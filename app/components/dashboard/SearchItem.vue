@@ -111,4 +111,3 @@ const stateColor = computed(() => {
 </script>
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
-<style scoped lang="scss"></style>

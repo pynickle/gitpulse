@@ -5,7 +5,7 @@
         <div class="media-content dashboard-list-card__content">
           <div class="is-flex is-justify-content-space-between is-align-items-center">
             <p class="title is-6 mb-0 dashboard-list-card__title">{{ repo.name }}</p>
-            <div class="is-flex items-center">
+            <div class="is-flex is-align-items-center">
               <span v-if="repo.language" class="tag mr-2 is-info is-light">
                 {{ repo.language }}
               </span>
@@ -21,16 +21,16 @@
         </div>
       </div>
 
-      <div class="is-flex items-center">
-        <div class="is-flex items-center mr-4">
+      <div class="is-flex is-align-items-center">
+        <div class="is-flex is-align-items-center mr-4">
           <StarIcon :size="14" class="mr-1 has-text-grey" />
           <span class="is-size-7 has-text-grey">{{ repo.stargazers_count }}</span>
         </div>
-        <div class="is-flex items-center mr-4">
+        <div class="is-flex is-align-items-center mr-4">
           <GitForkIcon :size="14" class="mr-1 has-text-grey" />
           <span class="is-size-7 has-text-grey">{{ repo.forks_count }}</span>
         </div>
-        <div class="is-flex items-center">
+        <div class="is-flex is-align-items-center">
           <EyeIcon :size="14" class="mr-1 has-text-grey" />
           <span class="is-size-7 has-text-grey">{{ repo.watchers_count || 0 }}</span>
         </div>
@@ -48,4 +48,3 @@ defineProps<{
 </script>
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
-<style scoped lang="scss"></style>
