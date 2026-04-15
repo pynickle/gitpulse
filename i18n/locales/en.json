@@ -79,5 +79,14 @@
     "failedToLockIssue": "Failed to lock issue",
     "failedToUnlockIssue": "Failed to unlock issue",
     "failedToUpdateLabels": "Failed to update labels"
+  },
+  "dashboard": {
+    "actions": {
+      "refreshCurrentTab": "Refresh Tab"
+    },
+    "pagination": {
+      "previous": "Previous Page",
+      "next": "Next Page"
+    }
   }
 }

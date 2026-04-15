@@ -3,10 +3,10 @@ import { ref } from 'vue';
 export type DashboardTab = 'notifications' | 'issues' | 'pulls' | 'repos';
 
 interface DashboardTabFetchers {
-  fetchNotifications: () => Promise<void>;
-  fetchIssues: () => Promise<void>;
-  fetchPulls: () => Promise<void>;
-  fetchRepos: () => Promise<void>;
+  fetchNotifications: (page?: number, options?: { force?: boolean }) => Promise<void>;
+  fetchIssues: (page?: number, options?: { force?: boolean }) => Promise<void>;
+  fetchPulls: (page?: number, options?: { force?: boolean }) => Promise<void>;
+  fetchRepos: (page?: number, options?: { force?: boolean }) => Promise<void>;
   initialTab?: DashboardTab;
 }
 
@@ -19,20 +19,23 @@ export function useDashboardTabs({
 }: DashboardTabFetchers) {
   const currentTab = ref<DashboardTab>(initialTab);
 
-  const tabRefreshers: Record<DashboardTab, () => Promise<void>> = {
+  const tabRefreshers: Record<
+    DashboardTab,
+    (page?: number, options?: { force?: boolean }) => Promise<void>
+  > = {
     notifications: fetchNotifications,
     issues: fetchIssues,
     pulls: fetchPulls,
     repos: fetchRepos,
   };
 
-  const refreshCurrentTab = async () => {
-    await tabRefreshers[currentTab.value]();
+  const refreshCurrentTab = async (page?: number, options?: { force?: boolean }) => {
+    await tabRefreshers[currentTab.value](page, options);
   };
 
-  const switchTab = async (tab: DashboardTab) => {
+  const switchTab = async (tab: DashboardTab, page?: number, options?: { force?: boolean }) => {
     currentTab.value = tab;
-    await refreshCurrentTab();
+    await refreshCurrentTab(page, options);
   };
 
   return {

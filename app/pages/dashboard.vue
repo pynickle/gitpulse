@@ -13,13 +13,6 @@
             </div>
 
             <div class="buttons is-centered mt-4">
-              <button
-                class="button is-small is-primary is-fullwidth"
-                @click="refreshCurrentTabSafely"
-              >
-                <RefreshCwIcon :size="16" class="mr-2" />
-                Refresh
-              </button>
               <button class="button is-small is-light is-fullwidth" @click="clear">
                 <LogOutIcon :size="16" class="mr-2" />
                 Logout
@@ -57,46 +50,65 @@
 
       <div class="column is-three-quarters main-content">
         <div class="card">
-          <div class="tabs is-centered is-boxed">
-            <ul>
-              <li :class="{ 'is-active': currentTab === 'notifications' }">
-                <a @click="switchTabSafely('notifications')">
-                  <BellIcon :size="16" class="mr-1" />
-                  Notifications
-                </a>
-              </li>
-              <li :class="{ 'is-active': currentTab === 'issues' }">
-                <a @click="switchTabSafely('issues')">
-                  <CircleDotIcon :size="16" class="mr-1" />
-                  Issues
-                </a>
-              </li>
-              <li :class="{ 'is-active': currentTab === 'pulls' }">
-                <a @click="switchTabSafely('pulls')">
-                  <GitPullRequestIcon :size="16" class="mr-1" />
-                  Pull Requests
-                </a>
-              </li>
-              <li :class="{ 'is-active': currentTab === 'repos' }">
-                <a @click="switchTabSafely('repos')">
-                  <BookMarkedIcon :size="16" class="mr-1" />
-                  Repositories
-                </a>
-              </li>
-            </ul>
+          <div class="dashboard-tabs-header">
+            <div class="tabs is-centered is-boxed dashboard-tabs-nav">
+              <ul>
+                <li :class="{ 'is-active': currentTab === 'notifications' }">
+                  <a @click="switchTabSafely('notifications')">
+                    <BellIcon :size="16" class="mr-1" />
+                    Notifications
+                  </a>
+                </li>
+                <li :class="{ 'is-active': currentTab === 'issues' }">
+                  <a @click="switchTabSafely('issues')">
+                    <CircleDotIcon :size="16" class="mr-1" />
+                    Issues
+                  </a>
+                </li>
+                <li :class="{ 'is-active': currentTab === 'pulls' }">
+                  <a @click="switchTabSafely('pulls')">
+                    <GitPullRequestIcon :size="16" class="mr-1" />
+                    Pull Requests
+                  </a>
+                </li>
+                <li :class="{ 'is-active': currentTab === 'repos' }">
+                  <a @click="switchTabSafely('repos')">
+                    <BookMarkedIcon :size="16" class="mr-1" />
+                    Repositories
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <button
+              class="button is-ghost is-small dashboard-tab-refresh"
+              type="button"
+              :aria-label="t('dashboard.actions.refreshCurrentTab')"
+              :title="t('dashboard.actions.refreshCurrentTab')"
+              @click="refreshCurrentTabSafely"
+            >
+              <RefreshCwIcon :size="16" class="dashboard-tab-refresh__icon mr-1" />
+              <span>{{ t('dashboard.actions.refreshCurrentTab') }}</span>
+            </button>
           </div>
 
-          <div class="card-content">
-            <div v-if="loading" class="has-text-centered py-6" style="min-height: 500px">
-              <p class="is-size-5 has-text-grey">Loading...</p>
-            </div>
+          <div class="card-content dashboard-list-card-content">
+            <DashboardLoadingList v-if="loading" :current-tab="currentTab" />
 
             <div v-else-if="error" class="notification is-danger" style="min-height: 500px">
               <p>{{ error }}</p>
             </div>
 
-            <div v-else>
-              <SimpleBar class="notification-list" v-if="currentTab === 'notifications'">
+            <div v-else class="dashboard-list-shell">
+              <div class="dashboard-pagination-wrapper dashboard-pagination-wrapper--top">
+                <DashboardPagination
+                  v-if="showPagination"
+                  :pagination="currentPagination"
+                  @change="goToPage"
+                />
+              </div>
+
+              <SimpleBar class="dashboard-list-scroll" v-if="currentTab === 'notifications'">
                 <div
                   v-for="notification in notifications"
                   :key="notification.id"
@@ -107,7 +119,7 @@
                 </div>
               </SimpleBar>
 
-              <SimpleBar v-else-if="currentTab === 'issues'" class="issues-list">
+              <SimpleBar v-else-if="currentTab === 'issues'" class="dashboard-list-scroll">
                 <div
                   v-for="issue in issues"
                   :key="issue.id"
@@ -118,13 +130,13 @@
                 </div>
               </SimpleBar>
 
-              <SimpleBar v-else-if="currentTab === 'pulls'" class="pulls-list">
+              <SimpleBar v-else-if="currentTab === 'pulls'" class="dashboard-list-scroll">
                 <div v-for="pull in pulls" :key="pull.id" class="mb-4 mr-4" @click="openPR(pull)">
                   <SearchItem :issue="pull" />
                 </div>
               </SimpleBar>
 
-              <SimpleBar v-else-if="currentTab === 'repos'" class="repos-list">
+              <SimpleBar v-else-if="currentTab === 'repos'" class="dashboard-list-scroll">
                 <div v-for="repo in repos" class="mb-4 mr-4" :key="repo.id">
                   <RepoItem :repo="repo" />
                 </div>
@@ -164,6 +176,8 @@ import {
 import { watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
+import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
+import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailOverlayHost from '~/components/dashboard/DetailOverlayHost.vue';
 import NotificationItem from '~/components/dashboard/NotificationItem.vue';
 import RepoItem from '~/components/dashboard/RepoItem.vue';
@@ -171,6 +185,7 @@ import SearchItem from '~/components/dashboard/SearchItem.vue';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
 const { user, clear } = useUserSession();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -184,6 +199,17 @@ const getQueryValue = (value: unknown) => {
 const parseDashboardTab = (value: unknown): DashboardTab => {
   const tab = getQueryValue(value);
   return dashboardTabs.includes(tab as DashboardTab) ? (tab as DashboardTab) : 'notifications';
+};
+
+const parseDashboardPage = (value: unknown) => {
+  const rawValue = getQueryValue(value);
+
+  if (!rawValue || !/^\d+$/.test(rawValue)) {
+    return 1;
+  }
+
+  const parsedPage = Number.parseInt(rawValue, 10);
+  return Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 };
 
 const buildDashboardQuery = (query: LocationQueryRaw) => {
@@ -205,6 +231,7 @@ const {
   issues,
   pulls,
   repos,
+  pagination,
   stats,
   fetchNotifications,
   fetchIssues,
@@ -218,6 +245,15 @@ const { currentTab, refreshCurrentTab, switchTab } = useDashboardTabs({
   fetchPulls,
   fetchRepos,
   initialTab: parseDashboardTab(route.query.tab),
+});
+
+const currentPage = computed(() => parseDashboardPage(route.query.page));
+
+const currentPagination = computed(() => pagination.value[currentTab.value]);
+
+const showPagination = computed(() => {
+  const activePagination = currentPagination.value;
+  return activePagination.totalPages !== 1 || activePagination.hasPrev || activePagination.hasNext;
 });
 
 const {
@@ -242,7 +278,7 @@ const {
 
 const refreshCurrentTabSafely = async () => {
   try {
-    await refreshCurrentTab();
+    await refreshCurrentTab(currentPage.value, { force: true });
   } catch (error) {
     console.error('Error refreshing tab:', error);
   }
@@ -266,14 +302,14 @@ const handleActiveDetailHome = async () => {
   await handlePRDetailHome();
 };
 
-const loadRouteTabSafely = async (tab: DashboardTab) => {
+const loadRouteTabSafely = async (tab: DashboardTab, page: number) => {
   try {
     if (tab === currentTab.value) {
-      await refreshCurrentTab();
+      await refreshCurrentTab(page);
       return;
     }
 
-    await switchTab(tab);
+    await switchTab(tab, page);
   } catch (error) {
     console.error('Error switching tab:', error);
   }
@@ -286,6 +322,7 @@ const switchTabSafely = async (tab: DashboardTab) => {
       query: buildDashboardQuery({
         ...route.query,
         tab,
+        page: undefined,
         issue: undefined,
         pr: undefined,
       }),
@@ -295,16 +332,100 @@ const switchTabSafely = async (tab: DashboardTab) => {
   }
 };
 
+const goToPage = async (page: number) => {
+  if (page < 1 || page === currentPage.value) {
+    return;
+  }
+
+  try {
+    await router.push({
+      path: '/dashboard',
+      query: buildDashboardQuery({
+        ...route.query,
+        tab: currentTab.value,
+        page,
+      }),
+    });
+  } catch (error) {
+    console.error('Error updating dashboard page route:', error);
+  }
+};
+
 watch(
-  () => route.query.tab,
-  (tab) => {
-    void loadRouteTabSafely(parseDashboardTab(tab));
+  () => currentPagination.value.page,
+  (resolvedPage) => {
+    if (resolvedPage === currentPage.value) {
+      return;
+    }
+
+    void router.replace({
+      path: '/dashboard',
+      query: buildDashboardQuery({
+        ...route.query,
+        tab: currentTab.value,
+        page: resolvedPage,
+      }),
+    });
+  }
+);
+
+watch(
+  () => [route.query.tab, route.query.page],
+  ([tab, page]) => {
+    void loadRouteTabSafely(parseDashboardTab(tab), parseDashboardPage(page));
   },
   { immediate: true }
 );
 </script>
 
 <style scoped lang="scss">
+.main-content {
+  display: flex;
+}
+
+.main-content > .card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+}
+
+.dashboard-tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-right: 1rem;
+}
+
+.dashboard-tabs-nav {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.dashboard-tabs-nav :deep(.tabs) {
+  margin-bottom: 0;
+}
+
+.dashboard-tab-refresh {
+  flex-shrink: 0;
+  color: #4a4a4a;
+}
+
+.dashboard-tab-refresh:hover,
+.dashboard-tab-refresh:focus-visible {
+  color: #1f6feb;
+  background: rgba(31, 111, 235, 0.08);
+}
+
+.dashboard-tab-refresh:hover .dashboard-tab-refresh__icon,
+.dashboard-tab-refresh:focus-visible .dashboard-tab-refresh__icon {
+  transform: rotate(15deg);
+}
+
+.dashboard-tab-refresh__icon {
+  transition: transform 0.2s ease;
+}
+
 .sidebar {
   position: sticky;
   top: 1rem;
@@ -318,11 +439,31 @@ watch(
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.notification-list,
-.issues-list,
-.pulls-list,
-.repos-list {
+.dashboard-list-card-content {
+  display: flex;
+  min-height: 0;
+  padding-top: 0.75rem;
+  flex: 1;
+}
+
+.dashboard-list-shell {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dashboard-list-scroll {
+  min-height: 0;
+  flex: 1;
   max-height: 500px;
-  overflow-y: auto;
+}
+
+.dashboard-pagination-wrapper {
+  z-index: 1;
+  padding: 0;
+  background: white;
 }
 </style>
