@@ -2,10 +2,10 @@
   <div>
     <!-- Reviewers section -->
     <div class="mb-4">
-      <div class="is-flex items-center justify-between mb-3">
+      <div class="is-flex is-align-items-center is-justify-content-space-between mb-3">
         <h3 class="title is-6 mb-0">Reviewers</h3>
       </div>
-      <div class="is-flex flex-wrap mb-4">
+      <div class="is-flex is-flex-wrap-wrap mb-4">
         <span
           v-for="reviewer in requestedReviewers"
           :key="reviewer.id || reviewer.login"
