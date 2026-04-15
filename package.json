@@ -1,0 +1,38 @@
+{
+  "name": "gitpulse",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "bunx oxlint ./ --type-aware",
+    "lint:fix": "bunx oxlint ./ --fix --type-aware",
+    "fmt": "bunx oxfmt ./"
+  },
+  "dependencies": {
+    "@nuxt/image": "^2.0.0",
+    "@nuxtjs/mdc": "0.21.1",
+    "@octokit/core": "^7.0.6",
+    "@octokit/plugin-paginate-graphql": "^6.0.0",
+    "@primer/css": "^22.1.1",
+    "bulma": "^1.0.4",
+    "dayjs": "^1.11.20",
+    "lucide-vue-next": "^1.0.0",
+    "nuxt": "^4.4.2",
+    "nuxt-auth-utils": "^0.5.29",
+    "simplebar-vue": "^2.4.2",
+    "vue": "^3.5.32",
+    "vue-router": "^5.0.4"
+  },
+  "devDependencies": {
+    "@nuxtjs/i18n": "^10.2.4",
+    "oxfmt": "^0.45.0",
+    "oxlint": "^1.60.0",
+    "oxlint-tsgolint": "^0.21.0",
+    "sass-embedded": "^1.99.0",
+    "vue3-simple-icons": "^16.10.0"
+  }
+}

@@ -1,0 +1,7 @@
+﻿@use 'bulma/sass/utilities/initial-variables' as iv;
+
+.card {
+  --bulma-shadow:
+    0 0.25em 0.5em -0.25em hsla(221deg, 14%, 4%, 0.1), 0 0px 0 1px hsla(221deg, 14%, 4%, 0.02);
+  border: 1px solid iv.$grey-lighter;
+}
