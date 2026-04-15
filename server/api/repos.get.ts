@@ -1,13 +1,27 @@
+import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
+
 export default defineEventHandler(async (event) => {
   const octokit = await getGitHubClient(event);
+  const page = parsePaginationNumber(getQuery(event).page, 1);
+  const perPage = parsePaginationNumber(getQuery(event).per_page, 20, 100);
 
   try {
-    const { data: repos } = await octokit.request('GET /user/repos', {
+    const { data: repos, headers } = await octokit.request('GET /user/repos', {
       type: 'owner',
       sort: 'updated',
       direction: 'desc',
+      page,
+      per_page: perPage,
     });
-    return repos;
+
+    return {
+      items: repos,
+      pagination: buildLinkedPaginationMeta({
+        page,
+        perPage,
+        linkHeader: headers.link,
+      }),
+    };
   } catch (error) {
     console.error('Error fetching GitHub repositories:', error);
 
