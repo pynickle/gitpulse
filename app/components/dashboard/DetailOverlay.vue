@@ -1,7 +1,7 @@
 <template>
-  <div class="detail-overlay">
-    <div class="detail-container">
-      <div class="card">
+  <div class="detail-overlay is-flex is-align-items-center is-justify-content-center">
+    <div class="detail-container is-flex is-flex-direction-column">
+      <div class="card is-flex is-flex-direction-column is-radiusless">
         <div :class="['card-header', { 'is-not-sticky': nonStickyHeader }]">
           <div
             class="card-header-title is-flex is-justify-content-space-between is-align-items-center"
@@ -23,7 +23,7 @@
         <div
           v-if="loading"
           class="is-overlay is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-background-white-ter"
-          style="z-index: 10; --bulma-bg-opacity: 0.8"
+          style="z-index: 10"
         >
           <div class="box has-text-centered py-5 px-6 shadow-md" style="min-width: 200px">
             <Loader2Icon class="spin-animation has-text-link mb-3" :size="40" :stroke-width="2.5" />
@@ -35,7 +35,10 @@
           </div>
         </div>
 
-        <div v-else :class="['card-content', contentClass]">
+        <div
+          v-else
+          :class="['card-content', 'is-flex-grow-1', 'has-background-white', contentClass]"
+        >
           <slot />
         </div>
       </div>
@@ -73,9 +76,6 @@ defineEmits<{
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 9999;
 }
 
@@ -84,15 +84,10 @@ defineEmits<{
   height: 100%;
   max-height: 100vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .card {
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: 0;
 }
 
 .card-header {
@@ -109,11 +104,9 @@ defineEmits<{
 }
 
 .card-content {
-  flex: 1;
   min-height: 0;
   padding: 2rem 8rem;
   overflow-y: auto;
-  background-color: #ffffff;
 }
 
 .spin-animation {

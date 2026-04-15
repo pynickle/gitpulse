@@ -100,16 +100,16 @@ watch(activeDetailKey, () => {
       :home-label="t('issueDetail.home')"
       :show-home-button="shouldShowHomeButton"
       :non-sticky-header="isHeaderNonSticky"
-      content-class="detail-host-content"
+      content-class="detail-host-content p-0 is-clipped"
       @back="emit('back')"
       @home="emit('home')"
     >
-      <div class="detail-pane-stage">
+      <div class="detail-pane-stage has-background-white is-clipped">
         <Transition name="detail-pane-slide">
-          <div :key="activeDetailKey" class="detail-pane">
+          <div :key="activeDetailKey" class="detail-pane has-background-white">
             <div
               v-if="isContentLoading"
-              class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
+              class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-background-white-ter"
             >
               <div class="box has-text-centered py-5 px-6 shadow-md detail-loading-box">
                 <Loader2Icon
@@ -148,16 +148,12 @@ watch(activeDetailKey, () => {
 
 <style scoped lang="scss">
 :deep(.detail-host-content) {
-  overflow: hidden;
-  padding: 0;
 }
 
 .detail-pane-stage {
   position: relative;
   height: 100%;
   min-height: 0;
-  overflow: hidden;
-  background-color: #ffffff;
 }
 
 .detail-pane {
@@ -167,13 +163,11 @@ watch(activeDetailKey, () => {
   min-height: 0;
   padding: 2rem 8rem;
   overflow-y: auto;
-  background-color: #ffffff;
 }
 
 .detail-loading-pane {
   height: 100%;
   margin: -2rem -8rem;
-  background-color: #f5f5f5;
 }
 
 .detail-loading-box {
