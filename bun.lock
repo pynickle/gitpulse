@@ -19,6 +19,7 @@
         "vue-router": "^5.0.4",
       },
       "devDependencies": {
+        "@ataraxy-labs/sem": "^0.3.21",
         "@nuxtjs/i18n": "^10.2.4",
         "oxfmt": "^0.45.0",
         "oxlint": "^1.60.0",
@@ -28,8 +29,13 @@
       },
     },
   },
+  "trustedDependencies": [
+    "@ataraxy-labs/sem",
+  ],
   "packages": {
     "@adonisjs/hash": ["@adonisjs/hash@9.1.1", "", { "dependencies": { "@phc/format": "^1.0.0", "@poppinss/utils": "^6.9.3" }, "peerDependencies": { "argon2": "^0.31.2 || ^0.41.0 || ^0.43.0", "bcrypt": "^5.1.1 || ^6.0.0" }, "optionalPeers": ["argon2", "bcrypt"] }, "sha512-ZkRguwjAp4skKvKDdRAfdJ2oqQ0N7p9l3sioyXO1E8o0WcsyDgEpsTQtuVNoIdMiw4sn4gJlmL3nyF4BcK1ZDQ=="],
+
+    "@ataraxy-labs/sem": ["@ataraxy-labs/sem@0.3.21", "", { "bin": { "sem": "bin/sem.js" } }, "sha512-JZ+X9Jm+5lYczq/CsshKIAWq93WkELgGKfOv6Uf8T9c1TsgHZVFmSYERvnrb/493g1HIVn1UW3wCYyHEcQ9jtQ=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.0", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.28.5", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw=="],
 
