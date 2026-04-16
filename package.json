@@ -16,7 +16,6 @@
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/mdc": "0.21.1",
     "@octokit/core": "^7.0.6",
-    "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@primer/css": "^22.1.1",
     "bulma": "^1.0.4",
     "dayjs": "^1.11.20",
