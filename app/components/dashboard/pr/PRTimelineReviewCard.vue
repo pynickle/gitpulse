@@ -1,5 +1,5 @@
 <template>
-  <div class="comment-item p-4">
+  <div class="comment-item px-4 pt-4 pb-1">
     <div class="mb-4">
       <div class="is-flex is-align-items-center mb-2">
         <RoundImg

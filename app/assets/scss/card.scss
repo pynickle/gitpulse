@@ -10,14 +10,6 @@
   overflow: hidden;
 }
 
-.dashboard-list-card--activity {
-  height: 6rem;
-}
-
-.dashboard-list-card--repo {
-  height: 5.5rem;
-}
-
 .dashboard-list-card > .card-content {
   height: 100%;
   overflow: hidden;
@@ -27,7 +19,6 @@
 .dashboard-list-card__subject,
 .dashboard-list-card__description {
   min-width: 0;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
