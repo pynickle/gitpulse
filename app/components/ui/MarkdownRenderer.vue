@@ -1,11 +1,18 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { parseMarkdown } from '@nuxtjs/mdc/runtime';
+import { shallowRef } from 'vue';
+
+import MarkdownRendererProseA from '~/components/ui/MarkdownRendererProseA.vue';
 
 const props = defineProps<{
   value: string;
 }>();
 
-const ast = ref<any>(null);
+const ast = shallowRef<Awaited<ReturnType<typeof parseMarkdown>> | null>(null);
+
+const rendererComponents = {
+  a: MarkdownRendererProseA,
+};
 
 watch(
   () => props.value,
@@ -21,7 +28,13 @@ watch(
 </script>
 
 <template>
-  <MDCRenderer class="markdown-body" v-if="ast" :body="ast.body" :data="ast.data" />
+  <MDCRenderer
+    v-if="ast"
+    class="markdown-body"
+    :body="ast.body"
+    :data="ast.data"
+    :components="rendererComponents"
+  />
 </template>
 
 <style lang="scss" src="@primer/css/color-modes/themes/light.scss" />
