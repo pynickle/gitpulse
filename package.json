@@ -27,11 +27,11 @@
     "vue-router": "^5.0.4"
   },
   "devDependencies": {
-    "@ataraxy-labs/sem": "^0.3.21",
+    "@ataraxy-labs/sem": "^0.3.22",
     "@nuxtjs/i18n": "^10.2.4",
     "oxfmt": "^0.45.0",
     "oxlint": "^1.60.0",
-    "oxlint-tsgolint": "^0.21.0",
+    "oxlint-tsgolint": "^0.21.1",
     "sass-embedded": "^1.99.0",
     "vue3-simple-icons": "^16.10.0"
   },
