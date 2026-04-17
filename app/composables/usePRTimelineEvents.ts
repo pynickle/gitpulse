@@ -85,6 +85,7 @@ export interface PRTimelineItem {
   duplicate?: TimelineReference;
   parent?: TimelineReference;
   subIssue?: TimelineReference;
+  fromRepository?: TimelineRepository & { url?: string };
   label?: TimelineLabel;
   lockReason?: string;
   stateReason?: string;
