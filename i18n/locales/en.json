@@ -38,7 +38,16 @@
     "oauthUnavailable": "GitHub OAuth is currently unavailable for this deployment.",
     "authFailed": "GitHub OAuth sign-in failed. Please try again or use a personal access token.",
     "providerStateUnavailable": "Unable to load authentication options right now.",
-    "loadingProviders": "Loading authentication options..."
+    "loadingProviders": "Loading authentication options...",
+    "personalModeTitle": "GitPulse Vault",
+    "personalModeSubtitle": "Enter your password to access GitPulse",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your site password",
+    "rememberDevice": "Remember this device",
+    "unlock": "Unlock",
+    "unlocking": "Unlocking...",
+    "invalidPassword": "Invalid password. Please try again.",
+    "personalModeLocked": "Locked"
   },
   "issueDetail": {
     "back": "Back",

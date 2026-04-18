@@ -1,4 +1,4 @@
-﻿declare module '#auth-utils' {
+declare module '#auth-utils' {
   interface User {
     login: string;
     name: string;
@@ -7,7 +7,7 @@
 
   interface UserSession {
     logged_in_at: Date;
-    auth_provider: 'github' | 'pat';
+    auth_provider: 'github' | 'pat' | 'personal';
   }
 
   interface SecureSessionData {

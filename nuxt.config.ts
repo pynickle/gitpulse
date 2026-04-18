@@ -18,14 +18,24 @@ const oauthEnvReady = Boolean(
   process.env.NUXT_OAUTH_GITHUB_CLIENT_ID && process.env.NUXT_OAUTH_GITHUB_CLIENT_SECRET
 );
 const effectiveOAuthEnabled = oauthRequested && oauthEnvReady;
+const personalModeEnabled = normalizeBoolean(process.env.AUTH_PERSONAL_MODE_ENABLED, false);
+const personalPat = process.env.AUTH_PERSONAL_PAT?.trim() ?? '';
+const personalPassword = process.env.AUTH_PERSONAL_PASSWORD?.trim() ?? '';
+const personalCookieSecret = process.env.AUTH_PERSONAL_COOKIE_SECRET?.trim() ?? '';
 
-if (!patEnabled && !oauthRequested) {
+if (personalModeEnabled && (!personalPat || !personalPassword || !personalCookieSecret)) {
+  throw new Error(
+    'GitPulse auth configuration is invalid: personal mode requires non-empty AUTH_PERSONAL_PAT, AUTH_PERSONAL_PASSWORD, and AUTH_PERSONAL_COOKIE_SECRET values before starting the app.'
+  );
+}
+
+if (!personalModeEnabled && !patEnabled && !oauthRequested) {
   throw new Error(
     'GitPulse auth configuration is invalid: both PAT token input and GitHub OAuth are disabled. Enable AUTH_PAT_ENABLED or AUTH_GITHUB_OAUTH_ENABLED before starting the app.'
   );
 }
 
-if (oauthRequested && !oauthEnvReady) {
+if (!personalModeEnabled && oauthRequested && !oauthEnvReady) {
   console.warn(
     '[auth] GitHub OAuth is enabled by configuration, but NUXT_OAUTH_GITHUB_CLIENT_ID or NUXT_OAUTH_GITHUB_CLIENT_SECRET is missing. OAuth has been disabled for this runtime.'
   );
@@ -37,10 +47,14 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     gitPulseAuth: {
-      patEnabled: String(patEnabled),
-      githubOAuthEnabled: String(effectiveOAuthEnabled),
-      githubOAuthRequested: String(oauthRequested),
+      personalModeEnabled: String(personalModeEnabled),
+      patEnabled: String(personalModeEnabled ? false : patEnabled),
+      githubOAuthEnabled: String(personalModeEnabled ? false : effectiveOAuthEnabled),
+      githubOAuthRequested: String(personalModeEnabled ? false : oauthRequested),
       githubOAuthEnvReady: String(oauthEnvReady),
+      personalPat,
+      personalPassword,
+      personalCookieSecret,
     },
   },
 

@@ -5,6 +5,13 @@ import { createGitHubClient } from '../../utils/github-auth-utils';
 export default defineEventHandler(async (event) => {
   const providerState = resolveAuthProviderState();
 
+  if (providerState.personalMode) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Personal access token authentication is not available in personal mode',
+    });
+  }
+
   if (!providerState.patEnabled) {
     throw createError({
       statusCode: 403,
@@ -37,9 +44,8 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error: any) {
-    console.error('GitHub PAT auth error:', error);
-
     const isUnauthorized = error?.status === 401;
+    console.error(`[auth] PAT validation failed: ${isUnauthorized ? 'unauthorized' : 'error'}`);
 
     throw createError({
       statusCode: isUnauthorized ? 401 : 500,

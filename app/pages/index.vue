@@ -36,15 +36,19 @@
           {{ warning }}
         </div>
 
-        <div v-if="providersError" class="notification is-danger is-light landing-shell__notice">
+        <div
+          v-if="showProvidersError"
+          class="notification is-danger is-light landing-shell__notice"
+        >
           {{ t('auth.providerStateUnavailable') }}
         </div>
 
-        <div v-if="providersPending" class="landing-shell__loading has-text-centered">
+        <div v-if="showProvidersLoading" class="landing-shell__loading has-text-centered">
           <LoadingIcon :size="22" />
           <p class="mt-3 has-text-grey">{{ t('auth.loadingProviders') }}</p>
         </div>
 
+        <PersonalLockForm v-else-if="isPersonalMode" />
         <AuthGateway v-else-if="providerState" :providers="providerState" />
       </div>
     </div>
@@ -52,16 +56,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import AuthenticatedLandingCard from '~/components/auth/AuthenticatedLandingCard.vue';
 import AuthGateway from '~/components/auth/AuthGateway.vue';
+import PersonalLockForm from '~/components/auth/PersonalLockForm.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
-const { user, loggedIn, clear } = useUserSession();
+const { user, loggedIn, clear, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
 const route = useRoute();
+const autoRestoreAttempted = ref(false);
+const autoRestorePending = ref(false);
 
 const {
   data: providersData,
@@ -70,7 +77,10 @@ const {
 } = await useFetch<AuthProviderState>('/api/auth/providers');
 
 const providerState = computed(() => providersData.value ?? null);
+const isPersonalMode = computed(() => providerState.value?.mode === 'personal');
 const providerWarnings = computed(() => providerState.value?.warnings ?? []);
+const showProvidersLoading = computed(() => providersPending.value && !isPersonalMode.value);
+const showProvidersError = computed(() => Boolean(providersError.value) && !isPersonalMode.value);
 const pageErrorMessage = computed(() => {
   const errorCode = Array.isArray(route.query.error) ? route.query.error[0] : route.query.error;
 
@@ -83,6 +93,36 @@ const pageErrorMessage = computed(() => {
       return '';
   }
 });
+
+watch(
+  [isPersonalMode, loggedIn],
+  async ([personalMode, isLoggedIn]) => {
+    if (!personalMode || isLoggedIn || autoRestoreAttempted.value || autoRestorePending.value) {
+      return;
+    }
+
+    autoRestoreAttempted.value = true;
+    autoRestorePending.value = true;
+
+    try {
+      await $fetch('/auth/unlock', {
+        method: 'POST',
+        body: {},
+      });
+
+      await fetchUserSession();
+
+      if (loggedIn.value) {
+        await navigateTo('/dashboard');
+      }
+    } catch {
+      // Ignore: missing/invalid remember cookie falls back to manual unlock.
+    } finally {
+      autoRestorePending.value = false;
+    }
+  },
+  { immediate: true }
+);
 
 const handleLogout = async () => {
   await clear();

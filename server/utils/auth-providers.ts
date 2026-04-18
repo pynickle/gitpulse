@@ -6,6 +6,9 @@ const DISABLED_VALUES = new Set(['0', 'false', 'no', 'off']);
 export const AUTH_PROVIDER_CONFIGURATION_ERROR =
   'GitPulse auth configuration is invalid: both PAT token input and GitHub OAuth are disabled. Enable AUTH_PAT_ENABLED or AUTH_GITHUB_OAUTH_ENABLED before starting the app.';
 
+export const AUTH_PERSONAL_MODE_CONFIGURATION_ERROR =
+  'GitPulse auth configuration is invalid: personal mode requires non-empty AUTH_PERSONAL_PAT, AUTH_PERSONAL_PASSWORD, and AUTH_PERSONAL_COOKIE_SECRET values before starting the app.';
+
 function normalizeBoolean(value: unknown, defaultValue: boolean): boolean {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'string') {
@@ -17,7 +20,16 @@ function normalizeBoolean(value: unknown, defaultValue: boolean): boolean {
   return defaultValue;
 }
 
-function resolveMode(patEnabled: boolean, oauthEnabled: boolean): AuthProviderMode {
+function hasNonBlankString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function resolveMode(
+  personalMode: boolean,
+  patEnabled: boolean,
+  oauthEnabled: boolean
+): AuthProviderMode {
+  if (personalMode) return 'personal';
   if (patEnabled && oauthEnabled) return 'hybrid';
   if (oauthEnabled) return 'oauth-only';
   return 'pat-only';
@@ -26,17 +38,31 @@ function resolveMode(patEnabled: boolean, oauthEnabled: boolean): AuthProviderMo
 export function resolveAuthProviderState(): AuthProviderState {
   const runtimeConfig = useRuntimeConfig() as {
     gitPulseAuth?: {
+      personalModeEnabled?: string | boolean;
       patEnabled?: string | boolean;
       githubOAuthEnabled?: string | boolean;
       githubOAuthRequested?: string | boolean;
       githubOAuthEnvReady?: string | boolean;
+      personalPat?: string;
+      personalPassword?: string;
+      personalCookieSecret?: string;
     };
   };
+  const personalMode = normalizeBoolean(runtimeConfig.gitPulseAuth?.personalModeEnabled, false);
   const patEnabled = normalizeBoolean(runtimeConfig.gitPulseAuth?.patEnabled, true);
   const oauthRequested = normalizeBoolean(runtimeConfig.gitPulseAuth?.githubOAuthRequested, false);
   const oauthEnvReady = normalizeBoolean(runtimeConfig.gitPulseAuth?.githubOAuthEnvReady, false);
   const oauthEnabled = normalizeBoolean(runtimeConfig.gitPulseAuth?.githubOAuthEnabled, false);
   const warnings: string[] = [];
+
+  if (
+    personalMode &&
+    (!hasNonBlankString(runtimeConfig.gitPulseAuth?.personalPat) ||
+      !hasNonBlankString(runtimeConfig.gitPulseAuth?.personalPassword) ||
+      !hasNonBlankString(runtimeConfig.gitPulseAuth?.personalCookieSecret))
+  ) {
+    throw new Error(AUTH_PERSONAL_MODE_CONFIGURATION_ERROR);
+  }
 
   if (oauthRequested && !oauthEnvReady) {
     warnings.push(
@@ -45,18 +71,23 @@ export function resolveAuthProviderState(): AuthProviderState {
   }
 
   return {
+    personalMode,
     patEnabled,
-    oauthEnabled,
-    oauthRequested,
+    oauthEnabled: personalMode ? false : oauthEnabled,
+    oauthRequested: personalMode ? false : oauthRequested,
     oauthEnvReady,
-    hasAvailableProvider: patEnabled || oauthEnabled,
-    mode: resolveMode(patEnabled, oauthEnabled),
+    hasAvailableProvider: personalMode ? false : patEnabled || oauthEnabled,
+    mode: resolveMode(personalMode, patEnabled, oauthEnabled),
     warnings,
   };
 }
 
 export function assertAuthProviderState(): AuthProviderState {
   const providerState = resolveAuthProviderState();
+
+  if (providerState.personalMode) {
+    return providerState;
+  }
 
   if (!providerState.hasAvailableProvider) {
     throw new Error(AUTH_PROVIDER_CONFIGURATION_ERROR);

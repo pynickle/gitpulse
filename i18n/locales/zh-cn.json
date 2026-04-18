@@ -38,7 +38,16 @@
     "oauthUnavailable": "当前部署暂时不可用 GitHub OAuth 登录。",
     "authFailed": "GitHub OAuth 登录失败，请重试或改用 Personal Access Token。",
     "providerStateUnavailable": "暂时无法加载认证方式。",
-    "loadingProviders": "正在加载认证方式..."
+    "loadingProviders": "正在加载认证方式...",
+    "personalModeTitle": "GitPulse 保险库",
+    "personalModeSubtitle": "输入密码以访问 GitPulse",
+    "passwordLabel": "密码",
+    "passwordPlaceholder": "输入站点密码",
+    "rememberDevice": "记住此设备",
+    "unlock": "解锁",
+    "unlocking": "解锁中...",
+    "invalidPassword": "密码无效，请重试。",
+    "personalModeLocked": "已锁定"
   },
   "issueDetail": {
     "back": "返回",
