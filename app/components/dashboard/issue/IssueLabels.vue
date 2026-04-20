@@ -119,7 +119,7 @@
 
 <script setup lang="ts">
 import { BoltIcon } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
@@ -137,8 +137,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { openModal, closeModal } = useModalState();
 
-// State variables
 const isLabelEditorVisible = ref(false);
 const loadingLabels = ref(false);
 const savingLabels = ref(false);
@@ -157,13 +157,23 @@ watch(
 
 const toggleLabelEditor = async () => {
   if (props.canEditLabels) {
-    isLabelEditorVisible.value = !isLabelEditorVisible.value;
-    emit('update:is-label-editor-visible', isLabelEditorVisible.value);
-    if (isLabelEditorVisible.value) {
+    const willBeVisible = !isLabelEditorVisible.value;
+    isLabelEditorVisible.value = willBeVisible;
+    emit('update:is-label-editor-visible', willBeVisible);
+    if (willBeVisible) {
+      openModal();
       await fetchRepoLabels();
+    } else {
+      closeModal();
     }
   }
 };
+
+onUnmounted(() => {
+  if (isLabelEditorVisible.value) {
+    closeModal();
+  }
+});
 
 const fetchRepoLabels = async () => {
   if (!props.repoInfo || !props.issueNumber) return;
@@ -218,9 +228,9 @@ const saveLabels = async () => {
       emit('update:labels', data);
     }
 
-    // Close the editor
     isLabelEditorVisible.value = false;
     emit('update:is-label-editor-visible', false);
+    closeModal();
   } catch (err: any) {
     console.error('Error saving labels:', err);
     labelError.value = err.message || t('issueDetail.failedToUpdateLabels');

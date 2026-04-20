@@ -9,7 +9,7 @@
       <button
         v-if="canLockIssue"
         :class="['button', 'is-small', isLocked ? 'is-danger' : 'is-warning']"
-        @click="isLocked ? unlockIssue() : (showLockReasonModal = true)"
+        @click="isLocked ? unlockIssue() : openLockModal()"
         :disabled="loadingLock"
       >
         <span v-if="loadingLock" class="icon is-small mr-2">
@@ -48,11 +48,10 @@
       </div>
     </div>
 
-    <!-- Lock reason modal -->
     <LockReasonModal
       :is-visible="showLockReasonModal"
       :loading="loadingLock"
-      @close="showLockReasonModal = false"
+      @close="closeLockModal"
       @confirm="confirmLockIssue"
     />
   </div>
@@ -60,7 +59,7 @@
 
 <script setup lang="ts">
 import { Loader2Icon } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import LockReasonModal from './LockReasonModal.vue';
@@ -83,11 +82,27 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { user } = useUserSession();
+const { openModal, closeModal } = useModalState();
 
-// State variables
 const showLockReasonModal = ref(false);
 const loadingLock = ref(false);
 const lockError = ref<string>('');
+
+const openLockModal = () => {
+  showLockReasonModal.value = true;
+  openModal();
+};
+
+const closeLockModal = () => {
+  showLockReasonModal.value = false;
+  closeModal();
+};
+
+onUnmounted(() => {
+  if (showLockReasonModal.value) {
+    closeModal();
+  }
+});
 
 const confirmLockIssue = async (lockReason: string) => {
   if (!props.canLockIssue || !props.repoInfo || !props.issueNumber) return;
@@ -124,7 +139,7 @@ const confirmLockIssue = async (lockReason: string) => {
 
     emit('update:isLocked', true);
     emit('add-timeline-event', lockEvent);
-    showLockReasonModal.value = false;
+    closeLockModal();
   } catch (err: any) {
     console.error('Error locking issue:', err);
     lockError.value = err.message || t('issueDetail.failedToLockIssue');
