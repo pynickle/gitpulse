@@ -14,12 +14,14 @@ interface ActiveDetailPane {
   key: string;
   loading: boolean;
   hasData: boolean;
+  error: string;
   loadingTitle: string;
 }
 
 const props = defineProps<{
   issue: Record<string, unknown> | null;
   pullRequest: Record<string, unknown> | null;
+  issueError: string;
   isIssueVisible: boolean;
   isPullRequestVisible: boolean;
   issueDetailKey: string;
@@ -46,6 +48,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       key: props.issueDetailKey,
       loading: props.loadingIssue,
       hasData: Boolean(props.issue),
+      error: props.issueError,
       loadingTitle: t('issueDetail.loading'),
     };
   }
@@ -56,6 +59,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       key: props.pullRequestDetailKey,
       loading: props.loadingPullRequest,
       hasData: Boolean(props.pullRequest),
+      error: '',
       loadingTitle: 'Loading Pull Request',
     };
   }
@@ -69,7 +73,7 @@ const isOverlayVisible = computed(() => Boolean(activeDetailPane.value));
 
 const isContentLoading = computed(() => {
   const pane = activeDetailPane.value;
-  return !pane || pane.loading || !pane.hasData;
+  return !pane || pane.loading || (!pane.hasData && !pane.error);
 });
 
 const isHeaderNonSticky = computed(() => {
@@ -125,6 +129,18 @@ watch(activeDetailKey, () => {
               </div>
             </div>
 
+            <div
+              v-else-if="activeDetailPane?.error"
+              class="detail-feedback-pane has-background-white-ter"
+            >
+              <div class="notification is-danger is-light mb-0 detail-feedback-box">
+                <p class="is-size-6 has-text-weight-semibold mb-2">
+                  {{ activeDetailPane.loadingTitle }}
+                </p>
+                <p class="is-size-7">{{ activeDetailPane.error }}</p>
+              </div>
+            </div>
+
             <IssueDetail
               v-else-if="activeDetailPane?.type === 'issue' && issue"
               :issue="issue"
@@ -170,8 +186,18 @@ watch(activeDetailKey, () => {
   margin: -2rem -8rem;
 }
 
+.detail-feedback-pane {
+  height: 100%;
+  margin: -2rem -8rem;
+  padding: 2rem;
+}
+
 .detail-loading-box {
   min-width: 200px;
+}
+
+.detail-feedback-box {
+  max-width: 420px;
 }
 
 .detail-overlay-fade-enter-active,

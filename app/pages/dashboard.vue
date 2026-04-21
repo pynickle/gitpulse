@@ -151,6 +151,7 @@
   <DetailOverlayHost
     :issue="currentIssue"
     :pull-request="currentPR"
+    :issue-error="issueError"
     :is-issue-visible="isIssueDetailVisible"
     :is-pull-request-visible="isPRDetailVisible"
     :issue-detail-key="issueDetailKey"
@@ -255,6 +256,7 @@ const showPagination = computed(() => {
 const {
   currentIssue,
   currentPR,
+  issueError,
   isIssueDetailVisible,
   isPRDetailVisible,
   issueDetailKey,

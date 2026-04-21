@@ -38,6 +38,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
   const isPRDetailVisible = ref(false);
   const currentIssue = ref<DashboardEntity | null>(null);
   const currentPR = ref<DashboardEntity | null>(null);
+  const issueError = ref('');
   const loadingIssue = ref(false);
   const loadingPR = ref(false);
   const issueRequestId = ref(0);
@@ -126,6 +127,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
     issueRequestId.value += 1;
     isIssueDetailVisible.value = false;
     currentIssue.value = null;
+    issueError.value = '';
     loadingIssue.value = false;
   };
 
@@ -166,6 +168,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
     const requestId = issueRequestId.value + 1;
     issueRequestId.value = requestId;
     currentIssue.value = null;
+    issueError.value = '';
     loadingIssue.value = true;
     isPRDetailVisible.value = false;
     isIssueDetailVisible.value = true;
@@ -179,6 +182,9 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
       }
     } catch (error) {
       console.error('Error fetching issue:', error);
+      if (requestId === issueRequestId.value) {
+        issueError.value = error instanceof Error ? error.message : 'Failed to load issue details.';
+      }
     } finally {
       if (requestId === issueRequestId.value) {
         loadingIssue.value = false;
@@ -308,6 +314,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
   return {
     currentIssue,
     currentPR,
+    issueError,
     isIssueDetailVisible,
     isPRDetailVisible,
     issueDetailKey,
