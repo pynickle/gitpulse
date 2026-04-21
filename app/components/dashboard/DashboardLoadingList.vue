@@ -69,11 +69,11 @@ const skeletonCardCount = 5;
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
 <style scoped lang="scss">
 .dashboard-loading-list {
-  display: flex;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   min-height: 0;
   flex: 1;
-  flex-direction: column;
   gap: 0.85rem;
 }
 
@@ -84,9 +84,8 @@ const skeletonCardCount = 5;
 }
 
 .dashboard-loading-list__scroll {
-  flex: 1;
   min-height: 0;
-  max-height: 500px;
+  height: 100%;
 }
 
 .dashboard-loading-card {

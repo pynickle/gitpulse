@@ -1,6 +1,6 @@
 <template>
-  <div class="container is-max-desktop pb-6">
-    <div class="columns">
+  <div class="container is-max-desktop pb-6 dashboard-page">
+    <div class="columns dashboard-columns">
       <div class="column is-one-quarter sidebar">
         <div class="card user-card">
           <div class="card-content">
@@ -49,7 +49,7 @@
       </div>
 
       <div class="column is-three-quarters main-content">
-        <div class="card">
+        <div class="card dashboard-main-card">
           <div class="dashboard-tabs-header">
             <div class="tabs is-centered is-boxed dashboard-tabs-nav">
               <ul>
@@ -99,13 +99,18 @@
               <p>{{ error }}</p>
             </div>
 
-            <div v-else class="dashboard-list-shell">
-              <div class="dashboard-pagination-wrapper dashboard-pagination-wrapper--top">
-                <DashboardPagination
-                  v-if="showPagination"
-                  :pagination="currentPagination"
-                  @change="goToPage"
-                />
+            <div
+              v-else
+              :class="[
+                'dashboard-list-shell',
+                { 'dashboard-list-shell--without-pagination': !showPagination },
+              ]"
+            >
+              <div
+                v-if="showPagination"
+                class="dashboard-pagination-wrapper dashboard-pagination-wrapper--top"
+              >
+                <DashboardPagination :pagination="currentPagination" @change="goToPage" />
               </div>
 
               <SimpleBar class="dashboard-list-scroll" v-if="currentTab === 'notifications'">
@@ -383,14 +388,28 @@ watch(
 </script>
 
 <style scoped lang="scss">
-.main-content {
-  display: flex;
-}
-
-.main-content > .card {
+.dashboard-page {
   display: flex;
   width: 100%;
+  min-height: 100%;
+}
+
+.dashboard-columns {
+  width: 100%;
+  align-items: stretch;
+}
+
+.main-content {
+  display: flex;
+  min-height: 0;
+}
+
+.dashboard-main-card {
+  display: flex;
+  width: 100%;
+  min-height: 0;
   flex-direction: column;
+  flex: 1;
 }
 
 .dashboard-tabs-header {
@@ -451,22 +470,26 @@ watch(
 }
 
 .dashboard-list-shell {
-  display: flex;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   min-height: 0;
   flex: 1;
-  flex-direction: column;
   gap: 0.85rem;
+}
+
+.dashboard-list-shell--without-pagination {
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .dashboard-list-scroll {
   min-height: 0;
-  flex: 1;
-  max-height: 500px;
+  height: 100%;
 }
 
 .dashboard-pagination-wrapper {
   z-index: 1;
+  min-height: 0;
   padding: 0;
   background: white;
 }
