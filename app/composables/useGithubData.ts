@@ -148,9 +148,9 @@ export function useGithubData() {
     error.value = null;
 
     try {
-      const response = await fetch(buildPaginationUrl('/api/notifications', page));
-      if (!response.ok) throw new Error('Failed to fetch notifications');
-      const data = (await response.json()) as PaginatedDashboardResponse<DashboardNotification>;
+      const data = await $fetch<PaginatedDashboardResponse<DashboardNotification>>(
+        buildPaginationUrl('/api/notifications', page)
+      );
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.notifications[data.pagination.page] = data;
@@ -181,9 +181,9 @@ export function useGithubData() {
     error.value = null;
 
     try {
-      const response = await fetch(buildPaginationUrl('/api/issues', page));
-      if (!response.ok) throw new Error('Failed to fetch issues');
-      const data = (await response.json()) as PaginatedDashboardResponse<DashboardEntity>;
+      const data = await $fetch<PaginatedDashboardResponse<DashboardEntity>>(
+        buildPaginationUrl('/api/issues', page)
+      );
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.issues[data.pagination.page] = data;
@@ -214,9 +214,9 @@ export function useGithubData() {
     error.value = null;
 
     try {
-      const response = await fetch(buildPaginationUrl('/api/pulls', page));
-      if (!response.ok) throw new Error('Failed to fetch pull requests');
-      const data = (await response.json()) as PaginatedDashboardResponse<DashboardEntity>;
+      const data = await $fetch<PaginatedDashboardResponse<DashboardEntity>>(
+        buildPaginationUrl('/api/pulls', page)
+      );
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.pulls[data.pagination.page] = data;
@@ -247,9 +247,9 @@ export function useGithubData() {
     error.value = null;
 
     try {
-      const response = await fetch(buildPaginationUrl('/api/repos', page));
-      if (!response.ok) throw new Error('Failed to fetch repositories');
-      const data = (await response.json()) as PaginatedDashboardResponse<DashboardRepo>;
+      const data = await $fetch<PaginatedDashboardResponse<DashboardRepo>>(
+        buildPaginationUrl('/api/repos', page)
+      );
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.repos[data.pagination.page] = data;
