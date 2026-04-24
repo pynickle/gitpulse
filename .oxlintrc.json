@@ -9,7 +9,7 @@
   },
   "overrides": [
     {
-      "files": ["src/**/*.ts"],
+      "files": ["app/**/*.ts", "app/**/*.vue", "server/**/*.ts", "shared/**/*.ts"],
       "rules": {
         "curly": "off",
         "no-unexpected-multiline": "off",
