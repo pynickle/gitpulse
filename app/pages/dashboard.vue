@@ -6,7 +6,14 @@
           <div class="card-content">
             <div class="has-text-centered mb-4">
               <figure class="image is-96x96 mx-auto mb-3">
-                <img :src="user?.avatar_url" :alt="user?.name" class="is-rounded" />
+                <NuxtImg
+                  :src="user?.avatar_url"
+                  :alt="user?.name"
+                  width="96"
+                  height="96"
+                  loading="lazy"
+                  class="is-rounded"
+                />
               </figure>
               <h2 class="title is-5">{{ user?.name }}</h2>
               <p class="subtitle is-7">{{ user?.login }}</p>

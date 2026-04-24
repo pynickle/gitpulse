@@ -7,9 +7,12 @@
       <div class="media mb-2">
         <div class="media-left">
           <figure class="image is-32x32">
-            <img
+            <NuxtImg
               :src="currentNotification.repository.owner.avatar_url"
               :alt="currentNotification.repository.owner.login"
+              width="32"
+              height="32"
+              loading="lazy"
               class="is-rounded"
             />
           </figure>
