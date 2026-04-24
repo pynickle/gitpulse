@@ -1,4 +1,4 @@
-import { readonly, ref } from 'vue';
+import { readonly } from 'vue';
 
 /**
  * Global modal state management
@@ -6,10 +6,10 @@ import { readonly, ref } from 'vue';
  * This allows components like CommentComposer to hide themselves when modals are active
  */
 
-const isAnyModalOpen = ref(false);
-const openModalCount = ref(0);
-
 export function useModalState() {
+  const isAnyModalOpen = useState<boolean>('gitpulse-modal-any-open', () => false);
+  const openModalCount = useState<number>('gitpulse-modal-open-count', () => 0);
+
   const openModal = () => {
     openModalCount.value += 1;
     isAnyModalOpen.value = true;

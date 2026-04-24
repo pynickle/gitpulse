@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 
 type PageType = 'dashboard' | 'issue' | 'pull-request' | 'notification';
 
@@ -12,10 +12,10 @@ interface NavigationEntry {
   };
 }
 
-const navigationHistory = ref<NavigationEntry[]>([]);
-const currentEntry = ref<NavigationEntry | null>(null);
-
 export function useNavigationHistory() {
+  const navigationHistory = useState<NavigationEntry[]>('gitpulse-navigation-history', () => []);
+  const currentEntry = useState<NavigationEntry | null>('gitpulse-navigation-current', () => null);
+
   const hasHistory = computed(() => navigationHistory.value.length > 0);
 
   const previousEntry = computed(() => {
