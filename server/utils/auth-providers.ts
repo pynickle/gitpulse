@@ -7,7 +7,7 @@ export const AUTH_PROVIDER_CONFIGURATION_ERROR =
   'GitPulse auth configuration is invalid: both PAT token input and GitHub OAuth are disabled. Enable AUTH_PAT_ENABLED or AUTH_GITHUB_OAUTH_ENABLED before starting the app.';
 
 export const AUTH_PERSONAL_MODE_CONFIGURATION_ERROR =
-  'GitPulse auth configuration is invalid: personal mode requires non-empty AUTH_PERSONAL_PAT, AUTH_PERSONAL_PASSWORD, and AUTH_PERSONAL_COOKIE_SECRET values before starting the app.';
+  'GitPulse auth configuration is invalid: personal mode requires non-empty NUXT_GIT_PULSE_AUTH_PERSONAL_PAT, NUXT_GIT_PULSE_AUTH_PERSONAL_PASSWORD, and NUXT_GIT_PULSE_AUTH_PERSONAL_COOKIE_SECRET (formerly AUTH_PERSONAL_PAT, AUTH_PERSONAL_PASSWORD, AUTH_PERSONAL_COOKIE_SECRET) values before starting the app.';
 
 function normalizeBoolean(value: unknown, defaultValue: boolean): boolean {
   if (typeof value === 'boolean') return value;

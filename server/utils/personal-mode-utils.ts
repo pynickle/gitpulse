@@ -83,7 +83,7 @@ export function assertPersonalCookieSecretStrength(): void {
     return;
   }
 
-  const message = `[auth] AUTH_PERSONAL_COOKIE_SECRET must be at least ${MIN_COOKIE_SECRET_BYTES} bytes (got ${byteLength}).`;
+  const message = `[auth] NUXT_GIT_PULSE_AUTH_PERSONAL_COOKIE_SECRET (formerly AUTH_PERSONAL_COOKIE_SECRET) must be at least ${MIN_COOKIE_SECRET_BYTES} bytes (got ${byteLength}).`;
 
   if (process.env.NODE_ENV === 'production') {
     throw new Error(message);

@@ -11,7 +11,7 @@ interface PersonalModeIdentity {
 const PERSONAL_MODE_STORAGE_BASE = 'personal-mode';
 const PERSONAL_MODE_IDENTITY_KEY = 'identity';
 const PERSONAL_MODE_STARTUP_FAILURE =
-  'GitPulse personal mode failed to start: AUTH_PERSONAL_PAT could not be validated against GitHub. Confirm the token is current and allowed to access GitHub user identity.';
+  'GitPulse personal mode failed to start: NUXT_GIT_PULSE_AUTH_PERSONAL_PAT (formerly AUTH_PERSONAL_PAT) could not be validated against GitHub. Confirm the token is current and allowed to access GitHub user identity.';
 
 function createPersonalModeStartupError(): Error {
   return createError({
@@ -40,7 +40,9 @@ export default defineNitroPlugin(async (_nitroApp) => {
   const personalPat = runtimeConfig.gitPulseAuth?.personalPat?.trim() ?? '';
 
   if (!personalPat) {
-    console.error('[auth] Personal mode startup validation failed: AUTH_PERSONAL_PAT is missing.');
+    console.error(
+      '[auth] Personal mode startup validation failed: NUXT_GIT_PULSE_AUTH_PERSONAL_PAT (formerly AUTH_PERSONAL_PAT) is missing.'
+    );
     throw createPersonalModeStartupError();
   }
 

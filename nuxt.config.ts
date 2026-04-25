@@ -19,15 +19,6 @@ const oauthEnvReady = Boolean(
 );
 const effectiveOAuthEnabled = oauthRequested && oauthEnvReady;
 const personalModeEnabled = normalizeBoolean(process.env.AUTH_PERSONAL_MODE_ENABLED, false);
-const personalPat = process.env.AUTH_PERSONAL_PAT?.trim() ?? '';
-const personalPassword = process.env.AUTH_PERSONAL_PASSWORD?.trim() ?? '';
-const personalCookieSecret = process.env.AUTH_PERSONAL_COOKIE_SECRET?.trim() ?? '';
-
-if (personalModeEnabled && (!personalPat || !personalPassword || !personalCookieSecret)) {
-  throw new Error(
-    'GitPulse auth configuration is invalid: personal mode requires non-empty AUTH_PERSONAL_PAT, AUTH_PERSONAL_PASSWORD, and AUTH_PERSONAL_COOKIE_SECRET values before starting the app.'
-  );
-}
 
 if (!personalModeEnabled && !patEnabled && !oauthRequested) {
   throw new Error(
@@ -52,9 +43,9 @@ export default defineNuxtConfig({
       githubOAuthEnabled: String(personalModeEnabled ? false : effectiveOAuthEnabled),
       githubOAuthRequested: String(personalModeEnabled ? false : oauthRequested),
       githubOAuthEnvReady: String(oauthEnvReady),
-      personalPat,
-      personalPassword,
-      personalCookieSecret,
+      personalPat: '',
+      personalPassword: '',
+      personalCookieSecret: '',
     },
   },
 
