@@ -480,6 +480,7 @@ watch(
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
+  height: calc(100vh - 12rem);
   min-height: 0;
   flex: 1;
   gap: 0.85rem;
