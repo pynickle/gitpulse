@@ -64,7 +64,13 @@ export default defineNuxtConfig({
         'simplebar-vue',
         'lucide-vue-next',
         'vue3-simple-icons',
-      ],
+        'dayjs/locale/zh-cn', // CJS
+        'dayjs', // CJS
+        'dayjs/plugin/duration.js', // CJS
+        'dayjs/plugin/relativeTime.js', // CJS
+        'dayjs/plugin/relativeTime', // CJS
+        'isomorphic-dompurify',
+      ]
     },
     css: {
       preprocessorOptions: {
