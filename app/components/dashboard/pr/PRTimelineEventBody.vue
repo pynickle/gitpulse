@@ -117,11 +117,9 @@ const stateEventTypes = new Set([
   'review_dismissed',
   'review_request_removed',
   'review_requested',
-  'subscribed',
   'unlabeled',
   'unlocked',
   'unpinned',
-  'unsubscribed',
   'user_blocked',
 ]);
 

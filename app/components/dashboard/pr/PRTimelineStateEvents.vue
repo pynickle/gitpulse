@@ -49,9 +49,7 @@
     </span>
   </template>
   <template v-else-if="item.eventType === 'reopened'">reopened this PR</template>
-  <template v-else-if="item.eventType === 'subscribed'">subscribed to this PR</template>
   <template v-else-if="item.eventType === 'unpinned'">unpinned this PR</template>
-  <template v-else-if="item.eventType === 'unsubscribed'">unsubscribed from this PR</template>
 
   <template v-else-if="item.eventType === 'added_to_project'">
     added this to project
@@ -203,9 +201,6 @@
 
   <template v-else-if="item.eventType === 'merged'">
     merged this PR
-    <span class="tag is-activity ml-1 is-info is-light">{{
-      item.commit?.message?.split('\n')[0] || 'Merged'
-    }}</span>
   </template>
 
   <template v-else-if="item.eventType === 'moved_columns_in_project'">

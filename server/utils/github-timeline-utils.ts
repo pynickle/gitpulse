@@ -404,18 +404,6 @@ export function normalizeIssueTimelineEvent(
         kind: 'event',
         eventType: eventName,
       };
-    case 'subscribed':
-      return {
-        ...baseItem,
-        kind: 'event',
-        eventType: eventName,
-      };
-    case 'unsubscribed':
-      return {
-        ...baseItem,
-        kind: 'event',
-        eventType: eventName,
-      };
     case 'marked_as_duplicate':
       return {
         ...baseItem,

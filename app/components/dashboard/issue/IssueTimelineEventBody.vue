@@ -91,8 +91,6 @@ const stateEventTypes = new Set([
   'mentioned',
   'project_v2_item_status_changed',
   'renamed',
-  'subscribed',
-  'unsubscribed',
   'transferred',
   'user_blocked',
   'pinned',

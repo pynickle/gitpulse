@@ -143,9 +143,6 @@
     <span class="tag is-activity ml-1 is-success is-light">{{ item.currentTitle }}</span>
   </template>
 
-  <template v-else-if="item.eventType === 'subscribed'">subscribed to this issue</template>
-  <template v-else-if="item.eventType === 'unsubscribed'">unsubscribed from this issue</template>
-
   <template v-else-if="item.eventType === 'transferred'">
     transferred this from
     <a
