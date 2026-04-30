@@ -18,9 +18,7 @@
       <div class="review-item__content is-flex-grow-1">
         <div class="review-item__heading">
           <span class="review-item__badge" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
-              <path :d="iconPath" />
-            </svg>
+            <component :is="stateIcon" :size="14" :stroke-width="2.5" />
           </span>
           <a
             :href="item.author?.url"
@@ -35,11 +33,7 @@
           </span>
         </div>
         <div v-if="item.body" class="review-item__body content">
-          <MarkdownRenderer
-            :value="item.body"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
-          />
+          <MarkdownRenderer :value="item.body" :repo-owner="repoOwner" :repo-name="repoName" />
         </div>
       </div>
     </div>
@@ -47,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { Check, Clock, Slash, X } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -67,18 +62,18 @@ const localeCode = computed(() => locale.value);
 
 const isPlainComment = computed(() => {
   const state = props.item.state;
-  return !state || state === 'COMMENTED';
+  return !state || state === 'commented';
 });
 
 const stateModifier = computed(() => {
   switch (props.item.state) {
-    case 'APPROVED':
+    case 'approved':
       return 'approved';
-    case 'CHANGES_REQUESTED':
+    case 'changes_requested':
       return 'changes-requested';
-    case 'DISMISSED':
+    case 'dismissed':
       return 'dismissed';
-    case 'PENDING':
+    case 'pending':
       return 'pending';
     default:
       return 'pending';
@@ -87,31 +82,32 @@ const stateModifier = computed(() => {
 
 const stateAction = computed(() => {
   switch (props.item.state) {
-    case 'APPROVED':
+    case 'approved':
       return 'approved these changes';
-    case 'CHANGES_REQUESTED':
+    case 'changes_requested':
       return 'requested changes';
-    case 'DISMISSED':
+    case 'dismissed':
       return 'dismissed this review';
-    case 'PENDING':
+    case 'pending':
       return 'started a review';
     default:
       return 'reviewed';
   }
 });
 
-const ICON_PATHS = {
-  approved:
-    'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z',
-  'changes-requested':
-    'M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z',
-  dismissed:
-    'M3.5 8a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5A.75.75 0 0 1 3.5 8Z',
-  pending:
-    'M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm.75 4.75a.75.75 0 0 0-1.5 0v3.5c0 .2.08.39.22.53l2 2a.75.75 0 1 0 1.06-1.06L8.75 7.94V4.75Z',
-} as const;
-
-const iconPath = computed(() => ICON_PATHS[stateModifier.value as keyof typeof ICON_PATHS]);
+const stateIcon = computed(() => {
+  switch (stateModifier.value) {
+    case 'approved':
+      return Check;
+    case 'changes-requested':
+      return X;
+    case 'dismissed':
+      return Slash;
+    case 'pending':
+    default:
+      return Clock;
+  }
+});
 </script>
 
 <style scoped lang="scss">
