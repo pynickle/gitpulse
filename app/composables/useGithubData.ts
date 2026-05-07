@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 
+import type { CustomTabQuery } from '~/composables/useCustomTabs';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
 interface DashboardEntity {
@@ -58,6 +59,7 @@ interface DashboardPageCache {
   issues: Record<number, PaginatedDashboardResponse<DashboardEntity>>;
   pulls: Record<number, PaginatedDashboardResponse<DashboardEntity>>;
   repos: Record<number, PaginatedDashboardResponse<DashboardRepo>>;
+  customTabs: Record<string, Record<number, PaginatedDashboardResponse<DashboardEntity>>>;
 }
 
 const defaultPerPage = 20;
@@ -83,6 +85,7 @@ const createPageCache = (): DashboardPageCache => ({
   issues: {},
   pulls: {},
   repos: {},
+  customTabs: {},
 });
 
 const buildPaginationUrl = (path: string, page: number, perPage = defaultPerPage) => {
@@ -90,6 +93,52 @@ const buildPaginationUrl = (path: string, page: number, perPage = defaultPerPage
     page: String(page),
     per_page: String(perPage),
   });
+
+  return `${path}?${searchParams.toString()}`;
+};
+
+const buildCustomTabQueryKey = (query: CustomTabQuery = {}) => {
+  const labels =
+    query.labels?.filter((label) => label.trim().length > 0).map((label) => label.trim()) ?? [];
+
+  return JSON.stringify({
+    repo: query.repo?.trim() || null,
+    labels,
+    author: query.author?.trim() || null,
+    state: query.state || null,
+  });
+};
+
+const buildCustomTabUrl = (
+  path: string,
+  page: number,
+  query: CustomTabQuery,
+  perPage = defaultPerPage
+) => {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  });
+
+  const repo = query.repo?.trim();
+  if (repo) {
+    searchParams.set('repo', repo);
+  }
+
+  const author = query.author?.trim();
+  if (author) {
+    searchParams.set('author', author);
+  }
+
+  if (query.state) {
+    searchParams.set('state', query.state);
+  }
+
+  const labels =
+    query.labels?.map((label) => label.trim()).filter((label) => label.length > 0) ?? [];
+  if (labels.length > 0) {
+    searchParams.set('labels', labels.join(','));
+  }
 
   return `${path}?${searchParams.toString()}`;
 };
@@ -265,6 +314,51 @@ export function useGithubData() {
     }
   };
 
+  const fetchCustomTab = async (
+    query: CustomTabQuery = {},
+    page = 1,
+    options: DashboardFetchOptions = {}
+  ) => {
+    const queryKey = buildCustomTabQueryKey(query);
+    const queryCache = pageCache.value.customTabs[queryKey] ?? {};
+    const cachedData = queryCache[page];
+
+    if (cachedData && !options.force) {
+      applyIssuesData(cachedData);
+      error.value = null;
+      loading.value = false;
+      return cachedData;
+    }
+
+    const requestId = activeRequestId.value + 1;
+    activeRequestId.value = requestId;
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const data = await $fetch<PaginatedDashboardResponse<DashboardEntity>>(
+        buildCustomTabUrl('/api/issues', page, query)
+      );
+      if (requestId !== activeRequestId.value) return;
+
+      if (!pageCache.value.customTabs[queryKey]) {
+        pageCache.value.customTabs[queryKey] = {};
+      }
+
+      pageCache.value.customTabs[queryKey][data.pagination.page] = data;
+      applyIssuesData(data);
+      return data;
+    } catch (err) {
+      if (requestId !== activeRequestId.value) return;
+
+      error.value = err instanceof Error ? err.message : 'An error occurred';
+    } finally {
+      if (requestId === activeRequestId.value) {
+        loading.value = false;
+      }
+    }
+  };
+
   return {
     loading,
     error,
@@ -278,5 +372,6 @@ export function useGithubData() {
     fetchIssues,
     fetchPulls,
     fetchRepos,
+    fetchCustomTab,
   };
 }
