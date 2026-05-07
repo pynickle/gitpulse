@@ -10,8 +10,6 @@ const skeletonCardCount = 5;
 
 <template>
   <div class="dashboard-loading-list" aria-busy="true" aria-live="polite">
-    <div class="dashboard-loading-list__pagination-spacer" aria-hidden="true" />
-
     <SimpleBar class="dashboard-loading-list__scroll">
       <div
         v-for="index in skeletonCardCount"
@@ -70,18 +68,11 @@ const skeletonCardCount = 5;
 <style scoped lang="scss">
 .dashboard-loading-list {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   width: 100%;
   height: calc(100vh - 12rem);
   min-height: 0;
   flex: 1;
-  gap: 0.85rem;
-}
-
-.dashboard-loading-list__pagination-spacer {
-  width: 100%;
-  height: 40px;
-  flex-shrink: 0;
 }
 
 .dashboard-loading-list__scroll {
