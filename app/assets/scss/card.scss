@@ -1,6 +1,7 @@
 ﻿@use 'bulma/sass/utilities/initial-variables' as iv;
 
 .card {
+  margin: 0.25rem;
   --bulma-shadow:
     0 0.25em 0.5em -0.25em hsla(221deg, 14%, 4%, 0.1), 0 0px 0 1px hsla(221deg, 14%, 4%, 0.02);
   border: 1px solid iv.$grey-lighter;
@@ -8,6 +9,11 @@
 
 .dashboard-list-card {
   overflow: hidden;
+  position: relative;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .dashboard-list-card > .card-content {
@@ -15,20 +21,129 @@
   overflow: hidden;
 }
 
-.dashboard-list-card__title,
-.dashboard-list-card__subject,
-.dashboard-list-card__description {
+.dashboard-list-card:hover,
+.dashboard-list-card:focus-within {
+  border-color: #3e8ed0;
+  background-color: #fbfdff;
+  box-shadow:
+    0 0.45rem 1rem -0.35rem hsla(221deg, 14%, 4%, 0.2),
+    0 0 0 1px hsla(207deg, 61%, 53%, 0.26);
+}
+
+.dashboard-list-card:hover .dashboard-list-card__title,
+.dashboard-list-card:focus-within .dashboard-list-card__title {
+  color: #3e8ed0;
+}
+
+.dashboard-list-card__content {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.dashboard-list-card__main-row,
+.dashboard-list-card__text-stack,
+.dashboard-list-card__meta,
+.dashboard-list-card__description,
+.dashboard-list-card__subject,
+.dashboard-list-card__title {
+  min-width: 0;
+}
+
+.dashboard-list-card__main-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.dashboard-list-card__icon {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.dashboard-list-card__text-stack {
+  flex: 1 1 auto;
+}
+
+.dashboard-list-card__side-actions {
+  display: flex;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+}
+
+.dashboard-list-card__side-actions .tag + .tag {
+  margin-left: 0.35rem;
+}
+
+.dashboard-list-card__title,
+.dashboard-list-card__subject {
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.38;
+  transition: color 0.2s ease;
+}
+
+.dashboard-list-card--detailed .dashboard-list-card__title,
+.dashboard-list-card--detailed .dashboard-list-card__subject {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+
+.dashboard-list-card--compact .dashboard-list-card__title,
+.dashboard-list-card__meta,
+.dashboard-list-card__description {
+  display: block;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dashboard-list-card__content {
+.dashboard-list-card__meta {
+  line-height: 1.35;
+}
+
+.dashboard-list-card__number {
+  margin: 0 0.35rem;
+  border: 1px solid hsla(207deg, 61%, 53%, 0.32);
+  background-color: hsla(207deg, 61%, 53%, 0.1);
+  color: #216aa8;
+  font-weight: 700;
+  vertical-align: 0.08em;
+}
+
+.dashboard-list-card__separator {
+  margin-right: 0.35rem;
+}
+
+.dashboard-list-card__description {
+  max-width: 100%;
+}
+
+.dashboard-list-card__tags-container {
   min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, black 86%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 86%, transparent 100%);
 }
 
 .dashboard-list-card__tags {
   min-width: 0;
   overflow: hidden;
   flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.dashboard-list-card__tags > .tag {
+  flex: 0 0 auto;
+  margin-right: 0 !important;
+}
+
+@media screen and (max-width: 768px) {
+  .dashboard-list-card--detailed .dashboard-list-card__title,
+  .dashboard-list-card--detailed .dashboard-list-card__subject {
+    -webkit-line-clamp: 3;
+  }
 }
