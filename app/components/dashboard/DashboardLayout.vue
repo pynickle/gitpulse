@@ -7,7 +7,7 @@
       </div>
 
       <!-- Tab Sidebar: 220-250px width (left-center) -->
-      <div class="column column-tab-sidebar">
+      <div class="column column-tab-sidebar" :style="layoutStyle">
         <slot name="tab-sidebar"></slot>
       </div>
 
@@ -17,7 +17,7 @@
       </div>
 
       <!-- Widgets Panel: 250-300px width (right, collapsible) -->
-      <div class="column column-widgets-panel">
+      <div v-if="isWidgetsPanelVisible" class="column column-widgets-panel" :style="layoutStyle">
         <slot name="widgets-panel"></slot>
       </div>
     </div>
@@ -25,7 +25,14 @@
 </template>
 
 <script setup lang="ts">
-// 4-column layout container for the redesigned dashboard
+import { computed } from 'vue';
+
+const { isWidgetsPanelVisible, tabSidebarWidth, widgetsPanelWidth } = useDashboardLayout();
+
+const layoutStyle = computed(() => ({
+  '--dashboard-tab-sidebar-width': `${tabSidebarWidth.value}px`,
+  '--dashboard-widgets-panel-width': `${widgetsPanelWidth.value}px`,
+}));
 </script>
 
 <style scoped lang="scss">
@@ -61,7 +68,7 @@ $widgets-panel-width: 280px;
 // Left-Center Tab Sidebar
 .column-tab-sidebar {
   flex: none;
-  width: $tab-sidebar-width;
+  width: var(--dashboard-tab-sidebar-width, #{$tab-sidebar-width});
 }
 
 // Center Main List
@@ -73,7 +80,7 @@ $widgets-panel-width: 280px;
 // Right Widgets Panel
 .column-widgets-panel {
   flex: none;
-  width: $widgets-panel-width;
+  width: var(--dashboard-widgets-panel-width, #{$widgets-panel-width});
 }
 
 // Responsive behavior
