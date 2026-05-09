@@ -5,7 +5,7 @@ import {
   normalizeIssueTimelineEvent,
   sortTimelineItems,
   throwTimelineFatalError,
-} from '../../../../../utils/github-timeline-utils';
+} from '#server/utils/github-timeline-utils';
 
 export default defineEventHandler(async (event) => {
   try {
