@@ -390,7 +390,7 @@ const filteredPulls = computed(() => {
   });
 });
 
-const currentTabStats = computed<Record<string, number>>(() => {
+const currentTabStats = computed((): Record<string, number> => {
   if (currentTab.value === 'notifications') {
     let unread = 0;
 

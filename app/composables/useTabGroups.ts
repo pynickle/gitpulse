@@ -198,6 +198,10 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
 
     const next = [...groups.value];
     const [moved] = next.splice(fromIndex, 1);
+    if (!moved) {
+      return false;
+    }
+
     next.splice(toIndex, 0, moved);
     groups.value = next;
     return true;
