@@ -48,9 +48,10 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 
 const handleGoToDashboard = async () => {
-  await navigateTo('/dashboard');
+  await navigateTo(localePath('/dashboard'));
 };
 </script>
 

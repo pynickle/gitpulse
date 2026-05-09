@@ -66,6 +66,7 @@ import RoundImg from '~/components/ui/RoundImg.vue';
 
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
+const localePath = useLocalePath();
 const route = useRoute();
 const autoRestoreAttempted = ref(false);
 const autoRestorePending = ref(false);
@@ -120,7 +121,7 @@ watch(
         await nextTick();
 
         if (loggedIn.value) {
-          await navigateTo('/dashboard');
+          await navigateTo(localePath('/dashboard'));
         }
       } catch (error) {
         console.error('Auto-restore session refresh failed', error);

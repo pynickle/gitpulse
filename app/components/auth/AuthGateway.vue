@@ -76,9 +76,33 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { fetch: fetchUserSession } = useUserSession();
+const localePath = useLocalePath();
 const token = ref('');
 const tokenError = ref('');
 const submitting = ref(false);
+
+const getTokenLoginErrorMessage = (error: unknown) => {
+  if (typeof error !== 'object' || error === null) {
+    return '';
+  }
+
+  const data = 'data' in error ? error.data : undefined;
+  const dataStatusMessage =
+    typeof data === 'object' &&
+    data !== null &&
+    'statusMessage' in data &&
+    typeof data.statusMessage === 'string'
+      ? data.statusMessage
+      : '';
+
+  if (dataStatusMessage) {
+    return dataStatusMessage;
+  }
+
+  return 'statusMessage' in error && typeof error.statusMessage === 'string'
+    ? error.statusMessage
+    : '';
+};
 
 watch(
   () => props.providers,
@@ -123,9 +147,9 @@ const handlePatSubmit = async () => {
     });
 
     await fetchUserSession();
-    await navigateTo('/dashboard');
-  } catch (error: any) {
-    const statusMessage = error?.data?.statusMessage || error?.statusMessage;
+    await navigateTo(localePath('/dashboard'));
+  } catch (error) {
+    const statusMessage = getTokenLoginErrorMessage(error);
 
     tokenError.value =
       statusMessage === 'Invalid GitHub token'

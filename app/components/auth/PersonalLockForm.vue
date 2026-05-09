@@ -62,6 +62,7 @@ import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 
 const { t } = useI18n();
 const { fetch: fetchUserSession } = useUserSession();
+const localePath = useLocalePath();
 
 const password = ref('');
 const remember = ref(false);
@@ -88,8 +89,8 @@ const handleUnlock = async () => {
     });
 
     await fetchUserSession();
-    await navigateTo('/dashboard');
-  } catch (err: any) {
+    await navigateTo(localePath('/dashboard'));
+  } catch {
     error.value = t('auth.invalidPassword');
   } finally {
     submitting.value = false;

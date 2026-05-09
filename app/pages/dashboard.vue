@@ -176,6 +176,7 @@ const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/
 
 const { user } = useUserSession();
 const { t } = useI18n();
+const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
 
@@ -545,7 +546,7 @@ const loadRouteTabSafely = async (tab: unknown, page: number) => {
 const switchTabSafely = async (tabId: string) => {
   try {
     await router.push({
-      path: '/dashboard',
+      path: localePath('/dashboard'),
       query: buildDashboardQuery({
         ...route.query,
         tab: tabId,
@@ -566,7 +567,7 @@ const goToPage = async (page: number) => {
 
   try {
     await router.push({
-      path: '/dashboard',
+      path: localePath('/dashboard'),
       query: buildDashboardQuery({
         ...route.query,
         tab: selectedCustomTab.value?.id ?? currentTab.value,
@@ -589,7 +590,7 @@ const handleAvatarClick = async () => {
 };
 
 const handleSettingsClick = async () => {
-  await router.push('/dashboard/settings/tabs');
+  await router.push(localePath('/dashboard/settings/tabs'));
 };
 
 const handleNewGroup = () => {

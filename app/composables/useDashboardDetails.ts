@@ -33,6 +33,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
     useNavigationHistory();
   const route = useRoute();
   const router = useRouter();
+  const localePath = useLocalePath();
 
   const isIssueDetailVisible = ref(false);
   const isPRDetailVisible = ref(false);
@@ -79,7 +80,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
 
   const pushDashboardQuery = async (query: LocationQueryRaw) => {
     await router.push({
-      path: '/dashboard',
+      path: localePath('/dashboard'),
       query: buildDashboardQuery(query),
     });
   };
