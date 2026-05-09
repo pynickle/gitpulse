@@ -120,9 +120,24 @@
         }
       },
       "actions": {
-        "markAllRead": "全部标为已读",
-        "createIssue": "新建议题",
-        "createPr": "新建 PR"
+        "title": "上下文与链接",
+        "notifications": {
+          "tip": "未读项会一直保留，直到 GitHub 将其标记为已读。你可以用上方过滤器对比未读和已读内容，不会改变任何状态。",
+          "settings": "管理通知设置"
+        },
+        "issues": {
+          "tip": "打开议题后先查看时间线、标签和交叉引用，再决定在哪里回复更合适。",
+          "mine": "在 GitHub 查看我的议题"
+        },
+        "pulls": {
+          "tip": "拉取请求包含审查活动和提交上下文，跳转到 GitHub 前可以先查看详情。",
+          "mine": "查看我的拉取请求",
+          "reviewRequests": "需要我审查的请求"
+        },
+        "repos": {
+          "tip": "仓库是近期项目活动的入口。仓库级创建和设置仍建议在 GitHub 中完成。",
+          "new": "在 GitHub 创建仓库"
+        }
       }
     }
   },

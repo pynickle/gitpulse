@@ -120,9 +120,24 @@
         }
       },
       "actions": {
-        "markAllRead": "Mark all read",
-        "createIssue": "Create issue",
-        "createPr": "Create PR"
+        "title": "Context & links",
+        "notifications": {
+          "tip": "Unread items stay visible until GitHub marks them read. Use the filters above to compare unread and read work without changing state.",
+          "settings": "Manage notification settings"
+        },
+        "issues": {
+          "tip": "Open an issue to inspect its timeline, labels, and cross-references before deciding where to respond.",
+          "mine": "View my issues on GitHub"
+        },
+        "pulls": {
+          "tip": "Pull requests include review activity and commit context, so scan the detail view before switching to GitHub.",
+          "mine": "View my pull requests",
+          "reviewRequests": "Review requests for me"
+        },
+        "repos": {
+          "tip": "Repositories provide the starting point for recent project activity. Use GitHub for repository-level creation and settings.",
+          "new": "Create a repository on GitHub"
+        }
       }
     }
   },

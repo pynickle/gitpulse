@@ -127,7 +127,7 @@
             :filters="currentTabFilters"
             @filter-change="handleFilterChange"
           />
-          <QuickActions :current-tab="currentTab" @action-click="handleActionClick" />
+          <QuickActions :current-tab="currentTab" />
         </WidgetsPanel>
       </template>
     </DashboardLayout>
@@ -653,20 +653,6 @@ const handleFilterChange = (filters: Record<string, boolean>) => {
     [currentTab.value]: filters,
   };
   persistQuickFilters();
-};
-
-const handleActionClick = async (action: string) => {
-  if (action === 'mark-all-read') {
-    await refreshCurrentTabSafely();
-    return;
-  }
-
-  if (action === 'create-issue' || action === 'create-pr') {
-    console.info(`Dashboard quick action is not implemented yet: ${action}`);
-    return;
-  }
-
-  console.warn(`Unknown dashboard quick action: ${action}`);
 };
 
 const hydrateQuickFilters = () => {
