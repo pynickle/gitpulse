@@ -27,6 +27,9 @@ logs
 .trae/
 .agents/
 .claude/
+
+.codegraph/
+
 skills-lock.json
 
 .editorconfig
