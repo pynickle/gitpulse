@@ -31,6 +31,15 @@ const resetTimer = shallowRef<ReturnType<typeof setTimeout> | null>(null);
 const languageLabel = computed(() => props.language?.trim() ?? '');
 const copyLabel = computed(() => (copied.value ? t('markdown.copied') : t('markdown.copyCode')));
 
+const prosePreProps = computed(() => ({
+  code: props.code,
+  language: props.language ?? undefined,
+  filename: props.filename ?? undefined,
+  highlights: props.highlights,
+  meta: props.meta ?? undefined,
+  class: props.class ?? undefined,
+}));
+
 function clearResetTimer() {
   if (!resetTimer.value) {
     return;
@@ -80,7 +89,7 @@ onBeforeUnmount(clearResetTimer);
       </button>
     </div>
 
-    <ProsePre v-bind="props"><slot /></ProsePre>
+    <ProsePre v-bind="prosePreProps"><slot /></ProsePre>
   </div>
 </template>
 

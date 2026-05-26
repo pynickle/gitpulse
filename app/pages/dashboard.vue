@@ -17,13 +17,12 @@
 
       <template #tab-sidebar>
         <TabSidebar
-          :groups="groups"
+          :groups="sidebarGroups"
           :tabs="sidebarTabs"
           :active-tab-id="activeTabId"
           @tab-select="handleSidebarTabSelect"
-          @tab-move="handleSidebarTabMove"
           @group-toggle="handleSidebarGroupToggle"
-          @new-group="handleNewGroup"
+          @manage-tabs="handleManageTabs"
         />
       </template>
 
@@ -81,7 +80,7 @@
                   v-for="issue in filteredIssues"
                   :key="issue.id"
                   class="mb-4 mr-4"
-                  @click="openIssue(issue)"
+                  @click="openSearchResult(issue)"
                 >
                   <AsyncSearchItem :issue="issue" />
                 </div>
@@ -151,8 +150,15 @@
 </template>
 
 <script setup lang="ts">
-import { RefreshCwIcon, SearchIcon } from 'lucide-vue-next';
-import { defineAsyncComponent, computed, onMounted, ref, watch } from 'vue';
+import {
+  BellIcon,
+  BookMarkedIcon,
+  CircleDotIcon,
+  GitPullRequestIcon,
+  RefreshCwIcon,
+  SearchIcon,
+} from 'lucide-vue-next';
+import { defineAsyncComponent, computed, onMounted, ref, watch, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
@@ -182,6 +188,12 @@ const router = useRouter();
 
 const dashboardTabs: DashboardTab[] = ['notifications', 'issues', 'pulls', 'repos'];
 const quickFiltersStorageKey = 'gitpulse:dashboard:quick-filters';
+
+interface DashboardEntity {
+  id: PropertyKey;
+  pull_request?: unknown;
+  [key: string]: unknown;
+}
 
 const isDashboardChildRoute = computed(() => {
   return !route.path.replace(/\/$/, '').endsWith('/dashboard');
@@ -233,7 +245,7 @@ const {
   fetchCustomTab,
 } = useGithubData();
 
-const { customTabs, getCustomTabById, updateCustomTab } = useCustomTabs();
+const { customTabs, getCustomTabById } = useCustomTabs();
 
 const {
   currentTab: currentBuiltinTab,
@@ -261,6 +273,20 @@ const {
 
 const { groups, toggleGroupCollapsed } = useTabGroups();
 
+const sidebarGroups = computed(() => {
+  return groups.value;
+});
+
+const customSidebarGroups = computed(() => {
+  return groups.value.filter((group) => group.source !== 'system');
+});
+
+const customSidebarGroupIds = computed(() => {
+  return new Set(customSidebarGroups.value.map((group) => group.id));
+});
+
+const fallbackCustomGroupId = computed(() => customSidebarGroups.value[0]?.id ?? '');
+
 const selectedCustomTab = computed(() => {
   const tabId = getQueryParamValue(route.query.tab);
 
@@ -272,14 +298,31 @@ const selectedCustomTab = computed(() => {
 });
 
 const sidebarTabs = computed(() => {
-  const customSidebarTabs = customTabs.value.map((tab) => ({
+  const iconByTab: Record<DashboardTab, Component> = {
+    notifications: BellIcon,
+    issues: CircleDotIcon,
+    pulls: GitPullRequestIcon,
+    repos: BookMarkedIcon,
+  };
+
+  const builtinSidebarTabs = tabs.value.map((tab) => ({
     id: tab.id,
     groupId: tab.groupId,
+    name: tab.name,
+    icon: iconByTab[tab.id as DashboardTab] ?? BellIcon,
+    badgeCount: tab.badgeCount,
+  }));
+
+  const customSidebarTabs = customTabs.value.map((tab) => ({
+    id: tab.id,
+    groupId: customSidebarGroupIds.value.has(tab.groupId)
+      ? tab.groupId
+      : fallbackCustomGroupId.value,
     name: tab.name,
     icon: SearchIcon,
   }));
 
-  return [...tabs.value, ...customSidebarTabs];
+  return [...builtinSidebarTabs, ...customSidebarTabs];
 });
 
 const currentTab = computed<DashboardTab>(() => {
@@ -463,6 +506,10 @@ const currentTabStats = computed((): Record<string, number> => {
   };
 });
 
+const isPullRequestResult = (item: DashboardEntity) => {
+  return typeof item.pull_request === 'object' && item.pull_request !== null;
+};
+
 const {
   currentIssue,
   currentPR,
@@ -482,14 +529,28 @@ const {
   handleSwitchIssue,
   handleSwitchPR,
   prDetailKey,
-} = useDashboardDetails(currentTab);
+} = useDashboardDetails(currentRouteTabId);
+
+const openSearchResult = async (item: DashboardEntity) => {
+  if (isPullRequestResult(item)) {
+    await openPR(item);
+    return;
+  }
+
+  await openIssue(item);
+};
 
 const refreshCurrentTabSafely = async () => {
   try {
     if (selectedCustomTab.value) {
-      await fetchCustomTab(selectedCustomTab.value.query, currentPage.value, {
-        force: true,
-      });
+      await fetchCustomTab(
+        selectedCustomTab.value.query,
+        currentPage.value,
+        {
+          force: true,
+        },
+        selectedCustomTab.value.source
+      );
       return;
     }
 
@@ -524,7 +585,7 @@ const loadRouteTabSafely = async (tab: unknown, page: number) => {
 
     if (customTab) {
       setActiveTabId(customTab.id);
-      await fetchCustomTab(customTab.query, page);
+      await fetchCustomTab(customTab.query, page, {}, customTab.source);
       return;
     }
 
@@ -590,11 +651,11 @@ const handleAvatarClick = async () => {
 };
 
 const handleSettingsClick = async () => {
-  await router.push(localePath('/dashboard/settings/tabs'));
+  await router.push(localePath('/dashboard/tabs'));
 };
 
-const handleNewGroup = () => {
-  console.info('New group action is reserved for a future phase.');
+const handleManageTabs = async () => {
+  await router.push(localePath('/dashboard/tabs'));
 };
 
 const handleSidebarGroupToggle = (groupId: string) => {
@@ -610,28 +671,6 @@ const handleSidebarTabSelect = async (tabId: string) => {
 
   const tab = selectTab(tabId);
   await switchTabSafely(tab);
-};
-
-const moveBuiltInSidebarTab = (tabId: string, groupId: string) => {
-  tabs.value = tabs.value.map((tab) => {
-    if (tab.id !== tabId) {
-      return tab;
-    }
-
-    return {
-      ...tab,
-      groupId,
-    };
-  });
-};
-
-const handleSidebarTabMove = (tabId: string, groupId: string) => {
-  if (getCustomTabById(tabId)) {
-    updateCustomTab(tabId, { groupId });
-    return;
-  }
-
-  moveBuiltInSidebarTab(tabId, groupId);
 };
 
 const handleActivityGroupSelect = async (groupId: string) => {

@@ -2,7 +2,11 @@
   <SimpleBar class="detail-scroll pr-6">
     <div class="columns">
       <div class="column is-three-quarters">
-        <IssueHeader :issue="currentIssue" :repo-owner="repoOwner" :repo-name="repoName" />
+        <IssueHeader
+          :issue="currentIssue"
+          :repo-owner="resolvedRepoOwner"
+          :repo-name="resolvedRepoName"
+        />
 
         <hr />
 
@@ -10,8 +14,8 @@
           <IssueTimelineEvents
             :timeline="timeline"
             :loading="loadingTimeline"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
+            :repo-owner="resolvedRepoOwner"
+            :repo-name="resolvedRepoName"
             :issue-number="currentIssue.number"
             :has-next-page="hasNextTimelinePage"
             :loading-more="loadingMoreTimeline"
@@ -107,6 +111,10 @@ const repoInfo = computed(() => {
 const repoOwner = computed(() => repoInfo.value?.owner);
 
 const repoName = computed(() => repoInfo.value?.repo);
+
+const resolvedRepoOwner = computed(() => repoOwner.value ?? '');
+
+const resolvedRepoName = computed(() => repoName.value ?? '');
 
 const canEditLabels = computed(() => {
   return repoPermissions.value.canEditLabels;

@@ -1,75 +1,95 @@
 <template>
   <aside class="menu tab-sidebar">
-    <template v-for="group in groups" :key="group.id">
-      <div class="menu-label-wrapper" @click="$emit('group-toggle', group.id)">
-        <p class="menu-label">{{ group.name }}</p>
-        <span class="icon is-small collapse-icon" :class="{ 'is-collapsed': group.collapsed }">
+    <div class="sidebar-header">
+      <p class="sidebar-header-title">{{ t('dashboard.sidebar.views') }}</p>
+      <button
+        class="button is-ghost is-small sidebar-manage-button"
+        type="button"
+        @click="$emit('manage-tabs')"
+      >
+        <span class="icon is-small mr-1">
+          <SlidersHorizontalIcon :size="14" />
+        </span>
+        <span>{{ t('dashboard.sidebar.manageViews') }}</span>
+      </button>
+    </div>
+
+    <template v-for="group in displayGroups" :key="group.id">
+      <div
+        class="menu-label-wrapper"
+        :class="{ 'is-nested': group.depth > 0, 'is-system': group.source === 'system' }"
+        :style="{ paddingLeft: `${0.75 + group.depth * 0.75}rem` }"
+        @click="group.source !== 'system' && $emit('group-toggle', group.id)"
+      >
+        <p class="menu-label">
+          <span>{{ group.name }}</span>
+          <span v-if="getGroupTabCount(group.id) > 0" class="group-count">
+            {{ getGroupTabCount(group.id) }}
+          </span>
+        </p>
+        <span
+          v-if="group.source !== 'system'"
+          class="icon is-small collapse-icon"
+          :class="{ 'is-collapsed': group.collapsed }"
+        >
           <ChevronDownIcon :size="14" />
         </span>
       </div>
-      <div class="group-list-wrap" :class="{ 'is-collapsed': group.collapsed }">
-        <VueDraggable
-          v-model="groupedTabs[group.id]"
-          tag="ul"
-          class="menu-list"
-          item-key="id"
-          :group="tabDragGroup"
-          :animation="150"
-          @add="handleTabAdd(group.id, $event)"
+      <div
+        class="group-list-wrap"
+        :class="{ 'is-collapsed': group.collapsed, 'is-system': group.source === 'system' }"
+      >
+        <ul class="menu-list">
+          <li v-for="tab in getTabsForGroup(group.id)" :key="tab.id">
+            <a
+              :class="{ 'is-active': activeTabId === tab.id }"
+              @click="$emit('tab-select', tab.id)"
+            >
+              <div class="tab-item-content">
+                <span class="icon is-small mr-2">
+                  <component :is="tab.icon" :size="16" />
+                </span>
+                <span class="tab-name">{{ tab.name }}</span>
+                <span
+                  v-if="(tab.badgeCount ?? 0) > 0"
+                  class="tag is-danger is-rounded is-small badge-count"
+                >
+                  {{ tab.badgeCount }}
+                </span>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <p
+          v-if="group.source !== 'system' && !group.collapsed && getGroupTabCount(group.id) === 0"
+          class="empty-group-note"
         >
-          <template #item="{ element: tab }">
-            <li :key="tab.id">
-              <a
-                :class="{ 'is-active': activeTabId === tab.id }"
-                @click="$emit('tab-select', tab.id)"
-              >
-                <div class="tab-item-content">
-                  <span class="icon is-small mr-2">
-                    <component :is="tab.icon" :size="16" />
-                  </span>
-                  <span class="tab-name">{{ tab.name }}</span>
-                  <span
-                    v-if="tab.badgeCount > 0"
-                    class="tag is-danger is-rounded is-small badge-count"
-                  >
-                    {{ tab.badgeCount }}
-                  </span>
-                </div>
-              </a>
-            </li>
-          </template>
-        </VueDraggable>
+          {{ t('dashboard.sidebar.emptyGroup') }}
+        </p>
       </div>
     </template>
-
-    <div class="new-group-action mt-4">
-      <button class="button is-ghost is-small is-fullwidth" @click="$emit('new-group')">
-        <span class="icon is-small mr-1">
-          <PlusIcon :size="14" />
-        </span>
-        <span>New Group</span>
-      </button>
-    </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import {
-  ChevronDownIcon,
-  PlusIcon,
-  BellIcon,
-  CircleDotIcon,
-  GitPullRequestIcon,
-  BookMarkedIcon,
-} from 'lucide-vue-next';
+import { ChevronDownIcon, SlidersHorizontalIcon } from 'lucide-vue-next';
 import type { Component } from 'vue';
-import { computed, reactive, watch } from 'vue';
-import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus';
+import { computed } from 'vue';
+
+import { DEFAULT_CUSTOM_TAB_GROUP_ID } from '~/composables/useTabGroups';
+
+const { t } = useI18n();
 
 interface TabSidebarGroup {
   id: string;
   name: string;
+  parentId?: string | null;
   collapsed?: boolean;
+  source?: 'system' | 'github-search';
+}
+
+interface DisplayTabSidebarGroup extends TabSidebarGroup {
+  depth: number;
 }
 
 interface TabSidebarItem {
@@ -87,62 +107,56 @@ const props = withDefaults(
     activeTabId: string;
   }>(),
   {
-    groups: () => [{ id: 'default', name: 'General', collapsed: false }],
-    tabs: () => [
-      { id: 'notifications', groupId: 'default', name: 'Notifications', icon: BellIcon },
-      { id: 'issues', groupId: 'default', name: 'Issues', icon: CircleDotIcon },
-      { id: 'pulls', groupId: 'default', name: 'Pull Requests', icon: GitPullRequestIcon },
-      { id: 'repos', groupId: 'default', name: 'Repositories', icon: BookMarkedIcon },
+    groups: () => [
+      {
+        id: DEFAULT_CUSTOM_TAB_GROUP_ID,
+        name: 'General',
+        collapsed: false,
+        source: 'github-search',
+      },
     ],
+    tabs: () => [],
   }
 );
 
 const emit = defineEmits<{
   (e: 'tab-select', tabId: string): void;
-  (e: 'tab-move', tabId: string, groupId: string): void;
   (e: 'group-toggle', groupId: string): void;
-  (e: 'new-group'): void;
+  (e: 'manage-tabs'): void;
 }>();
 
-const tabDragGroup = {
-  name: 'tab-groups',
-  pull: true,
-  put: true,
-};
+const getTabsForGroup = (groupId: string) => props.tabs.filter((tab) => tab.groupId === groupId);
+const getGroupTabCount = (groupId: string) => getTabsForGroup(groupId).length;
 
-const groupedTabs = reactive<Record<string, TabSidebarItem[]>>({});
+const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
+  const rows: DisplayTabSidebarGroup[] = [];
+  const visited = new Set<string>();
 
-const syncGroupedTabs = () => {
-  const nextGroupedTabs = props.groups.reduce<Record<string, TabSidebarItem[]>>((acc, group) => {
-    acc[group.id] = props.tabs.filter((tab) => tab.groupId === group.id);
-    return acc;
-  }, {});
+  const visit = (parentId: string | null, depth: number, ancestorCollapsed = false) => {
+    for (const group of props.groups) {
+      const currentParentId = group.parentId ?? null;
+      if (currentParentId !== parentId || visited.has(group.id)) {
+        continue;
+      }
+
+      visited.add(group.id);
+      if (!ancestorCollapsed) {
+        rows.push({ ...group, depth });
+      }
+      visit(group.id, depth + 1, ancestorCollapsed || Boolean(group.collapsed));
+    }
+  };
+
+  visit(null, 0);
 
   for (const group of props.groups) {
-    groupedTabs[group.id] = nextGroupedTabs[group.id] ?? [];
-  }
-
-  for (const groupId of Object.keys(groupedTabs)) {
-    if (!props.groups.some((group) => group.id === groupId)) {
-      delete groupedTabs[groupId];
+    if (!visited.has(group.id)) {
+      rows.push({ ...group, depth: 0 });
     }
   }
-};
 
-const groupsSignature = computed(() => props.groups.map((group) => group.id).join('|'));
-const tabsSignature = computed(() => props.tabs.map((tab) => tab.id).join('|'));
-
-watch(() => [groupsSignature.value, tabsSignature.value], syncGroupedTabs, {
-  immediate: true,
-  deep: true,
+  return rows;
 });
-
-const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) => {
-  if (event.data) {
-    event.data.groupId = groupId;
-    emit('tab-move', event.data.id, groupId);
-  }
-};
 </script>
 
 <style scoped lang="scss">
@@ -151,7 +165,33 @@ const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) =>
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 1rem 0;
+  padding: 0.75rem 0;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.55rem;
+}
+
+.sidebar-header-title {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  color: var(--bulma-text-light, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar-manage-button {
+  flex: 0 0 auto;
+  height: 1.85rem;
+  padding-inline: 0.45rem;
+  font-weight: 650;
 }
 
 .menu-label-wrapper {
@@ -160,7 +200,7 @@ const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) =>
   justify-content: space-between;
   cursor: pointer;
   padding: 0 0.75rem;
-  margin-bottom: 0.5em;
+  margin-bottom: 0.35em;
   border-radius: 4px;
   transition:
     background-color 0.2s ease,
@@ -173,9 +213,45 @@ const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) =>
   }
 
   .menu-label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.4rem;
     margin-bottom: 0;
     margin-top: 0;
     user-select: none;
+  }
+
+  .group-count {
+    display: inline-flex;
+    min-width: 1.45rem;
+    height: 1.15rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
+    color: var(--bulma-text, #334155);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  &.is-nested .menu-label::before {
+    content: '->';
+    margin-right: 0.35rem;
+    color: var(--bulma-text-light, #888);
+  }
+
+  &.is-system {
+    cursor: default;
+    border-left: 3px solid var(--bulma-primary, #485fc7);
+    color: var(--bulma-text-light, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    &:hover {
+      background-color: transparent;
+      transform: none;
+    }
   }
 }
 
@@ -210,6 +286,19 @@ const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) =>
     min-height: 0;
     overflow: hidden;
   }
+
+  &.is-system {
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bulma-border-light, rgba(0, 0, 0, 0.05));
+  }
+}
+
+.empty-group-note {
+  padding: 0.45rem 0.75rem 0.65rem;
+  margin: 0;
+  color: var(--bulma-text-light, #94a3b8);
+  font-size: 0.78rem;
 }
 
 .menu-list {
@@ -218,8 +307,8 @@ const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) =>
   li a {
     display: block;
     border-radius: 6px;
-    padding: 0.5em 0.75em;
-    margin-bottom: 0.25em;
+    padding: 0.38em 0.75em;
+    margin-bottom: 0.15em;
     transition:
       background-color 0.2s ease,
       color 0.2s ease,
@@ -257,12 +346,10 @@ const handleTabAdd = (groupId: string, event: DraggableEvent<TabSidebarItem>) =>
   }
 }
 
-.new-group-action {
-  padding: 0 0.75rem;
-  margin-top: auto;
-
-  .button {
-    justify-content: flex-start;
+@media (prefers-color-scheme: dark) {
+  .menu-label-wrapper .group-count {
+    background: rgba(148, 163, 184, 0.18);
+    color: #e2e8f0;
   }
 }
 </style>

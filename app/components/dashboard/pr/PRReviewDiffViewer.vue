@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
+import {
+  nextTick,
+  onBeforeUnmount,
+  shallowRef,
+  useTemplateRef,
+  watch,
+  type ComponentPublicInstance,
+} from 'vue';
 
 import PRReviewInlineComment from '~/components/dashboard/pr/PRReviewInlineComment.vue';
 import type {
@@ -133,9 +140,12 @@ const scrollContainer = useTemplateRef<HTMLElement>('scrollContainer');
 const sectionElements = new Map<string, HTMLElement>();
 const isProgrammaticScroll = shallowRef(false);
 const lastScrollSyncedFilename = shallowRef<string | null>(null);
-let programmaticScrollTimer: ReturnType<typeof window.setTimeout> | undefined;
+let programmaticScrollTimer: number | undefined;
 
-const setFileSectionElement = (filename: string, element: Element | null) => {
+const setFileSectionElement = (
+  filename: string,
+  element: Element | ComponentPublicInstance | null
+) => {
   if (element instanceof HTMLElement) {
     sectionElements.set(filename, element);
   } else {

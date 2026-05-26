@@ -1,16 +1,18 @@
 import { ref } from 'vue';
 
-import type { CustomTabQuery } from '~/composables/useCustomTabs';
+import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
+import type { CustomTabQuery, CustomTabSource } from '~/composables/useCustomTabs';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
 interface DashboardEntity {
+  id: PropertyKey;
   repository_url?: string | null;
   number?: number | null;
   [key: string]: unknown;
 }
 
 interface DashboardNotification {
-  id?: number | string;
+  id: PropertyKey;
   subject?: {
     type?: string;
     url?: string;
@@ -30,7 +32,7 @@ interface DashboardNotification {
 }
 
 interface DashboardRepo {
-  id?: number;
+  id: PropertyKey;
   name?: string;
   [key: string]: unknown;
 }
@@ -97,16 +99,17 @@ const buildPaginationUrl = (path: string, page: number, perPage = defaultPerPage
   return `${path}?${searchParams.toString()}`;
 };
 
-const buildCustomTabQueryKey = (query: CustomTabQuery = {}) => {
-  const labels =
-    query.labels?.filter((label) => label.trim().length > 0).map((label) => label.trim()) ?? [];
+const buildCustomTabQueryKey = (
+  query: CustomTabQuery = {},
+  source: CustomTabSource = 'github-search'
+) => {
+  const searchParams = new URLSearchParams({ source });
+  appendCustomTabQueryParams(searchParams, query);
+  if (query.perPage) {
+    searchParams.set('per_page', String(query.perPage));
+  }
 
-  return JSON.stringify({
-    repo: query.repo?.trim() || null,
-    labels,
-    author: query.author?.trim() || null,
-    state: query.state || null,
-  });
+  return searchParams.toString();
 };
 
 const buildCustomTabUrl = (
@@ -117,28 +120,9 @@ const buildCustomTabUrl = (
 ) => {
   const searchParams = new URLSearchParams({
     page: String(page),
-    per_page: String(perPage),
+    per_page: String(query.perPage ?? perPage),
   });
-
-  const repo = query.repo?.trim();
-  if (repo) {
-    searchParams.set('repo', repo);
-  }
-
-  const author = query.author?.trim();
-  if (author) {
-    searchParams.set('author', author);
-  }
-
-  if (query.state) {
-    searchParams.set('state', query.state);
-  }
-
-  const labels =
-    query.labels?.map((label) => label.trim()).filter((label) => label.length > 0) ?? [];
-  if (labels.length > 0) {
-    searchParams.set('labels', labels.join(','));
-  }
+  appendCustomTabQueryParams(searchParams, query);
 
   return `${path}?${searchParams.toString()}`;
 };
@@ -317,9 +301,10 @@ export function useGithubData() {
   const fetchCustomTab = async (
     query: CustomTabQuery = {},
     page = 1,
-    options: DashboardFetchOptions = {}
+    options: DashboardFetchOptions = {},
+    source: CustomTabSource = 'github-search'
   ) => {
-    const queryKey = buildCustomTabQueryKey(query);
+    const queryKey = buildCustomTabQueryKey(query, source);
     const queryCache = pageCache.value.customTabs[queryKey] ?? {};
     const cachedData = queryCache[page];
 
@@ -336,8 +321,9 @@ export function useGithubData() {
     error.value = null;
 
     try {
+      const path = source === 'github-search' ? '/api/search/issues' : '/api/search/issues';
       const data = await $fetch<PaginatedDashboardResponse<DashboardEntity>>(
-        buildCustomTabUrl('/api/issues', page, query)
+        buildCustomTabUrl(path, page, query)
       );
       if (requestId !== activeRequestId.value) return;
 

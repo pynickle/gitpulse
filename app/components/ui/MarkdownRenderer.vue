@@ -2,8 +2,6 @@
 import { parseMarkdown } from '@nuxtjs/mdc/runtime';
 import { shallowRef } from 'vue';
 
-import MarkdownRendererProseA from '~/components/ui/MarkdownRendererProseA.vue';
-import MarkdownRendererProseMermaidWrapper from '~/components/ui/MarkdownRendererProseMermaidWrapper.vue';
 import useGitHubAutolinks from '~/composables/useGitHubAutolinks';
 
 const props = defineProps<{
@@ -16,12 +14,12 @@ const ast = shallowRef<Awaited<ReturnType<typeof parseMarkdown>> | null>(null);
 const renderRequestId = shallowRef(0);
 const { applyGitHubAutolinks } = useGitHubAutolinks();
 
-const rendererComponents = {
-  a: MarkdownRendererProseA,
+const rendererComponents: Record<string, string> = {
+  a: 'MarkdownRendererProseA',
   // Override the block-level `pre` renderer (not `code` — inline backticks
   // must NOT trigger MermaidBlock). The wrapper inspects `language` and routes
   // mermaid fences to MermaidBlock; everything else delegates to ProsePre.
-  pre: MarkdownRendererProseMermaidWrapper,
+  pre: 'MarkdownRendererProseMermaidWrapper',
 };
 
 watch(

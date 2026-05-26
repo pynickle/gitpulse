@@ -7,7 +7,7 @@ interface PullFileResponse {
   deletions?: number;
   changes?: number;
   patch?: string;
-  sha?: string;
+  sha?: string | null;
   blob_url?: string;
   raw_url?: string;
   contents_url?: string;

@@ -3,23 +3,59 @@ import { watch } from 'vue';
 export interface TabGroup {
   id: string;
   name: string;
+  parentId?: string | null;
   collapsed?: boolean;
+  source?: TabGroupSource;
 }
+
+export type TabGroupSource = 'system' | 'github-search';
+
+export const BUILTIN_TAB_GROUP_ID = 'built-in';
+export const DEFAULT_CUSTOM_TAB_GROUP_ID = 'default';
 
 export interface CreateTabGroupInput {
   id?: string;
   name: string;
+  parentId?: string | null;
   collapsed?: boolean;
+  source?: TabGroupSource;
 }
 
 export interface UpdateTabGroupInput {
   name?: string;
+  parentId?: string | null;
   collapsed?: boolean;
+  source?: TabGroupSource;
 }
 
 const STORAGE_KEY = 'gitpulse:dashboard:tab-groups';
 
-const DEFAULT_TAB_GROUPS: TabGroup[] = [{ id: 'default', name: 'General', collapsed: false }];
+let hasHydratedStoredGroups = false;
+
+const DEFAULT_TAB_GROUPS: TabGroup[] = [
+  {
+    id: BUILTIN_TAB_GROUP_ID,
+    name: 'Built-in Views',
+    parentId: null,
+    collapsed: false,
+    source: 'system',
+  },
+  {
+    id: DEFAULT_CUSTOM_TAB_GROUP_ID,
+    name: 'General',
+    parentId: null,
+    collapsed: false,
+    source: 'github-search',
+  },
+];
+
+const REQUIRED_BUILTIN_GROUP: TabGroup = {
+  id: BUILTIN_TAB_GROUP_ID,
+  name: 'Built-in Views',
+  parentId: null,
+  collapsed: false,
+  source: 'system',
+};
 
 const cloneGroups = (groups: TabGroup[]) => {
   return groups.map((group) => ({ ...group }));
@@ -37,8 +73,33 @@ const normalizeGroup = (group: Partial<TabGroup>): TabGroup | null => {
   return {
     id: group.id,
     name: group.name,
+    parentId:
+      typeof group.parentId === 'string' && group.parentId.length > 0 ? group.parentId : null,
     collapsed: group.collapsed ?? false,
+    source:
+      group.source === 'system' || group.source === 'github-search'
+        ? group.source
+        : 'github-search',
   };
+};
+
+const ensureRequiredGroups = (groups: TabGroup[]) => {
+  const groupMap = new Map(groups.map((group) => [group.id, group]));
+  const builtinGroup = groupMap.get(BUILTIN_TAB_GROUP_ID);
+
+  if (builtinGroup) {
+    groupMap.delete(BUILTIN_TAB_GROUP_ID);
+  }
+
+  const resolvedBuiltin = {
+    ...(builtinGroup ?? REQUIRED_BUILTIN_GROUP),
+    id: BUILTIN_TAB_GROUP_ID,
+    name: REQUIRED_BUILTIN_GROUP.name,
+    parentId: null,
+    source: 'system' as const,
+  };
+
+  return [resolvedBuiltin, ...groupMap.values()];
 };
 
 const readStoredGroups = (): TabGroup[] | null => {
@@ -86,15 +147,18 @@ const createGroupId = () => {
 export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
   const groups = useState<TabGroup[]>('gitpulse-tab-groups', () => cloneGroups(initialGroups));
 
-  if (typeof window !== 'undefined' && groups.value.length === 0) {
+  if (import.meta.client && groups.value.length === 0) {
     groups.value = cloneGroups(initialGroups);
   }
 
-  if (typeof window !== 'undefined' && groups.value.length > 0) {
+  if (import.meta.client && !hasHydratedStoredGroups) {
     const storedGroups = readStoredGroups();
     if (storedGroups) {
-      groups.value = storedGroups;
+      groups.value = ensureRequiredGroups(storedGroups);
+    } else {
+      groups.value = ensureRequiredGroups(groups.value);
     }
+    hasHydratedStoredGroups = true;
   }
 
   watch(
@@ -119,7 +183,9 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
     const group: TabGroup = {
       id,
       name: input.name,
+      parentId: input.parentId ?? null,
       collapsed: input.collapsed ?? false,
+      source: input.source ?? 'github-search',
     };
 
     groups.value = [...groups.value, group];
@@ -130,6 +196,10 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
     const target = getGroupById(groupId);
     if (!target) {
       return null;
+    }
+
+    if (target.source === 'system') {
+      return target;
     }
 
     const updatedGroup: TabGroup = {
@@ -150,7 +220,7 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
 
   const deleteGroup = (groupId: string) => {
     const exists = groups.value.some((group) => group.id === groupId);
-    if (!exists) {
+    if (!exists || groupId === BUILTIN_TAB_GROUP_ID) {
       return false;
     }
 

@@ -3,6 +3,7 @@ import type { Component } from 'vue';
 import { computed, ref } from 'vue';
 
 import type { DashboardTab } from '~/composables/useDashboardTabs';
+import { BUILTIN_TAB_GROUP_ID } from '~/composables/useTabGroups';
 
 export interface MigratedTabGroup {
   id: string;
@@ -18,13 +19,15 @@ export interface TabItem {
   badgeCount?: number;
 }
 
-const DEFAULT_GROUPS: MigratedTabGroup[] = [{ id: 'default', name: 'General', collapsed: false }];
+const DEFAULT_GROUPS: MigratedTabGroup[] = [
+  { id: BUILTIN_TAB_GROUP_ID, name: 'Built-in Views', collapsed: false },
+];
 
 const DEFAULT_TABS: TabItem[] = [
-  { id: 'notifications', groupId: 'default', name: 'Notifications', icon: BellIcon },
-  { id: 'issues', groupId: 'default', name: 'Issues', icon: CircleDotIcon },
-  { id: 'pulls', groupId: 'default', name: 'Pull Requests', icon: GitPullRequestIcon },
-  { id: 'repos', groupId: 'default', name: 'Repositories', icon: BookMarkedIcon },
+  { id: 'notifications', groupId: BUILTIN_TAB_GROUP_ID, name: 'Notifications', icon: BellIcon },
+  { id: 'issues', groupId: BUILTIN_TAB_GROUP_ID, name: 'Issues', icon: CircleDotIcon },
+  { id: 'pulls', groupId: BUILTIN_TAB_GROUP_ID, name: 'Pull Requests', icon: GitPullRequestIcon },
+  { id: 'repos', groupId: BUILTIN_TAB_GROUP_ID, name: 'Repositories', icon: BookMarkedIcon },
 ];
 
 const DASHBOARD_TABS: DashboardTab[] = ['notifications', 'issues', 'pulls', 'repos'];

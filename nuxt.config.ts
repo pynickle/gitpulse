@@ -92,6 +92,7 @@ export default defineNuxtConfig({
   routeRules: {
     '/': { appLayout: 'landing' },
     '/**/dashboard': { appLayout: 'dashboard' },
+    '/**/dashboard/**': { appLayout: 'dashboard' },
   },
 
   modules: ['@nuxtjs/i18n', '@nuxt/image', 'nuxt-auth-utils', '@nuxtjs/mdc'],

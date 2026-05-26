@@ -1,7 +1,6 @@
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
-import type { DashboardTab } from '~/composables/useDashboardTabs';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
@@ -27,7 +26,7 @@ interface DetailTarget {
   number: number;
 }
 
-export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
+export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
   const { goBack, goToHome, hasHistory, navigateToIssue, navigateToPullRequest } =
     useNavigationHistory();
@@ -88,7 +87,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
   const pushDetailRoute = async (detailType: DetailType, target: DetailTarget) => {
     const query: LocationQueryRaw = {
       ...route.query,
-      tab: currentTab.value,
+      tab: currentRouteTab.value,
       issue:
         detailType === 'issue'
           ? serializeDetailTarget(target.owner, target.repo, target.number)
@@ -107,7 +106,7 @@ export function useDashboardDetails(currentTab: Ref<DashboardTab>) {
       ...route.query,
       issue: undefined,
       pr: undefined,
-      tab: currentTab.value,
+      tab: currentRouteTab.value,
     });
   };
 
