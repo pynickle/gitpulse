@@ -61,6 +61,7 @@ interface SettingsTab {
   id: string;
   groupId: string;
   name: string;
+  subtitle?: string;
   source?: CustomTabSource;
   query?: CustomTabQuery;
 }
@@ -207,6 +208,7 @@ const activeChildCreatorGroupId = shallowRef<string | null>(null);
 
 const newTab = reactive({
   name: '',
+  subtitle: '',
   groupId: DEFAULT_CUSTOM_TAB_GROUP_ID,
   source: 'github-search' as CustomTabSource,
   query: {
@@ -237,6 +239,11 @@ const newTab = reactive({
 });
 
 const labelDraft = ref('');
+const subtitleManuallyEdited = shallowRef(false);
+const editingSubtitleTabId = shallowRef<string | null>(null);
+const editingSubtitleDraft = shallowRef('');
+const confirmingTabId = shallowRef<string | null>(null);
+const confirmingGroupId = shallowRef<string | null>(null);
 const advancedFiltersOpen = ref(false);
 const previewLoading = ref(false);
 const previewError = ref<string | null>(null);
@@ -377,6 +384,14 @@ const getGroupTabCount = (groupId: string) => {
   return getTabsForGroup(groupId).length;
 };
 
+const getGroupDepthStyle = (depth: number) => {
+  return { inlineSize: `clamp(0rem, ${Math.max(depth, 0) * 1.1}rem, 30%)` };
+};
+
+const getNestedPanelStyle = (depth: number) => {
+  return { marginLeft: `clamp(0.85rem, ${0.85 + Math.max(depth, 0) * 1.1}rem, 30%)` };
+};
+
 const canEditGroup = (group: TabGroup) => {
   return group.source !== 'system';
 };
@@ -488,6 +503,49 @@ const humanPreview = computed(() => {
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.join(', ') });
 });
 
+const buildSummaryFromQuery = (query: CustomTabQuery) => {
+  const chunks = [];
+  const type = query.type ?? 'issues';
+  chunks.push(
+    type === 'pulls'
+      ? t('dashboard.tabsSettings.summary.pullRequests')
+      : type === 'all'
+        ? t('dashboard.tabsSettings.summary.issuesAndPullRequests')
+        : t('dashboard.tabsSettings.summary.issues')
+  );
+
+  if (query.state && query.state !== 'all') {
+    chunks.push(t('dashboard.tabsSettings.summary.state', { value: query.state }));
+  }
+  if (query.repo) chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: query.repo }));
+  if (query.author)
+    chunks.push(t('dashboard.tabsSettings.summary.authoredBy', { value: query.author }));
+  if (query.assignee)
+    chunks.push(t('dashboard.tabsSettings.summary.assignedTo', { value: query.assignee }));
+  if (query.involves)
+    chunks.push(t('dashboard.tabsSettings.summary.involving', { value: query.involves }));
+  if (query.labels && query.labels.length > 0)
+    chunks.push(
+      t('dashboard.tabsSettings.summary.labeled', { value: query.labels.slice(0, 2).join(', ') })
+    );
+
+  return t('dashboard.tabsSettings.summary.showing', { value: chunks.slice(0, 4).join(', ') });
+};
+
+const autoSubtitle = computed(() => buildSummaryFromQuery(buildCurrentQuery()));
+
+const getTabSubtitle = (tab: SettingsTab) => {
+  if (tab.subtitle?.trim()) {
+    return tab.subtitle.trim();
+  }
+
+  if (!tab.query) {
+    return t('dashboard.tabsSettings.builtinRowCaption');
+  }
+
+  return buildSummaryFromQuery(tab.query);
+};
+
 const getQueryPreview = (tab: SettingsTab) => {
   if (!tab.query) {
     return t('dashboard.tabsSettings.builtinRowCaption');
@@ -499,6 +557,66 @@ const getQueryPreview = (tab: SettingsTab) => {
   });
 
   return parts.length > 0 ? parts.join(' ') : t('dashboard.tabsSettings.defaultQueryPreview');
+};
+
+const handleSubtitleInput = (event: Event) => {
+  const value = getInputValue(event);
+  newTab.subtitle = value;
+  subtitleManuallyEdited.value = true;
+};
+
+const useAutoSubtitle = () => {
+  newTab.subtitle = autoSubtitle.value;
+  subtitleManuallyEdited.value = false;
+};
+
+const startSubtitleEdit = (tab: SettingsTab) => {
+  if (!isCustomTab(tab.id)) {
+    return;
+  }
+
+  editingSubtitleTabId.value = tab.id;
+  editingSubtitleDraft.value = getTabSubtitle(tab);
+};
+
+const cancelSubtitleEdit = () => {
+  editingSubtitleTabId.value = null;
+  editingSubtitleDraft.value = '';
+};
+
+const saveSubtitleEdit = (tab: SettingsTab) => {
+  const subtitle = editingSubtitleDraft.value.trim();
+  updateCustomTab(tab.id, { subtitle: subtitle || getTabSubtitle(tab) });
+  cancelSubtitleEdit();
+};
+
+const requestDeleteTab = (tabId: string) => {
+  confirmingGroupId.value = null;
+  confirmingTabId.value = tabId;
+};
+
+const confirmDeleteTab = (tabId: string) => {
+  deleteCustomTab(tabId);
+  if (confirmingTabId.value === tabId) {
+    confirmingTabId.value = null;
+  }
+};
+
+const requestDeleteGroup = (groupId: string) => {
+  confirmingTabId.value = null;
+  confirmingGroupId.value = groupId;
+};
+
+const cancelDeleteConfirmation = () => {
+  confirmingTabId.value = null;
+  confirmingGroupId.value = null;
+};
+
+const confirmDeleteGroup = (groupId: string) => {
+  handleDeleteGroup(groupId);
+  if (confirmingGroupId.value === groupId) {
+    confirmingGroupId.value = null;
+  }
 };
 
 const setActiveSource = (source: SourceOption) => {
@@ -651,12 +769,15 @@ const handleCreateCustomTab = () => {
 
   createCustomTab({
     name,
+    subtitle: newTab.subtitle.trim() || autoSubtitle.value,
     groupId: newTab.groupId,
     source: newTab.source,
     query: buildCurrentQuery(),
   });
 
   newTab.name = '';
+  newTab.subtitle = autoSubtitle.value;
+  subtitleManuallyEdited.value = false;
   newTab.query.text = '';
   newTab.query.repo = '';
   newTab.query.org = '';
@@ -721,6 +842,16 @@ watch(
     previewTimer = setTimeout(() => {
       void loadPreview();
     }, previewDebounceMs);
+  },
+  { immediate: true }
+);
+
+watch(
+  autoSubtitle,
+  (subtitle) => {
+    if (!subtitleManuallyEdited.value) {
+      newTab.subtitle = subtitle;
+    }
   },
   { immediate: true }
 );
@@ -863,10 +994,8 @@ watch(
 
           <div v-else class="tree-list">
             <article v-for="group in customGroupRows" :key="group.id" class="tree-group">
-              <div
-                class="tree-group-row"
-                :style="{ paddingLeft: `${0.75 + group.depth * 1.1}rem` }"
-              >
+              <div class="tree-group-row">
+                <span class="tree-depth-spacer" :style="getGroupDepthStyle(group.depth)" />
                 <button
                   class="button is-ghost is-small tree-icon"
                   type="button"
@@ -897,29 +1026,62 @@ watch(
                     }}
                   </small>
                 </div>
-                <button
-                  v-if="group.depth < maxGroupDepth"
-                  class="button is-ghost is-small tree-add"
-                  type="button"
-                  :title="t('dashboard.tabsSettings.addChildGroupTitle', { group: group.name })"
-                  @click="handleStartChildGroup(group.id)"
-                >
-                  <PlusIcon :size="14" />
-                </button>
-                <button
-                  class="button is-ghost is-small tree-delete"
-                  type="button"
-                  :disabled="!canEditGroup(group)"
-                  @click="handleDeleteGroup(group.id)"
-                >
-                  <Trash2Icon :size="14" />
-                </button>
+                <div class="tree-group-actions">
+                  <button
+                    v-if="group.depth < maxGroupDepth"
+                    class="button is-ghost is-small tree-add"
+                    type="button"
+                    :title="t('dashboard.tabsSettings.addChildGroupTitle', { group: group.name })"
+                    @click="handleStartChildGroup(group.id)"
+                  >
+                    <PlusIcon :size="14" />
+                  </button>
+                  <button
+                    class="button is-ghost is-small tree-delete"
+                    type="button"
+                    :disabled="!canEditGroup(group)"
+                    :aria-label="
+                      t('dashboard.tabsSettings.deleteGroupLabel', { group: group.name })
+                    "
+                    @click="requestDeleteGroup(group.id)"
+                  >
+                    <Trash2Icon :size="14" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-if="confirmingGroupId === group.id"
+                class="inline-delete-confirm"
+                role="alert"
+                aria-live="polite"
+                :style="getNestedPanelStyle(group.depth)"
+              >
+                <span>{{
+                  t('dashboard.tabsSettings.deleteGroupConfirm', { group: group.name })
+                }}</span>
+                <div class="inline-delete-confirm__actions">
+                  <button
+                    class="button is-small is-light"
+                    type="button"
+                    @click="cancelDeleteConfirmation"
+                  >
+                    {{ t('dashboard.tabsSettings.cancelDeleteButton') }}
+                  </button>
+                  <button
+                    class="button is-small is-danger"
+                    type="button"
+                    @click="confirmDeleteGroup(group.id)"
+                  >
+                    {{ t('dashboard.tabsSettings.confirmDeleteGroupButton') }}
+                  </button>
+                </div>
               </div>
 
               <div
                 v-if="activeChildCreatorGroupId === group.id"
                 class="inline-child-creator"
-                :style="{ marginLeft: `${2.1 + group.depth * 1.1}rem` }"
+                :style="getNestedPanelStyle(group.depth)"
               >
                 <div class="inline-child-creator__label">
                   {{ t('dashboard.tabsSettings.addChildGroupLabel', { group: group.name }) }}
@@ -955,20 +1117,72 @@ watch(
                 </div>
               </div>
 
-              <div v-if="!group.collapsed" class="tree-tabs">
+              <div
+                v-if="!group.collapsed"
+                class="tree-tabs"
+                :style="getNestedPanelStyle(group.depth)"
+              >
                 <div v-for="tab in getTabsForGroup(group.id)" :key="tab.id" class="tree-tab-row">
                   <SearchIcon :size="15" />
                   <div class="tree-tab-main">
                     <span>{{ tab.name }}</span>
-                    <small>{{ getQueryPreview(tab) }}</small>
+                    <input
+                      v-if="editingSubtitleTabId === tab.id"
+                      v-model="editingSubtitleDraft"
+                      class="input is-small tab-subtitle-input"
+                      type="text"
+                      :aria-label="
+                        t('dashboard.tabsSettings.editSubtitleLabel', { view: tab.name })
+                      "
+                      @keyup.enter="saveSubtitleEdit(tab)"
+                      @keyup.esc="cancelSubtitleEdit"
+                      @blur="saveSubtitleEdit(tab)"
+                    />
+                    <button
+                      v-else
+                      class="tab-subtitle-button"
+                      type="button"
+                      :title="getQueryPreview(tab)"
+                      @click="startSubtitleEdit(tab)"
+                    >
+                      {{ getTabSubtitle(tab) }}
+                    </button>
                   </div>
-                  <button
-                    class="button is-ghost is-small"
-                    type="button"
-                    @click="deleteCustomTab(tab.id)"
-                  >
-                    <XIcon :size="14" />
-                  </button>
+                  <div class="tree-tab-actions">
+                    <div
+                      v-if="confirmingTabId === tab.id"
+                      class="tab-delete-confirm"
+                      role="alert"
+                      aria-live="polite"
+                    >
+                      <span>{{ t('dashboard.tabsSettings.deleteViewConfirm') }}</span>
+                      <button
+                        class="button is-ghost is-small tree-action-button"
+                        type="button"
+                        :aria-label="t('dashboard.tabsSettings.cancelDeleteButton')"
+                        @click="cancelDeleteConfirmation"
+                      >
+                        <XIcon :size="14" />
+                      </button>
+                      <button
+                        class="button is-ghost is-small tree-delete"
+                        type="button"
+                        :aria-label="t('dashboard.tabsSettings.confirmDeleteViewButton')"
+                        @click="confirmDeleteTab(tab.id)"
+                      >
+                        <Trash2Icon :size="14" />
+                      </button>
+                    </div>
+                    <button
+                      v-else
+                      class="button is-ghost is-small tree-delete"
+                      type="button"
+                      :aria-label="t('dashboard.tabsSettings.deleteViewLabel', { view: tab.name })"
+                      @click="requestDeleteTab(tab.id)"
+                    >
+                      <Trash2Icon :size="14" />
+                    </button>
+                  </div>
                   <div v-if="editableGroupOptions.length > 1" class="tab-move-tray">
                     <span class="chip-label">{{ t('dashboard.tabsSettings.moveToLabel') }}</span>
                     <button
@@ -1041,6 +1255,31 @@ watch(
             />
             <span class="icon is-small is-left"><SearchIcon :size="16" /></span>
           </div>
+        </div>
+
+        <div class="field">
+          <div class="subtitle-label-row">
+            <label class="label mb-0" for="new-tab-subtitle">
+              {{ t('dashboard.tabsSettings.viewSubtitleLabel') }}
+            </label>
+            <button class="button is-ghost is-small" type="button" @click="useAutoSubtitle">
+              {{ t('dashboard.tabsSettings.useAutoSubtitleButton') }}
+            </button>
+          </div>
+          <div class="control has-icons-left">
+            <input
+              id="new-tab-subtitle"
+              class="input"
+              type="text"
+              :value="newTab.subtitle"
+              :placeholder="autoSubtitle"
+              @input="handleSubtitleInput"
+            />
+            <span class="icon is-small is-left"><ListFilterIcon :size="16" /></span>
+          </div>
+          <p class="help subtitle-auto-hint">
+            {{ t('dashboard.tabsSettings.autoSubtitleHint', { value: autoSubtitle }) }}
+          </p>
         </div>
 
         <div class="field">
@@ -1519,6 +1758,7 @@ watch(
 .panel-heading-row,
 .section-label-row,
 .section-label,
+.subtitle-label-row,
 .builtin-row,
 .tree-group-row,
 .tree-tab-row,
@@ -1683,6 +1923,11 @@ watch(
 
 .group-creator-form,
 .inline-child-creator__controls,
+.inline-delete-confirm,
+.inline-delete-confirm__actions,
+.tab-delete-confirm,
+.tree-group-actions,
+.tree-tab-actions,
 .tab-move-tray {
   display: flex;
   align-items: center;
@@ -1770,14 +2015,20 @@ watch(
 .tree-group-row {
   position: relative;
   gap: 0.45rem;
+  min-width: 0;
   min-height: 2.75rem;
-  padding: 0.6rem 0.85rem;
+  padding: 0.6rem 1rem 0.6rem 0.75rem;
   border: 1px solid transparent;
   box-shadow: inset 3px 0 0 transparent;
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
     box-shadow 0.15s ease;
+}
+
+.tree-depth-spacer {
+  display: block;
+  flex: 0 0 auto;
 }
 
 .tree-group-row:hover,
@@ -1810,7 +2061,24 @@ watch(
 .tree-group-main,
 .tree-tab-main {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 0;
+}
+
+.tree-group-actions,
+.tree-tab-actions {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  max-width: max-content;
+  margin-left: auto;
+}
+
+.tree-group-actions {
+  padding-right: 0.1rem;
+}
+
+.tree-tab-actions {
+  min-width: 1.65rem;
 }
 
 .tree-name-input {
@@ -1828,6 +2096,14 @@ watch(
 .tree-name-input:focus {
   border-color: #4f46e5;
   background: var(--bulma-scheme-main, #ffffff);
+}
+
+.tree-delete,
+.tree-action-button {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 1.65rem;
+  padding: 0;
 }
 
 .tree-delete {
@@ -1859,7 +2135,8 @@ watch(
   transform: translateY(-1px);
 }
 
-.inline-child-creator {
+.inline-child-creator,
+.inline-delete-confirm {
   display: grid;
   gap: 0.45rem;
   padding: 0.55rem 0.65rem 0.65rem;
@@ -1869,6 +2146,21 @@ watch(
   border: 1px dashed rgba(79, 70, 229, 0.22);
   border-radius: 8px;
   background: rgba(79, 70, 229, 0.045);
+}
+
+.inline-delete-confirm {
+  display: flex;
+  justify-content: space-between;
+  border-color: rgba(180, 35, 24, 0.24);
+  color: #7a271a;
+  background: rgba(254, 243, 242, 0.78);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.inline-delete-confirm__actions {
+  flex: 0 0 auto;
+  gap: 0.35rem;
 }
 
 .inline-child-creator__label {
@@ -1886,16 +2178,67 @@ watch(
 }
 
 .tree-tabs {
-  padding: 0.35rem 0.7rem 0.7rem 2.4rem;
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.35rem 1rem 0.7rem 0.7rem;
+  margin-right: 0.7rem;
 }
 
 .tree-tab-row {
+  min-width: 0;
   flex-wrap: wrap;
 }
 
 .tree-tab-main span,
-.tree-tab-main small {
+.tree-tab-main small,
+.tab-subtitle-button {
   display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-subtitle-button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: var(--bulma-text-light, #6b7280);
+  background: transparent;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: text;
+}
+
+.tab-subtitle-button:hover,
+.tab-subtitle-button:focus-visible {
+  color: #4f46e5;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tab-subtitle-input {
+  height: 1.75rem;
+  padding-inline: 0.45rem;
+}
+
+.tab-delete-confirm {
+  flex: 0 0 auto;
+  gap: 0.2rem;
+  color: #b42318;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.subtitle-label-row {
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.subtitle-auto-hint {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1917,7 +2260,7 @@ watch(
 }
 
 .tab-move-tray {
-  width: 100%;
+  flex: 1 0 100%;
   justify-content: flex-start;
   gap: 0.42rem;
   padding: 0.35rem 0 0 1.4rem;
@@ -2334,6 +2677,7 @@ watch(
   }
 
   .tree-tabs {
+    margin-left: 0.85rem !important;
     padding-left: 0.7rem;
   }
 }
