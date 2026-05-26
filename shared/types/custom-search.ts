@@ -45,6 +45,7 @@ export interface CustomTab {
   id: string;
   groupId: string;
   name: string;
+  subtitle?: string;
   source: CustomTabSource;
   query: CustomTabQuery;
 }

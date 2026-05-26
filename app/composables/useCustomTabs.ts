@@ -26,6 +26,7 @@ export interface CreateCustomTabInput {
   id?: string;
   groupId: string;
   name: string;
+  subtitle?: string;
   source?: CustomTabSource;
   query?: CustomTabQuery;
 }
@@ -33,6 +34,7 @@ export interface CreateCustomTabInput {
 export interface UpdateCustomTabInput {
   groupId?: string;
   name?: string;
+  subtitle?: string;
   source?: CustomTabSource;
   query?: CustomTabQuery;
 }
@@ -175,6 +177,7 @@ const normalizeTab = (tab: unknown): CustomTab | null => {
     id: candidate.id,
     groupId: candidate.groupId,
     name: candidate.name,
+    subtitle: normalizeString(candidate.subtitle),
     source: candidate.source === 'github-search' ? candidate.source : 'github-search',
     query: normalizeQuery(candidate.query),
   };
@@ -252,6 +255,7 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
       id,
       groupId: input.groupId,
       name: input.name,
+      subtitle: normalizeString(input.subtitle),
       source: input.source ?? 'github-search',
       query: cloneQuery(input.query),
     };
