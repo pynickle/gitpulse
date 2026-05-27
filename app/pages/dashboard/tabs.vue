@@ -1,17 +1,23 @@
 <script setup lang="ts">
 import {
+  ArrowDownIcon,
   ArrowLeftIcon,
+  ArrowUpIcon,
   BellIcon,
   BookMarkedIcon,
+  CheckCircle2Icon,
   CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CircleDotIcon,
+  CircleMinusIcon,
   Code2Icon,
   DatabaseIcon,
   EyeIcon,
+  FilePenLineIcon,
   FolderOpenIcon,
   GitBranchIcon,
+  GitMergeIcon,
   GitPullRequestIcon,
   HashIcon,
   LinkIcon,
@@ -19,10 +25,12 @@ import {
   MessageSquareIcon,
   PlusIcon,
   SearchIcon,
+  ShieldAlertIcon,
   TagsIcon,
   Trash2Icon,
   UserIcon,
   UsersIcon,
+  XCircleIcon,
   XIcon,
 } from 'lucide-vue-next';
 import { computed, reactive, ref, shallowRef, watch } from 'vue';
@@ -194,6 +202,26 @@ const reviewOptions: Array<ToggleOption<CustomTabReview>> = [
   { labelKey: 'dashboard.tabsSettings.options.approved', value: 'approved' },
   { labelKey: 'dashboard.tabsSettings.options.changesRequested', value: 'changes_requested' },
 ];
+
+const filterIconMap: Record<string, { icon: typeof CircleDotIcon; activeColor: string } | undefined> = {
+  // type
+  issues: { icon: CircleDotIcon, activeColor: '#1a7f37' },
+  pulls: { icon: GitPullRequestIcon, activeColor: '#8250df' },
+  all: { icon: GitMergeIcon, activeColor: '#4f46e5' },
+  // state
+  open: { icon: CircleDotIcon, activeColor: '#1a7f37' },
+  closed: { icon: CircleMinusIcon, activeColor: '#cf222e' },
+  // draft
+  draft: { icon: FilePenLineIcon, activeColor: '#bf8700' },
+  ready: { icon: CheckCircle2Icon, activeColor: '#1a7f37' },
+  // review
+  approved: { icon: CheckCircle2Icon, activeColor: '#1a7f37' },
+  changes_requested: { icon: XCircleIcon, activeColor: '#cf222e' },
+  required: { icon: ShieldAlertIcon, activeColor: '#bf8700' },
+  // order
+  desc: { icon: ArrowDownIcon, activeColor: '#4f46e5' },
+  asc: { icon: ArrowUpIcon, activeColor: '#4f46e5' },
+};
 
 const { groups, createGroup, updateGroup, deleteGroup, toggleGroupCollapsed } = useTabGroups();
 const { tabs } = useTabMigration();
@@ -1325,10 +1353,23 @@ watch(
                   :key="option.value"
                   class="segmented-button"
                   :class="{ 'is-active': newTab.query.type === option.value }"
+                  :style="
+                    newTab.query.type === option.value && filterIconMap[option.value]
+                      ? {
+                          '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                          '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                        }
+                      : {}
+                  "
                   type="button"
                   @click="newTab.query.type = option.value"
                 >
-                  {{ t(option.labelKey) }}
+                  <component
+                    :is="filterIconMap[option.value]?.icon"
+                    v-if="filterIconMap[option.value]"
+                    :size="14"
+                  />
+                  <span>{{ t(option.labelKey) }}</span>
                 </button>
               </div>
             </div>
@@ -1340,10 +1381,23 @@ watch(
                   :key="option.value"
                   class="segmented-button"
                   :class="{ 'is-active': newTab.query.state === option.value }"
+                  :style="
+                    newTab.query.state === option.value && filterIconMap[option.value]
+                      ? {
+                          '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                          '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                        }
+                      : {}
+                  "
                   type="button"
                   @click="newTab.query.state = option.value"
                 >
-                  {{ t(option.labelKey) }}
+                  <component
+                    :is="filterIconMap[option.value]?.icon"
+                    v-if="filterIconMap[option.value]"
+                    :size="14"
+                  />
+                  <span>{{ t(option.labelKey) }}</span>
                 </button>
               </div>
             </div>
@@ -1572,10 +1626,23 @@ watch(
                         :key="option.value"
                         class="segmented-button"
                         :class="{ 'is-active': newTab.query.draft === option.value }"
+                        :style="
+                          newTab.query.draft === option.value && filterIconMap[option.value]
+                            ? {
+                                '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                                '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                              }
+                            : {}
+                        "
                         type="button"
                         @click="newTab.query.draft = option.value"
                       >
-                        {{ t(option.labelKey) }}
+                        <component
+                          :is="filterIconMap[option.value]?.icon"
+                          v-if="filterIconMap[option.value]"
+                          :size="14"
+                        />
+                        <span>{{ t(option.labelKey) }}</span>
                       </button>
                     </div>
                   </div>
@@ -1587,10 +1654,23 @@ watch(
                         :key="option.value"
                         class="segmented-button"
                         :class="{ 'is-active': newTab.query.review === option.value }"
+                        :style="
+                          newTab.query.review === option.value && filterIconMap[option.value]
+                            ? {
+                                '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                                '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                              }
+                            : {}
+                        "
                         type="button"
                         @click="newTab.query.review = option.value"
                       >
-                        {{ t(option.labelKey) }}
+                        <component
+                          :is="filterIconMap[option.value]?.icon"
+                          v-if="filterIconMap[option.value]"
+                          :size="14"
+                        />
+                        <span>{{ t(option.labelKey) }}</span>
                       </button>
                     </div>
                   </div>
@@ -1666,10 +1746,23 @@ watch(
                   :key="option.value"
                   class="segmented-button"
                   :class="{ 'is-active': newTab.query.order === option.value }"
+                  :style="
+                    newTab.query.order === option.value && filterIconMap[option.value]
+                      ? {
+                          '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                          '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                        }
+                      : {}
+                  "
                   type="button"
                   @click="newTab.query.order = option.value"
                 >
-                  {{ t(option.labelKey) }}
+                  <component
+                    :is="filterIconMap[option.value]?.icon"
+                    v-if="filterIconMap[option.value]"
+                    :size="14"
+                  />
+                  <span>{{ t(option.labelKey) }}</span>
                 </button>
               </div>
             </div>
@@ -2306,6 +2399,9 @@ watch(
 
 .chip-button,
 .segmented-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   min-height: 1.85rem;
   padding: 0.25rem 0.55rem;
   border-radius: 999px;
@@ -2351,10 +2447,11 @@ watch(
 }
 
 .segmented-button.is-active {
-  border-color: #4f46e5;
+  --active: var(--seg-active-bg, #4f46e5);
+  border-color: var(--seg-active-border, var(--active));
   color: #ffffff;
-  background: #4f46e5;
-  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+  background: var(--active);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--active) 30%, transparent);
 }
 
 .chip-button:disabled,
