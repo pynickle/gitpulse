@@ -540,7 +540,7 @@ const getTabSubtitle = (tab: SettingsTab) => {
   }
 
   if (!tab.query) {
-    return t('dashboard.tabsSettings.builtinRowCaption');
+    return t('dashboard.tabsSettings.defaultQueryPreview');
   }
 
   return buildSummaryFromQuery(tab.query);
@@ -548,7 +548,7 @@ const getTabSubtitle = (tab: SettingsTab) => {
 
 const getQueryPreview = (tab: SettingsTab) => {
   if (!tab.query) {
-    return t('dashboard.tabsSettings.builtinRowCaption');
+    return t('dashboard.tabsSettings.defaultQueryPreview');
   }
 
   const parts = buildIssueSearchParts(tab.query, {
@@ -869,7 +869,6 @@ watch(
     <header class="settings-header">
       <div>
         <h1 class="title is-4 mb-1">{{ t('dashboard.tabsSettings.pageTitle') }}</h1>
-        <p class="settings-subtitle">{{ t('dashboard.tabsSettings.pageSubtitle') }}</p>
       </div>
       <a
         class="button is-small is-light preview-link"
@@ -887,11 +886,7 @@ watch(
         <div class="panel-heading-row">
           <div>
             <h2 class="title is-6 mb-1">{{ t('dashboard.tabsSettings.viewsPanelTitle') }}</h2>
-            <p class="panel-caption">{{ t('dashboard.tabsSettings.viewsPanelCaption') }}</p>
           </div>
-          <span class="tag is-light">{{
-            t('dashboard.tabsSettings.customCount', { count: customTabs.length })
-          }}</span>
         </div>
 
         <section class="builtin-section">
@@ -900,17 +895,22 @@ watch(
               <DatabaseIcon :size="15" />
               <span>{{ t('dashboard.tabsSettings.builtinSectionTitle') }}</span>
             </div>
-            <span class="tag is-light is-small">{{ builtinTabs.length }}</span>
           </div>
-          <div class="builtin-list">
-            <article v-for="tab in builtinTabs" :key="tab.id" class="builtin-row">
-              <BellIcon v-if="tab.id === 'notifications'" :size="16" />
-              <CircleDotIcon v-else-if="tab.id === 'issues'" :size="16" />
-              <GitPullRequestIcon v-else-if="tab.id === 'pulls'" :size="16" />
-              <BookMarkedIcon v-else :size="16" />
+          <div class="builtin-list" role="list">
+            <article
+              v-for="tab in builtinTabs"
+              :key="tab.id"
+              class="builtin-row"
+              role="listitem"
+              :aria-label="`${t('dashboard.tabsSettings.builtinLocked')}: ${tab.name}`"
+              :title="t('dashboard.tabsSettings.builtinLocked')"
+            >
+              <BellIcon v-if="tab.id === 'notifications'" :size="14" />
+              <CircleDotIcon v-else-if="tab.id === 'issues'" :size="14" />
+              <GitPullRequestIcon v-else-if="tab.id === 'pulls'" :size="14" />
+              <BookMarkedIcon v-else :size="14" />
               <div class="tree-tab-main">
                 <span>{{ tab.name }}</span>
-                <small>{{ t('dashboard.tabsSettings.builtinRowCaption') }}</small>
               </div>
               <span class="tag is-light is-small">{{
                 t('dashboard.tabsSettings.builtinLocked')
@@ -925,7 +925,6 @@ watch(
               <FolderOpenIcon :size="15" />
               <span>{{ t('dashboard.tabsSettings.customSectionTitle') }}</span>
             </div>
-            <span class="tag is-primary is-light is-small">{{ customGroupRows.length }}</span>
           </div>
 
           <div class="group-insights" :aria-label="t('dashboard.tabsSettings.groupOverviewLabel')">
@@ -1012,21 +1011,13 @@ watch(
                       updateGroup(group.id, { name: getInputValue($event).trim() || group.name })
                     "
                   />
-                  <small>
-                    {{
-                      group.depth === 0
-                        ? t('dashboard.tabsSettings.groupTopLevel')
-                        : t('dashboard.tabsSettings.groupNestedLabel')
-                    }}
-                    ·
-                    {{
-                      t('dashboard.tabsSettings.groupViewCount', {
-                        count: getGroupTabCount(group.id),
-                      })
-                    }}
-                  </small>
                 </div>
                 <div class="tree-group-actions">
+                  <span class="group-view-badge">{{
+                    t('dashboard.tabsSettings.groupViewCount', {
+                      count: getGroupTabCount(group.id),
+                    })
+                  }}</span>
                   <button
                     v-if="group.depth < maxGroupDepth"
                     class="button is-ghost is-small tree-add"
@@ -1210,18 +1201,7 @@ watch(
         <div class="panel-heading-row mb-4">
           <div>
             <h2 class="title is-6 mb-1">{{ t('dashboard.tabsSettings.editorTitle') }}</h2>
-            <p class="panel-caption">
-              {{
-                t('dashboard.tabsSettings.editorCaption', {
-                  source: activeSourceLabel,
-                  group: selectedGroupName,
-                })
-              }}
-            </p>
           </div>
-          <span class="tag is-primary is-light">{{
-            t('dashboard.tabsSettings.editorDebouncedPreview')
-          }}</span>
         </div>
 
         <div class="source-selector" role="radiogroup" aria-label="API source">
@@ -1729,7 +1709,6 @@ watch(
         </section>
 
         <footer class="editor-footer">
-          <p class="query-preview">{{ appPreviewUrl }}</p>
           <div class="editor-footer-actions">
             <button
               class="button is-primary"
@@ -1774,7 +1753,7 @@ watch(
 .settings-header {
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .tabs-nav-back {
@@ -1813,7 +1792,7 @@ watch(
 .tree-tab-main small,
 .query-preview,
 .chip-label {
-  color: var(--bulma-text-light, #6b7280);
+  color: #475569;
   font-size: 0.78rem;
 }
 
@@ -1873,6 +1852,10 @@ watch(
   background: rgba(248, 250, 252, 0.72);
 }
 
+.builtin-section {
+  padding: 0.6rem 0.75rem;
+}
+
 .builtin-section,
 .custom-section,
 .group-creator-strip {
@@ -1904,7 +1887,7 @@ watch(
 
 .group-insight-card span {
   overflow: hidden;
-  color: var(--bulma-text-light, #64748b);
+  color: #475569;
   font-size: 0.68rem;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -1934,6 +1917,8 @@ watch(
 }
 
 .group-creator-header {
+  display: flex;
+  align-items: center;
   gap: 0.65rem;
 }
 
@@ -1957,7 +1942,7 @@ watch(
 
 .group-creator-copy {
   margin: 0.1rem 0 0;
-  color: var(--bulma-text-light, #64748b);
+  color: #475569;
   font-size: 0.75rem;
 }
 
@@ -1972,7 +1957,7 @@ watch(
 
 .group-create-button {
   flex: 0 0 auto;
-  gap: 0.3rem;
+  gap: 0.45rem;
   font-weight: 700;
 }
 
@@ -1984,7 +1969,8 @@ watch(
 }
 
 .builtin-list {
-  margin-top: 0.65rem;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
 }
 
 .tree-list {
@@ -2002,6 +1988,9 @@ watch(
 }
 
 .builtin-row {
+  gap: 0.45rem;
+  min-height: 1.9rem;
+  padding: 0.35rem 0.65rem;
   color: var(--bulma-text, #334155);
 }
 
@@ -2075,6 +2064,18 @@ watch(
 
 .tree-group-actions {
   padding-right: 0.1rem;
+}
+
+.group-view-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .tree-tab-actions {
@@ -2203,7 +2204,7 @@ watch(
   width: 100%;
   padding: 0;
   border: 0;
-  color: var(--bulma-text-light, #6b7280);
+  color: #475569;
   background: transparent;
   font-size: 0.78rem;
   text-align: left;
@@ -2566,7 +2567,7 @@ watch(
   border: 0;
   background: transparent;
   cursor: pointer;
-  color: var(--bulma-text-light, #6b7280);
+  color: #475569;
   font-size: 0.78rem;
   font-weight: 650;
   transition: color 0.15s ease;
@@ -2578,7 +2579,7 @@ watch(
 
 .advanced-toggle__icon {
   transition: transform 0.2s ease;
-  color: var(--bulma-text-light, #888);
+  color: #6b7280;
   flex: 0 0 auto;
 
   &.rotated {
@@ -2604,8 +2605,8 @@ watch(
 }
 
 .editor-footer {
-  padding-top: 1rem;
-  margin-top: 1rem;
+  padding-top: 0.6rem;
+  margin-top: 0.5rem;
   border-top: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
 }
 
@@ -2624,7 +2625,7 @@ watch(
 
 .empty-drop-zone,
 .empty-state {
-  color: var(--bulma-text-light, #94a3b8);
+  color: #64748b;
   font-size: 0.85rem;
 }
 
@@ -2727,6 +2728,33 @@ watch(
   .segmented-button,
   .source-option {
     background: var(--bulma-scheme-main, #111827);
+  }
+
+  .tree-tab-main small,
+  .panel-caption,
+  .query-preview,
+  .chip-label,
+  .group-creator-copy,
+  .tab-subtitle-button {
+    color: #94a3b8;
+  }
+
+  .group-insight-card span {
+    color: #94a3b8;
+  }
+
+  .empty-drop-zone,
+  .empty-state {
+    color: #94a3b8;
+  }
+
+  .advanced-toggle__icon {
+    color: #6b7280;
+  }
+
+  .group-view-badge {
+    background: rgba(129, 140, 248, 0.15);
+    color: #a5b4fc;
   }
 }
 </style>
