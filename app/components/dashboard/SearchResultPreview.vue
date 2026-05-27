@@ -89,6 +89,7 @@ interface SearchResultItem {
   title: string;
   number: number;
   state: string;
+  merged_at?: string | null;
   pull_request?: unknown;
   labels?: Array<{ id?: number; name: string; color?: string; description?: string }>;
   repository_url: string;
@@ -129,7 +130,7 @@ const labelStyle = (label: { color?: string; name: string }) => {
 const getStateIcon = (item: SearchResultItem) => {
   if (item.pull_request) {
     if (item.state === 'open') return GitPullRequestIcon;
-    if (item.state === 'merged') return GitMergeIcon;
+    if (item.merged_at) return GitMergeIcon;
     return GitPullRequestClosedIcon;
   }
   if (item.state === 'open') return CircleDotIcon;

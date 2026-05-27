@@ -12,14 +12,14 @@
       <span
         class="ml-2 tag"
         :class="
-          pullRequest?.state === 'open'
+          displayState === 'open'
             ? 'is-success is-light'
-            : pullRequest?.state === 'merged'
+            : displayState === 'merged'
               ? 'is-primary is-light'
               : 'is-danger is-light'
         "
       >
-        {{ pullRequest?.state }}
+        {{ displayState }}
       </span>
       <span class="ml-4 has-text-grey has-text-weight-medium">
         {{ formatDurationFromNow(pullRequest?.updated_at, localeCode) }}
@@ -104,10 +104,15 @@ const props = defineProps<{
 }>();
 
 // Computed properties
+const displayState = computed(() => {
+  if (props.pullRequest?.merged_at) return 'merged';
+  return props.pullRequest?.state || 'closed';
+});
+
 const stateIcon = computed(() => {
-  if (props.pullRequest?.state === 'open') {
+  if (displayState.value === 'open') {
     return GitPullRequestIcon;
-  } else if (props.pullRequest?.state === 'merged') {
+  } else if (displayState.value === 'merged') {
     return GitMergeIcon;
   } else {
     return GitPullRequestClosedIcon;
@@ -115,9 +120,9 @@ const stateIcon = computed(() => {
 });
 
 const stateColor = computed(() => {
-  if (props.pullRequest?.state === 'open') {
+  if (displayState.value === 'open') {
     return { color: '#1a7f37' };
-  } else if (props.pullRequest?.state === 'merged') {
+  } else if (displayState.value === 'merged') {
     return { color: '#0969da' };
   } else {
     return { color: '#000000' };

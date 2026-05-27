@@ -93,11 +93,16 @@ const getTypeColor = (typeName: string) => {
   return typeColorMap[typeName] || '6e7781';
 };
 
+const displayState = computed(() => {
+  if (props.issue.merged_at) return 'merged';
+  return props.issue.state || 'closed';
+});
+
 const stateIcon = computed(() => {
   return props.issue.pull_request
-    ? props.issue.state === 'open'
+    ? displayState.value === 'open'
       ? GitPullRequestIcon
-      : props.issue.state === 'merged'
+      : displayState.value === 'merged'
         ? GitMergeIcon
         : GitPullRequestClosedIcon
     : props.issue.state === 'open'
