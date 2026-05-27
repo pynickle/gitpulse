@@ -190,6 +190,7 @@
       "previewMatches": "延迟预览返回 {count} 个匹配项",
       "previewWaiting": "预览将在防抖后加载。",
       "previewEmptyResults": "当前筛选条件下未找到匹配结果。",
+      "previewPage": "第 {page} / {total} 页",
       "testInGithub": "在 GitHub 测试",
       "createViewButton": "创建搜索视图",
       "deleteGroupLabel": "删除分组 {group}",

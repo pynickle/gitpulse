@@ -190,6 +190,7 @@
       "previewMatches": "{count} matches from delayed preview",
       "previewWaiting": "Preview will load after the debounce.",
       "previewEmptyResults": "No matching results found for the current filters.",
+      "previewPage": "Page {page} / {total}",
       "testInGithub": "Test in GitHub",
       "createViewButton": "Create Search View",
       "deleteGroupLabel": "Delete group {group}",

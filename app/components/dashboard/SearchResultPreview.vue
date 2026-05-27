@@ -215,6 +215,22 @@ const getStateIcon = (item: SearchResultItem) => {
 .srp-results {
   display: grid;
   gap: 0.35rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(79, 70, 229, 0.25);
+    border-radius: 4px;
+  }
 }
 
 .srp-card {
@@ -270,7 +286,7 @@ const getStateIcon = (item: SearchResultItem) => {
   align-items: center;
   gap: 0.2rem;
   font-size: 0.72rem;
-  color: var(--bulma-text-light, #6b7280);
+  color: var(--bulma-text, #4a4a4a);
   white-space: nowrap;
   overflow: hidden;
 }
