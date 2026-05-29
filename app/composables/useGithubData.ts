@@ -222,7 +222,7 @@ const buildCustomTabUrl = (
 };
 
 export function useGithubData() {
-  const apiFetch = useRequestFetch();
+  const apiFetch = useGitPulseApiFetch();
   const loading = ref(false);
   const error = ref<string | null>(null);
   const activeRequestId = ref(0);

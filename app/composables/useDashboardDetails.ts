@@ -27,7 +27,7 @@ interface DetailTarget {
 }
 
 export function useDashboardDetails(currentRouteTab: Ref<string>) {
-  const apiFetch = useRequestFetch();
+  const apiFetch = useGitPulseApiFetch();
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
   const { goBack, goToHome, hasHistory, navigateToIssue, navigateToPullRequest } =
     useNavigationHistory();
