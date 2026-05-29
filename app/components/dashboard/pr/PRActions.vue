@@ -1,52 +1,97 @@
 <template>
   <div>
     <!-- Reviewers section -->
-    <div class="mb-4">
-      <div class="is-flex is-align-items-center is-justify-content-space-between mb-3">
-        <h3 class="title is-6 mb-0">Reviewers</h3>
+    <div class="sidebar-card mb-4">
+      <div class="sidebar-card__header">
+        <div class="sidebar-card__header-left">
+          <UsersIcon :size="14" class="sidebar-card__icon" />
+          <span class="sidebar-card__title">Reviewers</span>
+        </div>
+        <span v-if="requestedReviewers.length > 0" class="sidebar-badge">
+          {{ requestedReviewers.length }}
+        </span>
       </div>
-      <div class="is-flex is-flex-wrap-wrap mb-4">
-        <span
-          v-for="reviewer in requestedReviewers"
-          :key="reviewer.id || reviewer.login"
-          class="tag is-info is-light mr-2 mb-2"
-        >
-          {{ reviewer.login }}
-        </span>
-        <span v-if="requestedReviewers.length === 0" class="has-text-grey is-size-7">
-          No reviewers
-        </span>
+      <div class="sidebar-card__content">
+        <div v-if="requestedReviewers.length > 0" class="reviewer-list">
+          <div
+            v-for="reviewer in requestedReviewers"
+            :key="reviewer.id || reviewer.login"
+            class="reviewer-item"
+          >
+            <img
+              :src="reviewer.avatar_url || ''"
+              :alt="reviewer.login"
+              class="reviewer-item__avatar"
+            />
+            <span class="reviewer-item__name">{{ reviewer.login }}</span>
+          </div>
+        </div>
+        <p v-else class="sidebar-card__empty">No reviewers assigned</p>
       </div>
     </div>
 
     <!-- Additional info section -->
-    <div class="mb-4">
-      <h3 class="title is-6 mb-3">Additional Info</h3>
-      <div class="is-size-7 has-text-grey">
-        <p class="mb-2">Created: {{ formatDurationFromNow(createdAt, localeCode) }}</p>
-        <p class="mb-2">Updated: {{ formatDurationFromNow(updatedAt, localeCode) }}</p>
-        <p v-if="mergedAt" class="mb-2">
-          Merged: {{ formatDurationFromNow(mergedAt, localeCode) }}
-        </p>
-        <p v-if="assignee" class="mb-2">Assignee: {{ assignee.login }}</p>
-        <p v-else class="mb-2">Assignee: None</p>
-        <p class="mb-2">Commits: {{ commits }}</p>
-        <p class="mb-2">Changed Files: {{ changedFiles }}</p>
-        <p class="mb-2">Additions: {{ additions }}</p>
-        <p class="mb-2">Deletions: {{ deletions }}</p>
+    <div class="sidebar-card mb-4">
+      <div class="sidebar-card__header">
+        <div class="sidebar-card__header-left">
+          <InfoIcon :size="14" class="sidebar-card__icon" />
+          <span class="sidebar-card__title">Details</span>
+        </div>
+      </div>
+      <div class="sidebar-card__content">
+        <div class="info-list">
+          <div class="info-item">
+            <span class="info-item__label">Created</span>
+            <span class="info-item__value">{{ formatDurationFromNow(createdAt, localeCode) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-item__label">Updated</span>
+            <span class="info-item__value">{{ formatDurationFromNow(updatedAt, localeCode) }}</span>
+          </div>
+          <div v-if="mergedAt" class="info-item">
+            <span class="info-item__label">Merged</span>
+            <span class="info-item__value">{{ formatDurationFromNow(mergedAt, localeCode) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-item__label">Assignee</span>
+            <span v-if="assignee" class="info-item__value">
+              <span class="info-item__avatar">
+                <img :src="assignee.avatar_url || ''" :alt="assignee.login" />
+              </span>
+              {{ assignee.login }}
+            </span>
+            <span v-else class="info-item__value info-item__value--muted">None</span>
+          </div>
+          <div class="info-stats">
+            <div class="info-stat">
+              <span class="info-stat__value">{{ commits }}</span>
+              <span class="info-stat__label">Commits</span>
+            </div>
+            <div class="info-stat">
+              <span class="info-stat__value">{{ changedFiles }}</span>
+              <span class="info-stat__label">Files</span>
+            </div>
+            <div class="info-stat info-stat--success">
+              <span class="info-stat__value">+{{ additions }}</span>
+              <span class="info-stat__label">Added</span>
+            </div>
+            <div class="info-stat info-stat--danger">
+              <span class="info-stat__value">-{{ deletions }}</span>
+              <span class="info-stat__label">Removed</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- GitHub link -->
-    <div>
-      <a
-        :href="htmlUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="button is-small is-fullwidth"
-      >
-        View on GitHub
-      </a>
+    <div class="sidebar-card">
+      <div class="sidebar-card__content">
+        <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
+          <ExternalLinkIcon :size="14" />
+          <span>View on GitHub</span>
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -54,6 +99,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { ExternalLinkIcon, InfoIcon, UsersIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import 'dayjs/locale/zh-cn';
@@ -82,3 +128,202 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   return dayjs(dateString).fromNow();
 };
 </script>
+
+<style scoped lang="scss">
+@use '~/assets/scss/_variables' as *;
+
+// Sidebar card wrapper
+.sidebar-card {
+  background: #f8f9fa;
+  border: 1px solid #eaecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sidebar-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eaecef;
+  background: #fff;
+}
+
+.sidebar-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-card__icon {
+  color: $brand-primary;
+}
+
+.sidebar-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-card__content {
+  padding: 12px 16px;
+}
+
+.sidebar-card__empty {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+// Badge
+.sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  background: #eaecef;
+  border-radius: 10px;
+}
+
+// Reviewer list
+.reviewer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reviewer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #eaecef;
+  border-radius: 8px;
+  transition: all 0.12s ease;
+
+  &:hover {
+    border-color: #d0d5dd;
+  }
+}
+
+.reviewer-item__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.reviewer-item__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+// Info list
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.info-item__label {
+  font-size: 12px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.info-item__value {
+  font-size: 12px;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: right;
+}
+
+.info-item__value--muted {
+  color: #999;
+}
+
+.info-item__avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// Stats grid
+.info-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.info-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  background: #fff;
+  border: 1px solid #eaecef;
+  border-radius: 8px;
+}
+
+.info-stat__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.info-stat__label {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+.info-stat--success .info-stat__value {
+  color: #1a7f37;
+}
+
+.info-stat--danger .info-stat__value {
+  color: #dc2626;
+}
+
+// Link inside card
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  text-decoration: none;
+  transition: color 0.12s ease;
+
+  &:hover {
+    color: $brand-primary;
+  }
+}
+</style>

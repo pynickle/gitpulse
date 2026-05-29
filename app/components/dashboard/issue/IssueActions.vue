@@ -1,50 +1,69 @@
 <template>
   <div>
-    <!-- Lock/Unlock button -->
-    <div class="mb-4">
-      <div v-if="lockError" class="notification is-danger is-light mb-3 py-2 px-3">
-        <button class="delete is-small" @click="lockError = ''"></button>
-        <p class="is-size-7">{{ lockError }}</p>
+    <!-- Lock/Unlock action -->
+    <div v-if="canLockIssue" class="sidebar-card mb-4">
+      <div class="sidebar-card__content">
+        <div v-if="lockError" class="sidebar-alert sidebar-alert--error mb-3">
+          <AlertCircleIcon :size="14" />
+          <span>{{ lockError }}</span>
+          <button class="sidebar-alert__dismiss" @click="lockError = ''">
+            <XIcon :size="12" />
+          </button>
+        </div>
+        <button
+          class="sidebar-action-btn"
+          @click="isLocked ? unlockIssue() : openLockModal()"
+          :disabled="loadingLock"
+        >
+          <Loader2Icon v-if="loadingLock" class="spin-animation" :size="14" />
+          <LockIcon v-else-if="!isLocked" :size="14" />
+          <UnlockIcon v-else :size="14" />
+          <span>{{ isLocked ? t('issueDetail.unlockIssue') : t('issueDetail.lockIssue') }}</span>
+        </button>
       </div>
-      <button
-        v-if="canLockIssue"
-        :class="['button', 'is-small', isLocked ? 'is-danger' : 'is-warning']"
-        @click="isLocked ? unlockIssue() : openLockModal()"
-        :disabled="loadingLock"
-      >
-        <span v-if="loadingLock" class="icon is-small mr-2">
-          <Loader2Icon class="is-spinning" :size="14" />
-        </span>
-        {{ isLocked ? t('issueDetail.unlockIssue') : t('issueDetail.lockIssue') }}
-      </button>
-    </div>
-
-    <!-- GitHub link -->
-    <div class="mb-4">
-      <a
-        :href="htmlUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="button is-small is-fullwidth"
-      >
-        {{ t('issueDetail.viewOnGithub') }}
-      </a>
     </div>
 
     <!-- Additional info section -->
-    <div class="mb-4">
-      <h3 class="title is-6 mb-3">{{ t('issueDetail.additionalInfo') }}</h3>
-      <div class="is-size-7 has-text-grey">
-        <p class="mb-2">
-          {{ t('issueDetail.created', { date: formatDate(createdAt) }) }}
-        </p>
-        <p class="mb-2">
-          {{ t('issueDetail.updated', { date: formatDate(updatedAt) }) }}
-        </p>
-        <p v-if="assignee" class="mb-2">
-          {{ t('issueDetail.assignee', { assignee: assignee.login }) }}
-        </p>
-        <p v-else class="mb-2">{{ t('issueDetail.noAssignee') }}</p>
+    <div class="sidebar-card mb-4">
+      <div class="sidebar-card__header">
+        <div class="sidebar-card__header-left">
+          <InfoIcon :size="14" class="sidebar-card__icon" />
+          <span class="sidebar-card__title">{{ t('issueDetail.additionalInfo') }}</span>
+        </div>
+      </div>
+      <div class="sidebar-card__content">
+        <div class="info-list">
+          <div class="info-item">
+            <span class="info-item__label">{{ t('issueDetail.created') }}</span>
+            <span class="info-item__value">{{ formatDate(createdAt) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-item__label">{{ t('issueDetail.updated') }}</span>
+            <span class="info-item__value">{{ formatDate(updatedAt) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-item__label">{{ t('issueDetail.assignee') }}</span>
+            <span v-if="assignee" class="info-item__value">
+              <span class="info-item__avatar">
+                <img :src="assignee.avatar_url || ''" :alt="assignee.login" />
+              </span>
+              {{ assignee.login }}
+            </span>
+            <span v-else class="info-item__value info-item__value--muted">
+              {{ t('issueDetail.noAssignee') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GitHub link -->
+    <div class="sidebar-card">
+      <div class="sidebar-card__content">
+        <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
+          <ExternalLinkIcon :size="14" />
+          <span>{{ t('issueDetail.viewOnGithub') }}</span>
+        </a>
       </div>
     </div>
 
@@ -58,7 +77,16 @@
 </template>
 
 <script setup lang="ts">
-import { Loader2Icon } from 'lucide-vue-next';
+import {
+  AlertCircleIcon,
+  ExternalLinkIcon,
+  InfoIcon,
+  LockIcon,
+  Loader2Icon,
+  ShieldIcon,
+  UnlockIcon,
+  XIcon,
+} from 'lucide-vue-next';
 import { onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -198,3 +226,201 @@ const formatDate = (dateString: string | undefined) => {
   return new Date(dateString).toLocaleString();
 };
 </script>
+
+<style scoped lang="scss">
+@use '~/assets/scss/_variables' as *;
+
+// Sidebar card wrapper
+.sidebar-card {
+  background: #f8f9fa;
+  border: 1px solid #eaecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sidebar-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eaecef;
+  background: #fff;
+}
+
+.sidebar-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-card__icon {
+  color: $brand-primary;
+}
+
+.sidebar-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-card__content {
+  padding: 12px 16px;
+}
+
+// Badge
+.sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-badge--danger {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+// Alert
+.sidebar-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.sidebar-alert--error {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.sidebar-alert__dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: #dc2626;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.1);
+  }
+}
+
+// Action button
+.sidebar-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #eaecef;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #d0d5dd;
+    color: #333;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Info list
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.info-item__label {
+  font-size: 12px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.info-item__value {
+  font-size: 12px;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: right;
+}
+
+.info-item__value--muted {
+  color: #999;
+}
+
+.info-item__avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// Link inside card
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  text-decoration: none;
+  transition: color 0.12s ease;
+
+  &:hover {
+    color: $brand-primary;
+  }
+}
+
+// Spin animation
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
