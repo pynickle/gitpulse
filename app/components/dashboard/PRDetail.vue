@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
 import { EyeIcon } from 'lucide-vue-next';
-import { shallowRef, ref, computed, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 // Import subcomponents
@@ -129,15 +129,23 @@ const sidebarRef = ref<HTMLElement | null>(null);
 const isSidebarScrolling = ref(false);
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
-const onSidebarScroll = () => {
-  isSidebarScrolling.value = true;
+const clearScrollTimeout = () => {
   if (scrollTimeout) {
     clearTimeout(scrollTimeout);
+    scrollTimeout = null;
   }
+};
+
+const onSidebarScroll = () => {
+  isSidebarScrolling.value = true;
+  clearScrollTimeout();
   scrollTimeout = setTimeout(() => {
     isSidebarScrolling.value = false;
+    scrollTimeout = null;
   }, 1000);
 };
+
+onBeforeUnmount(clearScrollTimeout);
 
 const repoPermissions = ref({
   admin: false,

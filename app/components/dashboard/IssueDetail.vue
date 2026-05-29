@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 // Import subcomponents
@@ -111,15 +111,23 @@ const sidebarRef = ref<HTMLElement | null>(null);
 const isSidebarScrolling = ref(false);
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
-const onSidebarScroll = () => {
-  isSidebarScrolling.value = true;
+const clearScrollTimeout = () => {
   if (scrollTimeout) {
     clearTimeout(scrollTimeout);
+    scrollTimeout = null;
   }
+};
+
+const onSidebarScroll = () => {
+  isSidebarScrolling.value = true;
+  clearScrollTimeout();
   scrollTimeout = setTimeout(() => {
     isSidebarScrolling.value = false;
+    scrollTimeout = null;
   }, 1000);
 };
+
+onBeforeUnmount(clearScrollTimeout);
 
 // Computed properties
 const repoInfo = computed(() => {
