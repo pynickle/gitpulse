@@ -28,7 +28,9 @@ export interface UpdateTabGroupInput {
   source?: TabGroupSource;
 }
 
-const STORAGE_KEY = 'gitpulse:dashboard:tab-groups';
+const buildStorageKey = (login: string): string => {
+  return `gitpulse:dashboard:tab-groups:${login}`;
+};
 
 let hasHydratedStoredGroups = false;
 
@@ -102,12 +104,12 @@ const ensureRequiredGroups = (groups: TabGroup[]) => {
   return [resolvedBuiltin, ...groupMap.values()];
 };
 
-const readStoredGroups = (): TabGroup[] | null => {
+const readStoredGroups = (login: string): TabGroup[] | null => {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = window.localStorage.getItem(buildStorageKey(login));
   if (!raw) {
     return null;
   }
@@ -132,12 +134,12 @@ const readStoredGroups = (): TabGroup[] | null => {
   }
 };
 
-const writeStoredGroups = (groups: TabGroup[]) => {
+const writeStoredGroups = (login: string, groups: TabGroup[]) => {
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(groups));
+  window.localStorage.setItem(buildStorageKey(login), JSON.stringify(groups));
 };
 
 const createGroupId = () => {
@@ -145,6 +147,9 @@ const createGroupId = () => {
 };
 
 export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
+  const { user } = useUserSession();
+  const login = computed(() => user.value?.login ?? 'anonymous');
+
   const groups = useState<TabGroup[]>('gitpulse-tab-groups', () => cloneGroups(initialGroups));
 
   if (import.meta.client && groups.value.length === 0) {
@@ -152,7 +157,7 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
   }
 
   if (import.meta.client && !hasHydratedStoredGroups) {
-    const storedGroups = readStoredGroups();
+    const storedGroups = readStoredGroups(login.value);
     if (storedGroups) {
       groups.value = ensureRequiredGroups(storedGroups);
     } else {
@@ -164,7 +169,7 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
   watch(
     groups,
     (nextGroups) => {
-      writeStoredGroups(nextGroups);
+      writeStoredGroups(login.value, nextGroups);
     },
     { deep: true }
   );

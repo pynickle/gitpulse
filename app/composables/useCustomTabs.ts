@@ -39,7 +39,9 @@ export interface UpdateCustomTabInput {
   query?: CustomTabQuery;
 }
 
-const STORAGE_KEY = 'gitpulse:dashboard:custom-tabs';
+const buildStorageKey = (login: string): string => {
+  return `gitpulse:dashboard:custom-tabs:${login}`;
+};
 
 const DEFAULT_CUSTOM_TABS: CustomTab[] = [];
 
@@ -183,12 +185,12 @@ const normalizeTab = (tab: unknown): CustomTab | null => {
   };
 };
 
-const readStoredTabs = (): CustomTab[] | null => {
+const readStoredTabs = (login: string): CustomTab[] | null => {
   if (typeof window === 'undefined') {
     return null;
   }
 
-  const raw = window.localStorage.getItem(STORAGE_KEY);
+  const raw = window.localStorage.getItem(buildStorageKey(login));
   if (!raw) {
     return null;
   }
@@ -208,12 +210,12 @@ const readStoredTabs = (): CustomTab[] | null => {
   }
 };
 
-const writeStoredTabs = (tabs: CustomTab[]) => {
+const writeStoredTabs = (login: string, tabs: CustomTab[]) => {
   if (typeof window === 'undefined') {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tabs));
+  window.localStorage.setItem(buildStorageKey(login), JSON.stringify(tabs));
 };
 
 const createTabId = () => {
@@ -221,10 +223,13 @@ const createTabId = () => {
 };
 
 export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
+  const { user } = useUserSession();
+  const login = computed(() => user.value?.login ?? 'anonymous');
+
   const customTabs = useState<CustomTab[]>('gitpulse-custom-tabs', () => cloneTabs(initialTabs));
 
   if (import.meta.client && !hasHydratedStoredTabs) {
-    const storedTabs = readStoredTabs();
+    const storedTabs = readStoredTabs(login.value);
     customTabs.value = storedTabs ?? cloneTabs(initialTabs);
     hasHydratedStoredTabs = true;
   }
@@ -232,7 +237,7 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
   watch(
     customTabs,
     (nextTabs) => {
-      writeStoredTabs(nextTabs);
+      writeStoredTabs(login.value, nextTabs);
     },
     { deep: true }
   );
