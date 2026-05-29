@@ -63,12 +63,12 @@
           </ul>
 
           <!-- Empty group state -->
-          <p
+          <span
             v-if="group.source !== 'system' && !group.collapsed && getGroupTabCount(group.id) === 0"
-            class="tab-sidebar__empty"
+            class="tab-sidebar__empty-inline"
           >
             {{ t('dashboard.sidebar.emptyGroup') }}
-          </p>
+          </span>
         </div>
       </template>
     </div>
@@ -465,17 +465,15 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   }
 }
 
-.tab-sidebar__empty {
-  margin: 0 0 0.35rem;
-  padding: 0.5rem 0.5rem;
-  border: 1.5px dashed #d1d5db;
-  border-radius: 6px;
+.tab-sidebar__empty-inline {
+  display: block;
+  margin: 0 0 0.3rem;
   color: #9ca3af;
-  font-size: 0.73rem;
-  text-align: center;
+  font-size: 0.65rem;
+  font-style: italic;
+  line-height: 1.8;
 
   @media (prefers-color-scheme: dark) {
-    border-color: rgba(255, 255, 255, 0.15);
     color: #6b7280;
   }
 }
