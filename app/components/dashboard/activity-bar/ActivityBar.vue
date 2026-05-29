@@ -1,7 +1,12 @@
 <template>
   <div class="activity-bar">
-    <!-- User Avatar (top) -->
-    <div class="activity-bar__avatar" @click="$emit('avatar-click')">
+    <!-- User Avatar -->
+    <button
+      class="activity-bar__avatar"
+      type="button"
+      :title="userName || 'User'"
+      @click="$emit('avatar-click')"
+    >
       <img
         v-if="userAvatar"
         :src="userAvatar"
@@ -9,28 +14,38 @@
         class="activity-bar__avatar-img"
       />
       <div v-else class="activity-bar__avatar-placeholder">
-        <UserIcon :size="20" />
+        <UserIcon :size="18" />
       </div>
-    </div>
+    </button>
 
-    <!-- Group Icons (middle) -->
-    <div class="activity-bar__groups">
+    <!-- Group Icons -->
+    <nav class="activity-bar__groups" aria-label="View groups">
       <button
         v-for="group in groups"
         :key="group.id"
         class="activity-bar__icon-btn"
         :class="{ 'is-active': activeGroupId === group.id }"
         :title="group.name"
+        :aria-label="group.name"
+        :aria-current="activeGroupId === group.id ? 'page' : undefined"
+        type="button"
         @click="$emit('group-select', group.id)"
       >
-        <component :is="getGroupIcon(group.icon)" :size="20" />
+        <component :is="getGroupIcon(group.icon)" :size="19" />
       </button>
-    </div>
+    </nav>
 
-    <!-- Settings Icon (bottom) -->
+    <!-- Settings -->
     <div class="activity-bar__bottom">
-      <button class="activity-bar__icon-btn" title="Settings" @click="$emit('settings-click')">
-        <SettingsIcon :size="20" />
+      <div class="activity-bar__divider" role="separator" aria-hidden="true"></div>
+      <button
+        class="activity-bar__icon-btn"
+        title="Settings"
+        aria-label="Settings"
+        type="button"
+        @click="$emit('settings-click')"
+      >
+        <SettingsIcon :size="19" />
       </button>
     </div>
   </div>
@@ -53,7 +68,7 @@ interface Group {
   icon?: string;
 }
 
-const props = defineProps<{
+defineProps<{
   userAvatar?: string;
   userName?: string;
   activeGroupId?: string;
@@ -83,40 +98,64 @@ function getGroupIcon(icon?: string) {
 
 <style scoped lang="scss">
 .activity-bar {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1rem 0;
-  background-color: transparent;
-  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  width: 100%;
+  height: 100%;
+  padding: 0.75rem 0;
+  background: rgba(0, 0, 0, 0.02);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.07);
 
   @media (prefers-color-scheme: dark) {
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.025);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
   }
 
   &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
     margin-bottom: 1rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
     cursor: pointer;
+    transition: box-shadow 0.15s ease;
+
+    &:focus-visible {
+      outline: 2px solid var(--bulma-primary, #4f46e5);
+      outline-offset: 2px;
+    }
+
+    &:hover {
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+    }
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 
   &__avatar-img {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     object-fit: cover;
   }
 
   &__avatar-placeholder {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    background-color: var(--bulma-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--bulma-text-light);
+    background: var(--bulma-border, #d1d5db);
+    color: var(--bulma-text-weak, #6b7280);
   }
 
   &__groups {
@@ -124,41 +163,90 @@ function getGroupIcon(icon?: string) {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.2rem;
   }
 
   &__icon-btn {
-    width: 40px;
-    height: 40px;
-    border: none;
-    background: transparent;
-    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--bulma-text-weak, #9ca3af);
     cursor: pointer;
-    color: var(--bulma-text-light);
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
 
     &:hover {
-      background-color: var(--bulma-background-hover, rgba(0, 0, 0, 0.04));
-      color: var(--bulma-text);
-      transform: translateY(-1px);
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--bulma-text-strong, #1e293b);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--bulma-primary, #4f46e5);
+      outline-offset: 1px;
     }
 
     &:active {
-      transform: translateY(1px);
+      background: rgba(0, 0, 0, 0.08);
     }
 
     &.is-active {
-      background-color: var(--bulma-primary-light, rgba(0, 105, 255, 0.1));
-      color: var(--bulma-primary);
-      box-shadow: inset 2px 0 0 var(--bulma-primary);
+      background: #eef2ff;
+      color: #4f46e5;
     }
   }
 
   &__bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     margin-top: auto;
+  }
+
+  &__divider {
+    width: 20px;
+    height: 1px;
+    border-radius: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    margin-bottom: 0.3rem;
+
+    @media (prefers-color-scheme: dark) {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .activity-bar__icon-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #e2e8f0;
+  }
+
+  .activity-bar__icon-btn.is-active {
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+  }
+
+  .activity-bar__avatar-placeholder {
+    background: rgba(255, 255, 255, 0.1);
+    color: #9ca3af;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-bar__icon-btn,
+  .activity-bar__avatar {
+    transition: none;
+  }
+
+  .activity-bar__avatar:active {
+    opacity: 1;
   }
 }
 </style>

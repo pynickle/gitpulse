@@ -1,27 +1,23 @@
 <template>
-  <aside class="menu tab-sidebar">
-    <div class="sidebar-header">
-      <p class="sidebar-header-title">{{ t('dashboard.sidebar.views') }}</p>
-      <button
-        class="button is-ghost is-small sidebar-manage-button"
-        type="button"
-        @click="$emit('manage-tabs')"
-      >
-        <span class="icon is-small mr-1">
-          <SlidersHorizontalIcon :size="14" />
-        </span>
+  <aside class="tab-sidebar" aria-label="Tab groups">
+    <!-- Compact header: title + manage button only -->
+    <div class="tab-sidebar__header">
+      <h2 class="tab-sidebar__title">{{ t('dashboard.sidebar.views') }}</h2>
+      <button class="tab-sidebar__manage-btn" type="button" @click="$emit('manage-tabs')">
+        <SlidersHorizontalIcon :size="13" />
         <span>{{ t('dashboard.sidebar.manageViews') }}</span>
       </button>
     </div>
 
-    <div class="sidebar-tree" role="tree" :aria-label="t('dashboard.sidebar.views')">
+    <!-- Group tree -->
+    <div class="tab-sidebar__tree" role="tree" :aria-label="t('dashboard.sidebar.views')">
       <template v-for="group in displayGroups" :key="group.id">
+        <!-- Group heading -->
         <button
-          class="menu-label-wrapper"
+          class="tab-sidebar__group"
           :class="{
-            'is-nested': group.depth > 0,
-            'is-system': group.source === 'system',
-            'is-collapsed': group.collapsed,
+            'tab-sidebar__group--nested': group.depth > 0,
+            'tab-sidebar__group--collapsed': group.collapsed,
           }"
           :style="getDepthStyle(group.depth)"
           type="button"
@@ -29,56 +25,47 @@
           :aria-expanded="group.source === 'system' ? undefined : !group.collapsed"
           @click="group.source !== 'system' && emit('group-toggle', group.id)"
         >
-          <span class="group-heading-main">
-            <span class="icon is-small group-chevron" aria-hidden="true">
-              <ChevronRightIcon v-if="group.collapsed" :size="14" />
-              <ChevronDownIcon v-else :size="14" />
-            </span>
-            <span class="icon is-small group-folder" aria-hidden="true">
-              <FolderIcon v-if="group.collapsed" :size="15" />
-              <FolderOpenIcon v-else :size="15" />
-            </span>
-            <span class="menu-label-text">{{ group.name }}</span>
+          <span class="tab-sidebar__group-toggle" aria-hidden="true">
+            <PlusIcon v-if="group.collapsed" :size="13" />
+            <MinusIcon v-else :size="13" />
           </span>
-          <span v-if="getGroupTabCount(group.id) > 0" class="group-count">
+          <span class="tab-sidebar__group-label">{{ group.name }}</span>
+          <span v-if="getGroupTabCount(group.id) > 0" class="tab-sidebar__group-count">
             {{ getGroupTabCount(group.id) }}
           </span>
         </button>
+
+        <!-- Group children (tabs) -->
         <div
-          class="group-list-wrap"
-          :class="{
-            'is-collapsed': group.collapsed,
-            'is-system': group.source === 'system',
-            'is-nested': group.depth > 0,
-          }"
+          v-if="!group.collapsed"
+          class="tab-sidebar__children"
           :style="getDepthStyle(group.depth)"
         >
-          <ul class="menu-list" role="group">
+          <ul class="tab-sidebar__tab-list" role="group">
             <li v-for="tab in getTabsForGroup(group.id)" :key="tab.id">
               <a
-                :class="{ 'is-active': activeTabId === tab.id }"
+                class="tab-sidebar__tab"
+                :class="{ 'tab-sidebar__tab--active': activeTabId === tab.id }"
                 role="treeitem"
                 :aria-current="activeTabId === tab.id ? 'page' : undefined"
-                @click="emit('tab-select', tab.id)"
+                href="#"
+                @click.prevent="emit('tab-select', tab.id)"
               >
-                <div class="tab-item-content">
-                  <span class="icon is-small mr-2">
-                    <component :is="tab.icon" :size="16" />
-                  </span>
-                  <span class="tab-name">{{ tab.name }}</span>
-                  <span
-                    v-if="(tab.badgeCount ?? 0) > 0"
-                    class="tag is-danger is-rounded is-small badge-count"
-                  >
-                    {{ tab.badgeCount }}
-                  </span>
-                </div>
+                <span class="icon is-small tab-sidebar__tab-icon">
+                  <component :is="tab.icon" :size="15" />
+                </span>
+                <span class="tab-sidebar__tab-name">{{ tab.name }}</span>
+                <span v-if="(tab.badgeCount ?? 0) > 0" class="tab-sidebar__tab-badge">
+                  {{ tab.badgeCount }}
+                </span>
               </a>
             </li>
           </ul>
+
+          <!-- Empty group state -->
           <p
             v-if="group.source !== 'system' && !group.collapsed && getGroupTabCount(group.id) === 0"
-            class="empty-group-note"
+            class="tab-sidebar__empty"
           >
             {{ t('dashboard.sidebar.emptyGroup') }}
           </p>
@@ -89,13 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  FolderIcon,
-  FolderOpenIcon,
-  SlidersHorizontalIcon,
-} from 'lucide-vue-next';
+import { PlusIcon, MinusIcon, SlidersHorizontalIcon } from 'lucide-vue-next';
 import type { Component, CSSProperties } from 'vue';
 import { computed } from 'vue';
 
@@ -135,7 +116,7 @@ const props = withDefaults(
         id: DEFAULT_CUSTOM_TAB_GROUP_ID,
         name: 'General',
         collapsed: false,
-        source: 'github-search',
+        source: 'github-search' as const,
       },
     ],
     tabs: () => [],
@@ -150,8 +131,10 @@ const emit = defineEmits<{
 
 const getTabsForGroup = (groupId: string) => props.tabs.filter((tab) => tab.groupId === groupId);
 const getGroupTabCount = (groupId: string) => getTabsForGroup(groupId).length;
-const getDepthStyle = (depth: number): CSSProperties & Record<'--depth-offset', string> => ({
-  '--depth-offset': `${depth * 0.9}rem`,
+
+// Capped depth offset: max 2rem so deep nesting doesn't waste horizontal space
+const getDepthStyle = (depth: number): CSSProperties => ({
+  '--depth-offset': `${Math.min(depth * 0.75, 2)}rem`,
 });
 
 const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
@@ -197,287 +180,318 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 
 <style scoped lang="scss">
 .tab-sidebar {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0.75rem 0;
+  padding: 0.5rem 0;
 }
 
-.sidebar-header {
+.tab-sidebar__header {
   display: flex;
   align-items: center;
-  flex-shrink: 0;
+  justify-content: space-between;
   gap: 0.5rem;
-  padding: 0 0.75rem 0.55rem;
+  flex-shrink: 0;
+  padding: 0 0.75rem 0.5rem;
 }
 
-.sidebar-header-title {
-  min-width: 0;
-  flex: 1;
+.tab-sidebar__title {
   margin: 0;
-  color: var(--bulma-text-light, #6b7280);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--bulma-text-weak, #6b7280);
+  line-height: 1;
 }
 
-.sidebar-manage-button {
-  flex: 0 0 auto;
-  height: 1.85rem;
-  padding-inline: 0.45rem;
+.tab-sidebar__manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  height: 1.5rem;
+  padding: 0 0.45rem;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--bulma-text-weak, #9ca3af);
+  font-size: 0.68rem;
   font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.045));
+    color: var(--bulma-text, #374151);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bulma-primary, #4f46e5);
+    outline-offset: 2px;
+  }
+
+  &:active {
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
+  }
 }
 
-.sidebar-tree {
+.tab-sidebar__tree {
   display: flex;
-  min-height: 0;
-  flex: 1;
   flex-direction: column;
-  gap: 0.15rem;
+  flex: 1;
+  min-height: 0;
   padding-inline: 0.35rem;
   overflow: hidden auto;
 }
 
-.menu-label-wrapper {
+.tab-sidebar__group {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.3rem;
   width: 100%;
-  cursor: pointer;
-  gap: 0.5rem;
-  padding: 0.42rem 0.55rem 0.42rem calc(0.45rem + var(--depth-offset, 0rem));
-  border: 0;
-  border-radius: 9px;
+  padding: 0.4rem 0.5rem 0.4rem calc(0.6rem + var(--depth-offset, 0rem));
+  border: none;
+  border-radius: 6px;
   background: transparent;
-  color: var(--bulma-text-light, #64748b);
+  color: var(--bulma-text-strong, #1e293b);
   font: inherit;
+  font-size: 0.81rem;
+  font-weight: 700;
   text-align: left;
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
 
   &:hover {
-    background-color: var(--bulma-background-hover, rgba(15, 23, 42, 0.055));
-    color: var(--bulma-text, #1f2937);
-    box-shadow: inset 0 0 0 1px rgba(100, 116, 139, 0.08);
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.045));
   }
 
   &:focus-visible {
-    outline: 2px solid var(--bulma-primary, #485fc7);
-    outline-offset: 2px;
+    outline: 2px solid var(--bulma-primary, #4f46e5);
+    outline-offset: 1px;
+    border-radius: 6px;
   }
 
-  &.is-nested {
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: calc(-0.35rem + var(--depth-offset, 0rem));
-      top: 50%;
-      width: 0.55rem;
-      height: 1px;
-      background: rgba(72, 95, 199, 0.2);
-    }
+  &:active {
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
   }
 
-  &.is-system {
-    cursor: default;
-    border-left: 3px solid var(--bulma-primary, #485fc7);
-    color: var(--bulma-text-light, #6b7280);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
+  &--nested {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--bulma-text, #475569);
+    padding-left: calc(0.6rem + var(--depth-offset, 0rem));
+  }
 
-    &:hover {
-      background-color: transparent;
-      transform: none;
-    }
+  &--collapsed {
+    color: var(--bulma-text-weak, #6b7280);
   }
 }
 
-.group-heading-main {
-  display: inline-flex;
-  min-width: 0;
+.tab-sidebar__group-toggle {
+  display: flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.79rem;
-  font-weight: 720;
-  letter-spacing: 0.015em;
-  user-select: none;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--bulma-text-weak, #9ca3af);
+  transition: color 0.15s ease;
+
+  .tab-sidebar__group:hover & {
+    color: var(--bulma-text, #374151);
+  }
 }
 
-.group-chevron,
-.group-folder {
-  flex: 0 0 auto;
-}
-
-.group-chevron {
-  color: var(--bulma-text-light, #888);
-}
-
-.group-folder {
-  color: var(--bulma-primary, #485fc7);
-  opacity: 0.86;
-}
-
-.menu-label-text {
+.tab-sidebar__group-label {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.group-count {
+.tab-sidebar__group-count {
   display: inline-flex;
-  min-width: 1.45rem;
-  height: 1.15rem;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
+  min-width: 1.25rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  padding-inline: 0.3rem;
   border-radius: 999px;
-  background: rgba(72, 95, 199, 0.1);
-  color: var(--bulma-primary, #485fc7);
-  font-size: 0.7rem;
-  font-weight: 760;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 0.63rem;
+  font-weight: 800;
+  margin-left: auto;
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+  }
 }
 
-.group-list-wrap {
-  position: relative;
+.tab-sidebar__children {
   display: grid;
   grid-template-rows: 1fr;
   opacity: 1;
-  padding-left: calc(2.2rem + var(--depth-offset, 0rem));
+  margin-top: 0.22rem;
+  padding-left: calc(1.6rem + var(--depth-offset, 0rem));
   transition:
-    grid-template-rows 0.25s ease,
-    opacity 0.2s ease,
-    margin 0.25s ease;
+    grid-template-rows 0.2s ease,
+    opacity 0.15s ease,
+    margin 0.2s ease;
 
-  &::before {
-    content: '';
-    position: absolute;
-    left: calc(0.95rem + var(--depth-offset, 0rem));
-    top: -0.1rem;
-    bottom: 0.45rem;
-    width: 1px;
-    border-radius: 999px;
-    background: rgba(72, 95, 199, 0.16);
-  }
-
-  &.is-collapsed {
+  &--collapsed {
     grid-template-rows: 0fr;
     opacity: 0;
-    margin-bottom: -0.25rem;
+    margin-bottom: -0.2rem;
     pointer-events: none;
   }
-
-  .menu-list {
-    min-height: 0;
-    margin: 0.05rem 0 0.35rem;
-    overflow: hidden;
-  }
-
-  &.is-system {
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid var(--bulma-border-light, rgba(0, 0, 0, 0.05));
-  }
 }
 
-.empty-group-note {
-  padding: 0.45rem 0.75rem 0.65rem 0.2rem;
-  margin: 0;
-  color: var(--bulma-text-light, #94a3b8);
-  font-size: 0.78rem;
+.tab-sidebar__tab-list {
+  min-height: 0;
+  margin: 0 0 0.3rem;
+  overflow: hidden;
+  list-style: none;
+  padding: 0;
 }
 
-.menu-list {
-  margin-left: 0;
+.tab-sidebar__tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.55rem 0.38rem 0.45rem;
+  border-radius: 6px;
+  color: var(--bulma-text, #475569);
+  font-size: 0.79rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
-  li a {
-    display: block;
-    border-radius: 8px;
-    padding: 0.42rem 0.65rem;
-    margin-bottom: 0.12rem;
-    position: relative;
-    transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease,
-      transform 0.2s ease;
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--bulma-text-strong, #1e293b);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bulma-primary, #4f46e5);
+    outline-offset: 1px;
+    border-radius: 6px;
+  }
+
+  &:active {
+    background: rgba(0, 0, 0, 0.07);
+  }
+
+  &--active {
+    background: #eef2ff;
+    color: #4f46e5;
+    font-weight: 650;
+
+    .tab-sidebar__tab-icon {
+      color: #4f46e5;
+    }
 
     &:hover {
-      background-color: var(--bulma-background-hover, rgba(15, 23, 42, 0.045));
-      transform: translateX(1px);
+      background: #e0e7ff;
     }
 
-    &:focus-visible {
-      outline: 2px solid var(--bulma-primary, #485fc7);
-      outline-offset: 2px;
-    }
+    @media (prefers-color-scheme: dark) {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
 
-    &.is-active {
-      background-color: var(--bulma-primary-light, rgba(72, 95, 199, 0.08));
-      color: var(--bulma-primary, #485fc7);
-      box-shadow: inset 0 0 0 1px rgba(72, 95, 199, 0.12);
-      font-weight: 650;
+      .tab-sidebar__tab-icon {
+        color: #a5b4fc;
+      }
 
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 18%;
-        height: 64%;
-        width: 3.5px;
-        border-radius: 0 3px 3px 0;
-        background-color: var(--bulma-primary, #485fc7);
+      &:hover {
+        background: rgba(99, 102, 241, 0.2);
       }
     }
   }
 }
 
-.tab-item-content {
+.tab-sidebar__tab-icon {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
-  width: 100%;
-  min-width: 0;
+  justify-content: center;
+  width: 16px;
+  color: var(--bulma-text-weak, #9ca3af);
+}
 
-  .tab-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.tab-sidebar__tab-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-sidebar__tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  padding-inline: 0.3rem;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+  .tab-sidebar__tab--active & {
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
   }
 
-  .badge-count {
-    margin-left: 0.5rem;
-    transition:
-      transform 0.2s ease,
-      opacity 0.2s ease;
+  @media (prefers-color-scheme: dark) {
+    background: #f87171;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+
+    .tab-sidebar__tab--active & {
+      box-shadow: 0 1px 3px rgba(248, 113, 113, 0.3);
+    }
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .menu-label-wrapper:hover,
-  .menu-list li a:hover {
-    background-color: rgba(148, 163, 184, 0.09);
+.tab-sidebar__empty {
+  margin: 0 0 0.35rem;
+  padding: 0.5rem 0.5rem;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 0.73rem;
+  text-align: center;
+
+  @media (prefers-color-scheme: dark) {
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #6b7280;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-sidebar__children,
+  .tab-sidebar__group,
+  .tab-sidebar__tab,
+  .tab-sidebar__manage-btn,
+  .tab-sidebar__group-toggle {
+    transition: none;
   }
 
-  .menu-label-wrapper.is-nested::before,
-  .group-list-wrap::before {
-    background: rgba(139, 92, 246, 0.22);
-  }
-
-  .group-count {
-    background: rgba(148, 163, 184, 0.18);
-    color: #e2e8f0;
-  }
-
-  .group-folder {
-    color: #a78bfa;
+  .tab-sidebar__tab:active,
+  .tab-sidebar__group:active {
+    background: rgba(0, 0, 0, 0.04);
   }
 }
 </style>
