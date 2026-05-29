@@ -27,6 +27,7 @@ logs
 .trae/
 .agents/
 .claude/
+.codex/
 
 .codegraph/
 
