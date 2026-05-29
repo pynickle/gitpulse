@@ -108,7 +108,7 @@ watch(() => props.code, render);
 .mermaid-skeleton {
   width: 100%;
   min-height: 160px;
-  background-color: #f0f0f0;
+  background-color: var(--gitpulse-skeleton-bg);
   border-radius: 4px;
 }
 
@@ -116,9 +116,9 @@ watch(() => props.code, render);
   position: relative;
   overflow: hidden;
   margin: 1rem 0;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
-  background-color: #ffffff;
+  background-color: var(--gitpulse-markdown-bg);
 }
 
 .mermaid-block__open {
@@ -130,12 +130,12 @@ watch(() => props.code, render);
   max-width: calc(100% - 1rem);
   align-items: center;
   gap: 0.25rem;
-  border-color: #d0d7de;
-  background-color: rgb(255 255 255 / 92%);
-  color: #24292f;
+  border-color: var(--gitpulse-border);
+  background-color: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.75rem;
   line-height: 1;
-  box-shadow: 0 1px 2px rgb(31 35 40 / 8%);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .mermaid-block__open span {
@@ -144,7 +144,7 @@ watch(() => props.code, render);
 }
 
 .mermaid-block__open:focus-visible {
-  outline: 2px solid #0969da;
+  outline: 2px solid var(--gitpulse-focus-ring);
   outline-offset: 2px;
 }
 

@@ -72,8 +72,8 @@ const localeCode = computed(() => locale.value);
 <style scoped lang="scss">
 .merge-item {
   border-radius: 12px;
-  background-color: #f5f0ff;
-  border-left: 3px solid #8250df;
+  background-color: var(--gitpulse-purple-soft);
+  border-left: 3px solid var(--gitpulse-purple);
   transition: background-color 0.2s ease;
 }
 
@@ -88,7 +88,7 @@ const localeCode = computed(() => locale.value);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8250df;
+  color: var(--gitpulse-purple);
 }
 
 .merge-label {
@@ -96,18 +96,18 @@ const localeCode = computed(() => locale.value);
   align-items: center;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #8250df;
+  color: var(--gitpulse-purple);
 }
 
 .merge-sha {
   font-size: 0.75rem;
-  background-color: #e9dffc;
-  color: #6b3ab0;
+  background-color: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-purple);
   font-weight: 500;
 
   &:hover {
-    background-color: #d8c8f6;
-    color: #5a2d9e;
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-accent);
   }
 }
 

@@ -345,15 +345,15 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 .pr-review-file-sidebar {
   height: 100%;
   min-width: 0;
-  border-right: 1px solid #d0d7de;
-  background: #f6f8fa;
+  border-right: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface-muted);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
 .pr-review-file-sidebar--collapsed {
-  background: #ffffff;
+  background: var(--gitpulse-surface);
 }
 
 .pr-review-file-sidebar__collapsed-handle {
@@ -361,7 +361,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   height: 100%;
   border: 0;
   background: transparent;
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -371,16 +371,16 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__collapsed-handle:hover {
-  background: #ddf4ff;
-  color: #0969da;
+  background: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
 }
 
 .pr-review-file-sidebar__collapsed-handle strong {
   width: 1.45rem;
   height: 1.45rem;
   border-radius: 50%;
-  background: #f6f8fa;
-  color: #656d76;
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -390,7 +390,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 .pr-review-file-sidebar__header {
   min-height: 2.5rem;
   padding: 0.45rem 0.6rem;
-  border-bottom: 1px solid #d0d7de;
+  border-bottom: 1px solid var(--gitpulse-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -404,8 +404,8 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 .pr-review-file-sidebar__subheader {
   min-height: 2rem;
   padding: 0 0.7rem;
-  border-bottom: 1px solid #e1e4e8;
-  color: #656d76;
+  border-bottom: 1px solid var(--gitpulse-border);
+  color: var(--gitpulse-text-muted);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -415,9 +415,9 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 
 .pr-review-file-sidebar__view-toggle {
   padding: 0.12rem;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--gitpulse-surface);
   display: flex;
 }
 
@@ -433,7 +433,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -441,8 +441,8 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__collapse-button:hover {
-  background: #eaeef2;
-  color: #24292f;
+  background: var(--gitpulse-surface-hover);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .pr-review-file-sidebar__toggle-button {
@@ -451,7 +451,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -459,7 +459,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__toggle-button--active {
-  background: #0969da;
+  background: var(--gitpulse-info);
   color: #ffffff;
 }
 
@@ -477,7 +477,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border-left: 3px solid transparent;
   border-radius: 5px;
   background: transparent;
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -488,8 +488,8 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 
 .pr-review-file-sidebar__item:hover,
 .pr-review-file-sidebar__item--active {
-  background: #ddf4ff;
-  border-left-color: #0969da;
+  background: var(--gitpulse-info-soft);
+  border-left-color: var(--gitpulse-info);
 }
 
 .pr-review-file-sidebar__name {
@@ -523,7 +523,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 50%;
-  background: #afb8c1;
+  background: var(--gitpulse-text-subtle);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -534,20 +534,20 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__status--added {
-  background: #1a7f37;
+  background: var(--gitpulse-success);
 }
 
 .pr-review-file-sidebar__status--removed {
-  background: #cf222e;
+  background: var(--gitpulse-danger);
 }
 
 .pr-review-file-sidebar__status--modified,
 .pr-review-file-sidebar__status--changed {
-  background: #bf8700;
+  background: var(--gitpulse-warning);
 }
 
 .pr-review-file-sidebar__status--renamed {
-  background: #8250df;
+  background: var(--gitpulse-purple);
 }
 
 .pr-review-file-sidebar__tree-group + .pr-review-file-sidebar__tree-group,
@@ -562,7 +562,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -580,11 +580,11 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 .pr-review-file-sidebar__tree-directory:hover,
 .pr-review-file-sidebar__tree-file:hover,
 .pr-review-file-sidebar__tree-file--active {
-  background: #ddf4ff;
+  background: var(--gitpulse-info-soft);
 }
 
 .pr-review-file-sidebar__tree-file--active {
-  border-left-color: #0969da;
+  border-left-color: var(--gitpulse-info);
   font-weight: 700;
 }
 
@@ -606,7 +606,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__tree-count {
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
 }
@@ -615,7 +615,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: #d4a72c;
+  background: var(--gitpulse-warning);
   flex: none;
 }
 </style>

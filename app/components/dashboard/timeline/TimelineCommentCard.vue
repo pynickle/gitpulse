@@ -72,6 +72,6 @@ const localeCode = computed(() => locale.value);
 <style scoped lang="scss">
 .comment-item {
   border-radius: 20px;
-  background-color: #f8f9fa;
+  background-color: var(--gitpulse-surface-muted);
 }
 </style>

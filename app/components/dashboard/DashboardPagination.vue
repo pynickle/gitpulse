@@ -123,11 +123,20 @@ const pageItems = computed(() => {
 .pagination-link,
 .pagination-previous,
 .pagination-next {
-  background: white;
+  border-color: var(--gitpulse-border);
+  background: var(--gitpulse-surface);
+  color: var(--bulma-text, var(--gitpulse-text));
+
+  &:hover:not([disabled]),
+  &:focus:not([disabled]) {
+    border-color: var(--gitpulse-border-strong);
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 }
 
 .pagination-link.is-current {
-  background: #0969da;
+  background: var(--gitpulse-info);
   border-color: transparent;
   color: #ffffff;
   font-weight: 600;
@@ -135,8 +144,16 @@ const pageItems = computed(() => {
 
 .pagination-link.is-current:hover,
 .pagination-link.is-current:focus {
-  background: #0757b3;
+  background: var(--gitpulse-link);
   color: #ffffff;
+}
+
+.pagination-link[disabled],
+.pagination-previous[disabled],
+.pagination-next[disabled] {
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-subtle);
+  opacity: 0.58;
 }
 
 .pagination-link,

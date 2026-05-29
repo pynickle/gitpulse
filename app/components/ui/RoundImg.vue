@@ -27,7 +27,7 @@ $motion-normal: 0.3s;
   display: inline-block;
   border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--gitpulse-shadow-card);
   transition: transform $motion-normal ease;
 
   &:hover {

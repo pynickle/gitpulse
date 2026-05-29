@@ -191,10 +191,8 @@ const reasonIcon = computed(() => {
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
 <style scoped lang="scss">
-@use 'bulma/sass/utilities/initial-variables' as iv;
-
 .card.is-unread {
-  background-color: #f5f9ff;
+  background-color: var(--gitpulse-unread-bg);
 }
 
 .card.is-unread::before {
@@ -204,7 +202,7 @@ const reasonIcon = computed(() => {
   bottom: 0;
   left: 0;
   width: 4px;
-  background-color: #3e8ed0;
+  background-color: var(--gitpulse-link);
   pointer-events: none;
   z-index: 1;
 }
@@ -218,10 +216,10 @@ const reasonIcon = computed(() => {
   justify-content: center;
   width: 18px;
   height: 18px;
-  border: 2px solid iv.$white;
+  border: 2px solid var(--gitpulse-surface);
   border-radius: 999px;
-  background-color: iv.$white;
-  box-shadow: 0 1px 4px hsla(221deg, 14%, 4%, 0.18);
+  background-color: var(--gitpulse-surface);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--gitpulse-text-strong) 18%, transparent);
   line-height: 1;
   transition:
     color 0.25s ease,
@@ -235,7 +233,7 @@ const reasonIcon = computed(() => {
 }
 
 .notification-type-badge--error {
-  border-color: iv.$grey-lighter;
+  border-color: var(--gitpulse-border-strong);
   opacity: 0.45;
 }
 
@@ -252,7 +250,7 @@ const reasonIcon = computed(() => {
 .mark-read-btn {
   opacity: 0;
   visibility: hidden;
-  color: #4a4a4a;
+  color: var(--gitpulse-text);
   cursor: pointer;
   padding: 4px;
   width: 24px;
@@ -278,7 +276,7 @@ const reasonIcon = computed(() => {
 }
 
 .notification-card__reason-icon {
-  color: iv.$grey;
+  color: var(--gitpulse-text-muted);
   flex: 0 0 auto;
 }
 
@@ -288,8 +286,8 @@ const reasonIcon = computed(() => {
 }
 
 .mark-read-btn:hover {
-  background-color: iv.$white-ter;
-  color: iv.$grey;
+  background-color: var(--gitpulse-surface-hover);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .mark-read-btn:disabled {

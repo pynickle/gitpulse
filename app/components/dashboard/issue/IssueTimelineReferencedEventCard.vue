@@ -72,7 +72,7 @@ const sanitizedCommitMessageHeadlineHtml = computed(() => {
 <style scoped lang="scss">
 .commit-item {
   border-radius: 12px;
-  background-color: #f6f8fa;
+  background-color: var(--gitpulse-surface-muted);
   transition: background-color 0.2s ease;
 }
 
@@ -82,7 +82,7 @@ const sanitizedCommitMessageHeadlineHtml = computed(() => {
   }
 
   ::v-deep(a) {
-    color: #0366d6;
+    color: var(--gitpulse-link);
     text-decoration: underline;
   }
 }

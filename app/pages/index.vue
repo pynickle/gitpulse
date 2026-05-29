@@ -160,9 +160,9 @@ const handleLogout = async () => {
   grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.95fr);
   width: min(100%, 1040px);
   overflow: hidden;
-  border: 1px solid rgba(10, 10, 10, 0.06);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .landing-shell__panel {
@@ -171,16 +171,16 @@ const handleLogout = async () => {
 
 .landing-shell__panel--copy {
   background:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.18), transparent 45%),
-    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.92));
-  border-right: 1px solid rgba(10, 10, 10, 0.06);
+    radial-gradient(circle at top left, var(--gitpulse-accent-soft), transparent 45%),
+    linear-gradient(180deg, var(--gitpulse-surface-muted), var(--gitpulse-shell-bg));
+  border-right: 1px solid var(--gitpulse-border);
 }
 
 .landing-shell__panel--auth {
   display: grid;
   align-content: center;
   gap: 1rem;
-  background: #fff;
+  background: var(--gitpulse-surface);
 }
 
 .landing-shell__eyebrow {
@@ -194,7 +194,7 @@ const handleLogout = async () => {
 .landing-shell__subtitle {
   margin: 0;
   text-align: left;
-  color: #4b5563;
+  color: var(--gitpulse-text-muted);
   line-height: 1.7;
   max-width: 32rem;
 }
@@ -205,9 +205,9 @@ const handleLogout = async () => {
 
 .landing-shell__loading {
   padding: 2rem;
-  border: 1px solid rgba(10, 10, 10, 0.06);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 18px;
-  background: rgba(248, 250, 252, 0.96);
+  background: var(--gitpulse-surface-muted);
 }
 
 @media (max-width: 1023px) {
@@ -225,7 +225,7 @@ const handleLogout = async () => {
 
   .landing-shell__panel--copy {
     border-right: 0;
-    border-bottom: 1px solid rgba(10, 10, 10, 0.06);
+    border-bottom: 1px solid var(--gitpulse-border);
   }
 
   .landing-shell__subtitle {

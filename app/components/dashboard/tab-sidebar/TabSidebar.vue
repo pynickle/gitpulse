@@ -322,16 +322,11 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   flex-shrink: 0;
   padding-inline: 0.3rem;
   border-radius: 999px;
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--gitpulse-surface-active);
+  color: var(--gitpulse-accent);
   font-size: 0.63rem;
   font-weight: 800;
   margin-left: auto;
-
-  @media (prefers-color-scheme: dark) {
-    background: rgba(99, 102, 241, 0.2);
-    color: #a5b4fc;
-  }
 }
 
 .tab-sidebar__children {
@@ -376,7 +371,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
     color 0.15s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.04));
     color: var(--bulma-text-strong, #1e293b);
   }
 
@@ -387,33 +382,20 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   }
 
   &:active {
-    background: rgba(0, 0, 0, 0.07);
+    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.07));
   }
 
   &--active {
-    background: #eef2ff;
-    color: #4f46e5;
+    background: var(--gitpulse-surface-active);
+    color: var(--gitpulse-accent);
     font-weight: 650;
 
     .tab-sidebar__tab-icon {
-      color: #4f46e5;
+      color: var(--gitpulse-accent);
     }
 
     &:hover {
-      background: #e0e7ff;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      background: rgba(99, 102, 241, 0.15);
-      color: #a5b4fc;
-
-      .tab-sidebar__tab-icon {
-        color: #a5b4fc;
-      }
-
-      &:hover {
-        background: rgba(99, 102, 241, 0.2);
-      }
+      background: var(--gitpulse-accent-soft);
     }
   }
 }
@@ -444,38 +426,25 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   flex-shrink: 0;
   padding-inline: 0.3rem;
   border-radius: 999px;
-  background: #ef4444;
+  background: var(--gitpulse-danger);
   color: #fff;
   font-size: 0.6rem;
   font-weight: 800;
   line-height: 1;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
 
   .tab-sidebar__tab--active & {
-    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    background: #f87171;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-
-    .tab-sidebar__tab--active & {
-      box-shadow: 0 1px 3px rgba(248, 113, 113, 0.3);
-    }
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--gitpulse-danger) 32%, transparent);
   }
 }
 
 .tab-sidebar__empty-inline {
   display: block;
   margin: 0 0 0.3rem;
-  color: #9ca3af;
+  color: var(--gitpulse-text-subtle);
   font-size: 0.65rem;
   font-style: italic;
   line-height: 1.8;
-
-  @media (prefers-color-scheme: dark) {
-    color: #6b7280;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

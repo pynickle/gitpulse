@@ -22,7 +22,7 @@
 
         <div
           v-if="loading"
-          class="is-overlay is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-background-white-ter"
+          class="detail-loading is-overlay is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
           style="z-index: 10"
         >
           <div class="box has-text-centered py-5 px-6 shadow-md" style="min-width: 200px">
@@ -35,10 +35,7 @@
           </div>
         </div>
 
-        <div
-          v-else
-          :class="['card-content', 'is-flex-grow-1', 'has-background-white', contentClass]"
-        >
+        <div v-else :class="['card-content', 'is-flex-grow-1', contentClass]">
           <slot />
         </div>
       </div>
@@ -76,7 +73,7 @@ defineEmits<{
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: var(--gitpulse-overlay-bg);
   z-index: 9999;
 }
 
@@ -92,8 +89,8 @@ defineEmits<{
 }
 
 .card-header {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #eaecef;
+  background-color: var(--gitpulse-surface-muted);
+  border-bottom: 1px solid var(--gitpulse-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -108,6 +105,11 @@ defineEmits<{
   min-height: 0;
   padding: 2rem 8rem;
   overflow-y: auto;
+  background: var(--gitpulse-surface);
+}
+
+.detail-loading {
+  background: var(--gitpulse-surface-muted);
 }
 
 .spin-animation {
@@ -115,8 +117,6 @@ defineEmits<{
 }
 
 .shadow-md {
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 </style>

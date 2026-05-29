@@ -250,8 +250,8 @@ const formatDate = (dateString: string | undefined) => {
 
 // Sidebar card wrapper
 .sidebar-card {
-  background: #f8f9fa;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface-muted);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -261,8 +261,8 @@ const formatDate = (dateString: string | undefined) => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #eaecef;
-  background: #fff;
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface);
 }
 
 .sidebar-card__header-left {
@@ -278,7 +278,7 @@ const formatDate = (dateString: string | undefined) => {
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   letter-spacing: -0.01em;
 }
 
@@ -298,8 +298,8 @@ const formatDate = (dateString: string | undefined) => {
 }
 
 .sidebar-badge--danger {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
 }
 
 // Alert
@@ -313,8 +313,8 @@ const formatDate = (dateString: string | undefined) => {
 }
 
 .sidebar-alert--error {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
 }
 
 .sidebar-alert__dismiss {
@@ -328,11 +328,11 @@ const formatDate = (dateString: string | undefined) => {
   border: none;
   background: transparent;
   border-radius: 4px;
-  color: #dc2626;
+  color: var(--gitpulse-danger);
   cursor: pointer;
 
   &:hover {
-    background: rgba(220, 38, 38, 0.1);
+    background: var(--gitpulse-danger-soft);
   }
 }
 
@@ -344,19 +344,19 @@ const formatDate = (dateString: string | undefined) => {
   gap: 8px;
   width: 100%;
   padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: var(--gitpulse-text-muted);
   cursor: pointer;
   transition: all 0.12s ease;
 
   &:hover:not(:disabled) {
-    background: #f8f9fa;
-    border-color: #d0d5dd;
-    color: #333;
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border-strong);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
 
   &:disabled {
@@ -381,13 +381,13 @@ const formatDate = (dateString: string | undefined) => {
 
 .info-item__label {
   font-size: 12px;
-  color: #666;
+  color: var(--gitpulse-text-muted);
   flex-shrink: 0;
 }
 
 .info-item__value {
   font-size: 12px;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   display: flex;
   align-items: center;
   gap: 6px;
@@ -395,7 +395,7 @@ const formatDate = (dateString: string | undefined) => {
 }
 
 .info-item__value--muted {
-  color: #999;
+  color: var(--gitpulse-text-subtle);
 }
 
 .info-item__avatar {
@@ -419,12 +419,12 @@ const formatDate = (dateString: string | undefined) => {
   gap: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: var(--gitpulse-text-muted);
   text-decoration: none;
   transition: color 0.12s ease;
 
   &:hover {
-    color: $brand-primary;
+    color: var(--gitpulse-accent);
   }
 }
 

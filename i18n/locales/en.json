@@ -4,6 +4,10 @@
     "subtitle": "GitHub Work Dashboard"
   },
   "colorMode": {
+    "label": "Color mode",
+    "system": "Use system color mode",
+    "light": "Use light mode",
+    "dark": "Use dark mode",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode"
   },

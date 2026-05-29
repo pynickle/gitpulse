@@ -134,8 +134,8 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 
 // Sidebar card wrapper
 .sidebar-card {
-  background: #f8f9fa;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface-muted);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -145,8 +145,8 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #eaecef;
-  background: #fff;
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface);
 }
 
 .sidebar-card__header-left {
@@ -162,7 +162,7 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   letter-spacing: -0.01em;
 }
 
@@ -172,7 +172,7 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 
 .sidebar-card__empty {
   font-size: 12px;
-  color: #999;
+  color: var(--gitpulse-text-subtle);
   margin: 0;
 }
 
@@ -186,8 +186,8 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   padding: 0 6px;
   font-size: 11px;
   font-weight: 600;
-  color: #666;
-  background: #eaecef;
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface-hover);
   border-radius: 10px;
 }
 
@@ -203,13 +203,13 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  background: #fff;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   transition: all 0.12s ease;
 
   &:hover {
-    border-color: #d0d5dd;
+    border-color: var(--gitpulse-border-strong);
   }
 }
 
@@ -223,7 +223,7 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 .reviewer-item__name {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 // Info list
@@ -242,13 +242,13 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 
 .info-item__label {
   font-size: 12px;
-  color: #666;
+  color: var(--gitpulse-text-muted);
   flex-shrink: 0;
 }
 
 .info-item__value {
   font-size: 12px;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   display: flex;
   align-items: center;
   gap: 6px;
@@ -256,7 +256,7 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 }
 
 .info-item__value--muted {
-  color: #999;
+  color: var(--gitpulse-text-subtle);
 }
 
 .info-item__avatar {
@@ -286,29 +286,29 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   flex-direction: column;
   align-items: center;
   padding: 10px 8px;
-  background: #fff;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
 }
 
 .info-stat__value {
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .info-stat__label {
   font-size: 11px;
-  color: #999;
+  color: var(--gitpulse-text-subtle);
   margin-top: 2px;
 }
 
 .info-stat--success .info-stat__value {
-  color: #1a7f37;
+  color: var(--gitpulse-success);
 }
 
 .info-stat--danger .info-stat__value {
-  color: #dc2626;
+  color: var(--gitpulse-danger);
 }
 
 // Link inside card
@@ -318,12 +318,12 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   gap: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: var(--gitpulse-text-muted);
   text-decoration: none;
   transition: color 0.12s ease;
 
   &:hover {
-    color: $brand-primary;
+    color: var(--gitpulse-accent);
   }
 }
 </style>

@@ -115,23 +115,16 @@ const currentConfig = computed<GuideConfig>(() => {
     align-items: flex-start;
     gap: 0.65rem;
     padding: 0.875rem;
-    border: 1px solid var(--bulma-border-light, rgba(0, 0, 0, 0.06));
+    border: 1px solid var(--gitpulse-border);
     border-radius: 12px;
     background:
-      linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.06)),
-      var(--bulma-background, #fff);
-
-    @media (prefers-color-scheme: dark) {
-      border-color: rgba(255, 255, 255, 0.08);
-      background:
-        linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(52, 211, 153, 0.08)),
-        rgba(255, 255, 255, 0.02);
-    }
+      linear-gradient(135deg, var(--gitpulse-info-soft), var(--gitpulse-success-soft)),
+      var(--gitpulse-surface);
   }
 
   &__tip-icon {
     display: inline-flex;
-    color: #d97706;
+    color: var(--gitpulse-warning);
     margin-top: 0.125rem;
     flex-shrink: 0;
   }

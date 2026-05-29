@@ -65,7 +65,7 @@ $widgets-panel-width: 280px;
   align-items: stretch;
   width: $activity-bar-width;
   padding: 0;
-  background: #f1f5f9;
+  background: var(--gitpulse-shell-bg);
 }
 
 // Left-Center Tab Sidebar
@@ -73,8 +73,8 @@ $widgets-panel-width: 280px;
   flex: none;
   width: var(--dashboard-tab-sidebar-width, #{$tab-sidebar-width});
   padding: 1.25rem 0.95rem;
-  background: #f1f5f9;
-  border-right: 1px solid var(--bulma-border-light, rgba(15, 23, 42, 0.08));
+  background: var(--gitpulse-shell-bg);
+  border-right: 1px solid var(--gitpulse-border);
 }
 
 // Center Main List
@@ -91,15 +91,6 @@ $widgets-panel-width: 280px;
   flex: none;
   width: var(--dashboard-widgets-panel-width, #{$widgets-panel-width});
   padding: 1.25rem 2rem 1.25rem 0;
-}
-
-:global(html.dark-mode) .column-activity-bar,
-:global(html.dark-mode) .column-tab-sidebar {
-  background: #16213e;
-}
-
-:global(html.dark-mode) .column-tab-sidebar {
-  border-right-color: rgba(255, 255, 255, 0.08);
 }
 
 // Responsive behavior

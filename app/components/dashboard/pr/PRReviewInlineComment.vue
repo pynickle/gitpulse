@@ -58,9 +58,9 @@ watch(
 <style scoped lang="scss">
 .pr-review-inline-comment {
   padding: 0.75rem;
-  border-top: 1px solid #d8dee4;
-  border-bottom: 1px solid #d8dee4;
-  background: #fff8c5;
+  border-top: 1px solid var(--gitpulse-border);
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-draft-bg);
 }
 
 .pr-review-inline-comment__textarea {

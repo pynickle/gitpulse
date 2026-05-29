@@ -76,7 +76,7 @@ const localeCode = computed(() => locale.value);
 <style scoped lang="scss">
 .commit-item {
   border-radius: 12px;
-  background-color: #f6f8fa;
+  background-color: var(--gitpulse-surface-muted);
   transition: background-color 0.2s ease;
 }
 
@@ -90,7 +90,7 @@ const localeCode = computed(() => locale.value);
 }
 
 .commit-message {
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   line-height: 1.5;
 }
 

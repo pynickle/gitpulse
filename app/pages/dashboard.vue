@@ -767,7 +767,7 @@ watch(
   height: calc(100vh - var(--bulma-navbar-height, 3.25rem));
   min-height: calc(100vh - var(--bulma-navbar-height, 3.25rem));
   overflow: hidden;
-  background: #f8fafc;
+  background: var(--gitpulse-page-bg);
 }
 
 .dashboard-main-card {
@@ -785,7 +785,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem 0.5rem;
-  border-bottom: 1px solid var(--bulma-border-light, rgba(0, 0, 0, 0.05));
+  border-bottom: 1px solid var(--gitpulse-border);
   margin-bottom: 0.5rem;
 }
 
@@ -804,13 +804,13 @@ watch(
 
 .dashboard-tab-refresh {
   flex-shrink: 0;
-  color: #4a4a4a;
+  color: var(--gitpulse-text-muted);
 }
 
 .dashboard-tab-refresh:hover,
 .dashboard-tab-refresh:focus-visible {
-  color: #1f6feb;
-  background: rgba(31, 111, 235, 0.08);
+  color: var(--gitpulse-link);
+  background: var(--gitpulse-info-soft);
 }
 
 .dashboard-tab-refresh:hover .dashboard-tab-refresh__icon,
@@ -852,10 +852,6 @@ watch(
   z-index: 1;
   min-height: 0;
   padding: 0;
-  background: white;
-}
-
-:global(html.dark-mode) .dashboard-page {
-  background: #1a1a2e;
+  background: var(--gitpulse-surface);
 }
 </style>

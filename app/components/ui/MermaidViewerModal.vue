@@ -421,20 +421,20 @@ onBeforeUnmount(() => {
 .mermaid-viewer-modal__card {
   width: min(1120px, calc(100vw - 2rem));
   max-height: min(860px, calc(100vh - 2rem));
-  box-shadow: 0 24px 64px rgb(31 35 40 / 18%);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .mermaid-viewer-modal__head,
 .mermaid-viewer-modal__foot {
   flex: 0 0 auto;
   gap: 0.75rem;
-  background-color: #f6f8fa;
+  background-color: var(--gitpulse-surface-muted);
 }
 
 .mermaid-viewer-modal__title {
   min-width: 0;
   flex: 1 1 auto;
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.25;
@@ -443,7 +443,7 @@ onBeforeUnmount(() => {
 .mermaid-viewer-modal__body {
   min-height: min(62vh, 640px);
   padding: 0;
-  background-color: #ffffff;
+  background-color: var(--gitpulse-surface);
 }
 
 .mermaid-viewer-modal__viewport {
@@ -455,8 +455,8 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   background:
-    linear-gradient(90deg, rgb(208 215 222 / 35%) 1px, transparent 1px),
-    linear-gradient(rgb(208 215 222 / 35%) 1px, transparent 1px), #ffffff;
+    linear-gradient(90deg, var(--gitpulse-grid-line) 1px, transparent 1px),
+    linear-gradient(var(--gitpulse-grid-line) 1px, transparent 1px), var(--gitpulse-surface);
   background-size: 24px 24px;
   cursor: grab;
   touch-action: none;
@@ -491,7 +491,7 @@ onBeforeUnmount(() => {
   width: min(520px, 70%);
   min-height: 220px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #f6f8fa, #eaeef2, #f6f8fa);
+  background: var(--gitpulse-skeleton-shimmer);
   background-size: 200% 100%;
   animation: mermaid-viewer-loading 1.2s linear infinite;
 }
@@ -502,8 +502,8 @@ onBeforeUnmount(() => {
   height: 100%;
   margin: 0;
   padding: 1rem;
-  background-color: #f6f8fa;
-  color: #24292f;
+  background-color: var(--gitpulse-code-bg);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .mermaid-viewer-modal__foot {
@@ -519,10 +519,10 @@ onBeforeUnmount(() => {
   align-items: stretch;
   gap: 0;
   padding: 0.125rem;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 999px;
-  background-color: #ffffff;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%);
+  background-color: var(--gitpulse-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gitpulse-surface-raised) 80%, transparent);
 }
 
 .mermaid-viewer-modal__zoom-cluster .button {
@@ -534,7 +534,7 @@ onBeforeUnmount(() => {
 .mermaid-viewer-modal__icon-button {
   border-color: transparent;
   background-color: transparent;
-  color: #57606a;
+  color: var(--gitpulse-text-muted);
   border-radius: 999px;
   transition:
     background-color 120ms ease,
@@ -543,8 +543,8 @@ onBeforeUnmount(() => {
 
 .mermaid-viewer-modal__icon-button:hover:not(:disabled),
 .mermaid-viewer-modal__icon-button:focus-visible {
-  background-color: #eaeef2;
-  color: #24292f;
+  background-color: var(--gitpulse-surface-hover);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .mermaid-viewer-modal__icon-button:disabled {
@@ -560,7 +560,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 999px;
   background-color: transparent;
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-feature-settings: 'tnum' 1;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -570,13 +570,13 @@ onBeforeUnmount(() => {
 
 .mermaid-viewer-modal__zoom-readout:hover,
 .mermaid-viewer-modal__zoom-readout:focus-visible {
-  background-color: #eaeef2;
+  background-color: var(--gitpulse-surface-hover);
 }
 
 .mermaid-viewer-modal__hint {
   flex: 1 1 auto;
   min-width: 0;
-  color: #57606a;
+  color: var(--gitpulse-text-muted);
   font-size: 0.75rem;
   text-align: center;
 }
@@ -588,7 +588,7 @@ onBeforeUnmount(() => {
 .mermaid-viewer-modal__foot .button:focus-visible,
 .mermaid-viewer-modal__zoom-readout:focus-visible,
 .mermaid-viewer-modal__head .delete:focus-visible {
-  outline: 2px solid #0969da;
+  outline: 2px solid var(--gitpulse-focus-ring);
   outline-offset: 2px;
 }
 

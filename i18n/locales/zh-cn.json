@@ -4,6 +4,10 @@
     "subtitle": "GitHub 工作仪表板"
   },
   "colorMode": {
+    "label": "颜色模式",
+    "system": "跟随系统颜色模式",
+    "light": "使用浅色模式",
+    "dark": "使用深色模式",
     "switchToLight": "切换到浅色模式",
     "switchToDark": "切换到深色模式"
   },

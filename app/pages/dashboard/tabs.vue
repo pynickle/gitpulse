@@ -2135,7 +2135,7 @@ void nextTick(() => {
   height: auto;
   padding: 0;
   border: none;
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
@@ -2150,7 +2150,7 @@ void nextTick(() => {
 .nav-back-link:focus-visible {
   border-radius: 4px;
   background: transparent;
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--gitpulse-focus-ring);
   outline-offset: 2px;
 }
 
@@ -2160,7 +2160,7 @@ void nextTick(() => {
 .tree-tab-main small,
 .query-preview,
 .chip-label {
-  color: #475569;
+  color: var(--gitpulse-text-muted);
   font-size: 0.78rem;
 }
 
@@ -2188,9 +2188,9 @@ void nextTick(() => {
 .views-tree-panel,
 .editor-panel {
   margin-bottom: 0;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .panel-heading-row,
@@ -2214,9 +2214,9 @@ void nextTick(() => {
 .group-creator-strip,
 .pr-field-band {
   padding: 0.85rem;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
-  background: rgba(248, 250, 252, 0.72);
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 72%, transparent);
 }
 
 .builtin-section {
@@ -2241,20 +2241,24 @@ void nextTick(() => {
   gap: 0.15rem;
   min-width: 0;
   padding: 0.55rem 0.6rem;
-  border: 1px solid rgba(79, 70, 229, 0.12);
+  border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 20%, transparent);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(14, 165, 233, 0.04));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gitpulse-accent) 12%, transparent),
+    color-mix(in srgb, var(--gitpulse-info) 7%, transparent)
+  );
 }
 
 .group-insight-card strong {
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   font-size: 1rem;
   line-height: 1;
 }
 
 .group-insight-card span {
   overflow: hidden;
-  color: #475569;
+  color: var(--gitpulse-text-muted);
   font-size: 0.68rem;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -2267,8 +2271,8 @@ void nextTick(() => {
   display: grid;
   gap: 0.55rem;
   margin-top: 0.75rem;
-  border-color: rgba(79, 70, 229, 0.18);
-  background: rgba(248, 250, 252, 0.92);
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 26%, transparent);
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 92%, transparent);
 }
 
 .group-creator-form,
@@ -2295,8 +2299,8 @@ void nextTick(() => {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 10px;
-  color: #4f46e5;
-  background: rgba(79, 70, 229, 0.12);
+  color: var(--gitpulse-accent);
+  background: var(--gitpulse-accent-soft);
 }
 
 .group-creator-title {
@@ -2308,7 +2312,7 @@ void nextTick(() => {
 
 .group-creator-copy {
   margin: 0.1rem 0 0;
-  color: #475569;
+  color: var(--gitpulse-text-muted);
   font-size: 0.75rem;
 }
 
@@ -2362,7 +2366,7 @@ void nextTick(() => {
 
 .tree-group {
   overflow: hidden;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   background: var(--bulma-scheme-main, #ffffff);
 }
@@ -2390,19 +2394,19 @@ void nextTick(() => {
 .tree-group-row:focus-within,
 .tree-tab-row:hover,
 .builtin-row:hover {
-  border-color: rgba(79, 70, 229, 0.18);
-  background: rgba(79, 70, 229, 0.045);
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 24%, transparent);
+  background: var(--gitpulse-accent-soft);
 }
 
 .tree-tab-row.is-selected {
-  border-color: #4f46e5;
-  background: rgba(79, 70, 229, 0.08);
-  box-shadow: inset 3px 0 0 #4f46e5;
+  border-color: var(--gitpulse-accent);
+  background: var(--gitpulse-accent-soft);
+  box-shadow: inset 3px 0 0 var(--gitpulse-accent);
 }
 
 .tree-group-row:hover,
 .tree-group-row:focus-within {
-  box-shadow: inset 3px 0 0 #4f46e5;
+  box-shadow: inset 3px 0 0 var(--gitpulse-accent);
 }
 
 .tree-icon {
@@ -2443,8 +2447,8 @@ void nextTick(() => {
   align-items: center;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: rgba(79, 70, 229, 0.08);
-  color: #4f46e5;
+  background: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-accent);
   font-size: 0.68rem;
   font-weight: 700;
   white-space: nowrap;
@@ -2457,17 +2461,17 @@ void nextTick(() => {
 .tree-name-input {
   height: 1.85rem;
   border-color: transparent;
-  border-bottom: 1px dashed rgba(100, 116, 139, 0.28);
+  border-bottom: 1px dashed var(--gitpulse-border-strong);
   background: transparent;
   font-weight: 650;
 }
 
 .tree-name-input:hover:not(:disabled) {
-  border-bottom-color: rgba(79, 70, 229, 0.4);
+  border-bottom-color: color-mix(in srgb, var(--gitpulse-accent) 46%, transparent);
 }
 
 .tree-name-input:focus {
-  border-color: #4f46e5;
+  border-color: var(--gitpulse-accent);
   background: var(--bulma-scheme-main, #ffffff);
 }
 
@@ -2480,14 +2484,14 @@ void nextTick(() => {
 }
 
 .tree-delete {
-  color: #b42318;
+  color: var(--gitpulse-danger);
 }
 
 .tree-add {
   width: 1.65rem;
   height: 1.65rem;
   padding: 0;
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   opacity: 0;
   pointer-events: none;
   transition:
@@ -2504,7 +2508,7 @@ void nextTick(() => {
 
 .tree-add:hover,
 .tree-add:focus-visible {
-  background: rgba(79, 70, 229, 0.1);
+  background: var(--gitpulse-accent-soft);
   transform: translateY(-1px);
 }
 
@@ -2516,17 +2520,17 @@ void nextTick(() => {
   margin-right: 0.7rem;
   margin-bottom: 0.55rem;
   margin-top: 0.6rem;
-  border: 1px dashed rgba(79, 70, 229, 0.22);
+  border: 1px dashed color-mix(in srgb, var(--gitpulse-accent) 30%, transparent);
   border-radius: 8px;
-  background: rgba(79, 70, 229, 0.045);
+  background: color-mix(in srgb, var(--gitpulse-accent) 8%, transparent);
 }
 
 .inline-delete-confirm {
   display: flex;
   justify-content: space-between;
-  border-color: rgba(180, 35, 24, 0.24);
-  color: #7a271a;
-  background: rgba(254, 243, 242, 0.78);
+  border-color: color-mix(in srgb, var(--gitpulse-danger) 30%, transparent);
+  color: var(--gitpulse-danger);
+  background: var(--gitpulse-danger-soft);
   font-size: 0.76rem;
   font-weight: 650;
 }
@@ -2537,7 +2541,7 @@ void nextTick(() => {
 }
 
 .inline-child-creator__label {
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   font-size: 0.72rem;
   font-weight: 750;
 }
@@ -2576,7 +2580,7 @@ void nextTick(() => {
   width: 100%;
   padding: 0;
   border: 0;
-  color: #475569;
+  color: var(--gitpulse-text-muted);
   background: transparent;
   font-size: 0.78rem;
   text-align: left;
@@ -2585,7 +2589,7 @@ void nextTick(() => {
 
 .tab-subtitle-button:hover,
 .tab-subtitle-button:focus-visible {
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   outline: none;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -2599,7 +2603,7 @@ void nextTick(() => {
 .tab-delete-confirm {
   flex: 0 0 auto;
   gap: 0.2rem;
-  color: #b42318;
+  color: var(--gitpulse-danger);
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
@@ -2637,7 +2641,7 @@ void nextTick(() => {
   flex: 0 0 auto;
   padding: 0 0.15rem;
   cursor: grab;
-  color: #94a3b8;
+  color: var(--gitpulse-text-subtle);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -2655,12 +2659,12 @@ void nextTick(() => {
 
 :deep(.sortable-ghost) {
   opacity: 0.4;
-  background: rgba(79, 70, 229, 0.08);
+  background: var(--gitpulse-accent-soft);
 }
 
 :deep(.sortable-chosen) {
   opacity: 0.85;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--gitpulse-shadow-card-hover);
 }
 
 :deep(.sortable-drag) {
@@ -2671,7 +2675,7 @@ void nextTick(() => {
 .group-choice,
 .segmented-button,
 .source-option {
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   color: var(--bulma-text, #334155);
   background: var(--bulma-scheme-main, #ffffff);
   cursor: pointer;
@@ -2713,21 +2717,21 @@ void nextTick(() => {
 .group-choice:hover,
 .segmented-button:hover,
 .source-option:hover:not(:disabled) {
-  border-color: rgba(79, 70, 229, 0.32);
-  color: #4f46e5;
-  background: rgba(79, 70, 229, 0.07);
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 36%, transparent);
+  color: var(--gitpulse-accent);
+  background: var(--gitpulse-accent-soft);
 }
 
 .chip-button.is-active {
-  border-color: #4f46e5;
+  border-color: var(--gitpulse-accent);
   color: #ffffff;
-  background: #4f46e5;
+  background: var(--gitpulse-accent);
 }
 
 .group-choice.is-active {
-  border-color: #4f46e5;
+  border-color: var(--gitpulse-accent);
   color: #ffffff;
-  background: #4f46e5;
+  background: var(--gitpulse-accent);
 }
 
 .segmented-button.is-active {
@@ -2747,9 +2751,9 @@ void nextTick(() => {
 .source-selector {
   padding: 0.25rem;
   margin-bottom: 1rem;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
-  background: rgba(248, 250, 252, 0.95);
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 95%, transparent);
 }
 
 .source-option {
@@ -2779,9 +2783,9 @@ void nextTick(() => {
 }
 
 .source-option.is-active {
-  border-color: #4f46e5;
+  border-color: var(--gitpulse-accent);
   color: #ffffff;
-  background: #4f46e5;
+  background: var(--gitpulse-accent);
 }
 
 .source-option.is-active small {
@@ -2859,10 +2863,10 @@ void nextTick(() => {
   padding: 0.35rem;
   margin-top: 0.35rem;
   overflow: auto;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   background: var(--bulma-scheme-main, #ffffff);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .suggestion-row {
@@ -2871,16 +2875,16 @@ void nextTick(() => {
 
 .preview-panel {
   margin-top: 1rem;
-  border-color: var(--bulma-border-light, rgba(10, 10, 10, 0.12));
+  border-color: var(--gitpulse-border);
   background: var(--bulma-scheme-main, #ffffff);
 }
 
 /* ── Tokenized query box ── */
 .tokenized-query-box {
   margin-top: 0.75rem;
-  border: 1px solid rgba(79, 70, 229, 0.15);
+  border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 22%, transparent);
   border-radius: 8px;
-  background: rgba(248, 250, 252, 0.82);
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 82%, transparent);
   overflow: hidden;
 }
 
@@ -2889,8 +2893,8 @@ void nextTick(() => {
   align-items: center;
   justify-content: space-between;
   padding: 0.45rem 0.7rem;
-  background: rgba(79, 70, 229, 0.06);
-  border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+  background: var(--gitpulse-accent-soft);
+  border-bottom: 1px solid color-mix(in srgb, var(--gitpulse-accent) 18%, transparent);
 }
 
 .tqb-label {
@@ -2898,13 +2902,13 @@ void nextTick(() => {
   font-weight: 750;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
 }
 
 .tqb-gh-link {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   text-decoration: none;
 
   &:hover {
@@ -2965,8 +2969,8 @@ void nextTick(() => {
 
   &:hover:not(:disabled) {
     background: var(--bulma-link-soft, rgba(79, 70, 229, 0.06));
-    border-color: #4f46e5;
-    color: #4f46e5;
+    border-color: var(--gitpulse-accent);
+    color: var(--gitpulse-accent);
   }
 
   &:disabled {
@@ -2998,14 +3002,14 @@ void nextTick(() => {
 /* ── Advanced filters collapsible ── */
 .advanced-section {
   margin: 0.85rem 0;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
-  background: rgba(248, 250, 252, 0.5);
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 50%, transparent);
   transition: border-color 0.15s ease;
 
   &.is-open {
-    border-color: rgba(79, 70, 229, 0.18);
-    background: rgba(248, 250, 252, 0.72);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 26%, transparent);
+    background: color-mix(in srgb, var(--gitpulse-surface-muted) 72%, transparent);
   }
 }
 
@@ -3018,24 +3022,24 @@ void nextTick(() => {
   border: 0;
   background: transparent;
   cursor: pointer;
-  color: #475569;
+  color: var(--gitpulse-text-muted);
   font-size: 0.78rem;
   font-weight: 650;
   transition: color 0.15s ease;
 
   &:hover {
-    color: #4f46e5;
+    color: var(--gitpulse-accent);
   }
 }
 
 .advanced-toggle__icon {
   transition: transform 0.2s ease;
-  color: #6b7280;
+  color: var(--gitpulse-text-muted);
   flex: 0 0 auto;
 
   &.rotated {
     transform: rotate(90deg);
-    color: #4f46e5;
+    color: var(--gitpulse-accent);
   }
 }
 
@@ -3050,20 +3054,20 @@ void nextTick(() => {
 .advanced-pr-band {
   padding: 0.75rem;
   margin-top: 0.5rem;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
-  background: rgba(236, 253, 245, 0.5);
+  background: var(--gitpulse-success-soft);
 }
 
 .preview-create-btn {
-  background: #4f46e5;
+  background: var(--gitpulse-accent);
   border-color: transparent;
   color: #ffffff;
   font-weight: 600;
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background: #4338ca;
+    background: var(--gitpulse-accent-hover);
     color: #ffffff;
   }
 
@@ -3082,13 +3086,13 @@ void nextTick(() => {
 
 .empty-drop-zone,
 .empty-state {
-  color: #64748b;
+  color: var(--gitpulse-text-muted);
   font-size: 0.85rem;
 }
 
 .empty-drop-zone {
   padding: 0.65rem;
-  border: 1px dashed var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px dashed var(--gitpulse-border);
   border-radius: 6px;
   text-align: center;
 }
@@ -3138,38 +3142,38 @@ void nextTick(() => {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+:global(html.dark) {
   .builtin-section,
   .custom-section,
   .search-fields-panel,
   .group-creator-strip,
   .pr-field-band,
   .source-selector {
-    background: rgba(30, 41, 59, 0.55);
+    background: color-mix(in srgb, var(--gitpulse-surface-muted) 78%, transparent);
   }
 
   .preview-panel {
-    background: var(--bulma-scheme-main, #111827);
+    background: var(--gitpulse-surface);
   }
 
   .tokenized-query-box {
-    background: rgba(30, 41, 59, 0.6);
+    background: color-mix(in srgb, var(--gitpulse-surface-muted) 82%, transparent);
   }
 
   .tqb-header {
-    background: rgba(79, 70, 229, 0.1);
+    background: var(--gitpulse-accent-soft);
   }
 
   .advanced-section {
-    background: rgba(30, 41, 59, 0.35);
+    background: color-mix(in srgb, var(--gitpulse-surface-muted) 58%, transparent);
 
     &.is-open {
-      background: rgba(30, 41, 59, 0.5);
+      background: color-mix(in srgb, var(--gitpulse-surface-muted) 76%, transparent);
     }
   }
 
   .advanced-pr-band {
-    background: rgba(6, 78, 59, 0.2);
+    background: var(--gitpulse-success-soft);
   }
 
   .builtin-row,
@@ -3182,7 +3186,7 @@ void nextTick(() => {
   .group-choice,
   .segmented-button,
   .source-option {
-    background: var(--bulma-scheme-main, #111827);
+    background: var(--gitpulse-surface);
   }
 
   .tree-tab-main small,
@@ -3191,25 +3195,25 @@ void nextTick(() => {
   .chip-label,
   .group-creator-copy,
   .tab-subtitle-button {
-    color: #94a3b8;
+    color: var(--gitpulse-text-subtle);
   }
 
   .group-insight-card span {
-    color: #94a3b8;
+    color: var(--gitpulse-text-subtle);
   }
 
   .empty-drop-zone,
   .empty-state {
-    color: #94a3b8;
+    color: var(--gitpulse-text-subtle);
   }
 
   .advanced-toggle__icon {
-    color: #6b7280;
+    color: var(--gitpulse-text-muted);
   }
 
   .group-view-badge {
-    background: rgba(129, 140, 248, 0.15);
-    color: #a5b4fc;
+    background: var(--gitpulse-accent-soft);
+    color: var(--gitpulse-accent);
   }
 }
 

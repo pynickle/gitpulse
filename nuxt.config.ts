@@ -95,6 +95,17 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/i18n', '@nuxt/image', 'nuxt-auth-utils', '@nuxtjs/mdc', '@nuxtjs/color-mode'],
 
+  colorMode: {
+    preference: 'system',
+    fallback: 'light',
+    classPrefix: '',
+    classSuffix: '',
+    dataValue: 'theme',
+    storage: 'localStorage',
+    storageKey: 'gitpulse-color-mode',
+    disableTransition: true,
+  },
+
   mdc: {
     headings: {
       anchorLinks: {

@@ -328,13 +328,6 @@ watch(
   },
   { immediate: true }
 );
-
-useHead({
-  htmlAttrs: {
-    'data-color-mode': 'light',
-    'data-light-theme': 'light',
-  },
-});
 </script>
 
 <style scoped lang="scss">
@@ -378,7 +371,7 @@ useHead({
 
   &:hover,
   &--active {
-    scrollbar-color: #d0d5dd transparent;
+    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
   }
 
   &::-webkit-scrollbar {
@@ -397,7 +390,7 @@ useHead({
 
   &:hover::-webkit-scrollbar-thumb,
   &--active::-webkit-scrollbar-thumb {
-    background-color: #d0d5dd;
+    background-color: var(--gitpulse-scrollbar-thumb);
   }
 }
 

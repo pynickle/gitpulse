@@ -61,8 +61,8 @@ const handleGoToDashboard = async () => {
 .auth-shell__box {
   width: min(100%, 32rem);
   padding: 2.5rem 2.25rem;
-  border: 1px solid rgba(10, 10, 10, 0.06);
-  box-shadow: 0 24px 60px rgba(10, 10, 10, 0.08);
+  border: 1px solid var(--gitpulse-border);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .auth-shell__eyebrow {

@@ -2,9 +2,10 @@
 
 .card {
   margin: 0.25rem;
-  --bulma-shadow:
-    0 0.25em 0.5em -0.25em hsla(221deg, 14%, 4%, 0.1), 0 0px 0 1px hsla(221deg, 14%, 4%, 0.02);
-  border: 1px solid iv.$grey-lighter;
+  --bulma-shadow: var(--gitpulse-shadow-card);
+  border: 1px solid var(--gitpulse-border, #{iv.$grey-lighter});
+  background-color: var(--gitpulse-surface);
+  color: var(--bulma-text, var(--gitpulse-text));
 }
 
 .dashboard-list-card {
@@ -23,16 +24,14 @@
 
 .dashboard-list-card:hover,
 .dashboard-list-card:focus-within {
-  border-color: #3e8ed0;
-  background-color: #fbfdff;
-  box-shadow:
-    0 0.45rem 1rem -0.35rem hsla(221deg, 14%, 4%, 0.2),
-    0 0 0 1px hsla(207deg, 61%, 53%, 0.26);
+  border-color: var(--gitpulse-link, #3e8ed0);
+  background-color: var(--gitpulse-surface-hover, #fbfdff);
+  box-shadow: var(--gitpulse-shadow-card-hover);
 }
 
 .dashboard-list-card:hover .dashboard-list-card__title,
 .dashboard-list-card:focus-within .dashboard-list-card__title {
-  color: #3e8ed0;
+  color: var(--gitpulse-link, #3e8ed0);
 }
 
 .dashboard-list-card__content {
@@ -107,9 +106,9 @@
 
 .dashboard-list-card__number {
   margin: 0 0.35rem;
-  border: 1px solid hsla(207deg, 61%, 53%, 0.32);
-  background-color: hsla(207deg, 61%, 53%, 0.1);
-  color: #216aa8;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-info) 32%, transparent);
+  background-color: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
   font-weight: 700;
   vertical-align: 0.08em;
 }

@@ -283,8 +283,8 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 
 // Sidebar card wrapper
 .sidebar-card {
-  background: #f8f9fa;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface-muted);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -294,8 +294,8 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #eaecef;
-  background: #fff;
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface);
 }
 
 .sidebar-card__header-left {
@@ -311,7 +311,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   letter-spacing: -0.01em;
 }
 
@@ -325,13 +325,13 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   border: none;
   background: transparent;
   border-radius: 6px;
-  color: #999;
+  color: var(--gitpulse-text-subtle);
   cursor: pointer;
   transition: all 0.12s ease;
 
   &:hover:not(:disabled) {
-    background: #eef2ff;
-    color: $brand-primary;
+    background: var(--gitpulse-accent-soft);
+    color: var(--gitpulse-accent);
   }
 
   &--hidden {
@@ -345,7 +345,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 
 .sidebar-card__empty {
   font-size: 12px;
-  color: #999;
+  color: var(--gitpulse-text-subtle);
   margin: 0;
 }
 
@@ -375,7 +375,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--gitpulse-overlay-bg);
   backdrop-filter: blur(6px);
 }
 
@@ -386,11 +386,9 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   max-height: 78vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--gitpulse-surface);
   border-radius: 14px;
-  box-shadow:
-    0 20px 40px -8px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(0, 0, 0, 0.03);
+  box-shadow: var(--gitpulse-shadow-raised);
   overflow: hidden;
 }
 
@@ -405,7 +403,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 .label-editor-title {
   font-size: 14px;
   font-weight: 600;
-  color: #111;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -420,13 +418,13 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   border: none;
   background: transparent;
   border-radius: 6px;
-  color: #bbb;
+  color: var(--gitpulse-text-subtle);
   cursor: pointer;
   transition: all 0.12s ease;
 
   &:hover {
-    background: #f0f0f0;
-    color: #555;
+    background: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text);
   }
 
   &:disabled {
@@ -450,9 +448,9 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   gap: 8px;
   padding: 8px 10px;
   margin: 4px 8px 8px;
-  background: #fef2f2;
+  background: var(--gitpulse-danger-soft);
   border-radius: 8px;
-  color: #dc2626;
+  color: var(--gitpulse-danger);
   font-size: 12px;
 }
 
@@ -467,11 +465,11 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   border: none;
   background: transparent;
   border-radius: 4px;
-  color: #dc2626;
+  color: var(--gitpulse-danger);
   cursor: pointer;
 
   &:hover {
-    background: rgba(220, 38, 38, 0.1);
+    background: var(--gitpulse-danger-soft);
   }
 }
 
@@ -482,7 +480,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   justify-content: center;
   gap: 8px;
   padding: 36px 0;
-  color: #999;
+  color: var(--gitpulse-text-subtle);
   font-size: 13px;
 }
 
@@ -507,11 +505,11 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   user-select: none;
 
   &:hover {
-    background: #f5f6f8;
+    background: var(--gitpulse-surface-hover);
   }
 
   &.is-selected {
-    background: #eef2ff;
+    background: var(--gitpulse-accent-soft);
   }
 }
 
@@ -536,12 +534,12 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 .label-row-check-box {
   width: 16px;
   height: 16px;
-  border: 1.5px solid #d0d5dd;
+  border: 1.5px solid var(--gitpulse-input-border);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--gitpulse-input-bg);
   transition: all 0.12s ease;
   color: transparent;
   pointer-events: none;
@@ -549,17 +547,17 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   .label-row-check input:checked + & {
     background: $brand-primary;
     border-color: $brand-primary;
-    color: #fff;
+    color: var(--gitpulse-surface);
   }
 
   .label-row:hover & {
-    border-color: #aab0ba;
+    border-color: var(--gitpulse-border-strong);
   }
 
   .label-row.is-selected & {
     background: $brand-primary;
     border-color: $brand-primary;
-    color: #fff;
+    color: var(--gitpulse-surface);
   }
 }
 
@@ -585,14 +583,14 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 .label-row-name {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   line-height: 1.4;
 }
 
 // Description — wraps naturally, muted color
 .label-row-desc {
   font-size: 12px;
-  color: #999;
+  color: var(--gitpulse-text-muted);
   line-height: 1.4;
   word-break: break-word;
 }
@@ -601,7 +599,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 .label-editor-empty {
   padding: 28px 0;
   text-align: center;
-  color: #bbb;
+  color: var(--gitpulse-text-subtle);
   font-size: 13px;
 }
 
@@ -619,7 +617,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 500;
-  color: #777;
+  color: var(--gitpulse-text-muted);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -627,8 +625,8 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   transition: all 0.12s ease;
 
   &:hover:not(:disabled) {
-    background: #f0f0f0;
-    color: #333;
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
 
   &:disabled {
@@ -644,7 +642,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   padding: 5px 14px;
   font-size: 12px;
   font-weight: 500;
-  color: #fff;
+  color: var(--gitpulse-surface);
   background: $brand-primary;
   border: none;
   border-radius: 6px;

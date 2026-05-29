@@ -106,10 +106,6 @@ function getGroupIcon(icon?: string) {
   padding: 0.75rem 0;
   background: transparent;
 
-  @media (prefers-color-scheme: dark) {
-    background: transparent;
-  }
-
   &__avatar {
     display: flex;
     align-items: center;
@@ -181,7 +177,7 @@ function getGroupIcon(icon?: string) {
       color 0.15s ease;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
+      background: var(--bulma-background-hover, rgba(0, 0, 0, 0.05));
       color: var(--bulma-text-strong, #1e293b);
     }
 
@@ -191,12 +187,12 @@ function getGroupIcon(icon?: string) {
     }
 
     &:active {
-      background: rgba(0, 0, 0, 0.08);
+      background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
     }
 
     &.is-active {
-      background: #eef2ff;
-      color: #4f46e5;
+      background: var(--gitpulse-surface-active);
+      color: var(--gitpulse-accent);
     }
   }
 
@@ -211,29 +207,8 @@ function getGroupIcon(icon?: string) {
     width: 20px;
     height: 1px;
     border-radius: 1px;
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--gitpulse-border);
     margin-bottom: 0.3rem;
-
-    @media (prefers-color-scheme: dark) {
-      background: rgba(255, 255, 255, 0.08);
-    }
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .activity-bar__icon-btn:hover {
-    background: rgba(255, 255, 255, 0.07);
-    color: #e2e8f0;
-  }
-
-  .activity-bar__icon-btn.is-active {
-    background: rgba(99, 102, 241, 0.2);
-    color: #a5b4fc;
-  }
-
-  .activity-bar__avatar-placeholder {
-    background: rgba(255, 255, 255, 0.1);
-    color: #9ca3af;
   }
 }
 

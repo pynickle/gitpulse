@@ -111,12 +111,12 @@ watch(activeDetailKey, () => {
       @back="emit('back')"
       @home="emit('home')"
     >
-      <div class="detail-pane-stage has-background-white is-clipped">
+      <div class="detail-pane-stage is-clipped">
         <Transition name="detail-pane-slide">
-          <div :key="activeDetailKey" class="detail-pane has-background-white">
+          <div :key="activeDetailKey" class="detail-pane">
             <div
               v-if="isContentLoading"
-              class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center has-background-white-ter"
+              class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
             >
               <div class="box has-text-centered py-5 px-6 shadow-md detail-loading-box">
                 <Loader2Icon
@@ -132,10 +132,7 @@ watch(activeDetailKey, () => {
               </div>
             </div>
 
-            <div
-              v-else-if="activeDetailPane?.error"
-              class="detail-feedback-pane has-background-white-ter"
-            >
+            <div v-else-if="activeDetailPane?.error" class="detail-feedback-pane">
               <div class="notification is-danger is-light mb-0 detail-feedback-box">
                 <p class="is-size-6 has-text-weight-semibold mb-2">
                   {{ activeDetailPane.loadingTitle }}
@@ -174,6 +171,7 @@ watch(activeDetailKey, () => {
   position: relative;
   height: 100%;
   min-height: 0;
+  background: var(--gitpulse-surface);
 }
 
 .detail-pane {
@@ -183,17 +181,20 @@ watch(activeDetailKey, () => {
   min-height: 0;
   padding: 2rem 8rem;
   overflow: hidden;
+  background: var(--gitpulse-surface);
 }
 
 .detail-loading-pane {
   height: 100%;
   margin: -2rem -8rem;
+  background: var(--gitpulse-surface-muted);
 }
 
 .detail-feedback-pane {
   height: 100%;
   margin: -2rem -8rem;
   padding: 2rem;
+  background: var(--gitpulse-surface-muted);
 }
 
 .detail-loading-box {
@@ -245,8 +246,6 @@ watch(activeDetailKey, () => {
 }
 
 .shadow-md {
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 </style>

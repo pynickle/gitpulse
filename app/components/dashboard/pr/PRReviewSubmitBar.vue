@@ -244,21 +244,21 @@ const handleBodyInput = (event: Event) => {
 .pr-review-submit-bar {
   height: 100%;
   min-width: 0;
-  border-left: 1px solid #d0d7de;
-  background: #f6f8fa;
+  border-left: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface-muted);
   display: flex;
   flex-direction: column;
   transition: width 0.2s ease;
 }
 
 .pr-review-submit-bar--collapsed {
-  background: #ffffff;
+  background: var(--gitpulse-surface);
 }
 
 .pr-review-submit-bar__header,
 .pr-review-submit-bar__footer {
   padding: 0.75rem;
-  border-bottom: 1px solid #d0d7de;
+  border-bottom: 1px solid var(--gitpulse-border);
 }
 
 .pr-review-submit-bar__header {
@@ -285,7 +285,7 @@ const handleBodyInput = (event: Event) => {
 .pr-review-submit-bar__collapsed-handle {
   border: 0;
   background: transparent;
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   cursor: pointer;
 }
 
@@ -301,8 +301,8 @@ const handleBodyInput = (event: Event) => {
 
 .pr-review-submit-bar__collapse-button:hover,
 .pr-review-submit-bar__delete-button:hover {
-  background: #eaeef2;
-  color: #24292f;
+  background: var(--gitpulse-surface-hover);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .pr-review-submit-bar__collapsed-handle {
@@ -328,8 +328,8 @@ const handleBodyInput = (event: Event) => {
   width: 1.45rem;
   height: 1.45rem;
   border-radius: 50%;
-  background: #fff8c5;
-  color: #9a6700;
+  background: var(--gitpulse-draft-bg);
+  color: var(--gitpulse-warning);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -337,7 +337,7 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__footer {
-  border-top: 1px solid #d0d7de;
+  border-top: 1px solid var(--gitpulse-border);
   border-bottom: 0;
 }
 
@@ -348,9 +348,9 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__section {
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--gitpulse-surface);
   overflow: hidden;
 }
 
@@ -362,8 +362,8 @@ const handleBodyInput = (event: Event) => {
   width: 100%;
   min-height: 2.15rem;
   border: 0;
-  background: #ffffff;
-  color: #656d76;
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-text-muted);
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -375,7 +375,7 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__section-header:hover {
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .pr-review-submit-bar__section-chevron {
@@ -388,14 +388,14 @@ const handleBodyInput = (event: Event) => {
 
 .pr-review-submit-bar__section-body {
   padding: 0.65rem;
-  border-top: 1px solid #e1e4e8;
+  border-top: 1px solid var(--gitpulse-border);
 }
 
 .pr-review-submit-bar__event-option {
   min-height: 2.15rem;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -416,9 +416,9 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__event-option--active {
-  border-color: #0969da;
-  background: #ddf4ff;
-  color: #0969da;
+  border-color: var(--gitpulse-info);
+  background: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
 }
 
 .pr-review-submit-bar__textarea {
@@ -432,8 +432,8 @@ const handleBodyInput = (event: Event) => {
   height: 1.25rem;
   margin-left: auto;
   border-radius: 999px;
-  background: #f6f8fa;
-  color: #656d76;
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -446,10 +446,10 @@ const handleBodyInput = (event: Event) => {
   justify-content: space-between;
   gap: 0.65rem;
   padding: 0.65rem;
-  border: 1px solid rgba(154, 103, 0, 0.18);
-  border-left: 3px solid #d4a72c;
+  border: 1px solid var(--gitpulse-draft-border);
+  border-left: 3px solid var(--gitpulse-warning);
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--gitpulse-surface);
   overflow-wrap: anywhere;
 }
 
@@ -469,7 +469,7 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__draft-path {
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   font-family:
     ui-monospace,
     SFMono-Regular,
@@ -482,17 +482,17 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__draft-body {
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.78rem;
 }
 
 .pr-review-submit-bar__empty {
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   font-size: 0.78rem;
 }
 
 .pr-review-submit-bar__submit--approve {
-  background: #2da44e;
-  border-color: #2da44e;
+  background: var(--gitpulse-success);
+  border-color: var(--gitpulse-success);
 }
 </style>

@@ -121,16 +121,16 @@ const stateIcon = computed(() => {
 
 const stateColor = computed(() => {
   if (displayState.value === 'open') {
-    return { color: '#1a7f37' };
+    return { color: 'var(--gitpulse-success)' };
   } else if (displayState.value === 'merged') {
-    return { color: '#0969da' };
+    return { color: 'var(--gitpulse-info)' };
   } else {
-    return { color: '#000000' };
+    return { color: 'var(--gitpulse-text-strong)' };
   }
 });
 
 const typeStyle = {
-  backgroundColor: '#f0f0f0',
-  color: '#333',
+  backgroundColor: 'var(--gitpulse-surface-muted)',
+  color: 'var(--gitpulse-text-strong)',
 };
 </script>

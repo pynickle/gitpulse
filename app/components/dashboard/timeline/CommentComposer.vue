@@ -248,13 +248,11 @@ const submitComment = async () => {
 .comment-composer__collapsed,
 .comment-composer__panel {
   width: 100%;
-  border: 1px solid rgba(219, 219, 219, 0.9);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
   backdrop-filter: blur(10px);
-  box-shadow:
-    0 12px 24px rgba(15, 23, 42, 0.08),
-    0 4px 10px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .comment-composer__collapsed {
@@ -277,8 +275,8 @@ const submitComment = async () => {
 
 .comment-composer__preview {
   padding: 1rem;
-  background: #f8f9fa;
-  border: 1px solid #e5e7eb;
+  background: var(--gitpulse-surface-muted);
+  border: 1px solid var(--gitpulse-border);
 }
 
 .comment-composer__footer {

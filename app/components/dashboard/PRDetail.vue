@@ -420,13 +420,6 @@ watch(
   },
   { immediate: true }
 );
-
-useHead({
-  htmlAttrs: {
-    'data-color-mode': 'light',
-    'data-light-theme': 'light',
-  },
-});
 </script>
 
 <style scoped lang="scss">
@@ -464,7 +457,7 @@ useHead({
 
   &:hover,
   &--active {
-    scrollbar-color: #d0d5dd transparent;
+    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
   }
 
   &::-webkit-scrollbar {
@@ -483,7 +476,7 @@ useHead({
 
   &:hover::-webkit-scrollbar-thumb,
   &--active::-webkit-scrollbar-thumb {
-    background-color: #d0d5dd;
+    background-color: var(--gitpulse-scrollbar-thumb);
   }
 }
 
@@ -512,19 +505,19 @@ useHead({
   gap: 8px;
   width: 100%;
   padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #eaecef;
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: var(--gitpulse-text-muted);
   cursor: pointer;
   transition: all 0.12s ease;
 
   &:hover:not(:disabled) {
-    background: #f8f9fa;
-    border-color: #d0d5dd;
-    color: #333;
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border-strong);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
 
   &:disabled {

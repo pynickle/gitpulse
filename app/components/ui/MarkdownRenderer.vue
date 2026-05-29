@@ -67,6 +67,7 @@ watch(
 </template>
 
 <style lang="scss" src="@primer/css/color-modes/themes/light.scss" />
+<style lang="scss" src="@primer/css/color-modes/themes/dark.scss" />
 <style lang="scss" src="@primer/css/primitives/index.scss" />
 <style lang="scss" src="@primer/css/markdown/index.scss" />
 <style lang="scss">

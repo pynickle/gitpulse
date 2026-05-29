@@ -97,9 +97,9 @@ onBeforeUnmount(clearResetTimer);
 .markdown-code-block {
   overflow: hidden;
   margin: 1rem 0;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
-  background-color: #f6f8fa;
+  background-color: var(--gitpulse-code-bg);
 }
 
 .markdown-code-block__header {
@@ -109,7 +109,7 @@ onBeforeUnmount(clearResetTimer);
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.25rem 0.5rem 0.25rem 0.75rem;
-  border-bottom: 1px solid #d0d7de;
+  border-bottom: 1px solid var(--gitpulse-border);
 }
 
 .markdown-code-block__language,
@@ -120,7 +120,7 @@ onBeforeUnmount(clearResetTimer);
 
 .markdown-code-block__language {
   overflow: hidden;
-  color: #57606a;
+  color: var(--gitpulse-text-muted);
   font-family:
     ui-monospace, SFMono-Regular, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.75rem;
@@ -140,20 +140,20 @@ onBeforeUnmount(clearResetTimer);
   border: 1px solid transparent;
   border-radius: 4px;
   background-color: transparent;
-  color: #57606a;
+  color: var(--gitpulse-text-muted);
   cursor: pointer;
   font-size: 0.75rem;
   line-height: 1;
 }
 
 .markdown-code-block__copy:hover {
-  border-color: #d0d7de;
-  background-color: #ffffff;
-  color: #24292f;
+  border-color: var(--gitpulse-border-strong);
+  background-color: var(--gitpulse-surface);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .markdown-code-block__copy:focus-visible {
-  outline: 2px solid #0969da;
+  outline: 2px solid var(--gitpulse-focus-ring);
   outline-offset: 2px;
 }
 

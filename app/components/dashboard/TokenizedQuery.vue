@@ -269,7 +269,7 @@ const tokens = computed<Token[]>(() => {
   color: #ef4444;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(html.dark) {
   .tq-token--keyword .tq-seg--bareword {
     color: #e2e8f0;
   }

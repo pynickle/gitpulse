@@ -185,7 +185,7 @@ const handlePatSubmit = async () => {
 .auth-gateway__divider::before {
   position: absolute;
   inset: 50% 0 auto;
-  border-top: 1px solid rgba(10, 10, 10, 0.08);
+  border-top: 1px solid var(--gitpulse-border);
   content: '';
 }
 
@@ -197,8 +197,8 @@ const handlePatSubmit = async () => {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6b7280;
-  background: #fff;
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface);
 }
 
 .auth-gateway__label {
@@ -207,7 +207,7 @@ const handlePatSubmit = async () => {
 }
 
 .auth-gateway__input-icon {
-  color: #6b7280;
+  color: var(--gitpulse-text-muted);
 }
 
 .auth-gateway__help {

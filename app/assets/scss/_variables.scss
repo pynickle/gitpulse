@@ -1,2 +1,10 @@
 // Brand Colors
 $brand-primary: #4f46e5;
+$brand-primary-dark: #a5b4fc;
+
+// Theme motion
+$theme-transition:
+  background-color 0.16s ease,
+  border-color 0.16s ease,
+  color 0.16s ease,
+  box-shadow 0.16s ease;

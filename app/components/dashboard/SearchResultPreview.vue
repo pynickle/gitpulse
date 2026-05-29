@@ -238,16 +238,16 @@ const getStateIcon = (item: SearchResultItem) => {
   display: flex;
   gap: 0.55rem;
   padding: 0.5rem 0.6rem;
-  border: 1px solid var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
-  background: var(--bulma-scheme-main, #ffffff);
+  background: var(--gitpulse-surface);
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 
   &:hover {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.15);
+    border-color: var(--gitpulse-accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--gitpulse-accent) 20%, transparent);
   }
 }
 
@@ -255,15 +255,15 @@ const getStateIcon = (item: SearchResultItem) => {
   flex: 0 0 auto;
   padding-top: 0.15rem;
   line-height: 1;
-  color: #6b7280;
+  color: var(--gitpulse-text-muted);
 }
 
 .srp-card--open .srp-card__state {
-  color: #1a7f37;
+  color: var(--gitpulse-success);
 }
 
 .srp-card--closed .srp-card__state {
-  color: #6b7280;
+  color: var(--gitpulse-text-muted);
 }
 
 .srp-card__body {
@@ -305,7 +305,7 @@ const getStateIcon = (item: SearchResultItem) => {
 
 .srp-card__number {
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
   flex: 0 0 auto;
 }
 
@@ -333,8 +333,8 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-tag--overflow {
-  background: var(--bulma-border-light, rgba(10, 10, 10, 0.08));
-  color: var(--bulma-text-light, #6b7280);
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
 }
 
 .srp-empty {
@@ -342,17 +342,7 @@ const getStateIcon = (item: SearchResultItem) => {
   text-align: center;
   color: var(--bulma-text-light, #94a3b8);
   font-size: 0.82rem;
-  border: 1px dashed var(--bulma-border-light, rgba(10, 10, 10, 0.08));
+  border: 1px dashed var(--gitpulse-border);
   border-radius: 6px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .srp-card {
-    background: var(--bulma-scheme-main, #111827);
-  }
-
-  .srp-card__title {
-    color: #f1f5f9;
-  }
 }
 </style>

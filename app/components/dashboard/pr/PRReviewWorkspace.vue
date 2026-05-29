@@ -164,7 +164,7 @@ const totalDeletions = computed(() =>
 .pr-review-workspace {
   height: 100%;
   min-height: 0;
-  background: #ffffff;
+  background: var(--gitpulse-surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -173,8 +173,8 @@ const totalDeletions = computed(() =>
 .pr-review-workspace__header {
   min-height: 3.25rem;
   padding: 0.45rem 0.75rem;
-  border-bottom: 1px solid #d0d7de;
-  background: #f6f8fa;
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface-muted);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -192,7 +192,7 @@ const totalDeletions = computed(() =>
 
 .pr-review-workspace__header-icon {
   flex: none;
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
 }
 
 .pr-review-workspace__title-block {
@@ -200,13 +200,13 @@ const totalDeletions = computed(() =>
 }
 
 .pr-review-workspace__eyebrow {
-  color: #656d76;
+  color: var(--gitpulse-text-muted);
   font-size: 0.72rem;
   font-weight: 600;
 }
 
 .pr-review-workspace__title {
-  color: #24292f;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.9rem;
   font-weight: 700;
   overflow: hidden;
@@ -222,10 +222,10 @@ const totalDeletions = computed(() =>
 .pr-review-workspace__summary-pill {
   min-height: 1.65rem;
   padding: 0.18rem 0.5rem;
-  border: 1px solid #d0d7de;
+  border: 1px solid var(--gitpulse-border);
   border-radius: 999px;
-  background: #ffffff;
-  color: #656d76;
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-text-muted);
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -234,17 +234,17 @@ const totalDeletions = computed(() =>
 }
 
 .pr-review-workspace__summary-pill--add {
-  color: #1a7f37;
+  color: var(--gitpulse-success);
 }
 
 .pr-review-workspace__summary-pill--delete {
-  color: #cf222e;
+  color: var(--gitpulse-danger);
 }
 
 .pr-review-workspace__summary-pill--draft {
-  border-color: rgba(191, 135, 0, 0.35);
-  background: #fff8c5;
-  color: #9a6700;
+  border-color: var(--gitpulse-draft-border);
+  background: var(--gitpulse-draft-bg);
+  color: var(--gitpulse-warning);
 }
 
 .pr-review-workspace__grid {

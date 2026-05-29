@@ -113,28 +113,28 @@ const stateIcon = computed(() => {
 <style scoped lang="scss">
 .review-item {
   border-radius: 16px;
-  background-color: #f8f9fa;
-  border-left: 4px solid var(--review-accent, #d0d7de);
+  background-color: var(--gitpulse-surface-muted);
+  border-left: 4px solid var(--review-accent, var(--gitpulse-border-strong));
 }
 
 .review-item--approved {
-  --review-accent: #1f883d;
-  background-color: #f4fbf6;
+  --review-accent: var(--gitpulse-success);
+  background-color: var(--gitpulse-success-soft);
 }
 
 .review-item--changes-requested {
-  --review-accent: #cf222e;
-  background-color: #fdf4f5;
+  --review-accent: var(--gitpulse-danger);
+  background-color: var(--gitpulse-danger-soft);
 }
 
 .review-item--dismissed {
-  --review-accent: #6e7781;
-  background-color: #f6f7f9;
+  --review-accent: var(--gitpulse-text-subtle);
+  background-color: var(--gitpulse-surface-muted);
 }
 
 .review-item--pending {
-  --review-accent: #9a6700;
-  background-color: #fdf9ef;
+  --review-accent: var(--gitpulse-warning);
+  background-color: var(--gitpulse-warning-soft);
 }
 
 .review-item__avatar {
@@ -159,7 +159,7 @@ const stateIcon = computed(() => {
   border-radius: 50%;
   flex-shrink: 0;
   color: #fff;
-  background: var(--review-accent, #d0d7de);
+  background: var(--review-accent, var(--gitpulse-border-strong));
 }
 
 .review-item__author {
@@ -167,7 +167,7 @@ const stateIcon = computed(() => {
 }
 
 .review-item__action {
-  color: #57606a;
+  color: var(--gitpulse-text-muted);
   font-size: 0.9rem;
 }
 
@@ -178,7 +178,7 @@ const stateIcon = computed(() => {
 .review-item__body {
   margin-top: 0.875rem;
   padding-top: 0.875rem;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  border-top: 1px solid var(--gitpulse-border);
 }
 
 .review-item__body :deep(*:last-child) {

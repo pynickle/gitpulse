@@ -113,8 +113,8 @@ const handleUnlock = async () => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: rgba(79, 70, 229, 0.1); /* Primary color with opacity */
-  color: #4f46e5;
+  background: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-accent);
 }
 
 .personal-lock-form__label {
@@ -123,7 +123,7 @@ const handleUnlock = async () => {
 }
 
 .personal-lock-form__input-icon {
-  color: #6b7280;
+  color: var(--gitpulse-text-muted);
 }
 
 .personal-lock-form__checkbox {

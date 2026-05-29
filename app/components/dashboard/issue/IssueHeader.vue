@@ -90,12 +90,13 @@ const stateIcon = computed(() => {
 
 const stateColor = computed(() => {
   return {
-    color: props.issue?.state === 'open' ? '#1a7f37' : '#000000',
+    color:
+      props.issue?.state === 'open' ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
   };
 });
 
 const typeStyle = {
-  backgroundColor: '#f0f0f0',
-  color: '#333',
+  backgroundColor: 'var(--gitpulse-surface-muted)',
+  color: 'var(--gitpulse-text-strong)',
 };
 </script>

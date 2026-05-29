@@ -1,7 +1,129 @@
 @use 'variables' as *;
 
+:root {
+  color-scheme: light;
+
+  --gitpulse-page-bg: #f8fafc;
+  --gitpulse-shell-bg: #f1f5f9;
+  --gitpulse-surface: #ffffff;
+  --gitpulse-surface-muted: #f8fafc;
+  --gitpulse-surface-raised: #ffffff;
+  --gitpulse-surface-hover: #fbfdff;
+  --gitpulse-surface-active: #eef2ff;
+  --gitpulse-overlay-bg: rgba(15, 23, 42, 0.68);
+  --gitpulse-border: rgba(15, 23, 42, 0.1);
+  --gitpulse-border-strong: rgba(15, 23, 42, 0.16);
+  --gitpulse-text: #334155;
+  --gitpulse-text-strong: #0f172a;
+  --gitpulse-text-muted: #64748b;
+  --gitpulse-text-subtle: #94a3b8;
+  --gitpulse-accent: #4f46e5;
+  --gitpulse-accent-hover: #4338ca;
+  --gitpulse-accent-soft: rgba(79, 70, 229, 0.1);
+  --gitpulse-link: #1f6feb;
+  --gitpulse-success: #1a7f37;
+  --gitpulse-success-soft: rgba(34, 197, 94, 0.12);
+  --gitpulse-danger: #cf222e;
+  --gitpulse-danger-soft: rgba(248, 81, 73, 0.1);
+  --gitpulse-warning: #bf8700;
+  --gitpulse-warning-soft: rgba(245, 158, 11, 0.14);
+  --gitpulse-info: #0969da;
+  --gitpulse-info-soft: rgba(9, 105, 218, 0.1);
+  --gitpulse-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --gitpulse-shadow-card-hover:
+    0 0.45rem 1rem -0.35rem rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(79, 70, 229, 0.2);
+  --gitpulse-shadow-raised: 0 18px 48px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(15, 23, 42, 0.06);
+  --gitpulse-input-bg: #ffffff;
+  --gitpulse-input-border: rgba(15, 23, 42, 0.16);
+  --gitpulse-scrollbar-thumb: #cbd5e1;
+  --gitpulse-markdown-bg: #ffffff;
+  --gitpulse-code-bg: #f6f8fa;
+  --gitpulse-focus-ring: #0969da;
+  --gitpulse-unread-bg: rgba(9, 105, 218, 0.08);
+  --gitpulse-skeleton-bg: #f1f5f9;
+  --gitpulse-skeleton-shimmer: linear-gradient(90deg, #f6f8fa, #eaeef2, #f6f8fa);
+  --gitpulse-grid-line: rgba(208, 215, 222, 0.35);
+  --gitpulse-diff-add-bg: #e6ffec;
+  --gitpulse-diff-delete-bg: #ffebe9;
+  --gitpulse-diff-hunk-bg: #ddf4ff;
+  --gitpulse-diff-empty-bg: #f6f8fa;
+  --gitpulse-draft-bg: #fff8c5;
+  --gitpulse-draft-border: rgba(154, 103, 0, 0.25);
+  --gitpulse-purple: #8250df;
+  --gitpulse-purple-soft: #f5f0ff;
+
+  --bulma-primary-h: 243deg;
+  --bulma-primary-s: 75%;
+  --bulma-primary-l: 59%;
+  --bulma-link-h: 215deg;
+  --bulma-link-s: 84%;
+  --bulma-link-l: 52%;
+  --bulma-background-hover: rgba(15, 23, 42, 0.045);
+  --bulma-border-hover: rgba(15, 23, 42, 0.22);
+  --bulma-link-soft: rgba(79, 70, 229, 0.08);
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --gitpulse-page-bg: #111318;
+  --gitpulse-shell-bg: #171a21;
+  --gitpulse-surface: #1b1f27;
+  --gitpulse-surface-muted: #20252f;
+  --gitpulse-surface-raised: #222832;
+  --gitpulse-surface-hover: #252c37;
+  --gitpulse-surface-active: rgba(129, 140, 248, 0.16);
+  --gitpulse-overlay-bg: rgba(5, 7, 12, 0.78);
+  --gitpulse-border: rgba(230, 237, 243, 0.12);
+  --gitpulse-border-strong: rgba(230, 237, 243, 0.2);
+  --gitpulse-text: #cbd5e1;
+  --gitpulse-text-strong: #f1f5f9;
+  --gitpulse-text-muted: #9aa4b2;
+  --gitpulse-text-subtle: #7f8a9a;
+  --gitpulse-accent: #a5b4fc;
+  --gitpulse-accent-hover: #c4b5fd;
+  --gitpulse-accent-soft: rgba(165, 180, 252, 0.16);
+  --gitpulse-link: #79c0ff;
+  --gitpulse-success: #7ee787;
+  --gitpulse-success-soft: rgba(126, 231, 135, 0.14);
+  --gitpulse-danger: #ff7b72;
+  --gitpulse-danger-soft: rgba(255, 123, 114, 0.14);
+  --gitpulse-warning: #f2cc60;
+  --gitpulse-warning-soft: rgba(242, 204, 96, 0.16);
+  --gitpulse-info: #79c0ff;
+  --gitpulse-info-soft: rgba(121, 192, 255, 0.14);
+  --gitpulse-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.34);
+  --gitpulse-shadow-card-hover:
+    0 0.65rem 1.2rem -0.45rem rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(165, 180, 252, 0.24);
+  --gitpulse-shadow-raised: 0 22px 58px rgba(0, 0, 0, 0.36), 0 5px 18px rgba(0, 0, 0, 0.24);
+  --gitpulse-input-bg: #151922;
+  --gitpulse-input-border: rgba(230, 237, 243, 0.16);
+  --gitpulse-scrollbar-thumb: #4b5563;
+  --gitpulse-markdown-bg: #0d1117;
+  --gitpulse-code-bg: #161b22;
+  --gitpulse-focus-ring: #79c0ff;
+  --gitpulse-unread-bg: rgba(121, 192, 255, 0.12);
+  --gitpulse-skeleton-bg: #20252f;
+  --gitpulse-skeleton-shimmer: linear-gradient(90deg, #20252f, #2a3140, #20252f);
+  --gitpulse-grid-line: rgba(230, 237, 243, 0.1);
+  --gitpulse-diff-add-bg: rgba(46, 160, 67, 0.18);
+  --gitpulse-diff-delete-bg: rgba(248, 81, 73, 0.18);
+  --gitpulse-diff-hunk-bg: rgba(121, 192, 255, 0.14);
+  --gitpulse-diff-empty-bg: #151922;
+  --gitpulse-draft-bg: rgba(242, 204, 96, 0.14);
+  --gitpulse-draft-border: rgba(242, 204, 96, 0.28);
+  --gitpulse-purple: #d2a8ff;
+  --gitpulse-purple-soft: rgba(210, 168, 255, 0.14);
+
+  --bulma-background-hover: rgba(255, 255, 255, 0.065);
+  --bulma-border-hover: rgba(255, 255, 255, 0.22);
+  --bulma-link-soft: rgba(165, 180, 252, 0.14);
+}
+
 body {
   font-family: 'HarmonyOS Sans', sans-serif;
+  background-color: var(--gitpulse-page-bg);
+  color: var(--bulma-text, var(--gitpulse-text));
 }
 
 html,
@@ -19,18 +141,176 @@ body::-webkit-scrollbar {
   padding: 0;
 }
 
-// ── Dark mode ──
-html.dark-mode {
-  body {
-    background-color: #1a1a2e;
-    color: #e0e0e0;
+.hero,
+.section,
+.dashboard-shell {
+  background: var(--gitpulse-page-bg);
+  color: var(--bulma-text, var(--gitpulse-text));
+}
+
+.navbar {
+  border-bottom: 1px solid var(--gitpulse-border);
+  background-color: var(--gitpulse-surface);
+  box-shadow: none;
+  transition: $theme-transition;
+}
+
+.navbar .title,
+.title,
+.label,
+.content strong,
+.has-text-weight-semibold,
+.has-text-weight-bold {
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.subtitle,
+.help,
+.has-text-grey,
+.has-text-grey-dark,
+.has-text-grey-light {
+  color: var(--gitpulse-text-muted) !important;
+}
+
+a {
+  color: var(--bulma-link, var(--gitpulse-link));
+}
+
+hr {
+  background-color: var(--gitpulse-border);
+}
+
+.card,
+.box,
+.modal-card,
+.dropdown-content,
+.panel {
+  border-color: var(--gitpulse-border);
+  background-color: var(--gitpulse-surface);
+  color: var(--bulma-text, var(--gitpulse-text));
+}
+
+.dropdown-content,
+.box,
+.modal-card {
+  box-shadow: var(--gitpulse-shadow-raised);
+}
+
+.dropdown-item {
+  color: var(--bulma-text, var(--gitpulse-text));
+
+  &:hover,
+  &:focus {
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
-  .navbar {
-    background-color: #16213e;
+
+  &.is-active {
+    background-color: var(--gitpulse-accent);
+    color: #fff;
   }
-  .title {
-    color: #e0e0e0;
+}
+
+.input,
+.textarea,
+.select select {
+  border-color: var(--gitpulse-input-border);
+  background-color: var(--gitpulse-input-bg);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+
+  &::placeholder {
+    color: var(--gitpulse-text-subtle);
   }
+}
+
+.button.is-ghost {
+  color: var(--bulma-text, var(--gitpulse-text));
+
+  &:hover,
+  &:focus {
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
+}
+
+.button.is-light {
+  border-color: var(--gitpulse-border);
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+
+  &:hover,
+  &:focus {
+    border-color: var(--gitpulse-border-strong);
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
+}
+
+.tag.is-light,
+.tag.is-info.is-light,
+.tag.is-link.is-light,
+.tag.is-primary.is-light,
+.tag.is-black.is-light {
+  background-color: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
+}
+
+.tag.is-success.is-light {
+  background-color: var(--gitpulse-success-soft);
+  color: var(--gitpulse-success);
+}
+
+.tag.is-danger.is-light,
+.notification.is-danger.is-light {
+  background-color: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+}
+
+.tag.is-warning.is-light,
+.notification.is-warning.is-light {
+  background-color: var(--gitpulse-warning-soft);
+  color: var(--gitpulse-warning);
+}
+
+.notification.is-light,
+.notification:not([class*='is-']) {
+  border: 1px solid var(--gitpulse-border);
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--bulma-text, var(--gitpulse-text));
+}
+
+.tabs.is-boxed li.is-active a {
+  border-color: var(--gitpulse-border);
+  background-color: var(--gitpulse-surface);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.tabs a {
+  color: var(--gitpulse-text-muted);
+
+  &:hover {
+    border-bottom-color: var(--gitpulse-border-strong);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
+}
+
+.table {
+  background-color: var(--gitpulse-surface);
+  color: var(--bulma-text, var(--gitpulse-text));
+}
+
+.has-background-grey-lighter {
+  background-color: var(--gitpulse-surface-muted) !important;
+}
+
+.markdown-body {
+  background-color: var(--gitpulse-markdown-bg);
+  color: var(--fgColor-default, var(--bulma-text, var(--gitpulse-text)));
+}
+
+::selection {
+  background: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-text-strong);
 }
 
 // Global spin animation

@@ -18,11 +18,7 @@
   flex-direction: column;
   background-color: transparent;
   padding-left: 1.25rem;
-  border-left: 1px solid var(--bulma-border-light, rgba(0, 0, 0, 0.05));
-
-  @media (prefers-color-scheme: dark) {
-    border-left: 1px solid rgba(255, 255, 255, 0.05);
-  }
+  border-left: 1px solid var(--gitpulse-border);
 
   &__content {
     flex: 1;
