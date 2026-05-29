@@ -38,11 +38,11 @@ Built-in English and Simplified Chinese, auto-detected from your browser.
 
 GitHub's own interface has you bouncing between tabs, pages, and repos to stay on top of everything. GitPulse brings it all into **one single-page workspace**:
 
-|                              | GitHub.com                            | GitPulse                                  |
-|------------------------------|---------------------------------------|-------------------------------------------|
-| Notifications + Issues + PRs | Separate pages, lots of back/forth    | One dashboard, four tabs                  |
-| Custom saved searches        | Bookmarks or URL hacks                | Built-in tab manager with drag-and-drop   |
-| Interface focus              | Nav bar, project panel, sidebar noise | Only the GitHub activity you care about   |
+|                              | GitHub.com                            | GitPulse                                |
+| ---------------------------- | ------------------------------------- | --------------------------------------- |
+| Notifications + Issues + PRs | Separate pages, lots of back/forth    | One dashboard, four tabs                |
+| Custom saved searches        | Bookmarks or URL hacks                | Built-in tab manager with drag-and-drop |
+| Interface focus              | Nav bar, project panel, sidebar noise | Only the GitHub activity you care about |
 
 ---
 
@@ -76,7 +76,7 @@ GitPulse has two deployment modes, controlled by environment variables. At least
 Users sign in by pasting a GitHub token or via GitHub OAuth. Suitable for teams or hosted deployments.
 
 | Environment Variable              | Required | Default | Description                            |
-|-----------------------------------|----------|---------|----------------------------------------|
+| --------------------------------- | -------- | ------- | -------------------------------------- |
 | `NUXT_SESSION_PASSWORD`           | **Yes**  | —       | 32-byte hex key for session encryption |
 | `NUXT_AUTH_PAT_ENABLED`           | No       | `true`  | Allow token-based login                |
 | `NUXT_AUTH_GITHUB_OAUTH_ENABLED`  | No       | —       | Allow OAuth login                      |
@@ -88,7 +88,7 @@ Users sign in by pasting a GitHub token or via GitHub OAuth. Suitable for teams 
 A password-gated vault with a pre-configured token. On each new browser you see a lock screen; optionally tick "Remember this device" to stay logged in.
 
 | Environment Variable              | Required | Default | Description                              |
-|-----------------------------------|----------|---------|------------------------------------------|
+| --------------------------------- | -------- | ------- | ---------------------------------------- |
 | `NUXT_AUTH_PERSONAL_MODE_ENABLED` | **Yes**  | —       | Enable personal mode                     |
 | `NUXT_PERSONAL_TOKEN`             | **Yes**  | —       | GitHub token baked into the server       |
 | `NUXT_PERSONAL_MODE_PASSWORD`     | **Yes**  | —       | Lock-screen password                     |
