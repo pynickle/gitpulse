@@ -27,6 +27,8 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
   const listeners = ref<Set<RealtimeNotificationsEvents['onNewNotifications']>>(new Set());
 
   let intervalId: ReturnType<typeof setInterval> | null = null;
+  let startGeneration = 0;
+  let isDisposed = false;
 
   const toNotificationId = (notification: DashboardNotification, fallbackIndex: number) => {
     if (notification.id === undefined || notification.id === null) {
@@ -73,14 +75,29 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
   };
 
   const start = async () => {
-    if (isPolling.value) return;
+    if (isPolling.value || isDisposed) return;
 
+    const generation = startGeneration + 1;
+    startGeneration = generation;
     isPolling.value = true;
-    await poll();
+
+    try {
+      await poll();
+    } catch (error) {
+      if (generation === startGeneration && !isDisposed) {
+        isPolling.value = false;
+      }
+      throw error;
+    }
+
+    if (generation !== startGeneration || isDisposed) return;
+
     intervalId = setInterval(poll, intervalMs);
   };
 
   const stop = () => {
+    startGeneration += 1;
+
     if (intervalId) {
       clearInterval(intervalId);
       intervalId = null;
@@ -98,6 +115,7 @@ export function useRealtimeNotifications(options: UseRealtimeNotificationsOption
   };
 
   onUnmounted(() => {
+    isDisposed = true;
     stop();
     listeners.value.clear();
   });
