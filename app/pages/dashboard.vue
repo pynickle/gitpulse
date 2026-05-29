@@ -158,6 +158,7 @@ import {
   RefreshCwIcon,
   SearchIcon,
 } from 'lucide-vue-next';
+import SimpleBar from 'simplebar-vue';
 import { defineAsyncComponent, computed, onMounted, ref, watch, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 

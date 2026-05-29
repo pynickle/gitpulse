@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SimpleBar from 'simplebar-vue';
+
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
 const props = defineProps<{
