@@ -9,7 +9,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronLeft,
-  ChevronRightIcon,
+  ChevronRight,
   CircleDotIcon,
   CircleMinusIcon,
   Code2Icon,
