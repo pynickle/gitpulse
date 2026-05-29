@@ -188,7 +188,7 @@
       "previewLabel": "实时请求预览",
       "previewGithubQuery": "搜索查询",
       "previewResultsLabel": "结果预览",
-      "previewLoading": "等待输入稳定...",
+      "previewLoading": "加载预览中...",
       "previewFailed": "预览请求失败",
       "previewMatches": "延迟预览返回 {count} 个匹配项",
       "previewWaiting": "预览将在防抖后加载。",

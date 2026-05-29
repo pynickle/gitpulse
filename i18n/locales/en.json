@@ -188,7 +188,7 @@
       "previewLabel": "Live request preview",
       "previewGithubQuery": "Search query",
       "previewResultsLabel": "Results preview",
-      "previewLoading": "Waiting for typing to settle...",
+      "previewLoading": "Loading preview...",
       "previewFailed": "Preview request failed",
       "previewMatches": "{count} matches from delayed preview",
       "previewWaiting": "Preview will load after the debounce.",

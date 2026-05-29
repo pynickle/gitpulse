@@ -287,6 +287,7 @@ const previewError = ref<string | null>(null);
 const previewResult = ref<SearchPreviewResult | null>(null);
 let previewTimer: ReturnType<typeof setTimeout> | null = null;
 let previewRequestId = 0;
+let paginationInProgress = false;
 
 const isEditing = computed(() => selectedTabId.value !== null);
 const editorTitle = computed(() =>
@@ -991,10 +992,12 @@ const handleCreateCustomTab = () => {
   handleSaveTab();
 };
 
-const loadPreview = async () => {
+const loadPreview = async (silent = false) => {
   const requestId = previewRequestId + 1;
   previewRequestId = requestId;
-  previewLoading.value = true;
+  if (!silent) {
+    previewLoading.value = true;
+  }
   previewError.value = null;
 
   try {
@@ -1035,6 +1038,18 @@ watch(customTabs, (tabs) => {
   }
 });
 
+function goToPreviewPage(page: number) {
+  paginationInProgress = true;
+  previewPage.value = page;
+  if (previewTimer) {
+    clearTimeout(previewTimer);
+  }
+  void loadPreview();
+  nextTick(() => {
+    paginationInProgress = false;
+  });
+}
+
 watch(searchQueryString, () => {
   previewPage.value = 1;
 });
@@ -1042,6 +1057,9 @@ watch(searchQueryString, () => {
 watch(
   appPreviewUrl,
   () => {
+    if (paginationInProgress) {
+      return;
+    }
     if (previewTimer) {
       clearTimeout(previewTimer);
     }
@@ -2026,7 +2044,7 @@ void nextTick(() => {
                   class="preview-page-btn"
                   :disabled="previewPage <= 1"
                   :aria-label="t('dashboard.pagination.previous')"
-                  @click="previewPage = Math.max(1, previewPage - 1)"
+                  @click="goToPreviewPage(Math.max(1, previewPage - 1))"
                 >
                   <ChevronLeft :size="14" aria-hidden="true" />
                 </button>
@@ -2042,7 +2060,7 @@ void nextTick(() => {
                   class="preview-page-btn"
                   :disabled="previewPage >= previewTotalPages"
                   :aria-label="t('dashboard.pagination.next')"
-                  @click="previewPage = Math.min(previewTotalPages, previewPage + 1)"
+                  @click="goToPreviewPage(Math.min(previewTotalPages, previewPage + 1))"
                 >
                   <ChevronRight :size="14" aria-hidden="true" />
                 </button>
