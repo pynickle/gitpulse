@@ -1,31 +1,37 @@
 <template>
-  <div class="mb-4">
-    <div class="is-flex is-align-items-center mb-3">
-      <h3 class="title is-6 mb-0 mr-2">{{ t('issueDetail.labels') }}</h3>
+  <div class="sidebar-card mb-4">
+    <div class="sidebar-card__header">
+      <div class="sidebar-card__header-left">
+        <TagIcon :size="14" class="sidebar-card__icon" />
+        <span class="sidebar-card__title">{{ t('issueDetail.labels') }}</span>
+      </div>
       <button
-        v-if="canEditLabels"
         @click="toggleLabelEditor"
-        class="button is-small is-text has-text-grey p-1"
+        class="sidebar-card__action"
+        :class="{ 'sidebar-card__action--hidden': !canEditLabels }"
         :title="t('issueDetail.editLabels')"
+        :disabled="!canEditLabels"
       >
-        <BoltIcon :size="16" />
+        <PencilIcon :size="14" />
       </button>
     </div>
-    <div class="is-flex is-flex-wrap-wrap mb-4">
-      <span
-        v-for="label in labels"
-        :key="label.id || label.name"
-        class="tag mr-2 mb-2 has-text-weight-medium"
-        :style="{
-          backgroundColor: `#${label.color}`,
-          color: `#${getTextColorFromBackground(label.color)}`,
-        }"
-      >
-        {{ label.name }}
-      </span>
-      <span v-if="labels.length === 0" class="has-text-grey is-size-7">
+    <div class="sidebar-card__content">
+      <div v-if="labels.length > 0" class="label-tags">
+        <span
+          v-for="label in labels"
+          :key="label.id || label.name"
+          class="label-tag"
+          :style="{
+            backgroundColor: `#${label.color}`,
+            color: `#${getTextColorFromBackground(label.color)}`,
+          }"
+        >
+          {{ label.name }}
+        </span>
+      </div>
+      <p v-else class="sidebar-card__empty">
         {{ t('issueDetail.noLabels') }}
-      </span>
+      </p>
     </div>
 
     <!-- Label editor panel -->
@@ -118,7 +124,14 @@
 </template>
 
 <script setup lang="ts">
-import { AlertCircleIcon, BoltIcon, CheckIcon, Loader2Icon, XIcon } from 'lucide-vue-next';
+import {
+  AlertCircleIcon,
+  CheckIcon,
+  Loader2Icon,
+  PencilIcon,
+  TagIcon,
+  XIcon,
+} from 'lucide-vue-next';
 import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -242,7 +255,94 @@ const saveLabels = async () => {
 </script>
 
 <style scoped lang="scss">
+@use 'sass:color';
 @use '~/assets/scss/_variables' as *;
+
+// Sidebar card wrapper
+.sidebar-card {
+  background: #f8f9fa;
+  border: 1px solid #eaecef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.sidebar-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eaecef;
+  background: #fff;
+}
+
+.sidebar-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-card__icon {
+  color: $brand-primary;
+}
+
+.sidebar-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: #eef2ff;
+    color: $brand-primary;
+  }
+
+  &--hidden {
+    visibility: hidden;
+  }
+}
+
+.sidebar-card__content {
+  padding: 12px 16px;
+}
+
+.sidebar-card__empty {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+// Label tags
+.label-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.label-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 20px;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+}
 
 // Overlay
 .label-editor-overlay {
@@ -529,7 +629,7 @@ const saveLabels = async () => {
   transition: all 0.12s ease;
 
   &:hover:not(:disabled) {
-    background: darken($brand-primary, 5%);
+    background: color.adjust($brand-primary, $lightness: -5%);
     box-shadow: 0 2px 8px rgba($brand-primary, 0.25);
   }
 
