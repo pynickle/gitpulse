@@ -5,19 +5,23 @@
     aria-label="pagination"
   >
     <button
-      class="pagination-previous"
+      class="pagination-previous pagination-control"
+      :aria-label="t('dashboard.pagination.previous')"
       :disabled="!canGoPrev"
       @click="emit('change', pagination.page - 1)"
     >
-      {{ t('dashboard.pagination.previous') }}
+      <ChevronLeft :size="18" aria-hidden="true" />
+      <span class="pagination-control-text">{{ t('dashboard.pagination.previous') }}</span>
     </button>
 
     <button
-      class="pagination-next"
+      class="pagination-next pagination-control"
+      :aria-label="t('dashboard.pagination.next')"
       :disabled="!canGoNext"
       @click="emit('change', pagination.page + 1)"
     >
-      {{ t('dashboard.pagination.next') }}
+      <span class="pagination-control-text">{{ t('dashboard.pagination.next') }}</span>
+      <ChevronRight :size="18" aria-hidden="true" />
     </button>
 
     <ul class="pagination-list">
@@ -37,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface PaginationMeta {
@@ -138,6 +143,36 @@ const pageItems = computed(() => {
 .pagination-previous,
 .pagination-next,
 .pagination-ellipsis {
-  min-height: 2.5rem;
+  min-height: 2rem;
+}
+
+.dashboard-pagination {
+  gap: 0.25rem;
+}
+
+/* Override Bulma's .pagination.is-rounded padding (1em) — need equal specificity */
+.pagination.is-rounded .pagination-previous.pagination-control,
+.pagination.is-rounded .pagination-next.pagination-control {
+  flex: 0 0 2rem;
+  padding-left: 0;
+  padding-right: 0;
+  width: 2rem;
+}
+
+.pagination-control svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.pagination-control-text {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 </style>

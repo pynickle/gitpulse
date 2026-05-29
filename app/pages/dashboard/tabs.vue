@@ -8,6 +8,7 @@ import {
   CheckCircle2Icon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronLeft,
   ChevronRightIcon,
   CircleDotIcon,
   CircleMinusIcon,
@@ -1808,9 +1809,10 @@ watch(
                 <button
                   class="preview-page-btn"
                   :disabled="previewPage <= 1"
+                  :aria-label="t('dashboard.pagination.previous')"
                   @click="previewPage = Math.max(1, previewPage - 1)"
                 >
-                  {{ t('dashboard.pagination.previous') }}
+                  <ChevronLeft :size="14" aria-hidden="true" />
                 </button>
                 <span class="preview-page-info">
                   {{
@@ -1823,9 +1825,10 @@ watch(
                 <button
                   class="preview-page-btn"
                   :disabled="previewPage >= previewTotalPages"
+                  :aria-label="t('dashboard.pagination.next')"
                   @click="previewPage = Math.min(previewTotalPages, previewPage + 1)"
                 >
-                  {{ t('dashboard.pagination.next') }}
+                  <ChevronRight :size="14" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -2672,8 +2675,10 @@ watch(
 .preview-page-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.3rem 0.65rem;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
   border: 1px solid var(--bulma-border, #dbdbdb);
   border-radius: 5px;
   background: var(--bulma-scheme-main, #ffffff);
