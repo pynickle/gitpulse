@@ -181,19 +181,6 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
               type="button"
               :class="[
                 'pr-review-file-sidebar__toggle-button',
-                { 'pr-review-file-sidebar__toggle-button--active': viewMode === 'tree' },
-              ]"
-              :aria-pressed="viewMode === 'tree'"
-              :aria-label="t('prReview.treeView')"
-              :title="t('prReview.treeView')"
-              @click="emit('update:view-mode', 'tree')"
-            >
-              <NetworkIcon :size="14" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              :class="[
-                'pr-review-file-sidebar__toggle-button',
                 { 'pr-review-file-sidebar__toggle-button--active': viewMode === 'list' },
               ]"
               :aria-pressed="viewMode === 'list'"
@@ -203,6 +190,17 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
             >
               <ListIcon :size="14" aria-hidden="true" />
             </button>
+            <button
+              type="button"
+              :class="[
+                'pr-review-file-sidebar__toggle-button',
+                { 'pr-review-file-sidebar__toggle-button--active': viewMode === 'tree' },
+              ]"
+              :aria-pressed="viewMode === 'tree'"
+              :aria-label="t('prReview.treeView')"
+              :title="t('prReview.treeView')"
+              @click="emit('update:view-mode', 'tree')"
+            >
               <NetworkIcon :size="14" aria-hidden="true" />
             </button>
           </div>

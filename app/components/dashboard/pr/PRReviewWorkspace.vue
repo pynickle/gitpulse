@@ -35,7 +35,7 @@ const review = usePRReview({
 const hasFiles = computed(() => review.files.value.length > 0);
 const hasMoreFiles = computed(() => review.pagination.value.hasNext);
 const workspaceTitle = computed(() => props.title || t('prReview.untitledPullRequest'));
-const fileViewMode = shallowRef<'list' | 'tree'>('tree');
+const fileViewMode = shallowRef<'list' | 'tree'>('list');
 const sidebarCollapsed = shallowRef(false);
 const reviewPanelCollapsed = shallowRef(false);
 const totalAdditions = computed(() =>
