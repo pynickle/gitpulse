@@ -1,5 +1,69 @@
 import { computed, ref, shallowRef, watch } from 'vue';
 
+/** Temporary tree node used for computing the depth-first tree ordering. */
+interface SortTreeNode {
+  name: string;
+  path: string;
+  type: 'directory' | 'file';
+  children: SortTreeNode[];
+  file?: PRReviewFile;
+}
+
+/**
+ * Returns files in depth-first tree order (directories first, alphabetical within
+ * each group). This matches the sidebar's tree/list view ordering so that the
+ * diff viewer (middle section) stays consistent with the sidebar.
+ */
+function sortFilesByTreeOrder(files: PRReviewFile[]): PRReviewFile[] {
+  const sorted = [...files].sort((a, b) => a.filename.localeCompare(b.filename));
+  const root: SortTreeNode[] = [];
+  const directories = new Map<string, SortTreeNode>();
+
+  for (const file of sorted) {
+    const parts = file.filename.split('/');
+    let children = root;
+    let path = '';
+
+    for (const [index, part] of parts.entries()) {
+      path = path ? `${path}/${part}` : part;
+      const isFile = index === parts.length - 1;
+
+      if (isFile) {
+        children.push({ name: part, path, type: 'file', children: [], file });
+        break;
+      }
+
+      let dir = directories.get(path);
+      if (!dir) {
+        dir = { name: part, path, type: 'directory', children: [] };
+        directories.set(path, dir);
+        children.push(dir);
+      }
+      children = dir.children;
+    }
+  }
+
+  const sortNodes = (nodes: SortTreeNode[]) => {
+    nodes.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const n of nodes) sortNodes(n.children);
+  };
+
+  sortNodes(root);
+
+  const result: PRReviewFile[] = [];
+  const visit = (nodes: SortTreeNode[]) => {
+    for (const n of nodes) {
+      if (n.type === 'file' && n.file) result.push(n.file);
+      else visit(n.children);
+    }
+  };
+  visit(root);
+  return result;
+}
+
 export type PRReviewEvent = 'APPROVE' | 'COMMENT' | 'REQUEST_CHANGES';
 
 export interface PRReviewFile {
@@ -184,12 +248,10 @@ export function usePRReview(options: UsePRReviewOptions) {
   const selectedDiffRows = computed(() => parsePRReviewPatch(selectedFile.value?.patch));
 
   const allDiffSections = computed<PRReviewDiffSection[]>(() =>
-    [...files.value]
-      .sort((first, second) => first.filename.localeCompare(second.filename))
-      .map((file) => ({
-        file,
-        rows: parsePRReviewPatch(file.patch),
-      }))
+    sortFilesByTreeOrder(files.value).map((file) => ({
+      file,
+      rows: parsePRReviewPatch(file.patch),
+    }))
   );
 
   const pendingCommentCount = computed(() => draftComments.value.length);
