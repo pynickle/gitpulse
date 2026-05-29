@@ -3,6 +3,10 @@
     "title": "GitPulse",
     "subtitle": "GitHub 工作仪表板"
   },
+  "colorMode": {
+    "switchToLight": "切换到浅色模式",
+    "switchToDark": "切换到深色模式"
+  },
   "landing": {
     "heroEyebrow": "选择你的 GitHub 连接方式",
     "heroDescription": "在一个专注的工作台中统一查看通知、议题、拉取请求和仓库。你可以使用 GitHub Token、GitHub OAuth，或当前部署允许的任意方式登录。",

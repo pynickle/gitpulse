@@ -19,6 +19,20 @@ body::-webkit-scrollbar {
   padding: 0;
 }
 
+// ── Dark mode ──
+html.dark-mode {
+  body {
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+  }
+  .navbar {
+    background-color: #16213e;
+  }
+  .title {
+    color: #e0e0e0;
+  }
+}
+
 // Global spin animation
 @keyframes spin {
   from {

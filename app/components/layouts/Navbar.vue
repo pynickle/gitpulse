@@ -15,8 +15,9 @@
             <GitHubIcon class="is-centered" />
           </LinkIcon>
         </div>
-        <div class="navbar-item">
+        <div class="navbar-item navbar-controls">
           <LanguageSwitcher />
+          <ColorModeToggle />
         </div>
       </div>
     </div>
@@ -26,8 +27,17 @@
 <script setup lang="ts">
 import { GitHubIcon } from 'vue3-simple-icons';
 
+import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
 const { t } = useI18n();
 </script>
+
+<style scoped lang="scss">
+.navbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+</style>
