@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { ChevronRightIcon } from 'lucide-vue-next';
 import {
   nextTick,
   onBeforeUnmount,
+  ref,
   shallowRef,
   useTemplateRef,
   watch,
@@ -30,6 +32,18 @@ const emit = defineEmits<{
   (e: 'remove-draft-comment', id: string): void;
   (e: 'visible-file-changed', filename: string): void;
 }>();
+
+const collapsedFiles = ref(new Set<string>());
+
+const toggleFileCollapse = (filename: string) => {
+  const updated = new Set(collapsedFiles.value);
+  if (updated.has(filename)) {
+    updated.delete(filename);
+  } else {
+    updated.add(filename);
+  }
+  collapsedFiles.value = updated;
+};
 
 type CodeTokenKind =
   | 'plain'
@@ -388,10 +402,32 @@ onBeforeUnmount(() => {
         class="pr-review-diff-viewer__file-section"
         :class="{
           'pr-review-diff-viewer__file-section--active': section.file.filename === activeFilename,
+          'pr-review-diff-viewer__file-section--collapsed': collapsedFiles.has(
+            section.file.filename
+          ),
         }"
       >
-        <div class="pr-review-diff-viewer__header">
-          <div>
+        <div
+          class="pr-review-diff-viewer__header"
+          role="button"
+          tabindex="0"
+          :aria-expanded="!collapsedFiles.has(section.file.filename)"
+          :aria-label="section.file.filename"
+          @click="toggleFileCollapse(section.file.filename)"
+          @keydown.enter.prevent="toggleFileCollapse(section.file.filename)"
+          @keydown.space.prevent="toggleFileCollapse(section.file.filename)"
+        >
+          <ChevronRightIcon
+            :size="14"
+            class="pr-review-diff-viewer__header-chevron"
+            :class="{
+              'pr-review-diff-viewer__header-chevron--expanded': !collapsedFiles.has(
+                section.file.filename
+              ),
+            }"
+            aria-hidden="true"
+          />
+          <div class="pr-review-diff-viewer__header-info">
             <h2 class="title is-6 mb-1">{{ section.file.filename }}</h2>
             <p v-if="section.file.previous_filename" class="is-size-7 has-text-grey mb-0">
               {{ t('prReview.renamedFrom', { filename: section.file.previous_filename }) }}
@@ -408,115 +444,125 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div
-          v-if="!section.file.patch"
-          class="pr-review-diff-viewer__empty pr-review-diff-viewer__empty--file"
-        >
-          <p class="mb-2">{{ t('prReview.patchUnavailable') }}</p>
-          <p class="is-size-7 has-text-grey mb-0">{{ t('prReview.patchUnavailableHint') }}</p>
-        </div>
-
-        <template v-else>
-          <template v-for="row in section.rows" :key="`${section.file.filename}:${row.key}`">
-            <div v-if="row.type === 'hunk'" class="pr-review-diff-viewer__hunk">
-              <code>{{ row.content }}</code>
-            </div>
-
-            <div v-else class="pr-review-diff-viewer__split-row">
-              <div :class="getRowSideClass(row, 'old')">
-                <span class="pr-review-diff-viewer__line-number">{{
-                  row.oldLineNumber ?? ''
-                }}</span>
-                <code class="pr-review-diff-viewer__code">
-                  <span
-                    v-for="token in tokenizeCode(getSideContent(row, 'old'), section.file.filename)"
-                    :key="token.key"
-                    class="pr-review-diff-viewer__token"
-                    :class="`pr-review-diff-viewer__token--${token.kind}`"
-                    >{{ token.text }}</span
-                  >
-                </code>
-              </div>
-
-              <span class="pr-review-diff-viewer__split-divider" aria-hidden="true"></span>
-
-              <div :class="getRowSideClass(row, 'new')">
-                <span class="pr-review-diff-viewer__line-number">
-                  <span class="pr-review-diff-viewer__line-num">{{ row.newLineNumber ?? '' }}</span>
-                  <button
-                    class="pr-review-diff-viewer__comment-button"
-                    type="button"
-                    :aria-label="
-                      row.newLineNumber
-                        ? t('prReview.addLineCommentForLine', { line: row.newLineNumber })
-                        : t('prReview.addLineComment')
-                    "
-                    :disabled="!row.isCommentable || !row.newLineNumber || submitting"
-                    :title="
-                      row.isCommentable
-                        ? t('prReview.addLineComment')
-                        : t('prReview.lineNotCommentable')
-                    "
-                    @click="
-                      row.newLineNumber
-                        ? emit('open-draft-editor', section.file.filename, row.newLineNumber)
-                        : undefined
-                    "
-                  >
-                    +
-                  </button>
-                </span>
-                <code class="pr-review-diff-viewer__code">
-                  <span
-                    v-for="token in tokenizeCode(getSideContent(row, 'new'), section.file.filename)"
-                    :key="token.key"
-                    class="pr-review-diff-viewer__token"
-                    :class="`pr-review-diff-viewer__token--${token.kind}`"
-                    >{{ token.text }}</span
-                  >
-                </code>
-              </div>
-            </div>
-
-            <PRReviewInlineComment
-              v-if="
-                row.newLineNumber && isActiveDraftTarget(section.file.filename, row.newLineNumber)
-              "
-              :path="section.file.filename"
-              :line="row.newLineNumber"
-              :existing-body="getDraftForLine(section.file.filename, row.newLineNumber)?.body"
-              :submitting="submitting"
-              @save="(path, line, body) => handleSaveDraft(section.rows, path, line, body)"
-              @cancel="emit('close-draft-editor')"
-            />
-          </template>
-        </template>
-
-        <div
-          v-if="getDraftsForFile(section.file.filename).length"
-          class="pr-review-diff-viewer__drafts"
-        >
-          <h3 class="title is-6 mb-2">{{ t('prReview.pendingForFile') }}</h3>
+        <template v-if="!collapsedFiles.has(section.file.filename)">
           <div
-            v-for="comment in getDraftsForFile(section.file.filename)"
-            :key="comment.id"
-            class="pr-review-diff-viewer__draft"
+            v-if="!section.file.patch"
+            class="pr-review-diff-viewer__empty pr-review-diff-viewer__empty--file"
           >
-            <div>
-              <p class="is-size-7 has-text-grey mb-1">
-                {{ t('prReview.lineLabel', { line: comment.line }) }}
-              </p>
-              <p class="mb-0">{{ comment.body }}</p>
-            </div>
-            <button
-              class="delete is-small"
-              type="button"
-              :aria-label="t('prReview.removeDraft')"
-              :disabled="submitting"
-              @click="emit('remove-draft-comment', comment.id)"
-            ></button>
+            <p class="mb-2">{{ t('prReview.patchUnavailable') }}</p>
+            <p class="is-size-7 has-text-grey mb-0">{{ t('prReview.patchUnavailableHint') }}</p>
           </div>
-        </div>
+
+          <template v-else>
+            <template v-for="row in section.rows" :key="`${section.file.filename}:${row.key}`">
+              <div v-if="row.type === 'hunk'" class="pr-review-diff-viewer__hunk">
+                <code>{{ row.content }}</code>
+              </div>
+
+              <div v-else class="pr-review-diff-viewer__split-row">
+                <div :class="getRowSideClass(row, 'old')">
+                  <span class="pr-review-diff-viewer__line-number">{{
+                    row.oldLineNumber ?? ''
+                  }}</span>
+                  <code class="pr-review-diff-viewer__code">
+                    <span
+                      v-for="token in tokenizeCode(
+                        getSideContent(row, 'old'),
+                        section.file.filename
+                      )"
+                      :key="token.key"
+                      class="pr-review-diff-viewer__token"
+                      :class="`pr-review-diff-viewer__token--${token.kind}`"
+                      >{{ token.text }}</span
+                    >
+                  </code>
+                </div>
+
+                <span class="pr-review-diff-viewer__split-divider" aria-hidden="true"></span>
+
+                <div :class="getRowSideClass(row, 'new')">
+                  <span class="pr-review-diff-viewer__line-number">
+                    <span class="pr-review-diff-viewer__line-num">{{
+                      row.newLineNumber ?? ''
+                    }}</span>
+                    <button
+                      class="pr-review-diff-viewer__comment-button"
+                      type="button"
+                      :aria-label="
+                        row.newLineNumber
+                          ? t('prReview.addLineCommentForLine', { line: row.newLineNumber })
+                          : t('prReview.addLineComment')
+                      "
+                      :disabled="!row.isCommentable || !row.newLineNumber || submitting"
+                      :title="
+                        row.isCommentable
+                          ? t('prReview.addLineComment')
+                          : t('prReview.lineNotCommentable')
+                      "
+                      @click="
+                        row.newLineNumber
+                          ? emit('open-draft-editor', section.file.filename, row.newLineNumber)
+                          : undefined
+                      "
+                    >
+                      +
+                    </button>
+                  </span>
+                  <code class="pr-review-diff-viewer__code">
+                    <span
+                      v-for="token in tokenizeCode(
+                        getSideContent(row, 'new'),
+                        section.file.filename
+                      )"
+                      :key="token.key"
+                      class="pr-review-diff-viewer__token"
+                      :class="`pr-review-diff-viewer__token--${token.kind}`"
+                      >{{ token.text }}</span
+                    >
+                  </code>
+                </div>
+              </div>
+
+              <PRReviewInlineComment
+                v-if="
+                  row.newLineNumber && isActiveDraftTarget(section.file.filename, row.newLineNumber)
+                "
+                :path="section.file.filename"
+                :line="row.newLineNumber"
+                :existing-body="getDraftForLine(section.file.filename, row.newLineNumber)?.body"
+                :submitting="submitting"
+                @save="(path, line, body) => handleSaveDraft(section.rows, path, line, body)"
+                @cancel="emit('close-draft-editor')"
+              />
+            </template>
+          </template>
+
+          <div
+            v-if="getDraftsForFile(section.file.filename).length"
+            class="pr-review-diff-viewer__drafts"
+          >
+            <h3 class="title is-6 mb-2">{{ t('prReview.pendingForFile') }}</h3>
+            <div
+              v-for="comment in getDraftsForFile(section.file.filename)"
+              :key="comment.id"
+              class="pr-review-diff-viewer__draft"
+            >
+              <div>
+                <p class="is-size-7 has-text-grey mb-1">
+                  {{ t('prReview.lineLabel', { line: comment.line }) }}
+                </p>
+                <p class="mb-0">{{ comment.body }}</p>
+              </div>
+              <button
+                class="delete is-small"
+                type="button"
+                :aria-label="t('prReview.removeDraft')"
+                :disabled="submitting"
+                @click="emit('remove-draft-comment', comment.id)"
+              ></button>
+            </div>
+          </div>
+        </template>
       </article>
     </div>
   </section>
@@ -538,16 +584,50 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 2;
   min-height: 2.75rem;
-  padding: 0.55rem 0.75rem;
+  padding: 0.55rem 0.6rem;
   border-bottom: 1px solid #d0d7de;
   background: #ffffff;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  border-left: 3px solid transparent;
+  outline: none;
 }
 
-.pr-review-diff-viewer__header .title {
+.pr-review-diff-viewer__header:hover {
+  background: #f6f8fa;
+}
+
+.pr-review-diff-viewer__header:focus-visible {
+  box-shadow: inset 0 0 0 2px #0969da;
+}
+
+.pr-review-diff-viewer__file-section--active .pr-review-diff-viewer__header {
+  border-left-color: #0969da;
+}
+
+.pr-review-diff-viewer__file-section--collapsed .pr-review-diff-viewer__header {
+  border-bottom-color: transparent;
+}
+
+.pr-review-diff-viewer__header-chevron {
+  flex: none;
+  color: #656d76;
+  transition: transform 0.15s ease;
+}
+
+.pr-review-diff-viewer__header-chevron--expanded {
+  transform: rotate(90deg);
+}
+
+.pr-review-diff-viewer__header-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.pr-review-diff-viewer__header-info .title {
   font-family:
     ui-monospace,
     SFMono-Regular,
@@ -581,10 +661,6 @@ onBeforeUnmount(() => {
 .pr-review-diff-viewer__file-section {
   min-width: 100%;
   border-bottom: 1px solid #d0d7de;
-}
-
-.pr-review-diff-viewer__file-section--active .pr-review-diff-viewer__header {
-  box-shadow: inset 3px 0 0 #0969da;
 }
 
 .pr-review-diff-viewer__split-row {
