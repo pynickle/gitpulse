@@ -50,6 +50,8 @@ interface DashboardPageCache {
 }
 
 const defaultPerPage = 20;
+const maxCachedPagesPerCollection = 5;
+const maxCachedCustomTabQueries = 25;
 
 const createDefaultPaginationMeta = (): DashboardPaginationMeta => ({
   page: 1,
@@ -229,6 +231,14 @@ export function useGithubData() {
   const activeNotificationRequestId = ref(0);
   const activeNotificationStateRequestId = ref(0);
   const pageCache = ref(createPageCache());
+  const pageCacheOrder = {
+    notifications: [] as number[],
+    issues: [] as number[],
+    pulls: [] as number[],
+    repos: [] as number[],
+    customTabs: [] as string[],
+    customTabPages: {} as Record<string, number[]>,
+  };
   const notifications = ref<DashboardNotification[]>([]);
   const issues = ref<DashboardEntity[]>([]);
   const pulls = ref<DashboardEntity[]>([]);
@@ -239,6 +249,46 @@ export function useGithubData() {
     prs: 0,
     repos: 0,
   });
+
+  const touchCachedPage = <T>(cache: Record<number, T>, order: number[], page: number) => {
+    const existingIndex = order.indexOf(page);
+    if (existingIndex >= 0) {
+      order.splice(existingIndex, 1);
+    }
+
+    order.push(page);
+
+    while (order.length > maxCachedPagesPerCollection) {
+      const expiredPage = order.shift();
+      if (expiredPage !== undefined) {
+        delete cache[expiredPage];
+      }
+    }
+  };
+
+  const touchCustomTabCache = (queryKey: string, page: number) => {
+    const existingQueryIndex = pageCacheOrder.customTabs.indexOf(queryKey);
+    if (existingQueryIndex >= 0) {
+      pageCacheOrder.customTabs.splice(existingQueryIndex, 1);
+    }
+
+    pageCacheOrder.customTabs.push(queryKey);
+
+    const queryCache = pageCache.value.customTabs[queryKey];
+    if (queryCache) {
+      const queryPageOrder = pageCacheOrder.customTabPages[queryKey] ?? [];
+      pageCacheOrder.customTabPages[queryKey] = queryPageOrder;
+      touchCachedPage(queryCache, queryPageOrder, page);
+    }
+
+    while (pageCacheOrder.customTabs.length > maxCachedCustomTabQueries) {
+      const expiredQueryKey = pageCacheOrder.customTabs.shift();
+      if (expiredQueryKey) {
+        delete pageCache.value.customTabs[expiredQueryKey];
+        delete pageCacheOrder.customTabPages[expiredQueryKey];
+      }
+    }
+  };
 
   const applyNotificationsData = (data: PaginatedDashboardResponse<DashboardNotification>) => {
     notifications.value = data.items;
@@ -326,6 +376,7 @@ export function useGithubData() {
   const fetchNotifications = async (page = 1, options: DashboardFetchOptions = {}) => {
     const cachedData = pageCache.value.notifications[page];
     if (cachedData && !options.force) {
+      touchCachedPage(pageCache.value.notifications, pageCacheOrder.notifications, page);
       applyNotificationsData(cachedData);
       if (shouldEnrichNotificationSubjectStates(cachedData.items)) {
         void enrichNotificationSubjectStates(
@@ -358,6 +409,11 @@ export function useGithubData() {
       };
 
       pageCache.value.notifications[data.pagination.page] = pendingData;
+      touchCachedPage(
+        pageCache.value.notifications,
+        pageCacheOrder.notifications,
+        data.pagination.page
+      );
       applyNotificationsData(pendingData);
       void enrichNotificationSubjectStates(
         data.pagination.page,
@@ -378,6 +434,7 @@ export function useGithubData() {
   const fetchIssues = async (page = 1, options: DashboardFetchOptions = {}) => {
     const cachedData = pageCache.value.issues[page];
     if (cachedData && !options.force) {
+      touchCachedPage(pageCache.value.issues, pageCacheOrder.issues, page);
       applyIssuesData(cachedData);
       error.value = null;
       loading.value = false;
@@ -396,6 +453,7 @@ export function useGithubData() {
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.issues[data.pagination.page] = data;
+      touchCachedPage(pageCache.value.issues, pageCacheOrder.issues, data.pagination.page);
       applyIssuesData(data);
     } catch (err) {
       if (requestId !== activeRequestId.value) return;
@@ -411,6 +469,7 @@ export function useGithubData() {
   const fetchPulls = async (page = 1, options: DashboardFetchOptions = {}) => {
     const cachedData = pageCache.value.pulls[page];
     if (cachedData && !options.force) {
+      touchCachedPage(pageCache.value.pulls, pageCacheOrder.pulls, page);
       applyPullsData(cachedData);
       error.value = null;
       loading.value = false;
@@ -429,6 +488,7 @@ export function useGithubData() {
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.pulls[data.pagination.page] = data;
+      touchCachedPage(pageCache.value.pulls, pageCacheOrder.pulls, data.pagination.page);
       applyPullsData(data);
     } catch (err) {
       if (requestId !== activeRequestId.value) return;
@@ -444,6 +504,7 @@ export function useGithubData() {
   const fetchRepos = async (page = 1, options: DashboardFetchOptions = {}) => {
     const cachedData = pageCache.value.repos[page];
     if (cachedData && !options.force) {
+      touchCachedPage(pageCache.value.repos, pageCacheOrder.repos, page);
       applyReposData(cachedData);
       error.value = null;
       loading.value = false;
@@ -462,6 +523,7 @@ export function useGithubData() {
       if (requestId !== activeRequestId.value) return;
 
       pageCache.value.repos[data.pagination.page] = data;
+      touchCachedPage(pageCache.value.repos, pageCacheOrder.repos, data.pagination.page);
       applyReposData(data);
     } catch (err) {
       if (requestId !== activeRequestId.value) return;
@@ -485,6 +547,7 @@ export function useGithubData() {
     const cachedData = queryCache[page];
 
     if (cachedData && !options.force) {
+      touchCustomTabCache(queryKey, page);
       applyIssuesData(cachedData);
       error.value = null;
       loading.value = false;
@@ -508,6 +571,7 @@ export function useGithubData() {
       }
 
       pageCache.value.customTabs[queryKey][data.pagination.page] = data;
+      touchCustomTabCache(queryKey, data.pagination.page);
       applyIssuesData(data);
       return data;
     } catch (err) {
