@@ -20,6 +20,7 @@ import {
   GitBranchIcon,
   GitMergeIcon,
   GitPullRequestIcon,
+  GripVerticalIcon,
   HashIcon,
   LinkIcon,
   ListFilterIcon,
@@ -34,7 +35,8 @@ import {
   XCircleIcon,
   XIcon,
 } from 'lucide-vue-next';
-import { computed, reactive, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, reactive, ref, shallowRef, watch } from 'vue';
+import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus';
 
 import {
   appendCustomTabQueryParams,
@@ -227,7 +229,8 @@ const filterIconMap: Record<
   asc: { icon: ArrowUpIcon, activeColor: '#4f46e5' },
 };
 
-const { groups, createGroup, updateGroup, deleteGroup, toggleGroupCollapsed } = useTabGroups();
+const { groups, createGroup, updateGroup, deleteGroup, toggleGroupCollapsed, reorderGroups } =
+  useTabGroups();
 const { tabs } = useTabMigration();
 const { customTabs, createCustomTab, updateCustomTab, deleteCustomTab } = useCustomTabs();
 
@@ -287,7 +290,6 @@ let previewRequestId = 0;
 const settingsTabs = computed<SettingsTab[]>(() => {
   return [...tabs.value, ...customTabs.value];
 });
-
 const builtinTabs = computed(() => {
   return tabs.value.filter((tab) => tab.groupId === BUILTIN_TAB_GROUP_ID);
 });
@@ -319,6 +321,42 @@ const customGroupRows = computed<GroupRow[]>(() => {
   }
 
   return rows;
+});
+
+// ── Drag-and-drop: per-group reactive tab lists ──
+let isDragUpdating = false;
+
+const groupTabLists = ref<Record<string, SettingsTab[]>>({});
+
+const syncTabLists = () => {
+  const next: Record<string, SettingsTab[]> = {};
+  for (const group of customGroupRows.value) {
+    next[group.id] = getTabsForGroup(group.id);
+  }
+  groupTabLists.value = next;
+};
+
+watch(
+  [settingsTabs, () => customGroupRows.value.map((g) => g.id)],
+  () => {
+    if (isDragUpdating) return;
+    syncTabLists();
+  },
+  { deep: true }
+);
+
+// ── Drag-and-drop: group reordering ──
+let isGroupDragUpdating = false;
+
+const draggableGroupRows = shallowRef<GroupRow[]>([]);
+
+const syncGroupRows = () => {
+  draggableGroupRows.value = customGroupRows.value.map((g) => ({ ...g }));
+};
+
+watch(customGroupRows, () => {
+  if (isGroupDragUpdating) return;
+  syncGroupRows();
 });
 
 const parentGroupOptions = computed(() => {
@@ -696,12 +734,38 @@ const removeLabel = (label: string) => {
   newTab.query.labels = newTab.query.labels.filter((candidate) => candidate !== label);
 };
 
-const handleMoveTab = (tabId: string, groupId: string) => {
-  if (!groupId || !isCustomTab(tabId)) {
-    return;
+// ── Drag-and-drop event handlers ──
+
+const handleGroupReorder = () => {
+  isGroupDragUpdating = true;
+  const orderedIds = draggableGroupRows.value.map((g) => g.id);
+  reorderGroups(orderedIds);
+  void nextTick(() => {
+    isGroupDragUpdating = false;
+    syncGroupRows();
+  });
+};
+
+const handleTabsChanged = (groupId: string) => {
+  if (isDragUpdating) return;
+
+  const currentTabs = groupTabLists.value[groupId];
+  if (!currentTabs) return;
+
+  // Detect tabs that were moved into this group from another group
+  for (const tab of currentTabs) {
+    if (tab.groupId !== groupId && isCustomTab(tab.id)) {
+      isDragUpdating = true;
+      updateCustomTab(tab.id, { groupId });
+    }
   }
 
-  updateCustomTab(tabId, { groupId });
+  if (isDragUpdating) {
+    void nextTick(() => {
+      isDragUpdating = false;
+      syncTabLists();
+    });
+  }
 };
 
 const collectDescendantGroupIds = (groupId: string) => {
@@ -896,6 +960,12 @@ watch(
   },
   { immediate: true }
 );
+
+// ── Initial sync for drag-and-drop (deferred to avoid TDZ) ──
+void nextTick(() => {
+  syncTabLists();
+  syncGroupRows();
+});
 </script>
 
 <template>
@@ -1033,207 +1103,227 @@ watch(
           </div>
 
           <div v-else class="tree-list">
-            <article v-for="group in customGroupRows" :key="group.id" class="tree-group">
-              <div class="tree-group-row">
-                <span class="tree-depth-spacer" :style="getGroupDepthStyle(group.depth)" />
-                <button
-                  class="button is-ghost is-small tree-icon"
-                  type="button"
-                  @click="toggleGroupCollapsed(group.id)"
-                >
-                  <ChevronDownIcon :class="{ 'is-collapsed': group.collapsed }" :size="14" />
-                </button>
-                <div class="tree-group-main">
-                  <input
-                    class="input is-small tree-name-input"
-                    :value="group.name"
-                    :disabled="!canEditGroup(group)"
-                    @change="
-                      updateGroup(group.id, { name: getInputValue($event).trim() || group.name })
-                    "
-                  />
-                </div>
-                <div class="tree-group-actions">
-                  <span class="group-view-badge">{{
-                    t('dashboard.tabsSettings.groupViewCount', {
-                      count: getGroupTabCount(group.id),
-                    })
-                  }}</span>
+            <VueDraggable
+              v-model="draggableGroupRows"
+              :animation="200"
+              handle=".drag-handle"
+              item-key="id"
+              @end="handleGroupReorder"
+            >
+              <article v-for="group in draggableGroupRows" :key="group.id" class="tree-group">
+                <div class="tree-group-row">
+                  <span class="tree-depth-spacer" :style="getGroupDepthStyle(group.depth)" />
                   <button
-                    v-if="group.depth < maxGroupDepth"
-                    class="button is-ghost is-small tree-add"
+                    class="button is-ghost is-small drag-handle"
                     type="button"
-                    :title="t('dashboard.tabsSettings.addChildGroupTitle', { group: group.name })"
-                    @click="handleStartChildGroup(group.id)"
+                    :aria-label="t('dashboard.tabsSettings.dragHandleGroup')"
                   >
-                    <PlusIcon :size="14" />
+                    <GripVerticalIcon :size="14" />
                   </button>
                   <button
-                    class="button is-ghost is-small tree-delete"
+                    class="button is-ghost is-small tree-icon"
                     type="button"
-                    :disabled="!canEditGroup(group)"
-                    :aria-label="
-                      t('dashboard.tabsSettings.deleteGroupLabel', { group: group.name })
-                    "
-                    @click="requestDeleteGroup(group.id)"
+                    @click="toggleGroupCollapsed(group.id)"
                   >
-                    <Trash2Icon :size="14" />
+                    <ChevronDownIcon :class="{ 'is-collapsed': group.collapsed }" :size="14" />
                   </button>
-                </div>
-              </div>
-
-              <div
-                v-if="confirmingGroupId === group.id"
-                class="inline-delete-confirm"
-                role="alert"
-                aria-live="polite"
-                :style="getNestedPanelStyle(group.depth)"
-              >
-                <span>{{
-                  t('dashboard.tabsSettings.deleteGroupConfirm', { group: group.name })
-                }}</span>
-                <div class="inline-delete-confirm__actions">
-                  <button
-                    class="button is-small is-light"
-                    type="button"
-                    @click="cancelDeleteConfirmation"
-                  >
-                    {{ t('dashboard.tabsSettings.cancelDeleteButton') }}
-                  </button>
-                  <button
-                    class="button is-small is-danger"
-                    type="button"
-                    @click="confirmDeleteGroup(group.id)"
-                  >
-                    {{ t('dashboard.tabsSettings.confirmDeleteGroupButton') }}
-                  </button>
-                </div>
-              </div>
-
-              <div
-                v-if="activeChildCreatorGroupId === group.id"
-                class="inline-child-creator"
-                :style="getNestedPanelStyle(group.depth)"
-              >
-                <div class="inline-child-creator__label">
-                  {{ t('dashboard.tabsSettings.addChildGroupLabel', { group: group.name }) }}
-                </div>
-                <div class="inline-child-creator__controls">
-                  <div class="control has-icons-left inline-child-creator__input">
+                  <div class="tree-group-main">
                     <input
-                      v-model="childGroupName"
-                      class="input is-small"
-                      type="text"
-                      :placeholder="t('dashboard.tabsSettings.childGroupNamePlaceholder')"
-                      @keyup.enter="handleCreateChildGroup"
-                      @keyup.esc="handleCancelChildGroup"
-                    />
-                    <span class="icon is-small is-left"><FolderOpenIcon :size="14" /></span>
-                  </div>
-                  <button
-                    class="button is-primary is-small"
-                    type="button"
-                    :disabled="!childGroupName.trim()"
-                    @click="handleCreateChildGroup"
-                  >
-                    <PlusIcon :size="14" />
-                    <span>{{ t('dashboard.tabsSettings.createGroupButton') }}</span>
-                  </button>
-                  <button
-                    class="button is-ghost is-small"
-                    type="button"
-                    @click="handleCancelChildGroup"
-                  >
-                    {{ t('dashboard.tabsSettings.cancelChildGroupButton') }}
-                  </button>
-                </div>
-              </div>
-
-              <div
-                v-if="!group.collapsed"
-                class="tree-tabs"
-                :style="getNestedPanelStyle(group.depth)"
-              >
-                <div v-for="tab in getTabsForGroup(group.id)" :key="tab.id" class="tree-tab-row">
-                  <SearchIcon :size="15" />
-                  <div class="tree-tab-main">
-                    <span>{{ tab.name }}</span>
-                    <input
-                      v-if="editingSubtitleTabId === tab.id"
-                      v-model="editingSubtitleDraft"
-                      class="input is-small tab-subtitle-input"
-                      type="text"
-                      :aria-label="
-                        t('dashboard.tabsSettings.editSubtitleLabel', { view: tab.name })
+                      class="input is-small tree-name-input"
+                      :value="group.name"
+                      :disabled="!canEditGroup(group)"
+                      @change="
+                        updateGroup(group.id, { name: getInputValue($event).trim() || group.name })
                       "
-                      @keyup.enter="saveSubtitleEdit(tab)"
-                      @keyup.esc="cancelSubtitleEdit"
-                      @blur="saveSubtitleEdit(tab)"
                     />
-                    <button
-                      v-else
-                      class="tab-subtitle-button"
-                      type="button"
-                      :title="getQueryPreview(tab)"
-                      @click="startSubtitleEdit(tab)"
-                    >
-                      {{ getTabSubtitle(tab) }}
-                    </button>
                   </div>
-                  <div class="tree-tab-actions">
-                    <div
-                      v-if="confirmingTabId === tab.id"
-                      class="tab-delete-confirm"
-                      role="alert"
-                      aria-live="polite"
-                    >
-                      <span>{{ t('dashboard.tabsSettings.deleteViewConfirm') }}</span>
-                      <button
-                        class="button is-ghost is-small tree-action-button"
-                        type="button"
-                        :aria-label="t('dashboard.tabsSettings.cancelDeleteButton')"
-                        @click="cancelDeleteConfirmation"
-                      >
-                        <XIcon :size="14" />
-                      </button>
-                      <button
-                        class="button is-ghost is-small tree-delete"
-                        type="button"
-                        :aria-label="t('dashboard.tabsSettings.confirmDeleteViewButton')"
-                        @click="confirmDeleteTab(tab.id)"
-                      >
-                        <Trash2Icon :size="14" />
-                      </button>
-                    </div>
+                  <div class="tree-group-actions">
+                    <span class="group-view-badge">{{
+                      t('dashboard.tabsSettings.groupViewCount', {
+                        count: getGroupTabCount(group.id),
+                      })
+                    }}</span>
                     <button
-                      v-else
+                      v-if="group.depth < maxGroupDepth"
+                      class="button is-ghost is-small tree-add"
+                      type="button"
+                      :title="t('dashboard.tabsSettings.addChildGroupTitle', { group: group.name })"
+                      @click="handleStartChildGroup(group.id)"
+                    >
+                      <PlusIcon :size="14" />
+                    </button>
+                    <button
                       class="button is-ghost is-small tree-delete"
                       type="button"
-                      :aria-label="t('dashboard.tabsSettings.deleteViewLabel', { view: tab.name })"
-                      @click="requestDeleteTab(tab.id)"
+                      :disabled="!canEditGroup(group)"
+                      :aria-label="
+                        t('dashboard.tabsSettings.deleteGroupLabel', { group: group.name })
+                      "
+                      @click="requestDeleteGroup(group.id)"
                     >
                       <Trash2Icon :size="14" />
                     </button>
                   </div>
-                  <div v-if="editableGroupOptions.length > 1" class="tab-move-tray">
-                    <span class="chip-label">{{ t('dashboard.tabsSettings.moveToLabel') }}</span>
+                </div>
+
+                <div
+                  v-if="confirmingGroupId === group.id"
+                  class="inline-delete-confirm"
+                  role="alert"
+                  aria-live="polite"
+                  :style="getNestedPanelStyle(group.depth)"
+                >
+                  <span>{{
+                    t('dashboard.tabsSettings.deleteGroupConfirm', { group: group.name })
+                  }}</span>
+                  <div class="inline-delete-confirm__actions">
                     <button
-                      v-for="option in editableGroupOptions"
-                      :key="option.id"
-                      class="chip-button is-compact"
-                      :class="{ 'is-active': tab.groupId === option.id }"
+                      class="button is-small is-light"
                       type="button"
-                      @click="handleMoveTab(tab.id, option.id)"
+                      @click="cancelDeleteConfirmation"
                     >
-                      {{ option.name }}
+                      {{ t('dashboard.tabsSettings.cancelDeleteButton') }}
+                    </button>
+                    <button
+                      class="button is-small is-danger"
+                      type="button"
+                      @click="confirmDeleteGroup(group.id)"
+                    >
+                      {{ t('dashboard.tabsSettings.confirmDeleteGroupButton') }}
                     </button>
                   </div>
                 </div>
-                <p v-if="getTabsForGroup(group.id).length === 0" class="empty-drop-zone">
-                  {{ t('dashboard.tabsSettings.groupEmptyTabs') }}
-                </p>
-              </div>
-            </article>
+
+                <div
+                  v-if="activeChildCreatorGroupId === group.id"
+                  class="inline-child-creator"
+                  :style="getNestedPanelStyle(group.depth)"
+                >
+                  <div class="inline-child-creator__label">
+                    {{ t('dashboard.tabsSettings.addChildGroupLabel', { group: group.name }) }}
+                  </div>
+                  <div class="inline-child-creator__controls">
+                    <div class="control has-icons-left inline-child-creator__input">
+                      <input
+                        v-model="childGroupName"
+                        class="input is-small"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.childGroupNamePlaceholder')"
+                        @keyup.enter="handleCreateChildGroup"
+                        @keyup.esc="handleCancelChildGroup"
+                      />
+                      <span class="icon is-small is-left"><FolderOpenIcon :size="14" /></span>
+                    </div>
+                    <button
+                      class="button is-primary is-small"
+                      type="button"
+                      :disabled="!childGroupName.trim()"
+                      @click="handleCreateChildGroup"
+                    >
+                      <PlusIcon :size="14" />
+                      <span>{{ t('dashboard.tabsSettings.createGroupButton') }}</span>
+                    </button>
+                    <button
+                      class="button is-ghost is-small"
+                      type="button"
+                      @click="handleCancelChildGroup"
+                    >
+                      {{ t('dashboard.tabsSettings.cancelChildGroupButton') }}
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  v-if="!group.collapsed"
+                  class="tree-tabs"
+                  :style="getNestedPanelStyle(group.depth)"
+                >
+                  <VueDraggable
+                    v-model="groupTabLists[group.id]"
+                    group="custom-tabs"
+                    :animation="200"
+                    handle=".drag-handle"
+                    item-key="id"
+                    @change="() => handleTabsChanged(group.id)"
+                  >
+                    <div v-for="tab in groupTabLists[group.id]" :key="tab.id" class="tree-tab-row">
+                      <button
+                        class="button is-ghost is-small drag-handle"
+                        type="button"
+                        :aria-label="t('dashboard.tabsSettings.dragHandleTab')"
+                      >
+                        <GripVerticalIcon :size="14" />
+                      </button>
+                      <SearchIcon :size="15" />
+                      <div class="tree-tab-main">
+                        <span>{{ tab.name }}</span>
+                        <input
+                          v-if="editingSubtitleTabId === tab.id"
+                          v-model="editingSubtitleDraft"
+                          class="input is-small tab-subtitle-input"
+                          type="text"
+                          :aria-label="
+                            t('dashboard.tabsSettings.editSubtitleLabel', { view: tab.name })
+                          "
+                          @keyup.enter="saveSubtitleEdit(tab)"
+                          @keyup.esc="cancelSubtitleEdit"
+                          @blur="saveSubtitleEdit(tab)"
+                        />
+                        <button
+                          v-else
+                          class="tab-subtitle-button"
+                          type="button"
+                          :title="getQueryPreview(tab)"
+                          @click="startSubtitleEdit(tab)"
+                        >
+                          {{ getTabSubtitle(tab) }}
+                        </button>
+                      </div>
+                      <div class="tree-tab-actions">
+                        <div
+                          v-if="confirmingTabId === tab.id"
+                          class="tab-delete-confirm"
+                          role="alert"
+                          aria-live="polite"
+                        >
+                          <span>{{ t('dashboard.tabsSettings.deleteViewConfirm') }}</span>
+                          <button
+                            class="button is-ghost is-small tree-action-button"
+                            type="button"
+                            :aria-label="t('dashboard.tabsSettings.cancelDeleteButton')"
+                            @click="cancelDeleteConfirmation"
+                          >
+                            <XIcon :size="14" />
+                          </button>
+                          <button
+                            class="button is-ghost is-small tree-delete"
+                            type="button"
+                            :aria-label="t('dashboard.tabsSettings.confirmDeleteViewButton')"
+                            @click="confirmDeleteTab(tab.id)"
+                          >
+                            <Trash2Icon :size="14" />
+                          </button>
+                        </div>
+                        <button
+                          v-else
+                          class="button is-ghost is-small tree-delete"
+                          type="button"
+                          :aria-label="
+                            t('dashboard.tabsSettings.deleteViewLabel', { view: tab.name })
+                          "
+                          @click="requestDeleteTab(tab.id)"
+                        >
+                          <Trash2Icon :size="14" />
+                        </button>
+                      </div>
+                    </div>
+                  </VueDraggable>
+                  <p v-if="(groupTabLists[group.id] ?? []).length === 0" class="empty-drop-zone">
+                    {{ t('dashboard.tabsSettings.groupEmptyTabs') }}
+                  </p>
+                </div>
+              </article>
+            </VueDraggable>
           </div>
         </section>
       </section>
@@ -2034,8 +2124,7 @@ watch(
 .inline-delete-confirm__actions,
 .tab-delete-confirm,
 .tree-group-actions,
-.tree-tab-actions,
-.tab-move-tray {
+.tree-tab-actions {
   display: flex;
   align-items: center;
 }
@@ -2369,7 +2458,6 @@ watch(
   white-space: nowrap;
 }
 
-.tab-move-tray,
 .group-picker,
 .segmented-row,
 .source-selector {
@@ -2384,12 +2472,40 @@ watch(
   flex-wrap: wrap;
 }
 
-.tab-move-tray {
-  flex: 1 0 100%;
-  justify-content: flex-start;
-  gap: 0.42rem;
-  padding: 0.35rem 0 0 1.4rem;
-  opacity: 0.92;
+/* ── Drag-and-drop ── */
+
+.drag-handle {
+  flex: 0 0 auto;
+  padding: 0 0.15rem;
+  cursor: grab;
+  color: #94a3b8;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tree-group-row:hover .drag-handle,
+.tree-group-row:focus-within .drag-handle,
+.tree-tab-row:hover .drag-handle,
+.tree-tab-row:focus-within .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+:deep(.sortable-ghost) {
+  opacity: 0.4;
+  background: rgba(79, 70, 229, 0.08);
+}
+
+:deep(.sortable-chosen) {
+  opacity: 0.85;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.sortable-drag) {
+  opacity: 0.9;
 }
 
 .chip-button,
