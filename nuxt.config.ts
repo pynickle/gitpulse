@@ -52,7 +52,6 @@ export default defineNuxtConfig({
   css: ['bulma/css/bulma.min.css', '~/assets/scss/main.scss'],
 
   nitro: {
-    preset: 'bun',
     minify: true,
   },
 
