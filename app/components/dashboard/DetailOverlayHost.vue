@@ -182,7 +182,7 @@ watch(activeDetailKey, () => {
   box-sizing: border-box;
   min-height: 0;
   padding: 2rem 8rem;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .detail-loading-pane {

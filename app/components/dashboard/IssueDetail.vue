@@ -1,5 +1,5 @@
 <template>
-  <SimpleBar class="detail-scroll pr-6">
+  <div class="detail-scroll">
     <div class="columns">
       <div class="column is-three-quarters">
         <IssueHeader
@@ -27,8 +27,13 @@
         </div>
       </div>
 
-      <div class="column is-one-quarter ml-6">
-        <div class="sticky-container">
+      <div class="column is-one-quarter detail-sidebar-column">
+        <div
+          ref="sidebarRef"
+          class="sidebar-scroll"
+          :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
+          @scroll="onSidebarScroll"
+        >
           <IssueLabels
             :labels="currentIssue?.labels || []"
             :can-edit-labels="canEditLabels"
@@ -53,14 +58,12 @@
         </div>
       </div>
     </div>
-  </SimpleBar>
+  </div>
 </template>
 
 <script setup lang="ts">
-import SimpleBar from 'simplebar-vue';
 import { computed, ref, watch } from 'vue';
 
-import 'simplebar-vue/dist/simplebar.min.css';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 // Import subcomponents
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
@@ -102,6 +105,21 @@ const permissionRequestId = ref(0);
 const currentTimelinePage = ref(1);
 const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
+
+// Sidebar scroll auto-hide
+const sidebarRef = ref<HTMLElement | null>(null);
+const isSidebarScrolling = ref(false);
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const onSidebarScroll = () => {
+  isSidebarScrolling.value = true;
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+  scrollTimeout = setTimeout(() => {
+    isSidebarScrolling.value = false;
+  }, 1000);
+};
 
 // Computed properties
 const repoInfo = computed(() => {
@@ -314,16 +332,65 @@ useHead({
 <style scoped lang="scss">
 .detail-scroll {
   height: 100%;
-  max-height: 100%;
-
-  .columns {
-    max-width: 100%;
-  }
+  min-height: 0;
+  overflow: hidden;
 }
 
-.sticky-container {
-  position: sticky;
-  top: 20px;
+.detail-scroll :deep(.columns) {
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  margin-bottom: 0;
+}
+
+.detail-scroll :deep(.column.is-three-quarters) {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.detail-scroll :deep(.column.is-one-quarter) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detail-scroll :deep(.detail-sidebar-column) {
+  padding-right: 1rem;
+}
+
+.sidebar-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 0.75rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+
+  &:hover,
+  &--active {
+    scrollbar-color: #d0d5dd transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+  }
+
+  &:hover::-webkit-scrollbar-thumb,
+  &--active::-webkit-scrollbar-thumb {
+    background-color: #d0d5dd;
+  }
 }
 
 .issue-detail__timeline {

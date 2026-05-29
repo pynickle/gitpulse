@@ -1,10 +1,5 @@
 <template>
-  <div
-    :class="[
-      'pr-detail-layout',
-      { 'pr-detail-layout--review': isReviewWindowOpen, 'mr-6': !isReviewWindowOpen },
-    ]"
-  >
+  <div :class="['pr-detail-layout', { 'pr-detail-layout--review': isReviewWindowOpen }]">
     <PRReviewWorkspace
       v-if="isReviewWindowOpen"
       :owner="repoOwner"
@@ -46,8 +41,13 @@
         </div>
       </div>
 
-      <div class="column is-one-quarter ml-6">
-        <div class="sticky-container">
+      <div class="column is-one-quarter detail-sidebar-column">
+        <div
+          ref="sidebarRef"
+          class="sidebar-scroll"
+          :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
+          @scroll="onSidebarScroll"
+        >
           <PRLabels
             :labels="currentPullRequest?.labels || []"
             :can-edit-labels="canEditLabels"
@@ -69,14 +69,19 @@
             :deletions="currentPullRequest?.deletions"
           />
 
-          <button
-            class="button is-link is-fullwidth mt-4"
-            type="button"
-            :disabled="!canOpenReviewWindow"
-            @click="isReviewWindowOpen = true"
-          >
-            {{ t('prReview.openReview') }}
-          </button>
+          <div class="sidebar-card mt-4">
+            <div class="sidebar-card__content">
+              <button
+                class="sidebar-review-btn"
+                type="button"
+                :disabled="!canOpenReviewWindow"
+                @click="isReviewWindowOpen = true"
+              >
+                <EyeIcon :size="14" />
+                <span>{{ t('prReview.openReview') }}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -84,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { EyeIcon } from 'lucide-vue-next';
 import { shallowRef, ref, computed, watch } from 'vue';
 
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
@@ -117,6 +123,21 @@ const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const isReviewWindowOpen = shallowRef(false);
 const { t } = useI18n();
+
+// Sidebar scroll auto-hide
+const sidebarRef = ref<HTMLElement | null>(null);
+const isSidebarScrolling = ref(false);
+let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const onSidebarScroll = () => {
+  isSidebarScrolling.value = true;
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+  scrollTimeout = setTimeout(() => {
+    isSidebarScrolling.value = false;
+  }, 1000);
+};
 
 const repoPermissions = ref({
   admin: false,
@@ -401,13 +422,67 @@ useHead({
 </script>
 
 <style scoped lang="scss">
-.sticky-container {
-  position: sticky;
-  top: 2rem;
+.pr-detail-layout :deep(.columns) {
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  margin-bottom: 0;
+}
+
+.pr-detail-layout :deep(.column.is-three-quarters) {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.pr-detail-layout :deep(.column.is-one-quarter) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pr-detail-layout :deep(.detail-sidebar-column) {
+  padding-right: 1rem;
+}
+
+.sidebar-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 0.75rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+
+  &:hover,
+  &--active {
+    scrollbar-color: #d0d5dd transparent;
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+  }
+
+  &:hover::-webkit-scrollbar-thumb,
+  &--active::-webkit-scrollbar-thumb {
+    background-color: #d0d5dd;
+  }
 }
 
 .pr-detail-layout {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pr-detail-layout--review {
@@ -419,5 +494,34 @@ useHead({
 
 .pr-detail__timeline {
   padding-bottom: 5rem;
+}
+
+// Review button
+.sidebar-review-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #eaecef;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #d0d5dd;
+    color: #333;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 </style>
