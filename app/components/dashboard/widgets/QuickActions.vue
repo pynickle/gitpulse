@@ -4,13 +4,6 @@
       {{ t('dashboard.widgets.actions.title') }}
     </h3>
 
-    <div class="quick-actions__tip">
-      <span class="quick-actions__tip-icon" aria-hidden="true">
-        <LightbulbIcon :size="16" />
-      </span>
-      <p class="quick-actions__tip-text">{{ currentConfig.tip }}</p>
-    </div>
-
     <ul class="quick-actions__links">
       <li v-for="link in currentConfig.links" :key="link.href">
         <a class="quick-actions__link" :href="link.href" target="_blank" rel="noopener noreferrer">
@@ -23,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ExternalLinkIcon, LightbulbIcon } from 'lucide-vue-next';
+import { ExternalLinkIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const { t } = useI18n();
@@ -108,32 +101,6 @@ const currentConfig = computed<GuideConfig>(() => {
     margin-bottom: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-  }
-
-  &__tip {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    padding: 0.875rem;
-    border: 1px solid var(--gitpulse-border);
-    border-radius: 12px;
-    background:
-      linear-gradient(135deg, var(--gitpulse-info-soft), var(--gitpulse-success-soft)),
-      var(--gitpulse-surface);
-  }
-
-  &__tip-icon {
-    display: inline-flex;
-    color: var(--gitpulse-warning);
-    margin-top: 0.125rem;
-    flex-shrink: 0;
-  }
-
-  &__tip-text {
-    margin: 0;
-    color: var(--bulma-text);
-    font-size: 0.875rem;
-    line-height: 1.45;
   }
 
   &__links {

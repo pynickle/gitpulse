@@ -291,7 +291,7 @@
         }
       },
       "actions": {
-        "title": "Context & links",
+        "title": "Links",
         "notifications": {
           "tip": "Unread items stay visible until GitHub marks them read. Use the filters above to compare unread and read work without changing state.",
           "settings": "Manage notification settings"
