@@ -211,22 +211,22 @@ const filterIconMap: Record<
   { icon: typeof CircleDotIcon; activeColor: string } | undefined
 > = {
   // type
-  issues: { icon: CircleDotIcon, activeColor: '#1a7f37' },
-  pulls: { icon: GitPullRequestIcon, activeColor: '#8250df' },
-  all: { icon: GitMergeIcon, activeColor: '#4f46e5' },
+  issues: { icon: CircleDotIcon, activeColor: 'var(--gitpulse-success-solid)' },
+  pulls: { icon: GitPullRequestIcon, activeColor: 'var(--gitpulse-purple)' },
+  all: { icon: GitMergeIcon, activeColor: 'var(--gitpulse-accent)' },
   // state
-  open: { icon: CircleDotIcon, activeColor: '#1a7f37' },
-  closed: { icon: CircleMinusIcon, activeColor: '#cf222e' },
+  open: { icon: CircleDotIcon, activeColor: 'var(--gitpulse-success-solid)' },
+  closed: { icon: CircleMinusIcon, activeColor: 'var(--gitpulse-danger-solid)' },
   // draft
-  draft: { icon: FilePenLineIcon, activeColor: '#bf8700' },
-  ready: { icon: CheckCircle2Icon, activeColor: '#1a7f37' },
+  draft: { icon: FilePenLineIcon, activeColor: 'var(--gitpulse-warning-solid)' },
+  ready: { icon: CheckCircle2Icon, activeColor: 'var(--gitpulse-success-solid)' },
   // review
-  approved: { icon: CheckCircle2Icon, activeColor: '#1a7f37' },
-  changes_requested: { icon: XCircleIcon, activeColor: '#cf222e' },
-  required: { icon: ShieldAlertIcon, activeColor: '#bf8700' },
+  approved: { icon: CheckCircle2Icon, activeColor: 'var(--gitpulse-success-solid)' },
+  changes_requested: { icon: XCircleIcon, activeColor: 'var(--gitpulse-danger-solid)' },
+  required: { icon: ShieldAlertIcon, activeColor: 'var(--gitpulse-warning-solid)' },
   // order
-  desc: { icon: ArrowDownIcon, activeColor: '#4f46e5' },
-  asc: { icon: ArrowUpIcon, activeColor: '#4f46e5' },
+  desc: { icon: ArrowDownIcon, activeColor: 'var(--gitpulse-accent)' },
+  asc: { icon: ArrowUpIcon, activeColor: 'var(--gitpulse-accent)' },
 };
 
 const { groups, createGroup, updateGroup, deleteGroup, toggleGroupCollapsed, reorderGroups } =
@@ -2735,7 +2735,7 @@ void nextTick(() => {
 }
 
 .segmented-button.is-active {
-  --active: var(--seg-active-bg, #4f46e5);
+  --active: var(--seg-active-bg, var(--gitpulse-accent));
   border-color: var(--seg-active-border, var(--active));
   color: #ffffff;
   background: var(--active);
@@ -2968,7 +2968,7 @@ void nextTick(() => {
     border-color 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: var(--bulma-link-soft, rgba(79, 70, 229, 0.06));
+    background: var(--bulma-link-soft);
     border-color: var(--gitpulse-accent);
     color: var(--gitpulse-accent);
   }
@@ -3222,10 +3222,10 @@ void nextTick(() => {
   padding: 0.15rem 0.5rem;
   font-size: 0.8rem;
   height: auto;
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
 }
 
 .editor-deselect-btn:hover {
-  background: rgba(79, 70, 229, 0.08);
+  background: var(--gitpulse-accent-soft);
 }
 </style>

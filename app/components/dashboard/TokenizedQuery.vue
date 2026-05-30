@@ -182,173 +182,90 @@ const tokens = computed<Token[]>(() => {
 
 // Type qualifiers: is:issue, is:pr, is:public, etc
 .tq-token--type .tq-seg--qualifier {
-  color: #7c3aed;
+  color: var(--gitpulse-purple);
 }
 .tq-token--type .tq-seg--value {
-  color: #8b5cf6;
+  color: var(--gitpulse-purple);
 }
 
 // State: state:open, state:closed
 .tq-token--state .tq-seg--qualifier {
-  color: #b45309;
+  color: var(--gitpulse-warning);
 }
 .tq-token--state .tq-seg--value {
-  color: #d97706;
+  color: var(--gitpulse-warning);
 }
 
 // Person: author:, assignee:, mentions:, involves:, commenter:
 .tq-token--person .tq-seg--qualifier {
-  color: #0891b2;
+  color: var(--gitpulse-info);
 }
 .tq-token--person .tq-seg--value {
-  color: #06b6d4;
+  color: var(--gitpulse-info);
 }
 
 // Repo: repo:, org:, user:
 .tq-token--repo .tq-seg--qualifier {
-  color: #2563eb;
+  color: var(--gitpulse-link);
 }
 .tq-token--repo .tq-seg--value {
-  color: #3b82f6;
+  color: var(--gitpulse-link);
 }
 
 // Label: label:
 .tq-token--label .tq-seg--qualifier {
-  color: #16a34a;
+  color: var(--gitpulse-success);
 }
 .tq-token--label .tq-seg--value {
-  color: #22c55e;
+  color: var(--gitpulse-success);
 }
 
 // PR: draft:, review:, base:, head:
 .tq-token--pr .tq-seg--qualifier {
-  color: #be185d;
+  color: var(--gitpulse-danger);
 }
 .tq-token--pr .tq-seg--value {
-  color: #db2777;
+  color: var(--gitpulse-danger);
 }
 
 // Archive: archived:
 .tq-token--archive .tq-seg--qualifier {
-  color: #6b7280;
+  color: var(--gitpulse-text-muted);
 }
 .tq-token--archive .tq-seg--value {
-  color: #9ca3af;
+  color: var(--gitpulse-text-muted);
 }
 
 // Search in: in:title, in:body
 .tq-token--search-in .tq-seg--qualifier {
-  color: #4f46e5;
+  color: var(--gitpulse-accent);
 }
 .tq-token--search-in .tq-seg--value {
-  color: #6366f1;
+  color: var(--gitpulse-accent);
 }
 
 // Sort: sort:, order:
 .tq-token--sort .tq-seg--qualifier {
-  color: #0d9488;
+  color: var(--gitpulse-info);
 }
 .tq-token--sort .tq-seg--value {
-  color: #14b8a6;
+  color: var(--gitpulse-info);
 }
 
 // Other known qualifiers
 .tq-token--other .tq-seg--qualifier {
-  color: #78716c;
+  color: var(--gitpulse-text-muted);
 }
 .tq-token--other .tq-seg--value {
-  color: #a8a29e;
+  color: var(--gitpulse-text-muted);
 }
 
 // Unknown qualifiers
 .tq-token--unknown .tq-seg--qualifier {
-  color: #dc2626;
-  text-decoration: underline wavy rgba(220, 38, 38, 0.35);
+  color: var(--gitpulse-danger);
+  text-decoration: underline wavy color-mix(in srgb, var(--gitpulse-danger) 35%, transparent);
 }
 .tq-token--unknown .tq-seg--value {
-  color: #ef4444;
-}
-
-:global(html.dark) {
-  .tq-token--keyword .tq-seg--bareword {
-    color: #e2e8f0;
-  }
-
-  .tq-token--type .tq-seg--qualifier {
-    color: #a78bfa;
-  }
-  .tq-token--type .tq-seg--value {
-    color: #c4b5fd;
-  }
-
-  .tq-token--state .tq-seg--qualifier {
-    color: #f59e0b;
-  }
-  .tq-token--state .tq-seg--value {
-    color: #fbbf24;
-  }
-
-  .tq-token--person .tq-seg--qualifier {
-    color: #22d3ee;
-  }
-  .tq-token--person .tq-seg--value {
-    color: #67e8f9;
-  }
-
-  .tq-token--repo .tq-seg--qualifier {
-    color: #60a5fa;
-  }
-  .tq-token--repo .tq-seg--value {
-    color: #93c5fd;
-  }
-
-  .tq-token--label .tq-seg--qualifier {
-    color: #4ade80;
-  }
-  .tq-token--label .tq-seg--value {
-    color: #86efac;
-  }
-
-  .tq-token--pr .tq-seg--qualifier {
-    color: #f472b6;
-  }
-  .tq-token--pr .tq-seg--value {
-    color: #f9a8d4;
-  }
-
-  .tq-token--archive .tq-seg--qualifier {
-    color: #9ca3af;
-  }
-  .tq-token--archive .tq-seg--value {
-    color: #d1d5db;
-  }
-
-  .tq-token--search-in .tq-seg--qualifier {
-    color: #818cf8;
-  }
-  .tq-token--search-in .tq-seg--value {
-    color: #a5b4fc;
-  }
-
-  .tq-token--sort .tq-seg--qualifier {
-    color: #2dd4bf;
-  }
-  .tq-token--sort .tq-seg--value {
-    color: #5eead4;
-  }
-
-  .tq-token--other .tq-seg--qualifier {
-    color: #a8a29e;
-  }
-  .tq-token--other .tq-seg--value {
-    color: #d6d3d1;
-  }
-
-  .tq-token--unknown .tq-seg--qualifier {
-    color: #fca5a5;
-  }
-  .tq-token--unknown .tq-seg--value {
-    color: #fecaca;
-  }
+  color: var(--gitpulse-danger);
 }
 </style>

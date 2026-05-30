@@ -85,8 +85,8 @@ const skeletonCardCount = 5;
 .dashboard-loading-card {
   overflow: hidden;
   background:
-    radial-gradient(circle at top left, rgba(62, 142, 208, 0.12), transparent 36%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(250, 252, 255, 0.92));
+    radial-gradient(circle at top left, var(--gitpulse-info-soft), transparent 36%),
+    linear-gradient(135deg, var(--gitpulse-surface), var(--gitpulse-surface-muted));
 }
 
 .dashboard-loading-card__icon,
@@ -98,7 +98,7 @@ const skeletonCardCount = 5;
   overflow: hidden;
   position: relative;
   border-radius: 999px;
-  background: linear-gradient(90deg, #eef3f8 0%, #f8fbff 42%, #e7eef6 74%);
+  background: var(--gitpulse-skeleton-shimmer);
   background-size: 220% 100%;
   animation: dashboard-loading-shimmer 1.35s ease-in-out infinite;
 }

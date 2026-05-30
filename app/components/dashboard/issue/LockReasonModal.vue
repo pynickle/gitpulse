@@ -19,8 +19,8 @@
           <div
             v-for="reason in lockReasons"
             :key="reason.value"
-            class="is-flex is-align-items-center p-3 hover:bg-gray-50 rounded cursor-pointer"
-            :class="{ 'bg-gray-100': selectedReason === reason.value }"
+            class="lock-reason-item is-flex is-align-items-center p-3 rounded cursor-pointer"
+            :class="{ 'is-selected': selectedReason === reason.value }"
             @click="selectedReason = reason.value"
           >
             <div class="mr-4">
@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
@@ -83,7 +83,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const selectedReason = ref<string>('');
+const selectedReason = shallowRef<string>('');
 
 // Lock reasons for selection
 const lockReasons = [
@@ -116,3 +116,23 @@ const confirmLock = () => {
   }
 };
 </script>
+
+<style scoped lang="scss">
+.lock-reason-item {
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border);
+  }
+
+  &.is-selected {
+    background: var(--gitpulse-surface-active);
+    border-color: var(--gitpulse-border-strong);
+  }
+}
+</style>

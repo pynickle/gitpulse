@@ -96,23 +96,23 @@ const displayStats = computed(() => {
 
     // Semantic color classes
     &.has-text-warning {
-      color: #f59e0b; // Amber/orange for unread
+      color: var(--gitpulse-warning);
     }
 
     &.has-text-success {
-      color: #10b981; // Green for read/open
+      color: var(--gitpulse-success);
     }
 
     &.has-text-info {
-      color: #3b82f6; // Blue for total
+      color: var(--gitpulse-info);
     }
 
     &.has-text-danger {
-      color: #ef4444; // Red for closed
+      color: var(--gitpulse-danger);
     }
 
     &.has-text-purple {
-      color: #8b5cf6; // Purple for merged
+      color: var(--gitpulse-purple);
     }
   }
 

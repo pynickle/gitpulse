@@ -157,10 +157,10 @@ const getStateIcon = (item: SearchResultItem) => {
   padding: 0.2rem 0;
   font-size: 0.78rem;
   font-weight: 650;
-  color: #92400e;
+  color: var(--gitpulse-warning);
 
   &.is-error {
-    color: #b42318;
+    color: var(--gitpulse-danger);
   }
 }
 
@@ -174,13 +174,13 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-pill__dot--pulse {
-  background: #4f46e5;
+  background: var(--gitpulse-accent);
   animation: srp-pulse 1s ease-in-out infinite;
 }
 
 .srp-pill__icon {
-  background: #b42318;
-  color: white;
+  background: var(--gitpulse-danger);
+  color: #ffffff;
   font-size: 0.5rem;
   line-height: 0.55rem;
   text-align: center;
@@ -188,7 +188,7 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-pill__check {
-  background: #16a34a;
+  background: var(--gitpulse-success);
 }
 
 @keyframes srp-pulse {
@@ -204,7 +204,7 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-toolbar__gh-link {
-  color: #4f46e5;
+  color: var(--gitpulse-link);
   text-decoration: none;
   font-weight: 600;
 
@@ -229,7 +229,7 @@ const getStateIcon = (item: SearchResultItem) => {
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(79, 70, 229, 0.25);
+    background: color-mix(in srgb, var(--gitpulse-accent) 25%, transparent);
     border-radius: 4px;
   }
 }
@@ -279,7 +279,7 @@ const getStateIcon = (item: SearchResultItem) => {
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.35;
-  color: var(--bulma-text-strong, #111827);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .srp-card__meta {
@@ -287,7 +287,7 @@ const getStateIcon = (item: SearchResultItem) => {
   align-items: center;
   gap: 0.2rem;
   font-size: 0.72rem;
-  color: var(--bulma-text, #4a4a4a);
+  color: var(--bulma-text, var(--gitpulse-text));
   white-space: nowrap;
   overflow: hidden;
 }
@@ -300,7 +300,7 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-card__sep {
-  color: var(--bulma-text-light, #9ca3af);
+  color: var(--gitpulse-text-subtle);
 }
 
 .srp-card__number {
@@ -340,7 +340,7 @@ const getStateIcon = (item: SearchResultItem) => {
 .srp-empty {
   padding: 1.5rem 0.75rem;
   text-align: center;
-  color: var(--bulma-text-light, #94a3b8);
+  color: var(--gitpulse-text-muted);
   font-size: 0.82rem;
   border: 1px dashed var(--gitpulse-border);
   border-radius: 6px;

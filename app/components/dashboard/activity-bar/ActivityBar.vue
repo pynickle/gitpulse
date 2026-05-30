@@ -121,12 +121,12 @@ function getGroupIcon(icon?: string) {
     transition: box-shadow 0.15s ease;
 
     &:focus-visible {
-      outline: 2px solid var(--bulma-primary, #4f46e5);
+      outline: 2px solid var(--gitpulse-focus-ring);
       outline-offset: 2px;
     }
 
     &:hover {
-      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--gitpulse-accent) 25%, transparent);
     }
 
     &:active {
@@ -177,17 +177,17 @@ function getGroupIcon(icon?: string) {
       color 0.15s ease;
 
     &:hover {
-      background: var(--bulma-background-hover, rgba(0, 0, 0, 0.05));
+      background: var(--bulma-background-hover);
       color: var(--bulma-text-strong, #1e293b);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--bulma-primary, #4f46e5);
+      outline: 2px solid var(--gitpulse-focus-ring);
       outline-offset: 1px;
     }
 
     &:active {
-      background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
+      background: var(--bulma-background-hover);
     }
 
     &.is-active {

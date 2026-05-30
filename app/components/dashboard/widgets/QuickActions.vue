@@ -104,7 +104,7 @@ const currentConfig = computed<GuideConfig>(() => {
   &__title {
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--bulma-text-light);
+    color: var(--gitpulse-text-muted);
     margin-bottom: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -164,7 +164,7 @@ const currentConfig = computed<GuideConfig>(() => {
     &:hover,
     &:focus-visible {
       color: var(--bulma-link);
-      background-color: var(--bulma-background-hover, rgba(0, 0, 0, 0.03));
+      background-color: var(--bulma-background-hover);
 
       .quick-actions__link-icon {
         transform: translate(2px, -2px);
@@ -173,7 +173,7 @@ const currentConfig = computed<GuideConfig>(() => {
   }
 
   &__link-icon {
-    color: var(--bulma-text-light);
+    color: var(--gitpulse-text-subtle);
     flex-shrink: 0;
     transition: transform 0.2s ease;
   }

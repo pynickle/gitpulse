@@ -224,17 +224,17 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.045));
+    background: var(--bulma-background-hover);
     color: var(--bulma-text, #374151);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--bulma-primary, #4f46e5);
+    outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 2px;
   }
 
   &:active {
-    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
+    background: var(--bulma-background-hover);
   }
 }
 
@@ -266,17 +266,17 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   transition: background-color 0.15s ease;
 
   &:hover {
-    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.045));
+    background: var(--bulma-background-hover);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--bulma-primary, #4f46e5);
+    outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 1px;
     border-radius: 6px;
   }
 
   &:active {
-    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.08));
+    background: var(--bulma-background-hover);
   }
 
   &--nested {
@@ -371,18 +371,18 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
     color 0.15s ease;
 
   &:hover {
-    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.04));
+    background: var(--bulma-background-hover);
     color: var(--bulma-text-strong, #1e293b);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--bulma-primary, #4f46e5);
+    outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 1px;
     border-radius: 6px;
   }
 
   &:active {
-    background: var(--bulma-background-hover, rgba(0, 0, 0, 0.07));
+    background: var(--bulma-background-hover);
   }
 
   &--active {
@@ -458,7 +458,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 
   .tab-sidebar__tab:active,
   .tab-sidebar__group:active {
-    background: rgba(0, 0, 0, 0.04);
+    background: var(--bulma-background-hover);
   }
 }
 </style>

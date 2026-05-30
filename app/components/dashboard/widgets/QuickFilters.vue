@@ -121,14 +121,14 @@ const onChange = () => {
   &__title {
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--bulma-text-light);
+    color: var(--gitpulse-text-muted);
     margin-bottom: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   &__empty {
-    color: var(--bulma-text-light);
+    color: var(--gitpulse-text-muted);
     font-size: 0.875rem;
     font-style: italic;
   }
@@ -151,10 +151,10 @@ const onChange = () => {
     margin-right: -0.75rem;
 
     &:hover {
-      background-color: var(--bulma-background-hover, rgba(0, 0, 0, 0.02));
+      background-color: var(--bulma-background-hover);
 
       .quick-filters__checkbox {
-        border-color: var(--bulma-border-hover, #b5b5b5);
+        border-color: var(--gitpulse-border-strong);
       }
     }
 
@@ -162,7 +162,7 @@ const onChange = () => {
       .quick-filters__checkbox {
         background-color: var(--bulma-primary);
         border-color: var(--bulma-primary);
-        color: white;
+        color: #ffffff;
       }
 
       .quick-filters__label {
@@ -176,7 +176,7 @@ const onChange = () => {
     width: 18px;
     height: 18px;
     border-radius: 4px;
-    border: 2px solid var(--bulma-border, #dbdbdb);
+    border: 2px solid var(--gitpulse-border);
     display: flex;
     align-items: center;
     justify-content: center;
