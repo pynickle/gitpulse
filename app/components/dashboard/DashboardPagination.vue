@@ -142,10 +142,21 @@ const pageItems = computed(() => {
   font-weight: 600;
 }
 
+html.dark .pagination-link.is-current {
+  background: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
+}
+
 .pagination-link.is-current:hover,
 .pagination-link.is-current:focus {
   background: var(--gitpulse-link);
   color: #ffffff;
+}
+
+html.dark .pagination-link.is-current:hover,
+html.dark .pagination-link.is-current:focus {
+  background: color-mix(in srgb, var(--gitpulse-info) 20%, transparent);
+  color: var(--gitpulse-info);
 }
 
 .pagination-link[disabled],

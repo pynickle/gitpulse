@@ -29,6 +29,7 @@ withDefaults(
 .loading-spinner {
   animation: spin 1s linear infinite;
   transform-origin: center;
+  color: var(--gitpulse-text-muted);
 }
 
 @keyframes spin {

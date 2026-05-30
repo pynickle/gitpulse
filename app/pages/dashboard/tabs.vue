@@ -3211,6 +3211,35 @@ void nextTick(() => {
     background: var(--gitpulse-accent-soft);
     color: var(--gitpulse-accent);
   }
+
+  .segmented-button.is-active {
+    background: var(--gitpulse-accent-soft);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 30%, transparent);
+    color: var(--gitpulse-accent);
+    box-shadow: none;
+  }
+
+  .source-option.is-active {
+    background: var(--gitpulse-accent-soft);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 30%, transparent);
+    color: var(--gitpulse-accent);
+  }
+
+  .source-option.is-active small {
+    color: var(--gitpulse-text-muted);
+  }
+
+  .group-choice.is-active {
+    background: var(--gitpulse-accent-soft);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 30%, transparent);
+    color: var(--gitpulse-accent);
+  }
+
+  .chip-button.is-active {
+    background: var(--gitpulse-accent-soft);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 30%, transparent);
+    color: var(--gitpulse-accent);
+  }
 }
 
 .editor-deselect-btn {

@@ -534,16 +534,19 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__status--added {
-  background: var(--gitpulse-success);
+  background: var(--gitpulse-success-soft);
+  color: var(--gitpulse-success);
 }
 
 .pr-review-file-sidebar__status--removed {
-  background: var(--gitpulse-danger);
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
 }
 
 .pr-review-file-sidebar__status--modified,
 .pr-review-file-sidebar__status--changed {
-  background: var(--gitpulse-warning);
+  background: var(--gitpulse-warning-soft);
+  color: var(--gitpulse-warning);
 }
 
 .pr-review-file-sidebar__status--renamed {

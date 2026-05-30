@@ -95,7 +95,7 @@ const totalDeletions = computed(() =>
 
     <div v-else-if="review.loading.value" class="pr-review-workspace__notice">
       <div class="is-flex is-align-items-center is-justify-content-center">
-        <span class="button is-loading is-white mr-2"></span>
+        <span class="button is-loading is-light pr-review-workspace__loading-btn mr-2"></span>
         <span>{{ t('prReview.loadingFiles') }}</span>
       </div>
     </div>
@@ -277,6 +277,17 @@ const totalDeletions = computed(() =>
   align-items: center;
   justify-content: center;
   padding: 2rem;
+}
+
+html.dark .pr-review-workspace__loading-btn {
+  color: var(--gitpulse-text-strong);
+  background-color: var(--gitpulse-surface);
+  border-color: var(--gitpulse-border);
+}
+
+html.dark .pr-review-workspace__loading-btn::after {
+  border-color: var(--gitpulse-text-strong);
+  border-right-color: transparent;
 }
 
 @media (max-width: 1100px) {
