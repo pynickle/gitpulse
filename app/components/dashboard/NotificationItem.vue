@@ -21,8 +21,8 @@
               :class="{
                 'notification-type-badge--pending': isSubjectStatePending,
                 'notification-type-badge--error': isSubjectStateError,
+                [`notification-type-badge--${subjectVisual.state}`]: subjectVisual.state,
               }"
-              :style="subjectVisualStyle"
               :title="subjectStateTitle"
               :aria-label="subjectStateTitle"
             >
@@ -125,10 +125,6 @@ const subjectVisual = computed(() => {
     state: currentNotification.value.subject?.state,
     subjectType: currentNotification.value.subject?.type,
   });
-});
-
-const subjectVisualStyle = computed(() => {
-  return subjectVisual.value.color ? { color: subjectVisual.value.color } : {};
 });
 
 const subjectStateTitle = computed(() => {
@@ -235,6 +231,26 @@ const reasonIcon = computed(() => {
 .notification-type-badge--error {
   border-color: var(--gitpulse-border-strong);
   opacity: 0.45;
+}
+
+.notification-type-badge--open {
+  color: var(--gitpulse-success);
+}
+
+.notification-type-badge--closed {
+  color: var(--gitpulse-text-muted);
+}
+
+.notification-type-badge--merged {
+  color: var(--gitpulse-info);
+}
+
+.notification-type-badge--discussion {
+  color: var(--gitpulse-info);
+}
+
+.notification-type-badge--release {
+  color: var(--gitpulse-warning);
 }
 
 .notification-state-icon-enter-active,

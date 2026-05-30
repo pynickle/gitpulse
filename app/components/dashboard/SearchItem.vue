@@ -3,7 +3,7 @@
     <div class="card-content p-3">
       <div class="dashboard-list-card__main-row">
         <div class="dashboard-list-card__icon ml-2 mt-1">
-          <component :size="24" :is="stateIcon" :style="stateColor" />
+          <component :size="24" :is="stateIcon" :class="`state-icon--${stateVisual.state}`" />
         </div>
         <div class="dashboard-list-card__content">
           <div class="dashboard-list-card__text-stack">
@@ -104,10 +104,27 @@ const stateVisual = computed(() => {
 const stateIcon = computed(() => {
   return stateVisual.value.icon;
 });
-
-const stateColor = computed(() => {
-  return stateVisual.value.color ? { color: stateVisual.value.color } : {};
-});
 </script>
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
+<style scoped lang="scss">
+.state-icon--open {
+  color: var(--gitpulse-success);
+}
+
+.state-icon--closed {
+  color: var(--gitpulse-text-muted);
+}
+
+.state-icon--merged {
+  color: var(--gitpulse-info);
+}
+
+.state-icon--discussion {
+  color: var(--gitpulse-info);
+}
+
+.state-icon--release {
+  color: var(--gitpulse-warning);
+}
+</style>

@@ -21,6 +21,7 @@ export interface DashboardSubjectStateVisual {
   icon?: Component;
   color?: string;
   label: string;
+  state?: 'open' | 'closed' | 'merged' | 'discussion' | 'release';
 }
 
 const subjectTypeVisuals: Record<string, DashboardSubjectStateVisual> = {
@@ -28,21 +29,25 @@ const subjectTypeVisuals: Record<string, DashboardSubjectStateVisual> = {
     icon: CircleDotIcon,
     color: '#1a7f37',
     label: 'Issue',
+    state: 'open',
   },
   PullRequest: {
     icon: GitPullRequestIcon,
     color: '#8250df',
     label: 'Pull request',
+    state: 'open',
   },
   Discussion: {
     icon: MessagesSquareIcon,
     color: '#0969da',
     label: 'Discussion',
+    state: 'discussion',
   },
   Release: {
     icon: TagIcon,
     color: '#bf8700',
     label: 'Release',
+    state: 'release',
   },
 };
 
@@ -69,6 +74,7 @@ export default function getDashboardSubjectStateVisual({
         icon: GitPullRequestIcon,
         color: '#1a7f37',
         label: 'Open pull request',
+        state: 'open',
       };
     }
 
@@ -77,6 +83,7 @@ export default function getDashboardSubjectStateVisual({
         icon: GitMergeIcon,
         color: '#0969da',
         label: 'Merged pull request',
+        state: 'merged',
       };
     }
 
@@ -84,6 +91,7 @@ export default function getDashboardSubjectStateVisual({
       icon: GitPullRequestClosedIcon,
       color: '#000000',
       label: 'Closed pull request',
+      state: 'closed',
     };
   }
 
@@ -92,6 +100,7 @@ export default function getDashboardSubjectStateVisual({
       icon: CircleDotIcon,
       color: '#1a7f37',
       label: 'Open issue',
+      state: 'open',
     };
   }
 
@@ -99,5 +108,6 @@ export default function getDashboardSubjectStateVisual({
     icon: CircleMinusIcon,
     color: '#000000',
     label: 'Closed issue',
+    state: 'closed',
   };
 }

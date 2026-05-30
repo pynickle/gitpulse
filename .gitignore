@@ -38,6 +38,8 @@ AGENTS.md
 
 .playwright-mcp/
 
+/tmp/
+
 opencode.jsonc
 
 /.sisyphus/
