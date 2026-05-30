@@ -1,3 +1,4 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <template>
   <div class="sidebar-card mb-4">
     <div class="sidebar-card__header">
@@ -274,6 +275,7 @@ const saveLabels = async () => {
 };
 </script>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 @use 'sass:color';
 @use '~/assets/scss/_variables' as *;
@@ -672,41 +674,4 @@ const saveLabels = async () => {
 }
 
 // Transition
-.label-modal-enter-active {
-  transition: opacity 0.18s ease;
-
-  .label-editor-panel {
-    transition:
-      transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-      opacity 0.18s ease;
-  }
-}
-
-.label-modal-leave-active {
-  transition: opacity 0.12s ease;
-
-  .label-editor-panel {
-    transition:
-      transform 0.12s ease,
-      opacity 0.12s ease;
-  }
-}
-
-.label-modal-enter-from {
-  opacity: 0;
-
-  .label-editor-panel {
-    transform: scale(0.97) translateY(6px);
-    opacity: 0;
-  }
-}
-
-.label-modal-leave-to {
-  opacity: 0;
-
-  .label-editor-panel {
-    transform: scale(0.97) translateY(6px);
-    opacity: 0;
-  }
-}
 </style>

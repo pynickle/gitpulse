@@ -1,3 +1,4 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <script setup lang="ts">
 import {
   CheckCircle2Icon,
@@ -240,6 +241,7 @@ const handleBodyInput = (event: Event) => {
   </aside>
 </template>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 .pr-review-submit-bar {
   height: 100%;

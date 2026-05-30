@@ -1,3 +1,5 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <template>
   <div class="sidebar-card mb-4">
     <div class="sidebar-card__header">
@@ -277,6 +279,8 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 };
 </script>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 @use 'sass:color';
 @use '~/assets/scss/_variables' as *;

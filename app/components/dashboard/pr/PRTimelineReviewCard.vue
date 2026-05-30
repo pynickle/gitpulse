@@ -1,3 +1,4 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <template>
   <TimelineCommentCard
     v-if="isPlainComment"
@@ -110,6 +111,7 @@ const stateIcon = computed(() => {
 });
 </script>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 .review-item {
   border-radius: 16px;

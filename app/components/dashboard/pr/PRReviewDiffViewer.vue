@@ -1,3 +1,7 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->
 <script setup lang="ts">
 import { ChevronRightIcon } from 'lucide-vue-next';
 import {
@@ -568,6 +572,10 @@ onBeforeUnmount(() => {
   </section>
 </template>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 .pr-review-diff-viewer {
   min-width: 0;
@@ -763,10 +771,10 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.pr-review-diff-viewer__pane--commentable:hover
-  .pr-review-diff-viewer__comment-button:not(:disabled),
-.pr-review-diff-viewer__pane--commentable:focus-within
-  .pr-review-diff-viewer__comment-button:not(:disabled) {
+.pr-review-diff-viewer__pane--commentable:hover,
+.pr-review-diff-viewer__comment-button:not(:disabled),
+.pr-review-diff-viewer__pane--commentable:focus-within,
+.pr-review-diff-viewer__comment-button:not(:disabled) {
   width: 1rem;
   font-size: 11px;
   color: var(--gitpulse-info);

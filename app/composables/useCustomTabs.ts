@@ -1,5 +1,12 @@
 import { watch } from 'vue';
 
+import type {
+  CustomTab,
+  CustomTabQuery,
+  CustomTabSearchScope,
+  CustomTabSource,
+} from '#shared/types/custom-search';
+
 export type {
   CustomTabArchived,
   CustomTabDraft,
@@ -14,12 +21,6 @@ export type {
   CustomTabVisibility,
 } from '#shared/types/custom-search';
 
-import type {
-  CustomTab,
-  CustomTabQuery,
-  CustomTabSearchScope,
-  CustomTabSource,
-} from '#shared/types/custom-search';
 export type { CustomTab } from '#shared/types/custom-search';
 
 export interface CreateCustomTabInput {
@@ -201,10 +202,9 @@ const readStoredTabs = (login: string): CustomTab[] | null => {
       return null;
     }
 
-    const tabs = parsed
+    return parsed
       .map((entry) => normalizeTab(entry))
       .filter((entry): entry is CustomTab => entry !== null);
-    return tabs;
   } catch {
     return null;
   }

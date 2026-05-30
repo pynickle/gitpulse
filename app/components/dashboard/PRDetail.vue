@@ -1,3 +1,4 @@
+<!--suppress CssUnusedSymbol -->
 <template>
   <div :class="['pr-detail-layout', { 'pr-detail-layout--review': isReviewWindowOpen }]">
     <PRReviewWorkspace
@@ -422,6 +423,7 @@ watch(
 );
 </script>
 
+<!--suppress CssUnusedSymbol -->
 <style scoped lang="scss">
 .pr-detail-layout :deep(.columns) {
   height: 100%;
@@ -482,13 +484,6 @@ watch(
 
 .pr-detail-layout {
   height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.pr-detail-layout--review {
-  position: absolute;
-  inset: 0;
   min-height: 0;
   overflow: hidden;
 }

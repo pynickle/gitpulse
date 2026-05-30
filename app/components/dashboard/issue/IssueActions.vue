@@ -1,3 +1,4 @@
+<!--suppress CssUnusedSymbol -->
 <template>
   <div>
     <!-- Lock/Unlock action -->
@@ -83,7 +84,6 @@ import {
   InfoIcon,
   LockIcon,
   Loader2Icon,
-  ShieldIcon,
   UnlockIcon,
   XIcon,
 } from 'lucide-vue-next';
@@ -245,6 +245,7 @@ const formatDate = (dateString: string | undefined) => {
 };
 </script>
 
+<!--suppress CssUnusedSymbol -->
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 
@@ -295,11 +296,6 @@ const formatDate = (dateString: string | undefined) => {
   font-weight: 600;
   border-radius: 10px;
   letter-spacing: 0.02em;
-}
-
-.sidebar-badge--danger {
-  background: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
 }
 
 // Alert

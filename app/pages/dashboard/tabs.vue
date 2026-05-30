@@ -1,3 +1,8 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->
 <script setup lang="ts">
 import {
   ArrowDownIcon,
@@ -36,17 +41,11 @@ import {
   XIcon,
 } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue';
-import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus';
+import { VueDraggable } from 'vue-draggable-plus';
 
-import {
-  appendCustomTabQueryParams,
-  buildIssueSearchParts,
-  getOneYearAgoSearchDate,
-} from '#shared/utils/github-search-query';
 import SearchResultPreview from '~/components/dashboard/SearchResultPreview.vue';
 import TokenizedQuery from '~/components/dashboard/TokenizedQuery.vue';
 import {
-  useCustomTabs,
   type CustomTab,
   type CustomTabArchived,
   type CustomTabDraft,
@@ -59,12 +58,32 @@ import {
   type CustomTabSource,
   type CustomTabState,
   type CustomTabVisibility,
+  useCustomTabs,
 } from '~/composables/useCustomTabs';
+import {
+  buildCustomTabHumanPreview,
+  buildCustomTabSearchParts,
+  buildCustomTabSearchQuery,
+  buildCustomTabSummary,
+  createCustomTabPreviewSearchParams,
+  createGitHubCustomTabPreviewUrl,
+  customTabArchivedOptions,
+  customTabDraftOptions,
+  customTabOrderOptions,
+  customTabReviewOptions,
+  customTabScopeOptions,
+  customTabSortOptions,
+  customTabSourceOptions,
+  type CustomTabSourceOption,
+  customTabStateOptions,
+  customTabTypeOptions,
+  customTabVisibilityOptions,
+} from '~/composables/useCustomTabSettingsOptions';
 import {
   BUILTIN_TAB_GROUP_ID,
   DEFAULT_CUSTOM_TAB_GROUP_ID,
-  useTabGroups,
   type TabGroup,
+  useTabGroups,
 } from '~/composables/useTabGroups';
 import { useTabMigration } from '~/composables/useTabMigration';
 
@@ -79,18 +98,6 @@ interface SettingsTab {
 
 interface GroupRow extends TabGroup {
   depth: number;
-}
-
-interface SourceOption {
-  id: CustomTabSource | 'github-graphql' | 'github-labels';
-  labelKey: string;
-  captionKey: string;
-  disabled?: boolean;
-}
-
-interface ToggleOption<T extends string> {
-  labelKey: string;
-  value: T;
 }
 
 interface SearchPreviewRequest {
@@ -127,84 +134,16 @@ const DEFAULT_TAB_GROUP_NAME = 'General';
 const { t } = useI18n();
 const localePath = useLocalePath();
 
-const sourceOptions: SourceOption[] = [
-  {
-    id: 'github-search',
-    labelKey: 'dashboard.tabsSettings.source.githubSearch',
-    captionKey: 'dashboard.tabsSettings.source.githubSearchCaption',
-  },
-  {
-    id: 'github-graphql',
-    labelKey: 'dashboard.tabsSettings.source.graphql',
-    captionKey: 'dashboard.tabsSettings.source.graphqlCaption',
-    disabled: true,
-  },
-  {
-    id: 'github-labels',
-    labelKey: 'dashboard.tabsSettings.source.labelsApi',
-    captionKey: 'dashboard.tabsSettings.source.labelsApiCaption',
-    disabled: true,
-  },
-];
-
-const typeOptions: Array<ToggleOption<CustomTabSearchType>> = [
-  { labelKey: 'dashboard.tabsSettings.options.issues', value: 'issues' },
-  { labelKey: 'dashboard.tabsSettings.options.pullRequests', value: 'pulls' },
-  { labelKey: 'dashboard.tabsSettings.options.both', value: 'all' },
-];
-
-const stateOptions: Array<ToggleOption<CustomTabState | 'any'>> = [
-  { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
-  { labelKey: 'dashboard.tabsSettings.options.open', value: 'open' },
-  { labelKey: 'dashboard.tabsSettings.options.closed', value: 'closed' },
-  { labelKey: 'dashboard.tabsSettings.options.all', value: 'all' },
-];
-
-const scopeOptions: Array<ToggleOption<CustomTabSearchScope>> = [
-  { labelKey: 'dashboard.tabsSettings.options.title', value: 'title' },
-  { labelKey: 'dashboard.tabsSettings.options.body', value: 'body' },
-  { labelKey: 'dashboard.tabsSettings.options.comments', value: 'comments' },
-];
-
-const sortOptions: Array<ToggleOption<CustomTabSort>> = [
-  { labelKey: 'dashboard.tabsSettings.options.best', value: 'best-match' },
-  { labelKey: 'dashboard.tabsSettings.options.updated', value: 'updated' },
-  { labelKey: 'dashboard.tabsSettings.options.created', value: 'created' },
-  { labelKey: 'dashboard.tabsSettings.options.comments', value: 'comments' },
-  { labelKey: 'dashboard.tabsSettings.options.reactions', value: 'reactions' },
-  { labelKey: 'dashboard.tabsSettings.options.interactions', value: 'interactions' },
-];
-
-const orderOptions: Array<ToggleOption<CustomTabOrder>> = [
-  { labelKey: 'dashboard.tabsSettings.options.desc', value: 'desc' },
-  { labelKey: 'dashboard.tabsSettings.options.asc', value: 'asc' },
-];
-
-const visibilityOptions: Array<ToggleOption<CustomTabVisibility>> = [
-  { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
-  { labelKey: 'dashboard.tabsSettings.options.public', value: 'public' },
-  { labelKey: 'dashboard.tabsSettings.options.private', value: 'private' },
-];
-
-const archivedOptions: Array<ToggleOption<CustomTabArchived>> = [
-  { labelKey: 'dashboard.tabsSettings.options.excludeArchived', value: 'exclude' },
-  { labelKey: 'dashboard.tabsSettings.options.include', value: 'include' },
-  { labelKey: 'dashboard.tabsSettings.options.onlyArchived', value: 'only' },
-];
-
-const draftOptions: Array<ToggleOption<CustomTabDraft>> = [
-  { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
-  { labelKey: 'dashboard.tabsSettings.options.draft', value: 'draft' },
-  { labelKey: 'dashboard.tabsSettings.options.ready', value: 'ready' },
-];
-
-const reviewOptions: Array<ToggleOption<CustomTabReview>> = [
-  { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
-  { labelKey: 'dashboard.tabsSettings.options.none', value: 'none' },
-  { labelKey: 'dashboard.tabsSettings.options.required', value: 'required' },
-  { labelKey: 'dashboard.tabsSettings.options.approved', value: 'approved' },
-  { labelKey: 'dashboard.tabsSettings.options.changesRequested', value: 'changes_requested' },
-];
+const sourceOptions = customTabSourceOptions;
+const typeOptions = customTabTypeOptions;
+const stateOptions = customTabStateOptions;
+const scopeOptions = customTabScopeOptions;
+const sortOptions = customTabSortOptions;
+const orderOptions = customTabOrderOptions;
+const visibilityOptions = customTabVisibilityOptions;
+const archivedOptions = customTabArchivedOptions;
+const draftOptions = customTabDraftOptions;
+const reviewOptions = customTabReviewOptions;
 
 const filterIconMap: Record<
   string,
@@ -516,25 +455,15 @@ const buildCurrentQuery = (): CustomTabQuery => {
 };
 
 const searchQueryParts = computed(() => {
-  return buildIssueSearchParts(buildCurrentQuery(), {
-    createdAfter: getOneYearAgoSearchDate(),
-  });
+  return buildCustomTabSearchParts(buildCurrentQuery());
 });
 
 const searchQueryString = computed(() => {
-  return searchQueryParts.value.length > 0 ? searchQueryParts.value.join(' ') : '';
+  return buildCustomTabSearchQuery(buildCurrentQuery());
 });
 
 const previewSearchParams = computed(() => {
-  const query = buildCurrentQuery();
-  const searchParams = new URLSearchParams({
-    page: String(previewPage.value),
-    per_page: String(previewPerPage),
-  });
-
-  appendCustomTabQueryParams(searchParams, query);
-
-  return searchParams;
+  return createCustomTabPreviewSearchParams(buildCurrentQuery(), previewPage.value, previewPerPage);
 });
 
 const appPreviewUrl = computed(() => {
@@ -548,80 +477,15 @@ const previewTotalPages = computed(() => {
 });
 
 const githubPreviewUrl = computed(() => {
-  const searchParams = new URLSearchParams({ q: searchQueryString.value });
-  if (newTab.query.type === 'issues') {
-    searchParams.set('type', 'issues');
-  } else if (newTab.query.type === 'pulls') {
-    searchParams.set('type', 'pullrequests');
-  }
-  if (newTab.query.sort !== 'best-match') {
-    searchParams.set('s', newTab.query.sort);
-    searchParams.set('o', newTab.query.order);
-  }
-  return `https://github.com/search?${searchParams.toString()}`;
+  return createGitHubCustomTabPreviewUrl(buildCurrentQuery());
 });
 
 const humanPreview = computed(() => {
-  const chunks = [];
-  chunks.push(
-    newTab.query.type === 'pulls'
-      ? t('dashboard.tabsSettings.summary.pullRequests')
-      : newTab.query.type === 'all'
-        ? t('dashboard.tabsSettings.summary.issuesAndPullRequests')
-        : t('dashboard.tabsSettings.summary.issues')
-  );
-
-  if (newTab.query.repo.trim())
-    chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: newTab.query.repo.trim() }));
-  if (newTab.query.author.trim())
-    chunks.push(
-      t('dashboard.tabsSettings.summary.authoredBy', { value: newTab.query.author.trim() })
-    );
-  if (newTab.query.assignee.trim())
-    chunks.push(
-      t('dashboard.tabsSettings.summary.assignedTo', { value: newTab.query.assignee.trim() })
-    );
-  if (newTab.query.involves.trim())
-    chunks.push(
-      t('dashboard.tabsSettings.summary.involving', { value: newTab.query.involves.trim() })
-    );
-  if (newTab.query.labels.length > 0)
-    chunks.push(
-      t('dashboard.tabsSettings.summary.labeled', { value: newTab.query.labels.join(', ') })
-    );
-  if (newTab.query.state !== 'any')
-    chunks.push(t('dashboard.tabsSettings.summary.state', { value: newTab.query.state }));
-
-  return t('dashboard.tabsSettings.summary.showing', { value: chunks.join(', ') });
+  return buildCustomTabHumanPreview(buildCurrentQuery(), t);
 });
 
 const buildSummaryFromQuery = (query: CustomTabQuery) => {
-  const chunks = [];
-  const type = query.type ?? 'issues';
-  chunks.push(
-    type === 'pulls'
-      ? t('dashboard.tabsSettings.summary.pullRequests')
-      : type === 'all'
-        ? t('dashboard.tabsSettings.summary.issuesAndPullRequests')
-        : t('dashboard.tabsSettings.summary.issues')
-  );
-
-  if (query.state && query.state !== 'all') {
-    chunks.push(t('dashboard.tabsSettings.summary.state', { value: query.state }));
-  }
-  if (query.repo) chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: query.repo }));
-  if (query.author)
-    chunks.push(t('dashboard.tabsSettings.summary.authoredBy', { value: query.author }));
-  if (query.assignee)
-    chunks.push(t('dashboard.tabsSettings.summary.assignedTo', { value: query.assignee }));
-  if (query.involves)
-    chunks.push(t('dashboard.tabsSettings.summary.involving', { value: query.involves }));
-  if (query.labels && query.labels.length > 0)
-    chunks.push(
-      t('dashboard.tabsSettings.summary.labeled', { value: query.labels.slice(0, 2).join(', ') })
-    );
-
-  return t('dashboard.tabsSettings.summary.showing', { value: chunks.slice(0, 4).join(', ') });
+  return buildCustomTabSummary(query, t);
 };
 
 const autoSubtitle = computed(() => buildSummaryFromQuery(buildCurrentQuery()));
@@ -643,16 +507,13 @@ const getQueryPreview = (tab: SettingsTab) => {
     return t('dashboard.tabsSettings.defaultQueryPreview');
   }
 
-  const parts = buildIssueSearchParts(tab.query, {
-    createdAfter: getOneYearAgoSearchDate(),
-  });
+  const parts = buildCustomTabSearchParts(tab.query);
 
   return parts.length > 0 ? parts.join(' ') : t('dashboard.tabsSettings.defaultQueryPreview');
 };
 
 const handleSubtitleInput = (event: Event) => {
-  const value = getInputValue(event);
-  newTab.subtitle = value;
+  newTab.subtitle = getInputValue(event);
   subtitleManuallyEdited.value = true;
 };
 
@@ -710,7 +571,7 @@ const confirmDeleteGroup = (groupId: string) => {
   }
 };
 
-const setActiveSource = (source: SourceOption) => {
+const setActiveSource = (source: CustomTabSourceOption) => {
   if (source.disabled || source.id !== 'github-search') {
     return;
   }
@@ -986,10 +847,6 @@ const handleSaveTab = () => {
   });
 
   resetNewTabForm();
-};
-
-const handleCreateCustomTab = () => {
-  handleSaveTab();
 };
 
 const loadPreview = async (silent = false) => {
@@ -2096,6 +1953,11 @@ void nextTick(() => {
   </div>
 </template>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->
 <style scoped lang="scss">
 .tabs-settings-page {
   width: 100%;
@@ -2653,18 +2515,9 @@ void nextTick(() => {
   cursor: grabbing;
 }
 
-:deep(.sortable-ghost) {
-  opacity: 0.4;
-  background: var(--gitpulse-accent-soft);
-}
-
 :deep(.sortable-chosen) {
   opacity: 0.85;
   box-shadow: var(--gitpulse-shadow-card-hover);
-}
-
-:deep(.sortable-drag) {
-  opacity: 0.9;
 }
 
 .chip-button,
@@ -2691,11 +2544,6 @@ void nextTick(() => {
   border-radius: 999px;
   font-size: 0.76rem;
   font-weight: 650;
-}
-
-.chip-button.is-compact {
-  min-height: 1.6rem;
-  padding: 0.18rem 0.45rem;
 }
 
 .group-choice {

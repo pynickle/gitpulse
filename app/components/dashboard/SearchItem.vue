@@ -1,3 +1,4 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <template>
   <div class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed">
     <div class="card-content p-3">
@@ -107,6 +108,7 @@ const stateIcon = computed(() => {
 </script>
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 .state-icon--open {
   color: var(--gitpulse-success);

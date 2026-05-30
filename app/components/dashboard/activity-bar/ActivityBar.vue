@@ -53,13 +53,13 @@
 
 <script setup lang="ts">
 import {
-  User as UserIcon,
-  Settings as SettingsIcon,
-  Inbox,
   Bell,
+  BookMarked,
   CircleDot,
   GitPullRequest,
-  BookMarked,
+  Inbox,
+  Settings as SettingsIcon,
+  User as UserIcon,
 } from 'lucide-vue-next';
 
 interface Group {

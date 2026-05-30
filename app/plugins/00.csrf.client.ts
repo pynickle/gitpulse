@@ -30,7 +30,7 @@ export default defineNuxtPlugin(() => {
     readonly: true,
   });
 
-  const wrapped = $fetch.create({
+  (globalThis as unknown as { $fetch: typeof $fetch }).$fetch = $fetch.create({
     onRequest({ request, options }) {
       const method = normalizeMethod(options.method);
 
@@ -54,6 +54,4 @@ export default defineNuxtPlugin(() => {
       options.headers = headers;
     },
   });
-
-  (globalThis as unknown as { $fetch: typeof $fetch }).$fetch = wrapped;
 });

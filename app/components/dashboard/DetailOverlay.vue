@@ -132,12 +132,6 @@ defineEmits<{
   margin-left: auto;
 }
 
-.detail-toolbar__actions :deep(.dropdown),
-.detail-toolbar__actions :deep(.dropdown-trigger) {
-  display: inline-flex;
-  align-items: center;
-}
-
 .detail-toolbar__actions :deep(.dropdown-trigger .button) {
   display: inline-flex;
   align-items: center;

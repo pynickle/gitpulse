@@ -1,3 +1,6 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->
 <script setup lang="ts">
 import {
   ChevronRightIcon,
@@ -341,6 +344,9 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   </aside>
 </template>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->
 <style scoped lang="scss">
 .pr-review-file-sidebar {
   height: 100%;
@@ -350,10 +356,6 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.pr-review-file-sidebar--collapsed {
-  background: var(--gitpulse-surface);
 }
 
 .pr-review-file-sidebar__collapsed-handle {
@@ -458,11 +460,6 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   cursor: pointer;
 }
 
-.pr-review-file-sidebar__toggle-button--active {
-  background: var(--gitpulse-info);
-  color: #ffffff;
-}
-
 .pr-review-file-sidebar__list,
 .pr-review-file-sidebar__tree {
   overflow-y: auto;
@@ -484,12 +481,6 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   gap: 0.45rem;
   padding: 0 0.45rem;
   text-align: left;
-}
-
-.pr-review-file-sidebar__item:hover,
-.pr-review-file-sidebar__item--active {
-  background: var(--gitpulse-info-soft);
-  border-left-color: var(--gitpulse-info);
 }
 
 .pr-review-file-sidebar__name {
@@ -533,31 +524,6 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   font-weight: 800;
 }
 
-.pr-review-file-sidebar__status--added {
-  background: var(--gitpulse-success-soft);
-  color: var(--gitpulse-success);
-}
-
-.pr-review-file-sidebar__status--removed {
-  background: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
-}
-
-.pr-review-file-sidebar__status--modified,
-.pr-review-file-sidebar__status--changed {
-  background: var(--gitpulse-warning-soft);
-  color: var(--gitpulse-warning);
-}
-
-.pr-review-file-sidebar__status--renamed {
-  background: var(--gitpulse-purple);
-}
-
-.pr-review-file-sidebar__tree-group + .pr-review-file-sidebar__tree-group,
-.pr-review-file-sidebar__tree-file + .pr-review-file-sidebar__tree-group {
-  margin-top: 0.15rem;
-}
-
 .pr-review-file-sidebar__tree-directory,
 .pr-review-file-sidebar__tree-file {
   width: 100%;
@@ -580,23 +546,8 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border-left: 3px solid transparent;
 }
 
-.pr-review-file-sidebar__tree-directory:hover,
-.pr-review-file-sidebar__tree-file:hover,
-.pr-review-file-sidebar__tree-file--active {
-  background: var(--gitpulse-info-soft);
-}
-
-.pr-review-file-sidebar__tree-file--active {
-  border-left-color: var(--gitpulse-info);
-  font-weight: 700;
-}
-
 .pr-review-file-sidebar__tree-chevron {
   transition: transform 0.15s ease;
-}
-
-.pr-review-file-sidebar__tree-chevron--expanded {
-  transform: rotate(90deg);
 }
 
 .pr-review-file-sidebar__tree-label {

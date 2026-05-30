@@ -1,3 +1,6 @@
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <template>
   <div class="tokenized-query">
     <span
@@ -137,6 +140,9 @@ const tokens = computed<Token[]>(() => {
 });
 </script>
 
+<!--suppress CssUnusedSymbol, CssUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol
+-->sUnusedSymbol -->sUnusedSymbol -->sUnusedSymbol -->
 <style scoped lang="scss">
 .tokenized-query {
   display: flex;
@@ -157,10 +163,6 @@ const tokens = computed<Token[]>(() => {
   width: 0.35rem;
 }
 
-.tq-seg--qualifier {
-  font-weight: 700;
-}
-
 .tq-seg--operator {
   opacity: 0.55;
   font-weight: 400;
@@ -170,101 +172,59 @@ const tokens = computed<Token[]>(() => {
   font-weight: 600;
 }
 
-.tq-seg--bareword {
-  font-weight: 500;
-  opacity: 0.85;
-}
-
 // Keyword (bare words)
-.tq-token--keyword .tq-seg--bareword {
-  color: var(--bulma-text, #334155);
-}
 
 // Type qualifiers: is:issue, is:pr, is:public, etc
-.tq-token--type .tq-seg--qualifier {
-  color: var(--gitpulse-purple);
-}
 .tq-token--type .tq-seg--value {
   color: var(--gitpulse-purple);
 }
 
 // State: state:open, state:closed
-.tq-token--state .tq-seg--qualifier {
-  color: var(--gitpulse-warning);
-}
 .tq-token--state .tq-seg--value {
   color: var(--gitpulse-warning);
 }
 
 // Person: author:, assignee:, mentions:, involves:, commenter:
-.tq-token--person .tq-seg--qualifier {
-  color: var(--gitpulse-info);
-}
 .tq-token--person .tq-seg--value {
   color: var(--gitpulse-info);
 }
 
 // Repo: repo:, org:, user:
-.tq-token--repo .tq-seg--qualifier {
-  color: var(--gitpulse-link);
-}
 .tq-token--repo .tq-seg--value {
   color: var(--gitpulse-link);
 }
 
 // Label: label:
-.tq-token--label .tq-seg--qualifier {
-  color: var(--gitpulse-success);
-}
 .tq-token--label .tq-seg--value {
   color: var(--gitpulse-success);
 }
 
 // PR: draft:, review:, base:, head:
-.tq-token--pr .tq-seg--qualifier {
-  color: var(--gitpulse-danger);
-}
 .tq-token--pr .tq-seg--value {
   color: var(--gitpulse-danger);
 }
 
 // Archive: archived:
-.tq-token--archive .tq-seg--qualifier {
-  color: var(--gitpulse-text-muted);
-}
 .tq-token--archive .tq-seg--value {
   color: var(--gitpulse-text-muted);
 }
 
 // Search in: in:title, in:body
-.tq-token--search-in .tq-seg--qualifier {
-  color: var(--gitpulse-accent);
-}
 .tq-token--search-in .tq-seg--value {
   color: var(--gitpulse-accent);
 }
 
 // Sort: sort:, order:
-.tq-token--sort .tq-seg--qualifier {
-  color: var(--gitpulse-info);
-}
 .tq-token--sort .tq-seg--value {
   color: var(--gitpulse-info);
 }
 
 // Other known qualifiers
-.tq-token--other .tq-seg--qualifier {
-  color: var(--gitpulse-text-muted);
-}
 .tq-token--other .tq-seg--value {
   color: var(--gitpulse-text-muted);
 }
 
 // Unknown qualifiers
-.tq-token--unknown .tq-seg--qualifier {
-  color: var(--gitpulse-danger);
-  text-decoration: underline wavy color-mix(in srgb, var(--gitpulse-danger) 35%, transparent);
-}
 .tq-token--unknown .tq-seg--value {
   color: var(--gitpulse-danger);
 }

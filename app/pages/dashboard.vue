@@ -839,10 +839,6 @@ watch(
   gap: 0.85rem;
 }
 
-.dashboard-list-shell--without-pagination {
-  grid-template-rows: minmax(0, 1fr);
-}
-
 .dashboard-list-scroll {
   min-height: 0;
   height: 100%;
