@@ -10,7 +10,8 @@
     "postinstall": "nuxt prepare",
     "lint": "bunx oxlint ./ --type-aware",
     "lint:fix": "bunx oxlint ./ --fix --type-aware",
-    "fmt": "bunx oxfmt ./"
+    "fmt": "bunx oxfmt ./",
+    "fmt:check": "bunx oxfmt --check ./"
   },
   "dependencies": {
     "@nuxt/image": "^2.0.0",
