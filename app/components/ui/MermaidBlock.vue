@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Maximize2 } from 'lucide-vue-next';
+import { Maximize2Icon } from 'lucide-vue-next';
 import { nextTick, onMounted, shallowRef, useId, watch } from 'vue';
 
 import MermaidViewerModal from '~/components/ui/MermaidViewerModal.vue';
@@ -81,7 +81,7 @@ watch(() => props.code, render);
           :title="t('markdown.mermaid.openViewer')"
           @click="openViewer"
         >
-          <Maximize2 :size="14" aria-hidden="true" />
+          <Maximize2Icon :size="14" aria-hidden="true" />
           <span>{{ t('markdown.mermaid.openViewer') }}</span>
         </button>
 

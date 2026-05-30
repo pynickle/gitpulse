@@ -13,8 +13,8 @@ import {
   CheckCircle2Icon,
   CheckIcon,
   ChevronDownIcon,
-  ChevronLeft,
-  ChevronRight,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   CircleDotIcon,
   CircleMinusIcon,
   Code2Icon,
@@ -1910,7 +1910,7 @@ void nextTick(() => {
                   :aria-label="t('dashboard.pagination.previous')"
                   @click="goToPreviewPage(Math.max(1, previewPage - 1))"
                 >
-                  <ChevronLeft :size="14" aria-hidden="true" />
+                  <ChevronLeftIcon :size="14" aria-hidden="true" />
                 </button>
                 <span class="preview-page-info">
                   {{

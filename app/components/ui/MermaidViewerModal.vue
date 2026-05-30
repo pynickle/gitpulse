@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Minus, Plus, RotateCcw, X } from 'lucide-vue-next';
+import { MinusIcon, PlusIcon, RotateCcwIcon, XIcon } from 'lucide-vue-next';
 import {
   computed,
   nextTick,
@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
             :disabled="!canZoomOut"
             @click="changeZoom(-ZOOM_STEP)"
           >
-            <Minus :size="16" aria-hidden="true" />
+            <MinusIcon :size="16" aria-hidden="true" />
           </button>
 
           <button
@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
             :disabled="!canZoomIn"
             @click="changeZoom(ZOOM_STEP)"
           >
-            <Plus :size="16" aria-hidden="true" />
+            <PlusIcon :size="16" aria-hidden="true" />
           </button>
 
           <button
@@ -394,7 +394,7 @@ onBeforeUnmount(() => {
             :title="t('markdown.mermaid.reset')"
             @click="resetViewport"
           >
-            <RotateCcw :size="16" aria-hidden="true" />
+            <RotateCcwIcon :size="16" aria-hidden="true" />
           </button>
         </div>
 
@@ -405,7 +405,7 @@ onBeforeUnmount(() => {
           type="button"
           @click="requestClose"
         >
-          <X :size="16" aria-hidden="true" />
+          <XIcon :size="16" aria-hidden="true" />
           <span>{{ t('markdown.mermaid.close') }}</span>
         </button>
       </footer>

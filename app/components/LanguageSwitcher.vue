@@ -10,7 +10,7 @@
       >
         <span>{{ currentLocaleName }}</span>
         <span class="icon is-small">
-          <ChevronDown />
+          <ChevronDownIcon />
         </span>
       </button>
     </div>
@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown } from 'lucide-vue-next';
+import { ChevronDownIcon } from 'lucide-vue-next';
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 
 // Get i18n instance

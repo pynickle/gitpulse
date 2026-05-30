@@ -10,7 +10,7 @@
  * so inline backtick `mermaid` code spans are never intercepted here.
  */
 import ProsePre from '@nuxtjs/mdc/dist/runtime/components/prose/ProsePre.vue';
-import { Check, Clipboard } from 'lucide-vue-next';
+import { CheckIcon, ClipboardIcon } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, shallowRef } from 'vue';
 
 import MermaidBlock from '~/components/ui/MermaidBlock.vue';
@@ -83,8 +83,8 @@ onBeforeUnmount(clearResetTimer);
         :aria-label="copyLabel"
         @click="copyCode"
       >
-        <Check v-if="copied" :size="14" aria-hidden="true" />
-        <Clipboard v-else :size="14" aria-hidden="true" />
+        <CheckIcon v-if="copied" :size="14" aria-hidden="true" />
+        <ClipboardIcon v-else :size="14" aria-hidden="true" />
         <span class="markdown-code-block__copy-text">{{ copyLabel }}</span>
       </button>
     </div>

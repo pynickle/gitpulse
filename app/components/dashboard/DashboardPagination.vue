@@ -10,7 +10,7 @@
       :disabled="!canGoPrev"
       @click="emit('change', pagination.page - 1)"
     >
-      <ChevronLeft :size="18" aria-hidden="true" />
+      <ChevronLeftIcon :size="18" aria-hidden="true" />
       <span class="pagination-control-text">{{ t('dashboard.pagination.previous') }}</span>
     </button>
 
@@ -21,7 +21,7 @@
       @click="emit('change', pagination.page + 1)"
     >
       <span class="pagination-control-text">{{ t('dashboard.pagination.next') }}</span>
-      <ChevronRight :size="18" aria-hidden="true" />
+      <ChevronRightIcon :size="18" aria-hidden="true" />
     </button>
 
     <ul class="pagination-list">
@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface PaginationMeta {

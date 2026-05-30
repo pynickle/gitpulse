@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { Check, Clock, Slash, X } from 'lucide-vue-next';
+import { CheckIcon, ClockIcon, SlashIcon, XIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -99,14 +99,14 @@ const stateAction = computed(() => {
 const stateIcon = computed(() => {
   switch (stateModifier.value) {
     case 'approved':
-      return Check;
+      return CheckIcon;
     case 'changes-requested':
-      return X;
+      return XIcon;
     case 'dismissed':
-      return Slash;
+      return SlashIcon;
     case 'pending':
     default:
-      return Clock;
+      return ClockIcon;
   }
 });
 </script>

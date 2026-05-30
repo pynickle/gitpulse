@@ -53,13 +53,13 @@
 
 <script setup lang="ts">
 import {
-  Bell,
-  BookMarked,
-  CircleDot,
-  GitPullRequest,
-  Inbox,
-  Settings as SettingsIcon,
-  User as UserIcon,
+  BellIcon,
+  BookMarkedIcon,
+  CircleDotIcon,
+  GitPullRequestIcon,
+  InboxIcon,
+  SettingsIcon,
+  UserIcon,
 } from 'lucide-vue-next';
 
 interface Group {
@@ -82,17 +82,17 @@ defineEmits<{
 }>();
 
 const iconMap: Record<string, typeof UserIcon> = {
-  inbox: Inbox,
-  bell: Bell,
-  'circle-dot': CircleDot,
-  'git-pull-request': GitPullRequest,
-  'book-marked': BookMarked,
+  inbox: InboxIcon,
+  bell: BellIcon,
+  'circle-dot': CircleDotIcon,
+  'git-pull-request': GitPullRequestIcon,
+  'book-marked': BookMarkedIcon,
   user: UserIcon,
   settings: SettingsIcon,
 };
 
 function getGroupIcon(icon?: string) {
-  return iconMap[icon || 'inbox'] || Inbox;
+  return iconMap[icon || 'inbox'] || InboxIcon;
 }
 </script>
 

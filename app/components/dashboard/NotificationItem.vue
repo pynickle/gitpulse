@@ -71,22 +71,22 @@
 
 <script setup lang="ts">
 import {
-  Activity,
-  AtSign,
-  Bell,
-  Bookmark,
-  CheckCircle,
+  ActivityIcon,
+  AtSignIcon,
+  BellIcon,
+  BookmarkIcon,
+  CheckCircleIcon,
   CheckIcon,
-  Eye,
-  GitCommit,
-  Mail,
-  MessageSquare,
-  PenLine,
-  ShieldAlert,
-  ShieldCheck,
-  UserPlus,
-  Users,
-  Users2,
+  EyeIcon,
+  GitCommitIcon,
+  MailIcon,
+  MessageSquareIcon,
+  PenLineIcon,
+  ShieldAlertIcon,
+  ShieldCheckIcon,
+  UserPlusIcon,
+  Users2Icon,
+  UsersIcon,
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 
@@ -165,21 +165,21 @@ const markAsRead = async () => {
 };
 
 const reasonIconMap: Record<string, any> = {
-  approval_requested: CheckCircle, // Deployment approval requested
-  assign: UserPlus, // You were assigned to the issue
-  author: PenLine, // You created the thread
-  ci_activity: Activity, // CI workflow activity completed
-  comment: MessageSquare, // You commented on the thread
-  invitation: Mail, // Repository invitation accepted
-  manual: Bookmark, // Manually subscribed to the thread
-  member_feature_requested: Users, // Organization members requested a feature
-  mention: AtSign, // You were @mentioned
-  review_requested: Eye, // Pull request review requested
-  security_advisory_credit: ShieldCheck, // Credited for security advisory contribution
-  security_alert: ShieldAlert, // Security vulnerability alert
-  state_change: GitCommit, // Thread state changed (close / merge / etc.)
-  subscribed: Bell, // Watching the repository
-  team_mention: Users2, // Your team was mentioned
+  approval_requested: CheckCircleIcon, // Deployment approval requested
+  assign: UserPlusIcon, // You were assigned to the issue
+  author: PenLineIcon, // You created the thread
+  ci_activity: ActivityIcon, // CI workflow activity completed
+  comment: MessageSquareIcon, // You commented on the thread
+  invitation: MailIcon, // Repository invitation accepted
+  manual: BookmarkIcon, // Manually subscribed to the thread
+  member_feature_requested: UsersIcon, // Organization members requested a feature
+  mention: AtSignIcon, // You were @mentioned
+  review_requested: EyeIcon, // Pull request review requested
+  security_advisory_credit: ShieldCheckIcon, // Credited for security advisory contribution
+  security_alert: ShieldAlertIcon, // Security vulnerability alert
+  state_change: GitCommitIcon, // Thread state changed (close / merge / etc.)
+  subscribed: BellIcon, // Watching the repository
+  team_mention: Users2Icon, // Your team was mentioned
 };
 
 const reasonIcon = computed(() => {
