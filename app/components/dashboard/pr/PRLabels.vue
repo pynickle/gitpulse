@@ -285,7 +285,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -387,7 +387,7 @@ const getTextColorFromBackground = (backgroundColor: string) => {
   display: flex;
   flex-direction: column;
   background: var(--gitpulse-surface);
-  border-radius: 14px;
+  border-radius: 8px;
   box-shadow: var(--gitpulse-shadow-raised);
   overflow: hidden;
 }

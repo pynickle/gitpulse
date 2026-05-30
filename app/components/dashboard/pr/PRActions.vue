@@ -136,7 +136,7 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 

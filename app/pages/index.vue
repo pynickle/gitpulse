@@ -161,8 +161,8 @@ const handleLogout = async () => {
   width: min(100%, 1040px);
   overflow: hidden;
   border: 1px solid var(--gitpulse-border);
-  border-radius: 24px;
-  box-shadow: var(--gitpulse-shadow-raised);
+  border-radius: 8px;
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .landing-shell__panel {
@@ -170,9 +170,7 @@ const handleLogout = async () => {
 }
 
 .landing-shell__panel--copy {
-  background:
-    radial-gradient(circle at top left, var(--gitpulse-accent-soft), transparent 45%),
-    linear-gradient(180deg, var(--gitpulse-surface-muted), var(--gitpulse-shell-bg));
+  background: var(--gitpulse-surface-muted);
   border-right: 1px solid var(--gitpulse-border);
 }
 
@@ -206,7 +204,7 @@ const handleLogout = async () => {
 .landing-shell__loading {
   padding: 2rem;
   border: 1px solid var(--gitpulse-border);
-  border-radius: 18px;
+  border-radius: 8px;
   background: var(--gitpulse-surface-muted);
 }
 

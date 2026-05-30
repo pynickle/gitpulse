@@ -3,6 +3,12 @@
 :root {
   color-scheme: light;
 
+  /* ── Border radius scale ── */
+  --gitpulse-radius-sm: 4px;
+  --gitpulse-radius-md: 6px;
+  --gitpulse-radius-lg: 8px;
+  --gitpulse-radius-xl: 12px;
+
   --gitpulse-page-bg: #f8fafc;
   --gitpulse-shell-bg: #f1f5f9;
   --gitpulse-surface: #ffffff;
@@ -113,6 +119,12 @@
 
 html.dark {
   color-scheme: dark;
+
+  /* ── Border radius scale (same as light) ── */
+  --gitpulse-radius-sm: 4px;
+  --gitpulse-radius-md: 6px;
+  --gitpulse-radius-lg: 8px;
+  --gitpulse-radius-xl: 12px;
 
   --gitpulse-page-bg: #111318;
   --gitpulse-shell-bg: #171a21;

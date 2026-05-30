@@ -2241,13 +2241,9 @@ void nextTick(() => {
   gap: 0.15rem;
   min-width: 0;
   padding: 0.55rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 20%, transparent);
-  border-radius: 8px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--gitpulse-accent) 12%, transparent),
-    color-mix(in srgb, var(--gitpulse-info) 7%, transparent)
-  );
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  background: var(--gitpulse-surface);
 }
 
 .group-insight-card strong {
@@ -2271,8 +2267,8 @@ void nextTick(() => {
   display: grid;
   gap: 0.55rem;
   margin-top: 0.75rem;
-  border-color: color-mix(in srgb, var(--gitpulse-accent) 26%, transparent);
-  background: color-mix(in srgb, var(--gitpulse-surface-muted) 92%, transparent);
+  border-color: var(--gitpulse-border);
+  background: var(--gitpulse-surface);
 }
 
 .group-creator-form,
@@ -3149,7 +3145,7 @@ void nextTick(() => {
   .group-creator-strip,
   .pr-field-band,
   .source-selector {
-    background: color-mix(in srgb, var(--gitpulse-surface-muted) 78%, transparent);
+    background: var(--gitpulse-surface-muted);
   }
 
   .preview-panel {
@@ -3199,7 +3195,7 @@ void nextTick(() => {
   }
 
   .group-insight-card span {
-    color: var(--gitpulse-text-subtle);
+    color: var(--gitpulse-text-muted);
   }
 
   .empty-drop-zone,
