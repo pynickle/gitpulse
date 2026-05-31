@@ -19,7 +19,10 @@ function isSameOriginApiUrl(request: unknown): boolean {
   try {
     const parsed = new URL(request, window.location.origin);
 
-    return parsed.origin === window.location.origin && parsed.pathname.startsWith('/api/');
+    return (
+      parsed.origin === window.location.origin &&
+      (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/auth/'))
+    );
   } catch {
     return false;
   }

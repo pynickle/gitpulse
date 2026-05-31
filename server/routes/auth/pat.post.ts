@@ -1,8 +1,11 @@
 import { resolveAuthProviderState } from '../../utils/auth-providers';
 import { establishGitHubSession } from '../../utils/auth-session-utils';
+import { assertCsrfToken } from '../../utils/csrf-utils';
 import { createGitHubClient } from '../../utils/github-auth-utils';
 
 export default defineEventHandler(async (event) => {
+  assertCsrfToken(event, '/auth/pat');
+
   const providerState = resolveAuthProviderState();
 
   if (providerState.personalMode) {

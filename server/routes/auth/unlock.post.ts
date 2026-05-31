@@ -1,4 +1,5 @@
 import { establishGitHubSession } from '../../utils/auth-session-utils';
+import { assertCsrfToken } from '../../utils/csrf-utils';
 import {
   clearRememberDeviceCookie,
   createRememberDeviceCookie,
@@ -74,6 +75,8 @@ function getSessionUserResponse(user: {
 }
 
 export default defineEventHandler(async (event) => {
+  assertCsrfToken(event, '/auth/unlock');
+
   const body = normalizeUnlockBody(await readBody(event));
   const githubToken = getGithubTokenFromRuntimeConfig();
   const identity = getPersonalModeIdentity();
