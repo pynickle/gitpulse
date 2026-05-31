@@ -642,9 +642,11 @@ const goToPage = async (page: number) => {
 };
 
 const handleLogout = async () => {
-  await navigateTo('/auth/logout', {
-    external: true,
+  await $fetch('/auth/logout', {
+    method: 'POST',
   });
+
+  await navigateTo(localePath('/'));
 };
 
 const handleAvatarClick = async () => {

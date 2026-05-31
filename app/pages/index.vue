@@ -134,9 +134,11 @@ watch(
 );
 
 const handleLogout = async () => {
-  await navigateTo('/auth/logout', {
-    external: true,
+  await $fetch('/auth/logout', {
+    method: 'POST',
   });
+
+  await fetchUserSession();
 };
 </script>
 

@@ -1,7 +1,10 @@
 import { resolveAuthProviderState } from '../../utils/auth-providers';
+import { assertCsrfToken } from '../../utils/csrf-utils';
 import { clearRememberDeviceCookie } from '../../utils/personal-mode-utils';
 
 export default defineEventHandler(async (event) => {
+  assertCsrfToken(event, '/auth/logout');
+
   const providerState = resolveAuthProviderState();
 
   if (providerState.personalMode) {
@@ -9,5 +12,8 @@ export default defineEventHandler(async (event) => {
   }
 
   await clearUserSession(event);
-  return sendRedirect(event, '/');
+
+  return {
+    ok: true,
+  };
 });
