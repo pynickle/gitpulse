@@ -194,7 +194,12 @@ const handleSaveDraft = (rows: PRReviewDiffRow[], path: string, line: number, bo
 const getRowSideClass = (row: PRReviewDiffRow, side: 'old' | 'new') => [
   'pr-review-diff-viewer__pane',
   `pr-review-diff-viewer__pane--${side}`,
-  `pr-review-diff-viewer__pane--${row.type}`,
+  `pr-review-diff-viewer__pane--${
+    row.type === 'replace' ? (side === 'old' ? 'delete' : 'add') : row.type
+  }`,
+  {
+    'pr-review-diff-viewer__pane--replace': row.type === 'replace',
+  },
   {
     'pr-review-diff-viewer__pane--empty':
       (side === 'old' && row.type === 'add') || (side === 'new' && row.type === 'delete'),
@@ -203,6 +208,9 @@ const getRowSideClass = (row: PRReviewDiffRow, side: 'old' | 'new') => [
 ];
 
 const getSideContent = (row: PRReviewDiffRow, side: 'old' | 'new') => {
+  if (row.type === 'replace') {
+    return (side === 'old' ? row.oldContent : row.newContent) || ' ';
+  }
   if (side === 'old' && row.type === 'add') return '';
   if (side === 'new' && row.type === 'delete') return '';
   return row.content || ' ';
