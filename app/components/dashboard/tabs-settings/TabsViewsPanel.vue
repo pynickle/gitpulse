@@ -306,7 +306,7 @@ const {
               :style="getNestedPanelStyle(group.depth)"
             >
               <VueDraggable
-                v-model="groupTabLists[group.id]"
+                v-model="groupTabLists[group.id]!"
                 group="custom-tabs"
                 :animation="200"
                 handle=".drag-handle"
