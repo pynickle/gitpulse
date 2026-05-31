@@ -16,10 +16,6 @@ Grouped by reason — `mention`, `review_requested`, `ci_activity`, `security_al
 
 Search-backed lists with quick filters (open / closed / merged). Click any row to open a **slide-over detail panel** showing the full timeline, labels, assignees, and action buttons — no page navigation needed.
 
-### 📂 Repositories
-
-Paginated list of your repos with quick links to each. A fast way to jump to a project without leaving the dashboard.
-
 ### ✨ Custom Tabs
 
 Create unlimited tabs backed by **real GitHub search queries**. Paste any GitHub search qualifier into the tab editor — it just works. Drag-and-drop to reorder, group tabs into named folders.
@@ -31,6 +27,14 @@ Comments render with rich Markdown, syntax-highlighted code blocks, and **Mermai
 ### 🌐 i18n
 
 Built-in English and Simplified Chinese, auto-detected from your browser.
+
+### 🌙 Dark Mode
+
+Adaptive dark mode styling keeps the dashboard comfortable in low-light environments and aligned with the system theme.
+
+### 📂 Repositories
+
+Paginated list of your repos with quick links to each. A fast way to jump to a project without leaving the dashboard.
 
 ---
 
