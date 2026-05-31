@@ -658,9 +658,9 @@ onBeforeUnmount(() => {
     ui-monospace,
     SFMono-Regular,
     SF Mono,
+    Menlo,
     Consolas,
     Liberation Mono,
-    Menlo,
     monospace;
   font-size: 12px;
   line-height: 1.45;
