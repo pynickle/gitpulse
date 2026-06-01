@@ -6,8 +6,9 @@ import { useI18n } from 'vue-i18n';
 import DetailOverlay from '~/components/dashboard/DetailOverlay.vue';
 import IssueDetail from '~/components/dashboard/IssueDetail.vue';
 import PrDetail from '~/components/dashboard/PRDetail.vue';
+import RepoDetail from '~/components/dashboard/RepoDetail.vue';
 
-type DetailPaneType = 'issue' | 'pull-request';
+type DetailPaneType = 'issue' | 'pull-request' | 'repository';
 
 interface ActiveDetailPane {
   type: DetailPaneType;
@@ -21,13 +22,18 @@ interface ActiveDetailPane {
 const props = defineProps<{
   issue: Record<string, unknown> | null;
   pullRequest: Record<string, unknown> | null;
+  repository: Record<string, unknown> | null;
   issueError: string;
+  repoError: string;
   isIssueVisible: boolean;
   isPullRequestVisible: boolean;
+  isRepositoryVisible: boolean;
   issueDetailKey: string;
   pullRequestDetailKey: string;
+  repositoryDetailKey: string;
   loadingIssue: boolean;
   loadingPullRequest: boolean;
+  loadingRepository: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -65,12 +71,32 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
     };
   }
 
+  if (props.isRepositoryVisible) {
+    return {
+      type: 'repository',
+      key: props.repositoryDetailKey,
+      loading: props.loadingRepository,
+      hasData: Boolean(props.repository),
+      error: props.repoError,
+      loadingTitle: 'Loading Repository',
+    };
+  }
+
   return null;
 });
 
 const activeDetailKey = computed(() => activeDetailPane.value?.key ?? 'empty');
 
 const isOverlayVisible = computed(() => Boolean(activeDetailPane.value));
+
+const repositoryOwner = computed(() => {
+  const owner = props.repository?.owner;
+  return owner && typeof owner === 'object' && 'login' in owner ? String(owner.login || '') : '';
+});
+
+const repositoryName = computed(() => {
+  return typeof props.repository?.name === 'string' ? props.repository.name : '';
+});
 
 const isContentLoading = computed(() => {
   const pane = activeDetailPane.value;
@@ -155,6 +181,13 @@ watch(activeDetailKey, () => {
               @update:review-active="isPullRequestReviewActive = $event"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
+            />
+
+            <RepoDetail
+              v-else-if="activeDetailPane?.type === 'repository' && repository"
+              :repository="repository"
+              :owner="repositoryOwner"
+              :repo="repositoryName"
             />
           </div>
         </Transition>

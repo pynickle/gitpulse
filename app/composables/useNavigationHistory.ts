@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 
-type PageType = 'dashboard' | 'issue' | 'pull-request' | 'notification';
+type PageType = 'dashboard' | 'issue' | 'pull-request' | 'repository' | 'notification';
 
 interface NavigationEntry {
   type: PageType;
@@ -69,6 +69,14 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
+  const navigateToRepo = (owner: string, repo: string) => {
+    const entry: NavigationEntry = {
+      type: 'repository',
+      data: { owner, repo },
+    };
+    pushEntry(entry);
+  };
+
   const navigateToNotification = (tab?: string) => {
     const entry: NavigationEntry = {
       type: 'notification',
@@ -112,6 +120,7 @@ export function useNavigationHistory() {
     navigateToDashboard,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToRepo,
     navigateToNotification,
     goBack,
     goToHome,

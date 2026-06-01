@@ -135,13 +135,18 @@
   <DetailOverlayHost
     :issue="currentIssue"
     :pull-request="currentPR"
+    :repository="currentRepo"
     :issue-error="issueError"
+    :repo-error="repoError"
     :is-issue-visible="isIssueDetailVisible"
     :is-pull-request-visible="isPRDetailVisible"
+    :is-repository-visible="isRepoDetailVisible"
     :issue-detail-key="issueDetailKey"
     :pull-request-detail-key="prDetailKey"
+    :repository-detail-key="repoDetailKey"
     :loading-issue="loadingIssue"
     :loading-pull-request="loadingPR"
+    :loading-repository="loadingRepo"
     @back="handleActiveDetailBack"
     @home="handleActiveDetailHome"
     @switch-issue="handleSwitchIssue"
@@ -514,12 +519,16 @@ const isPullRequestResult = (item: DashboardEntity) => {
 const {
   currentIssue,
   currentPR,
+  currentRepo,
   issueError,
+  repoError,
   isIssueDetailVisible,
   isPRDetailVisible,
+  isRepoDetailVisible,
   issueDetailKey,
   loadingIssue,
   loadingPR,
+  loadingRepo,
   openIssue,
   openNotification,
   openPR,
@@ -527,8 +536,11 @@ const {
   handleIssueDetailHome,
   handlePRDetailBack,
   handlePRDetailHome,
+  handleRepoDetailBack,
+  handleRepoDetailHome,
   handleSwitchIssue,
   handleSwitchPR,
+  repoDetailKey,
   prDetailKey,
 } = useDashboardDetails(currentRouteTabId);
 
@@ -567,12 +579,22 @@ const handleActiveDetailBack = async () => {
     return;
   }
 
+  if (isRepoDetailVisible.value) {
+    await handleRepoDetailBack();
+    return;
+  }
+
   await handlePRDetailBack();
 };
 
 const handleActiveDetailHome = async () => {
   if (isIssueDetailVisible.value) {
     await handleIssueDetailHome();
+    return;
+  }
+
+  if (isRepoDetailVisible.value) {
+    await handleRepoDetailHome();
     return;
   }
 
@@ -615,6 +637,7 @@ const switchTabSafely = async (tabId: string) => {
         page: undefined,
         issue: undefined,
         pr: undefined,
+        repo: undefined,
       }),
     });
   } catch (error) {

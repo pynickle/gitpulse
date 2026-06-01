@@ -29,7 +29,7 @@ interface DetailTarget {
 export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const apiFetch = useGitPulseApiFetch();
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
-  const { goBack, goToHome, hasHistory, navigateToIssue, navigateToPullRequest } =
+  const { goBack, goToHome, hasHistory, navigateToIssue, navigateToPullRequest, navigateToRepo } =
     useNavigationHistory();
   const route = useRoute();
   const router = useRouter();
@@ -37,13 +37,18 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const isIssueDetailVisible = ref(false);
   const isPRDetailVisible = ref(false);
+  const isRepoDetailVisible = ref(false);
   const currentIssue = ref<DashboardEntity | null>(null);
   const currentPR = ref<DashboardEntity | null>(null);
+  const currentRepo = ref<Record<string, unknown> | null>(null);
   const issueError = ref('');
+  const repoError = ref('');
   const loadingIssue = ref(false);
   const loadingPR = ref(false);
+  const loadingRepo = ref(false);
   const issueRequestId = ref(0);
   const prRequestId = ref(0);
+  const repoRequestId = ref(0);
 
   const parseDetailTarget = (value: unknown): DetailTarget | null => {
     const rawValue = getQueryParamValue(value);
@@ -64,6 +69,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const serializeDetailTarget = (owner: string, repo: string, number: number) => {
     return `${owner}/${repo}/${number}`;
+  };
+
+  const serializeRepoTarget = (owner: string, repo: string) => {
+    return `${owner}/${repo}`;
   };
 
   const buildDashboardQuery = (query: LocationQueryRaw) => {
@@ -102,17 +111,41 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await pushDashboardQuery(query);
   };
 
+  const pushRepoDetailRoute = async (owner: string, repo: string) => {
+    await pushDashboardQuery({
+      ...route.query,
+      tab: currentRouteTab.value,
+      issue: undefined,
+      pr: undefined,
+      repo: serializeRepoTarget(owner, repo),
+    });
+  };
+
   const clearDetailRoute = async () => {
     await pushDashboardQuery({
       ...route.query,
       issue: undefined,
       pr: undefined,
+      repo: undefined,
       tab: currentRouteTab.value,
     });
   };
 
   const activeIssueTarget = computed(() => parseDetailTarget(route.query.issue));
   const activePRTarget = computed(() => parseDetailTarget(route.query.pr));
+  const activeRepoTarget = computed(() => {
+    const rawValue = getQueryParamValue(route.query.repo);
+    if (!rawValue) return null;
+
+    const segments = rawValue.split('/').filter(Boolean);
+    if (segments.length < 2) return null;
+
+    const repo = segments[segments.length - 1];
+    const owner = segments.slice(0, -1).join('/');
+    if (!owner || !repo) return null;
+
+    return { owner, repo };
+  });
 
   const issueDetailKey = computed(() => {
     const target = activeIssueTarget.value;
@@ -122,6 +155,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const prDetailKey = computed(() => {
     const target = activePRTarget.value;
     return target ? `pr-${target.owner}-${target.repo}-${target.number}` : 'pr-empty';
+  });
+
+  const repoDetailKey = computed(() => {
+    const target = activeRepoTarget.value;
+    return target ? `repo-${target.owner}-${target.repo}` : 'repo-empty';
   });
 
   const closeIssueDetail = () => {
@@ -137,6 +175,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     isPRDetailVisible.value = false;
     currentPR.value = null;
     loadingPR.value = false;
+  };
+
+  const closeRepoDetail = () => {
+    repoRequestId.value += 1;
+    isRepoDetailVisible.value = false;
+    currentRepo.value = null;
+    repoError.value = '';
+    loadingRepo.value = false;
   };
 
   const openIssue = async (issue: DashboardEntity) => {
@@ -161,6 +207,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       repo: repoPath.repo,
       number: pull.number,
     });
+  };
+
+  const openRepo = async (repo: DashboardEntity) => {
+    const repoPath = parseGitHubRepoPath(repo.repository_url);
+    if (!repoPath) return;
+
+    navigateToRepo(repoPath.owner, repoPath.repo);
+    await pushRepoDetailRoute(repoPath.owner, repoPath.repo);
   };
 
   const loadIssueData = async (owner: string, repo: string, issueNumber: number) => {
@@ -224,6 +278,38 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     }
   };
 
+  const loadRepoData = async (owner: string, repo: string) => {
+    if (!owner || !repo) return;
+
+    const requestId = repoRequestId.value + 1;
+    repoRequestId.value = requestId;
+    currentRepo.value = null;
+    repoError.value = '';
+    loadingRepo.value = true;
+    isIssueDetailVisible.value = false;
+    isPRDetailVisible.value = false;
+    isRepoDetailVisible.value = true;
+
+    await nextTick();
+
+    try {
+      const repository = await apiFetch(`/api/repos/${owner}/${repo}`);
+      if (requestId === repoRequestId.value) {
+        currentRepo.value = repository as Record<string, unknown>;
+      }
+    } catch (error) {
+      console.error('Error fetching repository:', error);
+      if (requestId === repoRequestId.value) {
+        repoError.value =
+          error instanceof Error ? error.message : 'Failed to load repository details.';
+      }
+    } finally {
+      if (requestId === repoRequestId.value) {
+        loadingRepo.value = false;
+      }
+    }
+  };
+
   const handleSwitchIssue = async (owner: string, repo: string, issueNumber: number) => {
     if (!owner || !repo || !issueNumber) return;
 
@@ -280,6 +366,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await restorePreviousEntry();
   };
 
+  const handleRepoDetailBack = async () => {
+    await restorePreviousEntry();
+  };
+
   const handleIssueDetailHome = async () => {
     goToHome();
     await clearDetailRoute();
@@ -290,8 +380,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await clearDetailRoute();
   };
 
+  const handleRepoDetailHome = async () => {
+    goToHome();
+    await clearDetailRoute();
+  };
+
   watch(
-    () => [route.query.issue, route.query.pr],
+    () => [route.query.issue, route.query.pr, route.query.repo],
     async () => {
       const issueTarget = activeIssueTarget.value;
       const prTarget = activePRTarget.value;
@@ -306,8 +401,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         return;
       }
 
+      if (activeRepoTarget.value) {
+        await loadRepoData(activeRepoTarget.value.owner, activeRepoTarget.value.repo);
+        return;
+      }
+
       closeIssueDetail();
       closePRDetail();
+      closeRepoDetail();
     },
     { immediate: true }
   );
@@ -315,13 +416,18 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   return {
     currentIssue,
     currentPR,
+    currentRepo,
     issueError,
+    repoError,
     isIssueDetailVisible,
     isPRDetailVisible,
+    isRepoDetailVisible,
     issueDetailKey,
     loadingIssue,
     loadingPR,
+    loadingRepo,
     prDetailKey,
+    repoDetailKey,
     openIssue,
     openNotification,
     openPR,
@@ -329,6 +435,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     handleIssueDetailHome,
     handlePRDetailBack,
     handlePRDetailHome,
+    handleRepoDetailBack,
+    handleRepoDetailHome,
     handleSwitchIssue,
     handleSwitchPR,
   };
