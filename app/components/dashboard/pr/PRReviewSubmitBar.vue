@@ -56,7 +56,9 @@ const toggleSection = (section: string) => {
 };
 
 const handleBodyInput = (event: Event) => {
-  emit('update:body', (event.target as HTMLTextAreaElement).value);
+  if (event.target instanceof HTMLTextAreaElement) {
+    emit('update:body', event.target.value);
+  }
 };
 </script>
 
