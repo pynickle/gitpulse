@@ -72,7 +72,7 @@ const cloneTabs = (tabs: CustomTab[]) => {
 };
 
 const normalizeQuery = (query: unknown): CustomTabQuery => {
-  if (!query || typeof query !== 'object') {
+  if (!query || typeof query !== 'object' || Array.isArray(query)) {
     return {};
   }
 
