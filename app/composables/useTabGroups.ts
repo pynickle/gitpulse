@@ -32,7 +32,7 @@ const buildStorageKey = (login: string): string => {
   return `gitpulse:dashboard:tab-groups:${login}`;
 };
 
-let hasHydratedStoredGroups = false;
+let hydratedGroupsLogin: string | null = null;
 
 const DEFAULT_TAB_GROUPS: TabGroup[] = [
   {
@@ -164,15 +164,21 @@ export function useTabGroups(initialGroups: TabGroup[] = DEFAULT_TAB_GROUPS) {
     groups.value = cloneGroups(initialGroups);
   }
 
-  if (import.meta.client && !hasHydratedStoredGroups) {
-    const storedGroups = readStoredGroups(login.value);
+  const hydrateStoredGroups = (nextLogin: string) => {
+    if (!import.meta.client || hydratedGroupsLogin === nextLogin) {
+      return;
+    }
+
+    const storedGroups = readStoredGroups(nextLogin);
     if (storedGroups) {
       groups.value = ensureRequiredGroups(storedGroups);
     } else {
-      groups.value = ensureRequiredGroups(groups.value);
+      groups.value = ensureRequiredGroups(cloneGroups(initialGroups));
     }
-    hasHydratedStoredGroups = true;
-  }
+    hydratedGroupsLogin = nextLogin;
+  };
+
+  watch(login, hydrateStoredGroups, { immediate: true });
 
   watch(
     groups,

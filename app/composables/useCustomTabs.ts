@@ -46,7 +46,7 @@ const buildStorageKey = (login: string): string => {
 
 const DEFAULT_CUSTOM_TABS: CustomTab[] = [];
 
-let hasHydratedStoredTabs = false;
+let hydratedTabsLogin: string | null = null;
 
 const cloneQuery = (query: CustomTabQuery = {}) => {
   return {
@@ -239,11 +239,17 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
 
   const customTabs = useState<CustomTab[]>('gitpulse-custom-tabs', () => cloneTabs(initialTabs));
 
-  if (import.meta.client && !hasHydratedStoredTabs) {
-    const storedTabs = readStoredTabs(login.value);
+  const hydrateStoredTabs = (nextLogin: string) => {
+    if (!import.meta.client || hydratedTabsLogin === nextLogin) {
+      return;
+    }
+
+    const storedTabs = readStoredTabs(nextLogin);
     customTabs.value = storedTabs ?? cloneTabs(initialTabs);
-    hasHydratedStoredTabs = true;
-  }
+    hydratedTabsLogin = nextLogin;
+  };
+
+  watch(login, hydrateStoredTabs, { immediate: true });
 
   watch(
     customTabs,
