@@ -7,15 +7,6 @@ interface LabelsRequestBody {
   labels?: unknown;
 }
 
-function parseIssueNumber(value: string) {
-  if (!/^\d+$/.test(value)) {
-    return 0;
-  }
-
-  const issueNumber = Number.parseInt(value, 10);
-  return Number.isSafeInteger(issueNumber) ? issueNumber : 0;
-}
-
 function normalizeLabelsBody(body: unknown) {
   if (!body || typeof body !== 'object' || Array.isArray(body) || !('labels' in body)) {
     throw createError({
@@ -52,7 +43,7 @@ export default defineEventHandler(async (event) => {
       repo: string;
       issue_number: string;
     };
-    const issueNumber = parseIssueNumber(issue_number);
+    const issueNumber = parsePaginationNumber(issue_number, 0);
 
     if (!owner || !repo || issueNumber < 1) {
       throw createError({

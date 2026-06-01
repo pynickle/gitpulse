@@ -6,15 +6,6 @@ interface LockRequestBody {
   lock_reason?: unknown;
 }
 
-function parseIssueNumber(value: string) {
-  if (!/^\d+$/.test(value)) {
-    return 0;
-  }
-
-  const issueNumber = Number.parseInt(value, 10);
-  return Number.isSafeInteger(issueNumber) ? issueNumber : 0;
-}
-
 function normalizeLockReason(body: unknown): LockReason | undefined {
   if (body !== undefined && body !== null && (typeof body !== 'object' || Array.isArray(body))) {
     throw createError({
@@ -48,7 +39,7 @@ export default defineEventHandler(async (event) => {
     repo: string;
     issue_number: string;
   };
-  const issueNumber = parseIssueNumber(issue_number);
+  const issueNumber = parsePaginationNumber(issue_number, 0);
 
   if (!owner || !repo || issueNumber < 1) {
     throw createError({

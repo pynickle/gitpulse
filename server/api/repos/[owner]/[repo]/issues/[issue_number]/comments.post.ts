@@ -11,15 +11,6 @@ function hasRouteStatusCode(error: unknown): error is { statusCode: unknown } {
   return !!error && typeof error === 'object' && 'statusCode' in error && !!error.statusCode;
 }
 
-function parseIssueNumber(value: string) {
-  if (!/^\d+$/.test(value)) {
-    return 0;
-  }
-
-  const issueNumber = Number.parseInt(value, 10);
-  return Number.isSafeInteger(issueNumber) ? issueNumber : 0;
-}
-
 function normalizeCommentBody(body: unknown) {
   const requestBody =
     body && typeof body === 'object' && !Array.isArray(body) ? (body as CommentRequestBody) : {};
@@ -34,7 +25,7 @@ export default defineEventHandler(async (event) => {
       repo: string;
       issue_number: string;
     };
-    const issueNumber = parseIssueNumber(issue_number);
+    const issueNumber = parsePaginationNumber(issue_number, 0);
 
     if (!owner || !repo || issueNumber < 1) {
       throw createError({

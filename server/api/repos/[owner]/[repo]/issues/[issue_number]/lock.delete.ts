@@ -1,19 +1,10 @@
-function parseIssueNumber(value: string) {
-  if (!/^\d+$/.test(value)) {
-    return 0;
-  }
-
-  const issueNumber = Number.parseInt(value, 10);
-  return Number.isSafeInteger(issueNumber) ? issueNumber : 0;
-}
-
 export default defineEventHandler(async (event) => {
   const { owner, repo, issue_number } = event.context.params as {
     owner: string;
     repo: string;
     issue_number: string;
   };
-  const issueNumber = parseIssueNumber(issue_number);
+  const issueNumber = parsePaginationNumber(issue_number, 0);
 
   if (!owner || !repo || issueNumber < 1) {
     throw createError({
