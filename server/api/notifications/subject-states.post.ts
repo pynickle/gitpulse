@@ -76,10 +76,18 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
   };
 };
 
+const getSubjectTargetsBodyValue = (body: unknown) => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return undefined;
+  }
+
+  return (body as { targets?: unknown }).targets;
+};
+
 export default defineEventHandler(async (event) => {
-  const body = (await readBody(event)) as { targets?: unknown };
-  const targets = Array.isArray(body.targets)
-    ? body.targets.filter(isSubjectTarget).slice(0, maxTargets)
+  const bodyTargets = getSubjectTargetsBodyValue(await readBody(event));
+  const targets = Array.isArray(bodyTargets)
+    ? bodyTargets.filter(isSubjectTarget).slice(0, maxTargets)
     : [];
 
   if (targets.length === 0) {
