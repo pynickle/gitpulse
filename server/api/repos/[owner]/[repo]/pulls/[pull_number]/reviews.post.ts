@@ -11,24 +11,6 @@ const allowedEvents = new Set<ReviewEvent>(['APPROVE', 'COMMENT', 'REQUEST_CHANG
 
 const trimString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
-const getErrorNumber = (error: unknown, key: 'status' | 'statusCode') => {
-  if (typeof error !== 'object' || error === null) {
-    return null;
-  }
-
-  const value = (error as Record<string, unknown>)[key];
-  return typeof value === 'number' ? value : null;
-};
-
-const getErrorMessage = (error: unknown) => {
-  if (typeof error !== 'object' || error === null) {
-    return '';
-  }
-
-  const value = (error as Record<string, unknown>).message;
-  return typeof value === 'string' ? value : '';
-};
-
 const normalizeReviewComments = (comments: unknown[] | undefined) => {
   if (!Array.isArray(comments)) {
     return [];
@@ -119,25 +101,6 @@ export default defineEventHandler(async (event) => {
     return review;
   } catch (error: unknown) {
     console.error('Error creating pull request review:', error);
-
-    const statusCode = getErrorNumber(error, 'statusCode');
-    const status = getErrorNumber(error, 'status');
-    const message = getErrorMessage(error);
-
-    if (statusCode) {
-      throw error;
-    }
-
-    if (status) {
-      throw createError({
-        statusCode: status,
-        statusMessage: message || 'Failed to create pull request review',
-      });
-    }
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to create pull request review',
-    });
+    throwGitHubRouteError(error, 'Failed to create pull request review');
   }
 });

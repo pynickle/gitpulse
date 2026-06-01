@@ -77,24 +77,6 @@ const compareReviewComments = (
   return firstDate - secondDate;
 };
 
-const getErrorNumber = (error: unknown, key: 'status' | 'statusCode') => {
-  if (typeof error !== 'object' || error === null) {
-    return null;
-  }
-
-  const value = (error as Record<string, unknown>)[key];
-  return typeof value === 'number' ? value : null;
-};
-
-const getErrorMessage = (error: unknown) => {
-  if (typeof error !== 'object' || error === null) {
-    return '';
-  }
-
-  const value = (error as Record<string, unknown>).message;
-  return typeof value === 'string' ? value : '';
-};
-
 export default defineEventHandler(async (event) => {
   try {
     const { owner, repo, pull_number } = event.context.params as {
@@ -131,25 +113,6 @@ export default defineEventHandler(async (event) => {
     };
   } catch (error: unknown) {
     console.error('Error fetching pull request review comments:', error);
-
-    const statusCode = getErrorNumber(error, 'statusCode');
-    const status = getErrorNumber(error, 'status');
-    const message = getErrorMessage(error);
-
-    if (statusCode) {
-      throw error;
-    }
-
-    if (status) {
-      throw createError({
-        statusCode: status,
-        statusMessage: message || 'Failed to fetch pull request review comments',
-      });
-    }
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch pull request review comments',
-    });
+    throwGitHubRouteError(error, 'Failed to fetch pull request review comments');
   }
 });
