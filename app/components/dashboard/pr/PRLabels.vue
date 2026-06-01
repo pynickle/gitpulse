@@ -135,15 +135,22 @@ import { useI18n } from 'vue-i18n';
 import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
 import getThrownErrorMessage from '~/utils/getThrownErrorMessage';
 
+interface DashboardLabel {
+  id?: number | string;
+  name: string;
+  color: string;
+  description?: string | null;
+}
+
 const props = defineProps<{
-  labels: any[];
+  labels: DashboardLabel[];
   canEditLabels: boolean;
   repoInfo: { owner: string; repo: string } | null;
   prNumber?: number | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:labels', labels: any[]): void;
+  (e: 'update:labels', labels: DashboardLabel[]): void;
 }>();
 
 const { t } = useI18n();
@@ -152,7 +159,7 @@ const { openModal, closeModal } = useModalState();
 const isLabelEditorVisible = ref(false);
 const loadingLabels = ref(false);
 const savingLabels = ref(false);
-const repoLabels = ref<any[]>([]);
+const repoLabels = ref<DashboardLabel[]>([]);
 const selectedLabels = ref<string[]>([]);
 const labelError = ref<string>('');
 let labelErrorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -180,7 +187,7 @@ const scheduleLabelErrorClear = () => {
 watch(
   () => props.labels,
   (newLabels) => {
-    selectedLabels.value = newLabels.map((label: any) => label.name);
+    selectedLabels.value = newLabels.map((label) => label.name);
   },
   { immediate: true }
 );
@@ -214,13 +221,13 @@ const fetchRepoLabels = async () => {
   try {
     const { owner, repo } = props.repoInfo;
 
-    const data = await $fetch(`/api/repos/${owner}/${repo}/labels`, {
+    const data = await $fetch<DashboardLabel[]>(`/api/repos/${owner}/${repo}/labels`, {
       method: 'GET',
     });
 
     repoLabels.value = data || [];
 
-    selectedLabels.value = props.labels.map((label: any) => label.name);
+    selectedLabels.value = props.labels.map((label) => label.name);
   } catch (err) {
     console.error('Error fetching repository labels:', err);
   } finally {
@@ -245,12 +252,15 @@ const saveLabels = async () => {
 
   try {
     const { owner, repo } = props.repoInfo;
-    const data = await $fetch(`/api/repos/${owner}/${repo}/issues/${props.prNumber}/labels`, {
-      method: 'PUT',
-      body: {
-        labels: selectedLabels.value,
-      },
-    });
+    const data = await $fetch<DashboardLabel[]>(
+      `/api/repos/${owner}/${repo}/issues/${props.prNumber}/labels`,
+      {
+        method: 'PUT',
+        body: {
+          labels: selectedLabels.value,
+        },
+      }
+    );
 
     if (data) {
       emit('update:labels', data);
