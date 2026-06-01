@@ -103,7 +103,7 @@ const parseNotificationSubjectTarget = (
   if (
     !owner ||
     !repo ||
-    !Number.isFinite(parsedNumber) ||
+    !Number.isSafeInteger(parsedNumber) ||
     parsedNumber < 1 ||
     (type !== 'issues' && type !== 'pulls')
   )

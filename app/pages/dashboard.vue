@@ -246,7 +246,7 @@ const parseDashboardPage = (value: unknown) => {
   }
 
   const parsedPage = Number.parseInt(rawValue, 10);
-  return Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  return Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 };
 
 const buildDashboardQuery = (query: LocationQueryRaw) => {

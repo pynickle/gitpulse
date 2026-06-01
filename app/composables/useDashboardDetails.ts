@@ -60,7 +60,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
     const number = Number.parseInt(numberSegment, 10);
 
-    if (!owner || !repo || !Number.isFinite(number) || number < 1) return null;
+    if (!owner || !repo || !Number.isSafeInteger(number) || number < 1) return null;
 
     return { owner, repo, number };
   };

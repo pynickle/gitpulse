@@ -228,7 +228,7 @@ export function parseGitHubIssueOrPullUrl(url?: string) {
   if (issueMatch) {
     const [, owner, repo, number] = issueMatch;
     const parsedNumber = Number.parseInt(number ?? '', 10);
-    if (!owner || !repo || !Number.isFinite(parsedNumber) || parsedNumber < 1) return null;
+    if (!owner || !repo || !Number.isSafeInteger(parsedNumber) || parsedNumber < 1) return null;
 
     return {
       kind: 'issue' as const,
@@ -242,7 +242,7 @@ export function parseGitHubIssueOrPullUrl(url?: string) {
   if (pullMatch) {
     const [, owner, repo, number] = pullMatch;
     const parsedNumber = Number.parseInt(number ?? '', 10);
-    if (!owner || !repo || !Number.isFinite(parsedNumber) || parsedNumber < 1) return null;
+    if (!owner || !repo || !Number.isSafeInteger(parsedNumber) || parsedNumber < 1) return null;
 
     return {
       kind: 'pull-request' as const,

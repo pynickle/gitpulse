@@ -38,7 +38,7 @@ export default function parseGitHubMarkdownTarget(
     const type = getDetailType(rawType ?? '');
     const number = Number.parseInt(rawNumber ?? '', 10);
 
-    if (!owner || !repo || !type || !Number.isFinite(number) || number < 1) {
+    if (!owner || !repo || !type || !Number.isSafeInteger(number) || number < 1) {
       return null;
     }
 

@@ -30,7 +30,7 @@ export function useUrlHelper() {
         if (
           !owner ||
           !repo ||
-          !Number.isFinite(parsedNumber) ||
+          !Number.isSafeInteger(parsedNumber) ||
           parsedNumber < 1 ||
           (type !== 'issues' && type !== 'pulls')
         ) {
@@ -59,7 +59,7 @@ export function useUrlHelper() {
       if (match) {
         const [, owner, repo, type, number] = match;
         const parsedNumber = Number.parseInt(number ?? '', 10);
-        if (!owner || !repo || !Number.isFinite(parsedNumber) || parsedNumber < 1) {
+        if (!owner || !repo || !Number.isSafeInteger(parsedNumber) || parsedNumber < 1) {
           return;
         }
 
