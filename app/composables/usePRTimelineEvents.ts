@@ -1,6 +1,7 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 
 import parseGitHubMarkdownTarget from '~/utils/parseGitHubMarkdownTarget';
+import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 export interface TimelineActor {
   resourceType?: string;
@@ -215,15 +216,13 @@ export function usePRTimelineEvents(timeline: MaybeRefOrGetter<PRTimelineItem[]>
 }
 
 export function parseRepoFullName(repoFullName?: string): { owner: string; repo: string } | null {
-  if (!repoFullName) return null;
+  const repoPath = parseGitHubRepoPath(repoFullName);
+  if (!repoPath) return null;
 
-  const segments = repoFullName.split('/');
-  if (segments.length !== 2) return null;
-
-  const [owner, repo] = segments;
-  if (!owner || !repo) return null;
-
-  return { owner, repo };
+  return {
+    owner: repoPath.owner,
+    repo: repoPath.repo,
+  };
 }
 
 export function parseGitHubIssueOrPullUrl(url?: string) {
