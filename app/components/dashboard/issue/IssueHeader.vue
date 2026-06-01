@@ -40,6 +40,7 @@
           <a
             :href="`https://github.com/${issue?.user?.login}`"
             target="_blank"
+            rel="noopener"
             class="is-size-6 has-text-weight-medium has-text-link"
           >
             {{ issue?.user?.login }}

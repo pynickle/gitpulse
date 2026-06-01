@@ -23,6 +23,7 @@
             v-if="item.commit?.author?.user?.login"
             :href="item.commit.author.user.url"
             target="_blank"
+            rel="noopener"
             class="is-size-7 has-text-weight-medium has-text-link mr-2"
           >
             {{ item.commit.author.user.login }}
@@ -40,6 +41,7 @@
         v-if="item.commit?.oid"
         :href="`https://github.com/${repoOwner}/${repoName}/pull/${pullNumber}/commits/${item.commit.oid}`"
         target="_blank"
+        rel="noopener"
         class="tag is-light is-family-monospace ml-3"
         style="font-size: 0.75rem"
       >

@@ -15,6 +15,7 @@
           <a
             :href="item.actor?.url"
             target="_blank"
+            rel="noopener"
             class="is-size-7 has-text-weight-medium has-text-link mr-2"
           >
             {{ item.actor?.login }}
@@ -36,6 +37,7 @@
         v-if="item.commit?.commitUrl"
         :href="item.commit.commitUrl"
         target="_blank"
+        rel="noopener"
         class="tag is-light is-family-monospace ml-3"
       >
         {{ item.commit?.oid?.slice(0, 7) }}

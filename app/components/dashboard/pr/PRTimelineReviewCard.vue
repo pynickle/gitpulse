@@ -27,6 +27,7 @@
           <a
             :href="item.author?.url"
             target="_blank"
+            rel="noopener"
             class="has-text-link has-text-weight-semibold review-item__author"
           >
             {{ item.author?.login }}
@@ -47,7 +48,12 @@
               Dismissed
               <template v-if="item.dismissal.actor?.login">
                 by
-                <a :href="item.dismissal.actor.url" target="_blank" class="has-text-link">
+                <a
+                  :href="item.dismissal.actor.url"
+                  target="_blank"
+                  rel="noopener"
+                  class="has-text-link"
+                >
                   {{ item.dismissal.actor.login }}
                 </a>
               </template>
@@ -109,13 +115,19 @@
                     :src="comment.author?.avatarUrl || ''"
                     :alt="comment.author?.login || ''"
                   />
-                  <a :href="comment.author?.url" target="_blank" class="has-text-link">
+                  <a
+                    :href="comment.author?.url"
+                    target="_blank"
+                    rel="noopener"
+                    class="has-text-link"
+                  >
                     {{ comment.author?.login }}
                   </a>
                   <a
                     v-if="comment.url"
                     :href="comment.url"
                     target="_blank"
+                    rel="noopener"
                     class="tag is-light review-item__path-tag"
                   >
                     {{ commentLineLabel(comment) }}

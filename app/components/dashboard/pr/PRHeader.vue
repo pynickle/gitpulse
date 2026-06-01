@@ -55,6 +55,7 @@
           <a
             :href="`https://github.com/${pullRequest?.user?.login}`"
             target="_blank"
+            rel="noopener"
             class="is-size-6 has-text-weight-medium has-text-link"
           >
             {{ pullRequest?.user?.login }}

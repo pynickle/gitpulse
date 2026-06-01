@@ -40,6 +40,7 @@
       v-if="item.fromRepository?.url"
       :href="item.fromRepository.url"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-warning is-light"
     >
       {{ item.fromRepository.nameWithOwner }}
@@ -60,9 +61,14 @@
 
   <template v-else-if="item.eventType === 'added_to_project_v2'">
     added this to project
-    <a :href="item.project?.url" target="_blank" class="tag is-activity ml-1 is-info is-light">{{
-      item.project?.title
-    }}</a>
+    <a
+      :href="item.project?.url"
+      target="_blank"
+      rel="noopener"
+      class="tag is-activity ml-1 is-info is-light"
+    >
+      {{ item.project?.title }}
+    </a>
   </template>
 
   <template v-else-if="item.eventType === 'auto_merge_disabled'">
@@ -136,6 +142,7 @@
     <a
       :href="`https://github.com/${item.deletedCommentAuthor?.login}`"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ item.deletedCommentAuthor?.login }}
@@ -257,6 +264,7 @@
     <a
       :href="`https://github.com/${item.review?.author?.login}`"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ item.review?.author?.login }}
@@ -271,6 +279,7 @@
       v-if="reviewerUrl"
       :href="reviewerUrl"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ reviewerLabel }}
@@ -282,6 +291,7 @@
     <a
       :href="`https://github.com/${item.subject?.login}`"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ item.subject?.login }}

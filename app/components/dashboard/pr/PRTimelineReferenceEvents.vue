@@ -60,6 +60,7 @@
       v-if="item.commit?.commitUrl"
       :href="item.commit.commitUrl"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-light is-family-monospace"
     >
       {{ item.commit?.oid?.slice(0, 7) || 'commit' }}

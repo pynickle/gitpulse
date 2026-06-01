@@ -15,6 +15,7 @@
     <a
       :href="`https://github.com/${repoOwner}/${repoName}/milestone/${item.milestoneTitle}`"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-primary is-light"
     >
       {{ item.milestoneTitle }}
@@ -38,6 +39,7 @@
       v-if="item.project?.url"
       :href="item.project.url"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-link is-light"
     >
       {{ item.project?.title }}
@@ -52,6 +54,7 @@
     <a
       :href="`https://github.com/${item.assignee?.login}`"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-warning is-light"
     >
       {{ item.assignee?.login }}
@@ -75,6 +78,7 @@
     <a
       :href="`https://github.com/${item.deletedCommentAuthor?.login}`"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-warning is-light"
     >
       {{ item.deletedCommentAuthor?.login }}
@@ -149,6 +153,7 @@
       v-if="item.fromRepository?.url"
       :href="item.fromRepository.url"
       target="_blank"
+      rel="noopener"
       class="tag is-activity ml-1 is-warning is-light"
     >
       {{ item.fromRepository.nameWithOwner }}
@@ -160,7 +165,12 @@
 
   <template v-else-if="item.eventType === 'user_blocked'">
     blocked user
-    <a :href="item.subject?.url" target="_blank" class="tag is-activity ml-1 is-warning is-light">
+    <a
+      :href="item.subject?.url"
+      target="_blank"
+      rel="noopener"
+      class="tag is-activity ml-1 is-warning is-light"
+    >
       {{ item.subject?.login }}
     </a>
   </template>

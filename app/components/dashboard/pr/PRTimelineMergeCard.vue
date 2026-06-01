@@ -19,6 +19,7 @@
             v-if="item.actor?.login"
             :href="item.actor.url"
             target="_blank"
+            rel="noopener"
             class="is-size-6 has-text-weight-medium has-text-link mr-2"
           >
             {{ item.actor.login }}
@@ -42,6 +43,7 @@
           `https://github.com/${repoOwner}/${repoName}/commit/${item.commit.oid}`
         "
         target="_blank"
+        rel="noopener"
         class="merge-sha tag is-family-monospace ml-3"
       >
         {{ item.commit.oid.slice(0, 7) }}

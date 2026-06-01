@@ -3,6 +3,7 @@
     v-if="project?.url"
     :href="project.url"
     target="_blank"
+    rel="noopener"
     class="tag is-activity ml-1 is-link is-light"
   >
     {{ project.title }}

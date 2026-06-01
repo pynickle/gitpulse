@@ -1,6 +1,11 @@
 <template>
   <span class="is-size-7">
-    <a :href="item.actor?.url" target="_blank" class="has-text-weight-medium has-text-link mr-1">
+    <a
+      :href="item.actor?.url"
+      target="_blank"
+      rel="noopener"
+      class="has-text-weight-medium has-text-link mr-1"
+    >
       {{ item.actor?.login }}
     </a>
 

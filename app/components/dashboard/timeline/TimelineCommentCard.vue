@@ -13,6 +13,7 @@
           <a
             :href="item.author?.url"
             target="_blank"
+            rel="noopener"
             class="is-size-6 has-text-weight-medium has-text-link"
           >
             {{ item.author?.login }}
