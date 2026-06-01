@@ -45,7 +45,7 @@ const normalizeReviewComments = (comments: ReviewCommentPayload[] | undefined) =
     const body = trimString(comment.body);
     const position = Number(comment.position);
 
-    if (!path || !body || !Number.isInteger(position) || position < 1) {
+    if (!path || !body || !Number.isSafeInteger(position) || position < 1) {
       throw createError({
         statusCode: 400,
         statusMessage: `Invalid review comment at index ${index}`,
