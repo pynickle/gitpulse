@@ -17,13 +17,6 @@ const getQueryValue = (value: unknown) => {
   return typeof rawValue === 'string' ? rawValue.trim() : '';
 };
 
-const parseLabels = (value: unknown) => {
-  return getQueryValue(value)
-    .split(',')
-    .map((label) => label.trim())
-    .filter((label) => label.length > 0);
-};
-
 const parseList = (value: unknown) => {
   return getQueryValue(value)
     .split(',')
@@ -75,7 +68,7 @@ export default defineEventHandler(async (event) => {
     const involves = getQueryValue(query.involves);
     const milestone = getQueryValue(query.milestone);
     const state = getQueryValue(query.state);
-    const labels = parseLabels(query.labels);
+    const labels = parseList(query.labels);
     const scopes = normalizeIssueSearchScopes(parseList(query.scopes));
     const visibility = getQueryValue(query.visibility);
     const archived = getQueryValue(query.archived);
