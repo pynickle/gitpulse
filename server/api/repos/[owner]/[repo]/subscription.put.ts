@@ -17,10 +17,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody(event);
-  const requestBody =
-    body && typeof body === 'object' && !Array.isArray(body)
-      ? (body as SubscriptionRequestBody)
-      : {};
+  if (body !== undefined && body !== null && (typeof body !== 'object' || Array.isArray(body))) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid subscription request body',
+    });
+  }
+
+  const requestBody = body ? (body as SubscriptionRequestBody) : {};
   const subscribed = requestBody.subscribed ?? true;
   const ignored = requestBody.ignored ?? false;
 
