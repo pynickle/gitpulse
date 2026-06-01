@@ -5,13 +5,21 @@ export default defineEventHandler(async (event) => {
       repo: string;
       pull_number: string;
     };
+    const pullNumber = parsePaginationNumber(pull_number, 0);
+
+    if (!owner || !repo || pullNumber < 1) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Missing required parameters',
+      });
+    }
 
     const octokit = await getGitHubClient(event);
 
     const pullRequest = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
       repo,
-      pull_number: parseInt(pull_number, 10),
+      pull_number: pullNumber,
     });
 
     return pullRequest.data;
