@@ -25,7 +25,7 @@ export const getOneYearAgoSearchDate = () => {
 };
 
 export const quoteSearchValue = (value: string) => {
-  return /\s/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
+  return /[\s"]/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
 };
 
 export const normalizeIssueSearchType = (value: string): CustomTabSearchType => {
