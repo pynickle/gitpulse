@@ -162,7 +162,7 @@ const markAsRead = async () => {
   }
 };
 
-const reasonIconMap: Record<string, any> = {
+const reasonIconMap: Record<string, typeof BellIcon> = {
   approval_requested: CheckCircleIcon, // Deployment approval requested
   assign: UserPlusIcon, // You were assigned to the issue
   author: PenLineIcon, // You created the thread
