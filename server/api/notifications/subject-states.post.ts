@@ -24,6 +24,7 @@ interface GraphQLResponseEnvelope {
 }
 
 const maxTargets = 50;
+const maxGraphQLInt = 2_147_483_647;
 
 const isSubjectTarget = (value: unknown): value is NotificationSubjectStateTarget => {
   if (!value || typeof value !== 'object') return false;
@@ -35,8 +36,9 @@ const isSubjectTarget = (value: unknown): value is NotificationSubjectStateTarge
     typeof target.repo === 'string' &&
     (target.type === 'issues' || target.type === 'pulls') &&
     typeof target.number === 'number' &&
-    Number.isInteger(target.number) &&
-    target.number > 0
+    Number.isSafeInteger(target.number) &&
+    target.number > 0 &&
+    target.number <= maxGraphQLInt
   );
 };
 
