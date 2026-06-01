@@ -383,14 +383,15 @@ const currentTabFilters = computed(() => {
   return quickFilters.value[currentTab.value] ?? {};
 });
 
-// Filtered data based on active filters
-const filteredNotifications = computed(() => {
-  const filters = currentTabFilters.value;
-  const activeFilters = Object.entries(filters)
-    .filter(([_, active]) => active)
+const getActiveFilterKeys = (filters: Record<string, boolean>) => {
+  return Object.entries(filters)
+    .filter(([, active]) => active)
     .map(([key]) => key);
+};
 
-  // If no filters active, show all
+const filteredNotifications = computed(() => {
+  const activeFilters = getActiveFilterKeys(currentTabFilters.value);
+
   if (activeFilters.length === 0) {
     return notifications.value;
   }
@@ -403,12 +404,8 @@ const filteredNotifications = computed(() => {
 });
 
 const filteredIssues = computed(() => {
-  const filters = currentTabFilters.value;
-  const activeFilters = Object.entries(filters)
-    .filter(([_, active]) => active)
-    .map(([key]) => key);
+  const activeFilters = getActiveFilterKeys(currentTabFilters.value);
 
-  // If no filters active, show all
   if (activeFilters.length === 0) {
     return issues.value;
   }
@@ -421,12 +418,8 @@ const filteredIssues = computed(() => {
 });
 
 const filteredPulls = computed(() => {
-  const filters = currentTabFilters.value;
-  const activeFilters = Object.entries(filters)
-    .filter(([_, active]) => active)
-    .map(([key]) => key);
+  const activeFilters = getActiveFilterKeys(currentTabFilters.value);
 
-  // If no filters active, show all
   if (activeFilters.length === 0) {
     return pulls.value;
   }
