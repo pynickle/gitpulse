@@ -64,12 +64,18 @@ export default defineEventHandler(async (event) => {
       pull_number: string;
     };
 
-    const octokit = await getGitHubClient(event);
-    const pullNumber = parseInt(pull_number, 10);
-
     const query = getQuery(event);
-    const parsedPage = Number.parseInt(String(query.page ?? '1'), 10);
-    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const page = parsePaginationNumber(query.page, 1);
+    const pullNumber = parsePaginationNumber(pull_number, 0);
+
+    if (!owner || !repo || pullNumber < 1) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Missing required parameters',
+      });
+    }
+
+    const octokit = await getGitHubClient(event);
 
     const [timelinePage, pullCommits, pullReviews, pullReviewComments] = await Promise.all([
       fetchTimelinePage<Record<string, any>>(
