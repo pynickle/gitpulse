@@ -122,6 +122,10 @@ const PR_UNSUPPORTED_EVENT_CLASSES = [
   'project_v2_field_history',
 ] as const;
 
+const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
+const GITHUB_REPO_PATH_PATTERN = /^\/([^/]+)\/([^/]+)(?:\/|$)/;
+const GITHUB_PULL_REFERENCE_PATH_PATTERN = /^\/[^/]+\/[^/]+\/pull\/\d+(?:\/|$)/;
+
 export function buildIssueTimelineCapabilities(): TimelineCapabilities {
   return {
     source: 'rest',
@@ -1077,11 +1081,12 @@ function mapReferencedSource(
 function mapReference(item: Record<string, any> | undefined, context: TimelineRepoContext) {
   if (!item) return undefined;
 
+  const htmlUrl = parseGitHubWebUrl(item.html_url);
   const repository = mapRepository(item, context);
 
   return {
     resourceType:
-      item.pull_request || String(item.html_url ?? '').includes('/pull/')
+      item.pull_request || GITHUB_PULL_REFERENCE_PATH_PATTERN.test(htmlUrl?.pathname ?? '')
         ? 'pull-request'
         : 'issue',
     number: item.number,
@@ -1111,20 +1116,41 @@ function mapCommitPayload(commit: Record<string, any>) {
 }
 
 function mapRepository(item: Record<string, any>, context: TimelineRepoContext) {
-  const htmlUrl = typeof item.html_url === 'string' ? item.html_url : '';
-  const repoMatch = htmlUrl.match(/github\.com\/([^/]+)\/([^/]+)\//);
+  const repoPath = parseGitHubRepoPath(item.html_url);
 
   return {
-    name: item.repository?.name ?? repoMatch?.[2] ?? context.repo,
+    name: item.repository?.name ?? repoPath?.repo ?? context.repo,
     nameWithOwner:
       item.repository?.full_name ??
-      (repoMatch?.[1] && repoMatch?.[2]
-        ? `${repoMatch[1]}/${repoMatch[2]}`
-        : `${context.owner}/${context.repo}`),
+      (repoPath ? `${repoPath.owner}/${repoPath.repo}` : `${context.owner}/${context.repo}`),
     owner: {
-      login: item.repository?.owner?.login ?? repoMatch?.[1] ?? context.owner,
+      login: item.repository?.owner?.login ?? repoPath?.owner ?? context.owner,
     },
   };
+}
+
+function parseGitHubRepoPath(value: unknown): { owner: string; repo: string } | null {
+  const url = parseGitHubWebUrl(value);
+  if (!url) return null;
+
+  const repoMatch = url.pathname.match(GITHUB_REPO_PATH_PATTERN);
+  if (!repoMatch) return null;
+
+  const [, owner, repo] = repoMatch;
+  if (!owner || !repo) return null;
+
+  return { owner, repo };
+}
+
+function parseGitHubWebUrl(value: unknown): URL | null {
+  if (typeof value !== 'string') return null;
+
+  try {
+    const url = new URL(value);
+    return GITHUB_WEB_HOSTS.has(url.hostname.toLowerCase()) ? url : null;
+  } catch {
+    return null;
+  }
 }
 
 function stringifyId(value: unknown) {
