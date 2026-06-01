@@ -1,14 +1,7 @@
-import {
-  getGitHubErrorMessage,
-  getGitHubErrorStatusCode,
-} from '../../../../../../utils/github-auth-utils';
+import { throwGitHubRouteError } from '../../../../../../utils/github-auth-utils';
 
 interface CommentRequestBody {
   body?: unknown;
-}
-
-function hasRouteStatusCode(error: unknown): error is { statusCode: unknown } {
-  return !!error && typeof error === 'object' && 'statusCode' in error && !!error.statusCode;
 }
 
 function normalizeCommentBody(body: unknown) {
@@ -58,21 +51,6 @@ export default defineEventHandler(async (event) => {
   } catch (error: unknown) {
     console.error('Error creating issue comment:', error);
 
-    if (hasRouteStatusCode(error)) {
-      throw error;
-    }
-
-    const statusCode = getGitHubErrorStatusCode(error);
-    if (statusCode) {
-      throw createError({
-        statusCode,
-        statusMessage: getGitHubErrorMessage(error, 'Failed to create comment'),
-      });
-    }
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to create comment',
-    });
+    throwGitHubRouteError(error, 'Failed to create comment');
   }
 });

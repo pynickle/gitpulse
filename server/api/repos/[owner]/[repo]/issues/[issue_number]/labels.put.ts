@@ -1,7 +1,4 @@
-import {
-  getGitHubErrorMessage,
-  getGitHubErrorStatusCode,
-} from '../../../../../../utils/github-auth-utils';
+import { throwGitHubRouteError } from '../../../../../../utils/github-auth-utils';
 
 interface LabelsRequestBody {
   labels?: unknown;
@@ -30,10 +27,6 @@ function normalizeLabelsBody(body: unknown) {
   }
 
   return rawLabels;
-}
-
-function hasRouteStatusCode(error: unknown): error is { statusCode: unknown } {
-  return !!error && typeof error === 'object' && 'statusCode' in error && !!error.statusCode;
 }
 
 export default defineEventHandler(async (event) => {
@@ -70,21 +63,6 @@ export default defineEventHandler(async (event) => {
   } catch (error: unknown) {
     console.error('Error updating issue labels:', error);
 
-    if (hasRouteStatusCode(error)) {
-      throw error;
-    }
-
-    const statusCode = getGitHubErrorStatusCode(error);
-    if (statusCode) {
-      throw createError({
-        statusCode,
-        statusMessage: getGitHubErrorMessage(error, 'Failed to update issue labels'),
-      });
-    }
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to update issue labels',
-    });
+    throwGitHubRouteError(error, 'Failed to update issue labels');
   }
 });
