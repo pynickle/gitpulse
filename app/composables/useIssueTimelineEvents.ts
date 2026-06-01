@@ -59,38 +59,35 @@ export interface IssueTimelineContext {
   issueNumber: number;
 }
 
-const lockReasonMap: Record<string, string> = {
+const withLowercaseAliases = (entries: Record<string, string>): Record<string, string> => {
+  return Object.fromEntries(
+    Object.entries(entries).flatMap(([reason, value]) => [
+      [reason, value],
+      [reason.toLowerCase(), value],
+    ])
+  );
+};
+
+const lockReasonMap = withLowercaseAliases({
   OFF_TOPIC: 'Off Topic',
-  off_topic: 'Off Topic',
   RESOLVED: 'Resolved',
-  resolved: 'Resolved',
   SPAM: 'Spam',
-  spam: 'Spam',
   TOO_HEATED: 'Too Heated',
-  too_heated: 'Too Heated',
-};
+});
 
-const stateReasonMap: Record<string, string> = {
+const stateReasonMap = withLowercaseAliases({
   COMPLETED: 'Completed',
-  completed: 'Completed',
   DUPLICATE: 'Duplicate',
-  duplicate: 'Duplicate',
   NOT_PLANNED: 'Not Planned',
-  not_planned: 'Not Planned',
   REOPENED: 'Reopened',
-  reopened: 'Reopened',
-};
+});
 
-const stateReasonClassMap: Record<string, string> = {
+const stateReasonClassMap = withLowercaseAliases({
   COMPLETED: 'is-success',
-  completed: 'is-success',
   DUPLICATE: 'is-link',
-  duplicate: 'is-link',
   NOT_PLANNED: 'is-warning',
-  not_planned: 'is-warning',
   REOPENED: 'is-primary',
-  reopened: 'is-primary',
-};
+});
 
 const ISSUE_TYPE_EVENTS = ['issue_type_added', 'issue_type_changed', 'issue_type_removed'];
 
