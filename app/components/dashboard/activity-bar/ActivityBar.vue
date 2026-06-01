@@ -1,6 +1,5 @@
 <template>
   <div class="activity-bar">
-    <!-- User Avatar -->
     <button
       class="activity-bar__avatar"
       type="button"
@@ -18,7 +17,6 @@
       </div>
     </button>
 
-    <!-- Group Icons -->
     <nav class="activity-bar__groups" aria-label="View groups">
       <button
         v-for="group in groups"
@@ -35,7 +33,6 @@
       </button>
     </nav>
 
-    <!-- Settings -->
     <div class="activity-bar__bottom">
       <div class="activity-bar__divider" role="separator" aria-hidden="true"></div>
       <button

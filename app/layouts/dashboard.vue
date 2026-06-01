@@ -3,7 +3,6 @@ import Navbar from '~/components/layouts/Navbar.vue';
 </script>
 
 <template>
-  <!-- Header Component -->
   <Navbar />
   <section class="hero is-fullheight-with-navbar dashboard-shell">
     <div class="hero-body dashboard-shell__body">

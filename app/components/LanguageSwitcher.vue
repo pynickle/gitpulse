@@ -1,5 +1,4 @@
 <template>
-  <!-- Language Switcher -->
   <div class="dropdown is-right" :class="{ 'is-active': langOpen }">
     <div class="dropdown-trigger">
       <button
@@ -35,7 +34,6 @@
 import { ChevronDownIcon } from 'lucide-vue-next';
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 
-// Get i18n instance
 const { locale, setLocale, locales } = useI18n();
 
 const langOpen = ref(false);
