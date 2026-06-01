@@ -7,6 +7,15 @@ function hasRouteStatusCode(error: unknown): error is { statusCode: unknown } {
   return !!error && typeof error === 'object' && 'statusCode' in error && !!error.statusCode;
 }
 
+function parseIssueNumber(value: string) {
+  if (!/^\d+$/.test(value)) {
+    return 0;
+  }
+
+  const issueNumber = Number.parseInt(value, 10);
+  return Number.isSafeInteger(issueNumber) ? issueNumber : 0;
+}
+
 export default defineEventHandler(async (event) => {
   try {
     const { owner, repo, issue_number } = event.context.params as {
@@ -14,6 +23,14 @@ export default defineEventHandler(async (event) => {
       repo: string;
       issue_number: string;
     };
+    const issueNumber = parseIssueNumber(issue_number);
+
+    if (!owner || !repo || issueNumber < 1) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Missing required parameters',
+      });
+    }
 
     const body = await readBody<{ body?: string }>(event);
     const commentBody = body?.body?.trim();
@@ -31,7 +48,7 @@ export default defineEventHandler(async (event) => {
       {
         owner,
         repo,
-        issue_number: Number.parseInt(issue_number, 10),
+        issue_number: issueNumber,
         body: commentBody,
       }
     );
