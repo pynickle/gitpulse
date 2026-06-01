@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Reviewers section -->
     <div class="sidebar-card mb-4">
       <div class="sidebar-card__header">
         <div class="sidebar-card__header-left">
@@ -30,7 +29,6 @@
       </div>
     </div>
 
-    <!-- Additional info section -->
     <div class="sidebar-card mb-4">
       <div class="sidebar-card__header">
         <div class="sidebar-card__header-left">
@@ -84,7 +82,6 @@
       </div>
     </div>
 
-    <!-- GitHub link -->
     <div class="sidebar-card">
       <div class="sidebar-card__content">
         <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
@@ -132,7 +129,6 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 
-// Sidebar card wrapper
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
@@ -176,7 +172,6 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   margin: 0;
 }
 
-// Badge
 .sidebar-badge {
   display: inline-flex;
   align-items: center;
@@ -191,7 +186,6 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   border-radius: 10px;
 }
 
-// Reviewer list
 .reviewer-list {
   display: flex;
   flex-direction: column;
@@ -226,7 +220,6 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
-// Info list
 .info-list {
   display: flex;
   flex-direction: column;
@@ -273,7 +266,6 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   }
 }
 
-// Stats grid
 .info-stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -311,7 +303,6 @@ const formatDurationFromNow = (dateString: string | undefined, locale: string) =
   color: var(--gitpulse-danger);
 }
 
-// Link inside card
 .sidebar-link {
   display: flex;
   align-items: center;

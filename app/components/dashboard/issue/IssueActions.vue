@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Lock/Unlock action -->
     <div v-if="canLockIssue" class="sidebar-card mb-4">
       <div class="sidebar-card__content">
         <div v-if="lockError" class="sidebar-alert sidebar-alert--error mb-3">
@@ -23,7 +22,6 @@
       </div>
     </div>
 
-    <!-- Additional info section -->
     <div class="sidebar-card mb-4">
       <div class="sidebar-card__header">
         <div class="sidebar-card__header-left">
@@ -57,7 +55,6 @@
       </div>
     </div>
 
-    <!-- GitHub link -->
     <div class="sidebar-card">
       <div class="sidebar-card__content">
         <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
@@ -247,7 +244,6 @@ const formatDate = (dateString: string | undefined) => {
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 
-// Sidebar card wrapper
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
@@ -285,7 +281,6 @@ const formatDate = (dateString: string | undefined) => {
   padding: 12px 16px;
 }
 
-// Badge
 .sidebar-badge {
   display: inline-flex;
   align-items: center;
@@ -301,7 +296,6 @@ const formatDate = (dateString: string | undefined) => {
   color: var(--gitpulse-danger);
 }
 
-// Alert
 .sidebar-alert {
   display: flex;
   align-items: center;
@@ -335,7 +329,6 @@ const formatDate = (dateString: string | undefined) => {
   }
 }
 
-// Action button
 .sidebar-action-btn {
   display: flex;
   align-items: center;
@@ -364,7 +357,6 @@ const formatDate = (dateString: string | undefined) => {
   }
 }
 
-// Info list
 .info-list {
   display: flex;
   flex-direction: column;
@@ -411,7 +403,6 @@ const formatDate = (dateString: string | undefined) => {
   }
 }
 
-// Link inside card
 .sidebar-link {
   display: flex;
   align-items: center;
@@ -427,7 +418,6 @@ const formatDate = (dateString: string | undefined) => {
   }
 }
 
-// Spin animation
 .spin-animation {
   animation: spin 1s linear infinite;
 }

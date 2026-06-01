@@ -93,7 +93,6 @@ import { EyeIcon } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
-// Import subcomponents
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
 import PRReviewWorkspace from '~/components/dashboard/pr/PRReviewWorkspace.vue';
@@ -111,7 +110,6 @@ const emit = defineEmits<{
   (e: 'update:review-active', isActive: boolean): void;
 }>();
 
-// State variables
 const loadingTimeline = ref(false);
 const currentPullRequest = ref(props.pullRequest);
 const detailError = ref('');
@@ -158,7 +156,6 @@ const repoPermissions = ref({
   canLockIssue: false,
 });
 
-// Computed properties
 const repoInfo = computed(() => {
   const pullRequest = currentPullRequest.value;
 
@@ -184,7 +181,6 @@ const canOpenReviewWindow = computed(() =>
   )
 );
 
-// Methods
 const switchToIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
 };
@@ -394,7 +390,6 @@ const fetchPullRequestDetails = async () => {
   }
 };
 
-// Watch for changes in props.pullRequest
 watch(
   () => props.pullRequest,
   (newPullRequest) => {
@@ -498,7 +493,6 @@ watch(
   padding-bottom: 5rem;
 }
 
-// Review button
 .sidebar-review-btn {
   display: flex;
   align-items: center;

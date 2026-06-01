@@ -65,7 +65,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
-// Import subcomponents
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
@@ -82,7 +81,6 @@ const emit = defineEmits<{
   (e: 'update:non-sticky-header', visible: boolean): void;
 }>();
 
-// State variables
 const loadingTimeline = ref(false);
 const loadingPermission = ref(false);
 const currentIssue = ref(props.issue);
@@ -130,7 +128,6 @@ const onSidebarScroll = () => {
 
 onBeforeUnmount(clearScrollTimeout);
 
-// Computed properties
 const repoInfo = computed(() => {
   return parseGitHubRepoPath(currentIssue.value?.repository_url);
 });
@@ -151,7 +148,6 @@ const canLockIssue = computed(() => {
   return repoPermissions.value.canLockIssue;
 });
 
-// Methods
 const switchToIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
 };
@@ -315,7 +311,6 @@ const fetchRepoPermissions = async () => {
   }
 };
 
-// Watch for changes in props.issue
 watch(
   () => props.issue,
   (newIssue) => {

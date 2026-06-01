@@ -1,6 +1,5 @@
 <template>
   <div class="mb-6">
-    <!-- PR title and metadata -->
     <div class="is-flex is-align-items-center mb-4">
       <component :size="24" :is="stateIcon" :style="stateColor" />
       <h1 class="title is-3 ml-4">{{ pullRequest?.title }}</h1>
@@ -43,7 +42,6 @@
 
     <hr class="mr-4" />
 
-    <!-- PR description -->
     <div>
       <div class="is-flex is-align-items-center mb-4">
         <RoundImg
@@ -93,7 +91,6 @@ import { formatDurationFromNow } from '#imports';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
-// Configure dayjs
 const { locale } = useI18n();
 const localeCode = computed(() => locale.value);
 
@@ -103,7 +100,6 @@ const props = defineProps<{
   repoName: string;
 }>();
 
-// Computed properties
 const displayState = computed(() => {
   if (props.pullRequest?.merged_at) return 'merged';
   return props.pullRequest?.state || 'closed';
