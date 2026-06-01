@@ -29,6 +29,38 @@
     "goToDashboard": "前往仪表盘",
     "loggedOut": "登出"
   },
+  "error": {
+    "404": {
+      "title": "页面不存在",
+      "description": "你访问的页面不存在或已被移动。"
+    },
+    "500": {
+      "title": "出错了",
+      "description": "服务器开了个小差,请稍后重试。"
+    },
+    "403": {
+      "title": "无权访问",
+      "description": "你没有权限访问此页面。"
+    },
+    "503": {
+      "title": "服务暂不可用",
+      "description": "GitPulse 暂时无法访问,请稍后再试。"
+    },
+    "418": {
+      "title": "我是一个茶壶",
+      "description": "这个服务器是个茶壶,所以拒绝冲咖啡。"
+    },
+    "cta": {
+      "dashboard": "返回仪表盘",
+      "home": "回到首页",
+      "back": "返回上一页",
+      "retry": "重试"
+    },
+    "devWidget": {
+      "trigger": "预览错误页",
+      "panelTitle": "触发错误页面"
+    }
+  },
   "auth": {
     "connectWithGithub": "使用 GitHub 连接",
     "connecting": "连接中...",

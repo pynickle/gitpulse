@@ -29,6 +29,38 @@
     "goToDashboard": "Go to Dashboard",
     "loggedOut": "Logged Out"
   },
+  "error": {
+    "404": {
+      "title": "Page not found",
+      "description": "The page you're looking for doesn't exist or has been moved."
+    },
+    "500": {
+      "title": "Something went wrong",
+      "description": "An unexpected error hit our server. Please try again in a moment."
+    },
+    "403": {
+      "title": "Access denied",
+      "description": "You don't have permission to view this page."
+    },
+    "503": {
+      "title": "Service unavailable",
+      "description": "GitPulse is temporarily down. Please try again shortly."
+    },
+    "418": {
+      "title": "I'm a teapot",
+      "description": "This server refuses to brew coffee because it's, well, a teapot."
+    },
+    "cta": {
+      "dashboard": "Go to dashboard",
+      "home": "Back to home",
+      "back": "Go back",
+      "retry": "Try again"
+    },
+    "devWidget": {
+      "trigger": "Preview error",
+      "panelTitle": "Trigger an error page"
+    }
+  },
   "auth": {
     "connectWithGithub": "Connect with GitHub",
     "connecting": "Connecting...",
