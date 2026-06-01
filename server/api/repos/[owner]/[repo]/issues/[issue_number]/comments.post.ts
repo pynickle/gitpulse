@@ -1,3 +1,12 @@
+import {
+  getGitHubErrorMessage,
+  getGitHubErrorStatusCode,
+} from '../../../../../../utils/github-auth-utils';
+
+function hasRouteStatusCode(error: unknown): error is { statusCode: unknown } {
+  return !!error && typeof error === 'object' && 'statusCode' in error && !!error.statusCode;
+}
+
 export default defineEventHandler(async (event) => {
   try {
     const { owner, repo, issue_number } = event.context.params as {
@@ -28,17 +37,18 @@ export default defineEventHandler(async (event) => {
     );
 
     return comment;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating issue comment:', error);
 
-    if (error?.statusCode) {
+    if (hasRouteStatusCode(error)) {
       throw error;
     }
 
-    if (error?.status) {
+    const statusCode = getGitHubErrorStatusCode(error);
+    if (statusCode) {
       throw createError({
-        statusCode: error.status,
-        statusMessage: error.message || 'Failed to create comment',
+        statusCode,
+        statusMessage: getGitHubErrorMessage(error, 'Failed to create comment'),
       });
     }
 
