@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ConstructionIcon } from 'lucide-vue-next';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 interface ErrorPreset {
   statusCode: number;
@@ -12,8 +12,8 @@ interface ErrorPreset {
 
 const { t } = useI18n();
 
-const open = ref(false);
-const widgetRef = ref<HTMLElement | null>(null);
+const open = shallowRef(false);
+const widgetRef = useTemplateRef<HTMLElement>('widgetRef');
 
 const errors: ErrorPreset[] = [
   {
