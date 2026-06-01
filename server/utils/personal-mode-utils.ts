@@ -121,7 +121,7 @@ function verifySignedRememberPayload(value: string, secret: string): RememberCoo
       | RememberCookiePayload
       | undefined;
 
-    if (!payload || typeof payload !== 'object') {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       return null;
     }
 
