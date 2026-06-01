@@ -53,9 +53,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const numberSegment = segments[segments.length - 1];
     const repo = segments[segments.length - 2];
     const owner = segments.slice(0, -2).join('/');
-    const number = Number.parseInt(numberSegment ?? '', 10);
 
-    if (!owner || !repo || !Number.isFinite(number)) return null;
+    if (!numberSegment || !/^\d+$/.test(numberSegment)) {
+      return null;
+    }
+
+    const number = Number.parseInt(numberSegment, 10);
+
+    if (!owner || !repo || !Number.isFinite(number) || number < 1) return null;
 
     return { owner, repo, number };
   };
