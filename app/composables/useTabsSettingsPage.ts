@@ -390,6 +390,8 @@ export const useTabsSettingsPage = () => {
   };
 
   const buildCurrentQuery = (): CustomTabQuery => {
+    const labels = cleanLabels();
+
     return {
       text: newTab.query.text.trim() || undefined,
       type: newTab.query.type,
@@ -404,7 +406,7 @@ export const useTabsSettingsPage = () => {
       milestone: newTab.query.milestone.trim() || undefined,
       state: newTab.query.state === 'any' ? undefined : newTab.query.state,
       scopes: newTab.query.scopes.length > 0 ? [...newTab.query.scopes] : undefined,
-      labels: cleanLabels().length > 0 ? cleanLabels() : undefined,
+      labels: labels.length > 0 ? labels : undefined,
       visibility: newTab.query.visibility === 'any' ? undefined : newTab.query.visibility,
       archived: newTab.query.archived,
       draft: newTab.query.draft === 'any' ? undefined : newTab.query.draft,
