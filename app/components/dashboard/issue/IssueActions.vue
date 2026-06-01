@@ -86,9 +86,15 @@ import {
 import { onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import getThrownErrorMessage from '~/utils/getThrownErrorMessage';
 
 import LockReasonModal from './LockReasonModal.vue';
+
+interface IssueAssignee {
+  login: string;
+  avatar_url?: string | null;
+}
 
 const props = defineProps<{
   isLocked: boolean;
@@ -98,12 +104,12 @@ const props = defineProps<{
   htmlUrl: string | undefined;
   createdAt: string | undefined;
   updatedAt: string | undefined;
-  assignee: any | undefined;
+  assignee: IssueAssignee | undefined;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:isLocked', isLocked: boolean): void;
-  (e: 'add-timeline-event', event: any): void;
+  (e: 'add-timeline-event', event: IssueTimelineItem): void;
 }>();
 
 const { t } = useI18n();
