@@ -48,6 +48,15 @@ interface SortableTimelineItem {
   createdAt?: string;
   timelineSource?: string;
   commit?: TimelineCommitPayload;
+  reviewId?: string;
+  commitId?: string;
+  dismissal?: {
+    actor?: ReturnType<typeof mapActor>;
+    createdAt?: string;
+    message?: string;
+    commitId?: string;
+    previousState?: string;
+  };
   [key: string]: unknown;
 }
 
@@ -486,15 +495,23 @@ export function normalizePRIssueTimelineEvent(
         kind: 'event',
         eventType: eventName,
         review: {
+          id: stringifyId(
+            rawEvent.dismissed_review?.review_id ??
+              rawEvent.dismissed_review?.review?.id ??
+              rawEvent.review?.id
+          ),
           author: mapActor(
             rawEvent.dismissed_review?.review?.user ??
               rawEvent.dismissed_review?.user ??
               rawEvent.review?.user
           ),
-          state:
+          state: normalizeReviewState(
             rawEvent.dismissed_review?.review?.state ??
-            rawEvent.dismissed_review?.state ??
-            rawEvent.review?.state,
+              rawEvent.dismissed_review?.state ??
+              rawEvent.review?.state
+          ),
+          dismissalMessage: rawEvent.dismissed_review?.dismissal_message,
+          dismissalCommitId: rawEvent.dismissed_review?.dismissal_commit_id,
         },
       };
     case 'convert_to_draft':
@@ -607,15 +624,19 @@ export function normalizePRTimelineEvent(
 }
 
 function normalizePRReviewEvent(review: Record<string, any>): SortableTimelineItem {
+  const reviewId = stringifyId(review.id ?? review.node_id);
+
   return {
     kind: 'review',
     eventType: String(review.event ?? 'reviewed'),
-    id: stringifyId(review.id ?? review.node_id),
+    id: reviewId,
+    reviewId,
     createdAt: review.submitted_at ?? review.created_at,
     author: mapActor(review.user ?? review.actor),
     body: review.body ?? review.review?.body ?? '',
-    state: review.state ?? review.review?.state,
+    state: normalizeReviewState(review.state ?? review.review?.state),
     url: review.html_url,
+    commitId: review.commit_id,
     timelineSource: 'rest.timeline',
   };
 }
@@ -704,6 +725,112 @@ function normalizePRCommitCommentEvents(rawEvent: Record<string, any>): Sortable
     isOutdated: false,
     timelineSource: 'rest.timeline',
   }));
+}
+
+export function enrichPRTimelineWithReviewData(
+  timeline: SortableTimelineItem[],
+  reviews: Record<string, any>[]
+): SortableTimelineItem[] {
+  const reviewsById = buildReviewsById(reviews);
+  const dismissalsByReviewId = buildDismissalsByReviewId(timeline);
+
+  const enriched = timeline.map((item) => {
+    if (item.kind !== 'review') {
+      return item;
+    }
+
+    const reviewId = item.reviewId ?? item.id;
+    if (!reviewId) {
+      return item;
+    }
+
+    const review = reviewsById.get(reviewId);
+    const dismissal = dismissalsByReviewId.get(reviewId);
+    const submittedState = normalizeReviewState(
+      dismissal?.previousState ?? item.state ?? review?.state
+    );
+
+    return {
+      ...item,
+      reviewId,
+      commitId: item.commitId ?? review?.commit_id,
+      state: submittedState,
+      body: item.body ?? review?.body ?? '',
+      url: item.url ?? review?.html_url,
+      dismissal,
+    };
+  });
+
+  const reviewIdsInTimeline = new Set(
+    enriched
+      .filter((item) => item.kind === 'review')
+      .map((item) => item.reviewId ?? item.id)
+      .filter((reviewId): reviewId is string => Boolean(reviewId))
+  );
+
+  return enriched.filter((item) => {
+    if (item.eventType === 'review_dismissed') {
+      const review = item.review as { id?: string } | undefined;
+      return !review?.id || !reviewIdsInTimeline.has(review.id);
+    }
+
+    return true;
+  });
+}
+
+function buildReviewsById(reviews: Record<string, any>[]) {
+  const reviewsById = new Map<string, Record<string, any>>();
+
+  for (const review of reviews) {
+    const reviewId = stringifyId(review.id ?? review.node_id);
+    if (reviewId) {
+      reviewsById.set(reviewId, review);
+    }
+  }
+
+  return reviewsById;
+}
+
+function buildDismissalsByReviewId(timeline: SortableTimelineItem[]) {
+  const dismissalsByReviewId = new Map<string, NonNullable<SortableTimelineItem['dismissal']>>();
+
+  for (const item of timeline) {
+    if (item.eventType !== 'review_dismissed') {
+      continue;
+    }
+
+    const review = item.review as
+      | {
+          id?: string;
+          state?: string;
+          dismissalMessage?: string;
+          dismissalCommitId?: string;
+        }
+      | undefined;
+    const reviewId = review?.id;
+
+    if (!reviewId) {
+      continue;
+    }
+
+    dismissalsByReviewId.set(reviewId, {
+      actor: item.actor as ReturnType<typeof mapActor>,
+      createdAt: item.createdAt,
+      message: review?.dismissalMessage,
+      commitId: review?.dismissalCommitId,
+      previousState: normalizeReviewState(review?.state),
+    });
+  }
+
+  return dismissalsByReviewId;
+}
+
+function normalizeReviewState(state: unknown) {
+  if (typeof state !== 'string') {
+    return undefined;
+  }
+
+  return state.toLowerCase();
 }
 
 function normalizePRCommitEvent(commit: Record<string, any>): SortableTimelineItem {

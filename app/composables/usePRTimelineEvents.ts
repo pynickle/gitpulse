@@ -43,6 +43,14 @@ export interface TimelineCommit {
   };
 }
 
+export interface TimelineReviewDismissal {
+  actor?: TimelineActor;
+  createdAt?: string;
+  message?: string;
+  commitId?: string;
+  previousState?: string;
+}
+
 export interface TimelineRequestedReviewer {
   resourceType?: string;
   login?: string;
@@ -102,7 +110,16 @@ export interface PRTimelineItem {
   previousProjectColumnName?: string;
   previousStatus?: string;
   status?: string;
-  review?: { author?: TimelineActor; state?: string };
+  review?: {
+    id?: string;
+    author?: TimelineActor;
+    state?: string;
+    dismissalMessage?: string;
+    dismissalCommitId?: string;
+  };
+  reviewId?: string;
+  commitId?: string;
+  dismissal?: TimelineReviewDismissal;
   requestedReviewer?: TimelineRequestedReviewer;
   deletedCommentAuthor?: { login?: string };
   commit?: TimelineCommit;

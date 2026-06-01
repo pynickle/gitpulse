@@ -6,7 +6,11 @@
     :repo-owner="repoOwner"
     :repo-name="repoName"
   />
-  <div v-else class="review-item p-4" :class="`review-item--${stateModifier}`">
+  <div
+    v-else
+    class="review-item p-4"
+    :class="[`review-item--${stateModifier}`, { 'review-item--has-dismissal': item.dismissal }]"
+  >
     <div class="is-flex is-align-items-flex-start">
       <RoundImg
         class="mr-3 review-item__avatar"
@@ -28,12 +32,37 @@
             {{ item.author?.login }}
           </a>
           <span class="review-item__action">{{ stateAction }}</span>
+          <span v-if="item.dismissal" class="review-item__dismissed-note">dismissed</span>
           <span class="review-item__time has-text-grey">
             {{ formatDurationFromNow(item.createdAt || '', localeCode) }}
           </span>
         </div>
         <div v-if="item.body" class="review-item__body content">
           <MarkdownRenderer :value="item.body" :repo-owner="repoOwner" :repo-name="repoName" />
+        </div>
+        <div v-if="item.dismissal" class="review-item__dismissal">
+          <div class="review-item__dismissal-heading">
+            <SlashIcon :size="14" :stroke-width="2.5" />
+            <span>
+              Dismissed
+              <template v-if="item.dismissal.actor?.login">
+                by
+                <a :href="item.dismissal.actor.url" target="_blank" class="has-text-link">
+                  {{ item.dismissal.actor.login }}
+                </a>
+              </template>
+            </span>
+            <span v-if="item.dismissal.createdAt" class="has-text-grey">
+              {{ formatDurationFromNow(item.dismissal.createdAt, localeCode) }}
+            </span>
+          </div>
+          <MarkdownRenderer
+            v-if="item.dismissal.message"
+            class="review-item__dismissal-message"
+            :value="item.dismissal.message"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+          />
         </div>
       </div>
     </div>
@@ -62,7 +91,7 @@ const localeCode = computed(() => locale.value);
 
 const isPlainComment = computed(() => {
   const state = props.item.state;
-  return !state || state === 'commented';
+  return !state || (state === 'commented' && !props.item.dismissal);
 });
 
 const stateModifier = computed(() => {
@@ -132,6 +161,11 @@ const stateIcon = computed(() => {
   background-color: var(--gitpulse-surface-muted);
 }
 
+.review-item--has-dismissal {
+  --review-accent: var(--gitpulse-warning);
+  background-color: var(--gitpulse-warning-soft);
+}
+
 .review-item--pending {
   --review-accent: var(--gitpulse-warning);
   background-color: var(--gitpulse-warning-soft);
@@ -171,6 +205,18 @@ const stateIcon = computed(() => {
   font-size: 0.9rem;
 }
 
+.review-item__dismissed-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0 0.45rem;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--gitpulse-warning) 18%, transparent);
+  color: var(--gitpulse-warning);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .review-item__time {
   font-size: 0.8rem;
 }
@@ -182,6 +228,29 @@ const stateIcon = computed(() => {
 }
 
 .review-item__body :deep(*:last-child) {
+  margin-bottom: 0;
+}
+
+.review-item__dismissal {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--gitpulse-border);
+}
+
+.review-item__dismissal-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.review-item__dismissal-message {
+  margin-top: 0.625rem;
+}
+
+.review-item__dismissal-message :deep(*:last-child) {
   margin-bottom: 0;
 }
 </style>
