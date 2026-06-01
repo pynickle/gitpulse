@@ -95,7 +95,7 @@ function parseReferenceTarget(
   if (qualifiedMatch?.groups?.owner && qualifiedMatch.groups.repo && qualifiedMatch.groups.number) {
     const number = Number.parseInt(qualifiedMatch.groups.number, 10);
 
-    if (!Number.isFinite(number)) {
+    if (!Number.isFinite(number) || number < 1) {
       return null;
     }
 
@@ -113,7 +113,7 @@ function parseReferenceTarget(
   }
 
   const number = Number.parseInt(shortMatch.groups.number, 10);
-  if (!Number.isFinite(number)) {
+  if (!Number.isFinite(number) || number < 1) {
     return null;
   }
 
