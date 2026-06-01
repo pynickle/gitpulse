@@ -32,7 +32,6 @@ const emit = defineEmits<{
 const { locale } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 
-// ---- i18n ----
 const copy = computed(() => {
   if (locale.value.startsWith('zh')) {
     return {
@@ -105,29 +104,24 @@ const copy = computed(() => {
 
 const localeCode = computed(() => locale.value);
 
-// ---- Star state ----
 const isStarred = ref(false);
 const loadingStar = ref(false);
 const starCount = ref(props.repository.stargazers_count ?? 0);
 
-// ---- Watch state ----
 type WatchState = 'all' | 'default' | 'ignore' | null;
 const watchState = ref<WatchState>(null);
 const loadingWatch = ref(false);
 const showWatchDropdown = ref(false);
 const watchCount = ref(props.repository.watchers_count ?? 0);
 
-// ---- README ----
 const readmeContent = ref<string | null>(null);
 const loadingReadme = ref(false);
 
-// ---- LICENSE ----
 const licenseInfo = ref<{ name: string | null; spdxId: string | null; url: string | null } | null>(
   null
 );
 const loadingLicense = ref(false);
 
-// ---- Computed ----
 const languageColor = computed(() => getLanguageColor(props.repository.language));
 
 const visibility = computed(() =>
@@ -224,7 +218,6 @@ const stats = computed(() => [
   },
 ]);
 
-// ---- Methods ----
 const formatDate = (value?: string | null) => {
   if (!value) return '-';
   return formatDurationFromNow(value, localeCode.value);
@@ -351,7 +344,6 @@ const fetchLicense = async () => {
   }
 };
 
-// ---- Lifecycle ----
 onMounted(() => {
   fetchStarState();
   fetchWatchState();
@@ -375,15 +367,12 @@ if (import.meta.client) {
 <template>
   <div class="repo-detail-layout">
     <div class="columns">
-      <!-- Main content (3/4) -->
       <div class="column is-three-quarters">
         <section class="repo-detail-header">
-          <!-- Title row with star/watch buttons -->
           <div class="repo-detail-header__title-row">
             <GithubIcon :size="28" class="repo-detail-header__icon" />
             <h1 class="title is-3 repo-detail-header__title">{{ repository.name }}</h1>
             <div class="repo-detail-header__actions">
-              <!-- Star button -->
               <button
                 class="repo-action-btn"
                 :class="{ 'repo-action-btn--active': isStarred }"
@@ -395,7 +384,6 @@ if (import.meta.client) {
                 <span>{{ isStarred ? copy.starred : copy.star }}</span>
               </button>
 
-              <!-- Watch dropdown -->
               <div class="watch-dropdown-wrapper">
                 <button
                   class="repo-action-btn"
@@ -446,7 +434,6 @@ if (import.meta.client) {
             </div>
           </div>
 
-          <!-- Meta row -->
           <div class="repo-detail-header__meta">
             <span class="tag mr-2 repo-detail-header__type">{{ copy.repository }}</span>
             <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ owner }}/{{ repo }}</span>
@@ -470,14 +457,12 @@ if (import.meta.client) {
             </span>
           </div>
 
-          <!-- Description -->
           <div v-if="repository.description" class="repo-detail-description mb-4">
             <p class="repo-detail-description__body">
               {{ repository.description }}
             </p>
           </div>
 
-          <!-- About section -->
           <div class="repo-about mb-4">
             <div class="repo-about__grid">
               <div v-for="item in aboutItems" :key="item.label" class="repo-about__item">
@@ -500,7 +485,6 @@ if (import.meta.client) {
 
           <hr class="mr-4" />
 
-          <!-- README Section -->
           <div class="repo-readme">
             <h2 class="title is-5 repo-readme__title">
               <BookmarkIcon :size="18" />
@@ -519,10 +503,8 @@ if (import.meta.client) {
         </section>
       </div>
 
-      <!-- Sidebar (1/4) -->
       <div class="column is-one-quarter detail-sidebar-column">
         <div class="sidebar-scroll">
-          <!-- Stats card -->
           <div class="sidebar-card mb-4">
             <div class="sidebar-card__header">
               <div class="sidebar-card__header-left">
@@ -546,7 +528,6 @@ if (import.meta.client) {
             </div>
           </div>
 
-          <!-- GitHub link -->
           <div class="sidebar-card">
             <div class="sidebar-card__header">
               <div class="sidebar-card__header-left">
