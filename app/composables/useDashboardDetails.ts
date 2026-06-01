@@ -1,6 +1,7 @@
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
+import type { DashboardNotification } from '#shared/types/notifications';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
@@ -8,14 +9,6 @@ interface DashboardEntity {
   repository_url?: string | null;
   number?: number | null;
   [key: string]: unknown;
-}
-
-interface DashboardNotification {
-  subject?: {
-    type?: string;
-    url?: string;
-  };
-  html_url?: string;
 }
 
 type DetailType = 'issue' | 'pull-request';
