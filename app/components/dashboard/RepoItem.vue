@@ -12,13 +12,12 @@
               {{ repo.description }}
             </p>
           </div>
-          <div v-if="hasBadges" class="dashboard-list-card__side-actions ml-3">
-            <div class="is-flex is-align-items-center">
-              <span v-if="repo.language" class="tag is-info is-light">
-                {{ repo.language }}
-              </span>
-              <span v-if="repo.private" class="tag is-dark">Private</span>
-            </div>
+          <div v-if="repo.language" class="repo-language ml-3">
+            <span
+              class="repo-language-dot"
+              :style="{ backgroundColor: languageColor }"
+            />
+            <span class="repo-language-text">{{ repo.language }}</span>
           </div>
         </div>
 
@@ -31,9 +30,13 @@
             <GitForkIcon :size="14" class="mr-1 has-text-grey" />
             <span class="is-size-7 has-text-grey">{{ repo.forks_count }}</span>
           </div>
-          <div class="is-flex is-align-items-center">
+          <div class="is-flex is-align-items-center mr-4">
             <EyeIcon :size="14" class="mr-1 has-text-grey" />
             <span class="is-size-7 has-text-grey">{{ repo.watchers_count || 0 }}</span>
+          </div>
+          <div v-if="repo.private" class="is-flex is-align-items-center repo-private-badge">
+            <LockIcon :size="12" class="mr-1" />
+            <span class="is-size-7">Private</span>
           </div>
         </div>
       </div>
@@ -42,16 +45,45 @@
 </template>
 
 <script setup lang="ts">
-import { StarIcon, GitForkIcon, EyeIcon } from 'lucide-vue-next';
+import { StarIcon, GitForkIcon, EyeIcon, LockIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
   repo: any;
 }>();
 
-const hasBadges = computed(() => {
-  return Boolean(props.repo.language || props.repo.private);
+const languageColor = computed(() => {
+  return getLanguageColor(props.repo.language);
 });
 </script>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
+<style scoped lang="scss">
+@use '~/assets/scss/card.scss';
+
+.repo-language {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.repo-language-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.repo-language-text {
+  font-size: 0.8rem;
+  font-weight: normal;
+  color: var(--gitpulse-text-muted, #6b7280);
+}
+
+.repo-private-badge {
+  color: var(--gitpulse-text-muted, #6b7280);
+  background-color: rgba(128, 128, 128, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+}
+</style>
