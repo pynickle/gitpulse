@@ -267,7 +267,7 @@ const fetchTimeline = async () => {
       timeline.value = data?.timeline || [];
       hasNextTimelinePage.value = Boolean(data?.pageInfo?.hasNextPage);
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error fetching PR timeline:', err);
     if (requestId === timelineRequestId.value) {
       timeline.value = [];
@@ -312,7 +312,7 @@ const loadMoreTimeline = async () => {
       hasNextTimelinePage.value = Boolean(data?.pageInfo?.hasNextPage);
       currentTimelinePage.value = nextPage;
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error loading more PR timeline:', err);
   } finally {
     if (requestId === timelineRequestId.value) {
