@@ -4,7 +4,7 @@
       <div class="sidebar-card__header">
         <div class="sidebar-card__header-left">
           <UsersIcon :size="14" class="sidebar-card__icon" />
-          <span class="sidebar-card__title">Reviewers</span>
+          <span class="sidebar-card__title">{{ t('prReview.reviewers') }}</span>
         </div>
         <span v-if="requestedReviewers.length > 0" class="sidebar-badge">
           {{ requestedReviewers.length }}
@@ -25,7 +25,7 @@
             <span class="reviewer-item__name">{{ reviewer.login }}</span>
           </div>
         </div>
-        <p v-else class="sidebar-card__empty">No reviewers assigned</p>
+        <p v-else class="sidebar-card__empty">{{ t('prReview.noReviewers') }}</p>
       </div>
     </div>
 
@@ -33,49 +33,51 @@
       <div class="sidebar-card__header">
         <div class="sidebar-card__header-left">
           <InfoIcon :size="14" class="sidebar-card__icon" />
-          <span class="sidebar-card__title">Details</span>
+          <span class="sidebar-card__title">{{ t('prReview.details') }}</span>
         </div>
       </div>
       <div class="sidebar-card__content">
         <div class="info-list">
           <div class="info-item">
-            <span class="info-item__label">Created</span>
+            <span class="info-item__label">{{ t('prReview.created') }}</span>
             <span class="info-item__value">{{ formatDurationFromNow(createdAt, localeCode) }}</span>
           </div>
           <div class="info-item">
-            <span class="info-item__label">Updated</span>
+            <span class="info-item__label">{{ t('prReview.updated') }}</span>
             <span class="info-item__value">{{ formatDurationFromNow(updatedAt, localeCode) }}</span>
           </div>
           <div v-if="mergedAt" class="info-item">
-            <span class="info-item__label">Merged</span>
+            <span class="info-item__label">{{ t('prReview.merged') }}</span>
             <span class="info-item__value">{{ formatDurationFromNow(mergedAt, localeCode) }}</span>
           </div>
           <div class="info-item">
-            <span class="info-item__label">Assignee</span>
+            <span class="info-item__label">{{ t('prReview.assignee') }}</span>
             <span v-if="assignee" class="info-item__value">
               <span class="info-item__avatar">
                 <img :src="assignee.avatar_url || ''" :alt="assignee.login" />
               </span>
               {{ assignee.login }}
             </span>
-            <span v-else class="info-item__value info-item__value--muted">None</span>
+            <span v-else class="info-item__value info-item__value--muted">
+              {{ t('prReview.noAssignee') }}
+            </span>
           </div>
           <div class="info-stats">
             <div class="info-stat">
               <span class="info-stat__value">{{ commits }}</span>
-              <span class="info-stat__label">Commits</span>
+              <span class="info-stat__label">{{ t('prReview.commits') }}</span>
             </div>
             <div class="info-stat">
               <span class="info-stat__value">{{ changedFiles }}</span>
-              <span class="info-stat__label">Files</span>
+              <span class="info-stat__label">{{ t('prReview.filesShort') }}</span>
             </div>
             <div class="info-stat info-stat--success">
               <span class="info-stat__value">+{{ additions }}</span>
-              <span class="info-stat__label">Added</span>
+              <span class="info-stat__label">{{ t('prReview.added') }}</span>
             </div>
             <div class="info-stat info-stat--danger">
               <span class="info-stat__value">-{{ deletions }}</span>
-              <span class="info-stat__label">Removed</span>
+              <span class="info-stat__label">{{ t('prReview.removed') }}</span>
             </div>
           </div>
         </div>
@@ -86,7 +88,7 @@
       <div class="sidebar-card__content">
         <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
           <ExternalLinkIcon :size="14" />
-          <span>View on GitHub</span>
+          <span>{{ t('issueDetail.viewOnGithub') }}</span>
         </a>
       </div>
     </div>
@@ -101,7 +103,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import 'dayjs/locale/zh-cn';
 
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 const localeCode = computed(() => locale.value);
 
 dayjs.extend(relativeTime);
