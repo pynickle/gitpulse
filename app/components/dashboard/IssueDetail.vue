@@ -75,6 +75,13 @@ const props = defineProps<{
   issue: any;
 }>();
 
+interface IssueDetailLabel {
+  id?: number | string;
+  name: string;
+  color: string;
+  description?: string | null;
+}
+
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
@@ -156,7 +163,7 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
   emit('switch-pull-request', owner, repo, pullNumber);
 };
 
-const updateLabels = (labels: any[]) => {
+const updateLabels = (labels: IssueDetailLabel[]) => {
   currentIssue.value.labels = labels;
 };
 
@@ -164,7 +171,7 @@ const updateIsLocked = (locked: boolean) => {
   isLocked.value = locked;
 };
 
-const addTimelineEvent = (event: any) => {
+const addTimelineEvent = (event: IssueTimelineItem) => {
   timeline.value.push(event);
 };
 
