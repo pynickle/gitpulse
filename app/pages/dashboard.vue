@@ -207,6 +207,32 @@ const isDashboardChildRoute = computed(() => {
 
 type QuickFilterMap = Partial<Record<DashboardTab, Record<string, boolean>>>;
 
+const normalizeQuickFilters = (value: unknown): QuickFilterMap => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  const filterSource = value as Partial<Record<DashboardTab, unknown>>;
+  const normalizedFilters: QuickFilterMap = {};
+
+  for (const tab of dashboardTabs) {
+    const tabFilters = filterSource[tab];
+    if (!tabFilters || typeof tabFilters !== 'object' || Array.isArray(tabFilters)) {
+      continue;
+    }
+
+    const filters = Object.fromEntries(
+      Object.entries(tabFilters).filter(([, active]) => typeof active === 'boolean')
+    ) as Record<string, boolean>;
+
+    if (Object.keys(filters).length > 0) {
+      normalizedFilters[tab] = filters;
+    }
+  }
+
+  return normalizedFilters;
+};
+
 const parseDashboardTab = (value: unknown): DashboardTab => {
   const tab = getQueryParamValue(value);
   return dashboardTabs.includes(tab as DashboardTab) ? (tab as DashboardTab) : 'notifications';
@@ -724,8 +750,7 @@ const hydrateQuickFilters = () => {
   }
 
   try {
-    const parsed = JSON.parse(storedFilters) as QuickFilterMap;
-    quickFilters.value = parsed ?? {};
+    quickFilters.value = normalizeQuickFilters(JSON.parse(storedFilters));
   } catch (error) {
     console.warn('Failed to hydrate dashboard quick filters from sessionStorage.', error);
   }
