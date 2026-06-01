@@ -3,6 +3,10 @@ import {
   getGitHubErrorStatusCode,
 } from '../../../../../../utils/github-auth-utils';
 
+interface CommentRequestBody {
+  body?: unknown;
+}
+
 function hasRouteStatusCode(error: unknown): error is { statusCode: unknown } {
   return !!error && typeof error === 'object' && 'statusCode' in error && !!error.statusCode;
 }
@@ -14,6 +18,13 @@ function parseIssueNumber(value: string) {
 
   const issueNumber = Number.parseInt(value, 10);
   return Number.isSafeInteger(issueNumber) ? issueNumber : 0;
+}
+
+function normalizeCommentBody(body: unknown) {
+  const requestBody =
+    body && typeof body === 'object' && !Array.isArray(body) ? (body as CommentRequestBody) : {};
+
+  return typeof requestBody.body === 'string' ? requestBody.body.trim() : '';
 }
 
 export default defineEventHandler(async (event) => {
@@ -32,8 +43,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    const body = await readBody<{ body?: string }>(event);
-    const commentBody = body?.body?.trim();
+    const commentBody = normalizeCommentBody(await readBody(event));
 
     if (!commentBody) {
       throw createError({
