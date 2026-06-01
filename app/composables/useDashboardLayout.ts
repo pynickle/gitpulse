@@ -64,7 +64,7 @@ const readStoredLayout = (): DashboardLayoutState | null => {
 
   try {
     const parsed = JSON.parse(raw) as Partial<DashboardLayoutState>;
-    if (!parsed || typeof parsed !== 'object') {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return null;
     }
 
