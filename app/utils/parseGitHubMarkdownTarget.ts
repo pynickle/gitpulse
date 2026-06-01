@@ -5,7 +5,8 @@ interface GitHubMarkdownTarget {
   type: 'issue' | 'pull-request';
 }
 
-const GITHUB_HOSTS = new Set(['github.com', 'www.github.com', 'api.github.com']);
+const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
+const GITHUB_API_HOST = 'api.github.com';
 
 const WEB_PATH_PATTERN = /^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)(?:\/|$)/;
 const API_PATH_PATTERN = /^\/repos\/([^/]+)\/([^/]+)\/(issues|pulls)\/(\d+)(?:\/|$)/;
@@ -24,12 +25,12 @@ export default function parseGitHubMarkdownTarget(
   try {
     const url = new URL(href);
     const host = url.hostname.toLowerCase();
-
-    if (!GITHUB_HOSTS.has(host)) {
-      return null;
-    }
-
-    const match = url.pathname.match(WEB_PATH_PATTERN) ?? url.pathname.match(API_PATH_PATTERN);
+    const match =
+      host === GITHUB_API_HOST
+        ? url.pathname.match(API_PATH_PATTERN)
+        : GITHUB_WEB_HOSTS.has(host)
+          ? url.pathname.match(WEB_PATH_PATTERN)
+          : null;
     if (!match) {
       return null;
     }
