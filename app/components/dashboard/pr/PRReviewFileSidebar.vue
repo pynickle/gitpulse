@@ -50,8 +50,17 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const collapsedDirectories = ref(new Set<string>());
 
-const getDraftCount = (filename: string) =>
-  props.draftComments.filter((comment) => comment.path === filename).length;
+const draftCountsByFile = computed(() => {
+  const counts = new Map<string, number>();
+
+  for (const comment of props.draftComments) {
+    counts.set(comment.path, (counts.get(comment.path) ?? 0) + 1);
+  }
+
+  return counts;
+});
+
+const getDraftCount = (filename: string) => draftCountsByFile.value.get(filename) ?? 0;
 
 const sortedFiles = computed(() =>
   [...props.files].sort((first, second) => first.filename.localeCompare(second.filename))
