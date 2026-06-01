@@ -5,17 +5,15 @@ import parseGitHubMarkdownTarget from '~/utils/parseGitHubMarkdownTarget';
 
 const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
-const props = defineProps({
-  href: {
-    type: String,
-    default: '',
-  },
-  target: {
-    type: String,
-    default: undefined,
-    required: false,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    href?: string;
+    target?: string;
+  }>(),
+  {
+    href: '',
+  }
+);
 
 const localePath = useLocalePath();
 
