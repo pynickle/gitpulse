@@ -55,7 +55,6 @@ const emit = defineEmits<{
   'filter-change': [filters: Record<string, boolean>];
 }>();
 
-// Filter options mapped by tab
 const TAB_OPTIONS = computed<Record<string, { label: string; value: string }[]>>(() => ({
   issues: [
     { label: t('dashboard.widgets.filters.options.open'), value: 'open' },
@@ -76,10 +75,8 @@ const options = computed(() => {
   return TAB_OPTIONS.value[props.currentTab] || [];
 });
 
-// Initialize selected values from props.filters
 const selectedValues = ref<string[]>([]);
 
-// When props change, update local state
 watch(
   () => props.filters,
   (newFilters) => {
@@ -95,7 +92,6 @@ watch(
 );
 
 const onChange = () => {
-  // Convert array back to object Record<string, boolean>
   const newFilters: Record<string, boolean> = {};
 
   // Set all current options to false by default to ensure we send the full state
@@ -103,7 +99,6 @@ const onChange = () => {
     newFilters[opt.value] = false;
   });
 
-  // Set checked ones to true
   selectedValues.value.forEach((val) => {
     newFilters[val] = true;
   });

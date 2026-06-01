@@ -5,11 +5,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-// No props needed - panel is always visible
-</script>
-
 <style scoped lang="scss">
 .widgets-panel {
   width: 100%;

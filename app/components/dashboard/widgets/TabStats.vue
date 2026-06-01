@@ -59,7 +59,6 @@ const displayStats = computed(() => {
       },
     ];
   } else {
-    // issues and default
     return [
       {
         label: t('dashboard.widgets.stats.open'),
@@ -94,7 +93,6 @@ const displayStats = computed(() => {
     margin-bottom: 0.5rem;
     font-weight: 600;
 
-    // Semantic color classes
     &.has-text-warning {
       color: var(--gitpulse-warning);
     }
