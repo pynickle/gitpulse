@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     });
 
     return pullRequest.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching GitHub pull request:', error);
     throwGitHubRouteError(error, 'Failed to fetch pull request');
   }

@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     });
 
     return issue.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching GitHub issue:', error);
     throwGitHubRouteError(error, 'Failed to fetch issue');
   }
