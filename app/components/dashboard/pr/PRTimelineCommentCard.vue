@@ -1,25 +1,26 @@
 <template>
   <TimelineCommentCard
-    :item="item"
-    :empty-text="emptyText"
-    :repo-owner="repoOwner"
-    :repo-name="repoName"
+    :item="props.item"
+    :empty-text="localizedEmptyText"
+    :repo-owner="props.repoOwner"
+    :repo-name="props.repoName"
   />
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 
-withDefaults(
-  defineProps<{
-    item: PRTimelineItem;
-    emptyText?: string;
-    repoOwner: string;
-    repoName: string;
-  }>(),
-  {
-    emptyText: 'No comment body',
-  }
-);
+const props = defineProps<{
+  item: PRTimelineItem;
+  emptyText?: string;
+  repoOwner: string;
+  repoName: string;
+}>();
+
+const { t } = useI18n();
+const localizedEmptyText = computed(() => props.emptyText ?? t('issueDetail.noCommentBody'));
 </script>
