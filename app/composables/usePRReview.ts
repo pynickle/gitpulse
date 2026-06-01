@@ -184,6 +184,23 @@ const defaultPagination = (): PRReviewPagination => ({
   totalPages: null,
 });
 
+const getFetchErrorMessage = (error: unknown, fallback: string) => {
+  if (!error || typeof error !== 'object') {
+    return fallback;
+  }
+
+  const data = 'data' in error ? error.data : undefined;
+  const statusMessage =
+    data && typeof data === 'object' && 'statusMessage' in data ? data.statusMessage : undefined;
+
+  if (typeof statusMessage === 'string' && statusMessage) {
+    return statusMessage;
+  }
+
+  const message = 'message' in error ? error.message : undefined;
+  return typeof message === 'string' && message ? message : fallback;
+};
+
 const hunkHeaderPattern = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 
 export function parsePRReviewPatch(patch?: string): PRReviewDiffRow[] {
@@ -555,10 +572,9 @@ export function usePRReview(options: UsePRReviewOptions) {
       if (!activeFilename.value && files.value[0]) {
         activeFilename.value = files.value[0].filename;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (currentRequestId === requestId.value) {
-        errorMessage.value =
-          error?.data?.statusMessage || error?.message || options.messages.loadFailed;
+        errorMessage.value = getFetchErrorMessage(error, options.messages.loadFailed);
         if (isFirstPage) {
           files.value = [];
         }
@@ -665,9 +681,8 @@ export function usePRReview(options: UsePRReviewOptions) {
 
       resetDrafts();
       options.onSubmitted?.();
-    } catch (error: any) {
-      submitError.value =
-        error?.data?.statusMessage || error?.message || options.messages.submitFailed;
+    } catch (error: unknown) {
+      submitError.value = getFetchErrorMessage(error, options.messages.submitFailed);
     } finally {
       submitting.value = false;
     }
