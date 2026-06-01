@@ -105,6 +105,13 @@ const props = defineProps<{
   pullRequest: any;
 }>();
 
+interface PullRequestDetailLabel {
+  id?: number | string;
+  name: string;
+  color: string;
+  description?: string | null;
+}
+
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
@@ -194,7 +201,7 @@ const addTimelineEvent = (event: PRTimelineItem) => {
   timeline.value.push(event);
 };
 
-const updateLabels = (labels: any[]) => {
+const updateLabels = (labels: PullRequestDetailLabel[]) => {
   if (currentPullRequest.value) {
     currentPullRequest.value.labels = labels;
   }
