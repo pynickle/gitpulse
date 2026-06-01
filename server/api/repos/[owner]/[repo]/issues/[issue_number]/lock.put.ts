@@ -8,7 +8,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const { lock_reason } = body;
 
-  // Validate required parameters
   if (!owner || !repo || !issue_number) {
     throw createError({
       statusCode: 400,
@@ -16,7 +15,6 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Validate lock reason if provided
   const validLockReasons = ['off-topic', 'too heated', 'resolved', 'spam'];
   if (lock_reason && !validLockReasons.includes(lock_reason)) {
     throw createError({
@@ -25,10 +23,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Get GitHub client
   const octokit = await getGitHubClient(event);
 
-  // Lock the issue
   const { data } = await octokit.request('PUT /repos/{owner}/{repo}/issues/{issue_number}/lock', {
     owner,
     repo,

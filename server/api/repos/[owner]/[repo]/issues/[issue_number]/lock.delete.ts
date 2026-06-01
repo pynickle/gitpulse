@@ -5,7 +5,6 @@ export default defineEventHandler(async (event) => {
     issue_number: string;
   };
 
-  // Validate required parameters
   if (!owner || !repo || !issue_number) {
     throw createError({
       statusCode: 400,
@@ -13,10 +12,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Get GitHub client
   const octokit = await getGitHubClient(event);
 
-  // Unlock the issue
   const { data } = await octokit.request(
     'DELETE /repos/{owner}/{repo}/issues/{issue_number}/lock',
     {
