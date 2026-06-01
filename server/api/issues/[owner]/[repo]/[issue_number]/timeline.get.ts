@@ -16,11 +16,17 @@ export default defineEventHandler(async (event) => {
     };
 
     const query = getQuery(event);
-    const parsedPage = Number.parseInt(String(query.page ?? '1'), 10);
-    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const page = parsePaginationNumber(query.page, 1);
+    const issueNumber = parsePaginationNumber(issue_number, 0);
+
+    if (!owner || !repo || issueNumber < 1) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Missing required parameters',
+      });
+    }
 
     const octokit = await getGitHubClient(event);
-    const issueNumber = parseInt(issue_number, 10);
 
     const { items, hasNextPage } = await fetchTimelinePage<Record<string, any>>(
       octokit,
