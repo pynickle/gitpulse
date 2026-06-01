@@ -42,7 +42,7 @@
         <div class="srp-card__body">
           <p class="srp-card__title">{{ item.title }}</p>
           <div class="srp-card__meta">
-            <span class="srp-card__repo">{{ getRepoShort(item.repository_url) }}</span>
+            <span class="srp-card__repo">{{ getRepoName(item.repository_url) }}</span>
             <span class="srp-card__sep">&middot;</span>
             <span class="srp-card__number">#{{ item.number }}</span>
             <span class="srp-card__sep">&middot;</span>
@@ -111,12 +111,6 @@ const props = defineProps<{
 
 const formatTime = (dateStr: string) => {
   return formatDurationFromNow(dateStr, locale.value);
-};
-
-const getRepoShort = (url: string) => {
-  const name = getRepoName(url);
-  const parts = name.split('/');
-  return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : name;
 };
 
 const labelStyle = (label: { color?: string; name: string }) => {
