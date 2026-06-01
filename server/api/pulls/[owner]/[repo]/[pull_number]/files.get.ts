@@ -57,9 +57,9 @@ export default defineEventHandler(async (event) => {
     const query = getQuery(event);
     const page = parsePaginationNumber(query.page, 1);
     const perPage = parsePaginationNumber(query.per_page, 100, 100);
-    const pullNumber = Number.parseInt(pull_number, 10);
+    const pullNumber = parsePaginationNumber(pull_number, 0);
 
-    if (!Number.isFinite(pullNumber) || pullNumber < 1) {
+    if (!owner || !repo || pullNumber < 1) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Invalid pull request number',
