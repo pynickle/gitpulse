@@ -49,8 +49,20 @@
 import { EyeIcon, LockIcon, StarIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 
+interface RepositoryListItem {
+  name: string;
+  description?: string | null;
+  language?: string | null;
+  stargazers_count?: number;
+  watchers_count?: number;
+  private?: boolean;
+  owner?: {
+    login?: string;
+  };
+}
+
 const props = defineProps<{
-  repo: any;
+  repo: RepositoryListItem;
 }>();
 
 const localePath = useLocalePath();
