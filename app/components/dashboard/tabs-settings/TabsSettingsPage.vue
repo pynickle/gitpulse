@@ -576,7 +576,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   flex-wrap: wrap;
 }
 
-/* 鈹€鈹€ Drag-and-drop 鈹€鈹€ */
+/* Drag-and-drop */
 
 .drag-handle {
   flex: 0 0 auto;
@@ -820,7 +820,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   background: var(--bulma-scheme-main, #ffffff);
 }
 
-/* 鈹€鈹€ Tokenized query box 鈹€鈹€ */
+/* Tokenized query box */
 .tokenized-query-box {
   margin-top: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 22%, transparent);
@@ -863,7 +863,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   font-size: 0.78rem;
 }
 
-/* 鈹€鈹€ Preview results 鈹€鈹€ */
+/* Preview results */
 .preview-results {
   margin-top: 0.75rem;
 }
@@ -883,7 +883,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   color: var(--bulma-text-light, #6b7280);
 }
 
-/* 鈹€鈹€ Preview pagination 鈹€鈹€ */
+/* Preview pagination */
 .preview-pagination {
   display: flex;
   align-items: center;
@@ -928,7 +928,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   text-align: center;
 }
 
-/* 鈹€鈹€ Compact type/state row 鈹€鈹€ */
+/* Compact type/state row */
 .cmpact-row {
   display: flex;
   gap: 0.75rem;
@@ -940,7 +940,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   flex: 1;
 }
 
-/* 鈹€鈹€ Advanced filters collapsible 鈹€鈹€ */
+/* Advanced filters collapsible */
 .advanced-section {
   margin: 0.85rem 0;
   border: 1px solid var(--gitpulse-border);

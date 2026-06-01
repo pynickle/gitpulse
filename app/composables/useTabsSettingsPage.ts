@@ -246,7 +246,7 @@ export const useTabsSettingsPage = () => {
     return rows;
   });
 
-  // 鈹€鈹€ Drag-and-drop: per-group reactive tab lists 鈹€鈹€
+  // Drag-and-drop: per-group reactive tab lists
   let isDragUpdating = false;
 
   const groupTabLists = ref<Record<string, SettingsTab[]>>({});
@@ -268,7 +268,7 @@ export const useTabsSettingsPage = () => {
     { deep: true }
   );
 
-  // 鈹€鈹€ Drag-and-drop: group reordering 鈹€鈹€
+  // Drag-and-drop: group reordering
   let isGroupDragUpdating = false;
 
   const draggableGroupRows = shallowRef<GroupRow[]>([]);
@@ -583,7 +583,7 @@ export const useTabsSettingsPage = () => {
     newTab.query.labels = newTab.query.labels.filter((candidate) => candidate !== label);
   };
 
-  // 鈹€鈹€ Drag-and-drop event handlers 鈹€鈹€
+  // Drag-and-drop event handlers
 
   const handleGroupReorder = () => {
     isGroupDragUpdating = true;
@@ -918,7 +918,7 @@ export const useTabsSettingsPage = () => {
     { immediate: true }
   );
 
-  // 鈹€鈹€ Initial sync for drag-and-drop (deferred to avoid TDZ) 鈹€鈹€
+  // Initial sync for drag-and-drop (deferred to avoid TDZ)
   void nextTick(() => {
     syncTabLists();
     syncGroupRows();
