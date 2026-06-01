@@ -1,3 +1,5 @@
+import { hasGitHubErrorStatus } from '../../../../utils/github-auth-utils';
+
 export default defineEventHandler(async (event) => {
   const { owner, repo } = event.context.params as {
     owner: string;
@@ -22,8 +24,8 @@ export default defineEventHandler(async (event) => {
       subscribed: data.subscribed,
       ignored: data.ignored,
     };
-  } catch (error: any) {
-    if (error.status === 404) {
+  } catch (error: unknown) {
+    if (hasGitHubErrorStatus(error, 404)) {
       return { subscribed: false, ignored: false };
     }
     throwGitHubRouteError(error, 'Failed to get subscription status');

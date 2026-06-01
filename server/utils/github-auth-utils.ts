@@ -37,6 +37,10 @@ export async function getGitHubClient(event: H3Event): Promise<Octokit> {
   return createGitHubClient(accessToken);
 }
 
+export function hasGitHubErrorStatus(error: unknown, statusCode: number): boolean {
+  return !!error && typeof error === 'object' && 'status' in error && error.status === statusCode;
+}
+
 export function throwGitHubRouteError(error: unknown, fallbackStatusMessage: string): never {
   if (error && typeof error === 'object') {
     const statusCode =
