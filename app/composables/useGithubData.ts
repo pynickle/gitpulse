@@ -99,14 +99,22 @@ const parseNotificationSubjectTarget = (
   if (!match) return null;
 
   const [, owner, repo, type, number] = match;
-  if (!owner || !repo || !number || (type !== 'issues' && type !== 'pulls')) return null;
+  const parsedNumber = Number.parseInt(number ?? '', 10);
+  if (
+    !owner ||
+    !repo ||
+    !Number.isFinite(parsedNumber) ||
+    parsedNumber < 1 ||
+    (type !== 'issues' && type !== 'pulls')
+  )
+    return null;
 
   return {
-    key: `${owner}/${repo}/${type}/${number}`,
+    key: `${owner}/${repo}/${type}/${parsedNumber}`,
     owner,
     repo,
     type,
-    number: Number.parseInt(number, 10),
+    number: parsedNumber,
   };
 };
 
