@@ -8,9 +8,7 @@ import type {
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
 import type { CustomTabQuery, CustomTabSource } from '~/composables/useCustomTabs';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
-import parseGitHubMarkdownTarget, {
-  type GitHubMarkdownTarget,
-} from '~/utils/parseGitHubMarkdownTarget';
+import parseGitHubNotificationSubjectTarget from '~/utils/parseGitHubNotificationSubjectTarget';
 
 interface DashboardEntity {
   id: PropertyKey;
@@ -89,38 +87,17 @@ const buildPaginationUrl = (path: string, page: number, perPage = defaultPerPage
   return `${path}?${searchParams.toString()}`;
 };
 
-const isSubjectTypeForTarget = (
-  subjectType: string | undefined,
-  targetType: GitHubMarkdownTarget['type']
-) => {
-  return (
-    (subjectType === 'Issue' && targetType === 'issue') ||
-    (subjectType === 'PullRequest' && targetType === 'pull-request')
-  );
-};
-
-const getSubjectStateType = (
-  targetType: GitHubMarkdownTarget['type']
-): NotificationSubjectStateTarget['type'] => {
-  return targetType === 'issue' ? 'issues' : 'pulls';
-};
-
 const parseNotificationSubjectTarget = (
   notification: DashboardNotification
 ): NotificationSubjectStateTarget | null => {
-  const subjectType = notification.subject?.type;
-  if (subjectType !== 'Issue' && subjectType !== 'PullRequest') return null;
-
-  const target = parseGitHubMarkdownTarget(notification.subject?.url);
-  if (!target || !isSubjectTypeForTarget(subjectType, target.type)) return null;
-
-  const type = getSubjectStateType(target.type);
+  const target = parseGitHubNotificationSubjectTarget(notification.subject);
+  if (!target) return null;
 
   return {
-    key: `${target.owner}/${target.repo}/${type}/${target.number}`,
+    key: `${target.owner}/${target.repo}/${target.type}/${target.number}`,
     owner: target.owner,
     repo: target.repo,
-    type,
+    type: target.type,
     number: target.number,
   };
 };

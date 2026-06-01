@@ -1,6 +1,4 @@
-import parseGitHubMarkdownTarget, {
-  type GitHubMarkdownTarget,
-} from '~/utils/parseGitHubMarkdownTarget';
+import parseGitHubNotificationSubjectTarget from '~/utils/parseGitHubNotificationSubjectTarget';
 
 interface NotificationSubject {
   type?: string;
@@ -25,35 +23,19 @@ function isIssueOrPullSubject(notification: NotificationLike) {
   return notification.subject?.type === 'Issue' || notification.subject?.type === 'PullRequest';
 }
 
-function isSubjectTypeForTarget(
-  subjectType: string | undefined,
-  targetType: GitHubMarkdownTarget['type']
-) {
-  return (
-    (subjectType === 'Issue' && targetType === 'issue') ||
-    (subjectType === 'PullRequest' && targetType === 'pull-request')
-  );
-}
-
-function getNotificationDetailType(targetType: GitHubMarkdownTarget['type']) {
-  return targetType === 'issue' ? 'issues' : 'pulls';
-}
-
 export function useUrlHelper() {
   const getNotificationDetails = (notification: NotificationLike): NotificationDetails | null => {
     if (isIssueOrPullSubject(notification)) {
-      const target = parseGitHubMarkdownTarget(notification.subject?.url);
-      if (!target || !isSubjectTypeForTarget(notification.subject?.type, target.type)) return null;
-
-      const type = getNotificationDetailType(target.type);
+      const target = parseGitHubNotificationSubjectTarget(notification.subject);
+      if (!target) return null;
 
       return {
         owner: target.owner,
         repo: target.repo,
-        type,
+        type: target.type,
         number: target.number,
-        isIssue: type === 'issues',
-        isPR: type === 'pulls',
+        isIssue: target.type === 'issues',
+        isPR: target.type === 'pulls',
       };
     }
 
