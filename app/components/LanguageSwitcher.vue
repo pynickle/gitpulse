@@ -4,7 +4,7 @@
       <button
         class="button is-small"
         aria-haspopup="true"
-        aria-controls="lang-menu"
+        :aria-controls="menuId"
         @click="langOpen = !langOpen"
       >
         <span>{{ currentLocaleName }}</span>
@@ -14,7 +14,7 @@
       </button>
     </div>
 
-    <div class="dropdown-menu" id="lang-menu" role="menu">
+    <div :id="menuId" class="dropdown-menu" role="menu">
       <div class="dropdown-content">
         <a
           v-for="lang in locales"
@@ -32,12 +32,13 @@
 
 <script setup lang="ts">
 import { ChevronDownIcon } from 'lucide-vue-next';
-import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, shallowRef, useId, useTemplateRef } from 'vue';
 
 const { locale, setLocale, locales } = useI18n();
 
 const langOpen = shallowRef(false);
 const dropdown = useTemplateRef<HTMLElement>('dropdown');
+const menuId = useId();
 
 type LocaleCode = (typeof locales.value)[number]['code'];
 
