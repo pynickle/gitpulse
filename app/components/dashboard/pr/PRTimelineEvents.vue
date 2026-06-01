@@ -1,10 +1,12 @@
 <template>
   <div>
     <div class="mb-4 is-flex is-align-items-center">
-      <span class="is-size-5 has-text-weight-semibold ml-2 mr-4">Activity</span>
+      <span class="is-size-5 has-text-weight-semibold ml-2 mr-4">{{
+        t('issueDetail.activity')
+      }}</span>
       <div v-if="loading" class="is-flex is-justify-content-center">
         <LoadingIcon class="icon" />
-        <span class="ml-2 is-size-7 has-text-grey">Loading...</span>
+        <span class="ml-2 is-size-7 has-text-grey">{{ t('issueDetail.loadingTimelines') }}</span>
       </div>
     </div>
 
@@ -13,7 +15,7 @@
         <PRTimelineCommentCard
           v-if="item.kind === 'comment' || item.kind === 'review-comment'"
           :item="item"
-          empty-text="No comment body"
+          :empty-text="t('issueDetail.noCommentBody')"
           :repo-owner="repoOwner"
           :repo-name="repoName"
         />
@@ -54,7 +56,9 @@
       </div>
     </div>
 
-    <div v-else-if="!loading" class="has-text-grey is-size-7">No activity yet</div>
+    <div v-else-if="!loading" class="has-text-grey is-size-7">
+      {{ t('issueDetail.noActivity') }}
+    </div>
 
     <div
       v-if="hasNextPage && processedTimeline.length > 0"
@@ -67,7 +71,7 @@
         :disabled="loadingMore"
         @click="emit('load-more')"
       >
-        {{ loadingMore ? 'Loading more...' : 'Load more' }}
+        {{ loadingMore ? t('issueDetail.loadingMore') : t('issueDetail.loadMore') }}
       </button>
     </div>
 
@@ -82,6 +86,8 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
 import PRTimelineCommentCard from '~/components/dashboard/pr/PRTimelineCommentCard.vue';
 import PRTimelineCommitCard from '~/components/dashboard/pr/PRTimelineCommitCard.vue';
 import PRTimelineEventBody from '~/components/dashboard/pr/PRTimelineEventBody.vue';
@@ -109,6 +115,7 @@ const emit = defineEmits<{
   (e: 'load-more'): void;
 }>();
 
+const { t } = useI18n();
 const { processedTimeline } = usePRTimelineEvents(() => props.timeline);
 
 const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
