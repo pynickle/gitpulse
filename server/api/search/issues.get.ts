@@ -8,6 +8,7 @@ import {
   type GitHubIssueSearchSort,
 } from '#shared/utils/github-search-query';
 
+import { getGitHubErrorStatusCode } from '../../utils/github-auth-utils';
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../../utils/github-pagination';
 
 const SEARCH_TOTAL_COUNT_LIMIT = 1000;
@@ -22,12 +23,6 @@ const parseList = (value: unknown) => {
     .split(',')
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0);
-};
-
-const getGitHubErrorStatus = (error: unknown) => {
-  return typeof error === 'object' && error && 'status' in error && typeof error.status === 'number'
-    ? error.status
-    : null;
 };
 
 const getGitHubErrorHeader = (error: unknown, headerName: string) => {
@@ -146,7 +141,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     console.error('Error fetching GitHub issue search results:', error);
 
-    const status = getGitHubErrorStatus(error);
+    const status = getGitHubErrorStatusCode(error);
 
     if (status === 422) {
       throw createError({
