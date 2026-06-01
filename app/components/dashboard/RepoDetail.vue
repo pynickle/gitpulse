@@ -65,6 +65,7 @@ const copy = computed(() => {
       watchIgnore: '忽略',
       watchNone: '仅被@时',
       watching: '关注',
+      watchers: '关注者',
     };
   }
 
@@ -98,6 +99,7 @@ const copy = computed(() => {
     watchIgnore: 'Ignore',
     watchNone: 'Default',
     watching: 'Watching',
+    watchers: 'Watchers',
   };
 });
 
@@ -206,10 +208,20 @@ const aboutItems = computed(() => {
 });
 
 const stats = computed(() => [
-  { label: copy.value.starCount, value: starCount.value, icon: StarIcon },
-  { label: copy.value.watchers, value: watchCount.value, icon: EyeIcon },
-  { label: copy.value.forks, value: props.repository.forks_count ?? 0, icon: GitForkIcon },
-  { label: copy.value.issues, value: props.repository.open_issues_count ?? 0, icon: InfoIcon },
+  { label: copy.value.starCount, value: starCount.value, icon: StarIcon, color: '#f59e0b' },
+  { label: copy.value.watchers, value: watchCount.value, icon: EyeIcon, color: '#3b82f6' },
+  {
+    label: copy.value.forks,
+    value: props.repository.forks_count ?? 0,
+    icon: GitForkIcon,
+    color: '#10b981',
+  },
+  {
+    label: copy.value.issues,
+    value: props.repository.open_issues_count ?? 0,
+    icon: InfoIcon,
+    color: '#8b5cf6',
+  },
 ]);
 
 // ---- Methods ----
@@ -521,6 +533,12 @@ if (import.meta.client) {
             <div class="sidebar-card__content">
               <div class="info-stats">
                 <div v-for="stat in stats" :key="stat.label" class="info-stat">
+                  <component
+                    :is="stat.icon"
+                    :size="20"
+                    class="info-stat__icon"
+                    :style="{ color: stat.color }"
+                  />
                   <span class="info-stat__value">{{ stat.value }}</span>
                   <span class="info-stat__label">{{ stat.label }}</span>
                 </div>
@@ -950,6 +968,22 @@ if (import.meta.client) {
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   background: var(--gitpulse-surface);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--gitpulse-border-strong);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.info-stat__icon {
+  margin-bottom: 0.5rem;
+  transition: transform 0.2s ease;
+
+  .info-stat:hover & {
+    transform: scale(1.1);
+  }
 }
 
 .info-stat__value {
