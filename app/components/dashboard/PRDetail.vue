@@ -43,7 +43,6 @@
 
       <div class="column is-one-quarter detail-sidebar-column">
         <div
-          ref="sidebarRef"
           class="sidebar-scroll"
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
           @scroll="onSidebarScroll"
@@ -132,7 +131,6 @@ const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 
 // Sidebar scroll auto-hide
-const sidebarRef = ref<HTMLElement | null>(null);
 const isSidebarScrolling = ref(false);
 let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
 
