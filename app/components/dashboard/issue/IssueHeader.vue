@@ -74,8 +74,22 @@ import RoundImg from '~/components/ui/RoundImg.vue';
 const { locale } = useI18n();
 const localeCode = computed(() => locale.value);
 
+interface IssueHeaderIssue {
+  title?: string;
+  type?: { name?: string };
+  number?: number | string;
+  state?: string;
+  updated_at?: string;
+  user?: {
+    avatar_url?: string;
+    login?: string;
+  };
+  created_at?: string;
+  body?: string;
+}
+
 const props = defineProps<{
-  issue: any;
+  issue?: IssueHeaderIssue | null;
   repoOwner: string;
   repoName: string;
 }>();
