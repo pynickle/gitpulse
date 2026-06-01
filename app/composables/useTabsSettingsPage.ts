@@ -117,21 +117,16 @@ export const useTabsSettingsPage = () => {
     string,
     { icon: typeof CircleDotIcon; activeColor: string } | undefined
   > = {
-    // type
     issues: { icon: CircleDotIcon, activeColor: 'var(--gitpulse-success-solid)' },
     pulls: { icon: GitPullRequestIcon, activeColor: 'var(--gitpulse-purple)' },
     all: { icon: GitMergeIcon, activeColor: 'var(--gitpulse-accent)' },
-    // state
     open: { icon: CircleDotIcon, activeColor: 'var(--gitpulse-success-solid)' },
     closed: { icon: CircleMinusIcon, activeColor: 'var(--gitpulse-danger-solid)' },
-    // draft
     draft: { icon: FilePenLineIcon, activeColor: 'var(--gitpulse-warning-solid)' },
     ready: { icon: CheckCircle2Icon, activeColor: 'var(--gitpulse-success-solid)' },
-    // review
     approved: { icon: CheckCircle2Icon, activeColor: 'var(--gitpulse-success-solid)' },
     changes_requested: { icon: XCircleIcon, activeColor: 'var(--gitpulse-danger-solid)' },
     required: { icon: ShieldAlertIcon, activeColor: 'var(--gitpulse-warning-solid)' },
-    // order
     desc: { icon: ArrowDownIcon, activeColor: 'var(--gitpulse-accent)' },
     asc: { icon: ArrowUpIcon, activeColor: 'var(--gitpulse-accent)' },
   };
