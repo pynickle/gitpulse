@@ -354,8 +354,8 @@ onMounted(() => {
 // Close dropdown on outside click
 if (import.meta.client) {
   const handleClickOutside = (e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (!target.closest('.watch-dropdown-wrapper')) {
+    const target = e.target;
+    if (!(target instanceof Element) || !target.closest('.watch-dropdown-wrapper')) {
       closeWatchDropdown();
     }
   };
