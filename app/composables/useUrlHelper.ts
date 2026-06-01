@@ -63,10 +63,10 @@ export function useUrlHelper() {
           return;
         }
 
-        window.open(`https://github.com/${owner}/${repo}/${type}/${number}`, '_blank');
+        window.open(`https://github.com/${owner}/${repo}/${type}/${number}`, '_blank', 'noopener');
       }
     } else if (notification.html_url) {
-      window.open(notification.html_url, '_blank');
+      window.open(notification.html_url, '_blank', 'noopener');
     }
   };
 
