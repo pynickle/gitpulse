@@ -16,8 +16,14 @@ function parseIssueNumber(value: string) {
 }
 
 function normalizeLockReason(body: unknown): LockReason | undefined {
-  const requestBody =
-    body && typeof body === 'object' && !Array.isArray(body) ? (body as LockRequestBody) : {};
+  if (body !== undefined && body !== null && (typeof body !== 'object' || Array.isArray(body))) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid lock request body',
+    });
+  }
+
+  const requestBody = body ? (body as LockRequestBody) : {};
 
   if (requestBody.lock_reason === undefined) {
     return undefined;
