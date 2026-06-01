@@ -17,7 +17,6 @@
             </p>
           </div>
 
-          <!-- Type and Labels -->
           <div v-if="hasTags" class="dashboard-list-card__tags-container">
             <div class="is-flex dashboard-list-card__tags">
               <span v-if="issue.type?.name" class="tag has-text-weight-medium" :style="typeStyle">
@@ -71,7 +70,6 @@ const typeStyle = computed(() => {
   };
 });
 
-// Type color mapping
 const typeColorMap: Record<string, string> = {
   red: 'd1242f',
   green: '2ea44f',
@@ -83,7 +81,6 @@ const typeColorMap: Record<string, string> = {
   pink: 'bf3989',
 };
 
-// Get type color
 const getTypeColor = (typeName: string) => {
   return typeColorMap[typeName] || '6e7781';
 };

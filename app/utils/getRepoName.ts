@@ -6,7 +6,6 @@ export default function (url: string) {
     return repoPath.fullName;
   }
 
-  // Fallback to original method
   const parts = url.split('/');
   return parts[parts.length - 1] || 'Unknown';
 }
