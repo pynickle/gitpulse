@@ -55,7 +55,7 @@ const errors: ErrorPreset[] = [
 
 const trigger = (preset: ErrorPreset) => {
   open.value = false;
-  showError({ statusCode: preset.statusCode, statusMessage: preset.message });
+  showError({ status: preset.statusCode, statusText: preset.message });
 };
 
 const handleDocumentClick = (event: MouseEvent) => {

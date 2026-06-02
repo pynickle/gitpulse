@@ -86,8 +86,8 @@ const variants: Record<number, ErrorVariant> = {
   },
 };
 
-const variant = computed<ErrorVariant>(() => variants[props.error.statusCode] ?? fallbackVariant);
-const statusCode = computed<number>(() => props.error.statusCode);
+const variant = computed<ErrorVariant>(() => variants[props.error.status] ?? fallbackVariant);
+const statusCode = computed<number>(() => props.error.status);
 
 const title = computed(() => t(variant.value.titleKey));
 const description = computed(() => t(variant.value.descriptionKey));
