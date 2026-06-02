@@ -1,15 +1,5 @@
 <script setup lang="ts">
-/**
- * Wraps mdc's default ProsePre for block-level fenced code blocks.
- *
- * When the fenced block's `language` prop equals "mermaid", render MermaidBlock
- * (client-side lazy SVG renderer).  For all other languages, delegate to mdc's
- * default ProsePre so Shiki-highlighted HTML is rendered unchanged.
- *
- * We override the `pre` key in MDCRenderer's `components` map (not `code`),
- * so inline backtick `mermaid` code spans are never intercepted here.
- */
-import ProsePre from '@nuxtjs/mdc/dist/runtime/components/prose/ProsePre.vue';
+import type { ComarkNode } from 'comark';
 import { CheckIcon, ClipboardIcon } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, shallowRef } from 'vue';
 
@@ -22,6 +12,7 @@ const props = defineProps<{
   highlights?: number[];
   meta?: string | null;
   class?: string | null;
+  __node?: ComarkNode;
 }>();
 
 const { t } = useI18n();
@@ -30,15 +21,42 @@ const copied = shallowRef(false);
 const resetTimer = shallowRef<ReturnType<typeof setTimeout> | null>(null);
 const languageLabel = computed(() => props.language?.trim() ?? '');
 const copyLabel = computed(() => (copied.value ? t('markdown.copied') : t('markdown.copyCode')));
+const codeText = computed(() => props.code ?? extractCodeText(props.__node) ?? '');
 
-const prosePreProps = computed(() => ({
-  code: props.code,
-  language: props.language ?? undefined,
-  filename: props.filename ?? undefined,
-  highlights: props.highlights,
-  meta: props.meta ?? undefined,
-  class: props.class ?? undefined,
-}));
+function extractCodeText(node: ComarkNode | undefined): string | null {
+  if (!Array.isArray(node)) {
+    return null;
+  }
+
+  const codeNode = node
+    .slice(2)
+    .find(
+      (child): child is [string, Record<string, unknown>, ...ComarkNode[]] =>
+        Array.isArray(child) && child[0] === 'code'
+    );
+
+  if (!codeNode) {
+    return null;
+  }
+
+  return collectText(codeNode.slice(2));
+}
+
+function collectText(nodes: ComarkNode[]): string {
+  return nodes
+    .map((node) => {
+      if (typeof node === 'string') {
+        return node;
+      }
+
+      if (!Array.isArray(node)) {
+        return '';
+      }
+
+      return collectText(node.slice(2));
+    })
+    .join('');
+}
 
 function clearResetTimer() {
   if (!resetTimer.value) {
@@ -54,7 +72,7 @@ async function copyCode() {
   copied.value = false;
 
   try {
-    await navigator.clipboard.writeText(props.code ?? '');
+    await navigator.clipboard.writeText(codeText.value);
     copied.value = true;
     resetTimer.value = setTimeout(() => {
       copied.value = false;
@@ -69,7 +87,7 @@ onBeforeUnmount(clearResetTimer);
 </script>
 
 <template>
-  <MermaidBlock v-if="props.language === 'mermaid'" :code="props.code ?? ''" />
+  <MermaidBlock v-if="props.language === 'mermaid'" :code="codeText" />
   <div v-else class="markdown-code-block">
     <div class="markdown-code-block__header">
       <span v-if="languageLabel" class="markdown-code-block__language" :title="languageLabel">
@@ -89,7 +107,7 @@ onBeforeUnmount(clearResetTimer);
       </button>
     </div>
 
-    <ProsePre v-bind="prosePreProps"><slot /></ProsePre>
+    <pre :class="props.class" tabindex="0"><slot /></pre>
   </div>
 </template>
 

@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { parseMarkdown } from '@nuxtjs/mdc/runtime';
+import { parse } from 'comark';
+import type { ComarkTree } from 'comark';
+import highlight from 'comark/plugins/highlight';
+import security from 'comark/plugins/security';
 import type { DefineComponent } from 'vue';
 import { shallowRef } from 'vue';
 
@@ -14,19 +17,21 @@ const props = defineProps<{
   repoName?: string;
 }>();
 
-const ast = shallowRef<Awaited<ReturnType<typeof parseMarkdown>> | null>(null);
+const ast = shallowRef<ComarkTree | null>(null);
 const renderRequestId = shallowRef(0);
 const { applyGitHubAutolinks } = useGitHubAutolinks();
+const markdownPlugins = [
+  security({
+    blockedTags: ['script', 'style', 'iframe', 'object', 'embed'],
+    allowedProtocols: ['http', 'https', 'mailto', 'tel'],
+    allowDataImages: false,
+  }),
+  highlight(),
+];
 
-// Pass imported component objects directly — bypasses Vue string-based
-// component resolution which can fail when Nuxt's auto-registered names
-// differ from the bare PascalCase filename (e.g. path-prefixed variants).
 const rendererComponents: Record<string, string | DefineComponent<any, any, any>> = {
   a: MarkdownRendererProseA,
   img: MarkdownRendererProseImg,
-  // Override the block-level `pre` renderer (not `code` — inline backticks
-  // must NOT trigger MermaidBlock). The wrapper inspects `language` and routes
-  // mermaid fences to MermaidBlock; everything else delegates to ProsePre.
   pre: MarkdownRendererProseMermaidWrapper,
 };
 
@@ -41,9 +46,11 @@ watch(
       return;
     }
 
-    const parsedMarkdown = await parseMarkdown(value);
+    const parsedMarkdown = await parse(value, {
+      plugins: markdownPlugins,
+    });
 
-    await applyGitHubAutolinks(parsedMarkdown.body, {
+    await applyGitHubAutolinks(parsedMarkdown, {
       repoOwner,
       repoName,
     });
@@ -59,13 +66,7 @@ watch(
 </script>
 
 <template>
-  <MDCRenderer
-    v-if="ast"
-    class="markdown-body"
-    :body="ast.body"
-    :data="ast.data"
-    :components="rendererComponents"
-  />
+  <ComarkRenderer v-if="ast" class="markdown-body" :tree="ast" :components="rendererComponents" />
 </template>
 
 <style lang="scss" src="@primer/css/color-modes/themes/light.scss" />
@@ -104,8 +105,6 @@ watch(
     padding-left: 1em;
   }
 
-  // Fix badge spacing: add right margin to images inside links
-  // This ensures consecutive badge images have proper spacing
   a > img {
     margin-right: 4px;
   }

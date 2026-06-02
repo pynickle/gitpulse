@@ -58,8 +58,12 @@ export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
       include: [
+        '@comark/vue',
         '@vue/devtools-core',
         '@vue/devtools-kit',
+        'comark',
+        'comark/plugins/highlight',
+        'comark/plugins/security',
         'dayjs', // CJS
         'dayjs/locale/zh-cn', // CJS
         'dayjs/plugin/duration.js', // CJS
@@ -89,7 +93,7 @@ export default defineNuxtConfig({
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },
 
-  modules: ['@nuxtjs/i18n', '@nuxt/image', 'nuxt-auth-utils', '@nuxtjs/mdc', '@nuxtjs/color-mode'],
+  modules: ['@nuxtjs/i18n', '@nuxt/image', 'nuxt-auth-utils', '@comark/nuxt', '@nuxtjs/color-mode'],
 
   colorMode: {
     preference: 'system',
@@ -100,43 +104,6 @@ export default defineNuxtConfig({
     storage: 'localStorage',
     storageKey: 'gitpulse-color-mode',
     disableTransition: true,
-  },
-
-  mdc: {
-    headings: {
-      anchorLinks: {
-        h1: false,
-        h2: false,
-        h3: false,
-        h4: false,
-        h5: false,
-        h6: false,
-      },
-    },
-    highlight: {
-      theme: { default: 'min-light', dark: 'min-dark' },
-      langs: [
-        'ts',
-        'tsx',
-        'js',
-        'jsx',
-        'vue',
-        'json',
-        'bash',
-        'python',
-        'go',
-        'rust',
-        'java',
-        'sql',
-        'yaml',
-        'html',
-        'css',
-        'scss',
-        'mermaid',
-        'md',
-        'diff',
-      ],
-    },
   },
 
   i18n: {

@@ -1,4 +1,4 @@
-import type { MDCElement, MDCNode, MDCRoot, MDCText } from '@nuxtjs/mdc';
+import type { ComarkElement, ComarkNode, ComarkTree } from 'comark';
 
 interface GitHubAutolinkContext {
   repoOwner?: string;
@@ -54,30 +54,16 @@ const REFERENCE_CACHE_FAILURE_TTL_MS = 5 * 60 * 1000;
 
 const referenceCache = new Map<string, CachedGitHubAutolinkResolution>();
 
-function isTextNode(node: MDCNode): node is MDCText {
-  return node.type === 'text';
+function isTextNode(node: ComarkNode): node is string {
+  return typeof node === 'string';
 }
 
-function isElementNode(node: MDCNode): node is MDCElement {
-  return node.type === 'element';
+function isElementNode(node: ComarkNode): node is ComarkElement {
+  return Array.isArray(node) && typeof node[0] === 'string';
 }
 
-function createTextNode(value: string): MDCText {
-  return {
-    type: 'text',
-    value,
-  };
-}
-
-function createLinkNode(href: string, text: string): MDCElement {
-  return {
-    type: 'element',
-    tag: 'a',
-    props: {
-      href,
-    },
-    children: [createTextNode(text)],
-  };
+function createLinkNode(href: string, text: string): ComarkElement {
+  return ['a', { href }, text];
 }
 
 function shouldAutolinkInParent(parentTag?: string) {
@@ -211,11 +197,11 @@ async function resolveReference(target: GitHubAutolinkTarget): Promise<GitHubAut
 }
 
 async function transformTextNode(
-  node: MDCText,
+  node: string,
   context: GitHubAutolinkContext,
   parentTag?: string
-): Promise<MDCNode[]> {
-  if (!node.value || !shouldAutolinkInParent(parentTag)) {
+): Promise<ComarkNode[]> {
+  if (!node || !shouldAutolinkInParent(parentTag)) {
     return [node];
   }
 
@@ -230,7 +216,7 @@ async function transformTextNode(
   REFERENCE_PATTERN.lastIndex = 0;
 
   let match: RegExpExecArray | null = null;
-  while ((match = REFERENCE_PATTERN.exec(node.value)) !== null) {
+  while ((match = REFERENCE_PATTERN.exec(node)) !== null) {
     const prefix = match[1] ?? '';
     const matchedText = match[0].slice(prefix.length);
     const target = parseReferenceTarget(matchedText, context);
@@ -256,7 +242,7 @@ async function transformTextNode(
   }
 
   const resolutions = await Promise.all(matches.map(({ target }) => resolveReference(target)));
-  const transformedNodes: MDCNode[] = [];
+  const transformedNodes: ComarkNode[] = [];
   let cursor = 0;
 
   for (const [index, item] of matches.entries()) {
@@ -264,35 +250,35 @@ async function transformTextNode(
     const prefixStart = item.start - item.prefix.length;
 
     if (prefixStart > cursor) {
-      transformedNodes.push(createTextNode(node.value.slice(cursor, prefixStart)));
+      transformedNodes.push(node.slice(cursor, prefixStart));
     }
 
     if (item.prefix) {
-      transformedNodes.push(createTextNode(item.prefix));
+      transformedNodes.push(item.prefix);
     }
 
     if (resolution?.exists && resolution.href) {
       transformedNodes.push(createLinkNode(resolution.href, item.matchedText));
     } else {
-      transformedNodes.push(createTextNode(item.matchedText));
+      transformedNodes.push(item.matchedText);
     }
 
     cursor = item.end;
   }
 
-  if (cursor < node.value.length) {
-    transformedNodes.push(createTextNode(node.value.slice(cursor)));
+  if (cursor < node.length) {
+    transformedNodes.push(node.slice(cursor));
   }
 
   return transformedNodes;
 }
 
 async function transformChildren(
-  children: MDCNode[],
+  children: ComarkNode[],
   context: GitHubAutolinkContext,
   parentTag?: string
-): Promise<MDCNode[]> {
-  const transformedChildren: MDCNode[] = [];
+): Promise<ComarkNode[]> {
+  const transformedChildren: ComarkNode[] = [];
 
   for (const child of children) {
     if (isTextNode(child)) {
@@ -305,24 +291,23 @@ async function transformChildren(
       continue;
     }
 
-    if (SKIPPED_TAGS.has(child.tag)) {
+    const [tag, props, ...childNodes] = child;
+
+    if (SKIPPED_TAGS.has(tag)) {
       transformedChildren.push(child);
       continue;
     }
 
-    transformedChildren.push({
-      ...child,
-      children: await transformChildren(child.children, context, child.tag),
-    });
+    transformedChildren.push([tag, props, ...(await transformChildren(childNodes, context, tag))]);
   }
 
   return transformedChildren;
 }
 
 export default function useGitHubAutolinks() {
-  const applyGitHubAutolinks = async (body: MDCRoot, context: GitHubAutolinkContext) => {
-    body.children = await transformChildren(body.children, context);
-    return body;
+  const applyGitHubAutolinks = async (tree: ComarkTree, context: GitHubAutolinkContext) => {
+    tree.nodes = await transformChildren(tree.nodes, context);
+    return tree;
   };
 
   return {
