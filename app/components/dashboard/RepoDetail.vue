@@ -892,50 +892,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   padding: 12px 16px;
 }
 
-.info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.info-item__label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
-  font-size: 12px;
-}
-
-.info-item__value {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  font-size: 12px;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.info-item__value--link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--gitpulse-link);
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .info-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
