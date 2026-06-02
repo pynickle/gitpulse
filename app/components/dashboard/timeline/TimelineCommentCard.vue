@@ -33,7 +33,9 @@
           :repo-owner="repoOwner"
           :repo-name="repoName"
         />
-        <p v-else class="has-text-grey is-size-7">{{ emptyText }}</p>
+        <p v-else class="has-text-grey is-size-7">
+          {{ emptyText ?? t('issueDetail.noCommentBody') }}
+        </p>
       </div>
     </div>
   </div>
@@ -54,19 +56,14 @@ interface TimelineCommentCardItem {
   body?: string;
 }
 
-withDefaults(
-  defineProps<{
-    item: TimelineCommentCardItem;
-    emptyText?: string;
-    repoOwner?: string;
-    repoName?: string;
-  }>(),
-  {
-    emptyText: 'No comment body',
-  }
-);
+defineProps<{
+  item: TimelineCommentCardItem;
+  emptyText?: string;
+  repoOwner?: string;
+  repoName?: string;
+}>();
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const localeCode = computed(() => locale.value);
 </script>
 
