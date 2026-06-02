@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import githubDark from '@shikijs/themes/github-dark';
+import githubLight from '@shikijs/themes/github-light';
 import { parse } from 'comark';
 import type { ComarkTree } from 'comark';
 import highlight from 'comark/plugins/highlight';
 import security from 'comark/plugins/security';
+import type { LanguageRegistration } from 'shiki';
+import { bundledLanguages } from 'shiki/langs';
 import type { DefineComponent } from 'vue';
 import { shallowRef } from 'vue';
 
@@ -20,14 +24,35 @@ const props = defineProps<{
 const ast = shallowRef<ComarkTree | null>(null);
 const renderRequestId = shallowRef(0);
 const { applyGitHubAutolinks } = useGitHubAutolinks();
-const markdownPlugins = [
-  security({
-    blockedTags: ['script', 'style', 'iframe', 'object', 'embed'],
-    allowedProtocols: ['http', 'https', 'mailto', 'tel'],
-    allowDataImages: false,
-  }),
-  highlight(),
-];
+const markdownPluginsPromise = createMarkdownPlugins();
+
+async function createMarkdownPlugins() {
+  const languages = await loadBundledLanguages();
+
+  return [
+    security({
+      blockedTags: ['script', 'style', 'iframe', 'object', 'embed'],
+      allowedProtocols: ['http', 'https', 'mailto', 'tel'],
+      allowDataImages: false,
+    }),
+    highlight({
+      themes: {
+        light: githubLight,
+        dark: githubDark,
+      },
+      languages,
+      preStyles: true,
+    }),
+  ];
+}
+
+async function loadBundledLanguages(): Promise<LanguageRegistration[]> {
+  const modules = await Promise.all(
+    Object.values(bundledLanguages).map((loadLanguage) => loadLanguage())
+  );
+
+  return modules.flatMap((module) => module.default ?? module) as LanguageRegistration[];
+}
 
 const rendererComponents: Record<string, string | DefineComponent<any, any, any>> = {
   a: MarkdownRendererProseA,
@@ -47,7 +72,7 @@ watch(
     }
 
     const parsedMarkdown = await parse(value, {
-      plugins: markdownPlugins,
+      plugins: await markdownPluginsPromise,
     });
 
     await applyGitHubAutolinks(parsedMarkdown, {

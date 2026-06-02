@@ -2,6 +2,7 @@
 import type { ComarkNode } from 'comark';
 import { CheckIcon, ClipboardIcon } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, shallowRef } from 'vue';
+import type { StyleValue } from 'vue';
 
 import MermaidBlock from '~/components/ui/MermaidBlock.vue';
 
@@ -12,6 +13,7 @@ const props = defineProps<{
   highlights?: number[];
   meta?: string | null;
   class?: string | null;
+  style?: StyleValue;
   __node?: ComarkNode;
 }>();
 
@@ -107,7 +109,7 @@ onBeforeUnmount(clearResetTimer);
       </button>
     </div>
 
-    <pre :class="props.class" tabindex="0"><slot /></pre>
+    <pre :class="props.class" :style="props.style" tabindex="0"><slot /></pre>
   </div>
 </template>
 
@@ -185,9 +187,31 @@ onBeforeUnmount(clearResetTimer);
   margin: 0;
   border: 0;
   border-radius: 0;
+  background-color: var(--shiki-light-bg, var(--gitpulse-code-bg));
 }
 
 .markdown-code-block :deep(code) {
   white-space: pre;
+}
+
+.markdown-code-block :deep(.line) {
+  display: inline-block;
+  min-width: 100%;
+}
+
+.markdown-code-block :deep(.line.highlight) {
+  background-color: rgba(9, 105, 218, 0.12);
+}
+
+html.dark .markdown-code-block :deep(.shiki) {
+  background-color: var(--shiki-dark-bg, var(--gitpulse-code-bg)) !important;
+  color: var(--shiki-dark, var(--gitpulse-text)) !important;
+}
+
+html.dark .markdown-code-block :deep(.shiki span) {
+  color: var(--shiki-dark) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 </style>
