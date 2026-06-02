@@ -347,14 +347,19 @@ const getCommentDiffSide = (comment: TimelineReviewComment): 'LEFT' | 'RIGHT' =>
 
 const getCommentDiffRange = (comment: TimelineReviewComment) => {
   const side = getCommentDiffSide(comment);
+  const isSingleLineComment = comment.startLine == null && comment.originalStartLine == null;
   const start =
     side === 'LEFT'
       ? (comment.originalStartLine ?? comment.originalLine ?? comment.startLine ?? comment.line)
-      : (comment.startLine ?? comment.line ?? comment.originalStartLine ?? comment.originalLine);
+      : isSingleLineComment
+        ? (comment.originalLine ?? comment.line)
+        : (comment.startLine ?? comment.line ?? comment.originalStartLine ?? comment.originalLine);
   const end =
     side === 'LEFT'
       ? (comment.originalLine ?? comment.line ?? comment.originalStartLine ?? comment.startLine)
-      : (comment.line ?? comment.originalLine ?? comment.startLine ?? comment.originalStartLine);
+      : isSingleLineComment
+        ? (comment.originalLine ?? comment.line)
+        : (comment.line ?? comment.originalLine ?? comment.startLine ?? comment.originalStartLine);
 
   if (!start || !end) {
     return null;
@@ -382,6 +387,31 @@ const isRowInCommentRange = (
 
   const line = getRowLineForSide(row, range.side);
   return Boolean(line && line >= range.start && line <= range.end);
+};
+
+const getVisibleHunkContent = (
+  rows: ReturnType<typeof parsePRReviewPatch>,
+  fallbackContent?: string
+) => {
+  const fallbackMatch = fallbackContent?.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+  const fallbackOldStart = Number.parseInt(fallbackMatch?.[1] ?? '0', 10);
+  const fallbackNewStart = Number.parseInt(fallbackMatch?.[2] ?? '0', 10);
+  const visibleRows = rows.filter((row) => row.type !== 'hunk');
+  const oldLineNumbers = visibleRows
+    .map((row) => row.oldLineNumber)
+    .filter((line): line is number => line != null);
+  const newLineNumbers = visibleRows
+    .map((row) => row.newLineNumber)
+    .filter((line): line is number => line != null);
+
+  const oldStart = oldLineNumbers[0] ?? fallbackOldStart;
+  const newStart = newLineNumbers[0] ?? fallbackNewStart;
+
+  if (!oldStart && !newStart) {
+    return fallbackContent ?? '';
+  }
+
+  return `@@ -${oldStart},${oldLineNumbers.length} +${newStart},${newLineNumbers.length} @@`;
 };
 
 const rowToTimelineLines = (
@@ -455,18 +485,13 @@ const buildReviewCommentDiffLines = (comment: TimelineReviewComment): Suggestion
     return rows.flatMap(rowToTimelineLines);
   }
 
-  // When originalStartLine is null, this is a single-line comment.
-  // Show 3 lines of context before the commented line.
-  // When originalStartLine is not null, this is a multi-line range comment —
-  // show exactly originalStartLine..originalLine as-is.
-  const isSingleLineComment = comment.originalStartLine == null;
+  const isSingleLineComment = comment.startLine == null && comment.originalStartLine == null;
   const effectiveRange = isSingleLineComment
     ? { ...range, start: Math.max(1, range.end - 3) }
     : range;
 
-  const selectedLines = rows
-    .filter((row) => isRowInCommentRange(row, effectiveRange))
-    .flatMap(rowToTimelineLines);
+  const selectedRows = rows.filter((row) => isRowInCommentRange(row, effectiveRange));
+  const selectedLines = selectedRows.flatMap(rowToTimelineLines);
 
   if (!selectedLines.length) {
     return rows.flatMap(rowToTimelineLines);
@@ -481,7 +506,7 @@ const buildReviewCommentDiffLines = (comment: TimelineReviewComment): Suggestion
             oldLineNumber: null,
             newLineNumber: null,
             marker: '',
-            content: hunk.content,
+            content: getVisibleHunkContent(selectedRows, hunk.content),
           },
         ]
       : []),
