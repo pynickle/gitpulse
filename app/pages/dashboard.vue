@@ -186,7 +186,7 @@ const AsyncNotificationItem = defineAsyncComponent(
 const AsyncSearchItem = defineAsyncComponent(() => import('~/components/dashboard/SearchItem.vue'));
 const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/RepoItem.vue'));
 
-const { user } = useUserSession();
+const { loggedIn, ready: sessionReady, user } = useUserSession();
 const { t } = useI18n();
 const localePath = useLocalePath();
 const route = useRoute();
@@ -779,8 +779,12 @@ watch(
 );
 
 watch(
-  () => [route.query.tab, route.query.page],
+  () => [route.query.tab, route.query.page, sessionReady.value, loggedIn.value],
   ([tab, page]) => {
+    if (!import.meta.client || !sessionReady.value || !loggedIn.value) {
+      return;
+    }
+
     void loadRouteTabSafely(tab, parseDashboardPage(page));
   },
   { immediate: true }

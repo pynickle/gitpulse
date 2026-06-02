@@ -21,6 +21,7 @@ interface DetailTarget {
 
 export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const apiFetch = useGitPulseApiFetch();
+  const { loggedIn, ready: sessionReady } = useUserSession();
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
   const { goBack, goToHome, hasHistory, navigateToIssue, navigateToPullRequest, navigateToRepo } =
     useNavigationHistory();
@@ -368,8 +369,23 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const handleRepoDetailHome = handleIssueDetailHome;
 
   watch(
-    () => [route.query.issue, route.query.pr, route.query.repo],
+    () => [route.query.issue, route.query.pr, route.query.repo, sessionReady.value, loggedIn.value],
     async () => {
+      if (!import.meta.client) {
+        return;
+      }
+
+      if (!sessionReady.value) {
+        return;
+      }
+
+      if (!loggedIn.value) {
+        closeIssueDetail();
+        closePRDetail();
+        closeRepoDetail();
+        return;
+      }
+
       const issueTarget = activeIssueTarget.value;
       const prTarget = activePRTarget.value;
 
