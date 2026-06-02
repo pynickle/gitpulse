@@ -105,8 +105,8 @@ const isStarred = ref(false);
 const loadingStar = ref(false);
 const starCount = ref(props.repository.stargazers_count ?? 0);
 
-type WatchState = 'all' | 'default' | 'ignore' | null;
-const watchState = ref<WatchState>(null);
+type WatchState = 'all' | 'default' | 'ignore';
+const watchState = ref<WatchState | null>(null);
 const loadingWatch = ref(false);
 const showWatchDropdown = ref(false);
 const watchCount = ref(props.repository.watchers_count ?? 0);
@@ -150,6 +150,8 @@ const watchStateLabel = computed(() => {
   if (watchState.value === 'ignore') return copy.value.notWatching;
   return copy.value.watchNone;
 });
+
+const isSubscribedWatchState = (state: WatchState | null) => state === 'all' || state === 'ignore';
 
 const aboutItems = computed(() => {
   const items: { label: string; value: string; href?: string; icon: RepoDetailIcon }[] = [];
@@ -249,24 +251,25 @@ const setWatchState = async (state: WatchState) => {
   showWatchDropdown.value = false;
 
   const previousState = watchState.value;
+  const previousSubscribed = isSubscribedWatchState(previousState);
 
   try {
-    if (state === null) {
+    if (state === 'default') {
       await apiFetch(`/api/repos/${props.owner}/${props.repo}/subscription`, { method: 'DELETE' });
-      watchState.value = null;
-      watchCount.value = Math.max(0, watchCount.value - 1);
     } else {
       await apiFetch(`/api/repos/${props.owner}/${props.repo}/subscription`, {
         method: 'PUT',
         body: { subscribed: state === 'all', ignored: state === 'ignore' },
       });
-      const wasWatching = previousState === 'all';
-      watchState.value = state;
-      if (state === 'all' && !wasWatching) {
-        watchCount.value = watchCount.value + 1;
-      } else if (state !== 'all' && wasWatching) {
-        watchCount.value = Math.max(0, watchCount.value - 1);
-      }
+    }
+
+    watchState.value = state;
+
+    const nextSubscribed = isSubscribedWatchState(state);
+    if (previousSubscribed !== nextSubscribed) {
+      watchCount.value = previousSubscribed
+        ? Math.max(0, watchCount.value - 1)
+        : watchCount.value + 1;
     }
   } catch {
     watchState.value = previousState;
