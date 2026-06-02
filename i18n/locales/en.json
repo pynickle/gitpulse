@@ -374,6 +374,11 @@
     "pullRequestType": "PR",
     "issueType": "Issue"
   },
+  "repoDetail": {
+    "watchAllDescription": "Receive all notifications",
+    "watchDefaultDescription": "Only \\@mentions",
+    "watchIgnoreDescription": "Receive no notifications"
+  },
   "prReview": {
     "openReview": "Review changes",
     "backToDetails": "Back to PR details",

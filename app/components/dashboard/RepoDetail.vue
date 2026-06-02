@@ -31,7 +31,7 @@ const emit = defineEmits<{
 
 type RepoDetailIcon = typeof GithubIcon;
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 
 const copy = computed(() => {
@@ -404,7 +404,9 @@ if (import.meta.client) {
                     <EyeIcon :size="14" />
                     <div class="watch-dropdown__item-content">
                       <span class="watch-dropdown__item-label">{{ copy.watchAll }}</span>
-                      <span class="watch-dropdown__item-desc">Receive all notifications</span>
+                      <span class="watch-dropdown__item-desc">
+                        {{ t('repoDetail.watchAllDescription') }}
+                      </span>
                     </div>
                   </button>
                   <button
@@ -415,7 +417,9 @@ if (import.meta.client) {
                     <EyeIcon :size="14" />
                     <div class="watch-dropdown__item-content">
                       <span class="watch-dropdown__item-label">{{ copy.watchNone }}</span>
-                      <span class="watch-dropdown__item-desc">Only @mentions</span>
+                      <span class="watch-dropdown__item-desc">
+                        {{ t('repoDetail.watchDefaultDescription') }}
+                      </span>
                     </div>
                   </button>
                   <button
@@ -426,7 +430,9 @@ if (import.meta.client) {
                     <XIcon :size="14" />
                     <div class="watch-dropdown__item-content">
                       <span class="watch-dropdown__item-label">{{ copy.watchIgnore }}</span>
-                      <span class="watch-dropdown__item-desc">Receive no notifications</span>
+                      <span class="watch-dropdown__item-desc">
+                        {{ t('repoDetail.watchIgnoreDescription') }}
+                      </span>
                     </div>
                   </button>
                 </div>

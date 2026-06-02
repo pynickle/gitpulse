@@ -374,6 +374,11 @@
     "pullRequestType": "PR",
     "issueType": "议题"
   },
+  "repoDetail": {
+    "watchAllDescription": "接收所有通知",
+    "watchDefaultDescription": "仅 \\@ 提及时通知",
+    "watchIgnoreDescription": "不接收通知"
+  },
   "prReview": {
     "openReview": "审查变更",
     "backToDetails": "返回拉取请求详情",
