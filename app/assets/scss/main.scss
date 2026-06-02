@@ -470,6 +470,10 @@ hr {
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
+.tag.is-activity {
+  margin-bottom: 0.3rem;
+}
+
 .tag.is-info.is-light {
   border: 1px solid color-mix(in srgb, var(--gitpulse-info) 22%, transparent);
   background-color: var(--gitpulse-info-soft);
