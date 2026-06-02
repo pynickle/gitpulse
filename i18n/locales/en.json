@@ -368,6 +368,7 @@
     "submitFailed": "Failed to submit pull request review.",
     "retry": "Retry",
     "noFiles": "No changed files found for this pull request.",
+    "noDescription": "No description provided",
     "reviewers": "Reviewers",
     "noReviewers": "No reviewers assigned",
     "details": "Details",

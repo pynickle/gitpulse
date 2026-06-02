@@ -368,6 +368,7 @@
     "submitFailed": "提交拉取请求审查失败。",
     "retry": "重试",
     "noFiles": "此拉取请求没有变更文件。",
+    "noDescription": "没有提供描述",
     "reviewers": "审查者",
     "noReviewers": "没有指派审查者",
     "details": "详情",

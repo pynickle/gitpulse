@@ -72,7 +72,7 @@
           :repo-owner="repoOwner"
           :repo-name="repoName"
         />
-        <p v-else>No description provided</p>
+        <p v-else>{{ t('prReview.noDescription') }}</p>
       </div>
     </div>
   </div>
@@ -92,7 +92,7 @@ import { formatDurationFromNow } from '#imports';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const localeCode = computed(() => locale.value);
 
 interface PullRequestHeaderPullRequest {
