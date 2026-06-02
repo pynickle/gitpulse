@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
@@ -111,27 +111,7 @@ const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const apiFetch = useGitPulseApiFetch();
 
-// Sidebar scroll auto-hide
-const isSidebarScrolling = ref(false);
-let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
-
-const clearScrollTimeout = () => {
-  if (scrollTimeout) {
-    clearTimeout(scrollTimeout);
-    scrollTimeout = null;
-  }
-};
-
-const onSidebarScroll = () => {
-  isSidebarScrolling.value = true;
-  clearScrollTimeout();
-  scrollTimeout = setTimeout(() => {
-    isSidebarScrolling.value = false;
-    scrollTimeout = null;
-  }, 1000);
-};
-
-onBeforeUnmount(clearScrollTimeout);
+const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const repoInfo = computed(() => {
   return parseGitHubRepoPath(currentIssue.value?.repository_url);
