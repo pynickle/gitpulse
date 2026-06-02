@@ -7,7 +7,7 @@
 
     <div class="is-flex is-align-items-center my-4 is-flex-wrap-wrap">
       <span class="tag mr-2" :style="typeStyle">
-        {{ issue?.type?.name || 'Issue' }}
+        {{ issue?.type?.name || t('issueDetail.issueTypeFallback') }}
       </span>
       <span class="tag is-info is-light ml-2">#{{ issue?.number }}</span>
       <span
@@ -57,7 +57,7 @@
           :repo-owner="repoOwner"
           :repo-name="repoName"
         />
-        <p v-else>No description provided</p>
+        <p v-else>{{ t('issueDetail.noDescription') }}</p>
       </div>
     </div>
   </div>
@@ -72,7 +72,7 @@ import { formatDurationFromNow } from '#imports';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const localeCode = computed(() => locale.value);
 
 interface IssueHeaderIssue {
