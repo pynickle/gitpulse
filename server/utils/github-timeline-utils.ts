@@ -80,6 +80,13 @@ interface SortableTimelineItem {
     commitId?: string;
     previousState?: string;
   };
+  review?: {
+    id?: string;
+    author?: ReturnType<typeof mapActor>;
+    state?: string;
+    dismissalMessage?: string;
+    dismissalCommitId?: string;
+  };
   [key: string]: unknown;
 }
 
