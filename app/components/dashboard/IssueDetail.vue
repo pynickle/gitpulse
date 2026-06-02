@@ -90,16 +90,6 @@ const emit = defineEmits<{
 const loadingTimeline = ref(false);
 const loadingPermission = ref(false);
 const currentIssue = ref(props.issue);
-const createEmptyRepoPermissions = () => ({
-  admin: false,
-  maintain: false,
-  push: false,
-  triage: false,
-  pull: false,
-  canEditLabels: false,
-  canLockIssue: false,
-});
-
 const repoPermissions = ref(createEmptyRepoPermissions());
 const isLocked = ref(props.issue?.locked || false);
 const timeline = ref<IssueTimelineItem[]>([]);

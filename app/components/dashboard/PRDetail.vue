@@ -133,16 +133,6 @@ const apiFetch = useGitPulseApiFetch();
 
 const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
-const createEmptyRepoPermissions = () => ({
-  admin: false,
-  maintain: false,
-  push: false,
-  triage: false,
-  pull: false,
-  canEditLabels: false,
-  canLockIssue: false,
-});
-
 const repoPermissions = ref(createEmptyRepoPermissions());
 
 const repoInfo = computed(() => {
