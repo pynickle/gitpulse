@@ -8,9 +8,9 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 
+import type { NuxtError } from '#app';
 import LandingNavbar from '~/components/layouts/LandingNavbar.vue';
 import Button from '~/components/ui/Button.vue';
-import type {NuxtError} from "#app";
 
 const props = defineProps<{ error: NuxtError }>();
 
@@ -87,7 +87,9 @@ const variants: Record<number, ErrorVariant> = {
   },
 };
 
-const variant = computed<ErrorVariant>(() => variants[props.error.status ?? 500] ?? fallbackVariant);
+const variant = computed<ErrorVariant>(
+  () => variants[props.error.status ?? 500] ?? fallbackVariant
+);
 const statusCode = computed<number>(() => props.error.status ?? 500);
 
 const title = computed(() => t(variant.value.titleKey));
