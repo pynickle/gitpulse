@@ -588,11 +588,7 @@ const buildSuggestionDiffLines = (
 
 .review-item--changes-requested {
   --review-accent: var(--gitpulse-danger);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--gitpulse-danger) 12%, var(--gitpulse-surface)) 0%,
-    color-mix(in srgb, var(--gitpulse-danger) 6%, var(--gitpulse-surface)) 100%
-  );
+  background: var(--gitpulse-surface-muted);
 }
 
 .review-item--commented {
@@ -714,12 +710,12 @@ const buildSuggestionDiffLines = (
 }
 
 .review-item--changes-requested .review-item__file-group {
-  border-color: color-mix(in srgb, var(--gitpulse-danger) 18%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-danger) 5%, var(--gitpulse-surface));
+  border-color: var(--gitpulse-border);
+  background: var(--gitpulse-surface);
 }
 
 .review-item--changes-requested .review-item__file-toggle {
-  background: color-mix(in srgb, var(--gitpulse-danger) 7%, var(--gitpulse-surface-muted));
+  background: var(--gitpulse-surface-muted);
 }
 
 .review-item__file-toggle {
