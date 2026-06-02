@@ -103,5 +103,11 @@ watch(
     margin-inline-start: revert;
     padding-left: 1em;
   }
+
+  // Fix badge spacing: add right margin to images inside links
+  // This ensures consecutive badge images have proper spacing
+  a > img {
+    margin-right: 4px;
+  }
 }
 </style>
