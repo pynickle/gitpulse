@@ -15,6 +15,9 @@
               </button>
             </div>
             <div class="detail-toolbar__actions">
+              <LinkIcon to="https://github.com/pynickle/gitpulse">
+                <GitHubIcon class="is-centered" />
+              </LinkIcon>
               <LanguageSwitcher />
               <ColorModeToggle />
             </div>
@@ -46,9 +49,11 @@
 
 <script setup lang="ts">
 import { ArrowLeftIcon, HomeIcon, Loader2Icon } from 'lucide-vue-next';
+import { GitHubIcon } from 'vue3-simple-icons';
 
 import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
+import LinkIcon from '~/components/ui/LinkIcon.vue';
 
 defineProps<{
   loading: boolean;

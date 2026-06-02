@@ -1,6 +1,5 @@
-import { extractRepoParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
-
 import { hasGitHubErrorStatus } from '#server/utils/github-auth-utils';
+import { extractRepoParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo } = extractRepoParams(event);
