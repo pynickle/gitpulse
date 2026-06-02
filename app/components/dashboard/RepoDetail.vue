@@ -13,7 +13,7 @@ import {
   StarIcon,
   XIcon,
 } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 import { formatDurationFromNow } from '#imports';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
