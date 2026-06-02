@@ -40,15 +40,15 @@
         <div class="info-list">
           <div class="info-item">
             <span class="info-item__label">{{ t('prReview.created') }}</span>
-            <span class="info-item__value">{{ formatDurationFromNow(createdAt, localeCode) }}</span>
+            <span class="info-item__value">{{ formatRelativeTime(createdAt) }}</span>
           </div>
           <div class="info-item">
             <span class="info-item__label">{{ t('prReview.updated') }}</span>
-            <span class="info-item__value">{{ formatDurationFromNow(updatedAt, localeCode) }}</span>
+            <span class="info-item__value">{{ formatRelativeTime(updatedAt) }}</span>
           </div>
           <div v-if="mergedAt" class="info-item">
             <span class="info-item__label">{{ t('prReview.merged') }}</span>
-            <span class="info-item__value">{{ formatDurationFromNow(mergedAt, localeCode) }}</span>
+            <span class="info-item__value">{{ formatRelativeTime(mergedAt) }}</span>
           </div>
           <div class="info-item">
             <span class="info-item__label">{{ t('prReview.assignee') }}</span>
@@ -96,17 +96,12 @@
 </template>
 
 <script setup lang="ts">
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import { ExternalLinkIcon, InfoIcon, UsersIcon } from 'lucide-vue-next';
-import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import 'dayjs/locale/zh-cn';
+
+import { formatDurationFromNow } from '#imports';
 
 const { t, locale } = useI18n();
-const localeCode = computed(() => locale.value);
-
-dayjs.extend(relativeTime);
 
 interface PullRequestUserSummary {
   id?: number | string;
@@ -127,10 +122,9 @@ defineProps<{
   deletions: number | undefined;
 }>();
 
-const formatDurationFromNow = (dateString: string | undefined, locale: string) => {
+const formatRelativeTime = (dateString: string | undefined) => {
   if (!dateString) return '';
-  dayjs.locale(locale);
-  return dayjs(dateString).fromNow();
+  return formatDurationFromNow(dateString, locale.value);
 };
 </script>
 
