@@ -113,6 +113,7 @@ const showWatchDropdown = ref(false);
 const watchCount = ref(props.repository.watchers_count ?? 0);
 
 const readmeContent = ref<string | null>(null);
+const readmePath = ref<string | null>(null);
 const loadingReadme = ref(false);
 
 const licenseInfo = ref<{ name: string | null; spdxId: string | null; url: string | null } | null>(
@@ -318,12 +319,14 @@ const fetchWatchState = async () => {
 const fetchReadme = async () => {
   loadingReadme.value = true;
   try {
-    const data = await apiFetch<{ content: string | null }>(
+    const data = await apiFetch<{ content: string | null; path?: string | null }>(
       `/api/repos/${props.owner}/${props.repo}/readme`
     );
     readmeContent.value = data.content;
+    readmePath.value = data.path ?? null;
   } catch {
     readmeContent.value = null;
+    readmePath.value = null;
   } finally {
     loadingReadme.value = false;
   }
@@ -500,7 +503,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               <Loader2Icon :size="20" class="spin-animation" />
             </div>
             <div v-else-if="readmeContent" class="repo-readme__content content">
-              <MarkdownRenderer :value="readmeContent" :repo-owner="owner" :repo-name="repo" />
+              <MarkdownRenderer
+                :value="readmeContent"
+                :repo-owner="owner"
+                :repo-name="repo"
+                :base-path="readmePath ?? undefined"
+                :branch="repository.default_branch || undefined"
+              />
             </div>
             <div v-else class="repo-readme__empty">
               {{ copy.noDescription }}

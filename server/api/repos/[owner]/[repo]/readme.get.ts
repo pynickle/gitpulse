@@ -21,12 +21,13 @@ export default defineEventHandler(async (event) => {
       content,
       htmlUrl: data.html_url,
       name: data.name,
+      path: data.path,
       size: data.size,
       encoding: data.encoding,
     };
   } catch (error: unknown) {
     if (hasGitHubErrorStatus(error, 404)) {
-      return { content: null, htmlUrl: null, name: null, size: 0 };
+      return { content: null, htmlUrl: null, name: null, path: null, size: 0 };
     }
     throwGitHubRouteError(error, 'Failed to fetch README');
   }

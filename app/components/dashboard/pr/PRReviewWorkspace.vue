@@ -129,6 +129,8 @@ const totalDeletions = computed(() =>
       />
 
       <PRReviewDiffViewer
+        :repo-owner="owner"
+        :repo-name="repo"
         :sections="review.allDiffSections.value"
         :active-filename="review.activeFilename.value"
         :draft-comments="review.draftComments.value"

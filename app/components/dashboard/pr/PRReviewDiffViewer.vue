@@ -24,6 +24,8 @@ import formatDurationFromNow from '~/utils/formatDurationFromNow';
 import tokenizeCodeLine from '~/utils/tokenizeCodeLine';
 
 const props = defineProps<{
+  repoOwner: string;
+  repoName: string;
   sections: PRReviewDiffSection[];
   activeFilename: string;
   draftComments: PRReviewDraftComment[];
@@ -383,7 +385,12 @@ onBeforeUnmount(() => {
                             </div>
                           </div>
                           <div class="pr-review-diff-viewer__review-comment-body content">
-                            <MarkdownRenderer v-if="comment.body" :value="comment.body" />
+                            <MarkdownRenderer
+                              v-if="comment.body"
+                              :value="comment.body"
+                              :repo-owner="repoOwner"
+                              :repo-name="repoName"
+                            />
                             <p v-else class="has-text-grey mb-0">
                               {{ t('prReview.noReviewCommentBody') }}
                             </p>
