@@ -26,10 +26,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const {
     goBack,
     goToHome,
-    hasHistory,
     navigateToIssue,
     navigateToPullRequest,
     navigateToRepo,
+    replaceWithEntry,
     currentEntry,
   } = useNavigationHistory();
   const route = useRoute();
@@ -98,6 +98,60 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     });
   };
 
+  const navigateToEntryRoute = async (entry: typeof currentEntry.value) => {
+    if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
+      await clearDetailRoute();
+      return;
+    }
+
+    const data = entry.data;
+
+    if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
+      await pushDashboardQuery({
+        ...route.query,
+        tab: data.tab ?? currentRouteTab.value,
+        issue: serializeDetailTarget(data.owner, data.repo, data.number),
+        pr: undefined,
+        repo: undefined,
+        path: undefined,
+        branch: undefined,
+      });
+      return;
+    }
+
+    if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
+      await pushDashboardQuery({
+        ...route.query,
+        tab: data.tab ?? currentRouteTab.value,
+        issue: undefined,
+        pr: serializeDetailTarget(data.owner, data.repo, data.number),
+        repo: undefined,
+        path: undefined,
+        branch: undefined,
+      });
+      return;
+    }
+
+    if (entry.type === 'repository' && data?.owner && data.repo) {
+      await pushRepoDetailRoute(data.owner, data.repo);
+      return;
+    }
+
+    if (entry.type === 'file' && data?.owner && data.repo) {
+      await pushDashboardQuery({
+        ...route.query,
+        repo: `${data.owner}/${data.repo}`,
+        path: data.path ?? '',
+        branch: data.branch,
+        issue: undefined,
+        pr: undefined,
+      });
+      return;
+    }
+
+    await clearDetailRoute();
+  };
+
   const pushDetailRoute = async (detailType: DetailType, target: DetailTarget) => {
     const query: LocationQueryRaw = {
       ...route.query,
@@ -149,6 +203,9 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       repo: repoPath.repo,
     };
   });
+  const isFileBrowsingRoute = computed(() =>
+    Boolean(activeRepoTarget.value && Object.hasOwn(route.query, 'path'))
+  );
 
   const issueDetailKey = computed(() => {
     const target = activeIssueTarget.value;
@@ -192,7 +249,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const repoPath = parseGitHubRepoPath(issue.repository_url);
     if (!repoPath || !issue.number) return;
 
-    navigateToIssue(repoPath.owner, repoPath.repo, issue.number);
+    navigateToIssue(repoPath.owner, repoPath.repo, issue.number, currentRouteTab.value);
     await pushDetailRoute('issue', {
       owner: repoPath.owner,
       repo: repoPath.repo,
@@ -204,7 +261,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const repoPath = parseGitHubRepoPath(pull.repository_url);
     if (!repoPath || !pull.number) return;
 
-    navigateToPullRequest(repoPath.owner, repoPath.repo, pull.number);
+    navigateToPullRequest(repoPath.owner, repoPath.repo, pull.number, currentRouteTab.value);
     await pushDetailRoute('pull-request', {
       owner: repoPath.owner,
       repo: repoPath.repo,
@@ -216,7 +273,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const repoPath = parseGitHubRepoPath(repo.repository_url);
     if (!repoPath) return;
 
-    navigateToRepo(repoPath.owner, repoPath.repo);
+    navigateToRepo(repoPath.owner, repoPath.repo, currentRouteTab.value);
     await pushRepoDetailRoute(repoPath.owner, repoPath.repo);
   };
 
@@ -317,7 +374,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (!owner || !repo || !issueNumber) return;
 
     const target = { owner, repo, number: issueNumber };
-    navigateToIssue(owner, repo, issueNumber);
+    navigateToIssue(owner, repo, issueNumber, currentRouteTab.value);
     await pushDetailRoute('issue', target);
   };
 
@@ -325,7 +382,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (!owner || !repo || !pullNumber) return;
 
     const target = { owner, repo, number: pullNumber };
-    navigateToPullRequest(owner, repo, pullNumber);
+    navigateToPullRequest(owner, repo, pullNumber, currentRouteTab.value);
     await pushDetailRoute('pull-request', target);
   };
 
@@ -347,18 +404,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const restorePreviousEntry = async () => {
     const previousEntry = goBack();
-
-    if (!previousEntry) {
-      await clearDetailRoute();
-      return;
-    }
-
-    if (hasHistory.value) {
-      router.back();
-      return;
-    }
-
-    await clearDetailRoute();
+    await navigateToEntryRoute(previousEntry);
   };
 
   const handleIssueDetailBack = async () => {
@@ -376,7 +422,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const handleRepoDetailHome = handleIssueDetailHome;
 
   watch(
-    () => [route.query.issue, route.query.pr, route.query.repo, sessionReady.value, loggedIn.value],
+    () => [
+      route.query.issue,
+      route.query.pr,
+      route.query.repo,
+      route.query.path,
+      sessionReady.value,
+      loggedIn.value,
+    ],
     async () => {
       if (!import.meta.client) {
         return;
@@ -396,12 +449,53 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       const issueTarget = activeIssueTarget.value;
       const prTarget = activePRTarget.value;
 
+      if (isFileBrowsingRoute.value) {
+        closeIssueDetail();
+        closePRDetail();
+        closeRepoDetail();
+        return;
+      }
+
       if (issueTarget) {
+        const currentData = currentEntry.value?.data;
+        if (
+          currentEntry.value?.type !== 'issue' ||
+          currentData?.owner !== issueTarget.owner ||
+          currentData?.repo !== issueTarget.repo ||
+          currentData?.number !== issueTarget.number
+        ) {
+          replaceWithEntry({
+            type: 'issue',
+            data: {
+              owner: issueTarget.owner,
+              repo: issueTarget.repo,
+              number: issueTarget.number,
+              tab: currentRouteTab.value,
+            },
+          });
+        }
         await loadIssueData(issueTarget.owner, issueTarget.repo, issueTarget.number);
         return;
       }
 
       if (prTarget) {
+        const currentData = currentEntry.value?.data;
+        if (
+          currentEntry.value?.type !== 'pull-request' ||
+          currentData?.owner !== prTarget.owner ||
+          currentData?.repo !== prTarget.repo ||
+          currentData?.number !== prTarget.number
+        ) {
+          replaceWithEntry({
+            type: 'pull-request',
+            data: {
+              owner: prTarget.owner,
+              repo: prTarget.repo,
+              number: prTarget.number,
+              tab: currentRouteTab.value,
+            },
+          });
+        }
         await loadPRData(prTarget.owner, prTarget.repo, prTarget.number);
         return;
       }
@@ -409,8 +503,15 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       if (activeRepoTarget.value) {
         const { owner, repo } = activeRepoTarget.value;
         const currentData = currentEntry.value?.data;
-        if (currentData?.owner !== owner || currentData?.repo !== repo) {
-          navigateToRepo(owner, repo);
+        if (
+          currentEntry.value?.type !== 'repository' ||
+          currentData?.owner !== owner ||
+          currentData?.repo !== repo
+        ) {
+          replaceWithEntry({
+            type: 'repository',
+            data: { owner, repo, tab: currentRouteTab.value },
+          });
         }
         await loadRepoData(owner, repo);
         return;

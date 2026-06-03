@@ -200,6 +200,7 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
+const { currentEntry, navigateToFile } = useNavigationHistory();
 
 const dashboardTabs: DashboardTab[] = ['notifications', 'issues', 'pulls', 'repos'];
 const quickFiltersStorageKey = 'gitpulse:dashboard:quick-filters';
@@ -224,6 +225,32 @@ const hasFileBrowsingPath = computed(() => Object.hasOwn(route.query, 'path'));
 const showFileBrowsingView = computed(() => {
   return Boolean(fileBrowsingRepo.value && hasFileBrowsingPath.value);
 });
+
+watch(
+  () => [route.query.repo, route.query.path, route.query.branch, showFileBrowsingView.value],
+  () => {
+    if (!import.meta.client || !showFileBrowsingView.value || !fileBrowsingRepo.value) {
+      return;
+    }
+
+    const path = getQueryParamValue(route.query.path) ?? '';
+    const branch = getQueryParamValue(route.query.branch) || undefined;
+    const currentData = currentEntry.value?.data;
+
+    if (
+      currentEntry.value?.type === 'file' &&
+      currentData?.owner === fileBrowsingRepo.value.owner &&
+      currentData?.repo === fileBrowsingRepo.value.repo &&
+      currentData?.path === path &&
+      currentData?.branch === branch
+    ) {
+      return;
+    }
+
+    navigateToFile(fileBrowsingRepo.value.owner, fileBrowsingRepo.value.repo, path, branch);
+  },
+  { immediate: true }
+);
 
 type QuickFilterMap = Partial<Record<DashboardTab, Record<string, boolean>>>;
 
