@@ -44,6 +44,20 @@ const internalRepoTarget = computed(() => {
     return null;
   }
 });
+const internalRepoTargetBranch = computed(() => {
+  const repoTarget = internalRepoTarget.value;
+  const context = markdownRepoContext?.value;
+  if (
+    !repoTarget ||
+    !context?.branch ||
+    context.owner?.toLowerCase() !== repoTarget.owner.toLowerCase() ||
+    context.repo?.toLowerCase() !== repoTarget.repo.toLowerCase()
+  ) {
+    return undefined;
+  }
+
+  return context.branch;
+});
 
 const externalHref = computed(() => {
   const href = props.href.trim();
@@ -87,7 +101,7 @@ const internalTo = computed(() => {
   if (repoTarget) {
     return localePath({
       path: '/dashboard',
-      query: { repo: repoTarget.fullName },
+      query: { repo: repoTarget.fullName, branch: internalRepoTargetBranch.value },
     });
   }
 
@@ -112,7 +126,7 @@ const trackInternalNavigation = () => {
 
   const repoTarget = internalRepoTarget.value;
   if (repoTarget) {
-    navigateToRepo(repoTarget.owner, repoTarget.repo);
+    navigateToRepo(repoTarget.owner, repoTarget.repo, undefined, internalRepoTargetBranch.value);
   }
 };
 </script>

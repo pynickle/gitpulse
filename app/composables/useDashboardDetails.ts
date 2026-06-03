@@ -79,6 +79,28 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     return `${owner}/${repo}`;
   };
 
+  const getRepositoryDefaultBranch = (repository: Record<string, unknown> | null) => {
+    return typeof repository?.default_branch === 'string' && repository.default_branch
+      ? repository.default_branch
+      : undefined;
+  };
+
+  const isRepositoryDataForTarget = (
+    repository: Record<string, unknown> | null,
+    owner: string,
+    repo: string
+  ) => {
+    if (!repository) return false;
+
+    const repositoryOwner = repository.owner;
+    const ownerLogin =
+      repositoryOwner && typeof repositoryOwner === 'object' && 'login' in repositoryOwner
+        ? String(repositoryOwner.login || '')
+        : '';
+
+    return ownerLogin === owner && repository.name === repo;
+  };
+
   const buildDashboardQuery = (query: LocationQueryRaw) => {
     const nextQuery: LocationQueryRaw = {};
 
@@ -133,7 +155,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     }
 
     if (entry.type === 'repository' && data?.owner && data.repo) {
-      await pushRepoDetailRoute(data.owner, data.repo);
+      await pushRepoDetailRoute(data.owner, data.repo, data.branch);
       return;
     }
 
@@ -164,18 +186,23 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         detailType === 'pull-request'
           ? serializeDetailTarget(target.owner, target.repo, target.number)
           : undefined,
+      repo: undefined,
+      path: undefined,
+      branch: undefined,
     };
 
     await pushDashboardQuery(query);
   };
 
-  const pushRepoDetailRoute = async (owner: string, repo: string) => {
+  const pushRepoDetailRoute = async (owner: string, repo: string, branch?: string) => {
     await pushDashboardQuery({
       ...route.query,
       tab: currentRouteTab.value,
       issue: undefined,
       pr: undefined,
       repo: serializeRepoTarget(owner, repo),
+      path: undefined,
+      branch,
     });
   };
 
@@ -185,6 +212,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       issue: undefined,
       pr: undefined,
       repo: undefined,
+      path: undefined,
+      branch: undefined,
       tab: currentRouteTab.value,
     });
   };
@@ -203,9 +232,60 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       repo: repoPath.repo,
     };
   });
+  const activeRepoBranch = computed(() => getQueryParamValue(route.query.branch) || undefined);
   const isFileBrowsingRoute = computed(() =>
     Boolean(activeRepoTarget.value && Object.hasOwn(route.query, 'path'))
   );
+
+  const getCanonicalRepoBranch = (owner: string, repo: string) => {
+    if (activeRepoBranch.value) return activeRepoBranch.value;
+
+    const currentDefaultBranch = isRepositoryDataForTarget(currentRepo.value, owner, repo)
+      ? getRepositoryDefaultBranch(currentRepo.value)
+      : undefined;
+    if (currentDefaultBranch) return currentDefaultBranch;
+
+    const currentData = currentEntry.value?.data;
+    if (
+      currentEntry.value?.type === 'repository' &&
+      currentData?.owner === owner &&
+      currentData.repo === repo &&
+      currentData.branch
+    ) {
+      return currentData.branch;
+    }
+
+    return undefined;
+  };
+
+  const syncRepositoryEntry = (owner: string, repo: string, branch?: string) => {
+    const currentData = currentEntry.value?.data;
+    const nextEntry = {
+      type: 'repository' as const,
+      data: { owner, repo, tab: currentRouteTab.value, branch },
+    };
+
+    if (
+      currentEntry.value?.type === 'repository' &&
+      currentData?.owner === owner &&
+      currentData.repo === repo &&
+      currentData.branch === branch &&
+      currentData.tab === currentRouteTab.value
+    ) {
+      return;
+    }
+
+    if (
+      currentEntry.value?.type === 'repository' &&
+      currentData?.owner === owner &&
+      currentData.repo === repo
+    ) {
+      currentEntry.value = nextEntry;
+      return;
+    }
+
+    replaceWithEntry(nextEntry);
+  };
 
   const issueDetailKey = computed(() => {
     const target = activeIssueTarget.value;
@@ -355,7 +435,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     try {
       const repository = await apiFetch(`/api/repos/${owner}/${repo}`);
       if (requestId === repoRequestId.value) {
-        currentRepo.value = repository as Record<string, unknown>;
+        const repoData = repository as Record<string, unknown>;
+        currentRepo.value = repoData;
+        syncRepositoryEntry(
+          owner,
+          repo,
+          activeRepoBranch.value ?? getRepositoryDefaultBranch(repoData)
+        );
       }
     } catch (error) {
       console.error('Error fetching repository:', error);
@@ -427,6 +513,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       route.query.pr,
       route.query.repo,
       route.query.path,
+      route.query.branch,
       sessionReady.value,
       loggedIn.value,
     ],
@@ -503,15 +590,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       if (activeRepoTarget.value) {
         const { owner, repo } = activeRepoTarget.value;
         const currentData = currentEntry.value?.data;
+        const branch = getCanonicalRepoBranch(owner, repo);
         if (
           currentEntry.value?.type !== 'repository' ||
           currentData?.owner !== owner ||
-          currentData?.repo !== repo
+          currentData?.repo !== repo ||
+          currentData?.branch !== branch
         ) {
-          replaceWithEntry({
-            type: 'repository',
-            data: { owner, repo, tab: currentRouteTab.value },
-          });
+          syncRepositoryEntry(owner, repo, branch);
         }
         await loadRepoData(owner, repo);
         return;

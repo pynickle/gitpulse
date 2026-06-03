@@ -20,7 +20,8 @@ import { bundledLanguages } from 'shiki/langs';
 import { computed, nextTick, onActivated, onMounted, ref, shallowRef, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
-import type { RepoContentItem, RepoFileContent } from '~/composables/useRepoFiles';
+import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
+import type { RepoContentItem } from '~/composables/useRepoFiles';
 
 interface FolderTreeNode {
   name: string;
@@ -49,8 +50,10 @@ const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const router = useRouter();
 const {
+  currentEntry,
   goBack: goNavigationBack,
   goToHome,
+  navigateToFile,
   previousEntry,
   replaceWithEntry,
 } = useNavigationHistory();
@@ -94,6 +97,16 @@ const treeScrollKey = computed(() =>
     currentBranch.value || defaultBranch.value || 'default',
   ].join(':')
 );
+const currentBranchQueryValue = computed(() => {
+  return canonicalBranch.value && canonicalBranch.value !== defaultBranch.value
+    ? canonicalBranch.value
+    : undefined;
+});
+const canonicalBranch = computed(() => currentBranch.value || defaultBranch.value || undefined);
+
+const buildBranchQueryValue = (branch?: string) => {
+  return branch && branch !== defaultBranch.value ? branch : undefined;
+};
 
 const saveTreeScrollPosition = () => {
   treeScrollPositions.value = {
@@ -308,7 +321,7 @@ const highlightCode = async () => {
       return;
     }
 
-    const html = highlighter.value.codeToHtml(code, {
+    highlightedHtml.value = highlighter.value.codeToHtml(code, {
       lang: language,
       themes: {
         light: githubLight,
@@ -322,8 +335,6 @@ const highlightCode = async () => {
         },
       ],
     });
-
-    highlightedHtml.value = html;
   } catch {
     highlightedHtml.value = '';
   } finally {
@@ -450,7 +461,9 @@ const expandDirectoryChain = async (node: FolderTreeNode) => {
       await loadTreeChildren(currentNode);
     }
 
-    const directoryChildren = currentNode.children.filter((child) => child.type === 'directory');
+    const directoryChildren: FolderTreeNode[] = currentNode.children.filter(
+      (child) => child.type === 'directory'
+    );
     const hasFileChildren = currentNode.children.some((child) => child.type === 'file');
 
     if (directoryChildren.length !== 1 || hasFileChildren) {
@@ -555,6 +568,10 @@ const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
     const query: LocationQueryRaw = {
       tab: data.tab ?? 'repos',
       repo: `${data.owner}/${data.repo}`,
+      branch:
+        data.owner === props.owner && data.repo === props.repo
+          ? buildBranchQueryValue(data.branch ?? canonicalBranch.value)
+          : data.branch,
     };
     await router.push({ path: localePath('/dashboard'), query });
     return;
@@ -564,7 +581,10 @@ const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
     const query: LocationQueryRaw = {
       repo: `${data.owner}/${data.repo}`,
       path: data.path ?? '',
-      branch: data.branch,
+      branch:
+        data.owner === props.owner && data.repo === props.repo
+          ? buildBranchQueryValue(data.branch)
+          : data.branch,
     };
     await router.push({ path: localePath('/dashboard'), query });
     return;
@@ -593,13 +613,37 @@ const goHome = async () => {
 const navigateToRepoDetail = async () => {
   replaceWithEntry({
     type: 'repository',
-    data: { owner: props.owner, repo: props.repo, tab: 'repos' },
+    data: {
+      owner: props.owner,
+      repo: props.repo,
+      tab: 'repos',
+      branch: canonicalBranch.value,
+    },
   });
   const query: LocationQueryRaw = {
     tab: 'repos',
     repo: `${props.owner}/${props.repo}`,
+    branch: currentBranchQueryValue.value,
   };
   await router.push({ path: localePath('/dashboard'), query });
+};
+
+const syncFileNavigationEntry = () => {
+  const branch = canonicalBranch.value;
+  if (!branch) return;
+
+  const currentData = currentEntry.value?.data;
+  if (
+    currentEntry.value?.type === 'file' &&
+    currentData?.owner === props.owner &&
+    currentData.repo === props.repo &&
+    currentData.path === currentPath.value &&
+    currentData.branch === branch
+  ) {
+    return;
+  }
+
+  navigateToFile(props.owner, props.repo, currentPath.value, branch);
 };
 
 const navigateToItem = async (item: RepoContentItem) => {
@@ -645,6 +689,12 @@ watch(currentPath, async () => {
   await revealCurrentPath();
   await restoreTreeScrollPosition();
 });
+
+watch(
+  () => [props.owner, props.repo, currentPath.value, canonicalBranch.value],
+  syncFileNavigationEntry,
+  { immediate: true }
+);
 
 watch(treeScrollKey, async () => {
   treeNodes.value = [];
@@ -772,6 +822,16 @@ onActivated(() => {
             >
               <PanelLeftCloseIcon :size="14" aria-hidden="true" />
             </button>
+          </div>
+
+          <div class="repo-file-view__sidebar-branch">
+            <BranchSelector
+              :branches="branches"
+              :current-branch="currentBranch"
+              :default-branch="defaultBranch"
+              :loading="loading && branches.length === 0"
+              @select="navigateToBranch"
+            />
           </div>
 
           <div v-if="treeLoading" class="repo-file-view__tree-loading">
@@ -1218,6 +1278,17 @@ onActivated(() => {
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.repo-file-view__sidebar-branch {
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--gitpulse-border);
+}
+
+.repo-file-view__sidebar-branch .branch-selector__trigger {
+  width: 100%;
+  max-width: none;
+  justify-content: flex-start;
 }
 
 .repo-file-view__collapse-button {

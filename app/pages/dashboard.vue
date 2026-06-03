@@ -235,6 +235,10 @@ watch(
 
     const path = getQueryParamValue(route.query.path) ?? '';
     const branch = getQueryParamValue(route.query.branch) || undefined;
+    if (!branch) {
+      return;
+    }
+
     const currentData = currentEntry.value?.data;
 
     if (

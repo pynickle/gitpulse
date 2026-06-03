@@ -376,6 +376,9 @@
   },
   "branchSelector": {
     "label": "切换分支",
+    "title": "切换分支",
+    "close": "关闭分支选择器",
+    "cancel": "取消",
     "searchPlaceholder": "筛选分支...",
     "default": "默认",
     "noBranches": "未找到分支"

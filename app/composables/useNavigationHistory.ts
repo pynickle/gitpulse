@@ -98,10 +98,10 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
-  const navigateToRepo = (owner: string, repo: string, tab?: string) => {
+  const navigateToRepo = (owner: string, repo: string, tab?: string, branch?: string) => {
     const entry: NavigationEntry = {
       type: 'repository',
-      data: { owner, repo, tab },
+      data: { owner, repo, tab, branch },
     };
     pushEntry(entry);
   };

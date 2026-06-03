@@ -197,9 +197,6 @@ watch(activeDetailKey, () => {
 </template>
 
 <style scoped lang="scss">
-:deep(.detail-host-content) {
-}
-
 .detail-pane-stage {
   position: relative;
   height: 100%;

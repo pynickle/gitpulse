@@ -376,6 +376,9 @@
   },
   "branchSelector": {
     "label": "Switch branch",
+    "title": "Switch branch",
+    "close": "Close branch selector",
+    "cancel": "Cancel",
     "searchPlaceholder": "Filter branches...",
     "default": "default",
     "noBranches": "No branches found"
