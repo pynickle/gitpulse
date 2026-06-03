@@ -22,6 +22,7 @@ const props = withDefaults(
 );
 
 const localePath = useLocalePath();
+const { navigateToFile, navigateToRepo } = useNavigationHistory();
 const markdownRepoContext = inject(markdownRepoContextKey, null);
 
 const internalTarget = computed(() => parseGitHubMarkdownTarget(props.href));
@@ -101,10 +102,28 @@ const internalTo = computed(() => {
 });
 
 const externalRel = computed(() => (props.target === '_blank' ? 'noopener noreferrer' : undefined));
+
+const trackInternalNavigation = () => {
+  const resource = internalRepoResource.value;
+  if (resource) {
+    navigateToFile(resource.owner, resource.repo, resource.path, resource.branch);
+    return;
+  }
+
+  const repoTarget = internalRepoTarget.value;
+  if (repoTarget) {
+    navigateToRepo(repoTarget.owner, repoTarget.repo);
+  }
+};
 </script>
 
 <template>
-  <NuxtLinkLocale v-if="internalTo" :to="internalTo" :target="target">
+  <NuxtLinkLocale
+    v-if="internalTo"
+    :to="internalTo"
+    :target="target"
+    @click="trackInternalNavigation"
+  >
     <slot />
   </NuxtLinkLocale>
   <NuxtLink v-else-if="externalHref" :href="externalHref" :target="target" :rel="externalRel">
