@@ -113,16 +113,12 @@ export function useTabMigration(options: UseTabMigrationOptions = {}) {
   };
 
   const setBadgeCount = (tabId: string, badgeCount?: number) => {
-    tabs.value = tabs.value.map((tab) => {
-      if (tab.id !== tabId) {
-        return tab;
-      }
+    const tab = tabs.value.find((item) => item.id === tabId);
+    if (!tab || tab.badgeCount === badgeCount) {
+      return;
+    }
 
-      return {
-        ...tab,
-        badgeCount,
-      };
-    });
+    tab.badgeCount = badgeCount;
   };
 
   return {
