@@ -789,6 +789,7 @@ onBeforeUnmount(() => {
     Consolas,
     Liberation Mono,
     monospace;
+  font-size: 12px;
 }
 
 .pr-review-diff-viewer__split-divider {
@@ -932,6 +933,10 @@ onBeforeUnmount(() => {
 }
 
 .pr-review-diff-viewer__review-comment-body :deep(.markdown-body) {
+  font-size: 12px;
+}
+
+.pr-review-diff-viewer__review-comment-body :deep(.markdown-body code) {
   font-size: 12px;
 }
 

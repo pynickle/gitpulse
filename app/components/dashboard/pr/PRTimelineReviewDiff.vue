@@ -205,6 +205,7 @@ const diffLines = computed(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+  font-size: 12px;
 }
 
 .timeline-review-diff__token--keyword {
