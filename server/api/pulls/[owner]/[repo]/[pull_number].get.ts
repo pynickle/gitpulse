@@ -1,3 +1,5 @@
+import { createEmptyPRReviewerSummary } from '#server/utils/pr-reviewers-utils';
+
 export default defineEventHandler(async (event) => {
   try {
     const { owner, repo, pull_number } = event.context.params as {
@@ -22,7 +24,10 @@ export default defineEventHandler(async (event) => {
       pull_number: pullNumber,
     });
 
-    return pullRequest.data;
+    return {
+      ...pullRequest.data,
+      reviewers: createEmptyPRReviewerSummary(),
+    };
   } catch (error: unknown) {
     console.error('Error fetching GitHub pull request:', error);
     throwGitHubRouteError(error, 'Failed to fetch pull request');

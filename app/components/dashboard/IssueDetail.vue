@@ -1,7 +1,7 @@
 <template>
   <div class="detail-scroll">
     <div class="columns">
-      <div class="column is-three-quarters">
+      <div class="column detail-main-column">
         <IssueHeader
           :issue="currentIssue"
           :repo-owner="resolvedRepoOwner"
@@ -27,7 +27,7 @@
         </div>
       </div>
 
-      <div class="column is-one-quarter detail-sidebar-column">
+      <div class="column detail-sidebar-column">
         <div
           class="sidebar-scroll"
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
@@ -315,19 +315,20 @@ watch(
   margin-bottom: 0;
 }
 
-.detail-scroll :deep(.column.is-three-quarters) {
+.detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-}
-
-.detail-scroll :deep(.column.is-one-quarter) {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+  flex: none;
+  width: 72%;
 }
 
 .detail-scroll :deep(.detail-sidebar-column) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  flex: none;
+  width: 28%;
   padding-right: 1rem;
 }
 

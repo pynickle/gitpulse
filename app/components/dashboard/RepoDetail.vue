@@ -457,7 +457,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 <template>
   <div class="repo-detail-layout">
     <div class="columns">
-      <div class="column is-three-quarters">
+      <div class="column detail-main-column">
         <section class="repo-detail-header">
           <div class="repo-detail-header__title-row">
             <GithubIcon :size="28" class="repo-detail-header__icon" />
@@ -631,7 +631,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         </section>
       </div>
 
-      <div class="column is-one-quarter detail-sidebar-column">
+      <div class="column detail-sidebar-column">
         <div class="sidebar-scroll">
           <div class="sidebar-card mb-4">
             <div class="sidebar-card__header">
@@ -696,19 +696,20 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   margin-bottom: 0;
 }
 
-.repo-detail-layout :deep(.column.is-three-quarters) {
+.repo-detail-layout :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-}
-
-.repo-detail-layout :deep(.column.is-one-quarter) {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+  flex: none;
+  width: 72%;
 }
 
 .repo-detail-layout :deep(.detail-sidebar-column) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  flex: none;
+  width: 28%;
   padding-right: 1rem;
 }
 
@@ -1107,8 +1108,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     height: auto;
   }
 
-  .repo-detail-layout :deep(.column.is-three-quarters),
-  .repo-detail-layout :deep(.column.is-one-quarter) {
+  .repo-detail-layout :deep(.detail-main-column),
+  .repo-detail-layout :deep(.detail-sidebar-column) {
     height: auto;
     overflow: visible;
   }

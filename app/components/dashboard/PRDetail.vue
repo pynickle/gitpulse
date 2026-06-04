@@ -11,7 +11,7 @@
     />
 
     <div v-else class="columns">
-      <div class="column is-three-quarters">
+      <div class="column detail-main-column">
         <div v-if="detailError" class="notification is-danger is-light mb-4 py-2 px-3">
           <p class="is-size-7">{{ detailError }}</p>
         </div>
@@ -41,7 +41,7 @@
         </div>
       </div>
 
-      <div class="column is-one-quarter detail-sidebar-column">
+      <div class="column detail-sidebar-column">
         <div
           class="sidebar-scroll"
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
@@ -57,6 +57,10 @@
 
           <PRActions
             :requested-reviewers="currentPullRequest?.requested_reviewers || []"
+            :requested-teams="currentPullRequest?.requested_teams || []"
+            :reviewers="currentPullRequest?.reviewers"
+            :reviewer-error="reviewerPickerError"
+            :can-request-reviewers="canRequestReviewers"
             :html-url="currentPullRequest?.html_url"
             :created-at="currentPullRequest?.created_at"
             :updated-at="currentPullRequest?.updated_at"
@@ -66,6 +70,22 @@
             :changed-files="currentPullRequest?.changed_files"
             :additions="currentPullRequest?.additions"
             :deletions="currentPullRequest?.deletions"
+            @open-reviewers="openReviewerPicker"
+            @request-reviewer="rerequestReviewer"
+            @remove-reviewer="removeReviewerRequest"
+          />
+
+          <PRReviewerRequestModal
+            :is-visible="isReviewerPickerOpen"
+            :candidates="reviewerCandidates"
+            :warnings="reviewerCandidateWarnings"
+            :loading="loadingReviewerCandidates"
+            :submitting="submittingReviewerRequest"
+            :error="reviewerPickerError"
+            @close="closeReviewerPicker"
+            @search="loadReviewerCandidates"
+            @submit="requestReviewerSelection"
+            @clear-error="clearReviewerPickerError"
           />
 
           <div class="sidebar-card mt-4">
@@ -94,8 +114,16 @@ import { computed, ref, shallowRef, watch } from 'vue';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
+import PRReviewerRequestModal from '~/components/dashboard/pr/PRReviewerRequestModal.vue';
 import PRReviewWorkspace from '~/components/dashboard/pr/PRReviewWorkspace.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
+import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
+import type {
+  PRReviewerCandidate,
+  PRReviewerCandidateWarning,
+  PRReviewerMutationPayload,
+  PRReviewerSummaryItem,
+} from '~/composables/usePRReviewers';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
@@ -124,12 +152,23 @@ const timeline = ref<PRTimelineItem[]>([]);
 const timelineRequestId = ref(0);
 const detailRequestId = ref(0);
 const permissionRequestId = ref(0);
+const reviewerCandidateRequestId = ref(0);
+const reviewerSummaryRequestId = ref(0);
 const currentTimelinePage = ref(1);
 const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const isReviewWindowOpen = shallowRef(false);
+const isReviewerPickerOpen = shallowRef(false);
+const loadingReviewerCandidates = shallowRef(false);
+const submittingReviewerRequest = shallowRef(false);
+const reviewerRequestsAvailable = shallowRef<boolean | null>(null);
+const reviewerPickerError = shallowRef('');
+const reviewerCandidates = ref<PRReviewerCandidate[]>([]);
+const reviewerCandidateWarnings = ref<PRReviewerCandidateWarning[]>([]);
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
+const { fetchReviewerSummary, fetchReviewerCandidates, requestReviewers, removeReviewers } =
+  usePRReviewers();
 
 const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
@@ -147,6 +186,13 @@ const repoInfo = computed(() => {
 });
 
 const canEditLabels = computed(() => repoPermissions.value.canEditLabels);
+
+const canRequestReviewers = computed(
+  () =>
+    Boolean(
+      repoPermissions.value.admin || repoPermissions.value.maintain || repoPermissions.value.push
+    ) && reviewerRequestsAvailable.value !== false
+);
 
 const repoOwner = computed(() => repoInfo.value?.owner || '');
 
@@ -170,6 +216,226 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
 
 const addTimelineEvent = (event: PRTimelineItem) => {
   timeline.value.push(event);
+};
+
+const openReviewerPicker = () => {
+  if (!canRequestReviewers.value) {
+    return;
+  }
+
+  isReviewerPickerOpen.value = true;
+  loadReviewerCandidates();
+};
+
+const closeReviewerPicker = () => {
+  isReviewerPickerOpen.value = false;
+};
+
+const invalidateReviewerSummaryRequests = () => {
+  reviewerSummaryRequestId.value += 1;
+};
+
+const loadReviewerSummary = async () => {
+  if (!repoInfo.value || !currentPullRequest.value?.number) {
+    return;
+  }
+
+  const requestId = reviewerSummaryRequestId.value + 1;
+  const pullRequestIdentity = getPullRequestIdentity();
+  reviewerSummaryRequestId.value = requestId;
+
+  try {
+    const { owner, repo } = repoInfo.value;
+    const pullNumber = currentPullRequest.value.number;
+    const reviewers = await fetchReviewerSummary(owner, repo, pullNumber);
+
+    if (
+      requestId !== reviewerSummaryRequestId.value ||
+      pullRequestIdentity !== getPullRequestIdentity() ||
+      !currentPullRequest.value
+    ) {
+      return;
+    }
+
+    currentPullRequest.value = {
+      ...currentPullRequest.value,
+      reviewers,
+    };
+  } catch (err: unknown) {
+    console.error('Error fetching pull request reviewer summary:', err);
+    if (
+      requestId === reviewerSummaryRequestId.value &&
+      pullRequestIdentity === getPullRequestIdentity() &&
+      currentPullRequest.value
+    ) {
+      currentPullRequest.value = {
+        ...currentPullRequest.value,
+        reviewers: createEmptyPRReviewersSummary([
+          {
+            source: 'reviewer-summary',
+            message: getFetchErrorMessage(err, t('prReview.reviewerPicker.summaryLoadFailed')),
+          },
+        ]),
+      };
+    }
+  }
+};
+
+const loadReviewerCandidates = async (query = '') => {
+  if (!repoInfo.value || !currentPullRequest.value?.number) {
+    return;
+  }
+
+  const requestId = reviewerCandidateRequestId.value + 1;
+  const pullRequestIdentity = getPullRequestIdentity();
+  reviewerCandidateRequestId.value = requestId;
+  loadingReviewerCandidates.value = true;
+  reviewerPickerError.value = '';
+  reviewerCandidateWarnings.value = [];
+
+  try {
+    const { owner, repo } = repoInfo.value;
+    const pullNumber = currentPullRequest.value.number;
+    const data = await fetchReviewerCandidates(owner, repo, pullNumber, query);
+
+    if (
+      requestId !== reviewerCandidateRequestId.value ||
+      pullRequestIdentity !== getPullRequestIdentity()
+    ) {
+      return;
+    }
+
+    reviewerCandidates.value = data.items ?? [];
+    reviewerCandidateWarnings.value = data.warnings ?? [];
+    reviewerRequestsAvailable.value = data.canRequestReviewers;
+    if (!data.canRequestReviewers) {
+      isReviewerPickerOpen.value = false;
+    }
+  } catch (err: unknown) {
+    console.error('Error fetching pull request reviewer candidates:', err);
+    if (requestId === reviewerCandidateRequestId.value) {
+      reviewerCandidates.value = [];
+      reviewerCandidateWarnings.value = [];
+      reviewerPickerError.value = getFetchErrorMessage(
+        err,
+        t('prReview.reviewerPicker.loadFailed')
+      );
+    }
+  } finally {
+    if (requestId === reviewerCandidateRequestId.value) {
+      loadingReviewerCandidates.value = false;
+    }
+  }
+};
+
+const requestReviewerSelection = async (payload: PRReviewerMutationPayload) => {
+  if (!repoInfo.value || !currentPullRequest.value?.number) {
+    return;
+  }
+
+  const pullRequestIdentity = getPullRequestIdentity();
+  submittingReviewerRequest.value = true;
+  reviewerPickerError.value = '';
+
+  try {
+    const { owner, repo } = repoInfo.value;
+    const pullNumber = currentPullRequest.value.number;
+    const data = await requestReviewers(owner, repo, pullNumber, payload);
+
+    if (pullRequestIdentity !== getPullRequestIdentity() || !currentPullRequest.value) {
+      return;
+    }
+
+    currentPullRequest.value = {
+      ...currentPullRequest.value,
+      ...(data.pullRequest ?? {}),
+      reviewers: data.reviewers ?? currentPullRequest.value.reviewers,
+    };
+    invalidateReviewerSummaryRequests();
+    isReviewerPickerOpen.value = false;
+    reviewerCandidates.value = [];
+    reviewerCandidateWarnings.value = [];
+  } catch (err: unknown) {
+    console.error('Error requesting pull request reviewers:', err);
+    if (pullRequestIdentity === getPullRequestIdentity()) {
+      reviewerPickerError.value = getFetchErrorMessage(
+        err,
+        t('prReview.reviewerPicker.requestFailed')
+      );
+    }
+  } finally {
+    if (pullRequestIdentity === getPullRequestIdentity()) {
+      submittingReviewerRequest.value = false;
+    }
+  }
+};
+
+const createReviewerMutationPayload = (
+  reviewer: PRReviewerSummaryItem
+): PRReviewerMutationPayload => {
+  if (reviewer.kind === 'team') {
+    return { teamReviewers: reviewer.slug ? [reviewer.slug] : [] };
+  }
+
+  return { reviewers: reviewer.login ? [reviewer.login] : [] };
+};
+
+const rerequestReviewer = async (reviewer: PRReviewerSummaryItem) => {
+  if (!canRequestReviewers.value || reviewer.requested) {
+    return;
+  }
+
+  const payload = createReviewerMutationPayload(reviewer);
+  if (!payload.reviewers?.length && !payload.teamReviewers?.length) {
+    return;
+  }
+
+  await requestReviewerSelection(payload);
+};
+
+const removeReviewerRequest = async (reviewer: PRReviewerSummaryItem) => {
+  if (!repoInfo.value || !currentPullRequest.value?.number || !reviewer.removable) {
+    return;
+  }
+
+  const payload = createReviewerMutationPayload(reviewer);
+
+  if (!payload.reviewers?.length && !payload.teamReviewers?.length) {
+    return;
+  }
+
+  const pullRequestIdentity = getPullRequestIdentity();
+  reviewerPickerError.value = '';
+
+  try {
+    const { owner, repo } = repoInfo.value;
+    const pullNumber = currentPullRequest.value.number;
+    const data = await removeReviewers(owner, repo, pullNumber, payload);
+
+    if (pullRequestIdentity !== getPullRequestIdentity() || !currentPullRequest.value) {
+      return;
+    }
+
+    currentPullRequest.value = {
+      ...currentPullRequest.value,
+      ...(data.pullRequest ?? {}),
+      reviewers: data.reviewers ?? currentPullRequest.value.reviewers,
+    };
+    invalidateReviewerSummaryRequests();
+    reviewerPickerError.value = '';
+  } catch (err: unknown) {
+    console.error('Error removing pull request reviewer:', err);
+    if (pullRequestIdentity === getPullRequestIdentity()) {
+      reviewerPickerError.value = getFetchErrorMessage(
+        err,
+        t('prReview.reviewerPicker.removeFailed')
+      );
+    }
+  }
+};
+
+const clearReviewerPickerError = () => {
+  reviewerPickerError.value = '';
 };
 
 const updateLabels = (labels: PullRequestDetailLabel[]) => {
@@ -208,6 +474,15 @@ const resetPullRequestScopedState = (pullRequest: any) => {
   hasNextTimelinePage.value = false;
   loadingMoreTimeline.value = false;
   isReviewWindowOpen.value = false;
+  isReviewerPickerOpen.value = false;
+  loadingReviewerCandidates.value = false;
+  submittingReviewerRequest.value = false;
+  reviewerRequestsAvailable.value = null;
+  reviewerPickerError.value = '';
+  reviewerCandidates.value = [];
+  reviewerCandidateWarnings.value = [];
+  reviewerCandidateRequestId.value += 1;
+  invalidateReviewerSummaryRequests();
 };
 
 const fetchTimeline = async () => {
@@ -351,6 +626,7 @@ const fetchPullRequestDetails = async () => {
 
     if (requestId === detailRequestId.value && pullRequestIdentity === getPullRequestIdentity()) {
       currentPullRequest.value = { ...basePullRequest, ...data };
+      loadReviewerSummary();
     }
   } catch (err: unknown) {
     console.error('Error fetching PR details:', err);
@@ -372,6 +648,7 @@ watch(
       fetchTimeline();
       fetchRepoPermissions();
       if (hasHydratedPullRequestDetails(newPullRequest as Record<string, unknown>)) {
+        loadReviewerSummary();
         return;
       }
 
@@ -398,19 +675,20 @@ watch(
   margin-bottom: 0;
 }
 
-.pr-detail-layout :deep(.column.is-three-quarters) {
+.pr-detail-layout :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-}
-
-.pr-detail-layout :deep(.column.is-one-quarter) {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+  flex: none;
+  width: 72%;
 }
 
 .pr-detail-layout :deep(.detail-sidebar-column) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  flex: none;
+  width: 28%;
   padding-right: 1rem;
 }
 

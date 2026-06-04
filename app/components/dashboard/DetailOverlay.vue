@@ -151,7 +151,7 @@ defineEmits<{
 
 .card-content {
   min-height: 0;
-  padding: 2rem 8rem;
+  padding: 2rem 4rem;
   overflow-y: auto;
   background: var(--gitpulse-surface);
 }

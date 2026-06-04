@@ -209,20 +209,20 @@ watch(activeDetailKey, () => {
   inset: 0;
   box-sizing: border-box;
   min-height: 0;
-  padding: 2rem 8rem;
+  padding: 2rem 4rem;
   overflow: hidden;
   background: var(--gitpulse-surface);
 }
 
 .detail-loading-pane {
   height: 100%;
-  margin: -2rem -8rem;
+  margin: -2rem -4rem;
   background: var(--gitpulse-surface-muted);
 }
 
 .detail-feedback-pane {
   height: 100%;
-  margin: -2rem -8rem;
+  margin: -2rem -4rem;
   padding: 2rem;
   background: var(--gitpulse-surface-muted);
 }
