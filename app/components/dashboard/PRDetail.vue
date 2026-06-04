@@ -139,6 +139,11 @@ interface PullRequestDetailLabel {
   description?: string | null;
 }
 
+interface PRTimelineResponse {
+  timeline?: PRTimelineItem[];
+  pageInfo?: { hasNextPage?: boolean };
+}
+
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
@@ -501,13 +506,13 @@ const fetchTimeline = async () => {
     const { owner, repo } = repoInfo.value;
     const pullNumber = currentPullRequest.value.number;
 
-    const data = await apiFetch<{
-      timeline?: PRTimelineItem[];
-      pageInfo?: { hasNextPage?: boolean };
-    }>(`/api/pulls/${owner}/${repo}/${pullNumber}/timeline`, {
-      method: 'GET',
-      query: { page: 1 },
-    });
+    const data = await apiFetch<PRTimelineResponse>(
+      `/api/pulls/${owner}/${repo}/${pullNumber}/timeline`,
+      {
+        method: 'GET',
+        query: { page: 1 },
+      }
+    );
 
     if (requestId === timelineRequestId.value && pullRequestIdentity === getPullRequestIdentity()) {
       timeline.value = data?.timeline || [];
@@ -545,13 +550,13 @@ const loadMoreTimeline = async () => {
     const { owner, repo } = repoInfo.value;
     const pullNumber = currentPullRequest.value.number;
 
-    const data = await apiFetch<{
-      timeline?: PRTimelineItem[];
-      pageInfo?: { hasNextPage?: boolean };
-    }>(`/api/pulls/${owner}/${repo}/${pullNumber}/timeline`, {
-      method: 'GET',
-      query: { page: nextPage },
-    });
+    const data = await apiFetch<PRTimelineResponse>(
+      `/api/pulls/${owner}/${repo}/${pullNumber}/timeline`,
+      {
+        method: 'GET',
+        query: { page: nextPage },
+      }
+    );
 
     if (requestId === timelineRequestId.value && pullRequestIdentity === getPullRequestIdentity()) {
       timeline.value = [...timeline.value, ...(data?.timeline || [])];

@@ -1,5 +1,7 @@
 import type { Octokit } from '@octokit/core';
 
+import { parseLinkHeader } from './github-pagination';
+
 type GitHubClient = Octokit;
 
 export interface TimelineWarning {
@@ -187,6 +189,19 @@ export function throwTimelineFatalError(error: unknown, fallbackMessage: string)
   });
 }
 
+function getResponseLinkHeader(response: { headers?: Record<string, string | undefined> }) {
+  const headers = response.headers;
+  const linkHeader = (headers && (headers.link ?? headers.Link)) ?? '';
+
+  return typeof linkHeader === 'string' ? linkHeader : '';
+}
+
+function getResponseHasNextPage(response: { headers?: Record<string, string | undefined> }) {
+  const links = parseLinkHeader(getResponseLinkHeader(response));
+
+  return Boolean(links.next);
+}
+
 export async function fetchPaginatedArray<T>(
   octokit: GitHubClient,
   route: string,
@@ -206,7 +221,7 @@ export async function fetchPaginatedArray<T>(
     const pageItems = Array.isArray(response.data) ? (response.data as T[]) : [];
     results.push(...pageItems);
 
-    if (pageItems.length < perPage) {
+    if (!getResponseHasNextPage(response)) {
       return results;
     }
 
@@ -228,11 +243,7 @@ export async function fetchTimelinePage<T>(
   });
 
   const items = Array.isArray(response.data) ? (response.data as T[]) : [];
-
-  const headers = response.headers as Record<string, string | undefined> | undefined;
-  const linkHeader = (headers && (headers.link ?? headers.Link)) ?? '';
-  const hasNextPageByLink = typeof linkHeader === 'string' && linkHeader.includes('rel="next"');
-  const hasNextPage = hasNextPageByLink || items.length === perPage;
+  const hasNextPage = getResponseHasNextPage(response);
 
   return { items, hasNextPage };
 }
