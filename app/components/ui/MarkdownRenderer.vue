@@ -2,11 +2,11 @@
 import githubDark from '@shikijs/themes/github-dark';
 import githubLight from '@shikijs/themes/github-light';
 import { parse } from 'comark';
-import type { ComarkTree } from 'comark';
-import highlight from 'comark/plugins/highlight';
+import type { ComarkNode, ComarkTree } from 'comark';
+import { highlightCodeBlocks } from 'comark/plugins/highlight';
 import security from 'comark/plugins/security';
 import type { LanguageRegistration } from 'shiki';
-import { bundledLanguages } from 'shiki/langs';
+import { bundledLanguages, type BundledLanguage } from 'shiki/langs';
 import type { DefineComponent } from 'vue';
 import { computed, provide, shallowRef } from 'vue';
 
@@ -28,7 +28,7 @@ const props = defineProps<{
 const ast = shallowRef<ComarkTree | null>(null);
 const renderRequestId = shallowRef(0);
 const { applyGitHubAutolinks } = useGitHubAutolinks();
-const markdownPluginsPromise = createMarkdownPlugins();
+const markdownPlugins = createMarkdownPlugins();
 const markdownRepoContext = computed(() => ({
   owner: props.repoOwner,
   repo: props.repoName,
@@ -38,9 +38,7 @@ const markdownRepoContext = computed(() => ({
 
 provide(markdownRepoContextKey, markdownRepoContext);
 
-async function createMarkdownPlugins() {
-  const languages = await loadBundledLanguages();
-
+function createMarkdownPlugins() {
   return [
     fixHtmlBlockIndentation(),
     security({
@@ -48,23 +46,94 @@ async function createMarkdownPlugins() {
       allowedProtocols: ['http', 'https', 'mailto', 'tel'],
       allowDataImages: false,
     }),
-    highlight({
+  ];
+}
+
+const languageRegistrationPromises = new Map<string, Promise<LanguageRegistration[]>>();
+let highlightQueue: Promise<void> = Promise.resolve();
+
+async function highlightMarkdownCodeBlocks(tree: ComarkTree): Promise<ComarkTree> {
+  const languages = await loadMarkdownLanguages(tree);
+
+  const highlightedTree = highlightQueue.then(() =>
+    highlightCodeBlocks(tree, {
       themes: {
         light: githubLight,
         dark: githubDark,
       },
+      registerDefaultLanguages: false,
+      registerDefaultThemes: false,
       languages,
       preStyles: true,
-    }),
-  ];
-}
-
-async function loadBundledLanguages(): Promise<LanguageRegistration[]> {
-  const modules = await Promise.all(
-    Object.values(bundledLanguages).map((loadLanguage) => loadLanguage())
+    })
   );
 
-  return modules.flatMap((module) => module.default ?? module) as LanguageRegistration[];
+  // Comark keeps a module-level highlighter; serialize registration so concurrent renders
+  // cannot tokenize before their language grammars are loaded.
+  highlightQueue = highlightedTree.then(
+    () => undefined,
+    () => undefined
+  );
+
+  return highlightedTree;
+}
+
+async function loadMarkdownLanguages(tree: ComarkTree): Promise<LanguageRegistration[]> {
+  const languages = extractCodeBlockLanguages(tree);
+  const modules = await Promise.all([...languages].map((language) => loadLanguage(language)));
+
+  return modules.flat();
+}
+
+function extractCodeBlockLanguages(tree: ComarkTree): Set<string> {
+  const languages = new Set<string>();
+
+  for (const node of tree.nodes) {
+    collectCodeBlockLanguages(node, languages);
+  }
+
+  return languages;
+}
+
+function collectCodeBlockLanguages(node: ComarkNode, languages: Set<string>) {
+  if (!Array.isArray(node)) {
+    return;
+  }
+
+  if (node[0] === 'pre') {
+    const language = normalizeLanguage(node[1].language);
+    if (language && language in bundledLanguages) {
+      languages.add(language);
+    }
+  }
+
+  for (const child of node.slice(2)) {
+    collectCodeBlockLanguages(child, languages);
+  }
+}
+
+function normalizeLanguage(value: unknown): string | null {
+  return typeof value === 'string' ? value.trim().toLowerCase() || null : null;
+}
+
+async function loadLanguage(language: string): Promise<LanguageRegistration[]> {
+  const loadBundledLanguage = bundledLanguages[language as BundledLanguage];
+  if (!loadBundledLanguage) {
+    return [];
+  }
+
+  let promise = languageRegistrationPromises.get(language);
+  if (!promise) {
+    promise = loadBundledLanguage()
+      .then((module) => [module.default ?? module].flat() as LanguageRegistration[])
+      .catch(() => {
+        languageRegistrationPromises.delete(language);
+        return [];
+      });
+    languageRegistrationPromises.set(language, promise);
+  }
+
+  return promise;
 }
 
 const rendererComponents: Record<string, string | DefineComponent<any, any, any>> = {
@@ -89,10 +158,11 @@ watch(
     }
 
     const parsedMarkdown = await parse(value, {
-      plugins: await markdownPluginsPromise,
+      plugins: markdownPlugins,
     });
+    const highlightedMarkdown = await highlightMarkdownCodeBlocks(parsedMarkdown);
 
-    await applyGitHubAutolinks(parsedMarkdown, {
+    await applyGitHubAutolinks(highlightedMarkdown, {
       repoOwner,
       repoName,
     });
@@ -101,7 +171,7 @@ watch(
       return;
     }
 
-    ast.value = parsedMarkdown;
+    ast.value = highlightedMarkdown;
   },
   { immediate: true }
 );
