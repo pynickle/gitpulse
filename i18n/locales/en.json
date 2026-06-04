@@ -13,9 +13,9 @@
   },
   "landing": {
     "heroEyebrow": "Choose your GitHub access path",
-    "heroDescription": "Track notifications, issues, pull requests, and repositories from one focused workspace. Sign in with a GitHub token, GitHub OAuth, or whichever mode your deployment allows.",
+    "heroDescription": "Track notifications, issues, pull requests, and repositories from one focused workspace. Sign in with a GitHub token or via GitHub OAuth.",
     "authCardTitle": "Connect GitPulse",
-    "authCardSubtitle": "Use the authentication method currently available for this deployment.",
+    "authCardSubtitle": "Choose your preferred sign-in method below.",
     "authStatusPatOnly": "GitHub token",
     "authStatusOAuthOnly": "GitHub OAuth",
     "authStatusHybrid": "OAuth or GitHub token",

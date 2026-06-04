@@ -13,9 +13,9 @@
   },
   "landing": {
     "heroEyebrow": "选择你的 GitHub 连接方式",
-    "heroDescription": "在一个专注的工作台中统一查看通知、议题、拉取请求和仓库。你可以使用 GitHub Token、GitHub OAuth，或当前部署允许的任意方式登录。",
+    "heroDescription": "在一个专注的工作台中统一查看通知、议题、拉取请求和仓库。你可以使用 GitHub Token 或 GitHub OAuth 登录。",
     "authCardTitle": "连接 GitPulse",
-    "authCardSubtitle": "使用当前部署可用的认证方式进入工作台。",
+    "authCardSubtitle": "选择你偏好的登录方式。",
     "authStatusPatOnly": "GitHub Token",
     "authStatusOAuthOnly": "GitHub OAuth",
     "authStatusHybrid": "OAuth 或 GitHub Token",
