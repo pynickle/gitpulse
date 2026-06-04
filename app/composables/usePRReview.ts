@@ -138,9 +138,9 @@ export interface PRReviewComment {
   author?: PRReviewCommentAuthor;
 }
 
-interface PRReviewThreadBuildRow {
-  lineKey: string;
-  line: number;
+interface PRReviewThreadBuildIndex {
+  validLines: Set<number>;
+  lineByPosition: Map<number, number>;
 }
 
 export interface PRReviewDiffSection {
@@ -187,6 +187,36 @@ const defaultPagination = (): PRReviewPagination => ({
 });
 
 const hunkHeaderPattern = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
+
+const isPositiveLine = (line: number | null | undefined): line is number =>
+  typeof line === 'number' && line > 0;
+
+const getReviewCommentPreferredLine = (comment: PRReviewComment) => {
+  if (isPositiveLine(comment.originalStartLine) && isPositiveLine(comment.originalLine)) {
+    return comment.originalLine;
+  }
+
+  return comment.originalLine ?? comment.line ?? null;
+};
+
+const resolveReviewCommentLine = (
+  comment: PRReviewComment,
+  buildIndex: PRReviewThreadBuildIndex
+) => {
+  const preferredLine = getReviewCommentPreferredLine(comment);
+
+  if (isPositiveLine(preferredLine) && buildIndex.validLines.has(preferredLine)) {
+    return preferredLine;
+  }
+
+  if (isPositiveLine(comment.line) && buildIndex.validLines.has(comment.line)) {
+    return comment.line;
+  }
+
+  return isPositiveLine(comment.position)
+    ? (buildIndex.lineByPosition.get(comment.position) ?? null)
+    : null;
+};
 
 export function parsePRReviewPatch(patch?: string): PRReviewDiffRow[] {
   if (!patch) {
@@ -379,8 +409,6 @@ export function usePRReview(options: UsePRReviewOptions) {
       commentsByFile.set(comment.path, nextComments);
     }
 
-    const normalizeLine = (comment: PRReviewComment) => comment.line ?? comment.position ?? null;
-
     const compareComments = (first: PRReviewComment, second: PRReviewComment) => {
       const firstDate = Date.parse(first.createdAt ?? '') || 0;
       const secondDate = Date.parse(second.createdAt ?? '') || 0;
@@ -393,37 +421,41 @@ export function usePRReview(options: UsePRReviewOptions) {
 
     const sortedFiles = sortFilesByTreeOrder(files.value).map((file) => file.filename);
 
-    const fileLines = new Map<string, Set<string>>();
+    const fileBuildIndexes = new Map<string, PRReviewThreadBuildIndex>();
 
     for (const section of allDiffSections.value) {
-      const lineKeys = new Set<string>();
+      const validLines = new Set<number>();
+      const lineByPosition = new Map<number, number>();
 
       for (const row of section.rows) {
-        if (row.newLineNumber) {
-          lineKeys.add(`${section.file.filename}:${row.newLineNumber}`);
+        if (isPositiveLine(row.newLineNumber)) {
+          validLines.add(row.newLineNumber);
+        }
+
+        if (isPositiveLine(row.position) && isPositiveLine(row.newLineNumber)) {
+          lineByPosition.set(row.position, row.newLineNumber);
         }
       }
 
-      fileLines.set(section.file.filename, lineKeys);
+      fileBuildIndexes.set(section.file.filename, { validLines, lineByPosition });
     }
 
     for (const path of sortedFiles) {
       const comments = (commentsByFile.get(path) ?? []).sort(compareComments);
-      const validLines = fileLines.get(path) ?? new Set<string>();
+      const buildIndex = fileBuildIndexes.get(path) ?? {
+        validLines: new Set<number>(),
+        lineByPosition: new Map<number, number>(),
+      };
       const threadsById = new Map<string, PRReviewCommentThread>();
       const threadByCommentId = new Map<string, PRReviewCommentThread>();
 
       for (const comment of comments) {
-        const line = normalizeLine(comment);
+        const line = resolveReviewCommentLine(comment, buildIndex);
         if (!line) {
           continue;
         }
 
         const lineKey = `${path}:${line}`;
-        if (!validLines.has(lineKey)) {
-          continue;
-        }
-
         const isRightSide = comment.side !== 'LEFT' && comment.startSide !== 'LEFT';
         const parentThread = comment.inReplyToId
           ? threadByCommentId.get(comment.inReplyToId)
