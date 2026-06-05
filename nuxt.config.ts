@@ -1,6 +1,28 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 const ENABLED_VALUES = new Set(['1', 'true']);
 const DISABLED_VALUES = new Set(['0', 'false']);
+const FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
+const USER_SETTINGS_STORAGE_DRIVER =
+  process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER?.trim() || 'fs';
+const USER_SETTINGS_STORAGE_BASE =
+  process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE?.trim() ||
+  (USER_SETTINGS_STORAGE_DRIVER === 'fs' ? './.data/user-settings' : undefined);
+
+function fontsourceLatinFaces(options: {
+  name: string;
+  packageName: string;
+  slug: string;
+  version: string;
+}) {
+  return FONT_WEIGHTS.map((weight) => ({
+    name: options.name,
+    src: `https://cdn.jsdelivr.net/npm/${options.packageName}@${options.version}/files/${options.slug}-latin-${weight}-normal.woff2`,
+    weight: String(weight),
+    style: 'normal',
+    preload: false,
+    global: true,
+  }));
+}
 
 function normalizeBoolean(value: string | undefined, defaultValue: boolean): boolean {
   if (typeof value !== 'string') return defaultValue;
@@ -10,6 +32,13 @@ function normalizeBoolean(value: string | undefined, defaultValue: boolean): boo
   if (DISABLED_VALUES.has(normalized)) return false;
 
   return defaultValue;
+}
+
+function userSettingsStorageConfig() {
+  return {
+    driver: USER_SETTINGS_STORAGE_DRIVER,
+    ...(USER_SETTINGS_STORAGE_BASE ? { base: USER_SETTINGS_STORAGE_BASE } : {}),
+  };
 }
 
 const tokenEnabled = normalizeBoolean(process.env.NUXT_AUTH_PAT_ENABLED, true);
@@ -53,6 +82,12 @@ export default defineNuxtConfig({
 
   nitro: {
     minify: true,
+    storage: {
+      userSettings: userSettingsStorageConfig(),
+    },
+    devStorage: {
+      userSettings: userSettingsStorageConfig(),
+    },
   },
 
   vite: {
@@ -97,7 +132,120 @@ export default defineNuxtConfig({
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },
 
-  modules: ['@nuxtjs/i18n', '@nuxt/image', 'nuxt-auth-utils', '@comark/nuxt', '@nuxtjs/color-mode'],
+  modules: [
+    '@nuxtjs/i18n',
+    '@nuxt/image',
+    'nuxt-auth-utils',
+    '@comark/nuxt',
+    '@nuxtjs/color-mode',
+    '@nuxt/fonts',
+  ],
+
+  fonts: {
+    provider: 'npm',
+    processCSSVariables: false,
+    defaults: {
+      weights: [...FONT_WEIGHTS],
+      styles: ['normal'],
+      subsets: ['latin'],
+      preload: false,
+    },
+    families: [
+      {
+        name: 'HarmonyOS Sans',
+        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Regular.woff2',
+        weight: '400',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'HarmonyOS Sans',
+        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Medium.woff2',
+        weight: '500',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      // HarmonyOS Sans does not ship a Semibold file; Medium is the nearest bundled face for 600.
+      {
+        name: 'HarmonyOS Sans',
+        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Medium.woff2',
+        weight: '600',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'HarmonyOS Sans',
+        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Bold.woff2',
+        weight: '700',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'HarmonyOS Sans',
+        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Black.woff2',
+        weight: '800',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'MiSans Latin',
+        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Regular.woff2',
+        weight: '400',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'MiSans Latin',
+        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Medium.woff2',
+        weight: '500',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'MiSans Latin',
+        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Semibold.woff2',
+        weight: '600',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'MiSans Latin',
+        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Bold.woff2',
+        weight: '700',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      {
+        name: 'MiSans Latin',
+        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Heavy.woff2',
+        weight: '800',
+        style: 'normal',
+        preload: false,
+        global: true,
+      },
+      ...fontsourceLatinFaces({
+        name: 'Maple Mono',
+        packageName: '@fontsource/maple-mono',
+        slug: 'maple-mono',
+        version: '5.2.6',
+      }),
+      ...fontsourceLatinFaces({
+        name: 'JetBrains Mono',
+        packageName: '@fontsource/jetbrains-mono',
+        slug: 'jetbrains-mono',
+        version: '5.2.8',
+      }),
+    ],
+  },
 
   colorMode: {
     preference: 'system',

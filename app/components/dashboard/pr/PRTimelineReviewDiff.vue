@@ -139,14 +139,7 @@ const diffLines = computed(() => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
   background: var(--gitpulse-surface);
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 12px;
   line-height: 1.45;
 }

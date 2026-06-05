@@ -253,7 +253,7 @@ const handlePatSubmit = async () => {
   padding: 0.15em 0.4em;
   font-size: 0.92em;
   font-weight: 600;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--gitpulse-code-font-family);
   background: var(--gitpulse-code-bg);
   border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 15%, transparent);
   border-radius: 4px;

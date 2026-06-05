@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@comark/nuxt": "^0.3.1",
+    "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/color-mode": "^4.0.0",
     "@octokit/core": "^7.0.6",

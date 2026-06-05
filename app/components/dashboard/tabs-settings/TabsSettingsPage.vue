@@ -861,7 +861,7 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
 
 .tqb-body {
   padding: 0.65rem 0.7rem;
-  font-family: 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.78rem;
 }
 

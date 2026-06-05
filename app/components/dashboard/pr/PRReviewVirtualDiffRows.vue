@@ -781,14 +781,7 @@ onBeforeUnmount(() => {
 
 .pr-review-diff-viewer__hunk code,
 .pr-review-diff-viewer__code {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 12px;
 }
 

@@ -504,14 +504,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 .pr-review-file-sidebar__name {
   min-width: 0;
   flex: 1;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Consolas,
-    Liberation Mono,
-    Menlo,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.75rem;
   font-weight: 600;
   overflow: hidden;

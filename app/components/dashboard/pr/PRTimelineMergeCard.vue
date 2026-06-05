@@ -114,6 +114,6 @@ const localeCode = computed(() => locale.value);
 }
 
 .is-family-monospace {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--gitpulse-code-font-family);
 }
 </style>

@@ -786,14 +786,7 @@ const buildSuggestionDiffLines = (
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -821,14 +814,7 @@ const buildSuggestionDiffLines = (
 
 .review-item__path-tag {
   font-size: 0.68rem;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
   background: color-mix(in srgb, var(--gitpulse-info) 10%, transparent);

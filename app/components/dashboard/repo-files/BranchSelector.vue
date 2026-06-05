@@ -314,14 +314,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Consolas,
-    Liberation Mono,
-    Menlo,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
 }
 
 .branch-selector__chevron {
@@ -511,14 +504,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Consolas,
-    Liberation Mono,
-    Menlo,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
 }
 
 .branch-selector-panel__item-badge {

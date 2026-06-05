@@ -141,8 +141,7 @@ onBeforeUnmount(clearResetTimer);
 .markdown-code-block__language {
   overflow: hidden;
   color: var(--gitpulse-text-muted);
-  font-family:
-    ui-monospace, SFMono-Regular, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.75rem;
   line-height: 1.2;
   text-overflow: ellipsis;

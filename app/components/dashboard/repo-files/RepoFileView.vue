@@ -1648,14 +1648,7 @@ onActivated(() => {
 }
 
 .repo-file-view__code {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Consolas,
-    Liberation Mono,
-    Menlo,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.82rem;
   line-height: 1.6;
 
@@ -1695,14 +1688,7 @@ onActivated(() => {
 }
 
 .repo-file-view__code-plain {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Consolas,
-    Liberation Mono,
-    Menlo,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.82rem;
   line-height: 1.6;
 }

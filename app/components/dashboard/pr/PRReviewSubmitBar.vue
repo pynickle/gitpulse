@@ -468,14 +468,7 @@ const handleBodyInput = (event: Event) => {
 
 .pr-review-submit-bar__draft-path {
   color: var(--gitpulse-text-muted);
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Consolas,
-    Liberation Mono,
-    Menlo,
-    monospace;
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.7rem;
 }
 
