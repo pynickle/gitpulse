@@ -7,7 +7,7 @@ import {
   throwTimelineFatalError,
 } from '#server/utils/github-timeline-utils';
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { owner, repo, issue_number } = event.context.params as {
       owner: string;

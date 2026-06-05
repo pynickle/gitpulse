@@ -44,7 +44,7 @@ const getGitHubErrorHeader = (error: unknown, headerName: string) => {
   return typeof value === 'string' ? value : null;
 };
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { octokit, userLogin } = await getGitHubSessionContext(event);
     const query = getQuery(event);

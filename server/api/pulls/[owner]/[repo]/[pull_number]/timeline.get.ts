@@ -71,7 +71,7 @@ async function fetchPRReviewThreadsForTimeline(
   }
 }
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { owner, repo, pull_number } = event.context.params as {
       owner: string;

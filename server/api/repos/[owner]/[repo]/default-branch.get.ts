@@ -4,7 +4,7 @@ interface DefaultBranch {
   default_branch: string;
 }
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const { owner, repo } = extractRepoParams(event);
 
   return executeGitHubRequest(

@@ -1,5 +1,5 @@
 import { fetchRepoContents } from '#server/utils/repo-contents-utils';
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   return fetchRepoContents(event, '');
 });

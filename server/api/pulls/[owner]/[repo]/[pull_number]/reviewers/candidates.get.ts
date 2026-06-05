@@ -6,7 +6,7 @@ const getSearchQuery = (value: unknown) => {
   return typeof rawValue === 'string' ? rawValue.trim() : '';
 };
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const { owner, repo, pullNumber } = extractPullRouteParams(event);
   const query = getQuery(event);
   const searchQuery = getSearchQuery(query.q);

@@ -1,7 +1,7 @@
 import { hasGitHubErrorStatus } from '#server/utils/github-auth-utils';
 import { extractRepoParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const { owner, repo } = extractRepoParams(event);
 
   return executeGitHubRequest(

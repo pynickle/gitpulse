@@ -6,7 +6,7 @@ interface RepoBranch {
   protected: boolean;
 }
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const { owner, repo } = extractRepoParams(event);
 
   return executeGitHubRequest(

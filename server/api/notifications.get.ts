@@ -1,6 +1,6 @@
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const octokit = await getGitHubClient(event);
   const page = parsePaginationNumber(getQuery(event).page, 1);
   const perPage = parsePaginationNumber(getQuery(event).per_page, 20, 50);

@@ -1,4 +1,4 @@
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const octokit = await getGitHubClient(event);
 
   try {

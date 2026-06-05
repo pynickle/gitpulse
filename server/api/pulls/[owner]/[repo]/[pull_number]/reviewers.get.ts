@@ -1,7 +1,7 @@
 import { fetchPRReviewerSummary } from '#server/utils/pr-reviewers-utils';
 import { extractPullRouteParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   const { owner, repo, pullNumber } = extractPullRouteParams(event);
 
   return executeGitHubRequest(

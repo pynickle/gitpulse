@@ -5,7 +5,7 @@ function getStringQueryParam(value: unknown) {
   return typeof rawValue === 'string' && rawValue ? rawValue : undefined;
 }
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { owner, repo } = event.context.params as {
       owner: string;

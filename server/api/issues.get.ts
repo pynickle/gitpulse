@@ -2,7 +2,7 @@ import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/githu
 
 const SEARCH_TOTAL_COUNT_LIMIT = 1000;
 
-export default defineEventHandler(async (event) => {
+export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { octokit, userLogin } = await getGitHubSessionContext(event);
     const createdDate = getOneYearAgoDate();
