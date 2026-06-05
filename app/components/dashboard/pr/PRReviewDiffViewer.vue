@@ -30,6 +30,7 @@ const props = defineProps<{
   reviewCommentThreads: PRReviewCommentThread[];
   activeDraftTarget: { path: string; line: number } | null;
   submitting: boolean;
+  resolvingReviewThreadId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +39,7 @@ const emit = defineEmits<{
   (e: 'save-draft-comment', path: string, line: number, position: number, body: string): void;
   (e: 'remove-draft-comment', id: string): void;
   (e: 'visible-file-changed', filename: string): void;
+  (e: 'toggle-review-thread', threadId: string, resolved: boolean): void;
 }>();
 
 const collapsedFiles = ref(new Set<string>());
@@ -341,6 +343,7 @@ onBeforeUnmount(() => {
               :active-draft-target="activeDraftTarget"
               :active-draft-body="getInlineDraftBodyForFile(section.file.filename)"
               :submitting="submitting"
+              :resolving-review-thread-id="resolvingReviewThreadId"
               :scroll-container="scrollContainer"
               @open-draft-editor="handleOpenDraftEditor"
               @close-draft-editor="handleCloseDraftEditor"
@@ -348,6 +351,7 @@ onBeforeUnmount(() => {
                 (body) => setInlineDraftBodyForFile(section.file.filename, body)
               "
               @save-draft-comment="handleSaveDraftComment"
+              @toggle-review-thread="emit('toggle-review-thread', $event.threadId, $event.resolved)"
             />
           </template>
 

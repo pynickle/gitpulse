@@ -28,6 +28,8 @@ const review = usePRReview({
   messages: {
     loadFailed: t('prReview.loadFailed'),
     submitFailed: t('prReview.submitFailed'),
+    resolveThreadFailed: t('prReview.resolveThreadFailed'),
+    unresolveThreadFailed: t('prReview.unresolveThreadFailed'),
   },
   onSubmitted: () => emit('close'),
 });
@@ -137,11 +139,13 @@ const totalDeletions = computed(() =>
         :review-comment-threads="review.reviewCommentThreads.value"
         :active-draft-target="review.activeDraftTarget.value"
         :submitting="review.submitting.value"
+        :resolving-review-thread-id="review.resolvingReviewThreadId.value"
         @visible-file-changed="review.syncVisibleFile"
         @open-draft-editor="review.openDraftEditor"
         @close-draft-editor="review.closeDraftEditor"
         @save-draft-comment="review.saveDraftComment"
         @remove-draft-comment="review.removeDraftComment"
+        @toggle-review-thread="review.toggleReviewThreadResolved"
       />
 
       <PRReviewSubmitBar

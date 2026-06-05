@@ -1106,7 +1106,7 @@ function buildReviewCommentsByReviewId(
   return commentsByReviewId;
 }
 
-function buildReviewThreadsByCommentId(reviewThreads: TimelineReviewThreadPayload[]) {
+export function buildReviewThreadsByCommentId(reviewThreads: TimelineReviewThreadPayload[]) {
   const reviewThreadsByCommentId = new Map<string, TimelineReviewThreadPayload>();
 
   for (const thread of reviewThreads) {
@@ -1124,7 +1124,7 @@ function buildReviewThreadsByCommentId(reviewThreads: TimelineReviewThreadPayloa
   return reviewThreadsByCommentId;
 }
 
-function getReviewThreadForComment(
+export function getReviewThreadForComment(
   comment: Record<string, any>,
   reviewThreadsByCommentId: Map<string, TimelineReviewThreadPayload>
 ) {
@@ -1144,7 +1144,7 @@ function getReviewThreadForComment(
   return undefined;
 }
 
-function buildReviewThreadStatePayload(
+export function buildReviewThreadStatePayload(
   thread?: TimelineReviewThreadPayload
 ): Pick<TimelineReviewCommentPayload, 'threadId' | 'isResolved' | 'isOutdated' | 'resolvedBy'> {
   if (!thread?.id) {

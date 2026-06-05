@@ -137,6 +137,12 @@
                   <span v-if="comment.createdAt" class="has-text-grey">
                     {{ formatDurationFromNow(comment.createdAt, localeCode) }}
                   </span>
+                  <span
+                    v-if="comment.isOutdated"
+                    class="tag is-warning is-light review-item__outdated-tag"
+                  >
+                    {{ t('prReview.threadOutdated') }}
+                  </span>
                   <button
                     v-if="comment.threadId"
                     class="button is-small review-item__thread-action"
@@ -873,6 +879,11 @@ const buildSuggestionDiffLines = (
   border: 1px solid color-mix(in srgb, var(--gitpulse-info) 20%, transparent);
   max-width: 100%;
   overflow-wrap: anywhere;
+}
+
+.review-item__outdated-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
 }
 
 .review-item__thread-action {

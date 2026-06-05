@@ -230,7 +230,7 @@
     <span
       v-if="item.eventType === 'line_commented' && item.isOutdated"
       class="tag is-activity ml-1 is-warning is-light"
-      >outdated</span
+      >{{ t('prReview.threadOutdated') }}</span
     >
   </template>
 
@@ -313,6 +313,7 @@ const props = defineProps<{
   item: PRTimelineItem;
 }>();
 
+const { t } = useI18n();
 const reviewerUrl = computed(() => getRequestedReviewerUrl(props.item.requestedReviewer));
 const reviewerLabel = computed(() => getRequestedReviewerLabel(props.item.requestedReviewer));
 

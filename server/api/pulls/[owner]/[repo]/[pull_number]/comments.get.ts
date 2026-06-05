@@ -1,4 +1,10 @@
-import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
+import {
+  buildReviewThreadStatePayload,
+  buildReviewThreadsByCommentId,
+  fetchPaginatedArray,
+  fetchPRReviewThreads,
+  getReviewThreadForComment,
+} from '#server/utils/github-timeline-utils';
 
 interface PullReviewCommentResponse {
   id?: number | string;
@@ -34,7 +40,12 @@ const stringifyId = (value: unknown) => {
   return String(value);
 };
 
-const normalizeReviewComment = (comment: PullReviewCommentResponse) => ({
+type ReviewThreadsByCommentId = ReturnType<typeof buildReviewThreadsByCommentId>;
+
+const normalizeReviewComment = (
+  comment: PullReviewCommentResponse,
+  reviewThreadsByCommentId: ReviewThreadsByCommentId
+) => ({
   id: stringifyId(comment.id ?? comment.node_id) ?? '',
   pullRequestReviewId: stringifyId(comment.pull_request_review_id),
   inReplyToId: stringifyId(comment.in_reply_to_id),
@@ -59,6 +70,7 @@ const normalizeReviewComment = (comment: PullReviewCommentResponse) => ({
         url: comment.user.html_url,
       }
     : undefined,
+  ...buildReviewThreadStatePayload(getReviewThreadForComment(comment, reviewThreadsByCommentId)),
 });
 
 const compareReviewComments = (
@@ -77,6 +89,20 @@ const compareReviewComments = (
   return firstDate - secondDate;
 };
 
+async function fetchPRReviewThreadsForComments(
+  octokit: Parameters<typeof fetchPRReviewThreads>[0],
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  try {
+    return await fetchPRReviewThreads(octokit, owner, repo, pullNumber);
+  } catch (error: unknown) {
+    console.warn('Failed to fetch pull request review threads for comments:', error);
+    return [];
+  }
+}
+
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { owner, repo, pull_number } = event.context.params as {
@@ -94,21 +120,25 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     }
 
     const octokit = await getGitHubClient(event);
-    const reviewComments = await fetchPaginatedArray<PullReviewCommentResponse>(
-      octokit,
-      'GET /repos/{owner}/{repo}/pulls/{pull_number}/comments',
-      {
-        owner,
-        repo,
-        pull_number: pullNumber,
-      }
-    );
+    const [reviewComments, reviewThreads] = await Promise.all([
+      fetchPaginatedArray<PullReviewCommentResponse>(
+        octokit,
+        'GET /repos/{owner}/{repo}/pulls/{pull_number}/comments',
+        {
+          owner,
+          repo,
+          pull_number: pullNumber,
+        }
+      ),
+      fetchPRReviewThreadsForComments(octokit, owner, repo, pullNumber),
+    ]);
+    const reviewThreadsByCommentId = buildReviewThreadsByCommentId(reviewThreads);
 
     return {
       items: reviewComments
         .filter((comment) => comment.position !== null && comment.position !== undefined)
-        .map(normalizeReviewComment)
-        .filter((comment) => comment.path)
+        .map((comment) => normalizeReviewComment(comment, reviewThreadsByCommentId))
+        .filter((comment) => comment.path && !comment.isOutdated)
         .sort(compareReviewComments),
     };
   } catch (error: unknown) {

@@ -119,6 +119,7 @@ export interface PRReviewCommentAuthor {
 
 export interface PRReviewComment {
   id: string;
+  threadId?: string;
   pullRequestReviewId?: string;
   inReplyToId?: string;
   body: string;
@@ -136,6 +137,9 @@ export interface PRReviewComment {
   createdAt?: string;
   updatedAt?: string;
   author?: PRReviewCommentAuthor;
+  isResolved?: boolean;
+  isOutdated?: boolean;
+  resolvedBy?: PRReviewCommentAuthor;
 }
 
 interface PRReviewThreadBuildIndex {
@@ -150,10 +154,14 @@ export interface PRReviewDiffSection {
 
 export interface PRReviewCommentThread {
   id: string;
+  threadId?: string;
   path: string;
   lineKey: string;
   line: number;
   comments: PRReviewComment[];
+  isResolved?: boolean;
+  isOutdated?: boolean;
+  resolvedBy?: PRReviewCommentAuthor;
 }
 
 interface PullFilesResponse {
@@ -173,6 +181,8 @@ interface UsePRReviewOptions {
   messages: {
     loadFailed: string;
     submitFailed: string;
+    resolveThreadFailed: string;
+    unresolveThreadFailed: string;
   };
   onSubmitted?: () => void;
 }
@@ -373,6 +383,7 @@ export function usePRReview(options: UsePRReviewOptions) {
   const reviewComments = ref<PRReviewComment[]>([]);
   const activeDraftTarget = ref<{ path: string; line: number } | null>(null);
   const requestId = shallowRef(0);
+  const resolvingReviewThreadId = shallowRef<string | null>(null);
 
   const identity = computed(() => ({
     owner: options.owner(),
@@ -400,7 +411,7 @@ export function usePRReview(options: UsePRReviewOptions) {
     const commentsByFile = new Map<string, PRReviewComment[]>();
 
     for (const comment of reviewComments.value) {
-      if (!comment.path) {
+      if (!comment.path || comment.isOutdated) {
         continue;
       }
 
@@ -472,11 +483,15 @@ export function usePRReview(options: UsePRReviewOptions) {
         }
 
         const thread: PRReviewCommentThread = {
-          id: comment.id,
+          id: comment.threadId ?? comment.id,
+          threadId: comment.threadId,
           path,
           lineKey,
           line,
           comments: [comment],
+          isResolved: comment.isResolved,
+          isOutdated: comment.isOutdated,
+          resolvedBy: comment.resolvedBy,
         };
 
         threadsById.set(comment.id, thread);
@@ -538,6 +553,34 @@ export function usePRReview(options: UsePRReviewOptions) {
     activeFilename.value = '';
     pagination.value = defaultPagination();
     errorMessage.value = '';
+    resolvingReviewThreadId.value = null;
+  };
+
+  const fetchReviewComments = () => {
+    const { owner, repo, pullNumber } = identity.value;
+
+    return $fetch<PullReviewCommentsResponse>(
+      `/api/pulls/${owner}/${repo}/${pullNumber}/comments`,
+      {
+        method: 'GET',
+      }
+    );
+  };
+
+  const refreshReviewComments = async () => {
+    if (!canLoad.value) {
+      reviewComments.value = [];
+      return;
+    }
+
+    const currentRequestId = requestId.value;
+    const response = await fetchReviewComments();
+
+    if (currentRequestId !== requestId.value) {
+      return;
+    }
+
+    reviewComments.value = response.items ?? [];
   };
 
   const loadFiles = async (page = 1) => {
@@ -559,21 +602,13 @@ export function usePRReview(options: UsePRReviewOptions) {
 
     try {
       const { owner, repo, pullNumber } = identity.value;
-      const response = await $fetch<PullFilesResponse>(
-        `/api/pulls/${owner}/${repo}/${pullNumber}/files`,
-        {
+      const [response, reviewCommentResponse] = await Promise.all([
+        $fetch<PullFilesResponse>(`/api/pulls/${owner}/${repo}/${pullNumber}/files`, {
           method: 'GET',
           query: { page, per_page: 100 },
-        }
-      );
-      const reviewCommentResponse = isFirstPage
-        ? await $fetch<PullReviewCommentsResponse>(
-            `/api/pulls/${owner}/${repo}/${pullNumber}/comments`,
-            {
-              method: 'GET',
-            }
-          )
-        : null;
+        }),
+        isFirstPage ? fetchReviewComments() : Promise.resolve(null),
+      ]);
 
       if (currentRequestId !== requestId.value) {
         return;
@@ -671,6 +706,51 @@ export function usePRReview(options: UsePRReviewOptions) {
     draftComments.value = draftComments.value.filter((comment) => comment.id !== id);
   };
 
+  const updateReviewThreadResolvedState = (threadId: string, resolved: boolean) => {
+    reviewComments.value = reviewComments.value.map((comment) =>
+      comment.threadId === threadId ? { ...comment, isResolved: resolved } : comment
+    );
+  };
+
+  const toggleReviewThreadResolved = async (threadId: string, resolved: boolean) => {
+    if (!canLoad.value || resolvingReviewThreadId.value) {
+      return;
+    }
+
+    const { owner, repo, pullNumber } = identity.value;
+    const currentRequestId = requestId.value;
+    resolvingReviewThreadId.value = threadId;
+    submitError.value = '';
+
+    try {
+      await $fetch(
+        `/api/repos/${owner}/${repo}/pulls/${pullNumber}/review-threads/${encodeURIComponent(threadId)}/resolve`,
+        {
+          method: 'POST',
+          body: { resolved },
+        }
+      );
+
+      if (currentRequestId !== requestId.value) {
+        return;
+      }
+
+      updateReviewThreadResolvedState(threadId, resolved);
+      await refreshReviewComments();
+    } catch (error: unknown) {
+      if (currentRequestId === requestId.value) {
+        submitError.value = getFetchErrorMessage(
+          error,
+          resolved ? options.messages.resolveThreadFailed : options.messages.unresolveThreadFailed
+        );
+      }
+    } finally {
+      if (currentRequestId === requestId.value && resolvingReviewThreadId.value === threadId) {
+        resolvingReviewThreadId.value = null;
+      }
+    }
+  };
+
   const submitReview = async () => {
     submitError.value = '';
 
@@ -729,6 +809,7 @@ export function usePRReview(options: UsePRReviewOptions) {
     loading,
     loadingMore,
     submitting,
+    resolvingReviewThreadId,
     errorMessage,
     submitError,
     draftBody,
@@ -749,6 +830,7 @@ export function usePRReview(options: UsePRReviewOptions) {
     closeDraftEditor,
     saveDraftComment,
     removeDraftComment,
+    toggleReviewThreadResolved,
     submitReview,
   };
 }

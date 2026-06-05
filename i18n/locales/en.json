@@ -553,6 +553,7 @@
     "unresolveThread": "Unresolve thread",
     "threadResolved": "Resolved",
     "threadUnresolved": "Unresolved",
+    "threadOutdated": "Outdated",
     "resolveThreadFailed": "Failed to resolve review thread.",
     "unresolveThreadFailed": "Failed to unresolve review thread.",
     "reviewDiffLabel": "{filename} review diff",

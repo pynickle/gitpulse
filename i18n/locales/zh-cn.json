@@ -553,6 +553,7 @@
     "unresolveThread": "取消解决",
     "threadResolved": "已解决",
     "threadUnresolved": "未解决",
+    "threadOutdated": "已过期",
     "resolveThreadFailed": "解决 review thread 失败。",
     "unresolveThreadFailed": "取消解决 review thread 失败。",
     "reviewDiffLabel": "{filename} 的审查差异",

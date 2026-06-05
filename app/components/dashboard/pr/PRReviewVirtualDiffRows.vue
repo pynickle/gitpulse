@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CheckIcon, XIcon } from 'lucide-vue-next';
 import {
   computed,
   nextTick,
@@ -53,6 +54,7 @@ const props = defineProps<{
   activeDraftTarget: { path: string; line: number } | null;
   activeDraftBody: string;
   submitting: boolean;
+  resolvingReviewThreadId?: string | null;
   scrollContainer: HTMLElement | null;
 }>();
 
@@ -61,6 +63,7 @@ const emit = defineEmits<{
   (e: 'close-draft-editor'): void;
   (e: 'update-active-draft-body', body: string): void;
   (e: 'save-draft-comment', path: string, line: number, position: number, body: string): void;
+  (e: 'toggle-review-thread', payload: { threadId: string; resolved: boolean }): void;
 }>();
 
 const { t, locale } = useI18n();
@@ -278,7 +281,11 @@ const findFirstRowEndingAfter = (metrics: VirtualRow[], offset: number) => {
 
   while (low < high) {
     const mid = Math.floor((low + high) / 2);
-    const rowBottom = metrics[mid].top + metrics[mid].height;
+    const metric = metrics[mid];
+    if (!metric) {
+      break;
+    }
+    const rowBottom = metric.top + metric.height;
 
     if (rowBottom < offset) {
       low = mid + 1;
@@ -296,8 +303,12 @@ const findFirstRowStartingAfter = (metrics: VirtualRow[], offset: number) => {
 
   while (low < high) {
     const mid = Math.floor((low + high) / 2);
+    const metric = metrics[mid];
+    if (!metric) {
+      break;
+    }
 
-    if (metrics[mid].top <= offset) {
+    if (metric.top <= offset) {
       low = mid + 1;
     } else {
       high = mid;
@@ -495,6 +506,31 @@ const handleSaveDraft = (line: number, body: string) => {
   emit('save-draft-comment', props.filename, line, row.position, body);
 };
 
+const isReviewThreadResolving = (thread: PRReviewCommentThread) =>
+  Boolean(thread.threadId && props.resolvingReviewThreadId === thread.threadId);
+
+const reviewThreadActionLabel = (thread: PRReviewCommentThread) =>
+  thread.isResolved ? t('prReview.unresolveThread') : t('prReview.resolveThread');
+
+const reviewThreadStateLabel = (thread: PRReviewCommentThread) =>
+  thread.isResolved ? t('prReview.threadResolved') : t('prReview.threadUnresolved');
+
+const reviewThreadStateClass = (thread: PRReviewCommentThread) =>
+  thread.isResolved
+    ? 'pr-review-diff-viewer__thread-action--resolved'
+    : 'pr-review-diff-viewer__thread-action--unresolved';
+
+const toggleReviewThread = (thread: PRReviewCommentThread) => {
+  if (!thread.threadId || isReviewThreadResolving(thread)) {
+    return;
+  }
+
+  emit('toggle-review-thread', {
+    threadId: thread.threadId,
+    resolved: !Boolean(thread.isResolved),
+  });
+};
+
 watch(() => [props.filename, props.rows], resetMeasurements, { flush: 'post' });
 
 watch(activeDraftLineForFile, clearMeasurements, { flush: 'post' });
@@ -539,6 +575,10 @@ watch(
 
       rowsIntersectionObserver = new IntersectionObserver(
         ([entry]) => {
+          if (!entry) {
+            return;
+          }
+
           isRowsNearViewport.value = entry.isIntersecting;
 
           if (entry.isIntersecting) {
@@ -670,6 +710,28 @@ onBeforeUnmount(() => {
                 :key="thread.id"
                 class="pr-review-diff-viewer__review-thread"
               >
+                <div v-if="thread.threadId" class="pr-review-diff-viewer__review-thread-header">
+                  <button
+                    class="button is-small pr-review-diff-viewer__thread-action"
+                    type="button"
+                    :class="[
+                      reviewThreadStateClass(thread),
+                      { 'is-loading': isReviewThreadResolving(thread) },
+                    ]"
+                    :disabled="isReviewThreadResolving(thread)"
+                    :aria-label="reviewThreadActionLabel(thread)"
+                    :title="reviewThreadActionLabel(thread)"
+                    @click="toggleReviewThread(thread)"
+                  >
+                    <component
+                      :is="thread.isResolved ? XIcon : CheckIcon"
+                      :size="13"
+                      :stroke-width="2.5"
+                      aria-hidden="true"
+                    />
+                    <span>{{ reviewThreadStateLabel(thread) }}</span>
+                  </button>
+                </div>
                 <article
                   v-for="comment in thread.comments"
                   :key="comment.id"
@@ -893,6 +955,33 @@ onBeforeUnmount(() => {
 
 .pr-review-diff-viewer__review-thread {
   margin: 0 0 0.5rem;
+}
+
+.pr-review-diff-viewer__review-thread-header {
+  margin-bottom: 0.4rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.pr-review-diff-viewer__thread-action {
+  gap: 0.25rem;
+  height: 1.5rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pr-review-diff-viewer__thread-action--resolved {
+  border-color: color-mix(in srgb, var(--gitpulse-success) 42%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-success) 12%, var(--gitpulse-surface));
+  color: var(--gitpulse-success);
+}
+
+.pr-review-diff-viewer__thread-action--unresolved {
+  border-color: color-mix(in srgb, var(--gitpulse-warning) 42%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-warning) 12%, var(--gitpulse-surface));
+  color: var(--gitpulse-warning);
 }
 
 .pr-review-diff-viewer__review-comment {
