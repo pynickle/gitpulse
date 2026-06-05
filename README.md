@@ -98,6 +98,17 @@ A password-gated vault with a pre-configured token. On each new browser you see 
 | `NUXT_PERSONAL_MODE_PASSWORD`     | **Yes**  | —       | Lock-screen password                     |
 | `NUXT_PERSONAL_COOKIE_SECRET`     | **Yes**  | —       | Secret for signing "remember me" cookies |
 
+### User Settings Storage
+
+Dashboard user settings, including font choices, tab groups, and custom search tabs, are persisted through the Nitro storage mount named `userSettings`. This is separate from GitHub token/session storage.
+
+By default GitPulse uses local filesystem storage at `./.data/user-settings`, which is ignored by git. For production deployments, especially serverless, container, or multi-instance deployments, configure this mount to use durable storage.
+
+| Environment Variable                         | Required | Default                 | Description                                      |
+| -------------------------------------------- | -------- | ----------------------- | ------------------------------------------------ |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER` | No       | `fs`                    | Nitro/unstorage driver used for user settings    |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE`   | No       | `./.data/user-settings` | Base path for the `fs` driver or selected driver |
+
 ---
 
 ## FAQ
