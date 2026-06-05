@@ -1,6 +1,8 @@
 import type { ComputedRef, InjectionKey } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
+import { isGitHubRawHost, isGitHubWebHost } from './github-url-utils';
+
 export interface MarkdownRepoContext {
   owner?: string;
   repo?: string;
@@ -16,8 +18,6 @@ export interface MarkdownRepoResource {
   hash?: string;
 }
 
-const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
-const GITHUB_RAW_HOST = 'raw.githubusercontent.com';
 const PATH_SUFFIX_PATTERN = /[?#]/;
 const GITHUB_FILE_KINDS = new Set(['blob', 'tree', 'raw']);
 const SAFE_RESOURCE_PROTOCOLS = new Set(['http:', 'https:']);
@@ -181,7 +181,7 @@ function createGitHubResource(
 }
 
 function parseGitHubWebPath(url: URL, context: MarkdownRepoContext): MarkdownRepoResource | null {
-  if (!GITHUB_WEB_HOSTS.has(url.hostname.toLowerCase())) {
+  if (!isGitHubWebHost(url.hostname)) {
     return null;
   }
 
@@ -196,7 +196,7 @@ function parseGitHubWebPath(url: URL, context: MarkdownRepoContext): MarkdownRep
 }
 
 function parseGitHubRawPath(url: URL, context: MarkdownRepoContext): MarkdownRepoResource | null {
-  if (url.hostname.toLowerCase() !== GITHUB_RAW_HOST) {
+  if (!isGitHubRawHost(url.hostname)) {
     return null;
   }
 
