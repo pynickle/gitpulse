@@ -5,7 +5,7 @@ import {
   buildIssueSearchParts,
   normalizeIssueSearchScopes,
   quoteSearchValue,
-} from './github-search-query';
+} from '../shared/utils/github-search-query';
 
 describe('github search query helpers', () => {
   test('quotes search values only when GitHub requires it', () => {

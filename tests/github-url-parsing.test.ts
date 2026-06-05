@@ -1,8 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 
-import { buildRepoRawFileUrl, parseMarkdownRepoResource } from './markdown-repo-path-utils';
-import parseGitHubMarkdownTarget from './parseGitHubMarkdownTarget';
-import parseGitHubRepoPath from './parseGitHubRepoPath';
+import {
+  buildRepoRawFileUrl,
+  parseMarkdownRepoResource,
+} from '../app/utils/markdown-repo-path-utils';
+import parseGitHubMarkdownTarget from '../app/utils/parseGitHubMarkdownTarget';
+import parseGitHubRepoPath from '../app/utils/parseGitHubRepoPath';
 
 describe('parseGitHubRepoPath', () => {
   test('parses GitHub web and API repository URLs', () => {
