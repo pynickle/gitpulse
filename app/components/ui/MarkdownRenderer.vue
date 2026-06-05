@@ -12,7 +12,6 @@ import MarkdownRendererProseA from '~/components/ui/MarkdownRendererProseA.vue';
 import MarkdownRendererProseMedia from '~/components/ui/MarkdownRendererProseMedia.vue';
 import MarkdownRendererProseMermaidWrapper from '~/components/ui/MarkdownRendererProseMermaidWrapper.vue';
 import useGitHubAutolinks from '~/composables/useGitHubAutolinks';
-import fixHtmlBlockIndentation from '~/utils/comark-fix-html-indentation';
 import { markdownRepoContextKey } from '~/utils/markdown-repo-path-utils';
 
 const props = defineProps<{
@@ -38,7 +37,6 @@ provide(markdownRepoContextKey, markdownRepoContext);
 
 function createMarkdownPlugins() {
   return [
-    fixHtmlBlockIndentation(),
     security({
       blockedTags: ['script', 'style', 'iframe', 'object', 'embed'],
       allowedProtocols: ['http', 'https', 'mailto', 'tel'],
@@ -155,7 +153,9 @@ function collectCodeBlockInfo(node: ComarkNode, codeBlockInfo: MarkdownCodeBlock
   }
 
   for (const child of node.slice(2)) {
-    collectCodeBlockInfo(child, codeBlockInfo);
+    if (Array.isArray(child)) {
+      collectCodeBlockInfo(child, codeBlockInfo);
+    }
   }
 }
 

@@ -14,7 +14,7 @@
     "fmt:check": "bunx oxfmt --check ./"
   },
   "dependencies": {
-    "@comark/nuxt": "^0.3.1",
+    "@comark/nuxt": "^0.4.0",
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/color-mode": "^4.0.0",
@@ -22,7 +22,7 @@
     "@primer/css": "^22.2.0",
     "@upstash/redis": "^1.38.0",
     "bulma": "^1.0.4",
-    "comark": "^0.3.2",
+    "comark": "^0.4.0",
     "dayjs": "^1.11.21",
     "lucide-vue-next": "^1.0.0",
     "mermaid": "^11.15.0",

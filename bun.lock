@@ -5,7 +5,7 @@
     "": {
       "name": "gitpulse",
       "dependencies": {
-        "@comark/nuxt": "^0.3.1",
+        "@comark/nuxt": "^0.4.0",
         "@nuxt/fonts": "^0.14.0",
         "@nuxt/image": "^2.0.0",
         "@nuxtjs/color-mode": "^4.0.0",
@@ -13,7 +13,7 @@
         "@primer/css": "^22.2.0",
         "@upstash/redis": "^1.38.0",
         "bulma": "^1.0.4",
-        "comark": "^0.3.2",
+        "comark": "^0.4.0",
         "dayjs": "^1.11.21",
         "lucide-vue-next": "^1.0.0",
         "mermaid": "^11.15.0",
@@ -111,9 +111,9 @@
 
     "@colordx/core": ["@colordx/core@5.4.3", "", {}, "sha512-kIxYSfA5T8HXjav55UaaH/o/cKivF6jCCGIb8eqtcsfI46wsvlSiT8jMDyrl779qLec3c2c2oHBZo4oAhvbjrQ=="],
 
-    "@comark/nuxt": ["@comark/nuxt@0.3.1", "", { "dependencies": { "@comark/vue": "^0.3.1", "@nuxt/kit": "^4.4.2", "comark": "^0.3.1" }, "peerDependencies": { "nuxt": "^4.0.0" } }, "sha512-by3ZbtKosOR9tOpHQxG2DthN/5IlQJMWbdCkja4h/cVWaa39izNMF27kiNg94hA1Uv7nMuctWhTObp/nzW7mcg=="],
+    "@comark/nuxt": ["@comark/nuxt@0.4.0", "", { "dependencies": { "@comark/vue": "^0.4.0", "@nuxt/kit": "^4.4.2", "comark": "^0.4.0" }, "peerDependencies": { "nuxt": "^4.0.0" } }, "sha512-iaBPfB1x5B+WqaMGChOXXsixnhsceE5q4zJBMa6iZU9Gcjijl1UvpvntB0895SSelJgcNt3bYB/V5nTkjtgVkg=="],
 
-    "@comark/vue": ["@comark/vue@0.3.1", "", { "dependencies": { "comark": "^0.3.1" }, "peerDependencies": { "beautiful-mermaid": "^1.1.3", "katex": "^0.16.45", "shiki": "^4.0.0", "vue": "^3.5.0" }, "optionalPeers": ["beautiful-mermaid", "katex", "shiki"] }, "sha512-23fueUVe1tVuRV7M5PsGCcaFqL0cEZJfHRqdx5Ha5kW1F1J2O81B6LFibdh24vASqhjsHuoclrUrjeanq+gfqQ=="],
+    "@comark/vue": ["@comark/vue@0.4.0", "", { "dependencies": { "comark": "^0.4.0" }, "peerDependencies": { "beautiful-mermaid": "^1.1.3", "katex": "^0.16.45", "shiki": "^4.0.0", "vue": "^3.5.0" }, "optionalPeers": ["beautiful-mermaid", "katex", "shiki"] }, "sha512-1o4BBBzVIcxCsPOfWUzcYqdnSSI+bCyldxzlrbATc5U+s40Hm+ls7UppYAHPyOqUQPpMZy2vbvD4ESe+PD5lgg=="],
 
     "@dxup/nuxt": ["@dxup/nuxt@0.4.1", "", { "dependencies": { "@dxup/unimport": "^0.1.2", "@nuxt/kit": "^4.4.2", "chokidar": "^5.0.0", "pathe": "^2.0.3", "tinyglobby": "^0.2.16" }, "peerDependencies": { "typescript": "*" }, "optionalPeers": ["typescript"] }, "sha512-gtYffW6OfWNvoLW+XD3Mx/K8uUq08PMGLYJoDxc92EzZAWqR0FhcR5iaLm5r/OxyGTKz+P5f5Y7Aoir9+SjYaw=="],
 
@@ -981,7 +981,7 @@
 
     "colorjs.io": ["colorjs.io@0.5.2", "", {}, "sha512-twmVoizEW7ylZSN32OgKdXRmo1qg+wT5/6C3xu5b9QsWzSFAhHLn2xd8ro0diCsKfCj1RdaTP/nrcW+vAoQPIw=="],
 
-    "comark": ["comark@0.3.2", "", { "dependencies": { "entities": "^8.0.0", "htmlparser2": "^12.0.0", "js-yaml": "^4.1.1", "markdown-exit": "1.0.0-beta.9" }, "peerDependencies": { "beautiful-mermaid": "^1.1.3", "katex": "^0.16.45", "shiki": "^4.0.0" }, "optionalPeers": ["beautiful-mermaid", "katex", "shiki"] }, "sha512-wZ16V3PPItX49EScg6yDswqQ24bsMAhujZUGIf1dBKMmZjqGBa4HmXDe+WZNeqNQSOd8v4AJJT1NKyrvgdf3dA=="],
+    "comark": ["comark@0.4.0", "", { "dependencies": { "entities": "^8.0.0", "htmlparser2": "^12.0.0", "js-yaml": "^4.1.1", "markdown-exit": "1.0.0-beta.9" }, "peerDependencies": { "beautiful-mermaid": "^1.1.3", "katex": "^0.16.45", "shiki": "^4.0.0" }, "optionalPeers": ["beautiful-mermaid", "katex", "shiki"] }, "sha512-s+wZc9FDgxJDxS3oLhDhthuc8EFggd7oEQaGKEFSw/UbECEwM3qMgW/T3dk6eoNTuy+PNSAyPQtjyKZJfudlbA=="],
 
     "comma-separated-tokens": ["comma-separated-tokens@2.0.3", "", {}, "sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg=="],
 
