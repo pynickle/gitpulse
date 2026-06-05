@@ -747,7 +747,7 @@ const handleAvatarClick = async () => {
 };
 
 const handleSettingsClick = async () => {
-  await router.push(localePath('/dashboard/tabs'));
+  await router.push(localePath('/dashboard/settings'));
 };
 
 const handleManageTabs = async () => {

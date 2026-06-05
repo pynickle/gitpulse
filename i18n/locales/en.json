@@ -155,6 +155,32 @@
       "manageViews": "Manage Views",
       "emptyGroup": "No search tabs in this group."
     },
+    "settings": {
+      "pageKicker": "Dashboard",
+      "pageTitle": "Settings",
+      "backToDashboard": "Back to Dashboard",
+      "fontsTitle": "Fonts",
+      "appFontLabel": "Global font",
+      "codeFontLabel": "Code font",
+      "appFontSection": "App font",
+      "codeFontSection": "Code font",
+      "selectAppFont": "Select app font",
+      "selectCodeFont": "Select code font",
+      "bundledFonts": "Bundled fonts",
+      "systemFonts": "System fonts",
+      "loadSystemFonts": "Load system fonts",
+      "loadingSystemFonts": "Loading system fonts...",
+      "systemFontsUnsupported": "System font listing is not supported in this browser.",
+      "systemFontsDenied": "Browser permission is required to list system fonts.",
+      "manualAppFontLabel": "Manual global system font",
+      "manualCodeFontLabel": "Manual code system font",
+      "manualFontPlaceholder": "Exact local font family name",
+      "applyManualFont": "Use font",
+      "tabsTitle": "View tabs",
+      "tabsDescription": "Manage custom dashboard view groups and search tabs.",
+      "manageTabs": "Manage view tabs",
+      "statusLoading": "Loading settings..."
+    },
     "tabsSettings": {
       "pageKicker": "Dashboard",
       "pageTitle": "Manage Views",
@@ -540,5 +566,16 @@
       "close": "Close",
       "hint": "Drag to pan · Scroll to zoom"
     }
+  },
+  "fontModal": {
+    "searchPlaceholder": "Search fonts...",
+    "searchAriaLabel": "Search fonts",
+    "clearSearchAriaLabel": "Clear search",
+    "noFontsFound": "No fonts found",
+    "bundledFontsGroup": "Bundled fonts",
+    "systemFontsGroup": "System fonts",
+    "footerHint": "Or type a font name directly in the input field",
+    "close": "Close",
+    "closeAriaLabel": "Close"
   }
 }

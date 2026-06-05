@@ -155,6 +155,32 @@
       "manageViews": "管理视图",
       "emptyGroup": "此分组还没有搜索视图。"
     },
+    "settings": {
+      "pageKicker": "仪表盘",
+      "pageTitle": "设置",
+      "backToDashboard": "返回仪表盘",
+      "fontsTitle": "字体",
+      "appFontLabel": "全局字体",
+      "codeFontLabel": "代码字体",
+      "appFontSection": "应用字体",
+      "codeFontSection": "代码字体",
+      "selectAppFont": "选择应用字体",
+      "selectCodeFont": "选择代码字体",
+      "bundledFonts": "内置字体",
+      "systemFonts": "系统字体",
+      "loadSystemFonts": "加载系统字体",
+      "loadingSystemFonts": "正在加载系统字体...",
+      "systemFontsUnsupported": "当前浏览器不支持列出系统字体。",
+      "systemFontsDenied": "需要浏览器授权才能列出系统字体。",
+      "manualAppFontLabel": "手动全局系统字体",
+      "manualCodeFontLabel": "手动代码系统字体",
+      "manualFontPlaceholder": "精确的本地 font-family 名称",
+      "applyManualFont": "使用字体",
+      "tabsTitle": "视图标签",
+      "tabsDescription": "管理自定义仪表盘视图分组和搜索标签。",
+      "manageTabs": "管理视图标签",
+      "statusLoading": "正在加载设置..."
+    },
     "tabsSettings": {
       "pageKicker": "仪表盘",
       "pageTitle": "管理视图",
@@ -540,5 +566,16 @@
       "close": "关闭",
       "hint": "拖动平移 · 滚轮缩放"
     }
+  },
+  "fontModal": {
+    "searchPlaceholder": "搜索字体...",
+    "searchAriaLabel": "搜索字体",
+    "clearSearchAriaLabel": "清除搜索",
+    "noFontsFound": "未找到字体",
+    "bundledFontsGroup": "内置字体",
+    "systemFontsGroup": "系统字体",
+    "footerHint": "或直接在输入框中输入字体名称",
+    "close": "关闭",
+    "closeAriaLabel": "关闭"
   }
 }
