@@ -1,12 +1,47 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import {
+  defaultUserSettingsStorageBase,
+  normalizeOptionalString,
+  normalizeUserSettingsStorageDriver,
+  resolveOptionalUpstashRedisCredentials,
+} from './shared/utils/user-settings-storage-env';
+
 const ENABLED_VALUES = new Set(['1', 'true']);
 const DISABLED_VALUES = new Set(['0', 'false']);
 const FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
-const USER_SETTINGS_STORAGE_DRIVER =
-  process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER?.trim() || 'fs';
+
+type UserSettingsStorageConfig = {
+  driver: string;
+  base?: string;
+  url?: string;
+  token?: string;
+};
+
+type UserSettingsStorageAdapter = {
+  defaultBase?: string;
+  createConfig: (context: UserSettingsStorageContext) => UserSettingsStorageConfig;
+};
+
+type UserSettingsStorageContext = {
+  driver: string;
+  base?: string;
+};
+
+const BASE_SCOPED_USER_SETTINGS_STORAGE_ADAPTERS: Record<string, UserSettingsStorageAdapter> = {
+  fs: {
+    createConfig: createBaseScopedUserSettingsStorageConfig,
+  },
+  upstash: {
+    createConfig: createUpstashUserSettingsStorageConfig,
+  },
+};
+
+const USER_SETTINGS_STORAGE_DRIVER = normalizeUserSettingsStorageDriver(
+  process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER
+);
 const USER_SETTINGS_STORAGE_BASE =
-  process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE?.trim() ||
-  (USER_SETTINGS_STORAGE_DRIVER === 'fs' ? './.data/user-settings' : undefined);
+  normalizeOptionalString(process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE) ||
+  defaultUserSettingsStorageBase(USER_SETTINGS_STORAGE_DRIVER);
 
 function fontsourceLatinFaces(options: {
   name: string;
@@ -34,11 +69,34 @@ function normalizeBoolean(value: string | undefined, defaultValue: boolean): boo
   return defaultValue;
 }
 
-function userSettingsStorageConfig() {
+function createBaseScopedUserSettingsStorageConfig(context: UserSettingsStorageContext) {
   return {
-    driver: USER_SETTINGS_STORAGE_DRIVER,
-    ...(USER_SETTINGS_STORAGE_BASE ? { base: USER_SETTINGS_STORAGE_BASE } : {}),
+    driver: context.driver,
+    ...(context.base ? { base: context.base } : {}),
   };
+}
+
+function createUpstashUserSettingsStorageConfig(context: UserSettingsStorageContext) {
+  const credentials = resolveOptionalUpstashRedisCredentials(process.env);
+
+  return {
+    ...createBaseScopedUserSettingsStorageConfig(context),
+    ...(credentials ? { url: credentials.url, token: credentials.token } : {}),
+  };
+}
+
+function userSettingsStorageConfig() {
+  const context = {
+    driver: USER_SETTINGS_STORAGE_DRIVER,
+    base: USER_SETTINGS_STORAGE_BASE,
+  };
+  const adapter =
+    BASE_SCOPED_USER_SETTINGS_STORAGE_ADAPTERS[context.driver] ??
+    ({
+      createConfig: createBaseScopedUserSettingsStorageConfig,
+    } satisfies UserSettingsStorageAdapter);
+
+  return adapter.createConfig(context);
 }
 
 const tokenEnabled = normalizeBoolean(process.env.NUXT_AUTH_PAT_ENABLED, true);

@@ -7,25 +7,51 @@ import {
   normalizeUserSettings,
 } from '#shared/utils/user-settings';
 
-const STORAGE_MOUNT = 'userSettings';
-const userSettingsWriteQueues = new Map<string, Promise<unknown>>();
+import {
+  getUserSettingsStorageAdapter,
+  type UserSettingsStorageAdapter,
+} from './user-settings-storage-utils';
 
-const getSettingsKey = (userLogin: string) => {
-  return `users:${encodeURIComponent(userLogin.trim().toLowerCase())}`;
+type UserSettingsService = {
+  read: (userLogin: string) => Promise<UserSettings>;
+  save: (userLogin: string, settings: UserSettings) => Promise<UserSettings>;
+  patch: (userLogin: string, patch: unknown) => Promise<UserSettings>;
 };
 
-const enqueueUserSettingsWrite = <T>(settingsKey: string, task: () => Promise<T>) => {
-  const previousWrite = userSettingsWriteQueues.get(settingsKey) ?? Promise.resolve();
-  const nextWrite = previousWrite.catch(() => undefined).then(task);
-  const queuedWrite = nextWrite.finally(() => {
-    if (userSettingsWriteQueues.get(settingsKey) === queuedWrite) {
-      userSettingsWriteQueues.delete(settingsKey);
-    }
-  });
-
-  userSettingsWriteQueues.set(settingsKey, queuedWrite);
-  return queuedWrite;
+const normalizeStoredUserSettings = (storedSettings: UserSettings | null) => {
+  return normalizeUserSettings(storedSettings, createDefaultUserSettings());
 };
+
+const prepareUserSettingsForWrite = (settings: UserSettings): UserSettings => {
+  return {
+    ...normalizeUserSettings(settings),
+    updatedAt: new Date().toISOString(),
+  };
+};
+
+export function createUserSettingsService(
+  storage: UserSettingsStorageAdapter = getUserSettingsStorageAdapter()
+): UserSettingsService {
+  return {
+    async read(userLogin) {
+      return normalizeStoredUserSettings(await storage.read(userLogin));
+    },
+    async save(userLogin, settings) {
+      const nextSettings = prepareUserSettingsForWrite(settings);
+
+      await storage.write(userLogin, nextSettings);
+      return nextSettings;
+    },
+    async patch(userLogin, patch) {
+      return storage.update(userLogin, (storedSettings) => {
+        const currentSettings = normalizeStoredUserSettings(storedSettings);
+        const nextSettings = mergeUserSettingsPatch(currentSettings, patch);
+
+        return prepareUserSettingsForWrite(nextSettings);
+      });
+    },
+  };
+}
 
 export async function getUserSettingsLogin(event: H3Event) {
   const session = await getUserSession(event);
@@ -42,31 +68,13 @@ export async function getUserSettingsLogin(event: H3Event) {
 }
 
 export async function readUserSettings(userLogin: string) {
-  const storage = useStorage(STORAGE_MOUNT);
-  const storedSettings = await storage.getItem<UserSettings>(getSettingsKey(userLogin));
-
-  return normalizeUserSettings(storedSettings, createDefaultUserSettings());
+  return createUserSettingsService().read(userLogin);
 }
 
 export async function saveUserSettings(userLogin: string, settings: UserSettings) {
-  const settingsKey = getSettingsKey(userLogin);
-  const storage = useStorage(STORAGE_MOUNT);
-  const nextSettings: UserSettings = {
-    ...normalizeUserSettings(settings),
-    updatedAt: new Date().toISOString(),
-  };
-
-  await storage.setItem(settingsKey, nextSettings);
-  return nextSettings;
+  return createUserSettingsService().save(userLogin, settings);
 }
 
 export async function patchUserSettings(userLogin: string, patch: unknown) {
-  const settingsKey = getSettingsKey(userLogin);
-
-  return enqueueUserSettingsWrite(settingsKey, async () => {
-    const currentSettings = await readUserSettings(userLogin);
-    const nextSettings = mergeUserSettingsPatch(currentSettings, patch);
-
-    return saveUserSettings(userLogin, nextSettings);
-  });
+  return createUserSettingsService().patch(userLogin, patch);
 }

@@ -20,6 +20,7 @@
     "@nuxtjs/color-mode": "^4.0.0",
     "@octokit/core": "^7.0.6",
     "@primer/css": "^22.2.0",
+    "@upstash/redis": "^1.38.0",
     "bulma": "^1.0.4",
     "comark": "^0.3.2",
     "dayjs": "^1.11.21",

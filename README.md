@@ -100,14 +100,34 @@ A password-gated vault with a pre-configured token. On each new browser you see 
 
 ### User Settings Storage
 
-Dashboard user settings, including font choices, tab groups, and custom search tabs, are persisted through the Nitro storage mount named `userSettings`. This is separate from GitHub token/session storage.
+Dashboard user settings, including font choices, tab groups, and custom search tabs, are persisted through the server user settings storage layer. The local filesystem backend uses the Nitro storage mount named `userSettings`; the Upstash backend uses a Redis adapter. This is separate from GitHub token/session storage.
 
 By default GitPulse uses local filesystem storage at `./.data/user-settings`, which is ignored by git. For production deployments, especially serverless, container, or multi-instance deployments, configure this mount to use durable storage.
 
-| Environment Variable                         | Required | Default                 | Description                                      |
-| -------------------------------------------- | -------- | ----------------------- | ------------------------------------------------ |
-| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER` | No       | `fs`                    | Nitro/unstorage driver used for user settings    |
-| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE`   | No       | `./.data/user-settings` | Base path for the `fs` driver or selected driver |
+| Environment Variable                                     | Required | Default              | Description                                                                                                            |
+| -------------------------------------------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER`             | No       | `fs`                 | User settings storage backend. Use `fs` for local Nitro storage or `upstash` for Upstash Redis.                        |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE`               | No       | Driver-specific      | Base path/namespace. Defaults to `./.data/user-settings` for `fs` and `gitpulse:user-settings` for `upstash`.          |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_UPSTASH_ENV_PREFIX` | No       | `UPSTASH_REDIS_REST` | Optional Vercel Storage custom env prefix. GitPulse reads `<prefix>_KV_REST_API_URL` and `<prefix>_KV_REST_API_TOKEN`. |
+| `UPSTASH_REDIS_REST_URL`                                 | Upstash  | —                    | Upstash Redis REST URL, supplied by the Vercel Upstash integration or Upstash dashboard.                               |
+| `UPSTASH_REDIS_REST_TOKEN`                               | Upstash  | —                    | Upstash Redis REST token, supplied by the Vercel Upstash integration or Upstash dashboard.                             |
+
+For Vercel + Upstash Redis using the standard variables, set:
+
+```env
+NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER=upstash
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+If Vercel generated custom-prefixed variables such as `UPSTASH_REDIS_REST_KV_REST_API_URL` and `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`, set:
+
+```env
+NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER=upstash
+NUXT_GITPULSE_USER_SETTINGS_STORAGE_UPSTASH_ENV_PREFIX=UPSTASH_REDIS_REST
+```
+
+Use the read/write token variable ending in `_KV_REST_API_TOKEN`; the `_KV_REST_API_READ_ONLY_TOKEN` value cannot save user settings.
 
 ---
 
