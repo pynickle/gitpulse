@@ -58,9 +58,14 @@ const {
   replaceWithEntry,
 } = useNavigationHistory();
 
-const shouldShowRepoButton = computed(() => {
-  return previousEntry.value?.type === 'issue' || previousEntry.value?.type === 'pull-request';
+const isPreviousEntryCurrentRepository = computed(() => {
+  const entry = previousEntry.value;
+  const data = entry?.data;
+
+  return entry?.type === 'repository' && data?.owner === props.owner && data.repo === props.repo;
 });
+
+const shouldShowRepoButton = computed(() => !isPreviousEntryCurrentRepository.value);
 
 const {
   branches,
@@ -559,6 +564,7 @@ const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
     const query: LocationQueryRaw = {
       tab: data.tab,
       pr: `${data.owner}/${data.repo}/${data.number}`,
+      prView: data.view,
     };
     await router.push({ path: localePath('/dashboard'), query });
     return;
