@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
+import { parseDashboardUrlTarget } from '../app/utils/dashboard-url-navigation-utils';
 import {
   buildRepoRawFileUrl,
   parseMarkdownRepoResource,
@@ -113,5 +114,79 @@ describe('markdown repository resources', () => {
         path: 'docs/readme.md',
       })
     ).toBe('/api/repos/owner/repo/raw/docs/readme.md?ref=feature%2Fdocs');
+  });
+});
+
+describe('parseDashboardUrlTarget', () => {
+  test('parses pull request files URLs as PR diff targets', () => {
+    expect(parseDashboardUrlTarget('https://github.com/owner/repo/pull/7/files#diff-abc')).toEqual({
+      type: 'pull-request',
+      owner: 'owner',
+      repo: 'repo',
+      number: 7,
+      view: 'diff',
+      query: {
+        pr: 'owner/repo/7',
+        prView: 'diff',
+      },
+      hash: '#diff-abc',
+    });
+  });
+
+  test('parses pull request changes URLs as PR diff targets', () => {
+    expect(
+      parseDashboardUrlTarget('https://github.com/PCL-Community/PCL-CE/pull/3056/changes')
+    ).toEqual({
+      type: 'pull-request',
+      owner: 'PCL-Community',
+      repo: 'PCL-CE',
+      number: 3056,
+      view: 'diff',
+      query: {
+        pr: 'PCL-Community/PCL-CE/3056',
+        prView: 'diff',
+      },
+      hash: undefined,
+    });
+  });
+
+  test('parses repository file URLs as dashboard file targets', () => {
+    expect(parseDashboardUrlTarget('https://github.com/owner/repo/blob/main/src/app.vue')).toEqual({
+      type: 'file',
+      owner: 'owner',
+      repo: 'repo',
+      path: 'src/app.vue',
+      branch: 'main',
+      query: {
+        repo: 'owner/repo',
+        path: 'src/app.vue',
+        branch: 'main',
+      },
+      hash: undefined,
+    });
+  });
+
+  test('preserves markdown context branch for same-repo dashboard repo links', () => {
+    expect(
+      parseDashboardUrlTarget('https://github.com/owner/repo', {
+        owner: 'owner',
+        repo: 'repo',
+        branch: 'feature/docs',
+      })
+    ).toEqual({
+      type: 'repository',
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'feature/docs',
+      query: {
+        repo: 'owner/repo',
+        branch: 'feature/docs',
+      },
+      hash: undefined,
+    });
+  });
+
+  test('does not rewrite site-relative repo-shaped links without repo context', () => {
+    expect(parseDashboardUrlTarget('/owner/repo')).toBeNull();
   });
 });
