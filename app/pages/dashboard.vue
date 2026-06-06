@@ -50,7 +50,7 @@
           </div>
 
           <div class="card-content dashboard-list-card-content">
-            <DashboardLoadingList v-if="loading" :current-tab="currentTab" />
+            <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
 
             <div v-else-if="error" class="notification is-danger" style="min-height: 500px">
               <p>{{ error }}</p>
@@ -171,7 +171,7 @@ import {
   SearchIcon,
 } from 'lucide-vue-next';
 import SimpleBar from 'simplebar-vue';
-import { defineAsyncComponent, computed, onMounted, ref, watch } from 'vue';
+import { defineAsyncComponent, computed, onMounted, ref, shallowRef, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
@@ -327,6 +327,11 @@ const {
   fetchRepos,
   fetchCustomTab,
 } = useGithubData();
+
+const hasCompletedInitialDashboardLoad = shallowRef(false);
+const dashboardListLoading = computed(
+  () => !hasCompletedInitialDashboardLoad.value || loading.value
+);
 
 const { customTabs, getCustomTabById } = useCustomTabs();
 
@@ -694,6 +699,8 @@ const loadRouteTabSafely = async (tab: unknown, page: number) => {
     await switchTab(dashboardTab, page);
   } catch (error) {
     console.error('Error switching tab:', error);
+  } finally {
+    hasCompletedInitialDashboardLoad.value = true;
   }
 };
 
