@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { GitPullRequestIcon, MessageSquareIcon } from 'lucide-vue-next';
+import { ArrowLeftIcon, GitPullRequestIcon, HomeIcon, MessageSquareIcon } from 'lucide-vue-next';
 import { computed, shallowRef } from 'vue';
+import type { LocationQueryRaw } from 'vue-router';
 
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
@@ -19,6 +20,15 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const localePath = useLocalePath();
+const route = useRoute();
+const router = useRouter();
+const {
+  goBack: goNavigationBack,
+  goToHome,
+  previousEntry,
+  replaceWithEntry,
+} = useNavigationHistory();
 
 const review = usePRReview({
   owner: () => props.owner,
@@ -46,6 +56,98 @@ const totalAdditions = computed(() =>
 const totalDeletions = computed(() =>
   review.files.value.reduce((total, file) => total + file.deletions, 0)
 );
+const currentRouteTab = computed(() => {
+  const tab = route.query.tab;
+  if (Array.isArray(tab)) {
+    return tab.find((value): value is string => typeof value === 'string');
+  }
+
+  return typeof tab === 'string' ? tab : undefined;
+});
+const isPreviousEntryCurrentPullRequest = computed(() => {
+  const entry = previousEntry.value;
+  const data = entry?.data;
+
+  return (
+    entry?.type === 'pull-request' &&
+    data?.owner === props.owner &&
+    data.repo === props.repo &&
+    data.number === props.pullNumber
+  );
+});
+const shouldShowPullRequestDetailsButton = computed(() => !isPreviousEntryCurrentPullRequest.value);
+
+const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
+  if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
+    await router.push(localePath('/dashboard'));
+    return;
+  }
+
+  const data = entry.data;
+
+  if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
+    const query: LocationQueryRaw = {
+      tab: data.tab,
+      issue: `${data.owner}/${data.repo}/${data.number}`,
+    };
+    await router.push({ path: localePath('/dashboard'), query });
+    return;
+  }
+
+  if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
+    const query: LocationQueryRaw = {
+      tab: data.tab,
+      pr: `${data.owner}/${data.repo}/${data.number}`,
+      prView: data.view,
+    };
+    await router.push({ path: localePath('/dashboard'), query });
+    return;
+  }
+
+  if (entry.type === 'repository' && data?.owner && data.repo) {
+    const query: LocationQueryRaw = {
+      tab: data.tab ?? 'repos',
+      repo: `${data.owner}/${data.repo}`,
+      branch: data.branch,
+    };
+    await router.push({ path: localePath('/dashboard'), query });
+    return;
+  }
+
+  if (entry.type === 'file' && data?.owner && data.repo) {
+    const query: LocationQueryRaw = {
+      repo: `${data.owner}/${data.repo}`,
+      path: data.path ?? '',
+      branch: data.branch,
+    };
+    await router.push({ path: localePath('/dashboard'), query });
+    return;
+  }
+
+  await router.push(localePath('/dashboard'));
+};
+
+const goBack = async () => {
+  await navigateToEntryRoute(goNavigationBack());
+};
+
+const goHome = async () => {
+  goToHome();
+  await router.push(localePath('/dashboard'));
+};
+
+const goToPullRequestDetails = () => {
+  replaceWithEntry({
+    type: 'pull-request',
+    data: {
+      owner: props.owner,
+      repo: props.repo,
+      number: props.pullNumber,
+      tab: currentRouteTab.value,
+    },
+  });
+  emit('close');
+};
 </script>
 
 <template>
@@ -80,9 +182,39 @@ const totalDeletions = computed(() =>
           <MessageSquareIcon :size="13" aria-hidden="true" />
           {{ review.pendingCommentCount.value }}
         </span>
-        <button class="button is-small is-light" type="button" @click="emit('close')">
-          {{ t('prReview.backToDetails') }}
-        </button>
+        <div class="pr-review-workspace__nav-buttons">
+          <button
+            type="button"
+            class="pr-review-workspace__nav-button"
+            :aria-label="t('repoFileView.back')"
+            :title="t('repoFileView.back')"
+            @click="goBack"
+          >
+            <ArrowLeftIcon :size="15" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="pr-review-workspace__nav-button"
+            :aria-label="t('repoFileView.home')"
+            :title="t('repoFileView.home')"
+            @click="goHome"
+          >
+            <HomeIcon :size="15" aria-hidden="true" />
+          </button>
+          <template v-if="shouldShowPullRequestDetailsButton">
+            <span class="pr-review-workspace__nav-divider" aria-hidden="true" />
+            <button
+              type="button"
+              class="pr-review-workspace__nav-button pr-review-workspace__nav-button--pr-details"
+              :aria-label="t('prReview.backToDetails')"
+              :title="t('prReview.backToDetails')"
+              @click="goToPullRequestDetails"
+            >
+              <GitPullRequestIcon :size="14" aria-hidden="true" />
+              <span class="pr-review-workspace__nav-button-label" aria-hidden="true">PR</span>
+            </button>
+          </template>
+        </div>
       </div>
     </header>
 
@@ -252,6 +384,75 @@ const totalDeletions = computed(() =>
   border-color: var(--gitpulse-draft-border);
   background: var(--gitpulse-draft-bg);
   color: var(--gitpulse-warning);
+}
+
+.pr-review-workspace__nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: 0.35rem;
+  padding: 3px;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
+  background: var(--gitpulse-surface);
+}
+
+.pr-review-workspace__nav-divider {
+  width: 1px;
+  height: 0.875rem;
+  margin: 0 2px;
+  background: var(--gitpulse-border);
+  flex-shrink: 0;
+}
+
+.pr-review-workspace__nav-button {
+  height: 1.625rem;
+  min-width: 1.625rem;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+
+  &:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-info);
+    outline-offset: 1px;
+  }
+}
+
+.pr-review-workspace__nav-button--pr-details {
+  padding: 0 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--gitpulse-text-muted);
+
+  &:hover {
+    color: var(--gitpulse-info);
+    background: var(--gitpulse-info-soft, var(--gitpulse-surface-hover));
+  }
+
+  &:focus-visible {
+    color: var(--gitpulse-info);
+  }
+}
+
+.pr-review-workspace__nav-button-label {
+  line-height: 1;
 }
 
 .pr-review-workspace__grid {

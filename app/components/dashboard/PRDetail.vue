@@ -7,7 +7,7 @@
       :pull-number="currentPullRequest?.number || 0"
       :commit-id="reviewCommitId"
       :title="currentPullRequest?.title"
-      @close="isReviewWindowOpen = false"
+      @close="closeReviewWindow"
     />
 
     <div v-else class="columns">
@@ -96,7 +96,7 @@
                 class="sidebar-review-btn"
                 type="button"
                 :disabled="!canOpenReviewWindow"
-                @click="isReviewWindowOpen = true"
+                @click="openReviewWindow"
               >
                 <EyeIcon :size="14" />
                 <span>{{ t('prReview.openReview') }}</span>
@@ -132,6 +132,7 @@ import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
   pullRequest: any;
+  reviewActive?: boolean;
 }>();
 
 interface PullRequestDetailLabel {
@@ -150,6 +151,8 @@ const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'update:review-active', isActive: boolean): void;
+  (e: 'open-review'): void;
+  (e: 'close-review'): void;
 }>();
 
 const loadingTimeline = ref(false);
@@ -213,6 +216,20 @@ const canOpenReviewWindow = computed(() =>
     repoOwner.value && repoName.value && currentPullRequest.value?.number && reviewCommitId.value
   )
 );
+
+const openReviewWindow = () => {
+  if (!canOpenReviewWindow.value) {
+    return;
+  }
+
+  isReviewWindowOpen.value = true;
+  emit('open-review');
+};
+
+const closeReviewWindow = () => {
+  isReviewWindowOpen.value = false;
+  emit('close-review');
+};
 
 const switchToIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
@@ -701,6 +718,21 @@ watch(
       }
 
       fetchPullRequestDetails();
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => [props.reviewActive, canOpenReviewWindow.value] as const,
+  ([shouldOpenReview, canOpen]) => {
+    if (shouldOpenReview && canOpen) {
+      isReviewWindowOpen.value = true;
+      return;
+    }
+
+    if (!shouldOpenReview) {
+      isReviewWindowOpen.value = false;
     }
   },
   { immediate: true }

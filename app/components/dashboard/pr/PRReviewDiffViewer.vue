@@ -16,6 +16,7 @@ import type {
   PRReviewDiffSection,
   PRReviewDraftComment,
   PRReviewCommentThread,
+  PRReviewFile,
 } from '~/composables/usePRReview';
 
 const EMPTY_DRAFT_COMMENTS: PRReviewDraftComment[] = [];
@@ -45,6 +46,8 @@ const emit = defineEmits<{
 const collapsedFiles = ref(new Set<string>());
 const inlineDraftBodies = shallowRef(new Map<string, string>());
 const { t } = useI18n();
+const { resolveDashboardUrlTarget, getDashboardUrlRoute, trackDashboardUrlNavigation } =
+  useDashboardUrlNavigation();
 
 const draftsByFile = computed(() => {
   const grouped = new Map<string, PRReviewDraftComment[]>();
@@ -103,6 +106,36 @@ const getDraftsForFile = (filename: string) =>
 
 const getReviewThreadsForFile = (filename: string) =>
   reviewThreadsByFile.value.get(filename) ?? EMPTY_REVIEW_COMMENT_THREADS;
+
+const fileNavigationTargets = computed(() => {
+  const targets = new Map<string, NonNullable<ReturnType<typeof resolveDashboardUrlTarget>>>();
+
+  for (const section of props.sections) {
+    const sourceUrl = section.file.blob_url || section.file.raw_url;
+    const target = resolveDashboardUrlTarget(sourceUrl);
+
+    if (target?.type === 'file') {
+      targets.set(section.file.filename, target);
+    }
+  }
+
+  return targets;
+});
+
+const getFileNavigationTarget = (filename: string) =>
+  fileNavigationTargets.value.get(filename) ?? null;
+
+const getFileDashboardRoute = (filename: string) => {
+  const target = getFileNavigationTarget(filename);
+  return target ? getDashboardUrlRoute(target) : null;
+};
+
+const trackFileNavigation = (file: PRReviewFile) => {
+  const target = getFileNavigationTarget(file.filename);
+  if (target) {
+    trackDashboardUrlNavigation(target);
+  }
+};
 
 const getDraftKey = (path: string, line: number) => `${path}:${line}`;
 
@@ -308,7 +341,17 @@ onBeforeUnmount(() => {
             aria-hidden="true"
           />
           <div class="pr-review-diff-viewer__header-info">
-            <h2 class="title is-6 mb-1">{{ section.file.filename }}</h2>
+            <h2 class="title is-6 mb-1">
+              <NuxtLinkLocale
+                v-if="getFileDashboardRoute(section.file.filename)"
+                :to="getFileDashboardRoute(section.file.filename)!"
+                class="pr-review-diff-viewer__file-link"
+                @click.stop="trackFileNavigation(section.file)"
+              >
+                {{ section.file.filename }}
+              </NuxtLinkLocale>
+              <span v-else>{{ section.file.filename }}</span>
+            </h2>
             <p v-if="section.file.previous_filename" class="is-size-7 has-text-grey mb-0">
               {{ t('prReview.renamedFrom', { filename: section.file.previous_filename }) }}
             </p>
@@ -420,6 +463,17 @@ onBeforeUnmount(() => {
 
 .pr-review-diff-viewer__header:focus-visible {
   box-shadow: inset 0 0 0 2px var(--gitpulse-focus-ring);
+}
+
+.pr-review-diff-viewer__file-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.pr-review-diff-viewer__file-link:hover,
+.pr-review-diff-viewer__file-link:focus-visible {
+  color: var(--gitpulse-link);
+  text-decoration: underline;
 }
 
 .pr-review-diff-viewer__file-section--active .pr-review-diff-viewer__header {

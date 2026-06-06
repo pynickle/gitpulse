@@ -28,6 +28,7 @@ const props = defineProps<{
   isIssueVisible: boolean;
   isPullRequestVisible: boolean;
   isRepositoryVisible: boolean;
+  isPullRequestReviewRoute: boolean;
   issueDetailKey: string;
   pullRequestDetailKey: string;
   repositoryDetailKey: string;
@@ -41,6 +42,8 @@ const emit = defineEmits<{
   (e: 'home'): void;
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
+  (e: 'open-pull-request-review'): void;
+  (e: 'close-pull-request-review'): void;
 }>();
 
 const { t } = useI18n();
@@ -178,7 +181,10 @@ watch(activeDetailKey, () => {
             <PrDetail
               v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
               :pull-request="pullRequest"
+              :review-active="isPullRequestReviewRoute"
               @update:review-active="isPullRequestReviewActive = $event"
+              @open-review="emit('open-pull-request-review')"
+              @close-review="emit('close-pull-request-review')"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
             />
