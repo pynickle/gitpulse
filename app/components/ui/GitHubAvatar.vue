@@ -24,6 +24,8 @@ const props = withDefaults(
   }
 );
 
+const colorMode = useColorMode();
+
 const toCssSize = (value: number | string | undefined) => {
   if (value === undefined || value === '') return undefined;
   if (typeof value === 'number') return `${value}px`;
@@ -41,6 +43,7 @@ const avatarStyle = computed(() => ({
 const imageWidth = computed(() => props.width ?? props.size);
 const imageHeight = computed(() => props.height ?? props.size);
 const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
+const isDarkMode = computed(() => colorMode.value === 'dark');
 </script>
 
 <template>
@@ -50,6 +53,7 @@ const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
       `github-avatar--${variant}`,
       {
         'github-avatar--interactive': interactive,
+        'github-avatar--dark': isDarkMode,
       },
     ]"
     :style="avatarStyle"
@@ -75,18 +79,23 @@ const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
 $motion-normal: 0.3s;
 
 .github-avatar {
+  --github-avatar-bg: transparent;
+  --github-avatar-ring: 0 0 0 0 transparent;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 50%;
+  background: var(--github-avatar-bg);
+  box-shadow: var(--github-avatar-ring);
   vertical-align: middle;
   color: var(--gitpulse-text-muted);
 }
 
 .github-avatar--raised {
-  box-shadow: var(--gitpulse-shadow-card);
+  box-shadow: var(--github-avatar-ring), var(--gitpulse-shadow-card);
 }
 
 .github-avatar--interactive {
@@ -102,6 +111,7 @@ $motion-normal: 0.3s;
   width: 100%;
   height: 100%;
   border-radius: inherit;
+  background: var(--github-avatar-bg);
   object-fit: cover;
 }
 
@@ -112,5 +122,12 @@ $motion-normal: 0.3s;
   width: 100%;
   height: 100%;
   background: var(--gitpulse-surface-hover);
+}
+
+.github-avatar--dark,
+:global(html.dark) .github-avatar,
+:global(html[data-color-mode='dark']) .github-avatar {
+  --github-avatar-bg: #fff;
+  --github-avatar-ring: 0 0 0 1px color-mix(in srgb, var(--gitpulse-text-strong) 18%, transparent);
 }
 </style>
