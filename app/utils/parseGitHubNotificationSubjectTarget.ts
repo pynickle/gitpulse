@@ -1,6 +1,6 @@
-import parseGitHubMarkdownTarget, {
-  type GitHubMarkdownTarget,
-} from '~/utils/parseGitHubMarkdownTarget';
+import type { NotificationSubjectStateTarget } from '#shared/types/notifications';
+
+import parseGitHubMarkdownTarget, { type GitHubMarkdownTarget } from './parseGitHubMarkdownTarget';
 
 export interface GitHubNotificationSubjectTarget {
   owner: string;
@@ -28,6 +28,22 @@ const getRouteType = (
   if (targetType === 'pull-request') return 'pulls';
   return 'discussions';
 };
+
+export function toNotificationSubjectStateTarget(
+  target: GitHubNotificationSubjectTarget
+): NotificationSubjectStateTarget | null {
+  if (target.type !== 'issues' && target.type !== 'pulls') {
+    return null;
+  }
+
+  return {
+    key: `${target.owner}/${target.repo}/${target.type}/${target.number}`,
+    owner: target.owner,
+    repo: target.repo,
+    type: target.type,
+    number: target.number,
+  };
+}
 
 export default function parseGitHubNotificationSubjectTarget(
   subject?: GitHubNotificationSubjectLike | null

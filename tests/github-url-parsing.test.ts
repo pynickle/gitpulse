@@ -6,6 +6,9 @@ import {
   parseMarkdownRepoResource,
 } from '../app/utils/markdown-repo-path-utils';
 import parseGitHubMarkdownTarget from '../app/utils/parseGitHubMarkdownTarget';
+import parseGitHubNotificationSubjectTarget, {
+  toNotificationSubjectStateTarget,
+} from '../app/utils/parseGitHubNotificationSubjectTarget';
 import parseGitHubRepoPath from '../app/utils/parseGitHubRepoPath';
 
 describe('parseGitHubRepoPath', () => {
@@ -42,7 +45,7 @@ describe('parseGitHubRepoPath', () => {
 });
 
 describe('parseGitHubMarkdownTarget', () => {
-  test('parses GitHub issue and pull request targets', () => {
+  test('parses GitHub issue, pull request, and discussion targets', () => {
     expect(parseGitHubMarkdownTarget('https://github.com/owner/repo/issues/42')).toEqual({
       owner: 'owner',
       repo: 'repo',
@@ -56,12 +59,62 @@ describe('parseGitHubMarkdownTarget', () => {
       number: 7,
       type: 'pull-request',
     });
+
+    expect(parseGitHubMarkdownTarget('https://github.com/owner/repo/discussions/9')).toEqual({
+      owner: 'owner',
+      repo: 'repo',
+      number: 9,
+      type: 'discussion',
+    });
   });
 
   test('rejects unsupported hosts and invalid target numbers', () => {
     expect(parseGitHubMarkdownTarget('https://example.com/owner/repo/issues/42')).toBeNull();
     expect(parseGitHubMarkdownTarget('https://github.com/owner/repo/issues/0')).toBeNull();
     expect(parseGitHubMarkdownTarget('/owner/repo/issues/42')).toBeNull();
+  });
+});
+
+describe('parseGitHubNotificationSubjectTarget', () => {
+  test('keeps discussion notifications navigable but outside subject-state enrichment', () => {
+    const target = parseGitHubNotificationSubjectTarget({
+      type: 'Discussion',
+      url: 'https://github.com/owner/repo/discussions/9',
+    });
+
+    expect(target).toEqual({
+      owner: 'owner',
+      repo: 'repo',
+      number: 9,
+      type: 'discussions',
+    });
+    expect(target && toNotificationSubjectStateTarget(target)).toBeNull();
+  });
+
+  test('converts issue and pull request notification targets for state enrichment', () => {
+    const issueTarget = parseGitHubNotificationSubjectTarget({
+      type: 'Issue',
+      url: 'https://github.com/owner/repo/issues/42',
+    });
+    const pullTarget = parseGitHubNotificationSubjectTarget({
+      type: 'PullRequest',
+      url: 'https://github.com/owner/repo/pull/7',
+    });
+
+    expect(issueTarget && toNotificationSubjectStateTarget(issueTarget)).toEqual({
+      key: 'owner/repo/issues/42',
+      owner: 'owner',
+      repo: 'repo',
+      number: 42,
+      type: 'issues',
+    });
+    expect(pullTarget && toNotificationSubjectStateTarget(pullTarget)).toEqual({
+      key: 'owner/repo/pulls/7',
+      owner: 'owner',
+      repo: 'repo',
+      number: 7,
+      type: 'pulls',
+    });
   });
 });
 

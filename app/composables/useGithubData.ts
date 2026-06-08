@@ -8,7 +8,9 @@ import type {
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
 import type { CustomTabQuery, CustomTabSource } from '~/composables/useCustomTabs';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
-import parseGitHubNotificationSubjectTarget from '~/utils/parseGitHubNotificationSubjectTarget';
+import parseGitHubNotificationSubjectTarget, {
+  toNotificationSubjectStateTarget,
+} from '~/utils/parseGitHubNotificationSubjectTarget';
 
 interface DashboardEntity {
   id: PropertyKey;
@@ -87,24 +89,16 @@ const buildPaginationUrl = (path: string, page: number, perPage = defaultPerPage
   return `${path}?${searchParams.toString()}`;
 };
 
-const parseNotificationSubjectTarget = (
+const parseNotificationSubjectStateTarget = (
   notification: DashboardNotification
 ): NotificationSubjectStateTarget | null => {
   const target = parseGitHubNotificationSubjectTarget(notification.subject);
-  if (!target) return null;
-
-  return {
-    key: `${target.owner}/${target.repo}/${target.type}/${target.number}`,
-    owner: target.owner,
-    repo: target.repo,
-    type: target.type,
-    number: target.number,
-  };
+  return target ? toNotificationSubjectStateTarget(target) : null;
 };
 
 const withPendingNotificationSubjectStates = (items: DashboardNotification[]) => {
   return items.map((item) => {
-    const target = parseNotificationSubjectTarget(item);
+    const target = parseGitHubNotificationSubjectTarget(item.subject);
     if (!target) {
       return {
         ...item,
@@ -123,7 +117,9 @@ const withPendingNotificationSubjectStates = (items: DashboardNotification[]) =>
         ...item.subject,
         number: target.number,
         state: undefined,
-        stateStatus: 'pending' as const,
+        stateStatus: toNotificationSubjectStateTarget(target)
+          ? ('pending' as const)
+          : ('unavailable' as const),
       },
     };
   });
@@ -133,7 +129,7 @@ const collectUniqueNotificationSubjectTargets = (items: DashboardNotification[])
   const targetsByKey = new Map<string, NotificationSubjectStateTarget>();
 
   for (const item of items) {
-    const target = parseNotificationSubjectTarget(item);
+    const target = parseNotificationSubjectStateTarget(item);
     if (target) {
       targetsByKey.set(target.key, target);
     }
@@ -144,7 +140,7 @@ const collectUniqueNotificationSubjectTargets = (items: DashboardNotification[])
 
 const shouldEnrichNotificationSubjectStates = (items: DashboardNotification[]) => {
   return items.some((item) => {
-    const target = parseNotificationSubjectTarget(item);
+    const target = parseNotificationSubjectStateTarget(item);
     if (!target) return false;
 
     return item.subject?.stateStatus !== 'loaded';
@@ -158,7 +154,7 @@ const applyNotificationSubjectStates = (
   const statesByKey = new Map(states.map((item) => [item.key, item.state]));
 
   return items.map((item) => {
-    const target = parseNotificationSubjectTarget(item);
+    const target = parseNotificationSubjectStateTarget(item);
     if (!target) return item;
 
     const state = statesByKey.get(target.key);
@@ -175,7 +171,7 @@ const applyNotificationSubjectStates = (
 
 const markNotificationSubjectStateErrors = (items: DashboardNotification[]) => {
   return items.map((item) => {
-    const target = parseNotificationSubjectTarget(item);
+    const target = parseNotificationSubjectStateTarget(item);
     if (!target) return item;
 
     return {
