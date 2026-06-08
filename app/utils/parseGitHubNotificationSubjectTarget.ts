@@ -6,7 +6,7 @@ export interface GitHubNotificationSubjectTarget {
   owner: string;
   repo: string;
   number: number;
-  type: 'issues' | 'pulls';
+  type: 'issues' | 'pulls' | 'discussions';
 }
 
 interface GitHubNotificationSubjectLike {
@@ -17,13 +17,16 @@ interface GitHubNotificationSubjectLike {
 const getExpectedTargetType = (subjectType?: string): GitHubMarkdownTarget['type'] | null => {
   if (subjectType === 'Issue') return 'issue';
   if (subjectType === 'PullRequest') return 'pull-request';
+  if (subjectType === 'Discussion') return 'discussion';
   return null;
 };
 
 const getRouteType = (
   targetType: GitHubMarkdownTarget['type']
 ): GitHubNotificationSubjectTarget['type'] => {
-  return targetType === 'issue' ? 'issues' : 'pulls';
+  if (targetType === 'issue') return 'issues';
+  if (targetType === 'pull-request') return 'pulls';
+  return 'discussions';
 };
 
 export default function parseGitHubNotificationSubjectTarget(

@@ -8,6 +8,7 @@ export interface DashboardNotificationSubject {
   title?: string;
   type?: NotificationSubjectKind;
   url?: string;
+  number?: number;
   state?: NotificationSubjectState;
   stateStatus?: NotificationSubjectStateStatus;
 }

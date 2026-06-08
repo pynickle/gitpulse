@@ -121,6 +121,7 @@ const withPendingNotificationSubjectStates = (items: DashboardNotification[]) =>
       ...item,
       subject: {
         ...item.subject,
+        number: target.number,
         state: undefined,
         stateStatus: 'pending' as const,
       },

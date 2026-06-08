@@ -4,15 +4,16 @@ export interface GitHubMarkdownTarget {
   owner: string;
   repo: string;
   number: number;
-  type: 'issue' | 'pull-request';
+  type: 'issue' | 'pull-request' | 'discussion';
 }
 
-const WEB_PATH_PATTERN = /^\/([^/]+)\/([^/]+)\/(issues|pull)\/(\d+)(?:\/|$)/;
-const API_PATH_PATTERN = /^\/repos\/([^/]+)\/([^/]+)\/(issues|pulls)\/(\d+)(?:\/|$)/;
+const WEB_PATH_PATTERN = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions)\/(\d+)(?:\/|$)/;
+const API_PATH_PATTERN = /^\/repos\/([^/]+)\/([^/]+)\/(issues|pulls|discussions)\/(\d+)(?:\/|$)/;
 
 const getDetailType = (type: string): GitHubMarkdownTarget['type'] | null => {
   if (type === 'issues') return 'issue';
   if (type === 'pull' || type === 'pulls') return 'pull-request';
+  if (type === 'discussions') return 'discussion';
   return null;
 };
 

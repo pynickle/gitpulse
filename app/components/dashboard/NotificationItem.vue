@@ -40,7 +40,12 @@
               </p>
 
               <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
-                {{ currentNotification.repository.full_name }} &middot;
+                <span v-if="currentNotification.subject?.number" class="notification-card__number">
+                  #{{ currentNotification.subject.number }}
+                </span>
+                <span class="notification-card__meta-separator"></span>
+                {{ currentNotification.repository.full_name }}
+                <span class="dashboard-list-card__separator">&middot;</span>
                 {{
                   formatDurationFromNow(currentNotification.updated_at, localeCode, relativeTimeNow)
                 }}
@@ -302,6 +307,16 @@ const reasonIcon = computed(() => {
 .notification-card:hover .mark-read-btn {
   opacity: 1;
   visibility: visible;
+}
+
+.notification-card__number {
+  color: var(--gitpulse-info);
+  font-weight: 500;
+}
+
+.notification-card__meta-separator {
+  display: inline-block;
+  width: 0.5rem;
 }
 
 .mark-read-btn:hover {
