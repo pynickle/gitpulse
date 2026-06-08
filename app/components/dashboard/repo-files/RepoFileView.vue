@@ -22,6 +22,10 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import type { RepoContentItem } from '~/composables/useRepoFiles';
+import {
+  buildDashboardQueryFromNavigationEntry,
+  type DashboardNavigationEntry,
+} from '~/utils/dashboard-url-navigation-utils';
 
 interface FolderTreeNode {
   name: string;
@@ -543,55 +547,37 @@ const countFiles = (node: FolderTreeNode): number =>
 
 const isCurrentPath = (path: string) => currentPath.value === path;
 
+const normalizeNavigationEntryBranch = (
+  entry: DashboardNavigationEntry,
+  branch: string | undefined
+) => {
+  const data = entry.data;
+
+  if (
+    (entry.type === 'repository' || entry.type === 'file') &&
+    data?.owner === props.owner &&
+    data.repo === props.repo
+  ) {
+    return buildBranchQueryValue(
+      entry.type === 'repository' ? (branch ?? canonicalBranch.value) : branch
+    );
+  }
+
+  return branch;
+};
+
 const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
   if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
     await router.push(localePath('/dashboard'));
     return;
   }
 
-  const data = entry.data;
+  const query = buildDashboardQueryFromNavigationEntry(entry, {
+    repositoryTab: 'repos',
+    normalizeBranch: normalizeNavigationEntryBranch,
+  });
 
-  if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
-    const query: LocationQueryRaw = {
-      tab: data.tab,
-      issue: `${data.owner}/${data.repo}/${data.number}`,
-    };
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
-    const query: LocationQueryRaw = {
-      tab: data.tab,
-      pr: `${data.owner}/${data.repo}/${data.number}`,
-      prView: data.view,
-    };
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  if (entry.type === 'repository' && data?.owner && data.repo) {
-    const query: LocationQueryRaw = {
-      tab: data.tab ?? 'repos',
-      repo: `${data.owner}/${data.repo}`,
-      branch:
-        data.owner === props.owner && data.repo === props.repo
-          ? buildBranchQueryValue(data.branch ?? canonicalBranch.value)
-          : data.branch,
-    };
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  if (entry.type === 'file' && data?.owner && data.repo) {
-    const query: LocationQueryRaw = {
-      repo: `${data.owner}/${data.repo}`,
-      path: data.path ?? '',
-      branch:
-        data.owner === props.owner && data.repo === props.repo
-          ? buildBranchQueryValue(data.branch)
-          : data.branch,
-    };
+  if (query) {
     await router.push({ path: localePath('/dashboard'), query });
     return;
   }

@@ -3,12 +3,14 @@ import { Loader2Icon } from 'lucide-vue-next';
 import { computed, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import DetailOverlay from '~/components/dashboard/DetailOverlay.vue';
+import DiscussionDetail from '~/components/dashboard/DiscussionDetail.vue';
 import IssueDetail from '~/components/dashboard/IssueDetail.vue';
 import PrDetail from '~/components/dashboard/PRDetail.vue';
 import RepoDetail from '~/components/dashboard/RepoDetail.vue';
 
-type DetailPaneType = 'issue' | 'pull-request' | 'repository';
+type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'repository';
 
 interface ActiveDetailPane {
   type: DetailPaneType;
@@ -22,18 +24,23 @@ interface ActiveDetailPane {
 const props = defineProps<{
   issue: Record<string, unknown> | null;
   pullRequest: Record<string, unknown> | null;
+  discussion: DiscussionDetailPayload | null;
   repository: Record<string, unknown> | null;
   issueError: string;
+  discussionError: string;
   repoError: string;
   isIssueVisible: boolean;
   isPullRequestVisible: boolean;
+  isDiscussionVisible: boolean;
   isRepositoryVisible: boolean;
   isPullRequestReviewRoute: boolean;
   issueDetailKey: string;
   pullRequestDetailKey: string;
+  discussionDetailKey: string;
   repositoryDetailKey: string;
   loadingIssue: boolean;
   loadingPullRequest: boolean;
+  loadingDiscussion: boolean;
   loadingRepository: boolean;
 }>();
 
@@ -42,6 +49,7 @@ const emit = defineEmits<{
   (e: 'home'): void;
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
+  (e: 'switch-discussion', owner: string, repo: string, discussionNumber: number): void;
   (e: 'open-pull-request-review'): void;
   (e: 'close-pull-request-review'): void;
 }>();
@@ -71,6 +79,17 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(props.pullRequest),
       error: '',
       loadingTitle: t('issueDetail.loadingPullRequest'),
+    };
+  }
+
+  if (props.isDiscussionVisible) {
+    return {
+      type: 'discussion',
+      key: props.discussionDetailKey,
+      loading: props.loadingDiscussion,
+      hasData: Boolean(props.discussion),
+      error: props.discussionError,
+      loadingTitle: t('discussionDetail.loading'),
     };
   }
 
@@ -116,6 +135,10 @@ const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => 
 
 const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number) => {
   emit('switch-pull-request', owner, repo, pullNumber);
+};
+
+const handleSwitchDiscussion = (owner: string, repo: string, discussionNumber: number) => {
+  emit('switch-discussion', owner, repo, discussionNumber);
 };
 
 watch(activeDetailKey, () => {
@@ -187,6 +210,14 @@ watch(activeDetailKey, () => {
               @close-review="emit('close-pull-request-review')"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
+            />
+
+            <DiscussionDetail
+              v-else-if="activeDetailPane?.type === 'discussion' && discussion"
+              :discussion="discussion"
+              @switch-issue="handleSwitchIssue"
+              @switch-pull-request="handleSwitchPullRequest"
+              @switch-discussion="handleSwitchDiscussion"
             />
 
             <RepoDetail

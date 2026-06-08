@@ -13,19 +13,24 @@ interface NotificationLike {
 interface NotificationDetails {
   owner: string;
   repo: string;
-  type: 'issues' | 'pulls';
+  type: 'issues' | 'pulls' | 'discussions';
   number: number;
   isIssue: boolean;
   isPR: boolean;
+  isDiscussion: boolean;
 }
 
-function isIssueOrPullSubject(notification: NotificationLike) {
-  return notification.subject?.type === 'Issue' || notification.subject?.type === 'PullRequest';
+function isInternalDetailSubject(notification: NotificationLike) {
+  return (
+    notification.subject?.type === 'Issue' ||
+    notification.subject?.type === 'PullRequest' ||
+    notification.subject?.type === 'Discussion'
+  );
 }
 
 export function useUrlHelper() {
   const getNotificationDetails = (notification: NotificationLike): NotificationDetails | null => {
-    if (isIssueOrPullSubject(notification)) {
+    if (isInternalDetailSubject(notification)) {
       const target = parseGitHubNotificationSubjectTarget(notification.subject);
       if (!target) return null;
 
@@ -36,6 +41,7 @@ export function useUrlHelper() {
         number: target.number,
         isIssue: target.type === 'issues',
         isPR: target.type === 'pulls',
+        isDiscussion: target.type === 'discussions',
       };
     }
 
@@ -43,7 +49,7 @@ export function useUrlHelper() {
   };
 
   const openExternalNotification = (notification: NotificationLike) => {
-    if (isIssueOrPullSubject(notification)) {
+    if (isInternalDetailSubject(notification)) {
       const details = getNotificationDetails(notification);
       if (!details) return;
 

@@ -6,6 +6,7 @@ export type PageType =
   | 'dashboard'
   | 'issue'
   | 'pull-request'
+  | 'discussion'
   | 'repository'
   | 'notification'
   | 'file';
@@ -108,6 +109,14 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
+  const navigateToDiscussion = (owner: string, repo: string, number: number, tab?: string) => {
+    const entry: NavigationEntry = {
+      type: 'discussion',
+      data: { owner, repo, number, tab },
+    };
+    pushEntry(entry);
+  };
+
   const navigateToRepo = (owner: string, repo: string, tab?: string, branch?: string) => {
     const entry: NavigationEntry = {
       type: 'repository',
@@ -193,6 +202,7 @@ export function useNavigationHistory() {
     navigateToDashboard,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToDiscussion,
     navigateToRepo,
     navigateToFile,
     navigateToNotification,

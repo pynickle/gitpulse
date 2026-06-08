@@ -14,6 +14,129 @@ export type PullRequestDashboardView = 'diff';
 
 const PULL_REQUEST_DIFF_VIEW_SEGMENTS = new Set(['changes', 'files']);
 
+export const DASHBOARD_DETAIL_QUERY_KEYS = [
+  'issue',
+  'pr',
+  'prView',
+  'discussion',
+  'repo',
+  'path',
+  'branch',
+  'url',
+] as const;
+
+export type DashboardDetailQueryKey = (typeof DASHBOARD_DETAIL_QUERY_KEYS)[number];
+
+export interface DashboardNavigationEntry {
+  type:
+    | 'dashboard'
+    | 'issue'
+    | 'pull-request'
+    | 'discussion'
+    | 'repository'
+    | 'notification'
+    | 'file';
+  data?: {
+    owner?: string;
+    repo?: string;
+    number?: number;
+    tab?: string;
+    path?: string;
+    branch?: string;
+    view?: PullRequestDashboardView;
+  };
+}
+
+interface DashboardNavigationQueryOptions {
+  defaultTab?: string;
+  repositoryTab?: string;
+  normalizeBranch?: (
+    entry: DashboardNavigationEntry,
+    branch: string | undefined
+  ) => string | undefined;
+}
+
+export function clearDashboardDetailQuery(query: LocationQueryRaw): LocationQueryRaw {
+  return {
+    ...query,
+    issue: undefined,
+    pr: undefined,
+    prView: undefined,
+    discussion: undefined,
+    repo: undefined,
+    path: undefined,
+    branch: undefined,
+    url: undefined,
+  };
+}
+
+function serializeDashboardDetailTarget(owner: string, repo: string, number: number) {
+  return `${owner}/${repo}/${number}`;
+}
+
+function serializeDashboardRepoTarget(owner: string, repo: string) {
+  return `${owner}/${repo}`;
+}
+
+function getNavigationBranch(
+  entry: DashboardNavigationEntry,
+  options: DashboardNavigationQueryOptions
+) {
+  return options.normalizeBranch?.(entry, entry.data?.branch) ?? entry.data?.branch;
+}
+
+export function buildDashboardQueryFromNavigationEntry(
+  entry: DashboardNavigationEntry | null | undefined,
+  options: DashboardNavigationQueryOptions = {}
+): LocationQueryRaw | null {
+  if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
+    return null;
+  }
+
+  const data = entry.data;
+
+  if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
+    return {
+      tab: data.tab ?? options.defaultTab,
+      issue: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
+    };
+  }
+
+  if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
+    return {
+      tab: data.tab ?? options.defaultTab,
+      pr: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
+      prView: data.view,
+    };
+  }
+
+  if (entry.type === 'discussion' && data?.owner && data.repo && data.number) {
+    return {
+      tab: data.tab ?? options.defaultTab,
+      discussion: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
+    };
+  }
+
+  if (entry.type === 'repository' && data?.owner && data.repo) {
+    return {
+      tab: data.tab ?? options.repositoryTab ?? options.defaultTab,
+      repo: serializeDashboardRepoTarget(data.owner, data.repo),
+      branch: getNavigationBranch(entry, options),
+    };
+  }
+
+  if (entry.type === 'file' && data?.owner && data.repo) {
+    return {
+      tab: data.tab,
+      repo: serializeDashboardRepoTarget(data.owner, data.repo),
+      path: data.path ?? '',
+      branch: getNavigationBranch(entry, options),
+    };
+  }
+
+  return null;
+}
+
 export type DashboardUrlTarget =
   | {
       type: 'issue';
@@ -29,6 +152,14 @@ export type DashboardUrlTarget =
       repo: string;
       number: number;
       view?: PullRequestDashboardView;
+      query: LocationQueryRaw;
+      hash?: string;
+    }
+  | {
+      type: 'discussion';
+      owner: string;
+      repo: string;
+      number: number;
       query: LocationQueryRaw;
       hash?: string;
     }
@@ -157,6 +288,24 @@ function createIssueTarget(
   };
 }
 
+function createDiscussionTarget(
+  owner: string,
+  repo: string,
+  number: number,
+  hash?: string
+): DashboardUrlTarget {
+  return {
+    type: 'discussion',
+    owner,
+    repo,
+    number,
+    query: {
+      discussion: `${owner}/${repo}/${number}`,
+    },
+    hash,
+  };
+}
+
 function createRepoTarget(
   owner: string,
   repo: string,
@@ -204,6 +353,10 @@ export function parseDashboardUrlTarget(
   if (detailTarget) {
     if (detailTarget.type === 'issue') {
       return createIssueTarget(detailTarget.owner, detailTarget.repo, detailTarget.number);
+    }
+
+    if (detailTarget.type === 'discussion') {
+      return createDiscussionTarget(detailTarget.owner, detailTarget.repo, detailTarget.number);
     }
 
     return createPullRequestTarget({

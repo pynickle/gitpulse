@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, GitPullRequestIcon, HomeIcon, MessageSquareIcon } from 'lucide-vue-next';
 import { computed, shallowRef } from 'vue';
-import type { LocationQueryRaw } from 'vue-router';
 
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
+import { buildDashboardQueryFromNavigationEntry } from '~/utils/dashboard-url-navigation-utils';
 
 const props = defineProps<{
   owner: string;
@@ -83,43 +83,11 @@ const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
     return;
   }
 
-  const data = entry.data;
+  const query = buildDashboardQueryFromNavigationEntry(entry, {
+    repositoryTab: 'repos',
+  });
 
-  if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
-    const query: LocationQueryRaw = {
-      tab: data.tab,
-      issue: `${data.owner}/${data.repo}/${data.number}`,
-    };
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
-    const query: LocationQueryRaw = {
-      tab: data.tab,
-      pr: `${data.owner}/${data.repo}/${data.number}`,
-      prView: data.view,
-    };
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  if (entry.type === 'repository' && data?.owner && data.repo) {
-    const query: LocationQueryRaw = {
-      tab: data.tab ?? 'repos',
-      repo: `${data.owner}/${data.repo}`,
-      branch: data.branch,
-    };
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  if (entry.type === 'file' && data?.owner && data.repo) {
-    const query: LocationQueryRaw = {
-      repo: `${data.owner}/${data.repo}`,
-      path: data.path ?? '',
-      branch: data.branch,
-    };
+  if (query) {
     await router.push({ path: localePath('/dashboard'), query });
     return;
   }

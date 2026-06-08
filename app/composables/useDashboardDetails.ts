@@ -1,8 +1,15 @@
 import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
+import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
-import type { PullRequestDashboardView } from '~/utils/dashboard-url-navigation-utils';
+import {
+  DASHBOARD_DETAIL_QUERY_KEYS,
+  buildDashboardQueryFromNavigationEntry,
+  clearDashboardDetailQuery,
+  type DashboardDetailQueryKey,
+  type PullRequestDashboardView,
+} from '~/utils/dashboard-url-navigation-utils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
@@ -12,7 +19,7 @@ interface DashboardEntity {
   [key: string]: unknown;
 }
 
-type DetailType = 'issue' | 'pull-request';
+type DetailType = 'issue' | 'pull-request' | 'discussion';
 
 interface DetailTarget {
   owner: string;
@@ -31,6 +38,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const {
     goBack,
     goToHome,
+    navigateToDiscussion,
     navigateToIssue,
     navigateToPullRequest,
     navigateToRepo,
@@ -43,17 +51,22 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const isIssueDetailVisible = ref(false);
   const isPRDetailVisible = ref(false);
+  const isDiscussionDetailVisible = ref(false);
   const isRepoDetailVisible = ref(false);
   const currentIssue = ref<DashboardEntity | null>(null);
   const currentPR = ref<DashboardEntity | null>(null);
+  const currentDiscussion = ref<DiscussionDetailPayload | null>(null);
   const currentRepo = ref<Record<string, unknown> | null>(null);
   const issueError = ref('');
+  const discussionError = ref('');
   const repoError = ref('');
   const loadingIssue = ref(false);
   const loadingPR = ref(false);
+  const loadingDiscussion = ref(false);
   const loadingRepo = ref(false);
   const issueRequestId = ref(0);
   const prRequestId = ref(0);
+  const discussionRequestId = ref(0);
   const repoRequestId = ref(0);
 
   const parseDetailTarget = (value: unknown): DetailTarget | null => {
@@ -125,59 +138,47 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     });
   };
 
+  const replaceDashboardQuery = async (query: LocationQueryRaw) => {
+    await router.replace({
+      path: localePath('/dashboard'),
+      query: buildDashboardQuery(query),
+    });
+  };
+
+  const hasRouteQueryKey = (key: DashboardDetailQueryKey) => {
+    return Object.hasOwn(route.query, key);
+  };
+
+  const hasConflictingDetailQuery = (preservedKeys: DashboardDetailQueryKey[]) => {
+    const preservedKeySet = new Set(preservedKeys);
+    return DASHBOARD_DETAIL_QUERY_KEYS.some(
+      (key) => !preservedKeySet.has(key) && hasRouteQueryKey(key)
+    );
+  };
+
+  const buildDetailDashboardQuery = (query: LocationQueryRaw) => {
+    return {
+      ...clearDashboardDetailQuery(route.query),
+      tab: currentRouteTab.value,
+      ...query,
+    };
+  };
+
   const navigateToEntryRoute = async (entry: typeof currentEntry.value) => {
     if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
       await clearDetailRoute();
       return;
     }
 
-    const data = entry.data;
+    const query = buildDashboardQueryFromNavigationEntry(entry, {
+      defaultTab: currentRouteTab.value,
+      repositoryTab: currentRouteTab.value,
+    });
 
-    if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
+    if (query) {
       await pushDashboardQuery({
-        ...route.query,
-        tab: data.tab ?? currentRouteTab.value,
-        issue: serializeDetailTarget(data.owner, data.repo, data.number),
-        pr: undefined,
-        prView: undefined,
-        repo: undefined,
-        path: undefined,
-        branch: undefined,
-        url: undefined,
-      });
-      return;
-    }
-
-    if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
-      await pushDashboardQuery({
-        ...route.query,
-        tab: data.tab ?? currentRouteTab.value,
-        issue: undefined,
-        pr: serializeDetailTarget(data.owner, data.repo, data.number),
-        prView: data.view,
-        repo: undefined,
-        path: undefined,
-        branch: undefined,
-        url: undefined,
-      });
-      return;
-    }
-
-    if (entry.type === 'repository' && data?.owner && data.repo) {
-      await pushRepoDetailRoute(data.owner, data.repo, data.branch);
-      return;
-    }
-
-    if (entry.type === 'file' && data?.owner && data.repo) {
-      await pushDashboardQuery({
-        ...route.query,
-        repo: `${data.owner}/${data.repo}`,
-        path: data.path ?? '',
-        branch: data.branch,
-        issue: undefined,
-        pr: undefined,
-        prView: undefined,
-        url: undefined,
+        ...clearDashboardDetailQuery(route.query),
+        ...query,
       });
       return;
     }
@@ -186,9 +187,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const pushDetailRoute = async (detailType: DetailType, target: DetailTarget) => {
-    const query: LocationQueryRaw = {
-      ...route.query,
-      tab: currentRouteTab.value,
+    const query = buildDetailDashboardQuery({
       issue:
         detailType === 'issue'
           ? serializeDetailTarget(target.owner, target.repo, target.number)
@@ -197,46 +196,34 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         detailType === 'pull-request'
           ? serializeDetailTarget(target.owner, target.repo, target.number)
           : undefined,
-      prView: undefined,
-      repo: undefined,
-      path: undefined,
-      branch: undefined,
-      url: undefined,
-    };
+      discussion:
+        detailType === 'discussion'
+          ? serializeDetailTarget(target.owner, target.repo, target.number)
+          : undefined,
+    });
 
     await pushDashboardQuery(query);
   };
 
   const pushRepoDetailRoute = async (owner: string, repo: string, branch?: string) => {
-    await pushDashboardQuery({
-      ...route.query,
-      tab: currentRouteTab.value,
-      issue: undefined,
-      pr: undefined,
-      prView: undefined,
-      repo: serializeRepoTarget(owner, repo),
-      path: undefined,
-      branch,
-      url: undefined,
-    });
+    await pushDashboardQuery(
+      buildDetailDashboardQuery({
+        repo: serializeRepoTarget(owner, repo),
+        branch,
+      })
+    );
   };
 
   const clearDetailRoute = async () => {
     await pushDashboardQuery({
-      ...route.query,
-      issue: undefined,
-      pr: undefined,
-      prView: undefined,
-      repo: undefined,
-      path: undefined,
-      branch: undefined,
-      url: undefined,
+      ...clearDashboardDetailQuery(route.query),
       tab: currentRouteTab.value,
     });
   };
 
   const activeIssueTarget = computed(() => parseDetailTarget(route.query.issue));
   const activePRTarget = computed(() => parseDetailTarget(route.query.pr));
+  const activeDiscussionTarget = computed(() => parseDetailTarget(route.query.discussion));
   const activeRepoTarget = computed(() => {
     const rawValue = getQueryParamValue(route.query.repo);
     if (!rawValue) return null;
@@ -255,6 +242,73 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const isFileBrowsingRoute = computed(() =>
     Boolean(activeRepoTarget.value && Object.hasOwn(route.query, 'path'))
   );
+
+  const canonicalizeConflictingDetailRoute = async (
+    issueTarget: DetailTarget | null,
+    prTarget: DetailTarget | null,
+    discussionTarget: DetailTarget | null
+  ) => {
+    if (issueTarget && hasConflictingDetailQuery(['issue'])) {
+      await replaceDashboardQuery(
+        buildDetailDashboardQuery({
+          issue: serializeDetailTarget(issueTarget.owner, issueTarget.repo, issueTarget.number),
+        })
+      );
+      return true;
+    }
+
+    if (prTarget && hasConflictingDetailQuery(['pr', 'prView'])) {
+      await replaceDashboardQuery(
+        buildDetailDashboardQuery({
+          pr: serializeDetailTarget(prTarget.owner, prTarget.repo, prTarget.number),
+          prView: activePRView.value,
+        })
+      );
+      return true;
+    }
+
+    if (discussionTarget && hasConflictingDetailQuery(['discussion'])) {
+      await replaceDashboardQuery(
+        buildDetailDashboardQuery({
+          discussion: serializeDetailTarget(
+            discussionTarget.owner,
+            discussionTarget.repo,
+            discussionTarget.number
+          ),
+        })
+      );
+      return true;
+    }
+
+    if (isFileBrowsingRoute.value && hasConflictingDetailQuery(['repo', 'path', 'branch'])) {
+      const repoTarget = activeRepoTarget.value;
+      if (repoTarget) {
+        await replaceDashboardQuery({
+          ...clearDashboardDetailQuery(route.query),
+          repo: serializeRepoTarget(repoTarget.owner, repoTarget.repo),
+          path: getQueryParamValue(route.query.path) ?? '',
+          branch: activeRepoBranch.value,
+        });
+        return true;
+      }
+    }
+
+    if (
+      activeRepoTarget.value &&
+      !isFileBrowsingRoute.value &&
+      hasConflictingDetailQuery(['repo', 'branch'])
+    ) {
+      await replaceDashboardQuery(
+        buildDetailDashboardQuery({
+          repo: serializeRepoTarget(activeRepoTarget.value.owner, activeRepoTarget.value.repo),
+          branch: activeRepoBranch.value,
+        })
+      );
+      return true;
+    }
+
+    return false;
+  };
 
   const getCanonicalRepoBranch = (owner: string, repo: string) => {
     if (activeRepoBranch.value) return activeRepoBranch.value;
@@ -321,6 +375,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     return target ? `repo-${target.owner}-${target.repo}` : 'repo-empty';
   });
 
+  const discussionDetailKey = computed(() => {
+    const target = activeDiscussionTarget.value;
+    return target
+      ? `discussion-${target.owner}-${target.repo}-${target.number}`
+      : 'discussion-empty';
+  });
+
   const closeIssueDetail = () => {
     issueRequestId.value += 1;
     isIssueDetailVisible.value = false;
@@ -334,6 +395,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     isPRDetailVisible.value = false;
     currentPR.value = null;
     loadingPR.value = false;
+  };
+
+  const closeDiscussionDetail = () => {
+    discussionRequestId.value += 1;
+    isDiscussionDetailVisible.value = false;
+    currentDiscussion.value = null;
+    discussionError.value = '';
+    loadingDiscussion.value = false;
   };
 
   const closeRepoDetail = () => {
@@ -385,6 +454,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     issueError.value = '';
     loadingIssue.value = true;
     isPRDetailVisible.value = false;
+    isDiscussionDetailVisible.value = false;
     isIssueDetailVisible.value = true;
 
     await nextTick();
@@ -416,6 +486,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     currentPR.value = null;
     loadingPR.value = true;
     isIssueDetailVisible.value = false;
+    isDiscussionDetailVisible.value = false;
     isPRDetailVisible.value = true;
 
     await nextTick();
@@ -447,6 +518,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     loadingRepo.value = true;
     isIssueDetailVisible.value = false;
     isPRDetailVisible.value = false;
+    isDiscussionDetailVisible.value = false;
     isRepoDetailVisible.value = true;
 
     await nextTick();
@@ -475,6 +547,41 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     }
   };
 
+  const loadDiscussionData = async (owner: string, repo: string, discussionNumber: number) => {
+    if (!owner || !repo || !discussionNumber) return;
+
+    const requestId = discussionRequestId.value + 1;
+    discussionRequestId.value = requestId;
+    currentDiscussion.value = null;
+    discussionError.value = '';
+    loadingDiscussion.value = true;
+    isIssueDetailVisible.value = false;
+    isPRDetailVisible.value = false;
+    isRepoDetailVisible.value = false;
+    isDiscussionDetailVisible.value = true;
+
+    await nextTick();
+
+    try {
+      const discussion = await apiFetch<DiscussionDetailPayload>(
+        `/api/discussions/${owner}/${repo}/${discussionNumber}`
+      );
+      if (requestId === discussionRequestId.value) {
+        currentDiscussion.value = discussion;
+      }
+    } catch (error) {
+      console.error('Error fetching discussion:', error);
+      if (requestId === discussionRequestId.value) {
+        discussionError.value =
+          error instanceof Error ? error.message : 'Failed to load discussion details.';
+      }
+    } finally {
+      if (requestId === discussionRequestId.value) {
+        loadingDiscussion.value = false;
+      }
+    }
+  };
+
   const handleSwitchIssue = async (owner: string, repo: string, issueNumber: number) => {
     if (!owner || !repo || !issueNumber) return;
 
@@ -491,23 +598,26 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await pushDetailRoute('pull-request', target);
   };
 
+  const handleSwitchDiscussion = async (owner: string, repo: string, discussionNumber: number) => {
+    if (!owner || !repo || !discussionNumber) return;
+
+    const target = { owner, repo, number: discussionNumber };
+    navigateToDiscussion(owner, repo, discussionNumber, currentRouteTab.value);
+    await pushDetailRoute('discussion', target);
+  };
+
   const handlePRReviewOpen = async () => {
     const target = activePRTarget.value;
     if (!target) return;
 
     navigateToPullRequest(target.owner, target.repo, target.number, currentRouteTab.value, 'diff');
 
-    await pushDashboardQuery({
-      ...route.query,
-      tab: currentRouteTab.value,
-      issue: undefined,
-      pr: serializeDetailTarget(target.owner, target.repo, target.number),
-      prView: 'diff',
-      repo: undefined,
-      path: undefined,
-      branch: undefined,
-      url: undefined,
-    });
+    await pushDashboardQuery(
+      buildDetailDashboardQuery({
+        pr: serializeDetailTarget(target.owner, target.repo, target.number),
+        prView: 'diff',
+      })
+    );
   };
 
   const handlePRReviewClose = async () => {
@@ -545,6 +655,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       return;
     }
 
+    if (details.isDiscussion) {
+      void handleSwitchDiscussion(details.owner, details.repo, details.number);
+      return;
+    }
+
     void handleSwitchPR(details.owner, details.repo, details.number);
   };
 
@@ -563,14 +678,17 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const handlePRDetailBack = handleIssueDetailBack;
+  const handleDiscussionDetailBack = handleIssueDetailBack;
   const handleRepoDetailBack = handleIssueDetailBack;
   const handlePRDetailHome = handleIssueDetailHome;
+  const handleDiscussionDetailHome = handleIssueDetailHome;
   const handleRepoDetailHome = handleIssueDetailHome;
 
   watch(
     () => [
       route.query.issue,
       route.query.pr,
+      route.query.discussion,
       route.query.repo,
       route.query.path,
       route.query.branch,
@@ -590,16 +708,23 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       if (!loggedIn.value) {
         closeIssueDetail();
         closePRDetail();
+        closeDiscussionDetail();
         closeRepoDetail();
         return;
       }
 
       const issueTarget = activeIssueTarget.value;
       const prTarget = activePRTarget.value;
+      const discussionTarget = activeDiscussionTarget.value;
+
+      if (await canonicalizeConflictingDetailRoute(issueTarget, prTarget, discussionTarget)) {
+        return;
+      }
 
       if (isFileBrowsingRoute.value) {
         closeIssueDetail();
         closePRDetail();
+        closeDiscussionDetail();
         closeRepoDetail();
         return;
       }
@@ -651,6 +776,32 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         return;
       }
 
+      if (discussionTarget) {
+        const currentData = currentEntry.value?.data;
+        if (
+          currentEntry.value?.type !== 'discussion' ||
+          currentData?.owner !== discussionTarget.owner ||
+          currentData?.repo !== discussionTarget.repo ||
+          currentData?.number !== discussionTarget.number
+        ) {
+          replaceWithEntry({
+            type: 'discussion',
+            data: {
+              owner: discussionTarget.owner,
+              repo: discussionTarget.repo,
+              number: discussionTarget.number,
+              tab: currentRouteTab.value,
+            },
+          });
+        }
+        await loadDiscussionData(
+          discussionTarget.owner,
+          discussionTarget.repo,
+          discussionTarget.number
+        );
+        return;
+      }
+
       if (activeRepoTarget.value) {
         const { owner, repo } = activeRepoTarget.value;
         const currentData = currentEntry.value?.data;
@@ -669,6 +820,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
       closeIssueDetail();
       closePRDetail();
+      closeDiscussionDetail();
       closeRepoDetail();
     },
     { immediate: true }
@@ -677,15 +829,20 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   return {
     currentIssue,
     currentPR,
+    currentDiscussion,
     currentRepo,
     issueError,
+    discussionError,
     repoError,
     isIssueDetailVisible,
     isPRDetailVisible,
+    isDiscussionDetailVisible,
     isRepoDetailVisible,
     issueDetailKey,
+    discussionDetailKey,
     loadingIssue,
     loadingPR,
+    loadingDiscussion,
     loadingRepo,
     prDetailKey,
     repoDetailKey,
@@ -696,10 +853,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     handleIssueDetailHome,
     handlePRDetailBack,
     handlePRDetailHome,
+    handleDiscussionDetailBack,
+    handleDiscussionDetailHome,
     handleRepoDetailBack,
     handleRepoDetailHome,
     handleSwitchIssue,
     handleSwitchPR,
+    handleSwitchDiscussion,
     handlePRReviewOpen,
     handlePRReviewClose,
     isPRReviewRoute,

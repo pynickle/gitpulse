@@ -54,6 +54,23 @@ export function extractPullNumber(event: H3Event): number {
 }
 
 /**
+ * Extract and validate discussion number from route params.
+ */
+export function extractDiscussionNumber(event: H3Event): number {
+  const { discussion_number } = event.context.params as { discussion_number?: string };
+  const discussionNumber = parsePaginationNumber(discussion_number, 0);
+
+  if (discussionNumber < 1) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid discussion number',
+    });
+  }
+
+  return discussionNumber;
+}
+
+/**
  * Extract repo params + issue number together.
  */
 export function extractIssueRouteParams(event: H3Event) {
@@ -70,6 +87,16 @@ export function extractPullRouteParams(event: H3Event) {
   return {
     ...extractRepoParams(event),
     pullNumber: extractPullNumber(event),
+  };
+}
+
+/**
+ * Extract repo params + discussion number together.
+ */
+export function extractDiscussionRouteParams(event: H3Event) {
+  return {
+    ...extractRepoParams(event),
+    discussionNumber: extractDiscussionNumber(event),
   };
 }
 

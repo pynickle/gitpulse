@@ -142,23 +142,29 @@
     v-if="!showFileBrowsingView"
     :issue="currentIssue"
     :pull-request="currentPR"
+    :discussion="currentDiscussion"
     :repository="currentRepo"
     :issue-error="issueError"
+    :discussion-error="discussionError"
     :repo-error="repoError"
     :is-issue-visible="isIssueDetailVisible"
     :is-pull-request-visible="isPRDetailVisible"
+    :is-discussion-visible="isDiscussionDetailVisible"
     :is-repository-visible="isRepoDetailVisible"
     :is-pull-request-review-route="isPRReviewRoute"
     :issue-detail-key="issueDetailKey"
     :pull-request-detail-key="prDetailKey"
+    :discussion-detail-key="discussionDetailKey"
     :repository-detail-key="repoDetailKey"
     :loading-issue="loadingIssue"
     :loading-pull-request="loadingPR"
+    :loading-discussion="loadingDiscussion"
     :loading-repository="loadingRepo"
     @back="handleActiveDetailBack"
     @home="handleActiveDetailHome"
     @switch-issue="handleSwitchIssue"
     @switch-pull-request="handleSwitchPR"
+    @switch-discussion="handleSwitchDiscussion"
     @open-pull-request-review="handlePRReviewOpen"
     @close-pull-request-review="handlePRReviewClose"
   />
@@ -189,6 +195,7 @@ import QuickFilters from '~/components/dashboard/widgets/QuickFilters.vue';
 import TabStats from '~/components/dashboard/widgets/TabStats.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
+import { clearDashboardDetailQuery } from '~/utils/dashboard-url-navigation-utils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
@@ -626,15 +633,20 @@ const isPullRequestResult = (item: DashboardEntity) => {
 const {
   currentIssue,
   currentPR,
+  currentDiscussion,
   currentRepo,
   issueError,
+  discussionError,
   repoError,
   isIssueDetailVisible,
   isPRDetailVisible,
+  isDiscussionDetailVisible,
   isRepoDetailVisible,
   issueDetailKey,
+  discussionDetailKey,
   loadingIssue,
   loadingPR,
+  loadingDiscussion,
   loadingRepo,
   openIssue,
   openNotification,
@@ -643,10 +655,13 @@ const {
   handleIssueDetailHome,
   handlePRDetailBack,
   handlePRDetailHome,
+  handleDiscussionDetailBack,
+  handleDiscussionDetailHome,
   handleRepoDetailBack,
   handleRepoDetailHome,
   handleSwitchIssue,
   handleSwitchPR,
+  handleSwitchDiscussion,
   handlePRReviewOpen,
   handlePRReviewClose,
   isPRReviewRoute,
@@ -694,6 +709,11 @@ const handleActiveDetailBack = async () => {
     return;
   }
 
+  if (isDiscussionDetailVisible.value) {
+    await handleDiscussionDetailBack();
+    return;
+  }
+
   await handlePRDetailBack();
 };
 
@@ -705,6 +725,11 @@ const handleActiveDetailHome = async () => {
 
   if (isRepoDetailVisible.value) {
     await handleRepoDetailHome();
+    return;
+  }
+
+  if (isDiscussionDetailVisible.value) {
+    await handleDiscussionDetailHome();
     return;
   }
 
@@ -744,16 +769,9 @@ const switchTabSafely = async (tabId: string) => {
     await router.push({
       path: localePath('/dashboard'),
       query: buildDashboardQuery({
-        ...route.query,
+        ...clearDashboardDetailQuery(route.query),
         tab: tabId,
         page: undefined,
-        issue: undefined,
-        pr: undefined,
-        repo: undefined,
-        path: undefined,
-        branch: undefined,
-        prView: undefined,
-        url: undefined,
       }),
     });
   } catch (error) {

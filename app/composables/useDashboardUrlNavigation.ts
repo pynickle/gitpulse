@@ -7,8 +7,13 @@ import type { MarkdownRepoContext } from '~/utils/markdown-repo-path-utils';
 export function useDashboardUrlNavigation() {
   const localePath = useLocalePath();
   const router = useRouter();
-  const { navigateToFile, navigateToIssue, navigateToPullRequest, navigateToRepo } =
-    useNavigationHistory();
+  const {
+    navigateToDiscussion,
+    navigateToFile,
+    navigateToIssue,
+    navigateToPullRequest,
+    navigateToRepo,
+  } = useNavigationHistory();
 
   const resolveDashboardUrlTarget = (
     value: string | null | undefined,
@@ -38,6 +43,11 @@ export function useDashboardUrlNavigation() {
 
     if (target.type === 'pull-request') {
       navigateToPullRequest(target.owner, target.repo, target.number, undefined, target.view);
+      return;
+    }
+
+    if (target.type === 'discussion') {
+      navigateToDiscussion(target.owner, target.repo, target.number);
       return;
     }
 
