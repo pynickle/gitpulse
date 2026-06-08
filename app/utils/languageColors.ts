@@ -129,7 +129,7 @@ const languageColors: Record<string, string> = {
 
 const DEFAULT_COLOR = '#cccccc';
 
-export function getLanguageColor(language: string): string {
+export function getLanguageColor(language?: string | null): string {
   if (!language) return DEFAULT_COLOR;
 
   const direct = languageColors[language];
