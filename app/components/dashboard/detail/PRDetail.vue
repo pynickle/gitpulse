@@ -181,6 +181,17 @@ const apiFetch = useGitPulseApiFetch();
 const { fetchReviewerSummary, fetchReviewerCandidates, requestReviewers, removeReviewers } =
   usePRReviewers();
 
+// SEO: dynamic title based on PR
+usePageMeta(
+  computed(() => currentPullRequest.value?.title),
+  {
+    description: computed(() => {
+      const body = currentPullRequest.value?.body;
+      return body ? body.slice(0, 160).replace(/\n/g, ' ') : '';
+    }),
+  }
+);
+
 const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const repoPermissions = ref(createEmptyRepoPermissions());

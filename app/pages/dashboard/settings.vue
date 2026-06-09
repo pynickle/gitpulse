@@ -17,6 +17,9 @@ const localePath = useLocalePath();
 const router = useRouter();
 const { settings, loading, error, loadSettings, updateFonts } = useUserSettings();
 
+// SEO: settings page title
+usePageMeta(t('dashboard.settings.pageTitle'));
+
 // Font picker modal state
 const showAppFontPicker = shallowRef(false);
 const showCodeFontPicker = shallowRef(false);

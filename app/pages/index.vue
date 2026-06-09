@@ -67,6 +67,10 @@ import RoundImg from '~/components/ui/RoundImg.vue';
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
 const localePath = useLocalePath();
+
+usePageMeta(undefined, {
+  description: t('landing.heroDescription'),
+});
 const route = useRoute();
 const autoRestoreAttempted = ref(false);
 const autoRestorePending = ref(false);

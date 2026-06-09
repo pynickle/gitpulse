@@ -157,6 +157,14 @@ const repoDefaultBranch = computed(
 );
 const repoCurrentBranch = computed(() => currentBranch.value || repoDefaultBranch.value);
 const canonicalBranch = computed(() => repoCurrentBranch.value || undefined);
+
+// SEO: dynamic title based on repository
+usePageMeta(
+  computed(() => props.repository?.name),
+  {
+    description: computed(() => props.repository?.description ?? ''),
+  }
+);
 const currentBranchQueryValue = computed(() => {
   return repoCurrentBranch.value && repoCurrentBranch.value !== repoDefaultBranch.value
     ? repoCurrentBranch.value

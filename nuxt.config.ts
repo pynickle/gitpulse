@@ -122,6 +122,34 @@ if (!personalModeEnabled && oauthRequested && !oauthEnvReady) {
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+
+  app: {
+    head: {
+      titleTemplate: '%s - GitPulse',
+      title: 'GitPulse',
+      meta: [
+        {
+          name: 'description',
+          content:
+            'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
+        },
+        { property: 'og:title', content: 'GitPulse' },
+        {
+          property: 'og:description',
+          content:
+            'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
+        },
+        { property: 'og:type', content: 'website' },
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:title', content: 'GitPulse' },
+        {
+          name: 'twitter:description',
+          content:
+            'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
+        },
+      ],
+    },
+  },
   ignore: [
     'extension/**',
     'extension/.output/**',

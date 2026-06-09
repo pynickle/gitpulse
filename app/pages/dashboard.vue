@@ -473,6 +473,9 @@ const currentTabTitle = computed(() => {
   return tabNames[currentTab.value] || currentTab.value;
 });
 
+// SEO: dynamic title based on current tab
+usePageMeta(currentTabTitle);
+
 const currentRouteTabId = computed(() => selectedCustomTab.value?.id ?? currentTab.value);
 
 const activityGroups = computed(() => {

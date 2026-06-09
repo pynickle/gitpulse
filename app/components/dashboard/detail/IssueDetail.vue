@@ -101,6 +101,17 @@ const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const apiFetch = useGitPulseApiFetch();
 
+// SEO: dynamic title based on issue
+usePageMeta(
+  computed(() => currentIssue.value?.title),
+  {
+    description: computed(() => {
+      const body = currentIssue.value?.body;
+      return body ? body.slice(0, 160).replace(/\n/g, ' ') : '';
+    }),
+  }
+);
+
 const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const repoInfo = computed(() => {
