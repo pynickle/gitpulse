@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2Icon, MessageSquareReplyIcon } from 'lucide-vue-next';
+import { CheckCircle2Icon, MessageSquareIcon, MessageSquareReplyIcon } from 'lucide-vue-next';
 import { computed, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -118,7 +118,8 @@ watch(
           :aria-expanded="showReplies"
           @click="showReplies = !showReplies"
         >
-          �?{{ t('discussionDetail.replyCount', { count: comment.replies.totalCount }) }}
+          <MessageSquareIcon :size="14" />
+          {{ t('discussionDetail.replyCount', { count: comment.replies.totalCount }) }}
         </button>
       </div>
 
