@@ -540,7 +540,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
           </div>
 
           <div class="repo-detail-header__meta">
-            <span class="tag mr-2 repo-detail-header__type">{{ copy.repository }}</span>
             <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ owner }}/{{ repo }}</span>
             <span
               v-if="repository.language"
@@ -850,11 +849,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-bottom: 1rem;
-}
-
-.repo-detail-header__type {
-  background-color: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-strong);
 }
 
 .repo-detail-header__language,
