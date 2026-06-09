@@ -7,9 +7,7 @@
     "label": "Color mode",
     "system": "Use system color mode",
     "light": "Use light mode",
-    "dark": "Use dark mode",
-    "switchToLight": "Switch to light mode",
-    "switchToDark": "Switch to dark mode"
+    "dark": "Use dark mode"
   },
   "landing": {
     "heroEyebrow": "Choose your GitHub access path",
@@ -19,36 +17,30 @@
     "authStatusPatOnly": "GitHub token",
     "authStatusOAuthOnly": "GitHub OAuth",
     "authStatusHybrid": "OAuth or GitHub token",
-    "highlightFlexibleTitle": "Flexible sign-in",
-    "highlightFlexibleBody": "Support a personal token, GitHub OAuth, or both without changing the dashboard experience.",
-    "highlightUnifiedTitle": "One session model",
-    "highlightUnifiedBody": "Whichever entry path you use, GitPulse keeps the same session and GitHub data flow behind the scenes.",
-    "highlightPrivateTitle": "Private by design",
-    "highlightPrivateBody": "Token-based access keeps authentication simple for self-hosted setups where you do not want to register an OAuth app.",
     "sessionReady": "Session ready",
     "goToDashboard": "Go to Dashboard",
     "loggedOut": "Logged Out"
   },
   "error": {
+    "403": {
+      "title": "Access denied",
+      "description": "You don't have permission to view this page."
+    },
     "404": {
       "title": "Page not found",
       "description": "The page you're looking for doesn't exist or has been moved."
+    },
+    "418": {
+      "title": "I'm a teapot",
+      "description": "This server refuses to brew coffee because it's, well, a teapot."
     },
     "500": {
       "title": "Something went wrong",
       "description": "An unexpected error hit our server. Please try again in a moment."
     },
-    "403": {
-      "title": "Access denied",
-      "description": "You don't have permission to view this page."
-    },
     "503": {
       "title": "Service unavailable",
       "description": "GitPulse is temporarily down. Please try again shortly."
-    },
-    "418": {
-      "title": "I'm a teapot",
-      "description": "This server refuses to brew coffee because it's, well, a teapot."
     },
     "cta": {
       "dashboard": "Go to dashboard",
@@ -74,7 +66,6 @@
     "tokenRequired": "Please enter a GitHub token.",
     "tokenInvalid": "That GitHub token is invalid or no longer usable.",
     "tokenLoginFailed": "Unable to sign in with this GitHub token right now.",
-    "useTokenInstead": "Use a GitHub token instead",
     "or": "Or",
     "oauthUnavailable": "GitHub OAuth is currently unavailable for this deployment.",
     "authFailed": "GitHub OAuth sign-in failed. Please try again or use a GitHub token.",
@@ -87,8 +78,7 @@
     "rememberDevice": "Remember this device",
     "unlock": "Unlock",
     "unlocking": "Unlocking...",
-    "invalidPassword": "Invalid password. Please try again.",
-    "personalModeLocked": "Locked"
+    "invalidPassword": "Invalid password. Please try again."
   },
   "issueDetail": {
     "back": "Back",
@@ -115,7 +105,6 @@
     "projectColumnFallback": "column",
     "labels": "Labels",
     "editLabels": "Edit labels",
-    "selectLabels": "Select labels",
     "noLabelsAvailable": "No labels available",
     "cancel": "Cancel",
     "save": "Save",
@@ -176,8 +165,6 @@
     "loadMoreReplies": "Load more replies",
     "loadingMoreReplies": "Loading replies...",
     "reply": "Reply",
-    "cancelReply": "Cancel reply",
-    "joinDiscussion": "Join the discussion",
     "commentPlaceholder": "Write a discussion comment...",
     "replyPlaceholder": "Write a reply...",
     "submitComment": "Comment",
@@ -191,14 +178,11 @@
     "submitReplyFailed": "Failed to create discussion reply",
     "author": "Author",
     "retry": "Retry",
-    "cancel": "Cancel",
     "noCommentsPrompt": "No comments yet — be the first to join the discussion."
   },
   "dashboard": {
     "actions": {
-      "refreshCurrentTab": "Refresh Tab",
-      "manageViews": "Manage Views",
-      "views": "Views"
+      "refreshCurrentTab": "Refresh Tab"
     },
     "sidebar": {
       "views": "Views",
@@ -216,23 +200,14 @@
       "codeFontSection": "Code font",
       "selectAppFont": "Select app font",
       "selectCodeFont": "Select code font",
-      "bundledFonts": "Bundled fonts",
       "systemFonts": "System fonts",
       "loadSystemFonts": "Load system fonts",
       "loadingSystemFonts": "Loading system fonts...",
       "systemFontsUnsupported": "System font listing is not supported in this browser.",
       "systemFontsDenied": "Browser permission is required to list system fonts.",
-      "manualAppFontLabel": "Manual global system font",
-      "manualCodeFontLabel": "Manual code system font",
-      "manualFontPlaceholder": "Exact local font family name",
-      "applyManualFont": "Use font",
-      "tabsTitle": "View tabs",
-      "tabsDescription": "Manage custom dashboard view groups and search tabs.",
-      "manageTabs": "Manage view tabs",
       "statusLoading": "Loading settings..."
     },
     "tabsSettings": {
-      "pageKicker": "Dashboard",
       "pageTitle": "Manage Views",
       "backToDashboard": "Back to Dashboard",
       "openQuery": "Open query",
@@ -246,8 +221,6 @@
       "groupInsightGroups": "groups",
       "groupInsightViews": "views",
       "groupInsightParents": "parent slots",
-      "groupTopLevel": "Top level",
-      "groupNestedLabel": "Nested group",
       "groupViewCount": "{count} views",
       "groupEmptyTabs": "No views in this group yet.",
       "groupCreatorTitle": "Add group",
@@ -262,12 +235,10 @@
       "dragHandleGroup": "Drag to reorder group",
       "dragHandleTab": "Drag to move or reorder view",
       "defaultQueryPreview": "GitHub Search: involves me",
-      "unnamedPreviewView": "New search view",
       "editorTitle": "New Search View",
       "editorTitleEdit": "Edit Search View",
       "editorCaption": "Creates a {source} view inside {group}.",
       "editorCaptionEdit": "Editing {source} view in {group}.",
-      "editorDebouncedPreview": "Debounced preview",
       "viewNameLabel": "View name",
       "viewNamePlaceholder": "High Priority Bugs",
       "viewSubtitleLabel": "Subtitle",
@@ -466,8 +437,7 @@
     "watchDefaultDescription": "Only \\@mentions",
     "watchIgnoreDescription": "Receive no notifications",
     "files": "Files",
-    "filesEmpty": "No files found",
-    "filesLoadError": "Failed to load files"
+    "filesEmpty": "No files found"
   },
   "repoFileView": {
     "fileTree": "File tree",
@@ -486,13 +456,11 @@
     "size": "Size",
     "name": "Name",
     "lines": "{count} lines",
-    "selectFile": "Select a file to view its content",
     "binaryFile": "Binary file",
     "binaryFileHint": "This file is a binary and cannot be displayed as text.",
     "toggleWrap": "Toggle word wrap",
     "copyContent": "Copy content",
-    "download": "Download",
-    "copied": "Copied"
+    "download": "Download"
   },
   "prReview": {
     "openReview": "Review changes",
@@ -508,11 +476,6 @@
     "noReviewers": "No reviewers assigned",
     "status": {
       "requested": "Requested",
-      "approved": "Approved",
-      "changesRequested": "Changes requested",
-      "commented": "Commented",
-      "dismissed": "Dismissed",
-      "pending": "Pending",
       "unknown": "Unknown"
     },
     "reviewerPicker": {
@@ -569,7 +532,7 @@
     "pendingDrafts": "Pending comments",
     "pendingComments": "{count} pending comments",
     "lineLabel": "Line {line}",
-    "lineRangeLabel": "Lines {start}\u2013{end}",
+    "lineRangeLabel": "Lines {start}–{end}",
     "fileLabel": "File",
     "removeDraft": "Remove draft",
     "noReviewCommentBody": "No review comment body",

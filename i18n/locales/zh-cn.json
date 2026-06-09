@@ -7,9 +7,7 @@
     "label": "颜色模式",
     "system": "跟随系统颜色模式",
     "light": "使用浅色模式",
-    "dark": "使用深色模式",
-    "switchToLight": "切换到浅色模式",
-    "switchToDark": "切换到深色模式"
+    "dark": "使用深色模式"
   },
   "landing": {
     "heroEyebrow": "选择你的 GitHub 连接方式",
@@ -19,36 +17,30 @@
     "authStatusPatOnly": "GitHub Token",
     "authStatusOAuthOnly": "GitHub OAuth",
     "authStatusHybrid": "OAuth 或 GitHub Token",
-    "highlightFlexibleTitle": "灵活登录",
-    "highlightFlexibleBody": "支持 GitHub Token、GitHub OAuth 或两者并存，同时保持一致的仪表盘体验。",
-    "highlightUnifiedTitle": "统一会话模型",
-    "highlightUnifiedBody": "无论你从哪种入口登录，GitPulse 都会复用同一套会话与 GitHub 数据链路。",
-    "highlightPrivateTitle": "更适合自托管",
-    "highlightPrivateBody": "基于 Token 的接入方式更适合不想注册 OAuth App 的自托管部署场景。",
     "sessionReady": "会话已准备就绪",
     "goToDashboard": "前往仪表盘",
     "loggedOut": "登出"
   },
   "error": {
+    "403": {
+      "title": "无权访问",
+      "description": "你没有权限访问此页面。"
+    },
     "404": {
       "title": "页面不存在",
       "description": "你访问的页面不存在或已被移动。"
+    },
+    "418": {
+      "title": "我是一个茶壶",
+      "description": "这个服务器是个茶壶,所以拒绝冲咖啡。"
     },
     "500": {
       "title": "出错了",
       "description": "服务器开了个小差,请稍后重试。"
     },
-    "403": {
-      "title": "无权访问",
-      "description": "你没有权限访问此页面。"
-    },
     "503": {
       "title": "服务暂不可用",
       "description": "GitPulse 暂时无法访问,请稍后再试。"
-    },
-    "418": {
-      "title": "我是一个茶壶",
-      "description": "这个服务器是个茶壶,所以拒绝冲咖啡。"
     },
     "cta": {
       "dashboard": "返回仪表盘",
@@ -74,7 +66,6 @@
     "tokenRequired": "请输入 GitHub Token。",
     "tokenInvalid": "这个 GitHub Token 无效，或已经不可用。",
     "tokenLoginFailed": "当前无法使用这个 GitHub Token 登录。",
-    "useTokenInstead": "改用 GitHub Token",
     "or": "或",
     "oauthUnavailable": "当前部署暂时不可用 GitHub OAuth 登录。",
     "authFailed": "GitHub OAuth 登录失败，请重试或改用 GitHub Token。",
@@ -87,8 +78,7 @@
     "rememberDevice": "记住此设备",
     "unlock": "解锁",
     "unlocking": "解锁中...",
-    "invalidPassword": "密码无效，请重试。",
-    "personalModeLocked": "已锁定"
+    "invalidPassword": "密码无效，请重试。"
   },
   "issueDetail": {
     "back": "返回",
@@ -115,7 +105,6 @@
     "projectColumnFallback": "列",
     "labels": "标签",
     "editLabels": "编辑标签",
-    "selectLabels": "选择标签",
     "noLabelsAvailable": "无可用标签",
     "cancel": "取消",
     "save": "保存",
@@ -176,8 +165,6 @@
     "loadMoreReplies": "加载更多回复",
     "loadingMoreReplies": "正在加载回复...",
     "reply": "回复",
-    "cancelReply": "取消回复",
-    "joinDiscussion": "参与讨论",
     "commentPlaceholder": "撰写讨论评论...",
     "replyPlaceholder": "撰写回复...",
     "submitComment": "评论",
@@ -191,14 +178,11 @@
     "submitReplyFailed": "创建讨论回复失败",
     "author": "作者",
     "retry": "重试",
-    "cancel": "取消",
     "noCommentsPrompt": "暂无评论，成为第一个参与讨论的人。"
   },
   "dashboard": {
     "actions": {
-      "refreshCurrentTab": "刷新当前标签",
-      "manageViews": "管理视图",
-      "views": "视图"
+      "refreshCurrentTab": "刷新当前标签"
     },
     "sidebar": {
       "views": "视图",
@@ -216,23 +200,14 @@
       "codeFontSection": "代码字体",
       "selectAppFont": "选择应用字体",
       "selectCodeFont": "选择代码字体",
-      "bundledFonts": "内置字体",
       "systemFonts": "系统字体",
       "loadSystemFonts": "加载系统字体",
       "loadingSystemFonts": "正在加载系统字体...",
       "systemFontsUnsupported": "当前浏览器不支持列出系统字体。",
       "systemFontsDenied": "需要浏览器授权才能列出系统字体。",
-      "manualAppFontLabel": "手动全局系统字体",
-      "manualCodeFontLabel": "手动代码系统字体",
-      "manualFontPlaceholder": "精确的本地 font-family 名称",
-      "applyManualFont": "使用字体",
-      "tabsTitle": "视图标签",
-      "tabsDescription": "管理自定义仪表盘视图分组和搜索标签。",
-      "manageTabs": "管理视图标签",
       "statusLoading": "正在加载设置..."
     },
     "tabsSettings": {
-      "pageKicker": "仪表盘",
       "pageTitle": "管理视图",
       "backToDashboard": "返回仪表盘",
       "openQuery": "打开查询",
@@ -246,8 +221,6 @@
       "groupInsightGroups": "分组",
       "groupInsightViews": "视图",
       "groupInsightParents": "可作为父级",
-      "groupTopLevel": "顶层",
-      "groupNestedLabel": "嵌套分组",
       "groupViewCount": "{count} 个视图",
       "groupEmptyTabs": "此分组还没有视图。",
       "groupCreatorTitle": "添加分组",
@@ -262,12 +235,10 @@
       "dragHandleGroup": "拖拽以重新排序分组",
       "dragHandleTab": "拖拽以移动或重新排序视图",
       "defaultQueryPreview": "GitHub 搜索：与我相关",
-      "unnamedPreviewView": "新搜索视图",
       "editorTitle": "新建搜索视图",
       "editorTitleEdit": "编辑搜索视图",
       "editorCaption": "将在 {group} 中创建一个 {source} 视图。",
       "editorCaptionEdit": "正在编辑 {group} 中的 {source} 视图。",
-      "editorDebouncedPreview": "延迟预览",
       "viewNameLabel": "视图名称",
       "viewNamePlaceholder": "高优先级缺陷",
       "viewSubtitleLabel": "副标题",
@@ -466,8 +437,7 @@
     "watchDefaultDescription": "仅 \\@ 提及时通知",
     "watchIgnoreDescription": "不接收通知",
     "files": "文件",
-    "filesEmpty": "暂无文件",
-    "filesLoadError": "加载文件失败"
+    "filesEmpty": "暂无文件"
   },
   "repoFileView": {
     "fileTree": "文件树",
@@ -486,13 +456,11 @@
     "size": "大小",
     "name": "名称",
     "lines": "{count} 行",
-    "selectFile": "选择一个文件查看其内容",
     "binaryFile": "二进制文件",
     "binaryFileHint": "此文件是二进制文件，无法以文本形式显示。",
     "toggleWrap": "切换自动换行",
     "copyContent": "复制内容",
-    "download": "下载",
-    "copied": "已复制"
+    "download": "下载"
   },
   "prReview": {
     "openReview": "审查变更",
@@ -508,11 +476,6 @@
     "noReviewers": "没有指派审查者",
     "status": {
       "requested": "已请求",
-      "approved": "已批准",
-      "changesRequested": "需要更改",
-      "commented": "已评论",
-      "dismissed": "已驳回",
-      "pending": "待处理",
       "unknown": "未知"
     },
     "reviewerPicker": {
@@ -569,7 +532,7 @@
     "pendingDrafts": "待提交评论",
     "pendingComments": "{count} 条待提交评论",
     "lineLabel": "第 {line} 行",
-    "lineRangeLabel": "第 {start}\u2013{end} 行",
+    "lineRangeLabel": "第 {start}–{end} 行",
     "fileLabel": "文件",
     "removeDraft": "移除草稿",
     "noReviewCommentBody": "没有审查评论正文",

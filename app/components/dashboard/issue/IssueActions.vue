@@ -288,21 +288,6 @@ const formatDate = (dateString: string | undefined) => {
   padding: 12px 16px;
 }
 
-.sidebar-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 10px;
-  letter-spacing: 0.02em;
-}
-
-.sidebar-badge--danger {
-  background: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
-}
-
 .sidebar-alert {
   display: flex;
   align-items: center;
