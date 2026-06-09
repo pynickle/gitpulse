@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 import type { AppFontId, CodeFontId } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
-import DetailOverlay from '~/components/dashboard/DetailOverlay.vue';
+import DetailOverlay from '~/components/dashboard/detail/DetailOverlay.vue';
 import FontPickerModal from '~/components/ui/FontPickerModal.vue';
 import {
   builtinAppFontOptions,

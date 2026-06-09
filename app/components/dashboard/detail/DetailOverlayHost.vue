@@ -4,11 +4,11 @@ import { computed, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
-import DetailOverlay from '~/components/dashboard/DetailOverlay.vue';
-import DiscussionDetail from '~/components/dashboard/DiscussionDetail.vue';
-import IssueDetail from '~/components/dashboard/IssueDetail.vue';
-import PrDetail from '~/components/dashboard/PRDetail.vue';
-import RepoDetail from '~/components/dashboard/RepoDetail.vue';
+import DetailOverlay from '~/components/dashboard/detail/DetailOverlay.vue';
+import DiscussionDetail from '~/components/dashboard/detail/DiscussionDetail.vue';
+import IssueDetail from '~/components/dashboard/detail/IssueDetail.vue';
+import PrDetail from '~/components/dashboard/detail/PRDetail.vue';
+import RepoDetail from '~/components/dashboard/detail/RepoDetail.vue';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'repository';
 

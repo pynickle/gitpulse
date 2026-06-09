@@ -18,7 +18,7 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import { formatDurationFromNow } from '#imports';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
-import RepoFileTree from '~/components/dashboard/RepoFileTree.vue';
+import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const props = defineProps<{

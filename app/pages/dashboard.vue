@@ -187,7 +187,7 @@ import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
 import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
 import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
-import DetailOverlayHost from '~/components/dashboard/DetailOverlayHost.vue';
+import DetailOverlayHost from '~/components/dashboard/detail/DetailOverlayHost.vue';
 import RepoFileView from '~/components/dashboard/repo-files/RepoFileView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
