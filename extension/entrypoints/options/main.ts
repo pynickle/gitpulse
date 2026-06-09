@@ -1,5 +1,5 @@
 import './style.css';
-import { bindBaseUrlForm } from '../../utils/base-url-form';
+import { bindBaseUrlForm } from '@/utils/base-url-form';
 
 const baseUrlInput = document.querySelector<HTMLInputElement>('#base-url');
 const form = document.querySelector<HTMLFormElement>('#settings-form');

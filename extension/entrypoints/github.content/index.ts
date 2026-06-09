@@ -1,6 +1,6 @@
 import './style.css';
-import { buildGitPulseUrl, isGithubWebUrl } from '../../utils/gitpulse-url';
-import { gitPulseBaseUrl } from '../../utils/settings';
+import { buildGitPulseUrl, isGithubWebUrl } from '@/utils/gitpulse-url';
+import { gitPulseBaseUrl } from '@/utils/settings';
 
 const BUTTON_ID = 'gitpulse-jump-button';
 const CHECK_INTERVAL_MS = 1000;
