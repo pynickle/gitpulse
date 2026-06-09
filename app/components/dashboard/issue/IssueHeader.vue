@@ -1,53 +1,57 @@
 <template>
   <div class="mb-6">
-    <div class="is-flex is-align-items-center mb-4">
-      <component :size="24" :is="stateIcon" :style="stateColor" />
-      <h1 class="title is-3 ml-4">{{ issue?.title }}</h1>
+    <!-- Title row -->
+    <div class="is-flex is-align-items-center mb-3">
+      <component :size="22" :is="stateIcon" :style="stateColor" />
+      <h1 class="title is-3 ml-3 mb-0">{{ issue?.title }}</h1>
     </div>
 
-    <div class="is-flex is-align-items-center my-4 is-flex-wrap-wrap">
-      <span class="tag mr-2" :style="typeStyle">
+    <!-- Meta row -->
+    <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
+      <span class="header-badge" :style="typeStyle">
         {{ issue?.type?.name || t('issueDetail.issueTypeFallback') }}
       </span>
-      <span class="tag is-info is-light ml-2">#{{ issue?.number }}</span>
-      <span
-        class="ml-2 tag"
-        :class="issue?.state === 'open' ? 'is-success is-light' : 'is-danger is-light'"
-      >
-        {{ issue?.state }}
+      <span class="header-number has-text-weight-medium">#{{ issue?.number }}</span>
+      <span class="header-state-tag" :class="issue?.state === 'open' ? 'is-open' : 'is-closed'">
+        <component :size="12" :is="issue?.state === 'open' ? CircleDotIcon : CircleMinusIcon" />
+        <span>{{ issue?.state }}</span>
       </span>
-      <span class="ml-4 has-text-grey has-text-weight-medium">
-        {{ formatDurationFromNow(issue?.updated_at, localeCode, relativeTimeNow) }}
+      <span class="header-time is-flex is-align-items-center">
+        <ClockIcon :size="13" />
+        <span>{{ formatDurationFromNow(issue?.updated_at, localeCode, relativeTimeNow) }}</span>
       </span>
     </div>
 
-    <div class="mb-4">
-      <span class="subtitle is-6 has-text-weight-medium"> {{ repoOwner }}/{{ repoName }} </span>
+    <!-- Repo row -->
+    <div class="header-repo is-flex is-align-items-center mb-4">
+      <GitForkIcon :size="14" />
+      <span class="has-text-weight-medium">{{ repoOwner }}/{{ repoName }}</span>
     </div>
 
     <hr class="mr-4" />
 
+    <!-- Author row -->
     <div>
       <div class="is-flex is-align-items-center mb-4">
         <GitHubAvatar
           variant="raised"
           interactive
-          class="mr-4"
-          width="32"
-          height="32"
+          class="mr-3"
+          width="28"
+          height="28"
           :src="issue?.user?.avatar_url"
           :alt="issue?.user?.login"
         />
-        <div class="is-flex is-flex-direction-column is-justify-content-center">
+        <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
           <a
             :href="`https://github.com/${issue?.user?.login}`"
             target="_blank"
             rel="noopener"
-            class="is-size-6 has-text-weight-medium has-text-link"
+            class="header-author__name has-text-weight-medium has-text-link"
           >
             {{ issue?.user?.login }}
           </a>
-          <span class="is-size-7 has-text-grey">
+          <span class="header-author__time">
             {{ formatDurationFromNow(issue?.created_at, localeCode, relativeTimeNow) }}
           </span>
         </div>
@@ -66,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { CircleDotIcon, CircleMinusIcon } from 'lucide-vue-next';
+import { CircleDotIcon, CircleMinusIcon, ClockIcon, GitForkIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -114,3 +118,79 @@ const typeStyle = {
   color: 'var(--gitpulse-text-strong)',
 };
 </script>
+
+<style scoped lang="scss">
+.header-meta {
+  gap: 0.5rem;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--gitpulse-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text);
+  border: 1px solid var(--gitpulse-border);
+}
+
+.header-number {
+  font-size: 0.85rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.header-state-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+
+  &.is-open {
+    background-color: var(--gitpulse-success-soft);
+    color: var(--gitpulse-success-solid);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
+  }
+
+  &.is-closed {
+    background-color: var(--gitpulse-danger-soft);
+    color: var(--gitpulse-danger-solid);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  }
+}
+
+.header-time {
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.header-repo {
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.header-author {
+  gap: 0.6rem;
+}
+
+.header-author__name {
+  font-size: 0.875rem;
+  transition: color 0.16s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent-hover);
+  }
+}
+
+.header-author__time {
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
+}
+</style>

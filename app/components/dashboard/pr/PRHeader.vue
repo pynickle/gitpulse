@@ -1,68 +1,73 @@
 <template>
   <div class="mb-6">
-    <div class="is-flex is-align-items-center mb-4">
-      <component :size="24" :is="stateIcon" :style="stateColor" />
-      <h1 class="title is-3 ml-4">{{ pullRequest?.title }}</h1>
+    <!-- Title row -->
+    <div class="is-flex is-align-items-center mb-3">
+      <component :size="22" :is="stateIcon" :style="stateColor" />
+      <h1 class="title is-3 ml-3 mb-0">{{ pullRequest?.title }}</h1>
     </div>
 
-    <div class="is-flex is-align-items-center my-4 is-flex-wrap-wrap">
-      <span class="tag mr-2" :style="typeStyle">Pull Request</span>
-      <span class="tag is-info is-light ml-2">#{{ pullRequest?.number }}</span>
+    <!-- Meta row -->
+    <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
+      <span class="header-badge" :style="typeStyle">Pull Request</span>
+      <span class="header-number has-text-weight-medium">#{{ pullRequest?.number }}</span>
       <span
-        class="ml-2 tag"
+        class="header-state-tag"
         :class="
           displayState === 'open'
-            ? 'is-success is-light'
+            ? 'is-open'
             : displayState === 'merged'
-              ? 'is-primary is-light'
-              : 'is-danger is-light'
+              ? 'is-merged'
+              : 'is-closed'
         "
       >
-        {{ displayState }}
+        <component :size="12" :is="stateIcon" />
+        <span>{{ displayState }}</span>
       </span>
-      <span class="ml-4 has-text-grey has-text-weight-medium">
-        {{ updatedAtLabel }}
+      <span class="header-time is-flex is-align-items-center">
+        <ClockIcon :size="13" />
+        <span>{{ updatedAtLabel }}</span>
       </span>
     </div>
 
-    <div class="mb-4">
-      <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ repoOwner }}/{{ repoName }}</span>
-      <span v-if="pullRequest?.head?.ref && pullRequest?.base?.ref" class="ml-4">
-        <span class="tag is-link is-light has-text-weight-medium">
-          {{ pullRequest?.head?.ref }}
-        </span>
-        <span class="mx-2 has-text-grey">
-          <ArrowRightIcon :size="14" />
-        </span>
-        <span class="tag is-link is-light has-text-weight-medium">
-          {{ pullRequest?.base?.ref }}
-        </span>
+    <!-- Repo + Branch row -->
+    <div class="header-repo is-flex is-align-items-center is-flex-wrap-wrap mb-4">
+      <span class="header-repo__name is-flex is-align-items-center">
+        <GitForkIcon :size="14" />
+        <span class="has-text-weight-medium">{{ repoOwner }}/{{ repoName }}</span>
       </span>
+      <template v-if="pullRequest?.head?.ref && pullRequest?.base?.ref">
+        <span class="header-branch is-flex is-align-items-center">
+          <span class="header-branch__ref">{{ pullRequest?.head?.ref }}</span>
+          <ArrowRightIcon :size="14" class="header-branch__arrow" />
+          <span class="header-branch__ref">{{ pullRequest?.base?.ref }}</span>
+        </span>
+      </template>
     </div>
 
     <hr class="mr-4" />
 
+    <!-- Author row -->
     <div>
       <div class="is-flex is-align-items-center mb-4">
         <GitHubAvatar
           variant="raised"
           interactive
-          class="mr-4"
-          width="32"
-          height="32"
+          class="mr-3"
+          width="28"
+          height="28"
           :src="pullRequest?.user?.avatar_url ?? ''"
           :alt="pullRequest?.user?.login"
         />
-        <div class="is-flex is-flex-direction-column is-justify-content-center">
+        <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
           <a
             :href="`https://github.com/${pullRequest?.user?.login}`"
             target="_blank"
             rel="noopener"
-            class="is-size-6 has-text-weight-medium has-text-link"
+            class="header-author__name has-text-weight-medium has-text-link"
           >
             {{ pullRequest?.user?.login }}
           </a>
-          <span class="is-size-7 has-text-grey">
+          <span class="header-author__time">
             {{ createdAtLabel }}
           </span>
         </div>
@@ -83,9 +88,11 @@
 <script setup lang="ts">
 import {
   ArrowRightIcon,
-  GitPullRequestIcon,
+  ClockIcon,
+  GitForkIcon,
   GitMergeIcon,
   GitPullRequestClosedIcon,
+  GitPullRequestIcon,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
@@ -162,3 +169,107 @@ const typeStyle = {
   color: 'var(--gitpulse-text-strong)',
 };
 </script>
+
+<style scoped lang="scss">
+.header-meta {
+  gap: 0.5rem;
+}
+
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--gitpulse-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text);
+  border: 1px solid var(--gitpulse-border);
+}
+
+.header-number {
+  font-size: 0.85rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.header-state-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+
+  &.is-open {
+    background-color: var(--gitpulse-success-soft);
+    color: var(--gitpulse-success-solid);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
+  }
+
+  &.is-merged {
+    background-color: var(--gitpulse-info-soft);
+    color: var(--gitpulse-info-solid);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-info) 24%, transparent);
+  }
+
+  &.is-closed {
+    background-color: var(--gitpulse-danger-soft);
+    color: var(--gitpulse-danger-solid);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  }
+}
+
+.header-time {
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.header-repo {
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.header-repo__name {
+  gap: 0.4rem;
+}
+
+.header-branch {
+  gap: 0.25rem;
+  margin-left: 0.75rem;
+}
+
+.header-branch__arrow {
+  color: var(--gitpulse-text-subtle);
+}
+
+.header-branch__ref {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--gitpulse-radius-sm);
+  background-color: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
+}
+
+.header-author {
+  gap: 0.6rem;
+}
+
+.header-author__name {
+  font-size: 0.875rem;
+  transition: color 0.16s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent-hover);
+  }
+}
+
+.header-author__time {
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
+}
+</style>
