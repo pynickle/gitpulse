@@ -5,6 +5,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "extension:build": "bun run --cwd extension build",
+    "extension:build:firefox": "bun run --cwd extension build:firefox",
+    "extension:test": "bun test --cwd extension",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

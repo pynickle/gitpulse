@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitPulse Options</title>
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <main class="options-shell">
+      <header>
+        <h1>GitPulse</h1>
+      </header>
+
+      <form id="settings-form">
+        <label for="base-url">Base URL</label>
+        <div class="control-row">
+          <input id="base-url" name="base-url" type="url" autocomplete="off" />
+          <button type="submit">Save</button>
+        </div>
+      </form>
+
+      <p id="status" role="status" aria-live="polite"></p>
+    </main>
+  </body>
+</html>

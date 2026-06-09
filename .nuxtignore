@@ -1,0 +1,2 @@
+# Keep the companion browser extension outside Nuxt source scanning.
+extension/

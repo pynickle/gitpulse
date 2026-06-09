@@ -122,6 +122,12 @@ if (!personalModeEnabled && oauthRequested && !oauthEnvReady) {
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  ignore: [
+    'extension/**',
+    'extension/.output/**',
+    'extension/.wxt/**',
+    'extension/node_modules/**',
+  ],
 
   runtimeConfig: {
     gitPulseAuth: {

@@ -45,3 +45,7 @@ reasonix.toml
 
 /.sisyphus/
 /.omc/
+
+# WXT extension outputs
+extension/.output
+extension/.wxt

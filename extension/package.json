@@ -1,0 +1,16 @@
+{
+  "name": "gitpulse-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "test": "bun test tests"
+  },
+  "dependencies": {
+    "wxt": "^0.20.26"
+  }
+}
