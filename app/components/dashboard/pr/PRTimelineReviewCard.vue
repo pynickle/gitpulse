@@ -2,7 +2,7 @@
   <TimelineCommentCard
     v-if="isPlainComment"
     :item="item"
-    :empty-text="t('issueDetail.noCommentBody')"
+    :empty-text="t('detailTimeline.noCommentBody')"
     :repo-owner="repoOwner"
     :repo-name="repoName"
   />

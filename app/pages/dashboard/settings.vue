@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 import type { AppFontId, CodeFontId } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
-import DetailOverlay from '~/components/dashboard/detail/DetailOverlay.vue';
+import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import FontPickerModal from '~/components/ui/FontPickerModal.vue';
 import {
   builtinAppFontOptions,
@@ -168,7 +168,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <DetailOverlay
+  <DashboardOverlayFrame
     :loading="loading"
     :loading-title="t('dashboard.settings.statusLoading')"
     loading-subtitle=""
@@ -291,7 +291,7 @@ onMounted(() => {
       @close="showCodeFontPicker = false"
       @update:model-value="applyCodeFontFromModal"
     />
-  </DetailOverlay>
+  </DashboardOverlayFrame>
 </template>
 
 <style scoped lang="scss">

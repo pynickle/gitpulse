@@ -4,11 +4,11 @@ import { computed, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
-import DetailOverlay from '~/components/dashboard/detail/DetailOverlay.vue';
 import DiscussionDetail from '~/components/dashboard/detail/DiscussionDetail.vue';
 import IssueDetail from '~/components/dashboard/detail/IssueDetail.vue';
 import PrDetail from '~/components/dashboard/detail/PRDetail.vue';
 import RepoDetail from '~/components/dashboard/detail/RepoDetail.vue';
+import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'repository';
 
@@ -149,7 +149,7 @@ watch(activeDetailKey, () => {
 
 <template>
   <Transition name="detail-overlay-fade">
-    <DetailOverlay
+    <DashboardOverlayFrame
       v-if="isOverlayVisible"
       :loading="false"
       :loading-title="activeDetailPane?.loadingTitle || t('detailOverlay.loading.issue')"
@@ -229,7 +229,7 @@ watch(activeDetailKey, () => {
           </div>
         </Transition>
       </div>
-    </DetailOverlay>
+    </DashboardOverlayFrame>
   </Transition>
 </template>
 

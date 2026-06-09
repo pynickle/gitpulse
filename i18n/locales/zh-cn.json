@@ -101,7 +101,7 @@
   "detailLabels": {
     "title": "标签",
     "edit": "编辑标签",
-    "loading": "加载中...",
+    "loading": "正在加载标签...",
     "empty": "无标签",
     "noneAvailable": "无可用标签",
     "cancel": "取消",

@@ -36,7 +36,7 @@
           :repo-name="repoName"
         />
         <p v-else class="has-text-grey is-size-7">
-          {{ emptyText ?? t('issueDetail.noCommentBody') }}
+          {{ emptyText ?? t('detailTimeline.noCommentBody') }}
         </p>
       </div>
     </div>

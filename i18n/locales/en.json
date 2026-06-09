@@ -101,7 +101,7 @@
   "detailLabels": {
     "title": "Labels",
     "edit": "Edit labels",
-    "loading": "Loading issue...",
+    "loading": "Loading labels...",
     "empty": "No labels",
     "noneAvailable": "No labels available",
     "cancel": "Cancel",

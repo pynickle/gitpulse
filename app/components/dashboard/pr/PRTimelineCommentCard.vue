@@ -22,5 +22,5 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const localizedEmptyText = computed(() => props.emptyText ?? t('issueDetail.noCommentBody'));
+const localizedEmptyText = computed(() => props.emptyText ?? t('detailTimeline.noCommentBody'));
 </script>
