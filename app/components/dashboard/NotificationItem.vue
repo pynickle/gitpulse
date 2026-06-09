@@ -7,13 +7,18 @@
       <div class="dashboard-list-card__main-row notification-card__main-row">
         <div class="dashboard-list-card__icon">
           <figure class="image is-32x32">
-            <GitHubAvatar
-              :src="currentNotification.repository.owner.avatar_url"
-              :alt="currentNotification.repository.owner.login"
-              width="32"
-              height="32"
-              loading="lazy"
-            />
+            <Transition name="notification-avatar" mode="out-in">
+              <GitHubAvatar
+                v-if="avatarSrc"
+                key="avatar"
+                :src="avatarSrc"
+                :alt="avatarAlt"
+                width="32"
+                height="32"
+                loading="lazy"
+              />
+              <div v-else key="skeleton" class="avatar-skeleton" />
+            </Transition>
             <span
               v-if="subjectVisual.icon"
               class="notification-type-badge"
@@ -129,6 +134,21 @@ const currentNotification = computed(() => ({
   unread: isLocallyRead.value ? false : props.notification.unread,
 }));
 
+const avatarSrc = computed(() => {
+  // 只在loaded状态且有author信息时才显示
+  if (
+    currentNotification.value.subject?.stateStatus === 'loaded' &&
+    currentNotification.value.subject.authorAvatarUrl
+  ) {
+    return currentNotification.value.subject.authorAvatarUrl;
+  }
+  return undefined; // 未加载完成返回undefined，触发骨架屏
+});
+
+const avatarAlt = computed(() => {
+  return currentNotification.value.subject?.authorLogin ?? '';
+});
+
 const isSubjectStatePending = computed(() => {
   return currentNotification.value.subject?.stateStatus === 'pending';
 });
@@ -211,3 +231,37 @@ const reasonIcon = computed(() => {
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
 <style scoped lang="scss" src="~/assets/scss/notification-card.scss" />
+<style scoped lang="scss">
+.avatar-skeleton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.dark-mode .avatar-skeleton {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.notification-avatar-enter-active,
+.notification-avatar-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.notification-avatar-enter-from,
+.notification-avatar-leave-to {
+  opacity: 0;
+}
+</style>

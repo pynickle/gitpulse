@@ -164,6 +164,8 @@ const applyNotificationSubjectStates = (
         ...item.subject,
         state: result?.state,
         labels: result?.labels,
+        authorLogin: result?.authorLogin,
+        authorAvatarUrl: result?.authorAvatarUrl,
         stateStatus: result?.state ? ('loaded' as const) : ('error' as const),
       },
     };

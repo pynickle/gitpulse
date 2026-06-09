@@ -17,6 +17,8 @@ export interface DashboardNotificationSubject {
   state?: NotificationSubjectState;
   stateStatus?: NotificationSubjectStateStatus;
   labels?: NotificationLabel[];
+  authorLogin?: string;
+  authorAvatarUrl?: string;
 }
 
 export interface DashboardNotificationRepository {
@@ -50,4 +52,6 @@ export interface NotificationSubjectStateResult {
   key: string;
   state?: NotificationSubjectState;
   labels?: NotificationLabel[];
+  authorLogin?: string;
+  authorAvatarUrl?: string;
 }

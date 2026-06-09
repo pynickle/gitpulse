@@ -14,9 +14,15 @@ interface GraphQLLabelsConnection {
   nodes?: GraphQLLabelNode[];
 }
 
+interface GraphQLAuthorNode {
+  login?: string;
+  avatarUrl?: string;
+}
+
 interface GraphQLSubjectNode {
   state?: string;
   mergedAt?: string | null;
+  author?: GraphQLAuthorNode;
   labels?: GraphQLLabelsConnection;
 }
 
@@ -93,7 +99,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
     const fieldName = target.type === 'pulls' ? 'pullRequest' : 'issue';
     const nodeFields = target.type === 'pulls' ? 'state mergedAt' : 'state';
     fields.push(
-      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { ${fieldName}(number: $number${index}) { ${nodeFields} labels(first: 10) { nodes { name color } } } }`
+      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { ${fieldName}(number: $number${index}) { ${nodeFields} author { login avatarUrl } labels(first: 10) { nodes { name color } } } }`
     );
   });
 
@@ -161,6 +167,8 @@ export default defineEventHandler(async (event) => {
         key: target.key,
         state: normalizeState(target.type, node),
         labels: normalizeLabels(node),
+        authorLogin: node?.author?.login,
+        authorAvatarUrl: node?.author?.avatarUrl,
       };
     });
 
