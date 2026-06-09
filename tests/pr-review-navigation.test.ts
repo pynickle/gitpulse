@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
+import { ref, type Ref } from 'vue';
+
 import type { NavigationEntry } from '../app/composables/useNavigationHistory';
+import { useNavigationHistory } from '../app/composables/useNavigationHistory';
 import shouldCloseReviewWorkspaceAfterSubmit from '../app/utils/prReviewNavigation';
 
 const targetPullRequest = {
@@ -68,6 +71,48 @@ describe('PR review workspace submit navigation', () => {
           ...targetPullRequest,
         })
       ).toBe(false);
+    }
+  });
+
+  test('collapses the diff entry while keeping the dashboard to PR path', () => {
+    const state = new Map<string, Ref<unknown>>();
+    const originalUseState = globalThis.useState;
+
+    globalThis.useState = ((key: string, init: () => unknown) => {
+      if (!state.has(key)) {
+        state.set(key, ref(init()));
+      }
+
+      return state.get(key);
+    }) as typeof globalThis.useState;
+
+    try {
+      const navigation = useNavigationHistory();
+
+      navigation.navigateToPullRequest('acme', 'widget', 42, 'pulls');
+      navigation.navigateToPullRequest('acme', 'widget', 42, 'pulls', 'diff');
+
+      expect(
+        shouldCloseReviewWorkspaceAfterSubmit({
+          previousEntry: navigation.previousEntry.value,
+          ...targetPullRequest,
+        })
+      ).toBe(true);
+
+      navigation.goBack();
+
+      expect(navigation.navigationHistory.value).toEqual([{ type: 'dashboard' }]);
+      expect(navigation.currentEntry.value).toEqual({
+        type: 'pull-request',
+        data: {
+          owner: 'acme',
+          repo: 'widget',
+          number: 42,
+          tab: 'pulls',
+        },
+      });
+    } finally {
+      globalThis.useState = originalUseState;
     }
   });
 });

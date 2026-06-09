@@ -40,6 +40,7 @@ const handleReviewSubmitted = () => {
       pullNumber: props.pullNumber,
     })
   ) {
+    goNavigationBack();
     emit('close');
   }
 };
