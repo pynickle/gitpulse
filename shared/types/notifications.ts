@@ -4,6 +4,11 @@ export type NotificationSubjectState = 'open' | 'closed' | 'merged';
 
 export type NotificationSubjectStateStatus = 'pending' | 'loaded' | 'error' | 'unavailable';
 
+export interface NotificationLabel {
+  name: string;
+  color: string;
+}
+
 export interface DashboardNotificationSubject {
   title?: string;
   type?: NotificationSubjectKind;
@@ -11,6 +16,7 @@ export interface DashboardNotificationSubject {
   number?: number;
   state?: NotificationSubjectState;
   stateStatus?: NotificationSubjectStateStatus;
+  labels?: NotificationLabel[];
 }
 
 export interface DashboardNotificationRepository {
@@ -43,4 +49,5 @@ export interface NotificationSubjectStateTarget {
 export interface NotificationSubjectStateResult {
   key: string;
   state?: NotificationSubjectState;
+  labels?: NotificationLabel[];
 }

@@ -151,19 +151,20 @@ const applyNotificationSubjectStates = (
   items: DashboardNotification[],
   states: NotificationSubjectStateResult[]
 ) => {
-  const statesByKey = new Map(states.map((item) => [item.key, item.state]));
+  const statesByKey = new Map(states.map((item) => [item.key, item]));
 
   return items.map((item) => {
     const target = parseNotificationSubjectStateTarget(item);
     if (!target) return item;
 
-    const state = statesByKey.get(target.key);
+    const result = statesByKey.get(target.key);
     return {
       ...item,
       subject: {
         ...item.subject,
-        state,
-        stateStatus: state ? ('loaded' as const) : ('error' as const),
+        state: result?.state,
+        labels: result?.labels,
+        stateStatus: result?.state ? ('loaded' as const) : ('error' as const),
       },
     };
   });

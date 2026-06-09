@@ -1,12 +1,23 @@
 import type {
+  NotificationLabel,
   NotificationSubjectState,
   NotificationSubjectStateResult,
   NotificationSubjectStateTarget,
 } from '#shared/types/notifications';
 
+interface GraphQLLabelNode {
+  name?: string;
+  color?: string;
+}
+
+interface GraphQLLabelsConnection {
+  nodes?: GraphQLLabelNode[];
+}
+
 interface GraphQLSubjectNode {
   state?: string;
   mergedAt?: string | null;
+  labels?: GraphQLLabelsConnection;
 }
 
 interface GraphQLSubjectRepository {
@@ -42,6 +53,20 @@ const isSubjectTarget = (value: unknown): value is NotificationSubjectStateTarge
   );
 };
 
+const normalizeLabels = (
+  node: GraphQLSubjectNode | null | undefined
+): NotificationLabel[] | undefined => {
+  const nodes = node?.labels?.nodes;
+  if (!nodes?.length) return undefined;
+
+  return nodes
+    .filter(
+      (label): label is GraphQLLabelNode & { name: string; color: string } =>
+        typeof label.name === 'string' && typeof label.color === 'string'
+    )
+    .map((label) => ({ name: label.name, color: label.color }));
+};
+
 const normalizeState = (
   type: NotificationSubjectStateTarget['type'],
   node: GraphQLSubjectNode | null | undefined
@@ -68,7 +93,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
     const fieldName = target.type === 'pulls' ? 'pullRequest' : 'issue';
     const nodeFields = target.type === 'pulls' ? 'state mergedAt' : 'state';
     fields.push(
-      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { ${fieldName}(number: $number${index}) { ${nodeFields} } }`
+      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { ${fieldName}(number: $number${index}) { ${nodeFields} labels(first: 10) { nodes { name color } } } }`
     );
   });
 
@@ -135,6 +160,7 @@ export default defineEventHandler(async (event) => {
       return {
         key: target.key,
         state: normalizeState(target.type, node),
+        labels: normalizeLabels(node),
       };
     });
 

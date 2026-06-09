@@ -38,6 +38,20 @@
                 {{ currentNotification.subject.title }}
               </p>
 
+              <div v-if="subjectLabels.length" class="notification-card__labels">
+                <span
+                  v-for="label in subjectLabels"
+                  :key="label.name"
+                  class="notification-card__label"
+                  :style="{
+                    '--label-color': `#${label.color}`,
+                    borderBottomColor: `#${label.color}`,
+                  }"
+                >
+                  {{ label.name }}
+                </span>
+              </div>
+
               <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
                 <span v-if="currentNotification.subject?.number" class="notification-card__number">
                   #{{ currentNotification.subject.number }}
@@ -134,6 +148,8 @@ const subjectVisual = computed(() => {
     subjectType: currentNotification.value.subject?.type,
   });
 });
+
+const subjectLabels = computed(() => currentNotification.value.subject?.labels ?? []);
 
 const subjectStateTitle = computed(() => {
   if (isSubjectStatePending.value) {
@@ -317,6 +333,24 @@ const reasonIcon = computed(() => {
 .notification-card__meta-separator {
   display: inline-block;
   width: 0.5rem;
+}
+
+.notification-card__labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.notification-card__label {
+  font-size: 0.62rem;
+  font-weight: 650;
+  color: var(--gitpulse-text);
+  border-bottom: 2px solid var(--label-color, var(--gitpulse-border));
+  padding-bottom: 1px;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  transition: color 0.15s ease;
 }
 
 .mark-read-btn:hover {
