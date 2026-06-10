@@ -1,0 +1,73 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install extension dependencies
+        run: bun install --frozen-lockfile
+        working-directory: extension
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Zip extensions
+        working-directory: extension
+        run: |
+          bun run zip
+          bun run zip:firefox
+
+      - name: Create GitHub Release (draft)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --draft \
+            --title "GitPulse ${{ github.ref_name }}" \
+            --generate-notes \
+            extension/.output/gitpulse-extension-${{ steps.version.outputs.version }}-chrome.zip \
+            extension/.output/gitpulse-extension-${{ steps.version.outputs.version }}-firefox.zip \
+            extension/.output/gitpulse-extension-${{ steps.version.outputs.version }}-sources.zip
+
+      - name: Submit to stores
+        working-directory: extension
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+        run: |
+          bunx wxt submit \
+            --chrome-zip .output/gitpulse-extension-${{ steps.version.outputs.version }}-chrome.zip \
+            --firefox-zip .output/gitpulse-extension-${{ steps.version.outputs.version }}-firefox.zip \
+            --firefox-sources-zip .output/gitpulse-extension-${{ steps.version.outputs.version }}-sources.zip \
+            --edge-zip .output/gitpulse-extension-${{ steps.version.outputs.version }}-chrome.zip

@@ -7,6 +7,8 @@
     "dev": "nuxt dev",
     "extension:build": "bun run --cwd extension build",
     "extension:build:firefox": "bun run --cwd extension build:firefox",
+    "extension:zip": "bun run --cwd extension zip",
+    "extension:zip:firefox": "bun run --cwd extension zip:firefox",
     "extension:test": "bun test --cwd extension",
     "generate": "nuxt generate",
     "preview": "nuxt preview",

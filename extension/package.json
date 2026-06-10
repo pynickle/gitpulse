@@ -8,6 +8,8 @@
     "build:firefox": "wxt build -b firefox",
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
     "test": "bun test tests"
   },
   "dependencies": {
