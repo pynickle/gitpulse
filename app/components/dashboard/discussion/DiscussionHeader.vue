@@ -32,7 +32,12 @@
     </div>
 
     <div class="mb-4">
-      <span class="subtitle is-6 has-text-weight-medium"> {{ repoOwner }}/{{ repoName }} </span>
+      <a
+        class="header-repo__link subtitle is-6 has-text-weight-medium"
+        @click.prevent="handleRepoClick"
+      >
+        {{ repoOwner }}/{{ repoName }}
+      </a>
     </div>
 
     <hr class="mr-4" />
@@ -89,6 +94,10 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const { locale, t } = useI18n();
+const { navigateToRepo } = useNavigationHistory();
+const router = useRouter();
+const localePath = useLocalePath();
+const route = useRoute();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -115,4 +124,33 @@ const categoryStyle = {
   backgroundColor: 'var(--gitpulse-surface-muted)',
   color: 'var(--gitpulse-text-strong)',
 };
+
+const handleRepoClick = async () => {
+  if (props.repoOwner && props.repoName) {
+    const currentTab = route.query.tab as string;
+    navigateToRepo(props.repoOwner, props.repoName, currentTab);
+
+    await router.push({
+      path: localePath('/dashboard'),
+      query: {
+        tab: currentTab,
+        repo: `${props.repoOwner}/${props.repoName}`,
+      },
+    });
+  }
+};
 </script>
+
+<style scoped lang="scss">
+.header-repo__link {
+  color: var(--gitpulse-text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.16s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent-hover);
+    text-decoration: underline;
+  }
+}
+</style>
