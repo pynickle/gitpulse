@@ -86,6 +86,7 @@
     "loading": {
       "issue": "加载中...",
       "pullRequest": "正在加载拉取请求...",
+      "release": "正在加载 Release...",
       "repository": "正在加载仓库..."
     }
   },
@@ -110,6 +111,24 @@
   },
   "detailActions": {
     "viewOnGithub": "在 GitHub 上查看"
+  },
+  "releaseDetail": {
+    "loading": "正在加载 Release...",
+    "untitled": "Release",
+    "draft": "草稿",
+    "prerelease": "预发布",
+    "unpublished": "未发布",
+    "noDescription": "暂无发布说明",
+    "assets": "资源",
+    "assetCount": "{count} 个资源",
+    "downloadCount": "{count} 次下载",
+    "noAssets": "暂无发布资源",
+    "sourceCode": "源代码",
+    "sourceZip": "源代码 (zip)",
+    "sourceTar": "源代码 (tar.gz)",
+    "sizeUnknown": "未知大小",
+    "links": "链接",
+    "openOnGitHub": "在 GitHub 上查看"
   },
   "issueDetail": {
     "issueTypeFallback": "议题",

@@ -1,12 +1,13 @@
 import type { NotificationSubjectStateTarget } from '#shared/types/notifications';
 
+import { isGitHubApiHost, parseUrl } from './github-url-utils';
 import parseGitHubMarkdownTarget, { type GitHubMarkdownTarget } from './parseGitHubMarkdownTarget';
 
 export interface GitHubNotificationSubjectTarget {
   owner: string;
   repo: string;
   number: number;
-  type: 'issues' | 'pulls' | 'discussions';
+  type: 'issues' | 'pulls' | 'discussions' | 'releases';
 }
 
 interface GitHubNotificationSubjectLike {
@@ -20,6 +21,35 @@ const getExpectedTargetType = (subjectType?: string): GitHubMarkdownTarget['type
   if (subjectType === 'Discussion') return 'discussion';
   return null;
 };
+
+function parseGitHubReleaseSubjectUrl(url?: string | null): GitHubNotificationSubjectTarget | null {
+  if (!url) return null;
+
+  const parsedUrl = parseUrl(url);
+  if (!parsedUrl || !isGitHubApiHost(parsedUrl.hostname)) return null;
+
+  const [reposSegment, owner, repo, releasesSegment, releaseIdSegment] = parsedUrl.pathname
+    .split('/')
+    .filter(Boolean);
+
+  if (reposSegment !== 'repos' || !owner || !repo || releasesSegment !== 'releases') {
+    return null;
+  }
+
+  if (!releaseIdSegment || !/^\d+$/.test(releaseIdSegment)) {
+    return null;
+  }
+
+  const number = Number.parseInt(releaseIdSegment, 10);
+  if (!Number.isSafeInteger(number) || number < 1) return null;
+
+  return {
+    owner,
+    repo,
+    number,
+    type: 'releases',
+  };
+}
 
 const getRouteType = (
   targetType: GitHubMarkdownTarget['type']
@@ -48,6 +78,10 @@ export function toNotificationSubjectStateTarget(
 export default function parseGitHubNotificationSubjectTarget(
   subject?: GitHubNotificationSubjectLike | null
 ): GitHubNotificationSubjectTarget | null {
+  if (subject?.type === 'Release') {
+    return parseGitHubReleaseSubjectUrl(subject.url);
+  }
+
   const expectedTargetType = getExpectedTargetType(subject?.type);
   if (!expectedTargetType) return null;
 

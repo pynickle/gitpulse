@@ -12,6 +12,7 @@ export function useDashboardUrlNavigation() {
     navigateToFile,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToRelease,
     navigateToRepo,
   } = useNavigationHistory();
 
@@ -48,6 +49,11 @@ export function useDashboardUrlNavigation() {
 
     if (target.type === 'discussion') {
       navigateToDiscussion(target.owner, target.repo, target.number);
+      return;
+    }
+
+    if (target.type === 'release') {
+      navigateToRelease(target.owner, target.repo, target.releaseRef);
       return;
     }
 

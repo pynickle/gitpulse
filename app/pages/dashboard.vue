@@ -143,22 +143,27 @@
     :issue="currentIssue"
     :pull-request="currentPR"
     :discussion="currentDiscussion"
+    :release="currentRelease"
     :repository="currentRepo"
     :issue-error="issueError"
     :discussion-error="discussionError"
+    :release-error="releaseError"
     :repo-error="repoError"
     :is-issue-visible="isIssueDetailVisible"
     :is-pull-request-visible="isPRDetailVisible"
     :is-discussion-visible="isDiscussionDetailVisible"
+    :is-release-visible="isReleaseDetailVisible"
     :is-repository-visible="isRepoDetailVisible"
     :is-pull-request-review-route="isPRReviewRoute"
     :issue-detail-key="issueDetailKey"
     :pull-request-detail-key="prDetailKey"
     :discussion-detail-key="discussionDetailKey"
+    :release-detail-key="releaseDetailKey"
     :repository-detail-key="repoDetailKey"
     :loading-issue="loadingIssue"
     :loading-pull-request="loadingPR"
     :loading-discussion="loadingDiscussion"
+    :loading-release="loadingRelease"
     :loading-repository="loadingRepo"
     @back="handleActiveDetailBack"
     @home="handleActiveDetailHome"
@@ -640,19 +645,24 @@ const {
   currentIssue,
   currentPR,
   currentDiscussion,
+  currentRelease,
   currentRepo,
   issueError,
   discussionError,
+  releaseError,
   repoError,
   isIssueDetailVisible,
   isPRDetailVisible,
   isDiscussionDetailVisible,
+  isReleaseDetailVisible,
   isRepoDetailVisible,
   issueDetailKey,
   discussionDetailKey,
+  releaseDetailKey,
   loadingIssue,
   loadingPR,
   loadingDiscussion,
+  loadingRelease,
   loadingRepo,
   openIssue,
   openNotification,
@@ -663,6 +673,8 @@ const {
   handlePRDetailHome,
   handleDiscussionDetailBack,
   handleDiscussionDetailHome,
+  handleReleaseDetailBack,
+  handleReleaseDetailHome,
   handleRepoDetailBack,
   handleRepoDetailHome,
   handleSwitchIssue,
@@ -720,6 +732,11 @@ const handleActiveDetailBack = async () => {
     return;
   }
 
+  if (isReleaseDetailVisible.value) {
+    await handleReleaseDetailBack();
+    return;
+  }
+
   await handlePRDetailBack();
 };
 
@@ -736,6 +753,11 @@ const handleActiveDetailHome = async () => {
 
   if (isDiscussionDetailVisible.value) {
     await handleDiscussionDetailHome();
+    return;
+  }
+
+  if (isReleaseDetailVisible.value) {
+    await handleReleaseDetailHome();
     return;
   }
 

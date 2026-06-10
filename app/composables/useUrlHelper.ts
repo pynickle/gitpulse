@@ -13,18 +13,20 @@ interface NotificationLike {
 interface NotificationDetails {
   owner: string;
   repo: string;
-  type: 'issues' | 'pulls' | 'discussions';
+  type: 'issues' | 'pulls' | 'discussions' | 'releases';
   number: number;
   isIssue: boolean;
   isPR: boolean;
   isDiscussion: boolean;
+  isRelease: boolean;
 }
 
 function isInternalDetailSubject(notification: NotificationLike) {
   return (
     notification.subject?.type === 'Issue' ||
     notification.subject?.type === 'PullRequest' ||
-    notification.subject?.type === 'Discussion'
+    notification.subject?.type === 'Discussion' ||
+    notification.subject?.type === 'Release'
   );
 }
 
@@ -42,6 +44,7 @@ export function useUrlHelper() {
         isIssue: target.type === 'issues',
         isPR: target.type === 'pulls',
         isDiscussion: target.type === 'discussions',
+        isRelease: target.type === 'releases',
       };
     }
 
@@ -52,6 +55,15 @@ export function useUrlHelper() {
     if (isInternalDetailSubject(notification)) {
       const details = getNotificationDetails(notification);
       if (!details) return;
+
+      if (details.isRelease) {
+        window.open(
+          notification.html_url ?? `https://github.com/${details.owner}/${details.repo}/releases`,
+          '_blank',
+          'noopener'
+        );
+        return;
+      }
 
       window.open(
         `https://github.com/${details.owner}/${details.repo}/${details.type}/${details.number}`,

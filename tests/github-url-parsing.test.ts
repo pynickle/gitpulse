@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
-import { parseDashboardUrlTarget } from '../app/utils/dashboard-url-navigation-utils';
+import {
+  buildDashboardQueryFromNavigationEntry,
+  parseDashboardUrlTarget,
+} from '../app/utils/dashboard-url-navigation-utils';
 import {
   buildRepoRawFileUrl,
   parseMarkdownRepoResource,
@@ -116,6 +119,21 @@ describe('parseGitHubNotificationSubjectTarget', () => {
       type: 'pulls',
     });
   });
+
+  test('parses release notification targets without state enrichment', () => {
+    const target = parseGitHubNotificationSubjectTarget({
+      type: 'Release',
+      url: 'https://api.github.com/repos/owner/repo/releases/123',
+    });
+
+    expect(target).toEqual({
+      owner: 'owner',
+      repo: 'repo',
+      number: 123,
+      type: 'releases',
+    });
+    expect(target && toNotificationSubjectStateTarget(target)).toBeNull();
+  });
 });
 
 describe('markdown repository resources', () => {
@@ -203,6 +221,56 @@ describe('parseDashboardUrlTarget', () => {
     });
   });
 
+  test('parses release API URLs as release detail targets', () => {
+    expect(parseDashboardUrlTarget('https://api.github.com/repos/owner/repo/releases/123')).toEqual(
+      {
+        type: 'release',
+        owner: 'owner',
+        repo: 'repo',
+        releaseRef: {
+          kind: 'id',
+          id: 123,
+        },
+        query: {
+          release: 'owner/repo/123',
+        },
+        hash: undefined,
+      }
+    );
+  });
+
+  test('parses release web tag URLs as release detail targets', () => {
+    expect(parseDashboardUrlTarget('https://github.com/owner/repo/releases/tag/v1.2.3')).toEqual({
+      type: 'release',
+      owner: 'owner',
+      repo: 'repo',
+      releaseRef: {
+        kind: 'tag',
+        tag: 'v1.2.3',
+      },
+      query: {
+        release: 'owner/repo',
+        releaseTag: 'v1.2.3',
+      },
+      hash: undefined,
+    });
+  });
+
+  test('keeps slash-delimited release tags intact', () => {
+    expect(
+      parseDashboardUrlTarget('https://github.com/owner/repo/releases/tag/release/2026.06')
+    ).toMatchObject({
+      releaseRef: {
+        kind: 'tag',
+        tag: 'release/2026.06',
+      },
+      query: {
+        release: 'owner/repo',
+        releaseTag: 'release/2026.06',
+      },
+    });
+  });
+
   test('parses repository file URLs as dashboard file targets', () => {
     expect(parseDashboardUrlTarget('https://github.com/owner/repo/blob/main/src/app.vue')).toEqual({
       type: 'file',
@@ -241,5 +309,49 @@ describe('parseDashboardUrlTarget', () => {
 
   test('does not rewrite site-relative repo-shaped links without repo context', () => {
     expect(parseDashboardUrlTarget('/owner/repo')).toBeNull();
+  });
+});
+
+describe('buildDashboardQueryFromNavigationEntry', () => {
+  test('serializes release navigation entries', () => {
+    expect(
+      buildDashboardQueryFromNavigationEntry({
+        type: 'release',
+        data: {
+          owner: 'owner',
+          repo: 'repo',
+          number: 123,
+          releaseRef: {
+            kind: 'id',
+            id: 123,
+          },
+          tab: 'notifications',
+        },
+      })
+    ).toEqual({
+      tab: 'notifications',
+      release: 'owner/repo/123',
+    });
+  });
+
+  test('serializes release tag navigation entries', () => {
+    expect(
+      buildDashboardQueryFromNavigationEntry({
+        type: 'release',
+        data: {
+          owner: 'owner',
+          repo: 'repo',
+          releaseRef: {
+            kind: 'tag',
+            tag: 'v1.2.3',
+          },
+          tab: 'notifications',
+        },
+      })
+    ).toEqual({
+      tab: 'notifications',
+      release: 'owner/repo',
+      releaseTag: 'v1.2.3',
+    });
   });
 });

@@ -86,6 +86,7 @@
     "loading": {
       "issue": "Loading issue...",
       "pullRequest": "Loading pull request...",
+      "release": "Loading release...",
       "repository": "Loading repository..."
     }
   },
@@ -110,6 +111,24 @@
   },
   "detailActions": {
     "viewOnGithub": "View on GitHub"
+  },
+  "releaseDetail": {
+    "loading": "Loading release...",
+    "untitled": "Release",
+    "draft": "Draft",
+    "prerelease": "Pre-release",
+    "unpublished": "Unpublished",
+    "noDescription": "No release notes provided",
+    "assets": "Assets",
+    "assetCount": "{count} assets",
+    "downloadCount": "{count} downloads",
+    "noAssets": "No release assets",
+    "sourceCode": "Source code",
+    "sourceZip": "Source code (zip)",
+    "sourceTar": "Source code (tar.gz)",
+    "sizeUnknown": "Unknown size",
+    "links": "Links",
+    "openOnGitHub": "Open on GitHub"
   },
   "issueDetail": {
     "issueTypeFallback": "Issue",

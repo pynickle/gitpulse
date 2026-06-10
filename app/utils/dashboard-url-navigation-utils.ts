@@ -19,6 +19,8 @@ export const DASHBOARD_DETAIL_QUERY_KEYS = [
   'pr',
   'prView',
   'discussion',
+  'release',
+  'releaseTag',
   'repo',
   'path',
   'branch',
@@ -27,12 +29,23 @@ export const DASHBOARD_DETAIL_QUERY_KEYS = [
 
 export type DashboardDetailQueryKey = (typeof DASHBOARD_DETAIL_QUERY_KEYS)[number];
 
+export type ReleaseDashboardRef =
+  | {
+      kind: 'id';
+      id: number;
+    }
+  | {
+      kind: 'tag';
+      tag: string;
+    };
+
 export interface DashboardNavigationEntry {
   type:
     | 'dashboard'
     | 'issue'
     | 'pull-request'
     | 'discussion'
+    | 'release'
     | 'repository'
     | 'notification'
     | 'file';
@@ -44,6 +57,7 @@ export interface DashboardNavigationEntry {
     path?: string;
     branch?: string;
     view?: PullRequestDashboardView;
+    releaseRef?: ReleaseDashboardRef;
   };
 }
 
@@ -63,6 +77,8 @@ export function clearDashboardDetailQuery(query: LocationQueryRaw): LocationQuer
     pr: undefined,
     prView: undefined,
     discussion: undefined,
+    release: undefined,
+    releaseTag: undefined,
     repo: undefined,
     path: undefined,
     branch: undefined,
@@ -76,6 +92,19 @@ function serializeDashboardDetailTarget(owner: string, repo: string, number: num
 
 function serializeDashboardRepoTarget(owner: string, repo: string) {
   return `${owner}/${repo}`;
+}
+
+function serializeReleaseQuery(owner: string, repo: string, releaseRef: ReleaseDashboardRef) {
+  if (releaseRef.kind === 'tag') {
+    return {
+      release: serializeDashboardRepoTarget(owner, repo),
+      releaseTag: releaseRef.tag,
+    };
+  }
+
+  return {
+    release: serializeDashboardDetailTarget(owner, repo, releaseRef.id),
+  };
 }
 
 function getNavigationBranch(
@@ -114,6 +143,17 @@ export function buildDashboardQueryFromNavigationEntry(
     return {
       tab: data.tab ?? options.defaultTab,
       discussion: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
+    };
+  }
+
+  if (entry.type === 'release' && data?.owner && data.repo) {
+    const releaseRef =
+      data.releaseRef ?? (data.number ? { kind: 'id' as const, id: data.number } : null);
+    if (!releaseRef) return null;
+
+    return {
+      tab: data.tab ?? options.defaultTab,
+      ...serializeReleaseQuery(data.owner, data.repo, releaseRef),
     };
   }
 
@@ -160,6 +200,14 @@ export type DashboardUrlTarget =
       owner: string;
       repo: string;
       number: number;
+      query: LocationQueryRaw;
+      hash?: string;
+    }
+  | {
+      type: 'release';
+      owner: string;
+      repo: string;
+      releaseRef: ReleaseDashboardRef;
       query: LocationQueryRaw;
       hash?: string;
     }
@@ -306,6 +354,79 @@ function createDiscussionTarget(
   };
 }
 
+function createReleaseTarget(
+  owner: string,
+  repo: string,
+  releaseRef: ReleaseDashboardRef,
+  hash?: string
+): DashboardUrlTarget {
+  return {
+    type: 'release',
+    owner,
+    repo,
+    releaseRef,
+    query: serializeReleaseQuery(owner, repo, releaseRef),
+    hash,
+  };
+}
+
+function parseGitHubReleaseUrl(value: string): DashboardUrlTarget | null {
+  const url = parseUrl(value);
+  if (!url) return null;
+
+  if (isGitHubWebHost(url.hostname)) {
+    const [owner, repo, releasesSegment, tagSegment, ...tagParts] = getPathSegments(url);
+
+    if (
+      !owner ||
+      !repo ||
+      releasesSegment !== 'releases' ||
+      tagSegment !== 'tag' ||
+      tagParts.length === 0
+    ) {
+      return null;
+    }
+
+    return createReleaseTarget(
+      owner,
+      repo,
+      {
+        kind: 'tag',
+        tag: tagParts.join('/'),
+      },
+      url.hash || undefined
+    );
+  }
+
+  if (!isGitHubApiHost(url.hostname)) return null;
+
+  const [reposSegment, owner, repo, releasesSegment, releaseIdSegment, ...tagParts] =
+    getPathSegments(url);
+  const number = parsePositiveNumber(releaseIdSegment);
+
+  if (reposSegment !== 'repos' || !owner || !repo || releasesSegment !== 'releases') {
+    return null;
+  }
+
+  if (number) {
+    return createReleaseTarget(owner, repo, { kind: 'id', id: number }, url.hash || undefined);
+  }
+
+  if (releaseIdSegment === 'tags' && tagParts.length > 0) {
+    return createReleaseTarget(
+      owner,
+      repo,
+      {
+        kind: 'tag',
+        tag: tagParts.join('/'),
+      },
+      url.hash || undefined
+    );
+  }
+
+  return null;
+}
+
 function createRepoTarget(
   owner: string,
   repo: string,
@@ -347,6 +468,11 @@ export function parseDashboardUrlTarget(
   const pullRequestUrl = parseGitHubPullRequestUrl(rawValue);
   if (pullRequestUrl) {
     return createPullRequestTarget(pullRequestUrl);
+  }
+
+  const releaseUrl = parseGitHubReleaseUrl(rawValue);
+  if (releaseUrl) {
+    return releaseUrl;
   }
 
   const detailTarget = parseGitHubMarkdownTarget(rawValue);

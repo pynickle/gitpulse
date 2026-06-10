@@ -1,12 +1,16 @@
 import { computed } from 'vue';
 
-import type { PullRequestDashboardView } from '~/utils/dashboard-url-navigation-utils';
+import type {
+  PullRequestDashboardView,
+  ReleaseDashboardRef,
+} from '~/utils/dashboard-url-navigation-utils';
 
 export type PageType =
   | 'dashboard'
   | 'issue'
   | 'pull-request'
   | 'discussion'
+  | 'release'
   | 'repository'
   | 'notification'
   | 'file';
@@ -21,8 +25,14 @@ export interface NavigationEntry {
     path?: string;
     branch?: string;
     view?: PullRequestDashboardView;
+    releaseRef?: ReleaseDashboardRef;
   };
 }
+
+const getReleaseRefValue = (releaseRef: ReleaseDashboardRef | undefined) => {
+  if (!releaseRef) return undefined;
+  return releaseRef.kind === 'id' ? releaseRef.id : releaseRef.tag;
+};
 
 const isSameEntry = (left: NavigationEntry | null, right: NavigationEntry) => {
   return (
@@ -33,7 +43,9 @@ const isSameEntry = (left: NavigationEntry | null, right: NavigationEntry) => {
     left.data?.tab === right.data?.tab &&
     left.data?.path === right.data?.path &&
     left.data?.branch === right.data?.branch &&
-    left.data?.view === right.data?.view
+    left.data?.view === right.data?.view &&
+    left.data?.releaseRef?.kind === right.data?.releaseRef?.kind &&
+    getReleaseRefValue(left.data?.releaseRef) === getReleaseRefValue(right.data?.releaseRef)
   );
 };
 
@@ -113,6 +125,25 @@ export function useNavigationHistory() {
     const entry: NavigationEntry = {
       type: 'discussion',
       data: { owner, repo, number, tab },
+    };
+    pushEntry(entry);
+  };
+
+  const navigateToRelease = (
+    owner: string,
+    repo: string,
+    releaseRef: ReleaseDashboardRef,
+    tab?: string
+  ) => {
+    const entry: NavigationEntry = {
+      type: 'release',
+      data: {
+        owner,
+        repo,
+        number: releaseRef.kind === 'id' ? releaseRef.id : undefined,
+        releaseRef,
+        tab,
+      },
     };
     pushEntry(entry);
   };
@@ -203,6 +234,7 @@ export function useNavigationHistory() {
     navigateToIssue,
     navigateToPullRequest,
     navigateToDiscussion,
+    navigateToRelease,
     navigateToRepo,
     navigateToFile,
     navigateToNotification,

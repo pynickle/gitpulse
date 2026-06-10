@@ -4,13 +4,15 @@ import { computed, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
+import type { ReleaseDetailPayload } from '#shared/types/releases';
 import DiscussionDetail from '~/components/dashboard/detail/DiscussionDetail.vue';
 import IssueDetail from '~/components/dashboard/detail/IssueDetail.vue';
 import PrDetail from '~/components/dashboard/detail/PRDetail.vue';
+import ReleaseDetail from '~/components/dashboard/detail/ReleaseDetail.vue';
 import RepoDetail from '~/components/dashboard/detail/RepoDetail.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 
-type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'repository';
+type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
 
 interface ActiveDetailPane {
   type: DetailPaneType;
@@ -25,22 +27,27 @@ const props = defineProps<{
   issue: Record<string, unknown> | null;
   pullRequest: Record<string, unknown> | null;
   discussion: DiscussionDetailPayload | null;
+  release: ReleaseDetailPayload | null;
   repository: Record<string, unknown> | null;
   issueError: string;
   discussionError: string;
+  releaseError: string;
   repoError: string;
   isIssueVisible: boolean;
   isPullRequestVisible: boolean;
   isDiscussionVisible: boolean;
+  isReleaseVisible: boolean;
   isRepositoryVisible: boolean;
   isPullRequestReviewRoute: boolean;
   issueDetailKey: string;
   pullRequestDetailKey: string;
   discussionDetailKey: string;
+  releaseDetailKey: string;
   repositoryDetailKey: string;
   loadingIssue: boolean;
   loadingPullRequest: boolean;
   loadingDiscussion: boolean;
+  loadingRelease: boolean;
   loadingRepository: boolean;
 }>();
 
@@ -90,6 +97,17 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(props.discussion),
       error: props.discussionError,
       loadingTitle: t('discussionDetail.loading'),
+    };
+  }
+
+  if (props.isReleaseVisible) {
+    return {
+      type: 'release',
+      key: props.releaseDetailKey,
+      loading: props.loadingRelease,
+      hasData: Boolean(props.release),
+      error: props.releaseError,
+      loadingTitle: t('releaseDetail.loading'),
     };
   }
 
@@ -218,6 +236,11 @@ watch(activeDetailKey, () => {
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
               @switch-discussion="handleSwitchDiscussion"
+            />
+
+            <ReleaseDetail
+              v-else-if="activeDetailPane?.type === 'release' && release"
+              :release="release"
             />
 
             <RepoDetail

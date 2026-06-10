@@ -3,12 +3,14 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
+import type { ReleaseDetailPayload } from '#shared/types/releases';
 import {
   DASHBOARD_DETAIL_QUERY_KEYS,
   buildDashboardQueryFromNavigationEntry,
   clearDashboardDetailQuery,
   type DashboardDetailQueryKey,
   type PullRequestDashboardView,
+  type ReleaseDashboardRef,
 } from '~/utils/dashboard-url-navigation-utils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
@@ -19,7 +21,7 @@ interface DashboardEntity {
   [key: string]: unknown;
 }
 
-type DetailType = 'issue' | 'pull-request' | 'discussion';
+type DetailType = 'issue' | 'pull-request' | 'discussion' | 'release';
 
 interface DetailTarget {
   owner: string;
@@ -27,8 +29,19 @@ interface DetailTarget {
   number: number;
 }
 
+interface ReleaseDetailTarget {
+  owner: string;
+  repo: string;
+  releaseRef: ReleaseDashboardRef;
+}
+
 const parsePullRequestView = (value: unknown): PullRequestDashboardView | undefined => {
   return getQueryParamValue(value) === 'diff' ? 'diff' : undefined;
+};
+
+const getReleaseRefValue = (releaseRef: ReleaseDashboardRef | undefined) => {
+  if (!releaseRef) return undefined;
+  return releaseRef.kind === 'id' ? releaseRef.id : releaseRef.tag;
 };
 
 export function useDashboardDetails(currentRouteTab: Ref<string>) {
@@ -41,6 +54,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     navigateToDiscussion,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToRelease,
     navigateToRepo,
     replaceWithEntry,
     currentEntry,
@@ -52,21 +66,26 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const isIssueDetailVisible = ref(false);
   const isPRDetailVisible = ref(false);
   const isDiscussionDetailVisible = ref(false);
+  const isReleaseDetailVisible = ref(false);
   const isRepoDetailVisible = ref(false);
   const currentIssue = ref<DashboardEntity | null>(null);
   const currentPR = ref<DashboardEntity | null>(null);
   const currentDiscussion = ref<DiscussionDetailPayload | null>(null);
+  const currentRelease = ref<ReleaseDetailPayload | null>(null);
   const currentRepo = ref<Record<string, unknown> | null>(null);
   const issueError = ref('');
   const discussionError = ref('');
+  const releaseError = ref('');
   const repoError = ref('');
   const loadingIssue = ref(false);
   const loadingPR = ref(false);
   const loadingDiscussion = ref(false);
+  const loadingRelease = ref(false);
   const loadingRepo = ref(false);
   const issueRequestId = ref(0);
   const prRequestId = ref(0);
   const discussionRequestId = ref(0);
+  const releaseRequestId = ref(0);
   const repoRequestId = ref(0);
 
   const parseDetailTarget = (value: unknown): DetailTarget | null => {
@@ -89,12 +108,57 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     return { owner, repo, number };
   };
 
+  const parseReleaseTarget = (releaseValue: unknown, releaseTagValue: unknown) => {
+    const releaseTag = getQueryParamValue(releaseTagValue);
+    if (releaseTag) {
+      const rawRelease = getQueryParamValue(releaseValue);
+      if (!rawRelease) return null;
+
+      const repoPath = parseGitHubRepoPath(rawRelease);
+      if (!repoPath) return null;
+
+      return {
+        owner: repoPath.owner,
+        repo: repoPath.repo,
+        releaseRef: {
+          kind: 'tag' as const,
+          tag: releaseTag,
+        },
+      };
+    }
+
+    const releaseIdTarget = parseDetailTarget(releaseValue);
+    if (!releaseIdTarget) return null;
+
+    return {
+      owner: releaseIdTarget.owner,
+      repo: releaseIdTarget.repo,
+      releaseRef: {
+        kind: 'id' as const,
+        id: releaseIdTarget.number,
+      },
+    };
+  };
+
   const serializeDetailTarget = (owner: string, repo: string, number: number) => {
     return `${owner}/${repo}/${number}`;
   };
 
   const serializeRepoTarget = (owner: string, repo: string) => {
     return `${owner}/${repo}`;
+  };
+
+  const buildReleaseQuery = (target: ReleaseDetailTarget) => {
+    if (target.releaseRef.kind === 'tag') {
+      return {
+        release: serializeRepoTarget(target.owner, target.repo),
+        releaseTag: target.releaseRef.tag,
+      };
+    }
+
+    return {
+      release: serializeDetailTarget(target.owner, target.repo, target.releaseRef.id),
+    };
   };
 
   const getRepositoryDefaultBranch = (repository: Record<string, unknown> | null) => {
@@ -205,6 +269,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await pushDashboardQuery(query);
   };
 
+  const pushReleaseDetailRoute = async (target: ReleaseDetailTarget) => {
+    await pushDashboardQuery(buildDetailDashboardQuery(buildReleaseQuery(target)));
+  };
+
   const pushRepoDetailRoute = async (owner: string, repo: string, branch?: string) => {
     await pushDashboardQuery(
       buildDetailDashboardQuery({
@@ -224,6 +292,9 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const activeIssueTarget = computed(() => parseDetailTarget(route.query.issue));
   const activePRTarget = computed(() => parseDetailTarget(route.query.pr));
   const activeDiscussionTarget = computed(() => parseDetailTarget(route.query.discussion));
+  const activeReleaseTarget = computed(() =>
+    parseReleaseTarget(route.query.release, route.query.releaseTag)
+  );
   const activeRepoTarget = computed(() => {
     const rawValue = getQueryParamValue(route.query.repo);
     if (!rawValue) return null;
@@ -246,7 +317,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const canonicalizeConflictingDetailRoute = async (
     issueTarget: DetailTarget | null,
     prTarget: DetailTarget | null,
-    discussionTarget: DetailTarget | null
+    discussionTarget: DetailTarget | null,
+    releaseTarget: ReleaseDetailTarget | null
   ) => {
     if (issueTarget && hasConflictingDetailQuery(['issue'])) {
       await replaceDashboardQuery(
@@ -277,6 +349,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
           ),
         })
       );
+      return true;
+    }
+
+    if (releaseTarget && hasConflictingDetailQuery(['release', 'releaseTag'])) {
+      await replaceDashboardQuery(buildDetailDashboardQuery(buildReleaseQuery(releaseTarget)));
       return true;
     }
 
@@ -382,6 +459,15 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       : 'discussion-empty';
   });
 
+  const releaseDetailKey = computed(() => {
+    const target = activeReleaseTarget.value;
+    return target
+      ? `release-${target.owner}-${target.repo}-${target.releaseRef.kind}-${getReleaseRefValue(
+          target.releaseRef
+        )}`
+      : 'release-empty';
+  });
+
   const closeIssueDetail = () => {
     issueRequestId.value += 1;
     isIssueDetailVisible.value = false;
@@ -403,6 +489,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     currentDiscussion.value = null;
     discussionError.value = '';
     loadingDiscussion.value = false;
+  };
+
+  const closeReleaseDetail = () => {
+    releaseRequestId.value += 1;
+    isReleaseDetailVisible.value = false;
+    currentRelease.value = null;
+    releaseError.value = '';
+    loadingRelease.value = false;
   };
 
   const closeRepoDetail = () => {
@@ -455,6 +549,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     loadingIssue.value = true;
     isPRDetailVisible.value = false;
     isDiscussionDetailVisible.value = false;
+    isReleaseDetailVisible.value = false;
     isIssueDetailVisible.value = true;
 
     await nextTick();
@@ -487,6 +582,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     loadingPR.value = true;
     isIssueDetailVisible.value = false;
     isDiscussionDetailVisible.value = false;
+    isReleaseDetailVisible.value = false;
     isPRDetailVisible.value = true;
 
     await nextTick();
@@ -519,6 +615,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     isIssueDetailVisible.value = false;
     isPRDetailVisible.value = false;
     isDiscussionDetailVisible.value = false;
+    isReleaseDetailVisible.value = false;
     isRepoDetailVisible.value = true;
 
     await nextTick();
@@ -557,6 +654,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     loadingDiscussion.value = true;
     isIssueDetailVisible.value = false;
     isPRDetailVisible.value = false;
+    isReleaseDetailVisible.value = false;
     isRepoDetailVisible.value = false;
     isDiscussionDetailVisible.value = true;
 
@@ -578,6 +676,46 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     } finally {
       if (requestId === discussionRequestId.value) {
         loadingDiscussion.value = false;
+      }
+    }
+  };
+
+  const loadReleaseData = async (owner: string, repo: string, releaseRef: ReleaseDashboardRef) => {
+    if (!owner || !repo) return;
+    if (releaseRef.kind === 'id' && !releaseRef.id) return;
+    if (releaseRef.kind === 'tag' && !releaseRef.tag) return;
+
+    const requestId = releaseRequestId.value + 1;
+    releaseRequestId.value = requestId;
+    currentRelease.value = null;
+    releaseError.value = '';
+    loadingRelease.value = true;
+    isIssueDetailVisible.value = false;
+    isPRDetailVisible.value = false;
+    isDiscussionDetailVisible.value = false;
+    isRepoDetailVisible.value = false;
+    isReleaseDetailVisible.value = true;
+
+    await nextTick();
+
+    try {
+      const releaseUrl =
+        releaseRef.kind === 'tag'
+          ? `/api/releases/${owner}/${repo}/by-tag?tag=${encodeURIComponent(releaseRef.tag)}`
+          : `/api/releases/${owner}/${repo}/${releaseRef.id}`;
+      const release = await apiFetch<ReleaseDetailPayload>(releaseUrl);
+      if (requestId === releaseRequestId.value) {
+        currentRelease.value = release;
+      }
+    } catch (error) {
+      console.error('Error fetching release:', error);
+      if (requestId === releaseRequestId.value) {
+        releaseError.value =
+          error instanceof Error ? error.message : 'Failed to load release details.';
+      }
+    } finally {
+      if (requestId === releaseRequestId.value) {
+        loadingRelease.value = false;
       }
     }
   };
@@ -604,6 +742,21 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const target = { owner, repo, number: discussionNumber };
     navigateToDiscussion(owner, repo, discussionNumber, currentRouteTab.value);
     await pushDetailRoute('discussion', target);
+  };
+
+  const handleSwitchRelease = async (owner: string, repo: string, releaseId: number) => {
+    if (!owner || !repo || !releaseId) return;
+
+    const target = {
+      owner,
+      repo,
+      releaseRef: {
+        kind: 'id' as const,
+        id: releaseId,
+      },
+    };
+    navigateToRelease(owner, repo, target.releaseRef, currentRouteTab.value);
+    await pushReleaseDetailRoute(target);
   };
 
   const handlePRReviewOpen = async () => {
@@ -660,6 +813,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       return;
     }
 
+    if (details.isRelease) {
+      void handleSwitchRelease(details.owner, details.repo, details.number);
+      return;
+    }
+
     void handleSwitchPR(details.owner, details.repo, details.number);
   };
 
@@ -679,9 +837,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const handlePRDetailBack = handleIssueDetailBack;
   const handleDiscussionDetailBack = handleIssueDetailBack;
+  const handleReleaseDetailBack = handleIssueDetailBack;
   const handleRepoDetailBack = handleIssueDetailBack;
   const handlePRDetailHome = handleIssueDetailHome;
   const handleDiscussionDetailHome = handleIssueDetailHome;
+  const handleReleaseDetailHome = handleIssueDetailHome;
   const handleRepoDetailHome = handleIssueDetailHome;
 
   watch(
@@ -689,6 +849,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       route.query.issue,
       route.query.pr,
       route.query.discussion,
+      route.query.release,
+      route.query.releaseTag,
       route.query.repo,
       route.query.path,
       route.query.branch,
@@ -709,6 +871,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         closeIssueDetail();
         closePRDetail();
         closeDiscussionDetail();
+        closeReleaseDetail();
         closeRepoDetail();
         return;
       }
@@ -716,8 +879,16 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       const issueTarget = activeIssueTarget.value;
       const prTarget = activePRTarget.value;
       const discussionTarget = activeDiscussionTarget.value;
+      const releaseTarget = activeReleaseTarget.value;
 
-      if (await canonicalizeConflictingDetailRoute(issueTarget, prTarget, discussionTarget)) {
+      if (
+        await canonicalizeConflictingDetailRoute(
+          issueTarget,
+          prTarget,
+          discussionTarget,
+          releaseTarget
+        )
+      ) {
         return;
       }
 
@@ -725,6 +896,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         closeIssueDetail();
         closePRDetail();
         closeDiscussionDetail();
+        closeReleaseDetail();
         closeRepoDetail();
         return;
       }
@@ -802,6 +974,32 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         return;
       }
 
+      if (releaseTarget) {
+        const currentData = currentEntry.value?.data;
+        if (
+          currentEntry.value?.type !== 'release' ||
+          currentData?.owner !== releaseTarget.owner ||
+          currentData?.repo !== releaseTarget.repo ||
+          currentData?.releaseRef?.kind !== releaseTarget.releaseRef.kind ||
+          getReleaseRefValue(currentData?.releaseRef) !==
+            getReleaseRefValue(releaseTarget.releaseRef)
+        ) {
+          replaceWithEntry({
+            type: 'release',
+            data: {
+              owner: releaseTarget.owner,
+              repo: releaseTarget.repo,
+              number:
+                releaseTarget.releaseRef.kind === 'id' ? releaseTarget.releaseRef.id : undefined,
+              releaseRef: releaseTarget.releaseRef,
+              tab: currentRouteTab.value,
+            },
+          });
+        }
+        await loadReleaseData(releaseTarget.owner, releaseTarget.repo, releaseTarget.releaseRef);
+        return;
+      }
+
       if (activeRepoTarget.value) {
         const { owner, repo } = activeRepoTarget.value;
         const currentData = currentEntry.value?.data;
@@ -821,6 +1019,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       closeIssueDetail();
       closePRDetail();
       closeDiscussionDetail();
+      closeReleaseDetail();
       closeRepoDetail();
     },
     { immediate: true }
@@ -830,19 +1029,24 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     currentIssue,
     currentPR,
     currentDiscussion,
+    currentRelease,
     currentRepo,
     issueError,
     discussionError,
+    releaseError,
     repoError,
     isIssueDetailVisible,
     isPRDetailVisible,
     isDiscussionDetailVisible,
+    isReleaseDetailVisible,
     isRepoDetailVisible,
     issueDetailKey,
     discussionDetailKey,
+    releaseDetailKey,
     loadingIssue,
     loadingPR,
     loadingDiscussion,
+    loadingRelease,
     loadingRepo,
     prDetailKey,
     repoDetailKey,
@@ -855,11 +1059,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     handlePRDetailHome,
     handleDiscussionDetailBack,
     handleDiscussionDetailHome,
+    handleReleaseDetailBack,
+    handleReleaseDetailHome,
     handleRepoDetailBack,
     handleRepoDetailHome,
     handleSwitchIssue,
     handleSwitchPR,
     handleSwitchDiscussion,
+    handleSwitchRelease,
     handlePRReviewOpen,
     handlePRReviewClose,
     isPRReviewRoute,
