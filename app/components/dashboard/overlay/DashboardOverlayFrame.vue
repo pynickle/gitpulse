@@ -2,27 +2,15 @@
   <div class="detail-overlay is-flex is-align-items-center is-justify-content-center">
     <div class="detail-container is-flex is-flex-direction-column">
       <div class="card is-flex is-flex-direction-column is-radiusless">
-        <div v-if="!hideHeader" :class="['card-header', { 'is-not-sticky': nonStickyHeader }]">
-          <div class="card-header-title detail-toolbar">
-            <div class="buttons detail-toolbar__nav">
-              <button class="button is-light is-small" @click="$emit('back')">
-                <ArrowLeftIcon :size="18" class="mr-1" />
-                {{ backLabel }}
-              </button>
-              <button v-if="showHomeButton" class="button is-light is-small" @click="$emit('home')">
-                <HomeIcon :size="18" class="mr-1" />
-                {{ homeLabel }}
-              </button>
-            </div>
-            <div class="detail-toolbar__actions">
-              <LinkIcon to="https://github.com/pynickle/gitpulse">
-                <GitHubIcon class="is-centered" />
-              </LinkIcon>
-              <LanguageSwitcher />
-              <ColorModeToggle />
-            </div>
-          </div>
-        </div>
+        <DashboardTopHeader
+          v-if="!hideHeader"
+          :back-label="backLabel"
+          :home-label="homeLabel"
+          :show-home-button="showHomeButton"
+          :non-sticky="nonStickyHeader"
+          @back="$emit('back')"
+          @home="$emit('home')"
+        />
 
         <div
           v-if="loading"
@@ -48,12 +36,9 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeftIcon, HomeIcon, Loader2Icon } from 'lucide-vue-next';
-import { GitHubIcon } from 'vue3-simple-icons';
+import { Loader2Icon } from 'lucide-vue-next';
 
-import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
-import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
-import LinkIcon from '~/components/ui/LinkIcon.vue';
+import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
 
 defineProps<{
   loading: boolean;
@@ -93,60 +78,6 @@ defineEmits<{
 
 .card {
   height: 100%;
-}
-
-.card-header {
-  background-color: var(--gitpulse-surface-muted);
-  border-bottom: 1px solid var(--gitpulse-border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.card-header.is-not-sticky {
-  position: static;
-  z-index: auto;
-}
-
-.detail-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 3rem;
-  padding: 0.4rem 0.75rem;
-  gap: 0.75rem;
-}
-
-.detail-toolbar__nav {
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0;
-}
-
-.detail-toolbar__nav .button {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 0;
-}
-
-.detail-toolbar__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.detail-toolbar__actions :deep(.dropdown),
-.detail-toolbar__actions :deep(.dropdown-trigger) {
-  display: inline-flex;
-  align-items: center;
-}
-
-.detail-toolbar__actions :deep(.dropdown-trigger .button) {
-  display: inline-flex;
-  align-items: center;
-  height: 2.25rem;
 }
 
 .card-content {

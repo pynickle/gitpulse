@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeftIcon, LinkIcon } from 'lucide-vue-next';
+import { LinkIcon } from 'lucide-vue-next';
 
 import TabsEditorPanel from '~/components/dashboard/tabs-settings/TabsEditorPanel.vue';
 import TabsViewsPanel from '~/components/dashboard/tabs-settings/TabsViewsPanel.vue';
@@ -9,18 +9,11 @@ const props = defineProps<{
   model: TabsSettingsPageState;
 }>();
 
-const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
+const { t, githubPreviewUrl, deselectTab } = props.model;
 </script>
 
 <template>
   <div class="tabs-settings-page" @keydown.escape="deselectTab">
-    <nav class="tabs-nav-back" aria-label="Page navigation">
-      <NuxtLink :to="localePath('/dashboard')" class="button is-ghost is-small nav-back-link">
-        <ArrowLeftIcon :size="16" />
-        <span>{{ t('dashboard.tabsSettings.backToDashboard') }}</span>
-      </NuxtLink>
-    </nav>
-
     <header class="settings-header">
       <div>
         <h1 class="title is-4 mb-1">{{ t('dashboard.tabsSettings.pageTitle') }}</h1>
@@ -69,36 +62,6 @@ const { t, localePath, githubPreviewUrl, deselectTab } = props.model;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
-}
-
-.tabs-nav-back {
-  margin-bottom: 1.25rem;
-}
-
-.nav-back-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  height: auto;
-  padding: 0;
-  border: none;
-  color: var(--gitpulse-accent);
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: opacity 0.15s ease;
-}
-
-.nav-back-link:hover {
-  background: transparent;
-  opacity: 0.72;
-}
-
-.nav-back-link:focus-visible {
-  border-radius: 4px;
-  background: transparent;
-  outline: 2px solid var(--gitpulse-focus-ring);
-  outline-offset: 2px;
 }
 
 .settings-subtitle,
