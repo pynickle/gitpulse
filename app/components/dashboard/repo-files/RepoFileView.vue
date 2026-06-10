@@ -54,22 +54,16 @@ const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const router = useRouter();
 const {
+  canGoBack,
   currentEntry,
   goBack: goNavigationBack,
   goToHome,
   navigateToFile,
   previousEntry,
-  replaceWithEntry,
+  shouldShowHomeButton,
 } = useNavigationHistory();
 
-const isPreviousEntryCurrentRepository = computed(() => {
-  const entry = previousEntry.value;
-  const data = entry?.data;
-
-  return entry?.type === 'repository' && data?.owner === props.owner && data.repo === props.repo;
-});
-
-const shouldShowRepoButton = computed(() => !isPreviousEntryCurrentRepository.value);
+const shouldShowNavButtons = computed(() => canGoBack.value || shouldShowHomeButton.value);
 
 const {
   branches,
@@ -603,15 +597,6 @@ const goHome = async () => {
 };
 
 const navigateToRepoDetail = async () => {
-  replaceWithEntry({
-    type: 'repository',
-    data: {
-      owner: props.owner,
-      repo: props.repo,
-      tab: 'repos',
-      branch: canonicalBranch.value,
-    },
-  });
   const query: LocationQueryRaw = {
     tab: 'repos',
     repo: `${props.owner}/${props.repo}`,
@@ -716,8 +701,9 @@ onActivated(() => {
   <section class="repo-file-view">
     <header class="repo-file-view__header">
       <div class="repo-file-view__identity">
-        <div class="repo-file-view__nav-buttons">
+        <div v-if="shouldShowNavButtons" class="repo-file-view__nav-buttons">
           <button
+            v-if="canGoBack"
             type="button"
             class="repo-file-view__nav-button"
             :aria-label="t('repoFileView.back')"
@@ -727,6 +713,7 @@ onActivated(() => {
             <ArrowLeftIcon :size="16" aria-hidden="true" />
           </button>
           <button
+            v-if="shouldShowHomeButton"
             type="button"
             class="repo-file-view__nav-button"
             :aria-label="t('repoFileView.home')"
@@ -734,16 +721,6 @@ onActivated(() => {
             @click="goHome"
           >
             <HomeIcon :size="16" aria-hidden="true" />
-          </button>
-          <button
-            v-if="shouldShowRepoButton"
-            type="button"
-            class="repo-file-view__nav-button"
-            :aria-label="t('repoFileView.backToRepo')"
-            :title="t('repoFileView.backToRepo')"
-            @click="navigateToRepoDetail"
-          >
-            <FolderIcon :size="16" aria-hidden="true" />
           </button>
         </div>
         <FileIcon
@@ -754,7 +731,15 @@ onActivated(() => {
         />
         <FolderIcon v-else :size="18" class="repo-file-view__header-icon" aria-hidden="true" />
         <div class="repo-file-view__title-block">
-          <p class="repo-file-view__eyebrow mb-0">{{ owner }}/{{ repo }}</p>
+          <button
+            type="button"
+            class="repo-file-view__detail-link"
+            :aria-label="t('repoFileView.backToRepo')"
+            :title="t('repoFileView.backToRepo')"
+            @click="navigateToRepoDetail"
+          >
+            {{ owner }}/{{ repo }}
+          </button>
           <h1 v-if="fileName" class="repo-file-view__title mb-0">{{ fileName }}</h1>
         </div>
       </div>
@@ -1106,12 +1091,6 @@ onActivated(() => {
   min-width: 0;
 }
 
-.repo-file-view__eyebrow {
-  color: var(--gitpulse-text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
 .repo-file-view__title {
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.9rem;
@@ -1119,6 +1098,33 @@ onActivated(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.repo-file-view__detail-link {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  display: block;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.1s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--gitpulse-info);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-info);
+    outline-offset: 2px;
+  }
 }
 
 .repo-file-view__summary {

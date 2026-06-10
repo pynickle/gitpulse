@@ -22,13 +22,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const localePath = useLocalePath();
-const route = useRoute();
 const router = useRouter();
 const {
+  canGoBack,
   goBack: goNavigationBack,
   goToHome,
   previousEntry,
-  replaceWithEntry,
+  shouldShowHomeButton,
 } = useNavigationHistory();
 
 const handleReviewSubmitted = () => {
@@ -71,25 +71,7 @@ const totalAdditions = computed(() =>
 const totalDeletions = computed(() =>
   review.files.value.reduce((total, file) => total + file.deletions, 0)
 );
-const currentRouteTab = computed(() => {
-  const tab = route.query.tab;
-  if (Array.isArray(tab)) {
-    return tab.find((value): value is string => typeof value === 'string');
-  }
-
-  return typeof tab === 'string' ? tab : undefined;
-});
-const isPreviousEntryCurrentPullRequestDetails = computed(() =>
-  shouldCloseReviewWorkspaceAfterSubmit({
-    previousEntry: previousEntry.value,
-    owner: props.owner,
-    repo: props.repo,
-    pullNumber: props.pullNumber,
-  })
-);
-const shouldShowPullRequestDetailsButton = computed(
-  () => !isPreviousEntryCurrentPullRequestDetails.value
-);
+const shouldShowNavButtons = computed(() => canGoBack.value || shouldShowHomeButton.value);
 
 const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
   if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
@@ -119,15 +101,6 @@ const goHome = async () => {
 };
 
 const goToPullRequestDetails = () => {
-  replaceWithEntry({
-    type: 'pull-request',
-    data: {
-      owner: props.owner,
-      repo: props.repo,
-      number: props.pullNumber,
-      tab: currentRouteTab.value,
-    },
-  });
   emit('close');
 };
 </script>
@@ -142,7 +115,15 @@ const goToPullRequestDetails = () => {
           aria-hidden="true"
         />
         <div class="pr-review-workspace__title-block">
-          <p class="pr-review-workspace__eyebrow mb-0">{{ owner }}/{{ repo }} #{{ pullNumber }}</p>
+          <button
+            type="button"
+            class="pr-review-workspace__detail-link"
+            :aria-label="t('prReview.backToDetails')"
+            :title="t('prReview.backToDetails')"
+            @click="goToPullRequestDetails"
+          >
+            {{ owner }}/{{ repo }} #{{ pullNumber }}
+          </button>
           <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
         </div>
       </div>
@@ -164,8 +145,9 @@ const goToPullRequestDetails = () => {
           <MessageSquareIcon :size="13" aria-hidden="true" />
           {{ review.pendingCommentCount.value }}
         </span>
-        <div class="pr-review-workspace__nav-buttons">
+        <div v-if="shouldShowNavButtons" class="pr-review-workspace__nav-buttons">
           <button
+            v-if="canGoBack"
             type="button"
             class="pr-review-workspace__nav-button"
             :aria-label="t('repoFileView.back')"
@@ -175,6 +157,7 @@ const goToPullRequestDetails = () => {
             <ArrowLeftIcon :size="15" aria-hidden="true" />
           </button>
           <button
+            v-if="shouldShowHomeButton"
             type="button"
             class="pr-review-workspace__nav-button"
             :aria-label="t('repoFileView.home')"
@@ -183,19 +166,6 @@ const goToPullRequestDetails = () => {
           >
             <HomeIcon :size="15" aria-hidden="true" />
           </button>
-          <template v-if="shouldShowPullRequestDetailsButton">
-            <span class="pr-review-workspace__nav-divider" aria-hidden="true" />
-            <button
-              type="button"
-              class="pr-review-workspace__nav-button pr-review-workspace__nav-button--pr-details"
-              :aria-label="t('prReview.backToDetails')"
-              :title="t('prReview.backToDetails')"
-              @click="goToPullRequestDetails"
-            >
-              <GitPullRequestIcon :size="14" aria-hidden="true" />
-              <span class="pr-review-workspace__nav-button-label" aria-hidden="true">PR</span>
-            </button>
-          </template>
         </div>
       </div>
     </header>
@@ -320,12 +290,6 @@ const goToPullRequestDetails = () => {
   min-width: 0;
 }
 
-.pr-review-workspace__eyebrow {
-  color: var(--gitpulse-text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
 .pr-review-workspace__title {
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.9rem;
@@ -333,6 +297,33 @@ const goToPullRequestDetails = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pr-review-workspace__detail-link {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  display: block;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.12s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--gitpulse-info);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-info);
+    outline-offset: 2px;
+  }
 }
 
 .pr-review-workspace__summary {
@@ -379,14 +370,6 @@ const goToPullRequestDetails = () => {
   background: var(--gitpulse-surface);
 }
 
-.pr-review-workspace__nav-divider {
-  width: 1px;
-  height: 0.875rem;
-  margin: 0 2px;
-  background: var(--gitpulse-border);
-  flex-shrink: 0;
-}
-
 .pr-review-workspace__nav-button {
   height: 1.625rem;
   min-width: 1.625rem;
@@ -414,27 +397,6 @@ const goToPullRequestDetails = () => {
     outline: 2px solid var(--gitpulse-info);
     outline-offset: 1px;
   }
-}
-
-.pr-review-workspace__nav-button--pr-details {
-  padding: 0 0.4rem;
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: var(--gitpulse-text-muted);
-
-  &:hover {
-    color: var(--gitpulse-info);
-    background: var(--gitpulse-info-soft, var(--gitpulse-surface-hover));
-  }
-
-  &:focus-visible {
-    color: var(--gitpulse-info);
-  }
-}
-
-.pr-review-workspace__nav-button-label {
-  line-height: 1;
 }
 
 .pr-review-workspace__grid {
