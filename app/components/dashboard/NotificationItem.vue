@@ -58,10 +58,10 @@
               </div>
 
               <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
-                <span v-if="currentNotification.subject?.number" class="notification-card__number">
+                <span v-if="showSubjectNumber" class="notification-card__number">
                   #{{ currentNotification.subject.number }}
                 </span>
-                <span class="notification-card__meta-separator"></span>
+                <span v-if="showSubjectNumber" class="notification-card__meta-separator"></span>
                 {{ currentNotification.repository.full_name }}
                 <span class="dashboard-list-card__separator">&middot;</span>
                 {{
@@ -118,6 +118,7 @@ import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
+import shouldShowNotificationSubjectNumber from '~/utils/shouldShowNotificationSubjectNumber';
 
 const props = defineProps<{
   notification: DashboardNotification;
@@ -133,6 +134,10 @@ const currentNotification = computed(() => ({
   ...props.notification,
   unread: isLocallyRead.value ? false : props.notification.unread,
 }));
+
+const showSubjectNumber = computed(() => {
+  return shouldShowNotificationSubjectNumber(currentNotification.value.subject);
+});
 
 const avatarSrc = computed(() => {
   // Release类型直接使用repository.owner的头像，无需等待GraphQL加载
