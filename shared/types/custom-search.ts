@@ -14,6 +14,7 @@ export type CustomTabVisibility = 'any' | 'public' | 'private';
 export type CustomTabArchived = 'exclude' | 'include' | 'only';
 export type CustomTabDraft = 'any' | 'draft' | 'ready';
 export type CustomTabReview = 'any' | 'none' | 'required' | 'approved' | 'changes_requested';
+export type CustomTabMerged = 'merged' | 'unmerged';
 
 export interface CustomTabQuery {
   text?: string;
@@ -34,6 +35,7 @@ export interface CustomTabQuery {
   archived?: CustomTabArchived;
   draft?: CustomTabDraft;
   review?: CustomTabReview;
+  merged?: CustomTabMerged;
   base?: string;
   head?: string;
   sort?: CustomTabSort;

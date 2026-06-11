@@ -1,17 +1,27 @@
 <template>
-  <div class="quick-actions" aria-labelledby="quick-actions-title">
-    <h3 id="quick-actions-title" class="quick-actions__title">
-      {{ t('dashboard.widgets.actions.title') }}
-    </h3>
+  <div class="sidebar-card">
+    <div class="sidebar-card__header">
+      <div class="sidebar-card__header-left">
+        <ExternalLinkIcon :size="14" class="sidebar-card__icon" />
+        <span class="sidebar-card__title">{{ t('dashboard.widgets.actions.title') }}</span>
+      </div>
+    </div>
 
-    <ul class="quick-actions__links">
-      <li v-for="link in currentConfig.links" :key="link.href">
-        <a class="quick-actions__link" :href="link.href" target="_blank" rel="noopener noreferrer">
+    <div class="sidebar-card__content">
+      <div class="quick-actions__links">
+        <a
+          v-for="link in currentConfig.links"
+          :key="link.href"
+          :href="link.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="sidebar-link"
+        >
+          <ExternalLinkIcon :size="14" />
           <span>{{ link.label }}</span>
-          <ExternalLinkIcon :size="14" class="quick-actions__link-icon" aria-hidden="true" />
         </a>
-      </li>
-    </ul>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -88,61 +98,61 @@ const currentConfig = computed<GuideConfig>(() => {
 </script>
 
 <style scoped lang="scss">
-.quick-actions {
+.sidebar-card {
+  background: var(--gitpulse-surface-muted);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sidebar-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface);
+}
+
+.sidebar-card__header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-card__icon {
+  color: var(--gitpulse-accent);
+}
+
+.sidebar-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  letter-spacing: -0.01em;
+}
+
+.sidebar-card__content {
+  padding: 12px 16px;
+}
+
+.quick-actions__links {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding-top: 0.25rem;
+  gap: 0.35rem;
+}
 
-  &__title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--gitpulse-text-muted);
-    margin-bottom: 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gitpulse-text-muted);
+  text-decoration: none;
+  transition: color 0.12s ease;
 
-  &__links {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.55rem 0.75rem;
-    margin-left: -0.75rem;
-    margin-right: -0.75rem;
-    border-radius: 8px;
-    color: var(--bulma-text);
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition:
-      background-color 0.2s ease,
-      color 0.2s ease;
-
-    &:hover,
-    &:focus-visible {
-      color: var(--bulma-link);
-      background-color: var(--bulma-background-hover);
-
-      .quick-actions__link-icon {
-        transform: translate(2px, -2px);
-      }
-    }
-  }
-
-  &__link-icon {
-    color: var(--gitpulse-text-subtle);
-    flex-shrink: 0;
-    transition: transform 0.2s ease;
+  &:hover {
+    color: var(--gitpulse-accent);
   }
 }
 </style>

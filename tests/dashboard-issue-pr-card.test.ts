@@ -72,6 +72,27 @@ describe('dashboard issue/PR notification-style cards', () => {
     });
   });
 
+  test('maps search API pull_request merged_at to merged PullRequest subject state', () => {
+    const pull: DashboardIssuePrEntity = {
+      id: 'PR_8',
+      title: 'Render merged search result correctly',
+      repository_url: 'https://api.github.com/repos/acme/widgets',
+      number: 8,
+      updated_at: '2026-06-10T12:00:00Z',
+      state: 'closed',
+      pull_request: {
+        merged_at: '2026-06-10T13:00:00Z',
+      },
+      user: {
+        login: 'merge-bot',
+        avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+      },
+      labels: [],
+    };
+
+    expect(toDashboardIssuePrCard(pull).state).toBe('merged');
+  });
+
   test('handles malformed issue URLs without throwing', () => {
     const issue: DashboardIssuePrEntity = {
       id: 404,

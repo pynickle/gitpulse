@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="pagination is-centered is-rounded dashboard-pagination"
+    class="pagination is-centered dashboard-pagination"
     role="navigation"
     aria-label="pagination"
   >
@@ -118,39 +118,43 @@ const pageItems = computed(() => {
 <style scoped lang="scss">
 .dashboard-pagination {
   margin: 0;
+  gap: 0.125rem;
 }
 
 .pagination-link,
 .pagination-previous,
 .pagination-next {
-  border-color: var(--gitpulse-border);
-  background: var(--gitpulse-surface);
+  border: none;
+  border-radius: 4px;
+  background: transparent;
   color: var(--bulma-text, var(--gitpulse-text));
+  padding: 0.25rem 0.5rem;
+  min-height: 1.5rem;
+  font-size: 0.75rem;
 
   &:hover:not([disabled]),
   &:focus:not([disabled]) {
-    border-color: var(--gitpulse-border-strong);
     background: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
 }
 
 .pagination-link.is-current {
-  background: var(--gitpulse-info);
-  border-color: transparent;
-  color: #ffffff;
+  background: var(--gitpulse-info-soft);
+  border: none;
+  color: var(--gitpulse-info);
   font-weight: 600;
 }
 
 html.dark .pagination-link.is-current {
-  background: var(--gitpulse-info-soft);
+  background: color-mix(in srgb, var(--gitpulse-info) 15%, transparent);
   color: var(--gitpulse-info);
 }
 
 .pagination-link.is-current:hover,
 .pagination-link.is-current:focus {
-  background: var(--gitpulse-link);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--gitpulse-info) 25%, transparent);
+  color: var(--gitpulse-info);
 }
 
 html.dark .pagination-link.is-current:hover,
@@ -162,34 +166,26 @@ html.dark .pagination-link.is-current:focus {
 .pagination-link[disabled],
 .pagination-previous[disabled],
 .pagination-next[disabled] {
-  background: var(--gitpulse-surface-muted);
+  background: transparent;
   color: var(--gitpulse-text-subtle);
-  opacity: 0.58;
+  opacity: 0.45;
 }
 
-.pagination-link,
-.pagination-previous,
-.pagination-next,
 .pagination-ellipsis {
-  min-height: 2rem;
+  min-height: 1.5rem;
+  font-size: 0.75rem;
 }
 
-.dashboard-pagination {
-  gap: 0.25rem;
-}
-
-/* Override Bulma's .pagination.is-rounded padding (1em) — need equal specificity */
-.pagination.is-rounded .pagination-previous.pagination-control,
-.pagination.is-rounded .pagination-next.pagination-control {
-  flex: 0 0 2rem;
-  padding-left: 0;
-  padding-right: 0;
-  width: 2rem;
+.pagination-previous.pagination-control,
+.pagination-next.pagination-control {
+  flex: 0 0 auto;
+  padding: 0.25rem;
+  width: auto;
 }
 
 .pagination-control svg {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .pagination-control-text {

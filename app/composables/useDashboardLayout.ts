@@ -16,8 +16,8 @@ const STORAGE_KEY = 'gitpulse:dashboard:layout';
 
 const DEFAULT_LAYOUT: DashboardLayoutState = {
   isWidgetsPanelVisible: true,
-  tabSidebarWidth: 240,
-  widgetsPanelWidth: 280,
+  tabSidebarWidth: 220,
+  widgetsPanelWidth: 320,
 };
 
 const SIDEBAR_MIN_WIDTH = 220;

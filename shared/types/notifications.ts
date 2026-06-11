@@ -23,6 +23,7 @@ export interface DashboardNotificationSubject {
 
 export interface DashboardNotificationRepository {
   full_name?: string;
+  url?: string;
   owner?: {
     avatar_url?: string;
     login?: string;

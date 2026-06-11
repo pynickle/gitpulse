@@ -24,16 +24,17 @@ logs
 !.env.example
 
 # Ide Files
-.trae/
 .agents/
-.claude/
 .codex/
+.claude/
+.mimocode/
 
 .codegraph/
 
 skills-lock.json
 
 .editorconfig
+
 AGENTS.md
 
 .playwright-mcp/

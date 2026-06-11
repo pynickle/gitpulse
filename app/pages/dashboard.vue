@@ -38,6 +38,16 @@
             <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
             <div class="dashboard-tab-actions">
               <button
+                class="button is-ghost is-small dashboard-tab-filter"
+                :class="{ 'is-active': hasActiveVisibleFilters }"
+                type="button"
+                :aria-label="t('dashboard.filters.openDrawer')"
+                :title="t('dashboard.filters.openDrawer')"
+                @click="isFilterDrawerOpen = true"
+              >
+                <FilterIcon v-once :size="18" aria-hidden="true" />
+              </button>
+              <button
                 class="button is-ghost is-small dashboard-tab-refresh"
                 type="button"
                 :aria-label="t('dashboard.actions.refreshCurrentTab')"
@@ -47,6 +57,19 @@
                 <RefreshCwIcon v-once :size="18" class="dashboard-tab-refresh__icon" />
               </button>
             </div>
+          </div>
+
+          <div v-if="showPagination || visibleDashboardFilters" class="dashboard-controls-row">
+            <FilterPills
+              :current-tab="activeFilterSource"
+              :filters="visibleDashboardFilters"
+              @update="handleFilterUpdate"
+            />
+            <DashboardPagination
+              v-if="showPagination"
+              :pagination="currentPagination"
+              @change="goToPage"
+            />
           </div>
 
           <div class="card-content dashboard-list-card-content">
@@ -63,13 +86,6 @@
                 { 'dashboard-list-shell--without-pagination': !showPagination },
               ]"
             >
-              <div
-                v-if="showPagination"
-                class="dashboard-pagination-wrapper dashboard-pagination-wrapper--top"
-              >
-                <DashboardPagination :pagination="currentPagination" @change="goToPage" />
-              </div>
-
               <SimpleBar class="dashboard-list-scroll" v-if="currentTab === 'notifications'">
                 <div
                   v-for="notification in filteredNotifications"
@@ -83,7 +99,7 @@
 
               <SimpleBar v-else-if="selectedCustomTab" class="dashboard-list-scroll">
                 <div
-                  v-for="issue in filteredIssues"
+                  v-for="issue in issues"
                   :key="issue.id"
                   class="mb-4 mr-4"
                   @click="openSearchResult(issue)"
@@ -94,7 +110,7 @@
 
               <SimpleBar v-else-if="currentTab === 'issues'" class="dashboard-list-scroll">
                 <div
-                  v-for="issue in filteredIssues"
+                  v-for="issue in issues"
                   :key="issue.id"
                   class="mb-4 mr-4"
                   @click="openIssue(issue)"
@@ -104,12 +120,7 @@
               </SimpleBar>
 
               <SimpleBar v-else-if="currentTab === 'pulls'" class="dashboard-list-scroll">
-                <div
-                  v-for="pull in filteredPulls"
-                  :key="pull.id"
-                  class="mb-4 mr-4"
-                  @click="openPR(pull)"
-                >
+                <div v-for="pull in pulls" :key="pull.id" class="mb-4 mr-4" @click="openPR(pull)">
                   <AsyncIssuePrNotificationItem :item="pull" />
                 </div>
               </SimpleBar>
@@ -126,11 +137,13 @@
 
       <template #widgets-panel>
         <WidgetsPanel>
-          <TabStats :current-tab="currentTab" :stats="currentTabStats" />
-          <QuickFilters
-            :current-tab="currentTab"
-            :filters="currentTabFilters"
-            @filter-change="handleFilterChange"
+          <DashboardAdvancedFilters
+            :current-tab="activeFilterSource"
+            :filters="visibleDashboardFilters"
+            :label-suggestions="labelFilterSuggestions"
+            :repo-suggestions="repoFilterSuggestions"
+            :author-suggestions="authorFilterSuggestions"
+            @update="handleFilterUpdate"
           />
           <QuickActions :current-tab="currentTab" />
         </WidgetsPanel>
@@ -173,6 +186,18 @@
     @open-pull-request-review="handlePRReviewOpen"
     @close-pull-request-review="handlePRReviewClose"
   />
+
+  <FilterModal
+    :open="isFilterDrawerOpen"
+    :current-tab="activeFilterSource"
+    :filters="visibleDashboardFilters"
+    :repo-suggestions="repoFilterSuggestions"
+    :author-suggestions="authorFilterSuggestions"
+    :label-suggestions="labelFilterSuggestions"
+    @close="isFilterDrawerOpen = false"
+    @update="handleFilterUpdate"
+    @clear="clearVisibleFilters"
+  />
 </template>
 
 <script setup lang="ts">
@@ -180,12 +205,13 @@ import {
   BellIcon,
   BookMarkedIcon,
   CircleDotIcon,
+  FilterIcon,
   GitPullRequestIcon,
   RefreshCwIcon,
   SearchIcon,
 } from 'lucide-vue-next';
 import SimpleBar from 'simplebar-vue';
-import { defineAsyncComponent, computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { defineAsyncComponent, computed, shallowRef, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
@@ -193,12 +219,20 @@ import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
 import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailOverlayHost from '~/components/dashboard/detail/DetailOverlayHost.vue';
+import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
+import FilterModal from '~/components/dashboard/filters/FilterModal.vue';
+import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import RepoFileView from '~/components/dashboard/repo-files/RepoFileView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
-import QuickFilters from '~/components/dashboard/widgets/QuickFilters.vue';
-import TabStats from '~/components/dashboard/widgets/TabStats.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
+import {
+  applyNotificationLocalFilters,
+  createCustomTabFilterSourceState,
+  createDashboardFilterSourceState,
+  type DashboardFilterSource,
+  type DashboardRouteFilters,
+} from '~/composables/useDashboardFilters';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 import { clearDashboardDetailQuery } from '~/utils/dashboard-url-navigation-utils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
@@ -223,8 +257,6 @@ const { resolveDashboardUrlTarget, getDashboardUrlRoute, trackDashboardUrlNaviga
   useDashboardUrlNavigation();
 
 const dashboardTabs: DashboardTab[] = ['notifications', 'issues', 'pulls', 'repos'];
-const quickFiltersStorageKey = 'gitpulse:dashboard:quick-filters';
-
 interface DashboardEntity {
   id: PropertyKey;
   pull_request?: unknown;
@@ -303,34 +335,6 @@ watch(
   { immediate: true }
 );
 
-type QuickFilterMap = Partial<Record<DashboardTab, Record<string, boolean>>>;
-
-const normalizeQuickFilters = (value: unknown): QuickFilterMap => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
-  }
-
-  const filterSource = value as Partial<Record<DashboardTab, unknown>>;
-  const normalizedFilters: QuickFilterMap = {};
-
-  for (const tab of dashboardTabs) {
-    const tabFilters = filterSource[tab];
-    if (!tabFilters || typeof tabFilters !== 'object' || Array.isArray(tabFilters)) {
-      continue;
-    }
-
-    const filters = Object.fromEntries(
-      Object.entries(tabFilters).filter(([, active]) => typeof active === 'boolean')
-    ) as Record<string, boolean>;
-
-    if (Object.keys(filters).length > 0) {
-      normalizedFilters[tab] = filters;
-    }
-  }
-
-  return normalizedFilters;
-};
-
 const parseDashboardTab = (value: unknown): DashboardTab => {
   const tab = getQueryParamValue(value);
   return dashboardTabs.includes(tab as DashboardTab) ? (tab as DashboardTab) : 'notifications';
@@ -375,6 +379,39 @@ const {
   fetchCustomTab,
 } = useGithubData();
 
+const { filters: dashboardFilters, updateFilters, clearSourceFilters } = useDashboardFilters();
+const isFilterDrawerOpen = shallowRef(false);
+const userLogin = computed(() => user.value?.login);
+const filterSourceStates = computed(() => ({
+  notifications: createDashboardFilterSourceState('notifications', dashboardFilters.value),
+  issues: createDashboardFilterSourceState('issues', dashboardFilters.value, userLogin.value),
+  pulls: createDashboardFilterSourceState('pulls', dashboardFilters.value, userLogin.value),
+  repos: createDashboardFilterSourceState('repos', dashboardFilters.value, userLogin.value),
+}));
+const notificationFilterAdapter = computed(
+  () => filterSourceStates.value.notifications.notificationAdapter
+);
+const issuePrFetchOptions = computed(() => {
+  const issuePrQuery = filterSourceStates.value.issues.issuePrQuery;
+  if (!issuePrQuery) {
+    return {};
+  }
+
+  return {
+    query: issuePrQuery,
+  };
+});
+const pullRequestFetchOptions = computed(() => {
+  const issuePrQuery = filterSourceStates.value.pulls.issuePrQuery;
+  if (!issuePrQuery) {
+    return {};
+  }
+
+  return {
+    query: issuePrQuery,
+  };
+});
+
 const hasCompletedInitialDashboardLoad = shallowRef(false);
 const dashboardListLoading = computed(
   () => !hasCompletedInitialDashboardLoad.value || loading.value
@@ -387,9 +424,21 @@ const {
   refreshCurrentTab,
   switchTab,
 } = useDashboardTabs({
-  fetchNotifications,
-  fetchIssues,
-  fetchPulls,
+  fetchNotifications: (page, options = {}) =>
+    fetchNotifications(page, {
+      ...options,
+      notificationParams: notificationFilterAdapter.value.apiParams,
+    }),
+  fetchIssues: (page, options = {}) =>
+    fetchIssues(page, {
+      ...options,
+      ...issuePrFetchOptions.value,
+    }),
+  fetchPulls: (page, options = {}) =>
+    fetchPulls(page, {
+      ...options,
+      ...pullRequestFetchOptions.value,
+    }),
   fetchRepos,
   initialTab: parseDashboardTab(route.query.tab),
 });
@@ -430,6 +479,76 @@ const selectedCustomTab = computed(() => {
   }
 
   return getCustomTabById(tabId) ?? null;
+});
+
+const getCustomTabFilterSource = (query: { type?: string }): DashboardFilterSource => {
+  return query.type === 'pulls' ? 'pulls' : 'issues';
+};
+
+const activeFilterSource = computed<DashboardFilterSource>(() => {
+  if (selectedCustomTab.value) {
+    return getCustomTabFilterSource(selectedCustomTab.value.query);
+  }
+
+  return currentTab.value;
+});
+
+const activeFilterState = computed(() => {
+  const customTab = selectedCustomTab.value;
+  if (!customTab) {
+    return filterSourceStates.value[activeFilterSource.value];
+  }
+
+  const filterSource = getCustomTabFilterSource(customTab.query);
+  return createCustomTabFilterSourceState(
+    customTab.query,
+    filterSourceStates.value[filterSource].filters
+  );
+});
+const visibleDashboardFilters = computed(() => activeFilterState.value.filters);
+const hasActiveVisibleFilters = computed(() => activeFilterState.value.hasActiveFilters);
+
+const routeFilterSource = computed<DashboardFilterSource>(() => {
+  const customTabId = getQueryParamValue(route.query.tab);
+  const customTab = customTabId ? getCustomTabById(customTabId) : null;
+  if (customTab) {
+    return getCustomTabFilterSource(customTab.query);
+  }
+
+  return parseDashboardTab(route.query.tab);
+});
+
+const routeFilterFetchKey = computed(() => {
+  const source = routeFilterSource.value;
+  const sourceState = filterSourceStates.value[source];
+  const customTabId = getQueryParamValue(route.query.tab);
+  const customTab = customTabId ? getCustomTabById(customTabId) : null;
+
+  if (source === 'notifications') {
+    const apiParams = sourceState.notificationAdapter.apiParams;
+    return new URLSearchParams(
+      Object.entries(apiParams)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, String(value)])
+    ).toString();
+  }
+
+  if (source === 'repos') {
+    return 'repos';
+  }
+
+  if (customTab) {
+    return JSON.stringify({
+      customTabId: customTab.id,
+      query: customTab.query,
+      filters: sourceState.filters,
+    });
+  }
+
+  return JSON.stringify({
+    filters: sourceState.filters,
+    userLogin: userLogin.value ?? '',
+  });
 });
 
 const sidebarTabs = computed(() => {
@@ -506,135 +625,106 @@ const currentPagination = computed(() => pagination.value[currentTab.value]);
 
 const showPagination = computed(() => {
   const activePagination = currentPagination.value;
+  if (
+    currentTab.value === 'notifications' &&
+    notificationFilterAdapter.value.usesPageLocalPredicates
+  ) {
+    return false;
+  }
   return activePagination.totalPages !== 1 || activePagination.hasPrev || activePagination.hasNext;
 });
 
-const quickFilters = ref<QuickFilterMap>({});
-
-const currentTabFilters = computed(() => {
-  return quickFilters.value[currentTab.value] ?? {};
+const filteredNotifications = computed(() => {
+  return applyNotificationLocalFilters(notifications.value, notificationFilterAdapter.value.local);
 });
 
-const getActiveFilterKeys = (filters: Record<string, boolean>) => {
-  return Object.entries(filters)
-    .filter(([, active]) => active)
-    .map(([key]) => key);
+const getEntityRepoName = (entity: DashboardEntity) => {
+  const repositoryUrl = typeof entity.repository_url === 'string' ? entity.repository_url : '';
+  return parseGitHubRepoPath(repositoryUrl)?.fullName ?? '';
 };
 
-const filteredNotifications = computed(() => {
-  const activeFilters = getActiveFilterKeys(currentTabFilters.value);
-
-  if (activeFilters.length === 0) {
-    return notifications.value;
+const getEntityAuthor = (entity: DashboardEntity) => {
+  const user = entity.user;
+  if (!user || typeof user !== 'object' || !('login' in user)) {
+    return '';
   }
 
-  return notifications.value.filter((notification) => {
-    if (activeFilters.includes('unread') && notification.unread) return true;
-    if (activeFilters.includes('read') && !notification.unread) return true;
-    return false;
-  });
+  return typeof user.login === 'string' ? user.login : '';
+};
+
+const getEntityLabels = (entity: DashboardEntity) => {
+  const labels = entity.labels;
+  if (!Array.isArray(labels)) {
+    return [];
+  }
+
+  return labels
+    .map((label) => {
+      if (typeof label === 'string') return label;
+      if (label && typeof label === 'object' && 'name' in label && typeof label.name === 'string') {
+        return label.name;
+      }
+      return '';
+    })
+    .filter(Boolean);
+};
+
+const repoFilterSuggestions = computed(() => {
+  const suggestions = new Set<string>();
+
+  for (const repo of repos.value) {
+    if (typeof repo.full_name === 'string') suggestions.add(repo.full_name);
+  }
+
+  for (const notification of notifications.value) {
+    if (notification.repository?.full_name) suggestions.add(notification.repository.full_name);
+  }
+
+  for (const item of [...issues.value, ...pulls.value]) {
+    const repoName = getEntityRepoName(item);
+    if (repoName) suggestions.add(repoName);
+  }
+
+  return Array.from(suggestions).sort((left, right) => left.localeCompare(right));
 });
 
-const filteredIssues = computed(() => {
-  const activeFilters = getActiveFilterKeys(currentTabFilters.value);
+const authorFilterSuggestions = computed(() => {
+  const suggestions = new Set<string>();
 
-  if (activeFilters.length === 0) {
-    return issues.value;
+  for (const notification of notifications.value) {
+    if (notification.subject?.authorLogin) suggestions.add(notification.subject.authorLogin);
   }
 
-  return issues.value.filter((issue) => {
-    if (activeFilters.includes('open') && issue.state === 'open') return true;
-    if (activeFilters.includes('closed') && issue.state === 'closed') return true;
-    return false;
-  });
+  for (const item of [...issues.value, ...pulls.value]) {
+    const author = getEntityAuthor(item);
+    if (author) suggestions.add(author);
+  }
+
+  return Array.from(suggestions).sort((left, right) => left.localeCompare(right));
 });
 
-const filteredPulls = computed(() => {
-  const activeFilters = getActiveFilterKeys(currentTabFilters.value);
-
-  if (activeFilters.length === 0) {
-    return pulls.value;
+const labelFilterSuggestions = computed(() => {
+  if (!visibleDashboardFilters.value.repo) {
+    return [];
   }
 
-  return pulls.value.filter((pull) => {
-    if (activeFilters.includes('open') && pull.state === 'open') return true;
-    if (activeFilters.includes('closed') && pull.state === 'closed') return true;
-    if (activeFilters.includes('merged') && pull.merged_at) return true;
-    return false;
-  });
-});
+  const suggestions = new Set<string>();
 
-const currentTabStats = computed((): Record<string, number> => {
-  if (currentTab.value === 'notifications') {
-    let unread = 0;
-
-    for (const item of notifications.value) {
-      if (item.unread) {
-        unread += 1;
-      }
+  for (const notification of notifications.value) {
+    if (notification.repository?.full_name !== visibleDashboardFilters.value.repo) continue;
+    for (const label of notification.subject?.labels ?? []) {
+      if (label.name) suggestions.add(label.name);
     }
-
-    const total = notifications.value.length;
-    return {
-      unread,
-      read: Math.max(total - unread, 0),
-      total,
-    };
   }
 
-  if (currentTab.value === 'pulls') {
-    let open = 0;
-    let closed = 0;
-    let merged = 0;
-
-    for (const item of pulls.value) {
-      if (item.state === 'open') {
-        open += 1;
-      }
-
-      if (item.state === 'closed') {
-        closed += 1;
-      }
-
-      if (item.merged_at) {
-        merged += 1;
-      }
+  for (const item of [...issues.value, ...pulls.value]) {
+    if (getEntityRepoName(item) !== visibleDashboardFilters.value.repo) continue;
+    for (const label of getEntityLabels(item)) {
+      suggestions.add(label);
     }
-
-    return {
-      open,
-      closed,
-      merged,
-      total: pulls.value.length,
-    };
   }
 
-  if (currentTab.value === 'issues') {
-    let open = 0;
-    let closed = 0;
-
-    for (const item of issues.value) {
-      if (item.state === 'open') {
-        open += 1;
-      }
-
-      if (item.state === 'closed') {
-        closed += 1;
-      }
-    }
-
-    return {
-      open,
-      closed,
-      total: issues.value.length,
-    };
-  }
-
-  return {
-    total: repos.value.length,
-    open: 0,
-    closed: 0,
-  };
+  return Array.from(suggestions).sort((left, right) => left.localeCompare(right));
 });
 
 const isPullRequestResult = (item: DashboardEntity) => {
@@ -700,7 +790,9 @@ const refreshCurrentTabSafely = async () => {
   try {
     if (selectedCustomTab.value) {
       await fetchCustomTab(
-        selectedCustomTab.value.query,
+        filterSourceStates.value[
+          getCustomTabFilterSource(selectedCustomTab.value.query)
+        ].overlayCustomTabQuery(selectedCustomTab.value.query),
         currentPage.value,
         {
           force: true,
@@ -771,7 +863,14 @@ const loadRouteTabSafely = async (tab: unknown, page: number) => {
 
     if (customTab) {
       setActiveTabId(customTab.id);
-      await fetchCustomTab(customTab.query, page, {}, customTab.source);
+      await fetchCustomTab(
+        filterSourceStates.value[getCustomTabFilterSource(customTab.query)].overlayCustomTabQuery(
+          customTab.query
+        ),
+        page,
+        {},
+        customTab.source
+      );
       return;
     }
 
@@ -866,42 +965,13 @@ const handleActivityGroupSelect = async (groupId: string) => {
   await switchTabSafely(tab);
 };
 
-const persistQuickFilters = () => {
-  if (!import.meta.client) {
-    return;
-  }
-
-  sessionStorage.setItem(quickFiltersStorageKey, JSON.stringify(quickFilters.value));
+const handleFilterUpdate = async (patch: Partial<DashboardRouteFilters>) => {
+  await updateFilters(patch);
 };
 
-const handleFilterChange = (filters: Record<string, boolean>) => {
-  quickFilters.value = {
-    ...quickFilters.value,
-    [currentTab.value]: filters,
-  };
-  persistQuickFilters();
+const clearVisibleFilters = async () => {
+  await clearSourceFilters(activeFilterSource.value);
 };
-
-const hydrateQuickFilters = () => {
-  if (!import.meta.client) {
-    return;
-  }
-
-  const storedFilters = sessionStorage.getItem(quickFiltersStorageKey);
-  if (!storedFilters) {
-    return;
-  }
-
-  try {
-    quickFilters.value = normalizeQuickFilters(JSON.parse(storedFilters));
-  } catch (error) {
-    console.warn('Failed to hydrate dashboard quick filters from sessionStorage.', error);
-  }
-};
-
-onMounted(() => {
-  hydrateQuickFilters();
-});
 
 watch(
   () => currentPagination.value.page,
@@ -922,7 +992,13 @@ watch(
 );
 
 watch(
-  () => [route.query.tab, route.query.page, sessionReady.value, loggedIn.value],
+  () => [
+    route.query.tab,
+    route.query.page,
+    routeFilterFetchKey.value,
+    sessionReady.value,
+    loggedIn.value,
+  ],
   ([tab, page]) => {
     if (!import.meta.client || !sessionReady.value || !loggedIn.value) {
       return;
@@ -935,7 +1011,7 @@ watch(
 
 watch(
   () => ({
-    notifications: notifications.value.length,
+    notifications: filteredNotifications.value.length,
     issues: stats.value.issues,
     pulls: stats.value.prs,
     repos: stats.value.repos,
@@ -981,10 +1057,37 @@ watch(
 .dashboard-tabs-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.75rem;
   padding: 1.25rem 1.5rem 0.5rem;
   border-bottom: 1px solid var(--gitpulse-border);
-  margin-bottom: 0.5rem;
+  min-width: 0;
+}
+
+.dashboard-controls-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
+  min-width: 0;
+
+  :deep(.filter-pills) {
+    flex-shrink: 0;
+  }
+
+  :deep(.dashboard-pagination) {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .dashboard-controls-row {
+    :deep(.dashboard-pagination) {
+      margin-left: 0;
+    }
+  }
 }
 
 .dashboard-tab-title {
@@ -992,12 +1095,14 @@ watch(
   font-weight: 600;
   color: var(--bulma-text-strong);
   letter-spacing: -0.01em;
+  flex-shrink: 0;
 }
 
 .dashboard-tab-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: auto;
 }
 
 .dashboard-tab-refresh {
@@ -1005,8 +1110,21 @@ watch(
   color: var(--gitpulse-text-muted);
 }
 
+.dashboard-tab-filter {
+  display: none;
+  flex-shrink: 0;
+  color: var(--gitpulse-text-muted);
+}
+
+.dashboard-tab-filter.is-active {
+  color: var(--gitpulse-link);
+  background: var(--gitpulse-info-soft);
+}
+
 .dashboard-tab-refresh:hover,
-.dashboard-tab-refresh:focus-visible {
+.dashboard-tab-refresh:focus-visible,
+.dashboard-tab-filter:hover,
+.dashboard-tab-filter:focus-visible {
   color: var(--gitpulse-link);
   background: var(--gitpulse-info-soft);
 }
@@ -1028,13 +1146,10 @@ watch(
 }
 
 .dashboard-list-shell {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
   min-height: 0;
   flex: 1;
-  gap: 0.85rem;
 }
 
 .dashboard-list-scroll {
@@ -1042,10 +1157,9 @@ watch(
   height: 100%;
 }
 
-.dashboard-pagination-wrapper {
-  z-index: 1;
-  min-height: 0;
-  padding: 0;
-  background: var(--gitpulse-surface);
+@media (max-width: 860px) {
+  .dashboard-tab-filter {
+    display: inline-flex;
+  }
 }
 </style>

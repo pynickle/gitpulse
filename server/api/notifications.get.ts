@@ -2,12 +2,22 @@ import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/githu
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   const octokit = await getGitHubClient(event);
-  const page = parsePaginationNumber(getQuery(event).page, 1);
-  const perPage = parsePaginationNumber(getQuery(event).per_page, 20, 50);
+  const query = getQuery(event);
+  const page = parsePaginationNumber(query.page, 1);
+  const perPage = parsePaginationNumber(query.per_page, 20, 50);
+  const all = query.all === 'true' || query.all === true;
+  const participating = query.participating === 'true' || query.participating === true;
+  const since =
+    typeof query.since === 'string' && query.since.trim() ? query.since.trim() : undefined;
+  const before =
+    typeof query.before === 'string' && query.before.trim() ? query.before.trim() : undefined;
 
   try {
     const { data: notifications, headers } = await octokit.request('GET /notifications', {
-      all: true,
+      all,
+      participating,
+      since,
+      before,
       page,
       per_page: perPage,
     });

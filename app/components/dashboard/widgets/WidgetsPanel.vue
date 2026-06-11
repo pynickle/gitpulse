@@ -1,8 +1,14 @@
+<script setup lang="ts">
+import SimpleBar from 'simplebar-vue';
+</script>
+
 <template>
   <div class="widgets-panel">
-    <div class="widgets-panel__content">
-      <slot></slot>
-    </div>
+    <SimpleBar class="widgets-panel__scroll">
+      <div class="widgets-panel__content">
+        <slot></slot>
+      </div>
+    </SimpleBar>
   </div>
 </template>
 <style scoped lang="scss">
@@ -15,9 +21,17 @@
   padding-left: 1.25rem;
   border-left: 1px solid var(--gitpulse-border);
 
+  &__scroll {
+    height: 100%;
+    min-height: 0;
+    padding-right: 1.25rem;
+  }
+
   &__content {
-    flex: 1;
     padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 }
 </style>

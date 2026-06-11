@@ -1,12 +1,13 @@
 import { ref } from 'vue';
 
+import type { CustomTabQuery, CustomTabSource } from '#shared/types/custom-search';
 import type {
   DashboardNotification,
+  NotificationSubjectState,
   NotificationSubjectStateResult,
   NotificationSubjectStateTarget,
 } from '#shared/types/notifications';
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
-import type { CustomTabQuery, CustomTabSource } from '~/composables/useCustomTabs';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 import parseGitHubNotificationSubjectTarget, {
   toNotificationSubjectStateTarget,
@@ -14,14 +15,34 @@ import parseGitHubNotificationSubjectTarget, {
 
 interface DashboardEntity {
   id: PropertyKey;
-  repository_url?: string | null;
-  number?: number | null;
+  title: string;
+  repository_url: string;
+  number: number;
+  updated_at: string;
+  labels: {
+    id: number | string;
+    name: string;
+    color: string;
+  }[];
+  type?: { name?: string };
+  merged_at?: string | null;
+  state?: NotificationSubjectState;
+  pull_request?: unknown;
   [key: string]: unknown;
 }
 
 interface DashboardRepo {
   id: PropertyKey;
-  name?: string;
+  name: string;
+  description?: string | null;
+  language?: string | null;
+  stargazers_count?: number;
+  watchers_count?: number;
+  forks_count?: number;
+  private?: boolean;
+  owner?: {
+    login?: string;
+  };
   [key: string]: unknown;
 }
 
@@ -42,12 +63,14 @@ interface PaginatedDashboardResponse<T> {
 
 interface DashboardFetchOptions {
   force?: boolean;
+  query?: CustomTabQuery;
+  notificationParams?: Record<string, boolean | string | undefined>;
 }
 
 interface DashboardPageCache {
-  notifications: Record<number, PaginatedDashboardResponse<DashboardNotification>>;
-  issues: Record<number, PaginatedDashboardResponse<DashboardEntity>>;
-  pulls: Record<number, PaginatedDashboardResponse<DashboardEntity>>;
+  notifications: Record<string, Record<number, PaginatedDashboardResponse<DashboardNotification>>>;
+  issues: Record<string, Record<number, PaginatedDashboardResponse<DashboardEntity>>>;
+  pulls: Record<string, Record<number, PaginatedDashboardResponse<DashboardEntity>>>;
   repos: Record<number, PaginatedDashboardResponse<DashboardRepo>>;
   customTabs: Record<string, Record<number, PaginatedDashboardResponse<DashboardEntity>>>;
 }
@@ -80,13 +103,37 @@ const createPageCache = (): DashboardPageCache => ({
   customTabs: {},
 });
 
-const buildPaginationUrl = (path: string, page: number, perPage = defaultPerPage) => {
+const buildPaginationUrl = (
+  path: string,
+  page: number,
+  perPage = defaultPerPage,
+  params: Record<string, boolean | string | undefined> = {}
+) => {
   const searchParams = new URLSearchParams({
     page: String(page),
     per_page: String(perPage),
   });
 
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) {
+      searchParams.set(key, String(value));
+    }
+  }
+
   return `${path}?${searchParams.toString()}`;
+};
+
+const buildParamQueryKey = (params: Record<string, boolean | string | undefined> = {}) => {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params).sort(([left], [right]) =>
+    left.localeCompare(right)
+  )) {
+    if (value !== undefined) {
+      searchParams.set(key, String(value));
+    }
+  }
+
+  return searchParams.toString() || 'default';
 };
 
 const parseNotificationSubjectStateTarget = (
@@ -224,9 +271,12 @@ export function useGithubData() {
   const activeNotificationStateRequestId = ref(0);
   const pageCache = ref(createPageCache());
   const pageCacheOrder = {
-    notifications: [] as number[],
-    issues: [] as number[],
-    pulls: [] as number[],
+    notifications: [] as string[],
+    notificationPages: {} as Record<string, number[]>,
+    issues: [] as string[],
+    issuePages: {} as Record<string, number[]>,
+    pulls: [] as string[],
+    pullPages: {} as Record<string, number[]>,
     repos: [] as number[],
     customTabs: [] as string[],
     customTabPages: {} as Record<string, number[]>,
@@ -258,28 +308,45 @@ export function useGithubData() {
     }
   };
 
-  const touchCustomTabCache = (queryKey: string, page: number) => {
-    const existingQueryIndex = pageCacheOrder.customTabs.indexOf(queryKey);
+  const touchQueryCache = <T>(
+    cache: Record<string, Record<number, T>>,
+    queryOrder: string[],
+    pageOrders: Record<string, number[]>,
+    queryKey: string,
+    page: number,
+    maxCachedQueries = maxCachedCustomTabQueries
+  ) => {
+    const existingQueryIndex = queryOrder.indexOf(queryKey);
     if (existingQueryIndex >= 0) {
-      pageCacheOrder.customTabs.splice(existingQueryIndex, 1);
+      queryOrder.splice(existingQueryIndex, 1);
     }
 
-    pageCacheOrder.customTabs.push(queryKey);
+    queryOrder.push(queryKey);
 
-    const queryCache = pageCache.value.customTabs[queryKey];
+    const queryCache = cache[queryKey];
     if (queryCache) {
-      const queryPageOrder = pageCacheOrder.customTabPages[queryKey] ?? [];
-      pageCacheOrder.customTabPages[queryKey] = queryPageOrder;
+      const queryPageOrder = pageOrders[queryKey] ?? [];
+      pageOrders[queryKey] = queryPageOrder;
       touchCachedPage(queryCache, queryPageOrder, page);
     }
 
-    while (pageCacheOrder.customTabs.length > maxCachedCustomTabQueries) {
-      const expiredQueryKey = pageCacheOrder.customTabs.shift();
+    while (queryOrder.length > maxCachedQueries) {
+      const expiredQueryKey = queryOrder.shift();
       if (expiredQueryKey) {
-        delete pageCache.value.customTabs[expiredQueryKey];
-        delete pageCacheOrder.customTabPages[expiredQueryKey];
+        delete cache[expiredQueryKey];
+        delete pageOrders[expiredQueryKey];
       }
     }
+  };
+
+  const touchCustomTabCache = (queryKey: string, page: number) => {
+    touchQueryCache(
+      pageCache.value.customTabs,
+      pageCacheOrder.customTabs,
+      pageCacheOrder.customTabPages,
+      queryKey,
+      page
+    );
   };
 
   const applyNotificationsData = (data: PaginatedDashboardResponse<DashboardNotification>) => {
@@ -288,6 +355,7 @@ export function useGithubData() {
   };
 
   const enrichNotificationSubjectStates = async (
+    queryKey: string,
     page: number,
     items: DashboardNotification[],
     notificationRequestId: number
@@ -314,7 +382,7 @@ export function useGithubData() {
         return;
       }
 
-      const cachedData = pageCache.value.notifications[page];
+      const cachedData = pageCache.value.notifications[queryKey]?.[page];
       if (!cachedData) return;
 
       const enrichedItems = applyNotificationSubjectStates(cachedData.items, data.items);
@@ -323,7 +391,10 @@ export function useGithubData() {
         items: enrichedItems,
       };
 
-      pageCache.value.notifications[page] = enrichedData;
+      const queryCache = pageCache.value.notifications[queryKey];
+      if (!queryCache) return;
+
+      queryCache[page] = enrichedData;
       applyNotificationsData(enrichedData);
     } catch (err) {
       if (
@@ -333,7 +404,7 @@ export function useGithubData() {
         return;
       }
 
-      const cachedData = pageCache.value.notifications[page];
+      const cachedData = pageCache.value.notifications[queryKey]?.[page];
       if (!cachedData) return;
 
       const erroredData = {
@@ -341,7 +412,10 @@ export function useGithubData() {
         items: markNotificationSubjectStateErrors(cachedData.items),
       };
 
-      pageCache.value.notifications[page] = erroredData;
+      const queryCache = pageCache.value.notifications[queryKey];
+      if (!queryCache) return;
+
+      queryCache[page] = erroredData;
       applyNotificationsData(erroredData);
       console.error('Error enriching notification subject states:', err);
     }
@@ -366,12 +440,22 @@ export function useGithubData() {
   };
 
   const fetchNotifications = async (page = 1, options: DashboardFetchOptions = {}) => {
-    const cachedData = pageCache.value.notifications[page];
+    const notificationParams = options.notificationParams ?? { all: true };
+    const queryKey = buildParamQueryKey(notificationParams);
+    const queryCache = pageCache.value.notifications[queryKey] ?? {};
+    const cachedData = queryCache[page];
     if (cachedData && !options.force) {
-      touchCachedPage(pageCache.value.notifications, pageCacheOrder.notifications, page);
+      touchQueryCache(
+        pageCache.value.notifications,
+        pageCacheOrder.notifications,
+        pageCacheOrder.notificationPages,
+        queryKey,
+        page
+      );
       applyNotificationsData(cachedData);
       if (shouldEnrichNotificationSubjectStates(cachedData.items)) {
         void enrichNotificationSubjectStates(
+          queryKey,
           page,
           cachedData.items,
           activeNotificationRequestId.value
@@ -391,7 +475,7 @@ export function useGithubData() {
 
     try {
       const data = await apiFetch<PaginatedDashboardResponse<DashboardNotification>>(
-        buildPaginationUrl('/api/notifications', page)
+        buildPaginationUrl('/api/notifications', page, defaultPerPage, notificationParams)
       );
       if (requestId !== activeRequestId.value) return;
 
@@ -400,14 +484,20 @@ export function useGithubData() {
         items: withPendingNotificationSubjectStates(data.items),
       };
 
-      pageCache.value.notifications[data.pagination.page] = pendingData;
-      touchCachedPage(
+      if (!pageCache.value.notifications[queryKey]) {
+        pageCache.value.notifications[queryKey] = {};
+      }
+      pageCache.value.notifications[queryKey][data.pagination.page] = pendingData;
+      touchQueryCache(
         pageCache.value.notifications,
         pageCacheOrder.notifications,
+        pageCacheOrder.notificationPages,
+        queryKey,
         data.pagination.page
       );
       applyNotificationsData(pendingData);
       void enrichNotificationSubjectStates(
+        queryKey,
         data.pagination.page,
         pendingData.items,
         notificationRequestId
@@ -424,9 +514,17 @@ export function useGithubData() {
   };
 
   const fetchIssues = async (page = 1, options: DashboardFetchOptions = {}) => {
-    const cachedData = pageCache.value.issues[page];
+    const queryKey = options.query ? buildCustomTabQueryKey(options.query) : 'default';
+    const queryCache = pageCache.value.issues[queryKey] ?? {};
+    const cachedData = queryCache[page];
     if (cachedData && !options.force) {
-      touchCachedPage(pageCache.value.issues, pageCacheOrder.issues, page);
+      touchQueryCache(
+        pageCache.value.issues,
+        pageCacheOrder.issues,
+        pageCacheOrder.issuePages,
+        queryKey,
+        page
+      );
       applyIssuesData(cachedData);
       error.value = null;
       loading.value = false;
@@ -439,13 +537,24 @@ export function useGithubData() {
     error.value = null;
 
     try {
-      const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(
-        buildPaginationUrl('/api/issues', page)
-      );
+      // Built-in issue tabs use GitHub Search when query-level filters are available.
+      const url = options.query
+        ? buildCustomTabUrl('/api/search/issues', page, options.query)
+        : buildPaginationUrl('/api/issues', page);
+      const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(url);
       if (requestId !== activeRequestId.value) return;
 
-      pageCache.value.issues[data.pagination.page] = data;
-      touchCachedPage(pageCache.value.issues, pageCacheOrder.issues, data.pagination.page);
+      if (!pageCache.value.issues[queryKey]) {
+        pageCache.value.issues[queryKey] = {};
+      }
+      pageCache.value.issues[queryKey][data.pagination.page] = data;
+      touchQueryCache(
+        pageCache.value.issues,
+        pageCacheOrder.issues,
+        pageCacheOrder.issuePages,
+        queryKey,
+        data.pagination.page
+      );
       applyIssuesData(data);
     } catch (err) {
       if (requestId !== activeRequestId.value) return;
@@ -459,9 +568,17 @@ export function useGithubData() {
   };
 
   const fetchPulls = async (page = 1, options: DashboardFetchOptions = {}) => {
-    const cachedData = pageCache.value.pulls[page];
+    const queryKey = options.query ? buildCustomTabQueryKey(options.query) : 'default';
+    const queryCache = pageCache.value.pulls[queryKey] ?? {};
+    const cachedData = queryCache[page];
     if (cachedData && !options.force) {
-      touchCachedPage(pageCache.value.pulls, pageCacheOrder.pulls, page);
+      touchQueryCache(
+        pageCache.value.pulls,
+        pageCacheOrder.pulls,
+        pageCacheOrder.pullPages,
+        queryKey,
+        page
+      );
       applyPullsData(cachedData);
       error.value = null;
       loading.value = false;
@@ -474,13 +591,24 @@ export function useGithubData() {
     error.value = null;
 
     try {
-      const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(
-        buildPaginationUrl('/api/pulls', page)
-      );
+      // Built-in PR tabs use GitHub Search when query-level filters are available.
+      const url = options.query
+        ? buildCustomTabUrl('/api/search/issues', page, options.query)
+        : buildPaginationUrl('/api/pulls', page);
+      const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(url);
       if (requestId !== activeRequestId.value) return;
 
-      pageCache.value.pulls[data.pagination.page] = data;
-      touchCachedPage(pageCache.value.pulls, pageCacheOrder.pulls, data.pagination.page);
+      if (!pageCache.value.pulls[queryKey]) {
+        pageCache.value.pulls[queryKey] = {};
+      }
+      pageCache.value.pulls[queryKey][data.pagination.page] = data;
+      touchQueryCache(
+        pageCache.value.pulls,
+        pageCacheOrder.pulls,
+        pageCacheOrder.pullPages,
+        queryKey,
+        data.pagination.page
+      );
       applyPullsData(data);
     } catch (err) {
       if (requestId !== activeRequestId.value) return;

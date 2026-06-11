@@ -17,6 +17,10 @@ interface DashboardIssuePrUser {
   avatar_url?: string | null;
 }
 
+interface DashboardIssuePrPullRequest {
+  merged_at?: string | null;
+}
+
 export interface DashboardIssuePrEntity {
   id: PropertyKey;
   title?: string;
@@ -25,7 +29,7 @@ export interface DashboardIssuePrEntity {
   updated_at?: string;
   state?: NotificationSubjectState;
   merged_at?: string | null;
-  pull_request?: unknown;
+  pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
 }
@@ -49,10 +53,19 @@ const getRepositoryName = (repositoryUrl: string | null | undefined) => {
   return parseGitHubRepoPath(repositoryUrl)?.fullName ?? '';
 };
 
+const getPullRequestMergedAt = (entity: DashboardIssuePrEntity) => {
+  if (entity.merged_at) return entity.merged_at;
+  if (typeof entity.pull_request !== 'object' || entity.pull_request === null) return null;
+
+  const mergedAt = (entity.pull_request as DashboardIssuePrPullRequest).merged_at;
+  return typeof mergedAt === 'string' && mergedAt.length > 0 ? mergedAt : null;
+};
+
 export default function toDashboardIssuePrCard(
   entity: DashboardIssuePrEntity
 ): DashboardIssuePrCard {
   const isPullRequest = typeof entity.pull_request === 'object' && entity.pull_request !== null;
+  const mergedAt = isPullRequest ? getPullRequestMergedAt(entity) : null;
 
   return {
     id: entity.id,
@@ -61,7 +74,7 @@ export default function toDashboardIssuePrCard(
     repositoryName: getRepositoryName(entity.repository_url),
     updatedAt: entity.updated_at,
     subjectType: isPullRequest ? 'PullRequest' : 'Issue',
-    state: entity.merged_at ? 'merged' : (entity.state ?? 'closed'),
+    state: mergedAt ? 'merged' : (entity.state ?? 'closed'),
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
     labels: (entity.labels ?? []).map((label) => ({

@@ -67,7 +67,7 @@ interface SearchItemIssue {
   labels: SearchItemLabel[];
   merged_at?: string | null;
   state?: NotificationSubjectState;
-  pull_request?: unknown;
+  pull_request?: { merged_at?: string | null } | unknown;
 }
 
 const props = defineProps<{
@@ -106,8 +106,17 @@ const getTypeColor = (typeName: string) => {
   return typeColorMap[typeName] || '6e7781';
 };
 
+const pullRequestMergedAt = computed(() => {
+  if (props.issue.merged_at) return props.issue.merged_at;
+  if (typeof props.issue.pull_request !== 'object' || props.issue.pull_request === null)
+    return null;
+
+  const mergedAt = (props.issue.pull_request as { merged_at?: string | null }).merged_at;
+  return typeof mergedAt === 'string' && mergedAt.length > 0 ? mergedAt : null;
+});
+
 const displayState = computed(() => {
-  if (props.issue.merged_at) return 'merged';
+  if (pullRequestMergedAt.value) return 'merged';
   return (props.issue.state || 'closed') as NotificationSubjectState;
 });
 

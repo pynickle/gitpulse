@@ -91,7 +91,7 @@ interface SearchResultItem {
   number: number;
   state: string;
   merged_at?: string | null;
-  pull_request?: unknown;
+  pull_request?: { merged_at?: string | null } | unknown;
   labels?: Array<{ id?: number; name: string; color?: string; description?: string }>;
   repository_url: string;
   updated_at: string;
@@ -122,10 +122,18 @@ const labelStyle = (label: { color?: string; name: string }) => {
   };
 };
 
+const getPullRequestMergedAt = (item: SearchResultItem) => {
+  if (item.merged_at) return item.merged_at;
+  if (typeof item.pull_request !== 'object' || item.pull_request === null) return null;
+
+  const mergedAt = (item.pull_request as { merged_at?: string | null }).merged_at;
+  return typeof mergedAt === 'string' && mergedAt.length > 0 ? mergedAt : null;
+};
+
 const getStateIcon = (item: SearchResultItem) => {
   if (item.pull_request) {
     if (item.state === 'open') return GitPullRequestIcon;
-    if (item.merged_at) return GitMergeIcon;
+    if (getPullRequestMergedAt(item)) return GitMergeIcon;
     return GitPullRequestClosedIcon;
   }
   if (item.state === 'open') return CircleDotIcon;

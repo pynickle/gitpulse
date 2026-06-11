@@ -69,6 +69,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     const archived = getQueryValue(query.archived);
     const draft = getQueryValue(query.draft);
     const review = getQueryValue(query.review);
+    const merged = getQueryValue(query.merged);
     const base = getQueryValue(query.base);
     const head = getQueryValue(query.head);
     const sort = normalizeIssueSearchSort(getQueryValue(query.sort));
@@ -99,6 +100,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         review === 'changes_requested'
           ? review
           : undefined,
+      merged: merged === 'merged' || merged === 'unmerged' ? merged : undefined,
       base,
       head,
     };

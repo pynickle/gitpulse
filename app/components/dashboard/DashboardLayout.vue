@@ -40,8 +40,8 @@ const layoutStyle = computed(() => ({
 
 // Layout variables defining the 4-column structure
 $activity-bar-width: 48px;
-$tab-sidebar-width: 240px;
-$widgets-panel-width: 280px;
+$tab-sidebar-width: 220px;
+$widgets-panel-width: 320px;
 
 .dashboard-layout {
   display: flex;
@@ -83,14 +83,14 @@ $widgets-panel-width: 280px;
   flex: 1 1 auto;
   justify-content: center;
   min-width: 0;
-  padding: 1.25rem 2rem;
+  padding: 1.25rem 1.25rem;
 }
 
 // Right Widgets Panel
 .column-widgets-panel {
   flex: none;
   width: var(--dashboard-widgets-panel-width, #{$widgets-panel-width});
-  padding: 1.25rem 2rem 1.25rem 0;
+  padding: 1.25rem 0.75rem 1.25rem 0;
 }
 
 // Responsive behavior

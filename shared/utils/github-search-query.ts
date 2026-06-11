@@ -40,6 +40,7 @@ const SIMPLE_QUERY_PARAM_FIELDS = [
   'archived',
   'draft',
   'review',
+  'merged',
   'order',
 ] as const satisfies readonly (keyof CustomTabQuery)[];
 
@@ -200,6 +201,12 @@ export const buildIssueSearchParts = (
       query.review === 'changes_requested'
     ) {
       parts.push(`review:${query.review}`);
+    }
+
+    if (query.merged === 'merged') {
+      parts.push('is:merged');
+    } else if (query.merged === 'unmerged') {
+      parts.push('-is:merged');
     }
 
     for (const field of PULL_SEARCH_QUALIFIER_FIELDS) {

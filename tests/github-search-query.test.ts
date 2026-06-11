@@ -36,6 +36,7 @@ describe('github search query helpers', () => {
       archived: 'exclude',
       draft: 'ready',
       review: 'required',
+      merged: 'merged',
       sort: 'best-match',
       order: 'asc',
       base: ' main ',
@@ -43,7 +44,7 @@ describe('github search query helpers', () => {
     });
 
     expect(params.toString()).toBe(
-      'text=review+queue&repo=owner%2Frepo&base=main&head=feature&labels=bug%2Cneeds+triage&scopes=title%2Ccomments&type=pulls&state=open&visibility=private&archived=exclude&draft=ready&review=required&order=asc'
+      'text=review+queue&repo=owner%2Frepo&base=main&head=feature&labels=bug%2Cneeds+triage&scopes=title%2Ccomments&type=pulls&state=open&visibility=private&archived=exclude&draft=ready&review=required&merged=merged&order=asc'
     );
   });
 
@@ -62,6 +63,7 @@ describe('github search query helpers', () => {
           labels: ['bug', 'needs triage'],
           draft: 'ready',
           review: 'required',
+          merged: 'merged',
           base: 'main',
           head: 'feature branch',
         },
@@ -81,6 +83,7 @@ describe('github search query helpers', () => {
       'label:"needs triage"',
       'draft:false',
       'review:required',
+      'is:merged',
       'base:main',
       'head:"feature branch"',
     ]);
@@ -90,6 +93,22 @@ describe('github search query helpers', () => {
     expect(buildIssueSearchParts({})).toEqual(['is:issue', 'archived:false']);
 
     expect(buildIssueSearchParts({ type: 'pulls' })).toEqual(['is:pr', 'archived:false']);
+  });
+
+  test('keeps closed and merged pull request searches mutually exclusive', () => {
+    expect(buildIssueSearchParts({ type: 'pulls', state: 'closed', merged: 'unmerged' })).toEqual([
+      'is:pr',
+      'archived:false',
+      'state:closed',
+      '-is:merged',
+    ]);
+
+    expect(buildIssueSearchParts({ type: 'pulls', state: 'closed', merged: 'merged' })).toEqual([
+      'is:pr',
+      'archived:false',
+      'state:closed',
+      'is:merged',
+    ]);
   });
 
   test('creates GitHub search URLs from the displayed query without type overrides', () => {
