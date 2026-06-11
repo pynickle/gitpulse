@@ -5,6 +5,7 @@ import {
   CircleDotIcon,
   CircleMinusIcon,
   FilePenLineIcon,
+  GitMergeIcon,
   GitPullRequestIcon,
   ShieldAlertIcon,
   XCircleIcon,
@@ -27,6 +28,7 @@ import {
   useCustomTabs,
 } from '~/composables/useCustomTabs';
 import {
+  applyCustomTabEditorState,
   buildCustomTabHumanPreview,
   buildCustomTabSearchParts,
   buildCustomTabSearchQuery,
@@ -35,13 +37,16 @@ import {
   createGitHubCustomTabPreviewUrl,
   customTabArchivedOptions,
   customTabDraftOptions,
+  type CustomTabEditorState,
+  getCustomTabEditorState,
+  customTabIssueStateOptions,
   customTabOrderOptions,
+  customTabPullStateOptions,
   customTabReviewOptions,
   customTabScopeOptions,
   customTabSortOptions,
   customTabSourceOptions,
   type CustomTabSourceOption,
-  customTabStateOptions,
   customTabTypeOptions,
   customTabVisibilityOptions,
 } from '~/composables/useCustomTabSettingsOptions';
@@ -103,7 +108,6 @@ export const useTabsSettingsPage = () => {
 
   const sourceOptions = customTabSourceOptions;
   const typeOptions = customTabTypeOptions;
-  const stateOptions = customTabStateOptions;
   const scopeOptions = customTabScopeOptions;
   const sortOptions = customTabSortOptions;
   const orderOptions = customTabOrderOptions;
@@ -120,6 +124,7 @@ export const useTabsSettingsPage = () => {
     pulls: { icon: GitPullRequestIcon, activeColor: 'var(--gitpulse-purple)' },
     open: { icon: CircleDotIcon, activeColor: 'var(--gitpulse-success-solid)' },
     closed: { icon: CircleMinusIcon, activeColor: 'var(--gitpulse-danger-solid)' },
+    merged: { icon: GitMergeIcon, activeColor: 'var(--gitpulse-purple)' },
     draft: { icon: FilePenLineIcon, activeColor: 'var(--gitpulse-warning-solid)' },
     ready: { icon: CheckCircle2Icon, activeColor: 'var(--gitpulse-success-solid)' },
     approved: { icon: CheckCircle2Icon, activeColor: 'var(--gitpulse-success-solid)' },
@@ -159,7 +164,7 @@ export const useTabsSettingsPage = () => {
       commenter: '',
       involves: '',
       milestone: '',
-      state: 'open' as CustomTabState | 'any',
+      state: 'open' as CustomTabEditorState,
       scopes: ['title', 'body'] as CustomTabSearchScope[],
       labels: [] as string[],
       visibility: 'any' as CustomTabVisibility,
@@ -309,6 +314,10 @@ export const useTabsSettingsPage = () => {
     return newTab.query.type === 'pulls';
   });
 
+  const stateOptions = computed(() => {
+    return isPullRequestSearch.value ? customTabPullStateOptions : customTabIssueStateOptions;
+  });
+
   const advancedFilterCount = computed(() => {
     let count = 0;
     if (newTab.query.repo.trim()) count++;
@@ -390,7 +399,7 @@ export const useTabsSettingsPage = () => {
   const buildCurrentQuery = (): CustomTabQuery => {
     const labels = cleanLabels();
 
-    return {
+    const query: CustomTabQuery = {
       text: newTab.query.text.trim() || undefined,
       type: newTab.query.type,
       repo: newTab.query.repo.trim() || undefined,
@@ -402,7 +411,6 @@ export const useTabsSettingsPage = () => {
       commenter: newTab.query.commenter.trim() || undefined,
       involves: newTab.query.involves.trim() || undefined,
       milestone: newTab.query.milestone.trim() || undefined,
-      state: newTab.query.state === 'any' ? undefined : newTab.query.state,
       scopes: newTab.query.scopes.length > 0 ? [...newTab.query.scopes] : undefined,
       labels: labels.length > 0 ? labels : undefined,
       visibility: newTab.query.visibility === 'any' ? undefined : newTab.query.visibility,
@@ -415,6 +423,8 @@ export const useTabsSettingsPage = () => {
       order: newTab.query.order,
       perPage: newTab.query.perPage,
     };
+
+    return applyCustomTabEditorState(query, newTab.query.state);
   };
 
   const searchQueryParts = computed(() => {
@@ -557,6 +567,17 @@ export const useTabsSettingsPage = () => {
     }
 
     newTab.query.scopes = [...newTab.query.scopes, scope];
+  };
+
+  const setSearchType = (type: CustomTabSearchType) => {
+    newTab.query.type = type;
+    if (type !== 'pulls' && newTab.query.state === 'merged') {
+      newTab.query.state = 'closed';
+    }
+  };
+
+  const setQueryState = (state: CustomTabEditorState) => {
+    newTab.query.state = state;
   };
 
   const addLabel = (label: string) => {
@@ -755,7 +776,7 @@ export const useTabsSettingsPage = () => {
     newTab.groupId = tab.groupId;
     newTab.source = tab.source ?? 'github-search';
 
-    const q = tab.query ?? {};
+    const q: CustomTabQuery = tab.query ?? {};
     newTab.query.text = q.text ?? '';
     newTab.query.type = q.type ?? 'issues';
     newTab.query.repo = q.repo ?? '';
@@ -767,7 +788,7 @@ export const useTabsSettingsPage = () => {
     newTab.query.commenter = q.commenter ?? '';
     newTab.query.involves = q.involves ?? '';
     newTab.query.milestone = q.milestone ?? '';
-    newTab.query.state = q.state ?? 'open';
+    newTab.query.state = getCustomTabEditorState(q);
     newTab.query.scopes = q.scopes ?? ['title', 'body'];
     newTab.query.labels = q.labels ?? [];
     newTab.query.visibility = q.visibility ?? 'any';
@@ -990,6 +1011,8 @@ export const useTabsSettingsPage = () => {
     confirmDeleteGroup,
     setActiveSource,
     setNewTabGroup,
+    setSearchType,
+    setQueryState,
     toggleScope,
     addLabel,
     handleLabelEnter,

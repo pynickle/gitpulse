@@ -64,6 +64,8 @@ const {
   useAutoSubtitle,
   setActiveSource,
   setNewTabGroup,
+  setSearchType,
+  setQueryState,
   toggleScope,
   addLabel,
   handleLabelEnter,
@@ -206,7 +208,7 @@ const {
                   : {}
               "
               type="button"
-              @click="newTab.query.type = option.value"
+              @click="setSearchType(option.value)"
             >
               <component
                 :is="filterIconMap[option.value]?.icon"
@@ -234,7 +236,7 @@ const {
                   : {}
               "
               type="button"
-              @click="newTab.query.state = option.value"
+              @click="setQueryState(option.value)"
             >
               <component
                 :is="filterIconMap[option.value]?.icon"

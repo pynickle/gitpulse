@@ -7,6 +7,7 @@ import {
 import type {
   CustomTabArchived,
   CustomTabDraft,
+  CustomTabMerged,
   CustomTabOrder,
   CustomTabQuery,
   CustomTabReview,
@@ -31,6 +32,8 @@ export interface CustomTabToggleOption<T extends string> {
   labelKey: string;
   value: T;
 }
+
+export type CustomTabEditorState = CustomTabState | 'merged';
 
 export const customTabSourceOptions: CustomTabSourceOption[] = [
   {
@@ -57,11 +60,17 @@ export const customTabTypeOptions: Array<CustomTabToggleOption<CustomTabSearchTy
   { labelKey: 'dashboard.tabsSettings.options.pullRequests', value: 'pulls' },
 ];
 
-export const customTabStateOptions: Array<CustomTabToggleOption<CustomTabState | 'any'>> = [
-  { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
+export const customTabIssueStateOptions: Array<CustomTabToggleOption<CustomTabState>> = [
   { labelKey: 'dashboard.tabsSettings.options.open', value: 'open' },
   { labelKey: 'dashboard.tabsSettings.options.closed', value: 'closed' },
-  { labelKey: 'dashboard.tabsSettings.options.all', value: 'all' },
+  { labelKey: 'dashboard.tabsSettings.options.allStates', value: 'all' },
+];
+
+export const customTabPullStateOptions: Array<CustomTabToggleOption<CustomTabEditorState>> = [
+  { labelKey: 'dashboard.tabsSettings.options.open', value: 'open' },
+  { labelKey: 'dashboard.tabsSettings.options.closed', value: 'closed' },
+  { labelKey: 'dashboard.tabsSettings.options.merged', value: 'merged' },
+  { labelKey: 'dashboard.tabsSettings.options.allStates', value: 'all' },
 ];
 
 export const customTabScopeOptions: Array<CustomTabToggleOption<CustomTabSearchScope>> = [
@@ -140,6 +149,59 @@ export function createGitHubCustomTabPreviewUrl(query: CustomTabQuery) {
   return createGitHubIssueSearchUrl(query, buildCustomTabSearchQuery(query));
 }
 
+export function getCustomTabEditorState(query: CustomTabQuery): CustomTabEditorState {
+  if (query.type === 'pulls' && query.merged === 'merged') {
+    return 'merged';
+  }
+
+  if (query.state === 'open' || query.state === 'closed' || query.state === 'all') {
+    return query.state;
+  }
+
+  return 'all';
+}
+
+export function applyCustomTabEditorState(
+  query: CustomTabQuery,
+  editorState: CustomTabEditorState
+): CustomTabQuery {
+  const nextQuery: CustomTabQuery = { ...query };
+  const isPullRequest = nextQuery.type === 'pulls';
+  const state: CustomTabState = editorState === 'merged' ? 'closed' : editorState;
+  let merged: CustomTabMerged | undefined;
+
+  nextQuery.state = state;
+
+  if (isPullRequest && editorState === 'merged') {
+    merged = 'merged';
+  } else if (isPullRequest && editorState === 'closed') {
+    merged = 'unmerged';
+  }
+
+  if (merged) {
+    nextQuery.merged = merged;
+  } else {
+    delete nextQuery.merged;
+  }
+
+  return nextQuery;
+}
+
+function getCustomTabStateSummary(query: CustomTabQuery, t: Translate) {
+  const editorState = getCustomTabEditorState(query);
+
+  if (editorState === 'all') {
+    return '';
+  }
+
+  const labelKey =
+    editorState === 'merged'
+      ? 'dashboard.tabsSettings.options.merged'
+      : `dashboard.tabsSettings.options.${editorState}`;
+
+  return t(labelKey);
+}
+
 export function buildCustomTabHumanPreview(query: CustomTabQuery, t: Translate) {
   const chunks = [];
   chunks.push(getCustomTabTypeSummary(query.type ?? 'issues', t));
@@ -154,8 +216,9 @@ export function buildCustomTabHumanPreview(query: CustomTabQuery, t: Translate) 
     chunks.push(t('dashboard.tabsSettings.summary.involving', { value: query.involves.trim() }));
   if (query.labels && query.labels.length > 0)
     chunks.push(t('dashboard.tabsSettings.summary.labeled', { value: query.labels.join(', ') }));
-  if (query.state && query.state !== 'any')
-    chunks.push(t('dashboard.tabsSettings.summary.state', { value: query.state }));
+
+  const stateSummary = getCustomTabStateSummary(query, t);
+  if (stateSummary) chunks.push(t('dashboard.tabsSettings.summary.state', { value: stateSummary }));
 
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.join(', ') });
 }
@@ -165,9 +228,8 @@ export function buildCustomTabSummary(query: CustomTabQuery, t: Translate) {
   const type = query.type ?? 'issues';
   chunks.push(getCustomTabTypeSummary(type, t));
 
-  if (query.state && query.state !== 'all') {
-    chunks.push(t('dashboard.tabsSettings.summary.state', { value: query.state }));
-  }
+  const stateSummary = getCustomTabStateSummary(query, t);
+  if (stateSummary) chunks.push(t('dashboard.tabsSettings.summary.state', { value: stateSummary }));
   if (query.repo) chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: query.repo }));
   if (query.author)
     chunks.push(t('dashboard.tabsSettings.summary.authoredBy', { value: query.author }));
