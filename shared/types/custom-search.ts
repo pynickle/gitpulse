@@ -1,25 +1,27 @@
-export type CustomTabState = 'open' | 'closed' | 'all';
-export type CustomTabSource = 'github-search';
-export type CustomTabSearchType = 'issues' | 'pulls';
-export type CustomTabSearchScope = 'title' | 'body' | 'comments';
-export type CustomTabSort =
+export type GitHubSearchItemType = 'issues' | 'pulls';
+export type GitHubSearchIssueState = 'open' | 'closed' | 'all';
+export type GitHubSearchPullState = 'open' | 'closed' | 'merged' | 'all';
+export type GitHubSearchScope = 'title' | 'body' | 'comments';
+export type GitHubSearchSort =
   | 'best-match'
   | 'comments'
   | 'reactions'
   | 'interactions'
   | 'created'
   | 'updated';
-export type CustomTabOrder = 'desc' | 'asc';
-export type CustomTabVisibility = 'any' | 'public' | 'private';
-export type CustomTabArchived = 'exclude' | 'include' | 'only';
-export type CustomTabDraft = 'any' | 'draft' | 'ready';
-export type CustomTabReview = 'any' | 'none' | 'required' | 'approved' | 'changes_requested';
-export type CustomTabMerged = 'merged' | 'unmerged';
-export type CustomTabSubtitleMode = 'auto' | 'custom' | 'none';
+export type GitHubSearchOrder = 'desc' | 'asc';
+export type GitHubSearchVisibilityFilter = 'any' | 'public' | 'private';
+export type GitHubSearchArchivedFilter = 'exclude' | 'include' | 'only';
+export type GitHubSearchDraftFilter = 'any' | 'draft' | 'ready';
+export type GitHubSearchReviewFilter =
+  | 'any'
+  | 'none'
+  | 'required'
+  | 'approved'
+  | 'changes_requested';
 
-export interface CustomTabQuery {
+interface GitHubSearchQueryBase {
   text?: string;
-  type?: CustomTabSearchType;
   repo?: string;
   org?: string;
   user?: string;
@@ -30,26 +32,44 @@ export interface CustomTabQuery {
   commenter?: string;
   involves?: string;
   milestone?: string;
-  state?: CustomTabState;
-  scopes?: CustomTabSearchScope[];
-  visibility?: CustomTabVisibility;
-  archived?: CustomTabArchived;
-  draft?: CustomTabDraft;
-  review?: CustomTabReview;
-  merged?: CustomTabMerged;
-  base?: string;
-  head?: string;
-  sort?: CustomTabSort;
-  order?: CustomTabOrder;
+  scopes?: GitHubSearchScope[];
+  visibility?: GitHubSearchVisibilityFilter;
+  archived?: GitHubSearchArchivedFilter;
+  sort?: GitHubSearchSort;
+  order?: GitHubSearchOrder;
   perPage?: number;
 }
 
-export interface CustomTab {
+export interface GitHubIssueSearchQuery extends GitHubSearchQueryBase {
+  type: 'issues';
+  state?: GitHubSearchIssueState;
+}
+
+export interface GitHubPullSearchQuery extends GitHubSearchQueryBase {
+  type: 'pulls';
+  state?: GitHubSearchPullState;
+  draft?: GitHubSearchDraftFilter;
+  review?: GitHubSearchReviewFilter;
+  base?: string;
+  head?: string;
+}
+
+export type GitHubSearchQuery = GitHubIssueSearchQuery | GitHubPullSearchQuery;
+
+export type CustomTabSource = 'github-search';
+export type CustomTabSubtitleMode = 'auto' | 'custom' | 'none';
+
+interface CustomTabBase {
   id: string;
   groupId: string;
   name: string;
   subtitle?: string;
   subtitleMode: CustomTabSubtitleMode;
-  source: CustomTabSource;
-  query: CustomTabQuery;
 }
+
+export interface GitHubSearchTab extends CustomTabBase {
+  source: 'github-search';
+  query: GitHubSearchQuery;
+}
+
+export type CustomTab = GitHubSearchTab;

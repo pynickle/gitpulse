@@ -14,21 +14,21 @@ import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch }
 
 import {
   type CustomTab,
-  type CustomTabArchived,
-  type CustomTabDraft,
-  type CustomTabOrder,
-  type CustomTabQuery,
-  type CustomTabReview,
-  type CustomTabSearchScope,
-  type CustomTabSearchType,
-  type CustomTabSort,
   type CustomTabSource,
   type CustomTabSubtitleMode,
-  type CustomTabVisibility,
+  type GitHubSearchArchivedFilter,
+  type GitHubSearchDraftFilter,
+  type GitHubSearchItemType,
+  type GitHubSearchOrder,
+  type GitHubSearchPullState,
+  type GitHubSearchQuery,
+  type GitHubSearchReviewFilter,
+  type GitHubSearchScope,
+  type GitHubSearchSort,
+  type GitHubSearchVisibilityFilter,
   useCustomTabs,
 } from '~/composables/useCustomTabs';
 import {
-  applyCustomTabEditorState,
   buildCustomTabHumanPreview,
   buildCustomTabSearchParts,
   buildCustomTabSearchQuery,
@@ -37,8 +37,6 @@ import {
   createGitHubCustomTabPreviewUrl,
   customTabArchivedOptions,
   customTabDraftOptions,
-  type CustomTabEditorState,
-  getCustomTabEditorState,
   customTabIssueStateOptions,
   customTabOrderOptions,
   customTabPullStateOptions,
@@ -66,7 +64,7 @@ export interface SettingsTab {
   subtitle?: string;
   subtitleMode?: CustomTabSubtitleMode;
   source?: CustomTabSource;
-  query?: CustomTabQuery;
+  query?: GitHubSearchQuery;
 }
 
 export interface GroupRow extends TabGroup {
@@ -158,7 +156,7 @@ export const useTabsSettingsPage = () => {
     source: 'github-search' as CustomTabSource,
     query: {
       text: '',
-      type: 'issues' as CustomTabSearchType,
+      type: 'issues' as GitHubSearchItemType,
       repo: '',
       org: '',
       user: '',
@@ -168,17 +166,18 @@ export const useTabsSettingsPage = () => {
       commenter: '',
       involves: '',
       milestone: '',
-      state: 'open' as CustomTabEditorState,
-      scopes: ['title', 'body'] as CustomTabSearchScope[],
+      // The form keeps the pull-state superset; saving narrows it per item type.
+      state: 'open' as GitHubSearchPullState,
+      scopes: ['title', 'body'] as GitHubSearchScope[],
       labels: [] as string[],
-      visibility: 'any' as CustomTabVisibility,
-      archived: 'exclude' as CustomTabArchived,
-      draft: 'any' as CustomTabDraft,
-      review: 'any' as CustomTabReview,
+      visibility: 'any' as GitHubSearchVisibilityFilter,
+      archived: 'exclude' as GitHubSearchArchivedFilter,
+      draft: 'any' as GitHubSearchDraftFilter,
+      review: 'any' as GitHubSearchReviewFilter,
       base: '',
       head: '',
-      sort: 'updated' as CustomTabSort,
-      order: 'desc' as CustomTabOrder,
+      sort: 'updated' as GitHubSearchSort,
+      order: 'desc' as GitHubSearchOrder,
       perPage: 20,
     },
   });
@@ -388,12 +387,11 @@ export const useTabsSettingsPage = () => {
     return newTab.query.labels.map((label) => label.trim()).filter((label) => label.length > 0);
   };
 
-  const buildCurrentQuery = (): CustomTabQuery => {
+  const buildCurrentQuery = (): GitHubSearchQuery => {
     const labels = cleanLabels();
 
-    const query: CustomTabQuery = {
+    const sharedQuery = {
       text: newTab.query.text.trim() || undefined,
-      type: newTab.query.type,
       repo: newTab.query.repo.trim() || undefined,
       org: newTab.query.org.trim() || undefined,
       user: newTab.query.user.trim() || undefined,
@@ -407,16 +405,28 @@ export const useTabsSettingsPage = () => {
       labels: labels.length > 0 ? labels : undefined,
       visibility: newTab.query.visibility === 'any' ? undefined : newTab.query.visibility,
       archived: newTab.query.archived,
-      draft: newTab.query.draft === 'any' ? undefined : newTab.query.draft,
-      review: newTab.query.review === 'any' ? undefined : newTab.query.review,
-      base: newTab.query.base.trim() || undefined,
-      head: newTab.query.head.trim() || undefined,
       sort: newTab.query.sort,
       order: newTab.query.order,
       perPage: newTab.query.perPage,
     };
 
-    return applyCustomTabEditorState(query, newTab.query.state);
+    if (newTab.query.type === 'pulls') {
+      return {
+        ...sharedQuery,
+        type: 'pulls',
+        state: newTab.query.state,
+        draft: newTab.query.draft === 'any' ? undefined : newTab.query.draft,
+        review: newTab.query.review === 'any' ? undefined : newTab.query.review,
+        base: newTab.query.base.trim() || undefined,
+        head: newTab.query.head.trim() || undefined,
+      };
+    }
+
+    return {
+      ...sharedQuery,
+      type: 'issues',
+      state: newTab.query.state === 'merged' ? 'closed' : newTab.query.state,
+    };
   };
 
   const searchQueryParts = computed(() => {
@@ -453,7 +463,7 @@ export const useTabsSettingsPage = () => {
     return buildCustomTabHumanPreview(buildCurrentQuery(), t);
   });
 
-  const buildSummaryFromQuery = (query: CustomTabQuery) => {
+  const buildSummaryFromQuery = (query: GitHubSearchQuery) => {
     return buildCustomTabSummary(query, t);
   };
 
@@ -563,7 +573,7 @@ export const useTabsSettingsPage = () => {
     newTab.groupId = groupId;
   };
 
-  const toggleScope = (scope: CustomTabSearchScope) => {
+  const toggleScope = (scope: GitHubSearchScope) => {
     if (newTab.query.scopes.includes(scope)) {
       newTab.query.scopes = newTab.query.scopes.filter((candidate) => candidate !== scope);
       return;
@@ -572,14 +582,14 @@ export const useTabsSettingsPage = () => {
     newTab.query.scopes = [...newTab.query.scopes, scope];
   };
 
-  const setSearchType = (type: CustomTabSearchType) => {
+  const setSearchType = (type: GitHubSearchItemType) => {
     newTab.query.type = type;
     if (type !== 'pulls' && newTab.query.state === 'merged') {
       newTab.query.state = 'closed';
     }
   };
 
-  const setQueryState = (state: CustomTabEditorState) => {
+  const setQueryState = (state: GitHubSearchPullState) => {
     newTab.query.state = state;
   };
 
@@ -780,9 +790,9 @@ export const useTabsSettingsPage = () => {
     newTab.groupId = tab.groupId;
     newTab.source = tab.source ?? 'github-search';
 
-    const q: CustomTabQuery = tab.query ?? {};
+    const q: GitHubSearchQuery = tab.query ?? { type: 'issues' };
     newTab.query.text = q.text ?? '';
-    newTab.query.type = q.type ?? 'issues';
+    newTab.query.type = q.type;
     newTab.query.repo = q.repo ?? '';
     newTab.query.org = q.org ?? '';
     newTab.query.user = q.user ?? '';
@@ -792,15 +802,15 @@ export const useTabsSettingsPage = () => {
     newTab.query.commenter = q.commenter ?? '';
     newTab.query.involves = q.involves ?? '';
     newTab.query.milestone = q.milestone ?? '';
-    newTab.query.state = getCustomTabEditorState(q);
+    newTab.query.state = q.state ?? 'all';
     newTab.query.scopes = q.scopes ?? ['title', 'body'];
     newTab.query.labels = q.labels ?? [];
     newTab.query.visibility = q.visibility ?? 'any';
     newTab.query.archived = q.archived ?? 'exclude';
-    newTab.query.draft = q.draft ?? 'any';
-    newTab.query.review = q.review ?? 'any';
-    newTab.query.base = q.base ?? '';
-    newTab.query.head = q.head ?? '';
+    newTab.query.draft = (q.type === 'pulls' ? q.draft : undefined) ?? 'any';
+    newTab.query.review = (q.type === 'pulls' ? q.review : undefined) ?? 'any';
+    newTab.query.base = (q.type === 'pulls' ? q.base : undefined) ?? '';
+    newTab.query.head = (q.type === 'pulls' ? q.head : undefined) ?? '';
     newTab.query.sort = q.sort ?? 'updated';
     newTab.query.order = q.order ?? 'desc';
     newTab.query.perPage = q.perPage ?? 20;

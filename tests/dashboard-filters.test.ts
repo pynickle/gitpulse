@@ -269,19 +269,17 @@ describe('dashboard route filters', () => {
       sort: 'updated',
       order: 'desc',
       involves: 'octocat',
-      merged: 'unmerged',
     });
 
     expect(
       buildBuiltinIssuePrFilterQuery('pulls', { state: 'merged', labels: [] }, 'octocat')
     ).toEqual({
       type: 'pulls',
-      state: 'closed',
+      state: 'merged',
       archived: 'exclude',
       sort: 'updated',
       order: 'desc',
       involves: 'octocat',
-      merged: 'merged',
     });
 
     expect(
@@ -310,9 +308,8 @@ describe('dashboard route filters', () => {
     ).toEqual({
       type: 'pulls',
       repo: 'route/repo',
-      state: 'closed',
+      state: 'merged',
       labels: ['route'],
-      merged: 'merged',
     });
     expect(savedQuery).toEqual({
       type: 'pulls',
@@ -329,8 +326,7 @@ describe('dashboard route filters', () => {
         repo: ' saved/repo ',
         author: ' octocat ',
         labels: [' bug ', '', 'needs triage'],
-        state: 'closed',
-        merged: 'merged',
+        state: 'merged',
         review: 'approved',
         archived: 'include',
         sort: 'comments',
@@ -370,8 +366,7 @@ describe('dashboard route filters', () => {
       type: 'pulls' as const,
       repo: 'saved/repo',
       labels: ['saved'],
-      state: 'closed' as const,
-      merged: 'merged' as const,
+      state: 'merged' as const,
       review: 'approved' as const,
     };
     const sourceState = createCustomTabFilterSourceState(savedQuery, {
@@ -394,8 +389,7 @@ describe('dashboard route filters', () => {
       type: 'pulls',
       repo: 'route/repo',
       labels: ['saved'],
-      state: 'closed',
-      merged: 'merged',
+      state: 'merged',
       review: 'approved',
       sort: 'created',
     });
@@ -429,8 +423,7 @@ describe('dashboard route filters', () => {
   test('custom pull tabs clear merged qualifiers when route state changes to open', () => {
     const savedQuery = {
       type: 'pulls' as const,
-      state: 'closed' as const,
-      merged: 'merged' as const,
+      state: 'merged' as const,
     };
     const sourceState = createCustomTabFilterSourceState(savedQuery, {
       state: 'open',
@@ -476,7 +469,6 @@ describe('dashboard route filters', () => {
     ).toEqual({
       type: 'pulls',
       state: 'closed',
-      merged: 'unmerged',
     });
 
     expect(
@@ -486,9 +478,8 @@ describe('dashboard route filters', () => {
       )
     ).toEqual({
       type: 'pulls',
-      state: 'closed',
+      state: 'merged',
       review: 'approved',
-      merged: 'merged',
     });
 
     expect(
@@ -518,21 +509,19 @@ describe('dashboard route filters', () => {
     expect(sourceState.chips.map((chip) => chip.key)).toEqual(['state', 'repo', 'review']);
     expect(sourceState.issuePrQuery).toEqual({
       type: 'pulls',
-      state: 'closed',
+      state: 'merged',
       archived: 'exclude',
       sort: 'updated',
       order: 'desc',
       involves: 'octocat',
       repo: 'owner/repo',
-      merged: 'merged',
       review: 'approved',
     });
     expect(sourceState.overlayCustomTabQuery({ type: 'pulls', state: 'open' })).toEqual({
       type: 'pulls',
-      state: 'closed',
+      state: 'merged',
       repo: 'owner/repo',
       review: 'approved',
-      merged: 'merged',
     });
   });
 

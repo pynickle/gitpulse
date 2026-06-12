@@ -1,17 +1,15 @@
 import type {
   CustomTab,
-  CustomTabArchived,
-  CustomTabDraft,
-  CustomTabOrder,
-  CustomTabQuery,
-  CustomTabReview,
-  CustomTabSearchScope,
-  CustomTabSearchType,
-  CustomTabSort,
   CustomTabSource,
-  CustomTabState,
   CustomTabSubtitleMode,
-  CustomTabVisibility,
+  GitHubPullSearchQuery,
+  GitHubSearchArchivedFilter,
+  GitHubSearchItemType,
+  GitHubSearchOrder,
+  GitHubSearchQuery,
+  GitHubSearchScope,
+  GitHubSearchSort,
+  GitHubSearchVisibilityFilter,
 } from '#shared/types/custom-search';
 import {
   BUILTIN_TAB_GROUP_ID,
@@ -104,7 +102,7 @@ export function cloneTabGroups(groups: TabGroup[]) {
   return groups.map((group) => cloneTabGroup(group));
 }
 
-const cloneQuery = (query: CustomTabQuery = {}): CustomTabQuery => {
+const cloneQuery = (query: GitHubSearchQuery): GitHubSearchQuery => {
   return {
     ...query,
     labels: query.labels ? [...query.labels] : undefined,
@@ -182,20 +180,20 @@ export function normalizeTabGroups(value: unknown, fallback = createDefaultTabGr
   return groups.length > 0 ? ensureRequiredTabGroups(groups) : cloneTabGroups(fallback);
 }
 
-const normalizeQuery = (query: unknown): CustomTabQuery => {
+type GitHubSearchQueryCandidate = Partial<Omit<GitHubPullSearchQuery, 'type'>> & {
+  type?: unknown;
+};
+
+const normalizeQuery = (query: unknown): GitHubSearchQuery => {
   if (!query || typeof query !== 'object' || Array.isArray(query)) {
-    return {};
+    return { type: 'issues' };
   }
 
-  const candidate = query as Partial<CustomTabQuery>;
+  const candidate = query as GitHubSearchQueryCandidate;
+  const type: GitHubSearchItemType = candidate.type === 'pulls' ? 'pulls' : 'issues';
   const state = candidate.state;
-  const normalizedState: CustomTabState | undefined =
-    state === 'open' || state === 'closed' || state === 'all' ? state : undefined;
-  const type = candidate.type;
-  const normalizedType: CustomTabSearchType | undefined =
-    type === 'issues' || type === 'pulls' ? type : undefined;
   const sort = candidate.sort;
-  const normalizedSort: CustomTabSort | undefined =
+  const normalizedSort: GitHubSearchSort | undefined =
     sort === 'best-match' ||
     sort === 'comments' ||
     sort === 'reactions' ||
@@ -205,32 +203,20 @@ const normalizeQuery = (query: unknown): CustomTabQuery => {
       ? sort
       : undefined;
   const order = candidate.order;
-  const normalizedOrder: CustomTabOrder | undefined =
+  const normalizedOrder: GitHubSearchOrder | undefined =
     order === 'asc' || order === 'desc' ? order : undefined;
   const visibility = candidate.visibility;
-  const normalizedVisibility: CustomTabVisibility | undefined =
+  const normalizedVisibility: GitHubSearchVisibilityFilter | undefined =
     visibility === 'any' || visibility === 'public' || visibility === 'private'
       ? visibility
       : undefined;
   const archived = candidate.archived;
-  const normalizedArchived: CustomTabArchived | undefined =
+  const normalizedArchived: GitHubSearchArchivedFilter | undefined =
     archived === 'exclude' || archived === 'include' || archived === 'only' ? archived : undefined;
-  const draft = candidate.draft;
-  const normalizedDraft: CustomTabDraft | undefined =
-    draft === 'any' || draft === 'draft' || draft === 'ready' ? draft : undefined;
-  const review = candidate.review;
-  const normalizedReview: CustomTabReview | undefined =
-    review === 'any' ||
-    review === 'none' ||
-    review === 'required' ||
-    review === 'approved' ||
-    review === 'changes_requested'
-      ? review
-      : undefined;
   const sourceScopes = candidate.scopes;
   const scopes = Array.isArray(sourceScopes)
     ? sourceScopes.filter(
-        (scope): scope is CustomTabSearchScope =>
+        (scope): scope is GitHubSearchScope =>
           scope === 'title' || scope === 'body' || scope === 'comments'
       )
     : undefined;
@@ -239,9 +225,8 @@ const normalizeQuery = (query: unknown): CustomTabQuery => {
       ? Math.min(Math.max(Math.trunc(candidate.perPage), 1), 100)
       : undefined;
 
-  return {
+  const sharedQuery = {
     text: normalizeString(candidate.text),
-    type: normalizedType,
     repo: normalizeString(candidate.repo),
     org: normalizeString(candidate.org),
     user: normalizeString(candidate.user),
@@ -252,17 +237,43 @@ const normalizeQuery = (query: unknown): CustomTabQuery => {
     commenter: normalizeString(candidate.commenter),
     involves: normalizeString(candidate.involves),
     milestone: normalizeString(candidate.milestone),
-    state: normalizedState,
     scopes,
     visibility: normalizedVisibility,
     archived: normalizedArchived,
-    draft: normalizedDraft,
-    review: normalizedReview,
-    base: normalizeString(candidate.base),
-    head: normalizeString(candidate.head),
     sort: normalizedSort,
     order: normalizedOrder,
     perPage,
+  };
+
+  if (type === 'pulls') {
+    const draft = candidate.draft;
+    const review = candidate.review;
+
+    return {
+      ...sharedQuery,
+      type,
+      state:
+        state === 'open' || state === 'closed' || state === 'merged' || state === 'all'
+          ? state
+          : undefined,
+      draft: draft === 'any' || draft === 'draft' || draft === 'ready' ? draft : undefined,
+      review:
+        review === 'any' ||
+        review === 'none' ||
+        review === 'required' ||
+        review === 'approved' ||
+        review === 'changes_requested'
+          ? review
+          : undefined,
+      base: normalizeString(candidate.base),
+      head: normalizeString(candidate.head),
+    };
+  }
+
+  return {
+    ...sharedQuery,
+    type,
+    state: state === 'open' || state === 'closed' || state === 'all' ? state : undefined,
   };
 };
 

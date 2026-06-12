@@ -1,6 +1,6 @@
 import { ref } from 'vue';
 
-import type { CustomTabQuery, CustomTabSource } from '#shared/types/custom-search';
+import type { CustomTabSource, GitHubSearchQuery } from '#shared/types/custom-search';
 import type {
   DashboardNotification,
   NotificationSubjectState,
@@ -68,7 +68,7 @@ interface PaginatedDashboardResponse<T> {
 
 interface DashboardFetchOptions {
   force?: boolean;
-  query?: CustomTabQuery;
+  query?: GitHubSearchQuery;
   notificationParams?: Record<string, boolean | string | undefined>;
   notificationFilters?: NotificationFilterAdapter['local'];
 }
@@ -322,7 +322,7 @@ const markNotificationSubjectStateErrors = (items: DashboardNotification[]) => {
 };
 
 const buildCustomTabQueryKey = (
-  query: CustomTabQuery = {},
+  query: GitHubSearchQuery,
   source: CustomTabSource = 'github-search'
 ) => {
   const searchParams = new URLSearchParams({ source });
@@ -337,7 +337,7 @@ const buildCustomTabQueryKey = (
 const buildCustomTabUrl = (
   path: string,
   page: number,
-  query: CustomTabQuery,
+  query: GitHubSearchQuery,
   perPage = defaultPerPage
 ) => {
   const searchParams = new URLSearchParams({
@@ -912,7 +912,7 @@ export function useGithubData() {
   };
 
   const fetchCustomTab = async (
-    query: CustomTabQuery = {},
+    query: GitHubSearchQuery,
     page = 1,
     options: DashboardFetchOptions = {},
     source: CustomTabSource = 'github-search'

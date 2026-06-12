@@ -1,4 +1,8 @@
-import type { CustomTabQuery } from '#shared/types/custom-search';
+import type {
+  GitHubSearchArchivedFilter,
+  GitHubSearchQuery,
+  GitHubSearchVisibilityFilter,
+} from '#shared/types/custom-search';
 import {
   buildIssueSearchParts,
   getOneYearAgoSearchDate,
@@ -70,15 +74,18 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     const archived = getQueryValue(query.archived);
     const draft = getQueryValue(query.draft);
     const review = getQueryValue(query.review);
-    const merged = getQueryValue(query.merged);
     const base = getQueryValue(query.base);
     const head = getQueryValue(query.head);
     const sort = normalizeIssueSearchSort(getQueryValue(query.sort));
     const order = normalizeIssueSearchOrder(getQueryValue(query.order));
 
-    const customQuery: CustomTabQuery = {
+    const normalizedVisibility: GitHubSearchVisibilityFilter | undefined =
+      visibility === 'public' || visibility === 'private' ? visibility : undefined;
+    const normalizedArchived: GitHubSearchArchivedFilter =
+      archived === 'include' || archived === 'only' ? archived : 'exclude';
+
+    const sharedQuery = {
       text,
-      type,
       repo,
       org,
       user: userScope,
@@ -88,23 +95,37 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       commenter,
       involves,
       milestone,
-      state: state === 'open' || state === 'closed' || state === 'all' ? state : undefined,
       scopes,
       labels,
-      visibility: visibility === 'public' || visibility === 'private' ? visibility : undefined,
-      archived: archived === 'include' || archived === 'only' ? archived : 'exclude',
-      draft: draft === 'draft' || draft === 'ready' ? draft : undefined,
-      review:
-        review === 'none' ||
-        review === 'required' ||
-        review === 'approved' ||
-        review === 'changes_requested'
-          ? review
-          : undefined,
-      merged: merged === 'merged' || merged === 'unmerged' ? merged : undefined,
-      base,
-      head,
+      visibility: normalizedVisibility,
+      archived: normalizedArchived,
     };
+
+    const customQuery: GitHubSearchQuery =
+      type === 'pulls'
+        ? {
+            ...sharedQuery,
+            type,
+            state:
+              state === 'open' || state === 'closed' || state === 'merged' || state === 'all'
+                ? state
+                : undefined,
+            draft: draft === 'draft' || draft === 'ready' ? draft : undefined,
+            review:
+              review === 'none' ||
+              review === 'required' ||
+              review === 'approved' ||
+              review === 'changes_requested'
+                ? review
+                : undefined,
+            base,
+            head,
+          }
+        : {
+            ...sharedQuery,
+            type,
+            state: state === 'open' || state === 'closed' || state === 'all' ? state : undefined,
+          };
 
     const searchParts = buildIssueSearchParts(customQuery, {
       createdAfter: createdDate,

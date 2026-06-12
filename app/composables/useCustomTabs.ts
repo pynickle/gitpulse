@@ -1,26 +1,29 @@
 import type {
   CustomTab,
-  CustomTabQuery,
   CustomTabSource,
   CustomTabSubtitleMode,
+  GitHubSearchQuery,
 } from '#shared/types/custom-search';
 import { cloneCustomTabs, normalizeCustomTabs } from '#shared/utils/user-settings';
 
 export type {
   CustomTab,
-  CustomTabArchived,
-  CustomTabDraft,
-  CustomTabMerged,
-  CustomTabOrder,
-  CustomTabQuery,
-  CustomTabReview,
-  CustomTabSearchScope,
-  CustomTabSearchType,
-  CustomTabSort,
   CustomTabSource,
-  CustomTabState,
   CustomTabSubtitleMode,
-  CustomTabVisibility,
+  GitHubIssueSearchQuery,
+  GitHubPullSearchQuery,
+  GitHubSearchArchivedFilter,
+  GitHubSearchDraftFilter,
+  GitHubSearchIssueState,
+  GitHubSearchItemType,
+  GitHubSearchOrder,
+  GitHubSearchPullState,
+  GitHubSearchQuery,
+  GitHubSearchReviewFilter,
+  GitHubSearchScope,
+  GitHubSearchSort,
+  GitHubSearchTab,
+  GitHubSearchVisibilityFilter,
 } from '#shared/types/custom-search';
 
 export interface CreateCustomTabInput {
@@ -30,7 +33,7 @@ export interface CreateCustomTabInput {
   subtitle?: string;
   subtitleMode?: CustomTabSubtitleMode;
   source?: CustomTabSource;
-  query?: CustomTabQuery;
+  query?: GitHubSearchQuery;
 }
 
 export interface UpdateCustomTabInput {
@@ -39,7 +42,7 @@ export interface UpdateCustomTabInput {
   subtitle?: string;
   subtitleMode?: CustomTabSubtitleMode;
   source?: CustomTabSource;
-  query?: CustomTabQuery;
+  query?: GitHubSearchQuery;
 }
 
 const DEFAULT_CUSTOM_TABS: CustomTab[] = [];
@@ -115,7 +118,7 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
       name: input.name,
       ...subtitleState,
       source: input.source ?? 'github-search',
-      query: input.query ?? {},
+      query: input.query ?? { type: 'issues' },
     };
 
     void setCustomTabs([...customTabs.value, tab]);

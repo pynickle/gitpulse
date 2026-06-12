@@ -2,11 +2,11 @@ import { computed } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import type {
-  CustomTabArchived,
-  CustomTabOrder,
-  CustomTabQuery,
-  CustomTabReview,
-  CustomTabSort,
+  GitHubSearchArchivedFilter,
+  GitHubSearchOrder,
+  GitHubSearchQuery,
+  GitHubSearchReviewFilter,
+  GitHubSearchSort,
 } from '#shared/types/custom-search';
 import type { DashboardNotification } from '#shared/types/notifications';
 
@@ -24,10 +24,10 @@ export interface DashboardRouteFilters {
   reason?: string;
   subjectType?: string;
   subjectState?: 'open' | 'closed' | 'merged';
-  review?: Exclude<CustomTabReview, 'any'>;
-  archived?: CustomTabArchived;
-  sort?: Exclude<CustomTabSort, 'best-match'>;
-  order?: CustomTabOrder;
+  review?: Exclude<GitHubSearchReviewFilter, 'any'>;
+  archived?: GitHubSearchArchivedFilter;
+  sort?: Exclude<GitHubSearchSort, 'best-match'>;
+  order?: GitHubSearchOrder;
 }
 
 export interface DashboardFilterChip {
@@ -66,8 +66,8 @@ export interface DashboardFilterSourceState {
   chips: DashboardFilterChip[];
   hasActiveFilters: boolean;
   notificationAdapter: NotificationFilterAdapter;
-  issuePrQuery?: CustomTabQuery;
-  overlayCustomTabQuery: (savedQuery: CustomTabQuery) => CustomTabQuery;
+  issuePrQuery?: GitHubSearchQuery;
+  overlayCustomTabQuery: (savedQuery: GitHubSearchQuery) => GitHubSearchQuery;
 }
 
 export const dashboardFilterQueryKeys = [
@@ -94,14 +94,14 @@ const STATE_VALUES = new Set<DashboardRouteState>([
   'closed',
   'merged',
 ]);
-const REVIEW_VALUES = new Set<Exclude<CustomTabReview, 'any'>>([
+const REVIEW_VALUES = new Set<Exclude<GitHubSearchReviewFilter, 'any'>>([
   'none',
   'required',
   'approved',
   'changes_requested',
 ]);
-const ARCHIVED_VALUES = new Set<CustomTabArchived>(['exclude', 'include', 'only']);
-const SORT_VALUES = new Set<Exclude<CustomTabSort, 'best-match'>>([
+const ARCHIVED_VALUES = new Set<GitHubSearchArchivedFilter>(['exclude', 'include', 'only']);
+const SORT_VALUES = new Set<Exclude<GitHubSearchSort, 'best-match'>>([
   'comments',
   'reactions',
   'interactions',
@@ -114,7 +114,7 @@ const SUBJECT_STATE_VALUES = new Set<NonNullable<DashboardRouteFilters['subjectS
   'closed',
   'merged',
 ]);
-const archivedChipOptionByValue: Record<CustomTabArchived, string> = {
+const archivedChipOptionByValue: Record<GitHubSearchArchivedFilter, string> = {
   exclude: 'excludeArchived',
   include: 'includeArchived',
   only: 'onlyArchived',
@@ -189,14 +189,14 @@ export const parseDashboardRouteFilters = (
     )
       ? (subjectState as NonNullable<DashboardRouteFilters['subjectState']>)
       : undefined,
-    review: REVIEW_VALUES.has(review as Exclude<CustomTabReview, 'any'>)
-      ? (review as Exclude<CustomTabReview, 'any'>)
+    review: REVIEW_VALUES.has(review as Exclude<GitHubSearchReviewFilter, 'any'>)
+      ? (review as Exclude<GitHubSearchReviewFilter, 'any'>)
       : undefined,
-    archived: ARCHIVED_VALUES.has(archived as CustomTabArchived)
-      ? (archived as CustomTabArchived)
+    archived: ARCHIVED_VALUES.has(archived as GitHubSearchArchivedFilter)
+      ? (archived as GitHubSearchArchivedFilter)
       : undefined,
-    sort: SORT_VALUES.has(sort as Exclude<CustomTabSort, 'best-match'>)
-      ? (sort as Exclude<CustomTabSort, 'best-match'>)
+    sort: SORT_VALUES.has(sort as Exclude<GitHubSearchSort, 'best-match'>)
+      ? (sort as Exclude<GitHubSearchSort, 'best-match'>)
       : undefined,
     order: order === 'asc' || order === 'desc' ? order : undefined,
   };
@@ -369,7 +369,7 @@ export const createDashboardFilterChips = (
         key === 'review' || key === 'sort' || key === 'order'
           ? `dashboard.filters.options.${value}`
           : key === 'archived'
-            ? `dashboard.filters.options.${archivedChipOptionByValue[value as CustomTabArchived]}`
+            ? `dashboard.filters.options.${archivedChipOptionByValue[value as GitHubSearchArchivedFilter]}`
             : value;
 
       chips.push({
@@ -421,45 +421,41 @@ export const buildBuiltinIssuePrFilterQuery = (
   tab: Extract<DashboardTab, 'issues' | 'pulls'>,
   filters: DashboardRouteFilters,
   userLogin?: string
-): CustomTabQuery => {
-  const query: CustomTabQuery = {
-    type: tab === 'pulls' ? 'pulls' : 'issues',
-    state: 'open',
-    archived: filters.archived ?? 'exclude',
-    sort: filters.sort ?? 'updated',
-    order: filters.order ?? 'desc',
+): GitHubSearchQuery => {
+  const sharedQuery = {
+    archived: filters.archived ?? ('exclude' as const),
+    sort: filters.sort ?? ('updated' as const),
+    order: filters.order ?? ('desc' as const),
+    ...(userLogin ? { involves: userLogin } : {}),
+    ...(filters.repo ? { repo: filters.repo } : {}),
+    ...(filters.author ? { author: filters.author } : {}),
+    ...(filters.labels.length > 0 ? { labels: filters.labels } : {}),
   };
 
-  if (userLogin) query.involves = userLogin;
-  if (filters.repo) query.repo = filters.repo;
-  if (filters.author) query.author = filters.author;
-  if (filters.labels.length > 0) query.labels = filters.labels;
-
-  if (filters.state === 'closed') {
-    query.state = 'closed';
-    if (tab === 'pulls') {
-      query.merged = 'unmerged';
-    }
-  } else if (filters.state === 'all') {
-    query.state = 'all';
-    delete query.merged;
-  } else if (tab === 'pulls' && filters.state === 'merged') {
-    query.state = 'closed';
-    query.merged = 'merged';
+  if (tab === 'pulls') {
+    return {
+      ...sharedQuery,
+      type: 'pulls',
+      state:
+        filters.state === 'closed' || filters.state === 'all' || filters.state === 'merged'
+          ? filters.state
+          : 'open',
+      ...(filters.review ? { review: filters.review } : {}),
+    };
   }
 
-  if (tab === 'pulls' && filters.review) {
-    query.review = filters.review;
-  }
-
-  return query;
+  return {
+    ...sharedQuery,
+    type: 'issues',
+    state: filters.state === 'closed' || filters.state === 'all' ? filters.state : 'open',
+  };
 };
 
 export const buildCustomTabOverlayQuery = (
-  savedQuery: CustomTabQuery,
+  savedQuery: GitHubSearchQuery,
   filters: DashboardRouteFilters
-): CustomTabQuery => {
-  const nextQuery: CustomTabQuery = { ...savedQuery };
+): GitHubSearchQuery => {
+  const nextQuery: GitHubSearchQuery = { ...savedQuery };
 
   if (filters.repo) nextQuery.repo = filters.repo;
   if (filters.author) nextQuery.author = filters.author;
@@ -471,14 +467,8 @@ export const buildCustomTabOverlayQuery = (
 
   if (filters.state === 'open' || filters.state === 'closed' || filters.state === 'all') {
     nextQuery.state = filters.state;
-    if (filters.state === 'closed' && nextQuery.type === 'pulls') {
-      nextQuery.merged = 'unmerged';
-    } else {
-      delete nextQuery.merged;
-    }
   } else if (filters.state === 'merged' && nextQuery.type === 'pulls') {
-    nextQuery.state = 'closed';
-    nextQuery.merged = 'merged';
+    nextQuery.state = 'merged';
   }
 
   return nextQuery;
@@ -546,7 +536,7 @@ export const isIssuePrQueryFiltered = (filters: DashboardRouteFilters) => {
 };
 
 export const createDashboardFiltersFromCustomTabQuery = (
-  query: CustomTabQuery
+  query: GitHubSearchQuery
 ): DashboardRouteFilters => {
   const source: Extract<DashboardFilterSource, 'issues' | 'pulls'> =
     query.type === 'pulls' ? 'pulls' : 'issues';
@@ -559,7 +549,7 @@ export const createDashboardFiltersFromCustomTabQuery = (
 
   if (query.state === 'all') {
     filters.state = 'all';
-  } else if (source === 'pulls' && query.merged === 'merged') {
+  } else if (query.state === 'merged') {
     filters.state = 'merged';
   } else if (query.state === 'closed') {
     filters.state = 'closed';
@@ -567,16 +557,19 @@ export const createDashboardFiltersFromCustomTabQuery = (
     filters.state = 'open';
   }
 
-  if (source === 'pulls' && REVIEW_VALUES.has(query.review as Exclude<CustomTabReview, 'any'>)) {
-    filters.review = query.review as Exclude<CustomTabReview, 'any'>;
+  if (
+    query.type === 'pulls' &&
+    REVIEW_VALUES.has(query.review as Exclude<GitHubSearchReviewFilter, 'any'>)
+  ) {
+    filters.review = query.review as Exclude<GitHubSearchReviewFilter, 'any'>;
   }
 
-  if (ARCHIVED_VALUES.has(query.archived as CustomTabArchived)) {
+  if (ARCHIVED_VALUES.has(query.archived as GitHubSearchArchivedFilter)) {
     filters.archived = query.archived;
   }
 
-  if (SORT_VALUES.has(query.sort as Exclude<CustomTabSort, 'best-match'>)) {
-    filters.sort = query.sort as Exclude<CustomTabSort, 'best-match'>;
+  if (SORT_VALUES.has(query.sort as Exclude<GitHubSearchSort, 'best-match'>)) {
+    filters.sort = query.sort as Exclude<GitHubSearchSort, 'best-match'>;
   }
 
   if (query.order === 'asc' || query.order === 'desc') {
@@ -644,7 +637,7 @@ export const mergeDashboardRouteFilterOverlay = (
 };
 
 export const createCustomTabFilterSourceState = (
-  savedQuery: CustomTabQuery,
+  savedQuery: GitHubSearchQuery,
   routeFilters: DashboardRouteFilters
 ): DashboardFilterSourceState => {
   const source: Extract<DashboardFilterSource, 'issues' | 'pulls'> =

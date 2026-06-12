@@ -6,19 +6,19 @@ import {
 } from '#shared/utils/github-search-query';
 import type {
   CustomTab,
-  CustomTabArchived,
-  CustomTabDraft,
-  CustomTabMerged,
-  CustomTabOrder,
-  CustomTabQuery,
-  CustomTabReview,
-  CustomTabSearchScope,
-  CustomTabSearchType,
-  CustomTabSort,
   CustomTabSource,
-  CustomTabState,
   CustomTabSubtitleMode,
-  CustomTabVisibility,
+  GitHubSearchArchivedFilter,
+  GitHubSearchDraftFilter,
+  GitHubSearchIssueState,
+  GitHubSearchItemType,
+  GitHubSearchOrder,
+  GitHubSearchPullState,
+  GitHubSearchQuery,
+  GitHubSearchReviewFilter,
+  GitHubSearchScope,
+  GitHubSearchSort,
+  GitHubSearchVisibilityFilter,
 } from '~/composables/useCustomTabs';
 
 type Translate = (key: string, params?: Record<string, string>) => string;
@@ -34,8 +34,6 @@ export interface CustomTabToggleOption<T extends string> {
   labelKey: string;
   value: T;
 }
-
-export type CustomTabEditorState = CustomTabState | 'merged';
 
 export const customTabSourceOptions: CustomTabSourceOption[] = [
   {
@@ -57,7 +55,7 @@ export const customTabSourceOptions: CustomTabSourceOption[] = [
   },
 ];
 
-export const customTabTypeOptions: Array<CustomTabToggleOption<CustomTabSearchType>> = [
+export const customTabTypeOptions: Array<CustomTabToggleOption<GitHubSearchItemType>> = [
   { labelKey: 'dashboard.tabsSettings.options.issues', value: 'issues' },
   { labelKey: 'dashboard.tabsSettings.options.pullRequests', value: 'pulls' },
 ];
@@ -68,26 +66,26 @@ export const customTabSubtitleModeOptions: Array<CustomTabToggleOption<CustomTab
   { labelKey: 'dashboard.tabsSettings.subtitleMode.none', value: 'none' },
 ];
 
-export const customTabIssueStateOptions: Array<CustomTabToggleOption<CustomTabState>> = [
+export const customTabIssueStateOptions: Array<CustomTabToggleOption<GitHubSearchIssueState>> = [
   { labelKey: 'dashboard.tabsSettings.options.open', value: 'open' },
   { labelKey: 'dashboard.tabsSettings.options.closed', value: 'closed' },
   { labelKey: 'dashboard.tabsSettings.options.allStates', value: 'all' },
 ];
 
-export const customTabPullStateOptions: Array<CustomTabToggleOption<CustomTabEditorState>> = [
+export const customTabPullStateOptions: Array<CustomTabToggleOption<GitHubSearchPullState>> = [
   { labelKey: 'dashboard.tabsSettings.options.open', value: 'open' },
   { labelKey: 'dashboard.tabsSettings.options.closed', value: 'closed' },
   { labelKey: 'dashboard.tabsSettings.options.merged', value: 'merged' },
   { labelKey: 'dashboard.tabsSettings.options.allStates', value: 'all' },
 ];
 
-export const customTabScopeOptions: Array<CustomTabToggleOption<CustomTabSearchScope>> = [
+export const customTabScopeOptions: Array<CustomTabToggleOption<GitHubSearchScope>> = [
   { labelKey: 'dashboard.tabsSettings.options.title', value: 'title' },
   { labelKey: 'dashboard.tabsSettings.options.body', value: 'body' },
   { labelKey: 'dashboard.tabsSettings.options.comments', value: 'comments' },
 ];
 
-export const customTabSortOptions: Array<CustomTabToggleOption<CustomTabSort>> = [
+export const customTabSortOptions: Array<CustomTabToggleOption<GitHubSearchSort>> = [
   { labelKey: 'dashboard.tabsSettings.options.best', value: 'best-match' },
   { labelKey: 'dashboard.tabsSettings.options.updated', value: 'updated' },
   { labelKey: 'dashboard.tabsSettings.options.created', value: 'created' },
@@ -96,30 +94,32 @@ export const customTabSortOptions: Array<CustomTabToggleOption<CustomTabSort>> =
   { labelKey: 'dashboard.tabsSettings.options.interactions', value: 'interactions' },
 ];
 
-export const customTabOrderOptions: Array<CustomTabToggleOption<CustomTabOrder>> = [
+export const customTabOrderOptions: Array<CustomTabToggleOption<GitHubSearchOrder>> = [
   { labelKey: 'dashboard.tabsSettings.options.desc', value: 'desc' },
   { labelKey: 'dashboard.tabsSettings.options.asc', value: 'asc' },
 ];
 
-export const customTabVisibilityOptions: Array<CustomTabToggleOption<CustomTabVisibility>> = [
+export const customTabVisibilityOptions: Array<
+  CustomTabToggleOption<GitHubSearchVisibilityFilter>
+> = [
   { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
   { labelKey: 'dashboard.tabsSettings.options.public', value: 'public' },
   { labelKey: 'dashboard.tabsSettings.options.private', value: 'private' },
 ];
 
-export const customTabArchivedOptions: Array<CustomTabToggleOption<CustomTabArchived>> = [
+export const customTabArchivedOptions: Array<CustomTabToggleOption<GitHubSearchArchivedFilter>> = [
   { labelKey: 'dashboard.tabsSettings.options.excludeArchived', value: 'exclude' },
   { labelKey: 'dashboard.tabsSettings.options.include', value: 'include' },
   { labelKey: 'dashboard.tabsSettings.options.onlyArchived', value: 'only' },
 ];
 
-export const customTabDraftOptions: Array<CustomTabToggleOption<CustomTabDraft>> = [
+export const customTabDraftOptions: Array<CustomTabToggleOption<GitHubSearchDraftFilter>> = [
   { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
   { labelKey: 'dashboard.tabsSettings.options.draft', value: 'draft' },
   { labelKey: 'dashboard.tabsSettings.options.ready', value: 'ready' },
 ];
 
-export const customTabReviewOptions: Array<CustomTabToggleOption<CustomTabReview>> = [
+export const customTabReviewOptions: Array<CustomTabToggleOption<GitHubSearchReviewFilter>> = [
   { labelKey: 'dashboard.tabsSettings.options.any', value: 'any' },
   { labelKey: 'dashboard.tabsSettings.options.none', value: 'none' },
   { labelKey: 'dashboard.tabsSettings.options.required', value: 'required' },
@@ -127,18 +127,18 @@ export const customTabReviewOptions: Array<CustomTabToggleOption<CustomTabReview
   { labelKey: 'dashboard.tabsSettings.options.changesRequested', value: 'changes_requested' },
 ];
 
-export function buildCustomTabSearchParts(query: CustomTabQuery) {
+export function buildCustomTabSearchParts(query: GitHubSearchQuery) {
   return buildIssueSearchParts(query, {
     createdAfter: getOneYearAgoSearchDate(),
   });
 }
 
-export function buildCustomTabSearchQuery(query: CustomTabQuery) {
+export function buildCustomTabSearchQuery(query: GitHubSearchQuery) {
   return buildCustomTabSearchParts(query).join(' ');
 }
 
 export function createCustomTabPreviewSearchParams(
-  query: CustomTabQuery,
+  query: GitHubSearchQuery,
   page: number,
   perPage: number
 ) {
@@ -152,66 +152,23 @@ export function createCustomTabPreviewSearchParams(
   return searchParams;
 }
 
-export function createGitHubCustomTabPreviewUrl(query: CustomTabQuery) {
+export function createGitHubCustomTabPreviewUrl(query: GitHubSearchQuery) {
   return createGitHubIssueSearchUrl(query, buildCustomTabSearchQuery(query));
 }
 
-export function getCustomTabEditorState(query: CustomTabQuery): CustomTabEditorState {
-  if (query.type === 'pulls' && query.merged === 'merged') {
-    return 'merged';
-  }
+function getCustomTabStateSummary(query: GitHubSearchQuery, t: Translate) {
+  const state = query.state ?? 'all';
 
-  if (query.state === 'open' || query.state === 'closed' || query.state === 'all') {
-    return query.state;
-  }
-
-  return 'all';
-}
-
-export function applyCustomTabEditorState(
-  query: CustomTabQuery,
-  editorState: CustomTabEditorState
-): CustomTabQuery {
-  const nextQuery: CustomTabQuery = { ...query };
-  const isPullRequest = nextQuery.type === 'pulls';
-  const state: CustomTabState = editorState === 'merged' ? 'closed' : editorState;
-  let merged: CustomTabMerged | undefined;
-
-  nextQuery.state = state;
-
-  if (isPullRequest && editorState === 'merged') {
-    merged = 'merged';
-  } else if (isPullRequest && editorState === 'closed') {
-    merged = 'unmerged';
-  }
-
-  if (merged) {
-    nextQuery.merged = merged;
-  } else {
-    delete nextQuery.merged;
-  }
-
-  return nextQuery;
-}
-
-function getCustomTabStateSummary(query: CustomTabQuery, t: Translate) {
-  const editorState = getCustomTabEditorState(query);
-
-  if (editorState === 'all') {
+  if (state === 'all') {
     return '';
   }
 
-  const labelKey =
-    editorState === 'merged'
-      ? 'dashboard.tabsSettings.options.merged'
-      : `dashboard.tabsSettings.options.${editorState}`;
-
-  return t(labelKey);
+  return t(`dashboard.tabsSettings.options.${state}`);
 }
 
-export function buildCustomTabHumanPreview(query: CustomTabQuery, t: Translate) {
+export function buildCustomTabHumanPreview(query: GitHubSearchQuery, t: Translate) {
   const chunks = [];
-  chunks.push(getCustomTabTypeSummary(query.type ?? 'issues', t));
+  chunks.push(getCustomTabTypeSummary(query.type, t));
 
   if (query.repo?.trim())
     chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: query.repo.trim() }));
@@ -230,10 +187,9 @@ export function buildCustomTabHumanPreview(query: CustomTabQuery, t: Translate) 
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.join(', ') });
 }
 
-export function buildCustomTabSummary(query: CustomTabQuery, t: Translate) {
+export function buildCustomTabSummary(query: GitHubSearchQuery, t: Translate) {
   const chunks = [];
-  const type = query.type ?? 'issues';
-  chunks.push(getCustomTabTypeSummary(type, t));
+  chunks.push(getCustomTabTypeSummary(query.type, t));
 
   const stateSummary = getCustomTabStateSummary(query, t);
   if (stateSummary) chunks.push(t('dashboard.tabsSettings.summary.state', { value: stateSummary }));
@@ -252,7 +208,7 @@ export function buildCustomTabSummary(query: CustomTabQuery, t: Translate) {
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.slice(0, 4).join(', ') });
 }
 
-function getCustomTabTypeSummary(type: CustomTabSearchType, t: Translate) {
+function getCustomTabTypeSummary(type: GitHubSearchItemType, t: Translate) {
   return type === 'pulls'
     ? t('dashboard.tabsSettings.summary.pullRequests')
     : t('dashboard.tabsSettings.summary.issues');

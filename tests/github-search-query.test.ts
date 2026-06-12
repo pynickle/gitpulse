@@ -36,7 +36,6 @@ describe('github search query helpers', () => {
       archived: 'exclude',
       draft: 'ready',
       review: 'required',
-      merged: 'merged',
       sort: 'best-match',
       order: 'asc',
       base: ' main ',
@@ -44,7 +43,7 @@ describe('github search query helpers', () => {
     });
 
     expect(params.toString()).toBe(
-      'text=review+queue&repo=owner%2Frepo&base=main&head=feature&labels=bug%2Cneeds+triage&scopes=title%2Ccomments&type=pulls&state=open&visibility=private&archived=exclude&draft=ready&review=required&merged=merged&order=asc'
+      'text=review+queue&repo=owner%2Frepo&labels=bug%2Cneeds+triage&scopes=title%2Ccomments&type=pulls&state=open&visibility=private&archived=exclude&order=asc&base=main&head=feature&draft=ready&review=required'
     );
   });
 
@@ -63,7 +62,6 @@ describe('github search query helpers', () => {
           labels: ['bug', 'needs triage'],
           draft: 'ready',
           review: 'required',
-          merged: 'merged',
           base: 'main',
           head: 'feature branch',
         },
@@ -83,31 +81,35 @@ describe('github search query helpers', () => {
       'label:"needs triage"',
       'draft:false',
       'review:required',
-      'is:merged',
       'base:main',
       'head:"feature branch"',
     ]);
   });
 
   test('does not add implicit owner qualifiers', () => {
-    expect(buildIssueSearchParts({})).toEqual(['is:issue', 'archived:false']);
+    expect(buildIssueSearchParts({ type: 'issues' })).toEqual(['is:issue', 'archived:false']);
 
     expect(buildIssueSearchParts({ type: 'pulls' })).toEqual(['is:pr', 'archived:false']);
   });
 
   test('keeps closed and merged pull request searches mutually exclusive', () => {
-    expect(buildIssueSearchParts({ type: 'pulls', state: 'closed', merged: 'unmerged' })).toEqual([
+    expect(buildIssueSearchParts({ type: 'pulls', state: 'closed' })).toEqual([
       'is:pr',
       'archived:false',
       'state:closed',
       '-is:merged',
     ]);
 
-    expect(buildIssueSearchParts({ type: 'pulls', state: 'closed', merged: 'merged' })).toEqual([
+    expect(buildIssueSearchParts({ type: 'pulls', state: 'merged' })).toEqual([
       'is:pr',
       'archived:false',
-      'state:closed',
       'is:merged',
+    ]);
+
+    expect(buildIssueSearchParts({ type: 'issues', state: 'closed' })).toEqual([
+      'is:issue',
+      'archived:false',
+      'state:closed',
     ]);
   });
 

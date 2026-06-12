@@ -1,12 +1,13 @@
 import type {
-  CustomTabOrder,
-  CustomTabQuery,
-  CustomTabSearchScope,
-  CustomTabSearchType,
-  CustomTabSort,
+  GitHubPullSearchQuery,
+  GitHubSearchItemType,
+  GitHubSearchOrder,
+  GitHubSearchQuery,
+  GitHubSearchScope,
+  GitHubSearchSort,
 } from '#shared/types/custom-search';
 
-export type GitHubIssueSearchSort = Exclude<CustomTabSort, 'best-match'>;
+export type GitHubIssueSearchSort = Exclude<GitHubSearchSort, 'best-match'>;
 
 const ISSUE_SEARCH_SORTS: readonly GitHubIssueSearchSort[] = [
   'comments',
@@ -16,7 +17,7 @@ const ISSUE_SEARCH_SORTS: readonly GitHubIssueSearchSort[] = [
   'updated',
 ];
 
-const SEARCH_SCOPES: readonly CustomTabSearchScope[] = ['title', 'body', 'comments'];
+const SEARCH_SCOPES: readonly GitHubSearchScope[] = ['title', 'body', 'comments'];
 
 const TRIMMED_QUERY_PARAM_FIELDS = [
   'text',
@@ -29,20 +30,25 @@ const TRIMMED_QUERY_PARAM_FIELDS = [
   'commenter',
   'involves',
   'milestone',
-  'base',
-  'head',
-] as const satisfies readonly (keyof CustomTabQuery)[];
+] as const satisfies readonly (keyof GitHubSearchQuery)[];
 
 const SIMPLE_QUERY_PARAM_FIELDS = [
   'type',
   'state',
   'visibility',
   'archived',
+  'order',
+] as const satisfies readonly (keyof GitHubSearchQuery)[];
+
+const PULL_TRIMMED_QUERY_PARAM_FIELDS = [
+  'base',
+  'head',
+] as const satisfies readonly (keyof GitHubPullSearchQuery)[];
+
+const PULL_SIMPLE_QUERY_PARAM_FIELDS = [
   'draft',
   'review',
-  'merged',
-  'order',
-] as const satisfies readonly (keyof CustomTabQuery)[];
+] as const satisfies readonly (keyof GitHubPullSearchQuery)[];
 
 const SEARCH_QUALIFIER_FIELDS = [
   'repo',
@@ -54,12 +60,12 @@ const SEARCH_QUALIFIER_FIELDS = [
   'commenter',
   'involves',
   'milestone',
-] as const satisfies readonly (keyof CustomTabQuery)[];
+] as const satisfies readonly (keyof GitHubSearchQuery)[];
 
 const PULL_SEARCH_QUALIFIER_FIELDS = [
   'base',
   'head',
-] as const satisfies readonly (keyof CustomTabQuery)[];
+] as const satisfies readonly (keyof GitHubPullSearchQuery)[];
 
 export const getOneYearAgoSearchDate = () => {
   const today = new Date();
@@ -71,7 +77,7 @@ export const quoteSearchValue = (value: string) => {
   return /[\s"]/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
 };
 
-export const normalizeIssueSearchType = (value: string): CustomTabSearchType => {
+export const normalizeIssueSearchType = (value: string): GitHubSearchItemType => {
   return value === 'pulls' ? 'pulls' : 'issues';
 };
 
@@ -81,17 +87,17 @@ export const normalizeIssueSearchSort = (value: string): GitHubIssueSearchSort |
     : '';
 };
 
-export const normalizeIssueSearchOrder = (value: string): CustomTabOrder => {
+export const normalizeIssueSearchOrder = (value: string): GitHubSearchOrder => {
   return value === 'asc' ? 'asc' : 'desc';
 };
 
 export const normalizeIssueSearchScopes = (values: string[]) => {
-  return values.filter((scope): scope is CustomTabSearchScope => {
-    return SEARCH_SCOPES.includes(scope as CustomTabSearchScope);
+  return values.filter((scope): scope is GitHubSearchScope => {
+    return SEARCH_SCOPES.includes(scope as GitHubSearchScope);
   });
 };
 
-export const createGitHubIssueSearchUrl = (query: CustomTabQuery, searchQuery: string) => {
+export const createGitHubIssueSearchUrl = (query: GitHubSearchQuery, searchQuery: string) => {
   const searchParams = new URLSearchParams({ q: searchQuery });
 
   if (query.sort && query.sort !== 'best-match') {
@@ -113,7 +119,7 @@ const appendTrimmedParam = (params: URLSearchParams, key: string, value: string 
   }
 };
 
-export const appendCustomTabQueryParams = (params: URLSearchParams, query: CustomTabQuery) => {
+export const appendCustomTabQueryParams = (params: URLSearchParams, query: GitHubSearchQuery) => {
   for (const field of TRIMMED_QUERY_PARAM_FIELDS) {
     appendTrimmedParam(params, field, query[field]);
   }
@@ -133,6 +139,17 @@ export const appendCustomTabQueryParams = (params: URLSearchParams, query: Custo
     if (value) params.set(field, value);
   }
 
+  if (query.type === 'pulls') {
+    for (const field of PULL_TRIMMED_QUERY_PARAM_FIELDS) {
+      appendTrimmedParam(params, field, query[field]);
+    }
+
+    for (const field of PULL_SIMPLE_QUERY_PARAM_FIELDS) {
+      const value = query[field];
+      if (value) params.set(field, value);
+    }
+  }
+
   if (query.sort && query.sort !== 'best-match') params.set('sort', query.sort);
 };
 
@@ -144,7 +161,7 @@ const appendSearchQualifier = (parts: string[], qualifier: string, value: string
 };
 
 export const buildIssueSearchParts = (
-  query: CustomTabQuery,
+  query: GitHubSearchQuery,
   options: { createdAfter?: string } = {}
 ) => {
   const text = query.text?.trim();
@@ -166,8 +183,15 @@ export const buildIssueSearchParts = (
     parts.push('archived:false');
   }
 
-  if (query.state === 'open' || query.state === 'closed') {
-    parts.push(`state:${query.state}`);
+  if (query.state === 'open') {
+    parts.push('state:open');
+  } else if (query.state === 'closed') {
+    parts.push('state:closed');
+    if (query.type === 'pulls') {
+      parts.push('-is:merged');
+    }
+  } else if (query.state === 'merged') {
+    parts.push('is:merged');
   }
 
   const scopes = normalizeIssueSearchScopes(cleanList(query.scopes));
@@ -201,12 +225,6 @@ export const buildIssueSearchParts = (
       query.review === 'changes_requested'
     ) {
       parts.push(`review:${query.review}`);
-    }
-
-    if (query.merged === 'merged') {
-      parts.push('is:merged');
-    } else if (query.merged === 'unmerged') {
-      parts.push('-is:merged');
     }
 
     for (const field of PULL_SEARCH_QUALIFIER_FIELDS) {
