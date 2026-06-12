@@ -42,13 +42,7 @@ export interface UpdateCustomTabInput {
   query?: CustomTabQuery;
 }
 
-const buildLegacyStorageKey = (login: string): string => {
-  return `gitpulse:dashboard:custom-tabs:${login}`;
-};
-
 const DEFAULT_CUSTOM_TABS: CustomTab[] = [];
-
-let migratedLegacyTabsLogin: string | null = null;
 
 const normalizeOptionalString = (value?: string) => {
   const trimmed = value?.trim();
@@ -70,41 +64,12 @@ const resolveSubtitleState = (mode: CustomTabSubtitleMode | undefined, subtitle?
   return { subtitleMode: 'custom' as const, subtitle: normalizedSubtitle };
 };
 
-const readLegacyStoredTabs = (login: string): CustomTab[] | null => {
-  if (!import.meta.client) {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(buildLegacyStorageKey(login));
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    const tabs = normalizeCustomTabs(parsed);
-    return tabs.length > 0 ? tabs : null;
-  } catch {
-    return null;
-  }
-};
-
-const removeLegacyStoredTabs = (login: string) => {
-  if (!import.meta.client) {
-    return;
-  }
-
-  window.localStorage.removeItem(buildLegacyStorageKey(login));
-};
-
 const createTabId = () => {
   return `custom-tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 };
 
 export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
-  const { user } = useUserSession();
-  const login = computed(() => user.value?.login ?? 'anonymous');
-  const { settings, loaded, loadSettings, updateSettings } = useUserSettings();
+  const { settings, loadSettings, updateSettings } = useUserSettings();
 
   if (import.meta.client) {
     void loadSettings();
@@ -127,28 +92,6 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
     await updateSettings({ customTabs: normalizedTabs });
     return normalizedTabs;
   };
-
-  const migrateLegacyTabs = (nextLogin: string) => {
-    if (
-      !import.meta.client ||
-      !loaded.value ||
-      nextLogin === 'anonymous' ||
-      migratedLegacyTabsLogin === nextLogin ||
-      settings.value.customTabs.length > 0
-    ) {
-      return;
-    }
-
-    migratedLegacyTabsLogin = nextLogin;
-    const legacyTabs = readLegacyStoredTabs(nextLogin);
-    if (!legacyTabs) {
-      return;
-    }
-
-    void setCustomTabs(legacyTabs).then(() => removeLegacyStoredTabs(nextLogin));
-  };
-
-  watch([login, loaded], ([nextLogin]) => migrateLegacyTabs(nextLogin), { immediate: true });
 
   const getCustomTabById = (tabId: string) => {
     return customTabs.value.find((tab) => tab.id === tabId);
