@@ -42,6 +42,7 @@ AGENTS.md
 /tmp/
 
 opencode.jsonc
+.mcp.json
 reasonix.toml
 
 /.sisyphus/
