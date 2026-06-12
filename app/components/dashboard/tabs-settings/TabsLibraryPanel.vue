@@ -277,11 +277,16 @@ const {
                   <button
                     v-else
                     class="tab-subtitle-button"
+                    :class="{ 'is-placeholder': tab.subtitleMode === 'none' }"
                     type="button"
                     :title="getQueryPreview(tab)"
                     @click.stop="startSubtitleEdit(tab)"
                   >
-                    {{ getTabSubtitle(tab) }}
+                    {{
+                      tab.subtitleMode === 'none'
+                        ? t('dashboard.tabsSettings.noSubtitlePlaceholder')
+                        : getTabSubtitle(tab)
+                    }}
                   </button>
                 </div>
                 <div class="tree-tab-actions" @click.stop>

@@ -237,7 +237,7 @@ import RepoFileView from '~/components/dashboard/repo-files/RepoFileView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
-import { buildCustomTabSummary } from '~/composables/useCustomTabSettingsOptions';
+import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOptions';
 import {
   applyNotificationLocalFilters,
   createCustomTabFilterSourceState,
@@ -601,7 +601,7 @@ const sidebarTabs = computed(() => {
       ? tab.groupId
       : fallbackCustomGroupId.value,
     name: tab.name,
-    subtitle: tab.subtitle?.trim() || buildCustomTabSummary(tab.query, t),
+    subtitle: resolveCustomTabSubtitle(tab, t),
     icon: SearchIcon,
   }));
 
@@ -629,8 +629,7 @@ const currentTabTitle = computed(() => {
 const currentTabSubtitle = computed(() => {
   const customTab = selectedCustomTab.value;
   if (!customTab) return '';
-  if (customTab.subtitle?.trim()) return customTab.subtitle.trim();
-  return buildCustomTabSummary(customTab.query, t);
+  return resolveCustomTabSubtitle(customTab, t) ?? '';
 });
 
 // SEO: dynamic title based on current tab

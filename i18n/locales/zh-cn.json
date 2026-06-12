@@ -351,8 +351,9 @@
       "viewNameLabel": "视图名称",
       "viewNamePlaceholder": "高优先级缺陷",
       "viewSubtitleLabel": "副标题",
-      "useAutoSubtitleButton": "使用自动生成",
       "autoSubtitleHint": "自动生成：{value}",
+      "noSubtitleHint": "此标签页不显示副标题",
+      "noSubtitlePlaceholder": "无副标题",
       "searchParamsLabel": "GitHub 搜索参数",
       "searchParamsTag": "/search/issues",
       "searchTextLabel": "搜索文本",
@@ -416,6 +417,11 @@
       "confirmDeleteGroupButton": "删除分组",
       "confirmDeleteViewButton": "确认删除视图",
       "editSubtitleLabel": "编辑 {view} 的副标题",
+      "subtitleMode": {
+        "auto": "自动",
+        "custom": "自定义",
+        "none": "无"
+      },
       "source": {
         "githubSearch": "GitHub 搜索",
         "githubSearchCaption": "议题和拉取请求",

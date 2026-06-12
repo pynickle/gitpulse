@@ -5,6 +5,7 @@ import {
   getOneYearAgoSearchDate,
 } from '#shared/utils/github-search-query';
 import type {
+  CustomTab,
   CustomTabArchived,
   CustomTabDraft,
   CustomTabMerged,
@@ -16,6 +17,7 @@ import type {
   CustomTabSort,
   CustomTabSource,
   CustomTabState,
+  CustomTabSubtitleMode,
   CustomTabVisibility,
 } from '~/composables/useCustomTabs';
 
@@ -58,6 +60,12 @@ export const customTabSourceOptions: CustomTabSourceOption[] = [
 export const customTabTypeOptions: Array<CustomTabToggleOption<CustomTabSearchType>> = [
   { labelKey: 'dashboard.tabsSettings.options.issues', value: 'issues' },
   { labelKey: 'dashboard.tabsSettings.options.pullRequests', value: 'pulls' },
+];
+
+export const customTabSubtitleModeOptions: Array<CustomTabToggleOption<CustomTabSubtitleMode>> = [
+  { labelKey: 'dashboard.tabsSettings.subtitleMode.auto', value: 'auto' },
+  { labelKey: 'dashboard.tabsSettings.subtitleMode.custom', value: 'custom' },
+  { labelKey: 'dashboard.tabsSettings.subtitleMode.none', value: 'none' },
 ];
 
 export const customTabIssueStateOptions: Array<CustomTabToggleOption<CustomTabState>> = [
@@ -249,4 +257,16 @@ function getCustomTabTypeSummary(type: CustomTabSearchType, t: Translate) {
   return type === 'pulls'
     ? t('dashboard.tabsSettings.summary.pullRequests')
     : t('dashboard.tabsSettings.summary.issues');
+}
+
+export function resolveCustomTabSubtitle(tab: CustomTab, t: Translate) {
+  if (tab.subtitleMode === 'none') {
+    return undefined;
+  }
+
+  if (tab.subtitleMode === 'custom' && tab.subtitle?.trim()) {
+    return tab.subtitle.trim();
+  }
+
+  return buildCustomTabSummary(tab.query, t);
 }

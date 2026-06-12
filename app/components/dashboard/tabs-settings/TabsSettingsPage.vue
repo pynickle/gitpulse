@@ -474,6 +474,11 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
   text-underline-offset: 2px;
 }
 
+.tab-subtitle-button.is-placeholder {
+  color: var(--gitpulse-text-subtle);
+  font-style: italic;
+}
+
 .tab-subtitle-input {
   height: 1.75rem;
   padding-inline: 0.45rem;
@@ -831,6 +836,16 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.subtitle-mode-row {
+  flex-shrink: 0;
+}
+
+.segmented-button.is-subtitle-mode {
+  min-height: 1.55rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.7rem;
 }
 
 .segmented-row,

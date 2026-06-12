@@ -1,4 +1,9 @@
-import type { CustomTab, CustomTabQuery, CustomTabSource } from '#shared/types/custom-search';
+import type {
+  CustomTab,
+  CustomTabQuery,
+  CustomTabSource,
+  CustomTabSubtitleMode,
+} from '#shared/types/custom-search';
 import { cloneCustomTabs, normalizeCustomTabs } from '#shared/utils/user-settings';
 
 export type {
@@ -14,6 +19,7 @@ export type {
   CustomTabSort,
   CustomTabSource,
   CustomTabState,
+  CustomTabSubtitleMode,
   CustomTabVisibility,
 } from '#shared/types/custom-search';
 
@@ -22,6 +28,7 @@ export interface CreateCustomTabInput {
   groupId: string;
   name: string;
   subtitle?: string;
+  subtitleMode?: CustomTabSubtitleMode;
   source?: CustomTabSource;
   query?: CustomTabQuery;
 }
@@ -30,6 +37,7 @@ export interface UpdateCustomTabInput {
   groupId?: string;
   name?: string;
   subtitle?: string;
+  subtitleMode?: CustomTabSubtitleMode;
   source?: CustomTabSource;
   query?: CustomTabQuery;
 }
@@ -44,6 +52,21 @@ let migratedLegacyTabsLogin: string | null = null;
 
 const normalizeOptionalString = (value: unknown) => {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+};
+
+const resolveSubtitleState = (mode: CustomTabSubtitleMode | undefined, subtitle?: string) => {
+  const normalizedSubtitle = normalizeOptionalString(subtitle);
+  const resolvedMode = mode ?? (normalizedSubtitle ? 'custom' : 'auto');
+
+  if (resolvedMode !== 'custom') {
+    return { subtitleMode: resolvedMode, subtitle: undefined };
+  }
+
+  if (!normalizedSubtitle) {
+    return { subtitleMode: 'auto' as const, subtitle: undefined };
+  }
+
+  return { subtitleMode: 'custom' as const, subtitle: normalizedSubtitle };
 };
 
 const readLegacyStoredTabs = (login: string): CustomTab[] | null => {
@@ -140,11 +163,13 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
       return null;
     }
 
+    const subtitleState = resolveSubtitleState(input.subtitleMode, input.subtitle);
+
     const tab: CustomTab = {
       id,
       groupId: input.groupId,
       name: input.name,
-      subtitle: normalizeOptionalString(input.subtitle),
+      ...subtitleState,
       source: input.source ?? 'github-search',
       query: input.query ?? {},
     };
@@ -159,13 +184,22 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
       return null;
     }
 
+    const inferredMode =
+      updates.subtitleMode ??
+      (updates.subtitle !== undefined
+        ? normalizeOptionalString(updates.subtitle)
+          ? 'custom'
+          : 'auto'
+        : target.subtitleMode);
+    const subtitleState =
+      updates.subtitleMode === undefined && updates.subtitle === undefined
+        ? { subtitleMode: target.subtitleMode, subtitle: target.subtitle }
+        : resolveSubtitleState(inferredMode, updates.subtitle ?? target.subtitle);
+
     const updatedTab: CustomTab = {
       ...target,
       ...updates,
-      subtitle:
-        updates.subtitle === undefined
-          ? target.subtitle
-          : normalizeOptionalString(updates.subtitle),
+      ...subtitleState,
       query: updates.query ?? target.query,
     };
 

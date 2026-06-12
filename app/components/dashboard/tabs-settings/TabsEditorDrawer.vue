@@ -33,6 +33,7 @@ const {
   t,
   sourceOptions,
   typeOptions,
+  subtitleModeOptions,
   stateOptions,
   scopeOptions,
   sortOptions,
@@ -64,7 +65,7 @@ const {
   humanPreview,
   autoSubtitle,
   handleSubtitleInput,
-  useAutoSubtitle,
+  setSubtitleMode,
   setActiveSource,
   setSearchType,
   setQueryState,
@@ -146,11 +147,26 @@ const {
             <label class="label mb-0" for="new-tab-subtitle">
               {{ t('dashboard.tabsSettings.viewSubtitleLabel') }}
             </label>
-            <button class="button is-ghost is-small" type="button" @click="useAutoSubtitle">
-              {{ t('dashboard.tabsSettings.useAutoSubtitleButton') }}
-            </button>
+            <div
+              class="segmented-row subtitle-mode-row"
+              role="radiogroup"
+              :aria-label="t('dashboard.tabsSettings.viewSubtitleLabel')"
+            >
+              <button
+                v-for="option in subtitleModeOptions"
+                :key="option.value"
+                class="segmented-button is-subtitle-mode"
+                :class="{ 'is-active': newTab.subtitleMode === option.value }"
+                type="button"
+                role="radio"
+                :aria-checked="newTab.subtitleMode === option.value"
+                @click="setSubtitleMode(option.value)"
+              >
+                {{ t(option.labelKey) }}
+              </button>
+            </div>
           </div>
-          <div class="control has-icons-left">
+          <div v-if="newTab.subtitleMode === 'custom'" class="control has-icons-left">
             <input
               id="new-tab-subtitle"
               class="input"
@@ -161,8 +177,11 @@ const {
             />
             <span class="icon is-small is-left"><ListFilterIcon :size="16" /></span>
           </div>
-          <p class="help subtitle-auto-hint">
+          <p v-if="newTab.subtitleMode === 'auto'" class="help subtitle-auto-hint">
             {{ t('dashboard.tabsSettings.autoSubtitleHint', { value: autoSubtitle }) }}
+          </p>
+          <p v-else-if="newTab.subtitleMode === 'none'" class="help subtitle-auto-hint">
+            {{ t('dashboard.tabsSettings.noSubtitleHint') }}
           </p>
         </div>
 

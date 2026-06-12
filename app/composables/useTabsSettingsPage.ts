@@ -23,6 +23,7 @@ import {
   type CustomTabSearchType,
   type CustomTabSort,
   type CustomTabSource,
+  type CustomTabSubtitleMode,
   type CustomTabVisibility,
   useCustomTabs,
 } from '~/composables/useCustomTabs';
@@ -46,6 +47,7 @@ import {
   customTabSortOptions,
   customTabSourceOptions,
   type CustomTabSourceOption,
+  customTabSubtitleModeOptions,
   customTabTypeOptions,
   customTabVisibilityOptions,
 } from '~/composables/useCustomTabSettingsOptions';
@@ -62,6 +64,7 @@ export interface SettingsTab {
   groupId: string;
   name: string;
   subtitle?: string;
+  subtitleMode?: CustomTabSubtitleMode;
   source?: CustomTabSource;
   query?: CustomTabQuery;
 }
@@ -107,6 +110,7 @@ export const useTabsSettingsPage = () => {
 
   const sourceOptions = customTabSourceOptions;
   const typeOptions = customTabTypeOptions;
+  const subtitleModeOptions = customTabSubtitleModeOptions;
   const scopeOptions = customTabScopeOptions;
   const sortOptions = customTabSortOptions;
   const orderOptions = customTabOrderOptions;
@@ -149,6 +153,7 @@ export const useTabsSettingsPage = () => {
   const newTab = reactive({
     name: '',
     subtitle: '',
+    subtitleMode: 'auto' as CustomTabSubtitleMode,
     groupId: DEFAULT_CUSTOM_TAB_GROUP_ID,
     source: 'github-search' as CustomTabSource,
     query: {
@@ -179,7 +184,6 @@ export const useTabsSettingsPage = () => {
   });
 
   const labelDraft = ref('');
-  const subtitleManuallyEdited = shallowRef(false);
   const editingSubtitleTabId = shallowRef<string | null>(null);
   const editingSubtitleDraft = shallowRef('');
   const confirmingTabId = shallowRef<string | null>(null);
@@ -456,7 +460,11 @@ export const useTabsSettingsPage = () => {
   const autoSubtitle = computed(() => buildSummaryFromQuery(buildCurrentQuery()));
 
   const getTabSubtitle = (tab: SettingsTab) => {
-    if (tab.subtitle?.trim()) {
+    if (tab.subtitleMode === 'none') {
+      return '';
+    }
+
+    if (tab.subtitleMode !== 'auto' && tab.subtitle?.trim()) {
       return tab.subtitle.trim();
     }
 
@@ -479,12 +487,15 @@ export const useTabsSettingsPage = () => {
 
   const handleSubtitleInput = (event: Event) => {
     newTab.subtitle = getInputValue(event);
-    subtitleManuallyEdited.value = true;
+    newTab.subtitleMode = 'custom';
   };
 
-  const useAutoSubtitle = () => {
-    newTab.subtitle = autoSubtitle.value;
-    subtitleManuallyEdited.value = false;
+  const setSubtitleMode = (mode: CustomTabSubtitleMode) => {
+    if (mode === 'custom' && newTab.subtitleMode !== 'custom' && !newTab.subtitle.trim()) {
+      newTab.subtitle = autoSubtitle.value;
+    }
+
+    newTab.subtitleMode = mode;
   };
 
   const startSubtitleEdit = (tab: SettingsTab) => {
@@ -493,7 +504,7 @@ export const useTabsSettingsPage = () => {
     }
 
     editingSubtitleTabId.value = tab.id;
-    editingSubtitleDraft.value = getTabSubtitle(tab);
+    editingSubtitleDraft.value = tab.subtitleMode === 'none' ? '' : getTabSubtitle(tab);
   };
 
   const cancelSubtitleEdit = () => {
@@ -503,7 +514,11 @@ export const useTabsSettingsPage = () => {
 
   const saveSubtitleEdit = (tab: SettingsTab) => {
     const subtitle = editingSubtitleDraft.value.trim();
-    updateCustomTab(tab.id, { subtitle: subtitle || getTabSubtitle(tab) });
+    if (subtitle) {
+      updateCustomTab(tab.id, { subtitle, subtitleMode: 'custom' });
+    } else {
+      updateCustomTab(tab.id, { subtitle: undefined, subtitleMode: 'auto' });
+    }
     cancelSubtitleEdit();
   };
 
@@ -717,8 +732,8 @@ export const useTabsSettingsPage = () => {
 
   const resetNewTabForm = () => {
     newTab.name = '';
-    newTab.subtitle = autoSubtitle.value;
-    subtitleManuallyEdited.value = false;
+    newTab.subtitle = '';
+    newTab.subtitleMode = 'auto';
     newTab.groupId = getFallbackGroupId();
     newTab.source = 'github-search';
     newTab.query.text = '';
@@ -760,8 +775,8 @@ export const useTabsSettingsPage = () => {
     selectedTabId.value = tab.id;
     editorOpen.value = true;
     newTab.name = tab.name;
-    newTab.subtitle = tab.subtitle?.trim() || getTabSubtitle(tab);
-    subtitleManuallyEdited.value = Boolean(tab.subtitle?.trim());
+    newTab.subtitleMode = tab.subtitleMode ?? (tab.subtitle?.trim() ? 'custom' : 'auto');
+    newTab.subtitle = newTab.subtitleMode === 'custom' ? (tab.subtitle ?? '') : '';
     newTab.groupId = tab.groupId;
     newTab.source = tab.source ?? 'github-search';
 
@@ -819,10 +834,16 @@ export const useTabsSettingsPage = () => {
     const name = newTab.name.trim();
     if (!name || !selectedGroupExists.value) return;
 
+    const customSubtitle =
+      newTab.subtitleMode === 'custom' ? newTab.subtitle.trim() || undefined : undefined;
+    const subtitleMode: CustomTabSubtitleMode =
+      newTab.subtitleMode === 'custom' && !customSubtitle ? 'auto' : newTab.subtitleMode;
+
     if (isEditing.value && selectedTabId.value) {
       updateCustomTab(selectedTabId.value, {
         name,
-        subtitle: newTab.subtitle.trim() || autoSubtitle.value,
+        subtitle: customSubtitle,
+        subtitleMode,
         groupId: newTab.groupId,
         source: newTab.source,
         query: buildCurrentQuery(),
@@ -833,7 +854,8 @@ export const useTabsSettingsPage = () => {
 
     createCustomTab({
       name,
-      subtitle: newTab.subtitle.trim() || autoSubtitle.value,
+      subtitle: customSubtitle,
+      subtitleMode,
       groupId: newTab.groupId,
       source: newTab.source,
       query: buildCurrentQuery(),
@@ -940,16 +962,6 @@ export const useTabsSettingsPage = () => {
     }
   });
 
-  watch(
-    autoSubtitle,
-    (subtitle) => {
-      if (!subtitleManuallyEdited.value) {
-        newTab.subtitle = subtitle;
-      }
-    },
-    { immediate: true }
-  );
-
   // Initial sync for drag-and-drop (deferred to avoid TDZ)
   void nextTick(() => {
     syncTabLists();
@@ -962,6 +974,7 @@ export const useTabsSettingsPage = () => {
     maxGroupDepth,
     sourceOptions,
     typeOptions,
+    subtitleModeOptions,
     stateOptions,
     scopeOptions,
     sortOptions,
@@ -1017,7 +1030,7 @@ export const useTabsSettingsPage = () => {
     getTabSubtitle,
     getQueryPreview,
     handleSubtitleInput,
-    useAutoSubtitle,
+    setSubtitleMode,
     startSubtitleEdit,
     cancelSubtitleEdit,
     saveSubtitleEdit,

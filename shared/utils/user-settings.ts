@@ -10,6 +10,7 @@ import type {
   CustomTabSort,
   CustomTabSource,
   CustomTabState,
+  CustomTabSubtitleMode,
   CustomTabVisibility,
 } from '#shared/types/custom-search';
 import {
@@ -281,11 +282,22 @@ export function normalizeCustomTab(tab: unknown): CustomTab | null {
     return null;
   }
 
+  const subtitle = normalizeString(candidate.subtitle);
+  const subtitleMode: CustomTabSubtitleMode =
+    candidate.subtitleMode === 'none'
+      ? 'none'
+      : candidate.subtitleMode === 'auto'
+        ? 'auto'
+        : subtitle
+          ? 'custom'
+          : 'auto';
+
   return {
     id,
     groupId,
     name,
-    subtitle: normalizeString(candidate.subtitle),
+    subtitle: subtitleMode === 'custom' ? subtitle : undefined,
+    subtitleMode,
     source,
     query: normalizeQuery(candidate.query),
   };

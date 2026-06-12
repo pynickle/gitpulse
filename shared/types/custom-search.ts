@@ -15,6 +15,7 @@ export type CustomTabArchived = 'exclude' | 'include' | 'only';
 export type CustomTabDraft = 'any' | 'draft' | 'ready';
 export type CustomTabReview = 'any' | 'none' | 'required' | 'approved' | 'changes_requested';
 export type CustomTabMerged = 'merged' | 'unmerged';
+export type CustomTabSubtitleMode = 'auto' | 'custom' | 'none';
 
 export interface CustomTabQuery {
   text?: string;
@@ -48,6 +49,7 @@ export interface CustomTab {
   groupId: string;
   name: string;
   subtitle?: string;
+  subtitleMode: CustomTabSubtitleMode;
   source: CustomTabSource;
   query: CustomTabQuery;
 }
