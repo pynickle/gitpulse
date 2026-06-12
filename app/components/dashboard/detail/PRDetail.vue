@@ -41,6 +41,17 @@
             @toggle-review-thread="toggleReviewThreadResolved"
           />
         </div>
+
+        <PRMergeBox
+          v-if="repoOwner && repoName && currentPullRequest?.number"
+          class="pr-detail__merge-box"
+          :owner="repoOwner"
+          :repo="repoName"
+          :pull-number="currentPullRequest.number"
+          :pr-title="currentPullRequest?.title"
+          :head-label="currentPullRequest?.head?.label || currentPullRequest?.head?.ref"
+          @merged="handlePullRequestMerged"
+        />
       </div>
 
       <div class="column detail-sidebar-column">
@@ -116,6 +127,7 @@ import { computed, ref, shallowRef, watch } from 'vue';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
+import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRReviewerRequestModal from '~/components/dashboard/pr/PRReviewerRequestModal.vue';
 import PRReviewWorkspace from '~/components/dashboard/pr/PRReviewWorkspace.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
@@ -472,6 +484,11 @@ const removeReviewerRequest = async (reviewer: PRReviewerSummaryItem) => {
 
 const clearReviewerPickerError = () => {
   reviewerPickerError.value = '';
+};
+
+const handlePullRequestMerged = () => {
+  fetchPullRequestDetails();
+  fetchTimeline();
 };
 
 const updateLabels = (labels: PullRequestDetailLabel[]) => {
@@ -831,7 +848,12 @@ watch(
 }
 
 .pr-detail__timeline {
-  padding-bottom: 5rem;
+  padding-bottom: 1.5rem;
+}
+
+.pr-detail__merge-box {
+  margin-bottom: 5rem;
+  margin-right: 1rem;
 }
 
 .sidebar-review-btn {
