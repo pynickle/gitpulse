@@ -1,3 +1,5 @@
+import { getOneYearAgoSearchDate } from '#shared/utils/github-search-query';
+
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 
 const SEARCH_TOTAL_COUNT_LIMIT = 1000;
@@ -5,7 +7,7 @@ const SEARCH_TOTAL_COUNT_LIMIT = 1000;
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { octokit, userLogin } = await getGitHubSessionContext(event);
-    const createdDate = getOneYearAgoDate();
+    const createdDate = getOneYearAgoSearchDate();
     const page = parsePaginationNumber(getQuery(event).page, 1);
     const perPage = parsePaginationNumber(getQuery(event).per_page, 20, 100);
 

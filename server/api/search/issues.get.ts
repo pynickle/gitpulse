@@ -1,6 +1,7 @@
 import type { CustomTabQuery } from '#shared/types/custom-search';
 import {
   buildIssueSearchParts,
+  getOneYearAgoSearchDate,
   normalizeIssueSearchOrder,
   normalizeIssueSearchScopes,
   normalizeIssueSearchSort,
@@ -50,7 +51,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     const query = getQuery(event);
     const page = parsePaginationNumber(query.page, 1);
     const perPage = parsePaginationNumber(query.per_page, 20, 100);
-    const createdDate = getOneYearAgoDate();
+    const createdDate = getOneYearAgoSearchDate();
     const text = getQueryValue(query.text);
     const type = normalizeIssueSearchType(getQueryValue(query.type));
     const repo = getQueryValue(query.repo);
