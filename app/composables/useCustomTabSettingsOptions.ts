@@ -166,44 +166,43 @@ function getCustomTabStateSummary(query: GitHubSearchQuery, t: Translate) {
   return t(`dashboard.tabsSettings.options.${state}`);
 }
 
-export function buildCustomTabHumanPreview(query: GitHubSearchQuery, t: Translate) {
-  const chunks = [];
-  chunks.push(getCustomTabTypeSummary(query.type, t));
-
-  if (query.repo?.trim())
-    chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: query.repo.trim() }));
-  if (query.author?.trim())
-    chunks.push(t('dashboard.tabsSettings.summary.authoredBy', { value: query.author.trim() }));
-  if (query.assignee?.trim())
-    chunks.push(t('dashboard.tabsSettings.summary.assignedTo', { value: query.assignee.trim() }));
-  if (query.involves?.trim())
-    chunks.push(t('dashboard.tabsSettings.summary.involving', { value: query.involves.trim() }));
-  if (query.labels && query.labels.length > 0)
-    chunks.push(t('dashboard.tabsSettings.summary.labeled', { value: query.labels.join(', ') }));
+function buildCustomTabSummaryChunks(
+  query: GitHubSearchQuery,
+  t: Translate,
+  options: { maxLabels?: number } = {}
+) {
+  const chunks = [getCustomTabTypeSummary(query.type, t)];
 
   const stateSummary = getCustomTabStateSummary(query, t);
   if (stateSummary) chunks.push(t('dashboard.tabsSettings.summary.state', { value: stateSummary }));
+
+  const fields = [
+    ['repo', 'inRepo'],
+    ['author', 'authoredBy'],
+    ['assignee', 'assignedTo'],
+    ['involves', 'involving'],
+  ] as const;
+
+  for (const [key, labelKey] of fields) {
+    const value = query[key]?.trim();
+    if (value) chunks.push(t(`dashboard.tabsSettings.summary.${labelKey}`, { value }));
+  }
+
+  const labels = options.maxLabels ? query.labels?.slice(0, options.maxLabels) : query.labels;
+  if (labels && labels.length > 0)
+    chunks.push(t('dashboard.tabsSettings.summary.labeled', { value: labels.join(', ') }));
+
+  return chunks;
+}
+
+export function buildCustomTabHumanPreview(query: GitHubSearchQuery, t: Translate) {
+  const chunks = buildCustomTabSummaryChunks(query, t);
 
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.join(', ') });
 }
 
 export function buildCustomTabSummary(query: GitHubSearchQuery, t: Translate) {
-  const chunks = [];
-  chunks.push(getCustomTabTypeSummary(query.type, t));
-
-  const stateSummary = getCustomTabStateSummary(query, t);
-  if (stateSummary) chunks.push(t('dashboard.tabsSettings.summary.state', { value: stateSummary }));
-  if (query.repo) chunks.push(t('dashboard.tabsSettings.summary.inRepo', { value: query.repo }));
-  if (query.author)
-    chunks.push(t('dashboard.tabsSettings.summary.authoredBy', { value: query.author }));
-  if (query.assignee)
-    chunks.push(t('dashboard.tabsSettings.summary.assignedTo', { value: query.assignee }));
-  if (query.involves)
-    chunks.push(t('dashboard.tabsSettings.summary.involving', { value: query.involves }));
-  if (query.labels && query.labels.length > 0)
-    chunks.push(
-      t('dashboard.tabsSettings.summary.labeled', { value: query.labels.slice(0, 2).join(', ') })
-    );
+  const chunks = buildCustomTabSummaryChunks(query, t, { maxLabels: 2 });
 
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.slice(0, 4).join(', ') });
 }
