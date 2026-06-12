@@ -44,6 +44,55 @@ const getReleaseRefValue = (releaseRef: ReleaseDashboardRef | undefined) => {
   return releaseRef.kind === 'id' ? releaseRef.id : releaseRef.tag;
 };
 
+interface DetailPanelLoadOptions<TData> {
+  logPrefix: string;
+  fallbackError?: string;
+  onSuccess?: (data: TData) => void;
+}
+
+const createDetailPanel = <TData>() => {
+  const visible = ref(false);
+  const data = ref<TData | null>(null) as Ref<TData | null>;
+  const error = ref('');
+  const loading = ref(false);
+  let requestId = 0;
+
+  const close = () => {
+    requestId += 1;
+    visible.value = false;
+    data.value = null;
+    error.value = '';
+    loading.value = false;
+  };
+
+  const load = async (fetcher: () => Promise<TData>, options: DetailPanelLoadOptions<TData>) => {
+    const id = ++requestId;
+    data.value = null;
+    error.value = '';
+    loading.value = true;
+
+    await nextTick();
+
+    try {
+      const result = await fetcher();
+      if (id !== requestId) return;
+      data.value = result;
+      options.onSuccess?.(result);
+    } catch (fetchError) {
+      console.error(options.logPrefix, fetchError);
+      if (id === requestId && options.fallbackError) {
+        error.value = fetchError instanceof Error ? fetchError.message : options.fallbackError;
+      }
+    } finally {
+      if (id === requestId) {
+        loading.value = false;
+      }
+    }
+  };
+
+  return { visible, data, error, loading, close, load };
+};
+
 export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const apiFetch = useGitPulseApiFetch();
   const { loggedIn, ready: sessionReady } = useUserSession();
@@ -63,30 +112,30 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const router = useRouter();
   const localePath = useLocalePath();
 
-  const isIssueDetailVisible = ref(false);
-  const isPRDetailVisible = ref(false);
-  const isDiscussionDetailVisible = ref(false);
-  const isReleaseDetailVisible = ref(false);
-  const isRepoDetailVisible = ref(false);
-  const currentIssue = ref<DashboardEntity | null>(null);
-  const currentPR = ref<DashboardEntity | null>(null);
-  const currentDiscussion = ref<DiscussionDetailPayload | null>(null);
-  const currentRelease = ref<ReleaseDetailPayload | null>(null);
-  const currentRepo = ref<Record<string, unknown> | null>(null);
-  const issueError = ref('');
-  const discussionError = ref('');
-  const releaseError = ref('');
-  const repoError = ref('');
-  const loadingIssue = ref(false);
-  const loadingPR = ref(false);
-  const loadingDiscussion = ref(false);
-  const loadingRelease = ref(false);
-  const loadingRepo = ref(false);
-  const issueRequestId = ref(0);
-  const prRequestId = ref(0);
-  const discussionRequestId = ref(0);
-  const releaseRequestId = ref(0);
-  const repoRequestId = ref(0);
+  const issuePanel = createDetailPanel<DashboardEntity>();
+  const prPanel = createDetailPanel<DashboardEntity>();
+  const discussionPanel = createDetailPanel<DiscussionDetailPayload>();
+  const releasePanel = createDetailPanel<ReleaseDetailPayload>();
+  const repoPanel = createDetailPanel<Record<string, unknown>>();
+
+  const panels = [issuePanel, prPanel, discussionPanel, releasePanel, repoPanel];
+
+  type DetailPanel = (typeof panels)[number];
+
+  const showOnly = (panel: DetailPanel, except: DetailPanel[] = []) => {
+    for (const other of panels) {
+      if (other !== panel && !except.includes(other)) {
+        other.visible.value = false;
+      }
+    }
+    panel.visible.value = true;
+  };
+
+  const closeAllDetails = () => {
+    for (const panel of panels) {
+      panel.close();
+    }
+  };
 
   const parseDetailTarget = (value: unknown): DetailTarget | null => {
     const rawValue = getQueryParamValue(value);
@@ -390,8 +439,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const getCanonicalRepoBranch = (owner: string, repo: string) => {
     if (activeRepoBranch.value) return activeRepoBranch.value;
 
-    const currentDefaultBranch = isRepositoryDataForTarget(currentRepo.value, owner, repo)
-      ? getRepositoryDefaultBranch(currentRepo.value)
+    const currentDefaultBranch = isRepositoryDataForTarget(repoPanel.data.value, owner, repo)
+      ? getRepositoryDefaultBranch(repoPanel.data.value)
       : undefined;
     if (currentDefaultBranch) return currentDefaultBranch;
 
@@ -468,45 +517,6 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       : 'release-empty';
   });
 
-  const closeIssueDetail = () => {
-    issueRequestId.value += 1;
-    isIssueDetailVisible.value = false;
-    currentIssue.value = null;
-    issueError.value = '';
-    loadingIssue.value = false;
-  };
-
-  const closePRDetail = () => {
-    prRequestId.value += 1;
-    isPRDetailVisible.value = false;
-    currentPR.value = null;
-    loadingPR.value = false;
-  };
-
-  const closeDiscussionDetail = () => {
-    discussionRequestId.value += 1;
-    isDiscussionDetailVisible.value = false;
-    currentDiscussion.value = null;
-    discussionError.value = '';
-    loadingDiscussion.value = false;
-  };
-
-  const closeReleaseDetail = () => {
-    releaseRequestId.value += 1;
-    isReleaseDetailVisible.value = false;
-    currentRelease.value = null;
-    releaseError.value = '';
-    loadingRelease.value = false;
-  };
-
-  const closeRepoDetail = () => {
-    repoRequestId.value += 1;
-    isRepoDetailVisible.value = false;
-    currentRepo.value = null;
-    repoError.value = '';
-    loadingRepo.value = false;
-  };
-
   const openIssue = async (issue: DashboardEntity) => {
     const repoPath = parseGitHubRepoPath(issue.repository_url);
     if (!repoPath || !issue.number) return;
@@ -542,33 +552,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const loadIssueData = async (owner: string, repo: string, issueNumber: number) => {
     if (!owner || !repo || !issueNumber) return;
 
-    const requestId = issueRequestId.value + 1;
-    issueRequestId.value = requestId;
-    currentIssue.value = null;
-    issueError.value = '';
-    loadingIssue.value = true;
-    isPRDetailVisible.value = false;
-    isDiscussionDetailVisible.value = false;
-    isReleaseDetailVisible.value = false;
-    isIssueDetailVisible.value = true;
-
-    await nextTick();
-
-    try {
-      const issue = await apiFetch<DashboardEntity>(`/api/issues/${owner}/${repo}/${issueNumber}`);
-      if (requestId === issueRequestId.value) {
-        currentIssue.value = issue;
+    showOnly(issuePanel, [repoPanel]);
+    await issuePanel.load(
+      () => apiFetch<DashboardEntity>(`/api/issues/${owner}/${repo}/${issueNumber}`),
+      {
+        logPrefix: 'Error fetching issue:',
+        fallbackError: 'Failed to load issue details.',
       }
-    } catch (error) {
-      console.error('Error fetching issue:', error);
-      if (requestId === issueRequestId.value) {
-        issueError.value = error instanceof Error ? error.message : 'Failed to load issue details.';
-      }
-    } finally {
-      if (requestId === issueRequestId.value) {
-        loadingIssue.value = false;
-      }
-    }
+    );
   };
 
   const loadPRData = async (owner: string, repo: string, pullNumber: number) => {
@@ -576,108 +567,48 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
     const repositoryUrl = `https://api.github.com/repos/${owner}/${repo}`;
 
-    const requestId = prRequestId.value + 1;
-    prRequestId.value = requestId;
-    currentPR.value = null;
-    loadingPR.value = true;
-    isIssueDetailVisible.value = false;
-    isDiscussionDetailVisible.value = false;
-    isReleaseDetailVisible.value = false;
-    isPRDetailVisible.value = true;
-
-    await nextTick();
-
-    try {
-      const pullRequest = await apiFetch(`/api/pulls/${owner}/${repo}/${pullNumber}`);
-      if (requestId === prRequestId.value) {
-        currentPR.value = {
+    showOnly(prPanel, [repoPanel]);
+    await prPanel.load(
+      async () => {
+        const pullRequest = await apiFetch(`/api/pulls/${owner}/${repo}/${pullNumber}`);
+        return {
           repository_url: repositoryUrl,
           ...((pullRequest as Record<string, unknown>) || {}),
         };
-      }
-    } catch (error) {
-      console.error('Error fetching pull request:', error);
-    } finally {
-      if (requestId === prRequestId.value) {
-        loadingPR.value = false;
-      }
-    }
+      },
+      { logPrefix: 'Error fetching pull request:' }
+    );
   };
 
   const loadRepoData = async (owner: string, repo: string) => {
     if (!owner || !repo) return;
 
-    const requestId = repoRequestId.value + 1;
-    repoRequestId.value = requestId;
-    currentRepo.value = null;
-    repoError.value = '';
-    loadingRepo.value = true;
-    isIssueDetailVisible.value = false;
-    isPRDetailVisible.value = false;
-    isDiscussionDetailVisible.value = false;
-    isReleaseDetailVisible.value = false;
-    isRepoDetailVisible.value = true;
-
-    await nextTick();
-
-    try {
-      const repository = await apiFetch(`/api/repos/${owner}/${repo}`);
-      if (requestId === repoRequestId.value) {
-        const repoData = repository as Record<string, unknown>;
-        currentRepo.value = repoData;
+    showOnly(repoPanel);
+    await repoPanel.load(() => apiFetch<Record<string, unknown>>(`/api/repos/${owner}/${repo}`), {
+      logPrefix: 'Error fetching repository:',
+      fallbackError: 'Failed to load repository details.',
+      onSuccess: (repoData) => {
         syncRepositoryEntry(
           owner,
           repo,
           activeRepoBranch.value ?? getRepositoryDefaultBranch(repoData)
         );
-      }
-    } catch (error) {
-      console.error('Error fetching repository:', error);
-      if (requestId === repoRequestId.value) {
-        repoError.value =
-          error instanceof Error ? error.message : 'Failed to load repository details.';
-      }
-    } finally {
-      if (requestId === repoRequestId.value) {
-        loadingRepo.value = false;
-      }
-    }
+      },
+    });
   };
 
   const loadDiscussionData = async (owner: string, repo: string, discussionNumber: number) => {
     if (!owner || !repo || !discussionNumber) return;
 
-    const requestId = discussionRequestId.value + 1;
-    discussionRequestId.value = requestId;
-    currentDiscussion.value = null;
-    discussionError.value = '';
-    loadingDiscussion.value = true;
-    isIssueDetailVisible.value = false;
-    isPRDetailVisible.value = false;
-    isReleaseDetailVisible.value = false;
-    isRepoDetailVisible.value = false;
-    isDiscussionDetailVisible.value = true;
-
-    await nextTick();
-
-    try {
-      const discussion = await apiFetch<DiscussionDetailPayload>(
-        `/api/discussions/${owner}/${repo}/${discussionNumber}`
-      );
-      if (requestId === discussionRequestId.value) {
-        currentDiscussion.value = discussion;
+    showOnly(discussionPanel);
+    await discussionPanel.load(
+      () =>
+        apiFetch<DiscussionDetailPayload>(`/api/discussions/${owner}/${repo}/${discussionNumber}`),
+      {
+        logPrefix: 'Error fetching discussion:',
+        fallbackError: 'Failed to load discussion details.',
       }
-    } catch (error) {
-      console.error('Error fetching discussion:', error);
-      if (requestId === discussionRequestId.value) {
-        discussionError.value =
-          error instanceof Error ? error.message : 'Failed to load discussion details.';
-      }
-    } finally {
-      if (requestId === discussionRequestId.value) {
-        loadingDiscussion.value = false;
-      }
-    }
+    );
   };
 
   const loadReleaseData = async (owner: string, repo: string, releaseRef: ReleaseDashboardRef) => {
@@ -685,39 +616,20 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (releaseRef.kind === 'id' && !releaseRef.id) return;
     if (releaseRef.kind === 'tag' && !releaseRef.tag) return;
 
-    const requestId = releaseRequestId.value + 1;
-    releaseRequestId.value = requestId;
-    currentRelease.value = null;
-    releaseError.value = '';
-    loadingRelease.value = true;
-    isIssueDetailVisible.value = false;
-    isPRDetailVisible.value = false;
-    isDiscussionDetailVisible.value = false;
-    isRepoDetailVisible.value = false;
-    isReleaseDetailVisible.value = true;
-
-    await nextTick();
-
-    try {
-      const releaseUrl =
-        releaseRef.kind === 'tag'
-          ? `/api/releases/${owner}/${repo}/by-tag?tag=${encodeURIComponent(releaseRef.tag)}`
-          : `/api/releases/${owner}/${repo}/${releaseRef.id}`;
-      const release = await apiFetch<ReleaseDetailPayload>(releaseUrl);
-      if (requestId === releaseRequestId.value) {
-        currentRelease.value = release;
+    showOnly(releasePanel);
+    await releasePanel.load(
+      () => {
+        const releaseUrl =
+          releaseRef.kind === 'tag'
+            ? `/api/releases/${owner}/${repo}/by-tag?tag=${encodeURIComponent(releaseRef.tag)}`
+            : `/api/releases/${owner}/${repo}/${releaseRef.id}`;
+        return apiFetch<ReleaseDetailPayload>(releaseUrl);
+      },
+      {
+        logPrefix: 'Error fetching release:',
+        fallbackError: 'Failed to load release details.',
       }
-    } catch (error) {
-      console.error('Error fetching release:', error);
-      if (requestId === releaseRequestId.value) {
-        releaseError.value =
-          error instanceof Error ? error.message : 'Failed to load release details.';
-      }
-    } finally {
-      if (requestId === releaseRequestId.value) {
-        loadingRelease.value = false;
-      }
-    }
+    );
   };
 
   const handleSwitchIssue = async (owner: string, repo: string, issueNumber: number) => {
@@ -868,11 +780,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       }
 
       if (!loggedIn.value) {
-        closeIssueDetail();
-        closePRDetail();
-        closeDiscussionDetail();
-        closeReleaseDetail();
-        closeRepoDetail();
+        closeAllDetails();
         return;
       }
 
@@ -893,11 +801,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       }
 
       if (isFileBrowsingRoute.value) {
-        closeIssueDetail();
-        closePRDetail();
-        closeDiscussionDetail();
-        closeReleaseDetail();
-        closeRepoDetail();
+        closeAllDetails();
         return;
       }
 
@@ -1016,38 +920,34 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         return;
       }
 
-      closeIssueDetail();
-      closePRDetail();
-      closeDiscussionDetail();
-      closeReleaseDetail();
-      closeRepoDetail();
+      closeAllDetails();
     },
     { immediate: true }
   );
 
   return {
-    currentIssue,
-    currentPR,
-    currentDiscussion,
-    currentRelease,
-    currentRepo,
-    issueError,
-    discussionError,
-    releaseError,
-    repoError,
-    isIssueDetailVisible,
-    isPRDetailVisible,
-    isDiscussionDetailVisible,
-    isReleaseDetailVisible,
-    isRepoDetailVisible,
+    currentIssue: issuePanel.data,
+    currentPR: prPanel.data,
+    currentDiscussion: discussionPanel.data,
+    currentRelease: releasePanel.data,
+    currentRepo: repoPanel.data,
+    issueError: issuePanel.error,
+    discussionError: discussionPanel.error,
+    releaseError: releasePanel.error,
+    repoError: repoPanel.error,
+    isIssueDetailVisible: issuePanel.visible,
+    isPRDetailVisible: prPanel.visible,
+    isDiscussionDetailVisible: discussionPanel.visible,
+    isReleaseDetailVisible: releasePanel.visible,
+    isRepoDetailVisible: repoPanel.visible,
     issueDetailKey,
     discussionDetailKey,
     releaseDetailKey,
-    loadingIssue,
-    loadingPR,
-    loadingDiscussion,
-    loadingRelease,
-    loadingRepo,
+    loadingIssue: issuePanel.loading,
+    loadingPR: prPanel.loading,
+    loadingDiscussion: discussionPanel.loading,
+    loadingRelease: releasePanel.loading,
+    loadingRepo: repoPanel.loading,
     prDetailKey,
     repoDetailKey,
     openIssue,
