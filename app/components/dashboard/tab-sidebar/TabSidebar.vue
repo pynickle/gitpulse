@@ -54,7 +54,12 @@
                 <span class="icon is-small tab-sidebar__tab-icon">
                   <component :is="tab.icon" :size="15" />
                 </span>
-                <span class="tab-sidebar__tab-name">{{ tab.name }}</span>
+                <span class="tab-sidebar__tab-text">
+                  <span class="tab-sidebar__tab-name">{{ tab.name }}</span>
+                  <span v-if="tab.subtitle" class="tab-sidebar__tab-subtitle" :title="tab.subtitle">
+                    {{ tab.subtitle }}
+                  </span>
+                </span>
                 <span v-if="(tab.badgeCount ?? 0) > 0" class="tab-sidebar__tab-badge">
                   {{ tab.badgeCount }}
                 </span>
@@ -104,6 +109,7 @@ interface TabSidebarItem {
   id: string;
   groupId: string;
   name: string;
+  subtitle?: string;
   icon: Component;
   badgeCount?: number;
 }
@@ -421,12 +427,34 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   color: var(--bulma-text-weak, #9ca3af);
 }
 
-.tab-sidebar__tab-name {
+.tab-sidebar__tab-text {
+  display: flex;
   flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.tab-sidebar__tab-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tab-sidebar__tab-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--bulma-text-weak, #9ca3af);
+  font-size: 0.66rem;
+  font-weight: 500;
+  line-height: 1.25;
+
+  .tab-sidebar__tab--active & {
+    color: color-mix(in srgb, var(--gitpulse-accent) 72%, transparent);
+  }
 }
 
 .tab-sidebar__tab-badge {

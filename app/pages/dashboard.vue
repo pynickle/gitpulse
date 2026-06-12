@@ -36,6 +36,13 @@
         <div class="card dashboard-main-card">
           <div class="dashboard-tabs-header">
             <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
+            <span
+              v-if="currentTabSubtitle"
+              class="dashboard-tab-subtitle"
+              :title="currentTabSubtitle"
+            >
+              · {{ currentTabSubtitle }}
+            </span>
             <div class="dashboard-tab-actions">
               <button
                 class="button is-ghost is-small dashboard-tab-filter"
@@ -230,6 +237,7 @@ import RepoFileView from '~/components/dashboard/repo-files/RepoFileView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
+import { buildCustomTabSummary } from '~/composables/useCustomTabSettingsOptions';
 import {
   applyNotificationLocalFilters,
   createCustomTabFilterSourceState,
@@ -593,6 +601,7 @@ const sidebarTabs = computed(() => {
       ? tab.groupId
       : fallbackCustomGroupId.value,
     name: tab.name,
+    subtitle: tab.subtitle?.trim() || buildCustomTabSummary(tab.query, t),
     icon: SearchIcon,
   }));
 
@@ -615,6 +624,13 @@ const currentTabTitle = computed(() => {
     repos: 'Repositories',
   };
   return tabNames[currentTab.value] || currentTab.value;
+});
+
+const currentTabSubtitle = computed(() => {
+  const customTab = selectedCustomTab.value;
+  if (!customTab) return '';
+  if (customTab.subtitle?.trim()) return customTab.subtitle.trim();
+  return buildCustomTabSummary(customTab.query, t);
 });
 
 // SEO: dynamic title based on current tab
@@ -1127,6 +1143,16 @@ watch(
   color: var(--bulma-text-strong);
   letter-spacing: -0.01em;
   flex-shrink: 0;
+}
+
+.dashboard-tab-subtitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
 .dashboard-tab-actions {
