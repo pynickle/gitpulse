@@ -134,8 +134,7 @@ export function buildCustomTabSearchParts(query: CustomTabQuery) {
 }
 
 export function buildCustomTabSearchQuery(query: CustomTabQuery) {
-  const parts = buildCustomTabSearchParts(query);
-  return parts.length > 0 ? parts.join(' ') : '';
+  return buildCustomTabSearchParts(query).join(' ');
 }
 
 export function createCustomTabPreviewSearchParams(
