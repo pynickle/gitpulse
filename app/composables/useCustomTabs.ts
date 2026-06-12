@@ -1,17 +1,7 @@
 import type {
   CustomTab,
-  CustomTabArchived,
-  CustomTabDraft,
-  CustomTabMerged,
-  CustomTabOrder,
   CustomTabQuery,
-  CustomTabReview,
-  CustomTabSearchScope,
-  CustomTabSearchType,
-  CustomTabSort,
   CustomTabSource,
-  CustomTabState,
-  CustomTabVisibility,
 } from '#shared/types/custom-search';
 import { cloneCustomTabs, normalizeCustomTabs } from '#shared/utils/user-settings';
 

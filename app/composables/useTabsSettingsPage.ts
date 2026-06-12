@@ -23,7 +23,6 @@ import {
   type CustomTabSearchType,
   type CustomTabSort,
   type CustomTabSource,
-  type CustomTabState,
   type CustomTabVisibility,
   useCustomTabs,
 } from '~/composables/useCustomTabs';
