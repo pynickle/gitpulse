@@ -730,23 +730,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await navigateToEntryRoute(previousEntry);
   };
 
-  const handleIssueDetailBack = async () => {
+  const handleDetailBack = async () => {
     await restorePreviousEntry();
   };
 
-  const handleIssueDetailHome = async () => {
+  const handleDetailHome = async () => {
     goToHome();
     await clearDetailRoute();
   };
-
-  const handlePRDetailBack = handleIssueDetailBack;
-  const handleDiscussionDetailBack = handleIssueDetailBack;
-  const handleReleaseDetailBack = handleIssueDetailBack;
-  const handleRepoDetailBack = handleIssueDetailBack;
-  const handlePRDetailHome = handleIssueDetailHome;
-  const handleDiscussionDetailHome = handleIssueDetailHome;
-  const handleReleaseDetailHome = handleIssueDetailHome;
-  const handleRepoDetailHome = handleIssueDetailHome;
 
   watch(
     () => [
@@ -945,16 +936,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     openIssue,
     openNotification,
     openPR,
-    handleIssueDetailBack,
-    handleIssueDetailHome,
-    handlePRDetailBack,
-    handlePRDetailHome,
-    handleDiscussionDetailBack,
-    handleDiscussionDetailHome,
-    handleReleaseDetailBack,
-    handleReleaseDetailHome,
-    handleRepoDetailBack,
-    handleRepoDetailHome,
+    handleDetailBack,
+    handleDetailHome,
     handleSwitchIssue,
     handleSwitchPR,
     handleSwitchDiscussion,

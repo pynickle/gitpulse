@@ -189,8 +189,8 @@
     :loading-discussion="loadingDiscussion"
     :loading-release="loadingRelease"
     :loading-repository="loadingRepo"
-    @back="handleActiveDetailBack"
-    @home="handleActiveDetailHome"
+    @back="handleDetailBack"
+    @home="handleDetailHome"
     @switch-issue="handleSwitchIssue"
     @switch-pull-request="handleSwitchPR"
     @switch-discussion="handleSwitchDiscussion"
@@ -799,16 +799,8 @@ const {
   openIssue,
   openNotification,
   openPR,
-  handleIssueDetailBack,
-  handleIssueDetailHome,
-  handlePRDetailBack,
-  handlePRDetailHome,
-  handleDiscussionDetailBack,
-  handleDiscussionDetailHome,
-  handleReleaseDetailBack,
-  handleReleaseDetailHome,
-  handleRepoDetailBack,
-  handleRepoDetailHome,
+  handleDetailBack,
+  handleDetailHome,
   handleSwitchIssue,
   handleSwitchPR,
   handleSwitchDiscussion,
@@ -848,54 +840,6 @@ const refreshCurrentTabSafely = async () => {
   } catch (error) {
     console.error('Error refreshing tab:', error);
   }
-};
-
-const handleActiveDetailBack = async () => {
-  if (isIssueDetailVisible.value) {
-    await handleIssueDetailBack();
-    return;
-  }
-
-  if (isRepoDetailVisible.value) {
-    await handleRepoDetailBack();
-    return;
-  }
-
-  if (isDiscussionDetailVisible.value) {
-    await handleDiscussionDetailBack();
-    return;
-  }
-
-  if (isReleaseDetailVisible.value) {
-    await handleReleaseDetailBack();
-    return;
-  }
-
-  await handlePRDetailBack();
-};
-
-const handleActiveDetailHome = async () => {
-  if (isIssueDetailVisible.value) {
-    await handleIssueDetailHome();
-    return;
-  }
-
-  if (isRepoDetailVisible.value) {
-    await handleRepoDetailHome();
-    return;
-  }
-
-  if (isDiscussionDetailVisible.value) {
-    await handleDiscussionDetailHome();
-    return;
-  }
-
-  if (isReleaseDetailVisible.value) {
-    await handleReleaseDetailHome();
-    return;
-  }
-
-  await handlePRDetailHome();
 };
 
 const loadRouteTabSafely = async (tab: unknown, page: number) => {
