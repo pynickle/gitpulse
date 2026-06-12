@@ -106,15 +106,19 @@ export function buildDashboardTabSwitchQuery(
   };
 }
 
-function serializeDashboardDetailTarget(owner: string, repo: string, number: number) {
+export function serializeDashboardDetailTarget(owner: string, repo: string, number: number) {
   return `${owner}/${repo}/${number}`;
 }
 
-function serializeDashboardRepoTarget(owner: string, repo: string) {
+export function serializeDashboardRepoTarget(owner: string, repo: string) {
   return `${owner}/${repo}`;
 }
 
-function serializeReleaseQuery(owner: string, repo: string, releaseRef: ReleaseDashboardRef) {
+export function serializeReleaseQuery(
+  owner: string,
+  repo: string,
+  releaseRef: ReleaseDashboardRef
+) {
   if (releaseRef.kind === 'tag') {
     return {
       release: serializeDashboardRepoTarget(owner, repo),

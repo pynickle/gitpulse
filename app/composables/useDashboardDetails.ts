@@ -8,6 +8,9 @@ import {
   DASHBOARD_DETAIL_QUERY_KEYS,
   buildDashboardQueryFromNavigationEntry,
   clearDashboardDetailQuery,
+  serializeDashboardDetailTarget,
+  serializeDashboardRepoTarget,
+  serializeReleaseQuery,
   type DashboardDetailQueryKey,
   type PullRequestDashboardView,
   type ReleaseDashboardRef,
@@ -195,27 +198,6 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     };
   };
 
-  const serializeDetailTarget = (owner: string, repo: string, number: number) => {
-    return `${owner}/${repo}/${number}`;
-  };
-
-  const serializeRepoTarget = (owner: string, repo: string) => {
-    return `${owner}/${repo}`;
-  };
-
-  const buildReleaseQuery = (target: ReleaseDetailTarget) => {
-    if (target.releaseRef.kind === 'tag') {
-      return {
-        release: serializeRepoTarget(target.owner, target.repo),
-        releaseTag: target.releaseRef.tag,
-      };
-    }
-
-    return {
-      release: serializeDetailTarget(target.owner, target.repo, target.releaseRef.id),
-    };
-  };
-
   const getRepositoryDefaultBranch = (repository: Record<string, unknown> | null) => {
     return typeof repository?.default_branch === 'string' && repository.default_branch
       ? repository.default_branch
@@ -311,7 +293,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const pushDetailRoute = async (detailType: DetailType, target: DetailTarget) => {
     await pushDetailQuery({
-      [DETAIL_QUERY_KEY[detailType]]: serializeDetailTarget(
+      [DETAIL_QUERY_KEY[detailType]]: serializeDashboardDetailTarget(
         target.owner,
         target.repo,
         target.number
@@ -320,12 +302,12 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const pushReleaseDetailRoute = async (target: ReleaseDetailTarget) => {
-    await pushDetailQuery(buildReleaseQuery(target));
+    await pushDetailQuery(serializeReleaseQuery(target.owner, target.repo, target.releaseRef));
   };
 
   const pushRepoDetailRoute = async (owner: string, repo: string, branch?: string) => {
     await pushDetailQuery({
-      repo: serializeRepoTarget(owner, repo),
+      repo: serializeDashboardRepoTarget(owner, repo),
       branch,
     });
   };
@@ -371,7 +353,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (issueTarget && hasConflictingDetailQuery(['issue'])) {
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
-          issue: serializeDetailTarget(issueTarget.owner, issueTarget.repo, issueTarget.number),
+          issue: serializeDashboardDetailTarget(
+            issueTarget.owner,
+            issueTarget.repo,
+            issueTarget.number
+          ),
         })
       );
       return true;
@@ -380,7 +366,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (prTarget && hasConflictingDetailQuery(['pr', 'prView'])) {
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
-          pr: serializeDetailTarget(prTarget.owner, prTarget.repo, prTarget.number),
+          pr: serializeDashboardDetailTarget(prTarget.owner, prTarget.repo, prTarget.number),
           prView: activePRView.value,
         })
       );
@@ -390,7 +376,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (discussionTarget && hasConflictingDetailQuery(['discussion'])) {
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
-          discussion: serializeDetailTarget(
+          discussion: serializeDashboardDetailTarget(
             discussionTarget.owner,
             discussionTarget.repo,
             discussionTarget.number
@@ -401,7 +387,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     }
 
     if (releaseTarget && hasConflictingDetailQuery(['release', 'releaseTag'])) {
-      await replaceDashboardQuery(buildDetailDashboardQuery(buildReleaseQuery(releaseTarget)));
+      await replaceDashboardQuery(
+        buildDetailDashboardQuery(
+          serializeReleaseQuery(releaseTarget.owner, releaseTarget.repo, releaseTarget.releaseRef)
+        )
+      );
       return true;
     }
 
@@ -410,7 +400,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       if (repoTarget) {
         await replaceDashboardQuery({
           ...clearDashboardDetailQuery(route.query),
-          repo: serializeRepoTarget(repoTarget.owner, repoTarget.repo),
+          repo: serializeDashboardRepoTarget(repoTarget.owner, repoTarget.repo),
           path: getQueryParamValue(route.query.path) ?? '',
           branch: activeRepoBranch.value,
         });
@@ -425,7 +415,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     ) {
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
-          repo: serializeRepoTarget(activeRepoTarget.value.owner, activeRepoTarget.value.repo),
+          repo: serializeDashboardRepoTarget(
+            activeRepoTarget.value.owner,
+            activeRepoTarget.value.repo
+          ),
           branch: activeRepoBranch.value,
         })
       );
@@ -678,7 +671,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
     await pushDashboardQuery(
       buildDetailDashboardQuery({
-        pr: serializeDetailTarget(target.owner, target.repo, target.number),
+        pr: serializeDashboardDetailTarget(target.owner, target.repo, target.number),
         prView: 'diff',
       })
     );
