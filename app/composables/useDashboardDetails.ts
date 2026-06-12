@@ -21,7 +21,13 @@ interface DashboardEntity {
   [key: string]: unknown;
 }
 
-type DetailType = 'issue' | 'pull-request' | 'discussion' | 'release';
+type DetailType = 'issue' | 'pull-request' | 'discussion';
+
+const DETAIL_QUERY_KEY: Record<DetailType, DashboardDetailQueryKey> = {
+  issue: 'issue',
+  'pull-request': 'pr',
+  discussion: 'discussion',
+};
 
 interface DetailTarget {
   owner: string;
@@ -299,36 +305,29 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await clearDetailRoute();
   };
 
-  const pushDetailRoute = async (detailType: DetailType, target: DetailTarget) => {
-    const query = buildDetailDashboardQuery({
-      issue:
-        detailType === 'issue'
-          ? serializeDetailTarget(target.owner, target.repo, target.number)
-          : undefined,
-      pr:
-        detailType === 'pull-request'
-          ? serializeDetailTarget(target.owner, target.repo, target.number)
-          : undefined,
-      discussion:
-        detailType === 'discussion'
-          ? serializeDetailTarget(target.owner, target.repo, target.number)
-          : undefined,
-    });
+  const pushDetailQuery = async (query: LocationQueryRaw) => {
+    await pushDashboardQuery(buildDetailDashboardQuery(query));
+  };
 
-    await pushDashboardQuery(query);
+  const pushDetailRoute = async (detailType: DetailType, target: DetailTarget) => {
+    await pushDetailQuery({
+      [DETAIL_QUERY_KEY[detailType]]: serializeDetailTarget(
+        target.owner,
+        target.repo,
+        target.number
+      ),
+    });
   };
 
   const pushReleaseDetailRoute = async (target: ReleaseDetailTarget) => {
-    await pushDashboardQuery(buildDetailDashboardQuery(buildReleaseQuery(target)));
+    await pushDetailQuery(buildReleaseQuery(target));
   };
 
   const pushRepoDetailRoute = async (owner: string, repo: string, branch?: string) => {
-    await pushDashboardQuery(
-      buildDetailDashboardQuery({
-        repo: serializeRepoTarget(owner, repo),
-        branch,
-      })
-    );
+    await pushDetailQuery({
+      repo: serializeRepoTarget(owner, repo),
+      branch,
+    });
   };
 
   const clearDetailRoute = async () => {
