@@ -50,8 +50,9 @@ const DEFAULT_CUSTOM_TABS: CustomTab[] = [];
 
 let migratedLegacyTabsLogin: string | null = null;
 
-const normalizeOptionalString = (value: unknown) => {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+const normalizeOptionalString = (value?: string) => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 };
 
 const resolveSubtitleState = (mode: CustomTabSubtitleMode | undefined, subtitle?: string) => {
