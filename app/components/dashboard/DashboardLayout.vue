@@ -6,8 +6,8 @@
         <slot name="activity-bar"></slot>
       </div>
 
-      <!-- Tab Sidebar: 220-250px width (left-center) -->
-      <div class="column column-tab-sidebar" :style="layoutStyle">
+      <!-- Tab Sidebar: 220px width (left-center) -->
+      <div class="column column-tab-sidebar">
         <slot name="tab-sidebar"></slot>
       </div>
 
@@ -16,24 +16,13 @@
         <slot name="main-content"></slot>
       </div>
 
-      <!-- Widgets Panel: 250-300px width (right, collapsible) -->
-      <div v-if="isWidgetsPanelVisible" class="column column-widgets-panel" :style="layoutStyle">
+      <!-- Widgets Panel: 320px width (right) -->
+      <div class="column column-widgets-panel">
         <slot name="widgets-panel"></slot>
       </div>
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { computed } from 'vue';
-
-const { isWidgetsPanelVisible, tabSidebarWidth, widgetsPanelWidth } = useDashboardLayout();
-
-const layoutStyle = computed(() => ({
-  '--dashboard-tab-sidebar-width': `${tabSidebarWidth.value}px`,
-  '--dashboard-widgets-panel-width': `${widgetsPanelWidth.value}px`,
-}));
-</script>
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
@@ -71,7 +60,7 @@ $widgets-panel-width: 320px;
 // Left-Center Tab Sidebar
 .column-tab-sidebar {
   flex: none;
-  width: var(--dashboard-tab-sidebar-width, #{$tab-sidebar-width});
+  width: $tab-sidebar-width;
   padding: 1.25rem 0.95rem;
   background: var(--gitpulse-shell-bg);
   border-right: 1px solid var(--gitpulse-border);
@@ -89,7 +78,7 @@ $widgets-panel-width: 320px;
 // Right Widgets Panel
 .column-widgets-panel {
   flex: none;
-  width: var(--dashboard-widgets-panel-width, #{$widgets-panel-width});
+  width: $widgets-panel-width;
   padding: 1.25rem 0.75rem 1.25rem 0;
 }
 
