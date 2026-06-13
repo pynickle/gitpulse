@@ -485,7 +485,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   });
 
   const prDetailKey = computed(() => {
-    const target = activePRReviewTarget.value ?? activePRTarget.value;
+    const reviewTarget = activePRReviewTarget.value;
+    if (reviewTarget) {
+      return `pr-review-${reviewTarget.owner}-${reviewTarget.repo}-${reviewTarget.number}`;
+    }
+    const target = activePRTarget.value;
     return target ? `pr-${target.owner}-${target.repo}-${target.number}` : 'pr-empty';
   });
 
