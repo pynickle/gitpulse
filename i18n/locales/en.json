@@ -215,6 +215,13 @@
     "actions": {
       "refreshCurrentTab": "Refresh Tab"
     },
+    "error": {
+      "title": "Unable to load this view",
+      "description": "Please check your connection and try again.",
+      "retry": "Retry",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details"
+    },
     "sidebar": {
       "views": "Views",
       "manageViews": "Manage Views",
