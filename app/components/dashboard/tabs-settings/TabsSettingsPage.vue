@@ -1049,14 +1049,14 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
 }
 
 /* Compact type/state row */
-.cmpact-row {
+.compact-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 0.85rem;
 }
 
-.cmpact-toggle {
+.compact-toggle {
   margin-bottom: 0;
   flex: 1;
   min-width: fit-content;

@@ -211,8 +211,8 @@ const {
             </div>
           </div>
 
-          <div class="cmpact-row">
-            <div class="toggle-section cmpact-toggle">
+          <div class="compact-row">
+            <div class="toggle-section compact-toggle">
               <label class="label is-sr-only">{{
                 t('dashboard.tabsSettings.resultTypeLabel')
               }}</label>
@@ -242,7 +242,7 @@ const {
                 </button>
               </div>
             </div>
-            <div class="toggle-section cmpact-toggle">
+            <div class="toggle-section compact-toggle">
               <label class="label is-sr-only">{{ t('dashboard.tabsSettings.stateLabel') }}</label>
               <div class="segmented-row">
                 <button
