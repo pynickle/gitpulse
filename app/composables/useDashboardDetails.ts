@@ -677,7 +677,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const target = activePRReviewTarget.value;
 
     if (target && currentEntry.value?.type === 'pull-request-review') {
-      currentEntry.value = {
+      replaceWithEntry({
         type: 'pull-request',
         data: {
           owner: target.owner,
@@ -685,7 +685,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
           number: target.number,
           tab: currentRouteTab.value,
         },
-      };
+      });
     }
 
     await pushDashboardQuery({
