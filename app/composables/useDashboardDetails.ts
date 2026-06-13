@@ -554,6 +554,17 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const loadPRData = async (owner: string, repo: string, pullNumber: number) => {
     if (!owner || !repo || !pullNumber) return;
 
+    // Skip if already loaded for the same PR
+    const currentData = prPanel.data.value as PullRequestDetailPayload | null;
+    if (
+      currentData &&
+      currentData.base?.repo?.owner?.login === owner &&
+      currentData.base?.repo?.name === repo &&
+      currentData.number === pullNumber
+    ) {
+      return;
+    }
+
     const repositoryUrl = `https://api.github.com/repos/${owner}/${repo}`;
 
     showOnly(prPanel, [repoPanel]);
