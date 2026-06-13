@@ -7,7 +7,7 @@ declare module '#auth-utils' {
 
   interface UserSession {
     logged_in_at: Date;
-    auth_provider: 'github' | 'pat' | 'personal';
+    auth_provider: 'github' | 'pat';
   }
 
   interface SecureSessionData {
