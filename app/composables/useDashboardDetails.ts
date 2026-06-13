@@ -670,7 +670,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const handlePRReviewClose = async () => {
-    const target = activePRReviewTarget.value ?? activePRTarget.value;
+    const target = activePRReviewTarget.value;
 
     if (target && currentEntry.value?.type === 'pull-request-review') {
       currentEntry.value = {
