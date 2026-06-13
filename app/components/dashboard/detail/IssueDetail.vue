@@ -69,6 +69,7 @@ import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
+import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
@@ -107,8 +108,7 @@ usePageMeta(
   computed(() => currentIssue.value?.title),
   {
     description: computed(() => {
-      const body = currentIssue.value?.body;
-      return body ? body.slice(0, 160).replace(/\n/g, ' ') : '';
+      return formatPageMetaDescription(currentIssue.value?.body);
     }),
   }
 );

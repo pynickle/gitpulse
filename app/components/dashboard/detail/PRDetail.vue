@@ -140,6 +140,7 @@ import type {
 } from '~/composables/usePRReviewers';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
+import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
@@ -199,8 +200,7 @@ usePageMeta(
   computed(() => currentPullRequest.value?.title),
   {
     description: computed(() => {
-      const body = currentPullRequest.value?.body;
-      return body ? body.slice(0, 160).replace(/\n/g, ' ') : '';
+      return formatPageMetaDescription(currentPullRequest.value?.body);
     }),
   }
 );

@@ -13,6 +13,7 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import type { ReleaseAsset, ReleaseDetailPayload } from '#shared/types/releases';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 
 const props = defineProps<{
   release: ReleaseDetailPayload;
@@ -112,7 +113,7 @@ const handleRepoClick = async () => {
 usePageMeta(
   computed(() => releaseTitle.value),
   {
-    description: computed(() => body.value.slice(0, 160).replace(/\n/g, ' ')),
+    description: computed(() => formatPageMetaDescription(body.value)),
   }
 );
 </script>
