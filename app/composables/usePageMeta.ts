@@ -1,5 +1,21 @@
 import type { MaybeRef } from 'vue';
 
+type OpenGraphType =
+  | 'article'
+  | 'website'
+  | 'book'
+  | 'profile'
+  | 'music.song'
+  | 'music.album'
+  | 'music.playlist'
+  | 'music.radio_status'
+  | 'video.movie'
+  | 'video.episode'
+  | 'video.tv_show'
+  | 'video.other';
+
+type TwitterCardType = 'summary' | 'summary_large_image' | 'app' | 'player';
+
 /**
  * SEO meta options for the page.
  * All fields are optional. When omitted, global defaults from nuxt.config.ts apply.
@@ -12,9 +28,9 @@ export interface PageMetaOptions {
   /** Open Graph description (defaults to description if omitted) */
   ogDescription?: MaybeRef<string>;
   /** Open Graph type (default: 'website') */
-  ogType?: string;
+  ogType?: MaybeRef<OpenGraphType>;
   /** Twitter card type (default: 'summary') */
-  twitterCard?: string;
+  twitterCard?: MaybeRef<TwitterCardType>;
 }
 
 /**
@@ -57,8 +73,8 @@ export function usePageMeta(title?: MaybeRef<string | undefined>, meta?: PageMet
     description: () => unref(meta?.description),
     ogTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
     ogDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
-    ogType: meta?.ogType ?? 'website',
-    twitterCard: meta?.twitterCard ?? 'summary',
+    ogType: () => unref(meta?.ogType) ?? 'website',
+    twitterCard: () => unref(meta?.twitterCard) ?? 'summary',
     twitterTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
     twitterDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
   });
