@@ -3,6 +3,10 @@
     "title": "GitPulse",
     "subtitle": "GitHub 工作仪表板"
   },
+  "nuxtSiteConfig": {
+    "name": "GitPulse",
+    "description": "在一个专注的工作台中统一查看 GitHub 通知、议题、拉取请求和仓库。"
+  },
   "colorMode": {
     "label": "颜色模式",
     "system": "跟随系统颜色模式",

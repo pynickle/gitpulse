@@ -3,6 +3,10 @@
     "title": "GitPulse",
     "subtitle": "GitHub Work Dashboard"
   },
+  "nuxtSiteConfig": {
+    "name": "GitPulse",
+    "description": "Track GitHub notifications, issues, pull requests, and repositories from one focused workspace."
+  },
   "colorMode": {
     "label": "Color mode",
     "system": "Use system color mode",

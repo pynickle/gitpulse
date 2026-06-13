@@ -225,6 +225,7 @@ export default defineNuxtConfig({
 
   modules: [
     '@nuxtjs/i18n',
+    'nuxt-site-config',
     '@nuxt/image',
     'nuxt-auth-utils',
     '@comark/nuxt',
@@ -350,14 +351,17 @@ export default defineNuxtConfig({
   },
 
   i18n: {
+    baseUrl: process.env.NUXT_SITE_URL,
     locales: [
       {
         code: 'en',
+        language: 'en-US',
         name: 'English',
         file: 'en.json',
       },
       {
         code: 'zh-cn',
+        language: 'zh-CN',
         name: '中文',
         file: 'zh-cn.json',
       },
