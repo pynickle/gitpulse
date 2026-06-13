@@ -247,7 +247,7 @@ import {
   type DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
-import { buildDashboardTabSwitchQuery } from '../utils/dashboardUrlNavigationUtils';
+import { buildDashboardTabSwitchQuery } from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
