@@ -23,6 +23,7 @@
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/color-mode": "^4.0.1",
+    "@nuxtjs/robots": "^6.1.1",
     "@octokit/core": "^7.0.6",
     "@primer/css": "^22.2.0",
     "@upstash/redis": "^1.38.0",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@nuxtjs/i18n": "^10.4.0",
+    "@types/node": "^25.9.3",
     "oxfmt": "^0.54.0",
     "oxlint": "^1.69.0",
     "oxlint-tsgolint": "^0.23.0",

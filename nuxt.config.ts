@@ -107,6 +107,10 @@ const oauthEnvReady = Boolean(
 const effectiveOAuthEnabled = oauthRequested && oauthEnvReady;
 const personalModeEnabled = normalizeBoolean(process.env.NUXT_AUTH_PERSONAL_MODE_ENABLED, true);
 
+function siteConfig() {
+  return personalModeEnabled ? { indexable: false } : {};
+}
+
 if (!personalModeEnabled && !tokenEnabled && !oauthRequested) {
   throw new Error(
     'GitPulse auth configuration is invalid: both token input and GitHub OAuth are disabled. Enable NUXT_AUTH_PAT_ENABLED or NUXT_AUTH_GITHUB_OAUTH_ENABLED before starting the app.'
@@ -223,9 +227,12 @@ export default defineNuxtConfig({
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },
 
+  site: siteConfig(),
+
   modules: [
     '@nuxtjs/i18n',
     'nuxt-site-config',
+    '@nuxtjs/robots',
     '@nuxt/image',
     'nuxt-auth-utils',
     '@comark/nuxt',
@@ -348,6 +355,10 @@ export default defineNuxtConfig({
     storage: 'localStorage',
     storageKey: 'gitpulse-color-mode',
     disableTransition: true,
+  },
+
+  robots: {
+    disallow: ['/dashboard', '/dashboard/**', '/api/**', '/auth/**'],
   },
 
   i18n: {
