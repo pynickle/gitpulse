@@ -339,53 +339,28 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     discussionTarget: DetailTarget | null,
     releaseTarget: ReleaseDetailTarget | null
   ) => {
-    if (issueTarget && hasConflictingDetailQuery(['issue'])) {
+    // Helper to canonicalize a detail target if it has conflicts
+    const canonicalizeIfConflict = async (
+      target: DetailTarget | null,
+      queryKeys: string[],
+      queryKey: string
+    ): Promise<boolean> => {
+      if (!target || !hasConflictingDetailQuery(queryKeys)) {
+        return false;
+      }
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
-          issue: serializeDashboardDetailTarget(
-            issueTarget.owner,
-            issueTarget.repo,
-            issueTarget.number
-          ),
+          [queryKey]: serializeDashboardDetailTarget(target.owner, target.repo, target.number),
         })
       );
       return true;
-    }
+    };
 
-    if (prReviewTarget && hasConflictingDetailQuery(['prReview'])) {
-      await replaceDashboardQuery(
-        buildDetailDashboardQuery({
-          prReview: serializeDashboardDetailTarget(
-            prReviewTarget.owner,
-            prReviewTarget.repo,
-            prReviewTarget.number
-          ),
-        })
-      );
-      return true;
-    }
-
-    if (prTarget && hasConflictingDetailQuery(['pr'])) {
-      await replaceDashboardQuery(
-        buildDetailDashboardQuery({
-          pr: serializeDashboardDetailTarget(prTarget.owner, prTarget.repo, prTarget.number),
-        })
-      );
-      return true;
-    }
-
-    if (discussionTarget && hasConflictingDetailQuery(['discussion'])) {
-      await replaceDashboardQuery(
-        buildDetailDashboardQuery({
-          discussion: serializeDashboardDetailTarget(
-            discussionTarget.owner,
-            discussionTarget.repo,
-            discussionTarget.number
-          ),
-        })
-      );
-      return true;
-    }
+    // Check each detail type in priority order
+    if (await canonicalizeIfConflict(issueTarget, ['issue'], 'issue')) return true;
+    if (await canonicalizeIfConflict(prReviewTarget, ['prReview'], 'prReview')) return true;
+    if (await canonicalizeIfConflict(prTarget, ['pr'], 'pr')) return true;
+    if (await canonicalizeIfConflict(discussionTarget, ['discussion'], 'discussion')) return true;
 
     if (releaseTarget && hasConflictingDetailQuery(['release', 'releaseTag'])) {
       await replaceDashboardQuery(
