@@ -22,6 +22,7 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import type { RepoContentItem } from '~/composables/useRepoFiles';
+
 import {
   buildDashboardQueryFromNavigationEntry,
   type DashboardNavigationEntry,

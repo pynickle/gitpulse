@@ -28,6 +28,7 @@ logs
 .codex/
 .claude/
 .mimocode/
+.opencode/
 
 .codegraph/
 

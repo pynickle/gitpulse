@@ -5,10 +5,7 @@ import {
   buildDashboardTabSwitchQuery,
   parseDashboardUrlTarget,
 } from '../app/utils/dashboardUrlNavigationUtils';
-import {
-  buildRepoRawFileUrl,
-  parseMarkdownRepoResource,
-} from '../app/utils/markdownRepoPathUtils';
+import { buildRepoRawFileUrl, parseMarkdownRepoResource } from '../app/utils/markdownRepoPathUtils';
 import parseGitHubMarkdownTarget from '../app/utils/parseGitHubMarkdownTarget';
 import parseGitHubNotificationSubjectTarget, {
   toNotificationSubjectStateTarget,
