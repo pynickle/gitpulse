@@ -173,16 +173,18 @@ export function useUserSettings() {
         return null;
       } finally {
         loading.value = false;
-        if (import.meta.client && clientLoadPromise === loadPromise) {
-          clientLoadPromise = null;
-          clientLoadLogin = null;
-        }
       }
     })();
 
     if (import.meta.client) {
       clientLoadPromise = loadPromise;
       clientLoadLogin = targetLogin;
+      void loadPromise.finally(() => {
+        if (clientLoadPromise === loadPromise) {
+          clientLoadPromise = null;
+          clientLoadLogin = null;
+        }
+      });
     }
 
     return loadPromise;
