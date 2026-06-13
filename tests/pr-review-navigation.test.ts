@@ -46,13 +46,12 @@ describe('PR review workspace submit navigation', () => {
         },
       },
       {
-        type: 'pull-request',
+        type: 'pull-request-review',
         data: {
           owner: 'acme',
           repo: 'widget',
           number: 42,
           tab: 'pulls',
-          view: 'diff',
         },
       },
       {
@@ -74,7 +73,7 @@ describe('PR review workspace submit navigation', () => {
     }
   });
 
-  test('collapses the diff entry while keeping the dashboard to PR path', () => {
+  test('collapses the review entry while keeping the dashboard to PR path', () => {
     const state = new Map<string, Ref<unknown>>();
     const originalUseState = globalThis.useState;
 
@@ -90,7 +89,7 @@ describe('PR review workspace submit navigation', () => {
       const navigation = useNavigationHistory();
 
       navigation.navigateToPullRequest('acme', 'widget', 42, 'pulls');
-      navigation.navigateToPullRequest('acme', 'widget', 42, 'pulls', 'diff');
+      navigation.navigateToPullRequestReview('acme', 'widget', 42, 'pulls');
 
       expect(
         shouldCloseReviewWorkspaceAfterSubmit({

@@ -91,14 +91,12 @@ describe('buildGitPulseUrl', () => {
 
     expect(gitPulseUrl.pathname).toBe('/dashboard');
     expect(parseDashboardUrlTarget(gitPulseUrl.searchParams.get('url'))).toEqual({
-      type: 'pull-request',
+      type: 'pull-request-review',
       owner: 'owner',
       repo: 'repo',
       number: 7,
-      view: 'diff',
       query: {
-        pr: 'owner/repo/7',
-        prView: 'diff',
+        prReview: 'owner/repo/7',
       },
       hash: '#diff-abc',
     });

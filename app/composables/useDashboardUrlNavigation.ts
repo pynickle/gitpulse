@@ -12,6 +12,7 @@ export function useDashboardUrlNavigation() {
     navigateToFile,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToPullRequestReview,
     navigateToRelease,
     navigateToRepo,
   } = useNavigationHistory();
@@ -43,7 +44,12 @@ export function useDashboardUrlNavigation() {
     }
 
     if (target.type === 'pull-request') {
-      navigateToPullRequest(target.owner, target.repo, target.number, undefined, target.view);
+      navigateToPullRequest(target.owner, target.repo, target.number);
+      return;
+    }
+
+    if (target.type === 'pull-request-review') {
+      navigateToPullRequestReview(target.owner, target.repo, target.number);
       return;
     }
 

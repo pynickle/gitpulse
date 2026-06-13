@@ -19,7 +19,6 @@ export default function shouldCloseReviewWorkspaceAfterSubmit({
     previousEntry?.type === 'pull-request' &&
     data?.owner === owner &&
     data.repo === repo &&
-    data.number === pullNumber &&
-    data.view === undefined
+    data.number === pullNumber
   );
 }

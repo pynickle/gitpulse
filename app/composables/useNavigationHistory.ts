@@ -1,14 +1,12 @@
 import { computed } from 'vue';
 
-import type {
-  PullRequestDashboardView,
-  ReleaseDashboardRef,
-} from '~/utils/dashboard-url-navigation-utils';
+import type { ReleaseDashboardRef } from '~/utils/dashboard-url-navigation-utils';
 
 export type PageType =
   | 'dashboard'
   | 'issue'
   | 'pull-request'
+  | 'pull-request-review'
   | 'discussion'
   | 'release'
   | 'repository'
@@ -24,7 +22,6 @@ export interface NavigationEntry {
     tab?: string;
     path?: string;
     branch?: string;
-    view?: PullRequestDashboardView;
     releaseRef?: ReleaseDashboardRef;
   };
 }
@@ -43,7 +40,6 @@ const isSameEntry = (left: NavigationEntry | null, right: NavigationEntry) => {
     left.data?.tab === right.data?.tab &&
     left.data?.path === right.data?.path &&
     left.data?.branch === right.data?.branch &&
-    left.data?.view === right.data?.view &&
     left.data?.releaseRef?.kind === right.data?.releaseRef?.kind &&
     getReleaseRefValue(left.data?.releaseRef) === getReleaseRefValue(right.data?.releaseRef)
   );
@@ -107,16 +103,23 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
-  const navigateToPullRequest = (
+  const navigateToPullRequest = (owner: string, repo: string, number: number, tab?: string) => {
+    const entry: NavigationEntry = {
+      type: 'pull-request',
+      data: { owner, repo, number, tab },
+    };
+    pushEntry(entry);
+  };
+
+  const navigateToPullRequestReview = (
     owner: string,
     repo: string,
     number: number,
-    tab?: string,
-    view?: PullRequestDashboardView
+    tab?: string
   ) => {
     const entry: NavigationEntry = {
-      type: 'pull-request',
-      data: { owner, repo, number, tab, view },
+      type: 'pull-request-review',
+      data: { owner, repo, number, tab },
     };
     pushEntry(entry);
   };
@@ -202,7 +205,10 @@ export function useNavigationHistory() {
 
   const cameFromIssueOrPR = computed(() => {
     return navigationHistory.value.some(
-      (entry) => entry.type === 'issue' || entry.type === 'pull-request'
+      (entry) =>
+        entry.type === 'issue' ||
+        entry.type === 'pull-request' ||
+        entry.type === 'pull-request-review'
     );
   });
 
@@ -233,6 +239,7 @@ export function useNavigationHistory() {
     navigateToDashboard,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToPullRequestReview,
     navigateToDiscussion,
     navigateToRelease,
     navigateToRepo,

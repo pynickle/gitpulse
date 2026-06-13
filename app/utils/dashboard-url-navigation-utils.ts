@@ -10,14 +10,14 @@ import {
 import parseGitHubMarkdownTarget from './parseGitHubMarkdownTarget';
 import parseGitHubRepoPath from './parseGitHubRepoPath';
 
-export type PullRequestDashboardView = 'diff';
+type PullRequestDashboardView = 'diff';
 
 const PULL_REQUEST_DIFF_VIEW_SEGMENTS = new Set(['changes', 'files']);
 
 export const DASHBOARD_DETAIL_QUERY_KEYS = [
   'issue',
   'pr',
-  'prView',
+  'prReview',
   'discussion',
   'release',
   'releaseTag',
@@ -44,6 +44,7 @@ export interface DashboardNavigationEntry {
     | 'dashboard'
     | 'issue'
     | 'pull-request'
+    | 'pull-request-review'
     | 'discussion'
     | 'release'
     | 'repository'
@@ -56,7 +57,6 @@ export interface DashboardNavigationEntry {
     tab?: string;
     path?: string;
     branch?: string;
-    view?: PullRequestDashboardView;
     releaseRef?: ReleaseDashboardRef;
   };
 }
@@ -75,7 +75,7 @@ export function clearDashboardDetailQuery(query: LocationQueryRaw): LocationQuer
     ...query,
     issue: undefined,
     pr: undefined,
-    prView: undefined,
+    prReview: undefined,
     discussion: undefined,
     release: undefined,
     releaseTag: undefined,
@@ -159,7 +159,13 @@ export function buildDashboardQueryFromNavigationEntry(
     return {
       tab: data.tab ?? options.defaultTab,
       pr: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
-      prView: data.view,
+    };
+  }
+
+  if (entry.type === 'pull-request-review' && data?.owner && data.repo && data.number) {
+    return {
+      tab: data.tab ?? options.defaultTab,
+      prReview: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
     };
   }
 
@@ -215,7 +221,14 @@ export type DashboardUrlTarget =
       owner: string;
       repo: string;
       number: number;
-      view?: PullRequestDashboardView;
+      query: LocationQueryRaw;
+      hash?: string;
+    }
+  | {
+      type: 'pull-request-review';
+      owner: string;
+      repo: string;
+      number: number;
       query: LocationQueryRaw;
       hash?: string;
     }
@@ -283,9 +296,12 @@ function parsePositiveNumber(value: string | undefined) {
 }
 
 function createPullRequestTarget(target: PullRequestUrlTarget): DashboardUrlTarget {
+  if (target.view === 'diff') {
+    return createPullRequestReviewTarget(target);
+  }
+
   const query: LocationQueryRaw = {
     pr: `${target.owner}/${target.repo}/${target.number}`,
-    prView: target.view,
   };
 
   return {
@@ -293,7 +309,21 @@ function createPullRequestTarget(target: PullRequestUrlTarget): DashboardUrlTarg
     owner: target.owner,
     repo: target.repo,
     number: target.number,
-    view: target.view,
+    query,
+    hash: target.hash,
+  };
+}
+
+function createPullRequestReviewTarget(target: PullRequestUrlTarget): DashboardUrlTarget {
+  const query: LocationQueryRaw = {
+    prReview: `${target.owner}/${target.repo}/${target.number}`,
+  };
+
+  return {
+    type: 'pull-request-review',
+    owner: target.owner,
+    repo: target.repo,
+    number: target.number,
     query,
     hash: target.hash,
   };

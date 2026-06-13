@@ -192,14 +192,12 @@ describe('markdown repository resources', () => {
 describe('parseDashboardUrlTarget', () => {
   test('parses pull request files URLs as PR diff targets', () => {
     expect(parseDashboardUrlTarget('https://github.com/owner/repo/pull/7/files#diff-abc')).toEqual({
-      type: 'pull-request',
+      type: 'pull-request-review',
       owner: 'owner',
       repo: 'repo',
       number: 7,
-      view: 'diff',
       query: {
-        pr: 'owner/repo/7',
-        prView: 'diff',
+        prReview: 'owner/repo/7',
       },
       hash: '#diff-abc',
     });
@@ -209,14 +207,12 @@ describe('parseDashboardUrlTarget', () => {
     expect(
       parseDashboardUrlTarget('https://github.com/PCL-Community/PCL-CE/pull/3056/changes')
     ).toEqual({
-      type: 'pull-request',
+      type: 'pull-request-review',
       owner: 'PCL-Community',
       repo: 'PCL-CE',
       number: 3056,
-      view: 'diff',
       query: {
-        pr: 'PCL-Community/PCL-CE/3056',
-        prView: 'diff',
+        prReview: 'PCL-Community/PCL-CE/3056',
       },
       hash: undefined,
     });
@@ -314,6 +310,23 @@ describe('parseDashboardUrlTarget', () => {
 });
 
 describe('buildDashboardQueryFromNavigationEntry', () => {
+  test('serializes pull request review navigation entries', () => {
+    expect(
+      buildDashboardQueryFromNavigationEntry({
+        type: 'pull-request-review',
+        data: {
+          owner: 'owner',
+          repo: 'repo',
+          number: 7,
+          tab: 'pulls',
+        },
+      })
+    ).toEqual({
+      tab: 'pulls',
+      prReview: 'owner/repo/7',
+    });
+  });
+
   test('serializes release navigation entries', () => {
     expect(
       buildDashboardQueryFromNavigationEntry({
@@ -392,7 +405,7 @@ describe('buildDashboardTabSwitchQuery', () => {
       f_repo: 'owner/repo',
       issue: undefined,
       pr: undefined,
-      prView: undefined,
+      prReview: undefined,
       discussion: undefined,
       release: undefined,
       releaseTag: undefined,

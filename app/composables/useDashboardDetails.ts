@@ -12,7 +12,6 @@ import {
   serializeDashboardRepoTarget,
   serializeReleaseQuery,
   type DashboardDetailQueryKey,
-  type PullRequestDashboardView,
   type ReleaseDashboardRef,
 } from '~/utils/dashboard-url-navigation-utils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
@@ -43,10 +42,6 @@ interface ReleaseDetailTarget {
   repo: string;
   releaseRef: ReleaseDashboardRef;
 }
-
-const parsePullRequestView = (value: unknown): PullRequestDashboardView | undefined => {
-  return getQueryParamValue(value) === 'diff' ? 'diff' : undefined;
-};
 
 const getReleaseRefValue = (releaseRef: ReleaseDashboardRef | undefined) => {
   if (!releaseRef) return undefined;
@@ -112,6 +107,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     navigateToDiscussion,
     navigateToIssue,
     navigateToPullRequest,
+    navigateToPullRequestReview,
     navigateToRelease,
     replaceWithEntry,
     currentEntry,
@@ -313,6 +309,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const activeIssueTarget = computed(() => parseDetailTarget(route.query.issue));
   const activePRTarget = computed(() => parseDetailTarget(route.query.pr));
+  const activePRReviewTarget = computed(() => parseDetailTarget(route.query.prReview));
   const activeDiscussionTarget = computed(() => parseDetailTarget(route.query.discussion));
   const activeReleaseTarget = computed(() =>
     parseReleaseTarget(route.query.release, route.query.releaseTag)
@@ -330,8 +327,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     };
   });
   const activeRepoBranch = computed(() => getQueryParamValue(route.query.branch) || undefined);
-  const activePRView = computed(() => parsePullRequestView(route.query.prView));
-  const isPRReviewRoute = computed(() => activePRView.value === 'diff');
+  const isPRReviewRoute = computed(() => Boolean(activePRReviewTarget.value));
   const isFileBrowsingRoute = computed(() =>
     Boolean(activeRepoTarget.value && Object.hasOwn(route.query, 'path'))
   );
@@ -339,6 +335,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const canonicalizeConflictingDetailRoute = async (
     issueTarget: DetailTarget | null,
     prTarget: DetailTarget | null,
+    prReviewTarget: DetailTarget | null,
     discussionTarget: DetailTarget | null,
     releaseTarget: ReleaseDetailTarget | null
   ) => {
@@ -355,11 +352,23 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       return true;
     }
 
-    if (prTarget && hasConflictingDetailQuery(['pr', 'prView'])) {
+    if (prReviewTarget && hasConflictingDetailQuery(['prReview'])) {
+      await replaceDashboardQuery(
+        buildDetailDashboardQuery({
+          prReview: serializeDashboardDetailTarget(
+            prReviewTarget.owner,
+            prReviewTarget.repo,
+            prReviewTarget.number
+          ),
+        })
+      );
+      return true;
+    }
+
+    if (prTarget && hasConflictingDetailQuery(['pr'])) {
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
           pr: serializeDashboardDetailTarget(prTarget.owner, prTarget.repo, prTarget.number),
-          prView: activePRView.value,
         })
       );
       return true;
@@ -476,7 +485,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   });
 
   const prDetailKey = computed(() => {
-    const target = activePRTarget.value;
+    const target = activePRReviewTarget.value ?? activePRTarget.value;
     return target ? `pr-${target.owner}-${target.repo}-${target.number}` : 'pr-empty';
   });
 
@@ -651,20 +660,19 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const target = activePRTarget.value;
     if (!target) return;
 
-    navigateToPullRequest(target.owner, target.repo, target.number, currentRouteTab.value, 'diff');
+    navigateToPullRequestReview(target.owner, target.repo, target.number, currentRouteTab.value);
 
     await pushDashboardQuery(
       buildDetailDashboardQuery({
-        pr: serializeDashboardDetailTarget(target.owner, target.repo, target.number),
-        prView: 'diff',
+        prReview: serializeDashboardDetailTarget(target.owner, target.repo, target.number),
       })
     );
   };
 
   const handlePRReviewClose = async () => {
-    const target = activePRTarget.value;
+    const target = activePRReviewTarget.value ?? activePRTarget.value;
 
-    if (target && currentEntry.value?.type === 'pull-request') {
+    if (target && currentEntry.value?.type === 'pull-request-review') {
       currentEntry.value = {
         type: 'pull-request',
         data: {
@@ -678,7 +686,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
     await pushDashboardQuery({
       ...route.query,
-      prView: undefined,
+      pr: target
+        ? serializeDashboardDetailTarget(target.owner, target.repo, target.number)
+        : undefined,
+      prReview: undefined,
       url: undefined,
     });
   };
@@ -727,13 +738,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     () => [
       route.query.issue,
       route.query.pr,
+      route.query.prReview,
       route.query.discussion,
       route.query.release,
       route.query.releaseTag,
       route.query.repo,
       route.query.path,
       route.query.branch,
-      route.query.prView,
       sessionReady.value,
       loggedIn.value,
     ],
@@ -753,6 +764,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
       const issueTarget = activeIssueTarget.value;
       const prTarget = activePRTarget.value;
+      const prReviewTarget = activePRReviewTarget.value;
       const discussionTarget = activeDiscussionTarget.value;
       const releaseTarget = activeReleaseTarget.value;
 
@@ -760,6 +772,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         await canonicalizeConflictingDetailRoute(
           issueTarget,
           prTarget,
+          prReviewTarget,
           discussionTarget,
           releaseTarget
         )
@@ -794,15 +807,35 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         return;
       }
 
+      if (prReviewTarget) {
+        const currentData = currentEntry.value?.data;
+        if (
+          currentEntry.value?.type !== 'pull-request-review' ||
+          currentData?.owner !== prReviewTarget.owner ||
+          currentData?.repo !== prReviewTarget.repo ||
+          currentData?.number !== prReviewTarget.number
+        ) {
+          replaceWithEntry({
+            type: 'pull-request-review',
+            data: {
+              owner: prReviewTarget.owner,
+              repo: prReviewTarget.repo,
+              number: prReviewTarget.number,
+              tab: currentRouteTab.value,
+            },
+          });
+        }
+        await loadPRData(prReviewTarget.owner, prReviewTarget.repo, prReviewTarget.number);
+        return;
+      }
+
       if (prTarget) {
         const currentData = currentEntry.value?.data;
-        const prView = activePRView.value;
         if (
           currentEntry.value?.type !== 'pull-request' ||
           currentData?.owner !== prTarget.owner ||
           currentData?.repo !== prTarget.repo ||
-          currentData?.number !== prTarget.number ||
-          currentData?.view !== prView
+          currentData?.number !== prTarget.number
         ) {
           replaceWithEntry({
             type: 'pull-request',
@@ -811,7 +844,6 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
               repo: prTarget.repo,
               number: prTarget.number,
               tab: currentRouteTab.value,
-              view: prView,
             },
           });
         }
