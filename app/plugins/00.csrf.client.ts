@@ -1,32 +1,10 @@
-const CSRF_COOKIE_NAME = 'gitpulse_csrf';
-const CSRF_HEADER_NAME = 'X-CSRF-Token';
-
-const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-
-function normalizeMethod(method: unknown): string {
-  return typeof method === 'string' ? method.toUpperCase() : 'GET';
-}
-
-function isSameOriginApiUrl(request: unknown): boolean {
-  if (typeof request !== 'string') {
-    return false;
-  }
-
-  if (request.startsWith('/api/')) {
-    return true;
-  }
-
-  try {
-    const parsed = new URL(request, window.location.origin);
-
-    return (
-      parsed.origin === window.location.origin &&
-      (parsed.pathname.startsWith('/api/') || parsed.pathname.startsWith('/auth/'))
-    );
-  } catch {
-    return false;
-  }
-}
+import {
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER_NAME,
+  SAFE_METHODS,
+  normalizeMethod,
+  isSameOriginApiUrl,
+} from '~/utils/csrf';
 
 export default defineNuxtPlugin(() => {
   const csrfCookie = useCookie<string | null | undefined>(CSRF_COOKIE_NAME, {

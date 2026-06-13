@@ -1,34 +1,43 @@
-const CSRF_COOKIE_NAME = 'gitpulse_csrf';
-const CSRF_HEADER_NAME = 'X-CSRF-Token';
-
-const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-
-const normalizeMethod = (method: unknown) => {
-  return typeof method === 'string' ? method.toUpperCase() : 'GET';
-};
+import type { $Fetch, FetchOptions, FetchRequest, ResponseType } from 'ofetch';
+import {
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER_NAME,
+  SAFE_METHODS,
+  normalizeMethod,
+  isSameOriginApiUrl,
+} from '~/utils/csrf';
 
 export function useGitPulseApiFetch() {
-  const requestFetch = useRequestFetch();
+  const requestFetch = useRequestFetch() as $Fetch;
   const csrfCookie = useCookie<string | null | undefined>(CSRF_COOKIE_NAME, {
     readonly: true,
   });
 
-  return $fetch.create({
-    async onRequest({ options }) {
-      const method = normalizeMethod(options.method);
-      if (SAFE_METHODS.has(method)) {
-        return;
-      }
+  return <T = unknown, R extends ResponseType = 'json'>(
+    request: FetchRequest,
+    options: FetchOptions<R> = {}
+  ) => {
+    const method = normalizeMethod(options.method);
+    if (SAFE_METHODS.has(method)) {
+      return requestFetch<T, R>(request, options);
+    }
 
-      const token = csrfCookie.value;
-      if (!token) {
-        return;
-      }
+    if (!isSameOriginApiUrl(request)) {
+      return requestFetch<T, R>(request, options);
+    }
 
-      const headers = new Headers(options.headers as HeadersInit | undefined);
-      headers.set(CSRF_HEADER_NAME, token);
-      options.headers = headers;
-    },
-    fetch: requestFetch,
-  });
+    const token = csrfCookie.value;
+    if (!token) {
+      console.warn(`[csrf] missing client cookie for ${method} ${String(request)}`);
+      return requestFetch<T, R>(request, options);
+    }
+
+    const headers = new Headers(options.headers as HeadersInit | undefined);
+    headers.set(CSRF_HEADER_NAME, token);
+
+    return requestFetch<T, R>(request, {
+      ...options,
+      headers,
+    });
+  };
 }
