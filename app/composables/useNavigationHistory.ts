@@ -87,14 +87,6 @@ export function useNavigationHistory() {
     currentEntry.value = entry;
   };
 
-  const navigateToDashboard = (tab?: string) => {
-    const entry: NavigationEntry = {
-      type: 'dashboard',
-      data: { tab },
-    };
-    pushEntry(entry);
-  };
-
   const navigateToIssue = (owner: string, repo: string, number: number, tab?: string) => {
     const entry: NavigationEntry = {
       type: 'issue',
@@ -173,14 +165,6 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
-  const navigateToNotification = (tab?: string) => {
-    const entry: NavigationEntry = {
-      type: 'notification',
-      data: { tab },
-    };
-    pushEntry(entry);
-  };
-
   const goBack = () => {
     if (navigationHistory.value.length === 0) {
       currentEntry.value = {
@@ -203,40 +187,13 @@ export function useNavigationHistory() {
     return homeEntry;
   };
 
-  const cameFromIssueOrPR = computed(() => {
-    return navigationHistory.value.some(
-      (entry) =>
-        entry.type === 'issue' ||
-        entry.type === 'pull-request' ||
-        entry.type === 'pull-request-review'
-    );
-  });
-
-  const cameFromRepo = computed(() => {
-    return navigationHistory.value.some((entry) => entry.type === 'repository');
-  });
-
-  const clearHistory = () => {
-    navigationHistory.value = [];
-  };
-
-  const reset = () => {
-    navigationHistory.value = [];
-    currentEntry.value = null;
-  };
-
   return {
     navigationHistory,
     currentEntry,
     previousEntry,
-    hasHistory,
     canGoBack,
     shouldShowHomeButton,
-    cameFromIssueOrPR,
-    cameFromRepo,
-    pushEntry,
     replaceWithEntry,
-    navigateToDashboard,
     navigateToIssue,
     navigateToPullRequest,
     navigateToPullRequestReview,
@@ -244,10 +201,7 @@ export function useNavigationHistory() {
     navigateToRelease,
     navigateToRepo,
     navigateToFile,
-    navigateToNotification,
     goBack,
     goToHome,
-    clearHistory,
-    reset,
   };
 }
