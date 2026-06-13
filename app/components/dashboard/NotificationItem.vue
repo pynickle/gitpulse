@@ -40,7 +40,7 @@
           <div class="is-flex is-align-items-flex-start">
             <div class="dashboard-list-card__text-stack">
               <p class="title is-6 mb-1 dashboard-list-card__subject">
-                {{ currentNotification.subject.title }}
+                {{ subjectTitle }}
               </p>
 
               <div v-if="subjectLabels.length" class="notification-card__labels">
@@ -59,10 +59,10 @@
 
               <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
                 <span v-if="showSubjectNumber" class="notification-card__number">
-                  #{{ currentNotification.subject.number }}
+                  #{{ subjectNumber }}
                 </span>
                 <span v-if="showSubjectNumber" class="notification-card__meta-separator"></span>
-                {{ currentNotification.repository.full_name }}
+                {{ repositoryName }}
                 <span class="dashboard-list-card__separator">&middot;</span>
                 {{
                   formatDurationFromNow(currentNotification.updated_at, localeCode, relativeTimeNow)
@@ -135,53 +135,56 @@ const currentNotification = computed(() => ({
   unread: isLocallyRead.value ? false : props.notification.unread,
 }));
 
+const subject = computed(() => currentNotification.value.subject);
+const repository = computed(() => currentNotification.value.repository);
+const subjectTitle = computed(() => subject.value?.title ?? '');
+const subjectNumber = computed(() => subject.value?.number ?? '');
+const repositoryName = computed(() => repository.value?.full_name ?? '');
+
 const showSubjectNumber = computed(() => {
-  return shouldShowNotificationSubjectNumber(currentNotification.value.subject);
+  return shouldShowNotificationSubjectNumber(subject.value);
 });
 
 const avatarSrc = computed(() => {
   // Release类型直接使用repository.owner的头像，无需等待GraphQL加载
-  if (currentNotification.value.subject?.type === 'Release') {
-    return currentNotification.value.repository?.owner?.avatar_url;
+  if (subject.value?.type === 'Release') {
+    return repository.value?.owner?.avatar_url;
   }
   // 其他类型：只在loaded状态且有author信息时才显示
-  if (
-    currentNotification.value.subject?.stateStatus === 'loaded' &&
-    currentNotification.value.subject.authorAvatarUrl
-  ) {
-    return currentNotification.value.subject.authorAvatarUrl;
+  if (subject.value?.stateStatus === 'loaded' && subject.value.authorAvatarUrl) {
+    return subject.value.authorAvatarUrl;
   }
   return undefined; // 未加载完成返回undefined，触发骨架屏
 });
 
 const avatarAlt = computed(() => {
-  if (currentNotification.value.subject?.type === 'Release') {
-    return currentNotification.value.repository?.owner?.login ?? '';
+  if (subject.value?.type === 'Release') {
+    return repository.value?.owner?.login ?? '';
   }
-  return currentNotification.value.subject?.authorLogin ?? '';
+  return subject.value?.authorLogin ?? '';
 });
 
 const isSubjectStatePending = computed(() => {
-  return currentNotification.value.subject?.stateStatus === 'pending';
+  return subject.value?.stateStatus === 'pending';
 });
 
 const isSubjectStateError = computed(() => {
-  return currentNotification.value.subject?.stateStatus === 'error';
+  return subject.value?.stateStatus === 'error';
 });
 
 const isPullRequestSubject = computed(() => {
-  return currentNotification.value.subject?.type === 'PullRequest';
+  return subject.value?.type === 'PullRequest';
 });
 
 const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({
     isPullRequest: isPullRequestSubject.value,
-    state: currentNotification.value.subject?.state,
-    subjectType: currentNotification.value.subject?.type,
+    state: subject.value?.state,
+    subjectType: subject.value?.type,
   });
 });
 
-const subjectLabels = computed(() => currentNotification.value.subject?.labels ?? []);
+const subjectLabels = computed(() => subject.value?.labels ?? []);
 
 const subjectStateTitle = computed(() => {
   if (isSubjectStatePending.value) {
@@ -200,7 +203,7 @@ const markAsRead = async () => {
 
   markingAsRead.value = true;
 
-  const threadId = currentNotification.value.id;
+  const threadId = String(currentNotification.value.id);
 
   try {
     const { error } = await useFetch(`/api/notifications/${threadId}`, {
@@ -237,7 +240,7 @@ const reasonIconMap: Record<string, typeof BellIcon> = {
 };
 
 const reasonIcon = computed(() => {
-  return reasonIconMap[currentNotification.value.reason ?? ''];
+  return reasonIconMap[String(currentNotification.value.reason ?? '')];
 });
 </script>
 
