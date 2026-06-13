@@ -102,8 +102,7 @@ export function usePRMergeStatus() {
       mergeStatus.value = status;
       return status;
     } catch (fetchError: unknown) {
-      const message = getFetchErrorMessage(fetchError, 'Failed to fetch pull request merge status');
-      error.value = message;
+      error.value = getFetchErrorMessage(fetchError, 'Failed to fetch pull request merge status');
       mergeStatus.value = null;
       return null;
     } finally {

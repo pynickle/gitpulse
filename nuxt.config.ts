@@ -129,7 +129,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      titleTemplate: '%s - GitPulse',
+      // Note: titleTemplate function is set in app.vue to prevent "GitPulse - GitPulse" on homepage
       title: 'GitPulse',
       meta: [
         {
@@ -144,7 +144,7 @@ export default defineNuxtConfig({
             'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
         },
         { property: 'og:type', content: 'website' },
-        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: 'GitPulse' },
         {
           name: 'twitter:description',
@@ -227,12 +227,35 @@ export default defineNuxtConfig({
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },
 
-  site: siteConfig(),
+  site: {
+    ...siteConfig(),
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://gitpulse.app',
+    name: 'GitPulse',
+    description:
+      'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
+    defaultLocale: 'en',
+  },
+
+  // Unified SEO meta configuration (powered by nuxt-seo-utils)
+  seo: {
+    meta: {
+      description:
+        'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
+      ogSiteName: 'GitPulse',
+      ogType: 'website',
+      twitterCard: 'summary_large_image',
+      themeColor: [
+        { content: '#1f2937', media: '(prefers-color-scheme: dark)' },
+        { content: '#ffffff', media: '(prefers-color-scheme: light)' },
+      ],
+    },
+  },
 
   modules: [
     '@nuxtjs/i18n',
     'nuxt-site-config',
     '@nuxtjs/robots',
+    'nuxt-seo-utils',
     '@nuxt/image',
     'nuxt-auth-utils',
     '@comark/nuxt',
