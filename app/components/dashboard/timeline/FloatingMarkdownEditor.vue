@@ -140,7 +140,6 @@ import { useI18n } from 'vue-i18n';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 interface CreatedCommentResponse {
   id?: number | string;

@@ -103,7 +103,7 @@ const props = defineProps<{
   htmlUrl: string | undefined;
   createdAt: string | undefined;
   updatedAt: string | undefined;
-  assignee: IssueAssignee | undefined;
+  assignee: IssueAssignee | null | undefined;
 }>();
 
 const emit = defineEmits<{
@@ -175,7 +175,7 @@ const confirmLockIssue = async (lockReason: string) => {
     });
 
     // Add lock event to timeline manually
-    const lockEvent = {
+    const lockEvent: IssueTimelineItem = {
       kind: 'event',
       eventType: 'locked',
       id: `lock-${Date.now()}`,
@@ -217,7 +217,7 @@ const unlockIssue = async () => {
     });
 
     // Add unlock event to timeline manually
-    const unlockEvent = {
+    const unlockEvent: IssueTimelineItem = {
       kind: 'event',
       eventType: 'unlocked',
       id: `unlock-${Date.now()}`,

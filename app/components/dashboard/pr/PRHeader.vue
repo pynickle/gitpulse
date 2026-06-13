@@ -119,11 +119,11 @@ interface PullRequestHeaderPullRequest {
   head?: { ref?: string };
   base?: { ref?: string };
   user?: {
-    avatar_url?: string;
+    avatar_url?: string | null;
     login?: string;
   };
   created_at?: string;
-  body?: string;
+  body?: string | null;
 }
 
 const props = defineProps<{

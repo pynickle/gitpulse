@@ -95,11 +95,11 @@ interface IssueHeaderIssue {
   state?: string;
   updated_at?: string;
   user?: {
-    avatar_url?: string;
+    avatar_url?: string | null;
     login?: string;
-  };
+  } | null;
   created_at?: string;
-  body?: string;
+  body?: string | null;
 }
 
 const props = defineProps<{

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CheckCircle2Icon, MessageSquareIcon, MessageSquareReplyIcon } from 'lucide-vue-next';
-import { computed, shallowRef, watch } from 'vue';
+import { computed, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionComment } from '#shared/types/discussions';
