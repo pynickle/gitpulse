@@ -4,11 +4,11 @@ import {
   buildDashboardQueryFromNavigationEntry,
   buildDashboardTabSwitchQuery,
   parseDashboardUrlTarget,
-} from '../app/utils/dashboard-url-navigation-utils';
+} from '../app/utils/dashboardUrlNavigationUtils';
 import {
   buildRepoRawFileUrl,
   parseMarkdownRepoResource,
-} from '../app/utils/markdown-repo-path-utils';
+} from '../app/utils/markdownRepoPathUtils';
 import parseGitHubMarkdownTarget from '../app/utils/parseGitHubMarkdownTarget';
 import parseGitHubNotificationSubjectTarget, {
   toNotificationSubjectStateTarget,

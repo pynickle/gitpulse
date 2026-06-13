@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue';
 
-import { markdownRepoContextKey } from '~/utils/markdown-repo-path-utils';
+import { markdownRepoContextKey } from '../../utils/markdownRepoPathUtils';
 
 const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 

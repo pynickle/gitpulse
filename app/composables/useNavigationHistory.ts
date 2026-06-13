@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 
-import type { ReleaseDashboardRef } from '~/utils/dashboard-url-navigation-utils';
+import type { ReleaseDashboardRef } from '~/utils/dashboardUrlNavigationUtils';
 
 export type PageType =
   | 'dashboard'

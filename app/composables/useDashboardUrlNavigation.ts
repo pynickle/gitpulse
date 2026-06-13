@@ -1,8 +1,8 @@
 import {
   parseDashboardUrlTarget,
   type DashboardUrlTarget,
-} from '~/utils/dashboard-url-navigation-utils';
-import type { MarkdownRepoContext } from '~/utils/markdown-repo-path-utils';
+} from '~/utils/dashboardUrlNavigationUtils';
+import type { MarkdownRepoContext } from '~/utils/markdownRepoPathUtils';
 
 export function useDashboardUrlNavigation() {
   const localePath = useLocalePath();

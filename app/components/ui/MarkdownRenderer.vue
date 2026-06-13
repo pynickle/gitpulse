@@ -12,7 +12,7 @@ import MarkdownRendererProseA from '~/components/ui/MarkdownRendererProseA.vue';
 import MarkdownRendererProseMedia from '~/components/ui/MarkdownRendererProseMedia.vue';
 import MarkdownRendererProseMermaidWrapper from '~/components/ui/MarkdownRendererProseMermaidWrapper.vue';
 import useGitHubAutolinks from '~/composables/useGitHubAutolinks';
-import { markdownRepoContextKey } from '~/utils/markdown-repo-path-utils';
+import { markdownRepoContextKey } from '../../utils/markdownRepoPathUtils';
 
 const props = defineProps<{
   value: string;

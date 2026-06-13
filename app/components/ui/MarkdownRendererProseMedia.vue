@@ -8,7 +8,7 @@ import {
   markdownRepoContextKey,
   parseMarkdownRepoResource,
   resolveMarkdownRepoSrcset,
-} from '~/utils/markdown-repo-path-utils';
+} from '../../utils/markdownRepoPathUtils';
 
 defineOptions({
   inheritAttrs: false,

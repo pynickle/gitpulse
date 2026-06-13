@@ -5,7 +5,7 @@ import { computed, shallowRef } from 'vue';
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
-import { buildDashboardQueryFromNavigationEntry } from '~/utils/dashboard-url-navigation-utils';
+import { buildDashboardQueryFromNavigationEntry } from '../../../utils/dashboardUrlNavigationUtils';
 import shouldCloseReviewWorkspaceAfterSubmit from '~/utils/prReviewNavigation';
 
 const props = defineProps<{

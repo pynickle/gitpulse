@@ -17,7 +17,7 @@ import {
   serializeReleaseQuery,
   type DashboardDetailQueryKey,
   type ReleaseDashboardRef,
-} from '~/utils/dashboard-url-navigation-utils';
+} from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 

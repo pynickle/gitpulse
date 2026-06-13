@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { parseDashboardUrlTarget } from '../../app/utils/dashboard-url-navigation-utils';
+import { parseDashboardUrlTarget } from '../../app/utils/dashboardUrlNavigationUtils';
 import {
   DEFAULT_GITPULSE_BASE_URL,
   buildGitPulseUrl,

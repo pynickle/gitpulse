@@ -1,6 +1,6 @@
 import type { NotificationSubjectStateTarget } from '#shared/types/notifications';
 
-import { isGitHubApiHost, parseUrl } from './github-url-utils';
+import { isGitHubApiHost, parseUrl } from './githubUrlUtils';
 import parseGitHubMarkdownTarget, { type GitHubMarkdownTarget } from './parseGitHubMarkdownTarget';
 
 export interface GitHubNotificationSubjectTarget {

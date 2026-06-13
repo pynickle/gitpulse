@@ -25,7 +25,7 @@ import type { RepoContentItem } from '~/composables/useRepoFiles';
 import {
   buildDashboardQueryFromNavigationEntry,
   type DashboardNavigationEntry,
-} from '~/utils/dashboard-url-navigation-utils';
+} from '../../../utils/dashboardUrlNavigationUtils';
 
 interface FolderTreeNode {
   name: string;

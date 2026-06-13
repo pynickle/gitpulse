@@ -3,7 +3,7 @@ import {
   isGitHubApiHost,
   isGitHubWebHost,
   parseUrl,
-} from './github-url-utils';
+} from './githubUrlUtils';
 
 export interface GitHubRepoPath {
   owner: string;

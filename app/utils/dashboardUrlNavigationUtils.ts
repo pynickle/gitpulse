@@ -1,12 +1,12 @@
 import type { LocationQueryRaw } from 'vue-router';
 
-import { isGitHubApiHost, isGitHubWebHost, parseUrl } from './github-url-utils';
+import { isGitHubApiHost, isGitHubWebHost, parseUrl } from './githubUrlUtils';
 import {
   buildRepoFileDashboardQuery,
   parseMarkdownRepoResource,
   type MarkdownRepoContext,
   type MarkdownRepoResource,
-} from './markdown-repo-path-utils';
+} from './markdownRepoPathUtils';
 import parseGitHubMarkdownTarget from './parseGitHubMarkdownTarget';
 import parseGitHubRepoPath from './parseGitHubRepoPath';
 

@@ -1,7 +1,7 @@
 import type { ComputedRef, InjectionKey } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
-import { isGitHubRawHost, isGitHubWebHost } from './github-url-utils';
+import { isGitHubRawHost, isGitHubWebHost } from './githubUrlUtils';
 
 export interface MarkdownRepoContext {
   owner?: string;

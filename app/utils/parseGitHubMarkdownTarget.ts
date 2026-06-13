@@ -1,4 +1,4 @@
-import { isGitHubApiHost, isGitHubWebHost, parseUrl } from './github-url-utils';
+import { isGitHubApiHost, isGitHubWebHost, parseUrl } from './githubUrlUtils';
 
 export interface GitHubMarkdownTarget {
   owner: string;
