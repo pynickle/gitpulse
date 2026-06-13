@@ -800,95 +800,49 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         return;
       }
 
-      if (issueTarget) {
+      // Helper to ensure entry is set and load data if needed
+      const ensureDetailEntry = (
+        target: DetailTarget,
+        type: 'issue' | 'pull-request' | 'pull-request-review' | 'discussion',
+        loader: (owner: string, repo: string, number: number) => Promise<void>
+      ) => {
         const currentData = currentEntry.value?.data;
         if (
-          currentEntry.value?.type !== 'issue' ||
-          currentData?.owner !== issueTarget.owner ||
-          currentData?.repo !== issueTarget.repo ||
-          currentData?.number !== issueTarget.number
+          currentEntry.value?.type !== type ||
+          currentData?.owner !== target.owner ||
+          currentData?.repo !== target.repo ||
+          currentData?.number !== target.number
         ) {
           replaceWithEntry({
-            type: 'issue',
+            type,
             data: {
-              owner: issueTarget.owner,
-              repo: issueTarget.repo,
-              number: issueTarget.number,
+              owner: target.owner,
+              repo: target.repo,
+              number: target.number,
               tab: currentRouteTab.value,
             },
           });
         }
-        await loadIssueData(issueTarget.owner, issueTarget.repo, issueTarget.number);
+        return loader(target.owner, target.repo, target.number);
+      };
+
+      if (issueTarget) {
+        await ensureDetailEntry(issueTarget, 'issue', loadIssueData);
         return;
       }
 
       if (prReviewTarget) {
-        const currentData = currentEntry.value?.data;
-        if (
-          currentEntry.value?.type !== 'pull-request-review' ||
-          currentData?.owner !== prReviewTarget.owner ||
-          currentData?.repo !== prReviewTarget.repo ||
-          currentData?.number !== prReviewTarget.number
-        ) {
-          replaceWithEntry({
-            type: 'pull-request-review',
-            data: {
-              owner: prReviewTarget.owner,
-              repo: prReviewTarget.repo,
-              number: prReviewTarget.number,
-              tab: currentRouteTab.value,
-            },
-          });
-        }
-        await loadPRData(prReviewTarget.owner, prReviewTarget.repo, prReviewTarget.number);
+        await ensureDetailEntry(prReviewTarget, 'pull-request-review', loadPRData);
         return;
       }
 
       if (prTarget) {
-        const currentData = currentEntry.value?.data;
-        if (
-          currentEntry.value?.type !== 'pull-request' ||
-          currentData?.owner !== prTarget.owner ||
-          currentData?.repo !== prTarget.repo ||
-          currentData?.number !== prTarget.number
-        ) {
-          replaceWithEntry({
-            type: 'pull-request',
-            data: {
-              owner: prTarget.owner,
-              repo: prTarget.repo,
-              number: prTarget.number,
-              tab: currentRouteTab.value,
-            },
-          });
-        }
-        await loadPRData(prTarget.owner, prTarget.repo, prTarget.number);
+        await ensureDetailEntry(prTarget, 'pull-request', loadPRData);
         return;
       }
 
       if (discussionTarget) {
-        const currentData = currentEntry.value?.data;
-        if (
-          currentEntry.value?.type !== 'discussion' ||
-          currentData?.owner !== discussionTarget.owner ||
-          currentData?.repo !== discussionTarget.repo ||
-          currentData?.number !== discussionTarget.number
-        ) {
-          replaceWithEntry({
-            type: 'discussion',
-            data: {
-              owner: discussionTarget.owner,
-              repo: discussionTarget.repo,
-              number: discussionTarget.number,
-              tab: currentRouteTab.value,
-            },
-          });
-        }
-        await loadDiscussionData(
-          discussionTarget.owner,
-          discussionTarget.repo,
-          discussionTarget.number
-        );
+        await ensureDetailEntry(discussionTarget, 'discussion', loadDiscussionData);
         return;
       }
 
