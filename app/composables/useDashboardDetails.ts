@@ -3,6 +3,7 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
+import type { PullRequestDetailPayload } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import {
   DASHBOARD_DETAIL_QUERY_KEYS,
@@ -342,8 +343,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     // Helper to canonicalize a detail target if it has conflicts
     const canonicalizeIfConflict = async (
       target: DetailTarget | null,
-      queryKeys: string[],
-      queryKey: string
+      queryKeys: DashboardDetailQueryKey[],
+      queryKey: DashboardDetailQueryKey
     ): Promise<boolean> => {
       if (!target || !hasConflictingDetailQuery(queryKeys)) {
         return false;
