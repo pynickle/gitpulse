@@ -2,9 +2,11 @@ import { computed, nextTick, ref, watch, type Ref } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
+import type { IssueDetailPayload } from '#shared/types/issues';
 import type { DashboardNotification } from '#shared/types/notifications';
 import type { PullRequestDetailPayload } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
+import type { RepositoryDetailPayload } from '#shared/types/repos';
 import {
   DASHBOARD_DETAIL_QUERY_KEYS,
   buildDashboardQueryFromNavigationEntry,
@@ -18,10 +20,9 @@ import {
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
-interface DashboardEntity {
+interface DashboardDetailListItem {
   repository_url?: string | null;
   number?: number | null;
-  [key: string]: unknown;
 }
 
 type DetailType = 'issue' | 'pull-request' | 'discussion';
@@ -117,11 +118,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const router = useRouter();
   const localePath = useLocalePath();
 
-  const issuePanel = createDetailPanel<DashboardEntity>();
-  const prPanel = createDetailPanel<DashboardEntity>();
+  const issuePanel = createDetailPanel<IssueDetailPayload>();
+  const prPanel = createDetailPanel<PullRequestDetailPayload>();
   const discussionPanel = createDetailPanel<DiscussionDetailPayload>();
   const releasePanel = createDetailPanel<ReleaseDetailPayload>();
-  const repoPanel = createDetailPanel<Record<string, unknown>>();
+  const repoPanel = createDetailPanel<RepositoryDetailPayload>();
 
   const panels = [issuePanel, prPanel, discussionPanel, releasePanel, repoPanel];
 
@@ -194,14 +195,14 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     };
   };
 
-  const getRepositoryDefaultBranch = (repository: Record<string, unknown> | null) => {
+  const getRepositoryDefaultBranch = (repository: RepositoryDetailPayload | null) => {
     return typeof repository?.default_branch === 'string' && repository.default_branch
       ? repository.default_branch
       : undefined;
   };
 
   const isRepositoryDataForTarget = (
-    repository: Record<string, unknown> | null,
+    repository: RepositoryDetailPayload | null,
     owner: string,
     repo: string
   ) => {
@@ -490,7 +491,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       : 'release-empty';
   });
 
-  const openIssue = async (issue: DashboardEntity) => {
+  const openIssue = async (issue: DashboardDetailListItem) => {
     const repoPath = parseGitHubRepoPath(issue.repository_url);
     if (!repoPath || !issue.number) return;
 
@@ -502,7 +503,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     });
   };
 
-  const openPR = async (pull: DashboardEntity) => {
+  const openPR = async (pull: DashboardDetailListItem) => {
     const repoPath = parseGitHubRepoPath(pull.repository_url);
     if (!repoPath || !pull.number) return;
 
@@ -519,7 +520,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
     showOnly(issuePanel, [repoPanel]);
     await issuePanel.load(
-      () => apiFetch<DashboardEntity>(`/api/issues/${owner}/${repo}/${issueNumber}`),
+      () => apiFetch<IssueDetailPayload>(`/api/issues/${owner}/${repo}/${issueNumber}`),
       {
         logPrefix: 'Error fetching issue:',
         fallbackError: 'Failed to load issue details.',
@@ -531,7 +532,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (!owner || !repo || !pullNumber) return;
 
     // Skip if already loaded for the same PR
-    const currentData = prPanel.data.value as PullRequestDetailPayload | null;
+    const currentData = prPanel.data.value;
     if (
       currentData &&
       currentData.base?.repo?.owner?.login === owner &&
@@ -546,10 +547,12 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     showOnly(prPanel, [repoPanel]);
     await prPanel.load(
       async () => {
-        const pullRequest = await apiFetch(`/api/pulls/${owner}/${repo}/${pullNumber}`);
+        const pullRequest = await apiFetch<PullRequestDetailPayload>(
+          `/api/pulls/${owner}/${repo}/${pullNumber}`
+        );
         return {
           repository_url: repositoryUrl,
-          ...((pullRequest as Record<string, unknown>) || {}),
+          ...pullRequest,
         };
       },
       { logPrefix: 'Error fetching pull request:' }
@@ -560,7 +563,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     if (!owner || !repo) return;
 
     showOnly(repoPanel);
-    await repoPanel.load(() => apiFetch<Record<string, unknown>>(`/api/repos/${owner}/${repo}`), {
+    await repoPanel.load(() => apiFetch<RepositoryDetailPayload>(`/api/repos/${owner}/${repo}`), {
       logPrefix: 'Error fetching repository:',
       fallbackError: 'Failed to load repository details.',
       onSuccess: (repoData) => {

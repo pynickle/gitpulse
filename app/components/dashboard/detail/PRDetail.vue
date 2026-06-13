@@ -124,6 +124,7 @@
 import { EyeIcon } from 'lucide-vue-next';
 import { computed, ref, shallowRef, watch } from 'vue';
 
+import type { PullRequestDetailPayload } from '#shared/types/pulls';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
@@ -145,7 +146,7 @@ import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
-  pullRequest: any;
+  pullRequest: PullRequestDetailViewModel;
   reviewActive?: boolean;
 }>();
 
@@ -154,6 +155,34 @@ interface PullRequestDetailLabel {
   name: string;
   color: string;
   description?: string | null;
+}
+
+interface PullRequestUserSummary {
+  id?: number | string;
+  login: string;
+  avatar_url?: string | null;
+}
+
+interface PullRequestTeamSummary {
+  id?: number | string;
+  node_id?: string;
+  slug?: string;
+  name?: string | null;
+  html_url?: string | null;
+  url?: string | null;
+}
+
+interface PullRequestDetailViewModel extends PullRequestDetailPayload {
+  html_url?: string;
+  head?: PullRequestDetailPayload['head'] & { label?: string };
+  requested_reviewers?: PullRequestUserSummary[];
+  requested_teams?: PullRequestTeamSummary[];
+  assignee?: PullRequestUserSummary;
+  commits?: number;
+  changed_files?: number;
+  additions?: number;
+  deletions?: number;
+  reviewers?: ReturnType<typeof createEmptyPRReviewersSummary>;
 }
 
 interface PRTimelineResponse {
@@ -503,7 +532,9 @@ const getPullRequestIdentity = () => {
   return `${repoOwner.value}/${repoName.value}/${currentPullRequest.value.number}`;
 };
 
-const hasHydratedPullRequestDetails = (pullRequest: Record<string, unknown> | null | undefined) => {
+const hasHydratedPullRequestDetails = (
+  pullRequest: PullRequestDetailViewModel | null | undefined
+) => {
   if (!pullRequest) {
     return false;
   }
@@ -519,7 +550,7 @@ const hasHydratedPullRequestDetails = (pullRequest: Record<string, unknown> | nu
   ].some((key) => key in pullRequest);
 };
 
-const resetPullRequestScopedState = (pullRequest: any) => {
+const resetPullRequestScopedState = (pullRequest: PullRequestDetailViewModel) => {
   currentPullRequest.value = pullRequest;
   detailError.value = '';
   timeline.value = [];
@@ -703,7 +734,7 @@ const fetchPullRequestDetails = async () => {
     const { owner, repo } = repoInfo.value;
     const pullNumber = currentPullRequest.value.number;
 
-    const data = await apiFetch<Record<string, unknown>>(
+    const data = await apiFetch<PullRequestDetailViewModel>(
       `/api/pulls/${owner}/${repo}/${pullNumber}`,
       {
         method: 'GET',

@@ -4,7 +4,10 @@ import { computed, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
+import type { IssueDetailPayload } from '#shared/types/issues';
+import type { PullRequestDetailPayload } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
+import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DiscussionDetail from '~/components/dashboard/detail/DiscussionDetail.vue';
 import IssueDetail from '~/components/dashboard/detail/IssueDetail.vue';
 import PrDetail from '~/components/dashboard/detail/PRDetail.vue';
@@ -24,11 +27,11 @@ interface ActiveDetailPane {
 }
 
 const props = defineProps<{
-  issue: Record<string, unknown> | null;
-  pullRequest: Record<string, unknown> | null;
+  issue: IssueDetailPayload | null;
+  pullRequest: PullRequestDetailPayload | null;
   discussion: DiscussionDetailPayload | null;
   release: ReleaseDetailPayload | null;
-  repository: Record<string, unknown> | null;
+  repository: RepositoryDetailPayload | null;
   issueError: string;
   discussionError: string;
   releaseError: string;

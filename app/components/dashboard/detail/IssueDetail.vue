@@ -63,6 +63,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import type { IssueDetailLabel, IssueDetailPayload } from '#shared/types/issues';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
@@ -73,15 +74,8 @@ import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
-  issue: any;
+  issue: IssueDetailPayload;
 }>();
-
-interface IssueDetailLabel {
-  id?: number | string;
-  name: string;
-  color: string;
-  description?: string | null;
-}
 
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
@@ -165,7 +159,7 @@ const getIssueIdentity = () => {
   return `${repoOwner.value}/${repoName.value}/${currentIssue.value.number}`;
 };
 
-const resetIssueScopedState = (issue: any) => {
+const resetIssueScopedState = (issue: IssueDetailPayload) => {
   currentIssue.value = issue;
   timeline.value = [];
   repoPermissions.value = createEmptyRepoPermissions();

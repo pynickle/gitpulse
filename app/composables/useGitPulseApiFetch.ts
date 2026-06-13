@@ -1,4 +1,5 @@
 import type { FetchOptions, FetchRequest, ResponseType } from 'ofetch';
+
 import {
   CSRF_COOKIE_NAME,
   CSRF_HEADER_NAME,

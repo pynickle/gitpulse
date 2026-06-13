@@ -17,12 +17,13 @@ import type { LocationQueryRaw } from 'vue-router';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
+import type { RepositoryDetailPayload } from '#shared/types/repos';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const props = defineProps<{
-  repository: any;
+  repository: RepositoryDetailPayload;
   owner: string;
   repo: string;
 }>();
