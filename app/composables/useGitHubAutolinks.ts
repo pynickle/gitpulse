@@ -1,5 +1,10 @@
 import type { ComarkElement, ComarkNode, ComarkTree } from 'comark';
 
+import {
+  buildGitHubMentionUrl,
+  GITHUB_MENTION_LOGIN_PATTERN,
+} from '#shared/utils/markdown-mentions';
+
 interface GitHubAutolinkContext {
   repoOwner?: string;
   repoName?: string;
@@ -26,6 +31,24 @@ interface CachedGitHubAutolinkResolution {
   expiresAt: number;
 }
 
+type GitHubAutolinkMatch =
+  | {
+      kind: 'reference';
+      prefix: string;
+      start: number;
+      end: number;
+      matchedText: string;
+      target: GitHubAutolinkTarget;
+    }
+  | {
+      kind: 'mention';
+      prefix: string;
+      start: number;
+      end: number;
+      matchedText: string;
+      href: string;
+    };
+
 const AUTOLINKABLE_TEXT_PARENT_TAGS = new Set([
   'p',
   'li',
@@ -47,6 +70,11 @@ const SKIPPED_TAGS = new Set(['a', 'code', 'pre']);
 
 const REFERENCE_PATTERN =
   /(^|[^\w/])(?:(?<qualified>[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+#(?<qualifiedNumber>\d+))|(?<gh>GH-(?<ghNumber>\d+))|(?<short>#(?<shortNumber>\d+)))/g;
+
+const MENTION_PATTERN = new RegExp(
+  `(^|[^\\w/@])@(?<login>${GITHUB_MENTION_LOGIN_PATTERN})(?![A-Za-z0-9_-])`,
+  'g'
+);
 
 const REFERENCE_CACHE_MAX_ENTRIES = 500;
 const REFERENCE_CACHE_SUCCESS_TTL_MS = 30 * 60 * 1000;
@@ -205,15 +233,10 @@ async function transformTextNode(
     return [node];
   }
 
-  const matches: Array<{
-    prefix: string;
-    start: number;
-    end: number;
-    matchedText: string;
-    target: GitHubAutolinkTarget;
-  }> = [];
+  const matches: GitHubAutolinkMatch[] = [];
 
   REFERENCE_PATTERN.lastIndex = 0;
+  MENTION_PATTERN.lastIndex = 0;
 
   let match: RegExpExecArray | null = null;
   while ((match = REFERENCE_PATTERN.exec(node)) !== null) {
@@ -229,6 +252,7 @@ async function transformTextNode(
     const end = match.index + match[0].length;
 
     matches.push({
+      kind: 'reference',
       prefix,
       start,
       end,
@@ -237,15 +261,47 @@ async function transformTextNode(
     });
   }
 
+  while ((match = MENTION_PATTERN.exec(node)) !== null) {
+    const prefix = match[1] ?? '';
+    const login = match.groups?.login;
+
+    if (!login) {
+      continue;
+    }
+
+    const start = match.index + prefix.length;
+    const end = match.index + match[0].length;
+
+    matches.push({
+      kind: 'mention',
+      prefix,
+      start,
+      end,
+      matchedText: `@${login}`,
+      href: buildGitHubMentionUrl(login),
+    });
+  }
+
   if (matches.length === 0) {
     return [node];
   }
 
-  const resolutions = await Promise.all(matches.map(({ target }) => resolveReference(target)));
+  const sortedMatches = matches.sort((first, second) => first.start - second.start);
+  const resolutions = await Promise.all(
+    sortedMatches.map((item) =>
+      item.kind === 'reference'
+        ? resolveReference(item.target)
+        : Promise.resolve({ exists: true, href: item.href })
+    )
+  );
   const transformedNodes: ComarkNode[] = [];
   let cursor = 0;
 
-  for (const [index, item] of matches.entries()) {
+  for (const [index, item] of sortedMatches.entries()) {
+    if (item.start < cursor) {
+      continue;
+    }
+
     const resolution = resolutions[index];
     const prefixStart = item.start - item.prefix.length;
 

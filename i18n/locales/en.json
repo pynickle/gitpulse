@@ -545,14 +545,17 @@
     "writeTab": "Write",
     "previewTab": "Preview",
     "previewEmpty": "Preview will appear here once you start typing.",
-    "markdownHint": "Markdown and GitHub-style issue references like #100 are supported.",
+    "markdownHint": "Markdown, \\@mentions, and GitHub-style issue references like #100 are supported.",
     "cancel": "Cancel",
     "submit": "Comment",
     "submitting": "Commenting...",
     "emptyError": "Please enter a comment before submitting.",
     "unavailableError": "Comments are temporarily unavailable for this item.",
     "submitFailed": "Failed to submit comment",
-    "dismissError": "Dismiss error"
+    "dismissError": "Dismiss error",
+    "mentionSuggestions": "Mention users",
+    "mentionSuggestionsEmpty": "No matching users found",
+    "mentionSuggestionsUnavailable": "Unable to load users"
   },
   "timeline": {
     "referenceUnavailable": "Reference unavailable",

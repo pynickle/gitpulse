@@ -545,14 +545,17 @@
     "writeTab": "编写",
     "previewTab": "预览",
     "previewEmpty": "开始输入后，这里会显示预览内容。",
-    "markdownHint": "支持 Markdown 和 GitHub 风格的议题引用，例如 #100。",
+    "markdownHint": "支持 Markdown、\\@ 提及和 GitHub 风格的议题引用，例如 #100。",
     "cancel": "取消",
     "submit": "发表评论",
     "submitting": "发表评论中...",
     "emptyError": "请先输入评论内容再提交。",
     "unavailableError": "当前条目暂时无法发表评论。",
     "submitFailed": "提交评论失败",
-    "dismissError": "关闭错误"
+    "dismissError": "关闭错误",
+    "mentionSuggestions": "提及用户",
+    "mentionSuggestionsEmpty": "未找到匹配用户",
+    "mentionSuggestionsUnavailable": "无法加载用户"
   },
   "timeline": {
     "referenceUnavailable": "引用不可用",

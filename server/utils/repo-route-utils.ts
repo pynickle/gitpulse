@@ -1,6 +1,10 @@
 import type { H3Event } from 'h3';
 
-import { throwGitHubRouteError, getGitHubClient } from './github-auth-utils';
+import {
+  throwGitHubRouteError,
+  getGitHubClient,
+  getGitHubRequestContext,
+} from './github-auth-utils';
 import { parsePaginationNumber } from './github-pagination';
 
 /**
@@ -158,6 +162,26 @@ export async function executeGitHubRequest<T>(
   try {
     const octokit = await getGitHubClient(event);
     return await requestFn(octokit);
+  } catch (error: unknown) {
+    console.error(errorMessage, error);
+    throwGitHubRouteError(error, errorMessage);
+  }
+}
+
+/**
+ * Execute a GitHub API request that needs the opaque token-derived cache scope.
+ */
+export async function executeGitHubRequestWithContext<T>(
+  event: H3Event,
+  requestFn: (
+    octokit: Awaited<ReturnType<typeof getGitHubRequestContext>>['octokit'],
+    context: Awaited<ReturnType<typeof getGitHubRequestContext>>
+  ) => Promise<T>,
+  errorMessage: string
+): Promise<T> {
+  try {
+    const context = await getGitHubRequestContext(event);
+    return await requestFn(context.octokit, context);
   } catch (error: unknown) {
     console.error(errorMessage, error);
     throwGitHubRouteError(error, errorMessage);

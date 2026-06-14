@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { Octokit } from '@octokit/core';
 import type { H3Event } from 'h3';
 
@@ -41,7 +43,24 @@ export async function getGitHubClient(event: H3Event): Promise<Octokit> {
   return createGitHubClient(accessToken);
 }
 
+function getAccessTokenCacheKey(accessToken: string) {
+  return createHash('sha256').update(accessToken).digest('hex');
+}
+
+export async function getGitHubRequestContext(event: H3Event): Promise<{
+  accessTokenCacheKey: string;
+  octokit: Octokit;
+}> {
+  const accessToken = await getAccessToken(event);
+
+  return {
+    accessTokenCacheKey: getAccessTokenCacheKey(accessToken),
+    octokit: createGitHubClient(accessToken),
+  };
+}
+
 export async function getGitHubSessionContext(event: H3Event): Promise<{
+  accessTokenCacheKey: string;
   octokit: Octokit;
   userLogin: string;
 }> {
@@ -64,6 +83,7 @@ export async function getGitHubSessionContext(event: H3Event): Promise<{
   }
 
   return {
+    accessTokenCacheKey: getAccessTokenCacheKey(accessToken),
     octokit: createGitHubClient(accessToken),
     userLogin,
   };

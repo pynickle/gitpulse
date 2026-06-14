@@ -84,10 +84,22 @@
           :value="draft"
           class="textarea floating-markdown-editor__textarea"
           :class="{ 'floating-markdown-editor__textarea--hidden': activeTab !== 'write' }"
+          role="combobox"
           :rows="compact ? 4 : 6"
           :placeholder="placeholder"
           :disabled="isSubmitting"
+          :aria-expanded="mentionOpen"
+          :aria-controls="mentionListboxId"
+          :aria-activedescendant="
+            mentionActiveIndex >= 0 ? `${mentionComponentId}-opt-${mentionActiveIndex}` : undefined
+          "
+          aria-haspopup="listbox"
+          autocomplete="off"
           @input="handleDraftInput"
+          @keydown="handleTextareaKeydown"
+          @keyup="handleTextareaKeyup"
+          @click="refreshMentionTrigger"
+          @select="refreshMentionTrigger"
         />
 
         <div
@@ -104,6 +116,21 @@
             {{ t('floatingMarkdownEditor.previewEmpty') }}
           </p>
         </div>
+
+        <AutocompleteMenu
+          :open="mentionOpen"
+          :suggestions="mentionSuggestions"
+          :query="mentionQuery"
+          :active-index="mentionActiveIndex"
+          :listbox-id="mentionListboxId"
+          :option-id-prefix="mentionComponentId"
+          :panel-style="mentionPanelStyle"
+          :loading="mentionLoading"
+          :empty-message="mentionEmptyMessage"
+          :aria-label="t('floatingMarkdownEditor.mentionSuggestions')"
+          @select="insertMentionSuggestion"
+          @activate="mentionActiveIndex = $event"
+        />
       </div>
 
       <div class="floating-markdown-editor__footer">
@@ -135,9 +162,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, shallowRef, useId, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { MentionSuggestionsResponse } from '#shared/types/mention-suggestions';
+import {
+  findMarkdownMentionTrigger,
+  type MarkdownMentionTrigger,
+} from '#shared/utils/markdown-mentions';
+import type { AutocompleteSuggestion } from '~/components/ui/autocomplete';
+import AutocompleteMenu from '~/components/ui/AutocompleteMenu.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
@@ -214,20 +248,40 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const apiFetch = useGitPulseApiFetch();
 const { user } = useUserSession();
 const { isAnyModalOpen } = useModalState();
 
 const textareaRef = useTemplateRef<HTMLTextAreaElement>('textareaRef');
+const mentionComponentId = useId();
+const mentionListboxId = `${mentionComponentId}-mentions`;
 const isExpanded = shallowRef(false);
 const internalSubmitting = shallowRef(false);
 const activeTab = shallowRef<'write' | 'preview'>('write');
 const draft = shallowRef(props.modelValue ?? '');
 const errorMessage = shallowRef('');
+const mentionTrigger = shallowRef<MarkdownMentionTrigger | null>(null);
+const mentionQuery = shallowRef('');
+const mentionSuggestions = shallowRef<AutocompleteSuggestion[]>([]);
+const mentionLoading = shallowRef(false);
+const mentionLoadFailed = shallowRef(false);
+const mentionActiveIndex = shallowRef(-1);
+
+let mentionSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let mentionSearchRequestId = 0;
 
 const trimmedDraft = computed(() => draft.value.trim());
 const currentUserLogin = computed(() => user.value?.login || 'You');
 const currentUserAvatar = computed(
   () => user.value?.avatar_url || 'https://github.com/placeholder.png'
+);
+const mentionOpen = computed(
+  () => Boolean(mentionTrigger.value) && activeTab.value === 'write' && !isSubmitting.value
+);
+const mentionEmptyMessage = computed(() =>
+  mentionLoadFailed.value
+    ? t('floatingMarkdownEditor.mentionSuggestionsUnavailable')
+    : t('floatingMarkdownEditor.mentionSuggestionsEmpty')
 );
 
 // Determine submission mode
@@ -255,6 +309,195 @@ const submittingLabel = computed(
   () => props.submittingLabel || t('floatingMarkdownEditor.submitting')
 );
 
+const MENTION_PANEL_GAP = 4;
+const MENTION_PANEL_VIEWPORT_MARGIN = 8;
+const MENTION_PANEL_MIN_WIDTH = 240;
+const MENTION_PANEL_MAX_WIDTH = 360;
+const MENTION_PANEL_MAX_HEIGHT = 280;
+const MENTION_PANEL_MIN_HEIGHT = 120;
+
+const getMentionSuggestionsUrl = () =>
+  `/api/repos/${encodeURIComponent(props.repoOwner)}/${encodeURIComponent(
+    props.repoName
+  )}/mention-suggestions`;
+
+const closeMentionAutocomplete = () => {
+  mentionTrigger.value = null;
+  mentionActiveIndex.value = -1;
+  mentionLoading.value = false;
+  mentionLoadFailed.value = false;
+  if (mentionSearchTimer) {
+    clearTimeout(mentionSearchTimer);
+    mentionSearchTimer = null;
+  }
+  mentionSearchRequestId += 1;
+};
+
+const { panelStyle: mentionPanelStyle, updatePanelPosition: updateMentionPanelPosition } =
+  useAutocompletePanel({
+    isOpen: mentionOpen,
+    listboxId: mentionListboxId,
+    getAnchor: () => textareaRef.value,
+    onClose: closeMentionAutocomplete,
+    gap: MENTION_PANEL_GAP,
+    viewportMargin: MENTION_PANEL_VIEWPORT_MARGIN,
+    minWidth: MENTION_PANEL_MIN_WIDTH,
+    maxWidth: MENTION_PANEL_MAX_WIDTH,
+    maxHeight: MENTION_PANEL_MAX_HEIGHT,
+    minHeight: MENTION_PANEL_MIN_HEIGHT,
+  });
+
+const loadMentionSuggestions = async (query: string) => {
+  const requestId = ++mentionSearchRequestId;
+  mentionLoading.value = true;
+  mentionLoadFailed.value = false;
+
+  try {
+    const response = await apiFetch<MentionSuggestionsResponse>(getMentionSuggestionsUrl(), {
+      query: {
+        q: query,
+      },
+    });
+
+    if (requestId !== mentionSearchRequestId) {
+      return;
+    }
+
+    mentionSuggestions.value = response.items.map((item) => ({
+      value: item.login,
+      label: item.login,
+      description: item.name && item.name !== item.login ? item.name : undefined,
+      avatarUrl: item.avatarUrl,
+    }));
+    mentionLoadFailed.value = false;
+    mentionActiveIndex.value = mentionSuggestions.value.length > 0 ? 0 : -1;
+  } catch {
+    if (requestId === mentionSearchRequestId) {
+      mentionSuggestions.value = [];
+      mentionLoadFailed.value = true;
+      mentionActiveIndex.value = -1;
+    }
+  } finally {
+    if (requestId === mentionSearchRequestId) {
+      mentionLoading.value = false;
+    }
+  }
+};
+
+const scheduleMentionSearch = (query: string) => {
+  if (mentionSearchTimer) {
+    clearTimeout(mentionSearchTimer);
+  }
+
+  mentionLoadFailed.value = false;
+  mentionSearchTimer = setTimeout(() => {
+    mentionSearchTimer = null;
+    void loadMentionSuggestions(query);
+  }, 150);
+};
+
+const refreshMentionTrigger = () => {
+  const el = textareaRef.value;
+  if (!el || activeTab.value !== 'write' || isSubmitting.value) {
+    closeMentionAutocomplete();
+    return;
+  }
+
+  if (el.selectionStart !== el.selectionEnd) {
+    closeMentionAutocomplete();
+    return;
+  }
+
+  const trigger = findMarkdownMentionTrigger(draft.value, el.selectionStart);
+  if (!trigger) {
+    closeMentionAutocomplete();
+    return;
+  }
+
+  const queryChanged = trigger.query !== mentionQuery.value || !mentionTrigger.value;
+  mentionTrigger.value = trigger;
+  mentionQuery.value = trigger.query;
+  updateMentionPanelPosition();
+
+  if (queryChanged) {
+    scheduleMentionSearch(trigger.query);
+  }
+};
+
+const moveMentionActive = (direction: 1 | -1) => {
+  const len = mentionSuggestions.value.length;
+  if (!len) return;
+
+  if (mentionActiveIndex.value < 0) {
+    mentionActiveIndex.value = direction === 1 ? 0 : len - 1;
+  } else {
+    mentionActiveIndex.value = (mentionActiveIndex.value + direction + len) % len;
+  }
+};
+
+const insertMentionSuggestion = async (suggestion: AutocompleteSuggestion) => {
+  const trigger = mentionTrigger.value;
+  if (!trigger) return;
+
+  const mentionText = `@${suggestion.value} `;
+  const nextDraft =
+    draft.value.slice(0, trigger.start) + mentionText + draft.value.slice(trigger.end);
+  const nextCaret = trigger.start + mentionText.length;
+
+  setDraft(nextDraft);
+  closeMentionAutocomplete();
+  await nextTick();
+  const el = textareaRef.value;
+  if (el) {
+    el.focus();
+    el.setSelectionRange(nextCaret, nextCaret);
+  }
+  autoResizeTextarea();
+};
+
+const handleTextareaKeydown = (event: KeyboardEvent) => {
+  if (!mentionOpen.value) {
+    return;
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeMentionAutocomplete();
+    return;
+  }
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    moveMentionActive(1);
+    return;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    moveMentionActive(-1);
+    return;
+  }
+
+  if ((event.key === 'Enter' || event.key === 'Tab') && !event.isComposing) {
+    const suggestion =
+      mentionSuggestions.value[mentionActiveIndex.value] ?? mentionSuggestions.value[0];
+    if (!suggestion) {
+      return;
+    }
+
+    event.preventDefault();
+    void insertMentionSuggestion(suggestion);
+  }
+};
+
+const handleTextareaKeyup = (event: KeyboardEvent) => {
+  if (mentionOpen.value && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key)) {
+    return;
+  }
+
+  refreshMentionTrigger();
+};
+
 const focus = async () => {
   await nextTick();
   textareaRef.value?.focus();
@@ -275,6 +518,7 @@ const autoResizeTextarea = () => {
 const handleDraftInput = (event: Event) => {
   setDraft((event.target as HTMLTextAreaElement).value);
   autoResizeTextarea();
+  refreshMentionTrigger();
 };
 
 // Auto-resize textarea when switching to write tab
@@ -282,6 +526,9 @@ watch(activeTab, async (tab) => {
   if (tab === 'write') {
     await nextTick();
     autoResizeTextarea();
+    refreshMentionTrigger();
+  } else {
+    closeMentionAutocomplete();
   }
 });
 
@@ -293,6 +540,7 @@ watch(
     draft.value = value;
     await nextTick();
     autoResizeTextarea();
+    closeMentionAutocomplete();
   }
 );
 
@@ -315,6 +563,7 @@ const reset = () => {
   setDraft('');
   errorMessage.value = '';
   activeTab.value = 'write';
+  closeMentionAutocomplete();
   // Reset textarea height
   const el = textareaRef.value;
   if (el) {
@@ -403,6 +652,18 @@ if (props.autofocus) {
 if (props.compact) {
   void nextTick().then(() => autoResizeTextarea());
 }
+
+watch(
+  () => [props.repoOwner, props.repoName],
+  () => {
+    closeMentionAutocomplete();
+    mentionSuggestions.value = [];
+  }
+);
+
+onBeforeUnmount(() => {
+  closeMentionAutocomplete();
+});
 
 defineExpose({ focus });
 </script>
