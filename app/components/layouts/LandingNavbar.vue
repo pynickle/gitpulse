@@ -24,6 +24,22 @@ import LinkIcon from '~/components/ui/LinkIcon.vue';
 </script>
 
 <style scoped lang="scss">
+.navbar-end .navbar-item {
+  &:hover,
+  &:focus {
+    background-color: transparent;
+    color: inherit;
+  }
+}
+
+.navbar-end .navbar-item:first-child a {
+  transition: opacity 0.16s ease;
+
+  &:hover {
+    opacity: 0.65;
+  }
+}
+
 .navbar-controls {
   display: flex;
   align-items: center;
