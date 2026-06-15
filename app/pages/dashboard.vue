@@ -270,9 +270,21 @@ import { defineAsyncComponent, computed, shallowRef, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
+import {
+  loadDetailOverlayHost,
+  loadFilterModal,
+  loadRepoFileView,
+} from '~/components/dashboard/dashboard-lazy-loaders';
 import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
 import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
+import {
+  loadDiscussionDetail,
+  loadIssueDetail,
+  loadPrDetail,
+  loadReleaseDetail,
+  loadRepoDetail,
+} from '~/components/dashboard/detail/detail-pane-loaders';
 import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
@@ -306,15 +318,9 @@ const AsyncIssuePrNotificationItem = defineAsyncComponent(
 );
 const AsyncSearchItem = defineAsyncComponent(() => import('~/components/dashboard/SearchItem.vue'));
 const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/RepoItem.vue'));
-const DetailOverlayHost = defineAsyncComponent(
-  () => import('~/components/dashboard/detail/DetailOverlayHost.vue')
-);
-const FilterModal = defineAsyncComponent(
-  () => import('~/components/dashboard/filters/FilterModal.vue')
-);
-const RepoFileView = defineAsyncComponent(
-  () => import('~/components/dashboard/repo-files/RepoFileView.vue')
-);
+const DetailOverlayHost = defineAsyncComponent(loadDetailOverlayHost);
+const FilterModal = defineAsyncComponent(loadFilterModal);
+const RepoFileView = defineAsyncComponent(loadRepoFileView);
 
 const { loggedIn, ready: sessionReady, user } = useUserSession();
 const { t } = useI18n();
@@ -460,6 +466,7 @@ const { filters: dashboardFilters, updateFilters, clearSourceFilters } = useDash
 const isFilterDrawerOpen = shallowRef(false);
 const hasOpenedDetailOverlay = shallowRef(false);
 const hasOpenedFilterDrawer = shallowRef(false);
+const hasPrefetchedDashboardInteractionChunks = shallowRef(false);
 const showErrorDetails = shallowRef(false);
 const userLogin = computed(() => user.value?.login);
 const filterSourceStates = computed(() => ({
@@ -477,6 +484,52 @@ watch(isFilterDrawerOpen, (open) => {
     hasOpenedFilterDrawer.value = true;
   }
 });
+
+const shouldSkipInteractionChunkPrefetch = () => {
+  const connection = (
+    navigator as Navigator & {
+      connection?: { effectiveType?: string; saveData?: boolean };
+    }
+  ).connection;
+
+  return Boolean(connection?.saveData || connection?.effectiveType?.includes('2g'));
+};
+
+const prefetchDashboardInteractionChunks = () => {
+  void Promise.allSettled([
+    loadDetailOverlayHost(),
+    loadFilterModal(),
+    loadRepoFileView(),
+    loadDiscussionDetail(),
+    loadIssueDetail(),
+    loadPrDetail(),
+    loadReleaseDetail(),
+    loadRepoDetail(),
+  ]);
+};
+
+const scheduleDashboardInteractionChunkPrefetch = () => {
+  if (
+    !import.meta.client ||
+    hasPrefetchedDashboardInteractionChunks.value ||
+    shouldSkipInteractionChunkPrefetch()
+  ) {
+    return;
+  }
+
+  hasPrefetchedDashboardInteractionChunks.value = true;
+
+  const prefetch = () => {
+    prefetchDashboardInteractionChunks();
+  };
+
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(prefetch, { timeout: 5000 });
+    return;
+  }
+
+  window.setTimeout(prefetch, 2000);
+};
 
 const issuePrFetchOptions = computed(() => {
   const issuePrQuery = filterSourceStates.value.issues.issuePrQuery;
@@ -503,6 +556,12 @@ const hasCompletedInitialDashboardLoad = shallowRef(false);
 const dashboardListLoading = computed(
   () => !hasCompletedInitialDashboardLoad.value || loading.value
 );
+
+watch(hasCompletedInitialDashboardLoad, (loaded) => {
+  if (loaded) {
+    scheduleDashboardInteractionChunkPrefetch();
+  }
+});
 
 const { customTabs, getCustomTabById } = useCustomTabs();
 

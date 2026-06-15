@@ -10,6 +10,14 @@ import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 
+import {
+  loadDiscussionDetail,
+  loadIssueDetail,
+  loadPrDetail,
+  loadReleaseDetail,
+  loadRepoDetail,
+} from './detail-pane-loaders';
+
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
 
 interface ActiveDetailPane {
@@ -63,19 +71,11 @@ const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
 const isIssueHeaderNonSticky = shallowRef(false);
 const isPullRequestReviewActive = shallowRef(false);
-const DiscussionDetail = defineAsyncComponent(
-  () => import('~/components/dashboard/detail/DiscussionDetail.vue')
-);
-const IssueDetail = defineAsyncComponent(
-  () => import('~/components/dashboard/detail/IssueDetail.vue')
-);
-const PrDetail = defineAsyncComponent(() => import('~/components/dashboard/detail/PRDetail.vue'));
-const ReleaseDetail = defineAsyncComponent(
-  () => import('~/components/dashboard/detail/ReleaseDetail.vue')
-);
-const RepoDetail = defineAsyncComponent(
-  () => import('~/components/dashboard/detail/RepoDetail.vue')
-);
+const DiscussionDetail = defineAsyncComponent(loadDiscussionDetail);
+const IssueDetail = defineAsyncComponent(loadIssueDetail);
+const PrDetail = defineAsyncComponent(loadPrDetail);
+const ReleaseDetail = defineAsyncComponent(loadReleaseDetail);
+const RepoDetail = defineAsyncComponent(loadRepoDetail);
 
 const activeDetailPane = computed<ActiveDetailPane | null>(() => {
   if (props.isIssueVisible) {
