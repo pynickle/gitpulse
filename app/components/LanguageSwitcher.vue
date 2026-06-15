@@ -1,13 +1,10 @@
 <template>
-  <FilterDropdown
-    :options="localeOptions"
-    :model-value="locale"
-    @update:model-value="changeLang"
-  />
+  <FilterDropdown :options="localeOptions" :model-value="locale" @update:model-value="changeLang" />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
+
 import FilterDropdown from '~/components/ui/FilterDropdown.vue';
 import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
 
