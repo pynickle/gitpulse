@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { ComarkNode } from 'comark';
 import { CheckIcon, ClipboardIcon } from 'lucide-vue-next';
-import { computed, onBeforeUnmount, shallowRef } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, shallowRef } from 'vue';
 import type { StyleValue } from 'vue';
-
-import MermaidBlock from '~/components/ui/MermaidBlock.vue';
 
 const props = defineProps<{
   code?: string;
@@ -24,6 +22,7 @@ const resetTimer = shallowRef<ReturnType<typeof setTimeout> | null>(null);
 const languageLabel = computed(() => props.language?.trim() ?? '');
 const copyLabel = computed(() => (copied.value ? t('markdown.copied') : t('markdown.copyCode')));
 const codeText = computed(() => props.code ?? extractCodeText(props.__node) ?? '');
+const AsyncMermaidBlock = defineAsyncComponent(() => import('~/components/ui/MermaidBlock.vue'));
 
 function extractCodeText(node: ComarkNode | undefined): string | null {
   if (!Array.isArray(node)) {
@@ -89,7 +88,7 @@ onBeforeUnmount(clearResetTimer);
 </script>
 
 <template>
-  <MermaidBlock v-if="props.language === 'mermaid'" :code="codeText" />
+  <AsyncMermaidBlock v-if="props.language === 'mermaid'" :code="codeText" />
   <div v-else class="markdown-code-block">
     <div class="markdown-code-block__header">
       <span v-if="languageLabel" class="markdown-code-block__language" :title="languageLabel">
