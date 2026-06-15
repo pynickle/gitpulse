@@ -1,0 +1,50 @@
+name: Question
+description: Ask a usage, setup, configuration, or troubleshooting question.
+title: '[Question]: '
+labels:
+  - question
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like help with?
+      placeholder: Describe your question clearly.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Setup / installation
+        - Authentication
+        - GitHub token permissions
+        - Deployment
+        - Dashboard usage
+        - Browser extension
+        - Development
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include what you tried, relevant configuration, and any error messages.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Local Bun dev server, Vercel, Docker, browser/version, etc.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional details
+      description: Add logs, screenshots, links, or related issues.

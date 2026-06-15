@@ -1,0 +1,57 @@
+name: Feature request
+description: Suggest a new capability or improvement for GitPulse.
+title: '[Feature]: '
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for new features, workflow improvements, and product behavior changes.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem would this solve?
+      placeholder: Describe the workflow, limitation, or user need.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should GitPulse do?
+      placeholder: Describe the behavior or UI you would like to see.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Dashboard / UI
+        - Notifications
+        - Issues / pull requests
+        - Repositories
+        - Custom tabs / search
+        - User settings
+        - Authentication
+        - Browser extension
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you tried another workflow or workaround?
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Add mockups, examples, links, or related issues.
