@@ -1199,7 +1199,7 @@ watch(
 
 .expand-enter-active,
 .expand-leave-active {
-  max-height: 2000px;
+  max-height: 240px;
   transition:
     opacity 0.15s ease,
     transform 0.2s ease,
