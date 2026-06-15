@@ -13,6 +13,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "prepare": "prek install",
     "lint": "bunx oxlint ./ --type-aware --ignore-pattern extension/",
     "lint:fix": "bunx oxlint ./ --fix --type-aware --ignore-pattern extension/",
     "fmt": "bunx oxfmt ./",
