@@ -1207,6 +1207,7 @@ watch(
     padding-top 0.2s ease,
     padding-bottom 0.2s ease;
   overflow: hidden;
+  will-change: transform, opacity;
 }
 
 .expand-enter-from,

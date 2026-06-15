@@ -276,66 +276,64 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
       </div>
 
       <div v-else-if="files.length" class="pr-review-file-sidebar__tree">
-        <TransitionGroup name="tree-row">
-          <template v-for="row in visibleTreeRows" :key="row.node.path">
-            <div v-if="row.node.type === 'directory'" class="pr-review-file-sidebar__tree-group">
-              <button
-                type="button"
-                class="pr-review-file-sidebar__tree-directory"
-                :style="{ paddingLeft: `${0.45 + row.depth * 0.9}rem` }"
-                :aria-expanded="!isDirectoryCollapsed(row.collapsePath)"
-                :aria-label="
-                  isDirectoryCollapsed(row.collapsePath)
-                    ? t('prReview.expandDirectory', { name: row.label })
-                    : t('prReview.collapseDirectory', { name: row.label })
-                "
-                :title="row.label"
-                @click="toggleDirectory(row.collapsePath)"
-              >
-                <ChevronRightIcon
-                  :size="14"
-                  :class="[
-                    'pr-review-file-sidebar__tree-chevron',
-                    {
-                      'pr-review-file-sidebar__tree-chevron--expanded': !isDirectoryCollapsed(
-                        row.collapsePath
-                      ),
-                    },
-                  ]"
-                  aria-hidden="true"
-                />
-                <FolderIcon :size="14" aria-hidden="true" />
-                <span class="pr-review-file-sidebar__tree-label">{{ row.label }}</span>
-                <span class="pr-review-file-sidebar__tree-count">{{ countFiles(row.node) }}</span>
-              </button>
-            </div>
-
+        <template v-for="row in visibleTreeRows" :key="row.node.path">
+          <div v-if="row.node.type === 'directory'" class="pr-review-file-sidebar__tree-group">
             <button
-              v-else-if="row.node.file"
               type="button"
-              :class="[
-                'pr-review-file-sidebar__tree-file',
-                {
-                  'pr-review-file-sidebar__tree-file--active':
-                    row.node.file.filename === activeFilename,
-                },
-              ]"
-              :style="{ paddingLeft: `${1.2 + row.depth * 0.9}rem` }"
-              :aria-current="row.node.file.filename === activeFilename ? 'true' : undefined"
-              @click="emit('select-file', row.node.file.filename)"
+              class="pr-review-file-sidebar__tree-directory"
+              :style="{ paddingLeft: `${0.45 + row.depth * 0.9}rem` }"
+              :aria-expanded="!isDirectoryCollapsed(row.collapsePath)"
+              :aria-label="
+                isDirectoryCollapsed(row.collapsePath)
+                  ? t('prReview.expandDirectory', { name: row.label })
+                  : t('prReview.collapseDirectory', { name: row.label })
+              "
+              :title="row.label"
+              @click="toggleDirectory(row.collapsePath)"
             >
-              <FileIcon :size="14" aria-hidden="true" />
-              <span class="pr-review-file-sidebar__tree-label">{{ row.node.name }}</span>
-              <span :class="['pr-review-file-sidebar__status', statusClass(row.node.file.status)]">
-                {{ statusLabel(row.node.file.status) }}
-              </span>
-              <span
-                v-if="getDraftCount(row.node.file.filename)"
-                class="pr-review-file-sidebar__draft-dot"
-              ></span>
+              <ChevronRightIcon
+                :size="14"
+                :class="[
+                  'pr-review-file-sidebar__tree-chevron',
+                  {
+                    'pr-review-file-sidebar__tree-chevron--expanded': !isDirectoryCollapsed(
+                      row.collapsePath
+                    ),
+                  },
+                ]"
+                aria-hidden="true"
+              />
+              <FolderIcon :size="14" aria-hidden="true" />
+              <span class="pr-review-file-sidebar__tree-label">{{ row.label }}</span>
+              <span class="pr-review-file-sidebar__tree-count">{{ countFiles(row.node) }}</span>
             </button>
-          </template>
-        </TransitionGroup>
+          </div>
+
+          <button
+            v-else-if="row.node.file"
+            type="button"
+            :class="[
+              'pr-review-file-sidebar__tree-file',
+              {
+                'pr-review-file-sidebar__tree-file--active':
+                  row.node.file.filename === activeFilename,
+              },
+            ]"
+            :style="{ paddingLeft: `${1.2 + row.depth * 0.9}rem` }"
+            :aria-current="row.node.file.filename === activeFilename ? 'true' : undefined"
+            @click="emit('select-file', row.node.file.filename)"
+          >
+            <FileIcon :size="14" aria-hidden="true" />
+            <span class="pr-review-file-sidebar__tree-label">{{ row.node.name }}</span>
+            <span :class="['pr-review-file-sidebar__status', statusClass(row.node.file.status)]">
+              {{ statusLabel(row.node.file.status) }}
+            </span>
+            <span
+              v-if="getDraftCount(row.node.file.filename)"
+              class="pr-review-file-sidebar__draft-dot"
+            ></span>
+          </button>
+        </template>
       </div>
 
       <button
@@ -624,27 +622,5 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border-radius: 50%;
   background: var(--gitpulse-warning);
   flex: none;
-}
-
-.tree-row-enter-active {
-  transition:
-    opacity 0.15s ease,
-    transform 0.2s ease;
-}
-
-.tree-row-leave-active {
-  transition:
-    opacity 0.1s ease,
-    transform 0.15s ease;
-}
-
-.tree-row-enter-from {
-  opacity: 0;
-  transform: translateX(-4px);
-}
-
-.tree-row-leave-to {
-  opacity: 0;
-  transform: translateX(4px);
 }
 </style>

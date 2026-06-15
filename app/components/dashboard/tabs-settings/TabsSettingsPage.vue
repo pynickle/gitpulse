@@ -1421,11 +1421,12 @@ html.dark .empty-drop-zone {
   max-height: 2000px;
   transition:
     opacity 0.15s ease,
-    transform 0.2s ease,
-    max-height 0.2s ease,
-    padding-top 0.2s ease,
-    padding-bottom 0.2s ease;
+    transform 0.15s ease,
+    max-height 0.15s ease,
+    padding-top 0.15s ease,
+    padding-bottom 0.15s ease;
   overflow: hidden;
+  will-change: transform, opacity;
 }
 
 .expand-enter-from,
