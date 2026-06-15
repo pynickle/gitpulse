@@ -40,7 +40,7 @@ export interface UserSettingsStore {
   error: Readonly<Ref<string | null>>;
   appFontFamily: ComputedRef<string>;
   codeFontFamily: ComputedRef<string>;
-  loadSettings: () => Promise<UserSettings | null>;
+  loadSettings: (options?: { force?: boolean }) => Promise<UserSettings | null>;
   updateSettings: (patch: UserSettingsPatch) => Promise<UserSettings | null>;
   updateFonts: (fonts: Partial<UserFontSettings>) => Promise<UserSettings | null>;
   handleLoginChanged: () => void;
@@ -163,7 +163,7 @@ export function createUserSettingsActions({
     return nextSave;
   };
 
-  const loadSettings = async () => {
+  const loadSettings = async (options: { force?: boolean } = {}) => {
     syncActiveLogin();
 
     const targetLogin = activeLogin.value;
@@ -172,11 +172,12 @@ export function createUserSettingsActions({
       return null;
     }
 
-    if (loaded.value) {
+    if (loaded.value && !options.force) {
       return settings.value;
     }
 
     if (
+      !options.force &&
       activeLoad &&
       activeLoad.login === targetLogin &&
       activeLoad.loginRevision === requestState.value.loginRevision

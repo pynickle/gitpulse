@@ -309,6 +309,7 @@
       }
     },
     "actions": {
+      "refresh": "刷新",
       "refreshCurrentTab": "刷新当前标签"
     },
     "error": {

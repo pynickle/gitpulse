@@ -94,11 +94,19 @@ export function hasGitHubErrorStatus(error: unknown, statusCode: number): boolea
 }
 
 export function getGitHubErrorStatusCode(error: unknown): number | undefined {
-  if (!error || typeof error !== 'object' || !('status' in error)) {
+  if (!error || typeof error !== 'object') {
     return undefined;
   }
 
-  return typeof error.status === 'number' ? error.status : undefined;
+  if ('status' in error && typeof error.status === 'number') {
+    return error.status;
+  }
+
+  if ('statusCode' in error && typeof error.statusCode === 'number') {
+    return error.statusCode;
+  }
+
+  return undefined;
 }
 
 export function getGitHubErrorMessage(error: unknown, fallbackStatusMessage: string): string {

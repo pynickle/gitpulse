@@ -219,6 +219,7 @@
   },
   "dashboard": {
     "actions": {
+      "refresh": "Refresh",
       "refreshCurrentTab": "Refresh Tab"
     },
     "error": {

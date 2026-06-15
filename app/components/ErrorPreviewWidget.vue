@@ -96,14 +96,14 @@ onBeforeUnmount(() => {
     </Transition>
     <button
       type="button"
-      class="error-preview-widget__fab"
+      class="gitpulse-floating-fab error-preview-widget__fab"
       :aria-label="t('error.devWidget.trigger')"
       :title="t('error.devWidget.trigger')"
       :aria-expanded="open"
       aria-haspopup="menu"
       @click="open = !open"
     >
-      <ConstructionIcon :size="20" aria-hidden="true" />
+      <ConstructionIcon :size="17" aria-hidden="true" />
     </button>
   </div>
 </template>
@@ -111,9 +111,9 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .error-preview-widget {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 9999;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 3.5rem);
+  z-index: 10020;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -171,31 +171,10 @@ onBeforeUnmount(() => {
 }
 
 .error-preview-widget__fab {
-  appearance: none;
-  background: var(--gitpulse-surface);
-  color: var(--gitpulse-text-strong);
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 1px solid var(--gitpulse-border);
-  box-shadow: var(--gitpulse-shadow-raised);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease;
-
-  &:hover,
-  &:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: var(--gitpulse-shadow-card-hover);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring);
-    outline-offset: 2px;
+  &[aria-expanded='true'] {
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
+    background: color-mix(in srgb, var(--gitpulse-accent-soft) 72%, var(--gitpulse-surface));
+    color: var(--gitpulse-accent);
   }
 }
 

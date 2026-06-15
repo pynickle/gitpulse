@@ -27,6 +27,7 @@ export interface ReleaseDetailPayload {
   draft?: boolean;
   prerelease?: boolean;
   created_at?: string;
+  updated_at?: string;
   published_at?: string | null;
   html_url?: string;
   tarball_url?: string;

@@ -493,6 +493,55 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       : 'release-empty';
   });
 
+  const hasVisibleDetail = computed(() => {
+    return (
+      issuePanel.visible.value ||
+      prPanel.visible.value ||
+      discussionPanel.visible.value ||
+      releasePanel.visible.value ||
+      repoPanel.visible.value
+    );
+  });
+
+  const currentDetailRefreshKey = computed(() => {
+    if (activeIssueTarget.value) return issueDetailKey.value;
+    if (activePRReviewTarget.value || activePRTarget.value) return prDetailKey.value;
+    if (activeDiscussionTarget.value) return discussionDetailKey.value;
+    if (activeReleaseTarget.value) return releaseDetailKey.value;
+    if (activeRepoTarget.value && !isFileBrowsingRoute.value) return repoDetailKey.value;
+    return 'detail-empty';
+  });
+
+  const currentDetailFreshnessUrl = computed(() => {
+    const issueTarget = activeIssueTarget.value;
+    if (issueTarget) {
+      return `/api/issues/${issueTarget.owner}/${issueTarget.repo}/${issueTarget.number}/freshness`;
+    }
+
+    const pullTarget = activePRReviewTarget.value ?? activePRTarget.value;
+    if (pullTarget) {
+      return `/api/pulls/${pullTarget.owner}/${pullTarget.repo}/${pullTarget.number}/freshness`;
+    }
+
+    const releaseTarget = activeReleaseTarget.value;
+    if (releaseTarget) {
+      if (releaseTarget.releaseRef.kind === 'tag') {
+        return `/api/releases/${releaseTarget.owner}/${releaseTarget.repo}/by-tag/freshness?tag=${encodeURIComponent(
+          releaseTarget.releaseRef.tag
+        )}`;
+      }
+
+      return `/api/releases/${releaseTarget.owner}/${releaseTarget.repo}/${releaseTarget.releaseRef.id}/freshness`;
+    }
+
+    const repoTarget = activeRepoTarget.value;
+    if (repoTarget && !isFileBrowsingRoute.value) {
+      return `/api/repos/${repoTarget.owner}/${repoTarget.repo}/freshness`;
+    }
+
+    return '';
+  });
+
   const openIssue = async (issue: DashboardDetailListItem) => {
     const repoPath = parseGitHubRepoPath(issue.repository_url);
     if (!repoPath || !issue.number) return;
@@ -530,12 +579,18 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     );
   };
 
-  const loadPRData = async (owner: string, repo: string, pullNumber: number) => {
+  const loadPRData = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    options: { force?: boolean } = {}
+  ) => {
     if (!owner || !repo || !pullNumber) return;
 
     // Skip if already loaded for the same PR
     const currentData = prPanel.data.value;
     if (
+      !options.force &&
       currentData &&
       currentData.base?.repo?.owner?.login === owner &&
       currentData.base?.repo?.name === repo &&
@@ -709,6 +764,41 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     }
 
     void handleSwitchPR(details.owner, details.repo, details.number);
+  };
+
+  const refreshCurrentDetail = async () => {
+    const issueTarget = activeIssueTarget.value;
+    if (issueTarget) {
+      await loadIssueData(issueTarget.owner, issueTarget.repo, issueTarget.number);
+      return;
+    }
+
+    const pullTarget = activePRReviewTarget.value ?? activePRTarget.value;
+    if (pullTarget) {
+      await loadPRData(pullTarget.owner, pullTarget.repo, pullTarget.number, { force: true });
+      return;
+    }
+
+    const discussionTarget = activeDiscussionTarget.value;
+    if (discussionTarget) {
+      await loadDiscussionData(
+        discussionTarget.owner,
+        discussionTarget.repo,
+        discussionTarget.number
+      );
+      return;
+    }
+
+    const releaseTarget = activeReleaseTarget.value;
+    if (releaseTarget) {
+      await loadReleaseData(releaseTarget.owner, releaseTarget.repo, releaseTarget.releaseRef);
+      return;
+    }
+
+    const repoTarget = activeRepoTarget.value;
+    if (repoTarget && !isFileBrowsingRoute.value) {
+      await loadRepoData(repoTarget.owner, repoTarget.repo);
+    }
   };
 
   const restorePreviousEntry = async () => {
@@ -894,6 +984,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     loadingRepo: repoPanel.loading,
     prDetailKey,
     repoDetailKey,
+    hasVisibleDetail,
+    currentDetailRefreshKey,
+    currentDetailFreshnessUrl,
+    refreshCurrentDetail,
     openIssue,
     openNotification,
     openPR,

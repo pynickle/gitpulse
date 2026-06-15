@@ -4,6 +4,7 @@ import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 import type { AppFontId, CodeFontId } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
+import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import FontPickerModal from '~/components/ui/FontPickerModal.vue';
 import {
@@ -15,7 +16,17 @@ import {
 const { t } = useI18n();
 const localePath = useLocalePath();
 const router = useRouter();
-const { settings, loading, error, loadSettings, updateFonts } = useUserSettings();
+const { settings, loading, saving, error, loadSettings, updateFonts } = useUserSettings();
+const settingsRefresh = useRefreshableView({
+  refresh: () => loadSettings({ force: true }),
+  enabled: computed(() => !saving.value),
+});
+const {
+  refreshing: settingsRefreshing,
+  checking: settingsChecking,
+  hasNewContent: settingsHasNewContent,
+  refreshNow: refreshSettings,
+} = settingsRefresh;
 
 // SEO: settings page title
 usePageMeta(t('dashboard.settings.pageTitle'));
@@ -295,6 +306,15 @@ onMounted(() => {
       @update:model-value="applyCodeFontFromModal"
     />
   </DashboardOverlayFrame>
+
+  <FloatingRefreshButton
+    :has-new-content="settingsHasNewContent"
+    :refreshing="settingsRefreshing"
+    :checking="settingsChecking"
+    :disabled="saving"
+    :label="t('dashboard.actions.refresh')"
+    @refresh="refreshSettings"
+  />
 </template>
 
 <style scoped lang="scss">

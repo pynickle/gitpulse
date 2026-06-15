@@ -20,6 +20,7 @@ import { bundledLanguages } from 'shiki/langs';
 import { computed, nextTick, onActivated, onMounted, ref, shallowRef, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
+import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import type { RepoContentItem } from '~/composables/useRepoFiles';
 
@@ -73,11 +74,19 @@ const {
   directoryContents,
   fileContent,
   currentPath,
+  currentRefreshKey,
+  currentFreshnessUrl,
   loading,
   error,
   navigateToBranch,
   navigateToPath,
+  retry,
 } = useRepoFiles();
+
+interface FreshnessResponse {
+  signature: string;
+  pollIntervalMs?: number;
+}
 
 const treeNodes = ref<FolderTreeNode[]>([]);
 const collapsedDirectories = ref(new Set<string>());
@@ -86,6 +95,27 @@ const treeLoading = ref(false);
 const treeScrollElement = ref<HTMLElement | null>(null);
 const wordWrap = ref(false);
 const copied = ref(false);
+
+const fetchContentFreshness = async () => {
+  if (!currentFreshnessUrl.value) {
+    return null;
+  }
+
+  return apiFetch<FreshnessResponse>(currentFreshnessUrl.value);
+};
+
+const refreshState = useRefreshableView({
+  refresh: retry,
+  checkFreshness: fetchContentFreshness,
+  freshnessKey: currentRefreshKey,
+  enabled: computed(() => Boolean(props.owner && props.repo)),
+});
+const {
+  hasNewContent: refreshHasNewContent,
+  refreshing: refreshRefreshing,
+  checking: refreshChecking,
+  refreshNow,
+} = refreshState;
 
 const treeScrollPositions = useState<Record<string, number>>(
   'repo-file-tree-scroll-positions',
@@ -1046,6 +1076,15 @@ onActivated(() => {
         <div v-else class="repo-file-view__empty" />
       </div>
     </div>
+
+    <FloatingRefreshButton
+      :has-new-content="refreshHasNewContent"
+      :refreshing="refreshRefreshing"
+      :checking="refreshChecking"
+      :disabled="loading"
+      :label="t('dashboard.actions.refresh')"
+      @refresh="refreshNow"
+    />
   </section>
 </template>
 

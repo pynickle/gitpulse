@@ -239,6 +239,16 @@
     @update="handleFilterUpdate"
     @clear="clearVisibleFilters"
   />
+
+  <FloatingRefreshButton
+    v-if="!isDashboardChildRoute && !showFileBrowsingView"
+    :has-new-content="dashboardHasNewContent"
+    :refreshing="dashboardRefreshing"
+    :checking="dashboardChecking"
+    :disabled="activeDashboardLoading"
+    :label="t('dashboard.actions.refresh')"
+    @refresh="refreshDashboard"
+  />
 </template>
 
 <script setup lang="ts">
@@ -264,12 +274,17 @@ import DetailOverlayHost from '~/components/dashboard/detail/DetailOverlayHost.v
 import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
 import FilterModal from '~/components/dashboard/filters/FilterModal.vue';
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
+import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import RepoFileView from '~/components/dashboard/repo-files/RepoFileView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
 import Button from '~/components/ui/Button.vue';
-import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOptions';
+import type { GitHubSearchQuery } from '~/composables/useCustomTabs';
+import {
+  createCustomTabPreviewSearchParams,
+  resolveCustomTabSubtitle,
+} from '~/composables/useCustomTabSettingsOptions';
 import {
   applyNotificationLocalFilters,
   createCustomTabFilterSourceState,
@@ -297,6 +312,7 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
+const apiFetch = useGitPulseApiFetch();
 const { currentEntry, navigateToFile } = useNavigationHistory();
 const { resolveDashboardUrlTarget, getDashboardUrlRoute, trackDashboardUrlNavigation } =
   useDashboardUrlNavigation();
@@ -308,6 +324,11 @@ interface DashboardEntity {
   number?: number | null;
   pull_request?: unknown;
   [key: string]: unknown;
+}
+
+interface FreshnessResponse {
+  signature: string;
+  pollIntervalMs?: number;
 }
 
 const isDashboardChildRoute = computed(() => {
@@ -844,6 +865,10 @@ const {
   isPRReviewRoute,
   repoDetailKey,
   prDetailKey,
+  hasVisibleDetail,
+  currentDetailRefreshKey,
+  currentDetailFreshnessUrl,
+  refreshCurrentDetail,
 } = useDashboardDetails(currentRouteTabId);
 
 const openSearchResult = async (item: DashboardEntity) => {
@@ -876,6 +901,136 @@ const refreshCurrentTabSafely = async () => {
     console.error('Error refreshing tab:', error);
   }
 };
+
+const buildUrlWithParams = (path: string, params: Record<string, boolean | string | undefined>) => {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) {
+      searchParams.set(key, String(value));
+    }
+  }
+
+  const queryString = searchParams.toString();
+  return queryString ? `${path}?${queryString}` : path;
+};
+
+const buildSearchFreshnessUrl = (query: GitHubSearchQuery) => {
+  return `/api/search/issues/freshness?${createCustomTabPreviewSearchParams(
+    query,
+    1,
+    5
+  ).toString()}`;
+};
+
+const notificationFreshnessUrl = computed(() => {
+  const localFilters = notificationFilterAdapter.value.local;
+  if (localFilters.subjectState) {
+    return '';
+  }
+
+  return buildUrlWithParams('/api/notifications/freshness', {
+    ...notificationFilterAdapter.value.apiParams,
+    read_state: localFilters.readState,
+    repo: localFilters.repo,
+    reason: localFilters.reason,
+    subject_type: localFilters.subjectType,
+  });
+});
+
+const dashboardListFreshnessUrl = computed(() => {
+  const customTab = selectedCustomTab.value;
+  if (customTab) {
+    const customSourceState = filterSourceStates.value[getCustomTabFilterSource(customTab.query)];
+    return buildSearchFreshnessUrl(customSourceState.overlayCustomTabQuery(customTab.query));
+  }
+
+  if (currentTab.value === 'notifications') {
+    return notificationFreshnessUrl.value;
+  }
+
+  if (currentTab.value === 'issues') {
+    return issuePrFetchOptions.value.query
+      ? buildSearchFreshnessUrl(issuePrFetchOptions.value.query)
+      : '/api/issues/freshness';
+  }
+
+  if (currentTab.value === 'pulls') {
+    return pullRequestFetchOptions.value.query
+      ? buildSearchFreshnessUrl(pullRequestFetchOptions.value.query)
+      : '/api/pulls/freshness';
+  }
+
+  return '/api/repos/freshness';
+});
+
+const activeDashboardFreshnessUrl = computed(() => {
+  return hasVisibleDetail.value ? currentDetailFreshnessUrl.value : dashboardListFreshnessUrl.value;
+});
+
+const activeDashboardRefreshKey = computed(() => {
+  if (hasVisibleDetail.value) {
+    return currentDetailRefreshKey.value;
+  }
+
+  return JSON.stringify({
+    tab: currentRouteTabId.value,
+    page: currentPage.value,
+    filters: routeFilterFetchKey.value,
+  });
+});
+
+const fetchActiveDashboardFreshness = async () => {
+  if (!activeDashboardFreshnessUrl.value) {
+    return null;
+  }
+
+  return apiFetch<FreshnessResponse>(activeDashboardFreshnessUrl.value);
+};
+
+const refreshActiveDashboardSurface = async () => {
+  if (hasVisibleDetail.value) {
+    await refreshCurrentDetail();
+    return;
+  }
+
+  await refreshCurrentTabSafely();
+};
+
+const activeDashboardLoading = computed(() => {
+  if (!hasVisibleDetail.value) {
+    return dashboardListLoading.value;
+  }
+
+  return (
+    loadingIssue.value ||
+    loadingPR.value ||
+    loadingDiscussion.value ||
+    loadingRelease.value ||
+    loadingRepo.value
+  );
+});
+
+const dashboardRefresh = useRefreshableView({
+  refresh: refreshActiveDashboardSurface,
+  checkFreshness: fetchActiveDashboardFreshness,
+  freshnessKey: activeDashboardRefreshKey,
+  enabled: computed(() => {
+    return (
+      import.meta.client &&
+      sessionReady.value &&
+      loggedIn.value &&
+      !isDashboardChildRoute.value &&
+      !showFileBrowsingView.value &&
+      Boolean(activeDashboardFreshnessUrl.value)
+    );
+  }),
+});
+const {
+  hasNewContent: dashboardHasNewContent,
+  refreshing: dashboardRefreshing,
+  checking: dashboardChecking,
+  refreshNow: refreshDashboard,
+} = dashboardRefresh;
 
 const loadRouteTabSafely = async (tab: unknown, page: number) => {
   try {

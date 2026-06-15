@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
+import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import TabsSettingsPage from '~/components/dashboard/tabs-settings/TabsSettingsPage.vue';
 import { useTabsSettingsPage } from '~/composables/useTabsSettingsPage';
@@ -7,6 +10,17 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 const router = useRouter();
 const tabsSettings = useTabsSettingsPage();
+const { loadSettings, saving } = useUserSettings();
+const tabsRefresh = useRefreshableView({
+  refresh: () => loadSettings({ force: true }),
+  enabled: computed(() => !saving.value),
+});
+const {
+  refreshing: tabsRefreshing,
+  checking: tabsChecking,
+  hasNewContent: tabsHasNewContent,
+  refreshNow: refreshTabsSettings,
+} = tabsRefresh;
 
 // SEO: tabs settings page title
 usePageMeta(t('dashboard.tabsSettings.pageTitle'));
@@ -29,4 +43,13 @@ const handleBack = () => {
   >
     <TabsSettingsPage :model="tabsSettings" />
   </DashboardOverlayFrame>
+
+  <FloatingRefreshButton
+    :has-new-content="tabsHasNewContent"
+    :refreshing="tabsRefreshing"
+    :checking="tabsChecking"
+    :disabled="saving"
+    :label="t('dashboard.actions.refresh')"
+    @refresh="refreshTabsSettings"
+  />
 </template>

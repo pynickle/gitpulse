@@ -1,35 +1,40 @@
+import { getLatestUpdatedAt, type FreshnessResponse } from '#server/utils/freshness-response-utils';
 import {
   buildIssueSearchRequestParams,
   getGitHubErrorHeader,
   normalizeSearchTotalCount,
 } from '#server/utils/github-issue-search-route-utils';
+import { createCollectionFreshnessSignature } from '#shared/utils/freshness';
 
-import { getGitHubErrorStatusCode } from '../../utils/github-auth-utils';
-import { buildLinkedPaginationMeta } from '../../utils/github-pagination';
+import { getGitHubErrorStatusCode } from '../../../utils/github-auth-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { octokit } = await getGitHubSessionContext(event);
-    const requestParams = buildIssueSearchRequestParams(event);
+    const requestParams = buildIssueSearchRequestParams(event, {
+      defaultPerPage: 5,
+      maxPerPage: 10,
+    });
 
-    const { data, headers } = await octokit.request('GET /search/issues', requestParams);
-
+    const { data } = await octokit.request('GET /search/issues', {
+      ...requestParams,
+      page: 1,
+    });
     const totalCount = normalizeSearchTotalCount(data.total_count);
 
     return {
-      total_count: totalCount,
-      incomplete_results: data.incomplete_results ?? false,
-      request: requestParams,
-      items: data.items,
-      pagination: buildLinkedPaginationMeta({
-        page: requestParams.page,
-        perPage: requestParams.per_page,
-        linkHeader: headers.link,
+      signature: createCollectionFreshnessSignature(data.items, {
         totalCount,
+        q: requestParams.q,
+        sort: requestParams.sort,
+        order: requestParams.order,
       }),
-    };
+      itemCount: data.items.length,
+      totalCount,
+      latestUpdatedAt: getLatestUpdatedAt(data.items),
+    } satisfies FreshnessResponse;
   } catch (error) {
-    console.error('Error fetching GitHub issue search results:', error);
+    console.error('Error checking GitHub issue search freshness:', error);
 
     const status = getGitHubErrorStatusCode(error);
 
@@ -59,7 +64,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
 
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to fetch GitHub search results',
+      statusMessage: 'Failed to check GitHub search freshness',
     });
   }
 });

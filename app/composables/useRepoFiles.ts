@@ -132,6 +132,35 @@ export function useRepoFiles() {
 
   const isDirectory = computed(() => !fileContent.value);
   const isFile = computed(() => Boolean(fileContent.value));
+  const currentRefreshKey = computed(() => {
+    const target = activeRepoTarget.value;
+    return [
+      target?.owner ?? '',
+      target?.repo ?? '',
+      activePath.value,
+      activeBranch.value || currentBranch.value || defaultBranch.value,
+    ].join(':');
+  });
+  const currentFreshnessUrl = computed(() => {
+    const target = activeRepoTarget.value;
+    if (!target) {
+      return '';
+    }
+
+    const searchParams = new URLSearchParams();
+    if (activePath.value) {
+      searchParams.set('path', activePath.value);
+    }
+    const branch = activeBranch.value || currentBranch.value || defaultBranch.value;
+    if (branch) {
+      searchParams.set('ref', branch);
+    }
+
+    const queryString = searchParams.toString();
+    return `/api/repos/${target.owner}/${target.repo}/content-freshness${
+      queryString ? `?${queryString}` : ''
+    }`;
+  });
 
   const clearState = () => {
     contentRequestId.value += 1;
@@ -367,6 +396,8 @@ export function useRepoFiles() {
     error,
     isDirectory,
     isFile,
+    currentRefreshKey,
+    currentFreshnessUrl,
     navigateToPath,
     navigateToBranch,
     navigateUp,
