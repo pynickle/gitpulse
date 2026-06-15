@@ -100,105 +100,107 @@
               </span>
             </button>
 
-            <div v-if="isFileExpanded(group.path)" class="review-item__file-comments">
-              <div
-                v-for="comment in group.comments"
-                :key="comment.id || `${comment.path}-${comment.createdAt}`"
-                class="review-item__comment"
-              >
-                <PRTimelineReviewDiff
-                  v-if="comment.diffHunk"
-                  class="review-item__diff"
-                  :filename="comment.path ?? group.path"
-                  :lines="buildReviewCommentDiffLines(comment)"
-                  :aria-label="t('prReview.reviewDiffLabel', { filename: group.path })"
-                />
-                <div class="review-item__comment-meta">
-                  <div class="review-item__comment-meta-left">
-                    <GitHubAvatar
-                      variant="raised"
-                      interactive
-                      width="20"
-                      height="20"
-                      :src="comment.author?.avatarUrl || ''"
-                      :alt="comment.author?.login || ''"
-                    />
-                    <a
-                      :href="comment.author?.url"
-                      target="_blank"
-                      rel="noopener"
-                      class="has-text-link"
-                    >
-                      {{ comment.author?.login }}
-                    </a>
-                    <a
-                      v-if="comment.url"
-                      :href="comment.url"
-                      target="_blank"
-                      rel="noopener"
-                      class="review-item__path-tag"
-                    >
-                      {{ commentLineLabel(comment) }}
-                    </a>
-                    <span v-if="comment.createdAt" class="has-text-grey">
-                      {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
-                    </span>
-                    <span
-                      v-if="comment.isOutdated"
-                      class="tag is-warning is-light review-item__outdated-tag"
-                    >
-                      {{ t('prReview.threadOutdated') }}
-                    </span>
+            <Transition name="expand">
+              <div v-if="isFileExpanded(group.path)" class="review-item__file-comments">
+                <div
+                  v-for="comment in group.comments"
+                  :key="comment.id || `${comment.path}-${comment.createdAt}`"
+                  class="review-item__comment"
+                >
+                  <PRTimelineReviewDiff
+                    v-if="comment.diffHunk"
+                    class="review-item__diff"
+                    :filename="comment.path ?? group.path"
+                    :lines="buildReviewCommentDiffLines(comment)"
+                    :aria-label="t('prReview.reviewDiffLabel', { filename: group.path })"
+                  />
+                  <div class="review-item__comment-meta">
+                    <div class="review-item__comment-meta-left">
+                      <GitHubAvatar
+                        variant="raised"
+                        interactive
+                        width="20"
+                        height="20"
+                        :src="comment.author?.avatarUrl || ''"
+                        :alt="comment.author?.login || ''"
+                      />
+                      <a
+                        :href="comment.author?.url"
+                        target="_blank"
+                        rel="noopener"
+                        class="has-text-link"
+                      >
+                        {{ comment.author?.login }}
+                      </a>
+                      <a
+                        v-if="comment.url"
+                        :href="comment.url"
+                        target="_blank"
+                        rel="noopener"
+                        class="review-item__path-tag"
+                      >
+                        {{ commentLineLabel(comment) }}
+                      </a>
+                      <span v-if="comment.createdAt" class="has-text-grey">
+                        {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
+                      </span>
+                      <span
+                        v-if="comment.isOutdated"
+                        class="tag is-warning is-light review-item__outdated-tag"
+                      >
+                        {{ t('prReview.threadOutdated') }}
+                      </span>
+                    </div>
+                    <div v-if="comment.threadId" class="review-item__thread-status">
+                      <button
+                        class="review-item__thread-toggle"
+                        type="button"
+                        :class="{
+                          'is-resolved': comment.isResolved,
+                          'is-loading': isReviewThreadResolving(comment),
+                        }"
+                        :disabled="isReviewThreadResolving(comment)"
+                        :aria-label="reviewThreadActionLabel(comment)"
+                        :title="reviewThreadActionLabel(comment)"
+                        @click="toggleReviewThread(comment)"
+                      >
+                        <component
+                          :is="comment.isResolved ? CheckIcon : CircleIcon"
+                          :size="14"
+                          :stroke-width="2.5"
+                          aria-hidden="true"
+                        />
+                      </button>
+                      <span class="review-item__thread-label">
+                        {{ reviewThreadStateLabel(comment) }}
+                      </span>
+                    </div>
                   </div>
-                  <div v-if="comment.threadId" class="review-item__thread-status">
-                    <button
-                      class="review-item__thread-toggle"
-                      type="button"
-                      :class="{
-                        'is-resolved': comment.isResolved,
-                        'is-loading': isReviewThreadResolving(comment),
-                      }"
-                      :disabled="isReviewThreadResolving(comment)"
-                      :aria-label="reviewThreadActionLabel(comment)"
-                      :title="reviewThreadActionLabel(comment)"
-                      @click="toggleReviewThread(comment)"
-                    >
-                      <component
-                        :is="comment.isResolved ? CheckIcon : CircleIcon"
-                        :size="14"
-                        :stroke-width="2.5"
-                        aria-hidden="true"
-                      />
-                    </button>
-                    <span class="review-item__thread-label">
-                      {{ reviewThreadStateLabel(comment) }}
-                    </span>
-                  </div>
-                </div>
-                <div class="review-item__comment-body content">
-                  <template v-if="comment.body">
-                    <template v-for="part in splitSuggestionBody(comment.body)" :key="part.key">
-                      <MarkdownRenderer
-                        v-if="part.kind === 'markdown' && part.value.trim()"
-                        :value="part.value"
-                        :repo-owner="repoOwner"
-                        :repo-name="repoName"
-                      />
-                      <PRTimelineReviewDiff
-                        v-else-if="part.kind === 'suggestion'"
-                        class="review-item__suggestion"
-                        :filename="comment.path ?? group.path"
-                        :lines="buildSuggestionDiffLines(comment, part.value)"
-                        :aria-label="t('prReview.suggestedChangeLabel', { filename: group.path })"
-                      />
+                  <div class="review-item__comment-body content">
+                    <template v-if="comment.body">
+                      <template v-for="part in splitSuggestionBody(comment.body)" :key="part.key">
+                        <MarkdownRenderer
+                          v-if="part.kind === 'markdown' && part.value.trim()"
+                          :value="part.value"
+                          :repo-owner="repoOwner"
+                          :repo-name="repoName"
+                        />
+                        <PRTimelineReviewDiff
+                          v-else-if="part.kind === 'suggestion'"
+                          class="review-item__suggestion"
+                          :filename="comment.path ?? group.path"
+                          :lines="buildSuggestionDiffLines(comment, part.value)"
+                          :aria-label="t('prReview.suggestedChangeLabel', { filename: group.path })"
+                        />
+                      </template>
                     </template>
-                  </template>
-                  <p v-else class="has-text-grey is-size-7">
-                    {{ t('prReview.noReviewCommentBody') }}
-                  </p>
+                    <p v-else class="has-text-grey is-size-7">
+                      {{ t('prReview.noReviewCommentBody') }}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Transition>
           </article>
         </div>
       </div>
@@ -1002,5 +1004,26 @@ html.dark .review-item__thread-toggle {
 .review-item__dismissal-message :deep(*:last-child),
 .review-item__comment-body :deep(*:last-child) {
   margin-bottom: 0;
+}
+
+.expand-enter-active,
+.expand-leave-active {
+  max-height: 2000px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.2s ease,
+    max-height 0.2s ease,
+    padding-top 0.2s ease,
+    padding-bottom 0.2s ease;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>

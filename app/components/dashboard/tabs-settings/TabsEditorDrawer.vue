@@ -288,264 +288,266 @@ const {
               <span class="tag is-light is-small advanced-count">{{ advancedFilterCount }}</span>
             </button>
 
-            <div v-if="advancedFiltersOpen" class="advanced-body">
-              <div class="field-grid is-two">
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.repoLabel') }}</label>
-                  <div class="control has-icons-left">
-                    <input
-                      v-model="newTab.query.repo"
-                      class="input"
-                      type="text"
-                      :placeholder="t('dashboard.tabsSettings.repoPlaceholder')"
-                    />
-                    <span class="icon is-small is-left"><GitBranchIcon :size="16" /></span>
+            <Transition name="expand">
+              <div v-if="advancedFiltersOpen" class="advanced-body">
+                <div class="field-grid is-two">
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.repoLabel') }}</label>
+                    <div class="control has-icons-left">
+                      <input
+                        v-model="newTab.query.repo"
+                        class="input"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.repoPlaceholder')"
+                      />
+                      <span class="icon is-small is-left"><GitBranchIcon :size="16" /></span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.orgUserLabel') }}</label>
+                    <div class="scope-grid">
+                      <div class="control has-icons-left">
+                        <input
+                          v-model="newTab.query.org"
+                          class="input"
+                          type="text"
+                          :placeholder="t('dashboard.tabsSettings.orgPlaceholder')"
+                        />
+                        <span class="icon is-small is-left"><UsersIcon :size="16" /></span>
+                      </div>
+                      <div class="control has-icons-left">
+                        <input
+                          v-model="newTab.query.user"
+                          class="input"
+                          type="text"
+                          :placeholder="t('dashboard.tabsSettings.userPlaceholder')"
+                        />
+                        <span class="icon is-small is-left"><UserIcon :size="16" /></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.orgUserLabel') }}</label>
-                  <div class="scope-grid">
+
+                <div class="field-grid is-two">
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.authorLabel') }}</label>
                     <div class="control has-icons-left">
                       <input
-                        v-model="newTab.query.org"
+                        v-model="newTab.query.author"
                         class="input"
                         type="text"
-                        :placeholder="t('dashboard.tabsSettings.orgPlaceholder')"
-                      />
-                      <span class="icon is-small is-left"><UsersIcon :size="16" /></span>
-                    </div>
-                    <div class="control has-icons-left">
-                      <input
-                        v-model="newTab.query.user"
-                        class="input"
-                        type="text"
-                        :placeholder="t('dashboard.tabsSettings.userPlaceholder')"
+                        :placeholder="t('dashboard.tabsSettings.authorPlaceholder')"
                       />
                       <span class="icon is-small is-left"><UserIcon :size="16" /></span>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div class="field-grid is-two">
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.authorLabel') }}</label>
-                  <div class="control has-icons-left">
-                    <input
-                      v-model="newTab.query.author"
-                      class="input"
-                      type="text"
-                      :placeholder="t('dashboard.tabsSettings.authorPlaceholder')"
-                    />
-                    <span class="icon is-small is-left"><UserIcon :size="16" /></span>
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.assigneeLabel') }}</label>
+                    <div class="control has-icons-left">
+                      <input
+                        v-model="newTab.query.assignee"
+                        class="input"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.assigneePlaceholder')"
+                      />
+                      <span class="icon is-small is-left"><CheckIcon :size="16" /></span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.mentionsLabel') }}</label>
+                    <div class="control has-icons-left">
+                      <input
+                        v-model="newTab.query.mentions"
+                        class="input"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.mentionsPlaceholder')"
+                      />
+                      <span class="icon is-small is-left"><MessageSquareIcon :size="16" /></span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.involvesLabel') }}</label>
+                    <div class="control has-icons-left">
+                      <input
+                        v-model="newTab.query.involves"
+                        class="input"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.involvesPlaceholder')"
+                      />
+                      <span class="icon is-small is-left"><EyeIcon :size="16" /></span>
+                    </div>
                   </div>
                 </div>
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.assigneeLabel') }}</label>
-                  <div class="control has-icons-left">
+
+                <div class="field-grid is-three">
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.commenterLabel') }}</label>
                     <input
-                      v-model="newTab.query.assignee"
+                      v-model="newTab.query.commenter"
                       class="input"
                       type="text"
-                      :placeholder="t('dashboard.tabsSettings.assigneePlaceholder')"
+                      :placeholder="t('dashboard.tabsSettings.commenterPlaceholder')"
                     />
-                    <span class="icon is-small is-left"><CheckIcon :size="16" /></span>
                   </div>
-                </div>
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.mentionsLabel') }}</label>
-                  <div class="control has-icons-left">
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.milestoneLabel') }}</label>
                     <input
-                      v-model="newTab.query.mentions"
+                      v-model="newTab.query.milestone"
                       class="input"
                       type="text"
-                      :placeholder="t('dashboard.tabsSettings.mentionsPlaceholder')"
+                      :placeholder="t('dashboard.tabsSettings.milestonePlaceholder')"
                     />
-                    <span class="icon is-small is-left"><MessageSquareIcon :size="16" /></span>
                   </div>
-                </div>
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.involvesLabel') }}</label>
-                  <div class="control has-icons-left">
+                  <div class="field">
+                    <label class="label">{{ t('dashboard.tabsSettings.perPageLabel') }}</label>
                     <input
-                      v-model="newTab.query.involves"
+                      v-model.number="newTab.query.perPage"
                       class="input"
-                      type="text"
-                      :placeholder="t('dashboard.tabsSettings.involvesPlaceholder')"
+                      type="number"
+                      min="1"
+                      max="100"
+                      step="1"
                     />
-                    <span class="icon is-small is-left"><EyeIcon :size="16" /></span>
                   </div>
                 </div>
-              </div>
 
-              <div class="field-grid is-three">
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.commenterLabel') }}</label>
-                  <input
-                    v-model="newTab.query.commenter"
-                    class="input"
-                    type="text"
-                    :placeholder="t('dashboard.tabsSettings.commenterPlaceholder')"
-                  />
-                </div>
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.milestoneLabel') }}</label>
-                  <input
-                    v-model="newTab.query.milestone"
-                    class="input"
-                    type="text"
-                    :placeholder="t('dashboard.tabsSettings.milestonePlaceholder')"
-                  />
-                </div>
-                <div class="field">
-                  <label class="label">{{ t('dashboard.tabsSettings.perPageLabel') }}</label>
-                  <input
-                    v-model.number="newTab.query.perPage"
-                    class="input"
-                    type="number"
-                    min="1"
-                    max="100"
-                    step="1"
-                  />
-                </div>
-              </div>
-
-              <div class="toggle-section">
-                <label class="label">{{ t('dashboard.tabsSettings.searchInLabel') }}</label>
-                <div class="segmented-row is-wrap">
-                  <button
-                    v-for="option in scopeOptions"
-                    :key="option.value"
-                    class="segmented-button"
-                    :class="{ 'is-active': newTab.query.scopes.includes(option.value) }"
-                    type="button"
-                    @click="toggleScope(option.value)"
-                  >
-                    {{ t(option.labelKey) }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="toggle-grid">
                 <div class="toggle-section">
-                  <label class="label">{{ t('dashboard.tabsSettings.visibilityLabel') }}</label>
+                  <label class="label">{{ t('dashboard.tabsSettings.searchInLabel') }}</label>
                   <div class="segmented-row is-wrap">
                     <button
-                      v-for="option in visibilityOptions"
+                      v-for="option in scopeOptions"
                       :key="option.value"
                       class="segmented-button"
-                      :class="{ 'is-active': newTab.query.visibility === option.value }"
+                      :class="{ 'is-active': newTab.query.scopes.includes(option.value) }"
                       type="button"
-                      @click="newTab.query.visibility = option.value"
+                      @click="toggleScope(option.value)"
                     >
                       {{ t(option.labelKey) }}
                     </button>
                   </div>
                 </div>
-                <div class="toggle-section">
-                  <label class="label">{{ t('dashboard.tabsSettings.archivedLabel') }}</label>
-                  <div class="segmented-row is-wrap">
-                    <button
-                      v-for="option in archivedOptions"
-                      :key="option.value"
-                      class="segmented-button"
-                      :class="{ 'is-active': newTab.query.archived === option.value }"
-                      type="button"
-                      @click="newTab.query.archived = option.value"
-                    >
-                      {{ t(option.labelKey) }}
-                    </button>
-                  </div>
-                </div>
-              </div>
 
-              <div v-if="isPullRequestSearch" class="advanced-pr-band">
-                <div class="section-label-row mb-3">
-                  <div class="section-label">
-                    <GitPullRequestIcon :size="15" />
-                    <span>{{ t('dashboard.tabsSettings.prQualifiersTitle') }}</span>
-                  </div>
-                </div>
-                <div class="field-grid is-two">
-                  <div class="field">
-                    <label class="label">{{ t('dashboard.tabsSettings.baseBranchLabel') }}</label>
-                    <input
-                      v-model="newTab.query.base"
-                      class="input"
-                      type="text"
-                      :placeholder="t('dashboard.tabsSettings.baseBranchPlaceholder')"
-                    />
-                  </div>
-                  <div class="field">
-                    <label class="label">{{ t('dashboard.tabsSettings.headBranchLabel') }}</label>
-                    <input
-                      v-model="newTab.query.head"
-                      class="input"
-                      type="text"
-                      :placeholder="t('dashboard.tabsSettings.headBranchPlaceholder')"
-                    />
-                  </div>
-                </div>
                 <div class="toggle-grid">
                   <div class="toggle-section">
-                    <label class="label">{{ t('dashboard.tabsSettings.draftLabel') }}</label>
+                    <label class="label">{{ t('dashboard.tabsSettings.visibilityLabel') }}</label>
                     <div class="segmented-row is-wrap">
                       <button
-                        v-for="option in draftOptions"
+                        v-for="option in visibilityOptions"
                         :key="option.value"
                         class="segmented-button"
-                        :class="{ 'is-active': newTab.query.draft === option.value }"
-                        :style="
-                          newTab.query.draft === option.value && filterIconMap[option.value]
-                            ? {
-                                '--seg-active-bg': filterIconMap[option.value]!.activeColor,
-                                '--seg-active-border': filterIconMap[option.value]!.activeColor,
-                              }
-                            : {}
-                        "
+                        :class="{ 'is-active': newTab.query.visibility === option.value }"
                         type="button"
-                        @click="newTab.query.draft = option.value"
+                        @click="newTab.query.visibility = option.value"
                       >
-                        <component
-                          :is="filterIconMap[option.value]?.icon"
-                          v-if="filterIconMap[option.value]"
-                          :size="14"
-                        />
-                        <span>{{ t(option.labelKey) }}</span>
+                        {{ t(option.labelKey) }}
                       </button>
                     </div>
                   </div>
                   <div class="toggle-section">
-                    <label class="label">{{ t('dashboard.tabsSettings.reviewLabel') }}</label>
+                    <label class="label">{{ t('dashboard.tabsSettings.archivedLabel') }}</label>
                     <div class="segmented-row is-wrap">
                       <button
-                        v-for="option in reviewOptions"
+                        v-for="option in archivedOptions"
                         :key="option.value"
                         class="segmented-button"
-                        :class="{ 'is-active': newTab.query.review === option.value }"
-                        :style="
-                          newTab.query.review === option.value && filterIconMap[option.value]
-                            ? {
-                                '--seg-active-bg': filterIconMap[option.value]!.activeColor,
-                                '--seg-active-border': filterIconMap[option.value]!.activeColor,
-                              }
-                            : {}
-                        "
+                        :class="{ 'is-active': newTab.query.archived === option.value }"
                         type="button"
-                        @click="newTab.query.review = option.value"
+                        @click="newTab.query.archived = option.value"
                       >
-                        <component
-                          :is="filterIconMap[option.value]?.icon"
-                          v-if="filterIconMap[option.value]"
-                          :size="14"
-                        />
-                        <span>{{ t(option.labelKey) }}</span>
+                        {{ t(option.labelKey) }}
                       </button>
                     </div>
                   </div>
                 </div>
+
+                <div v-if="isPullRequestSearch" class="advanced-pr-band">
+                  <div class="section-label-row mb-3">
+                    <div class="section-label">
+                      <GitPullRequestIcon :size="15" />
+                      <span>{{ t('dashboard.tabsSettings.prQualifiersTitle') }}</span>
+                    </div>
+                  </div>
+                  <div class="field-grid is-two">
+                    <div class="field">
+                      <label class="label">{{ t('dashboard.tabsSettings.baseBranchLabel') }}</label>
+                      <input
+                        v-model="newTab.query.base"
+                        class="input"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.baseBranchPlaceholder')"
+                      />
+                    </div>
+                    <div class="field">
+                      <label class="label">{{ t('dashboard.tabsSettings.headBranchLabel') }}</label>
+                      <input
+                        v-model="newTab.query.head"
+                        class="input"
+                        type="text"
+                        :placeholder="t('dashboard.tabsSettings.headBranchPlaceholder')"
+                      />
+                    </div>
+                  </div>
+                  <div class="toggle-grid">
+                    <div class="toggle-section">
+                      <label class="label">{{ t('dashboard.tabsSettings.draftLabel') }}</label>
+                      <div class="segmented-row is-wrap">
+                        <button
+                          v-for="option in draftOptions"
+                          :key="option.value"
+                          class="segmented-button"
+                          :class="{ 'is-active': newTab.query.draft === option.value }"
+                          :style="
+                            newTab.query.draft === option.value && filterIconMap[option.value]
+                              ? {
+                                  '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                                  '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                                }
+                              : {}
+                          "
+                          type="button"
+                          @click="newTab.query.draft = option.value"
+                        >
+                          <component
+                            :is="filterIconMap[option.value]?.icon"
+                            v-if="filterIconMap[option.value]"
+                            :size="14"
+                          />
+                          <span>{{ t(option.labelKey) }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="toggle-section">
+                      <label class="label">{{ t('dashboard.tabsSettings.reviewLabel') }}</label>
+                      <div class="segmented-row is-wrap">
+                        <button
+                          v-for="option in reviewOptions"
+                          :key="option.value"
+                          class="segmented-button"
+                          :class="{ 'is-active': newTab.query.review === option.value }"
+                          :style="
+                            newTab.query.review === option.value && filterIconMap[option.value]
+                              ? {
+                                  '--seg-active-bg': filterIconMap[option.value]!.activeColor,
+                                  '--seg-active-border': filterIconMap[option.value]!.activeColor,
+                                }
+                              : {}
+                          "
+                          type="button"
+                          @click="newTab.query.review = option.value"
+                        >
+                          <component
+                            :is="filterIconMap[option.value]?.icon"
+                            v-if="filterIconMap[option.value]"
+                            :size="14"
+                          />
+                          <span>{{ t(option.labelKey) }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Transition>
           </div>
 
           <div class="field">

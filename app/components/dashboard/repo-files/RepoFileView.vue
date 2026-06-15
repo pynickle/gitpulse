@@ -825,59 +825,61 @@ onActivated(() => {
               <span class="repo-file-view__tree-label">{{ t('repoFileView.root') }}</span>
             </button>
 
-            <template v-for="row in visibleTreeRows" :key="row.node.path">
-              <div v-if="row.node.type === 'directory'" class="repo-file-view__tree-group">
+            <TransitionGroup name="tree-row">
+              <template v-for="row in visibleTreeRows" :key="row.node.path">
+                <div v-if="row.node.type === 'directory'" class="repo-file-view__tree-group">
+                  <button
+                    type="button"
+                    :class="[
+                      'repo-file-view__tree-directory',
+                      { 'repo-file-view__tree-directory--active': isCurrentPath(row.node.path) },
+                    ]"
+                    :style="{ paddingLeft: `${0.45 + row.depth * 0.9}rem` }"
+                    :aria-expanded="!isDirectoryCollapsed(row.collapsePath)"
+                    :aria-label="
+                      isDirectoryCollapsed(row.collapsePath)
+                        ? t('repoFileView.expandDirectory', { name: row.label })
+                        : t('repoFileView.collapseDirectory', { name: row.label })
+                    "
+                    :title="row.label"
+                    @click="handleTreeDirectoryClick(row)"
+                  >
+                    <ChevronRightIcon
+                      :size="14"
+                      :class="[
+                        'repo-file-view__tree-chevron',
+                        {
+                          'repo-file-view__tree-chevron--expanded': !isDirectoryCollapsed(
+                            row.collapsePath
+                          ),
+                        },
+                      ]"
+                      aria-hidden="true"
+                      @click.stop="toggleDirectory(row.collapsePath)"
+                    />
+                    <FolderIcon :size="14" aria-hidden="true" />
+                    <span class="repo-file-view__tree-label">{{ row.label }}</span>
+                    <span v-if="row.node.children.length" class="repo-file-view__tree-count">
+                      {{ countFiles(row.node) }}
+                    </span>
+                  </button>
+                </div>
+
                 <button
+                  v-else
                   type="button"
                   :class="[
-                    'repo-file-view__tree-directory',
-                    { 'repo-file-view__tree-directory--active': isCurrentPath(row.node.path) },
+                    'repo-file-view__tree-file',
+                    { 'repo-file-view__tree-file--active': isCurrentPath(row.node.path) },
                   ]"
-                  :style="{ paddingLeft: `${0.45 + row.depth * 0.9}rem` }"
-                  :aria-expanded="!isDirectoryCollapsed(row.collapsePath)"
-                  :aria-label="
-                    isDirectoryCollapsed(row.collapsePath)
-                      ? t('repoFileView.expandDirectory', { name: row.label })
-                      : t('repoFileView.collapseDirectory', { name: row.label })
-                  "
-                  :title="row.label"
-                  @click="handleTreeDirectoryClick(row)"
+                  :style="{ paddingLeft: `${1.2 + row.depth * 0.9}rem` }"
+                  @click="handleTreeFileClick(row)"
                 >
-                  <ChevronRightIcon
-                    :size="14"
-                    :class="[
-                      'repo-file-view__tree-chevron',
-                      {
-                        'repo-file-view__tree-chevron--expanded': !isDirectoryCollapsed(
-                          row.collapsePath
-                        ),
-                      },
-                    ]"
-                    aria-hidden="true"
-                    @click.stop="toggleDirectory(row.collapsePath)"
-                  />
-                  <FolderIcon :size="14" aria-hidden="true" />
-                  <span class="repo-file-view__tree-label">{{ row.label }}</span>
-                  <span v-if="row.node.children.length" class="repo-file-view__tree-count">
-                    {{ countFiles(row.node) }}
-                  </span>
+                  <FileIcon :size="14" aria-hidden="true" />
+                  <span class="repo-file-view__tree-label">{{ row.node.name }}</span>
                 </button>
-              </div>
-
-              <button
-                v-else
-                type="button"
-                :class="[
-                  'repo-file-view__tree-file',
-                  { 'repo-file-view__tree-file--active': isCurrentPath(row.node.path) },
-                ]"
-                :style="{ paddingLeft: `${1.2 + row.depth * 0.9}rem` }"
-                @click="handleTreeFileClick(row)"
-              >
-                <FileIcon :size="14" aria-hidden="true" />
-                <span class="repo-file-view__tree-label">{{ row.node.name }}</span>
-              </button>
-            </template>
+              </template>
+            </TransitionGroup>
           </div>
         </template>
       </aside>
@@ -1721,5 +1723,27 @@ onActivated(() => {
   .repo-file-view__grid {
     grid-template-columns: var(--file-sidebar-width, 12rem) minmax(0, 1fr);
   }
+}
+
+.tree-row-enter-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.2s ease;
+}
+
+.tree-row-leave-active {
+  transition:
+    opacity 0.1s ease,
+    transform 0.15s ease;
+}
+
+.tree-row-enter-from {
+  opacity: 0;
+  transform: translateX(-4px);
+}
+
+.tree-row-leave-to {
+  opacity: 0;
+  transform: translateX(4px);
 }
 </style>

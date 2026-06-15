@@ -37,8 +37,8 @@
 
         <!-- Group children (tabs) -->
         <div
-          v-if="!isGroupCollapsed(group)"
           class="tab-sidebar__children"
+          :class="{ 'tab-sidebar__children--collapsed': isGroupCollapsed(group) }"
           :style="getDepthStyle(group.depth)"
         >
           <ul class="tab-sidebar__tab-list" role="group">

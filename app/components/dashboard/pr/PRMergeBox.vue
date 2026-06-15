@@ -90,26 +90,31 @@
               :class="{ 'merge-box__chevron--open': checksExpanded }"
             />
           </button>
-          <ul v-if="checksExpanded" class="merge-box__check-list">
-            <li
-              v-for="(run, index) in status.checks.runs"
-              :key="`${run.name}:${index}`"
-              class="merge-box__check-item"
-            >
-              <span class="merge-box__check-dot" :class="`merge-box__check-dot--${runTone(run)}`" />
-              <a
-                v-if="run.htmlUrl"
-                :href="run.htmlUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="merge-box__check-name merge-box__check-name--link"
+          <Transition name="expand">
+            <ul v-if="checksExpanded" class="merge-box__check-list">
+              <li
+                v-for="(run, index) in status.checks.runs"
+                :key="`${run.name}:${index}`"
+                class="merge-box__check-item"
               >
-                {{ run.name }}
-              </a>
-              <span v-else class="merge-box__check-name">{{ run.name }}</span>
-              <span v-if="run.appName" class="merge-box__check-app">{{ run.appName }}</span>
-            </li>
-          </ul>
+                <span
+                  class="merge-box__check-dot"
+                  :class="`merge-box__check-dot--${runTone(run)}`"
+                />
+                <a
+                  v-if="run.htmlUrl"
+                  :href="run.htmlUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="merge-box__check-name merge-box__check-name--link"
+                >
+                  {{ run.name }}
+                </a>
+                <span v-else class="merge-box__check-name">{{ run.name }}</span>
+                <span v-if="run.appName" class="merge-box__check-app">{{ run.appName }}</span>
+              </li>
+            </ul>
+          </Transition>
         </template>
 
         <div class="merge-box__row" :class="`merge-box__row--${mergeabilityRow.tone}`">
@@ -1190,5 +1195,26 @@ watch(
   to {
     transform: rotate(360deg);
   }
+}
+
+.expand-enter-active,
+.expand-leave-active {
+  max-height: 2000px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.2s ease,
+    max-height 0.2s ease,
+    padding-top 0.2s ease,
+    padding-bottom 0.2s ease;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-4px);
+  padding-top: 0;
+  padding-bottom: 0;
 }
 </style>
