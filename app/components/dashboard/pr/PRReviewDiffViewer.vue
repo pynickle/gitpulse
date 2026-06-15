@@ -368,63 +368,58 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="!collapsedFiles.has(section.file.filename)"
-          class="pr-review-diff-viewer__file-body"
+          v-if="!section.file.patch"
+          class="pr-review-diff-viewer__empty pr-review-diff-viewer__empty--file"
         >
-          <div
-            v-if="!section.file.patch"
-            class="pr-review-diff-viewer__empty pr-review-diff-viewer__empty--file"
-          >
-            <p class="mb-2">{{ t('prReview.patchUnavailable') }}</p>
-            <p class="is-size-7 has-text-grey mb-0">{{ t('prReview.patchUnavailableHint') }}</p>
-          </div>
+          <p class="mb-2">{{ t('prReview.patchUnavailable') }}</p>
+          <p class="is-size-7 has-text-grey mb-0">{{ t('prReview.patchUnavailableHint') }}</p>
+        </div>
 
-          <template v-else>
-            <PRReviewVirtualDiffRows
-              :rows="section.rows"
-              :filename="section.file.filename"
-              :repo-owner="repoOwner"
-              :repo-name="repoName"
-              :review-comment-threads="getReviewThreadsForFile(section.file.filename)"
-              :active-draft-target="activeDraftTarget"
-              :active-draft-body="getInlineDraftBodyForFile(section.file.filename)"
-              :submitting="submitting"
-              :resolving-review-thread-id="resolvingReviewThreadId"
-              :scroll-container="scrollContainer"
-              @open-draft-editor="handleOpenDraftEditor"
-              @close-draft-editor="handleCloseDraftEditor"
-              @update-active-draft-body="
-                (body) => setInlineDraftBodyForFile(section.file.filename, body)
-              "
-              @save-draft-comment="handleSaveDraftComment"
-              @toggle-review-thread="emit('toggle-review-thread', $event.threadId, $event.resolved)"
-            />
-          </template>
+        <template v-else>
+          <PRReviewVirtualDiffRows
+            :rows="section.rows"
+            :filename="section.file.filename"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+            :review-comment-threads="getReviewThreadsForFile(section.file.filename)"
+            :active-draft-target="activeDraftTarget"
+            :active-draft-body="getInlineDraftBodyForFile(section.file.filename)"
+            :submitting="submitting"
+            :resolving-review-thread-id="resolvingReviewThreadId"
+            :scroll-container="scrollContainer"
+            @open-draft-editor="handleOpenDraftEditor"
+            @close-draft-editor="handleCloseDraftEditor"
+            @update-active-draft-body="
+              (body) => setInlineDraftBodyForFile(section.file.filename, body)
+            "
+            @save-draft-comment="handleSaveDraftComment"
+            @toggle-review-thread="emit('toggle-review-thread', $event.threadId, $event.resolved)"
+          />
+        </template>
 
+        <div
+          v-if="getDraftsForFile(section.file.filename).length"
+          class="pr-review-diff-viewer__drafts"
+        >
+          <h3 class="title is-6 mb-2">{{ t('prReview.pendingForFile') }}</h3>
           <div
-            v-if="getDraftsForFile(section.file.filename).length"
-            class="pr-review-diff-viewer__drafts"
+            v-for="comment in getDraftsForFile(section.file.filename)"
+            :key="comment.id"
+            class="pr-review-diff-viewer__draft"
           >
-            <h3 class="title is-6 mb-2">{{ t('prReview.pendingForFile') }}</h3>
-            <div
-              v-for="comment in getDraftsForFile(section.file.filename)"
-              :key="comment.id"
-              class="pr-review-diff-viewer__draft"
-            >
-              <div>
-                <p class="is-size-7 has-text-grey mb-1">
-                  {{ t('prReview.lineLabel', { line: comment.line }) }}
-                </p>
-                <p class="mb-0">{{ comment.body }}</p>
-              </div>
-              <button
-                class="delete is-small"
-                type="button"
-                :aria-label="t('prReview.removeDraft')"
-                :disabled="submitting"
-                @click="handleRemoveDraftComment(comment.id)"
-              ></button>
+            <div>
+              <p class="is-size-7 has-text-grey mb-1">
+                {{ t('prReview.lineLabel', { line: comment.line }) }}
+              </p>
+              <p class="mb-0">{{ comment.body }}</p>
             </div>
+            <button
+              class="delete is-small"
+              type="button"
+              :aria-label="t('prReview.removeDraft')"
+              :disabled="submitting"
+              @click="handleRemoveDraftComment(comment.id)"
+            ></button>
           </div>
         </div>
       </article>

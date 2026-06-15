@@ -1415,26 +1415,4 @@ html.dark .library-empty,
 html.dark .empty-drop-zone {
   color: var(--gitpulse-text-subtle);
 }
-
-.expand-enter-active,
-.expand-leave-active {
-  max-height: 2000px;
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease,
-    max-height 0.15s ease,
-    padding-top 0.15s ease,
-    padding-bottom 0.15s ease;
-  overflow: hidden;
-  will-change: transform, opacity;
-}
-
-.expand-enter-from,
-.expand-leave-to {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-4px);
-  padding-top: 0;
-  padding-bottom: 0;
-}
 </style>
