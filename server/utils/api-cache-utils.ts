@@ -4,10 +4,19 @@ import type { H3Event } from 'h3';
 import { defineEventHandler, getRequestHeader, setHeader } from 'h3';
 
 const PRIVATE_API_CACHE_CONTROL = 'private, max-age=0, must-revalidate';
+const PRIVATE_API_COALESCING_MAX_AGE_MS = 30_000;
 
 type PrivateApiHandler<T> = (event: H3Event) => T | Promise<T>;
+type PendingPrivateApiResponse = {
+  promise: Promise<unknown>;
+  cleanupTimer: ReturnType<typeof setTimeout> | null;
+};
 
-const pendingPrivateApiResponses = new Map<string, Promise<unknown>>();
+const pendingPrivateApiResponses = new Map<string, PendingPrivateApiResponse>();
+
+interface PrivateApiCoalescingOptions {
+  pendingMaxAgeMs?: number;
+}
 
 function createPrivateApiCacheKey(event: H3Event) {
   const url = event.node.req.originalUrl ?? event.node.req.url ?? event.path;
@@ -23,7 +32,21 @@ export function setPrivateApiCacheControl(event: H3Event) {
   setHeader(event, 'cache-control', PRIVATE_API_CACHE_CONTROL);
 }
 
-export function definePrivateApiCoalescedEventHandler<T>(handler: PrivateApiHandler<T>) {
+function clearPendingPrivateApiResponse(cacheKey: string, pending: PendingPrivateApiResponse) {
+  if (pendingPrivateApiResponses.get(cacheKey) !== pending) {
+    return;
+  }
+
+  if (pending.cleanupTimer) {
+    clearTimeout(pending.cleanupTimer);
+  }
+  pendingPrivateApiResponses.delete(cacheKey);
+}
+
+export function definePrivateApiCoalescedEventHandler<T>(
+  handler: PrivateApiHandler<T>,
+  options: PrivateApiCoalescingOptions = {}
+) {
   return defineEventHandler(async (event) => {
     setPrivateApiCacheControl(event);
 
@@ -35,15 +58,28 @@ export function definePrivateApiCoalescedEventHandler<T>(handler: PrivateApiHand
     const pendingResponse = pendingPrivateApiResponses.get(cacheKey);
 
     if (pendingResponse) {
-      return pendingResponse as Promise<T>;
+      return pendingResponse.promise as Promise<T>;
     }
 
-    const responsePromise = (async () => handler(event))().finally(() => {
-      pendingPrivateApiResponses.delete(cacheKey);
+    const pendingMaxAgeMs = Math.max(
+      options.pendingMaxAgeMs ?? PRIVATE_API_COALESCING_MAX_AGE_MS,
+      1
+    );
+    const pending: PendingPrivateApiResponse = {
+      promise: Promise.resolve(),
+      cleanupTimer: null,
+    };
+
+    pending.promise = (async () => handler(event))().finally(() => {
+      clearPendingPrivateApiResponse(cacheKey, pending);
     });
+    pending.cleanupTimer = setTimeout(() => {
+      clearPendingPrivateApiResponse(cacheKey, pending);
+    }, pendingMaxAgeMs);
+    pending.cleanupTimer.unref?.();
 
-    pendingPrivateApiResponses.set(cacheKey, responsePromise);
+    pendingPrivateApiResponses.set(cacheKey, pending);
 
-    return responsePromise;
+    return pending.promise;
   });
 }
