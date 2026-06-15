@@ -131,6 +131,13 @@ export default defineNuxtConfig({
     head: {
       // Note: titleTemplate function is set in app.vue to prevent "GitPulse - GitPulse" on homepage
       title: 'GitPulse',
+      link: [
+        {
+          rel: 'icon',
+          type: 'image/x-icon',
+          href: '/favicon.ico',
+        },
+      ],
       meta: [
         {
           name: 'description',
