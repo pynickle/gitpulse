@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Loader2Icon } from 'lucide-vue-next';
-import { computed, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
@@ -8,11 +8,6 @@ import type { IssueDetailPayload } from '#shared/types/issues';
 import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
-import DiscussionDetail from '~/components/dashboard/detail/DiscussionDetail.vue';
-import IssueDetail from '~/components/dashboard/detail/IssueDetail.vue';
-import PrDetail from '~/components/dashboard/detail/PRDetail.vue';
-import ReleaseDetail from '~/components/dashboard/detail/ReleaseDetail.vue';
-import RepoDetail from '~/components/dashboard/detail/RepoDetail.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
@@ -68,6 +63,19 @@ const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
 const isIssueHeaderNonSticky = shallowRef(false);
 const isPullRequestReviewActive = shallowRef(false);
+const DiscussionDetail = defineAsyncComponent(
+  () => import('~/components/dashboard/detail/DiscussionDetail.vue')
+);
+const IssueDetail = defineAsyncComponent(
+  () => import('~/components/dashboard/detail/IssueDetail.vue')
+);
+const PrDetail = defineAsyncComponent(() => import('~/components/dashboard/detail/PRDetail.vue'));
+const ReleaseDetail = defineAsyncComponent(
+  () => import('~/components/dashboard/detail/ReleaseDetail.vue')
+);
+const RepoDetail = defineAsyncComponent(
+  () => import('~/components/dashboard/detail/RepoDetail.vue')
+);
 
 const activeDetailPane = computed<ActiveDetailPane | null>(() => {
   if (props.isIssueVisible) {
