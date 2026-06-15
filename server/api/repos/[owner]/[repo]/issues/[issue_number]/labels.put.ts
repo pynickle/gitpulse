@@ -1,35 +1,9 @@
-import {
-  extractIssueRouteParams,
-  normalizeRequestBody,
-  executeGitHubRequest,
-} from '#server/utils/repo-route-utils';
-
-interface LabelsRequestBody {
-  labels?: unknown;
-}
-
-function normalizeLabelsBody(body: unknown) {
-  const requestBody = normalizeRequestBody<LabelsRequestBody>(body, ['labels']);
-
-  const rawLabels = Array.isArray(requestBody!.labels)
-    ? requestBody!.labels
-    : requestBody!.labels
-      ? [requestBody!.labels]
-      : [];
-
-  if (!rawLabels.every((label): label is string => typeof label === 'string')) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid labels: all labels must be strings',
-    });
-  }
-
-  return rawLabels;
-}
+import { parseIssueLabelsBody } from '#server/utils/repo-request-validation-utils';
+import { extractIssueRouteParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo, issueNumber } = extractIssueRouteParams(event);
-  const labels = normalizeLabelsBody(await readBody(event));
+  const labels = parseIssueLabelsBody(await readBody(event));
 
   return executeGitHubRequest(
     event,

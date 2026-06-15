@@ -3,27 +3,17 @@ import {
   fetchDiscussionReplyContext,
   validateDiscussionNodeId,
 } from '#server/utils/github-discussion-utils';
-import {
-  executeGitHubRequest,
-  extractDiscussionRouteParams,
-  normalizeRequestBody,
-  validateRequiredString,
-} from '#server/utils/repo-route-utils';
-
-interface DiscussionReplyRequestBody {
-  body?: unknown;
-}
-
-function normalizeReplyBody(body: unknown) {
-  const requestBody = normalizeRequestBody<DiscussionReplyRequestBody>(body);
-  return typeof requestBody?.body === 'string' ? requestBody.body.trim() : '';
-}
+import { parseRequiredBodyText } from '#server/utils/repo-request-validation-utils';
+import { executeGitHubRequest, extractDiscussionRouteParams } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo, discussionNumber } = extractDiscussionRouteParams(event);
   const { comment_id } = event.context.params as { comment_id?: string };
   const commentId = validateDiscussionNodeId(comment_id, 'Discussion comment ID');
-  const replyBody = validateRequiredString(normalizeReplyBody(await readBody(event)), 'Reply body');
+  const replyBody = parseRequiredBodyText(
+    await readBody(event),
+    'Invalid discussion reply request body'
+  );
 
   return executeGitHubRequest(
     event,

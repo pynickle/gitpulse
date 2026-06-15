@@ -1,7 +1,8 @@
 import type { Octokit } from '@octokit/core';
+import * as z from 'zod';
 
 import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
-import { normalizeRequestBody } from '#server/utils/repo-route-utils';
+import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
 
 type GitHubClient = Octokit;
 
@@ -54,11 +55,6 @@ interface PullReviewCommentResponse {
 interface RequestedReviewersResponse {
   users: GitHubUserSummary[];
   teams: GitHubTeamSummary[];
-}
-
-interface ReviewerRequestBody {
-  reviewers?: unknown;
-  teamReviewers?: unknown;
 }
 
 interface PRReviewerSummaryTelemetry {
@@ -139,6 +135,28 @@ export interface PRReviewerCandidateWarning {
 }
 
 const trimString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+const reviewerListSchema = z.array(z.string().trim().min(1)).transform((entries) => {
+  const normalized: string[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    const dedupeKey = entry.toLowerCase();
+    if (!seen.has(dedupeKey)) {
+      seen.add(dedupeKey);
+      normalized.push(entry);
+    }
+  }
+
+  return normalized;
+});
+const reviewerRequestBodySchema = z
+  .strictObject({
+    reviewers: reviewerListSchema.default([]),
+    teamReviewers: reviewerListSchema.default([]),
+  })
+  .refine((body) => body.reviewers.length > 0 || body.teamReviewers.length > 0, {
+    message: 'At least one reviewer or team reviewer is required',
+  });
 
 const getErrorMessage = (error: unknown, fallback: string) =>
   (error as { message?: string })?.message || fallback;
@@ -496,60 +514,7 @@ export function createEmptyPRReviewerSummary(
 }
 
 export function normalizeReviewerRequestBody(body: unknown): NormalizedReviewerRequestBody {
-  const requestBody = normalizeRequestBody<ReviewerRequestBody>(body) ?? {};
-
-  const normalizeStringArray = (value: unknown, fieldName: string) => {
-    if (value === undefined) {
-      return [];
-    }
-
-    if (!Array.isArray(value)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: `${fieldName} must be an array`,
-      });
-    }
-
-    const normalized: string[] = [];
-    const seen = new Set<string>();
-
-    value.forEach((entry, index) => {
-      if (typeof entry !== 'string') {
-        throw createError({
-          statusCode: 400,
-          statusMessage: `${fieldName}[${index}] must be a string`,
-        });
-      }
-
-      const trimmed = entry.trim();
-      if (!trimmed) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: `${fieldName}[${index}] must not be empty`,
-        });
-      }
-
-      const dedupeKey = trimmed.toLowerCase();
-      if (!seen.has(dedupeKey)) {
-        seen.add(dedupeKey);
-        normalized.push(trimmed);
-      }
-    });
-
-    return normalized;
-  };
-
-  const reviewers = normalizeStringArray(requestBody.reviewers, 'reviewers');
-  const teamReviewers = normalizeStringArray(requestBody.teamReviewers, 'teamReviewers');
-
-  if (!reviewers.length && !teamReviewers.length) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'At least one reviewer or team reviewer is required',
-    });
-  }
-
-  return { reviewers, teamReviewers };
+  return parseZodRequestBody(reviewerRequestBodySchema, body, 'Invalid reviewer request body');
 }
 
 export async function fetchRequestedReviewers(

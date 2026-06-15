@@ -1,4 +1,5 @@
 import type { Octokit } from '@octokit/core';
+import * as z from 'zod';
 
 import type {
   GitHubReaction,
@@ -6,10 +7,10 @@ import type {
   ReactionSummaryPayload,
   ReactionTargetKind,
 } from '#shared/types/reactions';
-import { normalizeReactionContent, normalizeReactionSummary } from '#shared/utils/reactions';
+import { getReactionContentsForTarget, normalizeReactionSummary } from '#shared/utils/reactions';
 
 import { parseLinkHeader } from './github-pagination';
-import { normalizeRequestBody } from './repo-route-utils';
+import { parseZodRequestBody } from './zod-validation-utils';
 
 type GitHubClient = Octokit;
 
@@ -24,6 +25,18 @@ interface ReactionRequestOptions {
   repo: string;
   targetId: number;
 }
+
+const createReactionMutationBodySchema = (target: ReactionTargetKind) =>
+  z.strictObject({
+    content: z
+      .string()
+      .trim()
+      .refine(
+        (content): content is ReactionContent =>
+          getReactionContentsForTarget(target).includes(content as ReactionContent),
+        { message: 'Unsupported reaction content' }
+      ),
+  });
 
 export function parseReactionTargetId(value: unknown, fieldName: string) {
   const rawValue = Array.isArray(value) ? value[0] : value;
@@ -52,29 +65,11 @@ export function normalizeReactionMutationBody(
   body: unknown,
   target: ReactionTargetKind
 ): ReactionMutationBody {
-  const normalizedBody = normalizeRequestBody<{
-    content?: unknown;
-  }>(body, ['content']);
-
-  if (!normalizedBody) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing required body field: content',
-    });
-  }
-
-  const content = normalizeReactionContent(normalizedBody.content, target);
-
-  if (!content) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Unsupported reaction content',
-    });
-  }
-
-  return {
-    content,
-  };
+  return parseZodRequestBody(
+    createReactionMutationBodySchema(target),
+    body,
+    'Invalid reaction request body'
+  );
 }
 
 export async function fetchIssueCommentReactionSummary(

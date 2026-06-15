@@ -1,8 +1,9 @@
 import type { Octokit } from '@octokit/core';
+import * as z from 'zod';
 
 import { parseLinkHeader } from '#server/utils/github-pagination';
 import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
-import { normalizeRequestBody } from '#server/utils/repo-route-utils';
+import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
 
 type GitHubClient = Octokit;
 
@@ -72,12 +73,6 @@ interface RepositoryPermissions {
   pull?: boolean;
 }
 
-interface MergePullRequestBody {
-  method?: unknown;
-  commitTitle?: unknown;
-  commitMessage?: unknown;
-}
-
 export interface PRMergedBy {
   login: string;
   avatarUrl: string;
@@ -129,7 +124,13 @@ export interface NormalizedMergePullRequestBody {
   commitMessage?: string;
 }
 
-const mergeMethods = new Set<PRMergeMethod>(['merge', 'squash', 'rebase']);
+const mergeMethodSchema = z.enum(['merge', 'squash', 'rebase']);
+const optionalTrimmedStringSchema = z.string().trim().min(1).optional();
+const mergePullRequestBodySchema = z.strictObject({
+  method: mergeMethodSchema,
+  commitTitle: optionalTrimmedStringSchema,
+  commitMessage: optionalTrimmedStringSchema,
+});
 
 const trimString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
 
@@ -313,35 +314,22 @@ async function fetchCheckRuns(
 }
 
 export function normalizeMergePullRequestBody(body: unknown): NormalizedMergePullRequestBody {
-  const requestBody = normalizeRequestBody<MergePullRequestBody>(body, ['method']);
-  if (!requestBody) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'method must be one of merge, squash, or rebase',
-    });
-  }
-
-  const method = requestBody.method;
-
-  if (typeof method !== 'string' || !mergeMethods.has(method as PRMergeMethod)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'method must be one of merge, squash, or rebase',
-    });
-  }
+  const requestBody = parseZodRequestBody(
+    mergePullRequestBodySchema,
+    body,
+    'Invalid pull request merge request body'
+  );
 
   const normalizedBody: NormalizedMergePullRequestBody = {
-    method: method as PRMergeMethod,
+    method: requestBody.method,
   };
 
-  const commitTitle = trimString(requestBody.commitTitle);
-  if (commitTitle) {
-    normalizedBody.commitTitle = commitTitle;
+  if (requestBody.commitTitle) {
+    normalizedBody.commitTitle = requestBody.commitTitle;
   }
 
-  const commitMessage = trimString(requestBody.commitMessage);
-  if (commitMessage) {
-    normalizedBody.commitMessage = commitMessage;
+  if (requestBody.commitMessage) {
+    normalizedBody.commitMessage = requestBody.commitMessage;
   }
 
   return normalizedBody;

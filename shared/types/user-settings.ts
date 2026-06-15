@@ -1,8 +1,11 @@
 import type { CustomTab } from '#shared/types/custom-search';
 import type { TabGroup } from '#shared/types/tab-groups';
 
-export type AppFontId = 'harmonyos-sans' | 'misans-latin' | 'system';
-export type CodeFontId = 'maple-mono' | 'jetbrains-mono' | 'system';
+export const APP_FONT_IDS = ['harmonyos-sans', 'misans-latin', 'system'] as const;
+export const CODE_FONT_IDS = ['maple-mono', 'jetbrains-mono', 'system'] as const;
+
+export type AppFontId = (typeof APP_FONT_IDS)[number];
+export type CodeFontId = (typeof CODE_FONT_IDS)[number];
 
 export interface UserFontSettings {
   appFont: AppFontId;

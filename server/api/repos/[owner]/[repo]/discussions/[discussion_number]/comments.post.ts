@@ -1,26 +1,10 @@
 import { addDiscussionComment, fetchDiscussionNodeId } from '#server/utils/github-discussion-utils';
-import {
-  executeGitHubRequest,
-  extractDiscussionRouteParams,
-  normalizeRequestBody,
-  validateRequiredString,
-} from '#server/utils/repo-route-utils';
-
-interface DiscussionCommentRequestBody {
-  body?: unknown;
-}
-
-function normalizeCommentBody(body: unknown) {
-  const requestBody = normalizeRequestBody<DiscussionCommentRequestBody>(body);
-  return typeof requestBody?.body === 'string' ? requestBody.body.trim() : '';
-}
+import { parseRequiredBodyText } from '#server/utils/repo-request-validation-utils';
+import { executeGitHubRequest, extractDiscussionRouteParams } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo, discussionNumber } = extractDiscussionRouteParams(event);
-  const commentBody = validateRequiredString(
-    normalizeCommentBody(await readBody(event)),
-    'Comment body'
-  );
+  const commentBody = parseRequiredBodyText(await readBody(event), 'Invalid comment request body');
 
   return executeGitHubRequest(
     event,

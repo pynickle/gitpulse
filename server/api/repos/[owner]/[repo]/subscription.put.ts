@@ -1,27 +1,11 @@
-import {
-  extractRepoParams,
-  normalizeRequestBody,
-  executeGitHubRequest,
-} from '#server/utils/repo-route-utils';
-
-interface SubscriptionRequestBody {
-  subscribed?: unknown;
-  ignored?: unknown;
-}
+import { parseRepoSubscriptionBody } from '#server/utils/repo-request-validation-utils';
+import { extractRepoParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo } = extractRepoParams(event);
-  const body = normalizeRequestBody<SubscriptionRequestBody>(await readBody(event));
+  const body = parseRepoSubscriptionBody(await readBody(event));
 
-  const subscribed = (body?.subscribed as boolean) ?? true;
-  const ignored = (body?.ignored as boolean) ?? false;
-
-  if (typeof subscribed !== 'boolean' || typeof ignored !== 'boolean') {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid subscription request body',
-    });
-  }
+  const { subscribed, ignored } = body;
 
   return executeGitHubRequest(
     event,

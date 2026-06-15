@@ -1,4 +1,5 @@
 import { resolveAuthProviderState } from '../../utils/auth-providers';
+import { parseTokenAuthBody } from '../../utils/auth-request-validation-utils';
 import {
   PERSISTENT_AUTH_SESSION_MAX_AGE_SECONDS,
   establishGitHubSession,
@@ -8,15 +9,6 @@ import { createGitHubClient } from '../../utils/github-auth-utils';
 
 function isGitHubUnauthorizedError(error: unknown): boolean {
   return !!error && typeof error === 'object' && 'status' in error && error.status === 401;
-}
-
-function normalizeTokenBody(body: unknown) {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return '';
-  }
-
-  const token = (body as { token?: unknown }).token;
-  return typeof token === 'string' ? token.trim() : '';
 }
 
 export default defineEventHandler(async (event) => {
@@ -38,14 +30,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const token = normalizeTokenBody(await readBody(event));
-
-  if (!token) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'A GitHub token is required',
-    });
-  }
+  const token = parseTokenAuthBody(await readBody(event));
 
   try {
     const octokit = createGitHubClient(token);

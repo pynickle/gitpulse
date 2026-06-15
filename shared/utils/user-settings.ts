@@ -11,11 +11,6 @@ import type {
   GitHubSearchSort,
   GitHubSearchVisibilityFilter,
 } from '#shared/types/custom-search';
-import {
-  BUILTIN_TAB_GROUP_ID,
-  DEFAULT_CUSTOM_TAB_GROUP_ID,
-  type TabGroup,
-} from '#shared/types/tab-groups';
 import type {
   AppFontId,
   CodeFontId,
@@ -23,8 +18,29 @@ import type {
   UserSettings,
 } from '#shared/types/user-settings';
 
-const APP_FONTS = new Set<AppFontId>(['harmonyos-sans', 'misans-latin', 'system']);
-const CODE_FONTS = new Set<CodeFontId>(['maple-mono', 'jetbrains-mono', 'system']);
+import {
+  CUSTOM_TAB_SOURCES,
+  CUSTOM_TAB_SUBTITLE_MODES,
+  GITHUB_SEARCH_ARCHIVED_FILTERS,
+  GITHUB_SEARCH_DRAFT_FILTERS,
+  GITHUB_SEARCH_ISSUE_STATES,
+  GITHUB_SEARCH_ORDERS,
+  GITHUB_SEARCH_PULL_STATES,
+  GITHUB_SEARCH_REVIEW_FILTERS,
+  GITHUB_SEARCH_SCOPES,
+  GITHUB_SEARCH_SORTS,
+  GITHUB_SEARCH_VISIBILITY_FILTERS,
+} from '../types/custom-search';
+import {
+  BUILTIN_TAB_GROUP_ID,
+  DEFAULT_CUSTOM_TAB_GROUP_ID,
+  TAB_GROUP_SOURCES,
+  type TabGroup,
+} from '../types/tab-groups';
+import { APP_FONT_IDS, CODE_FONT_IDS } from '../types/user-settings';
+
+const APP_FONTS = new Set<AppFontId>(APP_FONT_IDS);
+const CODE_FONTS = new Set<CodeFontId>(CODE_FONT_IDS);
 
 const REQUIRED_BUILTIN_GROUP: TabGroup = {
   id: BUILTIN_TAB_GROUP_ID,
@@ -41,6 +57,13 @@ export const DEFAULT_USER_FONT_SETTINGS: UserFontSettings = {
 
 const hasOwn = (value: object, key: string) => {
   return Object.prototype.hasOwnProperty.call(value, key);
+};
+
+const isOneOf = <TValue extends string>(
+  values: readonly TValue[],
+  value: unknown
+): value is TValue => {
+  return typeof value === 'string' && values.includes(value as TValue);
 };
 
 const normalizeString = (value: unknown, maxLength = 240) => {
@@ -142,10 +165,7 @@ export function normalizeTabGroup(group: unknown): TabGroup | null {
         ? candidate.parentId.trim()
         : null,
     collapsed: typeof candidate.collapsed === 'boolean' ? candidate.collapsed : false,
-    source:
-      candidate.source === 'system' || candidate.source === 'github-search'
-        ? candidate.source
-        : 'github-search',
+    source: isOneOf(TAB_GROUP_SOURCES, candidate.source) ? candidate.source : 'github-search',
   };
 }
 
@@ -193,31 +213,31 @@ const normalizeQuery = (query: unknown): GitHubSearchQuery => {
   const type: GitHubSearchItemType = candidate.type === 'pulls' ? 'pulls' : 'issues';
   const state = candidate.state;
   const sort = candidate.sort;
-  const normalizedSort: GitHubSearchSort | undefined =
-    sort === 'best-match' ||
-    sort === 'comments' ||
-    sort === 'reactions' ||
-    sort === 'interactions' ||
-    sort === 'created' ||
-    sort === 'updated'
-      ? sort
-      : undefined;
+  const normalizedSort: GitHubSearchSort | undefined = isOneOf(GITHUB_SEARCH_SORTS, sort)
+    ? sort
+    : undefined;
   const order = candidate.order;
-  const normalizedOrder: GitHubSearchOrder | undefined =
-    order === 'asc' || order === 'desc' ? order : undefined;
+  const normalizedOrder: GitHubSearchOrder | undefined = isOneOf(GITHUB_SEARCH_ORDERS, order)
+    ? order
+    : undefined;
   const visibility = candidate.visibility;
-  const normalizedVisibility: GitHubSearchVisibilityFilter | undefined =
-    visibility === 'any' || visibility === 'public' || visibility === 'private'
-      ? visibility
-      : undefined;
+  const normalizedVisibility: GitHubSearchVisibilityFilter | undefined = isOneOf(
+    GITHUB_SEARCH_VISIBILITY_FILTERS,
+    visibility
+  )
+    ? visibility
+    : undefined;
   const archived = candidate.archived;
-  const normalizedArchived: GitHubSearchArchivedFilter | undefined =
-    archived === 'exclude' || archived === 'include' || archived === 'only' ? archived : undefined;
+  const normalizedArchived: GitHubSearchArchivedFilter | undefined = isOneOf(
+    GITHUB_SEARCH_ARCHIVED_FILTERS,
+    archived
+  )
+    ? archived
+    : undefined;
   const sourceScopes = candidate.scopes;
   const scopes = Array.isArray(sourceScopes)
-    ? sourceScopes.filter(
-        (scope): scope is GitHubSearchScope =>
-          scope === 'title' || scope === 'body' || scope === 'comments'
+    ? sourceScopes.filter((scope): scope is GitHubSearchScope =>
+        isOneOf(GITHUB_SEARCH_SCOPES, scope)
       )
     : undefined;
   const perPage =
@@ -252,19 +272,9 @@ const normalizeQuery = (query: unknown): GitHubSearchQuery => {
     return {
       ...sharedQuery,
       type,
-      state:
-        state === 'open' || state === 'closed' || state === 'merged' || state === 'all'
-          ? state
-          : undefined,
-      draft: draft === 'any' || draft === 'draft' || draft === 'ready' ? draft : undefined,
-      review:
-        review === 'any' ||
-        review === 'none' ||
-        review === 'required' ||
-        review === 'approved' ||
-        review === 'changes_requested'
-          ? review
-          : undefined,
+      state: isOneOf(GITHUB_SEARCH_PULL_STATES, state) ? state : undefined,
+      draft: isOneOf(GITHUB_SEARCH_DRAFT_FILTERS, draft) ? draft : undefined,
+      review: isOneOf(GITHUB_SEARCH_REVIEW_FILTERS, review) ? review : undefined,
       base: normalizeString(candidate.base),
       head: normalizeString(candidate.head),
     };
@@ -273,7 +283,7 @@ const normalizeQuery = (query: unknown): GitHubSearchQuery => {
   return {
     ...sharedQuery,
     type,
-    state: state === 'open' || state === 'closed' || state === 'all' ? state : undefined,
+    state: isOneOf(GITHUB_SEARCH_ISSUE_STATES, state) ? state : undefined,
   };
 };
 
@@ -286,18 +296,22 @@ export function normalizeCustomTab(tab: unknown): CustomTab | null {
   const id = normalizeString(candidate.id);
   const groupId = normalizeString(candidate.groupId);
   const name = normalizeString(candidate.name);
-  const source: CustomTabSource =
-    candidate.source === 'github-search' ? candidate.source : 'github-search';
+  const source: CustomTabSource = isOneOf(CUSTOM_TAB_SOURCES, candidate.source)
+    ? candidate.source
+    : 'github-search';
 
   if (!id || !groupId || !name) {
     return null;
   }
 
   const subtitle = normalizeString(candidate.subtitle);
+  const requestedSubtitleMode = isOneOf(CUSTOM_TAB_SUBTITLE_MODES, candidate.subtitleMode)
+    ? candidate.subtitleMode
+    : undefined;
   const subtitleMode: CustomTabSubtitleMode =
-    candidate.subtitleMode === 'none'
+    requestedSubtitleMode === 'none'
       ? 'none'
-      : candidate.subtitleMode === 'auto'
+      : requestedSubtitleMode === 'auto'
         ? 'auto'
         : subtitle
           ? 'custom'

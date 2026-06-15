@@ -1,40 +1,9 @@
-import {
-  extractIssueRouteParams,
-  normalizeRequestBody,
-  executeGitHubRequest,
-} from '#server/utils/repo-route-utils';
-
-const validLockReasons = ['off-topic', 'too heated', 'resolved', 'spam'] as const;
-
-type LockReason = (typeof validLockReasons)[number];
-
-interface LockRequestBody {
-  lock_reason?: unknown;
-}
-
-function normalizeLockReason(body: unknown): LockReason | undefined {
-  const requestBody = normalizeRequestBody<LockRequestBody>(body);
-
-  if (requestBody?.lock_reason === undefined) {
-    return undefined;
-  }
-
-  if (
-    typeof requestBody.lock_reason !== 'string' ||
-    !validLockReasons.includes(requestBody.lock_reason as LockReason)
-  ) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `Invalid lock reason. Must be one of: ${validLockReasons.join(', ')}`,
-    });
-  }
-
-  return requestBody.lock_reason as LockReason;
-}
+import { parseIssueLockBody } from '#server/utils/repo-request-validation-utils';
+import { extractIssueRouteParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo, issueNumber } = extractIssueRouteParams(event);
-  const lockReason = normalizeLockReason(await readBody(event));
+  const lockReason = parseIssueLockBody(await readBody(event));
 
   return executeGitHubRequest(
     event,

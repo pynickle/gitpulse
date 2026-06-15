@@ -110,47 +110,6 @@ export function getStringQueryParam(value: unknown) {
 }
 
 /**
- * Normalize and validate a request body as JSON object.
- * Returns null if body is missing/null, throws if invalid type.
- */
-export function normalizeRequestBody<T>(body: unknown, requiredKeys?: (keyof T)[]): T | null {
-  if (body === undefined || body === null) {
-    if (requiredKeys?.length) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: `Missing required body field: ${requiredKeys[0] as string}`,
-      });
-    }
-    return null;
-  }
-
-  if (typeof body !== 'object' || Array.isArray(body)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid request body: expected object',
-    });
-  }
-
-  return body as T;
-}
-
-/**
- * Validate string field is non-empty after trim.
- */
-export function validateRequiredString(value: unknown, fieldName: string): string {
-  const trimmed = typeof value === 'string' ? value.trim() : '';
-
-  if (!trimmed) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `${fieldName} is required`,
-    });
-  }
-
-  return trimmed;
-}
-
-/**
  * Execute a GitHub API request with error handling.
  * Wraps the request in a try-catch and translates GitHub errors.
  */

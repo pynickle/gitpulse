@@ -1,25 +1,9 @@
-import {
-  extractIssueRouteParams,
-  normalizeRequestBody,
-  validateRequiredString,
-  executeGitHubRequest,
-} from '#server/utils/repo-route-utils';
-
-interface CommentRequestBody {
-  body?: unknown;
-}
-
-function normalizeCommentBody(body: unknown) {
-  const requestBody = normalizeRequestBody<CommentRequestBody>(body);
-  return typeof requestBody?.body === 'string' ? requestBody.body.trim() : '';
-}
+import { parseRequiredBodyText } from '#server/utils/repo-request-validation-utils';
+import { extractIssueRouteParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
 export default defineEventHandler(async (event) => {
   const { owner, repo, issueNumber } = extractIssueRouteParams(event);
-  const commentBody = validateRequiredString(
-    normalizeCommentBody(await readBody(event)),
-    'Comment body'
-  );
+  const commentBody = parseRequiredBodyText(await readBody(event), 'Invalid comment request body');
 
   return executeGitHubRequest(
     event,

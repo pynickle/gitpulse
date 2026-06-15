@@ -1,3 +1,4 @@
+import { parseNotificationSubjectTargetsBody } from '#server/utils/notification-subject-state-validation-utils';
 import type {
   NotificationLabel,
   NotificationSubjectState,
@@ -34,25 +35,6 @@ interface GraphQLSubjectRepository {
 interface GraphQLSubjectResponse {
   [key: string]: GraphQLSubjectRepository | null | undefined;
 }
-
-const maxTargets = 50;
-const maxGraphQLInt = 2_147_483_647;
-
-const isSubjectTarget = (value: unknown): value is NotificationSubjectStateTarget => {
-  if (!value || typeof value !== 'object') return false;
-
-  const target = value as Partial<NotificationSubjectStateTarget>;
-  return (
-    typeof target.key === 'string' &&
-    typeof target.owner === 'string' &&
-    typeof target.repo === 'string' &&
-    (target.type === 'issues' || target.type === 'pulls') &&
-    typeof target.number === 'number' &&
-    Number.isSafeInteger(target.number) &&
-    target.number > 0 &&
-    target.number <= maxGraphQLInt
-  );
-};
 
 const normalizeLabels = (
   node: GraphQLSubjectNode | null | undefined
@@ -104,36 +86,8 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
   };
 };
 
-const normalizeSubjectTargetsBody = (body: unknown) => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid notification subject state request body',
-    });
-  }
-
-  const targets = (body as { targets?: unknown }).targets;
-
-  if (!Array.isArray(targets)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid notification subject state request body',
-    });
-  }
-
-  const normalizedTargets = targets.slice(0, maxTargets);
-  if (!normalizedTargets.every(isSubjectTarget)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Invalid notification subject state request body',
-    });
-  }
-
-  return normalizedTargets;
-};
-
 export default defineEventHandler(async (event) => {
-  const targets = normalizeSubjectTargetsBody(await readBody(event));
+  const targets = parseNotificationSubjectTargetsBody(await readBody(event));
 
   if (targets.length === 0) {
     return { items: [] satisfies NotificationSubjectStateResult[] };
