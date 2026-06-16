@@ -90,6 +90,7 @@
           />
 
           <PRReviewerRequestModal
+            v-if="hasOpenedReviewerPicker"
             :is-visible="isReviewerPickerOpen"
             :candidates="reviewerCandidates"
             :warnings="reviewerCandidateWarnings"
@@ -134,7 +135,6 @@ import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
-import PRReviewerRequestModal from '~/components/dashboard/pr/PRReviewerRequestModal.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
 import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
 import type {
@@ -157,6 +157,9 @@ const props = defineProps<{
 
 const PRReviewWorkspace = defineAsyncComponent(
   () => import('~/components/dashboard/pr/PRReviewWorkspace.vue')
+);
+const PRReviewerRequestModal = defineAsyncComponent(
+  () => import('~/components/dashboard/pr/PRReviewerRequestModal.vue')
 );
 
 interface PRTimelineResponse {
@@ -186,6 +189,7 @@ const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const isReviewWindowOpen = shallowRef(false);
 const isReviewerPickerOpen = shallowRef(false);
+const hasOpenedReviewerPicker = shallowRef(false);
 const loadingReviewerCandidates = shallowRef(false);
 const submittingReviewerRequest = shallowRef(false);
 const reviewerRequestsAvailable = shallowRef<boolean | null>(null);
@@ -322,6 +326,7 @@ const openReviewerPicker = () => {
     return;
   }
 
+  hasOpenedReviewerPicker.value = true;
   isReviewerPickerOpen.value = true;
   loadReviewerCandidates();
 };

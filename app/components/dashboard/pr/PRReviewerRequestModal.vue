@@ -215,6 +215,14 @@ const focusedKey = shallowRef<string | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const listRef = ref<HTMLDivElement | null>(null);
 
+const focusSearchInput = () => {
+  if (!import.meta.client) return;
+
+  nextTick(() => {
+    window.requestAnimationFrame(() => searchInputRef.value?.focus());
+  });
+};
+
 interface CandidateGroup {
   kind: PRReviewerKind;
   items: PRReviewerCandidate[];
@@ -242,7 +250,7 @@ const handleSearch = () => {
 const clearSearch = () => {
   searchQuery.value = '';
   emit('search', '');
-  nextTick(() => searchInputRef.value?.focus());
+  focusSearchInput();
 };
 
 const toggleCandidate = (candidate: PRReviewerCandidate) => {
@@ -345,9 +353,10 @@ watch(
       searchQuery.value = '';
       selectedKeys.value = new Set();
       focusedKey.value = null;
-      nextTick(() => searchInputRef.value?.focus());
+      focusSearchInput();
     }
-  }
+  },
+  { immediate: true }
 );
 </script>
 
