@@ -86,6 +86,7 @@ const props = defineProps<{
   targetId: string | number;
   initialItems?: ReactionSummaryItem[];
   initialItemsIncludeViewerState?: boolean;
+  deferViewerState?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -103,6 +104,12 @@ const allowedContents = computed(() => getReactionContentsForTarget(props.target
 const isBusy = computed(() => isLoading.value || Boolean(pendingContent.value));
 const hasHydratedInitialItems = computed(
   () => Boolean(props.initialItems) && Boolean(props.initialItemsIncludeViewerState)
+);
+const shouldDeferInitialViewerState = computed(
+  () =>
+    Boolean(props.deferViewerState) &&
+    props.initialItems !== undefined &&
+    !props.initialItemsIncludeViewerState
 );
 const endpoint = computed(() => {
   const owner = encodeURIComponent(props.owner);
@@ -131,7 +138,11 @@ watch(
   () => {
     hasViewerState.value = Boolean(props.initialItemsIncludeViewerState);
 
-    if (hasHydratedInitialItems.value || hasViewerState.value) {
+    if (
+      hasHydratedInitialItems.value ||
+      hasViewerState.value ||
+      shouldDeferInitialViewerState.value
+    ) {
       return;
     }
 

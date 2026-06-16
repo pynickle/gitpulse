@@ -47,6 +47,7 @@
         :repo="props.repoName || ''"
         :target-id="reactionTargetId"
         :initial-items="props.item.reactions"
+        defer-viewer-state
       />
     </div>
   </div>
