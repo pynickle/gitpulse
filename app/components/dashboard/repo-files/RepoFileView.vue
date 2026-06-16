@@ -15,7 +15,7 @@ import {
 } from 'lucide-vue-next';
 import type { HighlighterCore, ThemeRegistration } from 'shiki';
 import type { BundledLanguage } from 'shiki/langs';
-import { computed, nextTick, onActivated, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onActivated, ref, shallowRef, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
@@ -464,28 +464,72 @@ const buildTreeFromItems = (items: RepoContentItem[]): FolderTreeNode[] => {
   return nodes;
 };
 
+const applyNodeChildren = (node: FolderTreeNode, items: RepoContentItem[]) => {
+  const children = buildTreeFromItems(items);
+  node.children = children;
+  collapsedDirectories.value = new Set([
+    ...collapsedDirectories.value,
+    ...children.filter((child) => child.type === 'directory').map((child) => child.path),
+  ]);
+  node.loaded = true;
+};
+
+const seedNodeFromCurrentDirectory = (node: FolderTreeNode) => {
+  if (node.path !== currentPath.value || fileContent.value) {
+    return false;
+  }
+
+  if (loading.value) {
+    return true;
+  }
+
+  applyNodeChildren(node, directoryContents.value);
+  return true;
+};
+
 const loadTreeChildren = async (node: FolderTreeNode) => {
   if (node.loaded) return;
+  if (seedNodeFromCurrentDirectory(node)) return;
 
   try {
     const encodedPath = node.path.split('/').map(encodeURIComponent).join('/');
-    const refQuery = currentBranch.value ? `?ref=${encodeURIComponent(currentBranch.value)}` : '';
+    const branch = canonicalBranch.value;
+    const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : '';
     const response = await apiFetch<RepoContentItem[]>(
       `/api/repos/${props.owner}/${props.repo}/contents/${encodedPath}${refQuery}`
     );
 
     if (Array.isArray(response)) {
-      const children = buildTreeFromItems(response);
-      node.children = children;
-      collapsedDirectories.value = new Set([
-        ...collapsedDirectories.value,
-        ...children.filter((child) => child.type === 'directory').map((child) => child.path),
-      ]);
-      node.loaded = true;
+      applyNodeChildren(node, response);
     }
   } catch {
     node.loaded = true;
   }
+};
+
+const applyRootTreeItems = async (items: RepoContentItem[]) => {
+  const nodes = buildTreeFromItems(items);
+  treeNodes.value = nodes;
+  collapsedDirectories.value = new Set(
+    nodes.filter((node) => node.type === 'directory').map((node) => node.path)
+  );
+  await revealCurrentPath();
+  await restoreTreeScrollPosition();
+};
+
+const seedRootTreeFromCurrentDirectory = async () => {
+  if (currentPath.value || fileContent.value || !canonicalBranch.value) {
+    return false;
+  }
+
+  if (loading.value) {
+    treeLoading.value = true;
+    return true;
+  }
+
+  await applyRootTreeItems(directoryContents.value);
+  treeLoading.value = false;
+  return true;
 };
 
 const loadRootTree = async () => {
@@ -493,8 +537,18 @@ const loadRootTree = async () => {
   treeRequestId.value = requestId;
   treeLoading.value = true;
 
+  if (!canonicalBranch.value) {
+    treeLoading.value = false;
+    return;
+  }
+
+  if (await seedRootTreeFromCurrentDirectory()) {
+    return;
+  }
+
   try {
-    const refQuery = currentBranch.value ? `?ref=${encodeURIComponent(currentBranch.value)}` : '';
+    const branch = canonicalBranch.value;
+    const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : '';
     const response = await apiFetch<RepoContentItem[]>(
       `/api/repos/${props.owner}/${props.repo}/contents${refQuery}`
     );
@@ -502,12 +556,7 @@ const loadRootTree = async () => {
     if (requestId !== treeRequestId.value) return;
 
     if (Array.isArray(response)) {
-      const nodes = buildTreeFromItems(response);
-      treeNodes.value = nodes;
-      collapsedDirectories.value = new Set(
-        nodes.filter((node) => node.type === 'directory').map((node) => node.path)
-      );
-      await revealCurrentPath();
+      await applyRootTreeItems(response);
     }
   } catch {
     if (requestId === treeRequestId.value) {
@@ -722,6 +771,10 @@ const revealCurrentPath = async () => {
       await loadTreeChildren(node);
     }
 
+    if (!node.loaded) {
+      return;
+    }
+
     if (isDirectoryCollapsed(partPath)) {
       const nextCollapsed = new Set(collapsedDirectories.value);
       nextCollapsed.delete(partPath);
@@ -744,12 +797,45 @@ watch(
   { immediate: true }
 );
 
-watch(treeScrollKey, async () => {
-  treeNodes.value = [];
-  collapsedDirectories.value = new Set();
-  await loadRootTree();
-  await restoreTreeScrollPosition();
-});
+watch(
+  treeScrollKey,
+  async () => {
+    treeNodes.value = [];
+    collapsedDirectories.value = new Set();
+    await loadRootTree();
+  },
+  { immediate: true }
+);
+
+watch(
+  () => [
+    currentPath.value,
+    canonicalBranch.value,
+    loading.value,
+    directoryContents.value,
+    fileContent.value,
+  ],
+  async () => {
+    if (await seedRootTreeFromCurrentDirectory()) {
+      return;
+    }
+
+    if (
+      !loading.value &&
+      currentPath.value &&
+      treeNodes.value.length === 0 &&
+      canonicalBranch.value
+    ) {
+      await loadRootTree();
+      return;
+    }
+
+    if (!loading.value) {
+      await revealCurrentPath();
+      await restoreTreeScrollPosition();
+    }
+  }
+);
 
 watch(
   fileContent,
@@ -758,10 +844,6 @@ watch(
   },
   { immediate: true }
 );
-
-onMounted(() => {
-  loadRootTree();
-});
 
 onActivated(() => {
   restoreTreeScrollPosition();

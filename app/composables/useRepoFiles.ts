@@ -68,6 +68,8 @@ const buildBranchQueryValue = (branch: string, defaultBranch: string) => {
   return branch && branch !== defaultBranch ? branch : undefined;
 };
 
+const buildRepoKey = (owner: string, repo: string) => `${owner}/${repo}`;
+
 const encodeContentPath = (path: string) => {
   const normalizedPath = normalizePath(path);
   if (!normalizedPath) return '';
@@ -112,6 +114,8 @@ export function useRepoFiles() {
   const error = ref('');
   const contentRequestId = ref(0);
   const repoRequestId = ref(0);
+  const metadataRepoKey = ref('');
+  const contentRepoKey = ref('');
 
   const activeRepoTarget = computed<RepoTarget | null>(() => {
     const rawValue = getQueryParamValue(route.query.repo);
@@ -173,6 +177,8 @@ export function useRepoFiles() {
     fileContent.value = null;
     loading.value = false;
     error.value = '';
+    metadataRepoKey.value = '';
+    contentRepoKey.value = '';
   };
 
   const pushRepoFilesQuery = async (query: LocationQueryRaw) => {
@@ -188,6 +194,11 @@ export function useRepoFiles() {
   };
 
   const loadRepoMetadata = async (owner: string, repo: string) => {
+    const repoKey = buildRepoKey(owner, repo);
+    if (metadataRepoKey.value === repoKey && defaultBranch.value) {
+      return defaultBranch.value;
+    }
+
     const requestId = repoRequestId.value + 1;
     repoRequestId.value = requestId;
 
@@ -201,6 +212,7 @@ export function useRepoFiles() {
 
       defaultBranch.value = defaultBranchResponse.default_branch;
       branches.value = branchResponse;
+      metadataRepoKey.value = repoKey;
 
       return defaultBranchResponse.default_branch;
     } catch (requestError) {
@@ -209,6 +221,7 @@ export function useRepoFiles() {
       if (requestId === repoRequestId.value) {
         defaultBranch.value = '';
         branches.value = [];
+        metadataRepoKey.value = '';
         error.value = getRequestErrorMessage(requestError, 'Failed to load repository branches.');
       }
 
@@ -238,17 +251,20 @@ export function useRepoFiles() {
       if (Array.isArray(response)) {
         directoryContents.value = response;
         fileContent.value = null;
+        contentRepoKey.value = buildRepoKey(owner, repo);
         return;
       }
 
       if (response) {
         directoryContents.value = [];
         fileContent.value = response;
+        contentRepoKey.value = buildRepoKey(owner, repo);
         return;
       }
 
       directoryContents.value = [];
       fileContent.value = null;
+      contentRepoKey.value = '';
       error.value = 'Repository file path was not found.';
     } catch (requestError) {
       console.error('Error fetching repository contents:', requestError);
@@ -256,6 +272,7 @@ export function useRepoFiles() {
       if (requestId === contentRequestId.value) {
         directoryContents.value = [];
         fileContent.value = null;
+        contentRepoKey.value = '';
         error.value = getRequestErrorMessage(requestError, 'Failed to load repository contents.');
       }
     } finally {
@@ -265,9 +282,50 @@ export function useRepoFiles() {
     }
   };
 
+  const hasLoadedContent = (target: RepoTarget, path: string, branch: string) => {
+    return (
+      contentRepoKey.value === buildRepoKey(target.owner, target.repo) &&
+      currentPath.value === path &&
+      currentBranch.value === branch &&
+      !loading.value &&
+      !error.value
+    );
+  };
+
+  const canonicalizeDefaultBranchQuery = async (
+    target: RepoTarget,
+    path: string,
+    branch: string,
+    pathQueryWasPresent = hasActivePathQuery.value
+  ) => {
+    const canonicalizingTarget = { ...target };
+    const canonicalizingPath = path;
+    const canonicalizingBranch = branch;
+
+    const currentTarget = activeRepoTarget.value;
+    if (
+      !currentTarget ||
+      currentTarget.owner !== canonicalizingTarget.owner ||
+      currentTarget.repo !== canonicalizingTarget.repo ||
+      activePath.value !== canonicalizingPath ||
+      activeBranch.value !== canonicalizingBranch ||
+      hasActivePathQuery.value !== pathQueryWasPresent
+    ) {
+      return;
+    }
+
+    await replaceRepoFilesQuery({
+      ...route.query,
+      branch: undefined,
+      path: pathQueryWasPresent ? path : undefined,
+    });
+  };
+
   const loadRepoFiles = async (target: RepoTarget, path: string, branch: string) => {
-    loading.value = true;
     error.value = '';
+    if (metadataRepoKey.value !== buildRepoKey(target.owner, target.repo) || !defaultBranch.value) {
+      loading.value = true;
+    }
 
     const loadedDefaultBranch = await loadRepoMetadata(target.owner, target.repo);
     if (!loadedDefaultBranch) {
@@ -286,35 +344,27 @@ export function useRepoFiles() {
       return;
     }
 
-    if (branch === loadedDefaultBranch) {
-      const canonicalizingTarget = { ...target };
-      const canonicalizingPath = path;
-      const canonicalizingBranch = branch;
-      const canonicalizingHasPathQuery = hasActivePathQuery.value;
+    const resolvedBranch = branch || loadedDefaultBranch;
+    if (hasLoadedContent(target, path, resolvedBranch)) {
+      loading.value = false;
 
-      await loadContent(target.owner, target.repo, path, loadedDefaultBranch);
-
-      const currentTarget = activeRepoTarget.value;
-      if (
-        !currentTarget ||
-        currentTarget.owner !== canonicalizingTarget.owner ||
-        currentTarget.repo !== canonicalizingTarget.repo ||
-        activePath.value !== canonicalizingPath ||
-        activeBranch.value !== canonicalizingBranch ||
-        hasActivePathQuery.value !== canonicalizingHasPathQuery
-      ) {
-        return;
+      if (branch === loadedDefaultBranch) {
+        await canonicalizeDefaultBranchQuery(target, path, branch);
       }
 
-      await replaceRepoFilesQuery({
-        ...route.query,
-        branch: undefined,
-        path: hasActivePathQuery.value ? path : undefined,
-      });
       return;
     }
 
-    await loadContent(target.owner, target.repo, path, branch || loadedDefaultBranch);
+    loading.value = true;
+
+    if (branch === loadedDefaultBranch) {
+      const pathQueryWasPresent = hasActivePathQuery.value;
+      await loadContent(target.owner, target.repo, path, loadedDefaultBranch);
+      await canonicalizeDefaultBranchQuery(target, path, branch, pathQueryWasPresent);
+      return;
+    }
+
+    await loadContent(target.owner, target.repo, path, resolvedBranch);
   };
 
   const retry = async () => {
