@@ -51,7 +51,7 @@ let markdownHighlighterRuntimePromise: Promise<MarkdownHighlighterRuntime> | nul
 let highlightQueue: Promise<void> = Promise.resolve();
 
 interface MarkdownCodeBlockInfo {
-  hasCodeBlocks: boolean;
+  hasHighlightableCodeBlocks: boolean;
   languages: Set<string>;
 }
 
@@ -129,7 +129,7 @@ async function loadMarkdownLanguages(languages: Set<string>): Promise<LanguageRe
 
 function inspectMarkdownCodeBlocks(tree: ComarkTree): MarkdownCodeBlockInfo {
   const codeBlockInfo: MarkdownCodeBlockInfo = {
-    hasCodeBlocks: false,
+    hasHighlightableCodeBlocks: false,
     languages: new Set<string>(),
   };
 
@@ -146,9 +146,9 @@ function collectCodeBlockInfo(node: ComarkNode, codeBlockInfo: MarkdownCodeBlock
   }
 
   if (node[0] === 'pre' && Array.isArray(node[2]) && node[2][0] === 'code') {
-    codeBlockInfo.hasCodeBlocks = true;
     const language = normalizeLanguage(node[1].language);
-    if (language) {
+    if (language && language !== 'mermaid') {
+      codeBlockInfo.hasHighlightableCodeBlocks = true;
       codeBlockInfo.languages.add(language);
     }
   }
@@ -212,7 +212,7 @@ watch(
       plugins: markdownPlugins,
     });
     const codeBlockInfo = inspectMarkdownCodeBlocks(parsedMarkdown);
-    const renderedMarkdown = codeBlockInfo.hasCodeBlocks
+    const renderedMarkdown = codeBlockInfo.hasHighlightableCodeBlocks
       ? await highlightMarkdownCodeBlocks(parsedMarkdown, codeBlockInfo.languages)
       : parsedMarkdown;
 

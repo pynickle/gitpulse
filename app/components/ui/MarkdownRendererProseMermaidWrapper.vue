@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { ComarkNode } from 'comark';
 import { CheckIcon, ClipboardIcon } from 'lucide-vue-next';
-import { computed, defineAsyncComponent, onBeforeUnmount, shallowRef } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef } from 'vue';
 import type { StyleValue } from 'vue';
+
+import { estimateMermaidPreviewHeight } from '#shared/utils/mermaid-preview-height';
+
+import { useDeferredElementLoad } from './deferredElementLoad';
 
 const props = defineProps<{
   code?: string;
@@ -17,12 +21,23 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+const mermaidContainer = ref<HTMLElement | null>(null);
 const copied = shallowRef(false);
 const resetTimer = shallowRef<ReturnType<typeof setTimeout> | null>(null);
 const languageLabel = computed(() => props.language?.trim() ?? '');
 const copyLabel = computed(() => (copied.value ? t('markdown.copied') : t('markdown.copyCode')));
 const codeText = computed(() => props.code ?? extractCodeText(props.__node) ?? '');
 const AsyncMermaidBlock = defineAsyncComponent(() => import('~/components/ui/MermaidBlock.vue'));
+const shouldDeferMermaid = computed(() => props.language === 'mermaid');
+const mermaidShouldLoad = useDeferredElementLoad(
+  mermaidContainer,
+  shouldDeferMermaid,
+  codeText,
+  '400px 0px'
+);
+const mermaidPreviewStyle = computed(() => ({
+  '--mermaid-preview-height': `${estimateMermaidPreviewHeight(codeText.value)}px`,
+}));
 
 function extractCodeText(node: ComarkNode | undefined): string | null {
   if (!Array.isArray(node)) {
@@ -88,7 +103,12 @@ onBeforeUnmount(clearResetTimer);
 </script>
 
 <template>
-  <AsyncMermaidBlock v-if="props.language === 'mermaid'" :code="codeText" />
+  <div v-if="props.language === 'mermaid'" ref="mermaidContainer">
+    <AsyncMermaidBlock v-if="mermaidShouldLoad" :code="codeText" />
+    <div v-else class="mermaid-placeholder" :style="mermaidPreviewStyle" aria-hidden="true">
+      <div class="mermaid-placeholder__skeleton" />
+    </div>
+  </div>
   <div v-else class="markdown-code-block">
     <div class="markdown-code-block__header">
       <span v-if="languageLabel" class="markdown-code-block__language" :title="languageLabel">
@@ -119,6 +139,21 @@ onBeforeUnmount(clearResetTimer);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
   background-color: var(--gitpulse-code-bg);
+}
+
+.mermaid-placeholder {
+  overflow: hidden;
+  margin: 1rem 0;
+  min-height: min(var(--mermaid-preview-height), 70vh);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  background-color: var(--gitpulse-markdown-bg);
+}
+
+.mermaid-placeholder__skeleton {
+  width: 100%;
+  min-height: min(var(--mermaid-preview-height), 70vh);
+  background-color: var(--gitpulse-skeleton-bg);
 }
 
 .markdown-code-block__header {
