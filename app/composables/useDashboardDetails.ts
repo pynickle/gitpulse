@@ -145,6 +145,17 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     }
   };
 
+  const hideDetailsForFileBrowsing = () => {
+    for (const panel of panels) {
+      if (panel === repoPanel) {
+        panel.visible.value = false;
+        continue;
+      }
+
+      panel.close();
+    }
+  };
+
   const parseDetailTarget = (value: unknown): DetailTarget | null => {
     const rawValue = getQueryParamValue(value);
     if (!rawValue) return null;
@@ -611,8 +622,16 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     );
   };
 
-  const loadRepoData = async (owner: string, repo: string) => {
+  const loadRepoData = async (owner: string, repo: string, options: { force?: boolean } = {}) => {
     if (!owner || !repo) return;
+
+    if (!options.force && isRepositoryDataForTarget(repoPanel.data.value, owner, repo)) {
+      showOnly(repoPanel);
+      repoPanel.error.value = '';
+      repoPanel.loading.value = false;
+      syncRepositoryEntry(owner, repo, getCanonicalRepoBranch(owner, repo));
+      return;
+    }
 
     showOnly(repoPanel);
     await repoPanel.load(() => apiFetch<RepositoryDetailPayload>(`/api/repos/${owner}/${repo}`), {
@@ -797,7 +816,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
     const repoTarget = activeRepoTarget.value;
     if (repoTarget && !isFileBrowsingRoute.value) {
-      await loadRepoData(repoTarget.owner, repoTarget.repo);
+      await loadRepoData(repoTarget.owner, repoTarget.repo, { force: true });
     }
   };
 
@@ -830,7 +849,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       loggedIn.value,
     ],
     async () => {
-      if (!import.meta.client) {
+      if (import.meta.server) {
         return;
       }
 
@@ -862,7 +881,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       }
 
       if (isFileBrowsingRoute.value) {
-        closeAllDetails();
+        hideDetailsForFileBrowsing();
         return;
       }
 
