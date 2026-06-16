@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ComarkElement } from 'comark';
-import { computed, inject, onBeforeUnmount, onMounted, ref, useAttrs, watch } from 'vue';
+import { computed, inject, ref, useAttrs } from 'vue';
 
 import { resolveMarkdownColorModeSourceMedia } from '#shared/utils/markdown-color-mode-source-media';
 
@@ -11,6 +11,7 @@ import {
   parseMarkdownRepoResource,
   resolveMarkdownRepoSrcset,
 } from '../../utils/markdownRepoPathUtils';
+import { useDeferredElementLoad } from './deferredElementLoad';
 
 defineOptions({
   inheritAttrs: false,
@@ -32,9 +33,6 @@ const runtimeConfig = useRuntimeConfig();
 const colorMode = useColorMode();
 const markdownRepoContext = inject(markdownRepoContextKey, null);
 const imageElement = ref<HTMLImageElement | null>(null);
-const imageShouldLoad = ref(false);
-let imageObserver: IntersectionObserver | undefined;
-let stopImageWatcher: (() => void) | undefined;
 
 const tag = computed(() => {
   const nodeTag = props.__node?.[0];
@@ -76,6 +74,8 @@ const shouldDeferImage = computed(
     !hasAttrValue(attrs.loading, 'eager') &&
     !hasAttrValue(attrs.fetchpriority ?? attrs.fetchPriority, 'high')
 );
+const imageLoadKey = computed(() => `${props.src ?? ''}\n${props.srcset ?? ''}`);
+const imageShouldLoad = useDeferredElementLoad(imageElement, shouldDeferImage, imageLoadKey);
 
 const resolvedAttrs = computed(() => {
   const resolved = {
@@ -117,59 +117,6 @@ const renderedImageAttrs = computed(() => {
     'data-src': resolved.src,
     'data-srcset': resolved.srcset,
   };
-});
-
-function stopObservingImage() {
-  imageObserver?.disconnect();
-  imageObserver = undefined;
-}
-
-function loadDeferredImage() {
-  imageShouldLoad.value = true;
-  stopObservingImage();
-}
-
-function observeDeferredImage() {
-  stopObservingImage();
-
-  if (!shouldDeferImage.value) {
-    imageShouldLoad.value = true;
-    return;
-  }
-
-  imageShouldLoad.value = false;
-
-  if (!imageElement.value) {
-    return;
-  }
-
-  if (typeof IntersectionObserver === 'undefined') {
-    loadDeferredImage();
-    return;
-  }
-
-  imageObserver = new IntersectionObserver(
-    (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        loadDeferredImage();
-      }
-    },
-    { rootMargin: '800px 0px' }
-  );
-  imageObserver.observe(imageElement.value);
-}
-
-onMounted(() => {
-  stopImageWatcher = watch(
-    () => [shouldDeferImage.value, props.src, props.srcset, imageElement.value] as const,
-    observeDeferredImage,
-    { immediate: true, flush: 'post' }
-  );
-});
-
-onBeforeUnmount(() => {
-  stopImageWatcher?.();
-  stopObservingImage();
 });
 </script>
 

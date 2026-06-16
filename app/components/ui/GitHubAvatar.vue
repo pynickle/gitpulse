@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { UserIcon } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import {
   createSizedGitHubAvatarUrl,
   resolveGitHubAvatarDisplaySize,
 } from '#shared/utils/github-avatar-url';
+
+import { useDeferredElementLoad } from './deferredElementLoad';
 
 type GitHubAvatarVariant = 'plain' | 'raised';
 type GitHubAvatarLoading = 'eager' | 'lazy';
@@ -37,6 +39,7 @@ const toCssSize = (value: number | string | undefined) => {
 
 const resolvedWidth = computed(() => toCssSize(props.width ?? props.size));
 const resolvedHeight = computed(() => toCssSize(props.height ?? props.size));
+const avatarElement = ref<HTMLElement | null>(null);
 
 const avatarStyle = computed(() => ({
   width: resolvedWidth.value,
@@ -49,11 +52,14 @@ const imageDisplaySize = computed(() =>
   resolveGitHubAvatarDisplaySize(imageWidth.value, imageHeight.value)
 );
 const imageSrc = computed(() => createSizedGitHubAvatarUrl(props.src, imageDisplaySize.value));
+const shouldDeferImage = computed(() => props.loading !== 'eager');
+const imageShouldLoad = useDeferredElementLoad(avatarElement, shouldDeferImage, imageSrc);
 const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
 </script>
 
 <template>
   <span
+    ref="avatarElement"
     class="github-avatar"
     :class="[
       `github-avatar--${variant}`,
@@ -64,7 +70,7 @@ const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
     :style="avatarStyle"
   >
     <NuxtImg
-      v-if="src"
+      v-if="src && imageShouldLoad"
       :src="imageSrc"
       :alt="alt || ''"
       :width="imageWidth"
