@@ -123,7 +123,7 @@
 
 <script setup lang="ts">
 import { EyeIcon } from 'lucide-vue-next';
-import { computed, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
 
 import type {
   PullRequestDetailLabel,
@@ -135,7 +135,6 @@ import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRReviewerRequestModal from '~/components/dashboard/pr/PRReviewerRequestModal.vue';
-import PRReviewWorkspace from '~/components/dashboard/pr/PRReviewWorkspace.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
 import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
 import type {
@@ -155,6 +154,10 @@ const props = defineProps<{
   pullRequest: PullRequestDetailViewModel;
   reviewActive?: boolean;
 }>();
+
+const PRReviewWorkspace = defineAsyncComponent(
+  () => import('~/components/dashboard/pr/PRReviewWorkspace.vue')
+);
 
 interface PRTimelineResponse {
   timeline?: PRTimelineItem[];
