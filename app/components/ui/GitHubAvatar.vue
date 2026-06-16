@@ -2,6 +2,11 @@
 import { UserIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 
+import {
+  createSizedGitHubAvatarUrl,
+  resolveGitHubAvatarDisplaySize,
+} from '#shared/utils/github-avatar-url';
+
 type GitHubAvatarVariant = 'plain' | 'raised';
 type GitHubAvatarLoading = 'eager' | 'lazy';
 
@@ -24,8 +29,6 @@ const props = withDefaults(
   }
 );
 
-const colorMode = useColorMode();
-
 const toCssSize = (value: number | string | undefined) => {
   if (value === undefined || value === '') return undefined;
   if (typeof value === 'number') return `${value}px`;
@@ -42,8 +45,11 @@ const avatarStyle = computed(() => ({
 
 const imageWidth = computed(() => props.width ?? props.size);
 const imageHeight = computed(() => props.height ?? props.size);
+const imageDisplaySize = computed(() =>
+  resolveGitHubAvatarDisplaySize(imageWidth.value, imageHeight.value)
+);
+const imageSrc = computed(() => createSizedGitHubAvatarUrl(props.src, imageDisplaySize.value));
 const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
-const isDarkMode = computed(() => colorMode.value === 'dark');
 </script>
 
 <template>
@@ -53,14 +59,13 @@ const isDarkMode = computed(() => colorMode.value === 'dark');
       `github-avatar--${variant}`,
       {
         'github-avatar--interactive': interactive,
-        'github-avatar--dark': isDarkMode,
       },
     ]"
     :style="avatarStyle"
   >
     <NuxtImg
       v-if="src"
-      :src="src"
+      :src="imageSrc"
       :alt="alt || ''"
       :width="imageWidth"
       :height="imageHeight"
@@ -124,7 +129,6 @@ $motion-normal: 0.3s;
   background: var(--gitpulse-surface-hover);
 }
 
-.github-avatar--dark,
 :global(html.dark) .github-avatar,
 :global(html[data-color-mode='dark']) .github-avatar {
   --github-avatar-bg: #fff;
