@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { parsePRReviewPatch, type PRReviewDiffRow } from '~/composables/usePRReview';
+import { parsePRReviewPatch, type PRReviewDiffRow } from '#shared/utils/pr-review-patch';
 import tokenizeCodeLine from '~/utils/tokenizeCodeLine';
 
 type TimelineDiffKind = 'hunk' | 'context' | 'add' | 'delete';

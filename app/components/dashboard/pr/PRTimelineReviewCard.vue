@@ -216,14 +216,13 @@ import {
   SlashIcon,
   XIcon,
 } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import PRTimelineReviewDiff from '~/components/dashboard/pr/PRTimelineReviewDiff.vue';
+import { parsePRReviewPatch } from '#shared/utils/pr-review-patch';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import { parsePRReviewPatch } from '~/composables/usePRReview';
 import type { PRTimelineItem, TimelineReviewComment } from '~/composables/usePRTimelineEvents';
 import formatDurationFromNow from '~/utils/formatDurationFromNow';
 
@@ -238,6 +237,9 @@ const emit = defineEmits<{
   (e: 'toggle-review-thread', payload: { threadId: string; resolved: boolean }): void;
 }>();
 
+const PRTimelineReviewDiff = defineAsyncComponent(
+  () => import('~/components/dashboard/pr/PRTimelineReviewDiff.vue')
+);
 const { t, locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
