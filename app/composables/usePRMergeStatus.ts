@@ -87,8 +87,18 @@ export function usePRMergeStatus() {
   const loading = shallowRef(false);
   const error = shallowRef<string | null>(null);
   const mergeError = shallowRef<string | null>(null);
+  let statusRequestId = 0;
+
+  const setMergeStatus = (status: PRMergeStatus | null) => {
+    statusRequestId += 1;
+    mergeStatus.value = status;
+    loading.value = false;
+    error.value = null;
+  };
 
   const fetchMergeStatus = async (owner: string, repo: string, pullNumber: number) => {
+    const requestId = statusRequestId + 1;
+    statusRequestId = requestId;
     loading.value = true;
     error.value = null;
 
@@ -99,14 +109,20 @@ export function usePRMergeStatus() {
           method: 'GET',
         }
       );
-      mergeStatus.value = status;
+      if (requestId === statusRequestId) {
+        mergeStatus.value = status;
+      }
       return status;
     } catch (fetchError: unknown) {
-      error.value = getFetchErrorMessage(fetchError, 'Failed to fetch pull request merge status');
-      mergeStatus.value = null;
+      if (requestId === statusRequestId) {
+        error.value = getFetchErrorMessage(fetchError, 'Failed to fetch pull request merge status');
+        mergeStatus.value = null;
+      }
       return null;
     } finally {
-      loading.value = false;
+      if (requestId === statusRequestId) {
+        loading.value = false;
+      }
     }
   };
 
@@ -136,6 +152,7 @@ export function usePRMergeStatus() {
     loading,
     error,
     mergeError,
+    setMergeStatus,
     fetchMergeStatus,
     mergePullRequest,
   };

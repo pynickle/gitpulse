@@ -50,6 +50,7 @@
           :pull-number="currentPullRequest.number"
           :pr-title="currentPullRequest?.title"
           :head-label="currentPullRequest?.head?.label || currentPullRequest?.head?.ref"
+          :initial-status="terminalMergeStatus"
           @merged="handlePullRequestMerged"
         />
       </div>
@@ -239,6 +240,53 @@ const canOpenReviewWindow = computed(() =>
     repoOwner.value && repoName.value && currentPullRequest.value?.number && reviewCommitId.value
   )
 );
+
+const terminalMergeStatus = computed(() => {
+  const pullRequest = currentPullRequest.value;
+  if (!pullRequest) {
+    return null;
+  }
+
+  const merged = Boolean(pullRequest.merged || pullRequest.merged_at);
+  if (!merged && pullRequest.state !== 'closed') {
+    return null;
+  }
+
+  const mergedBy = pullRequest.merged_by?.login
+    ? {
+        login: pullRequest.merged_by.login,
+        avatarUrl: pullRequest.merged_by.avatar_url ?? '',
+        htmlUrl: pullRequest.merged_by.html_url ?? '',
+      }
+    : null;
+
+  return {
+    state: merged ? ('merged' as const) : ('closed' as const),
+    merged,
+    mergedAt: pullRequest.merged_at ?? null,
+    mergedBy,
+    mergeCommitSha: pullRequest.merge_commit_sha ?? null,
+    mergeableState: pullRequest.mergeable_state ?? null,
+    mergeable: pullRequest.mergeable ?? null,
+    autoMerge: false,
+    draft: Boolean(pullRequest.draft),
+    reviewDecision: 'none' as const,
+    reviewSummary: {
+      approved: 0,
+      changesRequested: 0,
+    },
+    checks: {
+      total: 0,
+      success: 0,
+      failure: 0,
+      pending: 0,
+      neutral: 0,
+      runs: [],
+    },
+    headSha: pullRequest.head?.sha ?? null,
+    viewerCanMerge: false,
+  };
+});
 
 const openReviewWindow = () => {
   if (!canOpenReviewWindow.value) {

@@ -255,7 +255,11 @@ import { useI18n } from 'vue-i18n';
 
 import { formatDurationFromNow } from '#imports';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import type { PRCheckRunSummary, PRMergeMethod } from '~/composables/usePRMergeStatus';
+import type {
+  PRCheckRunSummary,
+  PRMergeMethod,
+  PRMergeStatus,
+} from '~/composables/usePRMergeStatus';
 
 const props = defineProps<{
   owner: string;
@@ -263,6 +267,7 @@ const props = defineProps<{
   pullNumber: number;
   prTitle?: string;
   headLabel?: string;
+  initialStatus?: PRMergeStatus | null;
 }>();
 
 const emit = defineEmits<{
@@ -271,8 +276,15 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
-const { mergeStatus, loading, error, mergeError, fetchMergeStatus, mergePullRequest } =
-  usePRMergeStatus();
+const {
+  mergeStatus,
+  loading,
+  error,
+  mergeError,
+  setMergeStatus,
+  fetchMergeStatus,
+  mergePullRequest,
+} = usePRMergeStatus();
 
 const mergeMethods: PRMergeMethod[] = ['merge', 'squash', 'rebase'];
 const selectedMethod = shallowRef<PRMergeMethod>('merge');
@@ -626,8 +638,8 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [props.owner, props.repo, props.pullNumber] as const,
-  ([owner, repo, pullNumber]) => {
+  () => [props.owner, props.repo, props.pullNumber, props.initialStatus] as const,
+  ([owner, repo, pullNumber, initialStatus]) => {
     dropdownOpen.value = false;
     confirming.value = false;
     checksExpanded.value = false;
@@ -636,6 +648,13 @@ watch(
     commitMessage.value = '';
     stopMergeabilityPolling();
     mergeabilityPollAttempts = 0;
+
+    if (initialStatus) {
+      setMergeStatus(initialStatus);
+      return;
+    }
+
+    setMergeStatus(null);
 
     if (owner && repo && pullNumber) {
       fetchMergeStatus(owner, repo, pullNumber);

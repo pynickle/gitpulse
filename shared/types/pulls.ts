@@ -55,6 +55,8 @@ export interface PullRequestDetailPayload {
   updated_at: string;
   closed_at?: string | null;
   merged_at?: string | null;
+  merged_by?: PullRequestUserSummary | null;
+  merge_commit_sha?: string | null;
   repository_url?: string;
   html_url?: string;
 
