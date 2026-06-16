@@ -1254,14 +1254,22 @@ watch(
 
 watch(
   () => [
+    isDashboardChildRoute.value,
+    showFileBrowsingView.value,
     route.query.tab,
     route.query.page,
     routeFilterFetchKey.value,
     sessionReady.value,
     loggedIn.value,
   ],
-  ([tab, page]) => {
-    if (!import.meta.client || !sessionReady.value || !loggedIn.value) {
+  ([childRoute, fileBrowsingView, tab, page]) => {
+    if (
+      !import.meta.client ||
+      childRoute ||
+      fileBrowsingView ||
+      !sessionReady.value ||
+      !loggedIn.value
+    ) {
       return;
     }
 
