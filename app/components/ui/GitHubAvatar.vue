@@ -11,6 +11,7 @@ import { useDeferredElementLoad } from './deferredElementLoad';
 
 type GitHubAvatarVariant = 'plain' | 'raised';
 type GitHubAvatarLoading = 'eager' | 'lazy';
+type GitHubAvatarFetchPriority = 'high' | 'low' | 'auto';
 
 const props = withDefaults(
   defineProps<{
@@ -20,6 +21,7 @@ const props = withDefaults(
     width?: number | string;
     height?: number | string;
     loading?: GitHubAvatarLoading;
+    fetchPriority?: GitHubAvatarFetchPriority;
     variant?: GitHubAvatarVariant;
     interactive?: boolean;
   }>(),
@@ -76,6 +78,7 @@ const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
       :width="imageWidth"
       :height="imageHeight"
       :loading="loading"
+      :fetchpriority="fetchPriority"
       class="github-avatar__image"
     />
     <span v-else class="github-avatar__fallback" role="img" :aria-label="fallbackLabel">

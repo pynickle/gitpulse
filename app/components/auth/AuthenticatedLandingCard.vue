@@ -9,6 +9,8 @@
           :alt="user.name"
           width="108"
           height="108"
+          loading="eager"
+          fetch-priority="high"
         />
       </div>
 
