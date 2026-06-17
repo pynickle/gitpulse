@@ -81,9 +81,67 @@
           </div>
 
           <div class="card-content dashboard-list-card-content">
-            <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
+            <div
+              v-if="dashboardListLoading || !error"
+              :class="[
+                'dashboard-list-shell',
+                { 'dashboard-list-shell--without-pagination': !showPagination },
+              ]"
+            >
+              <SimpleBar class="dashboard-list-scroll">
+                <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
 
-            <div v-else-if="error" class="dashboard-error-state">
+                <template v-else-if="currentTab === 'notifications'">
+                  <div v-if="filteredNotifications.length === 0" class="dashboard-empty-state">
+                    {{ notificationEmptyMessage }}
+                  </div>
+                  <div
+                    v-for="notification in filteredNotifications"
+                    :key="notification.id"
+                    class="mb-4 mr-4"
+                    @click="openNotification(notification)"
+                  >
+                    <AsyncNotificationItem :notification="notification" />
+                  </div>
+                </template>
+
+                <template v-else-if="selectedCustomTab">
+                  <div
+                    v-for="issue in issues"
+                    :key="issue.id"
+                    class="mb-4 mr-4"
+                    @click="openSearchResult(issue)"
+                  >
+                    <AsyncSearchItem :issue="issue" />
+                  </div>
+                </template>
+
+                <template v-else-if="currentTab === 'issues'">
+                  <div
+                    v-for="issue in issues"
+                    :key="issue.id"
+                    class="mb-4 mr-4"
+                    @click="openIssue(issue)"
+                  >
+                    <AsyncIssuePrNotificationItem :item="issue" />
+                  </div>
+                </template>
+
+                <template v-else-if="currentTab === 'pulls'">
+                  <div v-for="pull in pulls" :key="pull.id" class="mb-4 mr-4" @click="openPR(pull)">
+                    <AsyncIssuePrNotificationItem :item="pull" />
+                  </div>
+                </template>
+
+                <template v-else-if="currentTab === 'repos'">
+                  <div v-for="repo in repos" class="mb-4 mr-4" :key="repo.id">
+                    <AsyncRepoItem :repo="repo" />
+                  </div>
+                </template>
+              </SimpleBar>
+            </div>
+
+            <div v-else class="dashboard-error-state">
               <div class="dashboard-error-state__content">
                 <div class="dashboard-error-state__icon" aria-hidden="true">
                   <AlertTriangleIcon :size="40" />
@@ -115,62 +173,6 @@
                   }}</pre>
                 </div>
               </div>
-            </div>
-
-            <div
-              v-else
-              :class="[
-                'dashboard-list-shell',
-                { 'dashboard-list-shell--without-pagination': !showPagination },
-              ]"
-            >
-              <SimpleBar class="dashboard-list-scroll" v-if="currentTab === 'notifications'">
-                <div v-if="filteredNotifications.length === 0" class="dashboard-empty-state">
-                  {{ notificationEmptyMessage }}
-                </div>
-                <div
-                  v-for="notification in filteredNotifications"
-                  :key="notification.id"
-                  class="mb-4 mr-4"
-                  @click="openNotification(notification)"
-                >
-                  <AsyncNotificationItem :notification="notification" />
-                </div>
-              </SimpleBar>
-
-              <SimpleBar v-else-if="selectedCustomTab" class="dashboard-list-scroll">
-                <div
-                  v-for="issue in issues"
-                  :key="issue.id"
-                  class="mb-4 mr-4"
-                  @click="openSearchResult(issue)"
-                >
-                  <AsyncSearchItem :issue="issue" />
-                </div>
-              </SimpleBar>
-
-              <SimpleBar v-else-if="currentTab === 'issues'" class="dashboard-list-scroll">
-                <div
-                  v-for="issue in issues"
-                  :key="issue.id"
-                  class="mb-4 mr-4"
-                  @click="openIssue(issue)"
-                >
-                  <AsyncIssuePrNotificationItem :item="issue" />
-                </div>
-              </SimpleBar>
-
-              <SimpleBar v-else-if="currentTab === 'pulls'" class="dashboard-list-scroll">
-                <div v-for="pull in pulls" :key="pull.id" class="mb-4 mr-4" @click="openPR(pull)">
-                  <AsyncIssuePrNotificationItem :item="pull" />
-                </div>
-              </SimpleBar>
-
-              <SimpleBar v-else-if="currentTab === 'repos'" class="dashboard-list-scroll">
-                <div v-for="repo in repos" class="mb-4 mr-4" :key="repo.id">
-                  <AsyncRepoItem :repo="repo" />
-                </div>
-              </SimpleBar>
             </div>
           </div>
         </div>

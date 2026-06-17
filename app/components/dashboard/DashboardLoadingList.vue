@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import 'simplebar-vue/dist/simplebar.min.css';
-import SimpleBar from 'simplebar-vue';
-
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
 const props = defineProps<{
@@ -13,74 +10,63 @@ const skeletonCardCount = 5;
 
 <template>
   <div class="dashboard-loading-list" aria-busy="true" aria-live="polite">
-    <SimpleBar class="dashboard-loading-list__scroll">
+    <div
+      v-for="index in skeletonCardCount"
+      :key="`${props.currentTab}-loading-card-${index}`"
+      class="mb-4 mr-4"
+    >
       <div
-        v-for="index in skeletonCardCount"
-        :key="`${props.currentTab}-loading-card-${index}`"
-        class="mb-4 mr-4"
+        class="card dashboard-list-card dashboard-loading-card"
+        :class="
+          props.currentTab === 'repos'
+            ? 'dashboard-list-card--repo'
+            : 'dashboard-list-card--activity'
+        "
       >
-        <div
-          class="card dashboard-list-card dashboard-loading-card"
-          :class="
-            props.currentTab === 'repos'
-              ? 'dashboard-list-card--repo'
-              : 'dashboard-list-card--activity'
-          "
-        >
-          <div class="card-content p-3" :class="{ 'pl-4': props.currentTab === 'repos' }">
-            <div class="media mb-2">
-              <div v-if="props.currentTab !== 'repos'" class="media-left ml-2 mt-2">
-                <span class="dashboard-loading-card__icon" />
+        <div class="card-content p-3" :class="{ 'pl-4': props.currentTab === 'repos' }">
+          <div class="media mb-2">
+            <div v-if="props.currentTab !== 'repos'" class="media-left ml-2 mt-2">
+              <span class="dashboard-loading-card__icon" />
+            </div>
+
+            <div class="media-content">
+              <div class="is-flex is-justify-content-space-between is-align-items-center">
+                <span class="dashboard-loading-card__line dashboard-loading-card__line--title" />
+                <span class="dashboard-loading-card__pill" />
               </div>
 
-              <div class="media-content">
-                <div class="is-flex is-justify-content-space-between is-align-items-center">
-                  <span class="dashboard-loading-card__line dashboard-loading-card__line--title" />
-                  <span class="dashboard-loading-card__pill" />
-                </div>
+              <div
+                v-if="props.currentTab === 'notifications'"
+                class="dashboard-loading-card__line dashboard-loading-card__line--subtitle mt-2"
+              />
 
-                <div
-                  v-if="props.currentTab === 'notifications'"
-                  class="dashboard-loading-card__line dashboard-loading-card__line--subtitle mt-2"
-                />
-
-                <div v-else class="dashboard-loading-card__tags mt-2">
-                  <span class="dashboard-loading-card__tag" />
-                  <span class="dashboard-loading-card__tag dashboard-loading-card__tag--short" />
-                </div>
+              <div v-else class="dashboard-loading-card__tags mt-2">
+                <span class="dashboard-loading-card__tag" />
+                <span class="dashboard-loading-card__tag dashboard-loading-card__tag--short" />
               </div>
             </div>
+          </div>
 
-            <div v-if="props.currentTab === 'repos'" class="dashboard-loading-card__stats">
-              <span class="dashboard-loading-card__metric" />
-              <span class="dashboard-loading-card__metric" />
-              <span class="dashboard-loading-card__metric" />
-            </div>
+          <div v-if="props.currentTab === 'repos'" class="dashboard-loading-card__stats">
+            <span class="dashboard-loading-card__metric" />
+            <span class="dashboard-loading-card__metric" />
+            <span class="dashboard-loading-card__metric" />
+          </div>
 
-            <div v-else class="ml-2 dashboard-loading-card__footer">
-              <span class="dashboard-loading-card__line dashboard-loading-card__line--footer" />
-            </div>
+          <div v-else class="ml-2 dashboard-loading-card__footer">
+            <span class="dashboard-loading-card__line dashboard-loading-card__line--footer" />
           </div>
         </div>
       </div>
-    </SimpleBar>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss" src="~/assets/scss/card.scss" />
 <style scoped lang="scss">
 .dashboard-loading-list {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
   width: 100%;
-  height: calc(100vh - 12rem);
-  min-height: 0;
-  flex: 1;
-}
-
-.dashboard-loading-list__scroll {
-  min-height: 0;
-  height: 100%;
+  min-height: 100%;
 }
 
 .dashboard-loading-card {
