@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 
 import type { DiscussionComment } from '#shared/types/discussions';
 import DiscussionReplyList from '~/components/dashboard/discussion/DiscussionReplyList.vue';
-import FloatingMarkdownEditor from '~/components/dashboard/timeline/FloatingMarkdownEditor.vue';
+import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import formatDurationFromNow from '~/utils/formatDurationFromNow';

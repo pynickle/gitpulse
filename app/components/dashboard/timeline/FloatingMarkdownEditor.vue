@@ -645,6 +645,7 @@ const selfSubmit = async () => {
 };
 
 if (props.autofocus) {
+  isExpanded.value = true;
   void focus();
 }
 

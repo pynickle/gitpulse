@@ -81,7 +81,7 @@ import IssueTimelineCommentCard from '~/components/dashboard/issue/IssueTimeline
 import IssueTimelineCommitCard from '~/components/dashboard/issue/IssueTimelineCommitCard.vue';
 import IssueTimelineEventBody from '~/components/dashboard/issue/IssueTimelineEventBody.vue';
 import IssueTimelineReferencedEventCard from '~/components/dashboard/issue/IssueTimelineReferencedEventCard.vue';
-import FloatingMarkdownEditor from '~/components/dashboard/timeline/FloatingMarkdownEditor.vue';
+import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import TimelineEventActorRow from '~/components/dashboard/timeline/TimelineEventActorRow.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import {

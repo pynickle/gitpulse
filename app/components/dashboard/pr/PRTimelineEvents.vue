@@ -95,7 +95,7 @@ import PRTimelineCommitCard from '~/components/dashboard/pr/PRTimelineCommitCard
 import PRTimelineEventBody from '~/components/dashboard/pr/PRTimelineEventBody.vue';
 import PRTimelineMergeCard from '~/components/dashboard/pr/PRTimelineMergeCard.vue';
 import PRTimelineReviewCard from '~/components/dashboard/pr/PRTimelineReviewCard.vue';
-import FloatingMarkdownEditor from '~/components/dashboard/timeline/FloatingMarkdownEditor.vue';
+import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import TimelineEventActorRow from '~/components/dashboard/timeline/TimelineEventActorRow.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import { usePRTimelineEvents, type PRTimelineItem } from '~/composables/usePRTimelineEvents';

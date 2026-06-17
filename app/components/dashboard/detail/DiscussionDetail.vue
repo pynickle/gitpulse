@@ -14,7 +14,7 @@ import DiscussionActions from '~/components/dashboard/discussion/DiscussionActio
 import DiscussionAnswerCard from '~/components/dashboard/discussion/DiscussionAnswerCard.vue';
 import DiscussionComments from '~/components/dashboard/discussion/DiscussionComments.vue';
 import DiscussionHeader from '~/components/dashboard/discussion/DiscussionHeader.vue';
-import FloatingMarkdownEditor from '~/components/dashboard/timeline/FloatingMarkdownEditor.vue';
+import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 const props = defineProps<{
