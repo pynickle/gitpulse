@@ -19,6 +19,7 @@ import {
 } from './detail-pane-loaders';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
+type DetailSummaryTone = 'open' | 'closed' | 'merged';
 
 interface ActiveDetailPane {
   type: DetailPaneType;
@@ -28,6 +29,16 @@ interface ActiveDetailPane {
   error: string;
   loadingTitle: string;
 }
+
+interface DetailSummary {
+  title?: string;
+  number?: number | string;
+  state?: string;
+  stateTone?: DetailSummaryTone;
+  visible?: boolean;
+}
+
+type DetailSummaryContent = Omit<DetailSummary, 'visible'>;
 
 const props = defineProps<{
   issue: IssueDetailPayload | null;
@@ -71,6 +82,8 @@ const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
 const isIssueHeaderNonSticky = shallowRef(false);
 const isPullRequestReviewActive = shallowRef(false);
+const isCompactHeaderVisible = shallowRef(false);
+const pullRequestCompactSummary = shallowRef<DetailSummaryContent | null>(null);
 const DiscussionDetail = defineAsyncComponent(loadDiscussionDetail);
 const IssueDetail = defineAsyncComponent(loadIssueDetail);
 const PrDetail = defineAsyncComponent(loadPrDetail);
@@ -158,6 +171,57 @@ const isHeaderNonSticky = computed(() => {
   return activeDetailPane.value?.type === 'issue' && isIssueHeaderNonSticky.value;
 });
 
+const getPullRequestState = (pullRequest: PullRequestDetailViewModel | null) => {
+  if (pullRequest?.merged || pullRequest?.merged_at) return 'merged';
+  return pullRequest?.state || 'closed';
+};
+
+const getStateTone = (state: string): DetailSummaryTone => {
+  if (state === 'open' || state === 'merged') return state;
+  return 'closed';
+};
+
+const detailSummary = computed<DetailSummary | null>(() => {
+  const pane = activeDetailPane.value;
+  if (!pane) return null;
+
+  if (pane.type === 'issue' && props.issue) {
+    const state = props.issue.state || 'closed';
+    return {
+      title: props.issue.title,
+      number: props.issue.number,
+      state,
+      stateTone: getStateTone(state),
+      visible: isCompactHeaderVisible.value,
+    };
+  }
+
+  if (pane.type === 'pull-request' && props.pullRequest) {
+    const fallbackState = getPullRequestState(props.pullRequest);
+    const summary = pullRequestCompactSummary.value ?? {
+      title: props.pullRequest.title,
+      number: props.pullRequest.number,
+      state: fallbackState,
+      stateTone: getStateTone(fallbackState),
+    };
+
+    return {
+      ...summary,
+      visible: isCompactHeaderVisible.value,
+    };
+  }
+
+  if (pane.type === 'discussion' && props.discussion) {
+    return {
+      title: props.discussion.title || t('discussionDetail.titleFallback'),
+      number: props.discussion.number,
+      visible: isCompactHeaderVisible.value,
+    };
+  }
+
+  return null;
+});
+
 const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
 };
@@ -173,6 +237,8 @@ const handleSwitchDiscussion = (owner: string, repo: string, discussionNumber: n
 watch(activeDetailKey, () => {
   isIssueHeaderNonSticky.value = false;
   isPullRequestReviewActive.value = false;
+  isCompactHeaderVisible.value = false;
+  pullRequestCompactSummary.value = null;
 });
 </script>
 
@@ -188,6 +254,7 @@ watch(activeDetailKey, () => {
       :show-home-button="shouldShowHomeButton"
       :non-sticky-header="isHeaderNonSticky"
       :hide-header="isPullRequestReviewActive"
+      :detail-summary="detailSummary"
       content-class="detail-host-content p-0 is-clipped"
       @back="emit('back')"
       @home="emit('home')"
@@ -226,6 +293,7 @@ watch(activeDetailKey, () => {
               v-else-if="activeDetailPane?.type === 'issue' && issue"
               :issue="issue"
               @update:non-sticky-header="isIssueHeaderNonSticky = $event"
+              @update:compact-header-visible="isCompactHeaderVisible = $event"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
             />
@@ -235,6 +303,8 @@ watch(activeDetailKey, () => {
               :pull-request="pullRequest"
               :review-active="isPullRequestReviewRoute"
               @update:review-active="isPullRequestReviewActive = $event"
+              @update:compact-header-visible="isCompactHeaderVisible = $event"
+              @update:compact-header-summary="pullRequestCompactSummary = $event"
               @open-review="emit('open-pull-request-review')"
               @close-review="emit('close-pull-request-review')"
               @switch-issue="handleSwitchIssue"
@@ -244,6 +314,7 @@ watch(activeDetailKey, () => {
             <DiscussionDetail
               v-else-if="activeDetailPane?.type === 'discussion' && discussion"
               :discussion="discussion"
+              @update:compact-header-visible="isCompactHeaderVisible = $event"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
               @switch-discussion="handleSwitchDiscussion"

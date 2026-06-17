@@ -31,6 +31,7 @@
     </div>
 
     <hr class="mr-4" />
+    <div data-detail-compact-threshold aria-hidden="true"></div>
 
     <!-- Author row -->
     <div>

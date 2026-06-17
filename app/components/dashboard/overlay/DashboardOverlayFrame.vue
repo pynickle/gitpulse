@@ -8,6 +8,7 @@
           :home-label="homeLabel"
           :show-home-button="showHomeButton"
           :non-sticky="nonStickyHeader"
+          :detail-summary="detailSummary"
           @back="$emit('back')"
           @home="$emit('home')"
         />
@@ -40,6 +41,14 @@ import { Loader2Icon } from '@lucide/vue';
 
 import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
 
+interface DetailSummary {
+  title?: string;
+  number?: number | string;
+  state?: string;
+  stateTone?: 'open' | 'closed' | 'merged';
+  visible?: boolean;
+}
+
 defineProps<{
   loading: boolean;
   loadingTitle: string;
@@ -50,6 +59,7 @@ defineProps<{
   nonStickyHeader?: boolean;
   contentClass?: string;
   hideHeader?: boolean;
+  detailSummary?: DetailSummary | null;
 }>();
 
 defineEmits<{

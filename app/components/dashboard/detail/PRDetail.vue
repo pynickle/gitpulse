@@ -1,5 +1,9 @@
 <template>
-  <div :class="['pr-detail-layout', { 'pr-detail-layout--review': isReviewWindowOpen }]">
+  <div
+    ref="detailScrollRef"
+    :class="['pr-detail-layout', { 'pr-detail-layout--review': isReviewWindowOpen }]"
+    @scroll="onCompactHeaderScroll"
+  >
     <PRReviewWorkspace
       v-if="isReviewWindowOpen"
       :owner="repoOwner"
@@ -11,16 +15,18 @@
     />
 
     <div v-else class="columns">
-      <div class="column detail-main-column">
+      <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
         <div v-if="detailError" class="notification is-danger is-light mb-4 py-2 px-3">
           <p class="is-size-7">{{ detailError }}</p>
         </div>
 
-        <PRHeader
-          :pull-request="currentPullRequest"
-          :repo-owner="repoOwner"
-          :repo-name="repoName"
-        />
+        <div ref="detailHeaderRef" class="detail-header-boundary">
+          <PRHeader
+            :pull-request="currentPullRequest"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+          />
+        </div>
 
         <hr />
 
@@ -167,10 +173,21 @@ interface PRTimelineResponse {
   pageInfo?: { hasNextPage?: boolean };
 }
 
+type DetailSummaryTone = 'open' | 'closed' | 'merged';
+
+interface CompactHeaderSummary {
+  title?: string;
+  number?: number | string;
+  state?: string;
+  stateTone?: DetailSummaryTone;
+}
+
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'update:review-active', isActive: boolean): void;
+  (e: 'update:compact-header-visible', visible: boolean): void;
+  (e: 'update:compact-header-summary', summary: CompactHeaderSummary): void;
   (e: 'open-review'): void;
   (e: 'close-review'): void;
 }>();
@@ -199,6 +216,18 @@ const reviewerCandidates = ref<PRReviewerCandidate[]>([]);
 const reviewerCandidateWarnings = ref<PRReviewerCandidateWarning[]>([]);
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
+const detailScrollRef = ref<HTMLElement | null>(null);
+const mainColumnRef = ref<HTMLElement | null>(null);
+const detailHeaderRef = ref<HTMLElement | null>(null);
+const {
+  isCompactHeaderVisible,
+  onScroll: onCompactHeaderScroll,
+  reset: resetCompactHeader,
+} = useDetailCompactHeader({
+  scrollContainers: [mainColumnRef, detailScrollRef],
+  headerElement: detailHeaderRef,
+  thresholdSelector: '[data-detail-compact-threshold]',
+});
 const { fetchReviewerSummary, fetchReviewerCandidates, requestReviewers, removeReviewers } =
   usePRReviewers();
 
@@ -247,6 +276,22 @@ const canOpenReviewWindow = computed(() =>
     repoOwner.value && repoName.value && currentPullRequest.value?.number && reviewCommitId.value
   )
 );
+
+const compactHeaderState = computed(() => {
+  if (currentPullRequest.value?.merged || currentPullRequest.value?.merged_at) return 'merged';
+  return currentPullRequest.value?.state || 'closed';
+});
+
+const compactHeaderSummary = computed<CompactHeaderSummary>(() => {
+  const state = compactHeaderState.value;
+
+  return {
+    title: currentPullRequest.value?.title,
+    number: currentPullRequest.value?.number,
+    state,
+    stateTone: state === 'open' || state === 'merged' ? state : 'closed',
+  };
+});
 
 const terminalMergeStatus = computed(() => {
   const pullRequest = currentPullRequest.value;
@@ -595,6 +640,7 @@ const resetPullRequestScopedState = (pullRequest: PullRequestDetailViewModel) =>
   reviewerCandidateWarnings.value = [];
   reviewerCandidateRequestId.value += 1;
   invalidateReviewerSummaryRequests();
+  resetCompactHeader();
 };
 
 const fetchTimeline = async () => {
@@ -788,6 +834,22 @@ const fetchPullRequestDetails = async () => {
 };
 
 watch(
+  isCompactHeaderVisible,
+  (visible) => {
+    emit('update:compact-header-visible', visible);
+  },
+  { immediate: true }
+);
+
+watch(
+  compactHeaderSummary,
+  (summary) => {
+    emit('update:compact-header-summary', summary);
+  },
+  { immediate: true }
+);
+
+watch(
   () => props.pullRequest,
   (newPullRequest) => {
     timelineRequestId.value += 1;
@@ -846,6 +908,10 @@ watch(
   overflow-y: auto;
   flex: none;
   width: 72%;
+}
+
+.detail-header-boundary {
+  display: flow-root;
 }
 
 .pr-detail-layout :deep(.detail-sidebar-column) {

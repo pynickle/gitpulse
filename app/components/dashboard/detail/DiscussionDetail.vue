@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type {
@@ -21,10 +21,11 @@ const props = defineProps<{
   discussion: DiscussionDetailPayload;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'switch-discussion', owner: string, repo: string, discussionNumber: number): void;
+  (e: 'update:compact-header-visible', visible: boolean): void;
 }>();
 
 const EMPTY_PAGE_INFO: DiscussionPageInfo = {
@@ -50,6 +51,18 @@ const loadingReplyIds = shallowRef(new Set<string>());
 const submittingReplyIds = shallowRef(new Set<string>());
 const replyErrors = shallowRef(new Map<string, string>());
 const activeEditorCommentId = shallowRef<string | null>(null);
+const detailScrollRef = ref<HTMLElement | null>(null);
+const mainColumnRef = ref<HTMLElement | null>(null);
+const detailHeaderRef = ref<HTMLElement | null>(null);
+const {
+  isCompactHeaderVisible,
+  onScroll: onCompactHeaderScroll,
+  reset: resetCompactHeader,
+} = useDetailCompactHeader({
+  scrollContainers: [mainColumnRef, detailScrollRef],
+  headerElement: detailHeaderRef,
+  thresholdSelector: '[data-detail-compact-threshold]',
+});
 
 const displayDiscussion = computed<DiscussionDetailPayload>(() => ({
   ...discussionState.value,
@@ -218,6 +231,7 @@ function resetDiscussionState(discussion: DiscussionDetailPayload) {
   submittingReplyIds.value = new Set();
   replyErrors.value = new Map();
   activeEditorCommentId.value = null;
+  resetCompactHeader();
 }
 
 async function loadMoreComments() {
@@ -368,6 +382,14 @@ async function submitReply(comment: DiscussionComment, body: string) {
 }
 
 watch(
+  isCompactHeaderVisible,
+  (visible) => {
+    emit('update:compact-header-visible', visible);
+  },
+  { immediate: true }
+);
+
+watch(
   () => props.discussion,
   (discussion) => resetDiscussionState(discussion),
   { immediate: true }
@@ -375,14 +397,16 @@ watch(
 </script>
 
 <template>
-  <div class="detail-scroll">
+  <div ref="detailScrollRef" class="detail-scroll" @scroll="onCompactHeaderScroll">
     <div class="columns">
-      <div class="column detail-main-column">
-        <DiscussionHeader
-          :discussion="displayDiscussion"
-          :repo-owner="repoOwner"
-          :repo-name="repoName"
-        />
+      <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
+        <div ref="detailHeaderRef" class="detail-header-boundary">
+          <DiscussionHeader
+            :discussion="displayDiscussion"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+          />
+        </div>
 
         <DiscussionAnswerCard
           v-if="visibleAnswer"
@@ -460,6 +484,10 @@ watch(
   overflow-y: auto;
   flex: none;
   width: 72%;
+}
+
+.detail-header-boundary {
+  display: flow-root;
 }
 
 .detail-scroll :deep(.detail-sidebar-column) {

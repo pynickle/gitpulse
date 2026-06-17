@@ -1,12 +1,14 @@
 <template>
-  <div class="detail-scroll">
+  <div ref="detailScrollRef" class="detail-scroll" @scroll="onCompactHeaderScroll">
     <div class="columns">
-      <div class="column detail-main-column">
-        <IssueHeader
-          :issue="currentIssue"
-          :repo-owner="resolvedRepoOwner"
-          :repo-name="resolvedRepoName"
-        />
+      <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
+        <div ref="detailHeaderRef" class="detail-header-boundary">
+          <IssueHeader
+            :issue="currentIssue"
+            :repo-owner="resolvedRepoOwner"
+            :repo-name="resolvedRepoName"
+          />
+        </div>
 
         <hr />
 
@@ -81,6 +83,7 @@ const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'update:non-sticky-header', visible: boolean): void;
+  (e: 'update:compact-header-visible', visible: boolean): void;
 }>();
 
 const loadingTimeline = ref(false);
@@ -96,6 +99,18 @@ const currentTimelinePage = ref(1);
 const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const apiFetch = useGitPulseApiFetch();
+const detailScrollRef = ref<HTMLElement | null>(null);
+const mainColumnRef = ref<HTMLElement | null>(null);
+const detailHeaderRef = ref<HTMLElement | null>(null);
+const {
+  isCompactHeaderVisible,
+  onScroll: onCompactHeaderScroll,
+  reset: resetCompactHeader,
+} = useDetailCompactHeader({
+  scrollContainers: [mainColumnRef, detailScrollRef],
+  headerElement: detailHeaderRef,
+  thresholdSelector: '[data-detail-compact-threshold]',
+});
 
 // SEO: dynamic title based on issue
 usePageMeta(
@@ -168,6 +183,7 @@ const resetIssueScopedState = (issue: IssueDetailPayload) => {
   currentTimelinePage.value = 1;
   hasNextTimelinePage.value = false;
   loadingMoreTimeline.value = false;
+  resetCompactHeader();
   emit('update:non-sticky-header', false);
 };
 
@@ -288,6 +304,14 @@ const fetchRepoPermissions = async () => {
 };
 
 watch(
+  isCompactHeaderVisible,
+  (visible) => {
+    emit('update:compact-header-visible', visible);
+  },
+  { immediate: true }
+);
+
+watch(
   () => props.issue,
   (newIssue) => {
     timelineRequestId.value += 1;
@@ -322,6 +346,10 @@ watch(
   overflow-y: auto;
   flex: none;
   width: 72%;
+}
+
+.detail-header-boundary {
+  display: flow-root;
 }
 
 .detail-scroll :deep(.detail-sidebar-column) {
