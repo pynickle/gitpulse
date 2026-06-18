@@ -167,6 +167,7 @@ const notificationSubjectSchema = z.strictObject({
   url: optionalLongNonEmptyStringSchema,
   number: z.number().int().positive().optional(),
   state: z.enum(['open', 'closed', 'merged']).optional(),
+  isAnswered: z.boolean().optional(),
   stateStatus: z.enum(['pending', 'loaded', 'error', 'unavailable']).optional(),
   labels: z.array(notificationLabelSchema).optional(),
   authorLogin: optionalNonEmptyStringSchema,

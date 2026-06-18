@@ -77,7 +77,7 @@ describe('parseGitHubMarkdownTarget', () => {
 });
 
 describe('parseGitHubNotificationSubjectTarget', () => {
-  test('keeps discussion notifications navigable but outside subject-state enrichment', () => {
+  test('converts discussion notification targets for subject enrichment', () => {
     const target = parseGitHubNotificationSubjectTarget({
       type: 'Discussion',
       url: 'https://github.com/owner/repo/discussions/9',
@@ -89,7 +89,13 @@ describe('parseGitHubNotificationSubjectTarget', () => {
       number: 9,
       type: 'discussions',
     });
-    expect(target && toNotificationSubjectStateTarget(target)).toBeNull();
+    expect(target && toNotificationSubjectStateTarget(target)).toEqual({
+      key: 'owner/repo/discussions/9',
+      owner: 'owner',
+      repo: 'repo',
+      number: 9,
+      type: 'discussions',
+    });
   });
 
   test('converts issue and pull request notification targets for state enrichment', () => {

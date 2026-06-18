@@ -179,6 +179,7 @@ describe('server Zod request validation', () => {
               url: ' https://api.github.com/repos/owner/repo/issues/1 ',
               number: 1,
               state: 'open',
+              isAnswered: true,
               stateStatus: 'loaded',
               labels: [{ name: ' bug ', color: 'd73a4a' }],
               authorLogin: ' octocat ',
@@ -257,6 +258,7 @@ describe('server Zod request validation', () => {
               url: 'https://api.github.com/repos/owner/repo/issues/1',
               number: 1,
               state: 'open',
+              isAnswered: true,
               stateStatus: 'loaded',
               labels: [{ name: 'bug', color: 'd73a4a' }],
               authorLogin: 'octocat',
@@ -379,6 +381,13 @@ describe('server Zod request validation', () => {
             type: 'issues',
             number: 1,
           },
+          {
+            key: ' discussion:octocat/hello/2 ',
+            owner: ' octocat ',
+            repo: ' hello ',
+            type: 'discussions',
+            number: 2,
+          },
         ],
       })
     ).toEqual([
@@ -388,6 +397,13 @@ describe('server Zod request validation', () => {
         repo: 'hello',
         type: 'issues',
         number: 1,
+      },
+      {
+        key: 'discussion:octocat/hello/2',
+        owner: 'octocat',
+        repo: 'hello',
+        type: 'discussions',
+        number: 2,
       },
     ]);
 

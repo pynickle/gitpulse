@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   DASHBOARD_NOTIFICATION_SUBJECT_TYPES,
+  getDashboardDiscussionStateVisual,
   getDashboardSubjectTypeVisual,
 } from '../app/utils/getDashboardSubjectStateVisual';
 import shouldShowNotificationSubjectNumber from '../app/utils/shouldShowNotificationSubjectNumber';
@@ -59,5 +60,18 @@ describe('dashboard notification item subject number display', () => {
     for (const subjectType of DASHBOARD_NOTIFICATION_SUBJECT_TYPES) {
       expect(getDashboardSubjectTypeVisual(subjectType.value).icon).toBeDefined();
     }
+  });
+
+  test('uses detail-aligned discussion visual states for notification badges', () => {
+    expect(getDashboardDiscussionStateVisual(true)).toMatchObject({
+      label: 'Answered discussion',
+      state: 'discussion-answered',
+      color: 'var(--gitpulse-success)',
+    });
+    expect(getDashboardDiscussionStateVisual(false)).toMatchObject({
+      label: 'Unanswered discussion',
+      state: 'discussion-unanswered',
+      color: 'var(--gitpulse-text-strong)',
+    });
   });
 });

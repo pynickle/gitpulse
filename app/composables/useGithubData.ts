@@ -8,6 +8,7 @@ import type {
   NotificationSubjectStateTarget,
 } from '#shared/types/notifications';
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
+import { isNotificationSubjectStateResultLoaded } from '#shared/utils/notifications';
 import {
   applyNotificationLocalFilters,
   hasNotificationPageLocalPredicates,
@@ -356,10 +357,13 @@ const applyNotificationSubjectStates = (
         ...item.subject,
         title: result?.title ?? item.subject?.title,
         state: result?.state,
+        isAnswered: result?.isAnswered,
         labels: result?.labels,
         authorLogin: result?.authorLogin,
         authorAvatarUrl: result?.authorAvatarUrl,
-        stateStatus: result?.state ? ('loaded' as const) : ('error' as const),
+        stateStatus: isNotificationSubjectStateResultLoaded(target, result)
+          ? ('loaded' as const)
+          : ('error' as const),
       },
     };
   });

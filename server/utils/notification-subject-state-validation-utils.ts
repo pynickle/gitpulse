@@ -9,7 +9,7 @@ const subjectTargetSchema = z.strictObject({
   key: z.string().trim().min(1),
   owner: z.string().trim().min(1),
   repo: z.string().trim().min(1),
-  type: z.enum(['issues', 'pulls']),
+  type: z.enum(['issues', 'pulls', 'discussions']),
   number: z.number().int().positive().max(maxGraphQLInt),
 });
 const subjectTargetsRequestSchema = z.strictObject({

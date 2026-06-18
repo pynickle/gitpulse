@@ -45,7 +45,6 @@
 <script setup lang="ts">
 import {
   ArrowLeftIcon,
-  CheckCircle2Icon,
   CircleDotIcon,
   CircleMinusIcon,
   GitMergeIcon,
@@ -61,7 +60,7 @@ import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
 
-type DetailSummaryTone = 'open' | 'closed' | 'merged';
+type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'answered' | 'unanswered';
 type DetailSubjectType = 'issue' | 'pull-request' | 'discussion';
 
 interface DetailSummary {
@@ -107,7 +106,6 @@ const detailStateIcon = computed<Component | null>(() => {
   }
 
   if (subjectType === 'discussion') {
-    if (stateTone === 'open' || state === 'answered') return CheckCircle2Icon;
     return MessageSquareIcon;
   }
 
@@ -218,6 +216,18 @@ const isDetailSummaryVisible = computed(() => {
     background-color: var(--gitpulse-danger-soft);
     color: var(--gitpulse-danger-solid);
     border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  }
+
+  &.is-answered {
+    background-color: var(--gitpulse-success-soft);
+    color: var(--gitpulse-success-solid);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
+  }
+
+  &.is-unanswered {
+    background-color: var(--gitpulse-surface-muted);
+    color: var(--gitpulse-text);
+    border: 1px solid var(--gitpulse-border);
   }
 }
 
