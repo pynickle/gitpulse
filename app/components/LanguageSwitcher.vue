@@ -10,8 +10,6 @@ import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
 
 const { locale, setLocale, locales } = useI18n();
 
-type SupportedLocale = typeof locale.value;
-
 const localeOptions = computed<FilterOption[]>(() =>
   locales.value.map((l) => ({
     value: l.code,
@@ -19,11 +17,9 @@ const localeOptions = computed<FilterOption[]>(() =>
   }))
 );
 
-const isSupportedLocale = (code: string): code is SupportedLocale =>
-  locales.value.some((l) => l.code === code);
-
 const changeLang = (code: string) => {
-  if (!isSupportedLocale(code)) return;
-  setLocale(code);
+  const nextLocale = locales.value.find((l) => l.code === code);
+  if (!nextLocale) return;
+  setLocale(nextLocale.code);
 };
 </script>
