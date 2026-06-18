@@ -206,7 +206,6 @@ export default defineNuxtConfig({
         'comark/plugins/security',
         'dayjs', // CJS
         'dayjs/locale/zh-cn', // CJS
-        'dayjs/plugin/duration.js', // CJS
         'dayjs/plugin/relativeTime.js', // CJS
         '@lucide/vue',
         'mermaid',
