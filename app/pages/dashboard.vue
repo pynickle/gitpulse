@@ -15,9 +15,9 @@
           :user-name="user?.name"
           :active-group-id="activeTabId"
           :groups="activityGroups"
-          @avatar-click="handleAvatarClick"
           @group-select="handleActivityGroupSelect"
           @settings-click="handleSettingsClick"
+          @logout-click="handleLogout"
         />
       </template>
 
@@ -1373,11 +1373,10 @@ const handleLogout = async () => {
     method: 'POST',
   });
 
-  await navigateTo(localePath('/'));
-};
+  const { clear } = useUserSession();
+  await clear();
 
-const handleAvatarClick = async () => {
-  await handleLogout();
+  await navigateTo(localePath('/'));
 };
 
 const handleSettingsClick = async () => {

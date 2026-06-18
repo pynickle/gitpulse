@@ -1,11 +1,6 @@
 <template>
   <div class="activity-bar">
-    <button
-      class="activity-bar__avatar"
-      type="button"
-      :title="userName || 'User'"
-      @click="$emit('avatar-click')"
-    >
+    <div class="activity-bar__avatar" :title="userName || 'User'">
       <GitHubAvatar
         :src="userAvatar"
         :alt="userName || 'User'"
@@ -16,7 +11,7 @@
           <UserIcon :size="18" />
         </template>
       </GitHubAvatar>
-    </button>
+    </div>
 
     <nav class="activity-bar__groups" aria-label="View groups">
       <button
@@ -45,6 +40,15 @@
       >
         <SettingsIcon :size="19" />
       </button>
+      <button
+        class="activity-bar__icon-btn"
+        title="Logout"
+        aria-label="Logout"
+        type="button"
+        @click="$emit('logout-click')"
+      >
+        <LogOutIcon :size="19" />
+      </button>
     </div>
   </div>
 </template>
@@ -56,6 +60,7 @@ import {
   CircleDotIcon,
   GitPullRequestIcon,
   InboxIcon,
+  LogOutIcon,
   SettingsIcon,
   UserIcon,
 } from '@lucide/vue';
@@ -76,9 +81,9 @@ defineProps<{
 }>();
 
 defineEmits<{
-  'avatar-click': [];
   'group-select': [groupId: string];
   'settings-click': [];
+  'logout-click': [];
 }>();
 
 const iconMap: Record<string, typeof UserIcon> = {
@@ -114,10 +119,7 @@ function getGroupIcon(icon?: string) {
     height: 34px;
     margin-bottom: 1rem;
     padding: 0;
-    border: none;
     border-radius: 50%;
-    background: transparent;
-    cursor: pointer;
     transition: box-shadow 0.15s ease;
 
     &:focus-visible {
@@ -189,6 +191,7 @@ function getGroupIcon(icon?: string) {
     flex-direction: column;
     align-items: center;
     margin-top: auto;
+    gap: 0.2rem;
   }
 
   &__divider {
