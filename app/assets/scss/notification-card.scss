@@ -1,3 +1,7 @@
+// ============================================
+// Base Card Styles
+// ============================================
+
 .card.is-unread {
   background-color: var(--gitpulse-unread-bg);
 }
@@ -14,24 +18,56 @@
   z-index: 1;
 }
 
+// ============================================
+// Design Tokens (extracted magic numbers)
+// ============================================
+
+$badge-offset: -3px;
+$badge-size: 18px;
+$badge-border-width: 2px;
+
+$hint-badge-offset: -6px;
+$hint-badge-size: 14px;
+$hint-badge-border-width: 2px;
+
+$button-size: 26px;
+$button-border-radius: 6px;
+$button-border-width: 1px;
+
+// Shared transition patterns
+$transition-button:
+  background-color 0.15s ease,
+  border-color 0.15s ease,
+  color 0.15s ease;
+$transition-badge:
+  color 0.25s ease,
+  opacity 0.3s ease,
+  border-color 0.3s ease;
+$transition-hint:
+  background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+  box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+  color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+  transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ============================================
+// Notification Type Badges
+// ============================================
+
 .notification-type-badge {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
+  right: $badge-offset;
+  bottom: $badge-offset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--gitpulse-surface);
+  width: $badge-size;
+  height: $badge-size;
+  border: $badge-border-width solid var(--gitpulse-surface);
   border-radius: 999px;
   background-color: var(--gitpulse-surface);
   box-shadow: 0 1px 4px color-mix(in srgb, var(--gitpulse-text-strong) 18%, transparent);
   line-height: 1;
-  transition:
-    color 0.25s ease,
-    opacity 0.3s ease,
-    border-color 0.3s ease;
+  transition: $transition-badge;
 }
 
 .notification-type-badge--pending {
@@ -84,6 +120,10 @@
   color: var(--gitpulse-purple);
 }
 
+// ============================================
+// State Icon Transitions
+// ============================================
+
 .notification-state-icon-enter-active,
 .notification-state-icon-leave-active {
   transition: opacity 0.2s ease;
@@ -93,6 +133,10 @@
 .notification-state-icon-leave-to {
   opacity: 0;
 }
+
+// ============================================
+// Layout Components
+// ============================================
 
 .notification-card__content-frame {
   display: flex;
@@ -107,14 +151,12 @@
 }
 
 .notification-card__action-column {
-  align-self: stretch;
   display: flex;
   flex: 0 0 auto;
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
   gap: 0.25rem;
-  min-height: 100%;
 }
 
 .notification-card__actions {
@@ -126,34 +168,41 @@
   height: 30px;
 }
 
+// ============================================
+// Reason Control (with pre-computed colors)
+// ============================================
+
 .notification-card__reason-control {
+  // Pre-compute color-mix values for better performance
+  --reason-border-base: color-mix(in srgb, var(--gitpulse-info) 18%, var(--gitpulse-border));
+  --reason-bg-base: color-mix(in srgb, var(--gitpulse-info) 4%, var(--gitpulse-surface));
+  --reason-border-hover: color-mix(in srgb, var(--gitpulse-info) 34%, var(--gitpulse-border));
+  --reason-bg-hover: color-mix(in srgb, var(--gitpulse-info) 9%, var(--gitpulse-surface));
+
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: $button-size;
+  height: $button-size;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
+  border: $button-border-width solid transparent;
+  border-radius: $button-border-radius;
   background: transparent;
   color: var(--gitpulse-text-muted);
   line-height: 1;
 }
 
 .notification-card__reason-control--action {
-  border-color: color-mix(in srgb, var(--gitpulse-info) 18%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-info) 4%, var(--gitpulse-surface));
+  border-color: var(--reason-border-base);
+  background: var(--reason-bg-base);
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  transition: $transition-button;
 }
 
 .notification-card__reason-control--action:hover {
-  border-color: color-mix(in srgb, var(--gitpulse-info) 34%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-info) 9%, var(--gitpulse-surface));
+  border-color: var(--reason-border-hover);
+  background: var(--reason-bg-hover);
   color: var(--gitpulse-info);
 }
 
@@ -164,95 +213,118 @@
 
 .notification-card__reason-control--action:disabled {
   cursor: progress;
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .notification-card__reason-control--action:disabled .notification-card__reason-icon {
-  opacity: 0.8;
+  opacity: 0.5;
+  filter: grayscale(0.3);
 }
 
 .notification-card__reason-icon {
   flex: 0 0 auto;
 }
 
+// ============================================
+// Read Hint Badge (with pre-computed shadows)
+// ============================================
+
 .notification-card__reason-read-hint {
+  // Pre-compute shadow values for performance
+  --shadow-base:
+    0 2px 8px color-mix(in srgb, var(--gitpulse-info) 32%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--gitpulse-info) 12%, transparent);
+  --shadow-hover:
+    0 4px 12px color-mix(in srgb, var(--gitpulse-info) 42%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--gitpulse-info) 18%, transparent);
+  --shadow-disabled:
+    0 2px 8px color-mix(in srgb, var(--gitpulse-info) 22%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--gitpulse-info) 20%, transparent),
+    0 0 12px color-mix(in srgb, var(--gitpulse-info) 15%, transparent);
+
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: $hint-badge-offset;
+  right: $hint-badge-offset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--gitpulse-surface);
+  width: $hint-badge-size;
+  height: $hint-badge-size;
+  border: $hint-badge-border-width solid var(--gitpulse-surface);
   border-radius: 50%;
   background: var(--gitpulse-info);
   color: var(--gitpulse-surface);
   line-height: 1;
-  box-shadow:
-    0 2px 8px color-mix(in srgb, var(--gitpulse-info) 32%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--gitpulse-info) 12%, transparent);
-  transition:
-    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-base);
+  transition: $transition-hint;
 }
 
 .notification-card__reason-control--action:hover .notification-card__reason-read-hint {
   transform: scale(1.1);
-  box-shadow:
-    0 4px 12px color-mix(in srgb, var(--gitpulse-info) 42%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--gitpulse-info) 18%, transparent);
+  box-shadow: var(--shadow-hover);
 }
 
 .notification-card__reason-control--action:disabled .notification-card__reason-read-hint {
-  background: var(--gitpulse-surface);
-  color: var(--gitpulse-info);
-  box-shadow:
-    0 2px 8px color-mix(in srgb, var(--gitpulse-info) 18%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--gitpulse-info) 16%, transparent);
+  background: var(--gitpulse-info);
+  color: var(--gitpulse-surface);
+  box-shadow: var(--shadow-disabled);
+  animation: loading-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .notification-card__reason-read-hint .loading-spinner {
   color: inherit;
 }
 
+// ============================================
+// Todo Buttons (DRY pattern with CSS variables)
+// ============================================
+
 .notification-card__todo-btn {
+  // Pre-compute color-mix values, overridden by modifiers
+  --btn-color: var(--gitpulse-text-muted);
+  --btn-border-base: color-mix(in srgb, var(--btn-color) 28%, var(--gitpulse-border));
+  --btn-bg-base: color-mix(in srgb, var(--btn-color) 8%, var(--gitpulse-surface));
+  --btn-border-hover: color-mix(in srgb, var(--btn-color) 45%, var(--gitpulse-border));
+  --btn-bg-hover: color-mix(in srgb, var(--btn-color) 14%, var(--gitpulse-surface));
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
+  width: $button-size;
+  height: $button-size;
   padding: 0;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 6px;
+  border: $button-border-width solid var(--gitpulse-border);
+  border-radius: $button-border-radius;
   background: var(--gitpulse-surface);
-  color: var(--gitpulse-text-muted);
+  color: var(--btn-color);
   line-height: 1;
   cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  transition: $transition-button;
 }
 
+// Modifier classes only override the color variable
 .notification-card__todo-btn--add {
-  border-color: color-mix(in srgb, var(--gitpulse-accent) 28%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-accent) 8%, var(--gitpulse-surface));
-  color: var(--gitpulse-accent);
+  --btn-color: var(--gitpulse-accent);
+  border-color: var(--btn-border-base);
+  background: var(--btn-bg-base);
+  color: var(--btn-color);
 }
 
 .notification-card__todo-btn--remove {
-  border-color: color-mix(in srgb, var(--gitpulse-danger) 28%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-danger) 8%, var(--gitpulse-surface));
-  color: var(--gitpulse-danger);
+  --btn-color: var(--gitpulse-danger);
+  border-color: var(--btn-border-base);
+  background: var(--btn-bg-base);
+  color: var(--btn-color);
 }
 
-.notification-card__todo-btn--add:hover {
-  border-color: color-mix(in srgb, var(--gitpulse-accent) 45%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-accent) 14%, var(--gitpulse-surface));
-  color: var(--gitpulse-accent);
+// Shared hover state
+.notification-card__todo-btn--add:hover,
+.notification-card__todo-btn--remove:hover {
+  border-color: var(--btn-border-hover);
+  background: var(--btn-bg-hover);
+  color: var(--btn-color);
 }
 
 .notification-card__todo-btn:focus-visible {
@@ -260,11 +332,9 @@
   outline-offset: 2px;
 }
 
-.notification-card__todo-btn--remove:hover {
-  border-color: color-mix(in srgb, var(--gitpulse-danger) 45%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-danger) 14%, var(--gitpulse-surface));
-  color: var(--gitpulse-danger);
-}
+// ============================================
+// Metadata & Labels
+// ============================================
 
 .notification-card__number {
   color: var(--gitpulse-info);
@@ -294,6 +364,10 @@
   transition: color 0.15s ease;
 }
 
+// ============================================
+// Animations
+// ============================================
+
 @keyframes notification-state-pulse {
   0%,
   100% {
@@ -302,6 +376,19 @@
 
   50% {
     opacity: 0.65;
+  }
+}
+
+@keyframes loading-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
   }
 }
 
