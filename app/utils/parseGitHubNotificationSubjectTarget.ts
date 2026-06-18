@@ -62,7 +62,7 @@ const getRouteType = (
 export function toNotificationSubjectStateTarget(
   target: GitHubNotificationSubjectTarget
 ): NotificationSubjectStateTarget | null {
-  if (target.type !== 'issues' && target.type !== 'pulls') {
+  if (target.type === 'releases') {
     return null;
   }
 

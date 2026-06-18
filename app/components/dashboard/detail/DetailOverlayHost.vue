@@ -20,7 +20,7 @@ import {
 } from './detail-pane-loaders';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
-type DetailSummaryTone = 'open' | 'closed' | 'merged';
+type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'answered' | 'unanswered';
 type DetailSubjectType = 'issue' | 'pull-request' | 'discussion';
 
 interface ActiveDetailPane {
@@ -223,7 +223,7 @@ const detailSummary = computed<DetailSummary | null>(() => {
       title: props.discussion.title || t('discussionDetail.titleFallback'),
       number: props.discussion.number,
       state: isAnswered ? 'answered' : 'unanswered',
-      stateTone: isAnswered ? 'open' : 'closed',
+      stateTone: isAnswered ? 'answered' : 'unanswered',
       subjectType: 'discussion',
       visible: isCompactHeaderVisible.value,
     };

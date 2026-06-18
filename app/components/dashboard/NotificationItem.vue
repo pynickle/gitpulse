@@ -222,6 +222,7 @@ const subjectVisual = computed(() => {
     isPullRequest: isPullRequestSubject.value,
     state: subject.value?.state,
     subjectType: subject.value?.type,
+    isAnswered: subject.value?.isAnswered,
   });
 });
 

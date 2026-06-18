@@ -15,6 +15,7 @@ export interface DashboardNotificationSubject {
   url?: string;
   number?: number;
   state?: NotificationSubjectState;
+  isAnswered?: boolean;
   stateStatus?: NotificationSubjectStateStatus;
   labels?: NotificationLabel[];
   authorLogin?: string;
@@ -45,7 +46,7 @@ export interface NotificationSubjectStateTarget {
   key: string;
   owner: string;
   repo: string;
-  type: 'issues' | 'pulls';
+  type: 'issues' | 'pulls' | 'discussions';
   number: number;
 }
 
@@ -54,6 +55,7 @@ export interface NotificationSubjectStateResult {
   title?: string;
   updatedAt?: string;
   state?: NotificationSubjectState;
+  isAnswered?: boolean;
   labels?: NotificationLabel[];
   authorLogin?: string;
   authorAvatarUrl?: string;

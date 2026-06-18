@@ -25,6 +25,7 @@ interface GraphQLSubjectNode {
   updatedAt?: string;
   state?: string;
   mergedAt?: string | null;
+  isAnswered?: boolean | null;
   author?: GraphQLAuthorNode;
   labels?: GraphQLLabelsConnection;
 }
@@ -32,6 +33,7 @@ interface GraphQLSubjectNode {
 interface GraphQLSubjectRepository {
   issue?: GraphQLSubjectNode | null;
   pullRequest?: GraphQLSubjectNode | null;
+  discussion?: GraphQLSubjectNode | null;
 }
 
 interface GraphQLSubjectResponse {
@@ -56,6 +58,7 @@ const normalizeState = (
   type: NotificationSubjectStateTarget['type'],
   node: GraphQLSubjectNode | null | undefined
 ): NotificationSubjectState | undefined => {
+  if (type === 'discussions') return undefined;
   if (!node?.state) return undefined;
 
   if (type === 'pulls' && node.mergedAt) return 'merged';
@@ -75,11 +78,22 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
     values[`repo${index}`] = target.repo;
     values[`number${index}`] = target.number;
 
-    const fieldName = target.type === 'pulls' ? 'pullRequest' : 'issue';
+    const fieldName =
+      target.type === 'pulls'
+        ? 'pullRequest'
+        : target.type === 'discussions'
+          ? 'discussion'
+          : 'issue';
     const nodeFields =
-      target.type === 'pulls' ? 'title updatedAt state mergedAt' : 'title updatedAt state';
+      target.type === 'pulls'
+        ? 'title updatedAt state mergedAt'
+        : target.type === 'discussions'
+          ? 'title updatedAt isAnswered'
+          : 'title updatedAt state';
+    const labelsFields =
+      target.type === 'discussions' ? '' : ' labels(first: 10) { nodes { name color } }';
     fields.push(
-      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { ${fieldName}(number: $number${index}) { ${nodeFields} author { login avatarUrl } labels(first: 10) { nodes { name color } } } }`
+      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { ${fieldName}(number: $number${index}) { ${nodeFields} author { login avatarUrl }${labelsFields} } }`
     );
   });
 
@@ -104,13 +118,22 @@ export default defineEventHandler(async (event) => {
 
     const items = targets.map((target, index): NotificationSubjectStateResult => {
       const repository = payload[`subject${index}`];
-      const node = target.type === 'pulls' ? repository?.pullRequest : repository?.issue;
+      const node =
+        target.type === 'pulls'
+          ? repository?.pullRequest
+          : target.type === 'discussions'
+            ? repository?.discussion
+            : repository?.issue;
 
       return {
         key: target.key,
         title: node?.title,
         updatedAt: node?.updatedAt,
         state: normalizeState(target.type, node),
+        isAnswered:
+          target.type === 'discussions' && typeof node?.isAnswered === 'boolean'
+            ? node.isAnswered
+            : undefined,
         labels: normalizeLabels(node),
         authorLogin: node?.author?.login,
         authorAvatarUrl: node?.author?.avatarUrl,

@@ -4,6 +4,7 @@ import type {
   NotificationSubjectStateTarget,
 } from '#shared/types/notifications';
 import type { NotificationTodoItem } from '#shared/types/user-settings';
+import { isNotificationSubjectStateResultLoaded } from '#shared/utils/notifications';
 import {
   cloneNotificationTodos,
   normalizeDashboardNotification,
@@ -56,14 +57,15 @@ const chunkItems = <T>(items: T[], chunkSize: number) => {
   return chunks;
 };
 
-const toSubjectStateKey = (notification: DashboardNotification) => {
+const toSubjectStateTarget = (notification: DashboardNotification) => {
   const target = parseGitHubNotificationSubjectTarget(notification.subject);
-  return target ? toNotificationSubjectStateTarget(target)?.key : undefined;
+  return target ? toNotificationSubjectStateTarget(target) : null;
 };
 
 const applyNotificationTodoState = (
   item: NotificationTodoItem,
-  result: NotificationSubjectStateResult
+  result: NotificationSubjectStateResult,
+  target: NotificationSubjectStateTarget
 ) => {
   const nextNotification = normalizeDashboardNotification({
     ...item.notification,
@@ -74,10 +76,11 @@ const applyNotificationTodoState = (
           ...item.notification.subject,
           title: result.title ?? item.notification.subject.title,
           state: result.state,
+          isAnswered: result.isAnswered,
           labels: result.labels,
           authorLogin: result.authorLogin,
           authorAvatarUrl: result.authorAvatarUrl,
-          stateStatus: result.state ? 'loaded' : 'error',
+          stateStatus: isNotificationSubjectStateResultLoaded(target, result) ? 'loaded' : 'error',
         }
       : item.notification.subject,
   });
@@ -99,11 +102,11 @@ export const applyNotificationTodoSubjectStates = (
   const statesByKey = new Map(states.map((state) => [state.key, state]));
   let changed = false;
   const nextItems = items.map((item) => {
-    const key = toSubjectStateKey(item.notification);
-    const result = key ? statesByKey.get(key) : undefined;
-    if (!result) return item;
+    const target = toSubjectStateTarget(item.notification);
+    const result = target ? statesByKey.get(target.key) : undefined;
+    if (!target || !result) return item;
 
-    const nextItem = applyNotificationTodoState(item, result);
+    const nextItem = applyNotificationTodoState(item, result, target);
     if (!nextItem) return item;
 
     if (JSON.stringify(nextItem) !== JSON.stringify(item)) {

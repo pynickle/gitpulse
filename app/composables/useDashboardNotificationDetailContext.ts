@@ -252,17 +252,12 @@ export function useDashboardNotificationDetailContext({
     return true;
   };
 
-  const handleNotificationOpen = (notification: DashboardNotification) => {
+  const handleNotificationDetailOpen = (notification: DashboardNotification) => {
     const hasDetailTarget = setSourceNotificationForDetail(notification);
     openNotification(notification);
     if (hasDetailTarget) {
       handleNotificationAutoRead(notification);
     }
-  };
-
-  const handleTodoOpen = (notification: DashboardNotification) => {
-    setSourceNotificationForDetail(notification);
-    openNotification(notification);
   };
 
   watch(
@@ -325,8 +320,8 @@ export function useDashboardNotificationDetailContext({
   return {
     visibleSourceNotification,
     markNotificationAsReadFromDashboard,
-    handleNotificationOpen,
-    handleTodoOpen,
+    handleNotificationOpen: handleNotificationDetailOpen,
+    handleTodoOpen: handleNotificationDetailOpen,
     clearSourceNotification,
     clearNotificationDetailContext,
   };

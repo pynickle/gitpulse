@@ -134,4 +134,41 @@ describe('dashboard notification detail context', () => {
     expect(markedIds).toEqual(['thread-3']);
     expect(context.visibleSourceNotification.value).toBe(null);
   });
+
+  test('applies auto-read behavior when opening an unread todo notification', async () => {
+    const openedIds: string[] = [];
+    const markedIds: string[] = [];
+    const context = useDashboardNotificationDetailContext({
+      settings: ref({
+        notificationBehavior: {
+          readMarkMode: 'immediate',
+          readMarkDelaySeconds: 0,
+        },
+      }),
+      detailState: createDetailState(),
+      getNotificationDetails: () => ({
+        owner: 'owner',
+        repo: 'repo',
+        number: 1,
+        isIssue: true,
+      }),
+      openNotification: (notification) => {
+        openedIds.push(String(notification.id));
+      },
+      markNotificationAsRead: async (notification) => {
+        markedIds.push(String(notification.id));
+        return true;
+      },
+    });
+
+    context.handleTodoOpen({
+      id: 'thread-4',
+      unread: true,
+    } as any);
+
+    await sleep(0);
+
+    expect(openedIds).toEqual(['thread-4']);
+    expect(markedIds).toEqual(['thread-4']);
+  });
 });

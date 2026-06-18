@@ -2,7 +2,7 @@
   <div class="mb-6">
     <!-- Title row -->
     <div class="is-flex is-align-items-center mb-3">
-      <MessageSquareIcon :size="22" :style="stateColor" />
+      <component :is="stateVisual.icon" :size="22" :style="stateColor" />
       <h1 class="title is-3 ml-3 mb-0">
         {{ discussion.title || t('discussionDetail.titleFallback') }}
       </h1>
@@ -15,7 +15,7 @@
         class="header-state-tag"
         :class="discussion.isAnswered ? 'is-answered' : 'is-unanswered'"
       >
-        <component :size="12" :is="discussion.isAnswered ? CheckCircle2Icon : CircleDotIcon" />
+        <component :is="stateVisual.icon" :size="12" />
         <span>{{ stateLabel }}</span>
       </span>
       <span v-if="discussion.locked" class="header-locked-tag">
@@ -93,14 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  CheckCircle2Icon,
-  CircleDotIcon,
-  ClockIcon,
-  GitForkIcon,
-  LockIcon,
-  MessageSquareIcon,
-} from '@lucide/vue';
+import { ClockIcon, GitForkIcon, LockIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -126,8 +119,10 @@ const stateLabel = computed(() =>
   props.discussion.isAnswered ? t('discussionDetail.answered') : t('discussionDetail.unanswered')
 );
 
+const stateVisual = computed(() => getDashboardDiscussionStateVisual(props.discussion.isAnswered));
+
 const stateColor = computed(() => ({
-  color: props.discussion.isAnswered ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
+  color: stateVisual.value.color,
 }));
 
 const handleRepoClick = async () => {

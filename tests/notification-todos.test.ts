@@ -4,9 +4,11 @@ import type { DashboardNotification } from '../shared/types/notifications';
 import type { NotificationTodoItem } from '../shared/types/user-settings';
 
 const userSettingsUtils = await import('../shared/utils/user-settings');
+const notificationUtils = await import('../shared/utils/notifications');
 const notificationSubjectTargetUtils =
   await import('../app/utils/parseGitHubNotificationSubjectTarget');
 
+mock.module('#shared/utils/notifications', () => notificationUtils);
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
 mock.module('~/utils/parseGitHubNotificationSubjectTarget', () => notificationSubjectTargetUtils);
 
@@ -24,6 +26,24 @@ const createIssueNotification = (id: string): DashboardNotification => ({
     title: 'Old title',
     type: 'Issue',
     url: 'https://api.github.com/repos/owner/repo/issues/12',
+  },
+  repository: {
+    full_name: 'owner/repo',
+    owner: {
+      login: 'owner',
+      avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+    },
+  },
+});
+
+const createDiscussionNotification = (id: string): DashboardNotification => ({
+  id,
+  unread: true,
+  updated_at: '2026-06-17T13:00:00.000Z',
+  subject: {
+    title: 'Old discussion',
+    type: 'Discussion',
+    url: 'https://github.com/owner/repo/discussions/8',
   },
   repository: {
     full_name: 'owner/repo',
@@ -55,7 +75,7 @@ describe('notification todos', () => {
     });
   });
 
-  test('collects unique GraphQL refresh targets for todo issues and pull requests', () => {
+  test('collects unique GraphQL refresh targets for todo issues, pull requests, and discussions', () => {
     const firstTodo = createNotificationTodoItem(
       createIssueNotification('123'),
       '2026-06-18T00:00:00.000Z'
@@ -63,6 +83,10 @@ describe('notification todos', () => {
     const duplicateTodo = createNotificationTodoItem(
       createIssueNotification('456'),
       '2026-06-18T00:01:00.000Z'
+    );
+    const discussionTodo = createNotificationTodoItem(
+      createDiscussionNotification('987'),
+      '2026-06-18T00:01:30.000Z'
     );
     const releaseTodo = createNotificationTodoItem(
       {
@@ -77,7 +101,7 @@ describe('notification todos', () => {
 
     expect(
       collectNotificationTodoSubjectStateTargets(
-        [firstTodo, duplicateTodo, releaseTodo].filter(
+        [firstTodo, duplicateTodo, discussionTodo, releaseTodo].filter(
           (item): item is NotificationTodoItem => item !== null
         )
       )
@@ -88,6 +112,13 @@ describe('notification todos', () => {
         repo: 'repo',
         type: 'issues',
         number: 12,
+      },
+      {
+        key: 'owner/repo/discussions/8',
+        owner: 'owner',
+        repo: 'repo',
+        type: 'discussions',
+        number: 8,
       },
     ]);
   });
@@ -130,6 +161,7 @@ describe('notification todos', () => {
             url: 'https://api.github.com/repos/owner/repo/issues/12',
             number: undefined,
             state: 'closed',
+            isAnswered: undefined,
             stateStatus: 'loaded',
             labels: [{ name: 'bug', color: 'd73a4a' }],
             authorLogin: 'octocat',
@@ -146,5 +178,40 @@ describe('notification todos', () => {
         },
       },
     ]);
+  });
+
+  test('applies discussion author and answer state to stored todo snapshots', () => {
+    const todo = createNotificationTodoItem(
+      createDiscussionNotification('987'),
+      '2026-06-18T00:00:00.000Z'
+    );
+    if (!todo) throw new Error('Expected todo fixture');
+
+    const updated = applyNotificationTodoSubjectStates(
+      [todo],
+      [
+        {
+          key: 'owner/repo/discussions/8',
+          title: 'New discussion',
+          updatedAt: '2026-06-18T10:30:00.000Z',
+          isAnswered: false,
+          authorLogin: 'maintainer',
+          authorAvatarUrl: 'https://avatars.githubusercontent.com/u/3?v=4',
+        },
+      ]
+    );
+
+    expect(updated[0]?.notification.subject).toEqual({
+      title: 'New discussion',
+      type: 'Discussion',
+      url: 'https://github.com/owner/repo/discussions/8',
+      number: undefined,
+      state: undefined,
+      isAnswered: false,
+      stateStatus: 'loaded',
+      labels: undefined,
+      authorLogin: 'maintainer',
+      authorAvatarUrl: 'https://avatars.githubusercontent.com/u/3?v=4',
+    });
   });
 });

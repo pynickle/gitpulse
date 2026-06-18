@@ -7,7 +7,7 @@ import {
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
   MailIcon,
-  MessagesSquareIcon,
+  MessageSquareIcon,
   ShieldAlertIcon,
   TagIcon,
   WorkflowIcon,
@@ -20,6 +20,7 @@ interface DashboardSubjectStateVisualOptions {
   isPullRequest: boolean;
   state?: NotificationSubjectState;
   subjectType?: string;
+  isAnswered?: boolean;
 }
 
 export interface DashboardSubjectStateVisual {
@@ -29,13 +30,15 @@ export interface DashboardSubjectStateVisual {
     | 'open'
     | 'closed'
     | 'merged'
-    | 'discussion'
+    | 'discussion-answered'
+    | 'discussion-unanswered'
     | 'release'
     | 'commit'
     | 'check-suite'
     | 'security-alert'
     | 'workflow-run'
     | 'invitation';
+  color?: string;
 }
 
 export interface DashboardNotificationSubjectTypeOption {
@@ -55,9 +58,10 @@ const subjectTypeVisuals: Record<string, DashboardSubjectStateVisual> = {
     state: 'open',
   },
   Discussion: {
-    icon: MessagesSquareIcon,
+    icon: MessageSquareIcon,
     label: 'Discussion',
-    state: 'discussion',
+    state: 'discussion-unanswered',
+    color: 'var(--gitpulse-text-strong)',
   },
   Release: {
     icon: TagIcon,
@@ -117,11 +121,30 @@ export const getDashboardSubjectTypeVisual = (
     : { label: 'Subject' };
 };
 
+export const getDashboardDiscussionStateVisual = (
+  isAnswered?: boolean
+): DashboardSubjectStateVisual => ({
+  icon: MessageSquareIcon,
+  label:
+    typeof isAnswered === 'boolean'
+      ? isAnswered
+        ? 'Answered discussion'
+        : 'Unanswered discussion'
+      : 'Discussion',
+  state: isAnswered ? 'discussion-answered' : 'discussion-unanswered',
+  color: isAnswered ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
+});
+
 export default function getDashboardSubjectStateVisual({
   isPullRequest,
   state,
   subjectType,
+  isAnswered,
 }: DashboardSubjectStateVisualOptions): DashboardSubjectStateVisual {
+  if (subjectType === 'Discussion') {
+    return getDashboardDiscussionStateVisual(isAnswered);
+  }
+
   if (!state) {
     return getDashboardSubjectTypeVisual(subjectType);
   }
