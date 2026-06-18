@@ -147,14 +147,19 @@
                     v-for="issue in issues"
                     :key="issue.id"
                     class="mb-4 mr-4"
-                    @click="openIssue(issue)"
+                    @click="handleIssueOpen(issue)"
                   >
                     <AsyncIssuePrNotificationItem :item="issue" />
                   </div>
                 </template>
 
                 <template v-else-if="currentTab === 'pulls'">
-                  <div v-for="pull in pulls" :key="pull.id" class="mb-4 mr-4" @click="openPR(pull)">
+                  <div
+                    v-for="pull in pulls"
+                    :key="pull.id"
+                    class="mb-4 mr-4"
+                    @click="handlePROpen(pull)"
+                  >
                     <AsyncIssuePrNotificationItem :item="pull" />
                   </div>
                 </template>
@@ -247,11 +252,12 @@
     :loading-discussion="loadingDiscussion"
     :loading-release="loadingRelease"
     :loading-repository="loadingRepo"
+    :source-notification="visibleSourceNotification"
     @back="handleDetailBack"
     @home="handleDetailHome"
-    @switch-issue="handleSwitchIssue"
-    @switch-pull-request="handleSwitchPR"
-    @switch-discussion="handleSwitchDiscussion"
+    @switch-issue="handleSwitchIssueFromDetail"
+    @switch-pull-request="handleSwitchPRFromDetail"
+    @switch-discussion="handleSwitchDiscussionFromDetail"
     @open-pull-request-review="handlePRReviewOpen"
     @close-pull-request-review="handlePRReviewClose"
   />
@@ -1068,8 +1074,18 @@ interface PendingNotificationRead {
   detailKey: string;
 }
 
+const sourceNotification = shallowRef<DashboardNotification | null>(null);
 const pendingNotificationRead = shallowRef<PendingNotificationRead | null>(null);
 const notificationReadTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const currentVisibleDetailKey = computed(() => {
+  if (isIssueDetailVisible.value) return issueDetailKey.value;
+  if (isPRDetailVisible.value) return prDetailKey.value;
+  if (isDiscussionDetailVisible.value) return discussionDetailKey.value;
+  if (isReleaseDetailVisible.value) return releaseDetailKey.value;
+  if (isRepoDetailVisible.value) return repoDetailKey.value;
+  return null;
+});
 
 const notificationReadMarkMode = computed(() => settings.value.notificationBehavior.readMarkMode);
 const notificationReadMarkDelayMs = computed(
@@ -1096,6 +1112,23 @@ const buildNotificationDetailKey = (details: NotificationDetails) => {
   return `pr-${details.owner}-${details.repo}-${details.number}`;
 };
 
+const getNotificationSourceDetailKey = (notification: DashboardNotification) => {
+  const details = getNotificationDetails(notification);
+  return details ? buildNotificationDetailKey(details) : null;
+};
+
+const visibleSourceNotification = computed(() => {
+  const notification = sourceNotification.value;
+  if (
+    !notification ||
+    getNotificationSourceDetailKey(notification) !== currentVisibleDetailKey.value
+  ) {
+    return null;
+  }
+
+  return notification;
+});
+
 const clearNotificationReadTimer = (threadId: string) => {
   const timer = notificationReadTimers.get(threadId);
   if (!timer) return;
@@ -1108,6 +1141,12 @@ const clearNotificationReadTimers = () => {
   for (const threadId of Array.from(notificationReadTimers.keys())) {
     clearNotificationReadTimer(threadId);
   }
+};
+
+const clearNotificationDetailContext = () => {
+  sourceNotification.value = null;
+  pendingNotificationRead.value = null;
+  clearNotificationReadTimers();
 };
 
 const markNotificationAsReadFromDashboard = async (notification: DashboardNotification) => {
@@ -1185,12 +1224,32 @@ const handleNotificationAutoRead = (notification: DashboardNotification) => {
   schedulePendingNotificationReadIfReady();
 };
 
+const setSourceNotificationForDetail = (notification: DashboardNotification) => {
+  const detailKey = getNotificationSourceDetailKey(notification);
+  if (!detailKey) {
+    clearNotificationDetailContext();
+    return false;
+  }
+
+  if (detailKey !== currentVisibleDetailKey.value) {
+    pendingNotificationRead.value = null;
+    clearNotificationReadTimers();
+  }
+
+  sourceNotification.value = notification;
+  return true;
+};
+
 const handleNotificationOpen = (notification: DashboardNotification) => {
+  const hasDetailTarget = setSourceNotificationForDetail(notification);
   openNotification(notification);
-  handleNotificationAutoRead(notification);
+  if (hasDetailTarget) {
+    handleNotificationAutoRead(notification);
+  }
 };
 
 const handleTodoOpen = (notification: DashboardNotification) => {
+  setSourceNotificationForDetail(notification);
   openNotification(notification);
 };
 
@@ -1228,11 +1287,25 @@ watch(notificationReadMarkMode, (mode) => {
   schedulePendingNotificationReadIfReady();
 });
 
-watch(hasVisibleDetail, (visible) => {
-  if (visible) return;
+watch(currentVisibleDetailKey, (detailKey, previousDetailKey) => {
+  if (!detailKey) {
+    clearNotificationDetailContext();
+    return;
+  }
 
-  pendingNotificationRead.value = null;
-  clearNotificationReadTimers();
+  if (previousDetailKey && previousDetailKey !== detailKey) {
+    clearNotificationReadTimers();
+  }
+
+  const notification = sourceNotification.value;
+  if (notification && getNotificationSourceDetailKey(notification) !== detailKey) {
+    sourceNotification.value = null;
+  }
+
+  const pending = pendingNotificationRead.value;
+  if (pending && pending.detailKey !== detailKey) {
+    pendingNotificationRead.value = null;
+  }
 });
 
 onBeforeUnmount(() => {
@@ -1246,12 +1319,42 @@ watch([hasCompletedInitialDashboardLoad, hasVisibleDetail], ([loaded, detailVisi
 });
 
 const openSearchResult = async (item: DashboardEntity) => {
+  sourceNotification.value = null;
   if (isPullRequestResult(item)) {
     await openPR(item);
     return;
   }
 
   await openIssue(item);
+};
+
+const handleIssueOpen = (...args: Parameters<typeof openIssue>) => {
+  sourceNotification.value = null;
+  openIssue(...args);
+};
+
+const handlePROpen = (...args: Parameters<typeof openPR>) => {
+  sourceNotification.value = null;
+  openPR(...args);
+};
+
+const handleSwitchIssueFromDetail = (owner: string, repo: string, issueNumber: number) => {
+  sourceNotification.value = null;
+  handleSwitchIssue(owner, repo, issueNumber);
+};
+
+const handleSwitchPRFromDetail = (owner: string, repo: string, pullNumber: number) => {
+  sourceNotification.value = null;
+  handleSwitchPR(owner, repo, pullNumber);
+};
+
+const handleSwitchDiscussionFromDetail = (
+  owner: string,
+  repo: string,
+  discussionNumber: number
+) => {
+  sourceNotification.value = null;
+  handleSwitchDiscussion(owner, repo, discussionNumber);
 };
 
 const refreshCurrentTabSafely = async () => {

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { IssueDetailPayload } from '#shared/types/issues';
+import type { DashboardNotification } from '#shared/types/notifications';
 import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
@@ -68,6 +69,7 @@ const props = defineProps<{
   loadingDiscussion: boolean;
   loadingRelease: boolean;
   loadingRepository: boolean;
+  sourceNotification: DashboardNotification | null;
 }>();
 
 const emit = defineEmits<{
@@ -300,6 +302,7 @@ watch(activeDetailKey, () => {
             <IssueDetail
               v-else-if="activeDetailPane?.type === 'issue' && issue"
               :issue="issue"
+              :source-notification="sourceNotification"
               @update:non-sticky-header="isIssueHeaderNonSticky = $event"
               @update:compact-header-visible="isCompactHeaderVisible = $event"
               @switch-issue="handleSwitchIssue"
@@ -310,6 +313,7 @@ watch(activeDetailKey, () => {
               v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
               :pull-request="pullRequest"
               :review-active="isPullRequestReviewRoute"
+              :source-notification="sourceNotification"
               @update:review-active="isPullRequestReviewActive = $event"
               @update:compact-header-visible="isCompactHeaderVisible = $event"
               @update:compact-header-summary="pullRequestCompactSummary = $event"
@@ -322,6 +326,7 @@ watch(activeDetailKey, () => {
             <DiscussionDetail
               v-else-if="activeDetailPane?.type === 'discussion' && discussion"
               :discussion="discussion"
+              :source-notification="sourceNotification"
               @update:compact-header-visible="isCompactHeaderVisible = $event"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"

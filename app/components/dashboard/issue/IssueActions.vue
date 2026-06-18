@@ -53,6 +53,16 @@
       </div>
     </div>
 
+    <div v-if="sourceNotification" class="sidebar-card mb-4">
+      <div class="sidebar-card__content">
+        <button class="sidebar-action-btn" @click="handleToggleTodo">
+          <ListPlusIcon v-if="!isTodo" :size="14" />
+          <ListMinusIcon v-else :size="14" />
+          <span>{{ todoLabel }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="sidebar-card">
       <div class="sidebar-card__content">
         <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
@@ -76,14 +86,17 @@ import {
   AlertCircleIcon,
   ExternalLinkIcon,
   InfoIcon,
+  ListMinusIcon,
+  ListPlusIcon,
   LockIcon,
   Loader2Icon,
   UnlockIcon,
   XIcon,
 } from '@lucide/vue';
-import { onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
@@ -104,6 +117,7 @@ const props = defineProps<{
   createdAt: string | undefined;
   updatedAt: string | undefined;
   assignee: IssueAssignee | null | undefined;
+  sourceNotification?: DashboardNotification | null;
 }>();
 
 const emit = defineEmits<{
@@ -114,6 +128,21 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { user } = useUserSession();
 const { openModal, closeModal } = useModalState();
+const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
+
+const isTodo = computed(() =>
+  props.sourceNotification ? isNotificationTodo(props.sourceNotification) : false
+);
+
+const todoLabel = computed(() =>
+  isTodo.value ? t('dashboard.todos.removeAction') : t('dashboard.todos.addAction')
+);
+
+const handleToggleTodo = () => {
+  if (props.sourceNotification) {
+    toggleNotificationTodo(props.sourceNotification);
+  }
+};
 
 const showLockReasonModal = ref(false);
 const loadingLock = ref(false);

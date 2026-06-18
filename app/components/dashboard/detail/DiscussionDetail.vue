@@ -10,6 +10,7 @@ import type {
   DiscussionRepliesPayload,
   DiscussionReply,
 } from '#shared/types/discussions';
+import type { DashboardNotification } from '#shared/types/notifications';
 import DiscussionActions from '~/components/dashboard/discussion/DiscussionActions.vue';
 import DiscussionAnswerCard from '~/components/dashboard/discussion/DiscussionAnswerCard.vue';
 import DiscussionComments from '~/components/dashboard/discussion/DiscussionComments.vue';
@@ -19,6 +20,7 @@ import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 const props = defineProps<{
   discussion: DiscussionDetailPayload;
+  sourceNotification?: DashboardNotification | null;
 }>();
 
 const emit = defineEmits<{
@@ -457,7 +459,10 @@ watch(
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
           @scroll="onSidebarScroll"
         >
-          <DiscussionActions :discussion="displayDiscussion" />
+          <DiscussionActions
+            :discussion="displayDiscussion"
+            :source-notification="sourceNotification"
+          />
         </div>
       </div>
     </div>

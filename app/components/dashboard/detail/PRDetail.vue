@@ -90,6 +90,7 @@
             :changed-files="currentPullRequest?.changed_files"
             :additions="currentPullRequest?.additions"
             :deletions="currentPullRequest?.deletions"
+            :source-notification="sourceNotification"
             @open-reviewers="openReviewerPicker"
             @request-reviewer="rerequestReviewer"
             @remove-reviewer="removeReviewerRequest"
@@ -132,6 +133,7 @@
 import { EyeIcon } from '@lucide/vue';
 import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
 
+import type { DashboardNotification } from '#shared/types/notifications';
 import type {
   PullRequestDetailLabel,
   PullRequestDetailResponse,
@@ -159,6 +161,7 @@ import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 const props = defineProps<{
   pullRequest: PullRequestDetailViewModel;
   reviewActive?: boolean;
+  sourceNotification?: DashboardNotification | null;
 }>();
 
 const PRReviewWorkspace = defineAsyncComponent(

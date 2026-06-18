@@ -53,6 +53,7 @@
             :created-at="currentIssue?.created_at"
             :updated-at="currentIssue?.updated_at"
             :assignee="currentIssue?.assignee"
+            :source-notification="sourceNotification"
             @update:is-locked="updateIsLocked"
             @add-timeline-event="addTimelineEvent"
           />
@@ -66,6 +67,7 @@
 import { computed, ref, watch } from 'vue';
 
 import type { IssueDetailLabel, IssueDetailPayload } from '#shared/types/issues';
+import type { DashboardNotification } from '#shared/types/notifications';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
@@ -77,6 +79,7 @@ import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
   issue: IssueDetailPayload;
+  sourceNotification?: DashboardNotification | null;
 }>();
 
 const emit = defineEmits<{

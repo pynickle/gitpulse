@@ -156,6 +156,16 @@
       </div>
     </div>
 
+    <div v-if="sourceNotification" class="sidebar-card mb-4">
+      <div class="sidebar-card__content">
+        <button class="sidebar-action-btn" @click="handleToggleTodo">
+          <ListPlusIcon v-if="!isTodo" :size="14" />
+          <ListMinusIcon v-else :size="14" />
+          <span>{{ todoLabel }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="sidebar-card">
       <div class="sidebar-card__content">
         <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
@@ -173,6 +183,8 @@ import {
   ClockIcon,
   ExternalLinkIcon,
   InfoIcon,
+  ListMinusIcon,
+  ListPlusIcon,
   MessageSquareIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -184,6 +196,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { formatDurationFromNow } from '#imports';
+import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type {
   PRReviewerStatus,
@@ -224,6 +237,7 @@ const props = defineProps<{
   changedFiles: number | undefined;
   additions: number | undefined;
   deletions: number | undefined;
+  sourceNotification?: DashboardNotification | null;
 }>();
 
 const emit = defineEmits<{
@@ -231,6 +245,22 @@ const emit = defineEmits<{
   requestReviewer: [reviewer: PRReviewerSummaryItem];
   removeReviewer: [reviewer: PRReviewerSummaryItem];
 }>();
+
+const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
+
+const isTodo = computed(() =>
+  props.sourceNotification ? isNotificationTodo(props.sourceNotification) : false
+);
+
+const todoLabel = computed(() =>
+  isTodo.value ? t('dashboard.todos.removeAction') : t('dashboard.todos.addAction')
+);
+
+const handleToggleTodo = () => {
+  if (props.sourceNotification) {
+    toggleNotificationTodo(props.sourceNotification);
+  }
+};
 
 const reviewerItems = computed<PRReviewerSummaryItem[]>(() => {
   if (props.reviewers?.items?.length) {
@@ -691,6 +721,34 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
   &:hover {
     color: var(--gitpulse-accent);
+  }
+}
+
+.sidebar-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gitpulse-text-muted);
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border-strong);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 </style>
