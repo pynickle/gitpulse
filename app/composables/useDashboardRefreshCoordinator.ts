@@ -2,7 +2,7 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue';
 
 import type { CustomTab, GitHubSearchQuery } from './useCustomTabs';
 import { createCustomTabPreviewSearchParams } from './useCustomTabSettingsOptions';
-import type { DashboardFilterSource, DashboardFilterSourceState } from './useDashboardFilters';
+import type { DashboardFilterSourceState } from './useDashboardFilters';
 import type { DashboardTab } from './useDashboardTabs';
 import { useRefreshableView } from './useRefreshableView';
 
@@ -32,7 +32,6 @@ interface DashboardRefreshCoordinatorOptions {
   loggedIn: MaybeRefOrGetter<boolean>;
   isDashboardChildRoute: MaybeRefOrGetter<boolean>;
   showFileBrowsingView: MaybeRefOrGetter<boolean>;
-  getCustomTabFilterSource: (query: { type?: string }) => DashboardFilterSource;
   refreshCurrentDetail: () => Promise<void>;
   refreshCurrentTab: () => Promise<void>;
 }
@@ -67,13 +66,11 @@ export function useDashboardRefreshCoordinator(options: DashboardRefreshCoordina
 
   const dashboardListFreshnessUrl = computed(() => {
     const customTab = toValue(options.selectedCustomTab);
-    const filterSourceStates = toValue(options.filterSourceStates);
     if (customTab) {
-      const customSourceState =
-        filterSourceStates[options.getCustomTabFilterSource(customTab.query)];
-      return buildSearchFreshnessUrl(customSourceState.overlayCustomTabQuery(customTab.query));
+      return buildSearchFreshnessUrl(customTab.query);
     }
 
+    const filterSourceStates = toValue(options.filterSourceStates);
     const currentTab = toValue(options.currentTab);
     if (currentTab === 'notifications') {
       return notificationFreshnessUrl.value;

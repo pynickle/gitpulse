@@ -45,6 +45,7 @@
             </span>
             <div class="dashboard-tab-actions">
               <button
+                v-if="showDashboardFilterButton"
                 class="button is-ghost is-small dashboard-tab-filter"
                 :class="{ 'is-active': hasActiveVisibleFilters }"
                 type="button"
@@ -328,7 +329,6 @@ import {
   createCustomTabFilterSourceState,
   createDashboardFilterPatchForSource,
   createDashboardFilterSourceState,
-  normalizeCustomTabRouteFilterPatch,
   sourceSupportsDashboardFilter,
   type DashboardFilterSource,
   type DashboardRouteFilters,
@@ -648,11 +648,16 @@ const activeFilterState = computed(() => {
     return filterSourceStates.value[activeFilterSource.value];
   }
 
-  return createCustomTabFilterSourceState(customTab.query, dashboardFilters.value);
+  return createCustomTabFilterSourceState(customTab.query);
 });
 const visibleDashboardFilters = computed(() => activeFilterState.value.filters);
 const hasActiveVisibleFilters = computed(() => activeFilterState.value.hasActiveFilters);
+const showDashboardFilterButton = computed(() => !selectedCustomTab.value);
 const showDashboardAdvancedFilters = computed(() => {
+  if (selectedCustomTab.value) {
+    return false;
+  }
+
   const source = activeFilterSource.value;
   return (
     sourceSupportsDashboardFilter(source, 'repo') ||
@@ -717,14 +722,9 @@ const routeFilterFetchKey = computed(() => {
   }
 
   if (customTab) {
-    const customSourceState = createCustomTabFilterSourceState(
-      customTab.query,
-      dashboardFilters.value
-    );
     return JSON.stringify({
       customTabId: customTab.id,
       query: customTab.query,
-      filters: customSourceState.filters,
     });
   }
 
@@ -1021,9 +1021,7 @@ const refreshCurrentTabSafely = async () => {
   try {
     if (selectedCustomTab.value) {
       await fetchCustomTab(
-        filterSourceStates.value[
-          getCustomTabFilterSource(selectedCustomTab.value.query)
-        ].overlayCustomTabQuery(selectedCustomTab.value.query),
+        selectedCustomTab.value.query,
         currentPage.value,
         {
           force: true,
@@ -1071,7 +1069,6 @@ const {
   loggedIn,
   isDashboardChildRoute,
   showFileBrowsingView,
-  getCustomTabFilterSource,
   refreshCurrentDetail,
   refreshCurrentTab: refreshCurrentTabSafely,
 });
@@ -1083,16 +1080,7 @@ const loadRouteTabSafely = async (tab: unknown, page: number) => {
 
     if (customTab) {
       setActiveTabId(customTab.id);
-      const customSourceState = createCustomTabFilterSourceState(
-        customTab.query,
-        dashboardFilters.value
-      );
-      await fetchCustomTab(
-        customSourceState.overlayCustomTabQuery(customTab.query),
-        page,
-        {},
-        customTab.source
-      );
+      await fetchCustomTab(customTab.query, page, {}, customTab.source);
       return;
     }
 
@@ -1188,9 +1176,12 @@ const handleActivityGroupSelect = async (groupId: string) => {
 };
 
 const handleFilterUpdate = async (patch: Partial<DashboardRouteFilters>) => {
-  const customTab = selectedCustomTab.value;
+  if (selectedCustomTab.value) {
+    return;
+  }
+
   const sourcePatch = createDashboardFilterPatchForSource(activeFilterSource.value, patch);
-  await updateFilters(customTab ? normalizeCustomTabRouteFilterPatch(sourcePatch) : sourcePatch);
+  await updateFilters(sourcePatch);
 };
 
 const clearVisibleFilters = async () => {

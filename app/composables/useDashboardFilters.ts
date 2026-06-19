@@ -204,15 +204,6 @@ const setQueryValue = (query: LocationQueryRaw, key: DashboardFilterQueryKey, va
   delete query[key];
 };
 
-const getTrimmedFilterValue = (value: string | undefined) => {
-  const trimmedValue = value?.trim();
-  return trimmedValue && trimmedValue.length > 0 ? trimmedValue : undefined;
-};
-
-const getTrimmedFilterList = (values: string[] | undefined) => {
-  return values?.map((value) => value.trim()).filter((value) => value.length > 0) ?? [];
-};
-
 export const parseDashboardRouteFilters = (
   query: Record<string, unknown>
 ): DashboardRouteFilters => {
@@ -544,117 +535,20 @@ export const isIssuePrQueryFiltered = (filters: DashboardRouteFilters) => {
   );
 };
 
-export const createDashboardFiltersFromCustomTabQuery = (
-  query: GitHubSearchQuery
-): DashboardRouteFilters => {
-  const source: Extract<DashboardFilterSource, 'issues' | 'pulls'> =
-    query.type === 'pulls' ? 'pulls' : 'issues';
-  const filters: DashboardRouteFilters = {
-    labels: getTrimmedFilterList(query.labels),
-  };
-
-  filters.repo = getTrimmedFilterValue(query.repo);
-  filters.author = getTrimmedFilterValue(query.author);
-
-  if (query.state === 'all') {
-    filters.state = 'all';
-  } else if (query.state === 'merged') {
-    filters.state = 'merged';
-  } else if (query.state === 'closed') {
-    filters.state = 'closed';
-  } else if (query.state === 'open') {
-    filters.state = 'open';
-  }
-
-  if (
-    query.type === 'pulls' &&
-    REVIEW_VALUES.has(query.review as Exclude<GitHubSearchReviewFilter, 'any'>)
-  ) {
-    filters.review = query.review as Exclude<GitHubSearchReviewFilter, 'any'>;
-  }
-
-  if (ARCHIVED_VALUES.has(query.archived as GitHubSearchArchivedFilter)) {
-    filters.archived = query.archived;
-  }
-
-  if (GITHUB_SORT_VALUES.has(query.sort as DashboardIssuePrSort)) {
-    filters.sort = query.sort as DashboardIssuePrSort;
-  }
-
-  if (query.order === 'asc' || query.order === 'desc') {
-    filters.order = query.order;
-  }
-
-  return createDashboardEffectiveFilters(source, filters);
-};
-
-export const normalizeCustomTabRouteFilterPatch = (
-  patch: Partial<DashboardRouteFilters>
-): Partial<DashboardRouteFilters> => {
-  if (Object.hasOwn(patch, 'state') && patch.state === undefined) {
-    return { ...patch, state: 'open' };
-  }
-
-  return patch;
-};
-
-const preserveCustomTabRouteState = (
-  source: Extract<DashboardFilterSource, 'issues' | 'pulls'>,
-  filters: DashboardRouteFilters,
-  routeFilters: DashboardRouteFilters
-) => {
-  if (
-    routeFilters.state === 'all' ||
-    routeFilters.state === 'open' ||
-    routeFilters.state === 'closed' ||
-    (source === 'pulls' && routeFilters.state === 'merged')
-  ) {
-    filters.state = routeFilters.state;
-  }
-
-  return filters;
-};
-
-export const mergeDashboardRouteFilterOverlay = (
-  baseFilters: DashboardRouteFilters,
-  overlayFilters: DashboardRouteFilters
-): DashboardRouteFilters => {
-  const nextFilters: DashboardRouteFilters = {
-    ...baseFilters,
-    labels: overlayFilters.labels.length > 0 ? overlayFilters.labels : baseFilters.labels,
-  };
-
-  for (const key of dashboardScalarFilterKeys) {
-    const value = overlayFilters[key];
-    if (value) {
-      (nextFilters as Record<typeof key, typeof value>)[key] = value;
-    }
-  }
-
-  return nextFilters;
-};
-
 export const createCustomTabFilterSourceState = (
-  savedQuery: GitHubSearchQuery,
-  routeFilters: DashboardRouteFilters
+  savedQuery: GitHubSearchQuery
 ): DashboardFilterSourceState => {
   const source: Extract<DashboardFilterSource, 'issues' | 'pulls'> =
     savedQuery.type === 'pulls' ? 'pulls' : 'issues';
-  const sourceFilters = preserveCustomTabRouteState(
-    source,
-    createDashboardEffectiveFilters(source, routeFilters),
-    routeFilters
-  );
-  const savedFilters = createDashboardFiltersFromCustomTabQuery(savedQuery);
-  const displayFilters = mergeDashboardRouteFilterOverlay(savedFilters, sourceFilters);
+  const filters = createEmptyDashboardRouteFilters();
 
   return {
-    filters: displayFilters,
-    chips: createDashboardFilterChips(displayFilters),
-    hasActiveFilters: hasDashboardRouteFilters(displayFilters),
-    notificationAdapter: buildNotificationFilterAdapter(source, displayFilters),
+    filters,
+    chips: [],
+    hasActiveFilters: false,
+    notificationAdapter: buildNotificationFilterAdapter(source, filters),
     issuePrQuery: undefined,
-    overlayCustomTabQuery: (query) => buildCustomTabOverlayQuery(query, sourceFilters),
+    overlayCustomTabQuery: (query) => query,
   };
 };
 

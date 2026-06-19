@@ -51,7 +51,6 @@ describe('dashboard refresh coordinator', () => {
       loggedIn: ref(true),
       isDashboardChildRoute: ref(false),
       showFileBrowsingView: ref(false),
-      getCustomTabFilterSource: (query) => (query.type === 'pulls' ? 'pulls' : 'issues'),
       refreshCurrentDetail: async () => {
         detailRefreshCount += 1;
       },
@@ -89,5 +88,57 @@ describe('dashboard refresh coordinator', () => {
     expect(listRefreshCount).toBe(1);
     expect(detailRefreshCount).toBe(1);
     expect(fetchedUrls.at(-1)).toBe('/api/issues/owner/repo/1/freshness');
+  });
+
+  test('custom tab freshness uses the saved query without dashboard filter overlays', async () => {
+    const selectedCustomTab = ref({
+      id: 'custom-review',
+      groupId: 'default',
+      name: 'Custom review',
+      source: 'github-search' as const,
+      subtitleMode: 'auto' as const,
+      query: {
+        type: 'pulls' as const,
+        repo: 'saved/repo',
+        state: 'open' as const,
+      },
+    });
+
+    const coordinator = useDashboardRefreshCoordinator({
+      apiFetch: async (request) => ({ signature: request }),
+      currentTab: ref('issues'),
+      currentPage: ref(1),
+      currentRouteTabId: ref('custom-review'),
+      selectedCustomTab,
+      filterSourceStates: computed(() => ({
+        ...createFilterSourceStates().value,
+        pulls: createDashboardFilterSourceState('pulls', {
+          labels: ['route-label'],
+          repo: 'route/repo',
+          state: 'merged',
+        }),
+      })),
+      routeFilterFetchKey: ref('route-filters'),
+      hasVisibleDetail: ref(false),
+      currentDetailRefreshKey: ref(''),
+      currentDetailFreshnessUrl: ref(''),
+      dashboardListLoading: ref(false),
+      detailLoading: ref(false),
+      sessionReady: ref(true),
+      loggedIn: ref(true),
+      isDashboardChildRoute: ref(false),
+      showFileBrowsingView: ref(false),
+      refreshCurrentDetail: async () => {},
+      refreshCurrentTab: async () => {},
+    });
+
+    expect(coordinator.activeDashboardFreshnessUrl.value).toContain(
+      '/api/search/issues/freshness?'
+    );
+    expect(coordinator.activeDashboardFreshnessUrl.value).toContain('repo=saved%2Frepo');
+    expect(coordinator.activeDashboardFreshnessUrl.value).toContain('state=open');
+    expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('route%2Frepo');
+    expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('merged');
+    expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('route-label');
   });
 });

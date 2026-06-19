@@ -5,7 +5,6 @@ import {
   buildBuiltinIssuePrFilterQuery,
   buildCustomTabOverlayQuery,
   createCustomTabFilterSourceState,
-  createDashboardFiltersFromCustomTabQuery,
   createDashboardEffectiveFilters,
   createDashboardFilterPatchForSource,
   createDashboardFilterChips,
@@ -15,7 +14,6 @@ import {
   clearDashboardSourceFilters,
   hasNotificationPageLocalPredicates,
   isIssuePrQueryFiltered,
-  normalizeCustomTabRouteFilterPatch,
   parseDashboardRouteFilters,
   serializeDashboardRouteFilters,
   sourceUsesDashboardTodoSortControls,
@@ -406,49 +404,7 @@ describe('dashboard route filters', () => {
     });
   });
 
-  test('projects custom search query filters into dashboard filter state', () => {
-    expect(
-      createDashboardFiltersFromCustomTabQuery({
-        type: 'pulls',
-        repo: ' saved/repo ',
-        author: ' octocat ',
-        labels: [' bug ', '', 'needs triage'],
-        state: 'merged',
-        review: 'approved',
-        archived: 'include',
-        sort: 'comments',
-        order: 'asc',
-      })
-    ).toEqual({
-      labels: ['bug', 'needs triage'],
-      repo: 'saved/repo',
-      author: 'octocat',
-      state: 'merged',
-      archived: 'include',
-      sort: 'comments',
-      order: 'asc',
-      review: 'approved',
-    });
-
-    expect(
-      createDashboardFiltersFromCustomTabQuery({
-        type: 'issues',
-        state: 'open',
-        archived: 'exclude',
-        sort: 'updated',
-        order: 'desc',
-      })
-    ).toEqual({
-      labels: [],
-      repo: undefined,
-      author: undefined,
-      archived: undefined,
-      sort: undefined,
-      order: undefined,
-    });
-  });
-
-  test('custom tab filter state displays saved query plus route overlay', () => {
+  test('custom tab filter state does not expose saved query or route filters', () => {
     const savedQuery = {
       type: 'pulls' as const,
       repo: 'saved/repo',
@@ -456,88 +412,51 @@ describe('dashboard route filters', () => {
       state: 'merged' as const,
       review: 'approved' as const,
     };
-    const sourceState = createCustomTabFilterSourceState(savedQuery, {
-      repo: 'route/repo',
-      labels: [],
-      sort: 'created',
-    });
+    const sourceState = createCustomTabFilterSourceState(savedQuery);
 
     expect(sourceState.filters).toEqual({
-      labels: ['saved'],
-      repo: 'route/repo',
-      author: undefined,
-      state: 'merged',
-      archived: undefined,
-      sort: 'created',
-      order: undefined,
-      review: 'approved',
+      labels: [],
     });
+    expect(sourceState.chips).toEqual([]);
+    expect(sourceState.hasActiveFilters).toBe(false);
     expect(sourceState.overlayCustomTabQuery(savedQuery)).toEqual({
       type: 'pulls',
-      repo: 'route/repo',
+      repo: 'saved/repo',
       labels: ['saved'],
       state: 'merged',
       review: 'approved',
-      sort: 'created',
     });
   });
 
-  test('custom pull tabs can override saved all state with open from the route', () => {
+  test('custom pull tabs ignore route state overlays', () => {
     const savedQuery = {
       type: 'pulls' as const,
       state: 'all' as const,
     };
-    const sourceState = createCustomTabFilterSourceState(savedQuery, {
-      state: 'open',
-      labels: [],
-    });
+    const sourceState = createCustomTabFilterSourceState(savedQuery);
 
     expect(sourceState.filters).toEqual({
       labels: [],
-      repo: undefined,
-      author: undefined,
-      state: 'open',
-      archived: undefined,
-      sort: undefined,
-      order: undefined,
     });
     expect(sourceState.overlayCustomTabQuery(savedQuery)).toEqual({
       type: 'pulls',
-      state: 'open',
+      state: 'all',
     });
   });
 
-  test('custom pull tabs clear merged qualifiers when route state changes to open', () => {
+  test('custom pull tabs preserve saved merged state despite route filters', () => {
     const savedQuery = {
       type: 'pulls' as const,
       state: 'merged' as const,
     };
-    const sourceState = createCustomTabFilterSourceState(savedQuery, {
-      state: 'open',
-      labels: [],
-    });
+    const sourceState = createCustomTabFilterSourceState(savedQuery);
 
     expect(sourceState.filters).toEqual({
       labels: [],
-      repo: undefined,
-      author: undefined,
-      state: 'open',
-      archived: undefined,
-      sort: undefined,
-      order: undefined,
     });
     expect(sourceState.overlayCustomTabQuery(savedQuery)).toEqual({
       type: 'pulls',
-      state: 'open',
-    });
-  });
-
-  test('normalizes custom tab open state updates from segmented control empty value', () => {
-    expect(normalizeCustomTabRouteFilterPatch({ state: undefined })).toEqual({
-      state: 'open',
-    });
-    expect(normalizeCustomTabRouteFilterPatch({ state: 'closed' })).toEqual({
-      state: 'closed',
+      state: 'merged',
     });
   });
 
