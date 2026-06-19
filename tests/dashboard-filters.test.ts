@@ -7,6 +7,7 @@ import {
   createCustomTabFilterSourceState,
   createDashboardFiltersFromCustomTabQuery,
   createDashboardEffectiveFilters,
+  createDashboardFilterPatchForSource,
   createDashboardFilterChips,
   createDashboardFilterSourceState,
   buildNotificationFilterAdapter,
@@ -26,6 +27,7 @@ describe('dashboard route filters', () => {
         f_state: 'merged',
         f_repo: ' owner/repo ',
         f_labels: ' bug, ,needs triage ',
+        f_reason: 'mention',
         f_subject_state: 'merged',
         f_review: 'invalid',
         f_order: 'sideways',
@@ -35,9 +37,7 @@ describe('dashboard route filters', () => {
       repo: 'owner/repo',
       author: undefined,
       labels: ['bug', 'needs triage'],
-      reason: undefined,
       subjectType: undefined,
-      subjectState: 'merged',
       review: undefined,
       archived: undefined,
       sort: undefined,
@@ -76,68 +76,55 @@ describe('dashboard route filters', () => {
     });
   });
 
-  test('keeps notification API params separate from local predicates', () => {
+  test('keeps notification filters limited to read state', () => {
     expect(
-      buildNotificationFilterAdapter({
+      buildNotificationFilterAdapter('notifications', {
         state: 'read',
         repo: 'owner/repo',
         author: 'octocat',
         labels: ['bug'],
-        reason: 'mention',
-        subjectState: 'open',
+        subjectType: 'Issue',
       })
     ).toEqual({
       apiParams: { all: true },
       local: {
         readState: 'read',
-        repo: 'owner/repo',
-        author: undefined,
-        labels: [],
-        reason: 'mention',
-        subjectType: undefined,
-        subjectState: 'open',
       },
       usesPageLocalPredicates: true,
     });
 
-    expect(buildNotificationFilterAdapter({ state: 'unread', labels: [] }).apiParams).toEqual({
-      all: undefined,
-    });
     expect(
-      buildNotificationFilterAdapter({ state: 'unread', labels: [] }).usesPageLocalPredicates
+      buildNotificationFilterAdapter('notifications', { state: 'unread', labels: [] }).apiParams
+    ).toEqual({ all: undefined });
+    expect(
+      buildNotificationFilterAdapter('notifications', { state: 'unread', labels: [] })
+        .usesPageLocalPredicates
     ).toBe(false);
-    const readAdapter = buildNotificationFilterAdapter({ state: 'read', labels: [] });
+    const readAdapter = buildNotificationFilterAdapter('notifications', {
+      state: 'read',
+      labels: [],
+    });
     expect(readAdapter.apiParams).toEqual({ all: true });
     expect(readAdapter.usesPageLocalPredicates).toBe(true);
     expect(hasNotificationPageLocalPredicates(readAdapter.local)).toBe(true);
   });
 
-  test('omits author and labels from active notification filters', () => {
+  test('omits advanced filters from active notification filters', () => {
     const sourceState = createDashboardFilterSourceState('notifications', {
       state: 'read',
       repo: 'owner/repo',
       author: 'octocat',
       labels: ['bug'],
-      reason: 'mention',
+      subjectType: 'Issue',
     });
 
     expect(sourceState.filters).toEqual({
       labels: [],
-      repo: 'owner/repo',
       state: 'read',
-      reason: 'mention',
-      subjectType: undefined,
-      subjectState: undefined,
     });
-    expect(sourceState.chips.map((chip) => chip.key)).toEqual(['state', 'repo', 'reason']);
+    expect(sourceState.chips.map((chip) => chip.key)).toEqual(['state']);
     expect(sourceState.notificationAdapter.local).toEqual({
       readState: 'read',
-      repo: 'owner/repo',
-      author: undefined,
-      labels: [],
-      reason: 'mention',
-      subjectType: undefined,
-      subjectState: undefined,
     });
   });
 
@@ -147,9 +134,7 @@ describe('dashboard route filters', () => {
       repo: 'owner/repo',
       author: 'octocat',
       labels: ['bug'],
-      reason: 'mention',
       subjectType: 'PullRequest',
-      subjectState: 'open',
       sort: 'updated',
       order: 'asc',
     });
@@ -169,13 +154,8 @@ describe('dashboard route filters', () => {
     ]);
     expect(sourceState.hasActiveFilters).toBe(true);
     expect(sourceState.notificationAdapter.local).toEqual({
-      readState: undefined,
       repo: 'owner/repo',
-      author: undefined,
-      labels: [],
-      reason: undefined,
       subjectType: 'PullRequest',
-      subjectState: undefined,
     });
   });
 
@@ -228,14 +208,74 @@ describe('dashboard route filters', () => {
       clearDashboardSourceFilters('issues', {
         state: 'unread',
         repo: 'owner/repo',
-        reason: 'mention',
         labels: ['bug'],
         archived: 'only',
+        subjectType: 'Issue',
       })
     ).toEqual({
       state: 'unread',
-      reason: 'mention',
       labels: [],
+      subjectType: 'Issue',
+    });
+
+    expect(
+      clearDashboardSourceFilters('notifications', {
+        state: 'read',
+        repo: 'owner/repo',
+        author: 'octocat',
+        labels: ['bug'],
+        subjectType: 'Issue',
+        archived: 'only',
+      })
+    ).toEqual({
+      labels: ['bug'],
+      repo: 'owner/repo',
+      author: 'octocat',
+      subjectType: 'Issue',
+      archived: 'only',
+    });
+
+    expect(
+      clearDashboardSourceFilters('todos', {
+        state: 'read',
+        repo: 'owner/repo',
+        author: 'octocat',
+        labels: ['bug'],
+        subjectType: 'Issue',
+        sort: 'updated',
+        order: 'asc',
+      })
+    ).toEqual({
+      state: 'read',
+      author: 'octocat',
+      labels: ['bug'],
+    });
+  });
+
+  test('clips filter patches to the active source schema', () => {
+    expect(
+      createDashboardFilterPatchForSource('notifications', {
+        state: 'read',
+        repo: 'owner/repo',
+        subjectType: 'Issue',
+      })
+    ).toEqual({
+      state: 'read',
+    });
+
+    expect(
+      createDashboardFilterPatchForSource('todos', {
+        state: 'read',
+        repo: 'owner/repo',
+        subjectType: 'Issue',
+        sort: 'updated',
+        order: 'asc',
+      })
+    ).toEqual({
+      repo: 'owner/repo',
+      subjectType: 'Issue',
+      sort: 'updated',
+      order: 'asc',
     });
   });
 
@@ -563,7 +603,7 @@ describe('dashboard route filters', () => {
     });
   });
 
-  test('applies local notification predicates after enrichment', () => {
+  test('applies supported notification item predicates after enrichment', () => {
     const items = [
       {
         id: '1',
@@ -595,11 +635,7 @@ describe('dashboard route filters', () => {
       applyNotificationLocalFilters(items, {
         readState: 'read',
         repo: 'owner/repo',
-        author: 'octocat',
-        labels: ['bug'],
-        reason: 'mention',
         subjectType: 'Issue',
-        subjectState: 'open',
       }).map((item) => item.id)
     ).toEqual(['1']);
   });

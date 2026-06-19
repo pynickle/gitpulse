@@ -8,8 +8,10 @@ import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
 import FilterMultiSelect from '~/components/ui/FilterMultiSelect.vue';
 import type {
   DashboardFilterSource,
+  DashboardFilterKey,
   DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
+import { sourceSupportsDashboardFilter } from '~/composables/useDashboardFilters';
 import {
   DASHBOARD_NOTIFICATION_SUBJECT_TYPES,
   getDashboardSubjectTypeVisual,
@@ -43,22 +45,34 @@ const authorSuggestionItems = computed(() =>
   (props.authorSuggestions ?? []).map((author) => ({ value: author }))
 );
 
-const isNotificationSubjectFilterTab = computed(() => {
-  return props.currentTab === 'notifications' || props.currentTab === 'todos';
+const isTodoTab = computed(() => props.currentTab === 'todos');
+const supportsFilter = (key: DashboardFilterKey) =>
+  sourceSupportsDashboardFilter(props.currentTab, key);
+const hasAdvancedFilterControls = computed(() => {
+  return (
+    supportsFilter('repo') ||
+    supportsFilter('author') ||
+    supportsFilter('labels') ||
+    supportsFilter('subjectType') ||
+    supportsFilter('review') ||
+    supportsFilter('archived') ||
+    supportsFilter('sort') ||
+    supportsFilter('order')
+  );
 });
 
 const activeFilterCount = computed(() => {
-  if (isNotificationSubjectFilterTab.value) {
+  if (isTodoTab.value) {
     return props.filters.subjectType ? 1 : 0;
   }
 
   let count = props.filters.labels.length;
-  if (props.filters.repo) count++;
-  if (props.filters.author) count++;
-  if (props.currentTab === 'pulls' && props.filters.review) count++;
-  if (props.filters.archived) count++;
-  if (props.filters.sort) count++;
-  if (props.filters.order) count++;
+  if (supportsFilter('repo') && props.filters.repo) count++;
+  if (supportsFilter('author') && props.filters.author) count++;
+  if (supportsFilter('review') && props.filters.review) count++;
+  if (supportsFilter('archived') && props.filters.archived) count++;
+  if (supportsFilter('sort') && props.filters.sort) count++;
+  if (supportsFilter('order') && props.filters.order) count++;
   return count;
 });
 
@@ -123,7 +137,7 @@ const toggleCollapsed = () => {
 </script>
 
 <template>
-  <div v-if="currentTab !== 'repos'" class="sidebar-card">
+  <div v-if="hasAdvancedFilterControls" class="sidebar-card">
     <button
       class="sidebar-card__header sidebar-card__header--collapsible"
       :aria-expanded="!isCollapsed"
@@ -150,7 +164,7 @@ const toggleCollapsed = () => {
     >
       <div class="sidebar-card__content">
         <div class="dashboard-advanced-filters__body">
-          <label v-if="isNotificationSubjectFilterTab" class="dashboard-advanced-filters__control">
+          <label v-if="isTodoTab" class="dashboard-advanced-filters__control">
             <span>{{ t('dashboard.filters.subjectType') }}</span>
             <FilterDropdown
               :options="subjectTypeOptions"
@@ -161,7 +175,7 @@ const toggleCollapsed = () => {
           </label>
 
           <template v-else>
-            <label class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('repo')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.repo') }}</span>
               <FilterAutocomplete
                 :suggestions="repoSuggestionItems"
@@ -171,7 +185,7 @@ const toggleCollapsed = () => {
               />
             </label>
 
-            <label class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('author')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.author') }}</span>
               <FilterAutocomplete
                 :suggestions="authorSuggestionItems"
@@ -181,7 +195,7 @@ const toggleCollapsed = () => {
               />
             </label>
 
-            <label class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('labels')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.labels') }}</span>
               <FilterMultiSelect
                 :suggestions="labelSuggestionItems"
@@ -193,7 +207,7 @@ const toggleCollapsed = () => {
               />
             </label>
 
-            <label v-if="currentTab === 'pulls'" class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('review')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.review') }}</span>
               <FilterDropdown
                 :options="reviewOptions"
@@ -203,7 +217,7 @@ const toggleCollapsed = () => {
               />
             </label>
 
-            <label class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('archived')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.archived') }}</span>
               <FilterDropdown
                 :options="archivedOptions"
@@ -213,7 +227,7 @@ const toggleCollapsed = () => {
               />
             </label>
 
-            <label class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('sort')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.sort') }}</span>
               <FilterDropdown
                 :options="sortOptions"
@@ -223,7 +237,7 @@ const toggleCollapsed = () => {
               />
             </label>
 
-            <label class="dashboard-advanced-filters__control">
+            <label v-if="supportsFilter('order')" class="dashboard-advanced-filters__control">
               <span>{{ t('dashboard.filters.order') }}</span>
               <FilterDropdown
                 :options="orderOptions"

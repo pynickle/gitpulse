@@ -166,9 +166,7 @@ const buildParamQueryKey = (params: Record<string, boolean | string | undefined>
   return searchParams.toString() || 'default';
 };
 
-const createDefaultNotificationLocalFilters = (): NotificationFilterAdapter['local'] => ({
-  labels: [],
-});
+const createDefaultNotificationLocalFilters = (): NotificationFilterAdapter['local'] => ({});
 
 const buildNotificationQueryKey = (
   params: Record<string, boolean | string | undefined>,
@@ -177,10 +175,6 @@ const buildNotificationQueryKey = (
   return buildParamQueryKey({
     ...params,
     read_state: localFilters.readState,
-    repo: localFilters.repo,
-    reason: localFilters.reason,
-    subject_type: localFilters.subjectType,
-    subject_state: localFilters.subjectState,
   });
 };
 
@@ -204,17 +198,6 @@ const getNotificationLocalFiltersFromQueryKey = (
   const params = parseNotificationQueryParams(queryKey);
   return {
     readState: getReadStateFromQueryParams(params),
-    repo: params.get('repo') ?? undefined,
-    author: undefined,
-    labels: [],
-    reason: params.get('reason') ?? undefined,
-    subjectType: params.get('subject_type') ?? undefined,
-    subjectState:
-      params.get('subject_state') === 'open' ||
-      params.get('subject_state') === 'closed' ||
-      params.get('subject_state') === 'merged'
-        ? (params.get('subject_state') as 'open' | 'closed' | 'merged')
-        : undefined,
   };
 };
 

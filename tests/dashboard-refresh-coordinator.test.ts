@@ -61,7 +61,7 @@ describe('dashboard refresh coordinator', () => {
     });
 
     expect(coordinator.activeDashboardFreshnessUrl.value).toBe(
-      '/api/notifications/freshness?all=true&read_state=read&repo=owner%2Frepo&reason=mention&subject_type=Issue'
+      '/api/notifications/freshness?all=true&read_state=read'
     );
     expect(coordinator.activeDashboardRefreshKey.value).toBe(
       JSON.stringify({

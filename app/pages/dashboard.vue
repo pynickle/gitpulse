@@ -212,6 +212,7 @@
       <template #widgets-panel>
         <WidgetsPanel>
           <DashboardAdvancedFilters
+            v-if="showDashboardAdvancedFilters"
             :current-tab="activeFilterSource"
             :filters="visibleDashboardFilters"
             :label-suggestions="labelFilterSuggestions"
@@ -325,8 +326,10 @@ import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOpti
 import {
   applyNotificationLocalFilters,
   createCustomTabFilterSourceState,
+  createDashboardFilterPatchForSource,
   createDashboardFilterSourceState,
   normalizeCustomTabRouteFilterPatch,
+  sourceSupportsDashboardFilter,
   type DashboardFilterSource,
   type DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
@@ -649,6 +652,19 @@ const activeFilterState = computed(() => {
 });
 const visibleDashboardFilters = computed(() => activeFilterState.value.filters);
 const hasActiveVisibleFilters = computed(() => activeFilterState.value.hasActiveFilters);
+const showDashboardAdvancedFilters = computed(() => {
+  const source = activeFilterSource.value;
+  return (
+    sourceSupportsDashboardFilter(source, 'repo') ||
+    sourceSupportsDashboardFilter(source, 'author') ||
+    sourceSupportsDashboardFilter(source, 'labels') ||
+    sourceSupportsDashboardFilter(source, 'subjectType') ||
+    sourceSupportsDashboardFilter(source, 'review') ||
+    sourceSupportsDashboardFilter(source, 'archived') ||
+    sourceSupportsDashboardFilter(source, 'sort') ||
+    sourceSupportsDashboardFilter(source, 'order')
+  );
+});
 
 const routeFilterSource = computed<DashboardFilterSource>(() => {
   const customTabId = getQueryParamValue(route.query.tab);
@@ -681,10 +697,6 @@ const routeFilterFetchKey = computed(() => {
       apiParams,
       localFilters: {
         readState: localFilters.readState,
-        repo: localFilters.repo,
-        reason: localFilters.reason,
-        subjectType: localFilters.subjectType,
-        subjectState: localFilters.subjectState,
       },
     });
   }
@@ -1177,7 +1189,8 @@ const handleActivityGroupSelect = async (groupId: string) => {
 
 const handleFilterUpdate = async (patch: Partial<DashboardRouteFilters>) => {
   const customTab = selectedCustomTab.value;
-  await updateFilters(customTab ? normalizeCustomTabRouteFilterPatch(patch) : patch);
+  const sourcePatch = createDashboardFilterPatchForSource(activeFilterSource.value, patch);
+  await updateFilters(customTab ? normalizeCustomTabRouteFilterPatch(sourcePatch) : sourcePatch);
 };
 
 const clearVisibleFilters = async () => {

@@ -24,9 +24,7 @@ export interface DashboardRouteFilters {
   repo?: string;
   author?: string;
   labels: string[];
-  reason?: string;
   subjectType?: string;
-  subjectState?: 'open' | 'closed' | 'merged';
   review?: Exclude<GitHubSearchReviewFilter, 'any'>;
   archived?: GitHubSearchArchivedFilter;
   sort?: DashboardRouteSort;
@@ -55,11 +53,7 @@ export interface NotificationFilterAdapter {
   local: {
     readState?: 'unread' | 'read';
     repo?: string;
-    author?: string;
-    labels: string[];
-    reason?: string;
     subjectType?: string;
-    subjectState?: 'open' | 'closed' | 'merged';
   };
   usesPageLocalPredicates: boolean;
 }
@@ -78,6 +72,8 @@ export const dashboardFilterQueryKeys = [
   'f_repo',
   'f_author',
   'f_labels',
+  // Legacy notification filters. Keep clearing them from routes, but do not
+  // parse or serialize them into active dashboard filter state.
   'f_reason',
   'f_subject',
   'f_subject_state',
@@ -94,14 +90,45 @@ const dashboardScalarFilterKeys = [
   'state',
   'repo',
   'author',
-  'reason',
   'subjectType',
-  'subjectState',
   'review',
   'archived',
   'sort',
   'order',
 ] as const satisfies readonly DashboardScalarFilterKey[];
+
+export type DashboardFilterKey = keyof DashboardRouteFilters;
+
+export interface DashboardFilterSourceSchema {
+  keys: readonly DashboardFilterKey[];
+}
+
+export const dashboardFilterSourceSchemas = {
+  notifications: {
+    keys: ['state'],
+  },
+  todos: {
+    keys: ['repo', 'subjectType', 'sort', 'order'],
+  },
+  issues: {
+    keys: ['state', 'repo', 'author', 'labels', 'archived', 'sort', 'order'],
+  },
+  pulls: {
+    keys: ['state', 'repo', 'author', 'labels', 'review', 'archived', 'sort', 'order'],
+  },
+  repos: {
+    keys: [],
+  },
+} as const satisfies Record<DashboardFilterSource, DashboardFilterSourceSchema>;
+
+export const getDashboardFilterSourceSchema = (
+  source: DashboardFilterSource
+): DashboardFilterSourceSchema => dashboardFilterSourceSchemas[source];
+
+export const sourceSupportsDashboardFilter = (
+  source: DashboardFilterSource,
+  key: DashboardFilterKey
+) => getDashboardFilterSourceSchema(source).keys.includes(key);
 
 const STATE_VALUES = new Set<DashboardRouteState>([
   'all',
@@ -128,11 +155,6 @@ const GITHUB_SORT_VALUES = new Set<DashboardIssuePrSort>([
 const TODO_SORT_VALUES = new Set<DashboardTodoSort>(['added', 'updated']);
 const ROUTE_SORT_VALUES = new Set<DashboardRouteSort>([...GITHUB_SORT_VALUES, 'added']);
 const ISSUE_STATE_VALUES = new Set<DashboardRouteState>(['all', 'open', 'closed', 'merged']);
-const SUBJECT_STATE_VALUES = new Set<NonNullable<DashboardRouteFilters['subjectState']>>([
-  'open',
-  'closed',
-  'merged',
-]);
 const archivedChipOptionByValue: Record<GitHubSearchArchivedFilter, string> = {
   exclude: 'excludeArchived',
   include: 'includeArchived',
@@ -153,11 +175,7 @@ export const hasNotificationPageLocalPredicates = (
   localFilters: NotificationFilterAdapter['local']
 ) => {
   return Boolean(
-    localFilters.readState === 'read' ||
-    localFilters.repo ||
-    localFilters.reason ||
-    localFilters.subjectType ||
-    localFilters.subjectState
+    localFilters.readState === 'read' || localFilters.repo || localFilters.subjectType
   );
 };
 
@@ -200,7 +218,6 @@ export const parseDashboardRouteFilters = (
   const archived = getStringValue(query, 'f_archived');
   const sort = getStringValue(query, 'f_sort');
   const order = getStringValue(query, 'f_order');
-  const subjectState = getStringValue(query, 'f_subject_state');
 
   return {
     state: STATE_VALUES.has(state as DashboardRouteState)
@@ -209,13 +226,7 @@ export const parseDashboardRouteFilters = (
     repo: getStringValue(query, 'f_repo'),
     author: getStringValue(query, 'f_author'),
     labels: parseList(getStringValue(query, 'f_labels')),
-    reason: getStringValue(query, 'f_reason'),
     subjectType: getStringValue(query, 'f_subject'),
-    subjectState: SUBJECT_STATE_VALUES.has(
-      subjectState as NonNullable<DashboardRouteFilters['subjectState']>
-    )
-      ? (subjectState as NonNullable<DashboardRouteFilters['subjectState']>)
-      : undefined,
     review: REVIEW_VALUES.has(review as Exclude<GitHubSearchReviewFilter, 'any'>)
       ? (review as Exclude<GitHubSearchReviewFilter, 'any'>)
       : undefined,
@@ -240,9 +251,7 @@ export const serializeDashboardRouteFilters = (filters: DashboardRouteFilters) =
     'f_labels',
     filters.labels.length > 0 ? filters.labels.join(',') : undefined
   );
-  setQueryValue(query, 'f_reason', filters.reason);
   setQueryValue(query, 'f_subject', filters.subjectType);
-  setQueryValue(query, 'f_subject_state', filters.subjectState);
   setQueryValue(query, 'f_review', filters.review);
   setQueryValue(query, 'f_archived', filters.archived);
   setQueryValue(query, 'f_sort', filters.sort);
@@ -257,6 +266,24 @@ export const hasDashboardRouteFilters = (filters: DashboardRouteFilters) => {
   );
 };
 
+export const createDashboardFilterPatchForSource = (
+  source: DashboardFilterSource,
+  patch: Partial<DashboardRouteFilters>
+): Partial<DashboardRouteFilters> => {
+  const schema = getDashboardFilterSourceSchema(source);
+  const nextPatch: Partial<DashboardRouteFilters> = {};
+
+  for (const key of schema.keys) {
+    if (Object.hasOwn(patch, key)) {
+      (nextPatch as Partial<Record<DashboardFilterKey, DashboardRouteFilters[DashboardFilterKey]>>)[
+        key
+      ] = patch[key];
+    }
+  }
+
+  return nextPatch;
+};
+
 export const createDashboardEffectiveFilters = (
   source: DashboardFilterSource,
   filters: DashboardRouteFilters
@@ -267,9 +294,8 @@ export const createDashboardEffectiveFilters = (
     return effective;
   }
 
-  effective.repo = filters.repo;
-
   if (source === 'todos') {
+    effective.repo = filters.repo;
     effective.subjectType = filters.subjectType;
     effective.sort = isTodoSort(filters.sort) ? filters.sort : undefined;
     effective.order = filters.order;
@@ -288,12 +314,10 @@ export const createDashboardEffectiveFilters = (
     if (filters.state === 'all' || filters.state === 'unread' || filters.state === 'read') {
       effective.state = filters.state;
     }
-    effective.reason = filters.reason;
-    effective.subjectType = filters.subjectType;
-    effective.subjectState = filters.subjectState;
     return effective;
   }
 
+  effective.repo = filters.repo;
   effective.author = filters.author;
   effective.labels = filters.labels;
 
@@ -396,23 +420,26 @@ export const createDashboardFilterChips = (
 };
 
 export const buildNotificationFilterAdapter = (
+  source: DashboardFilterSource,
   filters: DashboardRouteFilters
 ): NotificationFilterAdapter => {
   const readState =
-    filters.state === 'read' || filters.state === 'unread' ? filters.state : undefined;
-  const localFilters: NotificationFilterAdapter['local'] = {
-    readState,
-    repo: filters.repo,
-    author: undefined,
-    labels: [],
-    reason: filters.reason,
-    subjectType: filters.subjectType,
-    subjectState: filters.subjectState,
-  };
+    source === 'notifications' && (filters.state === 'read' || filters.state === 'unread')
+      ? filters.state
+      : undefined;
+  const localFilters: NotificationFilterAdapter['local'] =
+    source === 'todos'
+      ? {
+          repo: filters.repo,
+          subjectType: filters.subjectType,
+        }
+      : {
+          readState,
+        };
 
   return {
     apiParams: {
-      all: filters.state === 'unread' ? undefined : true,
+      all: source === 'notifications' && filters.state === 'unread' ? undefined : true,
     },
     local: localFilters,
     usesPageLocalPredicates: hasNotificationPageLocalPredicates(localFilters),
@@ -493,31 +520,7 @@ export const applyNotificationLocalFilters = (
       return false;
     }
 
-    if (
-      localFilters.author &&
-      notification.subject?.authorLogin?.toLowerCase() !== localFilters.author.toLowerCase()
-    ) {
-      return false;
-    }
-
-    if (localFilters.labels.length > 0) {
-      const notificationLabels = new Set(
-        (notification.subject?.labels ?? []).map((label) => label.name.toLowerCase())
-      );
-      if (!localFilters.labels.every((label) => notificationLabels.has(label.toLowerCase()))) {
-        return false;
-      }
-    }
-
-    if (localFilters.reason && notification.reason !== localFilters.reason) {
-      return false;
-    }
-
     if (localFilters.subjectType && notification.subject?.type !== localFilters.subjectType) {
-      return false;
-    }
-
-    if (localFilters.subjectState && notification.subject?.state !== localFilters.subjectState) {
       return false;
     }
 
@@ -646,7 +649,7 @@ export const createCustomTabFilterSourceState = (
     filters: displayFilters,
     chips: createDashboardFilterChips(displayFilters),
     hasActiveFilters: hasDashboardRouteFilters(displayFilters),
-    notificationAdapter: buildNotificationFilterAdapter(displayFilters),
+    notificationAdapter: buildNotificationFilterAdapter(source, displayFilters),
     issuePrQuery: undefined,
     overlayCustomTabQuery: (query) => buildCustomTabOverlayQuery(query, sourceFilters),
   };
@@ -667,7 +670,7 @@ export const createDashboardFilterSourceState = (
     filters: sourceFilters,
     chips: createDashboardFilterChips(sourceFilters),
     hasActiveFilters: hasDashboardRouteFilters(sourceFilters),
-    notificationAdapter: buildNotificationFilterAdapter(sourceFilters),
+    notificationAdapter: buildNotificationFilterAdapter(source, sourceFilters),
     issuePrQuery,
     overlayCustomTabQuery: (savedQuery) => buildCustomTabOverlayQuery(savedQuery, sourceFilters),
   };

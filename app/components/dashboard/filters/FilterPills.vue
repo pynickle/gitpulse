@@ -21,6 +21,7 @@ import type {
   DashboardRouteFilters,
   DashboardRouteState,
 } from '~/composables/useDashboardFilters';
+import { sourceSupportsDashboardFilter } from '~/composables/useDashboardFilters';
 
 const props = defineProps<{
   currentTab: DashboardFilterSource;
@@ -162,8 +163,12 @@ const handleTodoOrderChange = (value: string) => {
   emit('update', { order: value === 'asc' ? 'asc' : 'desc' });
 };
 
-const showPills = computed(() => props.currentTab !== 'repos');
-const showTodoControls = computed(() => props.currentTab === 'todos');
+const supportsFilter = (key: keyof DashboardRouteFilters) =>
+  sourceSupportsDashboardFilter(props.currentTab, key);
+const showPills = computed(
+  () => supportsFilter('state') || supportsFilter('sort') || supportsFilter('order')
+);
+const showTodoControls = computed(() => supportsFilter('sort') || supportsFilter('order'));
 </script>
 
 <template>

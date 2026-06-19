@@ -10,8 +10,10 @@ import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue
 import FilterSegmentedControl from '~/components/ui/FilterSegmentedControl.vue';
 import type {
   DashboardFilterSource,
+  DashboardFilterKey,
   DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
+import { sourceSupportsDashboardFilter } from '~/composables/useDashboardFilters';
 import createFocusTrapController from '~/utils/createFocusTrapController';
 import {
   DASHBOARD_NOTIFICATION_SUBJECT_TYPES,
@@ -53,8 +55,16 @@ const labelItems = computed(() =>
 );
 
 const isTodoTab = computed(() => props.currentTab === 'todos');
-const isNotificationSubjectFilterTab = computed(() => {
-  return props.currentTab === 'notifications' || props.currentTab === 'todos';
+const supportsFilter = (key: DashboardFilterKey) =>
+  sourceSupportsDashboardFilter(props.currentTab, key);
+const showsIssuePrAdvancedFilters = computed(() => {
+  return (
+    supportsFilter('labels') ||
+    supportsFilter('review') ||
+    supportsFilter('archived') ||
+    supportsFilter('sort') ||
+    supportsFilter('order')
+  );
 });
 
 const stateOptions = computed<SegmentedOption[]>(() => {
@@ -225,7 +235,7 @@ watch(
             />
           </section>
 
-          <section v-if="currentTab !== 'repos'" class="filter-modal__section">
+          <section v-if="supportsFilter('repo')" class="filter-modal__section">
             <h3 class="filter-modal__section-title">
               {{ t('dashboard.filters.repo') }}
             </h3>
@@ -237,7 +247,7 @@ watch(
             />
           </section>
 
-          <section v-if="isNotificationSubjectFilterTab" class="filter-modal__section">
+          <section v-if="isTodoTab" class="filter-modal__section">
             <h3 class="filter-modal__section-title">
               {{ t('dashboard.filters.subjectType') }}
             </h3>
@@ -249,12 +259,7 @@ watch(
             />
           </section>
 
-          <section
-            v-if="
-              currentTab !== 'repos' && currentTab !== 'notifications' && currentTab !== 'todos'
-            "
-            class="filter-modal__section"
-          >
+          <section v-if="supportsFilter('author')" class="filter-modal__section">
             <h3 class="filter-modal__section-title">
               {{ t('dashboard.filters.author') }}
             </h3>
@@ -267,9 +272,7 @@ watch(
           </section>
 
           <details
-            v-if="
-              currentTab !== 'repos' && currentTab !== 'notifications' && currentTab !== 'todos'
-            "
+            v-if="showsIssuePrAdvancedFilters"
             class="filter-modal__collapsible"
             :open="advancedOpen || undefined"
             @toggle="advancedOpen = ($event.target as HTMLDetailsElement).open"
@@ -290,7 +293,7 @@ watch(
             </summary>
 
             <div class="filter-modal__advanced-body">
-              <label class="filter-modal__field">
+              <label v-if="supportsFilter('labels')" class="filter-modal__field">
                 <span class="filter-modal__field-label">{{ t('dashboard.filters.labels') }}</span>
                 <FilterMultiSelect
                   :model-value="localFilters.labels"
@@ -302,7 +305,7 @@ watch(
                 />
               </label>
 
-              <label v-if="currentTab === 'pulls'" class="filter-modal__field">
+              <label v-if="supportsFilter('review')" class="filter-modal__field">
                 <span class="filter-modal__field-label">{{ t('dashboard.filters.review') }}</span>
                 <FilterDropdown
                   :model-value="localFilters.review ?? ''"
@@ -330,7 +333,7 @@ watch(
                 />
               </label>
 
-              <label class="filter-modal__field">
+              <label v-if="supportsFilter('archived')" class="filter-modal__field">
                 <span class="filter-modal__field-label">{{ t('dashboard.filters.archived') }}</span>
                 <FilterDropdown
                   :model-value="localFilters.archived ?? ''"
@@ -353,7 +356,7 @@ watch(
                 />
               </label>
 
-              <label class="filter-modal__field">
+              <label v-if="supportsFilter('sort')" class="filter-modal__field">
                 <span class="filter-modal__field-label">{{ t('dashboard.filters.sort') }}</span>
                 <FilterDropdown
                   :model-value="localFilters.sort ?? ''"
@@ -384,7 +387,7 @@ watch(
                 />
               </label>
 
-              <label class="filter-modal__field">
+              <label v-if="supportsFilter('order')" class="filter-modal__field">
                 <span class="filter-modal__field-label">{{ t('dashboard.filters.order') }}</span>
                 <FilterDropdown
                   :model-value="localFilters.order ?? ''"

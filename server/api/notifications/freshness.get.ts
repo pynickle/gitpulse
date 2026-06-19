@@ -13,46 +13,15 @@ const getQueryString = (value: unknown) => {
   return typeof rawValue === 'string' ? rawValue.trim() : '';
 };
 
-const getNotificationRepoFullName = (notification: DashboardNotification) => {
-  if (notification.repository?.full_name) {
-    return notification.repository.full_name;
-  }
-
-  const repositoryUrl = notification.repository?.url;
-  if (typeof repositoryUrl !== 'string') {
-    return '';
-  }
-
-  const match = repositoryUrl.match(/\/repos\/([^/]+)\/([^/]+)$/);
-  return match ? `${match[1]}/${match[2]}` : '';
-};
-
 const applyNotificationFreshnessFilters = (
   notifications: DashboardNotification[],
   filters: {
     readState?: 'read' | 'unread';
-    repo?: string;
-    reason?: string;
-    subjectType?: string;
   }
 ) => {
-  const repo = filters.repo?.toLowerCase();
-
   return notifications.filter((notification) => {
     if (filters.readState === 'read' && notification.unread) return false;
     if (filters.readState === 'unread' && !notification.unread) return false;
-
-    if (repo && getNotificationRepoFullName(notification).toLowerCase() !== repo) {
-      return false;
-    }
-
-    if (filters.reason && notification.reason !== filters.reason) {
-      return false;
-    }
-
-    if (filters.subjectType && notification.subject?.type !== filters.subjectType) {
-      return false;
-    }
 
     return true;
   });
@@ -72,9 +41,6 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
   const filters = {
     readState:
       readState === 'read' || readState === 'unread' ? (readState as 'read' | 'unread') : undefined,
-    repo: getQueryString(query.repo) || undefined,
-    reason: getQueryString(query.reason) || undefined,
-    subjectType: getQueryString(query.subject_type) || undefined,
   };
 
   try {
@@ -95,9 +61,6 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         since,
         before,
         readState: filters.readState,
-        repo: filters.repo,
-        reason: filters.reason,
-        subjectType: filters.subjectType,
       }),
       itemCount: filteredNotifications.length,
       latestUpdatedAt: getLatestUpdatedAt(filteredNotifications),

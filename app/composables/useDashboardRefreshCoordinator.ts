@@ -58,16 +58,10 @@ export function useDashboardRefreshCoordinator(options: DashboardRefreshCoordina
     const notificationAdapter = toValue(options.filterSourceStates).notifications
       .notificationAdapter;
     const localFilters = notificationAdapter.local;
-    if (localFilters.subjectState) {
-      return '';
-    }
 
     return buildUrlWithParams('/api/notifications/freshness', {
       ...notificationAdapter.apiParams,
       read_state: localFilters.readState,
-      repo: localFilters.repo,
-      reason: localFilters.reason,
-      subject_type: localFilters.subjectType,
     });
   });
 

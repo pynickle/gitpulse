@@ -56,7 +56,6 @@ const chipValueLabel = (chip: DashboardFilterChip) => {
 const hasMultipleFilters = computed(() => props.chips.length >= 2);
 const advancedFilterKeys = new Set<DashboardFilterChip['key']>([
   'labels',
-  'reason',
   'subjectType',
   'review',
   'archived',
@@ -64,8 +63,8 @@ const advancedFilterKeys = new Set<DashboardFilterChip['key']>([
   'order',
 ]);
 
-// State and subjectState are handled by FilterSegmentedControl in the header — hide from chips
-const segmentedControlKeys = new Set<DashboardFilterChip['key']>(['state', 'subjectState']);
+// State is handled by FilterSegmentedControl in the header, so hide it from chips.
+const segmentedControlKeys = new Set<DashboardFilterChip['key']>(['state']);
 
 const primaryChips = computed(() =>
   props.chips.filter(
