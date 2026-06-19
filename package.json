@@ -37,6 +37,7 @@
     "nuxt-auth-utils": "^0.5.29",
     "nuxt-seo-utils": "^8.3.1",
     "nuxt-site-config": "^4.1.0",
+    "redis": "^6.0.0",
     "shiki": "^4.2.0",
     "simplebar-vue": "^2.4.2",
     "vue": "3.5.35",

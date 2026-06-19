@@ -1,9 +1,10 @@
 export const DEFAULT_USER_SETTINGS_STORAGE_DRIVER = 'fs';
 export const DEFAULT_USER_SETTINGS_FS_BASE = './.data/user-settings';
-export const DEFAULT_USER_SETTINGS_UPSTASH_BASE = 'gitpulse:user-settings';
+export const DEFAULT_USER_SETTINGS_REDIS_BASE = 'gitpulse:user-settings';
+export const DEFAULT_USER_SETTINGS_UPSTASH_BASE = DEFAULT_USER_SETTINGS_REDIS_BASE;
 export const DEFAULT_USER_SETTINGS_UPSTASH_ENV_PREFIX = 'UPSTASH_REDIS_REST';
 
-export type UserSettingsStorageDriver = 'fs' | 'upstash' | string;
+export type UserSettingsStorageDriver = 'fs' | 'redis' | 'upstash' | string;
 
 export type UpstashRedisCredentials = {
   url: string;
@@ -27,6 +28,7 @@ export const normalizeUserSettingsStorageDriver = (value: string | undefined) =>
 
 export const defaultUserSettingsStorageBase = (driver: string) => {
   if (driver === 'fs') return DEFAULT_USER_SETTINGS_FS_BASE;
+  if (driver === 'redis') return DEFAULT_USER_SETTINGS_REDIS_BASE;
   if (driver === 'upstash') return DEFAULT_USER_SETTINGS_UPSTASH_BASE;
 
   return undefined;

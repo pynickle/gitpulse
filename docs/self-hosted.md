@@ -38,19 +38,27 @@ A password-gated vault with a pre-configured token. On each new browser you see 
 
 ### User Settings Storage
 
-Dashboard user settings, including font choices, tab groups, and custom search tabs, are persisted through the server user settings storage layer. You can configure it to use Upstash Redis or the local filesystem.
+Dashboard user settings, including font choices, tab groups, and custom search tabs, are persisted through the server user settings storage layer. You can configure it to use Redis, Upstash Redis, or the local filesystem.
 
 By default GitPulse uses local filesystem storage at `./.data/user-settings`.
 
-| Environment Variable                                     | Required | Default              | Description                                                                                                   |
-| -------------------------------------------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER`             | No       | `fs`                 | User settings storage backend. Use `fs` for local Nitro storage or `upstash` for Upstash Redis.               |
-| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE`               | No       | Driver-specific      | Base path/namespace. Defaults to `./.data/user-settings` for `fs` and `gitpulse:user-settings` for `upstash`. |
-| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_UPSTASH_ENV_PREFIX` | No       | `UPSTASH_REDIS_REST` | Optional custom env prefix. GitPulse reads `<prefix>_KV_REST_API_URL` and `<prefix>_KV_REST_API_TOKEN`.       |
-| `UPSTASH_REDIS_REST_URL`                                 | Upstash  | —                    | Upstash Redis REST URL.                                                                                       |
-| `UPSTASH_REDIS_REST_TOKEN`                               | Upstash  | —                    | Upstash Redis REST token.                                                                                     |
+| Environment Variable                                     | Required | Default              | Description                                                                                                                                         |
+| -------------------------------------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER`             | No       | `fs`                 | User settings storage backend. Use `fs` for local Nitro storage, `redis` for Redis through the npm `redis` package, or `upstash` for Upstash Redis. |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE`               | No       | Driver-specific      | Base path/namespace. Defaults to `./.data/user-settings` for `fs` and `gitpulse:user-settings` for `redis` and `upstash`.                           |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_REDIS_URL`          | Redis    | —                    | Redis connection URL used when `NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER=redis`.                                                                  |
+| `NUXT_GITPULSE_USER_SETTINGS_STORAGE_UPSTASH_ENV_PREFIX` | No       | `UPSTASH_REDIS_REST` | Optional custom env prefix. GitPulse reads `<prefix>_KV_REST_API_URL` and `<prefix>_KV_REST_API_TOKEN`.                                             |
+| `UPSTASH_REDIS_REST_URL`                                 | Upstash  | —                    | Upstash Redis REST URL.                                                                                                                             |
+| `UPSTASH_REDIS_REST_TOKEN`                               | Upstash  | —                    | Upstash Redis REST token.                                                                                                                           |
 
-For Upstash Redis using the standard variables, set:
+For Redis, set:
+
+```env
+NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER=redis
+NUXT_GITPULSE_USER_SETTINGS_STORAGE_REDIS_URL=redis://localhost:6379
+```
+
+For Upstash Redis, set:
 
 ```env
 NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER=upstash

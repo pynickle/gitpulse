@@ -27,6 +27,7 @@ type UserSettingsStorageContext = {
   base?: string;
 };
 
+const DEFAULT_NITRO_USER_SETTINGS_STORAGE_DRIVER = 'fs';
 const BASE_SCOPED_USER_SETTINGS_STORAGE_ADAPTERS: Record<string, UserSettingsStorageAdapter> = {
   fs: {
     createConfig: createBaseScopedUserSettingsStorageConfig,
@@ -90,6 +91,15 @@ function userSettingsStorageConfig() {
     driver: USER_SETTINGS_STORAGE_DRIVER,
     base: USER_SETTINGS_STORAGE_BASE,
   };
+
+  if (context.driver === 'redis') {
+    // Redis settings are handled by the server adapter; keep Nitro's mount local.
+    return createBaseScopedUserSettingsStorageConfig({
+      driver: DEFAULT_NITRO_USER_SETTINGS_STORAGE_DRIVER,
+      base: defaultUserSettingsStorageBase(DEFAULT_NITRO_USER_SETTINGS_STORAGE_DRIVER),
+    });
+  }
+
   const adapter =
     BASE_SCOPED_USER_SETTINGS_STORAGE_ADAPTERS[context.driver] ??
     ({
