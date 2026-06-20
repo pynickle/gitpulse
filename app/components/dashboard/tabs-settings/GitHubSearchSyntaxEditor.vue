@@ -405,7 +405,7 @@ watch(
   overflow: auto;
   color: var(--gitpulse-text);
   caret-color: var(--gitpulse-accent);
-  font-family: var(--gitpulse-font-mono, monospace);
+  font-family: var(--gitpulse-code-font-family, monospace);
   font-size: 0.88rem;
   font-weight: 500;
   line-height: 1.55;
