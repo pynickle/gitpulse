@@ -407,8 +407,7 @@ watch(
   caret-color: var(--gitpulse-accent);
   font-family: var(--gitpulse-code-font-family, monospace);
   font-size: 0.88rem;
-  font-weight: 500;
-  line-height: 1.55;
+  line-height: 2.1;
   letter-spacing: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -437,12 +436,11 @@ watch(
 
 :deep(.syntax-token--operator) {
   color: var(--gitpulse-purple);
-  font-weight: 750;
+  font-weight: 650;
 }
 
 :deep(.syntax-token--qualifier-name) {
-  color: var(--gitpulse-accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 :deep(.syntax-token--qualifier-colon) {
@@ -451,12 +449,16 @@ watch(
 
 :deep(.syntax-token--qualifier-value) {
   color: var(--gitpulse-info);
+  background-color: #e6f7ff;
+  padding: 0.5px 4px;
+  border-radius: 3px;
+  font-weight: 650;
 }
 
 :deep(.syntax-token--paren),
 :deep(.syntax-token--negation) {
   color: var(--gitpulse-text-muted);
-  font-weight: 750;
+  font-weight: 650;
 }
 
 :deep(.syntax-token--error) {

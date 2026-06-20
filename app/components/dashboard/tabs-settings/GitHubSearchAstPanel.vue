@@ -141,5 +141,6 @@ const getDiagnosticMessage = (code: GitHubSearchSyntaxDiagnostic['code']) => {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--gitpulse-text);
+  font-weight: 650;
 }
 </style>
