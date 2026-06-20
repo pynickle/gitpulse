@@ -156,8 +156,6 @@ describe('server Zod request validation', () => {
             labels: [' review '],
             scopes: ['title', 'body'],
             archived: 'exclude',
-            sort: 'updated',
-            order: 'desc',
             perPage: 20,
             draft: 'ready',
             review: 'required',
@@ -235,8 +233,6 @@ describe('server Zod request validation', () => {
             labels: ['review'],
             scopes: ['title', 'body'],
             archived: 'exclude',
-            sort: 'updated',
-            order: 'desc',
             perPage: 20,
             draft: 'ready',
             review: 'required',
@@ -306,9 +302,23 @@ describe('server Zod request validation', () => {
             groupId: 'default',
             name: 'My PRs',
             subtitle: 'Should not be here',
-            subtitleMode: 'auto',
+            subtitleMode: 'none',
             source: 'github-search',
             query: { type: 'issues', state: 'open' },
+          },
+        ],
+      })
+    ).toThrow('Invalid settings request body');
+    expect(() =>
+      parseUserSettingsPatchBody({
+        customTabs: [
+          {
+            id: 'tab-1',
+            groupId: 'default',
+            name: 'My PRs',
+            subtitleMode: 'none',
+            source: 'github-search',
+            query: { type: 'issues', sort: 'updated' },
           },
         ],
       })

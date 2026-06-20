@@ -139,7 +139,18 @@
                     class="mb-4 mr-4"
                     @click="openSearchResult(issue)"
                   >
-                    <AsyncSearchItem :issue="issue" />
+                    <AsyncSearchItem
+                      v-if="
+                        selectedCustomTab.query.endpoint === 'issues' ||
+                        !selectedCustomTab.query.endpoint
+                      "
+                      :issue="issue"
+                    />
+                    <AsyncGenericSearchItem
+                      v-else
+                      :item="issue"
+                      :endpoint="selectedCustomTab.query.endpoint"
+                    />
                   </div>
                 </template>
 
@@ -354,6 +365,9 @@ const AsyncIssuePrNotificationItem = defineAsyncComponent(
   () => import('~/components/dashboard/IssuePrNotificationItem.vue')
 );
 const AsyncSearchItem = defineAsyncComponent(() => import('~/components/dashboard/SearchItem.vue'));
+const AsyncGenericSearchItem = defineAsyncComponent(
+  () => import('~/components/dashboard/GenericSearchItem.vue')
+);
 const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/RepoItem.vue'));
 const loadDetailOverlayHost = () => import('~/components/dashboard/detail/DetailOverlayHost.vue');
 const loadFilterModal = () => import('~/components/dashboard/filters/FilterModal.vue');
@@ -980,6 +994,12 @@ watch([hasCompletedInitialDashboardLoad, hasVisibleDetail], ([loaded, detailVisi
 
 const openSearchResult = async (item: DashboardEntity) => {
   clearSourceNotification();
+  if (
+    selectedCustomTab.value?.query.endpoint &&
+    selectedCustomTab.value.query.endpoint !== 'issues'
+  ) {
+    return;
+  }
   if (isPullRequestDashboardEntity(item)) {
     await openPR(item);
     return;

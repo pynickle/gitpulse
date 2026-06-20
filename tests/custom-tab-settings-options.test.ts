@@ -4,7 +4,7 @@ import * as githubSearchQuery from '../shared/utils/github-search-query';
 
 mock.module('#shared/utils/github-search-query', () => githubSearchQuery);
 
-const { buildCustomTabSummary, customTabIssueStateOptions, customTabPullStateOptions } =
+const { buildCustomTabSummary, customTabEndpointOptions } =
   await import('../app/composables/useCustomTabSettingsOptions');
 
 const t = (key: string, params?: Record<string, string>) => {
@@ -14,10 +14,16 @@ const t = (key: string, params?: Record<string, string>) => {
     'dashboard.tabsSettings.options.merged': 'Merged',
     'dashboard.tabsSettings.summary.pullRequests': 'pull requests',
     'dashboard.tabsSettings.summary.issues': 'issues',
+    'dashboard.tabsSettings.endpoint.issues': 'issues',
+    'dashboard.tabsSettings.endpoint.repositories': 'repositories',
   };
 
   if (key === 'dashboard.tabsSettings.summary.state') {
     return `state ${params?.value ?? ''}`;
+  }
+
+  if (key === 'dashboard.tabsSettings.summary.query') {
+    return `query ${params?.value ?? ''}`;
   }
 
   if (key === 'dashboard.tabsSettings.summary.showing') {
@@ -28,31 +34,27 @@ const t = (key: string, params?: Record<string, string>) => {
 };
 
 describe('custom tab settings options', () => {
-  test('exposes merged state only for pull requests', () => {
-    expect(customTabIssueStateOptions.map((option) => option.value)).toEqual([
-      'open',
-      'closed',
-      'all',
-    ]);
-    expect(customTabPullStateOptions.map((option) => option.value)).toEqual([
-      'open',
-      'closed',
-      'merged',
-      'all',
+  test('exposes all supported GitHub Search endpoints with issues first', () => {
+    expect(customTabEndpointOptions.map((option) => option.value)).toEqual([
+      'issues',
+      'repositories',
     ]);
   });
 
   test('summarizes pull request states including merged', () => {
     expect(buildCustomTabSummary({ type: 'pulls', state: 'merged' }, t)).toBe(
-      'Showing pull requests, state Merged'
+      'Showing issues, state Merged'
     );
     expect(buildCustomTabSummary({ type: 'pulls', state: 'closed' }, t)).toBe(
-      'Showing pull requests, state Closed'
+      'Showing issues, state Closed'
     );
     expect(buildCustomTabSummary({ type: 'issues', state: 'open' }, t)).toBe(
       'Showing issues, state Open'
     );
-    expect(buildCustomTabSummary({ type: 'pulls', state: 'all' }, t)).toBe('Showing pull requests');
-    expect(buildCustomTabSummary({ type: 'pulls' }, t)).toBe('Showing pull requests');
+    expect(buildCustomTabSummary({ type: 'pulls', state: 'all' }, t)).toBe('Showing issues');
+    expect(buildCustomTabSummary({ type: 'pulls' }, t)).toBe('Showing issues');
+    expect(
+      buildCustomTabSummary({ endpoint: 'repositories', type: 'issues', syntax: 'topic:nuxt' }, t)
+    ).toBe('Showing repositories, query topic:nuxt');
   });
 });

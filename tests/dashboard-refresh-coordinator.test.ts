@@ -96,8 +96,10 @@ describe('dashboard refresh coordinator', () => {
       groupId: 'default',
       name: 'Custom review',
       source: 'github-search' as const,
-      subtitleMode: 'auto' as const,
+      subtitleMode: 'none' as const,
       query: {
+        endpoint: 'repositories' as const,
+        syntax: 'repo:saved/repo state:open',
         type: 'pulls' as const,
         repo: 'saved/repo',
         state: 'open' as const,
@@ -133,10 +135,11 @@ describe('dashboard refresh coordinator', () => {
     });
 
     expect(coordinator.activeDashboardFreshnessUrl.value).toContain(
-      '/api/search/issues/freshness?'
+      '/api/search/repositories/freshness?'
     );
-    expect(coordinator.activeDashboardFreshnessUrl.value).toContain('repo=saved%2Frepo');
-    expect(coordinator.activeDashboardFreshnessUrl.value).toContain('state=open');
+    expect(coordinator.activeDashboardFreshnessUrl.value).toContain(
+      'q=repo%3Asaved%2Frepo+state%3Aopen'
+    );
     expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('route%2Frepo');
     expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('merged');
     expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('route-label');

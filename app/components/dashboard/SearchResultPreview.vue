@@ -1,29 +1,19 @@
 <template>
   <div class="search-result-preview">
-    <div class="srp-toolbar">
-      <div class="srp-toolbar__status">
-        <span
-          class="srp-pill"
-          :class="{
-            'is-loading': loading,
-            'is-empty': !loading && (!items || items.length === 0) && !error,
-            'is-error': !!error,
-          }"
-        >
-          <span v-if="loading" class="srp-pill__dot srp-pill__dot--pulse" />
-          <span v-else-if="error" class="srp-pill__icon">!</span>
-          <span v-else-if="items && items.length > 0" class="srp-pill__check" />
-          <span v-if="loading">{{ loadingLabel }}</span>
-          <span v-else-if="error">{{ error }}</span>
-          <span v-else-if="totalCount != null">
-            {{ countLabel }} &middot;
-            <a :href="githubUrl" target="_blank" rel="noreferrer" class="srp-toolbar__gh-link">{{
-              openInGithubLabel
-            }}</a>
-          </span>
-          <span v-else>{{ waitingLabel }}</span>
-        </span>
-      </div>
+    <div v-if="loading || error || !items" class="srp-status">
+      <span
+        class="srp-pill"
+        :class="{
+          'is-loading': loading,
+          'is-error': !!error,
+        }"
+      >
+        <span v-if="loading" class="srp-pill__dot srp-pill__dot--pulse" />
+        <span v-else-if="error" class="srp-pill__icon">!</span>
+        <span v-if="loading">{{ loadingLabel }}</span>
+        <span v-else-if="error">{{ error }}</span>
+        <span v-else>{{ waitingLabel }}</span>
+      </span>
     </div>
 
     <div v-if="!loading && !error && items && items.length > 0" class="srp-results">
@@ -40,13 +30,17 @@
           <component :is="getStateIcon(item)" :size="16" />
         </div>
         <div class="srp-card__body">
-          <p class="srp-card__title">{{ item.title }}</p>
+          <p class="srp-card__title">{{ getTitle(item) }}</p>
           <div class="srp-card__meta">
-            <span class="srp-card__repo">{{ getRepoName(item.repository_url) }}</span>
-            <span class="srp-card__sep">&middot;</span>
-            <span class="srp-card__number">#{{ item.number }}</span>
-            <span class="srp-card__sep">&middot;</span>
-            <span class="srp-card__time">{{ formatTime(item.updated_at) }}</span>
+            <span v-if="getMeta(item)" class="srp-card__repo">{{ getMeta(item) }}</span>
+            <span v-if="getNumberLabel(item)" class="srp-card__sep">&middot;</span>
+            <span v-if="getNumberLabel(item)" class="srp-card__number">{{
+              getNumberLabel(item)
+            }}</span>
+            <span v-if="getTimestamp(item)" class="srp-card__sep">&middot;</span>
+            <span v-if="getTimestamp(item)" class="srp-card__time">{{
+              formatTime(getTimestamp(item))
+            }}</span>
           </div>
           <div v-if="item.labels && item.labels.length > 0" class="srp-card__tags">
             <span
@@ -72,11 +66,17 @@
 
 <script setup lang="ts">
 import {
+  BookMarkedIcon,
   CircleDotIcon,
   CircleMinusIcon,
+  Code2Icon,
+  GitCommitIcon,
   GitMergeIcon,
   GitPullRequestClosedIcon,
   GitPullRequestIcon,
+  TagIcon,
+  TagsIcon,
+  UserIcon,
 } from '@lucide/vue';
 
 import { formatDurationFromNow, getRepoName } from '#imports';
@@ -87,31 +87,64 @@ const relativeTimeNow = useRelativeTimeNow();
 
 interface SearchResultItem {
   id?: number;
-  title: string;
-  number: number;
-  state: string;
+  title?: string;
+  name?: string;
+  full_name?: string;
+  login?: string;
+  number?: number;
+  state?: string;
   merged_at?: string | null;
   pull_request?: { merged_at?: string | null } | unknown;
   labels?: Array<{ id?: number; name: string; color?: string; description?: string }>;
-  repository_url: string;
-  updated_at: string;
+  repository_url?: string;
+  updated_at?: string;
+  pushed_at?: string;
+  html_url?: string;
+  repository?: {
+    full_name?: string;
+    name?: string;
+  };
+  commit?: {
+    message?: string;
+    committer?: {
+      date?: string;
+    };
+  };
+  [key: string]: unknown;
 }
 
 const props = defineProps<{
   items: SearchResultItem[] | null | undefined;
-  totalCount: number | null | undefined;
   loading: boolean;
   error: string | null;
-  githubUrl: string;
   loadingLabel: string;
-  countLabel: string;
-  openInGithubLabel: string;
   waitingLabel: string;
   emptyLabel: string;
 }>();
 
 const formatTime = (dateStr: string) => {
   return formatDurationFromNow(dateStr, locale.value, relativeTimeNow.value);
+};
+
+const getTitle = (item: SearchResultItem) => {
+  const commitTitle = item.commit?.message?.split('\n')[0]?.trim();
+  return item.title ?? item.full_name ?? item.name ?? item.login ?? commitTitle ?? 'GitHub result';
+};
+
+const getMeta = (item: SearchResultItem) => {
+  if (item.repository?.full_name) return item.repository.full_name;
+  if (item.repository_url) return getRepoName(item.repository_url);
+  if (item.full_name) return item.full_name;
+  if (item.login) return `@${item.login}`;
+  return '';
+};
+
+const getNumberLabel = (item: SearchResultItem) => {
+  return typeof item.number === 'number' ? `#${item.number}` : '';
+};
+
+const getTimestamp = (item: SearchResultItem) => {
+  return item.updated_at ?? item.pushed_at ?? item.commit?.committer?.date ?? '';
 };
 
 const labelStyle = (label: { color?: string; name: string }) => {
@@ -136,27 +169,29 @@ const getStateIcon = (item: SearchResultItem) => {
     if (getPullRequestMergedAt(item)) return GitMergeIcon;
     return GitPullRequestClosedIcon;
   }
-  if (item.state === 'open') return CircleDotIcon;
-  return CircleMinusIcon;
+  if (item.state === 'open' || item.state === 'closed') {
+    return item.state === 'open' ? CircleDotIcon : CircleMinusIcon;
+  }
+  if (item.commit) return GitCommitIcon;
+  if (item.login) return UserIcon;
+  if (item.full_name) return BookMarkedIcon;
+  if (item.repository) return Code2Icon;
+  if (item.name && item.description) return TagsIcon;
+  return TagIcon;
 };
 </script>
 
 <style scoped lang="scss">
 .search-result-preview {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   min-width: 0;
   max-width: 100%;
+  flex: 1;
 }
 
-.srp-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.srp-toolbar__status {
+.srp-status {
   min-width: 0;
 }
 
@@ -170,7 +205,7 @@ const getStateIcon = (item: SearchResultItem) => {
   padding: 0.2rem 0;
   font-size: 0.78rem;
   font-weight: 650;
-  color: var(--gitpulse-warning);
+  color: var(--gitpulse-text-muted);
   overflow-wrap: anywhere;
 
   &.is-error {
@@ -179,8 +214,7 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-pill__dot,
-.srp-pill__icon,
-.srp-pill__check {
+.srp-pill__icon {
   display: inline-block;
   width: 0.55rem;
   height: 0.55rem;
@@ -201,10 +235,6 @@ const getStateIcon = (item: SearchResultItem) => {
   font-weight: 800;
 }
 
-.srp-pill__check {
-  background: var(--gitpulse-success);
-}
-
 @keyframes srp-pulse {
   0%,
   100% {
@@ -217,22 +247,12 @@ const getStateIcon = (item: SearchResultItem) => {
   }
 }
 
-.srp-toolbar__gh-link {
-  color: var(--gitpulse-link);
-  text-decoration: none;
-  font-weight: 600;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
 .srp-results {
   display: grid;
   gap: 0.35rem;
-  max-height: 360px;
   overflow-y: auto;
   padding-right: 0.25rem;
+  flex: 1;
 
   &::-webkit-scrollbar {
     width: 4px;

@@ -3,10 +3,16 @@ import { describe, expect, test } from 'bun:test';
 import {
   appendCustomTabQueryParams,
   buildIssueSearchParts,
+  buildCustomTabSearchQuery,
   createGitHubIssueSearchUrl,
+  createGitHubSearchUrl,
+  getCustomTabEffectiveSearchQuery,
+  getCustomTabLabelsRepositoryId,
+  getCustomTabSearchValidationIssue,
   normalizeIssueSearchScopes,
   quoteSearchValue,
 } from '../shared/utils/github-search-query';
+import { parseGitHubSearchSyntax } from '../shared/utils/github-search-syntax';
 
 describe('github search query helpers', () => {
   test('quotes search values only when GitHub requires it', () => {
@@ -22,29 +28,37 @@ describe('github search query helpers', () => {
     ]);
   });
 
-  test('serializes custom tab query params with trimmed string lists', () => {
+  test('serializes custom tab query params as endpoint search syntax', () => {
     const params = new URLSearchParams();
 
     appendCustomTabQueryParams(params, {
-      text: ' review queue ',
-      repo: ' owner/repo ',
-      labels: [' bug ', '', 'needs triage'],
-      scopes: ['title', 'comments'],
-      type: 'pulls',
-      state: 'open',
-      visibility: 'private',
-      archived: 'exclude',
-      draft: 'ready',
-      review: 'required',
-      sort: 'best-match',
-      order: 'asc',
-      base: ' main ',
-      head: ' feature ',
+      endpoint: 'code',
+      syntax: 'repo:owner/repo language:ts "review queue"',
+      type: 'issues',
     });
 
     expect(params.toString()).toBe(
-      'text=review+queue&repo=owner%2Frepo&labels=bug%2Cneeds+triage&scopes=title%2Ccomments&type=pulls&state=open&visibility=private&archived=exclude&order=asc&base=main&head=feature&draft=ready&review=required'
+      'endpoint=code&q=repo%3Aowner%2Frepo+language%3Ats+%22review+queue%22'
     );
+  });
+
+  test('keeps legacy structured custom tabs convertible to syntax', () => {
+    expect(
+      buildCustomTabSearchQuery({
+        text: ' review queue ',
+        repo: ' owner/repo ',
+        labels: [' bug ', '', 'needs triage'],
+        scopes: ['title', 'comments'],
+        type: 'pulls',
+        state: 'open',
+        visibility: 'private',
+        archived: 'exclude',
+        draft: 'ready',
+        review: 'required',
+        base: ' main ',
+        head: ' feature ',
+      })
+    ).toContain('repo:owner/repo');
   });
 
   test('builds issue search parts in GitHub qualifier order', () => {
@@ -122,5 +136,121 @@ describe('github search query helpers', () => {
     expect(url).toBe(
       'https://github.com/search?q=created%3A%3E%3D2025-01-01+is%3Apr+archived%3Afalse&s=updated&o=desc'
     );
+  });
+
+  test('creates GitHub web URLs for non-issue endpoints', () => {
+    const url = createGitHubSearchUrl(
+      { endpoint: 'repositories', type: 'issues', syntax: 'topic:nuxt stars:>100' },
+      'topic:nuxt stars:>100'
+    );
+
+    expect(url).toBe('https://github.com/search?q=topic%3Anuxt+stars%3A%3E100&type=repositories');
+  });
+
+  test('parses GitHub search syntax and reports unknown qualifiers', () => {
+    const ast = parseGitHubSearchSyntax(
+      'repo:nuxt/nuxt language:ts badqual:value reviewed-by:octocat location:Shanghai'
+    );
+
+    expect(ast.qualifiers.map((node) => node.name)).toEqual([
+      'repo',
+      'language',
+      'badqual',
+      'reviewed-by',
+      'location',
+    ]);
+    expect(ast.diagnostics).toEqual([
+      {
+        code: 'unknown-qualifier',
+        start: 27,
+        end: 34,
+        message: 'Unknown qualifier: badqual',
+      },
+    ]);
+  });
+
+  test('splits qualifier highlighting into name, colon, and value spans', () => {
+    const ast = parseGitHubSearchSyntax('repo:owner/repo');
+
+    expect(ast.highlights).toContainEqual({
+      type: 'qualifier-name',
+      start: 0,
+      end: 4,
+    });
+    expect(ast.highlights).toContainEqual({
+      type: 'qualifier-colon',
+      start: 4,
+      end: 5,
+    });
+    expect(ast.highlights).toContainEqual({
+      type: 'qualifier-value',
+      start: 5,
+      end: 15,
+    });
+  });
+
+  test('reports unsupported operators except when the endpoint explicitly allows them', () => {
+    expect(parseGitHubSearchSyntax('bug OR regression').diagnostics).toContainEqual({
+      code: 'unsupported-operator',
+      start: 4,
+      end: 6,
+      message: 'Unsupported operator: OR',
+    });
+
+    expect(
+      parseGitHubSearchSyntax('bug OR regression', { allowOperators: true }).diagnostics
+    ).toEqual([]);
+  });
+
+  test('uses repository_id from labels syntax as a REST parameter side channel', () => {
+    const query = {
+      endpoint: 'labels' as const,
+      type: 'issues' as const,
+      syntax: 'repository_id:12345 bug',
+    };
+    const params = new URLSearchParams();
+
+    appendCustomTabQueryParams(params, query);
+
+    expect(getCustomTabLabelsRepositoryId(query)).toBe('12345');
+    expect(getCustomTabEffectiveSearchQuery(query)).toBe('bug');
+    expect(params.toString()).toBe('endpoint=labels&q=bug&repository_id=12345');
+  });
+
+  test('validates custom tab search before saving syntax-first views', () => {
+    expect(
+      getCustomTabSearchValidationIssue(
+        { endpoint: 'repositories', type: 'issues', syntax: '' },
+        { requireManualSyntax: true }
+      )
+    ).toBe('missing-query');
+
+    expect(
+      getCustomTabSearchValidationIssue(
+        { endpoint: 'labels', type: 'issues', syntax: 'bug' },
+        { requireManualSyntax: true }
+      )
+    ).toBe('missing-label-repository');
+
+    expect(
+      getCustomTabSearchValidationIssue(
+        { endpoint: 'issues', type: 'issues', syntax: 'bug OR regression' },
+        { requireManualSyntax: true }
+      )
+    ).toBe('unsupported-operator');
+
+    expect(
+      getCustomTabSearchValidationIssue(
+        { endpoint: 'code', type: 'issues', syntax: 'bug OR regression' },
+        { requireManualSyntax: true }
+      )
+    ).toBe('');
+
+    expect(
+      getCustomTabSearchValidationIssue(
+        { endpoint: 'labels', type: 'issues', syntax: 'repository_id:12345 bug' },
+        { requireManualSyntax: true }
+      )
+    ).toBe('');
   });
 });

@@ -10,7 +10,8 @@ mock.module('#shared/types/tab-groups', () => tabGroups);
 const userSettingsUtils = await import('../shared/utils/user-settings');
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
 
-const { createDefaultUserSettings, mergeUserSettingsPatch } = userSettingsUtils;
+const { createDefaultUserSettings, mergeUserSettingsPatch, normalizeUserSettings } =
+  userSettingsUtils;
 const { createInitialUserSettingsRequestState, createUserSettingsActions } =
   await import('../app/composables/user-settings/store');
 
@@ -95,6 +96,65 @@ const markLoaded = (harness: ReturnType<typeof createHarness>, settings = create
 };
 
 describe('user settings store', () => {
+  test('migrates retired custom tab fields during settings normalization', () => {
+    const settings = normalizeUserSettings({
+      customTabs: [
+        {
+          id: 'tab-1',
+          groupId: 'default',
+          name: 'Review queue',
+          subtitleMode: 'auto',
+          source: 'github-search',
+          query: {
+            endpoint: 'issues',
+            type: 'issues',
+            syntax: 'is:issue state:open',
+            sort: 'updated',
+            order: 'desc',
+          },
+        },
+        {
+          id: 'tab-2',
+          groupId: 'default',
+          name: 'Labels',
+          subtitleMode: 'auto',
+          source: 'github-search',
+          query: {
+            endpoint: 'labels',
+            type: 'issues',
+            repositoryId: '12345',
+            syntax: 'bug',
+          },
+        },
+      ],
+    });
+
+    expect(settings.customTabs[0]?.query).toEqual({
+      endpoint: 'issues',
+      syntax: 'is:issue state:open',
+      text: undefined,
+      repo: undefined,
+      org: undefined,
+      user: undefined,
+      labels: undefined,
+      author: undefined,
+      assignee: undefined,
+      mentions: undefined,
+      commenter: undefined,
+      involves: undefined,
+      milestone: undefined,
+      scopes: undefined,
+      visibility: undefined,
+      archived: undefined,
+      perPage: undefined,
+      type: 'issues',
+      state: undefined,
+    });
+    expect(settings.customTabs[1]?.query.syntax).toBe('repository_id:12345 bug');
+    expect(settings.customTabs[1]?.query).not.toHaveProperty('repositoryId');
+    expect(settings.customTabs.map((tab) => tab.subtitleMode)).toEqual(['none', 'none']);
+  });
+
   test('normalizes notification todo items through settings patches', () => {
     const todoAddedAt = '2026-06-18T00:00:00.000Z';
     const todoUpdatedAt = '2026-06-17T12:00:00.000Z';

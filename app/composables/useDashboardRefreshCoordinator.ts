@@ -1,7 +1,10 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue';
 
 import type { CustomTab, GitHubSearchQuery } from './useCustomTabs';
-import { createCustomTabPreviewSearchParams } from './useCustomTabSettingsOptions';
+import {
+  createCustomTabPreviewSearchParams,
+  getCustomTabEndpointPath,
+} from './useCustomTabSettingsOptions';
 import type { DashboardFilterSourceState } from './useDashboardFilters';
 import type { DashboardTab } from './useDashboardTabs';
 import { useRefreshableView } from './useRefreshableView';
@@ -49,7 +52,7 @@ const buildUrlWithParams = (path: string, params: Record<string, boolean | strin
 };
 
 const buildSearchFreshnessUrl = (query: GitHubSearchQuery) => {
-  return `/api/search/issues/freshness?${createCustomTabPreviewSearchParams(query, 1, 5).toString()}`;
+  return `${getCustomTabEndpointPath(query)}/freshness?${createCustomTabPreviewSearchParams(query, 1, 5).toString()}`;
 };
 
 export function useDashboardRefreshCoordinator(options: DashboardRefreshCoordinatorOptions) {

@@ -1,11 +1,18 @@
-import type {
-  GitHubPullSearchQuery,
-  GitHubSearchItemType,
-  GitHubSearchOrder,
-  GitHubSearchQuery,
-  GitHubSearchScope,
-  GitHubSearchSort,
-} from '#shared/types/custom-search';
+import {
+  GITHUB_SEARCH_ENDPOINTS,
+  type GitHubSearchEndpoint,
+  type GitHubPullSearchQuery,
+  type GitHubSearchItemType,
+  type GitHubSearchOrder,
+  type GitHubSearchQuery,
+  type GitHubSearchScope,
+  type GitHubSearchSort,
+} from '../types/custom-search';
+import {
+  getFirstGitHubSearchQualifierValue,
+  parseGitHubSearchSyntax,
+  removeGitHubSearchQualifiers,
+} from './github-search-syntax';
 
 export type GitHubIssueSearchSort = Exclude<GitHubSearchSort, 'best-match'>;
 
@@ -18,6 +25,15 @@ const ISSUE_SEARCH_SORTS: readonly GitHubIssueSearchSort[] = [
 ];
 
 const SEARCH_SCOPES: readonly GitHubSearchScope[] = ['title', 'body', 'comments'];
+
+const GITHUB_SEARCH_WEB_TYPES: Partial<Record<GitHubSearchEndpoint, string>> = {
+  issues: 'issues',
+  repositories: 'repositories',
+  code: 'code',
+  commits: 'commits',
+  users: 'users',
+  topics: 'topics',
+};
 
 const TRIMMED_QUERY_PARAM_FIELDS = [
   'text',
@@ -91,6 +107,18 @@ export const normalizeIssueSearchOrder = (value: string): GitHubSearchOrder => {
   return value === 'asc' ? 'asc' : 'desc';
 };
 
+export const isGitHubSearchEndpoint = (value: string): value is GitHubSearchEndpoint => {
+  return GITHUB_SEARCH_ENDPOINTS.includes(value as GitHubSearchEndpoint);
+};
+
+export const normalizeGitHubSearchEndpoint = (value: string): GitHubSearchEndpoint => {
+  return isGitHubSearchEndpoint(value) ? value : 'issues';
+};
+
+export const getGitHubSearchEndpoint = (query: GitHubSearchQuery): GitHubSearchEndpoint => {
+  return normalizeGitHubSearchEndpoint(query.endpoint ?? 'issues');
+};
+
 export const normalizeIssueSearchScopes = (values: string[]) => {
   return values.filter((scope): scope is GitHubSearchScope => {
     return SEARCH_SCOPES.includes(scope as GitHubSearchScope);
@@ -101,6 +129,22 @@ export const createGitHubIssueSearchUrl = (query: GitHubSearchQuery, searchQuery
   const searchParams = new URLSearchParams({ q: searchQuery });
 
   if (query.sort && query.sort !== 'best-match') {
+    searchParams.set('s', query.sort);
+    searchParams.set('o', query.order ?? 'desc');
+  }
+
+  return `https://github.com/search?${searchParams.toString()}`;
+};
+
+export const createGitHubSearchUrl = (query: GitHubSearchQuery, searchQuery: string) => {
+  const searchParams = new URLSearchParams({ q: searchQuery });
+  const webType = GITHUB_SEARCH_WEB_TYPES[getGitHubSearchEndpoint(query)];
+
+  if (webType) {
+    searchParams.set('type', webType);
+  }
+
+  if (query.sort && query.sort !== 'best-match' && getGitHubSearchEndpoint(query) === 'issues') {
     searchParams.set('s', query.sort);
     searchParams.set('o', query.order ?? 'desc');
   }
@@ -120,6 +164,22 @@ const appendTrimmedParam = (params: URLSearchParams, key: string, value: string 
 };
 
 export const appendCustomTabQueryParams = (params: URLSearchParams, query: GitHubSearchQuery) => {
+  params.set('endpoint', getGitHubSearchEndpoint(query));
+
+  const syntax = getCustomTabEffectiveSearchQuery(query);
+  if (syntax) {
+    params.set('q', syntax);
+  }
+
+  if (getGitHubSearchEndpoint(query) === 'labels') {
+    appendTrimmedParam(params, 'repository_id', getCustomTabLabelsRepositoryId(query));
+  }
+};
+
+export const appendLegacyCustomTabQueryParams = (
+  params: URLSearchParams,
+  query: GitHubSearchQuery
+) => {
   for (const field of TRIMMED_QUERY_PARAM_FIELDS) {
     appendTrimmedParam(params, field, query[field]);
   }
@@ -233,4 +293,78 @@ export const buildIssueSearchParts = (
   }
 
   return parts;
+};
+
+export function buildCustomTabSearchParts(query: GitHubSearchQuery) {
+  const syntax = query.syntax?.trim();
+  if (syntax) {
+    return [syntax];
+  }
+
+  if (getGitHubSearchEndpoint(query) !== 'issues') {
+    const text = query.text?.trim();
+    return text ? [text] : [];
+  }
+
+  return buildIssueSearchParts(query, {
+    createdAfter: getOneYearAgoSearchDate(),
+  });
+}
+
+export function buildCustomTabSearchQuery(query: GitHubSearchQuery) {
+  return buildCustomTabSearchParts(query).join(' ');
+}
+
+export const getCustomTabLabelsRepositoryId = (query: GitHubSearchQuery) => {
+  return getFirstGitHubSearchQualifierValue(
+    parseGitHubSearchSyntax(buildCustomTabSearchQuery(query)),
+    'repository_id'
+  );
+};
+
+export const getCustomTabEffectiveSearchQuery = (query: GitHubSearchQuery) => {
+  const searchQuery = buildCustomTabSearchQuery(query);
+  return getGitHubSearchEndpoint(query) === 'labels'
+    ? removeGitHubSearchQualifiers(searchQuery, ['repository_id'])
+    : searchQuery.trim();
+};
+
+export type CustomTabSearchValidationIssue =
+  | ''
+  | 'missing-query'
+  | 'invalid-syntax'
+  | 'unsupported-operator'
+  | 'missing-label-repository';
+
+export const getCustomTabSearchValidationIssue = (
+  query: GitHubSearchQuery,
+  options: { requireManualSyntax?: boolean } = {}
+): CustomTabSearchValidationIssue => {
+  const manualSyntax = query.syntax?.trim() ?? '';
+  const searchQuery = buildCustomTabSearchQuery(query);
+  const ast = parseGitHubSearchSyntax(searchQuery, {
+    allowOperators: getGitHubSearchEndpoint(query) === 'code',
+  });
+
+  if (options.requireManualSyntax && !manualSyntax) {
+    return 'missing-query';
+  }
+
+  if (ast.diagnostics.some((diagnostic) => diagnostic.code === 'unsupported-operator')) {
+    return 'unsupported-operator';
+  }
+
+  if (ast.diagnostics.length > 0) {
+    return 'invalid-syntax';
+  }
+
+  if (!getCustomTabEffectiveSearchQuery(query)) {
+    return 'missing-query';
+  }
+
+  if (getGitHubSearchEndpoint(query) === 'labels' && !getCustomTabLabelsRepositoryId(query)) {
+    return 'missing-label-repository';
+  }
+
+  return '';
 };

@@ -13,6 +13,7 @@ export type {
   GitHubIssueSearchQuery,
   GitHubPullSearchQuery,
   GitHubSearchArchivedFilter,
+  GitHubSearchEndpoint,
   GitHubSearchDraftFilter,
   GitHubSearchIssueState,
   GitHubSearchItemType,
@@ -54,14 +55,14 @@ const normalizeOptionalString = (value?: string) => {
 
 const resolveSubtitleState = (mode: CustomTabSubtitleMode | undefined, subtitle?: string) => {
   const normalizedSubtitle = normalizeOptionalString(subtitle);
-  const resolvedMode = mode ?? (normalizedSubtitle ? 'custom' : 'auto');
+  const resolvedMode = mode ?? (normalizedSubtitle ? 'custom' : 'none');
 
   if (resolvedMode !== 'custom') {
     return { subtitleMode: resolvedMode, subtitle: undefined };
   }
 
   if (!normalizedSubtitle) {
-    return { subtitleMode: 'auto' as const, subtitle: undefined };
+    return { subtitleMode: 'none' as const, subtitle: undefined };
   }
 
   return { subtitleMode: 'custom' as const, subtitle: normalizedSubtitle };
@@ -136,7 +137,7 @@ export function useCustomTabs(initialTabs: CustomTab[] = DEFAULT_CUSTOM_TABS) {
       (updates.subtitle !== undefined
         ? normalizeOptionalString(updates.subtitle)
           ? 'custom'
-          : 'auto'
+          : 'none'
         : target.subtitleMode);
     const subtitleState =
       updates.subtitleMode === undefined && updates.subtitle === undefined

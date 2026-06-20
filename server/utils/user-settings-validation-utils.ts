@@ -6,12 +6,11 @@ import {
   CUSTOM_TAB_SUBTITLE_MODES,
   GITHUB_SEARCH_ARCHIVED_FILTERS,
   GITHUB_SEARCH_DRAFT_FILTERS,
+  GITHUB_SEARCH_ENDPOINTS,
   GITHUB_SEARCH_ISSUE_STATES,
-  GITHUB_SEARCH_ORDERS,
   GITHUB_SEARCH_PULL_STATES,
   GITHUB_SEARCH_REVIEW_FILTERS,
   GITHUB_SEARCH_SCOPES,
-  GITHUB_SEARCH_SORTS,
   GITHUB_SEARCH_VISIBILITY_FILTERS,
 } from '#shared/types/custom-search';
 import { TAB_GROUP_SOURCES } from '#shared/types/tab-groups';
@@ -93,6 +92,8 @@ const tabGroupSchema = z.strictObject({
 
 const searchScopeSchema = z.enum(GITHUB_SEARCH_SCOPES);
 const sharedSearchQueryShape = {
+  endpoint: z.enum(GITHUB_SEARCH_ENDPOINTS).optional(),
+  syntax: z.string().trim().max(4000).optional(),
   text: optionalNonEmptyStringSchema,
   repo: optionalNonEmptyStringSchema,
   org: optionalNonEmptyStringSchema,
@@ -107,8 +108,6 @@ const sharedSearchQueryShape = {
   scopes: z.array(searchScopeSchema).optional(),
   visibility: z.enum(GITHUB_SEARCH_VISIBILITY_FILTERS).optional(),
   archived: z.enum(GITHUB_SEARCH_ARCHIVED_FILTERS).optional(),
-  sort: z.enum(GITHUB_SEARCH_SORTS).optional(),
-  order: z.enum(GITHUB_SEARCH_ORDERS).optional(),
   perPage: z.number().int().min(1).max(100).optional(),
 };
 

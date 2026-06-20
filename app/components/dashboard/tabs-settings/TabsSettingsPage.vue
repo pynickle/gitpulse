@@ -728,17 +728,34 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
 .drawer-preview {
   border-left: 1px solid var(--gitpulse-border);
   background: color-mix(in srgb, var(--gitpulse-surface-muted) 45%, transparent);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .drawer-preview__label {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
-.preview-human {
-  display: block;
-  color: var(--gitpulse-text-strong);
-  font-size: 0.84rem;
-  overflow-wrap: anywhere;
+.pr-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.7rem;
+  min-height: 2rem;
+  flex: 0 0 auto;
+  padding-bottom: 0.55rem;
+}
+
+.preview-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.preview-content .search-result-preview {
+  min-height: 100%;
 }
 
 .drawer-footer {
@@ -761,7 +778,7 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
   justify-content: center;
   border-color: transparent;
   color: #ffffff;
-  background: var(--gitpulse-primary-solid);
+  background: var(--gitpulse-primary-solid) !important;
   font-weight: 700;
 
   &:hover:not(:disabled) {
@@ -781,6 +798,45 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.search-section-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.github-test-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 1.6rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  color: var(--gitpulse-accent);
+  background: var(--gitpulse-surface);
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  svg {
+    fill: currentColor;
+  }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 36%, transparent);
+    color: var(--gitpulse-accent);
+    background: color-mix(in srgb, var(--gitpulse-accent) 12%, var(--gitpulse-surface));
+  }
 }
 
 .section-label {
@@ -978,6 +1034,20 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
   color: rgba(255, 255, 255, 0.76);
 }
 
+.endpoint-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.endpoint-row__label {
+  flex: 0 0 auto;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
 .field-grid,
 .toggle-grid,
 .sort-row,
@@ -1124,78 +1194,10 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
 
 /* ------------------------------ Live preview ------------------------------- */
 
-.tokenized-query-box {
-  margin-top: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 22%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--gitpulse-surface-muted) 82%, transparent);
-  overflow: hidden;
-}
-
-.tqb-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.25rem 0.7rem;
-  padding: 0.45rem 0.7rem;
-  background: var(--gitpulse-accent-soft);
-  border-bottom: 1px solid color-mix(in srgb, var(--gitpulse-accent) 18%, transparent);
-}
-
-.tqb-label {
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gitpulse-accent);
-}
-
-.tqb-gh-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--gitpulse-accent);
-  text-decoration: none;
-
-  svg {
-    fill: currentColor;
-  }
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.tqb-body {
-  padding: 0.65rem 0.7rem;
-  font-family: var(--gitpulse-code-font-family);
-  font-size: 0.78rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 .preview-results {
-  margin-top: 0.75rem;
-}
-
-.pr-header {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.25rem 0.7rem;
-  margin-bottom: 0.45rem;
-}
-
-.pr-label {
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gitpulse-text-muted);
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
 }
 
 .preview-pagination {
@@ -1301,6 +1303,10 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
     min-width: 10.5rem;
   }
 
+  .endpoint-row {
+    flex-wrap: wrap;
+  }
+
   .tree-tabs {
     margin-left: 0.85rem !important;
     padding-left: 0.7rem;
@@ -1331,6 +1337,7 @@ html.dark .label-combobox,
 html.dark .label-suggestions,
 html.dark .chip-button,
 html.dark .segmented-button,
+html.dark .github-test-link,
 html.dark .source-option,
 html.dark .preview-page-btn {
   background: var(--gitpulse-surface);
@@ -1383,10 +1390,6 @@ html.dark .drawer-footer {
 
 html.dark .drawer-preview {
   background: color-mix(in srgb, var(--gitpulse-surface-muted) 55%, transparent);
-}
-
-html.dark .tokenized-query-box {
-  background: color-mix(in srgb, var(--gitpulse-surface-muted) 82%, transparent);
 }
 
 html.dark .advanced-section {

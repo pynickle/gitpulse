@@ -130,7 +130,8 @@ describe('dashboard issue/PR notification-style cards', () => {
     expect(issuePrCardSource).toContain('class="notification-type-badge"');
     expect(issuePrCardSource).not.toContain('notification-card__actions');
     expect(issuePrCardSource).not.toContain('notification-card__reason-slot');
-    expect(dashboardSource).toContain('<AsyncSearchItem :issue="issue" />');
+    expect(dashboardSource).toContain('<AsyncSearchItem');
+    expect(dashboardSource).toContain('<AsyncGenericSearchItem');
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="issue" />');
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="pull" />');
   });

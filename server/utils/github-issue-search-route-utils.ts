@@ -14,6 +14,7 @@ import {
   normalizeIssueSearchType,
   type GitHubIssueSearchSort,
 } from '#shared/utils/github-search-query';
+import { parseGitHubSearchSyntax } from '#shared/utils/github-search-syntax';
 
 import { parsePaginationNumber } from './github-pagination';
 
@@ -88,6 +89,30 @@ export const buildIssueSearchRequestParams = (
   const head = getQueryValue(query.head);
   const sort = normalizeIssueSearchSort(getQueryValue(query.sort));
   const order = normalizeIssueSearchOrder(getQueryValue(query.order));
+  const syntax = getQueryValue(query.q);
+
+  if (syntax) {
+    const ast = parseGitHubSearchSyntax(syntax);
+    if (ast.diagnostics.length > 0) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: 'Invalid GitHub search syntax',
+      });
+    }
+
+    return {
+      q: syntax,
+      ...(sort ? { sort, order } : {}),
+      page,
+      per_page: perPage,
+    } satisfies {
+      q: string;
+      sort?: GitHubIssueSearchSort;
+      order?: 'asc' | 'desc';
+      page: number;
+      per_page: number;
+    };
+  }
 
   const normalizedVisibility: GitHubSearchVisibilityFilter | undefined =
     visibility === 'public' || visibility === 'private' ? visibility : undefined;

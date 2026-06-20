@@ -1,4 +1,13 @@
 export const GITHUB_SEARCH_ITEM_TYPES = ['issues', 'pulls'] as const;
+export const GITHUB_SEARCH_ENDPOINTS = [
+  'issues',
+  'repositories',
+  'code',
+  'commits',
+  'users',
+  'topics',
+  'labels',
+] as const;
 export const GITHUB_SEARCH_ISSUE_STATES = ['open', 'closed', 'all'] as const;
 export const GITHUB_SEARCH_PULL_STATES = ['open', 'closed', 'merged', 'all'] as const;
 export const GITHUB_SEARCH_SCOPES = ['title', 'body', 'comments'] as const;
@@ -22,9 +31,10 @@ export const GITHUB_SEARCH_REVIEW_FILTERS = [
   'changes_requested',
 ] as const;
 export const CUSTOM_TAB_SOURCES = ['github-search'] as const;
-export const CUSTOM_TAB_SUBTITLE_MODES = ['auto', 'custom', 'none'] as const;
+export const CUSTOM_TAB_SUBTITLE_MODES = ['custom', 'none'] as const;
 
 export type GitHubSearchItemType = (typeof GITHUB_SEARCH_ITEM_TYPES)[number];
+export type GitHubSearchEndpoint = (typeof GITHUB_SEARCH_ENDPOINTS)[number];
 export type GitHubSearchIssueState = (typeof GITHUB_SEARCH_ISSUE_STATES)[number];
 export type GitHubSearchPullState = (typeof GITHUB_SEARCH_PULL_STATES)[number];
 export type GitHubSearchScope = (typeof GITHUB_SEARCH_SCOPES)[number];
@@ -36,6 +46,8 @@ export type GitHubSearchDraftFilter = (typeof GITHUB_SEARCH_DRAFT_FILTERS)[numbe
 export type GitHubSearchReviewFilter = (typeof GITHUB_SEARCH_REVIEW_FILTERS)[number];
 
 interface GitHubSearchQueryBase {
+  endpoint?: GitHubSearchEndpoint;
+  syntax?: string;
   text?: string;
   repo?: string;
   org?: string;

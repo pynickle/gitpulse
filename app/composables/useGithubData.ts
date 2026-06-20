@@ -8,6 +8,7 @@ import type {
   NotificationSubjectStateTarget,
 } from '#shared/types/notifications';
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
+import { getGitHubSearchEndpoint } from '#shared/utils/github-search-query';
 import { isNotificationSubjectStateResultLoaded } from '#shared/utils/notifications';
 import {
   applyNotificationLocalFilters,
@@ -380,19 +381,14 @@ const buildCustomTabQueryKey = (
   return searchParams.toString();
 };
 
-const buildCustomTabUrl = (
-  path: string,
-  page: number,
-  query: GitHubSearchQuery,
-  perPage = defaultPerPage
-) => {
+const buildCustomTabUrl = (page: number, query: GitHubSearchQuery, perPage = defaultPerPage) => {
   const searchParams = new URLSearchParams({
     page: String(page),
     per_page: String(query.perPage ?? perPage),
   });
   appendCustomTabQueryParams(searchParams, query);
 
-  return `${path}?${searchParams.toString()}`;
+  return `/api/search/${getGitHubSearchEndpoint(query)}?${searchParams.toString()}`;
 };
 
 export function useGithubData() {
@@ -948,7 +944,7 @@ export function useGithubData() {
     try {
       // Built-in issue tabs use GitHub Search when query-level filters are available.
       const url = options.query
-        ? buildCustomTabUrl('/api/search/issues', page, options.query)
+        ? buildCustomTabUrl(page, options.query)
         : buildPaginationUrl('/api/issues', page);
       const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(url);
       if (requestId !== activeRequestId.value) return;
@@ -1002,7 +998,7 @@ export function useGithubData() {
     try {
       // Built-in PR tabs use GitHub Search when query-level filters are available.
       const url = options.query
-        ? buildCustomTabUrl('/api/search/issues', page, options.query)
+        ? buildCustomTabUrl(page, options.query)
         : buildPaginationUrl('/api/pulls', page);
       const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(url);
       if (requestId !== activeRequestId.value) return;
@@ -1090,7 +1086,7 @@ export function useGithubData() {
 
     try {
       const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(
-        buildCustomTabUrl('/api/search/issues', page, query)
+        buildCustomTabUrl(page, query)
       );
       if (requestId !== activeRequestId.value) return;
 

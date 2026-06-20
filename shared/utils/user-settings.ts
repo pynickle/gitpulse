@@ -4,11 +4,10 @@ import type {
   CustomTabSubtitleMode,
   GitHubPullSearchQuery,
   GitHubSearchArchivedFilter,
+  GitHubSearchEndpoint,
   GitHubSearchItemType,
-  GitHubSearchOrder,
   GitHubSearchQuery,
   GitHubSearchScope,
-  GitHubSearchSort,
   GitHubSearchVisibilityFilter,
 } from '#shared/types/custom-search';
 import type {
@@ -38,12 +37,11 @@ import {
   CUSTOM_TAB_SUBTITLE_MODES,
   GITHUB_SEARCH_ARCHIVED_FILTERS,
   GITHUB_SEARCH_DRAFT_FILTERS,
+  GITHUB_SEARCH_ENDPOINTS,
   GITHUB_SEARCH_ISSUE_STATES,
-  GITHUB_SEARCH_ORDERS,
   GITHUB_SEARCH_PULL_STATES,
   GITHUB_SEARCH_REVIEW_FILTERS,
   GITHUB_SEARCH_SCOPES,
-  GITHUB_SEARCH_SORTS,
   GITHUB_SEARCH_VISIBILITY_FILTERS,
 } from '../types/custom-search';
 import {
@@ -448,6 +446,24 @@ export function normalizeTabGroups(value: unknown, fallback = createDefaultTabGr
 
 type GitHubSearchQueryCandidate = Partial<Omit<GitHubPullSearchQuery, 'type'>> & {
   type?: unknown;
+  repositoryId?: unknown;
+};
+
+const appendLegacyLabelRepositoryId = (
+  endpoint: GitHubSearchEndpoint,
+  syntax: string | undefined,
+  repositoryId: string | undefined
+) => {
+  if (endpoint !== 'labels' || !repositoryId) {
+    return syntax;
+  }
+
+  const normalizedSyntax = syntax?.trim();
+  if (normalizedSyntax?.includes('repository_id:')) {
+    return normalizedSyntax;
+  }
+
+  return `repository_id:${repositoryId} ${normalizedSyntax ?? ''}`.trim();
 };
 
 const normalizeQuery = (query: unknown): GitHubSearchQuery => {
@@ -457,15 +473,10 @@ const normalizeQuery = (query: unknown): GitHubSearchQuery => {
 
   const candidate = query as GitHubSearchQueryCandidate;
   const type: GitHubSearchItemType = candidate.type === 'pulls' ? 'pulls' : 'issues';
+  const endpoint: GitHubSearchEndpoint = isOneOf(GITHUB_SEARCH_ENDPOINTS, candidate.endpoint)
+    ? candidate.endpoint
+    : 'issues';
   const state = candidate.state;
-  const sort = candidate.sort;
-  const normalizedSort: GitHubSearchSort | undefined = isOneOf(GITHUB_SEARCH_SORTS, sort)
-    ? sort
-    : undefined;
-  const order = candidate.order;
-  const normalizedOrder: GitHubSearchOrder | undefined = isOneOf(GITHUB_SEARCH_ORDERS, order)
-    ? order
-    : undefined;
   const visibility = candidate.visibility;
   const normalizedVisibility: GitHubSearchVisibilityFilter | undefined = isOneOf(
     GITHUB_SEARCH_VISIBILITY_FILTERS,
@@ -492,6 +503,12 @@ const normalizeQuery = (query: unknown): GitHubSearchQuery => {
       : undefined;
 
   const sharedQuery = {
+    endpoint,
+    syntax: appendLegacyLabelRepositoryId(
+      endpoint,
+      normalizeString(candidate.syntax),
+      normalizeString(candidate.repositoryId)
+    ),
     text: normalizeString(candidate.text),
     repo: normalizeString(candidate.repo),
     org: normalizeString(candidate.org),
@@ -506,8 +523,6 @@ const normalizeQuery = (query: unknown): GitHubSearchQuery => {
     scopes,
     visibility: normalizedVisibility,
     archived: normalizedArchived,
-    sort: normalizedSort,
-    order: normalizedOrder,
     perPage,
   };
 
@@ -555,13 +570,7 @@ export function normalizeCustomTab(tab: unknown): CustomTab | null {
     ? candidate.subtitleMode
     : undefined;
   const subtitleMode: CustomTabSubtitleMode =
-    requestedSubtitleMode === 'none'
-      ? 'none'
-      : requestedSubtitleMode === 'auto'
-        ? 'auto'
-        : subtitle
-          ? 'custom'
-          : 'auto';
+    requestedSubtitleMode === 'none' ? 'none' : subtitle ? 'custom' : 'none';
 
   return {
     id,
