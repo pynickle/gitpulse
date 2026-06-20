@@ -9,6 +9,15 @@ bun run build
 
 ---
 
+## Docker Images
+
+Pre-built Docker images are published to GitHub Container Registry and Docker Hub with every release:
+
+- `ghcr.io/pynickle/gitpulse:latest`
+- `docker.io/enceuphony/gitpulse:latest`
+
+---
+
 ## Configuration
 
 GitPulse has two deployment modes, controlled by environment variables. At least one must be enabled, or the app refuses to start.
