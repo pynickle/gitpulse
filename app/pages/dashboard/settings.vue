@@ -13,7 +13,6 @@ import {
   type ShikiLightThemeId,
 } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
-import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import FilterDropdown from '~/components/ui/FilterDropdown.vue';
 import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
@@ -32,23 +31,12 @@ const router = useRouter();
 const {
   settings,
   loading,
-  saving,
   error,
   loadSettings,
   updateFonts,
   updateAppearance,
   updateNotificationBehavior,
 } = useUserSettings();
-const settingsRefresh = useRefreshableView({
-  refresh: () => loadSettings({ force: true }),
-  enabled: computed(() => !saving.value),
-});
-const {
-  refreshing: settingsRefreshing,
-  checking: settingsChecking,
-  hasNewContent: settingsHasNewContent,
-  refreshNow: refreshSettings,
-} = settingsRefresh;
 
 // SEO: settings page title
 usePageMeta(t('dashboard.settings.pageTitle'));
@@ -522,15 +510,6 @@ onMounted(() => {
       @update:model-value="applyCodeFontFromModal"
     />
   </DashboardOverlayFrame>
-
-  <FloatingRefreshButton
-    :has-new-content="settingsHasNewContent"
-    :refreshing="settingsRefreshing"
-    :checking="settingsChecking"
-    :disabled="saving"
-    :label="t('dashboard.actions.refresh')"
-    @refresh="refreshSettings"
-  />
 </template>
 
 <style scoped lang="scss">
