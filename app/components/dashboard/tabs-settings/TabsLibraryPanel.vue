@@ -16,9 +16,11 @@ import {
   Trash2Icon,
   XIcon,
 } from '@lucide/vue';
+import { nextTick, onBeforeUnmount, shallowRef, watch } from 'vue';
+import type { ComponentPublicInstance } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 
-import type { TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
+import type { SettingsTab, TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
 
 const props = defineProps<{
   model: TabsSettingsPageState;
@@ -64,6 +66,75 @@ const {
   handleCreateChildGroup,
   startNewTabInGroup,
 } = props.model;
+
+const subtitleInputRef = shallowRef<HTMLInputElement | null>(null);
+let suppressNextRowSelection = false;
+let suppressNextRowSelectionTimer: ReturnType<typeof setTimeout> | null = null;
+const rowSelectionSuppressMs = 150;
+
+const setSubtitleInputRef = (element: Element | ComponentPublicInstance | null) => {
+  subtitleInputRef.value = element instanceof HTMLInputElement ? element : null;
+};
+
+const focusSubtitleInput = () => {
+  void nextTick(() => {
+    const input = subtitleInputRef.value;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  });
+};
+
+watch(editingSubtitleTabId, (tabId) => {
+  if (tabId) {
+    focusSubtitleInput();
+  }
+});
+
+const suppressNextTabRowSelection = () => {
+  suppressNextRowSelection = true;
+  if (suppressNextRowSelectionTimer) {
+    clearTimeout(suppressNextRowSelectionTimer);
+  }
+  suppressNextRowSelectionTimer = setTimeout(() => {
+    suppressNextRowSelection = false;
+    suppressNextRowSelectionTimer = null;
+  }, rowSelectionSuppressMs);
+};
+
+const selectTabFromRow = (tab: SettingsTab) => {
+  if (suppressNextRowSelection) {
+    suppressNextRowSelection = false;
+    if (suppressNextRowSelectionTimer) {
+      clearTimeout(suppressNextRowSelectionTimer);
+      suppressNextRowSelectionTimer = null;
+    }
+    return;
+  }
+
+  props.model.selectTabForEdit(tab);
+};
+
+const saveSubtitleFromInput = (tab: SettingsTab, suppressRowSelection = false) => {
+  if (editingSubtitleTabId.value !== tab.id) {
+    return;
+  }
+
+  if (suppressRowSelection) {
+    suppressNextTabRowSelection();
+  }
+  saveSubtitleEdit(tab);
+};
+
+onBeforeUnmount(() => {
+  if (suppressNextRowSelectionTimer) {
+    clearTimeout(suppressNextRowSelectionTimer);
+  }
+});
 </script>
 <template>
   <div class="library">
@@ -249,8 +320,8 @@ const {
                 role="button"
                 :tabindex="confirmingTabId === tab.id ? -1 : 0"
                 :aria-label="t('dashboard.tabsSettings.selectViewToEdit', { view: tab.name })"
-                @click="model.selectTabForEdit(tab)"
-                @keydown.enter="model.selectTabForEdit(tab)"
+                @click="selectTabFromRow(tab)"
+                @keydown.enter.self="selectTabFromRow(tab)"
               >
                 <button
                   class="button is-ghost is-small drag-handle"
@@ -265,13 +336,14 @@ const {
                   <span>{{ tab.name }}</span>
                   <input
                     v-if="editingSubtitleTabId === tab.id"
+                    :ref="setSubtitleInputRef"
                     v-model="editingSubtitleDraft"
                     class="input is-small tab-subtitle-input"
                     type="text"
                     :aria-label="t('dashboard.tabsSettings.editSubtitleLabel', { view: tab.name })"
-                    @keyup.enter="saveSubtitleEdit(tab)"
-                    @keyup.esc="cancelSubtitleEdit"
-                    @blur="saveSubtitleEdit(tab)"
+                    @keydown.enter.stop.prevent="saveSubtitleFromInput(tab)"
+                    @keydown.esc.stop.prevent="cancelSubtitleEdit"
+                    @blur="saveSubtitleFromInput(tab, true)"
                     @click.stop
                   />
                   <button
