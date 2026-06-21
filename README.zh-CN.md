@@ -42,6 +42,12 @@
 
 ---
 
+## 致谢
+
+本项目在 [LINUX DO](https://linux.do) 社区分享和推广。
+
+---
+
 ## 许可证
 
 GNU Affero General Public License v3.0 — 详见 [LICENSE](LICENSE)。

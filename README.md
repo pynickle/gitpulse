@@ -42,6 +42,12 @@ For details, see the [Self-hosting Guide](docs/self-hosted.md).
 
 ---
 
+## Acknowledgements
+
+This project was shared and promoted on [LINUX DO](https://linux.do).
+
+---
+
 ## License
 
 GNU Affero General Public License v3.0 – see [LICENSE](LICENSE) for details.
