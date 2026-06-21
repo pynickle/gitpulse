@@ -67,8 +67,9 @@
             </div>
           </div>
 
-          <div v-if="showPagination || visibleDashboardFilters" class="dashboard-controls-row">
+          <div v-if="showDashboardControlsRow" class="dashboard-controls-row">
             <FilterPills
+              v-if="showDashboardFilterPills"
               :current-tab="activeFilterSource"
               :filters="visibleDashboardFilters"
               @update="handleFilterUpdate"
@@ -276,7 +277,7 @@
   />
 
   <FilterModal
-    v-if="hasOpenedFilterDrawer"
+    v-if="hasOpenedFilterDrawer && showDashboardFilterButton"
     :open="isFilterDrawerOpen"
     :current-tab="activeFilterSource"
     :filters="visibleDashboardFilters"
@@ -337,7 +338,6 @@ import Button from '~/components/ui/Button.vue';
 import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOptions';
 import {
   applyNotificationLocalFilters,
-  createCustomTabFilterSourceState,
   createDashboardFilterPatchForSource,
   createDashboardFilterSourceState,
   sourceSupportsDashboardFilter,
@@ -643,29 +643,34 @@ const selectedCustomTab = computed(() => {
   return getCustomTabById(tabId) ?? null;
 });
 
-const getCustomTabFilterSource = (query: { type?: string }): DashboardFilterSource => {
-  return query.type === 'pulls' ? 'pulls' : 'issues';
-};
-
 const activeFilterSource = computed<DashboardFilterSource>(() => {
-  if (selectedCustomTab.value) {
-    return getCustomTabFilterSource(selectedCustomTab.value.query);
-  }
-
   return currentTab.value;
 });
 
-const activeFilterState = computed(() => {
-  const customTab = selectedCustomTab.value;
-  if (!customTab) {
-    return filterSourceStates.value[activeFilterSource.value];
+const visibleDashboardFilters = computed<DashboardRouteFilters>(() => {
+  if (selectedCustomTab.value) {
+    return { labels: [] };
   }
 
-  return createCustomTabFilterSourceState(customTab.query);
+  return filterSourceStates.value[activeFilterSource.value].filters;
 });
-const visibleDashboardFilters = computed(() => activeFilterState.value.filters);
-const hasActiveVisibleFilters = computed(() => activeFilterState.value.hasActiveFilters);
+const hasActiveVisibleFilters = computed(() => {
+  return (
+    !selectedCustomTab.value && filterSourceStates.value[activeFilterSource.value].hasActiveFilters
+  );
+});
 const showDashboardFilterButton = computed(() => !selectedCustomTab.value);
+const showDashboardFilterPills = computed(() => {
+  if (selectedCustomTab.value) {
+    return false;
+  }
+
+  const source = activeFilterSource.value;
+  return source === 'todos' || sourceSupportsDashboardFilter(source, 'state');
+});
+const showDashboardControlsRow = computed(
+  () => showPagination.value || showDashboardFilterPills.value
+);
 const showDashboardAdvancedFilters = computed(() => {
   if (selectedCustomTab.value) {
     return false;
@@ -684,21 +689,19 @@ const showDashboardAdvancedFilters = computed(() => {
   );
 });
 
-const routeFilterSource = computed<DashboardFilterSource>(() => {
+const routeFilterFetchKey = computed(() => {
   const customTabId = getQueryParamValue(route.query.tab);
   const customTab = customTabId ? getCustomTabById(customTabId) : null;
+
   if (customTab) {
-    return getCustomTabFilterSource(customTab.query);
+    return JSON.stringify({
+      customTabId: customTab.id,
+      query: customTab.query,
+    });
   }
 
-  return parseDashboardTab(route.query.tab);
-});
-
-const routeFilterFetchKey = computed(() => {
-  const source = routeFilterSource.value;
+  const source = parseDashboardTab(route.query.tab);
   const sourceState = filterSourceStates.value[source];
-  const customTabId = getQueryParamValue(route.query.tab);
-  const customTab = customTabId ? getCustomTabById(customTabId) : null;
 
   if (source === 'notifications') {
     const apiParams = sourceState.notificationAdapter.apiParams;
@@ -732,13 +735,6 @@ const routeFilterFetchKey = computed(() => {
 
   if (source === 'repos') {
     return 'repos';
-  }
-
-  if (customTab) {
-    return JSON.stringify({
-      customTabId: customTab.id,
-      query: customTab.query,
-    });
   }
 
   return JSON.stringify({
@@ -1204,8 +1200,18 @@ const handleFilterUpdate = async (patch: Partial<DashboardRouteFilters>) => {
 };
 
 const clearVisibleFilters = async () => {
+  if (selectedCustomTab.value) {
+    return;
+  }
+
   await clearSourceFilters(activeFilterSource.value);
 };
+
+watch(selectedCustomTab, (customTab) => {
+  if (customTab) {
+    isFilterDrawerOpen.value = false;
+  }
+});
 
 watch(
   () => currentPagination.value.page,

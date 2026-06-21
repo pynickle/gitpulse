@@ -64,7 +64,6 @@ export interface DashboardFilterSourceState {
   hasActiveFilters: boolean;
   notificationAdapter: NotificationFilterAdapter;
   issuePrQuery?: GitHubSearchQuery;
-  overlayCustomTabQuery: (savedQuery: GitHubSearchQuery) => GitHubSearchQuery;
 }
 
 export const dashboardFilterQueryKeys = [
@@ -475,29 +474,6 @@ export const buildBuiltinIssuePrFilterQuery = (
   };
 };
 
-export const buildCustomTabOverlayQuery = (
-  savedQuery: GitHubSearchQuery,
-  filters: DashboardRouteFilters
-): GitHubSearchQuery => {
-  const nextQuery: GitHubSearchQuery = { ...savedQuery };
-
-  if (filters.repo) nextQuery.repo = filters.repo;
-  if (filters.author) nextQuery.author = filters.author;
-  if (filters.labels.length > 0) nextQuery.labels = filters.labels;
-  if (filters.archived) nextQuery.archived = filters.archived;
-  if (isGitHubSort(filters.sort)) nextQuery.sort = filters.sort;
-  if (filters.order) nextQuery.order = filters.order;
-  if (filters.review && nextQuery.type === 'pulls') nextQuery.review = filters.review;
-
-  if (filters.state === 'open' || filters.state === 'closed' || filters.state === 'all') {
-    nextQuery.state = filters.state;
-  } else if (filters.state === 'merged' && nextQuery.type === 'pulls') {
-    nextQuery.state = 'merged';
-  }
-
-  return nextQuery;
-};
-
 export const applyNotificationLocalFilters = (
   items: DashboardNotification[],
   localFilters: NotificationFilterAdapter['local']
@@ -535,23 +511,6 @@ export const isIssuePrQueryFiltered = (filters: DashboardRouteFilters) => {
   );
 };
 
-export const createCustomTabFilterSourceState = (
-  savedQuery: GitHubSearchQuery
-): DashboardFilterSourceState => {
-  const source: Extract<DashboardFilterSource, 'issues' | 'pulls'> =
-    savedQuery.type === 'pulls' ? 'pulls' : 'issues';
-  const filters = createEmptyDashboardRouteFilters();
-
-  return {
-    filters,
-    chips: [],
-    hasActiveFilters: false,
-    notificationAdapter: buildNotificationFilterAdapter(source, filters),
-    issuePrQuery: undefined,
-    overlayCustomTabQuery: (query) => query,
-  };
-};
-
 export const createDashboardFilterSourceState = (
   source: DashboardFilterSource,
   filters: DashboardRouteFilters,
@@ -569,7 +528,6 @@ export const createDashboardFilterSourceState = (
     hasActiveFilters: hasDashboardRouteFilters(sourceFilters),
     notificationAdapter: buildNotificationFilterAdapter(source, sourceFilters),
     issuePrQuery,
-    overlayCustomTabQuery: (savedQuery) => buildCustomTabOverlayQuery(savedQuery, sourceFilters),
   };
 };
 

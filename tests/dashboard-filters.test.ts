@@ -3,8 +3,6 @@ import { describe, expect, test } from 'bun:test';
 import {
   applyNotificationLocalFilters,
   buildBuiltinIssuePrFilterQuery,
-  buildCustomTabOverlayQuery,
-  createCustomTabFilterSourceState,
   createDashboardEffectiveFilters,
   createDashboardFilterPatchForSource,
   createDashboardFilterChips,
@@ -376,130 +374,7 @@ describe('dashboard route filters', () => {
     });
   });
 
-  test('overlays custom tab queries without mutating the saved query', () => {
-    const savedQuery = {
-      type: 'pulls' as const,
-      repo: 'saved/repo',
-      state: 'open' as const,
-      labels: ['saved'],
-    };
-
-    expect(
-      buildCustomTabOverlayQuery(savedQuery, {
-        repo: 'route/repo',
-        state: 'merged',
-        labels: ['route'],
-      })
-    ).toEqual({
-      type: 'pulls',
-      repo: 'route/repo',
-      state: 'merged',
-      labels: ['route'],
-    });
-    expect(savedQuery).toEqual({
-      type: 'pulls',
-      repo: 'saved/repo',
-      state: 'open',
-      labels: ['saved'],
-    });
-  });
-
-  test('custom tab filter state does not expose saved query or route filters', () => {
-    const savedQuery = {
-      type: 'pulls' as const,
-      repo: 'saved/repo',
-      labels: ['saved'],
-      state: 'merged' as const,
-      review: 'approved' as const,
-    };
-    const sourceState = createCustomTabFilterSourceState(savedQuery);
-
-    expect(sourceState.filters).toEqual({
-      labels: [],
-    });
-    expect(sourceState.chips).toEqual([]);
-    expect(sourceState.hasActiveFilters).toBe(false);
-    expect(sourceState.overlayCustomTabQuery(savedQuery)).toEqual({
-      type: 'pulls',
-      repo: 'saved/repo',
-      labels: ['saved'],
-      state: 'merged',
-      review: 'approved',
-    });
-  });
-
-  test('custom pull tabs ignore route state overlays', () => {
-    const savedQuery = {
-      type: 'pulls' as const,
-      state: 'all' as const,
-    };
-    const sourceState = createCustomTabFilterSourceState(savedQuery);
-
-    expect(sourceState.filters).toEqual({
-      labels: [],
-    });
-    expect(sourceState.overlayCustomTabQuery(savedQuery)).toEqual({
-      type: 'pulls',
-      state: 'all',
-    });
-  });
-
-  test('custom pull tabs preserve saved merged state despite route filters', () => {
-    const savedQuery = {
-      type: 'pulls' as const,
-      state: 'merged' as const,
-    };
-    const sourceState = createCustomTabFilterSourceState(savedQuery);
-
-    expect(sourceState.filters).toEqual({
-      labels: [],
-    });
-    expect(sourceState.overlayCustomTabQuery(savedQuery)).toEqual({
-      type: 'pulls',
-      state: 'merged',
-    });
-  });
-
-  test('applies pull-only filters to pull custom tab overlays only', () => {
-    const routeFilters = {
-      state: 'merged' as const,
-      review: 'approved' as const,
-      labels: [],
-    };
-
-    expect(
-      buildCustomTabOverlayQuery(
-        { type: 'pulls', state: 'open' },
-        createDashboardEffectiveFilters('pulls', { state: 'closed', labels: [] })
-      )
-    ).toEqual({
-      type: 'pulls',
-      state: 'closed',
-    });
-
-    expect(
-      buildCustomTabOverlayQuery(
-        { type: 'pulls', state: 'open' },
-        createDashboardEffectiveFilters('pulls', routeFilters)
-      )
-    ).toEqual({
-      type: 'pulls',
-      state: 'merged',
-      review: 'approved',
-    });
-
-    expect(
-      buildCustomTabOverlayQuery(
-        { type: 'issues', state: 'open' },
-        createDashboardEffectiveFilters('issues', routeFilters)
-      )
-    ).toEqual({
-      type: 'issues',
-      state: 'open',
-    });
-  });
-
-  test('source state centralizes visible chips, built-in query, and custom tab overlay', () => {
+  test('source state centralizes visible chips and built-in query', () => {
     const sourceState = createDashboardFilterSourceState(
       'pulls',
       {
@@ -520,12 +395,6 @@ describe('dashboard route filters', () => {
       sort: 'updated',
       order: 'desc',
       involves: 'octocat',
-      repo: 'owner/repo',
-      review: 'approved',
-    });
-    expect(sourceState.overlayCustomTabQuery({ type: 'pulls', state: 'open' })).toEqual({
-      type: 'pulls',
-      state: 'merged',
       repo: 'owner/repo',
       review: 'approved',
     });
