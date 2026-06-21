@@ -108,25 +108,6 @@
   max-width: 100%;
 }
 
-.dashboard-list-card__tags-container {
-  min-width: 0;
-  overflow: hidden;
-  mask-image: linear-gradient(to right, black 86%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 86%, transparent 100%);
-}
-
-.dashboard-list-card__tags {
-  min-width: 0;
-  overflow: hidden;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-}
-
-.dashboard-list-card__tags > .tag {
-  flex: 0 0 auto;
-  margin-right: 0 !important;
-}
-
 @media screen and (max-width: 768px) {
   .dashboard-list-card--detailed .dashboard-list-card__title,
   .dashboard-list-card--detailed .dashboard-list-card__subject {

@@ -130,8 +130,12 @@ describe('dashboard issue/PR notification-style cards', () => {
     expect(issuePrCardSource).toContain('class="notification-type-badge"');
     expect(issuePrCardSource).not.toContain('notification-card__actions');
     expect(issuePrCardSource).not.toContain('notification-card__reason-slot');
-    expect(dashboardSource).toContain('<AsyncSearchItem');
+    expect(dashboardSource).not.toContain('AsyncSearchItem');
+    expect(dashboardSource).not.toContain("import('~/components/dashboard/SearchItem.vue')");
     expect(dashboardSource).toContain('<AsyncGenericSearchItem');
+    expect(dashboardSource).toMatch(
+      /<AsyncIssuePrNotificationItem\s+v-if="[\s\S]*selectedCustomTab\.query\.endpoint === 'issues'/
+    );
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="issue" />');
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="pull" />');
   });

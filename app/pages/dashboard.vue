@@ -139,12 +139,12 @@
                     class="mb-4 mr-4"
                     @click="openSearchResult(issue)"
                   >
-                    <AsyncSearchItem
+                    <AsyncIssuePrNotificationItem
                       v-if="
                         selectedCustomTab.query.endpoint === 'issues' ||
                         !selectedCustomTab.query.endpoint
                       "
-                      :issue="issue"
+                      :item="issue"
                     />
                     <AsyncGenericSearchItem
                       v-else
@@ -364,7 +364,6 @@ const AsyncNotificationItem = defineAsyncComponent(
 const AsyncIssuePrNotificationItem = defineAsyncComponent(
   () => import('~/components/dashboard/IssuePrNotificationItem.vue')
 );
-const AsyncSearchItem = defineAsyncComponent(() => import('~/components/dashboard/SearchItem.vue'));
 const AsyncGenericSearchItem = defineAsyncComponent(
   () => import('~/components/dashboard/GenericSearchItem.vue')
 );
