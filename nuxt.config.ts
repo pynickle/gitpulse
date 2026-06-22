@@ -207,8 +207,21 @@ export default defineNuxtConfig({
     optimizeDeps: {
       include: [
         '@comark/vue',
+        '@lucide/vue',
+        '@shikijs/themes/catppuccin-latte',
+        '@shikijs/themes/catppuccin-mocha',
+        '@shikijs/themes/dark-plus',
+        '@shikijs/themes/dracula',
         '@shikijs/themes/github-dark',
         '@shikijs/themes/github-light',
+        '@shikijs/themes/light-plus',
+        '@shikijs/themes/min-dark',
+        '@shikijs/themes/min-light',
+        '@shikijs/themes/nord',
+        '@shikijs/themes/one-dark-pro',
+        '@shikijs/themes/rose-pine-dawn',
+        '@shikijs/themes/vitesse-dark',
+        '@shikijs/themes/vitesse-light',
         '@vue/devtools-core',
         '@vue/devtools-kit',
         'comark',
@@ -217,7 +230,6 @@ export default defineNuxtConfig({
         'dayjs', // CJS
         'dayjs/locale/zh-cn', // CJS
         'dayjs/plugin/relativeTime.js', // CJS
-        '@lucide/vue',
         'mermaid',
         'shiki',
         'shiki/langs',

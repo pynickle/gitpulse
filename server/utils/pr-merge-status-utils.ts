@@ -4,6 +4,9 @@ import * as z from 'zod';
 import { parseLinkHeader } from '#server/utils/github-pagination';
 import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
 import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
+import type { PullRequestHeadBranchState } from '#shared/types/pulls';
+
+import { fetchPullHeadBranchState } from './pr-head-branch-utils';
 
 type GitHubClient = Octokit;
 
@@ -115,6 +118,7 @@ export interface PRMergeStatus {
   reviewSummary: PRReviewSummary;
   checks: PRChecksSummary;
   headSha: string | null;
+  headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;
 }
 
@@ -352,7 +356,7 @@ export async function fetchPRMergeStatus(
   const normalizedPullRequest = pullRequest as GitHubPullRequestResponse;
   const headSha = normalizedPullRequest.head?.sha ?? null;
 
-  const [reviews, requestedReviewers, checkRuns, repoPermissions] = await Promise.all([
+  const [reviews, requestedReviewers, checkRuns, repoPermissions, headBranch] = await Promise.all([
     fetchPaginatedArray<GitHubPullReviewResponse>(
       octokit,
       'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
@@ -371,6 +375,10 @@ export async function fetchPRMergeStatus(
       .then(({ data }) => data as GitHubRequestedReviewersResponse),
     fetchCheckRuns(octokit, owner, repo, headSha),
     fetchRepositoryPermissions(octokit, owner, repo),
+    fetchPullHeadBranchState(octokit, normalizedPullRequest).catch((error: unknown) => {
+      console.warn('Failed to fetch pull request head branch action state:', error);
+      return null;
+    }),
   ]);
 
   const review = computeReviewDecision({
@@ -392,6 +400,7 @@ export async function fetchPRMergeStatus(
     reviewSummary: review.summary,
     checks: buildChecksSummary(checkRuns),
     headSha,
+    headBranch,
     viewerCanMerge: getViewerCanMerge(
       repoPermissions ?? normalizedPullRequest.base?.repo?.permissions
     ),

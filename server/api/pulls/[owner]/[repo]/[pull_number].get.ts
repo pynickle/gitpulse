@@ -1,5 +1,6 @@
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
+import { fetchPullHeadBranchState } from '#server/utils/pr-head-branch-utils';
 import { createEmptyPRReviewerSummary } from '#server/utils/pr-reviewers-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
@@ -40,8 +41,16 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
     ]);
 
+    const headBranch = await fetchPullHeadBranchState(octokit, pullRequest.data).catch(
+      (error: unknown) => {
+        console.warn('Failed to fetch pull request head branch action state:', error);
+        return null;
+      }
+    );
+
     return {
       ...pullRequest.data,
+      head_branch: headBranch,
       reviewers: createEmptyPRReviewerSummary(),
       reactions: reactionSummary.items,
     };

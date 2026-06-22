@@ -57,6 +57,7 @@
           :pr-title="currentPullRequest?.title"
           :head-label="currentPullRequest?.head?.label || currentPullRequest?.head?.ref"
           :initial-status="terminalMergeStatus"
+          @head-branch-updated="handlePullRequestHeadBranchUpdated"
           @merged="handlePullRequestMerged"
         />
       </div>
@@ -339,6 +340,7 @@ const terminalMergeStatus = computed(() => {
       runs: [],
     },
     headSha: pullRequest.head?.sha ?? null,
+    headBranch: pullRequest.head_branch ?? null,
     viewerCanMerge: false,
   };
 });
@@ -593,6 +595,10 @@ const clearReviewerPickerError = () => {
 const handlePullRequestMerged = () => {
   fetchPullRequestDetails();
   fetchTimeline();
+};
+
+const handlePullRequestHeadBranchUpdated = () => {
+  fetchPullRequestDetails();
 };
 
 const updateLabels = (labels: PullRequestDetailLabel[]) => {
@@ -978,8 +984,8 @@ watch(
 }
 
 .pr-detail__merge-box {
+  margin-top: 1.5rem;
   margin-bottom: 5rem;
-  margin-right: 1rem;
 }
 
 .sidebar-review-btn {

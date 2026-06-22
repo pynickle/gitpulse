@@ -35,6 +35,14 @@ export interface PullRequestRepositorySummary {
   name?: string;
   full_name?: string;
   url?: string;
+  default_branch?: string | null;
+  permissions?: {
+    admin?: boolean;
+    maintain?: boolean;
+    push?: boolean;
+    triage?: boolean;
+    pull?: boolean;
+  } | null;
   owner?: PullRequestUserSummary;
 }
 
@@ -43,6 +51,32 @@ export interface PullRequestBranchSummary {
   sha?: string;
   label?: string;
   repo?: PullRequestRepositorySummary | null;
+}
+
+export type PullRequestHeadBranchUnavailableReason =
+  | 'not_closed_or_merged'
+  | 'missing_head'
+  | 'missing_repository'
+  | 'missing_permission'
+  | 'default_branch'
+  | 'protected_branch'
+  | 'open_pull_request'
+  | 'branch_exists'
+  | 'branch_missing'
+  | 'unknown';
+
+export interface PullRequestHeadBranchState {
+  ref: string | null;
+  sha: string | null;
+  label: string | null;
+  repo: PullRequestRepositorySummary | null;
+  exists: boolean | null;
+  protected: boolean | null;
+  default_branch: string | null;
+  open_pull_requests_count: number | null;
+  can_delete: boolean;
+  can_restore: boolean;
+  unavailable_reason: PullRequestHeadBranchUnavailableReason | null;
 }
 
 export interface PullRequestDetailPayload {
@@ -63,6 +97,7 @@ export interface PullRequestDetailPayload {
   // Base and head branches
   base?: PullRequestBranchSummary;
   head?: PullRequestBranchSummary;
+  head_branch?: PullRequestHeadBranchState | null;
 
   // User info
   user?: PullRequestUserSummary;

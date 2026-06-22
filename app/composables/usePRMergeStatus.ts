@@ -1,3 +1,5 @@
+import type { PullRequestHeadBranchState } from '#shared/types/pulls';
+
 export type PRState = 'open' | 'closed' | 'merged';
 export type PRReviewDecision = 'approved' | 'changes_requested' | 'review_required' | 'none';
 export type PRMergeMethod = 'merge' | 'squash' | 'rebase';
@@ -44,6 +46,7 @@ export interface PRMergeStatus {
   reviewSummary: PRReviewSummary;
   checks: PRChecksSummary;
   headSha: string | null;
+  headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;
 }
 
@@ -57,6 +60,10 @@ export interface PRMergeResponse {
   merged: boolean;
   sha: string | null;
   message: string;
+}
+
+export interface PRHeadBranchMutationResponse {
+  head_branch?: PullRequestHeadBranchState | null;
 }
 
 const getFetchErrorMessage = (error: unknown, fallback: string) => {
@@ -87,6 +94,7 @@ export function usePRMergeStatus() {
   const loading = shallowRef(false);
   const error = shallowRef<string | null>(null);
   const mergeError = shallowRef<string | null>(null);
+  const branchActionError = shallowRef<string | null>(null);
   let statusRequestId = 0;
 
   const setMergeStatus = (status: PRMergeStatus | null) => {
@@ -147,13 +155,56 @@ export function usePRMergeStatus() {
     }
   };
 
+  const mutateHeadBranch = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    method: 'DELETE' | 'POST',
+    fallbackError: string
+  ) => {
+    branchActionError.value = null;
+
+    try {
+      const response = await apiFetch<PRHeadBranchMutationResponse>(
+        `/api/pulls/${owner}/${repo}/${pullNumber}/head-branch`,
+        { method }
+      );
+      const nextStatus = await fetchMergeStatus(owner, repo, pullNumber);
+      if (!nextStatus && response?.head_branch && mergeStatus.value) {
+        mergeStatus.value = {
+          ...mergeStatus.value,
+          headBranch: response.head_branch,
+        };
+      }
+      return true;
+    } catch (fetchError: unknown) {
+      branchActionError.value = getFetchErrorMessage(fetchError, fallbackError);
+      return false;
+    }
+  };
+
+  const deleteHeadBranch = (owner: string, repo: string, pullNumber: number) =>
+    mutateHeadBranch(
+      owner,
+      repo,
+      pullNumber,
+      'DELETE',
+      'Failed to delete pull request head branch'
+    );
+
+  const restoreHeadBranch = (owner: string, repo: string, pullNumber: number) =>
+    mutateHeadBranch(owner, repo, pullNumber, 'POST', 'Failed to restore pull request head branch');
+
   return {
     mergeStatus,
     loading,
     error,
     mergeError,
+    branchActionError,
     setMergeStatus,
     fetchMergeStatus,
     mergePullRequest,
+    deleteHeadBranch,
+    restoreHeadBranch,
   };
 }

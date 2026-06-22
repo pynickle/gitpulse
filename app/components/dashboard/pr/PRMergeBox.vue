@@ -17,36 +17,45 @@
 
     <template v-else-if="status">
       <!-- Merged -->
-      <div v-if="status.merged" class="merge-box__panel merge-box__panel--merged">
-        <span class="merge-box__state-icon merge-box__state-icon--merged">
-          <GitMergeIcon :size="16" />
-        </span>
-        <div class="merge-box__panel-body">
-          <p class="merge-box__headline">{{ t('prReview.mergeBox.merged') }}</p>
-          <p class="merge-box__subline">
-            <a
-              v-if="status.mergedBy"
-              :href="status.mergedBy.htmlUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="merge-box__merged-by"
-            >
-              <GitHubAvatar
-                :src="status.mergedBy.avatarUrl"
-                :alt="status.mergedBy.login"
-                size="16"
-                class="merge-box__merged-avatar"
-              />
-              <span>{{ status.mergedBy.login }}</span>
-            </a>
-            <span>{{ t('prReview.mergeBox.mergedTime', { time: mergedTimeLabel }) }}</span>
-            <code v-if="shortMergeSha" class="merge-box__sha">{{ shortMergeSha }}</code>
-          </p>
+      <template v-if="status.merged">
+        <div
+          class="merge-box__panel merge-box__panel--merged"
+          :class="{ 'merge-box__panel--attached': showHeadBranchActions }"
+        >
+          <span class="merge-box__state-icon merge-box__state-icon--merged">
+            <GitMergeIcon :size="16" />
+          </span>
+          <div class="merge-box__panel-body">
+            <p class="merge-box__headline">{{ t('prReview.mergeBox.merged') }}</p>
+            <p class="merge-box__subline">
+              <a
+                v-if="status.mergedBy"
+                :href="status.mergedBy.htmlUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="merge-box__merged-by"
+              >
+                <GitHubAvatar
+                  :src="status.mergedBy.avatarUrl"
+                  :alt="status.mergedBy.login"
+                  size="16"
+                  class="merge-box__merged-avatar"
+                />
+                <span>{{ status.mergedBy.login }}</span>
+              </a>
+              <span>{{ t('prReview.mergeBox.mergedTime', { time: mergedTimeLabel }) }}</span>
+              <code v-if="shortMergeSha" class="merge-box__sha">{{ shortMergeSha }}</code>
+            </p>
+          </div>
         </div>
-      </div>
+      </template>
 
       <!-- Closed without merging -->
-      <div v-else-if="status.state === 'closed'" class="merge-box__panel merge-box__panel--closed">
+      <div
+        v-else-if="status.state === 'closed'"
+        class="merge-box__panel merge-box__panel--closed"
+        :class="{ 'merge-box__panel--attached': showHeadBranchActions }"
+      >
         <span class="merge-box__state-icon merge-box__state-icon--closed">
           <GitPullRequestClosedIcon :size="16" />
         </span>
@@ -236,6 +245,40 @@
           </form>
         </div>
       </div>
+
+      <div v-if="showHeadBranchActions" class="merge-box__branch-actions">
+        <div v-if="branchActionError" class="merge-box__note merge-box__note--danger" role="alert">
+          <AlertCircleIcon :size="14" />
+          <span>{{ branchActionError }}</span>
+        </div>
+
+        <div class="merge-box__branch-row">
+          <span class="merge-box__branch-icon">
+            <GitBranchIcon :size="14" />
+          </span>
+          <code v-if="headBranchLabel" class="merge-box__branch-label">
+            {{ headBranchLabel }}
+          </code>
+
+          <button
+            v-if="headBranchActionMode"
+            type="button"
+            class="merge-box__branch-btn"
+            :class="`merge-box__branch-btn--${headBranchActionMode}`"
+            :disabled="branchActionInProgress"
+            @click="performHeadBranchAction"
+          >
+            <span
+              v-if="branchActionInProgress"
+              class="merge-box__spinner merge-box__spinner--branch"
+              aria-hidden="true"
+            />
+            <Trash2Icon v-else-if="headBranchActionMode === 'delete'" :size="13" />
+            <RotateCcwIcon v-else :size="13" />
+            <span>{{ headBranchActionLabel }}</span>
+          </button>
+        </div>
+      </div>
     </template>
   </section>
 </template>
@@ -245,9 +288,12 @@ import {
   AlertCircleIcon,
   CheckIcon,
   ChevronDownIcon,
+  GitBranchIcon,
   ClockIcon,
   GitMergeIcon,
   GitPullRequestClosedIcon,
+  RotateCcwIcon,
+  Trash2Icon,
   XIcon,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
@@ -272,6 +318,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   merged: [];
+  headBranchUpdated: [];
 }>();
 
 const { t, locale } = useI18n();
@@ -281,9 +328,12 @@ const {
   loading,
   error,
   mergeError,
+  branchActionError,
   setMergeStatus,
   fetchMergeStatus,
   mergePullRequest,
+  deleteHeadBranch,
+  restoreHeadBranch,
 } = usePRMergeStatus();
 
 const mergeMethods: PRMergeMethod[] = ['merge', 'squash', 'rebase'];
@@ -291,6 +341,7 @@ const selectedMethod = shallowRef<PRMergeMethod>('merge');
 const dropdownOpen = shallowRef(false);
 const confirming = shallowRef(false);
 const merging = shallowRef(false);
+const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
@@ -308,6 +359,35 @@ const mergedTimeLabel = computed(() => {
 });
 
 const shortMergeSha = computed(() => status.value?.mergeCommitSha?.slice(0, 7) ?? '');
+
+const headBranch = computed(() => status.value?.headBranch ?? null);
+
+const isHeadBranchActionEligiblePr = computed(
+  () => Boolean(status.value?.merged) || status.value?.state === 'closed'
+);
+
+const headBranchActionMode = computed<'delete' | 'restore' | null>(() => {
+  if (headBranch.value?.can_delete) return 'delete';
+  if (headBranch.value?.can_restore) return 'restore';
+  return null;
+});
+
+const headBranchLabel = computed(() => headBranch.value?.label || headBranch.value?.ref || '');
+
+const showHeadBranchActions = computed(() =>
+  Boolean(
+    isHeadBranchActionEligiblePr.value && (headBranchActionMode.value || branchActionError.value)
+  )
+);
+
+const branchActionInProgress = computed(() => branchAction.value !== null);
+
+const headBranchActionLabel = computed(() => {
+  if (branchAction.value === 'delete') return t('prReview.mergeBox.deletingBranch');
+  if (branchAction.value === 'restore') return t('prReview.mergeBox.restoringBranch');
+  if (headBranchActionMode.value === 'restore') return t('prReview.mergeBox.restoreBranch');
+  return t('prReview.mergeBox.deleteBranch');
+});
 
 type RowTone = 'success' | 'danger' | 'warning' | 'muted';
 
@@ -562,6 +642,27 @@ const performMerge = async () => {
   }
 };
 
+const performHeadBranchAction = async () => {
+  const action = headBranchActionMode.value;
+  if (!action || branchAction.value) {
+    return;
+  }
+
+  branchAction.value = action;
+  try {
+    const succeeded =
+      action === 'delete'
+        ? await deleteHeadBranch(props.owner, props.repo, props.pullNumber)
+        : await restoreHeadBranch(props.owner, props.repo, props.pullNumber);
+
+    if (succeeded) {
+      emit('headBranchUpdated');
+    }
+  } finally {
+    branchAction.value = null;
+  }
+};
+
 const onMergeClick = async () => {
   if (mergeDisabled.value) {
     return;
@@ -646,6 +747,7 @@ watch(
     selectedMethod.value = 'merge';
     commitTitle.value = '';
     commitMessage.value = '';
+    branchAction.value = null;
     stopMergeabilityPolling();
     mergeabilityPollAttempts = 0;
 
@@ -744,6 +846,12 @@ watch(
     background: var(--gitpulse-surface-muted);
     border-left: 3px solid var(--gitpulse-danger);
   }
+
+  /* When a branch-action strip follows, flatten the bottom corners so the
+     panel + strip read as one continuous card. */
+  &--attached {
+    border-radius: 12px 12px 0 0;
+  }
 }
 
 .merge-box__state-icon {
@@ -822,6 +930,89 @@ watch(
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
+}
+
+.merge-box__branch-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--gitpulse-surface-muted);
+  border-top: 1px solid var(--gitpulse-border);
+  border-radius: 0 0 12px 12px;
+}
+
+.merge-box__branch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.merge-box__branch-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: var(--gitpulse-text-muted);
+}
+
+.merge-box__branch-label {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--gitpulse-code-font-family);
+  font-size: 12px;
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+}
+
+.merge-box__branch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border-strong);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--delete:hover:not(:disabled) {
+    color: var(--gitpulse-danger-solid);
+    border-color: var(--gitpulse-danger);
+  }
+
+  &--restore:hover:not(:disabled) {
+    color: var(--gitpulse-success-solid);
+    border-color: var(--gitpulse-success);
+  }
 }
 
 /* ── Open state rows ── */
@@ -1208,6 +1399,11 @@ watch(
   border-top-color: #ffffff;
   border-radius: 50%;
   animation: merge-box-spin 0.7s linear infinite;
+
+  &--branch {
+    border-color: color-mix(in srgb, currentColor 25%, transparent);
+    border-top-color: currentColor;
+  }
 }
 
 @keyframes merge-box-spin {

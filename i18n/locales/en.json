@@ -800,7 +800,11 @@
       "commitMessageLabel": "Commit message",
       "commitMessagePlaceholder": "Add an optional extended description...",
       "cancel": "Cancel",
-      "merging": "Merging..."
+      "merging": "Merging...",
+      "deleteBranch": "Delete branch",
+      "restoreBranch": "Restore branch",
+      "deletingBranch": "Deleting branch...",
+      "restoringBranch": "Restoring branch..."
     }
   },
   "markdown": {

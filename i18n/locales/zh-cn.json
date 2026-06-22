@@ -800,7 +800,11 @@
       "commitMessageLabel": "提交说明",
       "commitMessagePlaceholder": "添加可选的详细描述...",
       "cancel": "取消",
-      "merging": "正在合并..."
+      "merging": "正在合并...",
+      "deleteBranch": "删除分支",
+      "restoreBranch": "恢复分支",
+      "deletingBranch": "正在删除分支...",
+      "restoringBranch": "正在恢复分支..."
     }
   },
   "markdown": {
