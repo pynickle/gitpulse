@@ -64,16 +64,18 @@ jobs:
   build:
     name: Build ${{ matrix.platform }}
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -98,10 +100,6 @@ jobs:
           username: ${{ env.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set up QEMU
-        if: matrix.platform != 'linux/amd64'
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
 
@@ -113,19 +111,28 @@ jobs:
             ${{ needs.validate.outputs.ghcr_image }}
             ${{ needs.validate.outputs.dockerhub_image }}
 
-      - name: Build and push image digest
-        id: build
+      - name: Build and push GHCR image digest
+        id: ghcr_build
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
         with:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: |
-            type=image,name=${{ needs.validate.outputs.ghcr_image }},push-by-digest=true,name-canonical=true,push=true
-            type=image,name=${{ needs.validate.outputs.dockerhub_image }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=${{ needs.validate.outputs.ghcr_image }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=app-${{ steps.platform.outputs.pair }}
           cache-to: type=gha,mode=max,scope=app-${{ steps.platform.outputs.pair }}
+
+      - name: Build and push Docker Hub image digest
+        id: dockerhub_build
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=${{ needs.validate.outputs.dockerhub_image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=app-${{ steps.platform.outputs.pair }}
 
       - name: Export digest metadata
         shell: bash
@@ -136,20 +143,29 @@ jobs:
           DOCKERHUB_IMAGE: ${{ needs.validate.outputs.dockerhub_image }}
         run: |
           mkdir -p "${RUNNER_TEMP}/digests"
-          digest="${{ steps.build.outputs.digest }}"
-          if [ -z "${digest}" ]; then
-            echo "Build did not produce an image digest." >&2
+          ghcr_digest="${{ steps.ghcr_build.outputs.digest }}"
+          dockerhub_digest="${{ steps.dockerhub_build.outputs.digest }}"
+
+          if [ -z "${ghcr_digest}" ]; then
+            echo "GHCR build did not produce an image digest." >&2
+            exit 1
+          fi
+
+          if [ -z "${dockerhub_digest}" ]; then
+            echo "Docker Hub build did not produce an image digest." >&2
             exit 1
           fi
 
           jq -n \
             --arg platform "${PLATFORM}" \
-            --arg digest "${digest}" \
+            --arg ghcr_digest "${ghcr_digest}" \
+            --arg dockerhub_digest "${dockerhub_digest}" \
             --arg ghcr_image "${GHCR_IMAGE}" \
             --arg dockerhub_image "${DOCKERHUB_IMAGE}" \
             '{
               platform: $platform,
-              digest: $digest,
+              ghcr_digest: $ghcr_digest,
+              dockerhub_digest: $dockerhub_digest,
               ghcr_image: $ghcr_image,
               dockerhub_image: $dockerhub_image
             }' > "${RUNNER_TEMP}/digests/${PLATFORM_PAIR}.json"
@@ -212,7 +228,8 @@ jobs:
             exit 1
           fi
 
-          declare -A digests_by_platform=()
+          declare -A ghcr_digests_by_platform=()
+          declare -A dockerhub_digests_by_platform=()
           declare -A seen_platforms=()
 
           is_expected_platform() {
@@ -230,7 +247,8 @@ jobs:
 
           for metadata_file in "${metadata_files[@]}"; do
             platform="$(jq -r '.platform // empty' "${metadata_file}")"
-            digest="$(jq -r '.digest // empty' "${metadata_file}")"
+            ghcr_digest="$(jq -r '.ghcr_digest // empty' "${metadata_file}")"
+            dockerhub_digest="$(jq -r '.dockerhub_digest // empty' "${metadata_file}")"
             ghcr_image="$(jq -r '.ghcr_image // empty' "${metadata_file}")"
             dockerhub_image="$(jq -r '.dockerhub_image // empty' "${metadata_file}")"
 
@@ -239,8 +257,13 @@ jobs:
               exit 1
             fi
 
-            if [[ ! "${digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
-              echo "Invalid digest in ${metadata_file}: ${digest}" >&2
+            if [[ ! "${ghcr_digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+              echo "Invalid GHCR digest in ${metadata_file}: ${ghcr_digest}" >&2
+              exit 1
+            fi
+
+            if [[ ! "${dockerhub_digest}" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+              echo "Invalid Docker Hub digest in ${metadata_file}: ${dockerhub_digest}" >&2
               exit 1
             fi
 
@@ -254,37 +277,56 @@ jobs:
               exit 1
             fi
 
-            digests_by_platform["${platform}"]="${digest}"
+            ghcr_digests_by_platform["${platform}"]="${ghcr_digest}"
+            dockerhub_digests_by_platform["${platform}"]="${dockerhub_digest}"
             seen_platforms["${platform}"]=1
           done
 
           for platform in "${expected_platforms[@]}"; do
-            if [ -z "${digests_by_platform[${platform}]:-}" ]; then
-              echo "Missing digest metadata for ${platform}." >&2
+            if [ -z "${ghcr_digests_by_platform[${platform}]:-}" ]; then
+              echo "Missing GHCR digest metadata for ${platform}." >&2
+              exit 1
+            fi
+
+            if [ -z "${dockerhub_digests_by_platform[${platform}]:-}" ]; then
+              echo "Missing Docker Hub digest metadata for ${platform}." >&2
               exit 1
             fi
           done
 
           create_manifest() {
-            local image="$1"
-            shift
+            local registry="$1"
+            local image="$2"
+            shift 2
             local sources=()
             local platform
             local digest
 
             for platform in "${expected_platforms[@]}"; do
-              digest="${digests_by_platform[${platform}]}"
+              case "${registry}" in
+                ghcr)
+                  digest="${ghcr_digests_by_platform[${platform}]}"
+                  ;;
+                dockerhub)
+                  digest="${dockerhub_digests_by_platform[${platform}]}"
+                  ;;
+                *)
+                  echo "Unknown registry: ${registry}" >&2
+                  exit 1
+                  ;;
+              esac
+
               sources+=("${image}@${digest}")
             done
 
             docker buildx imagetools create "$@" "${sources[@]}"
           }
 
-          create_manifest "${GHCR_IMAGE}" \
+          create_manifest ghcr "${GHCR_IMAGE}" \
             -t "${GHCR_IMAGE}:${VERSION}" \
             -t "${GHCR_IMAGE}:latest"
 
-          create_manifest "${DOCKERHUB_IMAGE}" \
+          create_manifest dockerhub "${DOCKERHUB_IMAGE}" \
             -t "${DOCKERHUB_IMAGE}:${VERSION}" \
             -t "${DOCKERHUB_IMAGE}:latest"
 
