@@ -189,6 +189,55 @@
     changed issue type from {{ item.prevIssueType?.name }} to {{ item.issueType?.name }}
   </template>
 
+  <template v-else-if="item.eventType === 'assigned' || item.eventType === 'unassigned'">
+    {{ item.displayText || assigneePrefix }}
+  </template>
+
+  <template v-else-if="item.eventType === 'assignees_changed'">
+    <template v-if="assigneeChanges.length">
+      <template
+        v-for="(change, index) in assigneeChanges"
+        :key="`${change.action}-${change.value}-${index}`"
+      >
+        <template v-if="item.hasMixedActors">
+          <a
+            v-if="timelineChangeActorUrl(change)"
+            :href="timelineChangeActorUrl(change)"
+            target="_blank"
+            rel="noopener"
+            class="has-text-weight-medium has-text-link mr-1"
+          >
+            {{ timelineChangeActorLabel(change) }}
+          </a>
+          <span v-else class="has-text-weight-medium mr-1">
+            {{ timelineChangeActorLabel(change) }}
+          </span>
+        </template>
+        {{ change.action }}
+        <a
+          v-if="assigneeChangeUrl(change)"
+          :href="assigneeChangeUrl(change)"
+          target="_blank"
+          rel="noopener"
+          class="tag is-activity ml-1 is-info is-light"
+        >
+          {{ assigneeChangeLabel(change) }}
+        </a>
+        <span v-else class="tag is-activity ml-1 is-info is-light">
+          {{ assigneeChangeLabel(change) }}
+        </span>
+        {{
+          index === assigneeChanges.length - 2
+            ? ' and '
+            : index < assigneeChanges.length - 2
+              ? ', '
+              : ''
+        }}
+      </template>
+    </template>
+    <template v-else>{{ item.displayText }}</template>
+  </template>
+
   <template v-else-if="item.eventType === 'labeled' || item.eventType === 'unlabeled'">
     {{ item.eventType === 'labeled' ? 'added label' : 'removed label' }}
     <span
@@ -197,6 +246,41 @@
     >
       {{ item.label?.name }}
     </span>
+  </template>
+
+  <template v-else-if="item.eventType === 'labels_changed'">
+    <template v-if="labelChanges.length">
+      <template
+        v-for="(change, index) in labelChanges"
+        :key="`${change.action}-${change.value}-${index}`"
+      >
+        <template v-if="item.hasMixedActors">
+          <a
+            v-if="timelineChangeActorUrl(change)"
+            :href="timelineChangeActorUrl(change)"
+            target="_blank"
+            rel="noopener"
+            class="has-text-weight-medium has-text-link mr-1"
+          >
+            {{ timelineChangeActorLabel(change) }}
+          </a>
+          <span v-else class="has-text-weight-medium mr-1">
+            {{ timelineChangeActorLabel(change) }}
+          </span>
+        </template>
+        {{ change.action }}
+        <span
+          class="tag is-activity ml-1 has-text-weight-medium"
+          :style="labelStyle(change.label?.color)"
+        >
+          {{ labelChangeLabel(change) }}
+        </span>
+        {{
+          index === labelChanges.length - 2 ? ' and ' : index < labelChanges.length - 2 ? ', ' : ''
+        }}
+      </template>
+    </template>
+    <template v-else>{{ item.displayText }}</template>
   </template>
 
   <template v-else-if="item.eventType === 'locked' || item.eventType === 'unlocked'">
@@ -306,6 +390,7 @@ import {
   getRequestedReviewerLabel,
   getRequestedReviewerUrl,
   type PRTimelineItem,
+  type TimelineStateChange,
 } from '~/composables/usePRTimelineEvents';
 import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
 
@@ -316,6 +401,8 @@ const props = defineProps<{
 const { t } = useI18n();
 const reviewerUrl = computed(() => getRequestedReviewerUrl(props.item.requestedReviewer));
 const reviewerLabel = computed(() => getRequestedReviewerLabel(props.item.requestedReviewer));
+const assigneeChanges = computed(() => props.item.assigneeChanges ?? []);
+const labelChanges = computed(() => props.item.labelChanges ?? []);
 
 const issueFieldPrefix = computed(() => {
   switch (props.item.eventType) {
@@ -327,6 +414,10 @@ const issueFieldPrefix = computed(() => {
       return 'removed a project field value';
   }
 });
+
+const assigneePrefix = computed(() =>
+  props.item.eventType === 'assigned' ? 'assigned' : 'unassigned'
+);
 
 const threadPrefix = computed(() => {
   if (props.item.eventType === 'commit_commented') {
@@ -343,6 +434,26 @@ const labelStyle = (color?: string) => {
     backgroundColor: `#${color}`,
     color: `#${getTextColorFromBackground(color)}`,
   };
+};
+
+const assigneeChangeLabel = (change: TimelineStateChange) =>
+  change.assignee?.login || change.assignee?.name || change.value;
+
+const assigneeChangeUrl = (change: TimelineStateChange) => {
+  if (change.assignee?.url) return change.assignee.url;
+  if (change.assignee?.login) return `https://github.com/${change.assignee.login}`;
+  return undefined;
+};
+
+const labelChangeLabel = (change: TimelineStateChange) => change.label?.name || change.value;
+
+const timelineChangeActorLabel = (change: TimelineStateChange) =>
+  change.actor?.login || change.actor?.name || '';
+
+const timelineChangeActorUrl = (change: TimelineStateChange) => {
+  if (change.actor?.url) return change.actor.url;
+  if (change.actor?.login) return `https://github.com/${change.actor.login}`;
+  return undefined;
 };
 </script>
 

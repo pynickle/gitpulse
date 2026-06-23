@@ -35,6 +35,14 @@ export interface TimelineLabel {
   color?: string;
 }
 
+export interface TimelineStateChange {
+  action: string;
+  value: string;
+  actor?: TimelineActor;
+  assignee?: TimelineRequestedReviewer;
+  label?: TimelineLabel;
+}
+
 export interface TimelineCommit {
   oid?: string;
   message?: string;
@@ -108,6 +116,7 @@ export interface PRTimelineItem {
   state?: string;
   actor?: TimelineActor;
   author?: TimelineActor;
+  hasMixedActors?: boolean;
   assignee?: TimelineRequestedReviewer;
   enqueuer?: TimelineActor;
   mergeQueue?: { id?: string };
@@ -124,6 +133,8 @@ export interface PRTimelineItem {
   subIssue?: TimelineReference;
   fromRepository?: TimelineRepository & { url?: string };
   label?: TimelineLabel;
+  assigneeChanges?: TimelineStateChange[];
+  labelChanges?: TimelineStateChange[];
   lockReason?: string;
   stateReason?: string;
   currentRefName?: string;

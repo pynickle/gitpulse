@@ -5,6 +5,7 @@ import {
   fetchPaginatedArray,
   fetchPRReviewThreads,
   fetchTimelinePage,
+  normalizePRTimelineItems,
   normalizePRTimelineEvent,
   sortTimelineItems,
   throwTimelineFatalError,
@@ -139,8 +140,10 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       enrichTimelineEventWithPullCommit(rawEvent, pullCommitsBySha)
     );
 
-    const normalizedTimeline = sortTimelineItems(
-      enrichedTimeline.flatMap((rawEvent) => normalizePRTimelineEvent(rawEvent, { owner, repo }))
+    const normalizedTimeline = normalizePRTimelineItems(
+      sortTimelineItems(
+        enrichedTimeline.flatMap((rawEvent) => normalizePRTimelineEvent(rawEvent, { owner, repo }))
+      )
     );
     const timeline = enrichPRTimelineWithReviewData(
       normalizedTimeline,

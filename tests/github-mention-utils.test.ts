@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 
-const fetchPaginatedArray = mock(async () => [
+const reactions = await import('../shared/utils/reactions');
+
+const collaborators = [
   {
     login: 'octocat',
     name: 'The Octocat',
@@ -13,12 +15,16 @@ const fetchPaginatedArray = mock(async () => [
     avatar_url: null,
     html_url: 'https://github.com/hubot',
   },
-]);
+];
 
-mock.module('../server/utils/github-timeline-utils', () => ({
-  fetchPaginatedArray,
+const octokitRequest = mock(async () => ({
+  data: collaborators,
+  headers: {},
 }));
 
+mock.module('#shared/utils/reactions', () => ({
+  ...reactions,
+}));
 mock.module('#shared/types/mention-suggestions', () => ({}));
 mock.module('#shared/utils/markdown-mentions', () => ({
   GITHUB_MENTION_LOGIN_PATTERN: '[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?',
@@ -31,11 +37,11 @@ const { fetchRepositoryMentionSuggestions } = await import('../server/utils/gith
 
 describe('fetchRepositoryMentionSuggestions', () => {
   afterEach(() => {
-    fetchPaginatedArray.mockClear();
+    octokitRequest.mockClear();
   });
 
   test('reuses repository collaborators for repeated queries in the same token scope', async () => {
-    const octokit = {} as any;
+    const octokit = { request: octokitRequest } as any;
 
     await fetchRepositoryMentionSuggestions(octokit, 'OWNER', 'Repo', {
       accessTokenCacheKey: 'token-a',
@@ -46,11 +52,11 @@ describe('fetchRepositoryMentionSuggestions', () => {
       query: 'hub',
     });
 
-    expect(fetchPaginatedArray).toHaveBeenCalledTimes(1);
+    expect(octokitRequest).toHaveBeenCalledTimes(1);
   });
 
   test('keeps collaborator caches isolated by access token', async () => {
-    const octokit = {} as any;
+    const octokit = { request: octokitRequest } as any;
 
     await fetchRepositoryMentionSuggestions(octokit, 'owner', 'repo-two', {
       accessTokenCacheKey: 'token-c',
@@ -61,6 +67,6 @@ describe('fetchRepositoryMentionSuggestions', () => {
       query: '',
     });
 
-    expect(fetchPaginatedArray).toHaveBeenCalledTimes(2);
+    expect(octokitRequest).toHaveBeenCalledTimes(2);
   });
 });

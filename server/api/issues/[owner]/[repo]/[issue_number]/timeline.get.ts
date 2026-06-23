@@ -3,6 +3,7 @@ import {
   createUnsupportedWarnings,
   fetchTimelinePage,
   normalizeIssueTimelineEvent,
+  normalizeTimelineStateItems,
   sortTimelineItems,
   throwTimelineFatalError,
 } from '#server/utils/github-timeline-utils';
@@ -39,9 +40,11 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       page
     );
 
-    const timeline = sortTimelineItems(
-      items.map((rawEvent: Record<string, any>) =>
-        normalizeIssueTimelineEvent(rawEvent, { owner, repo })
+    const timeline = normalizeTimelineStateItems(
+      sortTimelineItems(
+        items.map((rawEvent: Record<string, any>) =>
+          normalizeIssueTimelineEvent(rawEvent, { owner, repo })
+        )
       )
     );
 

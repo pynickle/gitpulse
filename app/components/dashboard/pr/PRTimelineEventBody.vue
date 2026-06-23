@@ -1,6 +1,7 @@
 <template>
   <span class="is-size-7">
     <a
+      v-if="shouldRenderActorPrefix"
       :href="item.actor?.url"
       target="_blank"
       rel="noopener"
@@ -55,6 +56,7 @@ const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const repoFullName = computed(() => `${props.repoOwner}/${props.repoName}`);
 const eventDate = computed(() => props.item.createdAt || props.item.commit?.committedDate || '');
+const shouldRenderActorPrefix = computed(() => !props.item.hasMixedActors);
 
 const referenceEventTypes = new Set([
   'blocked_by_added',
@@ -77,6 +79,8 @@ const stateEventTypes = new Set([
   'added_to_merge_queue',
   'added_to_project',
   'added_to_project_v2',
+  'assigned',
+  'assignees_changed',
   'auto_merge_disabled',
   'auto_merge_enabled',
   'auto_rebase_enabled',
@@ -107,6 +111,7 @@ const stateEventTypes = new Set([
   'issue_type_changed',
   'issue_type_removed',
   'labeled',
+  'labels_changed',
   'locked',
   'mentioned',
   'merged',
@@ -125,6 +130,7 @@ const stateEventTypes = new Set([
   'review_dismissed',
   'review_request_removed',
   'review_requested',
+  'unassigned',
   'unlabeled',
   'unlocked',
   'unpinned',

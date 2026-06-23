@@ -1,6 +1,7 @@
 <template>
   <span class="is-size-7">
     <a
+      v-if="shouldRenderActorPrefix"
       :href="item.actor?.url"
       target="_blank"
       rel="noopener"
@@ -44,7 +45,7 @@ import IssueTimelineStateEvents from '~/components/dashboard/issue/IssueTimeline
 import { type ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import formatDurationFromNow from '~/utils/formatDurationFromNow';
 
-defineProps<{
+const props = defineProps<{
   item: ProcessedIssueTimelineItem;
   repoOwner: string;
   repoName: string;
@@ -58,6 +59,7 @@ const emit = defineEmits<{
 const { locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
+const shouldRenderActorPrefix = computed(() => !props.item.hasMixedActors);
 
 const referenceEventTypes = new Set([
   'connected',
@@ -77,7 +79,9 @@ const referenceEventTypes = new Set([
 
 const stateEventTypes = new Set([
   'added_to_project',
+  'assignees_changed',
   'labeled',
+  'labels_changed',
   'unlabeled',
   'milestoned',
   'demilestoned',

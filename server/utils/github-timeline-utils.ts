@@ -121,6 +121,16 @@ interface SortableTimelineItem {
 }
 
 type BaseTimelineItem = Omit<SortableTimelineItem, 'kind'>;
+type TimelineActorPayload = ReturnType<typeof mapActor>;
+type TimelineLabelPayload = ReturnType<typeof mapLabel>;
+
+interface MergeableTimelineChange {
+  action: string;
+  value: string;
+  actor?: TimelineActorPayload;
+  label?: TimelineLabelPayload;
+  assignee?: TimelineActorPayload;
+}
 
 const reactionContentKeys: ReactionContent[] = ISSUE_COMMENT_REACTION_CONTENTS;
 
@@ -507,6 +517,229 @@ export function sortTimelineItems<T extends SortableTimelineItem>(timeline: T[])
 
     return 0;
   });
+}
+
+export function normalizeTimelineStateItems<T extends SortableTimelineItem>(timeline: T[]): T[] {
+  const normalized: SortableTimelineItem[] = [];
+
+  for (const timelineItem of timeline) {
+    const item = normalizeAssigneeTimelineItem(timelineItem);
+    const previous = normalized[normalized.length - 1];
+    const merged = mergeAdjacentTimelineStateChanges(previous, item);
+
+    if (merged) {
+      normalized[normalized.length - 1] = merged;
+      continue;
+    }
+
+    normalized.push(item);
+  }
+
+  return normalized as T[];
+}
+
+export const normalizePRTimelineItems = normalizeTimelineStateItems;
+
+function normalizeAssigneeTimelineItem(item: SortableTimelineItem): SortableTimelineItem {
+  const change = getAssigneeChange(item);
+  if (!change) {
+    return item;
+  }
+
+  const actorLogin = getActorLogin(item.actor);
+  const assigneeLogin = getActorLogin(item.assignee);
+
+  if (item.eventType === 'assigned' && actorLogin && actorLogin === assigneeLogin) {
+    return {
+      ...item,
+      displayText: 'self-assigned this',
+    };
+  }
+
+  return {
+    ...item,
+    displayText: `${change.action} ${change.value}`,
+  };
+}
+
+function mergeAdjacentTimelineStateChanges(
+  previous: SortableTimelineItem | undefined,
+  current: SortableTimelineItem
+): SortableTimelineItem | undefined {
+  if (!previous) {
+    return undefined;
+  }
+
+  const mergedAssignees = mergeAdjacentAssigneeChanges(previous, current);
+  if (mergedAssignees) {
+    return mergedAssignees;
+  }
+
+  return mergeAdjacentLabelChanges(previous, current);
+}
+
+function mergeAdjacentAssigneeChanges(
+  previous: SortableTimelineItem,
+  current: SortableTimelineItem
+): SortableTimelineItem | undefined {
+  const currentChange = getAssigneeChange(current);
+  if (!currentChange) {
+    return undefined;
+  }
+
+  const previousChanges = getAssigneeChanges(previous);
+  if (!previousChanges.length) {
+    return undefined;
+  }
+
+  const assigneeChanges = [...previousChanges, currentChange];
+
+  return {
+    ...previous,
+    id: mergeTimelineIds(previous, current),
+    eventType: 'assignees_changed',
+    assignee: currentChange.assignee,
+    assigneeChanges,
+    displayText: formatTimelineChanges(assigneeChanges),
+    hasMixedActors: hasMixedChangeActors(assigneeChanges),
+  };
+}
+
+function mergeAdjacentLabelChanges(
+  previous: SortableTimelineItem,
+  current: SortableTimelineItem
+): SortableTimelineItem | undefined {
+  const currentChange = getLabelChange(current);
+  if (!currentChange) {
+    return undefined;
+  }
+
+  const previousChanges = getLabelChanges(previous);
+  if (!previousChanges.length) {
+    return undefined;
+  }
+
+  const labelChanges = [...previousChanges, currentChange];
+
+  return {
+    ...previous,
+    id: mergeTimelineIds(previous, current),
+    eventType: 'labels_changed',
+    label: currentChange.label,
+    labelChanges,
+    displayText: formatTimelineChanges(labelChanges),
+    hasMixedActors: hasMixedChangeActors(labelChanges),
+  };
+}
+
+function getAssigneeChanges(item: SortableTimelineItem): MergeableTimelineChange[] {
+  if (Array.isArray(item.assigneeChanges)) {
+    return item.assigneeChanges.filter(isMergeableTimelineChange);
+  }
+
+  const change = getAssigneeChange(item);
+  return change ? [change] : [];
+}
+
+function getAssigneeChange(item: SortableTimelineItem): MergeableTimelineChange | undefined {
+  if (item.eventType !== 'assigned' && item.eventType !== 'unassigned') {
+    return undefined;
+  }
+
+  const assignee = item.assignee as TimelineActorPayload;
+  const value = getActorDisplayName(assignee);
+  if (!value) {
+    return undefined;
+  }
+
+  return {
+    action: item.eventType,
+    value,
+    actor: item.actor as TimelineActorPayload,
+    assignee,
+  };
+}
+
+function getLabelChanges(item: SortableTimelineItem): MergeableTimelineChange[] {
+  if (Array.isArray(item.labelChanges)) {
+    return item.labelChanges.filter(isMergeableTimelineChange);
+  }
+
+  const change = getLabelChange(item);
+  return change ? [change] : [];
+}
+
+function getLabelChange(item: SortableTimelineItem): MergeableTimelineChange | undefined {
+  if (item.eventType !== 'labeled' && item.eventType !== 'unlabeled') {
+    return undefined;
+  }
+
+  const label = item.label as TimelineLabelPayload;
+  const value = typeof label?.name === 'string' ? label.name.trim() : '';
+  if (!value) {
+    return undefined;
+  }
+
+  return {
+    action: item.eventType === 'labeled' ? 'added label' : 'removed label',
+    value,
+    actor: item.actor as TimelineActorPayload,
+    label,
+  };
+}
+
+function formatTimelineChanges(changes: MergeableTimelineChange[]) {
+  const hasMixedActors = hasMixedChangeActors(changes);
+  const phrases = changes.map((change) => formatTimelineChangePhrase(change, hasMixedActors));
+
+  if (phrases.length < 2) {
+    return phrases[0] ?? '';
+  }
+
+  if (phrases.length === 2) {
+    return `${phrases[0]} and ${phrases[1]}`;
+  }
+
+  return `${phrases.slice(0, -1).join(', ')}, and ${phrases[phrases.length - 1]}`;
+}
+
+function formatTimelineChangePhrase(change: MergeableTimelineChange, includeActor: boolean) {
+  const actor = includeActor ? getActorDisplayName(change.actor) : '';
+  const phrase = `${change.action} ${change.value}`;
+  return actor ? `${actor} ${phrase}` : phrase;
+}
+
+function isMergeableTimelineChange(value: unknown): value is MergeableTimelineChange {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const change = value as Partial<MergeableTimelineChange>;
+  return typeof change.action === 'string' && typeof change.value === 'string';
+}
+
+function hasMixedChangeActors(changes: MergeableTimelineChange[]) {
+  const logins = changes
+    .map((change) => getActorLogin(change.actor))
+    .filter((login): login is string => Boolean(login));
+
+  return new Set(logins).size > 1;
+}
+
+function mergeTimelineIds(previous: SortableTimelineItem, current: SortableTimelineItem) {
+  const ids = [previous.id, current.id].filter((id): id is string => Boolean(id));
+  return ids.length ? ids.join(':') : (previous.id ?? current.id);
+}
+
+function getActorLogin(actor: unknown) {
+  const login = (actor as { login?: unknown } | undefined)?.login;
+  return typeof login === 'string' ? login.trim().toLowerCase() : '';
+}
+
+function getActorDisplayName(actor: TimelineActorPayload) {
+  const login = typeof actor?.login === 'string' ? actor.login.trim() : '';
+  const name = typeof actor?.name === 'string' ? actor.name.trim() : '';
+  return login || name;
 }
 
 export function normalizeIssueTimelineEvent(

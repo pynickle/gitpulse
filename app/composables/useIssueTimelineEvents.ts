@@ -9,6 +9,7 @@ import type {
   TimelineReference,
   TimelineRepository,
   TimelineRequestedReviewer,
+  TimelineStateChange,
 } from '~/composables/usePRTimelineEvents';
 
 export interface IssueTimelineItem {
@@ -24,10 +25,13 @@ export interface IssueTimelineItem {
   displayText?: string;
   actor?: TimelineActor;
   author?: TimelineActor;
+  hasMixedActors?: boolean;
   commit?: TimelineCommit & { messageHeadlineHTML?: string };
   label?: TimelineLabel;
+  labelChanges?: TimelineStateChange[];
   project?: TimelineProject;
   assignee?: TimelineRequestedReviewer;
+  assigneeChanges?: TimelineStateChange[];
   deletedCommentAuthor?: { login?: string };
   discussion?: { title?: string };
   source?: TimelineReference;
