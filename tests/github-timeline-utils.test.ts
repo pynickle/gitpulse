@@ -120,8 +120,8 @@ describe('PR timeline server normalization', () => {
     });
   });
 
-  test('merges adjacent label changes from different actors', () => {
-    const [item] = normalizePullTimeline([
+  test('does not merge adjacent label changes from different actors', () => {
+    const items = normalizePullTimeline([
       {
         id: 1,
         event: 'labeled',
@@ -138,20 +138,21 @@ describe('PR timeline server normalization', () => {
       },
     ]);
 
-    expect(item).toMatchObject({
-      eventType: 'labels_changed',
+    expect(items).toHaveLength(2);
+    expect(items[0]).toMatchObject({
+      eventType: 'labeled',
       actor: { login: 'SALTWOOD' },
-      displayText: 'SALTWOOD added label bug and Chiloven945 removed label stale',
-      hasMixedActors: true,
-      labelChanges: [
-        { actor: { login: 'SALTWOOD' }, action: 'added label', value: 'bug' },
-        { actor: { login: 'Chiloven945' }, action: 'removed label', value: 'stale' },
-      ],
+      label: { name: 'bug' },
+    });
+    expect(items[1]).toMatchObject({
+      eventType: 'unlabeled',
+      actor: { login: 'Chiloven945' },
+      label: { name: 'stale' },
     });
   });
 
-  test('merges adjacent assignment changes from different actors without self-assignment wording', () => {
-    const [item] = normalizePullTimeline([
+  test('does not merge adjacent assignment changes from different actors', () => {
+    const items = normalizePullTimeline([
       {
         id: 1,
         event: 'assigned',
@@ -168,16 +169,19 @@ describe('PR timeline server normalization', () => {
       },
     ]);
 
-    expect(item).toMatchObject({
-      eventType: 'assignees_changed',
-      displayText: 'SALTWOOD assigned Chiloven945 and Chiloven945 assigned Chiloven945',
-      hasMixedActors: true,
-      assigneeChanges: [
-        { actor: { login: 'SALTWOOD' }, action: 'assigned', value: 'Chiloven945' },
-        { actor: { login: 'Chiloven945' }, action: 'assigned', value: 'Chiloven945' },
-      ],
+    expect(items).toHaveLength(2);
+    expect(items[0]).toMatchObject({
+      eventType: 'assigned',
+      actor: { login: 'SALTWOOD' },
+      assignee: { login: 'Chiloven945' },
+      displayText: 'assigned Chiloven945',
     });
-    expect(item.displayText).not.toContain('self-assigned');
+    expect(items[1]).toMatchObject({
+      eventType: 'assigned',
+      actor: { login: 'Chiloven945' },
+      assignee: { login: 'Chiloven945' },
+      displayText: 'self-assigned this',
+    });
   });
 });
 
@@ -201,8 +205,8 @@ describe('issue timeline server normalization', () => {
     });
   });
 
-  test('merges adjacent assignment and label changes on the server', () => {
-    const [assignmentItem, labelItem] = normalizeIssueTimeline([
+  test('does not merge adjacent assignment and label changes across different actors', () => {
+    const items = normalizeIssueTimeline([
       {
         id: 1,
         event: 'assigned',
@@ -233,17 +237,18 @@ describe('issue timeline server normalization', () => {
       },
     ]);
 
-    expect(assignmentItem).toMatchObject({
-      eventType: 'assignees_changed',
-      displayText: 'SALTWOOD assigned Chiloven945 and Chiloven945 unassigned Chiloven945',
-      hasMixedActors: true,
-    });
-    expect(assignmentItem.displayText).not.toContain('self-assigned');
-
-    expect(labelItem).toMatchObject({
-      eventType: 'labels_changed',
-      displayText: 'SALTWOOD added label bug and Chiloven945 removed label stale',
-      hasMixedActors: true,
-    });
+    expect(items).toHaveLength(4);
+    expect(items.map((item) => item.eventType)).toEqual([
+      'assigned',
+      'unassigned',
+      'labeled',
+      'unlabeled',
+    ]);
+    expect(items.map((item) => item.actor?.login)).toEqual([
+      'SALTWOOD',
+      'Chiloven945',
+      'SALTWOOD',
+      'Chiloven945',
+    ]);
   });
 });

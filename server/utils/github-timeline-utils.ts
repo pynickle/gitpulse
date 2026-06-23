@@ -587,12 +587,10 @@ function mergeAdjacentAssigneeChanges(
     return undefined;
   }
 
-  const previousChanges = getAssigneeChanges(previous);
-  if (!previousChanges.length) {
+  const assigneeChanges = mergeTimelineChanges(getAssigneeChanges(previous), currentChange);
+  if (!assigneeChanges) {
     return undefined;
   }
-
-  const assigneeChanges = [...previousChanges, currentChange];
 
   return {
     ...previous,
@@ -614,12 +612,10 @@ function mergeAdjacentLabelChanges(
     return undefined;
   }
 
-  const previousChanges = getLabelChanges(previous);
-  if (!previousChanges.length) {
+  const labelChanges = mergeTimelineChanges(getLabelChanges(previous), currentChange);
+  if (!labelChanges) {
     return undefined;
   }
-
-  const labelChanges = [...previousChanges, currentChange];
 
   return {
     ...previous,
@@ -686,6 +682,26 @@ function getLabelChange(item: SortableTimelineItem): MergeableTimelineChange | u
     actor: item.actor as TimelineActorPayload,
     label,
   };
+}
+
+function mergeTimelineChanges(
+  previousChanges: MergeableTimelineChange[],
+  currentChange: MergeableTimelineChange
+): MergeableTimelineChange[] | undefined {
+  if (!previousChanges.length) {
+    return undefined;
+  }
+
+  const currentActor = getActorLogin(currentChange.actor);
+  if (!currentActor) {
+    return undefined;
+  }
+
+  const allChangesHaveCurrentActor = previousChanges.every(
+    (change) => getActorLogin(change.actor) === currentActor
+  );
+
+  return allChangesHaveCurrentActor ? [...previousChanges, currentChange] : undefined;
 }
 
 function formatTimelineChanges(changes: MergeableTimelineChange[]) {
