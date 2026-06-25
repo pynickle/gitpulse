@@ -153,7 +153,6 @@ interface TimelineRepoContext {
 
 const ISSUE_UNSUPPORTED_EVENT_CLASSES = [
   'project_v2_field_history',
-  'issue_type_history',
   'sub_issue_relationships',
   'blocking_relationships',
   'duplicate_relationships',
@@ -831,6 +830,30 @@ export function normalizeIssueTimelineEvent(
         kind: 'event',
         eventType: eventName,
         label: mapLabel(rawEvent.label),
+      };
+    case 'issue_type_added':
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+        issueType: mapIssueType(rawEvent.issue_type ?? rawEvent.issueType),
+      };
+    case 'issue_type_changed':
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+        prevIssueType: mapIssueType(
+          rawEvent.prev_issue_type ?? rawEvent.previous_issue_type ?? rawEvent.prevIssueType
+        ),
+        issueType: mapIssueType(rawEvent.issue_type ?? rawEvent.issueType),
+      };
+    case 'issue_type_removed':
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+        issueType: mapIssueType(rawEvent.issue_type ?? rawEvent.issueType),
       };
     case 'milestoned':
       return {
@@ -1594,6 +1617,16 @@ function mapLabel(label: Record<string, any> | undefined | null) {
   return {
     name: label.name,
     color: label.color,
+  };
+}
+
+function mapIssueType(issueType: Record<string, any> | undefined | null) {
+  if (!issueType) return undefined;
+
+  return {
+    id: issueType.id,
+    name: issueType.name,
+    color: issueType.color,
   };
 }
 

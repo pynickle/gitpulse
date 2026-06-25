@@ -4,6 +4,7 @@ import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type {
   TimelineActor,
   TimelineCommit,
+  TimelineIssueType,
   TimelineLabel,
   TimelineProject,
   TimelineReference,
@@ -48,6 +49,8 @@ export interface IssueTimelineItem {
   currentTitle?: string;
   lockReason?: string | null;
   stateReason?: string | null;
+  prevIssueType?: TimelineIssueType;
+  issueType?: TimelineIssueType;
   milestoneTitle?: string;
   previousProjectColumnName?: string;
   projectColumnName?: string;
@@ -95,8 +98,6 @@ const stateReasonClassMap = withLowercaseAliases({
   REOPENED: 'is-primary',
 });
 
-const ISSUE_TYPE_EVENTS = ['issue_type_added', 'issue_type_changed', 'issue_type_removed'];
-
 export function formatLockReason(lockReason: string | undefined | null): string {
   if (!lockReason) return '';
   return lockReasonMap[lockReason] || lockReason;
@@ -110,10 +111,6 @@ export function formatStateReason(stateReason: string | undefined | null): strin
 export function getStateReasonClass(stateReason: string | undefined | null): string {
   if (!stateReason) return 'is-info';
   return stateReasonClassMap[stateReason] || 'is-info';
-}
-
-export function isIssueTypeEvent(eventType?: string): boolean {
-  return Boolean(eventType && ISSUE_TYPE_EVENTS.includes(eventType));
 }
 
 function isSameTarget(
@@ -163,16 +160,14 @@ export function normalizeIssueTimelineItems(
   timeline: IssueTimelineItem[],
   context: IssueTimelineContext
 ): ProcessedIssueTimelineItem[] {
-  return timeline
-    .filter((item) => !isIssueTypeEvent(item.eventType))
-    .map((item, index) => ({
-      ...item,
-      otherTarget:
-        item.eventType === 'connected' || item.eventType === 'disconnected'
-          ? getOtherTarget(item, context)
-          : item.otherTarget,
-      renderKey: buildIssueTimelineItemKey(item, index),
-    }));
+  return timeline.map((item, index) => ({
+    ...item,
+    otherTarget:
+      item.eventType === 'connected' || item.eventType === 'disconnected'
+        ? getOtherTarget(item, context)
+        : item.otherTarget,
+    renderKey: buildIssueTimelineItemKey(item, index),
+  }));
 }
 
 export function useIssueTimelineEvents(

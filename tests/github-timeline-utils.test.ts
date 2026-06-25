@@ -205,6 +205,83 @@ describe('issue timeline server normalization', () => {
     });
   });
 
+  test('normalizes REST issue type events', () => {
+    const items = normalizeIssueTimeline([
+      {
+        id: 26_186_149_713,
+        event: 'issue_type_added',
+        created_at: '2026-06-01T12:06:03Z',
+        actor: user('SALTWOOD'),
+        issue_type: {
+          id: 26_699_556,
+          name: '\u4efb\u52a1',
+          color: 'pink',
+        },
+      },
+      {
+        id: 26_186_149_714,
+        event: 'issue_type_changed',
+        created_at: '2026-06-01T12:07:03Z',
+        actor: user('SALTWOOD'),
+        prev_issue_type: {
+          id: 26_699_555,
+          name: 'Bug',
+          color: 'red',
+        },
+        issue_type: {
+          id: 26_699_556,
+          name: 'Task',
+          color: 'blue',
+        },
+      },
+      {
+        id: 26_186_149_715,
+        event: 'issue_type_removed',
+        created_at: '2026-06-01T12:08:03Z',
+        actor: user('SALTWOOD'),
+        issue_type: {
+          id: 26_699_556,
+          name: 'Task',
+          color: 'blue',
+        },
+      },
+    ]);
+
+    expect(items).toHaveLength(3);
+    expect(items[0]).toMatchObject({
+      kind: 'event',
+      eventType: 'issue_type_added',
+      id: '26186149713',
+      actor: { login: 'SALTWOOD' },
+      issueType: {
+        id: 26_699_556,
+        name: '\u4efb\u52a1',
+        color: 'pink',
+      },
+    });
+    expect(items[1]).toMatchObject({
+      eventType: 'issue_type_changed',
+      prevIssueType: {
+        id: 26_699_555,
+        name: 'Bug',
+        color: 'red',
+      },
+      issueType: {
+        id: 26_699_556,
+        name: 'Task',
+        color: 'blue',
+      },
+    });
+    expect(items[2]).toMatchObject({
+      eventType: 'issue_type_removed',
+      issueType: {
+        id: 26_699_556,
+        name: 'Task',
+        color: 'blue',
+      },
+    });
+  });
+
   test('does not merge adjacent assignment and label changes across different actors', () => {
     const items = normalizeIssueTimeline([
       {

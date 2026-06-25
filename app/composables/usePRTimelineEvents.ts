@@ -35,6 +35,12 @@ export interface TimelineLabel {
   color?: string;
 }
 
+export interface TimelineIssueType {
+  id?: number | string;
+  name?: string;
+  color?: string;
+}
+
 export interface TimelineStateChange {
   action: string;
   value: string;
@@ -145,8 +151,8 @@ export interface PRTimelineItem {
   discussion?: { title?: string };
   deployment?: { environment?: string };
   deploymentStatus?: { environment?: string };
-  prevIssueType?: { name?: string };
-  issueType?: { name?: string };
+  prevIssueType?: TimelineIssueType;
+  issueType?: TimelineIssueType;
   previousProjectColumnName?: string;
   previousStatus?: string;
   status?: string;
