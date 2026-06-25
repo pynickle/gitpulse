@@ -1,3 +1,11 @@
+import {
+  buildGitHubUrlFromDashboardTarget,
+  createDashboardDiscussionTarget,
+  createDashboardIssueTarget,
+  createDashboardPullRequestTarget,
+  createDashboardReleaseTarget,
+  type DashboardUrlTarget,
+} from '~/utils/dashboardUrlNavigationUtils';
 import parseGitHubNotificationSubjectTarget from '~/utils/parseGitHubNotificationSubjectTarget';
 
 interface NotificationSubject {
@@ -56,17 +64,22 @@ export function useUrlHelper() {
       const details = getNotificationDetails(notification);
       if (!details) return;
 
-      if (details.isRelease) {
-        window.open(
-          notification.html_url ?? `https://github.com/${details.owner}/${details.repo}/releases`,
-          '_blank',
-          'noopener'
-        );
-        return;
+      let target: DashboardUrlTarget;
+      if (details.isIssue) {
+        target = createDashboardIssueTarget(details.owner, details.repo, details.number);
+      } else if (details.isDiscussion) {
+        target = createDashboardDiscussionTarget(details.owner, details.repo, details.number);
+      } else if (details.isRelease) {
+        target = createDashboardReleaseTarget(details.owner, details.repo, {
+          kind: 'id',
+          id: details.number,
+        });
+      } else {
+        target = createDashboardPullRequestTarget(details.owner, details.repo, details.number);
       }
 
       window.open(
-        `https://github.com/${details.owner}/${details.repo}/${details.type}/${details.number}`,
+        notification.html_url ?? buildGitHubUrlFromDashboardTarget(target),
         '_blank',
         'noopener'
       );

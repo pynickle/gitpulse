@@ -16,6 +16,7 @@ export interface MarkdownRepoResource {
   path: string;
   branch?: string;
   hash?: string;
+  view?: 'blob' | 'tree';
 }
 
 const PATH_SUFFIX_PATTERN = /[?#]/;
@@ -162,7 +163,8 @@ function createGitHubResource(
   repo: string | undefined,
   segments: string[],
   hash: string | undefined,
-  context: MarkdownRepoContext
+  context: MarkdownRepoContext,
+  view?: MarkdownRepoResource['view']
 ): MarkdownRepoResource | null {
   if (!owner || !repo) {
     return null;
@@ -171,13 +173,19 @@ function createGitHubResource(
   const refAndPath = splitGitHubRefAndPath(segments, owner, repo, context);
   if (!refAndPath) return null;
 
-  return {
+  const resource: MarkdownRepoResource = {
     owner,
     repo,
     branch: refAndPath.branch,
     hash,
     path: normalizeSegments(refAndPath.pathSegments),
   };
+
+  if (view) {
+    resource.view = view;
+  }
+
+  return resource;
 }
 
 function parseGitHubWebPath(url: URL, context: MarkdownRepoContext): MarkdownRepoResource | null {
@@ -192,7 +200,14 @@ function parseGitHubWebPath(url: URL, context: MarkdownRepoContext): MarkdownRep
     return null;
   }
 
-  return createGitHubResource(owner, repo, refAndPathSegments, url.hash || undefined, context);
+  return createGitHubResource(
+    owner,
+    repo,
+    refAndPathSegments,
+    url.hash || undefined,
+    context,
+    kind === 'tree' ? 'tree' : undefined
+  );
 }
 
 function parseGitHubRawPath(url: URL, context: MarkdownRepoContext): MarkdownRepoResource | null {
@@ -233,14 +248,28 @@ function parseRelativeGitHubPath(
     const refAndPathSegments = segments.slice(kindIndex + 1);
 
     if (parentTraversalCount === 1 && repoSegments.length === 0 && refAndPathSegments.length >= 2) {
-      return createGitHubResource(context.owner, context.repo, refAndPathSegments, hash, context);
+      return createGitHubResource(
+        context.owner,
+        context.repo,
+        refAndPathSegments,
+        hash,
+        context,
+        segments[kindIndex] === 'tree' ? 'tree' : undefined
+      );
     }
 
     if (parentTraversalCount >= 3 && repoSegments.length >= 2 && refAndPathSegments.length >= 2) {
       const owner = repoSegments[repoSegments.length - 2];
       const repo = repoSegments[repoSegments.length - 1];
 
-      return createGitHubResource(owner, repo, refAndPathSegments, hash, context);
+      return createGitHubResource(
+        owner,
+        repo,
+        refAndPathSegments,
+        hash,
+        context,
+        segments[kindIndex] === 'tree' ? 'tree' : undefined
+      );
     }
   }
 

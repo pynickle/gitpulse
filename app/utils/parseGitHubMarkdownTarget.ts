@@ -5,6 +5,7 @@ export interface GitHubMarkdownTarget {
   repo: string;
   number: number;
   type: 'issue' | 'pull-request' | 'discussion';
+  hash?: string;
 }
 
 const WEB_PATH_PATTERN = /^\/([^/]+)\/([^/]+)\/(issues|pull|discussions)\/(\d+)(?:\/|$)/;
@@ -42,10 +43,16 @@ export default function parseGitHubMarkdownTarget(
     return null;
   }
 
-  return {
+  const target: GitHubMarkdownTarget = {
     owner,
     repo,
     number,
     type,
   };
+
+  if (url.hash) {
+    target.hash = url.hash;
+  }
+
+  return target;
 }

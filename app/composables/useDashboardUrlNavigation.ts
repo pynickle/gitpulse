@@ -7,6 +7,7 @@ import type { MarkdownRepoContext } from '~/utils/markdownRepoPathUtils';
 export function useDashboardUrlNavigation() {
   const localePath = useLocalePath();
   const router = useRouter();
+  const { opensGitHubLinks, getPreferredTargetHref, openGitHubTarget } = useGitHubLinkRouting();
   const {
     navigateToDiscussion,
     navigateToFile,
@@ -35,6 +36,18 @@ export function useDashboardUrlNavigation() {
   ) => {
     const target = resolveDashboardUrlTarget(value, context);
     return target ? getDashboardUrlRoute(target) : null;
+  };
+
+  const getPreferredDashboardUrlHref = (target: DashboardUrlTarget) => {
+    return getPreferredTargetHref(target, getDashboardUrlRoute(target));
+  };
+
+  const buildPreferredDashboardUrlHref = (
+    value: string | null | undefined,
+    context: MarkdownRepoContext = {}
+  ) => {
+    const target = resolveDashboardUrlTarget(value, context);
+    return target ? getPreferredDashboardUrlHref(target) : null;
   };
 
   const trackDashboardUrlNavigation = (target: DashboardUrlTarget) => {
@@ -78,6 +91,11 @@ export function useDashboardUrlNavigation() {
     const target = resolveDashboardUrlTarget(value, context);
     if (!target) return false;
 
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(target);
+      return true;
+    }
+
     trackDashboardUrlNavigation(target);
     await router.push(getDashboardUrlRoute(target));
     return true;
@@ -87,6 +105,8 @@ export function useDashboardUrlNavigation() {
     resolveDashboardUrlTarget,
     getDashboardUrlRoute,
     buildDashboardUrlRoute,
+    getPreferredDashboardUrlHref,
+    buildPreferredDashboardUrlHref,
     trackDashboardUrlNavigation,
     navigateToDashboardUrl,
   };

@@ -11,8 +11,10 @@ import parseGitHubMarkdownTarget from './parseGitHubMarkdownTarget';
 import parseGitHubRepoPath from './parseGitHubRepoPath';
 
 type PullRequestDashboardView = 'diff';
+export type GitHubFileDashboardView = 'blob' | 'tree';
 
 const PULL_REQUEST_DIFF_VIEW_SEGMENTS = new Set(['changes', 'files']);
+const GITHUB_WEB_ORIGIN = 'https://github.com';
 
 export const DASHBOARD_DETAIL_QUERY_KEYS = [
   'issue',
@@ -262,6 +264,7 @@ export type DashboardUrlTarget =
       repo: string;
       path: string;
       branch?: string;
+      view?: GitHubFileDashboardView;
       query: LocationQueryRaw;
       hash?: string;
     };
@@ -274,12 +277,26 @@ interface PullRequestUrlTarget {
   hash?: string;
 }
 
+export interface DashboardFileTargetOptions {
+  branch?: string;
+  hash?: string;
+  view?: GitHubFileDashboardView;
+}
+
 function decodePathSegment(segment: string) {
   try {
     return decodeURIComponent(segment);
   } catch {
     return segment;
   }
+}
+
+function encodePathSegments(value: string) {
+  return value.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+}
+
+function appendHash(value: string, hash: string | undefined) {
+  return hash ? `${value}${hash}` : value;
 }
 
 function getPathSegments(url: URL) {
@@ -484,7 +501,7 @@ function createRepoTarget(
 }
 
 function createFileTarget(resource: MarkdownRepoResource): DashboardUrlTarget {
-  return {
+  const target: DashboardUrlTarget = {
     type: 'file',
     owner: resource.owner,
     repo: resource.repo,
@@ -493,6 +510,75 @@ function createFileTarget(resource: MarkdownRepoResource): DashboardUrlTarget {
     query: buildRepoFileDashboardQuery(resource),
     hash: resource.hash,
   };
+
+  if (resource.view) {
+    target.view = resource.view;
+  }
+
+  return target;
+}
+
+export function createDashboardIssueTarget(
+  owner: string,
+  repo: string,
+  number: number,
+  hash?: string
+) {
+  return createIssueTarget(owner, repo, number, hash);
+}
+
+export function createDashboardPullRequestTarget(
+  owner: string,
+  repo: string,
+  number: number,
+  hash?: string
+) {
+  return createPullRequestTarget({ owner, repo, number, hash });
+}
+
+export function createDashboardPullRequestReviewTarget(
+  owner: string,
+  repo: string,
+  number: number,
+  hash?: string
+) {
+  return createPullRequestTarget({ owner, repo, number, view: 'diff', hash });
+}
+
+export function createDashboardDiscussionTarget(
+  owner: string,
+  repo: string,
+  number: number,
+  hash?: string
+) {
+  return createDiscussionTarget(owner, repo, number, hash);
+}
+
+export function createDashboardReleaseTarget(
+  owner: string,
+  repo: string,
+  releaseRef: ReleaseDashboardRef,
+  hash?: string
+) {
+  return createReleaseTarget(owner, repo, releaseRef, hash);
+}
+
+export function createDashboardRepositoryTarget(
+  owner: string,
+  repo: string,
+  branch?: string,
+  hash?: string
+) {
+  return createRepoTarget(owner, repo, branch, hash);
+}
+
+export function createDashboardFileTarget(
+  owner: string,
+  repo: string,
+  path: string,
+  options: DashboardFileTargetOptions = {}
+) {
+  return createFileTarget({ owner, repo, path, ...options });
 }
 
 export function parseDashboardUrlTarget(
@@ -515,17 +601,28 @@ export function parseDashboardUrlTarget(
   const detailTarget = parseGitHubMarkdownTarget(rawValue);
   if (detailTarget) {
     if (detailTarget.type === 'issue') {
-      return createIssueTarget(detailTarget.owner, detailTarget.repo, detailTarget.number);
+      return createIssueTarget(
+        detailTarget.owner,
+        detailTarget.repo,
+        detailTarget.number,
+        detailTarget.hash
+      );
     }
 
     if (detailTarget.type === 'discussion') {
-      return createDiscussionTarget(detailTarget.owner, detailTarget.repo, detailTarget.number);
+      return createDiscussionTarget(
+        detailTarget.owner,
+        detailTarget.repo,
+        detailTarget.number,
+        detailTarget.hash
+      );
     }
 
     return createPullRequestTarget({
       owner: detailTarget.owner,
       repo: detailTarget.repo,
       number: detailTarget.number,
+      hash: detailTarget.hash,
     });
   }
 
@@ -547,4 +644,57 @@ export function parseDashboardUrlTarget(
   }
 
   return null;
+}
+
+export function buildGitHubUrlFromDashboardTarget(target: DashboardUrlTarget) {
+  const repoUrl = `${GITHUB_WEB_ORIGIN}/${encodeURIComponent(target.owner)}/${encodeURIComponent(
+    target.repo
+  )}`;
+
+  if (target.type === 'issue') {
+    return appendHash(`${repoUrl}/issues/${target.number}`, target.hash);
+  }
+
+  if (target.type === 'pull-request') {
+    return appendHash(`${repoUrl}/pull/${target.number}`, target.hash);
+  }
+
+  if (target.type === 'pull-request-review') {
+    return appendHash(`${repoUrl}/pull/${target.number}/files`, target.hash);
+  }
+
+  if (target.type === 'discussion') {
+    return appendHash(`${repoUrl}/discussions/${target.number}`, target.hash);
+  }
+
+  if (target.type === 'release') {
+    if (target.releaseRef.kind === 'tag') {
+      return appendHash(
+        `${repoUrl}/releases/tag/${encodePathSegments(target.releaseRef.tag)}`,
+        target.hash
+      );
+    }
+
+    return appendHash(`${repoUrl}/releases`, target.hash);
+  }
+
+  if (target.type === 'file') {
+    if (target.branch && target.path) {
+      const fileView = target.view ?? 'blob';
+      return appendHash(
+        `${repoUrl}/${fileView}/${encodePathSegments(target.branch)}/${encodePathSegments(
+          target.path
+        )}`,
+        target.hash
+      );
+    }
+
+    return appendHash(repoUrl, target.hash);
+  }
+
+  if (target.branch) {
+    return appendHash(`${repoUrl}/tree/${encodePathSegments(target.branch)}`, target.hash);
+  }
+
+  return appendHash(repoUrl, target.hash);
 }

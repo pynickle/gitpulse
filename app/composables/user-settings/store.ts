@@ -4,6 +4,7 @@ import { computed, readonly, watch } from 'vue';
 import type {
   UserAppearanceSettings,
   UserFontSettings,
+  UserNavigationSettings,
   UserNotificationBehaviorSettings,
   UserSettings,
   UserSettingsPatch,
@@ -49,6 +50,7 @@ export interface UserSettingsStore {
   updateNotificationBehavior: (
     notificationBehavior: Partial<UserNotificationBehaviorSettings>
   ) => Promise<UserSettings | null>;
+  updateNavigation: (navigation: Partial<UserNavigationSettings>) => Promise<UserSettings | null>;
   handleLoginChanged: () => void;
   ensureLoginWatcher: () => void;
 }
@@ -374,6 +376,10 @@ export function createUserSettingsActions({
     return updateSettings({ notificationBehavior });
   };
 
+  const updateNavigation = (navigation: Partial<UserNavigationSettings>) => {
+    return updateSettings({ navigation });
+  };
+
   const handleLoginChanged = () => {
     syncActiveLogin();
   };
@@ -409,6 +415,7 @@ export function createUserSettingsActions({
     updateFonts,
     updateAppearance,
     updateNotificationBehavior,
+    updateNavigation,
     handleLoginChanged,
     ensureLoginWatcher,
   };

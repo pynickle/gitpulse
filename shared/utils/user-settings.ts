@@ -28,6 +28,7 @@ import type {
   ShikiLightThemeId,
   UserAppearanceSettings,
   UserFontSettings,
+  UserNavigationSettings,
   UserNotificationBehaviorSettings,
   UserSettings,
 } from '#shared/types/user-settings';
@@ -53,6 +54,7 @@ import {
 import {
   APP_FONT_IDS,
   CODE_FONT_IDS,
+  LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
   SHIKI_DARK_THEME_IDS,
@@ -98,6 +100,10 @@ export const DEFAULT_USER_APPEARANCE_SETTINGS: UserAppearanceSettings = {
 export const DEFAULT_USER_NOTIFICATION_BEHAVIOR_SETTINGS: UserNotificationBehaviorSettings = {
   readMarkMode: 'delayed',
   readMarkDelaySeconds: 10,
+};
+
+export const DEFAULT_USER_NAVIGATION_SETTINGS: UserNavigationSettings = {
+  linkTarget: 'gitpulse',
 };
 
 const hasOwn = (value: object, key: string) => {
@@ -182,6 +188,7 @@ export function createDefaultUserSettings(): UserSettings {
     fonts: { ...DEFAULT_USER_FONT_SETTINGS },
     appearance: { ...DEFAULT_USER_APPEARANCE_SETTINGS },
     notificationBehavior: { ...DEFAULT_USER_NOTIFICATION_BEHAVIOR_SETTINGS },
+    navigation: { ...DEFAULT_USER_NAVIGATION_SETTINGS },
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
@@ -676,6 +683,23 @@ export function normalizeUserNotificationBehaviorSettings(
   };
 }
 
+export function normalizeUserNavigationSettings(
+  value: unknown,
+  fallback: UserNavigationSettings = DEFAULT_USER_NAVIGATION_SETTINGS
+): UserNavigationSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback };
+  }
+
+  const candidate = value as Partial<UserNavigationSettings>;
+
+  return {
+    linkTarget: isOneOf(LINK_TARGET_IDS, candidate.linkTarget)
+      ? candidate.linkTarget
+      : fallback.linkTarget,
+  };
+}
+
 export function normalizeUserSettings(value: unknown, fallback = createDefaultUserSettings()) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {
@@ -683,6 +707,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       fonts: { ...fallback.fonts },
       appearance: { ...fallback.appearance },
       notificationBehavior: { ...fallback.notificationBehavior },
+      navigation: { ...fallback.navigation },
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
@@ -699,6 +724,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       candidate.notificationBehavior,
       fallback.notificationBehavior
     ),
+    navigation: normalizeUserNavigationSettings(candidate.navigation, fallback.navigation),
     tabGroups: normalizeTabGroups(candidate.tabGroups, fallback.tabGroups),
     customTabs: normalizeCustomTabs(candidate.customTabs, fallback.customTabs),
     notificationTodos: normalizeNotificationTodos(
@@ -734,6 +760,12 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
           base.notificationBehavior
         )
       : { ...base.notificationBehavior },
+    navigation: hasOwn(candidate, 'navigation')
+      ? normalizeUserNavigationSettings(
+          { ...base.navigation, ...candidate.navigation },
+          base.navigation
+        )
+      : { ...base.navigation },
     tabGroups: hasOwn(candidate, 'tabGroups')
       ? normalizeTabGroups(candidate.tabGroups, base.tabGroups)
       : cloneTabGroups(base.tabGroups),

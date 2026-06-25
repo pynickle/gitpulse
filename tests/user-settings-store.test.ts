@@ -96,6 +96,22 @@ const markLoaded = (harness: ReturnType<typeof createHarness>, settings = create
 };
 
 describe('user settings store', () => {
+  test('defaults and normalizes navigation link targets', () => {
+    expect(createDefaultUserSettings().navigation).toEqual({
+      linkTarget: 'gitpulse',
+    });
+
+    expect(normalizeUserSettings({}).navigation).toEqual({
+      linkTarget: 'gitpulse',
+    });
+    expect(normalizeUserSettings({ navigation: { linkTarget: 'github' } }).navigation).toEqual({
+      linkTarget: 'github',
+    });
+    expect(normalizeUserSettings({ navigation: { linkTarget: 'external' } }).navigation).toEqual({
+      linkTarget: 'gitpulse',
+    });
+  });
+
   test('migrates retired custom tab fields during settings normalization', () => {
     const settings = normalizeUserSettings({
       customTabs: [
@@ -345,6 +361,37 @@ describe('user settings store', () => {
       notificationBehavior: {
         readMarkMode: 'immediate',
         readMarkDelaySeconds: 15,
+      },
+    });
+  });
+
+  test('persists navigation settings with optimistic save normalization', async () => {
+    const harness = createHarness('octocat');
+    markLoaded(harness);
+
+    const save = harness.store.updateNavigation({ linkTarget: 'github' });
+    await tick();
+
+    expect(harness.settings.value.navigation).toEqual({
+      linkTarget: 'github',
+    });
+    expect(harness.saveRequests).toHaveLength(1);
+    expect(harness.saveRequests[0]?.patch).toEqual({
+      navigation: {
+        linkTarget: 'github',
+      },
+    });
+
+    harness.saveRequests[0]?.deferred.resolve(
+      createSettings({
+        navigation: {
+          linkTarget: 'github',
+        },
+      })
+    );
+    await expect(save).resolves.toMatchObject({
+      navigation: {
+        linkTarget: 'github',
       },
     });
   });

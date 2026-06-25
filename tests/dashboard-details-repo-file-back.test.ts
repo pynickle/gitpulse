@@ -64,6 +64,10 @@ describe('dashboard repository detail routing', () => {
 
         throw new Error(`Unexpected request: ${url}`);
       },
+      useGitHubLinkRouting: () => ({
+        opensGitHubLinks: ref(false),
+        openGitHubTarget: mock(),
+      }),
       useLocalePath: () => (value: string | { path: string }) =>
         typeof value === 'string' ? value : value.path,
       useNavigationHistory: () => ({
@@ -74,6 +78,7 @@ describe('dashboard repository detail routing', () => {
         navigateToIssue: mock(),
         navigateToPullRequest: mock(),
         navigateToPullRequestReview: mock(),
+        navigateToRepo: mock(),
         navigateToRelease: mock(),
         replaceWithEntry: (entry: unknown) => {
           currentEntry.value = entry;

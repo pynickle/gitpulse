@@ -17,6 +17,7 @@ import { TAB_GROUP_SOURCES } from '#shared/types/tab-groups';
 import {
   APP_FONT_IDS,
   CODE_FONT_IDS,
+  LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
   SHIKI_DARK_THEME_IDS,
@@ -27,6 +28,7 @@ import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
 const appFontSchema = z.enum(APP_FONT_IDS);
 const codeFontSchema = z.enum(CODE_FONT_IDS);
 const notificationReadMarkModeSchema = z.enum(NOTIFICATION_READ_MARK_MODE_IDS);
+const linkTargetSchema = z.enum(LINK_TARGET_IDS);
 const notificationReadMarkDelaySecondsSchema = z
   .number()
   .int()
@@ -80,6 +82,14 @@ const notificationBehaviorSettingsPatchSchema = z
   })
   .refine((notificationBehavior) => Object.keys(notificationBehavior).length > 0, {
     message: 'At least one notification behavior setting is required',
+  });
+
+const navigationSettingsPatchSchema = z
+  .strictObject({
+    linkTarget: linkTargetSchema.optional(),
+  })
+  .refine((navigation) => Object.keys(navigation).length > 0, {
+    message: 'At least one navigation setting is required',
   });
 
 const tabGroupSchema = z.strictObject({
@@ -205,6 +215,7 @@ export const userSettingsPatchSchema = z
     fonts: fontSettingsPatchSchema.optional(),
     appearance: appearanceSettingsPatchSchema.optional(),
     notificationBehavior: notificationBehaviorSettingsPatchSchema.optional(),
+    navigation: navigationSettingsPatchSchema.optional(),
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),

@@ -12,6 +12,11 @@ import {
   DASHBOARD_DETAIL_QUERY_KEYS,
   buildDashboardQueryFromNavigationEntry,
   clearDashboardDetailQuery,
+  createDashboardDiscussionTarget,
+  createDashboardIssueTarget,
+  createDashboardPullRequestReviewTarget,
+  createDashboardPullRequestTarget,
+  createDashboardReleaseTarget,
   serializeDashboardDetailTarget,
   serializeDashboardRepoTarget,
   serializeReleaseQuery,
@@ -105,6 +110,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const apiFetch = useGitPulseApiFetch();
   const { loggedIn, ready: sessionReady } = useUserSession();
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
+  const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
   const {
     goBack,
     goToHome,
@@ -557,6 +563,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     const repoPath = parseGitHubRepoPath(issue.repository_url);
     if (!repoPath || !issue.number) return;
 
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(createDashboardIssueTarget(repoPath.owner, repoPath.repo, issue.number));
+      return;
+    }
+
     navigateToIssue(repoPath.owner, repoPath.repo, issue.number, currentRouteTab.value);
     await pushDetailRoute('issue', {
       owner: repoPath.owner,
@@ -568,6 +579,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const openPR = async (pull: DashboardDetailListItem) => {
     const repoPath = parseGitHubRepoPath(pull.repository_url);
     if (!repoPath || !pull.number) return;
+
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(
+        createDashboardPullRequestTarget(repoPath.owner, repoPath.repo, pull.number)
+      );
+      return;
+    }
 
     navigateToPullRequest(repoPath.owner, repoPath.repo, pull.number, currentRouteTab.value);
     await pushDetailRoute('pull-request', {
@@ -685,6 +703,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const handleSwitchIssue = async (owner: string, repo: string, issueNumber: number) => {
     if (!owner || !repo || !issueNumber) return;
 
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(createDashboardIssueTarget(owner, repo, issueNumber));
+      return;
+    }
+
     const target = { owner, repo, number: issueNumber };
     navigateToIssue(owner, repo, issueNumber, currentRouteTab.value);
     await pushDetailRoute('issue', target);
@@ -692,6 +715,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const handleSwitchPR = async (owner: string, repo: string, pullNumber: number) => {
     if (!owner || !repo || !pullNumber) return;
+
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(createDashboardPullRequestTarget(owner, repo, pullNumber));
+      return;
+    }
 
     const target = { owner, repo, number: pullNumber };
     navigateToPullRequest(owner, repo, pullNumber, currentRouteTab.value);
@@ -701,6 +729,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const handleSwitchDiscussion = async (owner: string, repo: string, discussionNumber: number) => {
     if (!owner || !repo || !discussionNumber) return;
 
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(createDashboardDiscussionTarget(owner, repo, discussionNumber));
+      return;
+    }
+
     const target = { owner, repo, number: discussionNumber };
     navigateToDiscussion(owner, repo, discussionNumber, currentRouteTab.value);
     await pushDetailRoute('discussion', target);
@@ -708,6 +741,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
 
   const handleSwitchRelease = async (owner: string, repo: string, releaseId: number) => {
     if (!owner || !repo || !releaseId) return;
+
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(createDashboardReleaseTarget(owner, repo, { kind: 'id', id: releaseId }));
+      return;
+    }
 
     const target = {
       owner,
@@ -724,6 +762,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const handlePRReviewOpen = async () => {
     const target = activePRTarget.value;
     if (!target) return;
+
+    if (opensGitHubLinks.value) {
+      openGitHubTarget(
+        createDashboardPullRequestReviewTarget(target.owner, target.repo, target.number)
+      );
+      return;
+    }
 
     navigateToPullRequestReview(target.owner, target.repo, target.number, currentRouteTab.value);
 
@@ -760,6 +805,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const openNotification = (notification: DashboardNotification) => {
+    if (opensGitHubLinks.value) {
+      openExternalNotification(notification);
+      return;
+    }
+
     const details = getNotificationDetails(notification);
 
     if (!details) {

@@ -133,6 +133,9 @@ describe('server Zod request validation', () => {
         readMarkMode: 'delayed',
         readMarkDelaySeconds: 15,
       },
+      navigation: {
+        linkTarget: 'github',
+      },
       tabGroups: [
         {
           id: 'default',
@@ -209,6 +212,9 @@ describe('server Zod request validation', () => {
       notificationBehavior: {
         readMarkMode: 'delayed',
         readMarkDelaySeconds: 15,
+      },
+      navigation: {
+        linkTarget: 'github',
       },
       tabGroups: [
         {
@@ -287,6 +293,16 @@ describe('server Zod request validation', () => {
     expect(() =>
       parseUserSettingsPatchBody({
         notificationBehavior: { readMarkDelaySeconds: 11 },
+      })
+    ).toThrow('Invalid settings request body');
+    expect(() =>
+      parseUserSettingsPatchBody({
+        navigation: { linkTarget: 'external' },
+      })
+    ).toThrow('Invalid settings request body');
+    expect(() =>
+      parseUserSettingsPatchBody({
+        navigation: { linkTarget: 'github', extra: true },
       })
     ).toThrow('Invalid settings request body');
     expect(() =>

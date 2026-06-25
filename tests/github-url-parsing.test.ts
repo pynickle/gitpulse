@@ -3,6 +3,11 @@ import { describe, expect, test } from 'bun:test';
 import {
   buildDashboardQueryFromNavigationEntry,
   buildDashboardTabSwitchQuery,
+  buildGitHubUrlFromDashboardTarget,
+  createDashboardFileTarget,
+  createDashboardPullRequestReviewTarget,
+  createDashboardReleaseTarget,
+  createDashboardRepositoryTarget,
   parseDashboardUrlTarget,
 } from '../app/utils/dashboardUrlNavigationUtils';
 import { buildRepoRawFileUrl, parseMarkdownRepoResource } from '../app/utils/markdownRepoPathUtils';
@@ -161,6 +166,15 @@ describe('markdown repository resources', () => {
       path: 'assets/logo.png',
       hash: undefined,
     });
+
+    expect(parseMarkdownRepoResource('https://github.com/owner/repo/tree/main/docs')).toEqual({
+      owner: 'owner',
+      repo: 'repo',
+      branch: 'main',
+      path: 'docs',
+      hash: undefined,
+      view: 'tree',
+    });
   });
 
   test('resolves repository-local paths from context', () => {
@@ -287,6 +301,23 @@ describe('parseDashboardUrlTarget', () => {
     });
   });
 
+  test('parses repository tree URLs as dashboard directory targets', () => {
+    expect(parseDashboardUrlTarget('https://github.com/owner/repo/tree/main/src')).toEqual({
+      type: 'file',
+      owner: 'owner',
+      repo: 'repo',
+      path: 'src',
+      branch: 'main',
+      view: 'tree',
+      query: {
+        repo: 'owner/repo',
+        path: 'src',
+        branch: 'main',
+      },
+      hash: undefined,
+    });
+  });
+
   test('preserves markdown context branch for same-repo dashboard repo links', () => {
     expect(
       parseDashboardUrlTarget('https://github.com/owner/repo', {
@@ -309,6 +340,56 @@ describe('parseDashboardUrlTarget', () => {
 
   test('does not rewrite site-relative repo-shaped links without repo context', () => {
     expect(parseDashboardUrlTarget('/owner/repo')).toBeNull();
+  });
+});
+
+describe('buildGitHubUrlFromDashboardTarget', () => {
+  test('builds GitHub issue and pull request review URLs from dashboard targets', () => {
+    const issueTarget = parseDashboardUrlTarget('https://github.com/owner/repo/issues/42#event-1');
+    expect(issueTarget && buildGitHubUrlFromDashboardTarget(issueTarget)).toBe(
+      'https://github.com/owner/repo/issues/42#event-1'
+    );
+
+    expect(
+      buildGitHubUrlFromDashboardTarget(
+        createDashboardPullRequestReviewTarget('owner', 'repo', 7, '#diff-abc')
+      )
+    ).toBe('https://github.com/owner/repo/pull/7/files#diff-abc');
+  });
+
+  test('builds GitHub release, repository, and file URLs from dashboard targets', () => {
+    expect(
+      buildGitHubUrlFromDashboardTarget(
+        createDashboardReleaseTarget('owner', 'repo', {
+          kind: 'tag',
+          tag: 'release/2026.06',
+        })
+      )
+    ).toBe('https://github.com/owner/repo/releases/tag/release/2026.06');
+
+    expect(
+      buildGitHubUrlFromDashboardTarget(
+        createDashboardRepositoryTarget('owner', 'repo', 'feature/docs')
+      )
+    ).toBe('https://github.com/owner/repo/tree/feature/docs');
+
+    expect(
+      buildGitHubUrlFromDashboardTarget(
+        createDashboardFileTarget('owner', 'repo', 'src/app.vue', {
+          branch: 'main',
+          hash: '#L1',
+        })
+      )
+    ).toBe('https://github.com/owner/repo/blob/main/src/app.vue#L1');
+
+    expect(
+      buildGitHubUrlFromDashboardTarget(
+        createDashboardFileTarget('owner', 'repo', 'packages/ui', {
+          branch: 'feature/docs',
+          view: 'tree',
+        })
+      )
+    ).toBe('https://github.com/owner/repo/tree/feature/docs/packages/ui');
   });
 });
 
