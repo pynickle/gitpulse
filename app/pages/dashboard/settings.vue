@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { BellIcon, PaletteIcon, SearchIcon, TypeIcon } from '@lucide/vue';
+import {
+  BellIcon,
+  CheckIcon,
+  LayoutPanelLeftIcon,
+  LinkIcon,
+  PaletteIcon,
+  SearchIcon,
+  TypeIcon,
+} from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
+import { GitHubIcon } from 'vue3-simple-icons';
 
 import {
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   type AppFontId,
   type CodeFontId,
+  type LinkTargetId,
   type NotificationReadMarkDelaySeconds,
   type NotificationReadMarkMode,
   type ShikiDarkThemeId,
@@ -35,13 +45,14 @@ const {
   loadSettings,
   updateFonts,
   updateAppearance,
+  updateNavigation,
   updateNotificationBehavior,
 } = useUserSettings();
 
 // SEO: settings page title
 usePageMeta(t('dashboard.settings.pageTitle'));
 
-type SettingsCategory = 'appearance' | 'notifications';
+type SettingsCategory = 'appearance' | 'notifications' | 'navigation';
 
 const activeSettingsCategory = shallowRef<SettingsCategory>('appearance');
 const settingsCategoryMeta = {
@@ -54,6 +65,11 @@ const settingsCategoryMeta = {
     icon: BellIcon,
     titleKey: 'dashboard.settings.notificationBehaviorTitle',
     descriptionKey: 'dashboard.settings.notificationBehaviorDescription',
+  },
+  navigation: {
+    icon: LinkIcon,
+    titleKey: 'dashboard.settings.navigationTitle',
+    descriptionKey: 'dashboard.settings.navigationDescription',
   },
 } satisfies Record<
   SettingsCategory,
@@ -136,6 +152,26 @@ const showNotificationReadMarkDelay = computed(() => {
   return settings.value.notificationBehavior.readMarkMode === 'delayed';
 });
 
+const linkTargetOptions: {
+  value: LinkTargetId;
+  icon: Component;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: 'gitpulse',
+    icon: LayoutPanelLeftIcon,
+    label: t('dashboard.settings.linkTargetGitPulse'),
+    description: t('dashboard.settings.linkTargetGitPulseDescription'),
+  },
+  {
+    value: 'github',
+    icon: GitHubIcon,
+    label: t('dashboard.settings.linkTargetGithub'),
+    description: t('dashboard.settings.linkTargetGithubDescription'),
+  },
+];
+
 // Current font display names
 const currentAppFontName = computed(() => {
   const { appFont, appSystemFont } = settings.value.fonts;
@@ -208,6 +244,12 @@ const applyNotificationReadMarkDelay = (secondsValue: string) => {
     void updateNotificationBehavior({
       readMarkDelaySeconds: seconds as NotificationReadMarkDelaySeconds,
     });
+  }
+};
+
+const applyLinkTarget = (value: string) => {
+  if (value === 'gitpulse' || value === 'github') {
+    void updateNavigation({ linkTarget: value });
   }
 };
 
@@ -319,6 +361,15 @@ onMounted(() => {
             >
               <BellIcon :size="15" />
               <span>{{ t('dashboard.settings.notificationBehaviorTitle') }}</span>
+            </button>
+            <button
+              class="settings__nav-item"
+              :class="{ 'is-active': activeSettingsCategory === 'navigation' }"
+              type="button"
+              @click="activeSettingsCategory = 'navigation'"
+            >
+              <LinkIcon :size="15" />
+              <span>{{ t('dashboard.settings.navigationTitle') }}</span>
             </button>
           </div>
         </nav>
@@ -449,7 +500,7 @@ onMounted(() => {
             </section>
           </template>
 
-          <template v-else>
+          <template v-else-if="activeSettingsCategory === 'notifications'">
             <section class="settings__section">
               <h2 class="settings__section-title">
                 {{ t('dashboard.settings.notificationReadSection') }}
@@ -484,6 +535,44 @@ onMounted(() => {
                     />
                   </div>
                 </div>
+              </div>
+            </section>
+          </template>
+
+          <template v-else>
+            <section class="settings__section">
+              <h2 class="settings__section-title">
+                {{ t('dashboard.settings.linkTargetSection') }}
+              </h2>
+              <div
+                class="settings__option-group"
+                role="radiogroup"
+                :aria-label="t('dashboard.settings.linkTargetSection')"
+              >
+                <label
+                  v-for="option in linkTargetOptions"
+                  :key="option.value"
+                  class="settings__option-card"
+                  :class="{ 'is-selected': settings.navigation.linkTarget === option.value }"
+                >
+                  <input
+                    class="settings__option-input"
+                    type="radio"
+                    name="linkTarget"
+                    :value="option.value"
+                    :checked="settings.navigation.linkTarget === option.value"
+                    :aria-label="option.label"
+                    @change="applyLinkTarget(option.value)"
+                  />
+                  <span class="settings__option-icon-wrap" aria-hidden="true">
+                    <component :is="option.icon" class="settings__option-icon" />
+                  </span>
+                  <span class="settings__option-body">
+                    <span class="settings__option-label">{{ option.label }}</span>
+                    <span class="settings__option-desc">{{ option.description }}</span>
+                  </span>
+                  <CheckIcon class="settings__option-check" :size="16" aria-hidden="true" />
+                </label>
               </div>
             </section>
           </template>
@@ -778,6 +867,113 @@ onMounted(() => {
     justify-content: space-between;
     height: 2.35rem;
     background: var(--gitpulse-surface-muted);
+  }
+}
+
+/* ── Option cards (radio group) ── */
+.settings__option-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.settings__option-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
+  background: var(--gitpulse-surface);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: var(--gitpulse-border-strong);
+  }
+
+  &.is-selected {
+    border-color: var(--gitpulse-accent);
+    background: var(--gitpulse-accent-soft);
+  }
+
+  &:has(.settings__option-input:focus-visible) {
+    box-shadow: 0 0 0 3px var(--gitpulse-accent-soft);
+  }
+}
+
+.settings__option-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.settings__option-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+
+  .settings__option-card.is-selected & {
+    background: var(--gitpulse-accent-soft);
+    color: var(--gitpulse-accent);
+  }
+}
+
+.settings__option-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.settings__option-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.settings__option-label {
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  font-size: 0.85rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.settings__option-desc {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.settings__option-check {
+  flex: 0 0 auto;
+  align-self: center;
+  color: var(--gitpulse-accent);
+  opacity: 0;
+  transform: scale(0.8);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+
+  .settings__option-card.is-selected & {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
