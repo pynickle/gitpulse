@@ -22,10 +22,7 @@ const props = defineProps<{
 
 const { locale, t } = useI18n();
 const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
-const route = useRoute();
-const router = useRouter();
-const localePath = useLocalePath();
-const { navigateToRepo } = useNavigationHistory();
+const { openRepository } = useDashboardRepositoryNavigation();
 const relativeTimeNow = useRelativeTimeNow();
 
 const repoInfo = computed(() => parseGitHubRepoPath(props.release.repository_url));
@@ -98,17 +95,7 @@ const formatDownloadCount = (count: number) => {
 const handleRepoClick = async () => {
   if (!repoOwner.value || !repoName.value) return;
 
-  const routeTab = Array.isArray(route.query.tab) ? route.query.tab[0] : route.query.tab;
-  const currentTab = typeof routeTab === 'string' ? routeTab : undefined;
-  navigateToRepo(repoOwner.value, repoName.value, currentTab);
-
-  await router.push({
-    path: localePath('/dashboard'),
-    query: {
-      tab: currentTab,
-      repo: `${repoOwner.value}/${repoName.value}`,
-    },
-  });
+  await openRepository(repoOwner.value, repoName.value);
 };
 
 usePageMeta(

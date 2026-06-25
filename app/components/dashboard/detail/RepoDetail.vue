@@ -21,6 +21,7 @@ import type { RepositoryDetailPayload } from '#shared/types/repos';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
 
 const props = defineProps<{
   repository: RepositoryDetailPayload;
@@ -34,6 +35,7 @@ const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const { navigateToFile } = useNavigationHistory();
+const { opensGitHubLinks, getGitHubTargetUrl } = useGitHubLinkRouting();
 const {
   branches,
   currentBranch,
@@ -221,6 +223,23 @@ const trackFileNavigation = (path: string) => {
   navigateToFile(props.owner, props.repo, path, canonicalBranch.value);
 };
 
+const buildRepoFileNavigation = (path: string) => {
+  const target = createDashboardFileTarget(props.owner, props.repo, path, {
+    branch: canonicalBranch.value,
+  });
+
+  if (opensGitHubLinks.value) {
+    return {
+      href: getGitHubTargetUrl(target),
+    };
+  }
+
+  return {
+    to: buildRepoFileTo(path),
+    onClick: () => trackFileNavigation(path),
+  };
+};
+
 const aboutItems = computed(() => {
   const items: AboutItem[] = [];
 
@@ -241,9 +260,8 @@ const aboutItems = computed(() => {
     items.push({
       label: copy.value.license,
       value: licenseInfo.value.name,
-      to: buildRepoFileTo(licensePath),
       icon: FileTextIcon,
-      onClick: () => trackFileNavigation(licensePath),
+      ...buildRepoFileNavigation(licensePath),
     });
   }
 

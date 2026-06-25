@@ -116,10 +116,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const { locale, t } = useI18n();
-const { navigateToRepo } = useNavigationHistory();
-const router = useRouter();
-const localePath = useLocalePath();
-const route = useRoute();
+const { openRepository } = useDashboardRepositoryNavigation();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -184,18 +181,7 @@ const stateColor = computed(() => {
 });
 
 const handleRepoClick = async () => {
-  if (props.repoOwner && props.repoName) {
-    const currentTab = route.query.tab as string;
-    navigateToRepo(props.repoOwner, props.repoName, currentTab);
-
-    await router.push({
-      path: localePath('/dashboard'),
-      query: {
-        tab: currentTab,
-        repo: `${props.repoOwner}/${props.repoName}`,
-      },
-    });
-  }
+  await openRepository(props.repoOwner, props.repoName);
 };
 </script>
 

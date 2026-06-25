@@ -16,14 +16,28 @@ const props = withDefaults(
 );
 
 const markdownRepoContext = inject(markdownRepoContextKey, null);
-const { resolveDashboardUrlTarget, getDashboardUrlRoute, trackDashboardUrlNavigation } =
-  useDashboardUrlNavigation();
+const {
+  resolveDashboardUrlTarget,
+  getDashboardUrlRoute,
+  getPreferredDashboardUrlHref,
+  trackDashboardUrlNavigation,
+} = useDashboardUrlNavigation();
+const { opensGitHubLinks } = useGitHubLinkRouting();
 
 const internalTarget = computed(() =>
   resolveDashboardUrlTarget(props.href, markdownRepoContext?.value)
 );
 
+const preferredDashboardHref = computed(() => {
+  const target = internalTarget.value;
+  return target ? getPreferredDashboardUrlHref(target) : null;
+});
+
 const externalHref = computed(() => {
+  if (opensGitHubLinks.value && preferredDashboardHref.value) {
+    return preferredDashboardHref.value;
+  }
+
   const href = props.href.trim();
 
   if (!href) return null;
@@ -47,7 +61,7 @@ const externalHref = computed(() => {
 
 const internalTo = computed(() => {
   const target = internalTarget.value;
-  return target ? getDashboardUrlRoute(target) : null;
+  return target && !opensGitHubLinks.value ? getDashboardUrlRoute(target) : null;
 });
 
 const externalRel = computed(() => (props.target === '_blank' ? 'noopener noreferrer' : undefined));
@@ -69,9 +83,9 @@ const trackInternalNavigation = () => {
   >
     <slot />
   </NuxtLinkLocale>
-  <NuxtLink v-else-if="externalHref" :href="externalHref" :target="target" :rel="externalRel">
+  <a v-else-if="externalHref" :href="externalHref" :target="target" :rel="externalRel">
     <slot />
-  </NuxtLink>
+  </a>
   <span v-else>
     <slot />
   </span>

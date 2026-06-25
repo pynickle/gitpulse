@@ -40,7 +40,17 @@
         </div>
       </div>
     </div>
+    <a
+      v-if="opensGitHubLinks && preferredHref"
+      class="repo-item__link"
+      :href="preferredHref"
+      target="_blank"
+      rel="noopener noreferrer"
+      :aria-label="`Open repository ${repo.owner?.login}/${repo.name}`"
+      :title="`Open repository ${repo.owner?.login}/${repo.name}`"
+    />
     <NuxtLinkLocale
+      v-else
       class="repo-item__link"
       :to="detailPath"
       :aria-label="`Open repository ${repo.owner?.login}/${repo.name}`"
@@ -52,6 +62,8 @@
 <script setup lang="ts">
 import { EyeIcon, GitForkIcon, LockIcon, StarIcon } from '@lucide/vue';
 import { computed } from 'vue';
+
+import { createDashboardRepositoryTarget } from '~/utils/dashboardUrlNavigationUtils';
 
 interface RepositoryListItem {
   name: string;
@@ -71,15 +83,27 @@ const props = defineProps<{
 }>();
 
 const localePath = useLocalePath();
+const { opensGitHubLinks, getPreferredTargetHref } = useGitHubLinkRouting();
+
+const repoOwner = computed(() => props.repo.owner?.login ?? '');
+
+const repoTarget = computed(() => {
+  return repoOwner.value ? createDashboardRepositoryTarget(repoOwner.value, props.repo.name) : null;
+});
 
 const detailPath = computed(() => {
   return localePath({
     path: '/dashboard',
     query: {
       tab: 'repos',
-      repo: `${props.repo.owner?.login}/${props.repo.name}`,
+      repo: `${repoOwner.value}/${props.repo.name}`,
     },
   });
+});
+
+const preferredHref = computed(() => {
+  const target = repoTarget.value;
+  return target ? getPreferredTargetHref(target, detailPath.value) : '';
 });
 
 const languageColor = computed(() => {

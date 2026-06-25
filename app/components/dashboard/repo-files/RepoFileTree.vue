@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import type { RepoContentItem } from '~/composables/useRepoFiles';
+import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
 
 const props = defineProps<{
   owner: string;
@@ -19,6 +20,7 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 const router = useRouter();
 const { navigateToFile } = useNavigationHistory();
+const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
 
 const sortedItems = computed(() => {
   const dirs = props.items
@@ -40,6 +42,16 @@ const currentBranchQueryValue = computed(() => {
 const canonicalBranch = computed(() => props.currentBranch || props.defaultBranch || undefined);
 
 const navigateToItem = async (item: RepoContentItem) => {
+  if (opensGitHubLinks.value) {
+    openGitHubTarget(
+      createDashboardFileTarget(props.owner, props.repo, item.path, {
+        branch: canonicalBranch.value,
+        view: item.type === 'dir' ? 'tree' : undefined,
+      })
+    );
+    return;
+  }
+
   navigateToFile(props.owner, props.repo, item.path, canonicalBranch.value);
 
   const query: LocationQueryRaw = {

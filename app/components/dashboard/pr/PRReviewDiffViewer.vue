@@ -46,8 +46,13 @@ const emit = defineEmits<{
 const collapsedFiles = ref(new Set<string>());
 const inlineDraftBodies = shallowRef(new Map<string, string>());
 const { t } = useI18n();
-const { resolveDashboardUrlTarget, getDashboardUrlRoute, trackDashboardUrlNavigation } =
-  useDashboardUrlNavigation();
+const {
+  resolveDashboardUrlTarget,
+  getDashboardUrlRoute,
+  getPreferredDashboardUrlHref,
+  trackDashboardUrlNavigation,
+} = useDashboardUrlNavigation();
+const { opensGitHubLinks } = useGitHubLinkRouting();
 
 const draftsByFile = computed(() => {
   const grouped = new Map<string, PRReviewDraftComment[]>();
@@ -130,7 +135,14 @@ const getFileDashboardRoute = (filename: string) => {
   return target ? getDashboardUrlRoute(target) : null;
 };
 
+const getFilePreferredHref = (filename: string) => {
+  const target = getFileNavigationTarget(filename);
+  return target ? getPreferredDashboardUrlHref(target) : null;
+};
+
 const trackFileNavigation = (file: PRReviewFile) => {
+  if (opensGitHubLinks.value) return;
+
   const target = getFileNavigationTarget(file.filename);
   if (target) {
     trackDashboardUrlNavigation(target);
@@ -342,8 +354,18 @@ onBeforeUnmount(() => {
           />
           <div class="pr-review-diff-viewer__header-info">
             <h2 class="title is-6 mb-1">
+              <a
+                v-if="opensGitHubLinks && getFilePreferredHref(section.file.filename)"
+                :href="getFilePreferredHref(section.file.filename)!"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="pr-review-diff-viewer__file-link"
+                @click.stop
+              >
+                {{ section.file.filename }}
+              </a>
               <NuxtLinkLocale
-                v-if="getFileDashboardRoute(section.file.filename)"
+                v-else-if="getFileDashboardRoute(section.file.filename)"
                 :to="getFileDashboardRoute(section.file.filename)!"
                 class="pr-review-diff-viewer__file-link"
                 @click.stop="trackFileNavigation(section.file)"

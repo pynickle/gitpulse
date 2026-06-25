@@ -25,7 +25,10 @@ import type { RepoContentItem } from '~/composables/useRepoFiles';
 
 import {
   buildDashboardQueryFromNavigationEntry,
+  createDashboardFileTarget,
+  createDashboardRepositoryTarget,
   type DashboardNavigationEntry,
+  type GitHubFileDashboardView,
 } from '../../../utils/dashboardUrlNavigationUtils';
 
 interface FolderTreeNode {
@@ -55,6 +58,7 @@ const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const router = useRouter();
 const { settings } = useUserSettings();
+const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
 const {
   canGoBack,
   currentEntry,
@@ -739,11 +743,11 @@ const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
 };
 
 const handleTreeDirectoryClick = async (row: VisibleTreeRow) => {
-  await navigateToPath(row.node.path);
+  await openFilePath(row.node.path, 'tree');
 };
 
 const handleTreeFileClick = async (row: VisibleTreeRow) => {
-  await navigateToPath(row.node.path);
+  await openFilePath(row.node.path, 'blob');
 };
 
 const goBack = async () => {
@@ -755,13 +759,43 @@ const goHome = async () => {
   await router.push(localePath('/dashboard'));
 };
 
+const openRepoOnGitHub = () => {
+  if (!opensGitHubLinks.value) return false;
+
+  openGitHubTarget(
+    createDashboardRepositoryTarget(props.owner, props.repo, currentBranchQueryValue.value)
+  );
+  return true;
+};
+
 const navigateToRepoDetail = async () => {
+  if (openRepoOnGitHub()) return;
+
   const query: LocationQueryRaw = {
     tab: 'repos',
     repo: `${props.owner}/${props.repo}`,
     branch: currentBranchQueryValue.value,
   };
   await router.push({ path: localePath('/dashboard'), query });
+};
+
+const openFilePath = async (path: string, view: GitHubFileDashboardView) => {
+  if (!opensGitHubLinks.value) {
+    await navigateToPath(path);
+    return;
+  }
+
+  if (!path) {
+    openRepoOnGitHub();
+    return;
+  }
+
+  openGitHubTarget(
+    createDashboardFileTarget(props.owner, props.repo, path, {
+      branch: canonicalBranch.value,
+      view,
+    })
+  );
 };
 
 const syncFileNavigationEntry = () => {
@@ -783,14 +817,14 @@ const syncFileNavigationEntry = () => {
 };
 
 const navigateToItem = async (item: RepoContentItem) => {
-  await navigateToPath(item.path);
+  await openFilePath(item.path, item.type === 'dir' ? 'tree' : 'blob');
 };
 
 const navigateUp = async () => {
   const segments = currentPath.value.split('/').filter(Boolean);
   segments.pop();
 
-  await navigateToPath(segments.join('/'));
+  await openFilePath(segments.join('/'), 'tree');
 };
 
 const revealCurrentPath = async () => {
@@ -1015,7 +1049,7 @@ onActivated(() => {
                 'repo-file-view__tree-root',
                 { 'repo-file-view__tree-root--active': !currentPath },
               ]"
-              @click="navigateToPath('')"
+              @click="openFilePath('', 'tree')"
             >
               <FolderIcon :size="14" aria-hidden="true" />
               <span class="repo-file-view__tree-label">{{ t('repoFileView.root') }}</span>
