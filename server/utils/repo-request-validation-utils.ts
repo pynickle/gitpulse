@@ -10,6 +10,26 @@ const issueLabelsBodySchema = z.strictObject({
   labels: z.array(z.string().trim().min(1)),
 });
 
+const issueAssigneesBodySchema = z.strictObject({
+  assignees: z
+    .array(z.string().trim().min(1))
+    .min(1)
+    .transform((assignees) => {
+      const normalized: string[] = [];
+      const seen = new Set<string>();
+
+      for (const assignee of assignees) {
+        const key = assignee.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          normalized.push(assignee);
+        }
+      }
+
+      return normalized;
+    }),
+});
+
 const issueLockReasonSchema = z.enum(['off-topic', 'too heated', 'resolved', 'spam']);
 const issueLockBodySchema = z.strictObject({
   lock_reason: issueLockReasonSchema.optional(),
@@ -33,6 +53,11 @@ export function parseRequiredBodyText(body: unknown, statusMessage: string) {
 export function parseIssueLabelsBody(body: unknown) {
   return parseZodRequestBody(issueLabelsBodySchema, body, 'Invalid issue labels request body')
     .labels;
+}
+
+export function parseIssueAssigneesBody(body: unknown) {
+  return parseZodRequestBody(issueAssigneesBodySchema, body, 'Invalid issue assignees request body')
+    .assignees;
 }
 
 export function parseIssueLockBody(body: unknown): IssueLockReason | undefined {

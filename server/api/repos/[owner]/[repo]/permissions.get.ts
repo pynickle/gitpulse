@@ -27,6 +27,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         pull: Boolean(permissions.pull),
         canEditLabels: Boolean(permissions.admin || permissions.maintain || permissions.push),
         canLockIssue: Boolean(permissions.admin || permissions.maintain || permissions.push),
+        canEditAssignees: Boolean(permissions.admin || permissions.maintain || permissions.push),
       };
     },
     'Failed to fetch repository permissions'

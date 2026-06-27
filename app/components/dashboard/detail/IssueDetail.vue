@@ -44,6 +44,15 @@
             @update:is-label-editor-visible="updateLabelEditorVisibility"
           />
 
+          <DetailAssignees
+            :assignees="issueAssignees"
+            :can-edit-assignees="canEditAssignees"
+            :issue-number="currentIssue?.number || null"
+            :repo-info="repoInfo"
+            @update:assignees="updateAssignees"
+            @update:is-assignee-editor-visible="updateAssigneeEditorVisibility"
+          />
+
           <IssueActions
             :is-locked="isLocked"
             :can-lock-issue="canLockIssue"
@@ -52,7 +61,6 @@
             :html-url="currentIssue?.html_url"
             :created-at="currentIssue?.created_at"
             :updated-at="currentIssue?.updated_at"
-            :assignee="currentIssue?.assignee"
             :source-notification="sourceNotification"
             @update:is-locked="updateIsLocked"
             @add-timeline-event="addTimelineEvent"
@@ -66,8 +74,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
+import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
 import type { IssueDetailLabel, IssueDetailPayload } from '#shared/types/issues';
 import type { DashboardNotification } from '#shared/types/notifications';
+import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
@@ -147,6 +157,18 @@ const canLockIssue = computed(() => {
   return repoPermissions.value.canLockIssue;
 });
 
+const canEditAssignees = computed(() => {
+  return repoPermissions.value.canEditAssignees;
+});
+
+const issueAssignees = computed<IssueAssigneeUser[]>(() => {
+  if (Array.isArray(currentIssue.value?.assignees)) {
+    return currentIssue.value.assignees;
+  }
+
+  return currentIssue.value?.assignee ? [currentIssue.value.assignee] : [];
+});
+
 const switchToIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
 };
@@ -159,6 +181,21 @@ const updateLabels = (labels: IssueDetailLabel[]) => {
   currentIssue.value.labels = labels;
 };
 
+const updateAssignees = (assignees: IssueAssigneeUser[], issue?: IssueAssigneeMutationResponse) => {
+  if (issue) {
+    currentIssue.value = {
+      ...currentIssue.value,
+      ...issue,
+      assignees,
+      assignee: issue.assignee ?? assignees[0] ?? null,
+    };
+    return;
+  }
+
+  currentIssue.value.assignees = assignees;
+  currentIssue.value.assignee = assignees[0] ?? null;
+};
+
 const updateIsLocked = (locked: boolean) => {
   isLocked.value = locked;
 };
@@ -169,6 +206,10 @@ const addTimelineEvent = (event: IssueTimelineItem) => {
 
 const updateLabelEditorVisibility = (visible: boolean) => {
   isLabelEditorVisible.value = visible;
+  emit('update:non-sticky-header', visible);
+};
+
+const updateAssigneeEditorVisibility = (visible: boolean) => {
   emit('update:non-sticky-header', visible);
 };
 

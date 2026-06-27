@@ -2,6 +2,7 @@
  * Issue detail payload from the GitHub API.
  */
 
+import type { IssueAssigneeUser } from './assignees';
 import type { ReactionSummaryItem } from './reactions';
 
 export interface IssueDetailLabel {
@@ -30,11 +31,8 @@ export interface IssueDetailPayload {
     avatar_url?: string | null;
   } | null;
 
-  assignee?: {
-    login: string;
-    id?: number | string;
-    avatar_url?: string | null;
-  } | null;
+  assignee?: IssueAssigneeUser | null;
+  assignees?: IssueAssigneeUser[];
 
   labels?: IssueDetailLabel[];
   reactions?: ReactionSummaryItem[];

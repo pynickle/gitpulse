@@ -321,13 +321,6 @@ import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
 import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
 import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
-import {
-  loadDiscussionDetail,
-  loadIssueDetail,
-  loadPrDetail,
-  loadReleaseDetail,
-  loadRepoDetail,
-} from '~/components/dashboard/detail/detail-pane-loaders';
 import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
@@ -354,6 +347,7 @@ import {
   parseDashboardTab,
 } from '~/composables/useDashboardRouteState';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
+import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 import { buildDashboardTabSwitchQuery } from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
@@ -371,6 +365,8 @@ const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/
 const loadDetailOverlayHost = () => import('~/components/dashboard/detail/DetailOverlayHost.vue');
 const loadFilterModal = () => import('~/components/dashboard/filters/FilterModal.vue');
 const loadRepoFileView = () => import('~/components/dashboard/repo-files/RepoFileView.vue');
+const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
+  createDashboardDetailPaneLoaders();
 const DetailOverlayHost = defineAsyncComponent(loadDetailOverlayHost);
 const FilterModal = defineAsyncComponent(loadFilterModal);
 const RepoFileView = defineAsyncComponent(loadRepoFileView);

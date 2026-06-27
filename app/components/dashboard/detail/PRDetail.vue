@@ -76,6 +76,14 @@
             @update:labels="updateLabels"
           />
 
+          <DetailAssignees
+            :assignees="pullRequestAssignees"
+            :can-edit-assignees="canEditAssignees"
+            :issue-number="currentPullRequest?.number || null"
+            :repo-info="repoInfo"
+            @update:assignees="updateAssignees"
+          />
+
           <PRActions
             :requested-reviewers="currentPullRequest?.requested_reviewers || []"
             :requested-teams="currentPullRequest?.requested_teams || []"
@@ -86,7 +94,6 @@
             :created-at="currentPullRequest?.created_at"
             :updated-at="currentPullRequest?.updated_at"
             :merged-at="currentPullRequest?.merged_at || undefined"
-            :assignee="currentPullRequest?.assignee || undefined"
             :commits="currentPullRequest?.commits"
             :changed-files="currentPullRequest?.changed_files"
             :additions="currentPullRequest?.additions"
@@ -134,12 +141,14 @@
 import { EyeIcon } from '@lucide/vue';
 import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
 
+import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
 import type { DashboardNotification } from '#shared/types/notifications';
 import type {
   PullRequestDetailLabel,
   PullRequestDetailResponse,
   PullRequestDetailViewModel,
 } from '#shared/types/pulls';
+import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
@@ -262,6 +271,8 @@ const repoInfo = computed(() => {
 
 const canEditLabels = computed(() => repoPermissions.value.canEditLabels);
 
+const canEditAssignees = computed(() => repoPermissions.value.canEditAssignees);
+
 const canRequestReviewers = computed(
   () =>
     Boolean(
@@ -272,6 +283,14 @@ const canRequestReviewers = computed(
 const repoOwner = computed(() => repoInfo.value?.owner || '');
 
 const repoName = computed(() => repoInfo.value?.repo || '');
+
+const pullRequestAssignees = computed<IssueAssigneeUser[]>(() => {
+  if (Array.isArray(currentPullRequest.value?.assignees)) {
+    return currentPullRequest.value.assignees;
+  }
+
+  return currentPullRequest.value?.assignee ? [currentPullRequest.value.assignee] : [];
+});
 
 const reviewCommitId = computed(() => currentPullRequest.value?.head?.sha || '');
 
@@ -605,6 +624,17 @@ const updateLabels = (labels: PullRequestDetailLabel[]) => {
   if (currentPullRequest.value) {
     currentPullRequest.value.labels = labels;
   }
+};
+
+const updateAssignees = (assignees: IssueAssigneeUser[], issue?: IssueAssigneeMutationResponse) => {
+  if (!currentPullRequest.value) return;
+
+  currentPullRequest.value = {
+    ...currentPullRequest.value,
+    ...(issue ?? {}),
+    assignees,
+    assignee: issue?.assignee ?? assignees[0] ?? null,
+  };
 };
 
 const getPullRequestIdentity = () => {

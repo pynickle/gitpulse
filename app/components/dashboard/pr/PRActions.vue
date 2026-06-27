@@ -124,16 +124,6 @@
             <span class="info-item__label">{{ t('prReview.merged') }}</span>
             <span class="info-item__value">{{ formatRelativeTime(mergedAt) }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-item__label">{{ t('prReview.assignee') }}</span>
-            <span v-if="assignee" class="info-item__value">
-              <GitHubAvatar :src="assignee.avatar_url" :alt="assignee.login" size="16" />
-              {{ assignee.login }}
-            </span>
-            <span v-else class="info-item__value info-item__value--muted">
-              {{ t('prReview.noAssignee') }}
-            </span>
-          </div>
           <div class="info-stats">
             <div class="info-stat">
               <span class="info-stat__value">{{ commits }}</span>
@@ -232,7 +222,6 @@ const props = defineProps<{
   createdAt: string | undefined;
   updatedAt: string | undefined;
   mergedAt: string | undefined;
-  assignee: PullRequestUserSummary | undefined;
   commits: number | undefined;
   changedFiles: number | undefined;
   additions: number | undefined;

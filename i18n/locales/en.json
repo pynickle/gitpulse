@@ -119,6 +119,25 @@
     "saving": "Saving...",
     "updateFailed": "Failed to update labels"
   },
+  "detailAssignees": {
+    "title": "Assignees",
+    "edit": "Edit assignees",
+    "empty": "No assignees",
+    "assigned": "Assigned",
+    "loading": "Loading assignees...",
+    "placeholder": "Search users",
+    "search": "Search assignees",
+    "clearSearch": "Clear search",
+    "noneAvailable": "No assignable users found",
+    "selectAssignee": "Select {login}",
+    "removeAssignee": "Remove {login}",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close assignee editor",
+    "loadFailed": "Failed to load assignees.",
+    "updateFailed": "Failed to update assignees.",
+    "removeFailed": "Failed to remove assignee."
+  },
   "detailActions": {
     "viewOnGithub": "View on GitHub"
   },

@@ -1,0 +1,425 @@
+@use '~/assets/scss/_variables' as *;
+
+.reviewer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gitpulse-overlay-bg);
+  backdrop-filter: blur(6px);
+}
+
+.reviewer-modal-panel {
+  width: 100%;
+  max-width: 420px;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--gitpulse-surface);
+  border-radius: 8px;
+  box-shadow: var(--gitpulse-shadow-raised);
+  overflow: hidden;
+}
+
+.reviewer-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+}
+
+.reviewer-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.reviewer-modal-close {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--gitpulse-text-subtle);
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+}
+
+.reviewer-modal-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+  min-height: 0;
+}
+
+.reviewer-modal-search {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 4px 0 8px;
+  background: var(--gitpulse-surface);
+}
+
+.reviewer-modal-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.reviewer-modal-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--gitpulse-text-muted);
+  pointer-events: none;
+}
+
+.reviewer-modal-search-input {
+  width: 100%;
+  height: 32px;
+  padding: 0 32px 0 32px;
+  font-size: 13px;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  background: var(--gitpulse-surface-muted);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  transition: border-color 0.12s ease;
+
+  &::placeholder {
+    color: var(--gitpulse-text-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--gitpulse-accent);
+  }
+}
+
+.reviewer-modal-search-clear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--gitpulse-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text);
+  }
+}
+
+.reviewer-modal-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--gitpulse-danger-soft);
+  border-radius: 6px;
+  color: var(--gitpulse-danger);
+  font-size: 12px;
+}
+
+.reviewer-modal-error-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--gitpulse-danger);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--gitpulse-danger-soft);
+  }
+}
+
+.reviewer-modal-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: var(--gitpulse-warning-soft);
+  border-radius: 6px;
+  color: var(--gitpulse-warning);
+  font-size: 12px;
+}
+
+.reviewer-modal-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 0;
+  color: var(--gitpulse-text-subtle);
+  font-size: 13px;
+}
+
+.reviewer-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reviewer-modal-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reviewer-modal-candidate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin: 0 -8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  user-select: none;
+
+  &:hover {
+    background: var(--gitpulse-surface-hover);
+  }
+
+  &--selected {
+    background: var(--gitpulse-accent-soft) !important;
+  }
+
+  &--requested {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.reviewer-modal-candidate-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--gitpulse-input-border);
+  border-radius: 4px;
+  background: var(--gitpulse-input-bg);
+  color: transparent;
+  flex-shrink: 0;
+  transition: all 0.12s ease;
+
+  .reviewer-modal-candidate:hover & {
+    border-color: var(--gitpulse-border-strong);
+  }
+
+  .reviewer-modal-candidate--selected & {
+    background: $brand-primary;
+    border-color: $brand-primary;
+    color: var(--bulma-primary-invert, #fff);
+  }
+
+  .reviewer-modal-candidate--requested & {
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border);
+  }
+}
+
+.reviewer-modal-candidate-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.reviewer-modal-candidate-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gitpulse-surface-hover);
+  color: var(--gitpulse-text-muted);
+}
+
+.reviewer-modal-candidate-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+}
+
+.reviewer-modal-candidate-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reviewer-modal-candidate-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface-hover);
+  padding: 1px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.reviewer-modal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 13px;
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+}
+
+.reviewer-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface-muted);
+}
+
+.reviewer-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.reviewer-modal-btn--cancel {
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+
+  &:hover:not(:disabled) {
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    border-color: var(--gitpulse-border-strong);
+    background: var(--gitpulse-surface-hover);
+  }
+}
+
+.reviewer-modal-btn--submit {
+  color: var(--bulma-primary-invert, #fff);
+  background: $brand-primary;
+  border: 1px solid $brand-primary;
+
+  &:hover:not(:disabled) {
+    background: var(--gitpulse-accent-hover);
+    border-color: var(--gitpulse-accent-hover);
+  }
+}
+
+.reviewer-modal-btn-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--bulma-primary-invert, #fff);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9px;
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.reviewer-modal-enter-active,
+.reviewer-modal-leave-active {
+  transition: opacity 0.18s ease;
+
+  .reviewer-modal-panel {
+    transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+}
+
+.reviewer-modal-enter-from,
+.reviewer-modal-leave-to {
+  opacity: 0;
+
+  .reviewer-modal-panel {
+    transform: scale(0.96) translateY(8px);
+  }
+}
+
+.reviewer-modal-enter-to,
+.reviewer-modal-leave-from {
+  opacity: 1;
+
+  .reviewer-modal-panel {
+    transform: scale(1) translateY(0);
+  }
+}

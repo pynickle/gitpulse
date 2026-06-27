@@ -39,16 +39,6 @@
             <span class="info-item__label">{{ t('issueDetail.updated') }}</span>
             <span class="info-item__value">{{ formatDate(updatedAt) }}</span>
           </div>
-          <div class="info-item">
-            <span class="info-item__label">{{ t('issueDetail.assignee') }}</span>
-            <span v-if="assignee" class="info-item__value">
-              <GitHubAvatar :src="assignee.avatar_url" :alt="assignee.login" size="16" />
-              {{ assignee.login }}
-            </span>
-            <span v-else class="info-item__value info-item__value--muted">
-              {{ t('issueDetail.noAssignee') }}
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -97,16 +87,10 @@ import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DashboardNotification } from '#shared/types/notifications';
-import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 import LockReasonModal from './LockReasonModal.vue';
-
-interface IssueAssignee {
-  login: string;
-  avatar_url?: string | null;
-}
 
 const props = defineProps<{
   isLocked: boolean;
@@ -116,7 +100,6 @@ const props = defineProps<{
   htmlUrl: string | undefined;
   createdAt: string | undefined;
   updatedAt: string | undefined;
-  assignee: IssueAssignee | null | undefined;
   sourceNotification?: DashboardNotification | null;
 }>();
 

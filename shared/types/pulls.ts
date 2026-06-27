@@ -1,3 +1,4 @@
+import type { IssueAssigneeUser } from './assignees';
 import type { PullRequestReviewersSummary } from './pr-reviewers';
 import type { ReactionSummaryItem } from './reactions';
 
@@ -102,6 +103,7 @@ export interface PullRequestDetailPayload {
   // User info
   user?: PullRequestUserSummary;
   assignee?: PullRequestUserSummary | null;
+  assignees?: IssueAssigneeUser[];
 
   // Labels
   labels?: PullRequestDetailLabel[];

@@ -39,6 +39,7 @@ const { parsePersonalUnlockBody, parseTokenAuthBody } =
 const { parseNotificationSubjectTargetsBody } =
   await import('../server/utils/notification-subject-state-validation-utils');
 const {
+  parseIssueAssigneesBody,
   parseIssueLabelsBody,
   parseIssueLockBody,
   parseRequiredBodyText,
@@ -362,6 +363,10 @@ describe('server Zod request validation', () => {
       'needs triage',
     ]);
     expect(parseIssueLabelsBody({ labels: [] })).toEqual([]);
+    expect(parseIssueAssigneesBody({ assignees: [' Alice ', 'alice', 'Bob'] })).toEqual([
+      'Alice',
+      'Bob',
+    ]);
     expect(parseIssueLockBody({ lock_reason: 'resolved' })).toBe('resolved');
     expect(parseIssueLockBody({})).toBeUndefined();
     expect(parseReviewThreadResolveBody({ resolved: false })).toBe(false);
@@ -377,6 +382,18 @@ describe('server Zod request validation', () => {
     );
     expect(() => parseIssueLabelsBody({ labels: [' '] })).toThrow(
       'Invalid issue labels request body'
+    );
+    expect(() => parseIssueAssigneesBody({ assignees: 'alice' })).toThrow(
+      'Invalid issue assignees request body'
+    );
+    expect(() => parseIssueAssigneesBody({ assignees: [] })).toThrow(
+      'Invalid issue assignees request body'
+    );
+    expect(() => parseIssueAssigneesBody({ assignees: [' '] })).toThrow(
+      'Invalid issue assignees request body'
+    );
+    expect(() => parseIssueAssigneesBody({ assignees: ['alice'], extra: true })).toThrow(
+      'Invalid issue assignees request body'
     );
     expect(() => parseIssueLockBody({ lock_reason: 'invalid' })).toThrow(
       'Invalid issue lock request body'
