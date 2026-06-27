@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-6">
+  <div class="mb-4">
     <!-- Title row -->
     <div class="is-flex is-align-items-center mb-3">
       <component :is="stateVisual.icon" :size="22" :style="stateColor" />
