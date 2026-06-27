@@ -609,7 +609,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ── Sidebar (backgroundless; active item uses soft accent fill) ── */
+/* ── Sidebar ── */
 .settings__sidebar {
   width: 14rem;
   flex-shrink: 0;
@@ -617,52 +617,6 @@ onMounted(() => {
   flex-direction: column;
   padding: 1.5rem 0;
   background: transparent;
-}
-
-.settings__nav {
-  flex: 1;
-  padding: 0 0.75rem;
-  overflow-y: auto;
-}
-
-.settings__nav-group {
-  margin-bottom: 0.5rem;
-}
-
-.settings__nav-label {
-  display: block;
-  padding: 0 0.75rem 0.6rem;
-  color: var(--gitpulse-text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.settings__nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: 6px;
-  color: var(--gitpulse-text-muted);
-  font-size: 0.82rem;
-  font-weight: 550;
-  cursor: default;
-  transition:
-    color 0.12s ease,
-    background 0.12s ease;
-
-  &:hover:not(.is-active) {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    background: var(--gitpulse-surface-hover);
-  }
-
-  &.is-active {
-    color: var(--gitpulse-accent);
-    background: var(--gitpulse-accent-soft);
-    font-weight: 650;
-  }
 }
 
 .settings__nav {
@@ -717,6 +671,10 @@ onMounted(() => {
 .settings__main {
   flex: 1;
   overflow-y: auto;
+  /* Reserve scrollbar gutter so centered content (.settings__content uses
+     margin: 0 auto) doesn't shift horizontally when the scrollbar appears
+     or disappears across tabs with different content heights. */
+  scrollbar-gutter: stable;
   background: var(--gitpulse-surface);
 }
 
