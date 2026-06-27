@@ -10,14 +10,7 @@ import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
-
-import {
-  loadDiscussionDetail,
-  loadIssueDetail,
-  loadPrDetail,
-  loadReleaseDetail,
-  loadRepoDetail,
-} from './detail-pane-loaders';
+import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'answered' | 'unanswered';
@@ -84,6 +77,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
+const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
+  createDashboardDetailPaneLoaders();
 const isIssueHeaderNonSticky = shallowRef(false);
 const isPullRequestReviewActive = shallowRef(false);
 const isCompactHeaderVisible = shallowRef(false);
