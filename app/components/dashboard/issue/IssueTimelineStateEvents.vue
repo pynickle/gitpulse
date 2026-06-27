@@ -233,7 +233,6 @@
   <template v-else-if="item.eventType === 'unmarked_as_duplicate'"
     >unmarked this as duplicate</template
   >
-  <template v-else-if="item.eventType === 'mentioned'">mentioned this issue</template>
 
   <template v-else-if="item.eventType === 'project_v2_item_status_changed'">
     <template v-if="item.previousStatus && item.status">

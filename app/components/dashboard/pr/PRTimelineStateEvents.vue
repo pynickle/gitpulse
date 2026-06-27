@@ -26,7 +26,6 @@
   <template v-else-if="item.eventType === 'issue_comment_unpinned'">unpinned a comment</template>
   <template v-else-if="item.eventType === 'issue_type_added'">updated issue type</template>
   <template v-else-if="item.eventType === 'issue_type_removed'">removed issue type</template>
-  <template v-else-if="item.eventType === 'mentioned'">mentioned this PR</template>
   <template v-else-if="item.eventType === 'pinned'">pinned this PR</template>
   <template v-else-if="item.eventType === 'pull_request_revision_marker'"
     >marked a review revision</template

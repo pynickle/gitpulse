@@ -1,49 +1,5 @@
 <template>
-  <template v-if="item.eventType === 'blocked_by_added'">
-    marked this as blocked by
-    <a
-      href="#"
-      @click.prevent="switchToIssue(repoFullName, item.blockingIssue?.number)"
-      class="tag is-activity ml-1 is-info is-light"
-    >
-      {{ item.blockingIssue?.title }} #{{ item.blockingIssue?.number }}
-    </a>
-  </template>
-
-  <template v-else-if="item.eventType === 'blocked_by_removed'">
-    removed this as blocked by
-    <a
-      href="#"
-      @click.prevent="switchToIssue(repoFullName, item.blockingIssue?.number)"
-      class="tag is-activity ml-1 is-info is-light"
-    >
-      {{ item.blockingIssue?.title }} #{{ item.blockingIssue?.number }}
-    </a>
-  </template>
-
-  <template v-else-if="item.eventType === 'blocking_added'">
-    marked this as blocking
-    <a
-      href="#"
-      @click.prevent="switchToIssue(repoFullName, item.blockedIssue?.number)"
-      class="tag is-activity ml-1 is-info is-light"
-    >
-      {{ item.blockedIssue?.title }} #{{ item.blockedIssue?.number }}
-    </a>
-  </template>
-
-  <template v-else-if="item.eventType === 'blocking_removed'">
-    removed this as blocking
-    <a
-      href="#"
-      @click.prevent="switchToIssue(repoFullName, item.blockedIssue?.number)"
-      class="tag is-activity ml-1 is-info is-light"
-    >
-      {{ item.blockedIssue?.title }} #{{ item.blockedIssue?.number }}
-    </a>
-  </template>
-
-  <template v-else-if="isSourceReferenceEvent">
+  <template v-if="isSourceReferenceEvent">
     {{ sourceReferencePrefix }}
     <a
       href="#"
@@ -160,13 +116,6 @@ const sourceReferencePrefix = computed(() => {
 const isSourceReferenceEvent = computed(() =>
   ['connected', 'disconnected', 'cross-referenced'].includes(props.item.eventType ?? '')
 );
-
-const switchToIssue = (fullName: string, number?: number) => {
-  const parsed = parseRepoFullName(fullName);
-  if (!parsed || !number) return;
-
-  emit('switch-issue', parsed.owner, parsed.repo, number);
-};
 
 const switchToIssueOrPR = (reference?: TimelineReference) => {
   if (!reference?.number) return;

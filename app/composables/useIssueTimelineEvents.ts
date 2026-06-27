@@ -14,7 +14,7 @@ import type {
 } from '~/composables/usePRTimelineEvents';
 
 export interface IssueTimelineItem {
-  kind: 'comment' | 'event' | 'commit' | 'unsupported';
+  kind: 'comment' | 'event' | 'commit' | 'unsupported' | 'unavailable';
   eventType?: string;
   id?: string;
   createdAt?: string;
@@ -55,6 +55,7 @@ export interface IssueTimelineItem {
   previousProjectColumnName?: string;
   projectColumnName?: string;
   restEvent?: string;
+  unavailableReasonCode?: string;
 }
 
 export interface ProcessedIssueTimelineItem extends IssueTimelineItem {

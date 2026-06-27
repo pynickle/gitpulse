@@ -7,6 +7,7 @@ import {
   fetchTimelinePage,
   normalizePRTimelineItems,
   normalizePRTimelineEvent,
+  SKIPPED_TIMELINE_EVENTS,
   sortTimelineItems,
   throwTimelineFatalError,
 } from '#server/utils/github-timeline-utils';
@@ -136,9 +137,11 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       ]);
 
     const pullCommitsBySha = buildPullCommitLookup(pullCommits);
-    const enrichedTimeline = timelinePage.items.map((rawEvent) =>
-      enrichTimelineEventWithPullCommit(rawEvent, pullCommitsBySha)
-    );
+    const enrichedTimeline = timelinePage.items
+      .filter(
+        (rawEvent: Record<string, any>) => !SKIPPED_TIMELINE_EVENTS.has(String(rawEvent.event))
+      )
+      .map((rawEvent) => enrichTimelineEventWithPullCommit(rawEvent, pullCommitsBySha));
 
     const normalizedTimeline = normalizePRTimelineItems(
       sortTimelineItems(

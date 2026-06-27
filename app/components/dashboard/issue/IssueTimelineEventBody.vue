@@ -26,6 +26,13 @@
       :repo-name="repoName"
     />
 
+    <TimelineUnavailableEvent
+      v-else-if="item.kind === 'unavailable'"
+      :event-type="item.eventType || ''"
+      :reason-code="item.unavailableReasonCode || ''"
+      scope="issue"
+    />
+
     <template v-else>
       {{ item.displayText || `${item.eventType || item.kind} this issue` }}
     </template>
@@ -42,6 +49,7 @@ import { useI18n } from 'vue-i18n';
 
 import IssueTimelineReferenceEvents from '~/components/dashboard/issue/IssueTimelineReferenceEvents.vue';
 import IssueTimelineStateEvents from '~/components/dashboard/issue/IssueTimelineStateEvents.vue';
+import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUnavailableEvent.vue';
 import { type ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import formatDurationFromNow from '~/utils/formatDurationFromNow';
 
@@ -66,10 +74,6 @@ const referenceEventTypes = new Set([
   'disconnected',
   'parent_issue_added',
   'parent_issue_removed',
-  'blocking_added',
-  'blocking_removed',
-  'blocked_by_added',
-  'blocked_by_removed',
   'cross-referenced',
   'marked_as_duplicate',
   'unmarked_as_duplicate',
@@ -101,7 +105,6 @@ const stateEventTypes = new Set([
   'issue_type_added',
   'issue_type_changed',
   'issue_type_removed',
-  'mentioned',
   'project_v2_item_status_changed',
   'renamed',
   'transferred',
@@ -129,11 +132,6 @@ const shouldRenderReferenceEvents = (item: ProcessedIssueTimelineItem) => {
     case 'parent_issue_added':
     case 'parent_issue_removed':
       return Boolean(item.parent);
-    case 'blocking_added':
-    case 'blocking_removed':
-    case 'blocked_by_added':
-    case 'blocked_by_removed':
-      return Boolean(item.blockedIssue);
     default:
       return true;
   }

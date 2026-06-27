@@ -109,7 +109,14 @@ export interface TimelineProject {
 }
 
 export interface PRTimelineItem {
-  kind: 'comment' | 'event' | 'review' | 'review-comment' | 'commit' | 'unsupported';
+  kind:
+    | 'comment'
+    | 'event'
+    | 'review'
+    | 'review-comment'
+    | 'commit'
+    | 'unsupported'
+    | 'unavailable';
   eventType?: string;
   id?: string;
   createdAt?: string;
@@ -183,6 +190,7 @@ export interface PRTimelineItem {
   reason?: string;
   reasonCode?: string;
   restEvent?: string;
+  unavailableReasonCode?: string;
   projectCard?: { project?: TimelineProject };
   issueField?: { resourceType?: string; name?: string };
   originalUrl?: string;

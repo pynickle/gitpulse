@@ -619,7 +619,10 @@
   "timeline": {
     "referenceUnavailable": "Reference unavailable",
     "pullRequestType": "PR",
-    "issueType": "Issue"
+    "issueType": "Issue",
+    "unavailable": "Unavailable",
+    "unavailableReason_mention": "GitHub's API does not expose which issue or pull request mentioned this one.",
+    "unavailableReason_blocking": "GitHub's API does not expose the issue or pull request involved in this blocking relationship."
   },
   "branchSelector": {
     "label": "Switch branch",

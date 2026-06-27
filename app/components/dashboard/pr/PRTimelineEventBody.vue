@@ -23,6 +23,13 @@
       :item="item"
     />
 
+    <TimelineUnavailableEvent
+      v-else-if="item.kind === 'unavailable'"
+      :event-type="item.eventType || ''"
+      :reason-code="item.unavailableReasonCode || ''"
+      scope="pull"
+    />
+
     <template v-else> {{ item.displayText || `${item.eventType || item.kind} this PR` }} </template>
 
     <span class="ml-2 has-text-grey">
@@ -37,6 +44,7 @@ import { useI18n } from 'vue-i18n';
 
 import PRTimelineReferenceEvents from '~/components/dashboard/pr/PRTimelineReferenceEvents.vue';
 import PRTimelineStateEvents from '~/components/dashboard/pr/PRTimelineStateEvents.vue';
+import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUnavailableEvent.vue';
 import { type PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import formatDurationFromNow from '~/utils/formatDurationFromNow';
 
@@ -59,10 +67,6 @@ const eventDate = computed(() => props.item.createdAt || props.item.commit?.comm
 const shouldRenderActorPrefix = computed(() => !props.item.hasMixedActors);
 
 const referenceEventTypes = new Set([
-  'blocked_by_added',
-  'blocked_by_removed',
-  'blocking_added',
-  'blocking_removed',
   'connected',
   'disconnected',
   'cross-referenced',
@@ -113,7 +117,6 @@ const stateEventTypes = new Set([
   'labeled',
   'labels_changed',
   'locked',
-  'mentioned',
   'merged',
   'milestoned',
   'moved_columns_in_project',
@@ -156,12 +159,6 @@ const shouldRenderReferenceEvents = (item: PRTimelineItem) => {
     case 'sub_issue_added':
     case 'sub_issue_removed':
       return Boolean(item.subIssue);
-    case 'blocking_added':
-    case 'blocking_removed':
-      return Boolean(item.blockedIssue);
-    case 'blocked_by_added':
-    case 'blocked_by_removed':
-      return Boolean(item.blockingIssue);
     case 'referenced':
       return Boolean(item.commit?.oid || item.commit?.commitUrl);
     default:

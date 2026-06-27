@@ -31,32 +31,6 @@
     />
   </template>
 
-  <template
-    v-else-if="item.eventType === 'blocking_added' || item.eventType === 'blocking_removed'"
-  >
-    {{ item.eventType === 'blocking_added' ? 'marked' : 'removed' }}
-    <ReferenceSubject
-      :ref-subject="item.blockedIssue"
-      resource-type="issue"
-      @switch-issue="handleSwitchIssue"
-      @switch-pull-request="handleSwitchPullRequest"
-    />
-    as blocking
-  </template>
-
-  <template
-    v-else-if="item.eventType === 'blocked_by_added' || item.eventType === 'blocked_by_removed'"
-  >
-    {{ item.eventType === 'blocked_by_added' ? 'marked' : 'removed' }}
-    <ReferenceSubject
-      :ref-subject="item.blockedIssue"
-      resource-type="issue"
-      @switch-issue="handleSwitchIssue"
-      @switch-pull-request="handleSwitchPullRequest"
-    />
-    as blocked by
-  </template>
-
   <template v-else-if="item.eventType === 'cross-referenced'">
     referenced this in
     <ReferenceSubject

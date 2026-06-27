@@ -172,6 +172,8 @@ const PR_UNSUPPORTED_EVENT_CLASSES = [
   'project_v2_field_history',
 ] as const;
 
+export const SKIPPED_TIMELINE_EVENTS = new Set(['subscribed', 'unsubscribed']);
+
 const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
 const GITHUB_REPO_PATH_PATTERN = /^\/([^/]+)\/([^/]+)(?:\/|$)/;
 const GITHUB_PULL_REFERENCE_PATH_PATTERN = /^\/[^/]+\/[^/]+\/pull\/\d+(?:\/|$)/;
@@ -970,11 +972,7 @@ export function normalizeIssueTimelineEvent(
         },
       };
     case 'mentioned':
-      return {
-        ...baseItem,
-        kind: 'event',
-        eventType: eventName,
-      };
+      return createUnavailableEvent(baseItem, eventName, 'mention');
     case 'marked_as_duplicate':
       return {
         ...baseItem,
@@ -1021,6 +1019,11 @@ export function normalizeIssueTimelineEvent(
         eventType: eventName,
         commit: mapCommitPayload(rawEvent),
       };
+    case 'blocking_added':
+    case 'blocking_removed':
+    case 'blocked_by_added':
+    case 'blocked_by_removed':
+      return createUnavailableEvent(baseItem, eventName, 'blocking');
     default:
       return createUnsupportedRestEvent(baseItem, eventName, 'issue');
   }
@@ -1595,6 +1598,15 @@ function createUnsupportedRestEvent(
     degraded: true,
     displayText: `GitHub REST does not fully expose the ${eventName} ${scope} event; showing a degraded entry instead.`,
     restEvent: eventName,
+  };
+}
+
+function createUnavailableEvent(baseItem: BaseTimelineItem, eventName: string, reasonCode: string) {
+  return {
+    ...baseItem,
+    kind: 'unavailable',
+    eventType: eventName,
+    unavailableReasonCode: reasonCode,
   };
 }
 

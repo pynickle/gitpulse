@@ -4,6 +4,7 @@ import {
   fetchTimelinePage,
   normalizeIssueTimelineEvent,
   normalizeTimelineStateItems,
+  SKIPPED_TIMELINE_EVENTS,
   sortTimelineItems,
   throwTimelineFatalError,
 } from '#server/utils/github-timeline-utils';
@@ -42,9 +43,13 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
 
     const timeline = normalizeTimelineStateItems(
       sortTimelineItems(
-        items.map((rawEvent: Record<string, any>) =>
-          normalizeIssueTimelineEvent(rawEvent, { owner, repo })
-        )
+        items
+          .filter(
+            (rawEvent: Record<string, any>) => !SKIPPED_TIMELINE_EVENTS.has(String(rawEvent.event))
+          )
+          .map((rawEvent: Record<string, any>) =>
+            normalizeIssueTimelineEvent(rawEvent, { owner, repo })
+          )
       )
     );
 
