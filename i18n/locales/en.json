@@ -251,7 +251,9 @@
     "sidebar": {
       "views": "Views",
       "manageViews": "Manage Views",
-      "emptyGroup": "No search tabs in this group."
+      "emptyGroup": "No search tabs in this group.",
+      "resizeHandle": "Resize sidebar",
+      "resetWidth": "Reset sidebar width"
     },
     "filters": {
       "title": "Filters",

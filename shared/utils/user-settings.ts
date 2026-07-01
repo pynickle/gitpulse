@@ -28,6 +28,7 @@ import type {
   ShikiLightThemeId,
   UserAppearanceSettings,
   UserFontSettings,
+  UserLayoutSettings,
   UserNavigationSettings,
   UserNotificationBehaviorSettings,
   UserSettings,
@@ -59,6 +60,9 @@ import {
   NOTIFICATION_READ_MARK_MODE_IDS,
   SHIKI_DARK_THEME_IDS,
   SHIKI_LIGHT_THEME_IDS,
+  TAB_SIDEBAR_WIDTH_DEFAULT,
+  TAB_SIDEBAR_WIDTH_MAX,
+  TAB_SIDEBAR_WIDTH_MIN,
 } from '../types/user-settings';
 
 const APP_FONTS = new Set<AppFontId>(APP_FONT_IDS);
@@ -104,6 +108,10 @@ export const DEFAULT_USER_NOTIFICATION_BEHAVIOR_SETTINGS: UserNotificationBehavi
 
 export const DEFAULT_USER_NAVIGATION_SETTINGS: UserNavigationSettings = {
   linkTarget: 'gitpulse',
+};
+
+export const DEFAULT_USER_LAYOUT_SETTINGS: UserLayoutSettings = {
+  tabSidebarWidth: TAB_SIDEBAR_WIDTH_DEFAULT,
 };
 
 const hasOwn = (value: object, key: string) => {
@@ -189,6 +197,7 @@ export function createDefaultUserSettings(): UserSettings {
     appearance: { ...DEFAULT_USER_APPEARANCE_SETTINGS },
     notificationBehavior: { ...DEFAULT_USER_NOTIFICATION_BEHAVIOR_SETTINGS },
     navigation: { ...DEFAULT_USER_NAVIGATION_SETTINGS },
+    layout: { ...DEFAULT_USER_LAYOUT_SETTINGS },
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
@@ -700,6 +709,27 @@ export function normalizeUserNavigationSettings(
   };
 }
 
+export function normalizeUserLayoutSettings(
+  value: unknown,
+  fallback: UserLayoutSettings = DEFAULT_USER_LAYOUT_SETTINGS
+): UserLayoutSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback };
+  }
+
+  const candidate = value as Partial<UserLayoutSettings>;
+  const candidateWidth = candidate.tabSidebarWidth;
+  const width =
+    typeof candidateWidth === 'number' &&
+    Number.isFinite(candidateWidth) &&
+    candidateWidth >= TAB_SIDEBAR_WIDTH_MIN &&
+    candidateWidth <= TAB_SIDEBAR_WIDTH_MAX
+      ? Math.round(candidateWidth)
+      : fallback.tabSidebarWidth;
+
+  return { tabSidebarWidth: width };
+}
+
 export function normalizeUserSettings(value: unknown, fallback = createDefaultUserSettings()) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {
@@ -708,6 +738,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       appearance: { ...fallback.appearance },
       notificationBehavior: { ...fallback.notificationBehavior },
       navigation: { ...fallback.navigation },
+      layout: { ...fallback.layout },
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
@@ -725,6 +756,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       fallback.notificationBehavior
     ),
     navigation: normalizeUserNavigationSettings(candidate.navigation, fallback.navigation),
+    layout: normalizeUserLayoutSettings(candidate.layout, fallback.layout),
     tabGroups: normalizeTabGroups(candidate.tabGroups, fallback.tabGroups),
     customTabs: normalizeCustomTabs(candidate.customTabs, fallback.customTabs),
     notificationTodos: normalizeNotificationTodos(
@@ -766,6 +798,9 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
           base.navigation
         )
       : { ...base.navigation },
+    layout: hasOwn(candidate, 'layout')
+      ? normalizeUserLayoutSettings({ ...base.layout, ...candidate.layout }, base.layout)
+      : { ...base.layout },
     tabGroups: hasOwn(candidate, 'tabGroups')
       ? normalizeTabGroups(candidate.tabGroups, base.tabGroups)
       : cloneTabGroups(base.tabGroups),

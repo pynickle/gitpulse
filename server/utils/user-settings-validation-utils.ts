@@ -22,6 +22,8 @@ import {
   NOTIFICATION_READ_MARK_MODE_IDS,
   SHIKI_DARK_THEME_IDS,
   SHIKI_LIGHT_THEME_IDS,
+  TAB_SIDEBAR_WIDTH_MAX,
+  TAB_SIDEBAR_WIDTH_MIN,
 } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
 
@@ -90,6 +92,20 @@ const navigationSettingsPatchSchema = z
   })
   .refine((navigation) => Object.keys(navigation).length > 0, {
     message: 'At least one navigation setting is required',
+  });
+
+const tabSidebarWidthSchema = z
+  .number()
+  .int()
+  .min(TAB_SIDEBAR_WIDTH_MIN, { message: 'Tab sidebar width is too narrow' })
+  .max(TAB_SIDEBAR_WIDTH_MAX, { message: 'Tab sidebar width is too wide' });
+
+const layoutSettingsPatchSchema = z
+  .strictObject({
+    tabSidebarWidth: tabSidebarWidthSchema.optional(),
+  })
+  .refine((layout) => Object.keys(layout).length > 0, {
+    message: 'At least one layout setting is required',
   });
 
 const tabGroupSchema = z.strictObject({
@@ -216,6 +232,7 @@ export const userSettingsPatchSchema = z
     appearance: appearanceSettingsPatchSchema.optional(),
     notificationBehavior: notificationBehaviorSettingsPatchSchema.optional(),
     navigation: navigationSettingsPatchSchema.optional(),
+    layout: layoutSettingsPatchSchema.optional(),
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),

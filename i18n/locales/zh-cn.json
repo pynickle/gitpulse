@@ -345,7 +345,9 @@
     "sidebar": {
       "views": "视图",
       "manageViews": "管理视图",
-      "emptyGroup": "此分组还没有搜索视图。"
+      "emptyGroup": "此分组还没有搜索视图。",
+      "resizeHandle": "调整侧边栏宽度",
+      "resetWidth": "重置侧边栏宽度"
     },
     "settings": {
       "pageKicker": "仪表盘",
