@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@comark/nuxt": "^0.5.0",
-    "@lucide/vue": "^1.22.0",
+    "@lucide/vue": "^1.23.0",
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/color-mode": "^4.0.1",
@@ -37,24 +37,24 @@
     "nuxt-auth-utils": "^0.5.29",
     "nuxt-seo-utils": "^8.3.1",
     "nuxt-site-config": "^4.1.1",
-    "redis": "^6.0.1",
-    "shiki": "^4.3.0",
+    "redis": "^6.1.0",
+    "shiki": "^4.3.1",
     "simplebar-vue": "^2.4.2",
-    "vue": "3.5.35",
+    "vue": "3.5.39",
     "vue-draggable-plus": "^0.6.1",
     "vue-router": "^5.1.0",
     "xss": "^1.0.15",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@j178/prek": "^0.4.5",
+    "@j178/prek": "^0.4.6",
     "@nuxtjs/i18n": "^10.4.0",
-    "@types/node": "^26.0.1",
+    "@types/node": "^26.1.0",
     "oxfmt": "^0.57.0",
-    "oxlint": "^1.71.0",
+    "oxlint": "^1.72.0",
     "oxlint-tsgolint": "^0.24.0",
     "sass-embedded": "^1.100.0",
-    "vue-tsc": "^3.3.5",
+    "vue-tsc": "^3.3.6",
     "vue3-simple-icons": "^16.10.0"
   }
 }
