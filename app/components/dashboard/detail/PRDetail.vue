@@ -113,7 +113,6 @@
             :submitting="submittingReviewerRequest"
             :error="reviewerPickerError"
             @close="closeReviewerPicker"
-            @search="loadReviewerCandidates"
             @submit="requestReviewerSelection"
             @clear-error="clearReviewerPickerError"
           />

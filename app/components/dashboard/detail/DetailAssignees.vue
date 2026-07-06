@@ -66,7 +66,6 @@
       :close-label="t('detailAssignees.close')"
       :search-placeholder="t('detailAssignees.placeholder')"
       :search-label="t('detailAssignees.search')"
-      :clear-search-label="t('detailAssignees.clearSearch')"
       :loading-label="t('detailAssignees.loading')"
       :empty-label="t('detailAssignees.noneAvailable')"
       :cancel-label="t('detailAssignees.cancel')"
@@ -80,7 +79,6 @@
       allow-empty-selection
       submit-requires-change
       @close="closeAssigneeEditor()"
-      @search="loadAssigneeCandidates"
       @submit="saveAssigneeSelection"
       @clear-error="clearAssigneeError"
     >

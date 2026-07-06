@@ -26,7 +26,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  search: [query: string];
   submit: [payload: PRReviewerMutationPayload];
   clearError: [];
 }>();
@@ -89,7 +88,6 @@ const submitSelection = ({ candidates }: DetailPeoplePickerSubmitPayload) => {
     :close-label="t('prReview.reviewerPicker.close')"
     :search-placeholder="t('prReview.reviewerPicker.placeholder')"
     :search-label="t('prReview.reviewerPicker.search')"
-    :clear-search-label="t('prReview.reviewerPicker.clearSearch')"
     :loading-label="t('prReview.reviewerPicker.loading')"
     :empty-label="t('prReview.reviewerPicker.empty')"
     :cancel-label="t('prReview.reviewerPicker.cancel')"
@@ -102,7 +100,6 @@ const submitSelection = ({ candidates }: DetailPeoplePickerSubmitPayload) => {
     :error="error"
     show-selected-count
     @close="emit('close')"
-    @search="emit('search', $event)"
     @submit="submitSelection"
     @clear-error="emit('clearError')"
   >

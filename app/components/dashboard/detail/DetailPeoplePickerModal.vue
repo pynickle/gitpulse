@@ -32,7 +32,6 @@ const props = withDefaults(
     closeLabel: string;
     searchPlaceholder: string;
     searchLabel: string;
-    clearSearchLabel: string;
     loadingLabel: string;
     emptyLabel: string;
     cancelLabel: string;
@@ -60,7 +59,6 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   close: [];
-  search: [query: string];
   submit: [payload: DetailPeoplePickerSubmitPayload];
   clearError: [];
 }>();
@@ -81,10 +79,14 @@ const focusSearchInput = () => {
 
 const initialSelectedKeySet = computed(() => new Set(props.initialSelectedKeys));
 
+const filteredCandidates = computed(() =>
+  filterDetailPeoplePickerCandidates(props.candidates, searchQuery.value)
+);
+
 const groupedCandidates = computed<CandidateGroup[]>(() => {
   const groupMap = new Map<string, DetailPeoplePickerCandidate[]>();
 
-  for (const candidate of props.candidates) {
+  for (const candidate of filteredCandidates.value) {
     const items = groupMap.get(candidate.kind) ?? [];
     items.push(candidate);
     groupMap.set(candidate.kind, items);
@@ -120,16 +122,6 @@ const isSubmitDisabled = computed(() => {
 
   return false;
 });
-
-const handleSearch = () => {
-  emit('search', searchQuery.value.trim());
-};
-
-const clearSearch = () => {
-  searchQuery.value = '';
-  emit('search', '');
-  focusSearchInput();
-};
 
 const toggleCandidate = (candidate: DetailPeoplePickerCandidate) => {
   if (candidate.disabled) return;
@@ -266,27 +258,18 @@ watch(
           </div>
 
           <div class="reviewer-modal-content">
-            <form class="reviewer-modal-search" @submit.prevent="handleSearch">
+            <form class="reviewer-modal-search" @submit.prevent>
               <div class="reviewer-modal-search-input-wrapper">
                 <SearchIcon :size="14" class="reviewer-modal-search-icon" />
                 <input
                   ref="searchInputRef"
                   v-model="searchQuery"
                   class="reviewer-modal-search-input"
-                  type="search"
+                  type="text"
                   :placeholder="searchPlaceholder"
                   :aria-label="searchLabel"
                   @keydown="handleSearchKeydown"
                 />
-                <button
-                  v-if="searchQuery.length > 0"
-                  class="reviewer-modal-search-clear"
-                  type="button"
-                  :aria-label="clearSearchLabel"
-                  @click="clearSearch"
-                >
-                  <XIcon :size="12" />
-                </button>
               </div>
             </form>
 
