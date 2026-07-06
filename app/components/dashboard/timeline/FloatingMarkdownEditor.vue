@@ -125,7 +125,7 @@
           :listbox-id="mentionListboxId"
           :option-id-prefix="mentionComponentId"
           :panel-style="mentionPanelStyle"
-          :loading="mentionLoading"
+          :loading="mentionMenuLoading"
           :empty-message="mentionEmptyMessage"
           :aria-label="t('floatingMarkdownEditor.mentionSuggestions')"
           @select="insertMentionSuggestion"
@@ -266,6 +266,7 @@ const mentionSuggestions = shallowRef<AutocompleteSuggestion[]>([]);
 const mentionLoading = shallowRef(false);
 const mentionLoadFailed = shallowRef(false);
 const mentionActiveIndex = shallowRef(-1);
+const mentionAnchorReady = shallowRef(false);
 
 let mentionSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let mentionSearchRequestId = 0;
@@ -276,12 +277,19 @@ const currentUserAvatar = computed(
   () => user.value?.avatar_url || 'https://github.com/placeholder.png'
 );
 const mentionOpen = computed(
-  () => Boolean(mentionTrigger.value) && activeTab.value === 'write' && !isSubmitting.value
+  () =>
+    Boolean(mentionTrigger.value) &&
+    mentionAnchorReady.value &&
+    activeTab.value === 'write' &&
+    !isSubmitting.value
 );
 const mentionEmptyMessage = computed(() =>
   mentionLoadFailed.value
     ? t('floatingMarkdownEditor.mentionSuggestionsUnavailable')
     : t('floatingMarkdownEditor.mentionSuggestionsEmpty')
+);
+const mentionMenuLoading = computed(
+  () => mentionLoading.value && mentionSuggestions.value.length === 0 && !mentionLoadFailed.value
 );
 
 // Determine submission mode
@@ -323,6 +331,7 @@ const getMentionSuggestionsUrl = () =>
 
 const closeMentionAutocomplete = () => {
   mentionTrigger.value = null;
+  mentionAnchorReady.value = false;
   mentionActiveIndex.value = -1;
   mentionLoading.value = false;
   mentionLoadFailed.value = false;
@@ -333,11 +342,23 @@ const closeMentionAutocomplete = () => {
   mentionSearchRequestId += 1;
 };
 
+const getMentionInlineAnchor = (): { x: number; y: number; height: number } | null => {
+  const el = textareaRef.value;
+  if (!el) return null;
+
+  const trigger = mentionTrigger.value;
+  if (!trigger) return null;
+
+  return getTextareaCaretAnchorRect(el, trigger.start);
+};
+
 const { panelStyle: mentionPanelStyle, updatePanelPosition: updateMentionPanelPosition } =
   useAutocompletePanel({
     isOpen: mentionOpen,
     listboxId: mentionListboxId,
     getAnchor: () => textareaRef.value,
+    getInlineAnchor: getMentionInlineAnchor,
+    requireInlineAnchor: true,
     onClose: closeMentionAutocomplete,
     gap: MENTION_PANEL_GAP,
     viewportMargin: MENTION_PANEL_VIEWPORT_MARGIN,
@@ -414,10 +435,14 @@ const refreshMentionTrigger = () => {
     return;
   }
 
-  const queryChanged = trigger.query !== mentionQuery.value || !mentionTrigger.value;
+  const previousTrigger = mentionTrigger.value;
+  const anchorChanged = previousTrigger?.start !== trigger.start;
+  const queryChanged = trigger.query !== mentionQuery.value || !previousTrigger;
   mentionTrigger.value = trigger;
   mentionQuery.value = trigger.query;
-  updateMentionPanelPosition();
+  if (anchorChanged || !mentionAnchorReady.value) {
+    mentionAnchorReady.value = updateMentionPanelPosition();
+  }
 
   if (queryChanged) {
     scheduleMentionSearch(trigger.query);
