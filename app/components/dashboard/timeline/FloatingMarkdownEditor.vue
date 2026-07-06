@@ -688,9 +688,26 @@ defineExpose({ focus });
   border-radius: 20px;
   background: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
   backdrop-filter: blur(10px);
-  box-shadow: var(--gitpulse-shadow-raised);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 4px 8px rgba(0, 0, 0, 0.05),
+    0 8px 16px rgba(0, 0, 0, 0.04);
   text-align: left;
   cursor: text;
+
+  &:hover {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.06),
+      0 4px 8px rgba(0, 0, 0, 0.05),
+      0 8px 16px rgba(0, 0, 0, 0.04),
+      inset 0 0 0 1px var(--gitpulse-border);
+  }
+
+  &:active {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 2px 4px rgba(0, 0, 0, 0.03);
+  }
 }
 
 .floating-markdown-editor__capsule-avatar {
@@ -715,7 +732,11 @@ defineExpose({ focus });
   padding: 1rem;
   background: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
   backdrop-filter: blur(10px);
-  box-shadow: var(--gitpulse-shadow-raised);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.03),
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.03),
+    0 8px 16px rgba(0, 0, 0, 0.02);
 }
 
 .floating-markdown-editor__header,
