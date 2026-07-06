@@ -97,6 +97,7 @@ import { ClockIcon, GitForkIcon, LockIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { formatDurationFromNow } from '#imports';
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';

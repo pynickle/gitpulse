@@ -127,6 +127,7 @@ import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, TagIcon, XIcon } f
 import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { getTextColorFromBackground } from '#imports';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 interface DashboardLabel {

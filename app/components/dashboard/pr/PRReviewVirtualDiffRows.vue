@@ -532,6 +532,14 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
   });
 };
 
+const openDraftEditorForLine = (line: number | null) => {
+  if (!line) {
+    return;
+  }
+
+  emit('open-draft-editor', props.filename, line);
+};
+
 watch(() => [props.filename, props.rows], resetMeasurements, { flush: 'post' });
 
 watch(activeDraftLineForFile, clearMeasurements, { flush: 'post' });
@@ -683,11 +691,7 @@ onBeforeUnmount(() => {
                   ? t('prReview.addLineComment')
                   : t('prReview.lineNotCommentable')
               "
-              @click="
-                virtualRow.row.newLineNumber
-                  ? emit('open-draft-editor', filename, virtualRow.row.newLineNumber)
-                  : undefined
-              "
+              @click="openDraftEditorForLine(virtualRow.row.newLineNumber)"
             >
               +
             </button>
