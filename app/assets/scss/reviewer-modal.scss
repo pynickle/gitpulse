@@ -14,7 +14,8 @@
 .reviewer-modal-panel {
   width: 100%;
   max-width: 420px;
-  max-height: 78vh;
+  height: 560px;
+  max-height: calc(100vh - 32px);
   display: flex;
   flex-direction: column;
   background: var(--gitpulse-surface);
