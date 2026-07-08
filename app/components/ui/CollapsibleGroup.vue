@@ -74,7 +74,7 @@ defineExpose({
   gap: 6px;
   width: 100%;
   padding: 4px 8px;
-  margin: 0 -8px;
+  margin: 0;
   border: none;
   background: transparent;
   border-radius: 6px;

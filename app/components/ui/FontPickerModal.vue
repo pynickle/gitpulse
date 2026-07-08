@@ -415,7 +415,7 @@ watch(
   align-items: center;
   gap: 10px;
   padding: 8px;
-  margin: 0 -8px;
+  margin: 0;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.1s ease;
