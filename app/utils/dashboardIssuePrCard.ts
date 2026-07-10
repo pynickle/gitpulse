@@ -32,6 +32,7 @@ export interface DashboardIssuePrEntity {
   pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
+  [key: string]: unknown;
 }
 
 export interface DashboardIssuePrCard {

@@ -11,6 +11,7 @@ import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
+import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'answered' | 'unanswered';
@@ -71,6 +72,8 @@ const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'switch-discussion', owner: string, repo: string, discussionNumber: number): void;
+  (e: 'open-issue', item: DashboardIssuePrEntity): void;
+  (e: 'open-pull-request', item: DashboardIssuePrEntity): void;
   (e: 'open-pull-request-review'): void;
   (e: 'close-pull-request-review'): void;
 }>();
@@ -338,6 +341,8 @@ watch(activeDetailKey, () => {
               :repository="repository"
               :owner="repositoryOwner"
               :repo="repositoryName"
+              @open-issue="emit('open-issue', $event)"
+              @open-pull-request="emit('open-pull-request', $event)"
             />
           </div>
         </Transition>

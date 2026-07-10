@@ -659,7 +659,15 @@
     "watchDefaultDescription": "仅 \\@ 提及时通知",
     "watchIgnoreDescription": "不接收通知",
     "files": "文件",
-    "filesEmpty": "暂无文件"
+    "filesEmpty": "暂无文件",
+    "panelSwitch": "仓库内容",
+    "issues": "Issues",
+    "pulls": "Pull requests",
+    "issuesEmpty": "此仓库暂无开放的 issue",
+    "pullsEmpty": "此仓库暂无开放的 pull request",
+    "loadingList": "加载中…",
+    "listErrorTitle": "列表加载失败",
+    "retry": "重试"
   },
   "repoFileView": {
     "fileTree": "文件树",

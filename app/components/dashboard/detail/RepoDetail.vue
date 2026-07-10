@@ -2,9 +2,11 @@
 import {
   ArchiveIcon,
   BookmarkIcon,
+  CircleDotIcon,
   EyeIcon,
   ExternalLinkIcon,
   FileTextIcon,
+  GitPullRequestIcon,
   GlobeIcon,
   GitForkIcon,
   InfoIcon,
@@ -12,21 +14,34 @@ import {
   StarIcon,
   XIcon,
 } from '@lucide/vue';
-import { computed, onMounted, onUnmounted, ref, watch, type Component } from 'vue';
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
+import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
+import FilterSegmentedControl, {
+  type SegmentedOption,
+} from '~/components/ui/FilterSegmentedControl.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import type { RepoIssuePrKind } from '~/composables/useRepoIssuePrList';
+import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
+
+type RepoDetailPanel = 'files' | RepoIssuePrKind;
 
 const props = defineProps<{
   repository: RepositoryDetailPayload;
   owner: string;
   repo: string;
+}>();
+
+const emit = defineEmits<{
+  (e: 'open-issue', item: DashboardIssuePrEntity): void;
+  (e: 'open-pull-request', item: DashboardIssuePrEntity): void;
 }>();
 
 type RepoDetailIcon = Component;
@@ -131,6 +146,48 @@ const copy = computed(() => {
     watchers: 'Watchers',
   };
 });
+
+const activePanel = shallowRef<RepoDetailPanel>('files');
+
+const panelOptions = computed<SegmentedOption[]>(() => [
+  {
+    value: 'files',
+    label: t('repoDetail.files'),
+    icon: FileTextIcon,
+  },
+  {
+    value: 'issues',
+    label: t('repoDetail.issues'),
+    icon: CircleDotIcon,
+  },
+  {
+    value: 'pulls',
+    label: t('repoDetail.pulls'),
+    icon: GitPullRequestIcon,
+  },
+]);
+
+const handlePanelChange = (value: string) => {
+  if (value === 'files' || value === 'issues' || value === 'pulls') {
+    activePanel.value = value;
+  }
+};
+
+const handleIssuePrSelect = (item: DashboardIssuePrEntity) => {
+  if (activePanel.value === 'pulls') {
+    emit('open-pull-request', item);
+    return;
+  }
+
+  emit('open-issue', item);
+};
+
+watch(
+  () => [props.owner, props.repo] as const,
+  () => {
+    activePanel.value = 'files';
+  }
+);
 
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
@@ -624,37 +681,56 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
           <hr class="mr-4" />
 
-          <RepoFileTree
+          <div class="repo-detail-panel-switch">
+            <FilterSegmentedControl
+              :options="panelOptions"
+              :model-value="activePanel"
+              :aria-label="t('repoDetail.panelSwitch')"
+              @update:model-value="handlePanelChange"
+            />
+          </div>
+
+          <template v-if="activePanel === 'files'">
+            <RepoFileTree
+              :owner="owner"
+              :repo="repo"
+              :items="directoryContents"
+              :loading="loadingFiles"
+              :error="filesError"
+              :current-branch="repoCurrentBranch"
+              :default-branch="repoDefaultBranch"
+            />
+
+            <div class="repo-readme">
+              <h2 class="title is-5 repo-readme__title">
+                <BookmarkIcon :size="18" />
+                <span>{{ copy.readme }}</span>
+              </h2>
+              <div v-if="loadingReadme" class="repo-readme__loading">
+                <Loader2Icon :size="20" class="spin-animation" />
+              </div>
+              <div v-else-if="readmeContent" class="repo-readme__content content">
+                <MarkdownRenderer
+                  :value="readmeContent"
+                  :repo-owner="owner"
+                  :repo-name="repo"
+                  :base-path="readmePath ?? undefined"
+                  :branch="repoCurrentBranch || undefined"
+                />
+              </div>
+              <div v-else class="repo-readme__empty">
+                {{ copy.noDescription }}
+              </div>
+            </div>
+          </template>
+
+          <RepoIssuePrList
+            v-else
             :owner="owner"
             :repo="repo"
-            :items="directoryContents"
-            :loading="loadingFiles"
-            :error="filesError"
-            :current-branch="repoCurrentBranch"
-            :default-branch="repoDefaultBranch"
+            :kind="activePanel"
+            @select="handleIssuePrSelect"
           />
-
-          <div class="repo-readme">
-            <h2 class="title is-5 repo-readme__title">
-              <BookmarkIcon :size="18" />
-              <span>{{ copy.readme }}</span>
-            </h2>
-            <div v-if="loadingReadme" class="repo-readme__loading">
-              <Loader2Icon :size="20" class="spin-animation" />
-            </div>
-            <div v-else-if="readmeContent" class="repo-readme__content content">
-              <MarkdownRenderer
-                :value="readmeContent"
-                :repo-owner="owner"
-                :repo-name="repo"
-                :base-path="readmePath ?? undefined"
-                :branch="repoCurrentBranch || undefined"
-              />
-            </div>
-            <div v-else class="repo-readme__empty">
-              {{ copy.noDescription }}
-            </div>
-          </div>
         </section>
       </div>
 
@@ -904,6 +980,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 }
 
 .repo-about {
+  margin-bottom: 1rem;
+}
+
+.repo-detail-panel-switch {
+  display: flex;
   margin-bottom: 1rem;
 }
 

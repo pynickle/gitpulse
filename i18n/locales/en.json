@@ -659,7 +659,15 @@
     "watchDefaultDescription": "Only \\@mentions",
     "watchIgnoreDescription": "Receive no notifications",
     "files": "Files",
-    "filesEmpty": "No files found"
+    "filesEmpty": "No files found",
+    "panelSwitch": "Repository content",
+    "issues": "Issues",
+    "pulls": "Pull requests",
+    "issuesEmpty": "No open issues in this repository",
+    "pullsEmpty": "No open pull requests in this repository",
+    "loadingList": "Loading…",
+    "listErrorTitle": "Couldn’t load this list",
+    "retry": "Retry"
   },
   "repoFileView": {
     "fileTree": "File tree",

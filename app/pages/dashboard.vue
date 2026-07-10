@@ -272,6 +272,8 @@
     @switch-issue="handleSwitchIssueFromDetail"
     @switch-pull-request="handleSwitchPRFromDetail"
     @switch-discussion="handleSwitchDiscussionFromDetail"
+    @open-issue="handleIssueOpen"
+    @open-pull-request="handlePROpen"
     @open-pull-request-review="handlePRReviewOpen"
     @close-pull-request-review="handlePRReviewClose"
   />
