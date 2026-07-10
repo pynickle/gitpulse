@@ -1,42 +1,25 @@
 <script setup lang="ts">
 import { AlertTriangleIcon, Loader2Icon } from '@lucide/vue';
-import { computed, toRef } from 'vue';
 
-import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import IssuePrNotificationItem from '~/components/dashboard/IssuePrNotificationItem.vue';
 import Button from '~/components/ui/Button.vue';
-import { useRepoIssuePrList, type RepoIssuePrKind } from '~/composables/useRepoIssuePrList';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
+import type { RepoIssuePrKind } from '~/utils/repoIssuePrSearchQuery';
 
-const props = defineProps<{
-  owner: string;
-  repo: string;
+defineProps<{
   kind: RepoIssuePrKind;
+  items: DashboardIssuePrEntity[];
+  loading: boolean;
+  error: string;
+  emptyMessage: string;
 }>();
 
 const emit = defineEmits<{
   select: [item: DashboardIssuePrEntity];
+  retry: [];
 }>();
 
 const { t } = useI18n();
-
-const { items, loading, error, pagination, goToPage, refresh } = useRepoIssuePrList(
-  toRef(props, 'owner'),
-  toRef(props, 'repo'),
-  toRef(props, 'kind')
-);
-
-const emptyMessage = computed(() => {
-  return props.kind === 'pulls' ? t('repoDetail.pullsEmpty') : t('repoDetail.issuesEmpty');
-});
-
-const showPagination = computed(() => {
-  return (
-    !loading.value &&
-    !error.value &&
-    (pagination.value.hasPrev || pagination.value.hasNext || (pagination.value.totalPages ?? 1) > 1)
-  );
-});
 
 const handleSelect = (item: DashboardIssuePrEntity) => {
   emit('select', item);
@@ -59,7 +42,7 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
       </div>
       <p class="repo-issue-pr-list__error-title">{{ t('repoDetail.listErrorTitle') }}</p>
       <p class="repo-issue-pr-list__error-message">{{ error }}</p>
-      <Button color="primary" size="normal" @click="refresh">
+      <Button color="primary" size="normal" @click="emit('retry')">
         {{ t('repoDetail.retry') }}
       </Button>
     </div>
@@ -80,13 +63,6 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
           <IssuePrNotificationItem :item="item" />
         </button>
       </div>
-
-      <DashboardPagination
-        v-if="showPagination"
-        class="repo-issue-pr-list__pagination"
-        :pagination="pagination"
-        @change="goToPage"
-      />
     </template>
   </section>
 </template>
@@ -94,6 +70,9 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
 <style scoped lang="scss">
 .repo-issue-pr-list {
   min-height: 8rem;
+  min-width: 0;
+  padding-top: 0.75rem;
+  padding-bottom: 1rem;
 }
 
 .repo-issue-pr-list__loading,
@@ -158,10 +137,6 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
     border-color: var(--gitpulse-border-strong);
     box-shadow: var(--gitpulse-shadow-card);
   }
-}
-
-.repo-issue-pr-list__pagination {
-  margin-top: 1rem;
 }
 
 .spin-animation {

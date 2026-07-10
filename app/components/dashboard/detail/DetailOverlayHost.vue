@@ -267,9 +267,16 @@ watch(activeDetailKey, () => {
       @back="emit('back')"
       @home="emit('home')"
     >
-      <div class="detail-pane-stage is-clipped">
+      <div
+        class="detail-pane-stage is-clipped"
+        :class="{ 'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository' }"
+      >
         <Transition name="detail-pane-slide">
-          <div :key="activeDetailKey" class="detail-pane">
+          <div
+            :key="activeDetailKey"
+            class="detail-pane"
+            :class="{ 'detail-pane--page-scroll': activeDetailPane?.type === 'repository' }"
+          >
             <div
               v-if="isContentLoading"
               class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
@@ -367,6 +374,15 @@ watch(activeDetailKey, () => {
   padding: 2rem 4rem;
   overflow: hidden;
   background: var(--gitpulse-surface);
+}
+
+/* Repository detail: scroll at pane level so sticky chrome pins under the header. */
+.detail-pane--page-scroll {
+  /* Less top padding so sticky repo chrome sits closer under the page header. */
+  padding-top: 0.75rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .detail-loading-pane {

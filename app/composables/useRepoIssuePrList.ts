@@ -2,8 +2,12 @@ import { computed, ref, shallowRef, watch, type Ref } from 'vue';
 
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-
-export type RepoIssuePrKind = 'issues' | 'pulls';
+import {
+  buildRepoIssuePrSearchQuery,
+  normalizeRepoIssuePrState,
+  type RepoIssuePrKind,
+  type RepoIssuePrState,
+} from '~/utils/repoIssuePrSearchQuery';
 
 export interface RepoIssuePrPagination {
   page: number;
@@ -31,27 +35,18 @@ const createEmptyPagination = (page = 1): RepoIssuePrPagination => ({
   totalPages: 1,
 });
 
-const buildSearchQuery = (owner: string, repo: string, kind: RepoIssuePrKind) => {
-  const typeQualifier = kind === 'pulls' ? 'is:pr' : 'is:issue';
-  return [
-    typeQualifier,
-    'is:open',
-    'archived:false',
-    `repo:${owner}/${repo}`,
-    'sort:updated-desc',
-  ].join(' ');
-};
-
 export function useRepoIssuePrList(
   owner: Ref<string> | (() => string),
   repo: Ref<string> | (() => string),
-  kind: Ref<RepoIssuePrKind> | (() => RepoIssuePrKind)
+  kind: Ref<RepoIssuePrKind> | (() => RepoIssuePrKind),
+  state: Ref<RepoIssuePrState> | (() => RepoIssuePrState) = () => 'open'
 ) {
   const apiFetch = useGitPulseApiFetch();
 
   const resolveOwner = () => (typeof owner === 'function' ? owner() : owner.value);
   const resolveRepo = () => (typeof repo === 'function' ? repo() : repo.value);
   const resolveKind = () => (typeof kind === 'function' ? kind() : kind.value);
+  const resolveState = () => (typeof state === 'function' ? state() : state.value);
 
   const items = shallowRef<DashboardIssuePrEntity[]>([]);
   const loading = ref(false);
@@ -61,10 +56,21 @@ export function useRepoIssuePrList(
 
   const hasItems = computed(() => items.value.length > 0);
 
+  const showPagination = computed(() => {
+    return (
+      !loading.value &&
+      !error.value &&
+      (pagination.value.hasPrev ||
+        pagination.value.hasNext ||
+        (pagination.value.totalPages ?? 1) > 1)
+    );
+  });
+
   const fetchPage = async (page = 1) => {
     const currentOwner = resolveOwner().trim();
     const currentRepo = resolveRepo().trim();
     const currentKind = resolveKind();
+    const currentState = normalizeRepoIssuePrState(currentKind, resolveState());
 
     if (!currentOwner || !currentRepo) {
       items.value = [];
@@ -79,7 +85,7 @@ export function useRepoIssuePrList(
     error.value = '';
 
     const searchParams = new URLSearchParams({
-      q: buildSearchQuery(currentOwner, currentRepo, currentKind),
+      q: buildRepoIssuePrSearchQuery(currentOwner, currentRepo, currentKind, currentState),
       page: String(page),
       per_page: String(DEFAULT_PER_PAGE),
     });
@@ -125,7 +131,13 @@ export function useRepoIssuePrList(
   };
 
   watch(
-    () => [resolveOwner(), resolveRepo(), resolveKind()] as const,
+    () =>
+      [
+        resolveOwner(),
+        resolveRepo(),
+        resolveKind(),
+        normalizeRepoIssuePrState(resolveKind(), resolveState()),
+      ] as const,
     ([nextOwner, nextRepo]) => {
       if (!nextOwner || !nextRepo) {
         items.value = [];
@@ -145,6 +157,7 @@ export function useRepoIssuePrList(
     error,
     pagination,
     hasItems,
+    showPagination,
     fetchPage,
     goToPage,
     refresh,

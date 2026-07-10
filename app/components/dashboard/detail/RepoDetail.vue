@@ -3,13 +3,16 @@ import {
   ArchiveIcon,
   BookmarkIcon,
   CircleDotIcon,
+  CircleMinusIcon,
   EyeIcon,
   ExternalLinkIcon,
   FileTextIcon,
+  GitMergeIcon,
   GitPullRequestIcon,
   GlobeIcon,
   GitForkIcon,
   InfoIcon,
+  LayoutGridIcon,
   Loader2Icon,
   StarIcon,
   XIcon,
@@ -20,18 +23,34 @@ import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
+import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
-import FilterSegmentedControl, {
-  type SegmentedOption,
-} from '~/components/ui/FilterSegmentedControl.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import type { RepoIssuePrKind } from '~/composables/useRepoIssuePrList';
+import { useRepoIssuePrList } from '~/composables/useRepoIssuePrList';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
+import {
+  normalizeRepoIssuePrState,
+  type RepoIssuePrKind,
+  type RepoIssuePrState,
+} from '~/utils/repoIssuePrSearchQuery';
 
 type RepoDetailPanel = 'files' | RepoIssuePrKind;
+
+interface RepoPanelTab {
+  value: RepoDetailPanel;
+  label: string;
+  icon: Component;
+}
+
+interface RepoStateFilterOption {
+  value: RepoIssuePrState;
+  label: string;
+  icon: Component;
+  color: string;
+}
 
 const props = defineProps<{
   repository: RepositoryDetailPayload;
@@ -148,8 +167,14 @@ const copy = computed(() => {
 });
 
 const activePanel = shallowRef<RepoDetailPanel>('files');
+const listState = shallowRef<RepoIssuePrState>('open');
 
-const panelOptions = computed<SegmentedOption[]>(() => [
+const listKind = computed<RepoIssuePrKind>(() =>
+  activePanel.value === 'pulls' ? 'pulls' : 'issues'
+);
+const isListPanel = computed(() => activePanel.value === 'issues' || activePanel.value === 'pulls');
+
+const panelTabs = computed<RepoPanelTab[]>(() => [
   {
     value: 'files',
     label: t('repoDetail.files'),
@@ -167,14 +192,84 @@ const panelOptions = computed<SegmentedOption[]>(() => [
   },
 ]);
 
-const handlePanelChange = (value: string) => {
-  if (value === 'files' || value === 'issues' || value === 'pulls') {
-    activePanel.value = value;
+const stateFilterOptions = computed<RepoStateFilterOption[]>(() => {
+  const openOption: RepoStateFilterOption = {
+    value: 'open',
+    label: t('dashboard.filters.options.open'),
+    icon: CircleDotIcon,
+    color: 'var(--gitpulse-success)',
+  };
+  const closedOption: RepoStateFilterOption = {
+    value: 'closed',
+    label: t('dashboard.filters.options.closed'),
+    icon: CircleMinusIcon,
+    color: 'var(--gitpulse-danger)',
+  };
+  const allOption: RepoStateFilterOption = {
+    value: 'all',
+    label: t('dashboard.filters.options.all'),
+    icon: LayoutGridIcon,
+    color: 'var(--gitpulse-text-muted)',
+  };
+
+  if (listKind.value === 'pulls') {
+    return [
+      openOption,
+      closedOption,
+      {
+        value: 'merged',
+        label: t('dashboard.filters.options.merged'),
+        icon: GitMergeIcon,
+        color: 'var(--gitpulse-purple)',
+      },
+      allOption,
+    ];
+  }
+
+  return [openOption, closedOption, allOption];
+});
+
+// Only query while Issues/PRs is open — keep Files panel free of list traffic.
+const listOwner = computed(() => (isListPanel.value ? props.owner : ''));
+const listRepo = computed(() => (isListPanel.value ? props.repo : ''));
+
+const {
+  items: listItems,
+  loading: listLoading,
+  error: listError,
+  pagination: listPagination,
+  showPagination: listShowPagination,
+  goToPage: listGoToPage,
+  refresh: listRefresh,
+} = useRepoIssuePrList(listOwner, listRepo, listKind, listState);
+
+const listEmptyMessage = computed(() => {
+  const state = listState.value;
+  if (listKind.value === 'pulls') {
+    if (state === 'closed') return t('repoDetail.pullsEmptyClosed');
+    if (state === 'merged') return t('repoDetail.pullsEmptyMerged');
+    if (state === 'all') return t('repoDetail.pullsEmptyAll');
+    return t('repoDetail.pullsEmpty');
+  }
+
+  if (state === 'closed') return t('repoDetail.issuesEmptyClosed');
+  if (state === 'all') return t('repoDetail.issuesEmptyAll');
+  return t('repoDetail.issuesEmpty');
+});
+
+const selectPanel = (value: RepoDetailPanel) => {
+  activePanel.value = value;
+  if (value === 'issues' || value === 'pulls') {
+    listState.value = 'open';
   }
 };
 
+const selectListState = (value: RepoIssuePrState) => {
+  listState.value = normalizeRepoIssuePrState(listKind.value, value);
+};
+
 const handleIssuePrSelect = (item: DashboardIssuePrEntity) => {
-  if (activePanel.value === 'pulls') {
+  if (listKind.value === 'pulls') {
     emit('open-pull-request', item);
     return;
   }
@@ -186,6 +281,7 @@ watch(
   () => [props.owner, props.repo] as const,
   () => {
     activePanel.value = 'files';
+    listState.value = 'open';
   }
 );
 
@@ -681,56 +777,125 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
           <hr class="mr-4" />
 
-          <div class="repo-detail-panel-switch">
-            <FilterSegmentedControl
-              :options="panelOptions"
-              :model-value="activePanel"
-              :aria-label="t('repoDetail.panelSwitch')"
-              @update:model-value="handlePanelChange"
-            />
-          </div>
-
-          <template v-if="activePanel === 'files'">
-            <RepoFileTree
-              :owner="owner"
-              :repo="repo"
-              :items="directoryContents"
-              :loading="loadingFiles"
-              :error="filesError"
-              :current-branch="repoCurrentBranch"
-              :default-branch="repoDefaultBranch"
-            />
-
-            <div class="repo-readme">
-              <h2 class="title is-5 repo-readme__title">
-                <BookmarkIcon :size="18" />
-                <span>{{ copy.readme }}</span>
-              </h2>
-              <div v-if="loadingReadme" class="repo-readme__loading">
-                <Loader2Icon :size="20" class="spin-animation" />
+          <div class="repo-detail-section">
+            <div
+              class="repo-detail-section__chrome"
+              :class="{ 'repo-detail-section__chrome--sticky': isListPanel }"
+            >
+              <div
+                class="repo-detail-tabs"
+                role="tablist"
+                :aria-label="t('repoDetail.panelSwitch')"
+              >
+                <button
+                  v-for="tab in panelTabs"
+                  :key="tab.value"
+                  type="button"
+                  role="tab"
+                  class="repo-detail-tabs__tab"
+                  :class="{ 'is-active': activePanel === tab.value }"
+                  :aria-selected="activePanel === tab.value"
+                  :tabindex="activePanel === tab.value ? 0 : -1"
+                  @click="selectPanel(tab.value)"
+                >
+                  <component :is="tab.icon" :size="14" class="repo-detail-tabs__icon" />
+                  <span>{{ tab.label }}</span>
+                </button>
               </div>
-              <div v-else-if="readmeContent" class="repo-readme__content content">
-                <MarkdownRenderer
-                  :value="readmeContent"
-                  :repo-owner="owner"
-                  :repo-name="repo"
-                  :base-path="readmePath ?? undefined"
-                  :branch="repoCurrentBranch || undefined"
-                />
-              </div>
-              <div v-else class="repo-readme__empty">
-                {{ copy.noDescription }}
+
+              <div v-if="isListPanel" class="repo-detail-list-toolbar">
+                <div
+                  class="repo-detail-state-filters"
+                  role="tablist"
+                  :aria-label="t('repoDetail.stateFilter')"
+                >
+                  <button
+                    v-for="option in stateFilterOptions"
+                    :key="option.value"
+                    type="button"
+                    role="tab"
+                    class="repo-detail-state-filters__option"
+                    :class="{ 'is-active': listState === option.value }"
+                    :aria-selected="listState === option.value"
+                    :tabindex="listState === option.value ? 0 : -1"
+                    :disabled="listLoading"
+                    :style="
+                      listState === option.value ? { '--state-color': option.color } : undefined
+                    "
+                    @click="selectListState(option.value)"
+                  >
+                    <component
+                      :is="option.icon"
+                      :size="13"
+                      class="repo-detail-state-filters__icon"
+                    />
+                    <span>{{ option.label }}</span>
+                  </button>
+                </div>
+
+                <!-- Always reserve pagination height so loading ↔ ready does not jump. -->
+                <div
+                  class="repo-detail-list-toolbar__pagination"
+                  :class="{
+                    'is-hidden': !listShowPagination && !listLoading,
+                    'is-loading': listLoading,
+                  }"
+                  :aria-hidden="!listShowPagination && !listLoading"
+                >
+                  <DashboardPagination
+                    v-if="listShowPagination || listLoading"
+                    :pagination="listPagination"
+                    @change="listGoToPage"
+                  />
+                </div>
               </div>
             </div>
-          </template>
 
-          <RepoIssuePrList
-            v-else
-            :owner="owner"
-            :repo="repo"
-            :kind="activePanel"
-            @select="handleIssuePrSelect"
-          />
+            <template v-if="activePanel === 'files'">
+              <RepoFileTree
+                :owner="owner"
+                :repo="repo"
+                :items="directoryContents"
+                :loading="loadingFiles"
+                :error="filesError"
+                :current-branch="repoCurrentBranch"
+                :default-branch="repoDefaultBranch"
+              />
+
+              <div class="repo-readme">
+                <h2 class="title is-5 repo-readme__title">
+                  <BookmarkIcon :size="18" />
+                  <span>{{ copy.readme }}</span>
+                </h2>
+                <div v-if="loadingReadme" class="repo-readme__loading">
+                  <Loader2Icon :size="20" class="spin-animation" />
+                </div>
+                <div v-else-if="readmeContent" class="repo-readme__content content">
+                  <MarkdownRenderer
+                    :value="readmeContent"
+                    :repo-owner="owner"
+                    :repo-name="repo"
+                    :base-path="readmePath ?? undefined"
+                    :branch="repoCurrentBranch || undefined"
+                  />
+                </div>
+                <div v-else class="repo-readme__empty">
+                  {{ copy.noDescription }}
+                </div>
+              </div>
+            </template>
+
+            <RepoIssuePrList
+              v-else
+              :kind="listKind"
+              :items="listItems"
+              :loading="listLoading"
+              :error="listError"
+              :empty-message="listEmptyMessage"
+              @select="handleIssuePrSelect"
+              @retry="listRefresh"
+            />
+          </div>
         </section>
       </div>
 
@@ -788,37 +953,36 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 @use '~/assets/scss/_variables' as *;
 
 .repo-detail-layout {
-  height: 100%;
-  min-height: 0;
+  /* Page-level scroll lives on the parent detail pane so sticky chrome can pin
+     under the overlay header, not under an inner column scroller. */
+  min-height: 100%;
 }
 
 .repo-detail-layout :deep(.columns) {
-  height: 100%;
-  min-height: 0;
-  align-items: stretch;
+  align-items: flex-start;
   margin-bottom: 0;
 }
 
 .repo-detail-layout :deep(.detail-main-column) {
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
   flex: none;
   width: 72%;
+  min-width: 0;
+  overflow: visible;
 }
 
 .repo-detail-layout :deep(.detail-sidebar-column) {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
+  position: sticky;
+  top: 0.75rem;
   flex: none;
   width: 28%;
+  max-height: calc(100vh - 4.5rem);
+  overflow: hidden;
   padding-right: 1rem;
 }
 
 .repo-detail-header {
   max-width: 68rem;
-  padding: 0.75rem 1rem 5rem 0;
+  padding: 0.75rem 1rem 2.5rem 0;
 }
 
 .repo-detail-header__title-row {
@@ -983,9 +1147,197 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   margin-bottom: 1rem;
 }
 
-.repo-detail-panel-switch {
+.repo-detail-section {
+  min-width: 0;
+}
+
+.repo-detail-section__chrome {
   display: flex;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
+}
+
+/*
+  Sticky under the overlay page header (scrollport is the detail pane).
+  Frosted shelf so list cards pass underneath without blending into the bar.
+*/
+.repo-detail-section__chrome--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 -1rem 0.35rem 0;
+  /* Extend slightly upward into the reduced pane padding for a flush header seam. */
+  margin-top: -0.35rem;
+  padding: 0.55rem 1rem 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--gitpulse-border) 88%, transparent);
+  background: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--gitpulse-border) 55%, transparent),
+    0 6px 14px -10px color-mix(in srgb, var(--gitpulse-text-strong, #111) 22%, transparent);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    height: 0.7rem;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--gitpulse-surface) 55%, transparent),
+      transparent
+    );
+  }
+}
+
+html.dark .repo-detail-section__chrome--sticky {
+  background: color-mix(in srgb, var(--gitpulse-surface) 86%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--gitpulse-border) 70%, transparent),
+    0 8px 18px -10px rgba(0, 0, 0, 0.45);
+}
+
+.repo-detail-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0.1rem;
+  min-width: 0;
+  border-bottom: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
+}
+
+.repo-detail-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: -1px;
+  padding: 0.55rem 0.85rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  font-family: var(--gitpulse-app-font-family);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease;
+
+  &:hover:not(.is-active) {
+    color: var(--gitpulse-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: -2px;
+    border-radius: 4px;
+  }
+
+  &.is-active {
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    border-bottom-color: var(--gitpulse-accent, var(--gitpulse-link));
+  }
+}
+
+.repo-detail-tabs__icon {
+  flex-shrink: 0;
+}
+
+.repo-detail-list-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem 0.75rem;
+  /* Fixed single-row height so pagination mount/unmount never shifts chrome. */
+  min-height: 2rem;
+  min-width: 0;
+  padding-top: 0.35rem;
+}
+
+.repo-detail-state-filters {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.repo-detail-state-filters__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  font-family: var(--gitpulse-app-font-family);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease;
+
+  &:hover:not(.is-active):not(:disabled) {
+    color: var(--gitpulse-text);
+    background: var(--gitpulse-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 1px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &.is-active {
+    color: var(--state-color, var(--gitpulse-text-strong));
+    background: color-mix(in srgb, var(--state-color, var(--gitpulse-text-muted)) 12%, transparent);
+  }
+}
+
+.repo-detail-state-filters__icon {
+  flex-shrink: 0;
+}
+
+.repo-detail-list-toolbar__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 0 auto;
+  /* Keep the same footprint whether pagination is real, loading, or hidden. */
+  min-height: 1.5rem;
+  min-width: 7.5rem;
+
+  &.is-hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  &.is-loading {
+    pointer-events: none;
+    opacity: 0.45;
+  }
 }
 
 .repo-about__grid {
@@ -1056,7 +1408,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 }
 
 .sidebar-scroll {
-  height: 100%;
+  max-height: inherit;
   overflow-y: auto;
   padding-right: 0.75rem;
   scrollbar-gutter: stable;
@@ -1208,13 +1560,15 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 @media screen and (max-width: 1024px) {
   .repo-detail-layout :deep(.columns) {
     display: block;
-    height: auto;
   }
 
   .repo-detail-layout :deep(.detail-main-column),
   .repo-detail-layout :deep(.detail-sidebar-column) {
-    height: auto;
+    width: 100%;
+    max-height: none;
     overflow: visible;
+    position: static;
+    padding-right: 0;
   }
 
   .repo-detail-header {
