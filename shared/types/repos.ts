@@ -2,6 +2,19 @@
  * Repository detail payload from the GitHub API.
  */
 
+/** Minimal parent/source repo identity returned by GitHub for forks. */
+export interface RepositoryParentSummary {
+  id?: number | string;
+  name?: string;
+  full_name?: string;
+  html_url?: string;
+  owner?: {
+    login?: string;
+    id?: number | string;
+    avatar_url?: string | null;
+  };
+}
+
 export interface RepositoryDetailPayload {
   id: number | string;
   name: string;
@@ -26,6 +39,10 @@ export interface RepositoryDetailPayload {
     id?: number | string;
     avatar_url?: string | null;
   };
+  /** Immediate parent when this repository is a fork. */
+  parent?: RepositoryParentSummary | null;
+  /** Root repository of the fork network (when different from parent). */
+  source?: RepositoryParentSummary | null;
 
   [key: string]: unknown;
 }

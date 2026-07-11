@@ -69,6 +69,7 @@ const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const { navigateToFile } = useNavigationHistory();
+const { openRepository } = useDashboardRepositoryNavigation();
 const { opensGitHubLinks, getGitHubTargetUrl } = useGitHubLinkRouting();
 const {
   branches,
@@ -104,6 +105,7 @@ const copy = computed(() => {
       branch: '默认分支',
       created: '创建',
       fork: '衍生',
+      forkedFrom: '衍生自',
       forks: '分叉',
       homepage: '主页',
       issues: '开放问题',
@@ -138,6 +140,7 @@ const copy = computed(() => {
     branch: 'Default branch',
     created: 'Created',
     fork: 'Fork',
+    forkedFrom: 'Forked from',
     forks: 'Forks',
     homepage: 'Homepage',
     issues: 'Open issues',
@@ -335,6 +338,38 @@ const visibility = computed(() =>
   props.repository.private ? copy.value.private : copy.value.public
 );
 
+/** Immediate parent repository when the current repo is a fork. */
+const forkedFrom = computed(() => {
+  if (!props.repository.fork) return null;
+
+  const parent = props.repository.parent;
+  if (!parent) return null;
+
+  const fullName = typeof parent.full_name === 'string' ? parent.full_name.trim() : '';
+  let owner = typeof parent.owner?.login === 'string' ? parent.owner.login.trim() : '';
+  let name = typeof parent.name === 'string' ? parent.name.trim() : '';
+
+  if ((!owner || !name) && fullName.includes('/')) {
+    const [parsedOwner = '', parsedName = ''] = fullName.split('/');
+    owner = owner || parsedOwner.trim();
+    name = name || parsedName.trim();
+  }
+
+  if (!owner || !name) return null;
+
+  return {
+    owner,
+    name,
+    fullName: fullName || `${owner}/${name}`,
+  };
+});
+
+const openParentRepository = async () => {
+  const parent = forkedFrom.value;
+  if (!parent) return;
+  await openRepository(parent.owner, parent.name);
+};
+
 const repoBadges = computed(() => {
   const badges: { icon: RepoDetailIcon; label: string; tone: string }[] = [
     {
@@ -344,7 +379,8 @@ const repoBadges = computed(() => {
     },
   ];
 
-  if (props.repository.fork) {
+  // When parent is known, "Forked from …" already conveys fork status — skip the badge.
+  if (props.repository.fork && !forkedFrom.value) {
     badges.push({ icon: GitForkIcon, label: copy.value.fork, tone: 'neutral' });
   }
 
@@ -757,26 +793,40 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             </div>
           </div>
 
-          <div class="repo-detail-header__meta">
-            <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ owner }}/{{ repo }}</span>
-            <span
-              v-if="repository.language"
-              class="tag is-link is-light ml-3 repo-detail-header__language"
-            >
+          <div class="repo-detail-header__identity">
+            <div class="repo-detail-header__meta">
+              <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ owner }}/{{ repo }}</span>
               <span
-                class="repo-detail-header__language-dot"
-                :style="{ backgroundColor: languageColor }"
-              />
-              <span>{{ repository.language }}</span>
-            </span>
-            <span
-              v-for="badge in repoBadges"
-              :key="badge.label"
-              class="tag ml-2 repo-detail-header__badge"
-            >
-              <component :is="badge.icon" :size="13" />
-              <span>{{ badge.label }}</span>
-            </span>
+                v-if="repository.language"
+                class="tag is-link is-light repo-detail-header__language"
+              >
+                <span
+                  class="repo-detail-header__language-dot"
+                  :style="{ backgroundColor: languageColor }"
+                />
+                <span>{{ repository.language }}</span>
+              </span>
+              <span
+                v-for="badge in repoBadges"
+                :key="badge.label"
+                class="tag repo-detail-header__badge"
+              >
+                <component :is="badge.icon" :size="13" />
+                <span>{{ badge.label }}</span>
+              </span>
+            </div>
+
+            <p v-if="forkedFrom" class="repo-detail-forked-from">
+              <GitForkIcon :size="12" class="repo-detail-forked-from__icon" aria-hidden="true" />
+              <span class="repo-detail-forked-from__label">{{ copy.forkedFrom }}</span>
+              <a
+                class="repo-detail-forked-from__link"
+                href="#"
+                @click.prevent="openParentRepository"
+              >
+                {{ forkedFrom.fullName }}
+              </a>
+            </p>
           </div>
 
           <div v-if="repository.description" class="repo-detail-description mb-4">
@@ -1148,12 +1198,20 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   font-size: 11px;
 }
 
+/* Full-name + badges (+ optional forked-from) share one vertical margin so
+   fork and non-fork headers keep the same rhythm into the description. */
+.repo-detail-header__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+}
+
 .repo-detail-header__meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 0.45rem;
-  margin-bottom: 1rem;
 }
 
 .repo-detail-header__language,
@@ -1161,6 +1219,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  margin: 0;
   font-weight: 600;
 }
 
@@ -1168,6 +1227,39 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   width: 0.6rem;
   height: 0.6rem;
   border-radius: 999px;
+}
+
+.repo-detail-forked-from {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--gitpulse-text-muted);
+}
+
+.repo-detail-forked-from__icon {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.repo-detail-forked-from__label {
+  color: var(--gitpulse-text-muted);
+}
+
+.repo-detail-forked-from__link {
+  color: var(--gitpulse-text-strong, var(--bulma-text-strong));
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.16s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent-hover);
+    text-decoration: underline;
+  }
 }
 
 .repo-detail-description {
