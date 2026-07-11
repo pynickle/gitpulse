@@ -673,7 +673,12 @@
     "pullsEmptyAll": "此仓库暂无 pull request",
     "loadingList": "加载中…",
     "listErrorTitle": "列表加载失败",
-    "retry": "重试"
+    "retry": "重试",
+    "loadingCommit": "正在加载最新提交…",
+    "noCommits": "暂无提交",
+    "commitLoadError": "最新提交加载失败",
+    "allCommits": "全部提交",
+    "unknownAuthor": "未知作者"
   },
   "repoFileView": {
     "fileTree": "文件树",

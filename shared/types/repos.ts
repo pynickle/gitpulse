@@ -46,3 +46,22 @@ export interface RepositoryDetailPayload {
 
   [key: string]: unknown;
 }
+
+/** Latest commit summary for the repository Files panel. */
+export interface RepoLatestCommitAuthor {
+  login: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+export interface RepoLatestCommitPayload {
+  sha: string;
+  shortSha: string;
+  message: string;
+  committedAt: string | null;
+  author: RepoLatestCommitAuthor;
+  htmlUrl: string | null;
+  commitsUrl: string;
+}
+
+export type RepoLatestCommitResponse = RepoLatestCommitPayload | null;

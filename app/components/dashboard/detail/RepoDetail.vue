@@ -22,9 +22,10 @@ import type { LocationQueryRaw } from 'vue-router';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
-import type { RepositoryDetailPayload } from '#shared/types/repos';
+import type { RepoLatestCommitPayload, RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
+import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
@@ -310,9 +311,15 @@ const licenseInfo = ref<LicenseInfo | null>(null);
 const loadingLicense = ref(false);
 const licenseRequestId = ref(0);
 
+const latestCommit = shallowRef<RepoLatestCommitPayload | null>(null);
+const loadingLatestCommit = ref(false);
+const latestCommitError = ref<string | null>(null);
+const latestCommitRequestId = ref(0);
+
 // Session caches for README / license while this repo detail instance is mounted.
 const readmeSessionCache = new Map<string, { content: string | null; path: string | null }>();
 const licenseSessionCache = new Map<string, LicenseInfo | null>();
+const latestCommitSessionCache = new Map<string, RepoLatestCommitPayload | null>();
 
 const languageColor = computed(() => getLanguageColor(props.repository.language));
 const repoDefaultBranch = computed(
@@ -675,6 +682,48 @@ const fetchLicense = async () => {
   }
 };
 
+const fetchLatestCommit = async (options: { force?: boolean } = {}) => {
+  if (activePanel.value !== 'files') return;
+  if (!repoCurrentBranch.value && !props.repository.default_branch) return;
+
+  const cacheKey = buildBranchScopedCacheKey();
+  if (!options.force && latestCommitSessionCache.has(cacheKey)) {
+    latestCommitRequestId.value += 1;
+    latestCommit.value = latestCommitSessionCache.get(cacheKey) ?? null;
+    latestCommitError.value = null;
+    loadingLatestCommit.value = false;
+    return;
+  }
+
+  if (options.force) {
+    latestCommitSessionCache.delete(cacheKey);
+  }
+
+  const requestId = latestCommitRequestId.value + 1;
+  latestCommitRequestId.value = requestId;
+  loadingLatestCommit.value = true;
+  latestCommitError.value = null;
+
+  try {
+    const data = await apiFetch<RepoLatestCommitPayload | null>(
+      `/api/repos/${props.owner}/${props.repo}/latest-commit${buildRefQuery()}`
+    );
+    if (requestId !== latestCommitRequestId.value) return;
+
+    latestCommitSessionCache.set(cacheKey, data);
+    latestCommit.value = data;
+  } catch {
+    if (requestId === latestCommitRequestId.value) {
+      latestCommit.value = null;
+      latestCommitError.value = t('repoDetail.commitLoadError');
+    }
+  } finally {
+    if (requestId === latestCommitRequestId.value) {
+      loadingLatestCommit.value = false;
+    }
+  }
+};
+
 onMounted(() => {
   fetchStarState();
   fetchWatchState();
@@ -689,13 +738,23 @@ watch(
     if (previous && (previous[0] !== owner || previous[1] !== repo)) {
       readmeSessionCache.clear();
       licenseSessionCache.clear();
+      latestCommitSessionCache.clear();
+      latestCommit.value = null;
+      latestCommitError.value = null;
     }
 
     void fetchReadme();
     void fetchLicense();
+    void fetchLatestCommit();
   },
   { immediate: true }
 );
+
+watch(activePanel, (panel) => {
+  if (panel === 'files') {
+    void fetchLatestCommit();
+  }
+});
 
 // Close dropdown on outside click
 const handleClickOutside = (e: MouseEvent) => {
@@ -866,10 +925,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
           <hr class="mr-4" />
 
           <div class="repo-detail-section">
-            <div
-              class="repo-detail-section__chrome"
-              :class="{ 'repo-detail-section__chrome--sticky': isListPanel }"
-            >
+            <div class="repo-detail-section__chrome">
               <div
                 class="repo-detail-tabs"
                 role="tablist"
@@ -891,50 +947,60 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 </button>
               </div>
 
-              <div v-if="isListPanel" class="repo-detail-list-toolbar">
-                <div
-                  class="repo-detail-state-filters"
-                  role="tablist"
-                  :aria-label="t('repoDetail.stateFilter')"
-                >
-                  <button
-                    v-for="option in stateFilterOptions"
-                    :key="option.value"
-                    type="button"
-                    role="tab"
-                    class="repo-detail-state-filters__option"
-                    :class="{ 'is-active': listState === option.value }"
-                    :aria-selected="listState === option.value"
-                    :tabindex="listState === option.value ? 0 : -1"
-                    :disabled="listLoading"
-                    :style="
-                      listState === option.value ? { '--state-color': option.color } : undefined
-                    "
-                    @click="selectListState(option.value)"
-                  >
-                    <component
-                      :is="option.icon"
-                      :size="13"
-                      class="repo-detail-state-filters__icon"
-                    />
-                    <span>{{ option.label }}</span>
-                  </button>
-                </div>
+              <div class="repo-detail-subtoolbar">
+                <RepoLatestCommitBar
+                  v-if="activePanel === 'files'"
+                  :commit="latestCommit"
+                  :loading="loadingLatestCommit"
+                  :error="latestCommitError"
+                  @retry="fetchLatestCommit({ force: true })"
+                />
 
-                <!-- Always reserve pagination height so loading ↔ ready does not jump. -->
-                <div
-                  class="repo-detail-list-toolbar__pagination"
-                  :class="{
-                    'is-hidden': !listShowPagination && !listLoading,
-                    'is-loading': listLoading,
-                  }"
-                  :aria-hidden="!listShowPagination && !listLoading"
-                >
-                  <DashboardPagination
-                    v-if="listShowPagination || listLoading"
-                    :pagination="listPagination"
-                    @change="listGoToPage"
-                  />
+                <div v-else class="repo-detail-list-toolbar">
+                  <div
+                    class="repo-detail-state-filters"
+                    role="tablist"
+                    :aria-label="t('repoDetail.stateFilter')"
+                  >
+                    <button
+                      v-for="option in stateFilterOptions"
+                      :key="option.value"
+                      type="button"
+                      role="tab"
+                      class="repo-detail-state-filters__option"
+                      :class="{ 'is-active': listState === option.value }"
+                      :aria-selected="listState === option.value"
+                      :tabindex="listState === option.value ? 0 : -1"
+                      :disabled="listLoading"
+                      :style="
+                        listState === option.value ? { '--state-color': option.color } : undefined
+                      "
+                      @click="selectListState(option.value)"
+                    >
+                      <component
+                        :is="option.icon"
+                        :size="13"
+                        class="repo-detail-state-filters__icon"
+                      />
+                      <span>{{ option.label }}</span>
+                    </button>
+                  </div>
+
+                  <!-- Always reserve pagination height so loading ↔ ready does not jump. -->
+                  <div
+                    class="repo-detail-list-toolbar__pagination"
+                    :class="{
+                      'is-hidden': !listShowPagination && !listLoading,
+                      'is-loading': listLoading,
+                    }"
+                    :aria-hidden="!listShowPagination && !listLoading"
+                  >
+                    <DashboardPagination
+                      v-if="listShowPagination || listLoading"
+                      :pagination="listPagination"
+                      @change="listGoToPage"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1281,19 +1347,15 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   min-width: 0;
 }
 
+/*
+  Sticky under the overlay page header (scrollport is the detail pane).
+  Frosted shelf so list cards / file tree pass underneath without blending into the bar.
+  Always on for Files + Issues/PRs so panel switches keep the same chrome footprint.
+*/
 .repo-detail-section__chrome {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  margin-bottom: 0.75rem;
-}
-
-/*
-  Sticky under the overlay page header (scrollport is the detail pane).
-  Frosted shelf so list cards pass underneath without blending into the bar.
-  Horizontal inset matches list cards (no asymmetric right bleed).
-*/
-.repo-detail-section__chrome--sticky {
   position: sticky;
   top: 0;
   z-index: 5;
@@ -1329,12 +1391,31 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   }
 }
 
-html.dark .repo-detail-section__chrome--sticky {
+html.dark .repo-detail-section__chrome {
   border-color: color-mix(in srgb, var(--gitpulse-border) 100%, transparent);
   background: color-mix(in srgb, var(--gitpulse-surface) 90%, #000);
   box-shadow:
     0 1px 0 color-mix(in srgb, var(--gitpulse-border) 70%, transparent),
     0 6px 16px -10px rgba(0, 0, 0, 0.5);
+}
+
+/*
+  Fixed subtoolbar footprint so Files (commit bar) and Issues/PRs (filters)
+  keep the same chrome height when switching panels.
+*/
+.repo-detail-subtoolbar {
+  --repo-subtoolbar-height: 2.125rem;
+
+  display: flex;
+  align-items: center;
+  box-sizing: content-box;
+  height: var(--repo-subtoolbar-height);
+  min-height: var(--repo-subtoolbar-height);
+  max-height: var(--repo-subtoolbar-height);
+  min-width: 0;
+  width: 100%;
+  padding: 0.35rem 0.15rem 0;
+  overflow: hidden;
 }
 
 .repo-detail-tabs {
@@ -1391,10 +1472,12 @@ html.dark .repo-detail-section__chrome--sticky {
   align-items: center;
   flex-wrap: nowrap;
   gap: 0.5rem 0.75rem;
-  /* Fixed single-row height so pagination mount/unmount never shifts chrome. */
-  min-height: 2rem;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
-  padding: 0.35rem 0.15rem 0;
+  width: 100%;
+  padding: 0;
 }
 
 .repo-detail-state-filters {
@@ -1402,10 +1485,11 @@ html.dark .repo-detail-section__chrome--sticky {
   align-items: center;
   flex-wrap: nowrap;
   gap: 0.2rem;
+  height: 100%;
   min-width: 0;
   flex: 1 1 auto;
   /* Keep first option off the chrome edge (active/hover fill needs breathing room). */
-  padding: 0.1rem 0.1rem 0.1rem 0.2rem;
+  padding: 0 0.1rem 0 0.2rem;
   overflow-x: auto;
   scrollbar-width: none;
 
@@ -1418,7 +1502,8 @@ html.dark .repo-detail-section__chrome--sticky {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.3rem 0.55rem;
+  height: 1.75rem;
+  padding: 0 0.55rem;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -1426,7 +1511,7 @@ html.dark .repo-detail-section__chrome--sticky {
   font-family: var(--gitpulse-app-font-family);
   font-size: 0.8125rem;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1;
   cursor: pointer;
   white-space: nowrap;
   transition:
@@ -1464,8 +1549,8 @@ html.dark .repo-detail-section__chrome--sticky {
   justify-content: flex-end;
   margin-left: auto;
   flex: 0 0 auto;
+  height: 100%;
   /* Keep the same footprint whether pagination is real, loading, or hidden. */
-  min-height: 1.5rem;
   min-width: 7.5rem;
 
   &.is-hidden {

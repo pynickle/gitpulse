@@ -673,7 +673,12 @@
     "pullsEmptyAll": "No pull requests in this repository",
     "loadingList": "Loading…",
     "listErrorTitle": "Couldn’t load this list",
-    "retry": "Retry"
+    "retry": "Retry",
+    "loadingCommit": "Loading latest commit…",
+    "noCommits": "No commits yet",
+    "commitLoadError": "Couldn’t load latest commit",
+    "allCommits": "All commits",
+    "unknownAuthor": "Unknown"
   },
   "repoFileView": {
     "fileTree": "File tree",
