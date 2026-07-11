@@ -307,6 +307,10 @@ const licenseInfo = ref<LicenseInfo | null>(null);
 const loadingLicense = ref(false);
 const licenseRequestId = ref(0);
 
+// Session caches for README / license while this repo detail instance is mounted.
+const readmeSessionCache = new Map<string, { content: string | null; path: string | null }>();
+const licenseSessionCache = new Map<string, LicenseInfo | null>();
+
 const languageColor = computed(() => getLanguageColor(props.repository.language));
 const repoDefaultBranch = computed(
   () => defaultBranch.value || props.repository.default_branch || ''
@@ -560,7 +564,22 @@ const buildRefQuery = () => {
   return branch ? `?ref=${encodeURIComponent(branch)}` : '';
 };
 
+const buildBranchScopedCacheKey = () => {
+  const branch = repoCurrentBranch.value || props.repository.default_branch || '';
+  return `${props.owner}/${props.repo}@${branch}`;
+};
+
 const fetchReadme = async () => {
+  const cacheKey = buildBranchScopedCacheKey();
+  const cached = readmeSessionCache.get(cacheKey);
+  if (cached) {
+    readmeRequestId.value += 1;
+    readmeContent.value = cached.content;
+    readmePath.value = cached.path;
+    loadingReadme.value = false;
+    return;
+  }
+
   const requestId = readmeRequestId.value + 1;
   readmeRequestId.value = requestId;
   loadingReadme.value = true;
@@ -570,10 +589,13 @@ const fetchReadme = async () => {
     );
     if (requestId !== readmeRequestId.value) return;
 
-    readmeContent.value = data.content;
-    readmePath.value = data.path ?? null;
+    const entry = { content: data.content, path: data.path ?? null };
+    readmeSessionCache.set(cacheKey, entry);
+    readmeContent.value = entry.content;
+    readmePath.value = entry.path;
   } catch {
     if (requestId === readmeRequestId.value) {
+      readmeSessionCache.set(cacheKey, { content: null, path: null });
       readmeContent.value = null;
       readmePath.value = null;
     }
@@ -585,6 +607,14 @@ const fetchReadme = async () => {
 };
 
 const fetchLicense = async () => {
+  const cacheKey = buildBranchScopedCacheKey();
+  if (licenseSessionCache.has(cacheKey)) {
+    licenseRequestId.value += 1;
+    licenseInfo.value = licenseSessionCache.get(cacheKey) ?? null;
+    loadingLicense.value = false;
+    return;
+  }
+
   const requestId = licenseRequestId.value + 1;
   licenseRequestId.value = requestId;
   licenseInfo.value = null;
@@ -595,9 +625,11 @@ const fetchLicense = async () => {
     );
     if (requestId !== licenseRequestId.value) return;
 
+    licenseSessionCache.set(cacheKey, data);
     licenseInfo.value = data;
   } catch {
     if (requestId === licenseRequestId.value) {
+      licenseSessionCache.set(cacheKey, null);
       licenseInfo.value = null;
     }
   } finally {
@@ -613,12 +645,18 @@ onMounted(() => {
 });
 
 watch(
-  () => [props.owner, props.repo, repoCurrentBranch.value],
-  () => {
+  () => [props.owner, props.repo, repoCurrentBranch.value] as const,
+  ([owner, repo], previous) => {
     if (!repoCurrentBranch.value) return;
 
-    fetchReadme();
-    fetchLicense();
+    // New repository instance: drop session caches from the previous repo.
+    if (previous && (previous[0] !== owner || previous[1] !== repo)) {
+      readmeSessionCache.clear();
+      licenseSessionCache.clear();
+    }
+
+    void fetchReadme();
+    void fetchLicense();
   },
   { immediate: true }
 );

@@ -3,6 +3,7 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import createSessionLruCache from '~/utils/sessionLruCache';
 
 type RepoContentType = 'file' | 'dir' | 'symlink' | 'submodule';
 
@@ -48,6 +49,14 @@ interface RepoTarget {
 
 type RepoContentsResponse = RepoContentItem[] | RepoFileContent | null;
 
+interface RepoContentCacheEntry {
+  directoryContents: RepoContentItem[];
+  fileContent: RepoFileContent | null;
+}
+
+/** Path/branch snapshots kept for the open repo files session. */
+const MAX_CACHED_CONTENT_ENTRIES = 24;
+
 const normalizePath = (path?: string) => {
   return (path || '').split('/').filter(Boolean).join('/');
 };
@@ -69,6 +78,9 @@ const buildBranchQueryValue = (branch: string, defaultBranch: string) => {
 };
 
 const buildRepoKey = (owner: string, repo: string) => `${owner}/${repo}`;
+
+const buildContentCacheKey = (owner: string, repo: string, path: string, branch: string) =>
+  `${owner}/${repo}:${branch || ''}:${path}`;
 
 const encodeContentPath = (path: string) => {
   const normalizedPath = normalizePath(path);
@@ -116,6 +128,8 @@ export function useRepoFiles() {
   const repoRequestId = ref(0);
   const metadataRepoKey = ref('');
   const contentRepoKey = ref('');
+  // Session-local: survives path/branch switches within the same files session.
+  const contentCache = createSessionLruCache<RepoContentCacheEntry>(MAX_CACHED_CONTENT_ENTRIES);
 
   const activeRepoTarget = computed<RepoTarget | null>(() => {
     const rawValue = getQueryParamValue(route.query.repo);
@@ -179,6 +193,23 @@ export function useRepoFiles() {
     error.value = '';
     metadataRepoKey.value = '';
     contentRepoKey.value = '';
+    contentCache.clear();
+  };
+
+  const applyContentCacheEntry = (
+    owner: string,
+    repo: string,
+    path: string,
+    branch: string,
+    entry: RepoContentCacheEntry
+  ) => {
+    currentPath.value = path;
+    currentBranch.value = branch;
+    directoryContents.value = entry.directoryContents;
+    fileContent.value = entry.fileContent;
+    contentRepoKey.value = buildRepoKey(owner, repo);
+    error.value = '';
+    loading.value = false;
   };
 
   const pushRepoFilesQuery = async (query: LocationQueryRaw) => {
@@ -229,7 +260,53 @@ export function useRepoFiles() {
     }
   };
 
-  const loadContent = async (owner: string, repo: string, path: string, branch: string) => {
+  const rememberContent = (
+    owner: string,
+    repo: string,
+    path: string,
+    branch: string,
+    entry: RepoContentCacheEntry
+  ) => {
+    contentCache.set(buildContentCacheKey(owner, repo, path, branch), entry);
+    // Default-branch loads may use "" then resolve to the real name — index both.
+    if (branch && defaultBranch.value && branch === defaultBranch.value) {
+      contentCache.set(buildContentCacheKey(owner, repo, path, ''), entry);
+    } else if (!branch && defaultBranch.value) {
+      contentCache.set(buildContentCacheKey(owner, repo, path, defaultBranch.value), entry);
+    }
+  };
+
+  const readContentCache = (owner: string, repo: string, path: string, branch: string) => {
+    const direct = contentCache.get(buildContentCacheKey(owner, repo, path, branch));
+    if (direct) return direct;
+
+    // Only alias empty ref ↔ default branch name — never other named branches.
+    if (!branch && defaultBranch.value) {
+      return contentCache.get(buildContentCacheKey(owner, repo, path, defaultBranch.value));
+    }
+    if (branch && defaultBranch.value && branch === defaultBranch.value) {
+      return contentCache.get(buildContentCacheKey(owner, repo, path, ''));
+    }
+    return undefined;
+  };
+
+  const loadContent = async (
+    owner: string,
+    repo: string,
+    path: string,
+    branch: string,
+    options: { force?: boolean } = {}
+  ) => {
+    if (!options.force) {
+      const cached = readContentCache(owner, repo, path, branch);
+      if (cached) {
+        // Bump request id so any in-flight fetch is ignored after a cache hit.
+        contentRequestId.value += 1;
+        applyContentCacheEntry(owner, repo, path, branch || defaultBranch.value || '', cached);
+        return;
+      }
+    }
+
     const requestId = contentRequestId.value + 1;
     contentRequestId.value = requestId;
     currentPath.value = path;
@@ -249,6 +326,11 @@ export function useRepoFiles() {
       if (requestId !== contentRequestId.value) return;
 
       if (Array.isArray(response)) {
+        const entry: RepoContentCacheEntry = {
+          directoryContents: response,
+          fileContent: null,
+        };
+        rememberContent(owner, repo, path, branch, entry);
         directoryContents.value = response;
         fileContent.value = null;
         contentRepoKey.value = buildRepoKey(owner, repo);
@@ -256,6 +338,11 @@ export function useRepoFiles() {
       }
 
       if (response) {
+        const entry: RepoContentCacheEntry = {
+          directoryContents: [],
+          fileContent: response,
+        };
+        rememberContent(owner, repo, path, branch, entry);
         directoryContents.value = [];
         fileContent.value = response;
         contentRepoKey.value = buildRepoKey(owner, repo);
@@ -409,7 +496,18 @@ export function useRepoFiles() {
     const target = activeRepoTarget.value;
     if (!target) return;
 
-    await loadRepoFiles(target, activePath.value, activeBranch.value || currentBranch.value);
+    const path = activePath.value;
+    const branch = activeBranch.value || currentBranch.value;
+    // Drop both empty-branch and named-branch keys so force reload cannot hit cache.
+    contentCache.delete(buildContentCacheKey(target.owner, target.repo, path, branch));
+    contentCache.delete(buildContentCacheKey(target.owner, target.repo, path, ''));
+    if (defaultBranch.value) {
+      contentCache.delete(
+        buildContentCacheKey(target.owner, target.repo, path, defaultBranch.value)
+      );
+    }
+    contentRepoKey.value = '';
+    await loadRepoFiles(target, path, activeBranch.value || currentBranch.value);
   };
 
   const navigateToPath = async (path: string) => {

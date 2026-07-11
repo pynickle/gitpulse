@@ -8,6 +8,7 @@ import {
   type RepoIssuePrKind,
   type RepoIssuePrState,
 } from '~/utils/repoIssuePrSearchQuery';
+import createSessionLruCache from '~/utils/sessionLruCache';
 
 export interface RepoIssuePrPagination {
   page: number;
@@ -24,7 +25,14 @@ interface SearchListResponse {
   pagination?: Partial<RepoIssuePrPagination>;
 }
 
+interface RepoIssuePrPageCacheEntry {
+  items: DashboardIssuePrEntity[];
+  pagination: RepoIssuePrPagination;
+}
+
 const DEFAULT_PER_PAGE = 20;
+/** Per list query (owner/repo/kind/state): keep recent pages for instant back-nav. */
+const MAX_CACHED_PAGES = 12;
 
 const createEmptyPagination = (page = 1): RepoIssuePrPagination => ({
   page,
@@ -34,6 +42,15 @@ const createEmptyPagination = (page = 1): RepoIssuePrPagination => ({
   totalCount: null,
   totalPages: 1,
 });
+
+const buildListQueryKey = (
+  owner: string,
+  repo: string,
+  kind: RepoIssuePrKind,
+  state: RepoIssuePrState
+) => `${owner}/${repo}:${kind}:${state}`;
+
+const buildPageCacheKey = (queryKey: string, page: number) => `${queryKey}:p${page}`;
 
 export function useRepoIssuePrList(
   owner: Ref<string> | (() => string),
@@ -54,6 +71,9 @@ export function useRepoIssuePrList(
   const pagination = ref<RepoIssuePrPagination>(createEmptyPagination());
   let requestId = 0;
 
+  // Lives for the lifetime of this composable instance (repo detail page session).
+  const pageCache = createSessionLruCache<RepoIssuePrPageCacheEntry>(MAX_CACHED_PAGES);
+
   const hasItems = computed(() => items.value.length > 0);
 
   const showPagination = computed(() => {
@@ -66,7 +86,14 @@ export function useRepoIssuePrList(
     );
   });
 
-  const fetchPage = async (page = 1) => {
+  const applyPage = (entry: RepoIssuePrPageCacheEntry) => {
+    items.value = entry.items;
+    pagination.value = entry.pagination;
+    error.value = '';
+    loading.value = false;
+  };
+
+  const fetchPage = async (page = 1, options: { force?: boolean } = {}) => {
     const currentOwner = resolveOwner().trim();
     const currentRepo = resolveRepo().trim();
     const currentKind = resolveKind();
@@ -76,7 +103,21 @@ export function useRepoIssuePrList(
       items.value = [];
       pagination.value = createEmptyPagination();
       error.value = '';
+      loading.value = false;
       return;
+    }
+
+    const queryKey = buildListQueryKey(currentOwner, currentRepo, currentKind, currentState);
+    const cacheKey = buildPageCacheKey(queryKey, page);
+
+    if (!options.force) {
+      const cached = pageCache.get(cacheKey);
+      if (cached) {
+        // Invalidate any in-flight network response for a different page.
+        requestId += 1;
+        applyPage(cached);
+        return;
+      }
     }
 
     const nextRequestId = requestId + 1;
@@ -97,8 +138,7 @@ export function useRepoIssuePrList(
 
       if (nextRequestId !== requestId) return;
 
-      items.value = Array.isArray(data.items) ? data.items : [];
-      pagination.value = {
+      const nextPagination: RepoIssuePrPagination = {
         page: data.pagination?.page ?? page,
         perPage: data.pagination?.perPage ?? DEFAULT_PER_PAGE,
         hasPrev: Boolean(data.pagination?.hasPrev),
@@ -108,6 +148,14 @@ export function useRepoIssuePrList(
           (typeof data.total_count === 'number' ? data.total_count : null),
         totalPages: data.pagination?.totalPages ?? 1,
       };
+      const nextItems = Array.isArray(data.items) ? data.items : [];
+      const entry: RepoIssuePrPageCacheEntry = {
+        items: nextItems,
+        pagination: nextPagination,
+      };
+
+      pageCache.set(buildPageCacheKey(queryKey, nextPagination.page), entry);
+      applyPage(entry);
     } catch (fetchError) {
       if (nextRequestId !== requestId) return;
 
@@ -127,7 +175,7 @@ export function useRepoIssuePrList(
   };
 
   const refresh = async () => {
-    await fetchPage(pagination.value.page || 1);
+    await fetchPage(pagination.value.page || 1, { force: true });
   };
 
   watch(
@@ -140,12 +188,12 @@ export function useRepoIssuePrList(
       ] as const,
     ([nextOwner, nextRepo]) => {
       if (!nextOwner || !nextRepo) {
-        items.value = [];
-        pagination.value = createEmptyPagination();
-        error.value = '';
+        // Files panel (or unscoped) — keep last snapshot + session cache; no fetch.
+        loading.value = false;
         return;
       }
 
+      // Kind/state switches and panel return — restore from session page cache when possible.
       void fetchPage(1);
     },
     { immediate: true }
