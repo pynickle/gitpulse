@@ -71,8 +71,8 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
 .repo-issue-pr-list {
   min-height: 8rem;
   min-width: 0;
-  padding-top: 0.75rem;
-  padding-bottom: 1rem;
+  /* Match sticky chrome horizontal inset so left/right edges line up. */
+  padding: 0.5rem 0.35rem 1rem;
 }
 
 .repo-issue-pr-list__loading,
@@ -108,7 +108,7 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
 .repo-issue-pr-list__items {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .repo-issue-pr-list__item {
@@ -126,16 +126,23 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
     outline-offset: 2px;
   }
 
+  /* Kill global .card margin so left/right protrusion is identical (full width). */
+  :deep(.card),
   :deep(.dashboard-list-card) {
-    margin-bottom: 0;
+    margin: 0;
+    width: 100%;
+    border-color: var(--gitpulse-border);
     transition:
       border-color 0.12s ease,
-      box-shadow 0.12s ease;
+      box-shadow 0.12s ease,
+      background-color 0.12s ease;
   }
 
-  &:hover :deep(.dashboard-list-card) {
-    border-color: var(--gitpulse-border-strong);
-    box-shadow: var(--gitpulse-shadow-card);
+  &:hover :deep(.dashboard-list-card),
+  &:focus-visible :deep(.dashboard-list-card) {
+    border-color: var(--gitpulse-link, var(--gitpulse-border-strong));
+    background-color: var(--gitpulse-surface-hover, var(--gitpulse-surface));
+    box-shadow: var(--gitpulse-shadow-card-hover, var(--gitpulse-shadow-card));
   }
 }
 

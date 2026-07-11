@@ -1161,44 +1161,50 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 /*
   Sticky under the overlay page header (scrollport is the detail pane).
   Frosted shelf so list cards pass underneath without blending into the bar.
+  Horizontal inset matches list cards (no asymmetric right bleed).
 */
 .repo-detail-section__chrome--sticky {
   position: sticky;
   top: 0;
   z-index: 5;
-  margin: 0 -1rem 0.35rem 0;
   /* Extend slightly upward into the reduced pane padding for a flush header seam. */
-  margin-top: -0.35rem;
-  padding: 0.55rem 1rem 0.65rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--gitpulse-border) 88%, transparent);
-  background: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
+  margin: -0.35rem 0 0.5rem;
+  padding: 0.5rem 0.35rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-border) 92%, transparent);
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--gitpulse-surface) 94%,
+    var(--gitpulse-surface-muted, var(--gitpulse-surface))
+  );
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
   box-shadow:
     0 1px 0 color-mix(in srgb, var(--gitpulse-border) 55%, transparent),
-    0 6px 14px -10px color-mix(in srgb, var(--gitpulse-text-strong, #111) 22%, transparent);
+    0 4px 12px -8px color-mix(in srgb, var(--gitpulse-text-strong, #111) 18%, transparent);
 
   &::after {
     content: '';
     position: absolute;
-    left: 0;
-    right: 0;
+    left: 0.5rem;
+    right: 0.5rem;
     top: 100%;
-    height: 0.7rem;
+    height: 0.55rem;
     pointer-events: none;
     background: linear-gradient(
       to bottom,
-      color-mix(in srgb, var(--gitpulse-surface) 55%, transparent),
+      color-mix(in srgb, var(--gitpulse-surface) 40%, transparent),
       transparent
     );
   }
 }
 
 html.dark .repo-detail-section__chrome--sticky {
-  background: color-mix(in srgb, var(--gitpulse-surface) 86%, transparent);
+  border-color: color-mix(in srgb, var(--gitpulse-border) 100%, transparent);
+  background: color-mix(in srgb, var(--gitpulse-surface) 90%, #000);
   box-shadow:
     0 1px 0 color-mix(in srgb, var(--gitpulse-border) 70%, transparent),
-    0 8px 18px -10px rgba(0, 0, 0, 0.45);
+    0 6px 16px -10px rgba(0, 0, 0, 0.5);
 }
 
 .repo-detail-tabs {
@@ -1206,6 +1212,7 @@ html.dark .repo-detail-section__chrome--sticky {
   align-items: stretch;
   gap: 0.1rem;
   min-width: 0;
+  padding: 0 0.15rem;
   border-bottom: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
 }
 
@@ -1214,7 +1221,7 @@ html.dark .repo-detail-section__chrome--sticky {
   align-items: center;
   gap: 0.35rem;
   margin-bottom: -1px;
-  padding: 0.55rem 0.85rem;
+  padding: 0.5rem 0.75rem;
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -1257,16 +1264,18 @@ html.dark .repo-detail-section__chrome--sticky {
   /* Fixed single-row height so pagination mount/unmount never shifts chrome. */
   min-height: 2rem;
   min-width: 0;
-  padding-top: 0.35rem;
+  padding: 0.35rem 0.15rem 0;
 }
 
 .repo-detail-state-filters {
   display: inline-flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 0.1rem;
+  gap: 0.2rem;
   min-width: 0;
   flex: 1 1 auto;
+  /* Keep first option off the chrome edge (active/hover fill needs breathing room). */
+  padding: 0.1rem 0.1rem 0.1rem 0.2rem;
   overflow-x: auto;
   scrollbar-width: none;
 
@@ -1311,7 +1320,7 @@ html.dark .repo-detail-section__chrome--sticky {
 
   &.is-active {
     color: var(--state-color, var(--gitpulse-text-strong));
-    background: color-mix(in srgb, var(--state-color, var(--gitpulse-text-muted)) 12%, transparent);
+    background: color-mix(in srgb, var(--state-color, var(--gitpulse-text-muted)) 14%, transparent);
   }
 }
 
