@@ -20,8 +20,8 @@
     "fmt:check": "bunx oxfmt --check ./"
   },
   "dependencies": {
-    "@comark/nuxt": "^0.5.0",
-    "@lucide/vue": "^1.23.0",
+    "@comark/nuxt": "^0.5.1",
+    "@lucide/vue": "^1.24.0",
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.0.0",
     "@nuxtjs/color-mode": "^4.0.1",
@@ -30,7 +30,7 @@
     "@primer/css": "^22.3.0",
     "@upstash/redis": "^1.38.0",
     "bulma": "^1.0.4",
-    "comark": "^0.5.0",
+    "comark": "^0.5.1",
     "dayjs": "^1.11.21",
     "mermaid": "^11.16.0",
     "nuxt": "^4.4.8",
@@ -47,14 +47,14 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@j178/prek": "^0.4.6",
-    "@nuxtjs/i18n": "^10.4.0",
-    "@types/node": "^26.1.0",
+    "@j178/prek": "^0.4.9",
+    "@nuxtjs/i18n": "^10.4.1",
+    "@types/node": "^26.1.1",
     "oxfmt": "^0.59.0",
-    "oxlint": "^1.72.0",
+    "oxlint": "^1.74.0",
     "oxlint-tsgolint": "^0.24.0",
     "sass-embedded": "^1.100.0",
-    "vue-tsc": "^3.3.6",
+    "vue-tsc": "^3.3.7",
     "vue3-simple-icons": "^16.10.0"
   }
 }
