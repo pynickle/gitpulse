@@ -526,6 +526,10 @@ onBeforeUnmount(() => {
 }
 
 .pr-review-diff-viewer__body {
+  // Pinned to a fixed pixel width by the workspace while the panel grid
+  // animates, so code lines never re-wrap mid-animation; the section's
+  // overflow: hidden clips the overflow instead.
+  width: var(--pr-review-center-pin, auto);
   overflow: auto;
   flex: 1 1 0;
   height: 100%;

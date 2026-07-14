@@ -64,20 +64,7 @@ const handleBodyInput = (event: Event) => {
 
 <template>
   <aside :class="['pr-review-submit-bar', { 'pr-review-submit-bar--collapsed': collapsed }]">
-    <button
-      v-if="collapsed"
-      type="button"
-      class="pr-review-submit-bar__collapsed-handle"
-      :aria-label="t('prReview.expandReviewPanel')"
-      :title="t('prReview.expandReviewPanel')"
-      @click="emit('update:collapsed', false)"
-    >
-      <ChevronLeftIcon :size="16" aria-hidden="true" />
-      <span>{{ t('prReview.reviewPanel') }}</span>
-      <strong v-if="pendingCommentCount">{{ pendingCommentCount }}</strong>
-    </button>
-
-    <template v-else>
+    <div class="pr-review-submit-bar__content">
       <div class="pr-review-submit-bar__header">
         <div class="pr-review-submit-bar__header-title">
           <MessageSquareIcon :size="16" aria-hidden="true" />
@@ -234,23 +221,61 @@ const handleBodyInput = (event: Event) => {
           {{ t('prReview.submitReview') }}
         </button>
       </div>
-    </template>
+    </div>
+
+    <button
+      type="button"
+      class="pr-review-submit-bar__collapsed-handle"
+      :aria-label="t('prReview.expandReviewPanel')"
+      :title="t('prReview.expandReviewPanel')"
+      @click="emit('update:collapsed', false)"
+    >
+      <ChevronLeftIcon :size="16" aria-hidden="true" />
+      <span>{{ t('prReview.reviewPanel') }}</span>
+      <strong v-if="pendingCommentCount">{{ pendingCommentCount }}</strong>
+    </button>
   </aside>
 </template>
 
 <style scoped lang="scss">
 .pr-review-submit-bar {
+  position: relative;
   height: 100%;
   min-width: 0;
   border-left: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface-muted);
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
+  overflow: hidden;
+  transition: background 0.2s ease;
 }
 
 .pr-review-submit-bar--collapsed {
   background: var(--gitpulse-surface);
+}
+
+// Fixed at the expanded width and anchored to the outer edge so the panel
+// content is only clipped, never re-wrapped, while the grid track animates.
+.pr-review-submit-bar__content {
+  width: var(--pr-review-panel-expanded-width, 22rem);
+  flex: 1;
+  min-height: 0;
+  align-self: flex-end;
+  display: flex;
+  flex-direction: column;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.16s ease 0.08s,
+    visibility 0s;
+}
+
+.pr-review-submit-bar--collapsed .pr-review-submit-bar__content {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.12s ease,
+    visibility 0s linear 0.12s;
 }
 
 .pr-review-submit-bar__header,
@@ -304,13 +329,29 @@ const handleBodyInput = (event: Event) => {
 }
 
 .pr-review-submit-bar__collapsed-handle {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--pr-review-rail-width, 2.75rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.12s ease,
+    visibility 0s linear 0.12s;
+}
+
+.pr-review-submit-bar--collapsed .pr-review-submit-bar__collapsed-handle {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.16s ease 0.12s,
+    visibility 0s;
 }
 
 .pr-review-submit-bar__collapsed-handle span {

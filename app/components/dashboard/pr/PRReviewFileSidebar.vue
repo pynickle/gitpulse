@@ -185,19 +185,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 
 <template>
   <aside :class="['pr-review-file-sidebar', { 'pr-review-file-sidebar--collapsed': collapsed }]">
-    <button
-      v-if="collapsed"
-      type="button"
-      class="pr-review-file-sidebar__collapsed-handle"
-      :aria-label="t('prReview.expandFileSidebar')"
-      :title="t('prReview.expandFileSidebar')"
-      @click="emit('update:collapsed', false)"
-    >
-      <PanelLeftOpenIcon :size="16" aria-hidden="true" />
-      <strong>{{ files.length }}</strong>
-    </button>
-
-    <template v-else>
+    <div class="pr-review-file-sidebar__content">
       <div class="pr-review-file-sidebar__header">
         <h2 class="title is-6 mb-1">{{ t('prReview.files') }}</h2>
         <div class="pr-review-file-sidebar__header-actions">
@@ -346,12 +334,24 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
       >
         {{ t('prReview.loadMoreFiles') }}
       </button>
-    </template>
+    </div>
+
+    <button
+      type="button"
+      class="pr-review-file-sidebar__collapsed-handle"
+      :aria-label="t('prReview.expandFileSidebar')"
+      :title="t('prReview.expandFileSidebar')"
+      @click="emit('update:collapsed', false)"
+    >
+      <PanelLeftOpenIcon :size="16" aria-hidden="true" />
+      <strong>{{ files.length }}</strong>
+    </button>
   </aside>
 </template>
 
 <style scoped lang="scss">
 .pr-review-file-sidebar {
+  position: relative;
   height: 100%;
   min-width: 0;
   border-right: 1px solid var(--gitpulse-border);
@@ -359,15 +359,43 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: background 0.2s ease;
 }
 
 .pr-review-file-sidebar--collapsed {
   background: var(--gitpulse-surface);
 }
 
+// Fixed at the expanded width and clipped by the aside while the grid track
+// animates, so the file list never re-wraps mid-animation.
+.pr-review-file-sidebar__content {
+  width: var(--pr-review-sidebar-expanded-width, 17rem);
+  flex: 1;
+  min-height: 0;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.16s ease 0.08s,
+    visibility 0s;
+}
+
+.pr-review-file-sidebar--collapsed .pr-review-file-sidebar__content {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.12s ease,
+    visibility 0s linear 0.12s;
+}
+
 .pr-review-file-sidebar__collapsed-handle {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--pr-review-rail-width, 2.75rem);
   border: 0;
   background: transparent;
   color: var(--gitpulse-text-muted);
@@ -377,6 +405,19 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   justify-content: center;
   gap: 0.55rem;
   cursor: pointer;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.12s ease,
+    visibility 0s linear 0.12s;
+}
+
+.pr-review-file-sidebar--collapsed .pr-review-file-sidebar__collapsed-handle {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity 0.16s ease 0.12s,
+    visibility 0s;
 }
 
 .pr-review-file-sidebar__collapsed-handle:hover {

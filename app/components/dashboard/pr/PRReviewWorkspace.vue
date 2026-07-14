@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, GitPullRequestIcon, HomeIcon, MessageSquareIcon } from '@lucide/vue';
-import { computed, shallowRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef } from 'vue';
 
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
@@ -104,6 +104,125 @@ const goHome = async () => {
 const goToPullRequestDetails = () => {
   emit('close');
 };
+
+// Keep in sync with the grid transition duration in <style>.
+const GRID_ANIMATION_DURATION_MS = 280;
+const GRID_ANIMATION_FALLBACK_MS = GRID_ANIMATION_DURATION_MS + 120;
+const CENTER_PIN_PROPERTY = '--pr-review-center-pin';
+
+const gridElement = useTemplateRef<HTMLElement>('gridElement');
+const gridAnimating = shallowRef(false);
+let gridAnimationToken = 0;
+let gridAnimationFallbackTimer: number | undefined;
+
+const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const clearGridAnimationFallback = () => {
+  if (gridAnimationFallbackTimer !== undefined) {
+    window.clearTimeout(gridAnimationFallbackTimer);
+    gridAnimationFallbackTimer = undefined;
+  }
+};
+
+const finalizeGridAnimation = async (token: number) => {
+  if (token !== gridAnimationToken) return;
+
+  clearGridAnimationFallback();
+  gridAnimating.value = false;
+  await nextTick();
+
+  const grid = gridElement.value;
+
+  if (token !== gridAnimationToken || !grid) return;
+
+  grid.style.gridTemplateColumns = '';
+  grid.style.removeProperty(CENTER_PIN_PROPERTY);
+};
+
+const handleGridTransitionEnd = (event: TransitionEvent) => {
+  if (event.propertyName !== 'grid-template-columns' || !gridAnimating.value) return;
+
+  void finalizeGridAnimation(gridAnimationToken);
+};
+
+/**
+ * Animates the panel grid between its pre- and post-toggle layouts (FLIP):
+ * both layouts are measured as resolved pixel tracks, then the transition
+ * interpolates between the two pixel lists, so it also reverses seamlessly
+ * from mid-flight. While the tracks animate, the diff viewer body is pinned
+ * to the wider of the two center widths so its rows are only clipped, never
+ * re-wrapped frame by frame.
+ */
+const animateGridColumns = async (applyState: () => void) => {
+  const grid = gridElement.value;
+
+  if (!grid || prefersReducedMotion()) {
+    applyState();
+    return;
+  }
+
+  const token = ++gridAnimationToken;
+  clearGridAnimationFallback();
+
+  const startColumns = getComputedStyle(grid).gridTemplateColumns;
+  const startCenterWidth = parseGridTemplateColumnWidths(startColumns)[1];
+  const hasCenterPin = startCenterWidth !== undefined && Number.isFinite(startCenterWidth);
+
+  // Pin the diff viewer to its current width up front so measuring the
+  // post-toggle layout below never re-wraps its rows.
+  if (hasCenterPin) {
+    grid.style.setProperty(CENTER_PIN_PROPERTY, `${startCenterWidth}px`);
+  } else {
+    grid.style.removeProperty(CENTER_PIN_PROPERTY);
+  }
+
+  gridAnimating.value = false;
+  grid.style.gridTemplateColumns = '';
+  applyState();
+  await nextTick();
+
+  if (token !== gridAnimationToken) return;
+
+  const endColumns = getComputedStyle(grid).gridTemplateColumns;
+
+  if (endColumns === startColumns) {
+    grid.style.removeProperty(CENTER_PIN_PROPERTY);
+    return;
+  }
+
+  const endCenterWidth = parseGridTemplateColumnWidths(endColumns)[1];
+
+  if (hasCenterPin && endCenterWidth !== undefined && Number.isFinite(endCenterWidth)) {
+    grid.style.setProperty(CENTER_PIN_PROPERTY, `${Math.max(startCenterWidth, endCenterWidth)}px`);
+  }
+
+  grid.style.gridTemplateColumns = startColumns;
+  void grid.offsetWidth;
+  gridAnimating.value = true;
+  await nextTick();
+
+  if (token !== gridAnimationToken) return;
+
+  grid.style.gridTemplateColumns = endColumns;
+  gridAnimationFallbackTimer = window.setTimeout(() => {
+    gridAnimationFallbackTimer = undefined;
+    void finalizeGridAnimation(token);
+  }, GRID_ANIMATION_FALLBACK_MS);
+};
+
+const setSidebarCollapsed = (collapsed: boolean) => {
+  void animateGridColumns(() => {
+    sidebarCollapsed.value = collapsed;
+  });
+};
+
+const setReviewPanelCollapsed = (collapsed: boolean) => {
+  void animateGridColumns(() => {
+    reviewPanelCollapsed.value = collapsed;
+  });
+};
+
+onBeforeUnmount(clearGridAnimationFallback);
 </script>
 
 <template>
@@ -193,13 +312,16 @@ const goToPullRequestDetails = () => {
 
     <div
       v-else
+      ref="gridElement"
       :class="[
         'pr-review-workspace__grid',
         {
           'pr-review-workspace__grid--sidebar-collapsed': sidebarCollapsed,
           'pr-review-workspace__grid--review-collapsed': reviewPanelCollapsed,
+          'pr-review-workspace__grid--animating': gridAnimating,
         },
       ]"
+      @transitionend.self="handleGridTransitionEnd"
     >
       <PRReviewFileSidebar
         :files="review.files.value"
@@ -210,7 +332,7 @@ const goToPullRequestDetails = () => {
         :view-mode="fileViewMode"
         :collapsed="sidebarCollapsed"
         @update:view-mode="fileViewMode = $event"
-        @update:collapsed="sidebarCollapsed = $event"
+        @update:collapsed="setSidebarCollapsed"
         @select-file="review.selectFile"
         @load-more="review.loadMoreFiles"
       />
@@ -244,7 +366,7 @@ const goToPullRequestDetails = () => {
         :collapsed="reviewPanelCollapsed"
         @update:event="review.selectedEvent.value = $event"
         @update:body="review.draftBody.value = $event"
-        @update:collapsed="reviewPanelCollapsed = $event"
+        @update:collapsed="setReviewPanelCollapsed"
         @submit="review.submitReview"
         @remove-draft-comment="review.removeDraftComment"
       />
@@ -401,14 +523,23 @@ const goToPullRequestDetails = () => {
 }
 
 .pr-review-workspace__grid {
+  --pr-review-rail-width: 2.75rem;
+  --pr-review-sidebar-expanded-width: 17rem;
+  --pr-review-panel-expanded-width: 22rem;
   min-height: 0;
   flex: 1;
   display: grid;
   grid-template-columns:
-    var(--pr-review-sidebar-width, minmax(14rem, 17rem))
+    var(--pr-review-sidebar-width, var(--pr-review-sidebar-expanded-width))
     minmax(0, 1fr)
-    var(--pr-review-panel-width, minmax(19rem, 22rem));
-  transition: grid-template-columns 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    var(--pr-review-panel-width, var(--pr-review-panel-expanded-width));
+}
+
+// Only transition while a toggle is in flight: the component first measures
+// the pre- and post-toggle layouts (FLIP), then interpolates between the two
+// resolved pixel track lists. Duration mirrors GRID_ANIMATION_DURATION_MS.
+.pr-review-workspace__grid--animating {
+  transition: grid-template-columns 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .pr-review-workspace__grid > * {
@@ -417,11 +548,11 @@ const goToPullRequestDetails = () => {
 }
 
 .pr-review-workspace__grid--sidebar-collapsed {
-  --pr-review-sidebar-width: 2.75rem;
+  --pr-review-sidebar-width: var(--pr-review-rail-width);
 }
 
 .pr-review-workspace__grid--review-collapsed {
-  --pr-review-panel-width: 2.75rem;
+  --pr-review-panel-width: var(--pr-review-rail-width);
 }
 
 .pr-review-workspace__notice {
@@ -445,14 +576,18 @@ html.dark .pr-review-workspace__loading-btn::after {
 
 @media (max-width: 1100px) {
   .pr-review-workspace__grid {
-    grid-template-columns:
-      var(--pr-review-sidebar-width, minmax(12rem, 14rem))
-      minmax(0, 1fr)
-      var(--pr-review-panel-width, minmax(16rem, 18rem));
+    --pr-review-sidebar-expanded-width: 14rem;
+    --pr-review-panel-expanded-width: 18rem;
   }
 
   .pr-review-workspace__summary-pill:not(.pr-review-workspace__summary-pill--draft) {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-review-workspace__grid--animating {
+    transition: none;
   }
 }
 </style>
