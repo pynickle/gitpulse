@@ -660,6 +660,8 @@
     "watchIgnoreDescription": "不接收通知",
     "files": "文件",
     "filesEmpty": "暂无文件",
+    "commits": "提交",
+    "commitsEmpty": "此仓库暂无提交",
     "panelSwitch": "仓库内容",
     "issues": "Issues",
     "pulls": "Pull requests",

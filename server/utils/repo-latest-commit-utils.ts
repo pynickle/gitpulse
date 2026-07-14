@@ -1,4 +1,4 @@
-import type { RepoLatestCommitPayload } from '#shared/types/repos';
+import type { RepoCommitListItemPayload, RepoLatestCommitPayload } from '#shared/types/repos';
 
 interface GitHubCommitUser {
   login?: string | null;
@@ -45,13 +45,12 @@ export function buildRepoCommitsUrl(owner: string, repo: string, ref?: string | 
 }
 
 /**
- * Map a GitHub commit list item into the client-facing latest-commit payload.
+ * Map a GitHub commit list item into the client-facing commit list entry.
  * Returns null when the item has no usable sha.
  */
-export function mapGitHubCommitToLatestCommit(
-  commit: GitHubCommitListItem | null | undefined,
-  options: { owner: string; repo: string; ref?: string | null }
-): RepoLatestCommitPayload | null {
+export function mapGitHubCommitToCommitListItem(
+  commit: GitHubCommitListItem | null | undefined
+): RepoCommitListItemPayload | null {
   const sha = trimString(commit?.sha);
   if (!sha || !commit) return null;
 
@@ -72,6 +71,22 @@ export function mapGitHubCommitToLatestCommit(
       avatarUrl: trimString(commit.author?.avatar_url) || null,
     },
     htmlUrl: trimString(commit.html_url) || null,
+  };
+}
+
+/**
+ * Map a GitHub commit list item into the client-facing latest-commit payload.
+ * Returns null when the item has no usable sha.
+ */
+export function mapGitHubCommitToLatestCommit(
+  commit: GitHubCommitListItem | null | undefined,
+  options: { owner: string; repo: string; ref?: string | null }
+): RepoLatestCommitPayload | null {
+  const listItem = mapGitHubCommitToCommitListItem(commit);
+  if (!listItem) return null;
+
+  return {
+    ...listItem,
     commitsUrl: buildRepoCommitsUrl(options.owner, options.repo, options.ref),
   };
 }

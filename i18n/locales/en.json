@@ -660,6 +660,8 @@
     "watchIgnoreDescription": "Receive no notifications",
     "files": "Files",
     "filesEmpty": "No files found",
+    "commits": "Commits",
+    "commitsEmpty": "No commits in this repository",
     "panelSwitch": "Repository content",
     "issues": "Issues",
     "pulls": "Pull requests",

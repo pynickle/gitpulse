@@ -54,14 +54,33 @@ export interface RepoLatestCommitAuthor {
   avatarUrl: string | null;
 }
 
-export interface RepoLatestCommitPayload {
+/** One entry of the repository Commits panel list. */
+export interface RepoCommitListItemPayload {
   sha: string;
   shortSha: string;
   message: string;
   committedAt: string | null;
   author: RepoLatestCommitAuthor;
   htmlUrl: string | null;
+}
+
+export interface RepoLatestCommitPayload extends RepoCommitListItemPayload {
   commitsUrl: string;
 }
 
 export type RepoLatestCommitResponse = RepoLatestCommitPayload | null;
+
+/** GitHub's list-commits API exposes prev/next via Link header only — no totals. */
+export interface RepoCommitListPaginationMeta {
+  page: number;
+  perPage: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+  totalCount: number | null;
+  totalPages: number | null;
+}
+
+export interface RepoCommitListResponse {
+  items: RepoCommitListItemPayload[];
+  pagination: RepoCommitListPaginationMeta;
+}

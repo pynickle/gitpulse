@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { ExternalLinkIcon, GitCommitHorizontalIcon, Loader2Icon } from '@lucide/vue';
+import {
+  ChevronRightIcon,
+  ExternalLinkIcon,
+  GitCommitHorizontalIcon,
+  Loader2Icon,
+} from '@lucide/vue';
 import { computed } from 'vue';
 
 import type { RepoLatestCommitPayload } from '#shared/types/repos';
@@ -10,10 +15,13 @@ const props = defineProps<{
   commit: RepoLatestCommitPayload | null;
   loading: boolean;
   error: string | null;
+  /** Route "All commits" to the in-app Commits panel instead of github.com. */
+  allCommitsInApp?: boolean;
 }>();
 
 const emit = defineEmits<{
   retry: [];
+  'view-all-commits': [];
 }>();
 
 const { locale, t } = useI18n();
@@ -116,7 +124,17 @@ const authorProfileUrl = computed(() => {
         </div>
       </div>
 
+      <button
+        v-if="allCommitsInApp"
+        type="button"
+        class="repo-latest-commit-bar__all"
+        @click="emit('view-all-commits')"
+      >
+        <span>{{ t('repoDetail.allCommits') }}</span>
+        <ChevronRightIcon :size="12" aria-hidden="true" />
+      </button>
       <a
+        v-else
         :href="commit.commitsUrl"
         target="_blank"
         rel="noopener noreferrer"
@@ -228,13 +246,17 @@ const authorProfileUrl = computed(() => {
   height: 1.75rem;
   margin-left: auto;
   padding: 0 0.5rem;
+  border: none;
   border-radius: 6px;
+  background: transparent;
   color: var(--gitpulse-text-muted);
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 500;
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
   transition:
     color 0.12s ease,
     background 0.12s ease;

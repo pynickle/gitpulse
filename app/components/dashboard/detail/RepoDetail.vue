@@ -7,6 +7,8 @@ import {
   EyeIcon,
   ExternalLinkIcon,
   FileTextIcon,
+  GitBranchIcon,
+  GitCommitHorizontalIcon,
   GitMergeIcon,
   GitPullRequestIcon,
   GlobeIcon,
@@ -24,11 +26,13 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import { formatDurationFromNow } from '#imports';
 import type { RepoLatestCommitPayload, RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
+import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useRepoCommitList } from '~/composables/useRepoCommitList';
 import { useRepoIssuePrList } from '~/composables/useRepoIssuePrList';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
@@ -38,7 +42,7 @@ import {
   type RepoIssuePrState,
 } from '~/utils/repoIssuePrSearchQuery';
 
-type RepoDetailPanel = 'files' | RepoIssuePrKind;
+type RepoDetailPanel = 'files' | 'commits' | RepoIssuePrKind;
 
 interface RepoPanelTab {
   value: RepoDetailPanel;
@@ -185,6 +189,11 @@ const panelTabs = computed<RepoPanelTab[]>(() => [
     icon: FileTextIcon,
   },
   {
+    value: 'commits',
+    label: t('repoDetail.commits'),
+    icon: GitCommitHorizontalIcon,
+  },
+  {
     value: 'issues',
     label: t('repoDetail.issues'),
     icon: CircleDotIcon,
@@ -268,6 +277,10 @@ const selectPanel = (value: RepoDetailPanel) => {
   }
 };
 
+const viewAllCommits = () => {
+  selectPanel('commits');
+};
+
 const selectListState = (value: RepoIssuePrState) => {
   listState.value = normalizeRepoIssuePrState(listKind.value, value);
 };
@@ -340,6 +353,22 @@ const currentBranchQueryValue = computed(() => {
     ? repoCurrentBranch.value
     : undefined;
 });
+
+// Only query while the Commits panel is open — keep other panels free of commit traffic.
+const commitsOwner = computed(() => (activePanel.value === 'commits' ? props.owner : ''));
+const commitsRepo = computed(() => (activePanel.value === 'commits' ? props.repo : ''));
+// Empty ref lets the API use the default branch; named refs follow the branch selector.
+const commitsRef = computed(() => currentBranchQueryValue.value ?? '');
+
+const {
+  items: commitItems,
+  loading: commitsLoading,
+  error: commitsError,
+  pagination: commitsPagination,
+  showPagination: commitsShowPagination,
+  goToPage: commitsGoToPage,
+  refresh: commitsRefresh,
+} = useRepoCommitList(commitsOwner, commitsRepo, commitsRef);
 
 const visibility = computed(() =>
   props.repository.private ? copy.value.private : copy.value.public
@@ -953,8 +982,41 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   :commit="latestCommit"
                   :loading="loadingLatestCommit"
                   :error="latestCommitError"
+                  :all-commits-in-app="!opensGitHubLinks"
                   @retry="fetchLatestCommit({ force: true })"
+                  @view-all-commits="viewAllCommits"
                 />
+
+                <div v-else-if="activePanel === 'commits'" class="repo-detail-list-toolbar">
+                  <div
+                    v-if="repoCurrentBranch"
+                    class="repo-detail-commits-branch"
+                    :title="repoCurrentBranch"
+                  >
+                    <GitBranchIcon
+                      :size="13"
+                      class="repo-detail-commits-branch__icon"
+                      aria-hidden="true"
+                    />
+                    <span class="repo-detail-commits-branch__name">{{ repoCurrentBranch }}</span>
+                  </div>
+
+                  <!-- Always reserve pagination height so loading ↔ ready does not jump. -->
+                  <div
+                    class="repo-detail-list-toolbar__pagination"
+                    :class="{
+                      'is-hidden': !commitsShowPagination && !commitsLoading,
+                      'is-loading': commitsLoading,
+                    }"
+                    :aria-hidden="!commitsShowPagination && !commitsLoading"
+                  >
+                    <DashboardPagination
+                      v-if="commitsShowPagination || commitsLoading"
+                      :pagination="commitsPagination"
+                      @change="commitsGoToPage"
+                    />
+                  </div>
+                </div>
 
                 <div v-else class="repo-detail-list-toolbar">
                   <div
@@ -1038,6 +1100,15 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 </div>
               </div>
             </template>
+
+            <RepoCommitList
+              v-else-if="activePanel === 'commits'"
+              :items="commitItems"
+              :loading="commitsLoading"
+              :error="commitsError"
+              :empty-message="t('repoDetail.commitsEmpty')"
+              @retry="commitsRefresh"
+            />
 
             <RepoIssuePrList
               v-else
@@ -1478,6 +1549,34 @@ html.dark .repo-detail-section__chrome {
   min-width: 0;
   width: 100%;
   padding: 0;
+}
+
+.repo-detail-commits-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 0 1 auto;
+  height: 1.75rem;
+  padding: 0 0.55rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  background: var(--gitpulse-surface-muted, var(--gitpulse-surface));
+  color: var(--gitpulse-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.repo-detail-commits-branch__icon {
+  flex-shrink: 0;
+}
+
+.repo-detail-commits-branch__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--gitpulse-code-font-family, monospace);
 }
 
 .repo-detail-state-filters {
