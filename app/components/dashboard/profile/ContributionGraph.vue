@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import type { ContributionCalendar } from '#shared/types/users';
 import buildContributionGrid from '~/utils/buildContributionGrid';
@@ -39,6 +39,34 @@ const cellTitle = (date: string, count: number) => {
   })();
   return t('profile.contributions.cellTitle', { count, date: readableDate });
 };
+
+const tooltip = ref<{ text: string; x: number; y: number; below: boolean } | null>(null);
+const canvasRef = useTemplateRef<HTMLElement>('canvas');
+
+// Event delegation: one listener for the whole grid instead of one per cell.
+const onGridOver = (event: MouseEvent) => {
+  const cell = (event.target as HTMLElement).closest<HTMLElement>('[data-date]');
+  const canvas = canvasRef.value;
+  if (!cell || !canvas) {
+    tooltip.value = null;
+    return;
+  }
+  const cellRect = cell.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  const top = cellRect.top - canvasRect.top;
+  // The scroll wrapper clips overflow, so flip below the cell when too close to the top.
+  const below = top < 44;
+  tooltip.value = {
+    text: cellTitle(cell.dataset.date!, Number(cell.dataset.count)),
+    x: cellRect.left - canvasRect.left + cellRect.width / 2,
+    y: below ? top + cellRect.height : top,
+    below,
+  };
+};
+
+const onGridLeave = () => {
+  tooltip.value = null;
+};
 </script>
 
 <template>
@@ -50,7 +78,7 @@ const cellTitle = (date: string, count: number) => {
     </header>
 
     <div class="contribution-graph__scroll">
-      <div class="contribution-graph__canvas">
+      <div ref="canvas" class="contribution-graph__canvas">
         <div class="contribution-graph__months" aria-hidden="true">
           <span
             v-for="month in grid.months"
@@ -79,14 +107,18 @@ const cellTitle = (date: string, count: number) => {
               gridTemplateColumns: `repeat(${grid.weekCount}, var(--contribution-cell-size))`,
             }"
             role="grid"
+            @mouseover="onGridOver"
+            @mouseleave="onGridLeave"
           >
             <template v-for="(cell, index) in flatCells" :key="index">
               <span
                 v-if="cell"
                 class="contribution-graph__cell"
                 :data-level="cell.level"
+                :data-date="cell.date"
+                :data-count="cell.count"
                 role="gridcell"
-                :title="cellTitle(cell.date, cell.count)"
+                :aria-label="cellTitle(cell.date, cell.count)"
               />
               <span
                 v-else
@@ -110,6 +142,16 @@ const cellTitle = (date: string, count: number) => {
             t('profile.contributions.more')
           }}</span>
         </footer>
+
+        <div
+          v-if="tooltip"
+          class="contribution-graph__tooltip"
+          :class="{ 'contribution-graph__tooltip--below': tooltip.below }"
+          :style="{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }"
+          role="tooltip"
+        >
+          {{ tooltip.text }}
+        </div>
       </div>
     </div>
   </section>
@@ -143,8 +185,44 @@ const cellTitle = (date: string, count: number) => {
 }
 
 .contribution-graph__canvas {
+  position: relative;
   display: inline-block;
   min-width: min-content;
+}
+
+.contribution-graph__tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 6px));
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: var(--gitpulse-tooltip-bg, #24292f);
+  color: var(--gitpulse-tooltip-text, #fff);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: var(--gitpulse-tooltip-bg, #24292f);
+  }
+}
+
+.contribution-graph__tooltip--below {
+  transform: translate(-50%, 6px);
+
+  &::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--gitpulse-tooltip-bg, #24292f);
+  }
 }
 
 // Month row aligns to the same column tracks as the grid, offset by the weekday gutter.
@@ -265,5 +343,7 @@ html[data-color-mode='dark'] .contribution-graph {
   --contribution-level-2: #006d32;
   --contribution-level-3: #26a641;
   --contribution-level-4: #39d353;
+  --gitpulse-tooltip-bg: #424a53;
+  --gitpulse-tooltip-text: #f0f3f6;
 }
 </style>
