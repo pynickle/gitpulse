@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import { RotateCcw as RotateCcwIcon } from '@lucide/vue';
-import { computed, shallowRef, watch } from 'vue';
+import { computed, shallowRef, useTemplateRef, watch } from 'vue';
 
 import {
   TAB_SIDEBAR_WIDTH_DEFAULT,
@@ -95,7 +95,11 @@ const {
   },
 });
 
-const splitterHandleRef = (el: HTMLElement | null) => bindSplitterHandle(el);
+const splitterHandleRef = useTemplateRef<HTMLElement>('splitterHandleRef');
+
+watch(splitterHandleRef, (el) => {
+  bindSplitterHandle(el);
+});
 
 // Keep dragWidth tracking the persisted value while not actively dragging so
 // remote changes (login switch, reset, server correction) show up immediately.
