@@ -15,6 +15,7 @@
           :user-name="user?.name"
           :active-group-id="activeTabId"
           :groups="activityGroups"
+          @avatar-click="handleProfileClick"
           @group-select="handleActivityGroupSelect"
           @settings-click="handleSettingsClick"
           @logout-click="handleLogout"
@@ -1162,6 +1163,10 @@ const handleLogout = async () => {
 
 const handleSettingsClick = async () => {
   await router.push(localePath('/dashboard/settings'));
+};
+
+const handleProfileClick = async () => {
+  await router.push(localePath('/dashboard/profile'));
 };
 
 const handleManageTabs = async () => {

@@ -882,5 +882,33 @@
     "footerHint": "Or type a font name directly in the input field",
     "close": "Close",
     "closeAriaLabel": "Close"
+  },
+  "profile": {
+    "pageTitle": "{login} · Profile",
+    "pageTitleGeneric": "Profile",
+    "backToDashboard": "Back to Dashboard",
+    "openProfile": "Open your profile",
+    "viewOnGitHub": "View on GitHub",
+    "noUser": "No user to display. Sign in to view your profile.",
+    "retry": "Retry",
+    "joined": "Joined {date}",
+    "followers": "followers",
+    "following": "following",
+    "emptyFollowers": "No followers yet.",
+    "emptyFollowing": "Not following anyone yet.",
+    "tabs": {
+      "overview": "Overview",
+      "followers": "Followers",
+      "following": "Following"
+    },
+    "readme": {
+      "title": "{login}/README.md"
+    },
+    "contributions": {
+      "total": "{count} contribution in the last year | {count} contributions in the last year",
+      "cellTitle": "No contributions on {date} | {count} contribution on {date} | {count} contributions on {date}",
+      "less": "Less",
+      "more": "More"
+    }
   }
 }

@@ -1,6 +1,12 @@
 <template>
   <div class="activity-bar">
-    <div class="activity-bar__avatar" :title="userName || 'User'">
+    <button
+      type="button"
+      class="activity-bar__avatar"
+      :title="userName || 'User'"
+      :aria-label="t('profile.openProfile')"
+      @click="$emit('avatar-click')"
+    >
       <GitHubAvatar
         :src="userAvatar"
         :alt="userName || 'User'"
@@ -11,7 +17,7 @@
           <UserIcon :size="18" />
         </template>
       </GitHubAvatar>
-    </div>
+    </button>
 
     <nav class="activity-bar__groups" aria-label="View groups">
       <button
@@ -101,10 +107,13 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
+  'avatar-click': [];
   'group-select': [groupId: string];
   'settings-click': [];
   'logout-click': [];
 }>();
+
+const { t } = useI18n();
 
 const activityGroups = computed(() => props.groups ?? []);
 const primaryGroups = computed(() => activityGroups.value.filter((group) => group.id === 'todos'));
@@ -144,7 +153,10 @@ function getGroupIcon(icon?: string) {
     height: 34px;
     margin-bottom: 1rem;
     padding: 0;
+    border: none;
     border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
     transition: box-shadow 0.15s ease;
 
     &:focus-visible {

@@ -1,4 +1,4 @@
-# Nuxt dev/build outputs
+# === Build outputs ===
 .output
 .data
 .nuxt
@@ -6,52 +6,57 @@
 .cache
 dist
 
-# Node dependencies
+# === Dependencies ===
 node_modules
 
-# Logs
+# === Logs ===
 logs
 *.log
 
-# Misc
+# === OS-specific files ===
 .DS_Store
-.fleet
+
+# === IDE ===
 .idea
 
-# Local env files
+# === AI CLI tools ===
+.agents/
+.claude/
+.codex/
+.grok/
+.opencode/
+
+# === Code intelligence ===
+.codegraph/
+
+# === Editor formatting ===
+.editorconfig
+
+# === Environment ===
 .env
 .env.*
 !.env.example
 
-# Ide Files
-.agents/
-.codex/
-.claude/
-.mimocode/
-.opencode/
-
-.codegraph/
-
-skills-lock.json
-
-.editorconfig
-
-AGENTS.md
-CLAUDE.md
-DESIGN.md
-
+# === Local tools ===
 .playwright-mcp/
-
 /tmp/
 
+# === Project config (per-user overrides) ===
+skills-lock.json
 opencode.jsonc
 .mcp.json
 reasonix.toml
 
+# === AI agent memory ===
+AGENTS.md
+CLAUDE.md
+DESIGN.md
+
+# === Sisyphus / OMC ===
 /.sisyphus/
 /.omc/
 /.omo/
 
-# WXT extension outputs
+# === Extension ===
 extension/.output
 extension/.wxt

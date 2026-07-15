@@ -882,5 +882,33 @@
     "footerHint": "或直接在输入框中输入字体名称",
     "close": "关闭",
     "closeAriaLabel": "关闭"
+  },
+  "profile": {
+    "pageTitle": "{login} · 个人主页",
+    "pageTitleGeneric": "个人主页",
+    "backToDashboard": "返回仪表盘",
+    "openProfile": "打开我的主页",
+    "viewOnGitHub": "在 GitHub 查看",
+    "noUser": "暂无可显示的用户。请登录以查看你的主页。",
+    "retry": "重试",
+    "joined": "加入于 {date}",
+    "followers": "关注者",
+    "following": "正在关注",
+    "emptyFollowers": "还没有关注者。",
+    "emptyFollowing": "还没有关注任何人。",
+    "tabs": {
+      "overview": "概览",
+      "followers": "关注者",
+      "following": "正在关注"
+    },
+    "readme": {
+      "title": "{login}/README.md"
+    },
+    "contributions": {
+      "total": "过去一年共 {count} 次贡献",
+      "cellTitle": "{date} 无贡献 | {date} 有 {count} 次贡献 | {date} 有 {count} 次贡献",
+      "less": "较少",
+      "more": "较多"
+    }
   }
 }
