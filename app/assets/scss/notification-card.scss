@@ -70,6 +70,13 @@ $transition-hint:
   transition: $transition-badge;
 }
 
+.notification-type-badge > svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .notification-type-badge--pending {
   animation: notification-state-pulse 2s ease-in-out infinite;
   opacity: 0.45;
