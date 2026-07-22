@@ -219,6 +219,7 @@ const resolveReviewCommentLine = (
 };
 
 export function usePRReview(options: UsePRReviewOptions) {
+  const apiFetch = useGitPulseApiFetch();
   const files = ref<PRReviewFile[]>([]);
   const activeFilename = shallowRef('');
   const pagination = ref(defaultPagination());
@@ -573,7 +574,7 @@ export function usePRReview(options: UsePRReviewOptions) {
     submitError.value = '';
 
     try {
-      await $fetch(
+      await apiFetch(
         `/api/repos/${owner}/${repo}/pulls/${pullNumber}/review-threads/${encodeURIComponent(threadId)}/resolve`,
         {
           method: 'POST',
@@ -612,7 +613,7 @@ export function usePRReview(options: UsePRReviewOptions) {
 
     try {
       const { owner, repo, pullNumber, commitId } = identity.value;
-      await $fetch(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
+      await apiFetch(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
         method: 'POST',
         body: {
           commitId,

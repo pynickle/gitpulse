@@ -67,6 +67,7 @@ import RoundImg from '~/components/ui/RoundImg.vue';
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
 const localePath = useLocalePath();
+const apiFetch = useGitPulseApiFetch();
 
 usePageMeta(undefined, {
   description: t('landing.heroDescription'),
@@ -112,7 +113,7 @@ if (import.meta.client) {
 
       try {
         try {
-          await $fetch('/auth/unlock', {
+          await apiFetch('/auth/unlock', {
             method: 'POST',
             body: {},
           });
@@ -140,7 +141,7 @@ if (import.meta.client) {
 }
 
 const handleLogout = async () => {
-  await $fetch('/auth/logout', {
+  await apiFetch('/auth/logout', {
     method: 'POST',
   });
 

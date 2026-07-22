@@ -637,7 +637,7 @@ const selfSubmit = async () => {
   internalSubmitting.value = true;
 
   try {
-    const response = await $fetch<CreatedCommentResponse>(
+    const response = await apiFetch<CreatedCommentResponse>(
       `/api/repos/${props.repoOwner}/${props.repoName}/issues/${props.itemNumber}/comments`,
       {
         method: 'POST',

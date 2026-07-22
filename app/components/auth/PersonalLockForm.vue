@@ -63,6 +63,7 @@ import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 const { t } = useI18n();
 const { fetch: fetchUserSession } = useUserSession();
 const localePath = useLocalePath();
+const apiFetch = useGitPulseApiFetch();
 
 const password = ref('');
 const remember = ref(false);
@@ -80,7 +81,7 @@ const handleUnlock = async () => {
   error.value = '';
 
   try {
-    await $fetch('/auth/unlock', {
+    await apiFetch('/auth/unlock', {
       method: 'POST',
       body: {
         password: normalizedPassword,

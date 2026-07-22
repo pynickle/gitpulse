@@ -150,6 +150,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const apiFetch = useGitPulseApiFetch();
 const { openModal, closeModal } = useModalState();
 
 const isLabelEditorVisible = ref(false);
@@ -249,7 +250,7 @@ const saveLabels = async () => {
 
   try {
     const { owner, repo } = props.repoInfo;
-    const data = await $fetch<DashboardLabel[]>(
+    const data = await apiFetch<DashboardLabel[]>(
       `/api/repos/${owner}/${repo}/issues/${props.issueNumber}/labels`,
       {
         method: 'PUT',

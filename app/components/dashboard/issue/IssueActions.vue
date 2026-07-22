@@ -112,6 +112,7 @@ const { t } = useI18n();
 const { user } = useUserSession();
 const { openModal, closeModal } = useModalState();
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
+const apiFetch = useGitPulseApiFetch();
 
 const isTodo = computed(() =>
   props.sourceNotification ? isNotificationTodo(props.sourceNotification) : false
@@ -179,7 +180,7 @@ const confirmLockIssue = async (lockReason: string) => {
     const { owner, repo } = props.repoInfo;
     const issueNumber = props.issueNumber;
 
-    await $fetch(`/api/repos/${owner}/${repo}/issues/${issueNumber}/lock`, {
+    await apiFetch(`/api/repos/${owner}/${repo}/issues/${issueNumber}/lock`, {
       method: 'PUT',
       body: {
         lock_reason: lockReason,
@@ -224,7 +225,7 @@ const unlockIssue = async () => {
     const { owner, repo } = props.repoInfo;
     const issueNumber = props.issueNumber;
 
-    await $fetch(`/api/repos/${owner}/${repo}/issues/${issueNumber}/lock`, {
+    await apiFetch(`/api/repos/${owner}/${repo}/issues/${issueNumber}/lock`, {
       method: 'DELETE',
     });
 

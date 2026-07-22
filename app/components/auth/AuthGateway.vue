@@ -87,6 +87,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const { fetch: fetchUserSession } = useUserSession();
 const localePath = useLocalePath();
+const apiFetch = useGitPulseApiFetch();
 const token = ref('');
 const tokenError = ref('');
 const submitting = ref(false);
@@ -149,7 +150,7 @@ const handlePatSubmit = async () => {
   tokenError.value = '';
 
   try {
-    await $fetch('/auth/pat', {
+    await apiFetch('/auth/pat', {
       method: 'POST',
       body: {
         token: normalizedToken,

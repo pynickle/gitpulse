@@ -1151,7 +1151,7 @@ const goToPage = async (page: number) => {
 };
 
 const handleLogout = async () => {
-  await $fetch('/auth/logout', {
+  await apiFetch('/auth/logout', {
     method: 'POST',
   });
 
