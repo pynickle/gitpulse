@@ -74,6 +74,17 @@ export interface UserRepositoryListResponse {
   pagination: UserConnectionPaginationMeta;
 }
 
+/**
+ * Where the profile "Pinned" section entries came from: GitHub's pinned items,
+ * or the most-starred fallback GitHub shows when nothing is pinned.
+ */
+export type PinnedRepoSource = 'pinned' | 'popular';
+
+export interface UserPinnedReposResponse {
+  items: UserRepositorySummary[];
+  source: PinnedRepoSource;
+}
+
 /** Public organization membership shown in the profile sidebar. */
 export interface UserOrganizationSummary {
   login: string;

@@ -7,7 +7,10 @@ import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.v
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
 import shouldCloseReviewWorkspaceAfterSubmit from '~/utils/prReviewNavigation';
 
-import { buildDashboardQueryFromNavigationEntry } from '../../../utils/dashboardUrlNavigationUtils';
+import {
+  buildChildPageRouteFromNavigationEntry,
+  buildDashboardQueryFromNavigationEntry,
+} from '../../../utils/dashboardUrlNavigationUtils';
 
 const props = defineProps<{
   owner: string;
@@ -77,6 +80,14 @@ const shouldShowNavButtons = computed(() => canGoBack.value || shouldShowHomeBut
 const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
   if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
     await router.push(localePath('/dashboard'));
+    return;
+  }
+
+  // Child pages (profile, package, releases list, wiki) live on their own
+  // routes, not behind a dashboard query.
+  const childRoute = buildChildPageRouteFromNavigationEntry(entry);
+  if (childRoute) {
+    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
     return;
   }
 

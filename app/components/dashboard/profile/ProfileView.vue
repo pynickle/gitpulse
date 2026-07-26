@@ -6,6 +6,7 @@ import type { PackageSummary, PackageType } from '#shared/types/packages';
 import ContributionGraph from '~/components/dashboard/profile/ContributionGraph.vue';
 import ProfileHeader from '~/components/dashboard/profile/ProfileHeader.vue';
 import ProfilePackageList from '~/components/dashboard/profile/ProfilePackageList.vue';
+import ProfilePinnedRepos from '~/components/dashboard/profile/ProfilePinnedRepos.vue';
 import ProfileReadme from '~/components/dashboard/profile/ProfileReadme.vue';
 import ProfileRepositoryList from '~/components/dashboard/profile/ProfileRepositoryList.vue';
 import UserConnectionList from '~/components/dashboard/profile/UserConnectionList.vue';
@@ -133,6 +134,8 @@ const showOverviewSkeleton = computed(
 
           <template v-else>
             <ProfileReadme :login="profile.login" :readme="readme" />
+
+            <ProfilePinnedRepos :username="profile.login" />
 
             <template v-if="!isOrganization">
               <ContributionGraph v-if="contributions" :calendar="contributions" />

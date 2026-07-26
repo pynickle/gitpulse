@@ -908,6 +908,10 @@
     "readme": {
       "title": "{login}/README.md"
     },
+    "pinned": {
+      "title": "置顶仓库",
+      "popularTitle": "热门仓库"
+    },
     "contributions": {
       "total": "过去一年共 {count} 次贡献",
       "cellTitle": "{date} 无贡献 | {date} 有 {count} 次贡献 | {date} 有 {count} 次贡献",
