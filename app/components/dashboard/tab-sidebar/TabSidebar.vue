@@ -1,5 +1,5 @@
 <template>
-  <aside class="tab-sidebar" aria-label="Tab groups">
+  <aside class="tab-sidebar" :aria-label="t('dashboard.sidebar.tabGroups')">
     <!-- Compact header: title + manage button only -->
     <div class="tab-sidebar__header">
       <h2 class="tab-sidebar__title">{{ t('dashboard.sidebar.views') }}</h2>

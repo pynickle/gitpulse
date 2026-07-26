@@ -35,7 +35,7 @@
           </div>
           <div v-if="repo.private" class="is-flex is-align-items-center repo-private-badge">
             <LockIcon :size="12" class="mr-1" />
-            <span class="is-size-7">Private</span>
+            <span class="is-size-7">{{ t('repoItem.private') }}</span>
           </div>
         </div>
       </div>
@@ -46,15 +46,15 @@
       :href="preferredHref"
       target="_blank"
       rel="noopener noreferrer"
-      :aria-label="`Open repository ${repo.owner?.login}/${repo.name}`"
-      :title="`Open repository ${repo.owner?.login}/${repo.name}`"
+      :aria-label="openRepositoryLabel"
+      :title="openRepositoryLabel"
     />
     <NuxtLinkLocale
       v-else
       class="repo-item__link"
       :to="detailPath"
-      :aria-label="`Open repository ${repo.owner?.login}/${repo.name}`"
-      :title="`Open repository ${repo.owner?.login}/${repo.name}`"
+      :aria-label="openRepositoryLabel"
+      :title="openRepositoryLabel"
     />
   </div>
 </template>
@@ -82,10 +82,15 @@ const props = defineProps<{
   repo: RepositoryListItem;
 }>();
 
+const { t } = useI18n();
 const localePath = useLocalePath();
 const { opensGitHubLinks, getPreferredTargetHref } = useGitHubLinkRouting();
 
 const repoOwner = computed(() => props.repo.owner?.login ?? '');
+
+const openRepositoryLabel = computed(() => {
+  return t('repoItem.openRepository', { repo: `${repoOwner.value}/${props.repo.name}` });
+});
 
 const repoTarget = computed(() => {
   return repoOwner.value ? createDashboardRepositoryTarget(repoOwner.value, props.repo.name) : null;

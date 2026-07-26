@@ -107,6 +107,8 @@ const props = defineProps<{
   parts: string[];
 }>();
 
+const { t } = useI18n();
+
 const tokens = computed<Token[]>(() => {
   return props.parts.map((part) => {
     const colonIndex = part.indexOf(':');
@@ -119,7 +121,9 @@ const tokens = computed<Token[]>(() => {
 
       return {
         kind,
-        title: isKnown ? `Filter by ${qualifier}` : 'Custom qualifier',
+        title: isKnown
+          ? t('dashboard.tokenizedQuery.filterBy', { qualifier })
+          : t('dashboard.tokenizedQuery.customQualifier'),
         segments: [
           { text: qualifier, role: 'qualifier' as const },
           { text: ':', role: 'operator' as const },
@@ -130,7 +134,7 @@ const tokens = computed<Token[]>(() => {
 
     return {
       kind: 'keyword' as TokenKind,
-      title: 'Search keyword',
+      title: t('dashboard.tokenizedQuery.searchKeyword'),
       segments: [{ text: part, role: 'bareword' as const }],
     };
   });

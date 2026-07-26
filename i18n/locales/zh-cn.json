@@ -89,9 +89,9 @@
     "retry": "重试",
     "syncing": "同步数据中...",
     "loading": {
-      "issue": "加载中...",
+      "issue": "正在加载议题...",
       "pullRequest": "正在加载拉取请求...",
-      "release": "正在加载 Release...",
+      "release": "正在加载发布...",
       "repository": "正在加载仓库..."
     }
   },
@@ -143,8 +143,8 @@
     "viewOnGithub": "在 GitHub 上查看"
   },
   "releaseDetail": {
-    "loading": "正在加载 Release...",
-    "untitled": "Release",
+    "loading": "正在加载发布...",
+    "untitled": "发布",
     "draft": "草稿",
     "prerelease": "预发布",
     "unpublished": "未发布",
@@ -348,7 +348,22 @@
       "manageViews": "管理视图",
       "emptyGroup": "此分组还没有搜索视图。",
       "resizeHandle": "调整侧边栏宽度",
-      "resetWidth": "重置侧边栏宽度"
+      "resetWidth": "重置侧边栏宽度",
+      "viewGroups": "视图分组",
+      "tabGroups": "标签页分组",
+      "logout": "退出登录"
+    },
+    "tabs": {
+      "todos": "待办",
+      "notifications": "通知",
+      "issues": "议题",
+      "pulls": "拉取请求",
+      "repos": "仓库"
+    },
+    "tokenizedQuery": {
+      "filterBy": "按 {qualifier} 筛选",
+      "customQualifier": "自定义限定符",
+      "searchKeyword": "搜索关键词"
     },
     "settings": {
       "pageKicker": "仪表盘",
@@ -669,6 +684,10 @@
     "default": "默认",
     "noBranches": "未找到分支"
   },
+  "repoItem": {
+    "private": "私有",
+    "openRepository": "打开仓库 {repo}"
+  },
   "repoDetail": {
     "watchAllDescription": "接收所有通知",
     "watchDefaultDescription": "仅 \\@ 提及时通知",
@@ -678,16 +697,16 @@
     "commits": "提交",
     "commitsEmpty": "此仓库暂无提交",
     "panelSwitch": "仓库内容",
-    "issues": "Issues",
-    "pulls": "Pull requests",
+    "issues": "议题",
+    "pulls": "拉取请求",
     "stateFilter": "按状态筛选",
-    "issuesEmpty": "此仓库暂无开放的 issue",
-    "issuesEmptyClosed": "此仓库暂无已关闭的 issue",
-    "issuesEmptyAll": "此仓库暂无 issue",
-    "pullsEmpty": "此仓库暂无开放的 pull request",
-    "pullsEmptyClosed": "此仓库暂无已关闭的 pull request",
-    "pullsEmptyMerged": "此仓库暂无已合并的 pull request",
-    "pullsEmptyAll": "此仓库暂无 pull request",
+    "issuesEmpty": "此仓库暂无开放的议题",
+    "issuesEmptyClosed": "此仓库暂无已关闭的议题",
+    "issuesEmptyAll": "此仓库暂无议题",
+    "pullsEmpty": "此仓库暂无开放的拉取请求",
+    "pullsEmptyClosed": "此仓库暂无已关闭的拉取请求",
+    "pullsEmptyMerged": "此仓库暂无已合并的拉取请求",
+    "pullsEmptyAll": "此仓库暂无拉取请求",
     "loadingList": "加载中…",
     "listErrorTitle": "列表加载失败",
     "retry": "重试",
@@ -928,6 +947,7 @@
       "popularTitle": "热门仓库"
     },
     "contributions": {
+      "label": "贡献图",
       "total": "过去一年共 {count} 次贡献",
       "cellTitle": "{date} 无贡献 | {date} 有 {count} 次贡献 | {date} 有 {count} 次贡献",
       "less": "较少",

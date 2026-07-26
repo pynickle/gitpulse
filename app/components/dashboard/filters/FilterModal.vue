@@ -243,6 +243,7 @@ watch(
               :model-value="localFilters.repo ?? ''"
               :suggestions="repoItems"
               :placeholder="t('dashboard.filters.repoPlaceholder')"
+              :empty-message="t('dashboard.filters.noResults')"
               @update:model-value="updateLocalFilter('repo', $event)"
             />
           </section>
@@ -267,6 +268,7 @@ watch(
               :model-value="localFilters.author ?? ''"
               :suggestions="authorItems"
               :placeholder="t('dashboard.filters.authorPlaceholder')"
+              :empty-message="t('dashboard.filters.noResults')"
               @update:model-value="updateLocalFilter('author', $event)"
             />
           </section>

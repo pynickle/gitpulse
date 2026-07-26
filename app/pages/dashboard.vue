@@ -772,13 +772,13 @@ const currentTabTitle = computed(() => {
   if (selectedCustomTab.value) return selectedCustomTab.value.name;
   const foundTab = tabs.value.find((t) => t.id === currentTab.value);
   if (foundTab) return foundTab.name;
-  // fallback map if translation is needed but not found in tabs
+  // fallback map if the current tab id is not present in the tab list
   const tabNames: Record<string, string> = {
-    todos: 'Todo',
-    notifications: 'Notifications',
-    issues: 'Issues',
-    pulls: 'Pull Requests',
-    repos: 'Repositories',
+    todos: t('dashboard.tabs.todos'),
+    notifications: t('dashboard.tabs.notifications'),
+    issues: t('dashboard.tabs.issues'),
+    pulls: t('dashboard.tabs.pulls'),
+    repos: t('dashboard.tabs.repos'),
   };
   return tabNames[currentTab.value] || currentTab.value;
 });

@@ -181,6 +181,7 @@ const toggleCollapsed = () => {
                 :suggestions="repoSuggestionItems"
                 :model-value="filters.repo ?? ''"
                 :placeholder="t('dashboard.filters.repoPlaceholder')"
+                :empty-message="t('dashboard.filters.noResults')"
                 @update:model-value="handleRepoChange"
               />
             </label>
@@ -191,6 +192,7 @@ const toggleCollapsed = () => {
                 :suggestions="authorSuggestionItems"
                 :model-value="filters.author ?? ''"
                 :placeholder="t('dashboard.filters.authorPlaceholder')"
+                :empty-message="t('dashboard.filters.noResults')"
                 @update:model-value="handleAuthorChange"
               />
             </label>

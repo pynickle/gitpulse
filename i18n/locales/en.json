@@ -254,7 +254,22 @@
       "manageViews": "Manage Views",
       "emptyGroup": "No search tabs in this group.",
       "resizeHandle": "Resize sidebar",
-      "resetWidth": "Reset sidebar width"
+      "resetWidth": "Reset sidebar width",
+      "viewGroups": "View groups",
+      "tabGroups": "Tab groups",
+      "logout": "Logout"
+    },
+    "tabs": {
+      "todos": "Todo",
+      "notifications": "Notifications",
+      "issues": "Issues",
+      "pulls": "Pull Requests",
+      "repos": "Repositories"
+    },
+    "tokenizedQuery": {
+      "filterBy": "Filter by {qualifier}",
+      "customQualifier": "Custom qualifier",
+      "searchKeyword": "Search keyword"
     },
     "filters": {
       "title": "Filters",
@@ -669,6 +684,10 @@
     "default": "default",
     "noBranches": "No branches found"
   },
+  "repoItem": {
+    "private": "Private",
+    "openRepository": "Open repository {repo}"
+  },
   "repoDetail": {
     "watchAllDescription": "Receive all notifications",
     "watchDefaultDescription": "Only \\@mentions",
@@ -928,6 +947,7 @@
       "popularTitle": "Popular repositories"
     },
     "contributions": {
+      "label": "Contribution graph",
       "total": "{count} contribution in the last year | {count} contributions in the last year",
       "cellTitle": "No contributions on {date} | {count} contribution on {date} | {count} contributions on {date}",
       "less": "Less",

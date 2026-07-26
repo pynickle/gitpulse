@@ -3,13 +3,13 @@
     <button
       type="button"
       class="activity-bar__avatar"
-      :title="userName || 'User'"
+      :title="userName || t('profile.openProfile')"
       :aria-label="t('profile.openProfile')"
       @click="$emit('avatar-click')"
     >
       <GitHubAvatar
         :src="userAvatar"
-        :alt="userName || 'User'"
+        :alt="userName || t('profile.openProfile')"
         size="34"
         class="activity-bar__avatar-img"
       >
@@ -19,7 +19,7 @@
       </GitHubAvatar>
     </button>
 
-    <nav class="activity-bar__groups" aria-label="View groups">
+    <nav class="activity-bar__groups" :aria-label="t('dashboard.sidebar.viewGroups')">
       <button
         v-for="group in primaryGroups"
         :key="group.id"
@@ -67,8 +67,8 @@
       </button>
       <button
         class="activity-bar__icon-btn"
-        title="Settings"
-        aria-label="Settings"
+        :title="t('dashboard.settings.pageTitle')"
+        :aria-label="t('dashboard.settings.pageTitle')"
         type="button"
         @click="$emit('settings-click')"
       >
@@ -76,8 +76,8 @@
       </button>
       <button
         class="activity-bar__icon-btn"
-        title="Logout"
-        aria-label="Logout"
+        :title="t('dashboard.sidebar.logout')"
+        :aria-label="t('dashboard.sidebar.logout')"
         type="button"
         @click="$emit('logout-click')"
       >
