@@ -3,17 +3,22 @@ import {
   AlertTriangleIcon,
   CalendarIcon,
   HistoryIcon,
+  LayoutGridIcon,
   Loader2Icon,
   TagIcon,
   TerminalIcon,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, type Component } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
-import type { PackageVersionSummary } from '#shared/types/packages';
+import type { PackageVersionFilter, PackageVersionSummary } from '#shared/types/packages';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
-import { useUserPackageDetail, type PackageDetailTarget } from '~/composables/useUserPackages';
+import {
+  packageTypeHasVersionTags,
+  useUserPackageDetail,
+  type PackageDetailTarget,
+} from '~/composables/useUserPackages';
 
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
@@ -49,7 +54,11 @@ const {
   versionsError,
   versionsPagination,
   versionsShowPagination,
+  versionsFilter,
+  versionsTruncated,
+  setVersionsFilter,
   goToVersionsPage,
+  retryVersions,
   refresh,
 } = useUserPackageDetail(() => packageTarget.value);
 
@@ -97,16 +106,95 @@ const updatedLabel = computed(() => {
   });
 });
 
+/** Only container/docker versions carry tags, so the toggle is hidden elsewhere. */
+const showVersionsFilter = computed(() =>
+  packageTypeHasVersionTags(packageTarget.value?.packageType)
+);
+
+interface VersionsFilterOption {
+  value: PackageVersionFilter;
+  label: string;
+  icon: Component;
+}
+
+const versionsFilterOptions = computed<VersionsFilterOption[]>(() => [
+  {
+    value: 'tagged',
+    label: t('packageDetail.versionsFilterTagged'),
+    icon: TagIcon,
+  },
+  {
+    value: 'all',
+    label: t('dashboard.filters.options.all'),
+    icon: LayoutGridIcon,
+  },
+]);
+
 const versionPublishedLabel = (version: PackageVersionSummary) => {
   const publishedAt = version.createdAt || version.updatedAt || '';
-  return publishedAt ? formatDurationFromNow(publishedAt, locale.value, relativeTimeNow.value) : '';
+  if (!publishedAt) return '';
+  return t('packageDetail.publishedAt', {
+    time: formatDurationFromNow(publishedAt, locale.value, relativeTimeNow.value),
+  });
+};
+
+/** Absolute timestamp as tooltip; the row itself shows relative time. */
+const versionPublishedTitle = (version: PackageVersionSummary) => {
+  const publishedAt = version.createdAt || version.updatedAt || '';
+  if (!publishedAt) return '';
+  const parsed = new Date(publishedAt);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return new Intl.DateTimeFormat(locale.value, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed);
 };
 
 /** Container digests are long; keep rows scannable while `title` shows all. */
 const versionDisplayName = (version: PackageVersionSummary) => {
+  const digestHex = version.name.match(/^sha256:([0-9a-f]+)$/i)?.[1];
+  if (digestHex) return `sha256:${digestHex.slice(0, 12)}`;
   if (version.name.length <= 32) return version.name;
   return `${version.name.slice(0, 29)}…`;
 };
+
+/** Tagged rows read by tag, not digest; prefer a specific tag over `latest`. */
+const versionPrimaryTag = (version: PackageVersionSummary) => {
+  if (version.tags.length === 0) return '';
+  return version.tags.find((tag) => tag !== 'latest') ?? version.tags[0]!;
+};
+
+const versionPrimaryLabel = (version: PackageVersionSummary) =>
+  versionPrimaryTag(version) || versionDisplayName(version);
+
+const versionSecondaryTags = (version: PackageVersionSummary) => {
+  const primary = versionPrimaryTag(version);
+  return version.tags.filter((tag) => tag !== primary);
+};
+
+/** Docker-style short digest shown next to tag titles. */
+const versionDigestLabel = (version: PackageVersionSummary) => {
+  if (version.tags.length === 0) return '';
+  return versionDisplayName(version);
+};
+
+/**
+ * The tagged view hides untagged versions, so always say it is a subset;
+ * append the scan-cap caveat when the server stopped early.
+ */
+const taggedVersionsNotice = computed(() => {
+  if (versionsFilter.value !== 'tagged' || loadingVersions.value || versionsError.value) return '';
+  if (versions.value.length === 0) return '';
+
+  const taggedCount = versionsPagination.value.totalCount;
+  const totalCount = detail.value?.versionCount;
+  const base =
+    typeof taggedCount === 'number' && typeof totalCount === 'number'
+      ? t('packageDetail.taggedOnlyCount', { count: taggedCount, total: totalCount })
+      : t('packageDetail.taggedOnly');
+
+  return versionsTruncated.value ? `${base} ${t('packageDetail.versionsTruncated')}` : base;
+});
 
 const handleRepoClick = async () => {
   const repoPath = parseGitHubRepoPath(detail.value?.repository?.fullName);
@@ -236,10 +324,39 @@ const handleBack = async () => {
         </section>
 
         <section class="package-page__versions">
-          <h2 class="title is-6 mb-2 package-page__section-title">
-            <TagIcon :size="15" aria-hidden="true" />
-            {{ t('packageDetail.versions') }}
-          </h2>
+          <div class="package-page__versions-header">
+            <h2 class="title is-6 mb-0 package-page__section-title">
+              <TagIcon :size="15" aria-hidden="true" />
+              {{ t('packageDetail.versions') }}
+            </h2>
+
+            <div
+              v-if="showVersionsFilter"
+              class="package-page__version-filters"
+              role="tablist"
+              :aria-label="t('packageDetail.versionsFilterLabel')"
+            >
+              <button
+                v-for="option in versionsFilterOptions"
+                :key="option.value"
+                type="button"
+                role="tab"
+                class="package-page__version-filter"
+                :class="{ 'is-active': versionsFilter === option.value }"
+                :aria-selected="versionsFilter === option.value"
+                :tabindex="versionsFilter === option.value ? 0 : -1"
+                :disabled="loadingVersions"
+                @click="setVersionsFilter(option.value)"
+              >
+                <component :is="option.icon" :size="13" aria-hidden="true" />
+                <span>{{ option.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <p v-if="taggedVersionsNotice" class="package-page__versions-notice">
+            {{ taggedVersionsNotice }}
+          </p>
 
           <div v-if="loadingVersions" class="package-page__status">
             <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
@@ -247,30 +364,59 @@ const handleBack = async () => {
 
           <div v-else-if="versionsError" class="package-page__status package-page__status--error">
             <p>{{ versionsError }}</p>
-            <button
-              type="button"
-              class="button is-small is-light"
-              @click="goToVersionsPage(versionsPagination.page)"
-            >
+            <button type="button" class="button is-small is-light" @click="retryVersions">
               {{ t('packageDetail.retry') }}
             </button>
           </div>
 
           <div v-else-if="versions.length === 0" class="package-page__status">
-            <p>{{ t('packageDetail.emptyVersions') }}</p>
+            <p>
+              {{
+                versionsFilter === 'tagged'
+                  ? t('packageDetail.emptyTaggedVersions')
+                  : t('packageDetail.emptyVersions')
+              }}
+            </p>
           </div>
 
           <ul v-else class="package-page__version-list">
             <li v-for="version in versions" :key="version.id" class="package-page__version card">
               <div class="package-page__version-main">
-                <span class="package-page__version-name" :title="version.name">
-                  {{ versionDisplayName(version) }}
+                <a
+                  v-if="version.htmlUrl"
+                  :href="version.htmlUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="package-page__version-name package-page__version-name--link"
+                  :title="version.name"
+                >
+                  {{ versionPrimaryLabel(version) }}
+                </a>
+                <span v-else class="package-page__version-name" :title="version.name">
+                  {{ versionPrimaryLabel(version) }}
                 </span>
-                <span v-for="tag in version.tags" :key="tag" class="tag is-info is-light">
+                <span
+                  v-for="tag in versionSecondaryTags(version)"
+                  :key="tag"
+                  class="tag is-light"
+                  :class="tag === 'latest' ? 'is-success' : 'is-info'"
+                >
                   {{ tag }}
                 </span>
+                <span
+                  v-if="versionDigestLabel(version)"
+                  class="package-page__version-digest"
+                  :title="version.name"
+                >
+                  {{ versionDigestLabel(version) }}
+                </span>
               </div>
-              <span v-if="versionPublishedLabel(version)" class="package-page__version-time">
+              <span
+                v-if="versionPublishedLabel(version)"
+                class="package-page__version-time"
+                :title="versionPublishedTitle(version)"
+              >
+                <CalendarIcon :size="13" aria-hidden="true" />
                 {{ versionPublishedLabel(version) }}
               </span>
             </li>
@@ -378,6 +524,52 @@ const handleBack = async () => {
   font-size: 0.85rem;
 }
 
+.package-page__versions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.package-page__version-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.package-page__version-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &:hover:not([disabled]) {
+    background: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text-strong);
+  }
+
+  &[disabled] {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  &.is-active {
+    border-color: var(--gitpulse-accent);
+    color: var(--gitpulse-accent);
+    background: color-mix(in srgb, var(--gitpulse-accent) 10%, transparent);
+    font-weight: 600;
+  }
+}
+
 .package-page__version-list {
   display: flex;
   flex-direction: column;
@@ -404,16 +596,46 @@ const handleBack = async () => {
 
 .package-page__version-name {
   color: var(--gitpulse-text-strong);
-  font-family: var(--gitpulse-font-code, monospace);
+  font-family: var(--gitpulse-code-font-family, monospace);
   font-size: 0.85rem;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
+.package-page__version-digest {
+  color: var(--gitpulse-text-muted);
+  font-family: var(--gitpulse-code-font-family, monospace);
+  font-size: 0.75rem;
+}
+
+.package-page__version-name--link {
+  text-decoration: none;
+  transition: color 0.12s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
 .package-page__version-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--gitpulse-text-muted);
   font-size: 0.8rem;
   white-space: nowrap;
+}
+
+/* Sits between the section header and the list as a caption. */
+.package-page__versions-notice {
+  margin: -0.25rem 0 0.75rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.78rem;
 }
 
 .package-page__pagination {

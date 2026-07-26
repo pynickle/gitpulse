@@ -265,6 +265,51 @@ function toTagArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
 }
 
+/** GitHub caps the version list endpoint at 100 per page. */
+const TAGGED_VERSIONS_PER_PAGE = 100;
+/** Page cap for the tagged-only scan (newest 300 versions). */
+const TAGGED_VERSIONS_MAX_PAGES = 3;
+
+/**
+ * Tagged-only view: GitHub has no server-side tag filter, so scan the newest
+ * pages, keep versions that carry at least one tag, and let the route
+ * re-paginate the filtered collection. `truncated` flags a hit on the scan
+ * cap, meaning older tagged versions may be missing.
+ */
+export async function collectTaggedPackageVersions(
+  octokit: Octokit,
+  scope: PackagesAccountScope,
+  username: string,
+  packageType: PackageType,
+  packageName: string
+): Promise<{ items: PackageVersionSummary[]; truncated: boolean }> {
+  const tagged: PackageVersionSummary[] = [];
+
+  for (let page = 1; page <= TAGGED_VERSIONS_MAX_PAGES; page += 1) {
+    const { items } = await listAccountPackageVersions(
+      octokit,
+      scope,
+      username,
+      packageType,
+      packageName,
+      { page, perPage: TAGGED_VERSIONS_PER_PAGE }
+    );
+
+    for (const raw of items) {
+      const version = mapGitHubPackageVersionToSummary(raw);
+      if (version && version.tags.length > 0) {
+        tagged.push(version);
+      }
+    }
+
+    if (items.length < TAGGED_VERSIONS_PER_PAGE) {
+      return { items: tagged, truncated: false };
+    }
+  }
+
+  return { items: tagged, truncated: true };
+}
+
 export function mapGitHubPackageVersionToSummary(
   raw: GitHubPackageVersionResponse | null | undefined
 ): PackageVersionSummary | null {

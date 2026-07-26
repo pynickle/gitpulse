@@ -5,6 +5,7 @@ import type {
   PackageSummary,
   PackageType,
   PackageTypeFilter,
+  PackageVersionFilter,
   PackageVersionListResponse,
   PackageVersionSummary,
   UserPackageListResponse,
@@ -200,6 +201,11 @@ export interface PackageDetailTarget {
   isOrganization: boolean;
 }
 
+/** Registries whose versions carry image tags (the tagged/all toggle applies). */
+export function packageTypeHasVersionTags(packageType: PackageType | null | undefined): boolean {
+  return packageType === 'container' || packageType === 'docker';
+}
+
 const buildTargetSearchParams = (
   target: PackageDetailTarget,
   extra: Record<string, string> = {}
@@ -232,6 +238,13 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
   const loadingVersions = ref(false);
   const versionsError = ref('');
   const versionsPagination = ref<UserConnectionPaginationMeta>(createEmptyPagination());
+  /** True when the server's tagged-only scan hit its fetch cap. */
+  const versionsTruncated = ref(false);
+
+  const defaultVersionsFilter = (): PackageVersionFilter =>
+    packageTypeHasVersionTags(target()?.packageType) ? 'tagged' : 'all';
+
+  const versionsFilter = ref<PackageVersionFilter>(defaultVersionsFilter());
 
   let detailRequestId = 0;
   let versionsRequestId = 0;
@@ -254,6 +267,8 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
     loadingDetail.value = false;
     loadingVersions.value = false;
     versionsPagination.value = createEmptyPagination();
+    versionsTruncated.value = false;
+    versionsFilter.value = defaultVersionsFilter();
   };
 
   const fetchVersionsPage = async (page = 1) => {
@@ -270,6 +285,7 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
     const searchParams = buildTargetSearchParams(currentTarget, {
       page: String(page),
       per_page: String(DEFAULT_PER_PAGE),
+      filter: versionsFilter.value,
     });
 
     try {
@@ -281,11 +297,13 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
 
       versions.value = Array.isArray(data.items) ? data.items : [];
       versionsPagination.value = normalizePagination(data.pagination, page);
+      versionsTruncated.value = Boolean(data.truncated);
     } catch (fetchError) {
       if (!isCurrent()) return;
 
       versions.value = [];
       versionsPagination.value = createEmptyPagination(page);
+      versionsTruncated.value = false;
       versionsError.value = getFetchErrorMessage(fetchError, 'Failed to load package versions.');
     } finally {
       if (isCurrent()) {
@@ -297,6 +315,18 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
   const goToVersionsPage = async (page: number) => {
     if (page < 1 || page === versionsPagination.value.page || loadingVersions.value) return;
     await fetchVersionsPage(page);
+  };
+
+  /** Re-request the current page (the page guard in goToVersionsPage skips it). */
+  const retryVersions = async () => {
+    await fetchVersionsPage(versionsPagination.value.page || 1);
+  };
+
+  /** Switching views restarts from page 1; request ids drop stale responses. */
+  const setVersionsFilter = async (filter: PackageVersionFilter) => {
+    if (filter === versionsFilter.value) return;
+    versionsFilter.value = filter;
+    await fetchVersionsPage(1);
   };
 
   const load = async () => {
@@ -317,6 +347,8 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
     detailError.value = '';
     versions.value = [];
     versionsPagination.value = createEmptyPagination();
+    versionsTruncated.value = false;
+    versionsFilter.value = defaultVersionsFilter();
 
     const searchParams = buildTargetSearchParams(currentTarget);
     const detailRequest = apiFetch<PackageDetailResponse>(
@@ -357,7 +389,11 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
     versionsError,
     versionsPagination,
     versionsShowPagination,
+    versionsFilter,
+    versionsTruncated,
+    setVersionsFilter,
     goToVersionsPage,
+    retryVersions,
     refresh: load,
   };
 }

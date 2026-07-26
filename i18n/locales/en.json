@@ -948,7 +948,14 @@
     "createdAt": "Created {date}",
     "updatedAt": "Last published {time}",
     "versions": "Versions",
+    "versionsFilterLabel": "Filter versions",
+    "versionsFilterTagged": "Tagged",
+    "publishedAt": "Published {time}",
     "emptyVersions": "No versions available.",
+    "emptyTaggedVersions": "No tagged versions. Switch to “All” to see untagged versions.",
+    "taggedOnly": "Showing tagged versions only — untagged versions are hidden.",
+    "taggedOnlyCount": "Showing tagged versions only ({count} of {total}) — untagged versions are hidden.",
+    "versionsTruncated": "Only the most recent versions were scanned; older tagged versions may not appear.",
     "versionsError": "Failed to load versions."
   },
   "starred": {

@@ -7,6 +7,7 @@ const githubAuthUtils = await import('../server/utils/github-auth-utils');
 mock.module('#server/utils/github-auth-utils', () => ({ ...githubAuthUtils }));
 
 const {
+  collectTaggedPackageVersions,
   isPackageType,
   listAccountPackages,
   listPackagesAcrossTypes,
@@ -229,6 +230,71 @@ describe('mapGitHubPackageVersionToSummary', () => {
   test('rejects payloads without a name', () => {
     expect(mapGitHubPackageVersionToSummary({ id: 'v1', name: '' })).toBeNull();
     expect(mapGitHubPackageVersionToSummary(undefined)).toBeNull();
+  });
+});
+
+describe('collectTaggedPackageVersions', () => {
+  const makeVersion = (id: string, tags: string[]) => ({
+    id,
+    name: `sha256:${id}`,
+    metadata: { container: { tags } },
+  });
+
+  test('keeps only tagged versions and stops on a short page', async () => {
+    const requestedPages: number[] = [];
+    const octokit = {
+      request: async (_route: string, params: { page: number }) => {
+        requestedPages.push(params.page);
+        return {
+          data: [
+            makeVersion('tagged-1', ['latest', 'v1']),
+            makeVersion('untagged', []),
+            { id: 'invalid', name: '' },
+            makeVersion('tagged-2', ['v0.9']),
+          ],
+          headers: {},
+        };
+      },
+    } as never;
+
+    const { items, truncated } = await collectTaggedPackageVersions(
+      octokit,
+      'user',
+      'octocat',
+      'container',
+      'img'
+    );
+
+    expect(truncated).toBe(false);
+    expect(requestedPages).toEqual([1]);
+    expect(items.map((item) => item.id)).toEqual(['tagged-1', 'tagged-2']);
+    expect(items[0]?.tags).toEqual(['latest', 'v1']);
+  });
+
+  test('flags truncation after scanning the page cap of full pages', async () => {
+    // Alternate tagged/untagged so filtering is also exercised across pages.
+    const fullPage = Array.from({ length: 100 }, (_, index) =>
+      makeVersion(`v${index}`, index % 2 === 0 ? ['tag'] : [])
+    );
+    let requests = 0;
+    const octokit = {
+      request: async () => {
+        requests += 1;
+        return { data: fullPage, headers: {} };
+      },
+    } as never;
+
+    const { items, truncated } = await collectTaggedPackageVersions(
+      octokit,
+      'self',
+      'octocat',
+      'container',
+      'img'
+    );
+
+    expect(truncated).toBe(true);
+    expect(requests).toBe(3);
+    expect(items).toHaveLength(150);
   });
 });
 

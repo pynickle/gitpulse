@@ -12,6 +12,9 @@ export type PackageType = 'npm' | 'maven' | 'rubygems' | 'docker' | 'nuget' | 'c
 /** `all` fans out one request per package type server-side. */
 export type PackageTypeFilter = PackageType | 'all';
 
+/** Version list view: `tagged` keeps only versions carrying image tags. */
+export type PackageVersionFilter = 'tagged' | 'all';
+
 /** Source repository a package is linked to, when GitHub returns one. */
 export interface PackageRepositorySummary {
   fullName: string;
@@ -58,4 +61,6 @@ export interface PackageVersionSummary {
 export interface PackageVersionListResponse {
   items: PackageVersionSummary[];
   pagination: UserConnectionPaginationMeta;
+  /** True when the tagged-only scan stopped at its version fetch cap. */
+  truncated: boolean;
 }
