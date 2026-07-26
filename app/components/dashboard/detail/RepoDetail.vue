@@ -17,6 +17,7 @@ import {
   LayoutGridIcon,
   Loader2Icon,
   StarIcon,
+  TagIcon,
   XIcon,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, shallowRef, watch, type Component } from 'vue';
@@ -123,6 +124,7 @@ const copy = computed(() => {
       public: '公开',
       pushed: '最近推送',
       readme: 'README',
+      releases: '发布',
       repository: '仓库',
       source: '链接',
       star: 'Star',
@@ -158,6 +160,7 @@ const copy = computed(() => {
     public: 'Public',
     pushed: 'Pushed',
     readme: 'README',
+    releases: 'Releases',
     repository: 'Repository',
     source: 'Links',
     star: 'Star',
@@ -493,6 +496,16 @@ const aboutItems = computed(() => {
       ...buildRepoFileNavigation(licensePath),
     });
   }
+
+  items.push({
+    label: copy.value.releases,
+    value: t('releasesPage.viewReleases'),
+    icon: TagIcon,
+    to: localePath({
+      path: '/dashboard/releases',
+      query: { repo: `${props.owner}/${props.repo}` },
+    }),
+  });
 
   items.push({
     label: copy.value.branch,

@@ -9,6 +9,7 @@ export type PageType =
   | 'pull-request-review'
   | 'discussion'
   | 'release'
+  | 'releases-list'
   | 'repository'
   | 'notification'
   | 'file';
@@ -143,6 +144,14 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
+  const navigateToReleasesList = (owner: string, repo: string, tab?: string) => {
+    const entry: NavigationEntry = {
+      type: 'releases-list',
+      data: { owner, repo, tab },
+    };
+    pushEntry(entry);
+  };
+
   const navigateToRepo = (owner: string, repo: string, tab?: string, branch?: string) => {
     const entry: NavigationEntry = {
       type: 'repository',
@@ -199,6 +208,7 @@ export function useNavigationHistory() {
     navigateToPullRequestReview,
     navigateToDiscussion,
     navigateToRelease,
+    navigateToReleasesList,
     navigateToRepo,
     navigateToFile,
     goBack,

@@ -18,6 +18,20 @@ export interface ReleaseAsset {
   updated_at?: string;
 }
 
+export interface ReleaseListItem {
+  id: number;
+  tag_name: string;
+  name?: string | null;
+  draft?: boolean;
+  prerelease?: boolean;
+  created_at?: string;
+  published_at?: string | null;
+  html_url?: string;
+  author?: ReleaseAuthor | null;
+  assets_count: number;
+  download_count: number;
+}
+
 export interface ReleaseDetailPayload {
   id: number | string;
   tag_name: string;

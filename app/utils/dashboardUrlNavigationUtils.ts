@@ -49,6 +49,7 @@ export interface DashboardNavigationEntry {
     | 'pull-request-review'
     | 'discussion'
     | 'release'
+    | 'releases-list'
     | 'repository'
     | 'notification'
     | 'file';

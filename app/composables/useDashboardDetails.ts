@@ -287,6 +287,15 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       return;
     }
 
+    // The releases list lives on its own child page, not behind a dashboard query.
+    if (entry.type === 'releases-list' && entry.data?.owner && entry.data.repo) {
+      await router.push({
+        path: localePath('/dashboard/releases'),
+        query: { repo: serializeDashboardRepoTarget(entry.data.owner, entry.data.repo) },
+      });
+      return;
+    }
+
     const query = buildDashboardQueryFromNavigationEntry(entry, {
       defaultTab: currentRouteTab.value,
       repositoryTab: currentRouteTab.value,
@@ -348,6 +357,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     };
   });
   const activeRepoBranch = computed(() => getQueryParamValue(route.query.branch) || undefined);
+  // Child pages under /dashboard/* (starred, releases, ...) own their view; detail
+  // query keys there (e.g. `repo` on /dashboard/releases) must not drive the panels.
+  const isDashboardChildRoute = computed(() => {
+    return !route.path.replace(/\/$/, '').endsWith('/dashboard');
+  });
   const isPRReviewRoute = computed(() => Boolean(activePRReviewTarget.value));
   const isFileBrowsingRoute = computed(() =>
     Boolean(activeRepoTarget.value && Object.hasOwn(route.query, 'path'))
@@ -895,6 +909,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       route.query.repo,
       route.query.path,
       route.query.branch,
+      isDashboardChildRoute.value,
       sessionReady.value,
       loggedIn.value,
     ],
@@ -908,6 +923,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       }
 
       if (!loggedIn.value) {
+        closeAllDetails();
+        return;
+      }
+
+      if (isDashboardChildRoute.value) {
         closeAllDetails();
         return;
       }

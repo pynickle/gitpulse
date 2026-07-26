@@ -923,5 +923,21 @@
     "empty": "你还没有为任何仓库加星标。",
     "error": "加载已加星标的仓库失败。",
     "retry": "重试"
+  },
+  "releasesPage": {
+    "pageTitle": "{repo} 的 Releases",
+    "heading": "发布",
+    "viewReleases": "查看全部发布",
+    "openRepo": "打开仓库",
+    "loadingTitle": "正在加载发布列表",
+    "loadingSubtitle": "正在从 GitHub 获取发布信息",
+    "empty": "该仓库还没有任何发布。",
+    "error": "加载发布列表失败。",
+    "retry": "重试",
+    "noRepo": "未指定仓库。",
+    "latest": "最新",
+    "filterLabel": "按类型筛选发布",
+    "filterStable": "正式版",
+    "emptyFiltered": "当前页没有符合该筛选条件的发布。"
   }
 }

@@ -923,5 +923,21 @@
     "empty": "You haven't starred any repositories yet.",
     "error": "Failed to load starred repositories.",
     "retry": "Retry"
+  },
+  "releasesPage": {
+    "pageTitle": "Releases · {repo}",
+    "heading": "Releases",
+    "viewReleases": "View all releases",
+    "openRepo": "Open repository",
+    "loadingTitle": "Loading releases",
+    "loadingSubtitle": "Fetching releases from GitHub",
+    "empty": "This repository has no releases yet.",
+    "error": "Failed to load releases.",
+    "retry": "Retry",
+    "noRepo": "No repository specified.",
+    "latest": "Latest",
+    "filterLabel": "Filter releases by type",
+    "filterStable": "Stable",
+    "emptyFiltered": "No releases match this filter on the current page."
   }
 }
