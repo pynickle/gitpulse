@@ -21,6 +21,8 @@ export interface TabItem {
   id: string;
   groupId: string;
   name: string;
+  /** i18n key for builtin tab names; resolved into `name` by the composable. */
+  nameKey?: string;
   icon: Component;
   badgeCount?: number;
 }
@@ -30,11 +32,41 @@ const DEFAULT_GROUPS: MigratedTabGroup[] = [
 ];
 
 const DEFAULT_TABS: TabItem[] = [
-  { id: 'todos', groupId: BUILTIN_TAB_GROUP_ID, name: 'Todo', icon: ListTodoIcon },
-  { id: 'notifications', groupId: BUILTIN_TAB_GROUP_ID, name: 'Notifications', icon: BellIcon },
-  { id: 'issues', groupId: BUILTIN_TAB_GROUP_ID, name: 'Issues', icon: CircleDotIcon },
-  { id: 'pulls', groupId: BUILTIN_TAB_GROUP_ID, name: 'Pull Requests', icon: GitPullRequestIcon },
-  { id: 'repos', groupId: BUILTIN_TAB_GROUP_ID, name: 'Repositories', icon: BookMarkedIcon },
+  {
+    id: 'todos',
+    groupId: BUILTIN_TAB_GROUP_ID,
+    name: 'Todo',
+    nameKey: 'dashboard.tabs.todos',
+    icon: ListTodoIcon,
+  },
+  {
+    id: 'notifications',
+    groupId: BUILTIN_TAB_GROUP_ID,
+    name: 'Notifications',
+    nameKey: 'dashboard.tabs.notifications',
+    icon: BellIcon,
+  },
+  {
+    id: 'issues',
+    groupId: BUILTIN_TAB_GROUP_ID,
+    name: 'Issues',
+    nameKey: 'dashboard.tabs.issues',
+    icon: CircleDotIcon,
+  },
+  {
+    id: 'pulls',
+    groupId: BUILTIN_TAB_GROUP_ID,
+    name: 'Pull Requests',
+    nameKey: 'dashboard.tabs.pulls',
+    icon: GitPullRequestIcon,
+  },
+  {
+    id: 'repos',
+    groupId: BUILTIN_TAB_GROUP_ID,
+    name: 'Repositories',
+    nameKey: 'dashboard.tabs.repos',
+    icon: BookMarkedIcon,
+  },
 ];
 
 const DASHBOARD_TABS: DashboardTab[] = ['todos', 'notifications', 'issues', 'pulls', 'repos'];
@@ -64,9 +96,16 @@ export function useTabMigration(options: UseTabMigrationOptions = {}) {
     tabs: inputTabs = DEFAULT_TABS,
   } = options;
 
+  const { t } = useI18n();
+
   const groups = ref<MigratedTabGroup[]>(cloneGroups(inputGroups));
-  const tabs = ref<TabItem[]>(cloneTabs(inputTabs));
+  const rawTabs = ref<TabItem[]>(cloneTabs(inputTabs));
   const activeTabId = ref<string>(initialTab);
+
+  /** Builtin tab names resolve through i18n so the sidebar follows the locale. */
+  const tabs = computed<TabItem[]>(() => {
+    return rawTabs.value.map((tab) => (tab.nameKey ? { ...tab, name: t(tab.nameKey) } : tab));
+  });
 
   const currentTab = computed<DashboardTab>(() => {
     if (isDashboardTab(activeTabId.value)) {
@@ -120,7 +159,7 @@ export function useTabMigration(options: UseTabMigrationOptions = {}) {
   };
 
   const setBadgeCount = (tabId: string, badgeCount?: number) => {
-    const tab = tabs.value.find((item) => item.id === tabId);
+    const tab = rawTabs.value.find((item) => item.id === tabId);
     if (!tab || tab.badgeCount === badgeCount) {
       return;
     }
