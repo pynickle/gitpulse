@@ -36,8 +36,7 @@ import {
 } from '~/composables/useUserSettings';
 
 const { t } = useI18n();
-const localePath = useLocalePath();
-const router = useRouter();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 const {
   settings,
   loading,
@@ -319,8 +318,12 @@ const handleCodeFontInputKeydown = (e: KeyboardEvent) => {
   }
 };
 
-const handleBack = () => {
-  void router.push(localePath('/dashboard'));
+const handleBack = async () => {
+  await goBackToPreviousPage();
+};
+
+const handleHome = async () => {
+  await goToDashboardHome();
 };
 
 onMounted(() => {
@@ -333,10 +336,11 @@ onMounted(() => {
     :loading="loading"
     :loading-title="t('dashboard.settings.statusLoading')"
     loading-subtitle=""
-    :back-label="t('dashboard.settings.backToDashboard')"
-    home-label=""
-    :show-home-button="false"
+    :back-label="t('detailOverlay.back')"
+    :home-label="t('detailOverlay.home')"
+    :show-home-button="shouldShowHomeButton"
     @back="handleBack"
+    @home="handleHome"
   >
     <div class="settings">
       <!-- Sidebar -->

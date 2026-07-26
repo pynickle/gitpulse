@@ -352,7 +352,6 @@
     "settings": {
       "pageKicker": "Dashboard",
       "pageTitle": "Settings",
-      "backToDashboard": "Back to Dashboard",
       "fontsTitle": "Fonts",
       "appearanceTitle": "Appearance",
       "appearanceDescription": "Tune the dashboard typography and code highlighting.",
@@ -392,7 +391,6 @@
     },
     "tabsSettings": {
       "pageTitle": "Manage Views",
-      "backToDashboard": "Back to Dashboard",
       "heroSubtitle": "Group your saved GitHub searches into views that show up as dashboard tabs.",
       "builtinSectionTitle": "Built-in Views",
       "builtinLocked": "Locked",

@@ -57,7 +57,9 @@ export interface DashboardNavigationEntry {
     | 'profile'
     | 'package'
     | 'wiki'
-    | 'starred';
+    | 'starred'
+    | 'settings'
+    | 'tabs-settings';
   data?: {
     owner?: string;
     repo?: string;
@@ -336,6 +338,14 @@ export function buildChildPageRouteFromNavigationEntry(
       path: '/dashboard/starred',
       query: data?.user ? { user: data.user } : {},
     };
+  }
+
+  if (entry.type === 'settings') {
+    return { path: '/dashboard/settings', query: {} };
+  }
+
+  if (entry.type === 'tabs-settings') {
+    return { path: '/dashboard/tabs', query: {} };
   }
 
   return null;

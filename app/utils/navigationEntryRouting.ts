@@ -157,8 +157,16 @@ function childRouteToNavigationEntry(
     return { type: 'starred', data: user ? { user } : undefined };
   }
 
-  // Unrecognized child pages (settings, tabs, ...) do not participate in the
-  // logical history; they behave like the dashboard root.
+  if (segment === 'settings') {
+    return { type: 'settings' };
+  }
+
+  if (segment === 'tabs') {
+    return { type: 'tabs-settings' };
+  }
+
+  // Unrecognized child pages do not participate in the logical history; they
+  // behave like the dashboard root.
   return dashboardEntry();
 }
 

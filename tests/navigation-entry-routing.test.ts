@@ -200,9 +200,15 @@ describe('routeToNavigationEntry', () => {
     expect(derive('/dashboard/starred')).toEqual({ type: 'starred', data: undefined });
   });
 
+  test('derives settings and tabs-settings child pages', () => {
+    expect(derive('/dashboard/settings')).toEqual({ type: 'settings' });
+    expect(derive('/zh-cn/dashboard/settings')).toEqual({ type: 'settings' });
+    expect(derive('/dashboard/tabs')).toEqual({ type: 'tabs-settings' });
+    expect(derive('/zh-cn/dashboard/tabs')).toEqual({ type: 'tabs-settings' });
+  });
+
   test('treats unrecognized child pages as the dashboard', () => {
-    expect(derive('/dashboard/settings')).toEqual({ type: 'dashboard' });
-    expect(derive('/dashboard/tabs')).toEqual({ type: 'dashboard' });
+    expect(derive('/dashboard/unknown-page')).toEqual({ type: 'dashboard' });
   });
 });
 
@@ -250,6 +256,8 @@ describe('routeToNavigationEntry / resolveNavigationEntryRoute round trip', () =
     },
     { label: 'starred', entry: { type: 'starred', data: undefined } },
     { label: 'starred user', entry: { type: 'starred', data: { user: 'octocat' } } },
+    { label: 'settings', entry: { type: 'settings' } },
+    { label: 'tabs settings', entry: { type: 'tabs-settings' } },
   ];
 
   for (const owner of owners) {

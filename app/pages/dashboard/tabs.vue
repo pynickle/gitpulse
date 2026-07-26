@@ -4,15 +4,18 @@ import TabsSettingsPage from '~/components/dashboard/tabs-settings/TabsSettingsP
 import { useTabsSettingsPage } from '~/composables/useTabsSettingsPage';
 
 const { t } = useI18n();
-const localePath = useLocalePath();
-const router = useRouter();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 const tabsSettings = useTabsSettingsPage();
 
 // SEO: tabs settings page title
 usePageMeta(t('dashboard.tabsSettings.pageTitle'));
 
-const handleBack = () => {
-  void router.push(localePath('/dashboard'));
+const handleBack = async () => {
+  await goBackToPreviousPage();
+};
+
+const handleHome = async () => {
+  await goToDashboardHome();
 };
 </script>
 
@@ -21,11 +24,12 @@ const handleBack = () => {
     :loading="false"
     loading-title=""
     loading-subtitle=""
-    :back-label="t('dashboard.tabsSettings.backToDashboard')"
-    home-label=""
-    :show-home-button="false"
+    :back-label="t('detailOverlay.back')"
+    :home-label="t('detailOverlay.home')"
+    :show-home-button="shouldShowHomeButton"
     content-class="p-0"
     @back="handleBack"
+    @home="handleHome"
   >
     <TabsSettingsPage :model="tabsSettings" />
   </DashboardOverlayFrame>

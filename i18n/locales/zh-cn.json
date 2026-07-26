@@ -352,7 +352,6 @@
     "settings": {
       "pageKicker": "仪表盘",
       "pageTitle": "设置",
-      "backToDashboard": "返回仪表盘",
       "fontsTitle": "字体",
       "appearanceTitle": "外观",
       "appearanceDescription": "调整仪表盘字体和代码高亮样式。",
@@ -392,7 +391,6 @@
     },
     "tabsSettings": {
       "pageTitle": "管理视图",
-      "backToDashboard": "返回仪表盘",
       "heroSubtitle": "将保存的 GitHub 搜索整理成分组视图，它们会作为标签页出现在仪表盘中。",
       "builtinSectionTitle": "内置视图",
       "builtinLocked": "已锁定",
