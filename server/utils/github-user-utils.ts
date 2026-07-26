@@ -26,6 +26,25 @@ export function extractUsername(event: H3Event): string {
   return normalized;
 }
 
+/** Validate an optional username taken from a query param; null when absent, 400 when malformed. */
+export function parseOptionalGitHubUsername(value: unknown): string | null {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const normalized = typeof rawValue === 'string' ? rawValue.trim() : '';
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (!GITHUB_USERNAME_PATTERN.test(normalized)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid GitHub username',
+    });
+  }
+
+  return normalized;
+}
+
 /** Shape of a GitHub REST user object (public profile fields we surface). */
 export interface GitHubUserResponse {
   login?: string;

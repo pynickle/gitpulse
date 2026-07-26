@@ -17,6 +17,7 @@
           :groups="activityGroups"
           @avatar-click="handleProfileClick"
           @group-select="handleActivityGroupSelect"
+          @starred-click="handleStarredClick"
           @settings-click="handleSettingsClick"
           @logout-click="handleLogout"
         />
@@ -1167,6 +1168,10 @@ const handleSettingsClick = async () => {
 
 const handleProfileClick = async () => {
   await router.push(localePath('/dashboard/profile'));
+};
+
+const handleStarredClick = async () => {
+  await router.push(localePath('/dashboard/starred'));
 };
 
 const handleManageTabs = async () => {

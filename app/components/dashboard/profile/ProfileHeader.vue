@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { BuildingIcon, CalendarIcon, LinkIcon, MailIcon, MapPinIcon, UsersIcon } from '@lucide/vue';
+import {
+  BuildingIcon,
+  CalendarIcon,
+  LinkIcon,
+  MailIcon,
+  MapPinIcon,
+  StarIcon,
+  UsersIcon,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
@@ -115,6 +123,14 @@ const followingCount = computed(() => props.profile.following);
         <dd>{{ joinedLabel }}</dd>
       </div>
     </dl>
+
+    <NuxtLinkLocale
+      class="profile-header__github-link"
+      :to="{ path: '/dashboard/starred', query: { user: profile.login } }"
+    >
+      <StarIcon :size="15" />
+      <span>{{ t('starred.viewStarred') }}</span>
+    </NuxtLinkLocale>
 
     <a
       v-if="profile.htmlUrl"

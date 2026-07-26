@@ -910,5 +910,18 @@
       "less": "Less",
       "more": "More"
     }
+  },
+  "starred": {
+    "pageTitle": "Starred Repositories",
+    "pageTitleUser": "Repositories Starred by {login}",
+    "emptyUser": "This user hasn't starred any repositories yet.",
+    "viewStarred": "View starred repositories",
+    "openStarred": "Starred repositories",
+    "backToDashboard": "Back to Dashboard",
+    "loadingTitle": "Loading starred repositories",
+    "loadingSubtitle": "Fetching your stars from GitHub",
+    "empty": "You haven't starred any repositories yet.",
+    "error": "Failed to load starred repositories.",
+    "retry": "Retry"
   }
 }

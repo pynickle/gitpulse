@@ -58,6 +58,15 @@
       <div class="activity-bar__divider" role="separator" aria-hidden="true"></div>
       <button
         class="activity-bar__icon-btn"
+        :title="t('starred.openStarred')"
+        :aria-label="t('starred.openStarred')"
+        type="button"
+        @click="$emit('starred-click')"
+      >
+        <StarIcon :size="19" />
+      </button>
+      <button
+        class="activity-bar__icon-btn"
         title="Settings"
         aria-label="Settings"
         type="button"
@@ -88,6 +97,7 @@ import {
   ListTodoIcon,
   LogOutIcon,
   SettingsIcon,
+  StarIcon,
   UserIcon,
 } from '@lucide/vue';
 
@@ -109,6 +119,7 @@ const props = defineProps<{
 defineEmits<{
   'avatar-click': [];
   'group-select': [groupId: string];
+  'starred-click': [];
   'settings-click': [];
   'logout-click': [];
 }>();
