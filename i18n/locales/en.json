@@ -886,7 +886,6 @@
   "profile": {
     "pageTitle": "{login} · Profile",
     "pageTitleGeneric": "Profile",
-    "backToDashboard": "Back to Dashboard",
     "openProfile": "Open your profile",
     "viewOnGitHub": "View on GitHub",
     "noUser": "No user to display. Sign in to view your profile.",
@@ -936,7 +935,6 @@
   },
   "packageDetail": {
     "pageTitle": "{name} · Package",
-    "backToProfile": "Back to profile",
     "loadingTitle": "Loading package",
     "loadingSubtitle": "Fetching package details from GitHub",
     "error": "Failed to load package.",

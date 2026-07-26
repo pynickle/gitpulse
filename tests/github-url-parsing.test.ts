@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  buildChildPageRouteFromNavigationEntry,
   buildDashboardQueryFromNavigationEntry,
   buildDashboardTabSwitchQuery,
   buildGitHubUrlFromDashboardTarget,
@@ -451,6 +452,72 @@ describe('buildDashboardQueryFromNavigationEntry', () => {
       release: 'owner/repo',
       releaseTag: 'v1.2.3',
     });
+  });
+});
+
+describe('buildChildPageRouteFromNavigationEntry', () => {
+  test('routes releases list entries to the releases child page', () => {
+    expect(
+      buildChildPageRouteFromNavigationEntry({
+        type: 'releases-list',
+        data: { owner: 'owner', repo: 'repo' },
+      })
+    ).toEqual({
+      path: '/dashboard/releases',
+      query: { repo: 'owner/repo' },
+    });
+  });
+
+  test('routes profile entries to the profile child page', () => {
+    expect(
+      buildChildPageRouteFromNavigationEntry({
+        type: 'profile',
+        data: { user: 'octocat', tab: 'packages' },
+      })
+    ).toEqual({
+      path: '/dashboard/profile',
+      query: { user: 'octocat', tab: 'packages' },
+    });
+  });
+
+  test('routes package entries to the package child page', () => {
+    expect(
+      buildChildPageRouteFromNavigationEntry({
+        type: 'package',
+        data: {
+          user: 'octo-org',
+          packageType: 'container',
+          packageName: 'app-image',
+          packageOrganization: true,
+        },
+      })
+    ).toEqual({
+      path: '/dashboard/package',
+      query: {
+        user: 'octo-org',
+        type: 'container',
+        name: 'app-image',
+        account: 'organization',
+      },
+    });
+  });
+
+  test('returns null for dashboard-query entries and incomplete data', () => {
+    expect(buildChildPageRouteFromNavigationEntry(null)).toBeNull();
+    expect(buildChildPageRouteFromNavigationEntry({ type: 'dashboard' })).toBeNull();
+    expect(
+      buildChildPageRouteFromNavigationEntry({
+        type: 'issue',
+        data: { owner: 'owner', repo: 'repo', number: 1 },
+      })
+    ).toBeNull();
+    expect(buildChildPageRouteFromNavigationEntry({ type: 'profile' })).toBeNull();
+    expect(
+      buildChildPageRouteFromNavigationEntry({
+        type: 'package',
+        data: { user: 'octocat', packageType: 'npm' },
+      })
+    ).toBeNull();
   });
 });
 

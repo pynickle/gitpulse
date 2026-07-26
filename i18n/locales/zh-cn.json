@@ -886,7 +886,6 @@
   "profile": {
     "pageTitle": "{login} · 个人主页",
     "pageTitleGeneric": "个人主页",
-    "backToDashboard": "返回仪表盘",
     "openProfile": "打开我的主页",
     "viewOnGitHub": "在 GitHub 查看",
     "noUser": "暂无可显示的用户。请登录以查看你的主页。",
@@ -936,7 +935,6 @@
   },
   "packageDetail": {
     "pageTitle": "{name} · 软件包",
-    "backToProfile": "返回个人主页",
     "loadingTitle": "正在加载软件包",
     "loadingSubtitle": "正在从 GitHub 获取软件包信息",
     "error": "加载软件包失败。",

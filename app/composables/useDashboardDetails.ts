@@ -10,6 +10,7 @@ import type { RepositoryDetailPayload } from '#shared/types/repos';
 import createPullRequestDetailViewModel from '~/utils/createPullRequestDetailViewModel';
 import {
   DASHBOARD_DETAIL_QUERY_KEYS,
+  buildChildPageRouteFromNavigationEntry,
   buildDashboardQueryFromNavigationEntry,
   clearDashboardDetailQuery,
   createDashboardDiscussionTarget,
@@ -287,12 +288,11 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       return;
     }
 
-    // The releases list lives on its own child page, not behind a dashboard query.
-    if (entry.type === 'releases-list' && entry.data?.owner && entry.data.repo) {
-      await router.push({
-        path: localePath('/dashboard/releases'),
-        query: { repo: serializeDashboardRepoTarget(entry.data.owner, entry.data.repo) },
-      });
+    // Child pages (releases list, profile, package) live on their own routes,
+    // not behind a dashboard query.
+    const childRoute = buildChildPageRouteFromNavigationEntry(entry);
+    if (childRoute) {
+      await router.push({ path: localePath(childRoute.path), query: childRoute.query });
       return;
     }
 

@@ -52,7 +52,9 @@ export interface DashboardNavigationEntry {
     | 'releases-list'
     | 'repository'
     | 'notification'
-    | 'file';
+    | 'file'
+    | 'profile'
+    | 'package';
   data?: {
     owner?: string;
     repo?: string;
@@ -61,6 +63,10 @@ export interface DashboardNavigationEntry {
     path?: string;
     branch?: string;
     releaseRef?: ReleaseDashboardRef;
+    user?: string;
+    packageType?: string;
+    packageName?: string;
+    packageOrganization?: boolean;
   };
 }
 
@@ -204,6 +210,52 @@ export function buildDashboardQueryFromNavigationEntry(
       repo: serializeDashboardRepoTarget(data.owner, data.repo),
       path: data.path ?? '',
       branch: getNavigationBranch(entry, options),
+    };
+  }
+
+  return null;
+}
+
+export interface DashboardChildPageRoute {
+  path: string;
+  query: LocationQueryRaw;
+}
+
+/**
+ * Entries for pages that live on their own child route (releases list,
+ * profile, package) rather than behind a dashboard query. Callers must wrap
+ * `path` with `localePath()` before pushing.
+ */
+export function buildChildPageRouteFromNavigationEntry(
+  entry: DashboardNavigationEntry | null | undefined
+): DashboardChildPageRoute | null {
+  if (!entry) return null;
+
+  const data = entry.data;
+
+  if (entry.type === 'releases-list' && data?.owner && data.repo) {
+    return {
+      path: '/dashboard/releases',
+      query: { repo: serializeDashboardRepoTarget(data.owner, data.repo) },
+    };
+  }
+
+  if (entry.type === 'profile' && data?.user) {
+    return {
+      path: '/dashboard/profile',
+      query: { user: data.user, tab: data.tab },
+    };
+  }
+
+  if (entry.type === 'package' && data?.user && data.packageType && data.packageName) {
+    return {
+      path: '/dashboard/package',
+      query: {
+        user: data.user,
+        type: data.packageType,
+        name: data.packageName,
+        ...(data.packageOrganization ? { account: 'organization' } : {}),
+      },
     };
   }
 

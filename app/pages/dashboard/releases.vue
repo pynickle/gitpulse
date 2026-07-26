@@ -17,6 +17,7 @@ import DashboardPagination from '~/components/dashboard/DashboardPagination.vue'
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import {
+  buildChildPageRouteFromNavigationEntry,
   buildDashboardQueryFromNavigationEntry,
   serializeReleaseQuery,
 } from '~/utils/dashboardUrlNavigationUtils';
@@ -180,12 +181,11 @@ const handleRetry = async () => {
 const handleBack = async () => {
   const previousEntry = goBack();
 
-  // Back can land on another repo's releases list (list → list navigation).
-  if (previousEntry?.type === 'releases-list' && previousEntry.data?.owner) {
-    await router.push({
-      path: localePath('/dashboard/releases'),
-      query: { repo: `${previousEntry.data.owner}/${previousEntry.data.repo}` },
-    });
+  // Back can land on another child page (another repo's releases list, a
+  // profile, or a package page).
+  const childRoute = buildChildPageRouteFromNavigationEntry(previousEntry);
+  if (childRoute) {
+    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
     return;
   }
 

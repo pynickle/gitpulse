@@ -12,7 +12,9 @@ export type PageType =
   | 'releases-list'
   | 'repository'
   | 'notification'
-  | 'file';
+  | 'file'
+  | 'profile'
+  | 'package';
 
 export interface NavigationEntry {
   type: PageType;
@@ -24,6 +26,10 @@ export interface NavigationEntry {
     path?: string;
     branch?: string;
     releaseRef?: ReleaseDashboardRef;
+    user?: string;
+    packageType?: string;
+    packageName?: string;
+    packageOrganization?: boolean;
   };
 }
 
@@ -42,7 +48,11 @@ const isSameEntry = (left: NavigationEntry | null, right: NavigationEntry) => {
     left.data?.path === right.data?.path &&
     left.data?.branch === right.data?.branch &&
     left.data?.releaseRef?.kind === right.data?.releaseRef?.kind &&
-    getReleaseRefValue(left.data?.releaseRef) === getReleaseRefValue(right.data?.releaseRef)
+    getReleaseRefValue(left.data?.releaseRef) === getReleaseRefValue(right.data?.releaseRef) &&
+    left.data?.user === right.data?.user &&
+    left.data?.packageType === right.data?.packageType &&
+    left.data?.packageName === right.data?.packageName &&
+    left.data?.packageOrganization === right.data?.packageOrganization
   );
 };
 
@@ -160,6 +170,40 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
+  const navigateToProfile = (user: string, tab?: string) => {
+    const entry: NavigationEntry = {
+      type: 'profile',
+      data: { user, tab },
+    };
+
+    // Profile tab switches use router.replace, so they update the entry in
+    // place; only navigating to a different user's profile pushes history.
+    if (currentEntry.value?.type === 'profile' && currentEntry.value.data?.user === user) {
+      currentEntry.value = entry;
+      return;
+    }
+
+    pushEntry(entry);
+  };
+
+  const navigateToPackage = (
+    user: string,
+    packageType: string,
+    packageName: string,
+    packageOrganization?: boolean
+  ) => {
+    const entry: NavigationEntry = {
+      type: 'package',
+      data: {
+        user,
+        packageType,
+        packageName,
+        packageOrganization: packageOrganization || undefined,
+      },
+    };
+    pushEntry(entry);
+  };
+
   const navigateToFile = (owner: string, repo: string, path: string, branch?: string) => {
     const entry: NavigationEntry = {
       type: 'file',
@@ -211,6 +255,8 @@ export function useNavigationHistory() {
     navigateToReleasesList,
     navigateToRepo,
     navigateToFile,
+    navigateToProfile,
+    navigateToPackage,
     goBack,
     goToHome,
   };
