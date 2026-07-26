@@ -102,8 +102,11 @@
                   <div
                     v-for="todo in filteredTodoItems"
                     :key="todo.id"
-                    class="mb-4 mr-4"
+                    class="mb-4 mr-4 dashboard-list-row"
+                    role="button"
+                    tabindex="0"
                     @click="handleTodoOpen(todo.notification)"
+                    @keydown="handleListRowKeydown($event, () => handleTodoOpen(todo.notification))"
                   >
                     <AsyncNotificationItem
                       :notification="todo.notification"
@@ -123,8 +126,13 @@
                   <div
                     v-for="notification in filteredNotifications"
                     :key="notification.id"
-                    class="mb-4 mr-4"
+                    class="mb-4 mr-4 dashboard-list-row"
+                    role="button"
+                    tabindex="0"
                     @click="handleNotificationOpen(notification)"
+                    @keydown="
+                      handleListRowKeydown($event, () => handleNotificationOpen(notification))
+                    "
                   >
                     <AsyncNotificationItem
                       :notification="notification"
@@ -142,8 +150,11 @@
                   <div
                     v-for="issue in issues"
                     :key="issue.id"
-                    class="mb-4 mr-4"
+                    class="mb-4 mr-4 dashboard-list-row"
+                    role="button"
+                    tabindex="0"
                     @click="openSearchResult(issue)"
+                    @keydown="handleListRowKeydown($event, () => openSearchResult(issue))"
                   >
                     <AsyncIssuePrNotificationItem
                       v-if="
@@ -167,8 +178,11 @@
                   <div
                     v-for="issue in issues"
                     :key="issue.id"
-                    class="mb-4 mr-4"
+                    class="mb-4 mr-4 dashboard-list-row"
+                    role="button"
+                    tabindex="0"
                     @click="handleIssueOpen(issue)"
+                    @keydown="handleListRowKeydown($event, () => handleIssueOpen(issue))"
                   >
                     <AsyncIssuePrNotificationItem :item="issue" />
                   </div>
@@ -181,8 +195,11 @@
                   <div
                     v-for="pull in pulls"
                     :key="pull.id"
-                    class="mb-4 mr-4"
+                    class="mb-4 mr-4 dashboard-list-row"
+                    role="button"
+                    tabindex="0"
                     @click="handlePROpen(pull)"
+                    @keydown="handleListRowKeydown($event, () => handlePROpen(pull))"
                   >
                     <AsyncIssuePrNotificationItem :item="pull" />
                   </div>
@@ -891,6 +908,19 @@ const customTabEmptyMessage = computed(() => {
     : t('dashboard.customTab.empty');
 });
 
+/**
+ * Keyboard activation for list rows. Rows are divs with role="button" (real
+ * buttons would nest the cards' inner mark-as-read/todo buttons illegally),
+ * so Enter/Space must be wired manually. The currentTarget guard keeps inner
+ * button presses from also opening the row.
+ */
+const handleListRowKeydown = (event: KeyboardEvent, open: () => void) => {
+  if (event.target !== event.currentTarget) return;
+  if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+  event.preventDefault();
+  open();
+};
+
 const { repoFilterSuggestions, authorFilterSuggestions, labelFilterSuggestions } =
   useDashboardFilterSuggestions({
     notifications,
@@ -1440,6 +1470,16 @@ watch(
   color: var(--gitpulse-text-muted);
   font-size: 0.875rem;
   text-align: center;
+}
+
+.dashboard-list-row {
+  cursor: pointer;
+  border-radius: 12px;
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+  }
 }
 
 .dashboard-error-state {
