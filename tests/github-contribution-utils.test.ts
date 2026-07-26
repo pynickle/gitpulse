@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  fetchContributionCalendar,
   normalizeContributionCalendar,
   type GraphQLContributionResponse,
 } from '../server/utils/github-contribution-utils';
@@ -96,5 +97,37 @@ describe('normalizeContributionCalendar', () => {
       totalContributions: 0,
       weeks: [],
     });
+  });
+});
+
+describe('fetchContributionCalendar', () => {
+  test('resolves to an empty calendar when the login is not a GraphQL user (e.g. an org)', async () => {
+    const octokit = {
+      graphql: async () => {
+        throw Object.assign(
+          new Error("Could not resolve to a User with the login of 'PCL-Community'."),
+          { errors: [{ type: 'NOT_FOUND', path: ['user'] }] }
+        );
+      },
+    } as never;
+
+    expect(await fetchContributionCalendar(octokit, 'PCL-Community')).toEqual({
+      totalContributions: 0,
+      weeks: [],
+    });
+  });
+
+  test('rethrows GraphQL failures that are not NOT_FOUND', async () => {
+    const octokit = {
+      graphql: async () => {
+        throw Object.assign(new Error('API rate limit exceeded'), {
+          errors: [{ type: 'RATE_LIMITED' }],
+        });
+      },
+    } as never;
+
+    await expect(fetchContributionCalendar(octokit, 'octocat')).rejects.toThrow(
+      'API rate limit exceeded'
+    );
   });
 });

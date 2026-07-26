@@ -11,7 +11,7 @@ const route = useRoute();
 const router = useRouter();
 const { user } = useUserSession();
 
-const VALID_TABS = new Set<ProfileTab>(['overview', 'followers', 'following']);
+const VALID_TABS = new Set<ProfileTab>(['overview', 'repositories', 'followers', 'following']);
 
 const sessionLogin = computed(() => user.value?.login ?? '');
 

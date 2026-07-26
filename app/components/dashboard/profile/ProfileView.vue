@@ -5,10 +5,11 @@ import { computed, toRef } from 'vue';
 import ContributionGraph from '~/components/dashboard/profile/ContributionGraph.vue';
 import ProfileHeader from '~/components/dashboard/profile/ProfileHeader.vue';
 import ProfileReadme from '~/components/dashboard/profile/ProfileReadme.vue';
+import ProfileRepositoryList from '~/components/dashboard/profile/ProfileRepositoryList.vue';
 import UserConnectionList from '~/components/dashboard/profile/UserConnectionList.vue';
 import { useUserProfile } from '~/composables/useUserProfile';
 
-export type ProfileTab = 'overview' | 'followers' | 'following';
+export type ProfileTab = 'overview' | 'repositories' | 'followers' | 'following';
 
 const props = defineProps<{
   username: string;
@@ -26,6 +27,7 @@ const {
   profile,
   readme,
   contributions,
+  organizations,
   loadingProfile,
   loadingReadme,
   loadingContributions,
@@ -36,6 +38,11 @@ const {
 
 const tabs = computed(() => [
   { id: 'overview' as const, label: t('profile.tabs.overview') },
+  {
+    id: 'repositories' as const,
+    label: t('profile.tabs.repositories'),
+    count: profile.value?.publicRepos,
+  },
   {
     id: 'followers' as const,
     label: t('profile.tabs.followers'),
@@ -48,8 +55,13 @@ const tabs = computed(() => [
   },
 ]);
 
+// Organizations are not GraphQL `user`s and have no contribution wall on GitHub either.
+const isOrganization = computed(() => profile.value?.type === 'Organization');
+
 const showOverviewSkeleton = computed(
-  () => tab.value === 'overview' && (loadingReadme.value || loadingContributions.value)
+  () =>
+    tab.value === 'overview' &&
+    (loadingReadme.value || (!isOrganization.value && loadingContributions.value))
 );
 </script>
 
@@ -69,7 +81,11 @@ const showOverviewSkeleton = computed(
 
     <div v-else-if="profile" class="profile-view__layout">
       <aside class="profile-view__sidebar">
-        <ProfileHeader :profile="profile" @show-connections="tab = $event" />
+        <ProfileHeader
+          :profile="profile"
+          :organizations="organizations"
+          @show-connections="tab = $event"
+        />
       </aside>
 
       <div class="profile-view__main">
@@ -99,15 +115,23 @@ const showOverviewSkeleton = computed(
           <template v-else>
             <ProfileReadme :login="profile.login" :readme="readme" />
 
-            <ContributionGraph v-if="contributions" :calendar="contributions" />
-            <div
-              v-else-if="contributionsError"
-              class="profile-view__status profile-view__status--error profile-view__status--inline"
-            >
-              <p>{{ contributionsError }}</p>
-            </div>
+            <template v-if="!isOrganization">
+              <ContributionGraph v-if="contributions" :calendar="contributions" />
+              <div
+                v-else-if="contributionsError"
+                class="profile-view__status profile-view__status--error profile-view__status--inline"
+              >
+                <p>{{ contributionsError }}</p>
+              </div>
+            </template>
           </template>
         </div>
+
+        <ProfileRepositoryList
+          v-else-if="tab === 'repositories'"
+          :username="profile.login"
+          :empty-label="t('profile.emptyRepositories')"
+        />
 
         <UserConnectionList
           v-else

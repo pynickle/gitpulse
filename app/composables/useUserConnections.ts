@@ -1,8 +1,8 @@
 import { computed, ref, shallowRef, watch, type Ref } from 'vue';
 
 import type {
-  UserConnectionListResponse,
   UserConnectionPaginationMeta,
+  UserRepositorySummary,
   UserSummary,
 } from '#shared/types/users';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
@@ -10,12 +10,20 @@ import createSessionLruCache from '~/utils/sessionLruCache';
 
 export type UserConnectionRelation = 'followers' | 'following';
 
+/** Paginated `/api/users/{username}/*` list segments served with the shared pagination meta. */
+type UserListPath = UserConnectionRelation | 'repos';
+
 const DEFAULT_PER_PAGE = 30;
-/** Per list query (username/relation): keep recent pages for instant back-nav. */
+/** Per list query (username/path): keep recent pages for instant back-nav. */
 const MAX_CACHED_PAGES = 8;
 
-interface ConnectionPageCacheEntry {
-  items: UserSummary[];
+interface UserListPageResponse<TItem> {
+  items: TItem[];
+  pagination: UserConnectionPaginationMeta;
+}
+
+interface UserListPageCacheEntry<TItem> {
+  items: TItem[];
   pagination: UserConnectionPaginationMeta;
 }
 
@@ -28,33 +36,32 @@ const createEmptyPagination = (page = 1): UserConnectionPaginationMeta => ({
   totalPages: null,
 });
 
-const buildListQueryKey = (username: string, relation: UserConnectionRelation) =>
-  `${username}:${relation}`;
+const buildListQueryKey = (username: string, path: UserListPath) => `${username}:${path}`;
 
 const buildPageCacheKey = (queryKey: string, page: number) => `${queryKey}:p${page}`;
 
 /**
- * Paginated followers/following list for the profile connections panel.
+ * Paginated `/api/users/{username}/{path}` list for the profile panels.
  * Mirrors {@link useRepoIssuePrList}: session page cache, request-id guarding,
  * and no traffic while username is empty (panel not active).
  */
-export function useUserConnections(
+function useUserPagedList<TItem>(
   username: Ref<string> | (() => string),
-  relation: Ref<UserConnectionRelation> | (() => UserConnectionRelation)
+  path: Ref<UserListPath> | (() => UserListPath)
 ) {
   const apiFetch = useGitPulseApiFetch();
 
   const resolveUsername = () => (typeof username === 'function' ? username() : username.value);
-  const resolveRelation = () => (typeof relation === 'function' ? relation() : relation.value);
+  const resolvePath = () => (typeof path === 'function' ? path() : path.value);
 
-  const items = shallowRef<UserSummary[]>([]);
+  const items = shallowRef<TItem[]>([]);
   const loading = ref(false);
   const error = ref('');
   const pagination = ref<UserConnectionPaginationMeta>(createEmptyPagination());
   let requestId = 0;
 
   // Lives for the lifetime of this composable instance (profile page session).
-  const pageCache = createSessionLruCache<ConnectionPageCacheEntry>(MAX_CACHED_PAGES);
+  const pageCache = createSessionLruCache<UserListPageCacheEntry<TItem>>(MAX_CACHED_PAGES);
 
   const hasItems = computed(() => items.value.length > 0);
 
@@ -68,7 +75,7 @@ export function useUserConnections(
     );
   });
 
-  const applyPage = (entry: ConnectionPageCacheEntry) => {
+  const applyPage = (entry: UserListPageCacheEntry<TItem>) => {
     items.value = entry.items;
     pagination.value = entry.pagination;
     error.value = '';
@@ -77,7 +84,7 @@ export function useUserConnections(
 
   const fetchPage = async (page = 1, options: { force?: boolean } = {}) => {
     const currentUsername = resolveUsername().trim();
-    const currentRelation = resolveRelation();
+    const currentPath = resolvePath();
 
     if (!currentUsername) {
       items.value = [];
@@ -87,7 +94,7 @@ export function useUserConnections(
       return;
     }
 
-    const queryKey = buildListQueryKey(currentUsername, currentRelation);
+    const queryKey = buildListQueryKey(currentUsername, currentPath);
     const cacheKey = buildPageCacheKey(queryKey, page);
 
     if (!options.force) {
@@ -111,8 +118,8 @@ export function useUserConnections(
     });
 
     try {
-      const data = await apiFetch<UserConnectionListResponse>(
-        `/api/users/${encodeURIComponent(currentUsername)}/${currentRelation}?${searchParams.toString()}`
+      const data = await apiFetch<UserListPageResponse<TItem>>(
+        `/api/users/${encodeURIComponent(currentUsername)}/${currentPath}?${searchParams.toString()}`
       );
 
       if (nextRequestId !== requestId) return;
@@ -126,7 +133,7 @@ export function useUserConnections(
         totalPages: data.pagination?.totalPages ?? null,
       };
       const nextItems = Array.isArray(data.items) ? data.items : [];
-      const entry: ConnectionPageCacheEntry = {
+      const entry: UserListPageCacheEntry<TItem> = {
         items: nextItems,
         pagination: nextPagination,
       };
@@ -156,7 +163,7 @@ export function useUserConnections(
   };
 
   watch(
-    () => [resolveUsername(), resolveRelation()] as const,
+    () => [resolveUsername(), resolvePath()] as const,
     ([nextUsername]) => {
       if (!nextUsername) {
         // Panel inactive — keep last snapshot + session cache; no fetch.
@@ -164,7 +171,7 @@ export function useUserConnections(
         return;
       }
 
-      // Relation switches and panel return — restore from session page cache when possible.
+      // Path switches and panel return — restore from session page cache when possible.
       void fetchPage(1);
     },
     { immediate: true }
@@ -181,4 +188,17 @@ export function useUserConnections(
     goToPage,
     refresh,
   };
+}
+
+/** Paginated followers/following list for the profile connections panel. */
+export function useUserConnections(
+  username: Ref<string> | (() => string),
+  relation: Ref<UserConnectionRelation> | (() => UserConnectionRelation)
+) {
+  return useUserPagedList<UserSummary>(username, relation);
+}
+
+/** Paginated public repository list for the profile "Repositories" tab (users and orgs). */
+export function useUserRepositories(username: Ref<string> | (() => string)) {
+  return useUserPagedList<UserRepositorySummary>(username, () => 'repos');
 }

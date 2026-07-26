@@ -11,14 +11,20 @@ import {
 import { computed } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
-import type { UserProfilePayload } from '#shared/types/users';
+import type { UserOrganizationSummary, UserProfilePayload } from '#shared/types/users';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
 type ProfileConnectionTab = 'followers' | 'following';
 
-const props = defineProps<{
-  profile: UserProfilePayload;
-}>();
+const props = withDefaults(
+  defineProps<{
+    profile: UserProfilePayload;
+    organizations?: UserOrganizationSummary[];
+  }>(),
+  {
+    organizations: () => [],
+  }
+);
 
 const emit = defineEmits<{
   (e: 'show-connections', tab: ProfileConnectionTab): void;
@@ -142,6 +148,24 @@ const followingCount = computed(() => props.profile.following);
       <GitHubIcon :size="15" />
       <span>{{ t('profile.viewOnGitHub') }}</span>
     </a>
+
+    <section v-if="organizations.length" class="profile-header__orgs">
+      <h2 class="profile-header__orgs-title">{{ t('profile.organizations') }}</h2>
+      <ul class="profile-header__orgs-list">
+        <li v-for="org in organizations" :key="org.login">
+          <a
+            :href="org.htmlUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="profile-header__org"
+            :title="org.description ? `${org.login} — ${org.description}` : org.login"
+            :aria-label="org.login"
+          >
+            <GitHubAvatar :src="org.avatarUrl" :alt="org.login" size="32" />
+          </a>
+        </li>
+      </ul>
+    </section>
   </header>
 </template>
 
@@ -283,6 +307,48 @@ const followingCount = computed(() => props.profile.following);
   }
 }
 
+.profile-header__orgs {
+  margin-top: 0.25rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--gitpulse-border);
+}
+
+.profile-header__orgs-title {
+  margin: 0 0 0.6rem;
+  color: var(--gitpulse-text-strong);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.profile-header__orgs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-header__org {
+  display: inline-flex;
+  border-radius: 6px;
+
+  // GitHub renders organization avatars as rounded squares, not circles
+  :deep(.github-avatar) {
+    border-radius: 6px;
+  }
+
+  &:hover :deep(.github-avatar),
+  &:focus-visible :deep(.github-avatar) {
+    box-shadow: 0 0 0 2px var(--gitpulse-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
 @media (max-width: 1023px) {
   .profile-header {
     align-items: center;
@@ -295,6 +361,10 @@ const followingCount = computed(() => props.profile.following);
 
   .profile-header__meta {
     align-items: center;
+  }
+
+  .profile-header__orgs-list {
+    justify-content: center;
   }
 }
 </style>

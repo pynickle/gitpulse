@@ -4,7 +4,9 @@ import { getGitHubClient } from '#server/utils/github-auth-utils';
 import { buildLinkedPaginationMeta } from '#server/utils/github-pagination';
 import type {
   UserConnectionListResponse,
+  UserOrganizationSummary,
   UserProfilePayload,
+  UserRepositorySummary,
   UserSummary,
 } from '#shared/types/users';
 
@@ -107,6 +109,76 @@ export function mapGitHubUserToSummary(user: GitHubUserResponse): UserSummary | 
     id: user.id ?? login,
     avatarUrl: toNonEmptyString(user.avatar_url),
     htmlUrl: toNonEmptyString(user.html_url),
+  };
+}
+
+/** Shape of a GitHub REST repository object (fields the profile repo list surfaces). */
+export interface GitHubRepositoryResponse {
+  id?: number | string;
+  name?: string;
+  full_name?: string;
+  description?: string | null;
+  language?: string | null;
+  stargazers_count?: number;
+  watchers_count?: number;
+  forks_count?: number;
+  private?: boolean;
+  fork?: boolean;
+  archived?: boolean;
+  owner?: { login?: string | null } | null;
+}
+
+export function mapGitHubRepositoryToSummary(
+  repo: GitHubRepositoryResponse
+): UserRepositorySummary | null {
+  const name = toNonEmptyString(repo.name);
+  if (!name) {
+    return null;
+  }
+
+  const ownerLogin = toNonEmptyString(repo.owner?.login);
+  const fullName =
+    toNonEmptyString(repo.full_name) ?? (ownerLogin ? `${ownerLogin}/${name}` : name);
+
+  return {
+    id: repo.id ?? fullName,
+    name,
+    full_name: fullName,
+    description: toNonEmptyString(repo.description),
+    language: toNonEmptyString(repo.language),
+    stargazers_count: toCount(repo.stargazers_count),
+    watchers_count: toCount(repo.watchers_count),
+    forks_count: toCount(repo.forks_count),
+    private: Boolean(repo.private),
+    fork: Boolean(repo.fork),
+    archived: Boolean(repo.archived),
+    owner: { login: ownerLogin ?? '' },
+  };
+}
+
+/** Shape of a GitHub REST organization object (from `/users/{username}/orgs`). */
+export interface GitHubOrganizationResponse {
+  login?: string;
+  id?: number | string;
+  avatar_url?: string | null;
+  description?: string | null;
+}
+
+/** `/users/{username}/orgs` has no `html_url`; the org page URL is derived from the login. */
+export function mapGitHubOrganizationToSummary(
+  org: GitHubOrganizationResponse
+): UserOrganizationSummary | null {
+  const login = toNonEmptyString(org.login);
+  if (!login) {
+    return null;
+  }
+
+  return {
+    login,
+    id: org.id ?? login,
+    avatarUrl: toNonEmptyString(org.avatar_url),
+    htmlUrl: `https://github.com/${encodeURIComponent(login)}`,
+    description: toNonEmptyString(org.description),
   };
 }
 

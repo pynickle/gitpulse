@@ -894,10 +894,13 @@
     "joined": "加入于 {date}",
     "followers": "关注者",
     "following": "正在关注",
+    "organizations": "组织",
     "emptyFollowers": "还没有关注者。",
     "emptyFollowing": "还没有关注任何人。",
+    "emptyRepositories": "还没有公开仓库。",
     "tabs": {
       "overview": "概览",
+      "repositories": "仓库",
       "followers": "关注者",
       "following": "正在关注"
     },

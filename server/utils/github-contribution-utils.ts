@@ -86,16 +86,37 @@ export function normalizeContributionCalendar(
   };
 }
 
+/** `octokit.graphql` rejections carry the GraphQL `errors` array on the thrown error. */
+const isGraphQLUserNotFoundError = (error: unknown): boolean => {
+  const errors = (error as { errors?: { type?: string }[] } | null)?.errors;
+  return Array.isArray(errors) && errors.some((entry) => entry?.type === 'NOT_FOUND');
+};
+
+/**
+ * Contribution calendar for a login. Organizations (and deleted accounts) are
+ * not GraphQL `user`s, so GitHub answers NOT_FOUND; those resolve to an empty
+ * calendar instead of throwing — orgs legitimately have no contribution wall.
+ */
 export async function fetchContributionCalendar(
   octokit: Octokit,
   login: string,
   range?: { from?: string; to?: string }
 ): Promise<ContributionCalendar> {
-  const response = await octokit.graphql<GraphQLContributionResponse>(CONTRIBUTION_CALENDAR_QUERY, {
-    login,
-    from: range?.from ?? null,
-    to: range?.to ?? null,
-  });
+  try {
+    const response = await octokit.graphql<GraphQLContributionResponse>(
+      CONTRIBUTION_CALENDAR_QUERY,
+      {
+        login,
+        from: range?.from ?? null,
+        to: range?.to ?? null,
+      }
+    );
 
-  return normalizeContributionCalendar(response);
+    return normalizeContributionCalendar(response);
+  } catch (error: unknown) {
+    if (isGraphQLUserNotFoundError(error)) {
+      return normalizeContributionCalendar({ user: null });
+    }
+    throw error;
+  }
 }

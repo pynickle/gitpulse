@@ -2,6 +2,8 @@ import { ref, shallowRef, watch, type Ref } from 'vue';
 
 import type {
   ContributionCalendar,
+  UserOrganizationsResponse,
+  UserOrganizationSummary,
   UserProfilePayload,
   UserReadmeResponse,
 } from '#shared/types/users';
@@ -11,17 +13,19 @@ interface UseUserProfileState {
   profile: Ref<UserProfilePayload | null>;
   readme: Ref<UserReadmeResponse | null>;
   contributions: Ref<ContributionCalendar | null>;
+  organizations: Ref<UserOrganizationSummary[]>;
   loadingProfile: Ref<boolean>;
   loadingReadme: Ref<boolean>;
   loadingContributions: Ref<boolean>;
+  loadingOrganizations: Ref<boolean>;
   profileError: Ref<string>;
   contributionsError: Ref<string>;
   refresh: () => Promise<void>;
 }
 
 /**
- * Loads a user's profile, profile README, and contribution calendar for the
- * profile page. Each surface tracks its own loading/error so a failed
+ * Loads a user's profile, profile README, contribution calendar, and public
+ * organizations for the profile page. Each surface tracks its own loading/error so a failed
  * contribution graph never blanks the header, and stale responses are dropped
  * via a per-username request id when the username switches mid-flight.
  *
@@ -35,10 +39,12 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
   const profile = shallowRef<UserProfilePayload | null>(null);
   const readme = shallowRef<UserReadmeResponse | null>(null);
   const contributions = shallowRef<ContributionCalendar | null>(null);
+  const organizations = shallowRef<UserOrganizationSummary[]>([]);
 
   const loadingProfile = ref(false);
   const loadingReadme = ref(false);
   const loadingContributions = ref(false);
+  const loadingOrganizations = ref(false);
 
   const profileError = ref('');
   const contributionsError = ref('');
@@ -49,11 +55,13 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
     profile.value = null;
     readme.value = null;
     contributions.value = null;
+    organizations.value = [];
     profileError.value = '';
     contributionsError.value = '';
     loadingProfile.value = false;
     loadingReadme.value = false;
     loadingContributions.value = false;
+    loadingOrganizations.value = false;
   };
 
   const load = async () => {
@@ -73,24 +81,34 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
     loadingProfile.value = true;
     loadingReadme.value = true;
     loadingContributions.value = true;
+    loadingOrganizations.value = true;
     profileError.value = '';
     contributionsError.value = '';
 
     const profileRequest = apiFetch<UserProfilePayload>(`/api/users/${encodedLogin}`)
       .then((data) => {
-        if (!isCurrent()) return;
-        profile.value = data;
+        if (isCurrent()) profile.value = data;
+        return data;
       })
       .catch((error) => {
-        if (!isCurrent()) return;
-        profile.value = null;
-        profileError.value = getFetchErrorMessage(error, 'Failed to load user profile.');
+        if (isCurrent()) {
+          profile.value = null;
+          profileError.value = getFetchErrorMessage(error, 'Failed to load user profile.');
+        }
+        return null;
       })
       .finally(() => {
         if (isCurrent()) loadingProfile.value = false;
       });
 
-    const readmeRequest = apiFetch<UserReadmeResponse>(`/api/users/${encodedLogin}/readme`)
+    // Org READMEs live in `org/.github`, so the readme fetch waits for the
+    // profile response to learn the account type before picking the source.
+    const readmeRequest = profileRequest
+      .then((profileData) => {
+        if (!profileData) return null;
+        const accountQuery = profileData.type === 'Organization' ? '?account=organization' : '';
+        return apiFetch<UserReadmeResponse>(`/api/users/${encodedLogin}/readme${accountQuery}`);
+      })
       .then((data) => {
         if (!isCurrent()) return;
         readme.value = data;
@@ -123,7 +141,23 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
         if (isCurrent()) loadingContributions.value = false;
       });
 
-    await Promise.all([profileRequest, readmeRequest, contributionsRequest]);
+    const organizationsRequest = apiFetch<UserOrganizationsResponse>(
+      `/api/users/${encodedLogin}/orgs`
+    )
+      .then((data) => {
+        if (!isCurrent()) return;
+        organizations.value = data.items;
+      })
+      .catch(() => {
+        if (!isCurrent()) return;
+        // Organizations are a supplementary sidebar section. Fail quietly.
+        organizations.value = [];
+      })
+      .finally(() => {
+        if (isCurrent()) loadingOrganizations.value = false;
+      });
+
+    await Promise.all([profileRequest, readmeRequest, contributionsRequest, organizationsRequest]);
   };
 
   watch(resolveUsername, () => void load(), { immediate: true });
@@ -132,9 +166,11 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
     profile,
     readme,
     contributions,
+    organizations,
     loadingProfile,
     loadingReadme,
     loadingContributions,
+    loadingOrganizations,
     profileError,
     contributionsError,
     refresh: load,

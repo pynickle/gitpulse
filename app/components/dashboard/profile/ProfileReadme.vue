@@ -13,6 +13,15 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const hasContent = computed(() => Boolean(props.readme?.content?.trim()));
+
+/** Source repo for relative link/image resolution — `org/.github` for org READMEs. */
+const sourceRepo = computed(() => {
+  const [owner, name] = (props.readme?.repo ?? '').split('/');
+  return {
+    owner: owner || props.login,
+    name: name || props.login,
+  };
+});
 </script>
 
 <template>
@@ -24,8 +33,9 @@ const hasContent = computed(() => Boolean(props.readme?.content?.trim()));
     <div class="profile-readme__body content">
       <MarkdownRenderer
         :value="readme.content ?? ''"
-        :repo-owner="login"
-        :repo-name="login"
+        :repo-owner="sourceRepo.owner"
+        :repo-name="sourceRepo.name"
+        :base-path="readme.path ?? undefined"
         :branch="readme.branch ?? undefined"
       />
     </div>

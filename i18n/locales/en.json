@@ -894,10 +894,13 @@
     "joined": "Joined {date}",
     "followers": "followers",
     "following": "following",
+    "organizations": "Organizations",
     "emptyFollowers": "No followers yet.",
     "emptyFollowing": "Not following anyone yet.",
+    "emptyRepositories": "No public repositories yet.",
     "tabs": {
       "overview": "Overview",
+      "repositories": "Repositories",
       "followers": "Followers",
       "following": "Following"
     },

@@ -50,12 +50,55 @@ export interface UserConnectionListResponse {
   pagination: UserConnectionPaginationMeta;
 }
 
-/** Profile README (from the `username/username` special repository). */
+/**
+ * Compact repository entry for the profile "Repositories" tab. Field names
+ * stay GitHub-cased so repo card components consume it directly.
+ */
+export interface UserRepositorySummary {
+  id: number | string;
+  name: string;
+  full_name: string;
+  description: string | null;
+  language: string | null;
+  stargazers_count: number;
+  watchers_count: number;
+  forks_count: number;
+  private: boolean;
+  fork: boolean;
+  archived: boolean;
+  owner: { login: string };
+}
+
+export interface UserRepositoryListResponse {
+  items: UserRepositorySummary[];
+  pagination: UserConnectionPaginationMeta;
+}
+
+/** Public organization membership shown in the profile sidebar. */
+export interface UserOrganizationSummary {
+  login: string;
+  id: number | string;
+  avatarUrl: string | null;
+  htmlUrl: string;
+  description: string | null;
+}
+
+export interface UserOrganizationsResponse {
+  items: UserOrganizationSummary[];
+}
+
+/**
+ * Profile README. Users: the `username/username` special repository;
+ * organizations: `org/.github` at `profile/README.md`.
+ */
 export interface UserReadmeResponse {
   content: string | null;
   htmlUrl: string | null;
+  /** Source repository as `owner/name`. */
   repo: string | null;
   branch: string | null;
+  /** File path inside the source repo (e.g. `README.md`, `profile/README.md`); anchors relative links. */
+  path: string | null;
 }
 
 /** One day cell in the contribution wall. */
