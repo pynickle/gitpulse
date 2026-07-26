@@ -3,6 +3,7 @@ import {
   parseGitHubPollIntervalMs,
   type FreshnessResponse,
 } from '#server/utils/freshness-response-utils';
+import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import type { DashboardNotification } from '#shared/types/notifications';
 import { createCollectionFreshnessSignature } from '#shared/utils/freshness';
 
@@ -67,14 +68,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       pollIntervalMs: parseGitHubPollIntervalMs(headers['x-poll-interval']),
     } satisfies FreshnessResponse;
   } catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error;
-    }
-
     console.error('Error checking GitHub notification freshness:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to check notification freshness',
-    });
+    throwGitHubRouteError(error, 'Failed to check notification freshness');
   }
 });

@@ -1,3 +1,5 @@
+import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
+
 export default defineEventHandler(async (event) => {
   const threadIdParam = getRouterParam(event, 'thread_id') ?? '';
   const threadId = parsePaginationNumber(threadIdParam, 0);
@@ -18,9 +20,6 @@ export default defineEventHandler(async (event) => {
     return data;
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to mark notification as read',
-    });
+    throwGitHubRouteError(error, 'Failed to mark notification as read');
   }
 });

@@ -1,4 +1,5 @@
 import { getLatestUpdatedAt, type FreshnessResponse } from '#server/utils/freshness-response-utils';
+import { translateGitHubSearchError } from '#server/utils/github-search-route-utils';
 import { createCollectionFreshnessSignature } from '#shared/utils/freshness';
 import { getOneYearAgoSearchDate } from '#shared/utils/github-search-query';
 
@@ -32,14 +33,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       latestUpdatedAt: getLatestUpdatedAt(data.items),
     } satisfies FreshnessResponse;
   } catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error;
-    }
-
     console.error('Error checking GitHub issue freshness:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to check issue freshness',
-    });
+    translateGitHubSearchError(error, 'Failed to check issue freshness');
   }
 });

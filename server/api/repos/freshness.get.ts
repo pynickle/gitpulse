@@ -1,4 +1,5 @@
 import { getLatestUpdatedAt, type FreshnessResponse } from '#server/utils/freshness-response-utils';
+import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { createCollectionFreshnessSignature } from '#shared/utils/freshness';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
@@ -19,14 +20,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       latestUpdatedAt: getLatestUpdatedAt(repos),
     } satisfies FreshnessResponse;
   } catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error;
-    }
-
     console.error('Error checking GitHub repository freshness:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to check repository freshness',
-    });
+    throwGitHubRouteError(error, 'Failed to check repository freshness');
   }
 });

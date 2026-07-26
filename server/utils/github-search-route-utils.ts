@@ -7,7 +7,7 @@ import {
   removeGitHubSearchQualifiers,
 } from '#shared/utils/github-search-syntax';
 
-import { getGitHubErrorStatusCode } from './github-auth-utils';
+import { getGitHubErrorStatusCode, throwGitHubRouteError } from './github-auth-utils';
 import { getGitHubErrorHeader, normalizeSearchTotalCount } from './github-issue-search-route-utils';
 import { parsePaginationNumber } from './github-pagination';
 
@@ -140,8 +140,7 @@ export const translateGitHubSearchError = (error: unknown, fallbackMessage: stri
     });
   }
 
-  throw createError({
-    statusCode: 500,
-    statusMessage: fallbackMessage,
-  });
+  // Preserve remaining upstream statuses (401 revoked token, 404, ...) instead
+  // of collapsing them to 500; unknown errors still fall back to 500.
+  throwGitHubRouteError(error, fallbackMessage);
 };

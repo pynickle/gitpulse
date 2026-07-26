@@ -1,3 +1,5 @@
+import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
+
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
@@ -31,14 +33,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
     };
   } catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error;
-    }
-
     console.error('Error fetching GitHub notifications:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch notifications',
-    });
+    throwGitHubRouteError(error, 'Failed to fetch notifications');
   }
 });

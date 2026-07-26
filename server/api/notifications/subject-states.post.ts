@@ -1,3 +1,4 @@
+import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { parseNotificationSubjectTargetsBody } from '#server/utils/notification-subject-state-validation-utils';
 import type {
   NotificationLabel,
@@ -143,9 +144,6 @@ export default defineEventHandler(async (event) => {
     return { items };
   } catch (error) {
     console.error('Error fetching notification subject states:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch notification subject states',
-    });
+    throwGitHubRouteError(error, 'Failed to fetch notification subject states');
   }
 });

@@ -1,3 +1,4 @@
+import { translateGitHubSearchError } from '#server/utils/github-search-route-utils';
 import { getOneYearAgoSearchDate } from '#shared/utils/github-search-query';
 
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
@@ -39,14 +40,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
     };
   } catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error;
-    }
-
     console.error('Error fetching GitHub issues:', error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch issues',
-    });
+    translateGitHubSearchError(error, 'Failed to fetch issues');
   }
 });

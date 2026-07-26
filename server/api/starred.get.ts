@@ -1,3 +1,5 @@
+import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
+
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 import { parseOptionalGitHubUsername } from '../utils/github-user-utils';
 
@@ -33,15 +35,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
     };
   } catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) {
-      throw error;
-    }
-
     console.error('Error fetching starred repositories:', error);
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to fetch starred repositories',
-    });
+    throwGitHubRouteError(error, 'Failed to fetch starred repositories');
   }
 });
