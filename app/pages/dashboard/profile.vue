@@ -2,7 +2,10 @@
 import { computed } from 'vue';
 
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
-import ProfileView, { type ProfileTab } from '~/components/dashboard/profile/ProfileView.vue';
+import ProfileView, {
+  type ProfilePackageSelection,
+  type ProfileTab,
+} from '~/components/dashboard/profile/ProfileView.vue';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 
 const { t } = useI18n();
@@ -11,7 +14,13 @@ const route = useRoute();
 const router = useRouter();
 const { user } = useUserSession();
 
-const VALID_TABS = new Set<ProfileTab>(['overview', 'repositories', 'followers', 'following']);
+const VALID_TABS = new Set<ProfileTab>([
+  'overview',
+  'repositories',
+  'packages',
+  'followers',
+  'following',
+]);
 
 const sessionLogin = computed(() => user.value?.login ?? '');
 
@@ -52,6 +61,18 @@ const openUserProfile = async (login: string) => {
   });
 };
 
+const openPackage = async (selection: ProfilePackageSelection) => {
+  await router.push({
+    path: localePath('/dashboard/package'),
+    query: {
+      user: username.value,
+      type: selection.packageType,
+      name: selection.name,
+      ...(selection.isOrganization ? { account: 'organization' } : {}),
+    },
+  });
+};
+
 const handleBack = async () => {
   await router.push(localePath('/dashboard'));
 };
@@ -73,6 +94,7 @@ const handleBack = async () => {
       :tab="activeTab"
       @update:tab="updateTab"
       @select-user="openUserProfile"
+      @select-package="openPackage"
     />
     <div v-else class="profile-page__empty">
       <p>{{ t('profile.noUser') }}</p>

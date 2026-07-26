@@ -898,9 +898,11 @@
     "emptyFollowers": "No followers yet.",
     "emptyFollowing": "Not following anyone yet.",
     "emptyRepositories": "No public repositories yet.",
+    "emptyPackages": "No packages published yet.",
     "tabs": {
       "overview": "Overview",
       "repositories": "Repositories",
+      "packages": "Packages",
       "followers": "Followers",
       "following": "Following"
     },
@@ -913,6 +915,41 @@
       "less": "Less",
       "more": "More"
     }
+  },
+  "packages": {
+    "filterLabel": "Filter packages by type",
+    "types": {
+      "npm": "npm",
+      "maven": "Maven",
+      "rubygems": "RubyGems",
+      "docker": "Docker",
+      "nuget": "NuGet",
+      "container": "Container"
+    },
+    "versionCount": "{count} version | {count} versions",
+    "updated": "Updated {time}",
+    "visibility": {
+      "public": "Public",
+      "private": "Private",
+      "internal": "Internal"
+    }
+  },
+  "packageDetail": {
+    "pageTitle": "{name} · Package",
+    "backToProfile": "Back to profile",
+    "loadingTitle": "Loading package",
+    "loadingSubtitle": "Fetching package details from GitHub",
+    "error": "Failed to load package.",
+    "retry": "Retry",
+    "noPackage": "No package specified.",
+    "viewOnGitHub": "View on GitHub",
+    "repository": "Open repository",
+    "install": "Installation",
+    "createdAt": "Created {date}",
+    "updatedAt": "Last published {time}",
+    "versions": "Versions",
+    "emptyVersions": "No versions available.",
+    "versionsError": "Failed to load versions."
   },
   "starred": {
     "pageTitle": "Starred Repositories",

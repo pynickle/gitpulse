@@ -6,7 +6,7 @@ import {
 
 const githubOAuthHandler = defineOAuthGitHubEventHandler({
   config: {
-    scope: ['notifications', 'read:user', 'read:org', 'project', 'repo'],
+    scope: ['notifications', 'read:user', 'read:org', 'read:packages', 'project', 'repo'],
   },
   async onSuccess(event, { user, tokens }) {
     await establishGitHubSession(event, 'github', tokens.access_token, user, {

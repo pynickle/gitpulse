@@ -898,9 +898,11 @@
     "emptyFollowers": "还没有关注者。",
     "emptyFollowing": "还没有关注任何人。",
     "emptyRepositories": "还没有公开仓库。",
+    "emptyPackages": "还没有发布任何软件包。",
     "tabs": {
       "overview": "概览",
       "repositories": "仓库",
+      "packages": "软件包",
       "followers": "关注者",
       "following": "正在关注"
     },
@@ -913,6 +915,41 @@
       "less": "较少",
       "more": "较多"
     }
+  },
+  "packages": {
+    "filterLabel": "按类型筛选软件包",
+    "types": {
+      "npm": "npm",
+      "maven": "Maven",
+      "rubygems": "RubyGems",
+      "docker": "Docker",
+      "nuget": "NuGet",
+      "container": "Container"
+    },
+    "versionCount": "{count} 个版本",
+    "updated": "更新于 {time}",
+    "visibility": {
+      "public": "公开",
+      "private": "私有",
+      "internal": "内部"
+    }
+  },
+  "packageDetail": {
+    "pageTitle": "{name} · 软件包",
+    "backToProfile": "返回个人主页",
+    "loadingTitle": "正在加载软件包",
+    "loadingSubtitle": "正在从 GitHub 获取软件包信息",
+    "error": "加载软件包失败。",
+    "retry": "重试",
+    "noPackage": "未指定软件包。",
+    "viewOnGitHub": "在 GitHub 查看",
+    "repository": "打开仓库",
+    "install": "安装",
+    "createdAt": "创建于 {date}",
+    "updatedAt": "最近发布于 {time}",
+    "versions": "版本",
+    "emptyVersions": "暂无版本。",
+    "versionsError": "加载版本失败。"
   },
   "starred": {
     "pageTitle": "已加星标的仓库",

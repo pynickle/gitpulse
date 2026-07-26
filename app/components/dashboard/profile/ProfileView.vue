@@ -2,14 +2,23 @@
 import { AlertTriangleIcon, Loader2Icon } from '@lucide/vue';
 import { computed, toRef } from 'vue';
 
+import type { PackageSummary, PackageType } from '#shared/types/packages';
 import ContributionGraph from '~/components/dashboard/profile/ContributionGraph.vue';
 import ProfileHeader from '~/components/dashboard/profile/ProfileHeader.vue';
+import ProfilePackageList from '~/components/dashboard/profile/ProfilePackageList.vue';
 import ProfileReadme from '~/components/dashboard/profile/ProfileReadme.vue';
 import ProfileRepositoryList from '~/components/dashboard/profile/ProfileRepositoryList.vue';
 import UserConnectionList from '~/components/dashboard/profile/UserConnectionList.vue';
 import { useUserProfile } from '~/composables/useUserProfile';
 
-export type ProfileTab = 'overview' | 'repositories' | 'followers' | 'following';
+export type ProfileTab = 'overview' | 'repositories' | 'packages' | 'followers' | 'following';
+
+/** Everything the profile page needs to route to the package detail page. */
+export interface ProfilePackageSelection {
+  name: string;
+  packageType: PackageType;
+  isOrganization: boolean;
+}
 
 const props = defineProps<{
   username: string;
@@ -17,6 +26,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select-user', login: string): void;
+  (e: 'select-package', selection: ProfilePackageSelection): void;
 }>();
 
 const tab = defineModel<ProfileTab>('tab', { default: 'overview' });
@@ -43,6 +53,7 @@ const tabs = computed(() => [
     label: t('profile.tabs.repositories'),
     count: profile.value?.publicRepos,
   },
+  { id: 'packages' as const, label: t('profile.tabs.packages') },
   {
     id: 'followers' as const,
     label: t('profile.tabs.followers'),
@@ -57,6 +68,14 @@ const tabs = computed(() => [
 
 // Organizations are not GraphQL `user`s and have no contribution wall on GitHub either.
 const isOrganization = computed(() => profile.value?.type === 'Organization');
+
+const handlePackageSelect = (pkg: PackageSummary) => {
+  emit('select-package', {
+    name: pkg.name,
+    packageType: pkg.packageType,
+    isOrganization: isOrganization.value,
+  });
+};
 
 const showOverviewSkeleton = computed(
   () =>
@@ -131,6 +150,14 @@ const showOverviewSkeleton = computed(
           v-else-if="tab === 'repositories'"
           :username="profile.login"
           :empty-label="t('profile.emptyRepositories')"
+        />
+
+        <ProfilePackageList
+          v-else-if="tab === 'packages'"
+          :username="profile.login"
+          :is-organization="isOrganization"
+          :empty-label="t('profile.emptyPackages')"
+          @select-package="handlePackageSelect"
         />
 
         <UserConnectionList
