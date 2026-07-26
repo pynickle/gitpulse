@@ -41,6 +41,8 @@ type DragState = {
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton');
 const viewport = useTemplateRef<HTMLElement>('viewport');
 const diagram = useTemplateRef<HTMLElement>('diagram');
+const modalCard = useTemplateRef<HTMLElement>('modalCard');
+const focusTrap = createFocusTrapController();
 const renderState = shallowRef<RenderState>({ kind: 'loading' });
 const zoom = shallowRef(1);
 const panX = shallowRef(0);
@@ -201,6 +203,11 @@ function requestClose() {
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     requestClose();
+    return;
+  }
+
+  if (modalCard.value) {
+    focusTrap.trapTabKey(event, modalCard.value);
   }
 }
 
@@ -303,6 +310,7 @@ function onWheel(event: WheelEvent) {
 onMounted(async () => {
   openModal();
   hasOpenedModal.value = true;
+  focusTrap.capturePreviousFocus();
   document.addEventListener('keydown', onKeydown);
   window.addEventListener('resize', onResize);
   await nextTick();
@@ -322,6 +330,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize);
   cancelPendingPan();
   dragState.value = null;
+  focusTrap.restorePreviousFocus();
 
   if (hasOpenedModal.value) {
     closeModal();
@@ -333,7 +342,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="modal mermaid-viewer-modal is-active" role="dialog" aria-modal="true">
     <div class="modal-background" @click="requestClose" />
-    <div class="modal-card mermaid-viewer-modal__card">
+    <div ref="modalCard" class="modal-card mermaid-viewer-modal__card">
       <header class="modal-card-head mermaid-viewer-modal__head">
         <p class="modal-card-title mermaid-viewer-modal__title">
           {{ t('markdown.mermaid.title') }}

@@ -68,6 +68,8 @@ const selectedKeys = shallowRef(new Set<string>());
 const focusedKey = shallowRef<string | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const listRef = ref<HTMLDivElement | null>(null);
+const panelRef = ref<HTMLElement | null>(null);
+const focusTrap = createFocusTrapController();
 
 const focusSearchInput = () => {
   if (!import.meta.client) return;
@@ -220,16 +222,27 @@ watch(
 
 watch(
   () => props.isVisible,
-  (isVisible) => {
+  async (isVisible) => {
     if (isVisible) {
+      if (import.meta.client) focusTrap.capturePreviousFocus();
       searchQuery.value = '';
       selectedKeys.value = new Set(props.initialSelectedKeys);
       focusedKey.value = null;
       focusSearchInput();
+      return;
+    }
+
+    if (import.meta.client) {
+      await nextTick();
+      focusTrap.restorePreviousFocus();
     }
   },
   { immediate: true }
 );
+
+const handleOverlayKeydown = (event: KeyboardEvent) => {
+  if (panelRef.value) focusTrap.trapTabKey(event, panelRef.value);
+};
 </script>
 
 <template>
@@ -240,8 +253,15 @@ watch(
         class="reviewer-modal-overlay"
         @click.self="emit('close')"
         @keydown.escape="emit('close')"
+        @keydown="handleOverlayKeydown"
       >
-        <div class="reviewer-modal-panel" role="dialog" aria-modal="true" :aria-label="title">
+        <div
+          ref="panelRef"
+          class="reviewer-modal-panel"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="title"
+        >
           <div class="reviewer-modal-header">
             <h3 class="reviewer-modal-title">
               {{ title }}

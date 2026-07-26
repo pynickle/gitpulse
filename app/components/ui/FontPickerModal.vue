@@ -6,8 +6,15 @@
         class="font-modal-overlay"
         @click.self="emit('close')"
         @keydown.escape="emit('close')"
+        @keydown="handleOverlayKeydown"
       >
-        <div class="font-modal-panel" role="dialog" aria-modal="true" :aria-label="title">
+        <div
+          ref="panelRef"
+          class="font-modal-panel"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="title"
+        >
           <div class="font-modal-header">
             <h3 class="font-modal-title">{{ title }}</h3>
             <button
@@ -164,6 +171,8 @@ const emit = defineEmits<{
 const uid = Math.random().toString(36).slice(2, 8);
 const searchQuery = shallowRef('');
 const searchInputRef = ref<HTMLInputElement | null>(null);
+const panelRef = ref<HTMLElement | null>(null);
+const focusTrap = createFocusTrapController();
 
 // System font state (managed inside the modal so callers don't need to pre-load)
 const systemFonts = shallowRef<string[]>([]);
@@ -256,13 +265,24 @@ const loadSystemFonts = async () => {
 
 watch(
   () => props.isVisible,
-  (isVisible) => {
+  async (isVisible) => {
     if (isVisible) {
+      if (import.meta.client) focusTrap.capturePreviousFocus();
       searchQuery.value = '';
       nextTick(() => searchInputRef.value?.focus());
+      return;
+    }
+
+    if (import.meta.client) {
+      await nextTick();
+      focusTrap.restorePreviousFocus();
     }
   }
 );
+
+const handleOverlayKeydown = (event: KeyboardEvent) => {
+  if (panelRef.value) focusTrap.trapTabKey(event, panelRef.value);
+};
 </script>
 
 <style scoped lang="scss">
