@@ -54,7 +54,8 @@ export interface DashboardNavigationEntry {
     | 'notification'
     | 'file'
     | 'profile'
-    | 'package';
+    | 'package'
+    | 'wiki';
   data?: {
     owner?: string;
     repo?: string;
@@ -255,6 +256,16 @@ export function buildChildPageRouteFromNavigationEntry(
         type: data.packageType,
         name: data.packageName,
         ...(data.packageOrganization ? { account: 'organization' } : {}),
+      },
+    };
+  }
+
+  if (entry.type === 'wiki' && data?.owner && data.repo) {
+    return {
+      path: '/dashboard/wiki',
+      query: {
+        repo: serializeDashboardRepoTarget(data.owner, data.repo),
+        ...(data.path ? { page: data.path } : {}),
       },
     };
   }

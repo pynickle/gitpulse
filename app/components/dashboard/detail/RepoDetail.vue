@@ -2,6 +2,7 @@
 import {
   ArchiveIcon,
   BookmarkIcon,
+  BookOpenIcon,
   CircleDotIcon,
   CircleMinusIcon,
   EyeIcon,
@@ -138,6 +139,7 @@ const copy = computed(() => {
       watchNone: '仅被@时',
       watching: '关注',
       watchers: '关注者',
+      wiki: 'Wiki',
     };
   }
 
@@ -174,6 +176,7 @@ const copy = computed(() => {
     watchNone: 'Default',
     watching: 'Watching',
     watchers: 'Watchers',
+    wiki: 'Wiki',
   };
 });
 
@@ -506,6 +509,20 @@ const aboutItems = computed(() => {
       query: { repo: `${props.owner}/${props.repo}` },
     }),
   });
+
+  // Only public wikis are readable: there is no wiki REST API, so the wiki
+  // page scrapes the public wiki HTML and raw wiki host.
+  if (props.repository.has_wiki && !props.repository.private) {
+    items.push({
+      label: copy.value.wiki,
+      value: t('wikiPage.viewWiki'),
+      icon: BookOpenIcon,
+      to: localePath({
+        path: '/dashboard/wiki',
+        query: { repo: `${props.owner}/${props.repo}` },
+      }),
+    });
+  }
 
   items.push({
     label: copy.value.branch,

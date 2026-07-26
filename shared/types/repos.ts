@@ -30,6 +30,7 @@ export interface RepositoryDetailPayload {
   private?: boolean;
   fork?: boolean;
   archived?: boolean;
+  has_wiki?: boolean;
   homepage?: string | null;
   created_at?: string;
   updated_at?: string;

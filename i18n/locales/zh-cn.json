@@ -984,5 +984,23 @@
     "filterLabel": "按类型筛选发布",
     "filterStable": "正式版",
     "emptyFiltered": "当前页没有符合该筛选条件的发布。"
+  },
+  "wikiPage": {
+    "pageTitle": "{repo} 的 Wiki",
+    "heading": "Wiki",
+    "viewWiki": "浏览 Wiki",
+    "openRepo": "打开仓库",
+    "viewOnGitHub": "在 GitHub 查看",
+    "loadingTitle": "正在加载 Wiki",
+    "loadingSubtitle": "正在从 GitHub 获取 Wiki 页面",
+    "pagesTitle": "页面",
+    "toc": "目录",
+    "empty": "这个 Wiki 还没有任何页面。",
+    "unavailable": "无法访问该仓库的 Wiki，目前仅支持公开仓库的 Wiki。",
+    "error": "加载 Wiki 失败。",
+    "pageError": "加载该 Wiki 页面失败。",
+    "pageUnavailable": "此页面无法在这里渲染，请前往 GitHub 查看。",
+    "retry": "重试",
+    "noRepo": "未指定仓库。"
   }
 }

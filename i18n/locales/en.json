@@ -984,5 +984,23 @@
     "filterLabel": "Filter releases by type",
     "filterStable": "Stable",
     "emptyFiltered": "No releases match this filter on the current page."
+  },
+  "wikiPage": {
+    "pageTitle": "Wiki · {repo}",
+    "heading": "Wiki",
+    "viewWiki": "Browse wiki",
+    "openRepo": "Open repository",
+    "viewOnGitHub": "View on GitHub",
+    "loadingTitle": "Loading wiki",
+    "loadingSubtitle": "Fetching wiki pages from GitHub",
+    "pagesTitle": "Pages",
+    "toc": "Contents",
+    "empty": "This wiki has no pages yet.",
+    "unavailable": "This repository's wiki is not available. Only public wikis can be displayed.",
+    "error": "Failed to load the wiki.",
+    "pageError": "Failed to load this wiki page.",
+    "pageUnavailable": "This page can't be rendered here. View it on GitHub instead.",
+    "retry": "Retry",
+    "noRepo": "No repository specified."
   }
 }

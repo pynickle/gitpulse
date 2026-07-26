@@ -14,7 +14,8 @@ export type PageType =
   | 'notification'
   | 'file'
   | 'profile'
-  | 'package';
+  | 'package'
+  | 'wiki';
 
 export interface NavigationEntry {
   type: PageType;
@@ -204,6 +205,26 @@ export function useNavigationHistory() {
     pushEntry(entry);
   };
 
+  const navigateToWiki = (owner: string, repo: string, page?: string) => {
+    const entry: NavigationEntry = {
+      type: 'wiki',
+      data: { owner, repo, path: page },
+    };
+
+    // Page switches inside the same wiki update the entry in place; only
+    // navigating to a different repository's wiki pushes history.
+    if (
+      currentEntry.value?.type === 'wiki' &&
+      currentEntry.value.data?.owner === owner &&
+      currentEntry.value.data?.repo === repo
+    ) {
+      currentEntry.value = entry;
+      return;
+    }
+
+    pushEntry(entry);
+  };
+
   const navigateToFile = (owner: string, repo: string, path: string, branch?: string) => {
     const entry: NavigationEntry = {
       type: 'file',
@@ -257,6 +278,7 @@ export function useNavigationHistory() {
     navigateToFile,
     navigateToProfile,
     navigateToPackage,
+    navigateToWiki,
     goBack,
     goToHome,
   };
