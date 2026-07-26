@@ -136,6 +136,9 @@
                 </template>
 
                 <template v-else-if="selectedCustomTab">
+                  <div v-if="issues.length === 0" class="dashboard-empty-state">
+                    {{ customTabEmptyMessage }}
+                  </div>
                   <div
                     v-for="issue in issues"
                     :key="issue.id"
@@ -158,6 +161,9 @@
                 </template>
 
                 <template v-else-if="currentTab === 'issues'">
+                  <div v-if="issues.length === 0" class="dashboard-empty-state">
+                    {{ issuesEmptyMessage }}
+                  </div>
                   <div
                     v-for="issue in issues"
                     :key="issue.id"
@@ -169,6 +175,9 @@
                 </template>
 
                 <template v-else-if="currentTab === 'pulls'">
+                  <div v-if="pulls.length === 0" class="dashboard-empty-state">
+                    {{ pullsEmptyMessage }}
+                  </div>
                   <div
                     v-for="pull in pulls"
                     :key="pull.id"
@@ -180,6 +189,9 @@
                 </template>
 
                 <template v-else-if="currentTab === 'repos'">
+                  <div v-if="repos.length === 0" class="dashboard-empty-state">
+                    {{ reposEmptyMessage }}
+                  </div>
                   <div v-for="repo in repos" class="mb-4 mr-4" :key="repo.id">
                     <AsyncRepoItem :repo="repo" />
                   </div>
@@ -853,6 +865,30 @@ const todoEmptyMessage = computed(() => {
   return hasActiveVisibleFilters.value
     ? t('dashboard.todos.emptyFiltered')
     : t('dashboard.todos.empty');
+});
+
+const issuesEmptyMessage = computed(() => {
+  return hasActiveVisibleFilters.value
+    ? t('dashboard.issues.emptyFiltered')
+    : t('dashboard.issues.empty');
+});
+
+const pullsEmptyMessage = computed(() => {
+  return hasActiveVisibleFilters.value
+    ? t('dashboard.pulls.emptyFiltered')
+    : t('dashboard.pulls.empty');
+});
+
+const reposEmptyMessage = computed(() => {
+  return hasActiveVisibleFilters.value
+    ? t('dashboard.repos.emptyFiltered')
+    : t('dashboard.repos.empty');
+});
+
+const customTabEmptyMessage = computed(() => {
+  return hasActiveVisibleFilters.value
+    ? t('dashboard.customTab.emptyFiltered')
+    : t('dashboard.customTab.empty');
 });
 
 const { repoFilterSuggestions, authorFilterSuggestions, labelFilterSuggestions } =

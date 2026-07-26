@@ -577,6 +577,22 @@
       "addAction": "Add to todo",
       "removeAction": "Remove from todo"
     },
+    "issues": {
+      "empty": "No issues to show.",
+      "emptyFiltered": "No issues match the current filters."
+    },
+    "pulls": {
+      "empty": "No pull requests to show.",
+      "emptyFiltered": "No pull requests match the current filters."
+    },
+    "repos": {
+      "empty": "No repositories to show.",
+      "emptyFiltered": "No repositories match the current filters."
+    },
+    "customTab": {
+      "empty": "No results for this view.",
+      "emptyFiltered": "No results match the current filters."
+    },
     "widgets": {
       "stats": {
         "unread": "Unread",

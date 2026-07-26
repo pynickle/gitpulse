@@ -577,6 +577,22 @@
       "addAction": "加入待办事项",
       "removeAction": "从待办事项移除"
     },
+    "issues": {
+      "empty": "暂无议题。",
+      "emptyFiltered": "当前筛选条件下没有匹配的议题。"
+    },
+    "pulls": {
+      "empty": "暂无拉取请求。",
+      "emptyFiltered": "当前筛选条件下没有匹配的拉取请求。"
+    },
+    "repos": {
+      "empty": "暂无仓库。",
+      "emptyFiltered": "当前筛选条件下没有匹配的仓库。"
+    },
+    "customTab": {
+      "empty": "该视图暂无结果。",
+      "emptyFiltered": "当前筛选条件下没有匹配的结果。"
+    },
     "widgets": {
       "stats": {
         "unread": "未读",
