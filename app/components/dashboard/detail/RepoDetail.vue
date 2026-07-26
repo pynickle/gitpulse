@@ -281,12 +281,34 @@ const selectPanel = (value: RepoDetailPanel) => {
   }
 };
 
+const handlePanelTablistKeydown = (event: KeyboardEvent) => {
+  handleRovingTablistKeydown(event, {
+    itemCount: panelTabs.value.length,
+    activeIndex: panelTabs.value.findIndex((tab) => tab.value === activePanel.value),
+    onSelect: (index) => {
+      const tab = panelTabs.value[index];
+      if (tab) selectPanel(tab.value);
+    },
+  });
+};
+
 const viewAllCommits = () => {
   selectPanel('commits');
 };
 
 const selectListState = (value: RepoIssuePrState) => {
   listState.value = normalizeRepoIssuePrState(listKind.value, value);
+};
+
+const handleStateFilterTablistKeydown = (event: KeyboardEvent) => {
+  handleRovingTablistKeydown(event, {
+    itemCount: stateFilterOptions.value.length,
+    activeIndex: stateFilterOptions.value.findIndex((option) => option.value === listState.value),
+    onSelect: (index) => {
+      const option = stateFilterOptions.value[index];
+      if (option) selectListState(option.value);
+    },
+  });
 };
 
 const handleIssuePrSelect = (item: DashboardIssuePrEntity) => {
@@ -981,6 +1003,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 class="repo-detail-tabs"
                 role="tablist"
                 :aria-label="t('repoDetail.panelSwitch')"
+                @keydown="handlePanelTablistKeydown"
               >
                 <button
                   v-for="tab in panelTabs"
@@ -1045,6 +1068,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     class="repo-detail-state-filters"
                     role="tablist"
                     :aria-label="t('repoDetail.stateFilter')"
+                    @keydown="handleStateFilterTablistKeydown"
                   >
                     <button
                       v-for="option in stateFilterOptions"

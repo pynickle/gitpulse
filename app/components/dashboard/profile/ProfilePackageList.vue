@@ -51,6 +51,17 @@ const filterOptions = computed<PackageFilterOption[]>(() => [
   })),
 ]);
 
+const handleFilterKeydown = (event: KeyboardEvent) => {
+  handleRovingTablistKeydown(event, {
+    itemCount: filterOptions.value.length,
+    activeIndex: filterOptions.value.findIndex((option) => option.value === typeFilter.value),
+    onSelect: (index) => {
+      const option = filterOptions.value[index];
+      if (option) typeFilter.value = option.value;
+    },
+  });
+};
+
 const visibilityLabel = (pkg: PackageSummary) => {
   switch (pkg.visibility) {
     case 'private':
@@ -78,6 +89,7 @@ const updatedLabel = (pkg: PackageSummary) => {
       class="profile-package-list__filters"
       role="tablist"
       :aria-label="t('packages.filterLabel')"
+      @keydown="handleFilterKeydown"
     >
       <button
         v-for="option in filterOptions"

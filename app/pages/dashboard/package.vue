@@ -131,6 +131,19 @@ const versionsFilterOptions = computed<VersionsFilterOption[]>(() => [
   },
 ]);
 
+const handleVersionsFilterKeydown = (event: KeyboardEvent) => {
+  handleRovingTablistKeydown(event, {
+    itemCount: versionsFilterOptions.value.length,
+    activeIndex: versionsFilterOptions.value.findIndex(
+      (option) => option.value === versionsFilter.value
+    ),
+    onSelect: (index) => {
+      const option = versionsFilterOptions.value[index];
+      if (option) setVersionsFilter(option.value);
+    },
+  });
+};
+
 const versionPublishedLabel = (version: PackageVersionSummary) => {
   const publishedAt = version.createdAt || version.updatedAt || '';
   if (!publishedAt) return '';
@@ -338,6 +351,7 @@ const handleHome = async () => {
               class="package-page__version-filters"
               role="tablist"
               :aria-label="t('packageDetail.versionsFilterLabel')"
+              @keydown="handleVersionsFilterKeydown"
             >
               <button
                 v-for="option in versionsFilterOptions"
