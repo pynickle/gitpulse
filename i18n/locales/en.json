@@ -86,6 +86,7 @@
   "detailOverlay": {
     "back": "Back",
     "home": "Home",
+    "retry": "Retry",
     "syncing": "Syncing data...",
     "loading": {
       "issue": "Loading issue...",

@@ -486,7 +486,10 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         );
         return createPullRequestDetailViewModel(pullRequest, { owner, repo });
       },
-      { logPrefix: 'Error fetching pull request:' }
+      {
+        logPrefix: 'Error fetching pull request:',
+        fallbackError: 'Failed to load pull request details.',
+      }
     );
   };
 
@@ -806,6 +809,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     currentRelease: releasePanel.data,
     currentRepo: repoPanel.data,
     issueError: issuePanel.error,
+    prError: prPanel.error,
     discussionError: discussionPanel.error,
     releaseError: releasePanel.error,
     repoError: repoPanel.error,

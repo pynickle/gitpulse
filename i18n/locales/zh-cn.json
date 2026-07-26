@@ -86,6 +86,7 @@
   "detailOverlay": {
     "back": "返回",
     "home": "主页",
+    "retry": "重试",
     "syncing": "同步数据中...",
     "loading": {
       "issue": "加载中...",

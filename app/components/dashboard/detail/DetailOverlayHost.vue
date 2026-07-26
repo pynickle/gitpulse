@@ -44,6 +44,7 @@ const props = defineProps<{
   release: ReleaseDetailPayload | null;
   repository: RepositoryDetailPayload | null;
   issueError: string;
+  pullRequestError: string;
   discussionError: string;
   releaseError: string;
   repoError: string;
@@ -76,6 +77,7 @@ const emit = defineEmits<{
   (e: 'open-pull-request', item: DashboardIssuePrEntity): void;
   (e: 'open-pull-request-review'): void;
   (e: 'close-pull-request-review'): void;
+  (e: 'retry'): void;
 }>();
 
 const { t } = useI18n();
@@ -110,7 +112,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       key: props.pullRequestDetailKey,
       loading: props.loadingPullRequest,
       hasData: Boolean(props.pullRequest),
-      error: '',
+      error: props.pullRequestError,
       loadingTitle: t('detailOverlay.loading.pullRequest'),
     };
   }
@@ -300,7 +302,14 @@ watch(activeDetailKey, () => {
                 <p class="is-size-6 has-text-weight-semibold mb-2">
                   {{ activeDetailPane.loadingTitle }}
                 </p>
-                <p class="is-size-7">{{ activeDetailPane.error }}</p>
+                <p class="is-size-7 mb-3">{{ activeDetailPane.error }}</p>
+                <button
+                  class="button is-small is-danger is-outlined"
+                  type="button"
+                  @click="emit('retry')"
+                >
+                  {{ t('detailOverlay.retry') }}
+                </button>
               </div>
             </div>
 

@@ -249,6 +249,7 @@
     :release="currentRelease"
     :repository="currentRepo"
     :issue-error="issueError"
+    :pull-request-error="prError"
     :discussion-error="discussionError"
     :release-error="releaseError"
     :repo-error="repoError"
@@ -278,6 +279,7 @@
     @open-pull-request="handlePROpen"
     @open-pull-request-review="handlePRReviewOpen"
     @close-pull-request-review="handlePRReviewClose"
+    @retry="refreshCurrentDetail"
   />
 
   <FilterModal
@@ -870,6 +872,7 @@ const {
   currentRelease,
   currentRepo,
   issueError,
+  prError,
   discussionError,
   releaseError,
   repoError,
