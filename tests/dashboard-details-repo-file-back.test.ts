@@ -39,7 +39,6 @@ describe('dashboard repository detail routing', () => {
         repo: 'octo/repo',
       } as Record<string, unknown>,
     });
-    const currentEntry = ref(null);
     const repoRequests: string[] = [];
 
     const router = {
@@ -70,19 +69,9 @@ describe('dashboard repository detail routing', () => {
       }),
       useLocalePath: () => (value: string | { path: string }) =>
         typeof value === 'string' ? value : value.path,
-      useNavigationHistory: () => ({
-        currentEntry,
-        goBack: () => null,
-        goToHome: mock(),
-        navigateToDiscussion: mock(),
-        navigateToIssue: mock(),
-        navigateToPullRequest: mock(),
-        navigateToPullRequestReview: mock(),
-        navigateToRepo: mock(),
-        navigateToRelease: mock(),
-        replaceWithEntry: (entry: unknown) => {
-          currentEntry.value = entry;
-        },
+      useNavigationRouting: () => ({
+        goBackToPreviousPage: mock(),
+        goToDashboardHome: mock(),
       }),
       useRoute: () => route,
       useRouter: () => router,

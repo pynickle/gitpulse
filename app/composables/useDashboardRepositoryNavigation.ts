@@ -12,7 +12,6 @@ export function useDashboardRepositoryNavigation() {
   const route = useRoute();
   const router = useRouter();
   const localePath = useLocalePath();
-  const { navigateToRepo } = useNavigationHistory();
   const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
 
   const getCurrentTab = () => getQueryParamValue(route.query.tab);
@@ -36,8 +35,6 @@ export function useDashboardRepositoryNavigation() {
       repo: `${owner}/${repo}`,
       branch: options.branch,
     };
-
-    navigateToRepo(owner, repo, tab, options.branch);
 
     await router.push({
       path: localePath('/dashboard'),

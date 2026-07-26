@@ -7,10 +7,9 @@ import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverl
 import RepoItem from '~/components/dashboard/RepoItem.vue';
 
 const { t } = useI18n();
-const localePath = useLocalePath();
 const route = useRoute();
-const router = useRouter();
 const { user } = useUserSession();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 
 const { items, pagination, loading, error, fetchPage } = useStarredRepos();
 
@@ -42,7 +41,11 @@ const handleRetry = async () => {
 };
 
 const handleBack = async () => {
-  await router.push(localePath('/dashboard'));
+  await goBackToPreviousPage();
+};
+
+const handleHome = async () => {
+  await goToDashboardHome();
 };
 
 onMounted(() => {
@@ -59,11 +62,12 @@ watch(requestedUser, () => {
     :loading="initialLoading"
     :loading-title="t('starred.loadingTitle')"
     :loading-subtitle="t('starred.loadingSubtitle')"
-    :back-label="t('starred.backToDashboard')"
-    home-label=""
-    :show-home-button="false"
+    :back-label="t('detailOverlay.back')"
+    :home-label="t('detailOverlay.home')"
+    :show-home-button="shouldShowHomeButton"
     content-class="starred-page-content"
     @back="handleBack"
+    @home="handleHome"
   >
     <div class="starred-page">
       <div class="starred-page__header">

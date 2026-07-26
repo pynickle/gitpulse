@@ -7,11 +7,6 @@ import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.v
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
 import shouldCloseReviewWorkspaceAfterSubmit from '~/utils/prReviewNavigation';
 
-import {
-  buildChildPageRouteFromNavigationEntry,
-  buildDashboardQueryFromNavigationEntry,
-} from '../../../utils/dashboardUrlNavigationUtils';
-
 const props = defineProps<{
   owner: string;
   repo: string;
@@ -25,15 +20,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const localePath = useLocalePath();
-const router = useRouter();
-const {
-  canGoBack,
-  goBack: goNavigationBack,
-  goToHome,
-  previousEntry,
-  shouldShowHomeButton,
-} = useNavigationHistory();
+const { canGoBack, goBackToPreviousPage, goToDashboardHome, previousEntry, shouldShowHomeButton } =
+  useNavigationRouting();
 
 const handleReviewSubmitted = () => {
   if (
@@ -44,7 +32,6 @@ const handleReviewSubmitted = () => {
       pullNumber: props.pullNumber,
     })
   ) {
-    goNavigationBack();
     emit('close');
   }
 };
@@ -77,39 +64,12 @@ const totalDeletions = computed(() =>
 );
 const shouldShowNavButtons = computed(() => canGoBack.value || shouldShowHomeButton.value);
 
-const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
-  if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
-    await router.push(localePath('/dashboard'));
-    return;
-  }
-
-  // Child pages (profile, package, releases list, wiki) live on their own
-  // routes, not behind a dashboard query.
-  const childRoute = buildChildPageRouteFromNavigationEntry(entry);
-  if (childRoute) {
-    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
-    return;
-  }
-
-  const query = buildDashboardQueryFromNavigationEntry(entry, {
-    repositoryTab: 'repos',
-  });
-
-  if (query) {
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  await router.push(localePath('/dashboard'));
-};
-
 const goBack = async () => {
-  await navigateToEntryRoute(goNavigationBack());
+  await goBackToPreviousPage();
 };
 
 const goHome = async () => {
-  goToHome();
-  await router.push(localePath('/dashboard'));
+  await goToDashboardHome();
 };
 
 const goToPullRequestDetails = () => {

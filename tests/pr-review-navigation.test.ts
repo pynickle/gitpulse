@@ -88,8 +88,21 @@ describe('PR review workspace submit navigation', () => {
     try {
       const navigation = useNavigationHistory();
 
-      navigation.navigateToPullRequest('acme', 'widget', 42, 'pulls');
-      navigation.navigateToPullRequestReview('acme', 'widget', 42, 'pulls');
+      const pullRequestEntry: NavigationEntry = {
+        type: 'pull-request',
+        data: { owner: 'acme', repo: 'widget', number: 42, tab: 'pulls' },
+      };
+
+      // Route-derived flow: dashboard tab -> PR detail -> PR review.
+      navigation.applyRouteChange({ type: 'dashboard', data: { tab: 'pulls' } }, { kind: 'reset' });
+      navigation.applyRouteChange(pullRequestEntry, { kind: 'push' });
+      navigation.applyRouteChange(
+        {
+          type: 'pull-request-review',
+          data: { owner: 'acme', repo: 'widget', number: 42, tab: 'pulls' },
+        },
+        { kind: 'push' }
+      );
 
       expect(
         shouldCloseReviewWorkspaceAfterSubmit({
@@ -98,18 +111,14 @@ describe('PR review workspace submit navigation', () => {
         })
       ).toBe(true);
 
-      navigation.goBack();
+      // Closing the review navigates to ?pr=; the review entry collapses onto
+      // the pull request without leaving a duplicate on the stack.
+      navigation.applyRouteChange(pullRequestEntry, { kind: 'push' });
 
-      expect(navigation.navigationHistory.value).toEqual([{ type: 'dashboard' }]);
-      expect(navigation.currentEntry.value).toEqual({
-        type: 'pull-request',
-        data: {
-          owner: 'acme',
-          repo: 'widget',
-          number: 42,
-          tab: 'pulls',
-        },
-      });
+      expect(navigation.navigationHistory.value).toEqual([
+        { type: 'dashboard', data: { tab: 'pulls' } },
+      ]);
+      expect(navigation.currentEntry.value).toEqual(pullRequestEntry);
     } finally {
       globalThis.useState = originalUseState;
     }

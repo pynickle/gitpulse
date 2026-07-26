@@ -8,7 +8,7 @@ import {
   TagIcon,
   TerminalIcon,
 } from '@lucide/vue';
-import { computed, onMounted, watch, type Component } from 'vue';
+import { computed, type Component } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { PackageVersionFilter, PackageVersionSummary } from '#shared/types/packages';
@@ -19,10 +19,6 @@ import {
   useUserPackageDetail,
   type PackageDetailTarget,
 } from '~/composables/useUserPackages';
-import {
-  buildChildPageRouteFromNavigationEntry,
-  buildDashboardQueryFromNavigationEntry,
-} from '~/utils/dashboardUrlNavigationUtils';
 
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
@@ -30,7 +26,7 @@ const route = useRoute();
 const router = useRouter();
 const relativeTimeNow = useRelativeTimeNow();
 const { openRepository } = useDashboardRepositoryNavigation();
-const { navigateToPackage, goBack, goToHome, shouldShowHomeButton } = useNavigationHistory();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 
 /** Target package from `?user=&type=&name=` (+ optional `account=organization`). */
 const packageTarget = computed<PackageDetailTarget | null>(() => {
@@ -216,40 +212,12 @@ const handleOwnerClick = async () => {
   });
 };
 
-/** Record this page in navigation history so "back" from child pages returns here. */
-const syncNavigationEntry = () => {
-  const target = packageTarget.value;
-  if (!target) return;
-  navigateToPackage(target.username, target.packageType, target.name, target.isOrganization);
-};
-
-onMounted(syncNavigationEntry);
-
-watch(packageTarget, syncNavigationEntry);
-
 const handleBack = async () => {
-  const previousEntry = goBack();
-
-  // Back usually lands on the owner's profile page; other child pages and
-  // dashboard detail entries are possible via direct navigation.
-  const childRoute = buildChildPageRouteFromNavigationEntry(previousEntry);
-  if (childRoute) {
-    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
-    return;
-  }
-
-  const query = buildDashboardQueryFromNavigationEntry(previousEntry);
-  if (query) {
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  await router.push(localePath('/dashboard'));
+  await goBackToPreviousPage();
 };
 
 const handleHome = async () => {
-  goToHome();
-  await router.push(localePath('/dashboard'));
+  await goToDashboardHome();
 };
 </script>
 

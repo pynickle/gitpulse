@@ -381,9 +381,7 @@ const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
 const apiFetch = useGitPulseApiFetch();
-const { currentEntry, navigateToFile } = useNavigationHistory();
-const { resolveDashboardUrlTarget, getDashboardUrlRoute, trackDashboardUrlNavigation } =
-  useDashboardUrlNavigation();
+const { resolveDashboardUrlTarget, getDashboardUrlRoute } = useDashboardUrlNavigation();
 
 const isDashboardChildRoute = computed(() => {
   return !route.path.replace(/\/$/, '').endsWith('/dashboard');
@@ -411,7 +409,6 @@ const normalizeUrlQuery = async () => {
     return;
   }
 
-  trackDashboardUrlNavigation(target);
   await router.replace(getDashboardUrlRoute(target));
 };
 
@@ -423,36 +420,6 @@ watch(
     }
 
     void normalizeUrlQuery();
-  },
-  { immediate: true }
-);
-
-watch(
-  () => [route.query.repo, route.query.path, route.query.branch, showFileBrowsingView.value],
-  () => {
-    if (!import.meta.client || !showFileBrowsingView.value || !fileBrowsingRepo.value) {
-      return;
-    }
-
-    const path = getQueryParamValue(route.query.path) ?? '';
-    const branch = getQueryParamValue(route.query.branch) || undefined;
-    if (!branch) {
-      return;
-    }
-
-    const currentData = currentEntry.value?.data;
-
-    if (
-      currentEntry.value?.type === 'file' &&
-      currentData?.owner === fileBrowsingRepo.value.owner &&
-      currentData?.repo === fileBrowsingRepo.value.repo &&
-      currentData?.path === path &&
-      currentData?.branch === branch
-    ) {
-      return;
-    }
-
-    navigateToFile(fileBrowsingRepo.value.owner, fileBrowsingRepo.value.repo, path, branch);
   },
   { immediate: true }
 );

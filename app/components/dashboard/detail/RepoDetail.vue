@@ -75,7 +75,6 @@ type RepoDetailIcon = Component;
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
-const { navigateToFile } = useNavigationHistory();
 const { openRepository } = useDashboardRepositoryNavigation();
 const { opensGitHubLinks, getGitHubTargetUrl } = useGitHubLinkRouting();
 const {
@@ -101,7 +100,6 @@ interface AboutItem {
   href?: string;
   to?: string;
   icon: RepoDetailIcon;
-  onClick?: () => void;
 }
 
 const copy = computed(() => {
@@ -454,10 +452,6 @@ const buildRepoFileTo = (path: string) => {
   });
 };
 
-const trackFileNavigation = (path: string) => {
-  navigateToFile(props.owner, props.repo, path, canonicalBranch.value);
-};
-
 const buildRepoFileNavigation = (path: string) => {
   const target = createDashboardFileTarget(props.owner, props.repo, path, {
     branch: canonicalBranch.value,
@@ -471,7 +465,6 @@ const buildRepoFileNavigation = (path: string) => {
 
   return {
     to: buildRepoFileTo(path),
-    onClick: () => trackFileNavigation(path),
   };
 };
 
@@ -962,7 +955,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   v-if="item.to"
                   :to="item.to"
                   class="repo-about__item-value repo-about__item-value--link"
-                  @click="item.onClick?.()"
                 >
                   {{ item.value }}
                 </NuxtLinkLocale>

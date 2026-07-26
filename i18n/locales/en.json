@@ -966,7 +966,6 @@
     "emptyUser": "This user hasn't starred any repositories yet.",
     "viewStarred": "View starred repositories",
     "openStarred": "Starred repositories",
-    "backToDashboard": "Back to Dashboard",
     "loadingTitle": "Loading starred repositories",
     "loadingSubtitle": "Fetching your stars from GitHub",
     "empty": "You haven't starred any repositories yet.",

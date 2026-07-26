@@ -1,5 +1,6 @@
 import type { LocationQueryRaw } from 'vue-router';
 
+import getQueryParamValue from './getQueryParamValue';
 import { isGitHubApiHost, isGitHubWebHost, parseUrl } from './githubUrlUtils';
 import {
   buildRepoFileDashboardQuery,
@@ -55,7 +56,8 @@ export interface DashboardNavigationEntry {
     | 'file'
     | 'profile'
     | 'package'
-    | 'wiki';
+    | 'wiki'
+    | 'starred';
   data?: {
     owner?: string;
     repo?: string;
@@ -72,12 +74,8 @@ export interface DashboardNavigationEntry {
 }
 
 interface DashboardNavigationQueryOptions {
-  defaultTab?: string;
+  /** Fallback `tab` for repository entries recorded without one. */
   repositoryTab?: string;
-  normalizeBranch?: (
-    entry: DashboardNavigationEntry,
-    branch: string | undefined
-  ) => string | undefined;
 }
 
 export function clearDashboardDetailQuery(query: LocationQueryRaw): LocationQueryRaw {
@@ -120,6 +118,75 @@ export function serializeDashboardDetailTarget(owner: string, repo: string, numb
   return `${owner}/${repo}/${number}`;
 }
 
+export interface DashboardDetailTarget {
+  owner: string;
+  repo: string;
+  number: number;
+}
+
+/** Inverse of {@link serializeDashboardDetailTarget} for `owner/repo/number` query values. */
+export function parseDashboardDetailTarget(value: unknown): DashboardDetailTarget | null {
+  const rawValue = getQueryParamValue(value);
+  if (!rawValue) return null;
+
+  const segments = rawValue.split('/').filter(Boolean);
+  if (segments.length !== 3) return null;
+
+  const [owner, repo, numberSegment] = segments;
+
+  if (!numberSegment || !/^\d+$/.test(numberSegment)) {
+    return null;
+  }
+
+  const number = Number.parseInt(numberSegment, 10);
+
+  if (!owner || !repo || !Number.isSafeInteger(number) || number < 1) return null;
+
+  return { owner, repo, number };
+}
+
+export interface DashboardReleaseTarget {
+  owner: string;
+  repo: string;
+  releaseRef: ReleaseDashboardRef;
+}
+
+/** Inverse of {@link serializeReleaseQuery} for `release`/`releaseTag` query values. */
+export function parseDashboardReleaseQuery(
+  releaseValue: unknown,
+  releaseTagValue: unknown
+): DashboardReleaseTarget | null {
+  const releaseTag = getQueryParamValue(releaseTagValue);
+  if (releaseTag) {
+    const rawRelease = getQueryParamValue(releaseValue);
+    if (!rawRelease) return null;
+
+    const repoPath = parseGitHubRepoPath(rawRelease);
+    if (!repoPath) return null;
+
+    return {
+      owner: repoPath.owner,
+      repo: repoPath.repo,
+      releaseRef: {
+        kind: 'tag',
+        tag: releaseTag,
+      },
+    };
+  }
+
+  const releaseIdTarget = parseDashboardDetailTarget(releaseValue);
+  if (!releaseIdTarget) return null;
+
+  return {
+    owner: releaseIdTarget.owner,
+    repo: releaseIdTarget.repo,
+    releaseRef: {
+      kind: 'id',
+      id: releaseIdTarget.number,
+    },
+  };
+}
+
 export function serializeDashboardRepoTarget(owner: string, repo: string) {
   return `${owner}/${repo}`;
 }
@@ -141,13 +208,6 @@ export function serializeReleaseQuery(
   };
 }
 
-function getNavigationBranch(
-  entry: DashboardNavigationEntry,
-  options: DashboardNavigationQueryOptions
-) {
-  return options.normalizeBranch?.(entry, entry.data?.branch) ?? entry.data?.branch;
-}
-
 export function buildDashboardQueryFromNavigationEntry(
   entry: DashboardNavigationEntry | null | undefined,
   options: DashboardNavigationQueryOptions = {}
@@ -160,28 +220,28 @@ export function buildDashboardQueryFromNavigationEntry(
 
   if (entry.type === 'issue' && data?.owner && data.repo && data.number) {
     return {
-      tab: data.tab ?? options.defaultTab,
+      tab: data.tab,
       issue: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
     };
   }
 
   if (entry.type === 'pull-request' && data?.owner && data.repo && data.number) {
     return {
-      tab: data.tab ?? options.defaultTab,
+      tab: data.tab,
       pr: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
     };
   }
 
   if (entry.type === 'pull-request-review' && data?.owner && data.repo && data.number) {
     return {
-      tab: data.tab ?? options.defaultTab,
+      tab: data.tab,
       prReview: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
     };
   }
 
   if (entry.type === 'discussion' && data?.owner && data.repo && data.number) {
     return {
-      tab: data.tab ?? options.defaultTab,
+      tab: data.tab,
       discussion: serializeDashboardDetailTarget(data.owner, data.repo, data.number),
     };
   }
@@ -192,16 +252,16 @@ export function buildDashboardQueryFromNavigationEntry(
     if (!releaseRef) return null;
 
     return {
-      tab: data.tab ?? options.defaultTab,
+      tab: data.tab,
       ...serializeReleaseQuery(data.owner, data.repo, releaseRef),
     };
   }
 
   if (entry.type === 'repository' && data?.owner && data.repo) {
     return {
-      tab: data.tab ?? options.repositoryTab ?? options.defaultTab,
+      tab: data.tab ?? options.repositoryTab,
       repo: serializeDashboardRepoTarget(data.owner, data.repo),
-      branch: getNavigationBranch(entry, options),
+      branch: data.branch,
     };
   }
 
@@ -210,7 +270,7 @@ export function buildDashboardQueryFromNavigationEntry(
       tab: data.tab,
       repo: serializeDashboardRepoTarget(data.owner, data.repo),
       path: data.path ?? '',
-      branch: getNavigationBranch(entry, options),
+      branch: data.branch,
     };
   }
 
@@ -241,10 +301,11 @@ export function buildChildPageRouteFromNavigationEntry(
     };
   }
 
-  if (entry.type === 'profile' && data?.user) {
+  // Profile entries without a user target the signed-in user's own profile.
+  if (entry.type === 'profile') {
     return {
       path: '/dashboard/profile',
-      query: { user: data.user, tab: data.tab },
+      query: { user: data?.user, tab: data?.tab },
     };
   }
 
@@ -267,6 +328,13 @@ export function buildChildPageRouteFromNavigationEntry(
         repo: serializeDashboardRepoTarget(data.owner, data.repo),
         ...(data.path ? { page: data.path } : {}),
       },
+    };
+  }
+
+  if (entry.type === 'starred') {
+    return {
+      path: '/dashboard/starred',
+      query: data?.user ? { user: data.user } : {},
     };
   }
 

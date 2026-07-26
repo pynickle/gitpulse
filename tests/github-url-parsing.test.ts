@@ -511,13 +511,19 @@ describe('buildChildPageRouteFromNavigationEntry', () => {
         data: { owner: 'owner', repo: 'repo', number: 1 },
       })
     ).toBeNull();
-    expect(buildChildPageRouteFromNavigationEntry({ type: 'profile' })).toBeNull();
     expect(
       buildChildPageRouteFromNavigationEntry({
         type: 'package',
         data: { user: 'octocat', packageType: 'npm' },
       })
     ).toBeNull();
+  });
+
+  test('routes user-less profile entries to the self profile page', () => {
+    expect(buildChildPageRouteFromNavigationEntry({ type: 'profile' })).toEqual({
+      path: '/dashboard/profile',
+      query: { user: undefined, tab: undefined },
+    });
   });
 });
 

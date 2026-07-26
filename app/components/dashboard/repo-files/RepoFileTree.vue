@@ -19,7 +19,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const localePath = useLocalePath();
 const router = useRouter();
-const { navigateToFile } = useNavigationHistory();
 const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
 
 const sortedItems = computed(() => {
@@ -51,8 +50,6 @@ const navigateToItem = async (item: RepoContentItem) => {
     );
     return;
   }
-
-  navigateToFile(props.owner, props.repo, item.path, canonicalBranch.value);
 
   const query: LocationQueryRaw = {
     repo: `${props.owner}/${props.repo}`,

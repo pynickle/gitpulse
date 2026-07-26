@@ -14,10 +14,6 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import { splitWikiHtmlSegments, type WikiHtmlSegment } from '#shared/utils/github-wiki';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import {
-  buildChildPageRouteFromNavigationEntry,
-  buildDashboardQueryFromNavigationEntry,
-} from '~/utils/dashboardUrlNavigationUtils';
 
 const AsyncMermaidBlock = defineAsyncComponent(() => import('~/components/ui/MermaidBlock.vue'));
 
@@ -28,10 +24,9 @@ interface WikiTocItem {
 }
 
 const { t } = useI18n();
-const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
-const { navigateToWiki, goBack, goToHome, shouldShowHomeButton } = useNavigationHistory();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 const { openRepository } = useDashboardRepositoryNavigation();
 
 const {
@@ -112,14 +107,6 @@ const fetchCurrentPage = async () => {
   if (!target) return;
 
   await fetchPage(target.owner, target.repo, activeSlug.value);
-};
-
-/** Record this page in navigation history so "back" from child pages returns here. */
-const syncNavigationEntry = () => {
-  const target = repoTarget.value;
-  if (!target) return;
-
-  navigateToWiki(target.owner, target.repo, requestedPage.value || undefined);
 };
 
 const contentRef = ref<HTMLElement | null>(null);
@@ -302,40 +289,19 @@ const handleRepoClick = async () => {
 };
 
 const handleBack = async () => {
-  const previousEntry = goBack();
-
-  // Back can land on another child page (another repo's wiki, a releases
-  // list, a profile, or a package page).
-  const childRoute = buildChildPageRouteFromNavigationEntry(previousEntry);
-  if (childRoute) {
-    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
-    return;
-  }
-
-  // Mirror the detail overlay's back handling: rebuild the dashboard query from
-  // the popped history entry, falling back to the plain dashboard.
-  const query = buildDashboardQueryFromNavigationEntry(previousEntry);
-  if (query) {
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  await router.push(localePath('/dashboard'));
+  await goBackToPreviousPage();
 };
 
 const handleHome = async () => {
-  goToHome();
-  await router.push(localePath('/dashboard'));
+  await goToDashboardHome();
 };
 
 onMounted(() => {
-  syncNavigationEntry();
   void fetchCurrentPages();
   void fetchCurrentPage();
 });
 
 watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
-  syncNavigationEntry();
   activeTocId.value = '';
   if (newRepo !== oldRepo) {
     void fetchCurrentPages();

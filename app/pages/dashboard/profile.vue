@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed } from 'vue';
 
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import ProfileView, {
   type ProfilePackageSelection,
   type ProfileTab,
 } from '~/components/dashboard/profile/ProfileView.vue';
-import {
-  buildChildPageRouteFromNavigationEntry,
-  buildDashboardQueryFromNavigationEntry,
-} from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 
 const { t } = useI18n();
@@ -17,7 +13,7 @@ const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
 const { user } = useUserSession();
-const { navigateToProfile, goBack, goToHome, shouldShowHomeButton } = useNavigationHistory();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 
 const VALID_TABS = new Set<ProfileTab>([
   'overview',
@@ -78,38 +74,12 @@ const openPackage = async (selection: ProfilePackageSelection) => {
   });
 };
 
-/** Record this page in navigation history so "back" from child pages returns here. */
-const syncNavigationEntry = () => {
-  if (!username.value) return;
-  navigateToProfile(username.value, activeTab.value === 'overview' ? undefined : activeTab.value);
-};
-
-onMounted(syncNavigationEntry);
-
-watch([username, activeTab], syncNavigationEntry);
-
 const handleBack = async () => {
-  const previousEntry = goBack();
-
-  // Back can land on another child page (another profile, package, releases list).
-  const childRoute = buildChildPageRouteFromNavigationEntry(previousEntry);
-  if (childRoute) {
-    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
-    return;
-  }
-
-  const query = buildDashboardQueryFromNavigationEntry(previousEntry);
-  if (query) {
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  await router.push(localePath('/dashboard'));
+  await goBackToPreviousPage();
 };
 
 const handleHome = async () => {
-  goToHome();
-  await router.push(localePath('/dashboard'));
+  await goToDashboardHome();
 };
 </script>
 

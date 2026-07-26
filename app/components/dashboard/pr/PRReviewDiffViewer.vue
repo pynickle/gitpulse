@@ -46,12 +46,8 @@ const emit = defineEmits<{
 const collapsedFiles = ref(new Set<string>());
 const inlineDraftBodies = shallowRef(new Map<string, string>());
 const { t } = useI18n();
-const {
-  resolveDashboardUrlTarget,
-  getDashboardUrlRoute,
-  getPreferredDashboardUrlHref,
-  trackDashboardUrlNavigation,
-} = useDashboardUrlNavigation();
+const { resolveDashboardUrlTarget, getDashboardUrlRoute, getPreferredDashboardUrlHref } =
+  useDashboardUrlNavigation();
 const { opensGitHubLinks } = useGitHubLinkRouting();
 
 const draftsByFile = computed(() => {
@@ -138,15 +134,6 @@ const getFileDashboardRoute = (filename: string) => {
 const getFilePreferredHref = (filename: string) => {
   const target = getFileNavigationTarget(filename);
   return target ? getPreferredDashboardUrlHref(target) : null;
-};
-
-const trackFileNavigation = (file: PRReviewFile) => {
-  if (opensGitHubLinks.value) return;
-
-  const target = getFileNavigationTarget(file.filename);
-  if (target) {
-    trackDashboardUrlNavigation(target);
-  }
 };
 
 const getDraftKey = (path: string, line: number) => `${path}:${line}`;
@@ -368,7 +355,7 @@ onBeforeUnmount(() => {
                 v-else-if="getFileDashboardRoute(section.file.filename)"
                 :to="getFileDashboardRoute(section.file.filename)!"
                 class="pr-review-diff-viewer__file-link"
-                @click.stop="trackFileNavigation(section.file)"
+                @click.stop
               >
                 {{ section.file.filename }}
               </NuxtLinkLocale>

@@ -966,7 +966,6 @@
     "emptyUser": "该用户还没有为任何仓库加星标。",
     "viewStarred": "查看星标仓库",
     "openStarred": "已加星标的仓库",
-    "backToDashboard": "返回仪表盘",
     "loadingTitle": "正在加载已加星标的仓库",
     "loadingSubtitle": "正在从 GitHub 获取你的星标",
     "empty": "你还没有为任何仓库加星标。",

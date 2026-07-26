@@ -16,11 +16,7 @@ import type { ReleaseListItem } from '#shared/types/releases';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import {
-  buildChildPageRouteFromNavigationEntry,
-  buildDashboardQueryFromNavigationEntry,
-  serializeReleaseQuery,
-} from '~/utils/dashboardUrlNavigationUtils';
+import { serializeReleaseQuery } from '~/utils/dashboardUrlNavigationUtils';
 
 type ReleaseTypeFilter = 'all' | 'stable' | 'prerelease' | 'draft';
 
@@ -34,9 +30,7 @@ interface ReleaseFilterOption {
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const route = useRoute();
-const router = useRouter();
-const { navigateToRelease, navigateToReleasesList, goBack, goToHome, shouldShowHomeButton } =
-  useNavigationHistory();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 const { openRepository } = useDashboardRepositoryNavigation();
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -148,21 +142,6 @@ const releaseDetailRoute = (release: ReleaseListItem) => {
   });
 };
 
-const trackReleaseNavigation = (release: ReleaseListItem) => {
-  const target = repoTarget.value;
-  if (!target) return;
-
-  navigateToRelease(target.owner, target.repo, { kind: 'id', id: release.id });
-};
-
-/** Record this list page in navigation history so detail "back" returns here. */
-const syncListNavigationEntry = () => {
-  const target = repoTarget.value;
-  if (!target) return;
-
-  navigateToReleasesList(target.owner, target.repo);
-};
-
 const fetchCurrentRepoPage = async (page: number) => {
   const target = repoTarget.value;
   if (!target) return;
@@ -179,30 +158,11 @@ const handleRetry = async () => {
 };
 
 const handleBack = async () => {
-  const previousEntry = goBack();
-
-  // Back can land on another child page (another repo's releases list, a
-  // profile, or a package page).
-  const childRoute = buildChildPageRouteFromNavigationEntry(previousEntry);
-  if (childRoute) {
-    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
-    return;
-  }
-
-  // Mirror the detail overlay's back handling: rebuild the dashboard query from
-  // the popped history entry, falling back to the plain dashboard.
-  const query = buildDashboardQueryFromNavigationEntry(previousEntry);
-  if (query) {
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  await router.push(localePath('/dashboard'));
+  await goBackToPreviousPage();
 };
 
 const handleHome = async () => {
-  goToHome();
-  await router.push(localePath('/dashboard'));
+  await goToDashboardHome();
 };
 
 const handleRepoClick = async () => {
@@ -213,13 +173,11 @@ const handleRepoClick = async () => {
 };
 
 onMounted(() => {
-  syncListNavigationEntry();
   void fetchCurrentRepoPage(1);
 });
 
 watch(repoFullName, () => {
   typeFilter.value = 'all';
-  syncListNavigationEntry();
   void fetchCurrentRepoPage(1);
 });
 </script>
@@ -310,7 +268,6 @@ watch(repoFullName, () => {
             :key="release.id"
             :to="releaseDetailRoute(release)"
             class="releases-page__item card"
-            @click="trackReleaseNavigation(release)"
           >
             <div class="releases-page__item-main">
               <div class="releases-page__item-title-row">

@@ -55,7 +55,6 @@
       :to="detailPath"
       :aria-label="`Open repository ${repo.owner?.login}/${repo.name}`"
       :title="`Open repository ${repo.owner?.login}/${repo.name}`"
-      @click="trackRepoNavigation"
     />
   </div>
 </template>
@@ -85,7 +84,6 @@ const props = defineProps<{
 
 const localePath = useLocalePath();
 const { opensGitHubLinks, getPreferredTargetHref } = useGitHubLinkRouting();
-const { navigateToRepo } = useNavigationHistory();
 
 const repoOwner = computed(() => props.repo.owner?.login ?? '');
 
@@ -111,22 +109,6 @@ const preferredHref = computed(() => {
 const languageColor = computed(() => {
   return getLanguageColor(props.repo.language);
 });
-
-/**
- * Record the repo in navigation history before the router navigates so the
- * detail's Back returns to the current page (profile, starred, …) instead of
- * the dashboard sync resetting the history stack.
- */
-const trackRepoNavigation = (event: MouseEvent) => {
-  // Modified/middle clicks open a new tab; this tab's history must not change.
-  // (No defaultPrevented check — RouterLink preventDefaults every SPA click
-  // before fallthrough listeners run.)
-  if (event.button !== 0) return;
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-  if (!repoOwner.value) return;
-
-  navigateToRepo(repoOwner.value, props.repo.name, 'repos');
-};
 </script>
 
 <style scoped lang="scss">

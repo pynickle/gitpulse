@@ -8,15 +8,6 @@ export function useDashboardUrlNavigation() {
   const localePath = useLocalePath();
   const router = useRouter();
   const { opensGitHubLinks, getPreferredTargetHref, openGitHubTarget } = useGitHubLinkRouting();
-  const {
-    navigateToDiscussion,
-    navigateToFile,
-    navigateToIssue,
-    navigateToPullRequest,
-    navigateToPullRequestReview,
-    navigateToRelease,
-    navigateToRepo,
-  } = useNavigationHistory();
 
   const resolveDashboardUrlTarget = (
     value: string | null | undefined,
@@ -50,40 +41,6 @@ export function useDashboardUrlNavigation() {
     return target ? getPreferredDashboardUrlHref(target) : null;
   };
 
-  const trackDashboardUrlNavigation = (target: DashboardUrlTarget) => {
-    if (target.type === 'issue') {
-      navigateToIssue(target.owner, target.repo, target.number);
-      return;
-    }
-
-    if (target.type === 'pull-request') {
-      navigateToPullRequest(target.owner, target.repo, target.number);
-      return;
-    }
-
-    if (target.type === 'pull-request-review') {
-      navigateToPullRequestReview(target.owner, target.repo, target.number);
-      return;
-    }
-
-    if (target.type === 'discussion') {
-      navigateToDiscussion(target.owner, target.repo, target.number);
-      return;
-    }
-
-    if (target.type === 'release') {
-      navigateToRelease(target.owner, target.repo, target.releaseRef);
-      return;
-    }
-
-    if (target.type === 'repository') {
-      navigateToRepo(target.owner, target.repo, undefined, target.branch);
-      return;
-    }
-
-    navigateToFile(target.owner, target.repo, target.path, target.branch);
-  };
-
   const navigateToDashboardUrl = async (
     value: string | null | undefined,
     context: MarkdownRepoContext = {}
@@ -96,7 +53,6 @@ export function useDashboardUrlNavigation() {
       return true;
     }
 
-    trackDashboardUrlNavigation(target);
     await router.push(getDashboardUrlRoute(target));
     return true;
   };
@@ -107,7 +63,6 @@ export function useDashboardUrlNavigation() {
     buildDashboardUrlRoute,
     getPreferredDashboardUrlHref,
     buildPreferredDashboardUrlHref,
-    trackDashboardUrlNavigation,
     navigateToDashboardUrl,
   };
 }

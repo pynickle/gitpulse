@@ -24,11 +24,8 @@ import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue
 import type { RepoContentItem } from '~/composables/useRepoFiles';
 
 import {
-  buildChildPageRouteFromNavigationEntry,
-  buildDashboardQueryFromNavigationEntry,
   createDashboardFileTarget,
   createDashboardRepositoryTarget,
-  type DashboardNavigationEntry,
   type GitHubFileDashboardView,
 } from '../../../utils/dashboardUrlNavigationUtils';
 
@@ -60,17 +57,7 @@ const apiFetch = useGitPulseApiFetch();
 const router = useRouter();
 const { settings } = useUserSettings();
 const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
-const {
-  canGoBack,
-  currentEntry,
-  goBack: goNavigationBack,
-  goToHome,
-  navigateToFile,
-  previousEntry,
-  shouldShowHomeButton,
-} = useNavigationHistory();
-
-const shouldShowNavButtons = computed(() => canGoBack.value || shouldShowHomeButton.value);
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 
 const {
   branches,
@@ -142,10 +129,6 @@ const currentBranchQueryValue = computed(() => {
     : undefined;
 });
 const canonicalBranch = computed(() => currentBranch.value || defaultBranch.value || undefined);
-
-const buildBranchQueryValue = (branch?: string) => {
-  return branch && branch !== defaultBranch.value ? branch : undefined;
-};
 
 const saveTreeScrollPosition = () => {
   treeScrollPositions.value = {
@@ -705,52 +688,6 @@ const countFiles = (node: FolderTreeNode): number =>
 
 const isCurrentPath = (path: string) => currentPath.value === path;
 
-const normalizeNavigationEntryBranch = (
-  entry: DashboardNavigationEntry,
-  branch: string | undefined
-) => {
-  const data = entry.data;
-
-  if (
-    (entry.type === 'repository' || entry.type === 'file') &&
-    data?.owner === props.owner &&
-    data.repo === props.repo
-  ) {
-    return buildBranchQueryValue(
-      entry.type === 'repository' ? (branch ?? canonicalBranch.value) : branch
-    );
-  }
-
-  return branch;
-};
-
-const navigateToEntryRoute = async (entry: typeof previousEntry.value) => {
-  if (!entry || entry.type === 'dashboard' || entry.type === 'notification') {
-    await router.push(localePath('/dashboard'));
-    return;
-  }
-
-  // Child pages (profile, package, releases list, wiki) live on their own
-  // routes, not behind a dashboard query.
-  const childRoute = buildChildPageRouteFromNavigationEntry(entry);
-  if (childRoute) {
-    await router.push({ path: localePath(childRoute.path), query: childRoute.query });
-    return;
-  }
-
-  const query = buildDashboardQueryFromNavigationEntry(entry, {
-    repositoryTab: 'repos',
-    normalizeBranch: normalizeNavigationEntryBranch,
-  });
-
-  if (query) {
-    await router.push({ path: localePath('/dashboard'), query });
-    return;
-  }
-
-  await router.push(localePath('/dashboard'));
-};
-
 const handleTreeDirectoryClick = async (row: VisibleTreeRow) => {
   await openFilePath(row.node.path, 'tree');
 };
@@ -760,12 +697,11 @@ const handleTreeFileClick = async (row: VisibleTreeRow) => {
 };
 
 const goBack = async () => {
-  await navigateToEntryRoute(goNavigationBack());
+  await goBackToPreviousPage();
 };
 
 const goHome = async () => {
-  goToHome();
-  await router.push(localePath('/dashboard'));
+  await goToDashboardHome();
 };
 
 const openRepoOnGitHub = () => {
@@ -805,24 +741,6 @@ const openFilePath = async (path: string, view: GitHubFileDashboardView) => {
       view,
     })
   );
-};
-
-const syncFileNavigationEntry = () => {
-  const branch = canonicalBranch.value;
-  if (!branch) return;
-
-  const currentData = currentEntry.value?.data;
-  if (
-    currentEntry.value?.type === 'file' &&
-    currentData?.owner === props.owner &&
-    currentData.repo === props.repo &&
-    currentData.path === currentPath.value &&
-    currentData.branch === branch
-  ) {
-    return;
-  }
-
-  navigateToFile(props.owner, props.repo, currentPath.value, branch);
 };
 
 const navigateToItem = async (item: RepoContentItem) => {
@@ -872,12 +790,6 @@ watch(currentPath, async () => {
   await revealCurrentPath();
   await restoreTreeScrollPosition();
 });
-
-watch(
-  () => [props.owner, props.repo, currentPath.value, canonicalBranch.value],
-  syncFileNavigationEntry,
-  { immediate: true }
-);
 
 watch(
   treeScrollKey,
@@ -941,9 +853,8 @@ onActivated(() => {
   <section class="repo-file-view">
     <header class="repo-file-view__header">
       <div class="repo-file-view__identity">
-        <div v-if="shouldShowNavButtons" class="repo-file-view__nav-buttons">
+        <div class="repo-file-view__nav-buttons">
           <button
-            v-if="canGoBack"
             type="button"
             class="repo-file-view__nav-button"
             :aria-label="t('repoFileView.back')"
