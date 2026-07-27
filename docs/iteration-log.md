@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — fix(i18n): RepoDetail 内联双语文案迁入 locale 文件
+
+仓库详情组件此前用一个约 35 键的手写双语 copy 对象(按 locale 前缀二选一)与 i18n 系统并行,翻译人员在 locale 文件中完全看不到这些文案,新增语言也会静默回退英文。现将全部键迁入 en/zh-cn 的 repoDetail 段并通过 t() 解析,模板调用点不变。迁移中发现并修复一个隐蔽陷阱:文案"仅被@时"中的裸 @ 是 intlify 链接语法,会导致整个 zh-cn locale 编译失败、所有翻译回退为键名,已按项目惯例转义为 \\@。
+
 ## 2026-07-27 — fix(ui): 详情与子页面外框在窄屏收窄内边距
 
 DashboardOverlayFrame 与详情面板此前固定 2rem/4rem 内边距且无任何响应式断点,在手机(约 375px)视口下左右各浪费 64px,内容被压缩到约 240px 宽。现在与移动端筛选弹层一致以 860px 为断点,窄屏下收窄为 1.25rem,所有详情 overlay 与仪表盘子页面(profile/wiki/starred/releases/package/settings)同时受益。已在 375px 模拟视口实测。
