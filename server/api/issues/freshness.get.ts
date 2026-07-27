@@ -1,22 +1,15 @@
 import { getLatestUpdatedAt, type FreshnessResponse } from '#server/utils/freshness-response-utils';
+import {
+  buildInvolvesSearchQuery,
+  normalizeSearchTotalCount,
+} from '#server/utils/github-issue-search-route-utils';
 import { translateGitHubSearchError } from '#server/utils/github-search-route-utils';
 import { createCollectionFreshnessSignature } from '#shared/utils/freshness';
-import { getOneYearAgoSearchDate } from '#shared/utils/github-search-query';
-
-const SEARCH_TOTAL_COUNT_LIMIT = 1000;
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { octokit, userLogin } = await getGitHubSessionContext(event);
-    const createdDate = getOneYearAgoSearchDate();
-    const q = [
-      'is:issue',
-      'is:open',
-      'archived:false',
-      `created:>=${createdDate}`,
-      `involves:${userLogin}`,
-      'sort:updated-desc',
-    ].join(' ');
+    const q = buildInvolvesSearchQuery('issue', userLogin);
 
     const { data } = await octokit.request('GET /search/issues', {
       q,
@@ -24,7 +17,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       per_page: 5,
     });
 
-    const totalCount = Math.min(data.total_count ?? 0, SEARCH_TOTAL_COUNT_LIMIT);
+    const totalCount = normalizeSearchTotalCount(data.total_count);
 
     return {
       signature: createCollectionFreshnessSignature(data.items, { totalCount, q }),

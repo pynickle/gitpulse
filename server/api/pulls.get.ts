@@ -1,33 +1,24 @@
+import {
+  buildInvolvesSearchQuery,
+  normalizeSearchTotalCount,
+} from '#server/utils/github-issue-search-route-utils';
 import { translateGitHubSearchError } from '#server/utils/github-search-route-utils';
-import { getOneYearAgoSearchDate } from '#shared/utils/github-search-query';
 
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
-
-const SEARCH_TOTAL_COUNT_LIMIT = 1000;
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { octokit, userLogin } = await getGitHubSessionContext(event);
-    const createdDate = getOneYearAgoSearchDate();
     const page = parsePaginationNumber(getQuery(event).page, 1);
     const perPage = parsePaginationNumber(getQuery(event).per_page, 20, 100);
 
-    const q = [
-      'is:pr',
-      'is:open',
-      'archived:false',
-      `created:>=${createdDate}`,
-      `involves:${userLogin}`,
-      'sort:updated-desc',
-    ].join(' ');
-
     const { data, headers } = await octokit.request('GET /search/issues', {
-      q,
+      q: buildInvolvesSearchQuery('pr', userLogin),
       page,
       per_page: perPage,
     });
 
-    const totalCount = Math.min(data.total_count ?? 0, SEARCH_TOTAL_COUNT_LIMIT);
+    const totalCount = normalizeSearchTotalCount(data.total_count);
 
     return {
       total_count: totalCount,

@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — refactor(server): 统一 involves 搜索查询构建,删除死代码
+
+仪表盘议题/PR 列表与对应 freshness 轮询端点此前各自手写相同的 GitHub 搜索串(共 4 处重复),一旦有人只改列表不改 freshness,freshness 签名将悄悄失真。现提取 buildInvolvesSearchQuery 到 server/utils 作为唯一构建点,四个端点统一复用,并改用共享的 normalizeSearchTotalCount;同时删除从未被调用的 buildIssueSearchRequestParams(约 120 行死代码)及其无用依赖。
+
 ## 2026-07-27 — feat(detail): 支持在应用内关闭/重新打开议题与拉取请求
 
 补上最常用的分诊操作:新增两个 CSRF 保护的 PATCH 状态路由(issues/{n}/state 与 pulls/{n}/state,复用 executeGitHubRequest 错误处理),权限端点新增 canManageItemState(triage 及以上),前端在议题与 PR 详情侧栏新增"关闭/重新打开"按钮——仓库协作者或条目作者可见;已合并的 PR 不显示。议题侧乐观更新状态并在时间线插入 closed/reopened 事件,PR 侧成功后重新拉取详情与时间线;顺带将锁定/解锁的乐观事件假头像(placeholder.png)换成真实会话用户信息。新增中英文案 8 组,浏览器实测关闭→重开完整闭环。
