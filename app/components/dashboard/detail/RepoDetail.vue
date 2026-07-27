@@ -543,6 +543,26 @@ const formatDate = (value?: string | null) => {
   return formatDurationFromNow(value, localeCode.value, relativeTimeNow.value);
 };
 
+// Inline feedback for star/watch mutations; silent rollback reads as a broken button.
+const actionError = ref('');
+let actionErrorTimer: ReturnType<typeof setTimeout> | null = null;
+
+const showActionError = (message: string) => {
+  actionError.value = message;
+  if (actionErrorTimer) clearTimeout(actionErrorTimer);
+  actionErrorTimer = setTimeout(() => {
+    actionError.value = '';
+    actionErrorTimer = null;
+  }, 5000);
+};
+
+onUnmounted(() => {
+  if (actionErrorTimer) {
+    clearTimeout(actionErrorTimer);
+    actionErrorTimer = null;
+  }
+});
+
 const toggleStar = async () => {
   if (loadingStar.value) return;
   loadingStar.value = true;
@@ -560,9 +580,10 @@ const toggleStar = async () => {
       starCount.value = starCount.value + 1;
       await apiFetch(`/api/repos/${props.owner}/${props.repo}/star`, { method: 'PUT' });
     }
-  } catch {
+  } catch (err) {
     isStarred.value = previousState;
     starCount.value = previousCount;
+    showActionError(getFetchErrorMessage(err, t('repoDetail.starError')));
   } finally {
     loadingStar.value = false;
   }
@@ -594,8 +615,9 @@ const setWatchState = async (state: WatchState) => {
         ? Math.max(0, watchCount.value - 1)
         : watchCount.value + 1;
     }
-  } catch {
+  } catch (err) {
     watchState.value = previousState;
+    showActionError(getFetchErrorMessage(err, t('repoDetail.watchError')));
   } finally {
     loadingWatch.value = false;
   }
@@ -886,6 +908,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               />
             </div>
           </div>
+
+          <p v-if="actionError" class="repo-detail-header__action-error" role="alert">
+            {{ actionError }}
+          </p>
 
           <div class="repo-detail-header__identity">
             <div class="repo-detail-header__meta">
@@ -1227,6 +1253,15 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .repo-detail-header__icon {
   flex: 0 0 auto;
   color: var(--gitpulse-success);
+}
+
+.repo-detail-header__action-error {
+  margin: -0.5rem 0 0.75rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+  font-size: 12px;
 }
 
 .repo-detail-header__title {

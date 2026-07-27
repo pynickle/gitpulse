@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — fix(repo): star/关注操作失败不再静默
+
+仓库详情的 Star 与关注(watch)切换此前失败时只做乐观回滚、无任何提示,在 token 权限不足或限流时表现为"按钮点了没反应"。现在失败会在标题行下方显示内联错误(优先展示服务端错误信息,5 秒后自动消失,带 role=alert),状态照常回滚;新增 repoDetail.starError/watchError 中英文案。已用注入的 403 响应实测回滚与提示。
+
 ## 2026-07-27 — fix(server): 用户设置读取接入请求合并处理器
 
 /api/settings 是全部私有数据 GET 端点中唯一仍用裸 defineEventHandler 的(违反 AGENTS.md 约定),现改用 definePrivateApiCoalescedEventHandler,使并发的设置读取合并为一次存储访问,缓存头行为与其他端点一致。
