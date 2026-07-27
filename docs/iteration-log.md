@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — fix(server): 用户设置读取接入请求合并处理器
+
+/api/settings 是全部私有数据 GET 端点中唯一仍用裸 defineEventHandler 的(违反 AGENTS.md 约定),现改用 definePrivateApiCoalescedEventHandler,使并发的设置读取合并为一次存储访问,缓存头行为与其他端点一致。
+
 ## 2026-07-27 — fix(timeline): 清理假头像回退与不随语言的日期格式
 
 Markdown 评论编辑器(含延迟加载版本)在会话缺少头像时回退到会 404 的 https://github.com/placeholder.png 假图和英文 "You" 昵称,现改为空值以触发 GitHubAvatar 的占位图标;议题侧栏"创建/更新"时间此前用 toLocaleString()(跟随浏览器而非应用语言),现改用 Intl.DateTimeFormat 按应用当前 locale 格式化,与其余日期展示保持一致。
