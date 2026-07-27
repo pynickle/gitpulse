@@ -272,10 +272,9 @@ let mentionSearchTimer: ReturnType<typeof setTimeout> | null = null;
 let mentionSearchRequestId = 0;
 
 const trimmedDraft = computed(() => draft.value.trim());
-const currentUserLogin = computed(() => user.value?.login || 'You');
-const currentUserAvatar = computed(
-  () => user.value?.avatar_url || 'https://github.com/placeholder.png'
-);
+// Empty values fall back to GitHubAvatar's placeholder icon instead of a 404 image.
+const currentUserLogin = computed(() => user.value?.login || '');
+const currentUserAvatar = computed(() => user.value?.avatar_url || '');
 const mentionOpen = computed(
   () =>
     Boolean(mentionTrigger.value) &&

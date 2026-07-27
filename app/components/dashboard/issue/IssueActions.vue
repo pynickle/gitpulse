@@ -133,7 +133,7 @@ const emit = defineEmits<{
   (e: 'add-timeline-event', event: IssueTimelineItem): void;
 }>();
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
 const { user } = useUserSession();
 const { openModal, closeModal } = useModalState();
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
@@ -344,7 +344,12 @@ const unlockIssue = async () => {
 
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleString();
+  const parsed = new Date(dateString);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return new Intl.DateTimeFormat(locale.value, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed);
 };
 </script>
 

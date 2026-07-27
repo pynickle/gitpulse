@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — fix(timeline): 清理假头像回退与不随语言的日期格式
+
+Markdown 评论编辑器(含延迟加载版本)在会话缺少头像时回退到会 404 的 https://github.com/placeholder.png 假图和英文 "You" 昵称,现改为空值以触发 GitHubAvatar 的占位图标;议题侧栏"创建/更新"时间此前用 toLocaleString()(跟随浏览器而非应用语言),现改用 Intl.DateTimeFormat 按应用当前 locale 格式化,与其余日期展示保持一致。
+
 ## 2026-07-27 — fix(i18n): 详情加载失败文案本地化并优化错误提取
 
 useDashboardDetails 中五类详情(议题/PR/讨论/发布/仓库)的加载失败兜底文案此前硬编码英文,且错误面板直接显示 ofetch 原始报错(形如 [GET] "/api/..." 500);现改用 getFetchErrorMessage 优先提取服务端 statusMessage、兜底走 detailOverlay.loadError.* 中英文案,PRDetail 中孤立的英文兜底一并接入,相关测试补充 useI18n mock。

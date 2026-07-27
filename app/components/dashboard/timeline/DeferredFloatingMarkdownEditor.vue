@@ -126,10 +126,9 @@ const { user } = useUserSession();
 const { isAnyModalOpen } = useModalState();
 const activatedByPlaceholder = shallowRef(false);
 const shouldLoadEditor = shallowRef(Boolean(props.compact || props.autofocus));
-const currentUserLogin = computed(() => user.value?.login || 'You');
-const currentUserAvatar = computed(
-  () => user.value?.avatar_url || 'https://github.com/placeholder.png'
-);
+// Empty values fall back to GitHubAvatar's placeholder icon instead of a 404 image.
+const currentUserLogin = computed(() => user.value?.login || '');
+const currentUserAvatar = computed(() => user.value?.avatar_url || '');
 const resolvedPlaceholder = computed(
   () => props.placeholder || t('floatingMarkdownEditor.placeholder')
 );
