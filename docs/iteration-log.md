@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — fix(ui): 详情与子页面外框在窄屏收窄内边距
+
+DashboardOverlayFrame 与详情面板此前固定 2rem/4rem 内边距且无任何响应式断点,在手机(约 375px)视口下左右各浪费 64px,内容被压缩到约 240px 宽。现在与移动端筛选弹层一致以 860px 为断点,窄屏下收窄为 1.25rem,所有详情 overlay 与仪表盘子页面(profile/wiki/starred/releases/package/settings)同时受益。已在 375px 模拟视口实测。
+
 ## 2026-07-27 — refactor(server): 统一 involves 搜索查询构建,删除死代码
 
 仪表盘议题/PR 列表与对应 freshness 轮询端点此前各自手写相同的 GitHub 搜索串(共 4 处重复),一旦有人只改列表不改 freshness,freshness 签名将悄悄失真。现提取 buildInvolvesSearchQuery 到 server/utils 作为唯一构建点,四个端点统一复用,并改用共享的 normalizeSearchTotalCount;同时删除从未被调用的 buildIssueSearchRequestParams(约 120 行死代码)及其无用依赖。

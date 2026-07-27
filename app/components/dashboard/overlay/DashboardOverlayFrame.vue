@@ -96,6 +96,12 @@ defineEmits<{
   padding: 2rem 4rem;
   overflow-y: auto;
   background: var(--gitpulse-surface);
+
+  /* Same breakpoint as the mobile filter modal; the fixed 4rem side padding
+     would otherwise eat ~128px of width on phones. */
+  @media (max-width: 860px) {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
 }
 
 .detail-loading {

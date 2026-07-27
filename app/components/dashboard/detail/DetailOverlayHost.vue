@@ -383,6 +383,12 @@ watch(activeDetailKey, () => {
   padding: 2rem 4rem;
   overflow: hidden;
   background: var(--gitpulse-surface);
+
+  /* Same breakpoint as the mobile filter modal; the fixed 4rem side padding
+     would otherwise eat ~128px of width on phones. */
+  @media (max-width: 860px) {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
 }
 
 /* Repository detail: scroll at pane level so sticky chrome pins under the header. */
