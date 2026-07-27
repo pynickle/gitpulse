@@ -191,7 +191,11 @@
     "lockReasonSpam": "Spam",
     "lockReasonSpamDesc": "The issue is spam or contains inappropriate content",
     "failedToLockIssue": "Failed to lock issue",
-    "failedToUnlockIssue": "Failed to unlock issue"
+    "failedToUnlockIssue": "Failed to unlock issue",
+    "closeIssue": "Close Issue",
+    "reopenIssue": "Reopen Issue",
+    "failedToCloseIssue": "Failed to close issue",
+    "failedToReopenIssue": "Failed to reopen issue"
   },
   "discussionDetail": {
     "loading": "Loading discussion...",
@@ -741,6 +745,10 @@
   },
   "prReview": {
     "openReview": "Review changes",
+    "closePullRequest": "Close Pull Request",
+    "reopenPullRequest": "Reopen Pull Request",
+    "failedToClosePullRequest": "Failed to close pull request",
+    "failedToReopenPullRequest": "Failed to reopen pull request",
     "backToDetails": "Back to PR details",
     "untitledPullRequest": "Untitled pull request",
     "loadingFiles": "Loading changed files...",

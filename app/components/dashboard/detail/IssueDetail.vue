@@ -56,6 +56,8 @@
           <IssueActions
             :is-locked="isLocked"
             :can-lock-issue="canLockIssue"
+            :can-manage-state="canManageIssueState"
+            :issue-state="currentIssue?.state"
             :repo-info="repoInfo"
             :issue-number="currentIssue?.number"
             :html-url="currentIssue?.html_url"
@@ -63,6 +65,7 @@
             :updated-at="currentIssue?.updated_at"
             :source-notification="sourceNotification"
             @update:is-locked="updateIsLocked"
+            @update:state="updateIssueState"
             @add-timeline-event="addTimelineEvent"
           />
         </div>
@@ -112,6 +115,7 @@ const currentTimelinePage = ref(1);
 const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const apiFetch = useGitPulseApiFetch();
+const { user: sessionUser } = useUserSession();
 const detailScrollRef = ref<HTMLElement | null>(null);
 const mainColumnRef = ref<HTMLElement | null>(null);
 const detailHeaderRef = ref<HTMLElement | null>(null);
@@ -157,6 +161,14 @@ const canLockIssue = computed(() => {
   return repoPermissions.value.canLockIssue;
 });
 
+// Repo triage+ rights, or the issue author closing/reopening their own issue.
+const canManageIssueState = computed(() => {
+  if (repoPermissions.value.canManageItemState) return true;
+
+  const authorLogin = currentIssue.value?.user?.login;
+  return Boolean(authorLogin && authorLogin === sessionUser.value?.login);
+});
+
 const canEditAssignees = computed(() => {
   return repoPermissions.value.canEditAssignees;
 });
@@ -198,6 +210,15 @@ const updateAssignees = (assignees: IssueAssigneeUser[], issue?: IssueAssigneeMu
 
 const updateIsLocked = (locked: boolean) => {
   isLocked.value = locked;
+};
+
+const updateIssueState = (state: 'open' | 'closed', stateReason: string | null) => {
+  currentIssue.value = {
+    ...currentIssue.value,
+    state,
+    state_reason: stateReason,
+    closed_at: state === 'closed' ? new Date().toISOString() : null,
+  };
 };
 
 const addTimelineEvent = (event: IssueTimelineItem) => {

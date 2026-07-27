@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — feat(detail): 支持在应用内关闭/重新打开议题与拉取请求
+
+补上最常用的分诊操作:新增两个 CSRF 保护的 PATCH 状态路由(issues/{n}/state 与 pulls/{n}/state,复用 executeGitHubRequest 错误处理),权限端点新增 canManageItemState(triage 及以上),前端在议题与 PR 详情侧栏新增"关闭/重新打开"按钮——仓库协作者或条目作者可见;已合并的 PR 不显示。议题侧乐观更新状态并在时间线插入 closed/reopened 事件,PR 侧成功后重新拉取详情与时间线;顺带将锁定/解锁的乐观事件假头像(placeholder.png)换成真实会话用户信息。新增中英文案 8 组,浏览器实测关闭→重开完整闭环。
+
 ## 2026-07-27 — fix(a11y): 补齐三个弹窗的焦点陷阱与焦点恢复
 
 人员选择弹窗(reviewer/assignee)、字体选择弹窗和 Mermaid 图表查看器此前缺少焦点管理:Tab 会穿透到弹窗背后的页面,关闭后焦点丢失。现统一接入现有的 createFocusTrapController:打开时记录触发元素、Tab 在弹窗内循环、关闭后焦点还原到触发按钮,与 FilterModal/筛选抽屉行为保持一致。

@@ -156,6 +156,31 @@
       </div>
     </div>
 
+    <div v-if="showStateActions" class="sidebar-card mb-4">
+      <div class="sidebar-card__content">
+        <div v-if="stateError" class="sidebar-alert sidebar-alert--error mb-3">
+          <AlertCircleIcon :size="14" />
+          <span>{{ stateError }}</span>
+          <button class="sidebar-alert__dismiss" @click="clearStateError">
+            <XIcon :size="12" />
+          </button>
+        </div>
+        <button
+          class="sidebar-action-btn"
+          :class="{ 'sidebar-action-btn--danger': !isClosed }"
+          :disabled="loadingState"
+          @click="isClosed ? updatePullRequestState('open') : updatePullRequestState('closed')"
+        >
+          <Loader2Icon v-if="loadingState" class="spin-animation" :size="14" />
+          <CircleSlashIcon v-else-if="!isClosed" :size="14" />
+          <GitPullRequestIcon v-else :size="14" />
+          <span>{{
+            isClosed ? t('prReview.reopenPullRequest') : t('prReview.closePullRequest')
+          }}</span>
+        </button>
+      </div>
+    </div>
+
     <div class="sidebar-card">
       <div class="sidebar-card__content">
         <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
@@ -169,12 +194,16 @@
 
 <script setup lang="ts">
 import {
+  AlertCircleIcon,
   CheckIcon,
+  CircleSlashIcon,
   ClockIcon,
   ExternalLinkIcon,
+  GitPullRequestIcon,
   InfoIcon,
   ListMinusIcon,
   ListPlusIcon,
+  Loader2Icon,
   MessageSquareIcon,
   PlusIcon,
   RotateCcwIcon,
@@ -182,7 +211,7 @@ import {
   UsersIcon,
   XIcon,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { formatDurationFromNow } from '#imports';
@@ -227,13 +256,76 @@ const props = defineProps<{
   additions: number | undefined;
   deletions: number | undefined;
   sourceNotification?: DashboardNotification | null;
+  prState: string | undefined;
+  merged: boolean;
+  canManageState: boolean;
+  repoInfo: { owner: string; repo: string } | null;
+  prNumber: number | undefined;
 }>();
 
 const emit = defineEmits<{
   openReviewers: [];
   requestReviewer: [reviewer: PRReviewerSummaryItem];
   removeReviewer: [reviewer: PRReviewerSummaryItem];
+  stateUpdated: [state: 'open' | 'closed'];
 }>();
+
+const apiFetch = useGitPulseApiFetch();
+
+const isClosed = computed(() => props.prState === 'closed');
+
+// Merged pull requests can never be reopened or closed again.
+const showStateActions = computed(() => props.canManageState && !props.merged);
+
+const loadingState = ref(false);
+const stateError = ref('');
+let stateErrorTimer: ReturnType<typeof setTimeout> | null = null;
+
+const clearStateError = () => {
+  if (stateErrorTimer) {
+    clearTimeout(stateErrorTimer);
+    stateErrorTimer = null;
+  }
+  stateError.value = '';
+};
+
+onUnmounted(() => {
+  if (stateErrorTimer) {
+    clearTimeout(stateErrorTimer);
+    stateErrorTimer = null;
+  }
+});
+
+const updatePullRequestState = async (state: 'open' | 'closed') => {
+  if (!showStateActions.value || !props.repoInfo || !props.prNumber) return;
+
+  loadingState.value = true;
+  clearStateError();
+
+  try {
+    const { owner, repo } = props.repoInfo;
+    await apiFetch(`/api/repos/${owner}/${repo}/pulls/${props.prNumber}/state`, {
+      method: 'PATCH',
+      body: { state },
+    });
+
+    emit('stateUpdated', state);
+  } catch (err: unknown) {
+    console.error('Error updating pull request state:', err);
+    stateError.value = getFetchErrorMessage(
+      err,
+      state === 'closed'
+        ? t('prReview.failedToClosePullRequest')
+        : t('prReview.failedToReopenPullRequest')
+    );
+    stateErrorTimer = setTimeout(() => {
+      stateError.value = '';
+      stateErrorTimer = null;
+    }, 5000);
+  } finally {
+    loadingState.value = false;
+  }
+};
 
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 
@@ -738,6 +830,62 @@ const formatRelativeTime = (dateString: string | undefined) => {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+.sidebar-action-btn--danger {
+  color: var(--gitpulse-danger);
+
+  &:hover:not(:disabled) {
+    background: var(--gitpulse-danger-soft);
+    border-color: var(--gitpulse-danger);
+    color: var(--gitpulse-danger);
+  }
+}
+
+.sidebar-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.sidebar-alert--error {
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+}
+
+.sidebar-alert__dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--gitpulse-danger);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--gitpulse-danger-soft);
+  }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 </style>

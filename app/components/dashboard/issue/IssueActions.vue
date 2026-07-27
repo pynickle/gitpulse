@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="canLockIssue" class="sidebar-card mb-4">
+    <div v-if="canLockIssue || canManageState" class="sidebar-card mb-4">
       <div class="sidebar-card__content">
         <div v-if="lockError" class="sidebar-alert sidebar-alert--error mb-3">
           <AlertCircleIcon :size="14" />
@@ -9,7 +9,27 @@
             <XIcon :size="12" />
           </button>
         </div>
+        <div v-if="stateError" class="sidebar-alert sidebar-alert--error mb-3">
+          <AlertCircleIcon :size="14" />
+          <span>{{ stateError }}</span>
+          <button class="sidebar-alert__dismiss" @click="clearStateError">
+            <XIcon :size="12" />
+          </button>
+        </div>
         <button
+          v-if="canManageState"
+          class="sidebar-action-btn"
+          :class="{ 'sidebar-action-btn--danger': !isClosed, 'mb-2': canLockIssue }"
+          :disabled="loadingState"
+          @click="isClosed ? reopenIssue() : closeIssue()"
+        >
+          <Loader2Icon v-if="loadingState" class="spin-animation" :size="14" />
+          <CircleCheckIcon v-else-if="!isClosed" :size="14" />
+          <CircleDotIcon v-else :size="14" />
+          <span>{{ isClosed ? t('issueDetail.reopenIssue') : t('issueDetail.closeIssue') }}</span>
+        </button>
+        <button
+          v-if="canLockIssue"
           class="sidebar-action-btn"
           @click="isLocked ? unlockIssue() : openLockModal()"
           :disabled="loadingLock"
@@ -74,6 +94,8 @@
 <script setup lang="ts">
 import {
   AlertCircleIcon,
+  CircleCheckIcon,
+  CircleDotIcon,
   ExternalLinkIcon,
   InfoIcon,
   ListMinusIcon,
@@ -95,6 +117,8 @@ import LockReasonModal from './LockReasonModal.vue';
 const props = defineProps<{
   isLocked: boolean;
   canLockIssue: boolean;
+  canManageState: boolean;
+  issueState: string | undefined;
   repoInfo: { owner: string; repo: string } | null;
   issueNumber: number | undefined;
   htmlUrl: string | undefined;
@@ -105,6 +129,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:isLocked', isLocked: boolean): void;
+  (e: 'update:state', state: 'open' | 'closed', stateReason: string | null): void;
   (e: 'add-timeline-event', event: IssueTimelineItem): void;
 }>();
 
@@ -127,6 +152,76 @@ const handleToggleTodo = () => {
     toggleNotificationTodo(props.sourceNotification);
   }
 };
+
+const isClosed = computed(() => props.issueState === 'closed');
+
+const loadingState = ref(false);
+const stateError = ref('');
+let stateErrorTimer: ReturnType<typeof setTimeout> | null = null;
+
+const clearStateError = () => {
+  if (stateErrorTimer) {
+    clearTimeout(stateErrorTimer);
+    stateErrorTimer = null;
+  }
+  stateError.value = '';
+};
+
+const scheduleStateErrorClear = () => {
+  if (stateErrorTimer) clearTimeout(stateErrorTimer);
+  stateErrorTimer = setTimeout(() => {
+    stateError.value = '';
+    stateErrorTimer = null;
+  }, 5000);
+};
+
+const currentActor = () => ({
+  login: user.value?.login || '',
+  avatarUrl: user.value?.avatar_url || '',
+  url: user.value?.login ? `https://github.com/${user.value.login}` : '',
+});
+
+const updateIssueState = async (state: 'open' | 'closed') => {
+  if (!props.canManageState || !props.repoInfo || !props.issueNumber) return;
+
+  loadingState.value = true;
+  clearStateError();
+
+  try {
+    const { owner, repo } = props.repoInfo;
+    const result = await apiFetch<{ state: string; stateReason: string | null }>(
+      `/api/repos/${owner}/${repo}/issues/${props.issueNumber}/state`,
+      {
+        method: 'PATCH',
+        body: state === 'closed' ? { state, state_reason: 'completed' } : { state },
+      }
+    );
+
+    emit('update:state', state, result.stateReason);
+    emit('add-timeline-event', {
+      kind: 'event',
+      eventType: state === 'closed' ? 'closed' : 'reopened',
+      id: `state-${Date.now()}`,
+      actor: currentActor(),
+      ...(state === 'closed' && result.stateReason ? { stateReason: result.stateReason } : {}),
+      createdAt: new Date().toISOString(),
+    });
+  } catch (err: unknown) {
+    console.error('Error updating issue state:', err);
+    stateError.value = getFetchErrorMessage(
+      err,
+      state === 'closed'
+        ? t('issueDetail.failedToCloseIssue')
+        : t('issueDetail.failedToReopenIssue')
+    );
+    scheduleStateErrorClear();
+  } finally {
+    loadingState.value = false;
+  }
+};
+
+const closeIssue = () => updateIssueState('closed');
+const reopenIssue = () => updateIssueState('open');
 
 const showLockReasonModal = ref(false);
 const loadingLock = ref(false);
@@ -165,6 +260,10 @@ const closeLockModal = () => {
 
 onUnmounted(() => {
   clearLockErrorTimer();
+  if (stateErrorTimer) {
+    clearTimeout(stateErrorTimer);
+    stateErrorTimer = null;
+  }
   if (showLockReasonModal.value) {
     closeModal();
   }
@@ -192,13 +291,7 @@ const confirmLockIssue = async (lockReason: string) => {
       kind: 'event',
       eventType: 'locked',
       id: `lock-${Date.now()}`,
-      actor: {
-        login: user.value?.login || 'You',
-        avatarUrl: user.value?.avatar_url || 'https://github.com/placeholder.png',
-        url: user.value?.login
-          ? `https://github.com/${user.value.login}`
-          : 'https://github.com/you',
-      },
+      actor: currentActor(),
       lockReason: lockReason.toUpperCase().replace('-', '_'),
       createdAt: new Date().toISOString(),
     };
@@ -234,13 +327,7 @@ const unlockIssue = async () => {
       kind: 'event',
       eventType: 'unlocked',
       id: `unlock-${Date.now()}`,
-      actor: {
-        login: user.value?.login || 'You',
-        avatarUrl: user.value?.avatar_url || 'https://github.com/placeholder.png',
-        url: user.value?.login
-          ? `https://github.com/${user.value.login}`
-          : 'https://github.com/you',
-      },
+      actor: currentActor(),
       createdAt: new Date().toISOString(),
     };
 
@@ -359,6 +446,16 @@ const formatDate = (dateString: string | undefined) => {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+.sidebar-action-btn--danger {
+  color: var(--gitpulse-danger);
+
+  &:hover:not(:disabled) {
+    background: var(--gitpulse-danger-soft);
+    border-color: var(--gitpulse-danger);
+    color: var(--gitpulse-danger);
   }
 }
 

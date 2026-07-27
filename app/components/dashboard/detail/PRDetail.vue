@@ -99,9 +99,15 @@
             :additions="currentPullRequest?.additions"
             :deletions="currentPullRequest?.deletions"
             :source-notification="sourceNotification"
+            :pr-state="currentPullRequest?.state"
+            :merged="Boolean(currentPullRequest?.merged || currentPullRequest?.merged_at)"
+            :can-manage-state="canManagePullRequestState"
+            :repo-info="repoInfo"
+            :pr-number="currentPullRequest?.number"
             @open-reviewers="openReviewerPicker"
             @request-reviewer="rerequestReviewer"
             @remove-reviewer="removeReviewerRequest"
+            @state-updated="handlePullRequestStateUpdated"
           />
 
           <PRReviewerRequestModal
@@ -206,6 +212,7 @@ const emit = defineEmits<{
 
 const loadingTimeline = ref(false);
 const currentPullRequest = ref(props.pullRequest);
+const { user: sessionUser } = useUserSession();
 const detailError = ref('');
 const timeline = ref<PRTimelineItem[]>([]);
 const timelineRequestId = ref(0);
@@ -278,6 +285,14 @@ const canRequestReviewers = computed(
       repoPermissions.value.admin || repoPermissions.value.maintain || repoPermissions.value.push
     ) && reviewerRequestsAvailable.value !== false
 );
+
+// Repo triage+ rights, or the author closing/reopening their own pull request.
+const canManagePullRequestState = computed(() => {
+  if (repoPermissions.value.canManageItemState) return true;
+
+  const authorLogin = currentPullRequest.value?.user?.login;
+  return Boolean(authorLogin && authorLogin === sessionUser.value?.login);
+});
 
 const repoOwner = computed(() => repoInfo.value?.owner || '');
 
@@ -611,6 +626,11 @@ const clearReviewerPickerError = () => {
 };
 
 const handlePullRequestMerged = () => {
+  fetchPullRequestDetails();
+  fetchTimeline();
+};
+
+const handlePullRequestStateUpdated = () => {
   fetchPullRequestDetails();
   fetchTimeline();
 };

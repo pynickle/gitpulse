@@ -7,6 +7,7 @@ export interface RepoPermissions {
   canEditLabels: boolean;
   canLockIssue: boolean;
   canEditAssignees: boolean;
+  canManageItemState: boolean;
 }
 
 type RepoPermissionsSource = Partial<Record<keyof RepoPermissions, unknown>> | null | undefined;
@@ -26,6 +27,7 @@ export function normalizeRepoPermissions(source: RepoPermissionsSource): RepoPer
     canEditLabels: Boolean(source?.canEditLabels),
     canLockIssue: Boolean(source?.canLockIssue),
     canEditAssignees: Boolean(source?.canEditAssignees || admin || maintain || push),
+    canManageItemState: Boolean(source?.canManageItemState || admin || maintain || push || triage),
   };
 }
 

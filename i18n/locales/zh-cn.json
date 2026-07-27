@@ -191,7 +191,11 @@
     "lockReasonSpam": "垃圾内容",
     "lockReasonSpamDesc": "此议题是垃圾内容或包含不适当的内容",
     "failedToLockIssue": "锁定议题失败",
-    "failedToUnlockIssue": "解锁议题失败"
+    "failedToUnlockIssue": "解锁议题失败",
+    "closeIssue": "关闭议题",
+    "reopenIssue": "重新打开议题",
+    "failedToCloseIssue": "关闭议题失败",
+    "failedToReopenIssue": "重新打开议题失败"
   },
   "discussionDetail": {
     "loading": "正在加载讨论...",
@@ -741,6 +745,10 @@
   },
   "prReview": {
     "openReview": "审查变更",
+    "closePullRequest": "关闭拉取请求",
+    "reopenPullRequest": "重新打开拉取请求",
+    "failedToClosePullRequest": "关闭拉取请求失败",
+    "failedToReopenPullRequest": "重新打开拉取请求失败",
     "backToDetails": "返回拉取请求详情",
     "untitledPullRequest": "未命名拉取请求",
     "loadingFiles": "正在加载变更文件...",
