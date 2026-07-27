@@ -88,7 +88,7 @@ const createDetailPanel = <TData>() => {
     } catch (fetchError) {
       console.error(options.logPrefix, fetchError);
       if (id === requestId && options.fallbackError) {
-        error.value = fetchError instanceof Error ? fetchError.message : options.fallbackError;
+        error.value = getFetchErrorMessage(fetchError, options.fallbackError);
       }
     } finally {
       if (id === requestId) {
@@ -101,6 +101,7 @@ const createDetailPanel = <TData>() => {
 };
 
 export function useDashboardDetails(currentRouteTab: Ref<string>) {
+  const { t } = useI18n();
   const apiFetch = useGitPulseApiFetch();
   const { loggedIn, ready: sessionReady } = useUserSession();
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
@@ -453,7 +454,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       () => apiFetch<IssueDetailPayload>(`/api/issues/${owner}/${repo}/${issueNumber}`),
       {
         logPrefix: 'Error fetching issue:',
-        fallbackError: 'Failed to load issue details.',
+        fallbackError: t('detailOverlay.loadError.issue'),
       }
     );
   };
@@ -488,7 +489,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       },
       {
         logPrefix: 'Error fetching pull request:',
-        fallbackError: 'Failed to load pull request details.',
+        fallbackError: t('detailOverlay.loadError.pullRequest'),
       }
     );
   };
@@ -506,7 +507,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     showOnly(repoPanel);
     await repoPanel.load(() => apiFetch<RepositoryDetailPayload>(`/api/repos/${owner}/${repo}`), {
       logPrefix: 'Error fetching repository:',
-      fallbackError: 'Failed to load repository details.',
+      fallbackError: t('detailOverlay.loadError.repository'),
     });
   };
 
@@ -519,7 +520,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         apiFetch<DiscussionDetailPayload>(`/api/discussions/${owner}/${repo}/${discussionNumber}`),
       {
         logPrefix: 'Error fetching discussion:',
-        fallbackError: 'Failed to load discussion details.',
+        fallbackError: t('detailOverlay.loadError.discussion'),
       }
     );
   };
@@ -540,7 +541,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       },
       {
         logPrefix: 'Error fetching release:',
-        fallbackError: 'Failed to load release details.',
+        fallbackError: t('detailOverlay.loadError.release'),
       }
     );
   };

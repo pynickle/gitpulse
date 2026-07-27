@@ -2,6 +2,10 @@
 
 > 本文档记录 `self-iteration` 分支上每次提交的简洁中文功能说明,按时间倒序排列(最新在前)。
 
+## 2026-07-27 — fix(i18n): 详情加载失败文案本地化并优化错误提取
+
+useDashboardDetails 中五类详情(议题/PR/讨论/发布/仓库)的加载失败兜底文案此前硬编码英文,且错误面板直接显示 ofetch 原始报错(形如 [GET] "/api/..." 500);现改用 getFetchErrorMessage 优先提取服务端 statusMessage、兜底走 detailOverlay.loadError.* 中英文案,PRDetail 中孤立的英文兜底一并接入,相关测试补充 useI18n mock。
+
 ## 2026-07-27 — fix(i18n): RepoDetail 内联双语文案迁入 locale 文件
 
 仓库详情组件此前用一个约 35 键的手写双语 copy 对象(按 locale 前缀二选一)与 i18n 系统并行,翻译人员在 locale 文件中完全看不到这些文案,新增语言也会静默回退英文。现将全部键迁入 en/zh-cn 的 repoDetail 段并通过 t() 解析,模板调用点不变。迁移中发现并修复一个隐蔽陷阱:文案"仅被@时"中的裸 @ 是 intlify 链接语法,会导致整个 zh-cn locale 编译失败、所有翻译回退为键名,已按项目惯例转义为 \\@。

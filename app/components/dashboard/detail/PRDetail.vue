@@ -886,7 +886,7 @@ const fetchPullRequestDetails = async () => {
     console.error('Error fetching PR details:', err);
     if (requestId === detailRequestId.value && pullRequestIdentity === getPullRequestIdentity()) {
       currentPullRequest.value = basePullRequest;
-      detailError.value = getFetchErrorMessage(err, 'Failed to load pull request details.');
+      detailError.value = getFetchErrorMessage(err, t('detailOverlay.loadError.pullRequest'));
     }
   }
 };

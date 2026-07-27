@@ -93,6 +93,13 @@
       "pullRequest": "正在加载拉取请求...",
       "release": "正在加载发布...",
       "repository": "正在加载仓库..."
+    },
+    "loadError": {
+      "issue": "议题详情加载失败。",
+      "pullRequest": "拉取请求详情加载失败。",
+      "discussion": "讨论详情加载失败。",
+      "release": "发布详情加载失败。",
+      "repository": "仓库详情加载失败。"
     }
   },
   "detailTimeline": {

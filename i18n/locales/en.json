@@ -93,6 +93,13 @@
       "pullRequest": "Loading pull request...",
       "release": "Loading release...",
       "repository": "Loading repository..."
+    },
+    "loadError": {
+      "issue": "Failed to load issue details.",
+      "pullRequest": "Failed to load pull request details.",
+      "discussion": "Failed to load discussion details.",
+      "release": "Failed to load release details.",
+      "repository": "Failed to load repository details."
     }
   },
   "detailTimeline": {

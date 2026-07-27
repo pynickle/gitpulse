@@ -55,6 +55,7 @@ describe('dashboard repository detail routing', () => {
     };
 
     Object.assign(globalThis, {
+      useI18n: () => ({ t: (key: string) => key }),
       useGitPulseApiFetch: () => async (url: string) => {
         if (url === '/api/repos/octo/repo') {
           repoRequests.push(url);
