@@ -13,6 +13,6 @@
     "test": "bun test tests"
   },
   "dependencies": {
-    "wxt": "^0.20.26"
+    "wxt": "^0.21.0"
   }
 }
