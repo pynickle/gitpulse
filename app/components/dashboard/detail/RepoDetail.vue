@@ -5,6 +5,7 @@ import {
   BookOpenIcon,
   CircleDotIcon,
   CircleMinusIcon,
+  Code2Icon,
   EyeIcon,
   ExternalLinkIcon,
   FileTextIcon,
@@ -26,7 +27,11 @@ import type { LocationQueryRaw } from 'vue-router';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
-import type { RepoLatestCommitPayload, RepositoryDetailPayload } from '#shared/types/repos';
+import type {
+  RepoLanguagesPayload,
+  RepoLatestCommitPayload,
+  RepositoryDetailPayload,
+} from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
@@ -114,6 +119,7 @@ const copy = computed(() => ({
   homepage: t('repoDetail.homepage'),
   issues: t('repoDetail.openIssues'),
   language: t('repoDetail.language'),
+  languages: t('repoDetail.languages'),
   license: t('repoDetail.license'),
   noDescription: t('repoDetail.noDescription'),
   notWatching: t('repoDetail.notWatching'),
@@ -316,12 +322,32 @@ const loadingLatestCommit = ref(false);
 const latestCommitError = ref<string | null>(null);
 const latestCommitRequestId = ref(0);
 
+const languageBytes = shallowRef<RepoLanguagesPayload | null>(null);
+const loadingLanguages = ref(false);
+const languagesRequestId = ref(0);
+
 // Session caches for README / license while this repo detail instance is mounted.
 const readmeSessionCache = new Map<string, { content: string | null; path: string | null }>();
 const licenseSessionCache = new Map<string, LicenseInfo | null>();
 const latestCommitSessionCache = new Map<string, RepoLatestCommitPayload | null>();
+// Languages are repo-scoped (GitHub has no ref param on this endpoint).
+const languagesSessionCache = new Map<string, RepoLanguagesPayload | null>();
+
+const formatLanguagePercentage = (value: number) => {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}%` : `${rounded.toFixed(1)}%`;
+};
 
 const languageColor = computed(() => getLanguageColor(props.repository.language));
+const languageShares = computed(() =>
+  buildRepoLanguageBreakdown(languageBytes.value, { getColor: getLanguageColor })
+);
+const languageBarAriaLabel = computed(() => {
+  if (languageShares.value.length === 0) return copy.value.languages;
+  return languageShares.value
+    .map((item) => `${item.name} ${formatLanguagePercentage(item.percentage)}`)
+    .join(', ');
+});
 const repoDefaultBranch = computed(
   () => defaultBranch.value || props.repository.default_branch || ''
 );
@@ -781,6 +807,42 @@ const fetchLatestCommit = async (options: { force?: boolean } = {}) => {
   }
 };
 
+const buildRepoCacheKey = () => `${props.owner}/${props.repo}`;
+
+const fetchLanguages = async () => {
+  const cacheKey = buildRepoCacheKey();
+  if (languagesSessionCache.has(cacheKey)) {
+    languagesRequestId.value += 1;
+    languageBytes.value = languagesSessionCache.get(cacheKey) ?? null;
+    loadingLanguages.value = false;
+    return;
+  }
+
+  const requestId = languagesRequestId.value + 1;
+  languagesRequestId.value = requestId;
+  languageBytes.value = null;
+  loadingLanguages.value = true;
+
+  try {
+    const data = await apiFetch<RepoLanguagesPayload>(
+      `/api/repos/${props.owner}/${props.repo}/languages`
+    );
+    if (requestId !== languagesRequestId.value) return;
+
+    languagesSessionCache.set(cacheKey, data);
+    languageBytes.value = data;
+  } catch {
+    if (requestId === languagesRequestId.value) {
+      languagesSessionCache.set(cacheKey, null);
+      languageBytes.value = null;
+    }
+  } finally {
+    if (requestId === languagesRequestId.value) {
+      loadingLanguages.value = false;
+    }
+  }
+};
+
 onMounted(() => {
   fetchStarState();
   fetchWatchState();
@@ -803,6 +865,22 @@ watch(
     void fetchReadme();
     void fetchLicense();
     void fetchLatestCommit();
+  },
+  { immediate: true }
+);
+
+// Languages are repo-wide (not branch-scoped); load as soon as owner/repo are known.
+watch(
+  () => [props.owner, props.repo] as const,
+  ([owner, repo], previous) => {
+    if (!owner || !repo) return;
+
+    if (previous && (previous[0] !== owner || previous[1] !== repo)) {
+      languagesSessionCache.clear();
+      languageBytes.value = null;
+    }
+
+    void fetchLanguages();
   },
   { immediate: true }
 );
@@ -1178,6 +1256,51 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   <span class="info-stat__value">{{ stat.value }}</span>
                   <span class="info-stat__label">{{ stat.label }}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card mb-4">
+            <div class="sidebar-card__header">
+              <div class="sidebar-card__header-left">
+                <Code2Icon :size="14" class="sidebar-card__icon" />
+                <span class="sidebar-card__title">{{ copy.languages }}</span>
+              </div>
+            </div>
+            <div class="sidebar-card__content">
+              <div
+                v-if="loadingLanguages && languageShares.length === 0"
+                class="repo-languages__loading"
+              >
+                <Loader2Icon :size="16" class="spin-animation" aria-hidden="true" />
+                <span class="is-sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
+              </div>
+              <div v-else class="repo-languages">
+                <div class="repo-languages__bar" role="img" :aria-label="languageBarAriaLabel">
+                  <span
+                    v-for="item in languageShares"
+                    :key="item.name"
+                    class="repo-languages__segment"
+                    :style="{
+                      width: `${item.percentage}%`,
+                      backgroundColor: item.color,
+                    }"
+                    :title="`${item.name} ${formatLanguagePercentage(item.percentage)}`"
+                  />
+                </div>
+                <ul class="repo-languages__legend">
+                  <li v-for="item in languageShares" :key="item.name" class="repo-languages__item">
+                    <span
+                      class="repo-languages__dot"
+                      :style="{ backgroundColor: item.color }"
+                      aria-hidden="true"
+                    />
+                    <span class="repo-languages__name">{{ item.name }}</span>
+                    <span class="repo-languages__percent">
+                      {{ formatLanguagePercentage(item.percentage) }}
+                    </span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -1883,6 +2006,88 @@ html.dark .repo-detail-section__chrome {
   color: var(--gitpulse-text-muted);
   font-size: 12px;
   text-align: center;
+}
+
+.repo-languages__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.repo-languages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.repo-languages__bar {
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--gitpulse-surface);
+}
+
+.repo-languages__segment {
+  display: block;
+  height: 100%;
+  min-width: 0;
+
+  &:first-child {
+    border-radius: 999px 0 0 999px;
+  }
+
+  &:last-child {
+    border-radius: 0 999px 999px 0;
+  }
+
+  &:only-child {
+    border-radius: 999px;
+  }
+}
+
+.repo-languages__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repo-languages__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.repo-languages__dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.repo-languages__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-languages__percent {
+  flex: 0 0 auto;
+  color: var(--gitpulse-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .sidebar-link {

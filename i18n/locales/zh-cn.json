@@ -710,6 +710,8 @@
     "homepage": "主页",
     "openIssues": "开放问题",
     "language": "语言",
+    "languages": "语言占比",
+    "loadingLanguages": "正在加载语言占比…",
     "license": "许可证",
     "noDescription": "这个仓库暂无描述",
     "notWatching": "不关注",

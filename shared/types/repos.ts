@@ -85,3 +85,9 @@ export interface RepoCommitListResponse {
   items: RepoCommitListItemPayload[];
   pagination: RepoCommitListPaginationMeta;
 }
+
+/**
+ * Language → byte-count map from GitHub's repository languages endpoint.
+ * Values are source-byte totals used to compute percentage shares in the UI.
+ */
+export type RepoLanguagesPayload = Record<string, number>;

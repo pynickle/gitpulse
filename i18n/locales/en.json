@@ -710,6 +710,8 @@
     "homepage": "Homepage",
     "openIssues": "Open issues",
     "language": "Language",
+    "languages": "Languages",
+    "loadingLanguages": "Loading languages…",
     "license": "License",
     "noDescription": "No description provided",
     "notWatching": "Ignore",
