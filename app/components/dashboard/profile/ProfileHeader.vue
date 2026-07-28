@@ -2,6 +2,8 @@
 import {
   BuildingIcon,
   CalendarIcon,
+  ChevronRightIcon,
+  ExternalLinkIcon,
   LinkIcon,
   MailIcon,
   MapPinIcon,
@@ -60,6 +62,11 @@ const blogHref = computed(() => {
 
 const followerCount = computed(() => props.profile.followers);
 const followingCount = computed(() => props.profile.following);
+
+const starredTo = computed(() => ({
+  path: '/dashboard/starred',
+  query: { user: props.profile.login },
+}));
 </script>
 
 <template>
@@ -76,9 +83,8 @@ const followingCount = computed(() => props.profile.following);
     <div class="profile-header__identity">
       <h1 class="profile-header__name">{{ displayName }}</h1>
       <p v-if="showSecondaryLogin" class="profile-header__login">{{ profile.login }}</p>
+      <p v-if="profile.bio" class="profile-header__bio">{{ profile.bio }}</p>
     </div>
-
-    <p v-if="profile.bio" class="profile-header__bio">{{ profile.bio }}</p>
 
     <div class="profile-header__connections">
       <button
@@ -100,6 +106,14 @@ const followingCount = computed(() => props.profile.following);
         <span class="profile-header__connection-label">{{ t('profile.following') }}</span>
       </button>
     </div>
+
+    <NuxtLinkLocale class="profile-header__starred" :to="starredTo">
+      <span class="profile-header__starred-icon" aria-hidden="true">
+        <StarIcon :size="15" />
+      </span>
+      <span class="profile-header__starred-label">{{ t('starred.openStarred') }}</span>
+      <ChevronRightIcon :size="16" aria-hidden="true" class="profile-header__starred-chevron" />
+    </NuxtLinkLocale>
 
     <dl class="profile-header__meta">
       <div v-if="profile.company" class="profile-header__meta-item">
@@ -130,25 +144,6 @@ const followingCount = computed(() => props.profile.following);
       </div>
     </dl>
 
-    <NuxtLinkLocale
-      class="profile-header__github-link"
-      :to="{ path: '/dashboard/starred', query: { user: profile.login } }"
-    >
-      <StarIcon :size="15" />
-      <span>{{ t('starred.viewStarred') }}</span>
-    </NuxtLinkLocale>
-
-    <a
-      v-if="profile.htmlUrl"
-      :href="profile.htmlUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="profile-header__github-link"
-    >
-      <GitHubIcon :size="15" />
-      <span>{{ t('profile.viewOnGitHub') }}</span>
-    </a>
-
     <section v-if="organizations.length" class="profile-header__orgs">
       <h2 class="profile-header__orgs-title">{{ t('profile.organizations') }}</h2>
       <ul class="profile-header__orgs-list">
@@ -166,6 +161,19 @@ const followingCount = computed(() => props.profile.following);
         </li>
       </ul>
     </section>
+
+    <!-- External source escape hatch: after all profile content, not inside it. -->
+    <a
+      v-if="profile.htmlUrl"
+      :href="profile.htmlUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="profile-header__github"
+    >
+      <GitHubIcon :size="14" aria-hidden="true" />
+      <span>{{ t('profile.viewOnGitHub') }}</span>
+      <ExternalLinkIcon :size="12" aria-hidden="true" />
+    </a>
   </header>
 </template>
 
@@ -186,7 +194,7 @@ const followingCount = computed(() => props.profile.following);
 .profile-header__identity {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.35rem;
 }
 
 .profile-header__name {
@@ -250,6 +258,66 @@ const followingCount = computed(() => props.profile.following);
   color: var(--gitpulse-text-subtle);
 }
 
+.profile-header__starred {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 28%, var(--gitpulse-border));
+  border-radius: var(--gitpulse-radius-md);
+  background: color-mix(in srgb, var(--gitpulse-accent-soft) 55%, var(--gitpulse-surface));
+  color: var(--gitpulse-text-strong);
+  text-decoration: none;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--gitpulse-accent-soft) 78%, var(--gitpulse-surface));
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
+  }
+
+  &:hover .profile-header__starred-chevron {
+    transform: translateX(2px);
+    color: var(--gitpulse-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.profile-header__starred-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--gitpulse-radius-sm);
+  background: color-mix(in srgb, var(--gitpulse-accent) 14%, transparent);
+  color: var(--gitpulse-accent);
+}
+
+.profile-header__starred-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: start;
+}
+
+.profile-header__starred-chevron {
+  flex-shrink: 0;
+  color: var(--gitpulse-text-muted);
+  transition:
+    transform 0.12s ease,
+    color 0.12s ease;
+}
+
 .profile-header__meta {
   display: flex;
   flex-direction: column;
@@ -281,29 +349,6 @@ const followingCount = computed(() => props.profile.following);
     &:hover {
       text-decoration: underline;
     }
-  }
-}
-
-.profile-header__github-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--gitpulse-border-strong);
-  border-radius: var(--gitpulse-radius-md);
-  background: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-strong);
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease;
-
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-accent);
   }
 }
 
@@ -349,6 +394,33 @@ const followingCount = computed(() => props.profile.following);
   }
 }
 
+// Footer escape hatch — outside identity/meta, clearly "leave the app".
+.profile-header__github {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--gitpulse-border);
+  width: fit-content;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: color 0.12s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--gitpulse-radius-sm);
+  }
+}
+
 @media (max-width: 1023px) {
   .profile-header {
     align-items: center;
@@ -357,6 +429,19 @@ const followingCount = computed(() => props.profile.following);
 
   .profile-header__avatar {
     max-width: 160px;
+  }
+
+  .profile-header__identity {
+    align-items: center;
+  }
+
+  .profile-header__starred {
+    width: 100%;
+    max-width: 20rem;
+  }
+
+  .profile-header__starred-label {
+    text-align: center;
   }
 
   .profile-header__meta {
