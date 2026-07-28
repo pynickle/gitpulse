@@ -4,22 +4,11 @@
  */
 
 import {
-  STARRED_DEFAULT_PER_PAGE,
   STARRED_DIRECTIONS,
-  STARRED_MAX_PER_PAGE,
   STARRED_SORTS,
   type StarredDirection,
   type StarredSort,
 } from '#shared/utils/starred';
-
-export {
-  STARRED_DEFAULT_PER_PAGE,
-  STARRED_DIRECTIONS,
-  STARRED_MAX_PER_PAGE,
-  STARRED_SORTS,
-  type StarredDirection,
-  type StarredSort,
-};
 
 const STARRED_SORT_SET = new Set<string>(STARRED_SORTS);
 const STARRED_DIRECTION_SET = new Set<string>(STARRED_DIRECTIONS);

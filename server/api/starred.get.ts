@@ -1,13 +1,9 @@
 import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
+import { STARRED_DEFAULT_PER_PAGE, STARRED_MAX_PER_PAGE } from '#shared/utils/starred';
 
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 import { parseOptionalGitHubUsername } from '../utils/github-user-utils';
-import {
-  parseStarredDirection,
-  parseStarredSort,
-  STARRED_DEFAULT_PER_PAGE,
-  STARRED_MAX_PER_PAGE,
-} from '../utils/starred-query-utils';
+import { parseStarredDirection, parseStarredSort } from '../utils/starred-query-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   const octokit = await getGitHubClient(event);
