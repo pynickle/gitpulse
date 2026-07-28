@@ -1055,7 +1055,15 @@
     "loadingSubtitle": "正在从 GitHub 获取你的星标",
     "empty": "你还没有为任何仓库加星标。",
     "error": "加载已加星标的仓库失败。",
-    "retry": "重试"
+    "retry": "重试",
+    "sortLabel": "排序星标仓库",
+    "orderLabel": "排序方向",
+    "sort": {
+      "starred": "加星时间",
+      "updated": "最近更新",
+      "desc": "降序",
+      "asc": "升序"
+    }
   },
   "releasesPage": {
     "pageTitle": "{repo} 的 Releases",

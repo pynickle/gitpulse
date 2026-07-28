@@ -1,3 +1,11 @@
+import {
+  STARRED_DEFAULT_PER_PAGE,
+  type StarredDirection,
+  type StarredSort,
+} from '#shared/utils/starred';
+
+export type { StarredDirection, StarredSort };
+
 export interface StarredRepo {
   id: number;
   name: string;
@@ -22,14 +30,23 @@ export interface StarredPaginationMeta {
   totalPages: number | null;
 }
 
+export interface FetchStarredPageOptions {
+  page?: number;
+  user?: string | null;
+  sort?: StarredSort;
+  direction?: StarredDirection;
+}
+
 interface StarredReposResponse {
   items: StarredRepo[];
   pagination: StarredPaginationMeta;
+  sort?: StarredSort;
+  direction?: StarredDirection;
 }
 
 const DEFAULT_PAGINATION: StarredPaginationMeta = {
   page: 1,
-  perPage: 20,
+  perPage: STARRED_DEFAULT_PER_PAGE,
   hasPrev: false,
   hasNext: false,
   totalCount: null,
@@ -41,20 +58,30 @@ export function useStarredRepos() {
 
   const items = ref<StarredRepo[]>([]);
   const pagination = ref<StarredPaginationMeta>({ ...DEFAULT_PAGINATION });
+  const sort = ref<StarredSort>('created');
+  const direction = ref<StarredDirection>('desc');
   const loading = ref(true);
   const error = ref<string | null>(null);
   const activeRequestId = ref(0);
 
-  const fetchPage = async (page = 1, user: string | null = null) => {
+  const fetchPage = async (options: FetchStarredPageOptions = {}) => {
+    const page = options.page ?? 1;
+    const nextSort = options.sort ?? sort.value;
+    const nextDirection = options.direction ?? direction.value;
     const requestId = activeRequestId.value + 1;
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
 
     try {
-      const params = new URLSearchParams({ page: String(page) });
-      if (user) {
-        params.set('user', user);
+      const params = new URLSearchParams({
+        page: String(page),
+        per_page: String(STARRED_DEFAULT_PER_PAGE),
+        sort: nextSort,
+        direction: nextDirection,
+      });
+      if (options.user) {
+        params.set('user', options.user);
       }
 
       const data = await apiFetch<StarredReposResponse>(`/api/starred?${params.toString()}`);
@@ -62,6 +89,8 @@ export function useStarredRepos() {
 
       items.value = data.items;
       pagination.value = data.pagination;
+      sort.value = data.sort ?? nextSort;
+      direction.value = data.direction ?? nextDirection;
     } catch (err) {
       if (requestId !== activeRequestId.value) return;
 
@@ -76,6 +105,8 @@ export function useStarredRepos() {
   return {
     items,
     pagination,
+    sort,
+    direction,
     loading,
     error,
     fetchPage,

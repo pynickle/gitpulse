@@ -1055,7 +1055,15 @@
     "loadingSubtitle": "Fetching your stars from GitHub",
     "empty": "You haven't starred any repositories yet.",
     "error": "Failed to load starred repositories.",
-    "retry": "Retry"
+    "retry": "Retry",
+    "sortLabel": "Sort starred repositories",
+    "orderLabel": "Sort order",
+    "sort": {
+      "starred": "Starred",
+      "updated": "Updated",
+      "desc": "Desc",
+      "asc": "Asc"
+    }
   },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",

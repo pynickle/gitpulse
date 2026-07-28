@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { StarIcon } from '@lucide/vue';
+import { ArrowDownIcon, ArrowUpIcon, ClockIcon, StarIcon } from '@lucide/vue';
 import { computed, onMounted, watch } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import RepoItem from '~/components/dashboard/RepoItem.vue';
+import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue';
+import FilterSegmentedControl from '~/components/ui/FilterSegmentedControl.vue';
+import type { StarredDirection, StarredSort } from '~/composables/useStarredRepos';
 
 const { t } = useI18n();
 const route = useRoute();
 const { user } = useUserSession();
 const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 
-const { items, pagination, loading, error, fetchPage } = useStarredRepos();
+const { items, pagination, sort, direction, loading, error, fetchPage } = useStarredRepos();
 
 const sessionLogin = computed(() => user.value?.login ?? '');
 
@@ -32,12 +35,77 @@ const initialLoading = computed(() => loading.value && items.value.length === 0 
 
 const requestedUser = computed(() => (isOwnStars.value ? null : targetUser.value));
 
+const sortOptions = computed<SegmentedOption[]>(() => [
+  {
+    value: 'created',
+    label: t('starred.sort.starred'),
+    icon: StarIcon,
+    color: 'var(--gitpulse-accent)',
+  },
+  {
+    value: 'updated',
+    label: t('starred.sort.updated'),
+    icon: ClockIcon,
+    color: 'var(--gitpulse-info)',
+  },
+]);
+
+const directionOptions = computed<SegmentedOption[]>(() => [
+  {
+    value: 'desc',
+    label: t('starred.sort.desc'),
+    icon: ArrowDownIcon,
+    color: 'var(--gitpulse-text-muted)',
+  },
+  {
+    value: 'asc',
+    label: t('starred.sort.asc'),
+    icon: ArrowUpIcon,
+    color: 'var(--gitpulse-text-muted)',
+  },
+]);
+
+const controlsDisabled = computed(() => loading.value);
+
+const reloadFirstPage = async () => {
+  await fetchPage({
+    page: 1,
+    user: requestedUser.value,
+    sort: sort.value,
+    direction: direction.value,
+  });
+};
+
 const handlePageChange = async (page: number) => {
-  await fetchPage(page, requestedUser.value);
+  await fetchPage({
+    page,
+    user: requestedUser.value,
+    sort: sort.value,
+    direction: direction.value,
+  });
+};
+
+const handleSortChange = async (value: string) => {
+  const nextSort: StarredSort = value === 'updated' ? 'updated' : 'created';
+  if (nextSort === sort.value) return;
+  sort.value = nextSort;
+  await reloadFirstPage();
+};
+
+const handleDirectionChange = async (value: string) => {
+  const nextDirection: StarredDirection = value === 'asc' ? 'asc' : 'desc';
+  if (nextDirection === direction.value) return;
+  direction.value = nextDirection;
+  await reloadFirstPage();
 };
 
 const handleRetry = async () => {
-  await fetchPage(pagination.value.page, requestedUser.value);
+  await fetchPage({
+    page: pagination.value.page,
+    user: requestedUser.value,
+    sort: sort.value,
+    direction: direction.value,
+  });
 };
 
 const handleBack = async () => {
@@ -49,11 +117,11 @@ const handleHome = async () => {
 };
 
 onMounted(() => {
-  void fetchPage(1, requestedUser.value);
+  void reloadFirstPage();
 });
 
 watch(requestedUser, () => {
-  void fetchPage(1, requestedUser.value);
+  void reloadFirstPage();
 });
 </script>
 
@@ -75,6 +143,23 @@ watch(requestedUser, () => {
           <StarIcon :size="18" class="mr-2" aria-hidden="true" />
           {{ pageTitle }}
         </h1>
+
+        <div class="starred-page__controls">
+          <FilterSegmentedControl
+            :options="sortOptions"
+            :model-value="sort"
+            :disabled="controlsDisabled"
+            :aria-label="t('starred.sortLabel')"
+            @update:model-value="handleSortChange"
+          />
+          <FilterSegmentedControl
+            :options="directionOptions"
+            :model-value="direction"
+            :disabled="controlsDisabled"
+            :aria-label="t('starred.orderLabel')"
+            @update:model-value="handleDirectionChange"
+          />
+        </div>
       </div>
 
       <div class="starred-page__body">
@@ -111,7 +196,17 @@ watch(requestedUser, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+.starred-page__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .starred-page__error {
