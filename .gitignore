@@ -41,6 +41,9 @@ logs
 .playwright-mcp/
 /tmp/
 
+# === Generated release notes (manual skill output) ===
+release-notes/
+
 # === Project config (per-user overrides) ===
 skills-lock.json
 opencode.jsonc
