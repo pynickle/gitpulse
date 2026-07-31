@@ -90,6 +90,7 @@
             :reviewers="currentPullRequest?.reviewers"
             :reviewer-error="reviewerPickerError"
             :can-request-reviewers="canRequestReviewers"
+            :can-open-review="canOpenReviewWindow"
             :html-url="currentPullRequest?.html_url"
             :created-at="currentPullRequest?.created_at"
             :updated-at="currentPullRequest?.updated_at"
@@ -105,6 +106,7 @@
             :repo-info="repoInfo"
             :pr-number="currentPullRequest?.number"
             @open-reviewers="openReviewerPicker"
+            @open-review="openReviewWindow"
             @request-reviewer="rerequestReviewer"
             @remove-reviewer="removeReviewerRequest"
             @state-updated="handlePullRequestStateUpdated"
@@ -122,20 +124,6 @@
             @submit="requestReviewerSelection"
             @clear-error="clearReviewerPickerError"
           />
-
-          <div class="sidebar-card mt-4">
-            <div class="sidebar-card__content">
-              <button
-                class="sidebar-review-btn"
-                type="button"
-                :disabled="!canOpenReviewWindow"
-                @click="openReviewWindow"
-              >
-                <EyeIcon :size="14" />
-                <span>{{ t('prReview.openReview') }}</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -143,7 +131,6 @@
 </template>
 
 <script setup lang="ts">
-import { EyeIcon } from '@lucide/vue';
 import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
 
 import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
@@ -1037,33 +1024,5 @@ watch(
 .pr-detail__merge-box {
   margin-top: 1.5rem;
   margin-bottom: 5rem;
-}
-
-.sidebar-review-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  background: var(--gitpulse-surface);
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--gitpulse-text-muted);
-  cursor: pointer;
-  transition: all 0.12s ease;
-
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 }
 </style>

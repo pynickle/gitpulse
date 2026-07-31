@@ -147,6 +147,8 @@
     "removeFailed": "移除指派人失败。"
   },
   "detailActions": {
+    "manage": "管理",
+    "links": "链接",
     "viewOnGithub": "在 GitHub 上查看"
   },
   "releaseDetail": {
@@ -180,8 +182,8 @@
     "projectColumnFallback": "列",
     "cancel": "取消",
     "additionalInfo": "其他信息",
-    "created": "创建于 {date}",
-    "updated": "更新于 {date}",
+    "created": "创建",
+    "updated": "更新",
     "assignee": "指派给 {assignee}",
     "noAssignee": "未指派",
     "lockIssue": "锁定议题",

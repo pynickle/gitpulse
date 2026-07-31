@@ -147,6 +147,8 @@
     "removeFailed": "Failed to remove assignee."
   },
   "detailActions": {
+    "manage": "Manage",
+    "links": "Links",
     "viewOnGithub": "View on GitHub"
   },
   "releaseDetail": {
@@ -180,8 +182,8 @@
     "projectColumnFallback": "column",
     "cancel": "Cancel",
     "additionalInfo": "Additional Info",
-    "created": "Created: {date}",
-    "updated": "Updated: {date}",
+    "created": "Created",
+    "updated": "Updated",
     "assignee": "Assignee: {assignee}",
     "noAssignee": "Assignee: None",
     "lockIssue": "Lock Issue",

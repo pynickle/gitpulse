@@ -1,12 +1,12 @@
 <template>
-  <div>
-    <div class="sidebar-card mb-4">
-      <div class="sidebar-card__header">
-        <div class="sidebar-card__header-left">
-          <UsersIcon :size="14" class="sidebar-card__icon" />
-          <span class="sidebar-card__title">{{ t('prReview.reviewers') }}</span>
+  <div class="detail-sidebar-panel">
+    <section class="sidebar-section sidebar-section--card">
+      <header class="sidebar-section__header sidebar-section__header--row">
+        <div class="sidebar-section__header-left">
+          <UsersIcon :size="14" class="sidebar-section__icon" />
+          <h3 class="sidebar-section__title">{{ t('prReview.reviewers') }}</h3>
         </div>
-        <div class="sidebar-card__header-actions">
+        <div class="sidebar-section__header-actions">
           <span v-if="reviewerItems.length > 0" class="sidebar-badge">
             {{ reviewerItems.length }}
           </span>
@@ -21,8 +21,8 @@
             <PlusIcon :size="13" />
           </button>
         </div>
-      </div>
-      <div class="sidebar-card__content">
+      </header>
+      <div class="sidebar-section__body">
         <div v-if="reviewerItems.length > 0" class="reviewer-list">
           <div
             v-for="reviewer in reviewerItems"
@@ -87,30 +87,28 @@
             </button>
           </div>
         </div>
-        <p v-else class="sidebar-card__empty">{{ t('prReview.noReviewers') }}</p>
+        <p v-else class="sidebar-section__empty">{{ t('prReview.noReviewers') }}</p>
         <div v-if="reviewerWarnings.length > 0" class="reviewer-warning-list">
           <p
             v-for="warning in reviewerWarnings"
             :key="`${warning.source}:${warning.message}`"
-            class="sidebar-card__warning"
+            class="sidebar-section__warning"
           >
             {{ warning.message }}
           </p>
         </div>
-        <p v-if="reviewerError" class="sidebar-card__error">
+        <p v-if="reviewerError" class="sidebar-section__error">
           {{ reviewerError }}
         </p>
       </div>
-    </div>
+    </section>
 
-    <div class="sidebar-card mb-4">
-      <div class="sidebar-card__header">
-        <div class="sidebar-card__header-left">
-          <InfoIcon :size="14" class="sidebar-card__icon" />
-          <span class="sidebar-card__title">{{ t('prReview.details') }}</span>
-        </div>
-      </div>
-      <div class="sidebar-card__content">
+    <section class="sidebar-section sidebar-section--card">
+      <header class="sidebar-section__header">
+        <InfoIcon :size="14" class="sidebar-section__icon" />
+        <h3 class="sidebar-section__title">{{ t('prReview.details') }}</h3>
+      </header>
+      <div class="sidebar-section__body">
         <div class="info-list">
           <div class="info-item">
             <span class="info-item__label">{{ t('prReview.created') }}</span>
@@ -144,51 +142,89 @@
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div v-if="sourceNotification" class="sidebar-card mb-4">
-      <div class="sidebar-card__content">
-        <button class="sidebar-action-btn" @click="handleToggleTodo">
-          <ListPlusIcon v-if="!isTodo" :size="14" />
-          <ListMinusIcon v-else :size="14" />
-          <span>{{ todoLabel }}</span>
-        </button>
-      </div>
-    </div>
-
-    <div v-if="showStateActions" class="sidebar-card mb-4">
-      <div class="sidebar-card__content">
-        <div v-if="stateError" class="sidebar-alert sidebar-alert--error mb-3">
+    <section class="sidebar-section">
+      <header class="sidebar-section__header">
+        <Settings2Icon :size="14" class="sidebar-section__icon" />
+        <h3 class="sidebar-section__title">{{ t('detailActions.manage') }}</h3>
+      </header>
+      <div class="sidebar-section__body">
+        <div v-if="stateError" class="sidebar-alert sidebar-alert--error">
           <AlertCircleIcon :size="14" />
           <span>{{ stateError }}</span>
-          <button class="sidebar-alert__dismiss" @click="clearStateError">
+          <button type="button" class="sidebar-alert__dismiss" @click="clearStateError">
             <XIcon :size="12" />
           </button>
         </div>
-        <button
-          class="sidebar-action-btn"
-          :class="{ 'sidebar-action-btn--danger': !isClosed }"
-          :disabled="loadingState"
-          @click="isClosed ? updatePullRequestState('open') : updatePullRequestState('closed')"
-        >
-          <Loader2Icon v-if="loadingState" class="spin-animation" :size="14" />
-          <CircleSlashIcon v-else-if="!isClosed" :size="14" />
-          <GitPullRequestIcon v-else :size="14" />
-          <span>{{
-            isClosed ? t('prReview.reopenPullRequest') : t('prReview.closePullRequest')
-          }}</span>
-        </button>
+        <div class="sidebar-action-stack">
+          <button
+            type="button"
+            class="sidebar-action-btn sidebar-action-btn--review"
+            :disabled="!canOpenReview"
+            @click="emit('openReview')"
+          >
+            <span class="sidebar-action-btn__icon" aria-hidden="true">
+              <EyeIcon :size="14" />
+            </span>
+            <span class="sidebar-action-btn__label">{{ t('prReview.openReview') }}</span>
+            <ChevronRightIcon :size="14" class="sidebar-action-btn__chevron" aria-hidden="true" />
+          </button>
+          <button
+            v-if="showManageActions"
+            type="button"
+            class="sidebar-action-btn"
+            :class="isClosed ? 'sidebar-action-btn--reopen' : 'sidebar-action-btn--close'"
+            :disabled="loadingState"
+            @click="isClosed ? updatePullRequestState('open') : updatePullRequestState('closed')"
+          >
+            <span class="sidebar-action-btn__icon" aria-hidden="true">
+              <Loader2Icon v-if="loadingState" class="spin-animation" :size="14" />
+              <CircleSlashIcon v-else-if="!isClosed" :size="14" />
+              <GitPullRequestIcon v-else :size="14" />
+            </span>
+            <span>{{
+              isClosed ? t('prReview.reopenPullRequest') : t('prReview.closePullRequest')
+            }}</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="sidebar-card">
-      <div class="sidebar-card__content">
-        <a :href="htmlUrl" target="_blank" rel="noopener noreferrer" class="sidebar-link">
-          <ExternalLinkIcon :size="14" />
-          <span>{{ t('detailActions.viewOnGithub') }}</span>
-        </a>
+    <section v-if="sourceNotification" class="sidebar-section">
+      <header class="sidebar-section__header">
+        <LinkIcon :size="14" class="sidebar-section__icon" />
+        <h3 class="sidebar-section__title">{{ t('detailActions.links') }}</h3>
+      </header>
+      <div class="sidebar-section__body">
+        <div class="sidebar-action-stack">
+          <button
+            type="button"
+            class="sidebar-action-btn"
+            :class="isTodo ? 'sidebar-action-btn--todo-active' : 'sidebar-action-btn--todo'"
+            @click="handleToggleTodo"
+          >
+            <span class="sidebar-action-btn__icon" aria-hidden="true">
+              <ListPlusIcon v-if="!isTodo" :size="14" />
+              <ListMinusIcon v-else :size="14" />
+            </span>
+            <span>{{ todoLabel }}</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <a
+      v-if="htmlUrl"
+      :href="htmlUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="sidebar-github-link"
+    >
+      <GitHubIcon :size="14" aria-hidden="true" />
+      <span>{{ t('detailActions.viewOnGithub') }}</span>
+      <ExternalLinkIcon :size="12" aria-hidden="true" />
+    </a>
   </div>
 </template>
 
@@ -196,23 +232,28 @@
 import {
   AlertCircleIcon,
   CheckIcon,
+  ChevronRightIcon,
   CircleSlashIcon,
   ClockIcon,
   ExternalLinkIcon,
+  EyeIcon,
   GitPullRequestIcon,
   InfoIcon,
+  LinkIcon,
   ListMinusIcon,
   ListPlusIcon,
   Loader2Icon,
   MessageSquareIcon,
   PlusIcon,
   RotateCcwIcon,
+  Settings2Icon,
   SlashIcon,
   UsersIcon,
   XIcon,
 } from '@lucide/vue';
 import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
 import type { DashboardNotification } from '#shared/types/notifications';
@@ -247,6 +288,7 @@ const props = defineProps<{
   reviewers?: PRReviewersSummary;
   reviewerError?: string;
   canRequestReviewers: boolean;
+  canOpenReview?: boolean;
   htmlUrl: string | undefined;
   createdAt: string | undefined;
   updatedAt: string | undefined;
@@ -265,6 +307,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   openReviewers: [];
+  openReview: [];
   requestReviewer: [reviewer: PRReviewerSummaryItem];
   removeReviewer: [reviewer: PRReviewerSummaryItem];
   stateUpdated: [state: 'open' | 'closed'];
@@ -275,7 +318,7 @@ const apiFetch = useGitPulseApiFetch();
 const isClosed = computed(() => props.prState === 'closed');
 
 // Merged pull requests can never be reopened or closed again.
-const showStateActions = computed(() => props.canManageState && !props.merged);
+const showManageActions = computed(() => props.canManageState && !props.merged);
 
 const loadingState = ref(false);
 const stateError = ref('');
@@ -297,7 +340,7 @@ onUnmounted(() => {
 });
 
 const updatePullRequestState = async (state: 'open' | 'closed') => {
-  if (!showStateActions.value || !props.repoInfo || !props.prNumber) return;
+  if (!showManageActions.value || !props.repoInfo || !props.prNumber) return;
 
   loadingState.value = true;
   clearStateError();
@@ -449,72 +492,109 @@ const formatRelativeTime = (dateString: string | undefined) => {
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 
-.sidebar-card {
+.detail-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-section {
+  min-width: 0;
+}
+
+.sidebar-section--card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   overflow: hidden;
+
+  .sidebar-section__header {
+    padding: 10px 14px;
+    margin: 0;
+    border-bottom: 1px solid var(--gitpulse-border);
+    background: var(--gitpulse-surface);
+  }
+
+  .sidebar-section__body {
+    padding: 12px 14px;
+  }
 }
 
-.sidebar-card__header {
+.sidebar-section__header {
   display: flex;
   align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.sidebar-section__header--row {
   justify-content: space-between;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--gitpulse-border);
-  background: var(--gitpulse-surface);
 }
 
-.sidebar-card__header-left {
+.sidebar-section__header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sidebar-section__header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.sidebar-card__header-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sidebar-card__icon {
+.sidebar-section__icon {
+  flex-shrink: 0;
   color: $brand-primary;
 }
 
-.sidebar-card__title {
-  font-size: 13px;
+.sidebar-section__title {
+  margin: 0;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--gitpulse-text-muted);
+}
+
+.sidebar-section--card .sidebar-section__title {
+  text-transform: none;
   letter-spacing: 0;
+  font-size: 13px;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
-.sidebar-card__content {
-  padding: 12px 16px;
+.sidebar-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
 
-.sidebar-card__empty {
+.sidebar-section__empty {
   font-size: 12px;
   color: var(--gitpulse-text-subtle);
   margin: 0;
+}
+
+.sidebar-section__warning {
+  font-size: 11px;
+  color: var(--gitpulse-text-subtle);
+  margin: 0;
+}
+
+.sidebar-section__error {
+  margin: 0;
+  font-size: 11px;
+  color: var(--bulma-danger, #cc0f35);
 }
 
 .reviewer-warning-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 8px;
-}
-
-.sidebar-card__warning {
-  font-size: 11px;
-  color: var(--gitpulse-text-subtle);
-  margin: 0;
-}
-
-.sidebar-card__error {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--bulma-danger, #cc0f35);
 }
 
 .sidebar-badge {
@@ -749,10 +829,6 @@ const formatRelativeTime = (dateString: string | undefined) => {
   text-align: right;
 }
 
-.info-item__value--muted {
-  color: var(--gitpulse-text-subtle);
-}
-
 .info-stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -790,36 +866,32 @@ const formatRelativeTime = (dateString: string | undefined) => {
   color: var(--gitpulse-danger);
 }
 
-.sidebar-link {
+.sidebar-action-stack {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--gitpulse-text-muted);
-  text-decoration: none;
-  transition: color 0.12s ease;
-
-  &:hover {
-    color: var(--gitpulse-accent);
-  }
+  flex-direction: column;
+  gap: 6px;
 }
 
 .sidebar-action-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 8px 10px;
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--gitpulse-text-muted);
+  text-align: left;
+  text-decoration: none;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
 
   &:hover:not(:disabled) {
     background: var(--gitpulse-surface-hover);
@@ -831,15 +903,149 @@ const formatRelativeTime = (dateString: string | undefined) => {
     opacity: 0.5;
     cursor: not-allowed;
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
-.sidebar-action-btn--danger {
-  color: var(--gitpulse-danger);
+.sidebar-action-btn__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 6px;
+  background: var(--gitpulse-surface-hover);
+  color: inherit;
+}
+
+.sidebar-action-btn__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-action-btn__chevron {
+  flex-shrink: 0;
+  color: var(--gitpulse-text-muted);
+  transition:
+    transform 0.12s ease,
+    color 0.12s ease;
+}
+
+// Primary PR action — profile "starred" row language.
+.sidebar-action-btn--review {
+  color: var(--gitpulse-text-strong);
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 28%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-accent-soft) 55%, var(--gitpulse-surface));
+
+  .sidebar-action-btn__icon {
+    background: color-mix(in srgb, var(--gitpulse-accent) 14%, transparent);
+    color: var(--gitpulse-accent);
+  }
 
   &:hover:not(:disabled) {
-    background: var(--gitpulse-danger-soft);
-    border-color: var(--gitpulse-danger);
+    color: var(--gitpulse-text-strong);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
+    background: color-mix(in srgb, var(--gitpulse-accent-soft) 78%, var(--gitpulse-surface));
+
+    .sidebar-action-btn__chevron {
+      transform: translateX(2px);
+      color: var(--gitpulse-accent);
+    }
+  }
+}
+
+// Close: destructive intent when the PR is currently open.
+.sidebar-action-btn--close {
+  color: var(--gitpulse-danger);
+  border-color: color-mix(in srgb, var(--gitpulse-danger) 28%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-danger-soft) 70%, var(--gitpulse-surface));
+
+  .sidebar-action-btn__icon {
+    background: color-mix(in srgb, var(--gitpulse-danger) 12%, transparent);
     color: var(--gitpulse-danger);
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--gitpulse-danger);
+    border-color: color-mix(in srgb, var(--gitpulse-danger) 55%, var(--gitpulse-border));
+    background: color-mix(in srgb, var(--gitpulse-danger-soft) 90%, var(--gitpulse-surface));
+  }
+}
+
+// Reopen: positive recovery when the PR is currently closed.
+.sidebar-action-btn--reopen {
+  color: var(--gitpulse-success);
+  border-color: color-mix(in srgb, var(--gitpulse-success) 28%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-success-soft) 70%, var(--gitpulse-surface));
+
+  .sidebar-action-btn__icon {
+    background: color-mix(in srgb, var(--gitpulse-success) 12%, transparent);
+    color: var(--gitpulse-success);
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--gitpulse-success);
+    border-color: color-mix(in srgb, var(--gitpulse-success) 55%, var(--gitpulse-border));
+    background: color-mix(in srgb, var(--gitpulse-success-soft) 90%, var(--gitpulse-surface));
+  }
+}
+
+.sidebar-action-btn--todo {
+  color: var(--gitpulse-text-strong);
+  border-color: var(--gitpulse-border);
+  background: var(--gitpulse-surface);
+
+  .sidebar-action-btn__icon {
+    background: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text-muted);
+  }
+}
+
+.sidebar-action-btn--todo-active {
+  color: var(--gitpulse-accent);
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 32%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-accent-soft) 50%, var(--gitpulse-surface));
+
+  .sidebar-action-btn__icon {
+    background: color-mix(in srgb, var(--gitpulse-accent) 14%, transparent);
+    color: var(--gitpulse-accent);
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--gitpulse-accent);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
+    background: color-mix(in srgb, var(--gitpulse-accent-soft) 72%, var(--gitpulse-surface));
+  }
+}
+
+// Profile-style escape hatch: quiet footer link, not another full-width button.
+.sidebar-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  margin-top: 0.15rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--gitpulse-border);
+  color: var(--gitpulse-text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: color 0.12s ease;
+
+  &:hover {
+    color: var(--gitpulse-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--gitpulse-radius-sm, 6px);
   }
 }
 
