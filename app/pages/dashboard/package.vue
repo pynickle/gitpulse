@@ -90,6 +90,11 @@ const installCommand = computed(() => {
   return getPackageInstallCommand(pkg.packageType, pkg.ownerLogin, pkg.name);
 });
 
+/** Local binding so template typecheck can resolve the auto-imported util. */
+const packageTypeIcon = computed(() =>
+  detail.value ? getPackageTypeIcon(detail.value.packageType) : null
+);
+
 const createdLabel = computed(() => {
   const createdAt = detail.value?.createdAt;
   if (!createdAt) return '';
@@ -262,7 +267,7 @@ const handleHome = async () => {
         <header class="package-page__header">
           <div class="package-page__title-row">
             <component
-              :is="getPackageTypeIcon(detail.packageType)"
+              :is="packageTypeIcon"
               :size="22"
               class="package-page__type-icon"
               aria-hidden="true"

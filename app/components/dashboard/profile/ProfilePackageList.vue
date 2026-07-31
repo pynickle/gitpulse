@@ -47,9 +47,14 @@ const filterOptions = computed<PackageFilterOption[]>(() => [
   ...PACKAGE_TYPE_OPTIONS.map((type) => ({
     value: type,
     label: t(`packages.types.${type}`),
-    icon: getPackageTypeIcon(type),
+    icon: packageTypeIcon(type),
   })),
 ]);
+
+/** Local binding so template typecheck can resolve the auto-imported util. */
+function packageTypeIcon(type: PackageType): Component {
+  return getPackageTypeIcon(type);
+}
 
 const handleFilterKeydown = (event: KeyboardEvent) => {
   handleRovingTablistKeydown(event, {
@@ -130,7 +135,7 @@ const updatedLabel = (pkg: PackageSummary) => {
         >
           <div class="profile-package-list__item-title-row">
             <component
-              :is="getPackageTypeIcon(pkg.packageType)"
+              :is="packageTypeIcon(pkg.packageType)"
               :size="16"
               class="profile-package-list__item-icon"
               aria-hidden="true"
