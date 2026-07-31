@@ -14,7 +14,7 @@ import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneL
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
-type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'answered' | 'unanswered';
+type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
 type DetailSubjectType = 'issue' | 'pull-request' | 'discussion';
 
 interface ActiveDetailPane {
@@ -177,11 +177,13 @@ const isHeaderNonSticky = computed(() => {
 
 const getPullRequestState = (pullRequest: PullRequestDetailViewModel | null) => {
   if (pullRequest?.merged || pullRequest?.merged_at) return 'merged';
+  if (pullRequest?.state === 'closed') return 'closed';
+  if (pullRequest?.draft) return 'draft';
   return pullRequest?.state || 'closed';
 };
 
 const getStateTone = (state: string): DetailSummaryTone => {
-  if (state === 'open' || state === 'merged') return state;
+  if (state === 'open' || state === 'merged' || state === 'draft') return state;
   return 'closed';
 };
 

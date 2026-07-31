@@ -91,3 +91,57 @@ export interface RepoCommitListResponse {
  * Values are source-byte totals used to compute percentage shares in the UI.
  */
 export type RepoLanguagesPayload = Record<string, number>;
+
+/** One branch from `GET /repos/{owner}/{repo}/branches`. */
+export interface RepoBranch {
+  name: string;
+  sha: string;
+  protected: boolean;
+}
+
+/** Last-commit author on a branch tip (REST commit payload). */
+export interface RepoBranchAuthor {
+  login: string | null;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+/** Compact last-commit summary attached to a branch list row. */
+export interface RepoBranchLastCommit {
+  sha: string;
+  shortSha: string;
+  message: string | null;
+  committedAt: string | null;
+  author: RepoBranchAuthor;
+}
+
+/**
+ * Pull request whose head branch matches a listed branch.
+ * `merged` is true when GitHub reports `merged_at` (closed + merged).
+ */
+export interface RepoBranchAssociatedPull {
+  number: number;
+  title: string;
+  state: 'open' | 'closed';
+  merged: boolean;
+  draft: boolean;
+  htmlUrl: string | null;
+}
+
+/**
+ * Enriched branch row for `/api/repos/{owner}/{repo}/branches/details`.
+ * Ahead/behind are relative to the repository default branch (null when
+ * compare is skipped or unavailable — e.g. the default branch itself).
+ */
+export interface RepoBranchDetail extends RepoBranch {
+  isDefault: boolean;
+  lastCommit: RepoBranchLastCommit | null;
+  aheadBy: number | null;
+  behindBy: number | null;
+  associatedPulls: RepoBranchAssociatedPull[];
+}
+
+export interface RepoBranchesDetailResponse {
+  defaultBranch: string;
+  items: RepoBranchDetail[];
+}

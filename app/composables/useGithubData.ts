@@ -293,6 +293,7 @@ const withPendingNotificationSubjectStates = (items: DashboardNotification[]) =>
         ...item.subject,
         number: target.number,
         state: undefined,
+        draft: undefined,
         stateStatus: toNotificationSubjectStateTarget(target)
           ? ('pending' as const)
           : ('unavailable' as const),
@@ -341,6 +342,7 @@ const applyNotificationSubjectStates = (
         ...item.subject,
         title: result?.title ?? item.subject?.title,
         state: result?.state,
+        draft: result?.draft,
         isAnswered: result?.isAnswered,
         labels: result?.labels,
         authorLogin: result?.authorLogin,

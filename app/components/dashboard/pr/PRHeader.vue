@@ -9,16 +9,7 @@
     <!-- Meta row -->
     <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
       <span class="header-number has-text-weight-medium">#{{ pullRequest?.number }}</span>
-      <span
-        class="header-state-tag"
-        :class="
-          displayState === 'open'
-            ? 'is-open'
-            : displayState === 'merged'
-              ? 'is-merged'
-              : 'is-closed'
-        "
-      >
+      <span class="header-state-tag" :class="`is-${displayState}`">
         <component :size="12" :is="stateIcon" />
         <span>{{ displayState }}</span>
       </span>
@@ -98,14 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ArrowRightIcon,
-  ClockIcon,
-  GitForkIcon,
-  GitMergeIcon,
-  GitPullRequestClosedIcon,
-  GitPullRequestIcon,
-} from '@lucide/vue';
+import { ArrowRightIcon, ClockIcon, GitForkIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -114,6 +98,7 @@ import type { ReactionSummaryItem } from '#shared/types/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import getPullRequestStateVisual from '~/utils/getPullRequestStateVisual';
 
 const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -125,6 +110,7 @@ interface PullRequestHeaderPullRequest {
   number?: number | string;
   state?: string;
   merged_at?: string | null;
+  draft?: boolean;
   updated_at?: string;
   head?: { ref?: string };
   base?: { ref?: string };
@@ -143,10 +129,10 @@ const props = defineProps<{
   repoName: string;
 }>();
 
-const displayState = computed(() => {
-  if (props.pullRequest?.merged_at) return 'merged';
-  return props.pullRequest?.state || 'closed';
-});
+const stateVisual = computed(() => getPullRequestStateVisual(props.pullRequest));
+const displayState = computed(() => stateVisual.value.state);
+const stateIcon = computed(() => stateVisual.value.icon);
+const stateColor = computed(() => ({ color: stateVisual.value.color }));
 
 const updatedAtLabel = computed(() => {
   return props.pullRequest?.updated_at
@@ -158,26 +144,6 @@ const createdAtLabel = computed(() => {
   return props.pullRequest?.created_at
     ? formatDurationFromNow(props.pullRequest.created_at, localeCode.value, relativeTimeNow.value)
     : '-';
-});
-
-const stateIcon = computed(() => {
-  if (displayState.value === 'open') {
-    return GitPullRequestIcon;
-  } else if (displayState.value === 'merged') {
-    return GitMergeIcon;
-  } else {
-    return GitPullRequestClosedIcon;
-  }
-});
-
-const stateColor = computed(() => {
-  if (displayState.value === 'open') {
-    return { color: 'var(--gitpulse-success)' };
-  } else if (displayState.value === 'merged') {
-    return { color: 'var(--gitpulse-info)' };
-  } else {
-    return { color: 'var(--gitpulse-text-strong)' };
-  }
 });
 
 const handleRepoClick = async () => {
@@ -226,6 +192,12 @@ const handleRepoClick = async () => {
     background-color: var(--gitpulse-danger-soft);
     color: var(--gitpulse-danger-solid);
     border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  }
+
+  &.is-draft {
+    background-color: var(--gitpulse-surface-muted);
+    color: var(--gitpulse-text-muted);
+    border: 1px solid var(--gitpulse-border);
   }
 }
 

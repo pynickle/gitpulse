@@ -191,7 +191,7 @@ interface PRTimelineResponse {
   pageInfo?: { hasNextPage?: boolean };
 }
 
-type DetailSummaryTone = 'open' | 'closed' | 'merged';
+type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft';
 
 interface CompactHeaderSummary {
   title?: string;
@@ -316,6 +316,8 @@ const canOpenReviewWindow = computed(() =>
 
 const compactHeaderState = computed(() => {
   if (currentPullRequest.value?.merged || currentPullRequest.value?.merged_at) return 'merged';
+  if (currentPullRequest.value?.state === 'closed') return 'closed';
+  if (currentPullRequest.value?.draft) return 'draft';
   return currentPullRequest.value?.state || 'closed';
 });
 
@@ -326,7 +328,7 @@ const compactHeaderSummary = computed<CompactHeaderSummary>(() => {
     title: currentPullRequest.value?.title,
     number: currentPullRequest.value?.number,
     state,
-    stateTone: state === 'open' || state === 'merged' ? state : 'closed',
+    stateTone: state === 'open' || state === 'merged' || state === 'draft' ? state : 'closed',
   };
 });
 

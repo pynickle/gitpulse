@@ -320,6 +320,7 @@ const normalizeDashboardNotificationSubject = (
     url: normalizeString(candidate.url, 1000),
     number: normalizeNotificationNumber(candidate.number),
     state,
+    draft: typeof candidate.draft === 'boolean' ? candidate.draft : undefined,
     isAnswered: typeof candidate.isAnswered === 'boolean' ? candidate.isAnswered : undefined,
     stateStatus,
     labels: normalizeNotificationLabels(candidate.labels),

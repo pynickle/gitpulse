@@ -26,6 +26,8 @@ interface GraphQLSubjectNode {
   updatedAt?: string;
   state?: string;
   mergedAt?: string | null;
+  /** PullRequest only — GraphQL `isDraft`. */
+  isDraft?: boolean | null;
   isAnswered?: boolean | null;
   author?: GraphQLAuthorNode;
   labels?: GraphQLLabelsConnection;
@@ -87,7 +89,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
           : 'issue';
     const nodeFields =
       target.type === 'pulls'
-        ? 'title updatedAt state mergedAt'
+        ? 'title updatedAt state mergedAt isDraft'
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
           : 'title updatedAt state';
@@ -131,6 +133,8 @@ export default defineEventHandler(async (event) => {
         title: node?.title,
         updatedAt: node?.updatedAt,
         state: normalizeState(target.type, node),
+        draft:
+          target.type === 'pulls' && typeof node?.isDraft === 'boolean' ? node.isDraft : undefined,
         isAnswered:
           target.type === 'discussions' && typeof node?.isAnswered === 'boolean'
             ? node.isAnswered

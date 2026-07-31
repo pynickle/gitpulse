@@ -47,9 +47,6 @@ import {
   ArrowLeftIcon,
   CircleDotIcon,
   CircleMinusIcon,
-  GitMergeIcon,
-  GitPullRequestClosedIcon,
-  GitPullRequestIcon,
   HomeIcon,
   MessageSquareIcon,
 } from '@lucide/vue';
@@ -59,8 +56,9 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
+import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 
-type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'answered' | 'unanswered';
+type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
 type DetailSubjectType = 'issue' | 'pull-request' | 'discussion';
 
 interface DetailSummary {
@@ -100,9 +98,11 @@ const detailStateIcon = computed<Component | null>(() => {
   const state = detailState.value;
 
   if (subjectType === 'pull-request') {
-    if (stateTone === 'merged' || state === 'merged') return GitMergeIcon;
-    if (stateTone === 'open' || state === 'open') return GitPullRequestIcon;
-    return GitPullRequestClosedIcon;
+    return getPullRequestStateIcon({
+      state: stateTone === 'draft' || state === 'draft' ? 'open' : state || stateTone,
+      merged: stateTone === 'merged' || state === 'merged',
+      draft: stateTone === 'draft' || state === 'draft',
+    });
   }
 
   if (subjectType === 'discussion') {
@@ -216,6 +216,12 @@ const isDetailSummaryVisible = computed(() => {
     background-color: var(--gitpulse-danger-soft);
     color: var(--gitpulse-danger-solid);
     border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  }
+
+  &.is-draft {
+    background-color: var(--gitpulse-surface-muted);
+    color: var(--gitpulse-text-muted);
+    border: 1px solid var(--gitpulse-border);
   }
 
   &.is-answered {

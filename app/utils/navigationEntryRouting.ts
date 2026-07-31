@@ -137,6 +137,14 @@ function childRouteToNavigationEntry(
     return dashboardEntry();
   }
 
+  if (segment === 'branches') {
+    const repoPath = parseGitHubRepoPath(getQueryParamValue(query.repo));
+    if (repoPath) {
+      return { type: 'branches-list', data: { owner: repoPath.owner, repo: repoPath.repo } };
+    }
+    return dashboardEntry();
+  }
+
   if (segment === 'wiki') {
     const repoPath = parseGitHubRepoPath(getQueryParamValue(query.repo));
     if (repoPath) {

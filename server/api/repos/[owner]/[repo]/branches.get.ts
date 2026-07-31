@@ -1,10 +1,5 @@
 import { extractRepoParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
-
-interface RepoBranch {
-  name: string;
-  sha: string;
-  protected: boolean;
-}
+import type { RepoBranch } from '#shared/types/repos';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   const { owner, repo } = extractRepoParams(event);

@@ -3,8 +3,6 @@ import {
   CircleDotIcon,
   CircleMinusIcon,
   GitCommitIcon,
-  GitMergeIcon,
-  GitPullRequestClosedIcon,
   GitPullRequestIcon,
   MailIcon,
   MessageSquareIcon,
@@ -16,11 +14,15 @@ import type { Component } from 'vue';
 
 import type { NotificationSubjectState } from '#shared/types/notifications';
 
+import getPullRequestStateVisual from './getPullRequestStateVisual';
+
 interface DashboardSubjectStateVisualOptions {
   isPullRequest: boolean;
   state?: NotificationSubjectState;
   subjectType?: string;
   isAnswered?: boolean;
+  /** Open draft PR — ignored when state is closed/merged. */
+  draft?: boolean;
 }
 
 export interface DashboardSubjectStateVisual {
@@ -30,6 +32,7 @@ export interface DashboardSubjectStateVisual {
     | 'open'
     | 'closed'
     | 'merged'
+    | 'draft'
     | 'discussion-answered'
     | 'discussion-unanswered'
     | 'release'
@@ -135,11 +138,19 @@ export const getDashboardDiscussionStateVisual = (
   color: isAnswered ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
 });
 
+const PULL_REQUEST_STATE_LABELS = {
+  open: 'Open pull request',
+  draft: 'Draft pull request',
+  merged: 'Merged pull request',
+  closed: 'Closed pull request',
+} as const;
+
 export default function getDashboardSubjectStateVisual({
   isPullRequest,
   state,
   subjectType,
   isAnswered,
+  draft,
 }: DashboardSubjectStateVisualOptions): DashboardSubjectStateVisual {
   if (subjectType === 'Discussion') {
     return getDashboardDiscussionStateVisual(isAnswered);
@@ -150,26 +161,17 @@ export default function getDashboardSubjectStateVisual({
   }
 
   if (isPullRequest) {
-    if (state === 'open') {
-      return {
-        icon: GitPullRequestIcon,
-        label: 'Open pull request',
-        state: 'open',
-      };
-    }
-
-    if (state === 'merged') {
-      return {
-        icon: GitMergeIcon,
-        label: 'Merged pull request',
-        state: 'merged',
-      };
-    }
+    const visual = getPullRequestStateVisual({
+      state: state === 'merged' ? 'closed' : state,
+      merged: state === 'merged',
+      draft,
+    });
 
     return {
-      icon: GitPullRequestClosedIcon,
-      label: 'Closed pull request',
-      state: 'closed',
+      icon: visual.icon,
+      label: PULL_REQUEST_STATE_LABELS[visual.state],
+      state: visual.state,
+      color: visual.color,
     };
   }
 

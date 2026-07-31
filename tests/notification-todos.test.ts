@@ -161,6 +161,7 @@ describe('notification todos', () => {
             url: 'https://api.github.com/repos/owner/repo/issues/12',
             number: undefined,
             state: 'closed',
+            draft: undefined,
             isAnswered: undefined,
             stateStatus: 'loaded',
             labels: [{ name: 'bug', color: 'd73a4a' }],
@@ -207,11 +208,59 @@ describe('notification todos', () => {
       url: 'https://github.com/owner/repo/discussions/8',
       number: undefined,
       state: undefined,
+      draft: undefined,
       isAnswered: false,
       stateStatus: 'loaded',
       labels: undefined,
       authorLogin: 'maintainer',
       authorAvatarUrl: 'https://avatars.githubusercontent.com/u/3?v=4',
+    });
+  });
+
+  test('applies GraphQL isDraft as subject.draft for pull request todos', () => {
+    const todo = createNotificationTodoItem(
+      {
+        id: 'pr-1',
+        unread: true,
+        updated_at: '2026-06-17T14:00:00.000Z',
+        subject: {
+          title: 'WIP change',
+          type: 'PullRequest',
+          url: 'https://api.github.com/repos/owner/repo/pulls/3',
+        },
+        repository: {
+          full_name: 'owner/repo',
+          owner: {
+            login: 'owner',
+            avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+          },
+        },
+      },
+      '2026-06-18T00:00:00.000Z'
+    );
+    if (!todo) throw new Error('Expected todo fixture');
+
+    const updated = applyNotificationTodoSubjectStates(
+      [todo],
+      [
+        {
+          key: 'owner/repo/pulls/3',
+          title: 'WIP change',
+          updatedAt: '2026-06-18T11:00:00.000Z',
+          state: 'open',
+          draft: true,
+          authorLogin: 'octocat',
+          authorAvatarUrl: 'https://avatars.githubusercontent.com/u/2?v=4',
+        },
+      ]
+    );
+
+    expect(updated[0]?.notification.subject).toMatchObject({
+      type: 'PullRequest',
+      state: 'open',
+      draft: true,
+      stateStatus: 'loaded',
+      authorLogin: 'octocat',
     });
   });
 });

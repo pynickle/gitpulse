@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
-import {
+import { GitPullRequestDraftIcon, GitPullRequestIcon } from '@lucide/vue';
+
+import getDashboardSubjectStateVisual, {
   DASHBOARD_NOTIFICATION_SUBJECT_TYPES,
   getDashboardDiscussionStateVisual,
   getDashboardSubjectTypeVisual,
@@ -73,5 +75,27 @@ describe('dashboard notification item subject number display', () => {
       state: 'discussion-unanswered',
       color: 'var(--gitpulse-text-strong)',
     });
+  });
+
+  test('uses draft icon for open draft pull requests', () => {
+    expect(
+      getDashboardSubjectStateVisual({
+        isPullRequest: true,
+        state: 'open',
+        draft: true,
+      })
+    ).toMatchObject({
+      icon: GitPullRequestDraftIcon,
+      state: 'draft',
+      label: 'Draft pull request',
+    });
+
+    expect(
+      getDashboardSubjectStateVisual({
+        isPullRequest: true,
+        state: 'open',
+        draft: false,
+      }).icon
+    ).toBe(GitPullRequestIcon);
   });
 });

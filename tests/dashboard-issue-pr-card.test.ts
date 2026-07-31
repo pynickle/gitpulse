@@ -32,6 +32,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       updatedAt: '2026-06-09T09:30:00Z',
       subjectType: 'Issue',
       state: 'open',
+      draft: false,
       actorLogin: 'octocat',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
       labels: [
@@ -66,9 +67,28 @@ describe('dashboard issue/PR notification-style cards', () => {
       updatedAt: '2026-06-08T18:45:00Z',
       subjectType: 'PullRequest',
       state: 'merged',
+      draft: false,
       actorLogin: 'merge-bot',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       labels: [{ name: 'enhancement', color: '2ea44f' }],
+    });
+  });
+
+  test('maps open draft pull requests with draft flag', () => {
+    const pull: DashboardIssuePrEntity = {
+      id: 'PR_9',
+      title: 'WIP draft',
+      repository_url: 'https://api.github.com/repos/acme/widgets',
+      number: 9,
+      state: 'open',
+      draft: true,
+      pull_request: {},
+    };
+
+    expect(toDashboardIssuePrCard(pull)).toMatchObject({
+      subjectType: 'PullRequest',
+      state: 'open',
+      draft: true,
     });
   });
 
@@ -113,6 +133,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       updatedAt: undefined,
       subjectType: 'Issue',
       state: 'closed',
+      draft: false,
       actorLogin: '',
       actorAvatarUrl: '',
       labels: [],

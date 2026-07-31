@@ -92,6 +92,10 @@ $transition-hint:
   color: var(--gitpulse-info);
 }
 
+.notification-type-badge--draft {
+  color: var(--gitpulse-text-muted);
+}
+
 .notification-type-badge--discussion-answered {
   color: var(--gitpulse-success);
 }

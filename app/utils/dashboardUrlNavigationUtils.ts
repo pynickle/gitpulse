@@ -51,6 +51,7 @@ export interface DashboardNavigationEntry {
     | 'discussion'
     | 'release'
     | 'releases-list'
+    | 'branches-list'
     | 'repository'
     | 'notification'
     | 'file'
@@ -299,6 +300,13 @@ export function buildChildPageRouteFromNavigationEntry(
   if (entry.type === 'releases-list' && data?.owner && data.repo) {
     return {
       path: '/dashboard/releases',
+      query: { repo: serializeDashboardRepoTarget(data.owner, data.repo) },
+    };
+  }
+
+  if (entry.type === 'branches-list' && data?.owner && data.repo) {
+    return {
+      path: '/dashboard/branches',
       query: { repo: serializeDashboardRepoTarget(data.owner, data.repo) },
     };
   }

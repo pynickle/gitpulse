@@ -223,6 +223,7 @@ const subjectVisual = computed(() => {
     state: subject.value?.state,
     subjectType: subject.value?.type,
     isAnswered: subject.value?.isAnswered,
+    draft: subject.value?.draft,
   });
 });
 

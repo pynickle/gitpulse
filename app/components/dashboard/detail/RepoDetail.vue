@@ -528,8 +528,12 @@ const aboutItems = computed(() => {
 
   items.push({
     label: copy.value.branch,
-    value: props.repository.default_branch || '-',
-    icon: GitForkIcon,
+    value: props.repository.default_branch || t('branchesPage.viewBranches'),
+    icon: GitBranchIcon,
+    to: localePath({
+      path: '/dashboard/branches',
+      query: { repo: `${props.owner}/${props.repo}` },
+    }),
   });
 
   items.push({

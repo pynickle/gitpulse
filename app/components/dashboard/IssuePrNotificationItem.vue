@@ -95,6 +95,7 @@ const subjectVisual = computed(() => {
     isPullRequest: card.value.subjectType === 'PullRequest',
     state: card.value.state,
     subjectType: card.value.subjectType,
+    draft: card.value.draft,
   });
 });
 </script>

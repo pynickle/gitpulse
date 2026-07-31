@@ -468,6 +468,18 @@ describe('buildChildPageRouteFromNavigationEntry', () => {
     });
   });
 
+  test('routes branches list entries to the branches child page', () => {
+    expect(
+      buildChildPageRouteFromNavigationEntry({
+        type: 'branches-list',
+        data: { owner: 'owner', repo: 'repo' },
+      })
+    ).toEqual({
+      path: '/dashboard/branches',
+      query: { repo: 'owner/repo' },
+    });
+  });
+
   test('routes profile entries to the profile child page', () => {
     expect(
       buildChildPageRouteFromNavigationEntry({

@@ -71,15 +71,13 @@ import {
   CircleMinusIcon,
   Code2Icon,
   GitCommitIcon,
-  GitMergeIcon,
-  GitPullRequestClosedIcon,
-  GitPullRequestIcon,
   TagIcon,
   TagsIcon,
   UserIcon,
 } from '@lucide/vue';
 
 import { formatDurationFromNow, getRepoName } from '#imports';
+import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
 
 const { locale } = useI18n();
@@ -93,8 +91,9 @@ interface SearchResultItem {
   login?: string;
   number?: number;
   state?: string;
+  draft?: boolean;
   merged_at?: string | null;
-  pull_request?: { merged_at?: string | null } | unknown;
+  pull_request?: { merged_at?: string | null; draft?: boolean } | unknown;
   labels?: Array<{ id?: number; name: string; color?: string; description?: string }>;
   repository_url?: string;
   updated_at?: string;
@@ -163,11 +162,19 @@ const getPullRequestMergedAt = (item: SearchResultItem) => {
   return typeof mergedAt === 'string' && mergedAt.length > 0 ? mergedAt : null;
 };
 
+const getPullRequestDraft = (item: SearchResultItem) => {
+  if (typeof item.draft === 'boolean') return item.draft;
+  if (typeof item.pull_request !== 'object' || item.pull_request === null) return false;
+  return Boolean((item.pull_request as { draft?: boolean }).draft);
+};
+
 const getStateIcon = (item: SearchResultItem) => {
   if (item.pull_request) {
-    if (item.state === 'open') return GitPullRequestIcon;
-    if (getPullRequestMergedAt(item)) return GitMergeIcon;
-    return GitPullRequestClosedIcon;
+    return getPullRequestStateIcon({
+      state: item.state,
+      merged_at: getPullRequestMergedAt(item),
+      draft: getPullRequestDraft(item),
+    });
   }
   if (item.state === 'open' || item.state === 'closed') {
     return item.state === 'open' ? CircleDotIcon : CircleMinusIcon;

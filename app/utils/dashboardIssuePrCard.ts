@@ -28,6 +28,7 @@ export interface DashboardIssuePrEntity {
   number?: number | null;
   updated_at?: string;
   state?: NotificationSubjectState;
+  draft?: boolean;
   merged_at?: string | null;
   pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
@@ -43,6 +44,8 @@ export interface DashboardIssuePrCard {
   updatedAt: string | undefined;
   subjectType: NotificationSubjectKind;
   state: NotificationSubjectState;
+  /** True when the PR is an open draft (ignored for issues / closed / merged). */
+  draft: boolean;
   actorLogin: string;
   actorAvatarUrl: string;
   labels: NotificationLabel[];
@@ -67,6 +70,7 @@ export default function toDashboardIssuePrCard(
 ): DashboardIssuePrCard {
   const isPullRequest = typeof entity.pull_request === 'object' && entity.pull_request !== null;
   const mergedAt = isPullRequest ? getPullRequestMergedAt(entity) : null;
+  const state: NotificationSubjectState = mergedAt ? 'merged' : (entity.state ?? 'closed');
 
   return {
     id: entity.id,
@@ -75,7 +79,8 @@ export default function toDashboardIssuePrCard(
     repositoryName: getRepositoryName(entity.repository_url),
     updatedAt: entity.updated_at,
     subjectType: isPullRequest ? 'PullRequest' : 'Issue',
-    state: mergedAt ? 'merged' : (entity.state ?? 'closed'),
+    state,
+    draft: isPullRequest && state === 'open' && Boolean(entity.draft),
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
     labels: (entity.labels ?? []).map((label) => ({
