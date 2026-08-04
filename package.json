@@ -30,7 +30,7 @@
     "@primer/css": "^22.3.0",
     "@upstash/redis": "^1.38.0",
     "bulma": "^1.0.4",
-    "comark": "^0.5.1",
+    "comark": "^0.6.0",
     "dayjs": "^1.11.21",
     "mermaid": "^11.16.0",
     "nuxt": "^4.5.1",
