@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ComarkElement } from 'comark';
+import type { ElementNode } from 'comark';
 import { computed, inject, ref, useAttrs } from 'vue';
 
 import { resolveMarkdownColorModeSourceMedia } from '#shared/utils/markdown-color-mode-source-media';
@@ -20,7 +20,7 @@ defineOptions({
 const MEDIA_TAGS = new Set(['audio', 'img', 'source', 'track', 'video']);
 
 const props = defineProps<{
-  __node?: ComarkElement;
+  __node?: ElementNode;
   src?: string;
   srcset?: string;
   poster?: string;

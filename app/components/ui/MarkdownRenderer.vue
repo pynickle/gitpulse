@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { parse } from 'comark';
-import type { ComarkNode, ComarkTree } from 'comark';
+import { parseMarkdown } from 'comark';
+import type { MarkdownDocument, Node } from 'comark';
 import type { highlightCodeBlocks } from 'comark/plugins/highlight';
 import security from 'comark/plugins/security';
 import type { LanguageRegistration, ThemeRegistration } from 'shiki';
@@ -25,7 +25,7 @@ const props = defineProps<{
   branch?: string;
 }>();
 
-const ast = shallowRef<ComarkTree | null>(null);
+const ast = shallowRef<MarkdownDocument | null>(null);
 const renderRequestId = shallowRef(0);
 const { applyGitHubAutolinks } = useGitHubAutolinks();
 const { settings } = useUserSettings();
@@ -75,10 +75,10 @@ interface MarkdownShikiThemes {
 type BundledLanguages = (typeof import('shiki/langs'))['bundledLanguages'];
 
 async function highlightMarkdownCodeBlocks(
-  tree: ComarkTree,
+  tree: MarkdownDocument,
   languageNames: Set<string>,
   themeSelection: MarkdownShikiThemeSelection
-): Promise<ComarkTree> {
+): Promise<MarkdownDocument> {
   const [languages, highlighterRuntime, themes] = await Promise.all([
     loadMarkdownLanguages(languageNames),
     loadMarkdownHighlighterRuntime(),
@@ -145,7 +145,7 @@ async function loadMarkdownLanguages(languages: Set<string>): Promise<LanguageRe
   return modules.flat();
 }
 
-function inspectMarkdownCodeBlocks(tree: ComarkTree): MarkdownCodeBlockInfo {
+function inspectMarkdownCodeBlocks(tree: MarkdownDocument): MarkdownCodeBlockInfo {
   const codeBlockInfo: MarkdownCodeBlockInfo = {
     hasHighlightableCodeBlocks: false,
     languages: new Set<string>(),
@@ -158,7 +158,7 @@ function inspectMarkdownCodeBlocks(tree: ComarkTree): MarkdownCodeBlockInfo {
   return codeBlockInfo;
 }
 
-function collectCodeBlockInfo(node: ComarkNode, codeBlockInfo: MarkdownCodeBlockInfo) {
+function collectCodeBlockInfo(node: Node, codeBlockInfo: MarkdownCodeBlockInfo) {
   if (!Array.isArray(node)) {
     return;
   }
@@ -234,7 +234,7 @@ watch(
       return;
     }
 
-    const parsedMarkdown = await parse(value, {
+    const parsedMarkdown = await parseMarkdown(value, {
       plugins: markdownPlugins,
     });
     const codeBlockInfo = inspectMarkdownCodeBlocks(parsedMarkdown);
@@ -261,7 +261,12 @@ watch(
 </script>
 
 <template>
-  <ComarkRenderer v-if="ast" class="markdown-body" :tree="ast" :components="rendererComponents" />
+  <MarkdownDocument
+    v-if="ast"
+    class="markdown-body"
+    :value="ast"
+    :components="rendererComponents"
+  />
 </template>
 
 <style lang="scss" src="@primer/css/color-modes/themes/light.scss" />

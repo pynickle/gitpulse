@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CheckIcon, ClipboardIcon } from '@lucide/vue';
-import type { ComarkNode } from 'comark';
+import type { Node } from 'comark';
 import { computed, defineAsyncComponent, onBeforeUnmount, ref, shallowRef } from 'vue';
 import type { StyleValue } from 'vue';
 
@@ -16,7 +16,7 @@ const props = defineProps<{
   meta?: string | null;
   class?: string | null;
   style?: StyleValue;
-  __node?: ComarkNode;
+  __node?: Node;
 }>();
 
 const { t } = useI18n();
@@ -39,7 +39,7 @@ const mermaidPreviewStyle = computed(() => ({
   '--mermaid-preview-height': `${estimateMermaidPreviewHeight(codeText.value)}px`,
 }));
 
-function extractCodeText(node: ComarkNode | undefined): string | null {
+function extractCodeText(node: Node | undefined): string | null {
   if (!Array.isArray(node)) {
     return null;
   }
@@ -47,7 +47,7 @@ function extractCodeText(node: ComarkNode | undefined): string | null {
   const codeNode = node
     .slice(2)
     .find(
-      (child): child is [string, Record<string, unknown>, ...ComarkNode[]] =>
+      (child): child is [string, Record<string, unknown>, ...Node[]] =>
         Array.isArray(child) && child[0] === 'code'
     );
 

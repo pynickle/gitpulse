@@ -6,7 +6,8 @@ import type { IssueAssigneeCandidate, IssueAssigneeCandidates } from '#shared/ty
 type GitHubClient = Octokit;
 
 interface GitHubUserSummary {
-  id?: number | string;
+  // Octokit OpenAPI types use number | bigint for GitHub numeric ids.
+  id?: number | string | bigint;
   node_id?: string;
   login?: string;
   avatar_url?: string | null;
@@ -15,6 +16,16 @@ interface GitHubUserSummary {
 }
 
 const trimString = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizeGitHubId = (
+  id: number | string | bigint | undefined
+): number | string | undefined => {
+  if (typeof id === 'bigint') {
+    const asNumber = Number(id);
+    return Number.isSafeInteger(asNumber) ? asNumber : id.toString();
+  }
+  return id;
+};
 
 const matchesCandidate = (candidate: IssueAssigneeCandidate, query: string) => {
   if (!query) return true;
@@ -29,7 +40,7 @@ const mapAssigneeCandidate = (
   if (!login) return null;
 
   return {
-    id: user.id,
+    id: normalizeGitHubId(user.id),
     node_id: user.node_id,
     login,
     avatar_url: user.avatar_url,

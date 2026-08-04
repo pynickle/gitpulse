@@ -20,13 +20,11 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         });
 
         branches.push(
-          ...data.map(
-            (branch): RepoBranch => ({
-              name: branch.name,
-              sha: branch.commit.sha,
-              protected: branch.protected,
-            })
-          )
+          ...data.map((branch): RepoBranch => ({
+            name: branch.name,
+            sha: branch.commit.sha,
+            protected: branch.protected,
+          }))
         );
 
         if (data.length < perPage) {

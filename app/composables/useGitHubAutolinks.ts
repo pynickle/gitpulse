@@ -1,4 +1,4 @@
-import type { ComarkElement, ComarkNode, ComarkTree } from 'comark';
+import type { ElementNode, MarkdownDocument, Node } from 'comark';
 
 import {
   buildGitHubMentionUrl,
@@ -82,15 +82,15 @@ const REFERENCE_CACHE_FAILURE_TTL_MS = 5 * 60 * 1000;
 
 const referenceCache = new Map<string, CachedGitHubAutolinkResolution>();
 
-function isTextNode(node: ComarkNode): node is string {
+function isTextNode(node: Node): node is string {
   return typeof node === 'string';
 }
 
-function isElementNode(node: ComarkNode): node is ComarkElement {
+function isElementNode(node: Node): node is ElementNode {
   return Array.isArray(node) && typeof node[0] === 'string';
 }
 
-function createLinkNode(href: string, text: string): ComarkElement {
+function createLinkNode(href: string, text: string): ElementNode {
   return ['a', { href }, text];
 }
 
@@ -228,7 +228,7 @@ async function transformTextNode(
   node: string,
   context: GitHubAutolinkContext,
   parentTag?: string
-): Promise<ComarkNode[]> {
+): Promise<Node[]> {
   if (!node || !shouldAutolinkInParent(parentTag)) {
     return [node];
   }
@@ -294,7 +294,7 @@ async function transformTextNode(
         : Promise.resolve({ exists: true, href: item.href })
     )
   );
-  const transformedNodes: ComarkNode[] = [];
+  const transformedNodes: Node[] = [];
   let cursor = 0;
 
   for (const [index, item] of sortedMatches.entries()) {
@@ -330,11 +330,11 @@ async function transformTextNode(
 }
 
 async function transformChildren(
-  children: ComarkNode[],
+  children: Node[],
   context: GitHubAutolinkContext,
   parentTag?: string
-): Promise<ComarkNode[]> {
-  const transformedChildren: ComarkNode[] = [];
+): Promise<Node[]> {
+  const transformedChildren: Node[] = [];
 
   for (const child of children) {
     if (isTextNode(child)) {
@@ -361,7 +361,7 @@ async function transformChildren(
 }
 
 export default function useGitHubAutolinks() {
-  const applyGitHubAutolinks = async (tree: ComarkTree, context: GitHubAutolinkContext) => {
+  const applyGitHubAutolinks = async (tree: MarkdownDocument, context: GitHubAutolinkContext) => {
     tree.nodes = await transformChildren(tree.nodes, context);
     return tree;
   };

@@ -21,15 +21,27 @@ interface RepositoryPermissions {
 }
 
 interface GitHubRepositorySummary {
-  id?: number;
+  // Octokit OpenAPI types use number | bigint for GitHub numeric ids.
+  id?: number | bigint;
   name?: string | null;
   full_name?: string | null;
   url?: string | null;
   html_url?: string | null;
   default_branch?: string | null;
   permissions?: RepositoryPermissions | null;
-  owner?: PullRequestUserSummary | null;
+  owner?: (Omit<PullRequestUserSummary, 'id'> & { id?: number | string | bigint }) | null;
 }
+
+const normalizeGitHubNumericId = (id: number | bigint | undefined): number | undefined => {
+  if (typeof id === 'number') {
+    return Number.isFinite(id) ? id : undefined;
+  }
+  if (typeof id === 'bigint') {
+    const asNumber = Number(id);
+    return Number.isSafeInteger(asNumber) ? asNumber : undefined;
+  }
+  return undefined;
+};
 
 interface GitHubPullRequestBranch {
   ref?: string | null;
@@ -111,14 +123,26 @@ const normalizeRepositorySummary = (
     return null;
   }
 
+  const owner = source.owner;
+  const ownerLogin = trimString(owner?.login) || identity.owner;
+
   return {
-    id: typeof source.id === 'number' ? source.id : undefined,
+    id: normalizeGitHubNumericId(source.id),
     name: identity.repo,
     full_name: identity.fullName,
     url: trimString(source.url) || trimString(source.html_url) || undefined,
     default_branch: trimString(source.default_branch) || null,
     permissions: source.permissions ?? null,
-    owner: source.owner ?? { login: identity.owner },
+    owner: {
+      id:
+        typeof owner?.id === 'bigint'
+          ? normalizeGitHubNumericId(owner.id)
+          : (owner?.id ?? undefined),
+      login: ownerLogin,
+      avatar_url: owner?.avatar_url,
+      html_url: owner?.html_url,
+      url: owner?.url,
+    },
   };
 };
 
