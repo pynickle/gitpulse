@@ -69,11 +69,90 @@ export interface DashboardNavigationEntry {
     tab?: string;
     path?: string;
     branch?: string;
+    /**
+     * In-repo detail panel (`issues` / `pulls` / `commits`). Omitted for the
+     * default Files panel so repository entries stay compact.
+     */
+    section?: RepoDetailSection;
+    /** 1-based page within the active section list. Omitted when page is 1. */
+    repoPage?: number;
+    /**
+     * Issue/PR list state filter. Omitted when `open` (the default). Only
+     * meaningful for `section: 'issues' | 'pulls'`.
+     */
+    repoState?: RepoDetailListState;
     releaseRef?: ReleaseDashboardRef;
     user?: string;
     packageType?: string;
     packageName?: string;
     packageOrganization?: boolean;
+  };
+}
+
+/** Panels inside repository detail (URL `section=`). */
+export type RepoDetailSection = 'commits' | 'issues' | 'pulls';
+
+/** Issue/PR list filter state inside repository detail (URL `repoState=`). */
+export type RepoDetailListState = 'open' | 'closed' | 'merged' | 'all';
+
+const REPO_DETAIL_SECTIONS = new Set<string>(['commits', 'issues', 'pulls']);
+const REPO_DETAIL_LIST_STATES = new Set<string>(['open', 'closed', 'merged', 'all']);
+
+/** Parse `section` for repository detail; default Files panel yields `undefined`. */
+export function parseRepoDetailSection(value: unknown): RepoDetailSection | undefined {
+  const raw = getQueryParamValue(value)?.trim();
+  if (!raw || raw === 'files' || !REPO_DETAIL_SECTIONS.has(raw)) {
+    return undefined;
+  }
+  return raw as RepoDetailSection;
+}
+
+/** Parse `repoPage`; page 1 / missing / invalid yield `undefined`. */
+export function parseRepoDetailPage(value: unknown): number | undefined {
+  const raw = getQueryParamValue(value)?.trim();
+  if (!raw || !/^\d+$/.test(raw)) {
+    return undefined;
+  }
+  const page = Number.parseInt(raw, 10);
+  if (!Number.isSafeInteger(page) || page < 2) {
+    return undefined;
+  }
+  return page;
+}
+
+/** Parse `repoState`; `open` / missing / invalid yield `undefined`. */
+export function parseRepoDetailListState(value: unknown): RepoDetailListState | undefined {
+  const raw = getQueryParamValue(value)?.trim();
+  if (!raw || raw === 'open' || !REPO_DETAIL_LIST_STATES.has(raw)) {
+    return undefined;
+  }
+  return raw as RepoDetailListState;
+}
+
+/** Serialize repository panel location into dashboard query keys. */
+export function buildRepoDetailPanelQuery(options: {
+  section?: RepoDetailSection;
+  repoPage?: number;
+  repoState?: RepoDetailListState;
+}): LocationQueryRaw {
+  const section = options.section;
+  const repoPage =
+    typeof options.repoPage === 'number' &&
+    Number.isSafeInteger(options.repoPage) &&
+    options.repoPage >= 2
+      ? String(options.repoPage)
+      : undefined;
+  const repoState =
+    section === 'issues' || section === 'pulls'
+      ? options.repoState && options.repoState !== 'open'
+        ? options.repoState
+        : undefined
+      : undefined;
+
+  return {
+    section: section || undefined,
+    repoPage,
+    repoState,
   };
 }
 
@@ -94,6 +173,11 @@ export function clearDashboardDetailQuery(query: LocationQueryRaw): LocationQuer
     repo: undefined,
     path: undefined,
     branch: undefined,
+    // Repo-local panel location is owned by the repository navigation entry;
+    // strip it from residual query so Back to the dashboard is not polluted.
+    section: undefined,
+    repoPage: undefined,
+    repoState: undefined,
     url: undefined,
   };
 }
@@ -266,6 +350,11 @@ export function buildDashboardQueryFromNavigationEntry(
       tab: data.tab ?? options.repositoryTab,
       repo: serializeDashboardRepoTarget(data.owner, data.repo),
       branch: data.branch,
+      ...buildRepoDetailPanelQuery({
+        section: data.section,
+        repoPage: data.repoPage,
+        repoState: data.repoState,
+      }),
     };
   }
 

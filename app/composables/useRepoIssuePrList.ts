@@ -52,11 +52,21 @@ const buildListQueryKey = (
 
 const buildPageCacheKey = (queryKey: string, page: number) => `${queryKey}:p${page}`;
 
+export interface UseRepoIssuePrListOptions {
+  /**
+   * Page to load when the list becomes active (owner/repo go from empty to
+   * set). Kind/state switches still start at page 1. Used to restore Back
+   * navigation into a paginated Issues/PRs panel.
+   */
+  getResumePage?: () => number;
+}
+
 export function useRepoIssuePrList(
   owner: Ref<string> | (() => string),
   repo: Ref<string> | (() => string),
   kind: Ref<RepoIssuePrKind> | (() => RepoIssuePrKind),
-  state: Ref<RepoIssuePrState> | (() => RepoIssuePrState) = () => 'open'
+  state: Ref<RepoIssuePrState> | (() => RepoIssuePrState) = () => 'open',
+  options: UseRepoIssuePrListOptions = {}
 ) {
   const apiFetch = useGitPulseApiFetch();
 
@@ -64,6 +74,10 @@ export function useRepoIssuePrList(
   const resolveRepo = () => (typeof repo === 'function' ? repo() : repo.value);
   const resolveKind = () => (typeof kind === 'function' ? kind() : kind.value);
   const resolveState = () => (typeof state === 'function' ? state() : state.value);
+  const resolveResumePage = () => {
+    const page = options.getResumePage?.() ?? 1;
+    return Number.isSafeInteger(page) && page >= 1 ? page : 1;
+  };
 
   const items = shallowRef<DashboardIssuePrEntity[]>([]);
   const loading = ref(false);
@@ -186,15 +200,17 @@ export function useRepoIssuePrList(
         resolveKind(),
         normalizeRepoIssuePrState(resolveKind(), resolveState()),
       ] as const,
-    ([nextOwner, nextRepo]) => {
+    ([nextOwner, nextRepo], previous) => {
       if (!nextOwner || !nextRepo) {
         // Files panel (or unscoped) — keep last snapshot + session cache; no fetch.
         loading.value = false;
         return;
       }
 
-      // Kind/state switches and panel return — restore from session page cache when possible.
-      void fetchPage(1);
+      // First activation (or remount) may resume a saved page; kind/state switches reset to 1.
+      const wasInactive = !previous?.[0] || !previous?.[1];
+      const page = wasInactive ? resolveResumePage() : 1;
+      void fetchPage(page);
     },
     { immediate: true }
   );

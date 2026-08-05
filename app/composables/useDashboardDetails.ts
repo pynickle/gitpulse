@@ -313,6 +313,8 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       !isFileBrowsingRoute.value &&
       hasConflictingDetailQuery(['repo', 'branch'])
     ) {
+      // Keep in-repo panel location when stripping a conflicting detail key so
+      // Back still lands on the same section/page after canonicalization.
       await replaceDashboardQuery(
         buildDetailDashboardQuery({
           repo: serializeDashboardRepoTarget(
@@ -320,6 +322,9 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
             activeRepoTarget.value.repo
           ),
           branch: activeRepoBranch.value,
+          section: getQueryParamValue(route.query.section) || undefined,
+          repoPage: getQueryParamValue(route.query.repoPage) || undefined,
+          repoState: getQueryParamValue(route.query.repoState) || undefined,
         })
       );
       return true;

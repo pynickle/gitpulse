@@ -43,7 +43,14 @@ import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { useRepoCommitList } from '~/composables/useRepoCommitList';
 import { useRepoIssuePrList } from '~/composables/useRepoIssuePrList';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
-import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
+import {
+  buildRepoDetailPanelQuery,
+  createDashboardFileTarget,
+  parseRepoDetailListState,
+  parseRepoDetailPage,
+  parseRepoDetailSection,
+  type RepoDetailSection,
+} from '~/utils/dashboardUrlNavigationUtils';
 import {
   normalizeRepoIssuePrState,
   type RepoIssuePrKind,
@@ -79,6 +86,8 @@ const emit = defineEmits<{
 type RepoDetailIcon = Component;
 
 const { locale, t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -146,8 +155,26 @@ const copy = computed(() => ({
   wiki: t('repoDetail.wiki'),
 }));
 
-const activePanel = shallowRef<RepoDetailPanel>('files');
-const listState = shallowRef<RepoIssuePrState>('open');
+// Restore panel/page/state from the route so Back remounts on the same place.
+const initialSection = parseRepoDetailSection(route.query.section);
+const initialPanel: RepoDetailPanel = initialSection ?? 'files';
+const initialPage = parseRepoDetailPage(route.query.repoPage) ?? 1;
+const initialListState: RepoIssuePrState =
+  initialSection === 'issues' || initialSection === 'pulls'
+    ? normalizeRepoIssuePrState(
+        initialSection,
+        parseRepoDetailListState(route.query.repoState) ?? 'open'
+      )
+    : 'open';
+
+const activePanel = shallowRef<RepoDetailPanel>(initialPanel);
+const listState = shallowRef<RepoIssuePrState>(initialListState);
+/** Resume page for Issues/PRs when the list panel activates or remounts. */
+const resumeListPage = shallowRef(
+  initialPanel === 'issues' || initialPanel === 'pulls' ? initialPage : 1
+);
+/** Resume page for Commits when that panel activates or remounts. */
+const resumeCommitsPage = shallowRef(initialPanel === 'commits' ? initialPage : 1);
 
 const listKind = computed<RepoIssuePrKind>(() =>
   activePanel.value === 'pulls' ? 'pulls' : 'issues'
@@ -226,7 +253,9 @@ const {
   showPagination: listShowPagination,
   goToPage: listGoToPage,
   refresh: listRefresh,
-} = useRepoIssuePrList(listOwner, listRepo, listKind, listState);
+} = useRepoIssuePrList(listOwner, listRepo, listKind, listState, {
+  getResumePage: () => resumeListPage.value,
+});
 
 const listEmptyMessage = computed(() => {
   const state = listState.value;
@@ -242,11 +271,61 @@ const listEmptyMessage = computed(() => {
   return t('repoDetail.issuesEmpty');
 });
 
+/** Keep `section` / `repoPage` / `repoState` in the URL so navigation history can restore them. */
+const syncRepoDetailLocation = async () => {
+  if (!getQueryParamValue(route.query.repo)) return;
+  // File browsing owns `path` and is a separate navigation entry.
+  if (Object.hasOwn(route.query, 'path')) return;
+
+  const section: RepoDetailSection | undefined =
+    activePanel.value === 'files' ? undefined : (activePanel.value as RepoDetailSection);
+  const page =
+    activePanel.value === 'commits'
+      ? resumeCommitsPage.value
+      : activePanel.value === 'issues' || activePanel.value === 'pulls'
+        ? resumeListPage.value
+        : 1;
+  const repoState: RepoIssuePrState | undefined =
+    activePanel.value === 'issues' || activePanel.value === 'pulls' ? listState.value : undefined;
+
+  const panelQuery = buildRepoDetailPanelQuery({
+    section,
+    repoPage: page,
+    repoState,
+  });
+
+  const nextSection = getQueryParamValue(panelQuery.section) || undefined;
+  const nextPage = getQueryParamValue(panelQuery.repoPage) || undefined;
+  const nextState = getQueryParamValue(panelQuery.repoState) || undefined;
+  const currentSection = getQueryParamValue(route.query.section) || undefined;
+  const currentPage = getQueryParamValue(route.query.repoPage) || undefined;
+  const currentState = getQueryParamValue(route.query.repoState) || undefined;
+
+  if (currentSection === nextSection && currentPage === nextPage && currentState === nextState) {
+    return;
+  }
+
+  await router.replace({
+    path: route.path,
+    query: {
+      ...route.query,
+      section: panelQuery.section,
+      repoPage: panelQuery.repoPage,
+      repoState: panelQuery.repoState,
+    },
+  });
+};
+
 const selectPanel = (value: RepoDetailPanel) => {
   activePanel.value = value;
   if (value === 'issues' || value === 'pulls') {
     listState.value = 'open';
+    resumeListPage.value = 1;
   }
+  if (value === 'commits') {
+    resumeCommitsPage.value = 1;
+  }
+  void syncRepoDetailLocation();
 };
 
 const handlePanelTablistKeydown = (event: KeyboardEvent) => {
@@ -266,6 +345,14 @@ const viewAllCommits = () => {
 
 const selectListState = (value: RepoIssuePrState) => {
   listState.value = normalizeRepoIssuePrState(listKind.value, value);
+  resumeListPage.value = 1;
+  void syncRepoDetailLocation();
+};
+
+const handleListPageChange = async (page: number) => {
+  resumeListPage.value = page;
+  await listGoToPage(page);
+  await syncRepoDetailLocation();
 };
 
 const handleStateFilterTablistKeydown = (event: KeyboardEvent) => {
@@ -293,6 +380,9 @@ watch(
   () => {
     activePanel.value = 'files';
     listState.value = 'open';
+    resumeListPage.value = 1;
+    resumeCommitsPage.value = 1;
+    void syncRepoDetailLocation();
   }
 );
 
@@ -382,7 +472,15 @@ const {
   showPagination: commitsShowPagination,
   goToPage: commitsGoToPage,
   refresh: commitsRefresh,
-} = useRepoCommitList(commitsOwner, commitsRepo, commitsRef);
+} = useRepoCommitList(commitsOwner, commitsRepo, commitsRef, {
+  getResumePage: () => resumeCommitsPage.value,
+});
+
+const handleCommitsPageChange = async (page: number) => {
+  resumeCommitsPage.value = page;
+  await commitsGoToPage(page);
+  await syncRepoDetailLocation();
+};
 
 const visibility = computed(() =>
   props.repository.private ? copy.value.private : copy.value.public
@@ -1128,7 +1226,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     <DashboardPagination
                       v-if="commitsShowPagination || commitsLoading"
                       :pagination="commitsPagination"
-                      @change="commitsGoToPage"
+                      @change="handleCommitsPageChange"
                     />
                   </div>
                 </div>
@@ -1176,7 +1274,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     <DashboardPagination
                       v-if="listShowPagination || listLoading"
                       :pagination="listPagination"
-                      @change="listGoToPage"
+                      @change="handleListPageChange"
                     />
                   </div>
                 </div>

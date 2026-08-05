@@ -6,6 +6,9 @@ import {
   parseDashboardDetailTarget,
   parseDashboardReleaseQuery,
   parseDashboardUrlTarget,
+  parseRepoDetailListState,
+  parseRepoDetailPage,
+  parseRepoDetailSection,
   type DashboardNavigationEntry,
   type DashboardUrlTarget,
 } from './dashboardUrlNavigationUtils';
@@ -75,7 +78,15 @@ function entryFromDashboardUrlTarget(
   if (target.type === 'repository') {
     return {
       type: 'repository',
-      data: { owner: target.owner, repo: target.repo, branch: target.branch, tab },
+      data: {
+        owner: target.owner,
+        repo: target.repo,
+        branch: target.branch,
+        tab,
+        section: undefined,
+        repoPage: undefined,
+        repoState: undefined,
+      },
     };
   }
 
@@ -260,9 +271,25 @@ export function routeToNavigationEntry(
       };
     }
 
+    const section = parseRepoDetailSection(query.section);
+    const repoPage = parseRepoDetailPage(query.repoPage);
+    // State only applies to issue/PR lists; ignore for files/commits.
+    const repoState =
+      section === 'issues' || section === 'pulls'
+        ? parseRepoDetailListState(query.repoState)
+        : undefined;
+
     return {
       type: 'repository',
-      data: { owner: repoPath.owner, repo: repoPath.repo, branch, tab },
+      data: {
+        owner: repoPath.owner,
+        repo: repoPath.repo,
+        branch,
+        tab,
+        section,
+        repoPage,
+        repoState,
+      },
     };
   }
 
@@ -296,6 +323,9 @@ export function isSameNavigationEntry(
     left.data?.tab === right.data?.tab &&
     left.data?.path === right.data?.path &&
     left.data?.branch === right.data?.branch &&
+    left.data?.section === right.data?.section &&
+    left.data?.repoPage === right.data?.repoPage &&
+    left.data?.repoState === right.data?.repoState &&
     left.data?.releaseRef?.kind === right.data?.releaseRef?.kind &&
     getReleaseRefValue(left) === getReleaseRefValue(right) &&
     left.data?.user === right.data?.user &&

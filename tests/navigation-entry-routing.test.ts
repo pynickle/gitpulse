@@ -115,12 +115,28 @@ describe('routeToNavigationEntry', () => {
   test('derives repository and file entries from repo/path/branch', () => {
     expect(derive('/dashboard', { tab: 'repos', repo: 'octo/repo' })).toEqual({
       type: 'repository',
-      data: { owner: 'octo', repo: 'repo', branch: undefined, tab: 'repos' },
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: 'repos',
+        section: undefined,
+        repoPage: undefined,
+        repoState: undefined,
+      },
     });
 
     expect(derive('/dashboard', { repo: 'octo/repo', branch: 'dev' })).toEqual({
       type: 'repository',
-      data: { owner: 'octo', repo: 'repo', branch: 'dev', tab: undefined },
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: 'dev',
+        tab: undefined,
+        section: undefined,
+        repoPage: undefined,
+        repoState: undefined,
+      },
     });
 
     expect(
@@ -132,6 +148,156 @@ describe('routeToNavigationEntry', () => {
 
     // An empty (but present) path is root file browsing, not the repo detail.
     expect(derive('/dashboard', { repo: 'octo/repo', path: '' })?.type).toBe('file');
+  });
+
+  test('derives repository section, page, and list state for issue/pr/commit panels', () => {
+    expect(
+      derive('/dashboard', {
+        tab: 'repos',
+        repo: 'octo/repo',
+        section: 'issues',
+        repoPage: '3',
+        repoState: 'closed',
+      })
+    ).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: 'repos',
+        section: 'issues',
+        repoPage: 3,
+        repoState: 'closed',
+      },
+    });
+
+    expect(
+      derive('/dashboard', {
+        repo: 'octo/repo',
+        section: 'pulls',
+        repoPage: '2',
+        repoState: 'merged',
+      })
+    ).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: undefined,
+        section: 'pulls',
+        repoPage: 2,
+        repoState: 'merged',
+      },
+    });
+
+    expect(derive('/dashboard', { repo: 'octo/repo', section: 'commits', repoPage: '4' })).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: undefined,
+        section: 'commits',
+        repoPage: 4,
+        repoState: undefined,
+      },
+    });
+
+    // Default files panel / page 1 / open state stay omitted from the entry.
+    expect(
+      derive('/dashboard', {
+        repo: 'octo/repo',
+        section: 'files',
+        repoPage: '1',
+        repoState: 'open',
+      })
+    ).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: undefined,
+        section: undefined,
+        repoPage: undefined,
+        repoState: undefined,
+      },
+    });
+
+    // Unknown section/page/state values are ignored.
+    expect(
+      derive('/dashboard', {
+        repo: 'octo/repo',
+        section: 'wiki',
+        repoPage: '0',
+        repoState: 'draft',
+      })
+    ).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: undefined,
+        section: undefined,
+        repoPage: undefined,
+        repoState: undefined,
+      },
+    });
+  });
+
+  test('resolves repository section/page/state back onto the dashboard query', () => {
+    expect(
+      resolveNavigationEntryRoute({
+        type: 'repository',
+        data: {
+          owner: 'octo',
+          repo: 'repo',
+          tab: 'repos',
+          section: 'issues',
+          repoPage: 3,
+          repoState: 'closed',
+        },
+      }).query
+    ).toEqual({
+      tab: 'repos',
+      repo: 'octo/repo',
+      branch: undefined,
+      section: 'issues',
+      repoPage: '3',
+      repoState: 'closed',
+    });
+
+    expect(
+      resolveNavigationEntryRoute({
+        type: 'repository',
+        data: { owner: 'octo', repo: 'repo', section: 'commits', repoPage: 2 },
+      }).query
+    ).toEqual({
+      tab: 'repos',
+      repo: 'octo/repo',
+      branch: undefined,
+      section: 'commits',
+      repoPage: '2',
+      repoState: undefined,
+    });
+
+    // Defaults stay out of the query so residual dashboard page is not polluted.
+    expect(
+      resolveNavigationEntryRoute({
+        type: 'repository',
+        data: { owner: 'octo', repo: 'repo', tab: 'repos' },
+      }).query
+    ).toEqual({
+      tab: 'repos',
+      repo: 'octo/repo',
+      branch: undefined,
+      section: undefined,
+      repoPage: undefined,
+      repoState: undefined,
+    });
   });
 
   test('derives entries for transient ?url= deep links', () => {
@@ -312,6 +478,43 @@ describe('routeToNavigationEntry / resolveNavigationEntryRoute round trip', () =
         corpus.push({
           label: `repository tab=${tab} branch=${branch}`,
           entry: { type: 'repository', data: { owner, repo: 'repo', branch, tab } },
+        });
+        corpus.push({
+          label: `repository issues page tab=${tab} branch=${branch}`,
+          entry: {
+            type: 'repository',
+            data: {
+              owner,
+              repo: 'repo',
+              branch,
+              tab,
+              section: 'issues',
+              repoPage: 3,
+              repoState: 'closed',
+            },
+          },
+        });
+        corpus.push({
+          label: `repository pulls page tab=${tab} branch=${branch}`,
+          entry: {
+            type: 'repository',
+            data: {
+              owner,
+              repo: 'repo',
+              branch,
+              tab,
+              section: 'pulls',
+              repoPage: 2,
+              repoState: 'merged',
+            },
+          },
+        });
+        corpus.push({
+          label: `repository commits page tab=${tab} branch=${branch}`,
+          entry: {
+            type: 'repository',
+            data: { owner, repo: 'repo', branch, tab, section: 'commits', repoPage: 4 },
+          },
         });
         for (const path of ['', 'src/app.ts']) {
           corpus.push({
@@ -750,6 +953,73 @@ describe('acceptance flows through derivation + reducer', () => {
 
     expect(state.current?.data?.path).toBe('Setup');
     expect(state.history.map((entry) => entry.type)).toEqual(['repository']);
+  });
+
+  test('repo issues panel page survives open issue and back', () => {
+    let state: NavigationHistoryState = { history: [], current: null };
+    state = navigate(state, '/dashboard', { tab: 'repos' }, 'reset');
+    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'octo/repo' });
+    // Panel + page switches collapse in place (same repo repository entry).
+    state = navigate(
+      state,
+      '/dashboard',
+      { tab: 'repos', repo: 'octo/repo', section: 'issues', repoPage: '3', repoState: 'closed' },
+      'replace'
+    );
+    state = navigate(state, '/dashboard', {
+      tab: 'repos',
+      issue: 'octo/repo/12',
+    });
+
+    expect(state.current?.type).toBe('issue');
+    const previous = state.history[state.history.length - 1];
+    expect(previous).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: 'repos',
+        section: 'issues',
+        repoPage: 3,
+        repoState: 'closed',
+      },
+    });
+
+    const resolved = resolveNavigationEntryRoute(previous);
+    expect(resolved.query).toEqual({
+      tab: 'repos',
+      repo: 'octo/repo',
+      branch: undefined,
+      section: 'issues',
+      repoPage: '3',
+      repoState: 'closed',
+    });
+  });
+
+  test('repo commits panel page survives in-place history updates', () => {
+    let state: NavigationHistoryState = { history: [], current: null };
+    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'octo/repo' }, 'reset');
+    state = navigate(
+      state,
+      '/dashboard',
+      { tab: 'repos', repo: 'octo/repo', section: 'commits', repoPage: '4' },
+      'replace'
+    );
+
+    expect(state.history).toEqual([]);
+    expect(state.current).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'octo',
+        repo: 'repo',
+        branch: undefined,
+        tab: 'repos',
+        section: 'commits',
+        repoPage: 4,
+        repoState: undefined,
+      },
+    });
   });
 
   test('a detail opened from a dashboard tab goes back to that tab', () => {

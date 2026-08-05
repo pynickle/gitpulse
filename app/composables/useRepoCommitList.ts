@@ -30,6 +30,15 @@ const buildListQueryKey = (owner: string, repo: string, ref: string) => `${owner
 
 const buildPageCacheKey = (queryKey: string, page: number) => `${queryKey}:p${page}`;
 
+export interface UseRepoCommitListOptions {
+  /**
+   * Page to load when the commits panel becomes active. Ref switches still
+   * start at page 1. Used to restore Back navigation into a paginated
+   * Commits panel.
+   */
+  getResumePage?: () => number;
+}
+
 /**
  * Paginated repository commit list for the Commits panel.
  * Mirrors {@link useRepoIssuePrList}: session page cache, request-id guarding,
@@ -38,13 +47,18 @@ const buildPageCacheKey = (queryKey: string, page: number) => `${queryKey}:p${pa
 export function useRepoCommitList(
   owner: Ref<string> | (() => string),
   repo: Ref<string> | (() => string),
-  refName: Ref<string> | (() => string) = () => ''
+  refName: Ref<string> | (() => string) = () => '',
+  options: UseRepoCommitListOptions = {}
 ) {
   const apiFetch = useGitPulseApiFetch();
 
   const resolveOwner = () => (typeof owner === 'function' ? owner() : owner.value);
   const resolveRepo = () => (typeof repo === 'function' ? repo() : repo.value);
   const resolveRef = () => (typeof refName === 'function' ? refName() : refName.value);
+  const resolveResumePage = () => {
+    const page = options.getResumePage?.() ?? 1;
+    return Number.isSafeInteger(page) && page >= 1 ? page : 1;
+  };
 
   const items = shallowRef<RepoCommitListItemPayload[]>([]);
   const loading = ref(false);
@@ -160,15 +174,18 @@ export function useRepoCommitList(
 
   watch(
     () => [resolveOwner(), resolveRepo(), resolveRef()] as const,
-    ([nextOwner, nextRepo]) => {
+    ([nextOwner, nextRepo, nextRef], previous) => {
       if (!nextOwner || !nextRepo) {
         // Panel inactive (or unscoped) — keep last snapshot + session cache; no fetch.
         loading.value = false;
         return;
       }
 
-      // Ref switches and panel return — restore from session page cache when possible.
-      void fetchPage(1);
+      // First activation (or remount) may resume a saved page; ref switches reset to 1.
+      const wasInactive = !previous?.[0] || !previous?.[1];
+      const refChanged = previous !== undefined && previous[2] !== nextRef;
+      const page = wasInactive && !refChanged ? resolveResumePage() : 1;
+      void fetchPage(page);
     },
     { immediate: true }
   );
