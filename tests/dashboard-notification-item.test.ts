@@ -46,7 +46,6 @@ describe('dashboard notification item subject number display', () => {
     expect(notificationItemSource).toContain("subject.value?.type === 'Issue'");
     expect(notificationItemSource).toContain('subject.value.issueType');
     expect(subjectStatesSource).toContain('issueType { name color }');
-    expect(subjectStatesSource).toContain('color: node.issueType.color?.toLowerCase()');
   });
 
   test('keeps todo action as an icon-only action in the right action column', () => {

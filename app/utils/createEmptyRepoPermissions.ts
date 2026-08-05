@@ -26,10 +26,7 @@ export function normalizeRepoPermissions(source: RepoPermissionsSource): RepoPer
     triage,
     pull: Boolean(source?.pull),
     canEditLabels: Boolean(source?.canEditLabels),
-    canEditIssueType:
-      typeof source?.canEditIssueType === 'boolean'
-        ? source.canEditIssueType
-        : Boolean(admin || maintain || push),
+    canEditIssueType: Boolean(source?.canEditIssueType),
     canLockIssue: Boolean(source?.canLockIssue),
     canEditAssignees: Boolean(source?.canEditAssignees || admin || maintain || push),
     canManageItemState: Boolean(source?.canManageItemState || admin || maintain || push || triage),

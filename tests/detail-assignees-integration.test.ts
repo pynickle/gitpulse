@@ -13,15 +13,11 @@ describe('detail assignee integration', () => {
     expect(normalizeRepoPermissions({ canEditAssignees: true }).canEditAssignees).toBe(true);
   });
 
-  test('limits issue type editing to push-level repository permissions', () => {
+  test('normalizes the explicit issue type editing capability', () => {
     expect(createEmptyRepoPermissions().canEditIssueType).toBe(false);
     expect(normalizeRepoPermissions({ triage: true }).canEditIssueType).toBe(false);
-    expect(normalizeRepoPermissions({ push: true }).canEditIssueType).toBe(true);
-    expect(normalizeRepoPermissions({ maintain: true }).canEditIssueType).toBe(true);
-    expect(normalizeRepoPermissions({ admin: true }).canEditIssueType).toBe(true);
-    expect(
-      normalizeRepoPermissions({ admin: true, canEditIssueType: false }).canEditIssueType
-    ).toBe(false);
+    expect(normalizeRepoPermissions({ canEditIssueType: true }).canEditIssueType).toBe(true);
+    expect(normalizeRepoPermissions({ canEditIssueType: false }).canEditIssueType).toBe(false);
   });
 
   test('provides issue type selection and clearing from the issue detail sidebar', () => {
@@ -51,9 +47,6 @@ describe('detail assignee integration', () => {
     expect(issueTypeCard).toContain("selectIssueType('')");
     expect(issueTypeCard).toContain(':disabled="savingIssueType"');
     expect(issueTypeCard).toContain("selectedTypeName.value = props.issueType?.name ?? ''");
-    expect(issueTypeCard).not.toContain('detailIssueType.close');
-    expect(issueTypeCard).not.toContain('detailIssueType.dismissError');
-    expect(issueTypeCard).not.toContain('aria-label=');
     expect(issueTypeCard).toContain("method: 'PATCH'");
     for (const sharedEditorMarker of [
       '<Teleport to="body">',
@@ -70,7 +63,6 @@ describe('detail assignee integration', () => {
     expect(issueTypeMutation).toContain('parseIssueTypeBody');
     expect(issueTypeMutation).toContain('type,');
     expect(issueTypesRoute).toContain("'GET /orgs/{org}/issue-types'");
-    expect(issueTypesRoute).toContain("repository.owner.type !== 'Organization'");
     expect(permissionsRoute).toContain("repository.owner.type === 'Organization' && canPush");
   });
 

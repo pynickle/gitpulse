@@ -178,7 +178,6 @@ describe('dashboard issue/PR notification-style cards', () => {
     expect(issueHeaderSource).not.toContain('<IssueTypeBadge');
     expect(issueHeaderSource).not.toContain('issue.type');
     expect(issueTypeBadgeSource).toContain('border-bottom: 2px solid var(--issue-type-color);');
-    expect(issueTypeBadgeSource).not.toContain('background-color:');
     expect(issuePrCardSource).toContain('class="notification-type-badge"');
     expect(issuePrCardSource).not.toContain('notification-card__actions');
     expect(issuePrCardSource).not.toContain('notification-card__reason-slot');

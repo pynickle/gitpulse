@@ -40,38 +40,46 @@
 
   <template v-else-if="item.eventType === 'issue_type_added'">
     added issue type
-    <IssueTypeBadge
+    <span
       v-if="item.issueType?.name"
-      class="ml-1"
-      :name="item.issueType.name"
-      :color="item.issueType.color"
-    />
+      class="tag is-activity issue-type-tag ml-1"
+      :style="issueTypeTagStyle(item.issueType.color)"
+    >
+      {{ item.issueType.name }}
+    </span>
   </template>
 
   <template v-else-if="item.eventType === 'issue_type_changed'">
     changed issue type
     <template v-if="item.prevIssueType?.name">
       from
-      <IssueTypeBadge
-        class="ml-1"
-        :name="item.prevIssueType.name"
-        :color="item.prevIssueType.color"
-      />
+      <span
+        class="tag is-activity issue-type-tag ml-1"
+        :style="issueTypeTagStyle(item.prevIssueType.color)"
+      >
+        {{ item.prevIssueType.name }}
+      </span>
     </template>
     <template v-if="item.issueType?.name">
       to
-      <IssueTypeBadge class="ml-1" :name="item.issueType.name" :color="item.issueType.color" />
+      <span
+        class="tag is-activity issue-type-tag ml-1"
+        :style="issueTypeTagStyle(item.issueType.color)"
+      >
+        {{ item.issueType.name }}
+      </span>
     </template>
   </template>
 
   <template v-else-if="item.eventType === 'issue_type_removed'">
     removed issue type
-    <IssueTypeBadge
+    <span
       v-if="item.issueType?.name"
-      class="ml-1"
-      :name="item.issueType.name"
-      :color="item.issueType.color"
-    />
+      class="tag is-activity issue-type-tag ml-1"
+      :style="issueTypeTagStyle(item.issueType.color)"
+    >
+      {{ item.issueType.name }}
+    </span>
   </template>
 
   <template v-else-if="item.eventType === 'milestoned' || item.eventType === 'demilestoned'">
@@ -308,7 +316,6 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import ProjectTag from '~/components/dashboard/timeline/ProjectTag.vue';
 import type { ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import {
@@ -347,6 +354,31 @@ const labelStyle = (color?: string) => {
   };
 };
 
+const issueTypeColorHexMap: Record<string, string> = {
+  gray: '#6e7781',
+  blue: '#0969da',
+  green: '#1a7f37',
+  yellow: '#bf8700',
+  orange: '#bc4c00',
+  red: '#cf222e',
+  pink: '#bf3989',
+  purple: '#8250df',
+};
+
+const issueTypeTagStyle = (color?: string) => {
+  const normalizedColor = color?.trim().toLowerCase() ?? '';
+
+  const issueTypeColor = /^[\da-f]{6}$/i.test(normalizedColor)
+    ? `#${normalizedColor}`
+    : normalizedColor.startsWith('#')
+      ? normalizedColor
+      : (issueTypeColorHexMap[normalizedColor] ?? issueTypeColorHexMap.gray);
+
+  return {
+    '--issue-type-tag-color': issueTypeColor,
+  };
+};
+
 const projectEventTypes = new Set([
   'added_to_project',
   'added_to_project_v2',
@@ -381,5 +413,25 @@ const timelineChangeActorUrl = (change: TimelineStateChange) => {
 .tag.is-activity {
   font-size: 0.62rem;
   font-weight: bold;
+}
+
+.tag.issue-type-tag {
+  border: 1px solid color-mix(in srgb, var(--issue-type-tag-color, #6e7781) 28%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--issue-type-tag-color, #6e7781) 14%,
+    var(--gitpulse-surface)
+  );
+  color: color-mix(in srgb, var(--issue-type-tag-color, #6e7781) 78%, var(--gitpulse-text-strong));
+}
+
+html.dark .tag.issue-type-tag {
+  border-color: color-mix(in srgb, var(--issue-type-tag-color, #6e7781) 42%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--issue-type-tag-color, #6e7781) 24%,
+    var(--gitpulse-surface)
+  );
+  color: color-mix(in srgb, var(--issue-type-tag-color, #6e7781) 68%, var(--gitpulse-text-strong));
 }
 </style>
