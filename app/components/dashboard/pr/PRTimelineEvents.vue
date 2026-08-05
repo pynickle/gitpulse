@@ -10,8 +10,8 @@
       </div>
     </div>
 
-    <div v-if="processedTimeline.length > 0">
-      <div v-for="item in processedTimeline" :key="item.renderKey" class="mb-4">
+    <div v-if="processedTimeline.length > 0" class="pr-timeline-events__list">
+      <div v-for="item in processedTimeline" :key="item.renderKey">
         <PRTimelineCommentCard
           v-if="item.kind === 'comment' || item.kind === 'review-comment'"
           :item="item"
@@ -132,6 +132,12 @@ const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number
 </script>
 
 <style scoped lang="scss">
+.pr-timeline-events__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
 .pr-timeline-events__composer {
   padding-top: 1rem;
 }

@@ -670,9 +670,11 @@ const buildSuggestionDiffLines = (
 
 <style scoped lang="scss">
 .review-item {
-  border-radius: 16px;
-  background-color: var(--gitpulse-surface-muted);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border-strong);
   border-left: 4px solid var(--review-accent, var(--gitpulse-border-strong));
+  box-shadow: var(--gitpulse-shadow-card);
   overflow: hidden;
 }
 
@@ -979,7 +981,7 @@ html.dark .review-item__thread-toggle {
 .review-item__comment + .review-item__comment {
   margin-top: 1.125rem;
   padding-top: 1.125rem;
-  border-top: 1px dashed var(--gitpulse-border);
+  border-top: 1px solid var(--gitpulse-border-strong);
 }
 
 .review-item__diff {

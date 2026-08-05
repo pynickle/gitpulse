@@ -1,56 +1,53 @@
 <template>
-  <div class="comment-item px-4 pt-4 pb-1">
-    <div class="mb-4">
-      <div class="is-flex is-align-items-center mb-2">
-        <GitHubAvatar
-          variant="raised"
-          interactive
-          class="mr-4"
-          width="32"
-          height="32"
-          :src="props.item.author?.avatarUrl || ''"
-          :alt="props.item.author?.login || ''"
-        />
-        <div class="is-flex is-flex-direction-column is-justify-content-center">
-          <a
-            :href="props.item.author?.url"
-            target="_blank"
-            rel="noopener"
-            class="is-size-6 has-text-weight-medium has-text-link"
-          >
-            {{ props.item.author?.login }}
-          </a>
-          <slot name="meta">
-            <span class="is-size-7 has-text-grey">
-              {{ formatDurationFromNow(props.item.createdAt || '', localeCode, relativeTimeNow) }}
-            </span>
-          </slot>
-        </div>
-      </div>
-      <hr class="my-2" />
-      <div class="content">
-        <MarkdownRenderer
-          v-if="props.item.body"
-          :value="props.item.body"
-          :repo-owner="props.repoOwner"
-          :repo-name="props.repoName"
-        />
-        <p v-else class="has-text-grey is-size-7">
-          {{ props.emptyText ?? t('detailTimeline.noCommentBody') }}
-        </p>
-      </div>
-      <ReactionBar
-        v-if="canShowReactions"
-        class="comment-item__reactions"
-        :target-kind="reactionTargetKind"
-        :owner="props.repoOwner || ''"
-        :repo="props.repoName || ''"
-        :target-id="reactionTargetId"
-        :initial-items="props.item.reactions"
-        defer-viewer-state
+  <article class="comment-item">
+    <header class="comment-item__header">
+      <GitHubAvatar
+        variant="raised"
+        interactive
+        class="comment-item__avatar"
+        width="32"
+        height="32"
+        :src="props.item.author?.avatarUrl || ''"
+        :alt="props.item.author?.login || ''"
       />
+      <div class="comment-item__meta">
+        <a
+          :href="props.item.author?.url"
+          target="_blank"
+          rel="noopener"
+          class="comment-item__author is-size-6 has-text-weight-medium has-text-link"
+        >
+          {{ props.item.author?.login }}
+        </a>
+        <slot name="meta">
+          <span class="comment-item__time is-size-7 has-text-grey">
+            {{ formatDurationFromNow(props.item.createdAt || '', localeCode, relativeTimeNow) }}
+          </span>
+        </slot>
+      </div>
+    </header>
+    <div class="comment-item__body content">
+      <MarkdownRenderer
+        v-if="props.item.body"
+        :value="props.item.body"
+        :repo-owner="props.repoOwner"
+        :repo-name="props.repoName"
+      />
+      <p v-else class="has-text-grey is-size-7">
+        {{ props.emptyText ?? t('detailTimeline.noCommentBody') }}
+      </p>
     </div>
-  </div>
+    <ReactionBar
+      v-if="canShowReactions"
+      class="comment-item__reactions"
+      :target-kind="reactionTargetKind"
+      :owner="props.repoOwner || ''"
+      :repo="props.repoName || ''"
+      :target-id="reactionTargetId"
+      :initial-items="props.item.reactions"
+      defer-viewer-state
+    />
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -100,11 +97,57 @@ const canShowReactions = computed(
 
 <style scoped lang="scss">
 .comment-item {
-  border-radius: 20px;
-  background-color: var(--gitpulse-surface-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 1rem 1.125rem 0.875rem;
+  border: 1px solid var(--gitpulse-border-strong);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  box-shadow: var(--gitpulse-shadow-card);
+}
+
+.comment-item__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.comment-item__avatar {
+  flex: none;
+}
+
+.comment-item__meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.comment-item__author {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.comment-item__time {
+  line-height: 1.3;
+}
+
+.comment-item__body {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gitpulse-border);
+  overflow-wrap: anywhere;
+}
+
+.comment-item__body :deep(*:last-child) {
+  margin-bottom: 0;
 }
 
 .comment-item__reactions {
   margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--gitpulse-border);
 }
 </style>
