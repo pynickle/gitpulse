@@ -42,6 +42,7 @@ const {
   parseIssueAssigneesBody,
   parseIssueLabelsBody,
   parseIssueLockBody,
+  parseIssueTypeBody,
   parseRequiredBodyText,
   parseRepoSubscriptionBody,
   parseReviewThreadResolveBody,
@@ -183,6 +184,7 @@ describe('server Zod request validation', () => {
               state: 'open',
               isAnswered: true,
               stateStatus: 'loaded',
+              issueType: { name: ' Bug ', color: ' red ' },
               labels: [{ name: ' bug ', color: 'd73a4a' }],
               authorLogin: ' octocat ',
               authorAvatarUrl: ' https://avatars.githubusercontent.com/u/1?v=4 ',
@@ -263,6 +265,7 @@ describe('server Zod request validation', () => {
               state: 'open',
               isAnswered: true,
               stateStatus: 'loaded',
+              issueType: { name: 'Bug', color: 'red' },
               labels: [{ name: 'bug', color: 'd73a4a' }],
               authorLogin: 'octocat',
               authorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
@@ -363,6 +366,8 @@ describe('server Zod request validation', () => {
       'needs triage',
     ]);
     expect(parseIssueLabelsBody({ labels: [] })).toEqual([]);
+    expect(parseIssueTypeBody({ type: ' Bug ' })).toBe('Bug');
+    expect(parseIssueTypeBody({ type: null })).toBeNull();
     expect(parseIssueAssigneesBody({ assignees: [' Alice ', 'alice', 'Bob'] })).toEqual([
       'Alice',
       'Bob',
@@ -382,6 +387,10 @@ describe('server Zod request validation', () => {
     );
     expect(() => parseIssueLabelsBody({ labels: [' '] })).toThrow(
       'Invalid issue labels request body'
+    );
+    expect(() => parseIssueTypeBody({ type: '' })).toThrow('Invalid issue type request body');
+    expect(() => parseIssueTypeBody({ type: 'Bug', extra: true })).toThrow(
+      'Invalid issue type request body'
     );
     expect(() => parseIssueAssigneesBody({ assignees: 'alice' })).toThrow(
       'Invalid issue assignees request body'

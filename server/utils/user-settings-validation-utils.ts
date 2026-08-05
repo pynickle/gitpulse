@@ -186,6 +186,11 @@ const notificationLabelSchema = z.strictObject({
   color: z.string().trim().min(1).max(32),
 });
 
+const notificationIssueTypeSchema = z.strictObject({
+  name: nonEmptyStringSchema,
+  color: z.string().trim().min(1).max(32).nullable().optional(),
+});
+
 const notificationSubjectSchema = z.strictObject({
   title: optionalNonEmptyStringSchema,
   type: optionalNonEmptyStringSchema,
@@ -195,6 +200,7 @@ const notificationSubjectSchema = z.strictObject({
   draft: z.boolean().optional(),
   isAnswered: z.boolean().optional(),
   stateStatus: z.enum(['pending', 'loaded', 'error', 'unavailable']).optional(),
+  issueType: notificationIssueTypeSchema.optional(),
   labels: z.array(notificationLabelSchema).optional(),
   authorLogin: optionalNonEmptyStringSchema,
   authorAvatarUrl: optionalLongNonEmptyStringSchema,

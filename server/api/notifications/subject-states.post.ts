@@ -1,5 +1,6 @@
 import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { parseNotificationSubjectTargetsBody } from '#server/utils/notification-subject-state-validation-utils';
+import type { IssueTypeSummary } from '#shared/types/issues';
 import type {
   NotificationLabel,
   NotificationSubjectState,
@@ -21,6 +22,11 @@ interface GraphQLAuthorNode {
   avatarUrl?: string;
 }
 
+interface GraphQLIssueTypeNode {
+  name?: string;
+  color?: string;
+}
+
 interface GraphQLSubjectNode {
   title?: string;
   updatedAt?: string;
@@ -30,6 +36,7 @@ interface GraphQLSubjectNode {
   isDraft?: boolean | null;
   isAnswered?: boolean | null;
   author?: GraphQLAuthorNode;
+  issueType?: GraphQLIssueTypeNode | null;
   labels?: GraphQLLabelsConnection;
 }
 
@@ -70,6 +77,18 @@ const normalizeState = (
   return state === 'open' || state === 'closed' ? state : undefined;
 };
 
+const normalizeIssueType = (
+  type: NotificationSubjectStateTarget['type'],
+  node: GraphQLSubjectNode | null | undefined
+): IssueTypeSummary | undefined => {
+  if (type !== 'issues' || typeof node?.issueType?.name !== 'string') return undefined;
+
+  return {
+    name: node.issueType.name,
+    color: node.issueType.color?.toLowerCase() ?? null,
+  };
+};
+
 const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
   const variables: string[] = [];
   const fields: string[] = [];
@@ -92,7 +111,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
         ? 'title updatedAt state mergedAt isDraft'
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
-          : 'title updatedAt state';
+          : 'title updatedAt state issueType { name color }';
     const labelsFields =
       target.type === 'discussions' ? '' : ' labels(first: 10) { nodes { name color } }';
     fields.push(
@@ -139,6 +158,7 @@ export default defineEventHandler(async (event) => {
           target.type === 'discussions' && typeof node?.isAnswered === 'boolean'
             ? node.isAnswered
             : undefined,
+        issueType: normalizeIssueType(target.type, node),
         labels: normalizeLabels(node),
         authorLogin: node?.author?.login,
         authorAvatarUrl: node?.author?.avatarUrl,

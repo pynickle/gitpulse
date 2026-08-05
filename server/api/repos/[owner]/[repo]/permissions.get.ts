@@ -18,6 +18,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         triage: false,
         pull: false,
       };
+      const canPush = Boolean(permissions.admin || permissions.maintain || permissions.push);
 
       return {
         admin: Boolean(permissions.admin),
@@ -25,9 +26,10 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         push: Boolean(permissions.push),
         triage: Boolean(permissions.triage),
         pull: Boolean(permissions.pull),
-        canEditLabels: Boolean(permissions.admin || permissions.maintain || permissions.push),
-        canLockIssue: Boolean(permissions.admin || permissions.maintain || permissions.push),
-        canEditAssignees: Boolean(permissions.admin || permissions.maintain || permissions.push),
+        canEditLabels: canPush,
+        canEditIssueType: repository.owner.type === 'Organization' && canPush,
+        canLockIssue: canPush,
+        canEditAssignees: canPush,
         canManageItemState: Boolean(
           permissions.admin || permissions.maintain || permissions.push || permissions.triage
         ),

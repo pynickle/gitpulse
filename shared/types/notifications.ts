@@ -1,3 +1,5 @@
+import type { IssueTypeSummary } from './issues';
+
 export type NotificationSubjectKind = 'Issue' | 'PullRequest' | 'Discussion' | 'Release' | string;
 
 export type NotificationSubjectState = 'open' | 'closed' | 'merged';
@@ -19,6 +21,7 @@ export interface DashboardNotificationSubject {
   draft?: boolean;
   isAnswered?: boolean;
   stateStatus?: NotificationSubjectStateStatus;
+  issueType?: IssueTypeSummary;
   labels?: NotificationLabel[];
   authorLogin?: string;
   authorAvatarUrl?: string;
@@ -60,6 +63,7 @@ export interface NotificationSubjectStateResult {
   /** Present for pull requests; true when GraphQL `isDraft` is true. */
   draft?: boolean;
   isAnswered?: boolean;
+  issueType?: IssueTypeSummary;
   labels?: NotificationLabel[];
   authorLogin?: string;
   authorAvatarUrl?: string;

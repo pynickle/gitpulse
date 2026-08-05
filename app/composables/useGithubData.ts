@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 
 import type { CustomTabSource, GitHubSearchQuery } from '#shared/types/custom-search';
+import type { GitHubIssueType } from '#shared/types/issues';
 import type {
   DashboardNotification,
   NotificationSubjectState,
@@ -31,7 +32,7 @@ interface DashboardEntity {
     name: string;
     color: string;
   }[];
-  type?: { name?: string };
+  type?: GitHubIssueType | null;
   merged_at?: string | null;
   state?: NotificationSubjectState;
   pull_request?: unknown;
@@ -344,6 +345,7 @@ const applyNotificationSubjectStates = (
         state: result?.state,
         draft: result?.draft,
         isAnswered: result?.isAnswered,
+        issueType: result?.issueType,
         labels: result?.labels,
         authorLogin: result?.authorLogin,
         authorAvatarUrl: result?.authorAvatarUrl,

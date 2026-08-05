@@ -35,6 +35,15 @@
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
           @scroll="onSidebarScroll"
         >
+          <IssueTypeCard
+            :issue-type="currentIssue?.type"
+            :can-edit-issue-type="canEditIssueType"
+            :issue-number="currentIssue?.number || null"
+            :repo-info="repoInfo"
+            @update:issue-type="updateIssueType"
+            @update:is-issue-type-editor-visible="updateIssueTypeEditorVisibility"
+          />
+
           <IssueLabels
             :labels="currentIssue?.labels || []"
             :can-edit-labels="canEditLabels"
@@ -85,6 +94,7 @@ import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
+import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
 import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
@@ -157,6 +167,8 @@ const canEditLabels = computed(() => {
   return repoPermissions.value.canEditLabels;
 });
 
+const canEditIssueType = computed(() => repoPermissions.value.canEditIssueType);
+
 const canLockIssue = computed(() => {
   return repoPermissions.value.canLockIssue;
 });
@@ -193,6 +205,10 @@ const updateLabels = (labels: IssueDetailLabel[]) => {
   currentIssue.value.labels = labels;
 };
 
+const updateIssueType = (issueType: IssueDetailPayload['type']) => {
+  currentIssue.value.type = issueType;
+};
+
 const updateAssignees = (assignees: IssueAssigneeUser[], issue?: IssueAssigneeMutationResponse) => {
   if (issue) {
     currentIssue.value = {
@@ -227,6 +243,10 @@ const addTimelineEvent = (event: IssueTimelineItem) => {
 
 const updateLabelEditorVisibility = (visible: boolean) => {
   isLabelEditorVisible.value = visible;
+  emit('update:non-sticky-header', visible);
+};
+
+const updateIssueTypeEditorVisibility = (visible: boolean) => {
   emit('update:non-sticky-header', visible);
 };
 

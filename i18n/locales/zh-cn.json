@@ -127,6 +127,19 @@
     "saving": "保存中...",
     "updateFailed": "更新标签失败"
   },
+  "detailIssueType": {
+    "title": "类型",
+    "edit": "编辑类型",
+    "loading": "正在加载类型...",
+    "empty": "无类型",
+    "none": "无类型",
+    "noneAvailable": "无可用类型",
+    "cancel": "取消",
+    "save": "保存",
+    "saving": "保存中...",
+    "loadFailed": "加载类型失败",
+    "updateFailed": "更新类型失败"
+  },
   "detailAssignees": {
     "title": "指派人",
     "edit": "编辑指派人",

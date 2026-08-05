@@ -13,6 +13,67 @@ describe('detail assignee integration', () => {
     expect(normalizeRepoPermissions({ canEditAssignees: true }).canEditAssignees).toBe(true);
   });
 
+  test('limits issue type editing to push-level repository permissions', () => {
+    expect(createEmptyRepoPermissions().canEditIssueType).toBe(false);
+    expect(normalizeRepoPermissions({ triage: true }).canEditIssueType).toBe(false);
+    expect(normalizeRepoPermissions({ push: true }).canEditIssueType).toBe(true);
+    expect(normalizeRepoPermissions({ maintain: true }).canEditIssueType).toBe(true);
+    expect(normalizeRepoPermissions({ admin: true }).canEditIssueType).toBe(true);
+    expect(
+      normalizeRepoPermissions({ admin: true, canEditIssueType: false }).canEditIssueType
+    ).toBe(false);
+  });
+
+  test('provides issue type selection and clearing from the issue detail sidebar', () => {
+    const issueDetail = readFileSync('app/components/dashboard/detail/IssueDetail.vue', 'utf8');
+    const issueTypeCard = readFileSync('app/components/dashboard/issue/IssueTypeCard.vue', 'utf8');
+    const issueLabels = readFileSync('app/components/dashboard/issue/IssueLabels.vue', 'utf8');
+    const issueTypeMutation = readFileSync(
+      'server/api/repos/[owner]/[repo]/issues/[issue_number]/type.patch.ts',
+      'utf8'
+    );
+    const issueTypesRoute = readFileSync(
+      'server/api/repos/[owner]/[repo]/issue-types.get.ts',
+      'utf8'
+    );
+    const permissionsRoute = readFileSync(
+      'server/api/repos/[owner]/[repo]/permissions.get.ts',
+      'utf8'
+    );
+
+    expect(issueDetail).toContain('<IssueTypeCard');
+    expect(issueDetail).toContain(':can-edit-issue-type="canEditIssueType"');
+    expect(issueDetail).toContain(
+      '@update:is-issue-type-editor-visible="updateIssueTypeEditorVisibility"'
+    );
+    expect(issueTypeCard).toContain('type="radio"');
+    expect(issueTypeCard).toContain('<IssueTypeBadge variant="tag"');
+    expect(issueTypeCard).toContain("selectIssueType('')");
+    expect(issueTypeCard).toContain(':disabled="savingIssueType"');
+    expect(issueTypeCard).toContain("selectedTypeName.value = props.issueType?.name ?? ''");
+    expect(issueTypeCard).not.toContain('detailIssueType.close');
+    expect(issueTypeCard).not.toContain('detailIssueType.dismissError');
+    expect(issueTypeCard).not.toContain('aria-label=');
+    expect(issueTypeCard).toContain("method: 'PATCH'");
+    for (const sharedEditorMarker of [
+      '<Teleport to="body">',
+      '<Transition name="label-modal">',
+      'class="label-editor-overlay"',
+      'class="label-row"',
+      'class="label-btn-cancel"',
+      'class="label-btn-save"',
+      'useModalState()',
+    ]) {
+      expect(issueTypeCard).toContain(sharedEditorMarker);
+      expect(issueLabels).toContain(sharedEditorMarker);
+    }
+    expect(issueTypeMutation).toContain('parseIssueTypeBody');
+    expect(issueTypeMutation).toContain('type,');
+    expect(issueTypesRoute).toContain("'GET /orgs/{org}/issue-types'");
+    expect(issueTypesRoute).toContain("repository.owner.type !== 'Organization'");
+    expect(permissionsRoute).toContain("repository.owner.type === 'Organization' && canPush");
+  });
+
   test('renders the shared assignee sidebar on issue and pull request detail panes', () => {
     const issueDetail = readFileSync('app/components/dashboard/detail/IssueDetail.vue', 'utf8');
     const pullRequestDetail = readFileSync('app/components/dashboard/detail/PRDetail.vue', 'utf8');

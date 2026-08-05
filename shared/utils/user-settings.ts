@@ -10,6 +10,7 @@ import type {
   GitHubSearchScope,
   GitHubSearchVisibilityFilter,
 } from '#shared/types/custom-search';
+import type { IssueTypeSummary } from '#shared/types/issues';
 import type {
   DashboardNotification,
   DashboardNotificationRepository,
@@ -242,6 +243,7 @@ const cloneDashboardNotificationSubject = (
 
   return {
     ...subject,
+    issueType: subject.issueType ? { ...subject.issueType } : undefined,
     labels: cloneNotificationLabels(subject.labels),
   };
 };
@@ -297,6 +299,19 @@ const normalizeNotificationLabels = (value: unknown) => {
   return labels.length > 0 ? labels : undefined;
 };
 
+const normalizeIssueTypeSummary = (value: unknown): IssueTypeSummary | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+
+  const candidate = value as Partial<IssueTypeSummary>;
+  const name = normalizeString(candidate.name);
+  if (!name) return undefined;
+
+  return {
+    name,
+    color: normalizeString(candidate.color, 32) ?? null,
+  };
+};
+
 const normalizeDashboardNotificationSubject = (
   value: unknown
 ): DashboardNotificationSubject | undefined => {
@@ -323,6 +338,7 @@ const normalizeDashboardNotificationSubject = (
     draft: typeof candidate.draft === 'boolean' ? candidate.draft : undefined,
     isAnswered: typeof candidate.isAnswered === 'boolean' ? candidate.isAnswered : undefined,
     stateStatus,
+    issueType: normalizeIssueTypeSummary(candidate.issueType),
     labels: normalizeNotificationLabels(candidate.labels),
     authorLogin: normalizeString(candidate.authorLogin),
     authorAvatarUrl: normalizeString(candidate.authorAvatarUrl, 1000),

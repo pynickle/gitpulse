@@ -1,3 +1,4 @@
+import type { GitHubIssueType, IssueTypeSummary } from '#shared/types/issues';
 import type {
   NotificationLabel,
   NotificationSubjectKind,
@@ -33,6 +34,7 @@ export interface DashboardIssuePrEntity {
   pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
+  type?: GitHubIssueType | null;
   [key: string]: unknown;
 }
 
@@ -48,6 +50,7 @@ export interface DashboardIssuePrCard {
   draft: boolean;
   actorLogin: string;
   actorAvatarUrl: string;
+  issueType: IssueTypeSummary | null;
   labels: NotificationLabel[];
 }
 
@@ -83,6 +86,10 @@ export default function toDashboardIssuePrCard(
     draft: isPullRequest && state === 'open' && Boolean(entity.draft),
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
+    issueType:
+      !isPullRequest && entity.type?.name
+        ? { name: entity.type.name, color: entity.type.color ?? null }
+        : null,
     labels: (entity.labels ?? []).map((label) => ({
       name: label.name,
       color: label.color,

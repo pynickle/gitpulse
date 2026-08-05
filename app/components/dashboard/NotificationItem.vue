@@ -43,7 +43,15 @@
                 {{ subjectTitle }}
               </p>
 
-              <div v-if="subjectLabels.length" class="notification-card__labels">
+              <div
+                v-if="subjectIssueType || subjectLabels.length"
+                class="notification-card__labels"
+              >
+                <IssueTypeBadge
+                  v-if="subjectIssueType"
+                  :name="subjectIssueType.name"
+                  :color="subjectIssueType.color"
+                />
                 <span
                   v-for="label in subjectLabels"
                   :key="label.name"
@@ -139,6 +147,7 @@ import { ref, computed } from 'vue';
 
 import { formatDurationFromNow } from '#imports';
 import type { DashboardNotification } from '#shared/types/notifications';
+import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
@@ -228,6 +237,9 @@ const subjectVisual = computed(() => {
 });
 
 const subjectLabels = computed(() => subject.value?.labels ?? []);
+const subjectIssueType = computed(() =>
+  subject.value?.type === 'Issue' ? subject.value.issueType : undefined
+);
 const showReason = computed(() => props.showReason);
 const showMarkAsRead = computed(() => props.showMarkAsRead);
 const todoAction = computed(() => props.todoAction);

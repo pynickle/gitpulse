@@ -8,9 +8,6 @@
 
     <!-- Meta row -->
     <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
-      <span v-if="issue?.type?.name" class="header-badge" :style="typeStyle">
-        {{ issue.type.name }}
-      </span>
       <span class="header-number has-text-weight-medium">#{{ issue?.number }}</span>
       <span class="header-state-tag" :class="issue?.state === 'open' ? 'is-open' : 'is-closed'">
         <component :size="12" :is="issue?.state === 'open' ? CircleDotIcon : CircleMinusIcon" />
@@ -100,7 +97,6 @@ const relativeTimeNow = useRelativeTimeNow();
 
 interface IssueHeaderIssue {
   title?: string;
-  type?: { name?: string };
   number?: number | string;
   state?: string;
   updated_at?: string;
@@ -130,11 +126,6 @@ const stateColor = computed(() => {
   };
 });
 
-const typeStyle = {
-  backgroundColor: 'var(--gitpulse-surface-muted)',
-  color: 'var(--gitpulse-text-strong)',
-};
-
 const handleRepoClick = async () => {
   await openRepository(props.repoOwner, props.repoName);
 };
@@ -143,18 +134,6 @@ const handleRepoClick = async () => {
 <style scoped lang="scss">
 .header-meta {
   gap: 0.75rem;
-}
-
-.header-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--gitpulse-radius-sm);
-  font-size: 0.75rem;
-  font-weight: 500;
-  background-color: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text);
-  border: 1px solid var(--gitpulse-border);
 }
 
 .header-number {
