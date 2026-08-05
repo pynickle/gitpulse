@@ -155,7 +155,7 @@
     "loading": "Loading release...",
     "untitled": "Release",
     "draft": "Draft",
-    "prerelease": "Pre-release",
+    "prerelease": "Pre Release",
     "unpublished": "Unpublished",
     "noDescription": "No release notes provided",
     "assets": "Assets",
@@ -1085,6 +1085,9 @@
     "retry": "Retry",
     "noRepo": "No repository specified.",
     "latest": "Latest",
+    "previousReleases": "Previous releases",
+    "downloads": "Downloads",
+    "metricsLabel": "Release metrics",
     "filterLabel": "Filter releases by type",
     "filterStable": "Stable",
     "emptyFiltered": "No releases match this filter on the current page."

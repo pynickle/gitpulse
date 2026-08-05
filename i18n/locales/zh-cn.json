@@ -1085,6 +1085,9 @@
     "retry": "重试",
     "noRepo": "未指定仓库。",
     "latest": "最新",
+    "previousReleases": "历史发布",
+    "downloads": "下载",
+    "metricsLabel": "发布指标",
     "filterLabel": "按类型筛选发布",
     "filterStable": "正式版",
     "emptyFiltered": "当前页没有符合该筛选条件的发布。"

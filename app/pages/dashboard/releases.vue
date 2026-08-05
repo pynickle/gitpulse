@@ -1,21 +1,12 @@
 <script setup lang="ts">
-import {
-  CalendarIcon,
-  DownloadIcon,
-  FlaskConicalIcon,
-  LayoutGridIcon,
-  PackageIcon,
-  PencilLineIcon,
-  RocketIcon,
-  TagIcon,
-} from '@lucide/vue';
+import { FlaskConicalIcon, LayoutGridIcon, PencilLineIcon, RocketIcon, TagIcon } from '@lucide/vue';
 import { computed, onMounted, ref, watch, type Component } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { ReleaseListItem } from '#shared/types/releases';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
-import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import ReleaseListItemCard from '~/components/dashboard/releases/ReleaseListItemCard.vue';
 import { serializeReleaseQuery } from '~/utils/dashboardUrlNavigationUtils';
 
 type ReleaseTypeFilter = 'all' | 'stable' | 'prerelease' | 'draft';
@@ -27,12 +18,11 @@ interface ReleaseFilterOption {
   color: string;
 }
 
-const { locale, t } = useI18n();
+const { t } = useI18n();
 const localePath = useLocalePath();
 const route = useRoute();
 const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 const { openRepository } = useDashboardRepositoryNavigation();
-const relativeTimeNow = useRelativeTimeNow();
 
 const { items, pagination, loading, error, fetchPage } = useRepoReleases();
 
@@ -119,29 +109,25 @@ const latestReleaseId = computed(() => {
   return latest?.id ?? null;
 });
 
-const releaseTitle = (release: ReleaseListItem) => {
-  return release.name?.trim() || release.tag_name || t('releaseDetail.untitled');
-};
+/**
+ * Featured hero only when the latest release is still in the filtered set
+ * (e.g. hides when filtering to Pre Release / Draft).
+ */
+const latestRelease = computed(() => {
+  const id = latestReleaseId.value;
+  if (id == null) return null;
+  return filteredItems.value.find((release) => release.id === id) ?? null;
+});
 
-const releasedAtLabel = (release: ReleaseListItem) => {
-  const releasedAt = release.published_at || release.created_at || '';
-  return releasedAt
-    ? formatDurationFromNow(releasedAt, locale.value, relativeTimeNow.value)
-    : t('releaseDetail.unpublished');
-};
+const historyItems = computed(() => {
+  const latestId = latestRelease.value?.id;
+  if (latestId == null) return filteredItems.value;
+  return filteredItems.value.filter((release) => release.id !== latestId);
+});
 
-const compactFormatter = computed(
-  () =>
-    new Intl.NumberFormat(locale.value, {
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    })
+const showHistoryHeading = computed(
+  () => Boolean(latestRelease.value) && historyItems.value.length > 0
 );
-
-const formatCount = (count: number) => {
-  if (!Number.isFinite(count) || count <= 0) return '0';
-  return compactFormatter.value.format(count);
-};
 
 const releaseDetailRoute = (release: ReleaseListItem) => {
   const target = repoTarget.value;
@@ -275,67 +261,26 @@ watch(repoFullName, () => {
           class="releases-page__list"
           :class="{ 'releases-page__list--loading': loading }"
         >
-          <NuxtLink
-            v-for="release in filteredItems"
+          <ReleaseListItemCard
+            v-if="latestRelease"
+            :release="latestRelease"
+            :to="releaseDetailRoute(latestRelease)"
+            :is-latest="true"
+            variant="hero"
+          />
+
+          <div v-if="showHistoryHeading" class="releases-page__section-label">
+            {{ t('releasesPage.previousReleases') }}
+          </div>
+
+          <ReleaseListItemCard
+            v-for="release in historyItems"
             :key="release.id"
+            :release="release"
             :to="releaseDetailRoute(release)"
-            class="releases-page__item card"
-          >
-            <div class="releases-page__item-main">
-              <div class="releases-page__item-title-row">
-                <span class="releases-page__item-title">{{ releaseTitle(release) }}</span>
-
-                <span v-if="release.id === latestReleaseId" class="tag is-success is-light">
-                  {{ t('releasesPage.latest') }}
-                </span>
-                <span v-if="release.draft" class="tag is-warning is-light">
-                  {{ t('releaseDetail.draft') }}
-                </span>
-                <span v-if="release.prerelease" class="tag is-info is-light">
-                  {{ t('releaseDetail.prerelease') }}
-                </span>
-              </div>
-
-              <div class="releases-page__item-meta">
-                <span class="releases-page__item-meta-entry" :title="release.tag_name">
-                  <TagIcon :size="13" aria-hidden="true" />
-                  <span class="releases-page__item-tag">{{ release.tag_name }}</span>
-                </span>
-
-                <span v-if="release.author?.login" class="releases-page__item-meta-entry">
-                  <GitHubAvatar
-                    :src="release.author.avatar_url"
-                    :alt="release.author.login"
-                    :size="16"
-                    class="releases-page__item-avatar"
-                  />
-                  <span>{{ release.author.login }}</span>
-                </span>
-
-                <span class="releases-page__item-meta-entry">
-                  <CalendarIcon :size="13" aria-hidden="true" />
-                  <span>{{ releasedAtLabel(release) }}</span>
-                </span>
-              </div>
-            </div>
-
-            <div class="releases-page__item-stats">
-              <span
-                class="releases-page__item-meta-entry"
-                :title="t('releaseDetail.assetCount', { count: release.assets_count })"
-              >
-                <PackageIcon :size="13" aria-hidden="true" />
-                <span>{{ formatCount(release.assets_count) }}</span>
-              </span>
-              <span
-                class="releases-page__item-meta-entry"
-                :title="t('releaseDetail.downloadCount', { count: release.download_count })"
-              >
-                <DownloadIcon :size="13" aria-hidden="true" />
-                <span>{{ formatCount(release.download_count) }}</span>
-              </span>
-            </div>
-          </NuxtLink>
+            :is-latest="release.id === latestReleaseId"
+            variant="row"
+          />
         </div>
       </div>
 
@@ -438,7 +383,7 @@ watch(repoFullName, () => {
 .releases-page__list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .releases-page__list--loading {
@@ -446,70 +391,14 @@ watch(repoFullName, () => {
   pointer-events: none;
 }
 
-.releases-page__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.875rem 1rem;
-  color: inherit;
-
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-  }
-}
-
-.releases-page__item-main {
-  min-width: 0;
-}
-
-.releases-page__item-title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.375rem;
-}
-
-.releases-page__item-title {
+.releases-page__section-label {
+  margin: 0.65rem 0 0.15rem;
+  padding: 0 0.15rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--gitpulse-text-strong);
-  overflow-wrap: anywhere;
-}
-
-.releases-page__item-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.375rem 1rem;
-  color: var(--gitpulse-text-muted);
-  font-size: 0.8rem;
-}
-
-.releases-page__item-meta-entry {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  white-space: nowrap;
-}
-
-.releases-page__item-tag {
-  max-width: 16rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.releases-page__item-avatar {
-  border-radius: 50%;
-}
-
-.releases-page__item-stats {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
-  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 /* Always visible: pinned to the bottom edge of the overlay's scroll area. */
