@@ -2,7 +2,7 @@
   <div class="sidebar-card mb-4">
     <div class="sidebar-card__header">
       <div class="sidebar-card__header-left">
-        <TagIcon :size="14" class="sidebar-card__icon" />
+        <Tags :size="14" class="sidebar-card__icon" />
         <span class="sidebar-card__title">{{ t('detailIssueType.title') }}</span>
       </div>
       <button
@@ -141,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, TagIcon, XIcon } from '@lucide/vue';
+import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, Tags, XIcon } from '@lucide/vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 
 import type { GitHubIssueType } from '#shared/types/issues';
