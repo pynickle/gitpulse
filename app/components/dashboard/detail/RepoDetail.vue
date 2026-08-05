@@ -1461,9 +1461,18 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   top: 0.75rem;
   flex: none;
   width: 28%;
-  max-height: calc(100vh - 4.5rem);
+  /*
+    Fit inside the page-scroll pane, not the full viewport:
+    overlay header (~3.8rem) + sticky top (0.75rem) + pane bottom padding (2rem) + buffer.
+    Previous 100vh - 4.5rem was ~2rem too tall and clipped the Links card.
+  */
+  max-height: calc(100dvh - 7.25rem);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding-right: 1rem;
+  box-sizing: border-box;
 }
 
 .repo-detail-header {
@@ -1610,8 +1619,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .repo-detail-header__identity {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
 }
 
 .repo-detail-header__meta {
@@ -1619,6 +1629,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   align-items: center;
   flex-wrap: wrap;
   gap: 0.45rem;
+  min-width: 0;
 }
 
 .repo-detail-header__language,
@@ -1640,23 +1651,31 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  column-gap: 0.35rem;
+  row-gap: 0.15rem;
+  max-width: 100%;
   margin: 0;
+  padding: 0;
   font-size: 0.8125rem;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--gitpulse-text-muted);
 }
 
 .repo-detail-forked-from__icon {
   flex: 0 0 auto;
-  opacity: 0.85;
+  opacity: 0.8;
+  /* Optical align with the smaller caption text. */
+  transform: translateY(0.5px);
 }
 
 .repo-detail-forked-from__label {
+  flex: 0 0 auto;
   color: var(--gitpulse-text-muted);
 }
 
 .repo-detail-forked-from__link {
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--gitpulse-text-strong, var(--bulma-text-strong));
   font-weight: 500;
   text-decoration: none;
@@ -1666,6 +1685,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   &:hover {
     color: var(--gitpulse-accent-hover);
     text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 }
 
@@ -2001,9 +2026,16 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Inherit the column max-height calc(); percentage max-height is unreliable
+     when the parent only has max-height (not an explicit height). */
   max-height: inherit;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 0.75rem;
+  overscroll-behavior: contain;
+  /* Keep the last Links card fully inside the scrollport (border + shadow). */
+  padding: 0 0.75rem 0.75rem 0;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
@@ -2243,7 +2275,15 @@ html.dark .repo-detail-section__chrome {
     max-height: none;
     overflow: visible;
     position: static;
+    display: block;
+    min-height: 0;
     padding-right: 0;
+  }
+
+  .sidebar-scroll {
+    max-height: none;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .repo-detail-header {
