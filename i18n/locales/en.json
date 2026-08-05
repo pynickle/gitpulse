@@ -737,6 +737,10 @@
     "watching": "Watching",
     "watchers": "Watchers",
     "wiki": "Wiki",
+    "contributors": "Contributors",
+    "loadingContributors": "Loading contributors…",
+    "contributorsError": "Couldn't load contributors.",
+    "contributorsUnknown": "Unknown contributor",
     "starError": "Couldn't update the star status.",
     "watchError": "Couldn't update the watch status.",
     "watchAllDescription": "Receive all notifications",
@@ -1135,5 +1139,24 @@
     "pageUnavailable": "This page can't be rendered here. View it on GitHub instead.",
     "retry": "Retry",
     "noRepo": "No repository specified."
+  },
+  "contributorsPage": {
+    "pageTitle": "Contributors · {repo}",
+    "heading": "Contributors",
+    "viewAll": "View all contributors",
+    "openRepo": "Open repository",
+    "loadingTitle": "Loading contributors",
+    "loadingSubtitle": "Fetching contributor activity from GitHub",
+    "empty": "This repository has no contributors yet.",
+    "emptyFiltered": "No contributors match this filter.",
+    "error": "Failed to load contributors.",
+    "retry": "Retry",
+    "noRepo": "No repository specified.",
+    "count": "{count} contributors",
+    "searchPlaceholder": "Filter by username…",
+    "commits": "{count} commits",
+    "computing": "Building contribution graphs…",
+    "unknownAuthor": "Unknown contributor",
+    "sparklineLabel": "{user}: {count} commits over time"
   }
 }

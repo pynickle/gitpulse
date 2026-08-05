@@ -737,6 +737,10 @@
     "watching": "关注",
     "watchers": "关注者",
     "wiki": "Wiki",
+    "contributors": "贡献者",
+    "loadingContributors": "正在加载贡献者…",
+    "contributorsError": "无法加载贡献者。",
+    "contributorsUnknown": "未知贡献者",
     "starError": "Star 状态更新失败。",
     "watchError": "关注状态更新失败。",
     "watchAllDescription": "接收所有通知",
@@ -1135,5 +1139,24 @@
     "pageUnavailable": "此页面无法在这里渲染，请前往 GitHub 查看。",
     "retry": "重试",
     "noRepo": "未指定仓库。"
+  },
+  "contributorsPage": {
+    "pageTitle": "{repo} 的贡献者",
+    "heading": "贡献者",
+    "viewAll": "查看全部贡献者",
+    "openRepo": "打开仓库",
+    "loadingTitle": "正在加载贡献者",
+    "loadingSubtitle": "正在从 GitHub 获取贡献活动",
+    "empty": "此仓库还没有贡献者。",
+    "emptyFiltered": "没有匹配此筛选条件的贡献者。",
+    "error": "加载贡献者失败。",
+    "retry": "重试",
+    "noRepo": "未指定仓库。",
+    "count": "{count} 位贡献者",
+    "searchPlaceholder": "按用户名筛选…",
+    "commits": "{count} 次提交",
+    "computing": "正在生成贡献图表…",
+    "unknownAuthor": "未知贡献者",
+    "sparklineLabel": "{user}：共 {count} 次提交"
   }
 }

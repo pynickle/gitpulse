@@ -145,3 +145,67 @@ export interface RepoBranchesDetailResponse {
   defaultBranch: string;
   items: RepoBranchDetail[];
 }
+
+/**
+ * One contributor from `GET /repos/{owner}/{repo}/contributors`.
+ * Anonymous entries have no login/avatar when `anon=1` is requested.
+ */
+export interface RepoContributorSummary {
+  login: string | null;
+  id: number | string | null;
+  avatarUrl: string | null;
+  htmlUrl: string | null;
+  /** Display name for anonymous contributors (GitHub `name` field). */
+  name: string | null;
+  contributions: number;
+  type: string;
+  anonymous: boolean;
+}
+
+/** GitHub's list-contributors API exposes prev/next via Link header only. */
+export interface RepoContributorListPaginationMeta {
+  page: number;
+  perPage: number;
+  hasPrev: boolean;
+  hasNext: boolean;
+  totalCount: number | null;
+  totalPages: number | null;
+}
+
+export interface RepoContributorListResponse {
+  items: RepoContributorSummary[];
+  pagination: RepoContributorListPaginationMeta;
+}
+
+/** One week bucket from GitHub's contributor commit-activity stats. */
+export interface RepoContributorWeek {
+  /** Start of the week as a Unix timestamp (seconds). */
+  week: number;
+  additions: number;
+  deletions: number;
+  commits: number;
+}
+
+/**
+ * One contributor with weekly commit activity from
+ * `GET /repos/{owner}/{repo}/stats/contributors`.
+ */
+export interface RepoContributorStatsItem {
+  login: string | null;
+  id: number | string | null;
+  avatarUrl: string | null;
+  htmlUrl: string | null;
+  total: number;
+  weeks: RepoContributorWeek[];
+}
+
+/**
+ * Stats endpoints are computed asynchronously. `computing` maps GitHub's 202;
+ * `empty` maps 204 / empty body; `ready` is a finished payload.
+ */
+export type RepoContributorStatsStatus = 'ready' | 'computing' | 'empty';
+
+export interface RepoContributorStatsResponse {
+  status: RepoContributorStatsStatus;
+  items: RepoContributorStatsItem[];
+}

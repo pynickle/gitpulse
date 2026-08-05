@@ -34,6 +34,7 @@ import type {
 } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
+import RepoContributorsCard from '~/components/dashboard/detail/RepoContributorsCard.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
@@ -1308,6 +1309,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               </div>
             </div>
           </div>
+
+          <RepoContributorsCard :owner="owner" :repo="repo" />
 
           <div class="sidebar-card">
             <div class="sidebar-card__header">

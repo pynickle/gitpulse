@@ -188,6 +188,11 @@ describe('routeToNavigationEntry', () => {
       data: { owner: 'octo', repo: 'repo' },
     });
 
+    expect(derive('/dashboard/contributors', { repo: 'octo/repo' })).toEqual({
+      type: 'contributors-list',
+      data: { owner: 'octo', repo: 'repo' },
+    });
+
     expect(derive('/zh-cn/dashboard/wiki', { repo: 'octo/repo', page: 'Guide' })).toEqual({
       type: 'wiki',
       data: { owner: 'octo', repo: 'repo', path: 'Guide' },
@@ -257,6 +262,10 @@ describe('routeToNavigationEntry / resolveNavigationEntryRoute round trip', () =
     {
       label: 'branches list',
       entry: { type: 'branches-list', data: { owner: 'octo', repo: 'r' } },
+    },
+    {
+      label: 'contributors list',
+      entry: { type: 'contributors-list', data: { owner: 'octo', repo: 'r' } },
     },
     { label: 'wiki', entry: { type: 'wiki', data: { owner: 'octo', repo: 'r' } } },
     {
