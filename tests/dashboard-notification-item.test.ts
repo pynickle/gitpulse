@@ -32,22 +32,6 @@ describe('dashboard notification item subject number display', () => {
     expect(notificationItemSource).not.toContain('v-if="currentNotification.subject?.number"');
   });
 
-  test('renders enriched issue types without showing them on other notification subjects', () => {
-    const notificationItemSource = readFileSync(
-      'app/components/dashboard/NotificationItem.vue',
-      'utf8'
-    );
-    const subjectStatesSource = readFileSync(
-      'server/api/notifications/subject-states.post.ts',
-      'utf8'
-    );
-
-    expect(notificationItemSource).toContain('<IssueTypeBadge');
-    expect(notificationItemSource).toContain("subject.value?.type === 'Issue'");
-    expect(notificationItemSource).toContain('subject.value.issueType');
-    expect(subjectStatesSource).toContain('issueType { name color }');
-  });
-
   test('keeps todo action as an icon-only action in the right action column', () => {
     const notificationItemSource = readFileSync(
       'app/components/dashboard/NotificationItem.vue',

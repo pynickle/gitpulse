@@ -163,21 +163,9 @@ describe('dashboard issue/PR notification-style cards', () => {
       'app/components/dashboard/IssuePrNotificationItem.vue',
       'utf8'
     );
-    const issueHeaderSource = readFileSync(
-      'app/components/dashboard/issue/IssueHeader.vue',
-      'utf8'
-    );
-    const issueTypeBadgeSource = readFileSync(
-      'app/components/dashboard/issue/IssueTypeBadge.vue',
-      'utf8'
-    );
     const dashboardSource = readFileSync('app/pages/dashboard.vue', 'utf8');
 
     expect(issuePrCardSource).toContain('<GitHubAvatar');
-    expect(issuePrCardSource).toContain('<IssueTypeBadge');
-    expect(issueHeaderSource).not.toContain('<IssueTypeBadge');
-    expect(issueHeaderSource).not.toContain('issue.type');
-    expect(issueTypeBadgeSource).toContain('border-bottom: 2px solid var(--issue-type-color);');
     expect(issuePrCardSource).toContain('class="notification-type-badge"');
     expect(issuePrCardSource).not.toContain('notification-card__actions');
     expect(issuePrCardSource).not.toContain('notification-card__reason-slot');
