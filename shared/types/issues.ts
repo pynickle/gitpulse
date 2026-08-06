@@ -5,6 +5,31 @@
 import type { IssueAssigneeUser } from './assignees';
 import type { ReactionSummaryItem } from './reactions';
 
+export type GitHubIssueTypeColor =
+  | 'gray'
+  | 'blue'
+  | 'green'
+  | 'yellow'
+  | 'orange'
+  | 'red'
+  | 'pink'
+  | 'purple';
+
+export interface IssueTypeSummary {
+  name: string;
+  color?: string | null;
+}
+
+export interface GitHubIssueType extends IssueTypeSummary {
+  id: number;
+  node_id: string;
+  description: string | null;
+  color?: GitHubIssueTypeColor | null;
+  created_at?: string;
+  updated_at?: string;
+  is_enabled?: boolean;
+}
+
 export interface IssueDetailLabel {
   id?: number | string;
   name: string;
@@ -35,6 +60,7 @@ export interface IssueDetailPayload {
   assignees?: IssueAssigneeUser[];
 
   labels?: IssueDetailLabel[];
+  type?: GitHubIssueType | null;
   reactions?: ReactionSummaryItem[];
 
   [key: string]: unknown;

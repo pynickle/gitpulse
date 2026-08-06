@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import toDashboardIssuePrCard, {
   type DashboardIssuePrEntity,
 } from '../app/utils/dashboardIssuePrCard';
+import resolveIssueTypeColor from '../app/utils/issueTypeColor';
 
 describe('dashboard issue/PR notification-style cards', () => {
   test('maps an open issue into the notification-style card view model', () => {
@@ -22,6 +23,13 @@ describe('dashboard issue/PR notification-style cards', () => {
         { id: 1, name: 'bug', color: 'd1242f' },
         { id: 2, name: 'accessibility', color: '0969da' },
       ],
+      type: {
+        id: 5,
+        node_id: 'IT_kwDOExample',
+        name: 'Bug',
+        description: 'Unexpected behavior or an error',
+        color: 'red',
+      },
     };
 
     expect(toDashboardIssuePrCard(issue)).toEqual({
@@ -35,6 +43,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       draft: false,
       actorLogin: 'octocat',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
+      issueType: { name: 'Bug', color: 'red' },
       labels: [
         { name: 'bug', color: 'd1242f' },
         { name: 'accessibility', color: '0969da' },
@@ -57,6 +66,13 @@ describe('dashboard issue/PR notification-style cards', () => {
         avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
       },
       labels: [{ id: 'enhancement', name: 'enhancement', color: '2ea44f' }],
+      type: {
+        id: 6,
+        node_id: 'IT_kwDOIgnored',
+        name: 'Task',
+        description: null,
+        color: 'blue',
+      },
     };
 
     expect(toDashboardIssuePrCard(pull)).toEqual({
@@ -70,6 +86,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       draft: false,
       actorLogin: 'merge-bot',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
+      issueType: null,
       labels: [{ name: 'enhancement', color: '2ea44f' }],
     });
   });
@@ -136,6 +153,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       draft: false,
       actorLogin: '',
       actorAvatarUrl: '',
+      issueType: null,
       labels: [],
     });
   });
@@ -159,5 +177,12 @@ describe('dashboard issue/PR notification-style cards', () => {
     );
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="issue" />');
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="pull" />');
+  });
+
+  test('resolves GitHub issue type colors and safely falls back to gray', () => {
+    expect(resolveIssueTypeColor('red')).toBe('#cf222e');
+    expect(resolveIssueTypeColor(' #AABBCC ')).toBe('#aabbcc');
+    expect(resolveIssueTypeColor('not-a-color')).toBe('#6e7781');
+    expect(resolveIssueTypeColor(null)).toBe('#6e7781');
   });
 });

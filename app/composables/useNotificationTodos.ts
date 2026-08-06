@@ -78,6 +78,7 @@ const applyNotificationTodoState = (
           state: result.state,
           draft: result.draft,
           isAnswered: result.isAnswered,
+          issueType: result.issueType,
           labels: result.labels,
           authorLogin: result.authorLogin,
           authorAvatarUrl: result.authorAvatarUrl,

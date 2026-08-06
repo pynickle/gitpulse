@@ -10,6 +10,10 @@ const issueLabelsBodySchema = z.strictObject({
   labels: z.array(z.string().trim().min(1)),
 });
 
+const issueTypeBodySchema = z.strictObject({
+  type: z.string().trim().min(1).nullable(),
+});
+
 const issueAssigneesBodySchema = z.strictObject({
   assignees: z
     .array(z.string().trim().min(1))
@@ -53,6 +57,10 @@ export function parseRequiredBodyText(body: unknown, statusMessage: string) {
 export function parseIssueLabelsBody(body: unknown) {
   return parseZodRequestBody(issueLabelsBodySchema, body, 'Invalid issue labels request body')
     .labels;
+}
+
+export function parseIssueTypeBody(body: unknown) {
+  return parseZodRequestBody(issueTypeBodySchema, body, 'Invalid issue type request body').type;
 }
 
 export function parseIssueAssigneesBody(body: unknown) {

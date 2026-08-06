@@ -357,6 +357,7 @@ $transition-hint:
 .notification-card__labels {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.35rem;
 }

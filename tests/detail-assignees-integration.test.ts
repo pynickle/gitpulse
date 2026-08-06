@@ -13,6 +13,13 @@ describe('detail assignee integration', () => {
     expect(normalizeRepoPermissions({ canEditAssignees: true }).canEditAssignees).toBe(true);
   });
 
+  test('normalizes the explicit issue type editing capability', () => {
+    expect(createEmptyRepoPermissions().canEditIssueType).toBe(false);
+    expect(normalizeRepoPermissions({ triage: true }).canEditIssueType).toBe(false);
+    expect(normalizeRepoPermissions({ canEditIssueType: true }).canEditIssueType).toBe(true);
+    expect(normalizeRepoPermissions({ canEditIssueType: false }).canEditIssueType).toBe(false);
+  });
+
   test('renders the shared assignee sidebar on issue and pull request detail panes', () => {
     const issueDetail = readFileSync('app/components/dashboard/detail/IssueDetail.vue', 'utf8');
     const pullRequestDetail = readFileSync('app/components/dashboard/detail/PRDetail.vue', 'utf8');

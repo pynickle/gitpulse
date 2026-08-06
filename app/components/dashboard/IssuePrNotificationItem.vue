@@ -34,7 +34,12 @@
                 {{ card.title }}
               </p>
 
-              <div v-if="card.labels.length" class="notification-card__labels">
+              <div v-if="card.issueType || card.labels.length" class="notification-card__labels">
+                <IssueTypeBadge
+                  v-if="card.issueType"
+                  :name="card.issueType.name"
+                  :color="card.issueType.color"
+                />
                 <span
                   v-for="label in card.labels"
                   :key="label.name"
@@ -76,6 +81,7 @@
 import { computed } from 'vue';
 
 import { formatDurationFromNow } from '#imports';
+import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import toDashboardIssuePrCard, { type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';

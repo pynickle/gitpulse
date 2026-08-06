@@ -127,6 +127,19 @@
     "saving": "Saving...",
     "updateFailed": "Failed to update labels"
   },
+  "detailIssueType": {
+    "title": "Type",
+    "edit": "Edit type",
+    "loading": "Loading types...",
+    "empty": "No type",
+    "none": "No type",
+    "noneAvailable": "No types available",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "loadFailed": "Failed to load types",
+    "updateFailed": "Failed to update type"
+  },
   "detailAssignees": {
     "title": "Assignees",
     "edit": "Edit assignees",
