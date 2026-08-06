@@ -123,10 +123,16 @@
             <span class="info-item__value">{{ formatRelativeTime(mergedAt) }}</span>
           </div>
           <div class="info-stats">
-            <div class="info-stat">
-              <span class="info-stat__value">{{ commits }}</span>
+            <button
+              type="button"
+              class="info-stat info-stat--action"
+              :aria-label="t('prReview.panel.openCommitsAria', { count: commits ?? 0 })"
+              :title="t('prReview.panel.viewCommits')"
+              @click="emit('openCommits')"
+            >
+              <span class="info-stat__value">{{ commits ?? 0 }}</span>
               <span class="info-stat__label">{{ t('prReview.commits') }}</span>
-            </div>
+            </button>
             <div class="info-stat">
               <span class="info-stat__value">{{ changedFiles }}</span>
               <span class="info-stat__label">{{ t('prReview.filesShort') }}</span>
@@ -308,6 +314,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   openReviewers: [];
   openReview: [];
+  openCommits: [];
   requestReviewer: [reviewer: PRReviewerSummaryItem];
   removeReviewer: [reviewer: PRReviewerSummaryItem];
   stateUpdated: [state: 'open' | 'closed'];
@@ -844,6 +851,28 @@ const formatRelativeTime = (dateString: string | undefined) => {
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
+}
+
+.info-stat--action {
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &:hover {
+    background: var(--gitpulse-surface-hover);
+    border-color: var(--gitpulse-border-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+  }
 }
 
 .info-stat__value {

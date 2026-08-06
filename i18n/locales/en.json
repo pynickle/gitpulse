@@ -855,6 +855,14 @@
     "assignee": "Assignee",
     "noAssignee": "None",
     "commits": "Commits",
+    "panel": {
+      "switch": "Pull request panels",
+      "conversation": "Conversation",
+      "commits": "Commits",
+      "commitsEmpty": "No commits on this pull request",
+      "viewCommits": "View commits",
+      "openCommitsAria": "Show commits panel ({count})"
+    },
     "filesShort": "Files",
     "added": "Added",
     "removed": "Removed",

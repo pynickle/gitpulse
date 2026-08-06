@@ -44,6 +44,16 @@ export function buildRepoCommitsUrl(owner: string, repo: string, ref?: string | 
   return `${base}/${branch.split('/').map(encodeURIComponent).join('/')}`;
 }
 
+/** Build the public GitHub commit URL scoped to a pull request. */
+export function buildPullRequestCommitUrl(
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  sha: string
+): string {
+  return `https://github.com/${owner}/${repo}/pull/${pullNumber}/commits/${sha}`;
+}
+
 /**
  * Map a GitHub commit list item into the client-facing commit list entry.
  * Returns null when the item has no usable sha.

@@ -28,38 +28,95 @@
           />
         </div>
 
-        <hr />
+        <div class="pr-detail-section">
+          <div
+            class="pr-detail-tabs"
+            role="tablist"
+            :aria-label="t('prReview.panel.switch')"
+            @keydown="handlePanelTablistKeydown"
+          >
+            <button
+              v-for="tab in panelTabs"
+              :key="tab.value"
+              type="button"
+              role="tab"
+              class="pr-detail-tabs__tab"
+              :class="{ 'is-active': activePanel === tab.value }"
+              :aria-selected="activePanel === tab.value"
+              :tabindex="activePanel === tab.value ? 0 : -1"
+              @click="selectPanel(tab.value)"
+            >
+              <component
+                :is="tab.icon"
+                :size="14"
+                class="pr-detail-tabs__icon"
+                aria-hidden="true"
+              />
+              <span>{{ tab.label }}</span>
+              <span
+                v-if="tab.value === 'commits' && commitCountLabel !== null"
+                class="pr-detail-tabs__count"
+              >
+                {{ commitCountLabel }}
+              </span>
+            </button>
+          </div>
 
-        <div class="pr-detail__timeline mt-4">
-          <PRTimelineEvents
-            :timeline="timeline"
-            :loading="loadingTimeline"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
-            :pull-number="currentPullRequest?.number || 0"
-            :has-next-page="hasNextTimelinePage"
-            :loading-more="loadingMoreTimeline"
-            :resolving-review-thread-id="resolvingReviewThreadId"
-            @switch-issue="switchToIssue"
-            @switch-pull-request="switchToPullRequest"
-            @comment-created="addTimelineEvent"
-            @load-more="loadMoreTimeline"
-            @toggle-review-thread="toggleReviewThreadResolved"
-          />
+          <div v-show="activePanel === 'conversation'" class="pr-detail-panel" role="tabpanel">
+            <div class="pr-detail__timeline">
+              <PRTimelineEvents
+                :timeline="timeline"
+                :loading="loadingTimeline"
+                :repo-owner="repoOwner"
+                :repo-name="repoName"
+                :pull-number="currentPullRequest?.number || 0"
+                :has-next-page="hasNextTimelinePage"
+                :loading-more="loadingMoreTimeline"
+                :resolving-review-thread-id="resolvingReviewThreadId"
+                @switch-issue="switchToIssue"
+                @switch-pull-request="switchToPullRequest"
+                @comment-created="addTimelineEvent"
+                @load-more="loadMoreTimeline"
+                @toggle-review-thread="toggleReviewThreadResolved"
+              />
+            </div>
+
+            <PRMergeBox
+              v-if="repoOwner && repoName && currentPullRequest?.number"
+              class="pr-detail__merge-box"
+              :owner="repoOwner"
+              :repo="repoName"
+              :pull-number="currentPullRequest.number"
+              :pr-title="currentPullRequest?.title"
+              :head-label="currentPullRequest?.head?.label || currentPullRequest?.head?.ref"
+              :initial-status="terminalMergeStatus"
+              @head-branch-updated="handlePullRequestHeadBranchUpdated"
+              @merged="handlePullRequestMerged"
+            />
+          </div>
+
+          <div
+            v-show="activePanel === 'commits'"
+            class="pr-detail-panel pr-detail-panel--commits"
+            role="tabpanel"
+          >
+            <div v-if="commitsShowPagination" class="pr-detail-commits-toolbar">
+              <DashboardPagination
+                :pagination="commitsPagination"
+                current-page-only
+                @change="handleCommitsPageChange"
+              />
+            </div>
+
+            <RepoCommitList
+              :items="commitItems"
+              :loading="commitsLoading"
+              :error="commitsError"
+              :empty-message="t('prReview.panel.commitsEmpty')"
+              @retry="refreshCommits"
+            />
+          </div>
         </div>
-
-        <PRMergeBox
-          v-if="repoOwner && repoName && currentPullRequest?.number"
-          class="pr-detail__merge-box"
-          :owner="repoOwner"
-          :repo="repoName"
-          :pull-number="currentPullRequest.number"
-          :pr-title="currentPullRequest?.title"
-          :head-label="currentPullRequest?.head?.label || currentPullRequest?.head?.ref"
-          :initial-status="terminalMergeStatus"
-          @head-branch-updated="handlePullRequestHeadBranchUpdated"
-          @merged="handlePullRequestMerged"
-        />
       </div>
 
       <div class="column detail-sidebar-column">
@@ -107,6 +164,7 @@
             :pr-number="currentPullRequest?.number"
             @open-reviewers="openReviewerPicker"
             @open-review="openReviewWindow"
+            @open-commits="openCommitsPanel"
             @request-reviewer="rerequestReviewer"
             @remove-reviewer="removeReviewerRequest"
             @state-updated="handlePullRequestStateUpdated"
@@ -131,7 +189,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
+import { GitCommitHorizontalIcon, MessagesSquareIcon } from '@lucide/vue';
+import { computed, defineAsyncComponent, ref, shallowRef, watch, type Component } from 'vue';
 
 import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
 import type { DashboardNotification } from '#shared/types/notifications';
@@ -140,12 +199,15 @@ import type {
   PullRequestDetailResponse,
   PullRequestDetailViewModel,
 } from '#shared/types/pulls';
+import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
+import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
+import { usePRCommitList } from '~/composables/usePRCommitList';
 import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
 import type {
   PRReviewerCandidate,
@@ -158,7 +220,16 @@ import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
 import createPullRequestDetailViewModel from '~/utils/createPullRequestDetailViewModel';
 import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import handleRovingTablistKeydown from '~/utils/handleRovingTablistKeydown';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+
+type PRDetailPanel = 'conversation' | 'commits';
+
+interface PRPanelTab {
+  value: PRDetailPanel;
+  label: string;
+  icon: Component;
+}
 
 const props = defineProps<{
   pullRequest: PullRequestDetailViewModel;
@@ -213,6 +284,7 @@ const loadingMoreTimeline = ref(false);
 const isReviewWindowOpen = shallowRef(false);
 const isReviewerPickerOpen = shallowRef(false);
 const hasOpenedReviewerPicker = shallowRef(false);
+const activePanel = shallowRef<PRDetailPanel>('conversation');
 const loadingReviewerCandidates = shallowRef(false);
 const submittingReviewerRequest = shallowRef(false);
 const reviewerRequestsAvailable = shallowRef<boolean | null>(null);
@@ -405,6 +477,72 @@ const openReviewerPicker = () => {
 
 const closeReviewerPicker = () => {
   isReviewerPickerOpen.value = false;
+};
+
+const panelTabs = computed<PRPanelTab[]>(() => [
+  {
+    value: 'conversation',
+    label: t('prReview.panel.conversation'),
+    icon: MessagesSquareIcon,
+  },
+  {
+    value: 'commits',
+    label: t('prReview.panel.commits'),
+    icon: GitCommitHorizontalIcon,
+  },
+]);
+
+const commitCountLabel = computed(() => {
+  const count = currentPullRequest.value?.commits;
+  if (typeof count !== 'number' || !Number.isFinite(count) || count < 0) {
+    return null;
+  }
+  return String(count);
+});
+
+const isCommitsPanelActive = computed(() => activePanel.value === 'commits');
+
+const {
+  items: commitItems,
+  loading: commitsLoading,
+  error: commitsError,
+  pagination: commitsPagination,
+  showPagination: commitsShowPagination,
+  goToPage: goToCommitsPage,
+  refresh: refreshCommits,
+} = usePRCommitList(
+  () => repoOwner.value,
+  () => repoName.value,
+  () => currentPullRequest.value?.number || 0,
+  { enabled: isCommitsPanelActive }
+);
+
+const selectPanel = (value: PRDetailPanel) => {
+  if (activePanel.value === value) return;
+  activePanel.value = value;
+  // Keep compact-header threshold stable when switching tall/short panels.
+  if (mainColumnRef.value) {
+    mainColumnRef.value.scrollTop = 0;
+  }
+};
+
+const openCommitsPanel = () => {
+  selectPanel('commits');
+};
+
+const handlePanelTablistKeydown = (event: KeyboardEvent) => {
+  handleRovingTablistKeydown(event, {
+    itemCount: panelTabs.value.length,
+    activeIndex: panelTabs.value.findIndex((tab) => tab.value === activePanel.value),
+    onSelect: (index) => {
+      const tab = panelTabs.value[index];
+      if (tab) selectPanel(tab.value);
+    },
+  });
+};
+
+const handleCommitsPageChange = (page: number) => {
+  void goToCommitsPage(page);
 };
 
 const invalidateReviewerSummaryRequests = () => {
@@ -678,6 +816,7 @@ const resetPullRequestScopedState = (pullRequest: PullRequestDetailViewModel) =>
   loadingMoreTimeline.value = false;
   isReviewWindowOpen.value = false;
   isReviewerPickerOpen.value = false;
+  activePanel.value = 'conversation';
   loadingReviewerCandidates.value = false;
   submittingReviewerRequest.value = false;
   resolvingReviewThreadId.value = null;
@@ -1015,6 +1154,95 @@ watch(
   inset: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.pr-detail-section {
+  margin-top: 0.25rem;
+  min-width: 0;
+}
+
+.pr-detail-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0.1rem;
+  min-width: 0;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
+}
+
+.pr-detail-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: -1px;
+  padding: 0.55rem 0.85rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--gitpulse-text-muted);
+  font-family: var(--gitpulse-app-font-family);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease;
+
+  &:hover:not(.is-active) {
+    color: var(--gitpulse-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: -2px;
+    border-radius: 4px;
+  }
+
+  &.is-active {
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    border-bottom-color: var(--gitpulse-accent, var(--gitpulse-link));
+  }
+}
+
+.pr-detail-tabs__icon {
+  flex-shrink: 0;
+}
+
+.pr-detail-tabs__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--gitpulse-surface-muted, var(--gitpulse-surface-hover));
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+
+  .pr-detail-tabs__tab.is-active & {
+    background: color-mix(in srgb, var(--gitpulse-accent, var(--gitpulse-link)) 14%, transparent);
+    color: var(--gitpulse-accent, var(--gitpulse-link));
+  }
+}
+
+.pr-detail-panel {
+  min-width: 0;
+}
+
+.pr-detail-panel--commits {
+  padding-bottom: 2rem;
+}
+
+.pr-detail-commits-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+  padding: 0 0.35rem;
 }
 
 .pr-detail__timeline {

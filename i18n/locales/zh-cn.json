@@ -855,6 +855,14 @@
     "assignee": "指派人",
     "noAssignee": "无",
     "commits": "提交",
+    "panel": {
+      "switch": "拉取请求面板",
+      "conversation": "对话",
+      "commits": "提交",
+      "commitsEmpty": "此拉取请求暂无提交",
+      "viewCommits": "查看提交",
+      "openCommitsAria": "显示提交面板（{count}）"
+    },
     "filesShort": "文件",
     "added": "新增",
     "removed": "删除",

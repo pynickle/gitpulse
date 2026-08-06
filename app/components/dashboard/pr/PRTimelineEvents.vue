@@ -1,13 +1,8 @@
 <template>
   <div>
-    <div class="mb-4 is-flex is-align-items-center">
-      <span class="is-size-5 has-text-weight-semibold ml-2 mr-4">{{
-        t('detailTimeline.activity')
-      }}</span>
-      <div v-if="loading" class="is-flex is-justify-content-center">
-        <LoadingIcon class="icon" />
-        <span class="ml-2 is-size-7 has-text-grey">{{ t('detailTimeline.loading') }}</span>
-      </div>
+    <div v-if="loading" class="pr-timeline-events__loading mb-4 is-flex is-align-items-center">
+      <LoadingIcon class="icon" />
+      <span class="ml-2 is-size-7 has-text-grey">{{ t('detailTimeline.loading') }}</span>
     </div>
 
     <div v-if="processedTimeline.length > 0" class="pr-timeline-events__list">
@@ -132,6 +127,11 @@ const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number
 </script>
 
 <style scoped lang="scss">
+.pr-timeline-events__loading {
+  min-height: 1.25rem;
+  padding-left: 0.5rem;
+}
+
 .pr-timeline-events__list {
   display: flex;
   flex-direction: column;
