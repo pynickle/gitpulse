@@ -33,7 +33,7 @@
     "comark": "^0.6.0",
     "dayjs": "^1.11.21",
     "mermaid": "^11.16.1",
-    "nuxt": "^4.5.1",
+    "nuxt": "^4.5.2",
     "nuxt-auth-utils": "^0.5.30",
     "nuxt-seo-utils": "^8.3.3",
     "nuxt-site-config": "^4.1.5",
