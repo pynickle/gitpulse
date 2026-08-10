@@ -225,7 +225,7 @@ export default defineNuxtConfig({
         '@vue/devtools-core',
         '@vue/devtools-kit',
         'comark',
-        'comark/plugins/highlight',
+        'comark/plugins/shiki',
         'comark/plugins/security',
         'dayjs', // CJS
         'dayjs/locale/zh-cn', // CJS

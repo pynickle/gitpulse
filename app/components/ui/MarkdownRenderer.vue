@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { parseMarkdown } from 'comark';
 import type { MarkdownDocument, Node } from 'comark';
-import type { highlightCodeBlocks } from 'comark/plugins/highlight';
 import security from 'comark/plugins/security';
+import type { highlightCodeBlocks } from 'comark/plugins/shiki';
 import type { LanguageRegistration, ThemeRegistration } from 'shiki';
 import type { BundledLanguage } from 'shiki/langs';
 import type { DefineComponent } from 'vue';
@@ -107,11 +107,9 @@ async function highlightMarkdownCodeBlocks(
 
 function loadMarkdownHighlighterRuntime(): Promise<MarkdownHighlighterRuntime> {
   if (!markdownHighlighterRuntimePromise) {
-    markdownHighlighterRuntimePromise = import('comark/plugins/highlight').then(
-      (highlightModule) => ({
-        highlightCodeBlocks: highlightModule.highlightCodeBlocks,
-      })
-    );
+    markdownHighlighterRuntimePromise = import('comark/plugins/shiki').then((shikiModule) => ({
+      highlightCodeBlocks: shikiModule.highlightCodeBlocks,
+    }));
     markdownHighlighterRuntimePromise.catch(() => {
       markdownHighlighterRuntimePromise = null;
     });
