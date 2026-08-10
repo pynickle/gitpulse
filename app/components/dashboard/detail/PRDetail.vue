@@ -190,7 +190,15 @@
 
 <script setup lang="ts">
 import { GitCommitHorizontalIcon, MessagesSquareIcon } from '@lucide/vue';
-import { computed, defineAsyncComponent, ref, shallowRef, watch, type Component } from 'vue';
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  ref,
+  shallowRef,
+  watch,
+  type Component,
+} from 'vue';
 
 import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
 import type { DashboardNotification } from '#shared/types/notifications';
@@ -520,10 +528,11 @@ const {
 const selectPanel = (value: PRDetailPanel) => {
   if (activePanel.value === value) return;
   activePanel.value = value;
-  // Keep compact-header threshold stable when switching tall/short panels.
-  if (mainColumnRef.value) {
-    mainColumnRef.value.scrollTop = 0;
-  }
+  // Panel height can change (tall conversation vs short commits). Re-check the
+  // compact header against the current scroll position without jumping to top.
+  nextTick(() => {
+    onCompactHeaderScroll();
+  });
 };
 
 const openCommitsPanel = () => {
