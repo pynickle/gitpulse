@@ -93,7 +93,12 @@ const starredTo = computed(() => ({
         @click="emit('show-connections', 'followers')"
       >
         <UsersIcon :size="16" aria-hidden="true" />
-        <span class="profile-header__connection-count">{{ followerCount }}</span>
+        <span
+          class="profile-header__connection-count"
+          :title="followerCount.toLocaleString(locale)"
+        >
+          {{ formatCompactNumber(followerCount, locale) }}
+        </span>
         <span class="profile-header__connection-label">{{ t('profile.followers') }}</span>
       </button>
       <span class="profile-header__connection-separator" aria-hidden="true">·</span>
@@ -102,7 +107,12 @@ const starredTo = computed(() => ({
         class="profile-header__connection"
         @click="emit('show-connections', 'following')"
       >
-        <span class="profile-header__connection-count">{{ followingCount }}</span>
+        <span
+          class="profile-header__connection-count"
+          :title="followingCount.toLocaleString(locale)"
+        >
+          {{ formatCompactNumber(followingCount, locale) }}
+        </span>
         <span class="profile-header__connection-label">{{ t('profile.following') }}</span>
       </button>
     </div>

@@ -79,17 +79,8 @@ const gridLoadingSoft = computed(() => {
   return isComputing.value && !useStatsView.value && listItems.value.length > 0;
 });
 
-const compactFormatter = computed(
-  () =>
-    new Intl.NumberFormat(locale.value, {
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    })
-);
-
 const formatCount = (count: number) => {
-  if (!Number.isFinite(count) || count <= 0) return '0';
-  return compactFormatter.value.format(count);
+  return formatCompactNumber(Math.max(0, count), locale.value);
 };
 
 const displayName = (card: ContributorCard) => {

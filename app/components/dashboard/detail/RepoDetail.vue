@@ -1356,7 +1356,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     class="info-stat__icon"
                     :style="{ color: stat.color }"
                   />
-                  <span class="info-stat__value">{{ stat.value }}</span>
+                  <span class="info-stat__value" :title="stat.value.toLocaleString(localeCode)">
+                    {{ formatCompactNumber(stat.value, localeCode) }}
+                  </span>
                   <span class="info-stat__label">{{ stat.label }}</span>
                 </div>
               </div>

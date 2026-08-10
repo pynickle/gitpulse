@@ -23,15 +23,21 @@
         <div class="is-flex is-align-items-center dashboard-list-card__meta">
           <div class="is-flex is-align-items-center mr-4">
             <StarIcon :size="14" class="mr-1 has-text-grey" />
-            <span class="is-size-7 has-text-grey">{{ repo.stargazers_count }}</span>
+            <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.stargazers_count)">
+              {{ compactCount(repo.stargazers_count) }}
+            </span>
           </div>
           <div class="is-flex is-align-items-center mr-4">
             <EyeIcon :size="14" class="mr-1 has-text-grey" />
-            <span class="is-size-7 has-text-grey">{{ repo.watchers_count || 0 }}</span>
+            <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.watchers_count)">
+              {{ compactCount(repo.watchers_count) }}
+            </span>
           </div>
           <div class="is-flex is-align-items-center mr-4">
             <GitForkIcon :size="14" class="mr-1 has-text-grey" />
-            <span class="is-size-7 has-text-grey">{{ repo.forks_count || 0 }}</span>
+            <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.forks_count)">
+              {{ compactCount(repo.forks_count) }}
+            </span>
           </div>
           <div v-if="repo.private" class="is-flex is-align-items-center repo-private-badge">
             <LockIcon :size="12" class="mr-1" />
@@ -82,9 +88,19 @@ const props = defineProps<{
   repo: RepositoryListItem;
 }>();
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const localePath = useLocalePath();
 const { opensGitHubLinks, getPreferredTargetHref } = useGitHubLinkRouting();
+
+const compactCount = (value?: number | null) => {
+  const count = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return formatCompactNumber(count, locale.value);
+};
+
+const fullCountTitle = (value?: number | null) => {
+  const count = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return count.toLocaleString(locale.value);
+};
 
 const repoOwner = computed(() => props.repo.owner?.login ?? '');
 

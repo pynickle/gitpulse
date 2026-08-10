@@ -73,7 +73,13 @@ const onGridLeave = () => {
   <section class="contribution-graph" :aria-label="t('profile.contributions.label')">
     <header class="contribution-graph__header">
       <h3 class="contribution-graph__total">
-        {{ t('profile.contributions.total', { count: calendar.totalContributions }) }}
+        {{
+          t('profile.contributions.total', calendar.totalContributions, {
+            named: {
+              count: formatCompactNumber(calendar.totalContributions, locale),
+            },
+          })
+        }}
       </h3>
     </header>
 

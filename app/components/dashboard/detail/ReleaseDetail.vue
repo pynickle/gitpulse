@@ -79,17 +79,8 @@ const formatAssetSize = (size: number) => {
   return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
 };
 
-const compactFormatter = computed(
-  () =>
-    new Intl.NumberFormat(locale.value, {
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    })
-);
-
 const formatDownloadCount = (count: number) => {
-  if (!Number.isFinite(count) || count <= 0) return '0';
-  return compactFormatter.value.format(count);
+  return formatCompactNumber(Math.max(0, count), locale.value);
 };
 
 const handleRepoClick = async () => {

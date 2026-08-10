@@ -52,21 +52,12 @@ const releasedAtLabel = computed(() => {
     : t('releaseDetail.unpublished');
 });
 
-const compactFormatter = computed(
-  () =>
-    new Intl.NumberFormat(locale.value, {
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    })
+const assetsCountLabel = computed(() =>
+  formatCompactNumber(Math.max(0, props.release.assets_count || 0), locale.value)
 );
-
-const formatCount = (count: number) => {
-  if (!Number.isFinite(count) || count <= 0) return '0';
-  return compactFormatter.value.format(count);
-};
-
-const assetsCountLabel = computed(() => formatCount(props.release.assets_count));
-const downloadCountLabel = computed(() => formatCount(props.release.download_count));
+const downloadCountLabel = computed(() =>
+  formatCompactNumber(Math.max(0, props.release.download_count || 0), locale.value)
+);
 
 type StatusKind = 'latest' | 'prerelease' | 'draft';
 
