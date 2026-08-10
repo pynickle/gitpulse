@@ -354,6 +354,14 @@ $transition-hint:
   width: 0.5rem;
 }
 
+.notification-card__comments {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  vertical-align: -0.05em;
+  color: var(--gitpulse-text-muted, #6b7280);
+}
+
 .notification-card__labels {
   display: flex;
   flex-wrap: wrap;

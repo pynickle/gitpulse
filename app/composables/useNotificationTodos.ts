@@ -80,6 +80,7 @@ const applyNotificationTodoState = (
           isAnswered: result.isAnswered,
           issueType: result.issueType,
           labels: result.labels,
+          comments: result.comments,
           authorLogin: result.authorLogin,
           authorAvatarUrl: result.authorAvatarUrl,
           stateStatus: isNotificationSubjectStateResultLoaded(target, result) ? 'loaded' : 'error',

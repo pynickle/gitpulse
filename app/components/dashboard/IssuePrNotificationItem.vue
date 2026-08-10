@@ -68,6 +68,22 @@
                 <span v-if="card.updatedAt">
                   {{ formatDurationFromNow(card.updatedAt, localeCode, relativeTimeNow) }}
                 </span>
+                <template v-if="card.comments !== null">
+                  <span
+                    v-if="card.number || card.repositoryName || card.updatedAt"
+                    class="dashboard-list-card__separator"
+                  >
+                    &middot;
+                  </span>
+                  <span
+                    class="notification-card__comments"
+                    :title="commentsTitle"
+                    :aria-label="commentsTitle"
+                  >
+                    <MessageSquareIcon :size="12" aria-hidden="true" />
+                    <span>{{ commentsLabel }}</span>
+                  </span>
+                </template>
               </p>
             </div>
           </div>
@@ -78,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import { MessageSquareIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import { formatDurationFromNow } from '#imports';
@@ -90,11 +107,21 @@ const props = defineProps<{
   item: DashboardIssuePrEntity;
 }>();
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
 const card = computed(() => toDashboardIssuePrCard(props.item));
+
+const commentsLabel = computed(() => {
+  if (card.value.comments === null) return '';
+  return formatCompactNumber(card.value.comments, locale.value);
+});
+
+const commentsTitle = computed(() => {
+  if (card.value.comments === null) return '';
+  return t('dashboard.meta.commentCount', { count: card.value.comments });
+});
 
 const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({

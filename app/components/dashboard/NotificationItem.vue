@@ -75,6 +75,17 @@
                 {{
                   formatDurationFromNow(currentNotification.updated_at, localeCode, relativeTimeNow)
                 }}
+                <template v-if="showCommentsCount">
+                  <span class="dashboard-list-card__separator">&middot;</span>
+                  <span
+                    class="notification-card__comments"
+                    :title="commentsTitle"
+                    :aria-label="commentsTitle"
+                  >
+                    <MessageSquareIcon :size="12" aria-hidden="true" />
+                    <span>{{ commentsLabel }}</span>
+                  </span>
+                </template>
               </p>
             </div>
 
@@ -240,6 +251,22 @@ const subjectLabels = computed(() => subject.value?.labels ?? []);
 const subjectIssueType = computed(() =>
   subject.value?.type === 'Issue' ? subject.value.issueType : undefined
 );
+
+const subjectComments = computed(() => {
+  const count = subject.value?.comments;
+  return typeof count === 'number' && Number.isFinite(count) && count >= 0
+    ? Math.trunc(count)
+    : null;
+});
+const showCommentsCount = computed(() => subjectComments.value !== null);
+const commentsLabel = computed(() => {
+  if (subjectComments.value === null) return '';
+  return formatCompactNumber(subjectComments.value, locale.value);
+});
+const commentsTitle = computed(() => {
+  if (subjectComments.value === null) return '';
+  return t('dashboard.meta.commentCount', { count: subjectComments.value });
+});
 const showReason = computed(() => props.showReason);
 const showMarkAsRead = computed(() => props.showMarkAsRead);
 const todoAction = computed(() => props.todoAction);

@@ -23,6 +23,8 @@ export interface DashboardNotificationSubject {
   stateStatus?: NotificationSubjectStateStatus;
   issueType?: IssueTypeSummary;
   labels?: NotificationLabel[];
+  /** Issue/PR conversation comment count from subject-state enrichment. */
+  comments?: number;
   authorLogin?: string;
   authorAvatarUrl?: string;
 }
@@ -65,6 +67,8 @@ export interface NotificationSubjectStateResult {
   isAnswered?: boolean;
   issueType?: IssueTypeSummary;
   labels?: NotificationLabel[];
+  /** Conversation comment count (`comments.totalCount`) for issues/PRs. */
+  comments?: number;
   authorLogin?: string;
   authorAvatarUrl?: string;
 }

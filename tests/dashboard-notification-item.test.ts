@@ -32,6 +32,17 @@ describe('dashboard notification item subject number display', () => {
     expect(notificationItemSource).not.toContain('v-if="currentNotification.subject?.number"');
   });
 
+  test('renders issue/PR comment count from enriched subject.comments', () => {
+    const notificationItemSource = readFileSync(
+      'app/components/dashboard/NotificationItem.vue',
+      'utf8'
+    );
+
+    expect(notificationItemSource).toContain('showCommentsCount');
+    expect(notificationItemSource).toContain('notification-card__comments');
+    expect(notificationItemSource).toContain('subject.value?.comments');
+  });
+
   test('keeps todo action as an icon-only action in the right action column', () => {
     const notificationItemSource = readFileSync(
       'app/components/dashboard/NotificationItem.vue',

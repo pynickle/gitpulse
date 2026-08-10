@@ -31,6 +31,8 @@ export interface DashboardIssuePrEntity {
   state?: NotificationSubjectState;
   draft?: boolean;
   merged_at?: string | null;
+  /** Issue comment count from GitHub Search/Issues APIs (not review comments). */
+  comments?: number | null;
   pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
@@ -48,11 +50,19 @@ export interface DashboardIssuePrCard {
   state: NotificationSubjectState;
   /** True when the PR is an open draft (ignored for issues / closed / merged). */
   draft: boolean;
+  /** Issue comment count when provided by the list payload. */
+  comments: number | null;
   actorLogin: string;
   actorAvatarUrl: string;
   issueType: IssueTypeSummary | null;
   labels: NotificationLabel[];
 }
+
+const normalizeCommentsCount = (value: unknown): number | null => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  const count = Math.trunc(value);
+  return count >= 0 ? count : null;
+};
 
 const getRepositoryName = (repositoryUrl: string | null | undefined) => {
   if (!repositoryUrl) return '';
@@ -84,6 +94,7 @@ export default function toDashboardIssuePrCard(
     subjectType: isPullRequest ? 'PullRequest' : 'Issue',
     state,
     draft: isPullRequest && state === 'open' && Boolean(entity.draft),
+    comments: normalizeCommentsCount(entity.comments),
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
     issueType:

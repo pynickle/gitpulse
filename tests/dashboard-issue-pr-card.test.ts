@@ -15,6 +15,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       number: 42,
       updated_at: '2026-06-09T09:30:00Z',
       state: 'open',
+      comments: 1,
       user: {
         login: 'octocat',
         avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
@@ -41,6 +42,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       subjectType: 'Issue',
       state: 'open',
       draft: false,
+      comments: 1,
       actorLogin: 'octocat',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
       issueType: { name: 'Bug', color: 'red' },
@@ -84,6 +86,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       subjectType: 'PullRequest',
       state: 'merged',
       draft: false,
+      comments: null,
       actorLogin: 'merge-bot',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       issueType: null,
@@ -151,11 +154,35 @@ describe('dashboard issue/PR notification-style cards', () => {
       subjectType: 'Issue',
       state: 'closed',
       draft: false,
+      comments: null,
       actorLogin: '',
       actorAvatarUrl: '',
       issueType: null,
       labels: [],
     });
+  });
+
+  test('maps zero and invalid comments counts safely', () => {
+    expect(
+      toDashboardIssuePrCard({
+        id: 1,
+        comments: 0,
+      }).comments
+    ).toBe(0);
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 2,
+        comments: -3,
+      }).comments
+    ).toBe(null);
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 3,
+        comments: Number.NaN,
+      }).comments
+    ).toBe(null);
   });
 
   test('keeps issue and PR card UI aligned with notification item structure', () => {
@@ -167,6 +194,8 @@ describe('dashboard issue/PR notification-style cards', () => {
 
     expect(issuePrCardSource).toContain('<GitHubAvatar');
     expect(issuePrCardSource).toContain('class="notification-type-badge"');
+    expect(issuePrCardSource).toContain('notification-card__comments');
+    expect(issuePrCardSource).toContain('MessageSquareIcon');
     expect(issuePrCardSource).not.toContain('notification-card__actions');
     expect(issuePrCardSource).not.toContain('notification-card__reason-slot');
     expect(dashboardSource).not.toContain('AsyncSearchItem');

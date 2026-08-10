@@ -27,6 +27,10 @@ interface GraphQLIssueTypeNode {
   color?: string;
 }
 
+interface GraphQLCommentsConnection {
+  totalCount?: number | null;
+}
+
 interface GraphQLSubjectNode {
   title?: string;
   updatedAt?: string;
@@ -35,6 +39,7 @@ interface GraphQLSubjectNode {
   /** PullRequest only — GraphQL `isDraft`. */
   isDraft?: boolean | null;
   isAnswered?: boolean | null;
+  comments?: GraphQLCommentsConnection | null;
   author?: GraphQLAuthorNode;
   issueType?: GraphQLIssueTypeNode | null;
   labels?: GraphQLLabelsConnection;
@@ -89,6 +94,17 @@ const normalizeIssueType = (
   };
 };
 
+const normalizeCommentsCount = (
+  type: NotificationSubjectStateTarget['type'],
+  node: GraphQLSubjectNode | null | undefined
+): number | undefined => {
+  if (type === 'discussions') return undefined;
+  const totalCount = node?.comments?.totalCount;
+  if (typeof totalCount !== 'number' || !Number.isFinite(totalCount)) return undefined;
+  const count = Math.trunc(totalCount);
+  return count >= 0 ? count : undefined;
+};
+
 const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
   const variables: string[] = [];
   const fields: string[] = [];
@@ -108,10 +124,10 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
           : 'issue';
     const nodeFields =
       target.type === 'pulls'
-        ? 'title updatedAt state mergedAt isDraft'
+        ? 'title updatedAt state mergedAt isDraft comments { totalCount }'
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
-          : 'title updatedAt state issueType { name color }';
+          : 'title updatedAt state issueType { name color } comments { totalCount }';
     const labelsFields =
       target.type === 'discussions' ? '' : ' labels(first: 10) { nodes { name color } }';
     fields.push(
@@ -160,6 +176,7 @@ export default defineEventHandler(async (event) => {
             : undefined,
         issueType: normalizeIssueType(target.type, node),
         labels: normalizeLabels(node),
+        comments: normalizeCommentsCount(target.type, node),
         authorLogin: node?.author?.login,
         authorAvatarUrl: node?.author?.avatarUrl,
       };

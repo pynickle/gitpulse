@@ -158,6 +158,15 @@ const normalizeNotificationNumber = (value: unknown) => {
   return value;
 };
 
+/** Non-negative integer counts (e.g. issue comment total, including 0). */
+const normalizeNonNegativeCount = (value: unknown) => {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    return undefined;
+  }
+
+  return value;
+};
+
 const normalizeStringList = (values: unknown) => {
   if (!Array.isArray(values)) {
     return undefined;
@@ -340,6 +349,7 @@ const normalizeDashboardNotificationSubject = (
     stateStatus,
     issueType: normalizeIssueTypeSummary(candidate.issueType),
     labels: normalizeNotificationLabels(candidate.labels),
+    comments: normalizeNonNegativeCount(candidate.comments),
     authorLogin: normalizeString(candidate.authorLogin),
     authorAvatarUrl: normalizeString(candidate.authorAvatarUrl, 1000),
   };

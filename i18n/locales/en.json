@@ -606,6 +606,9 @@
       "previous": "Previous Page",
       "next": "Next Page"
     },
+    "meta": {
+      "commentCount": "{count} comments"
+    },
     "notifications": {
       "empty": "No notifications to show.",
       "emptyFiltered": "No notifications match the current filters.",

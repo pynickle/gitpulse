@@ -140,6 +140,7 @@ describe('notification todos', () => {
           state: 'closed',
           issueType: { name: 'Bug', color: 'red' },
           labels: [{ name: 'bug', color: 'd73a4a' }],
+          comments: 4,
           authorLogin: 'octocat',
           authorAvatarUrl: 'https://avatars.githubusercontent.com/u/2?v=4',
         },
@@ -167,6 +168,7 @@ describe('notification todos', () => {
             stateStatus: 'loaded',
             issueType: { name: 'Bug', color: 'red' },
             labels: [{ name: 'bug', color: 'd73a4a' }],
+            comments: 4,
             authorLogin: 'octocat',
             authorAvatarUrl: 'https://avatars.githubusercontent.com/u/2?v=4',
           },
@@ -215,6 +217,7 @@ describe('notification todos', () => {
       stateStatus: 'loaded',
       issueType: undefined,
       labels: undefined,
+      comments: undefined,
       authorLogin: 'maintainer',
       authorAvatarUrl: 'https://avatars.githubusercontent.com/u/3?v=4',
     });

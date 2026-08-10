@@ -202,6 +202,7 @@ const notificationSubjectSchema = z.strictObject({
   stateStatus: z.enum(['pending', 'loaded', 'error', 'unavailable']).optional(),
   issueType: notificationIssueTypeSchema.optional(),
   labels: z.array(notificationLabelSchema).optional(),
+  comments: z.number().int().nonnegative().optional(),
   authorLogin: optionalNonEmptyStringSchema,
   authorAvatarUrl: optionalLongNonEmptyStringSchema,
 });
