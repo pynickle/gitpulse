@@ -272,7 +272,12 @@ const showMarkAsRead = computed(() => props.showMarkAsRead);
 const todoAction = computed(() => props.todoAction);
 const showActionColumn = computed(() => showReason.value || Boolean(todoAction.value));
 const reasonMarksAsRead = computed(() => {
-  return showReason.value && showMarkAsRead.value && Boolean(currentNotification.value.unread);
+  return (
+    showReason.value &&
+    showMarkAsRead.value &&
+    Boolean(props.markAsRead) &&
+    Boolean(currentNotification.value.unread)
+  );
 });
 const markAsReadTitle = computed(() => t('dashboard.notifications.markAsReadAction'));
 const reasonTitle = computed(() => t('dashboard.notifications.reasonAction'));
@@ -295,30 +300,15 @@ const subjectStateTitle = computed(() => {
 });
 
 const handleMarkAsRead = async () => {
-  if (markingAsRead.value || !currentNotification.value.unread) return;
+  const markAsRead = props.markAsRead;
+  if (!markAsRead || markingAsRead.value || !currentNotification.value.unread) return;
 
   markingAsRead.value = true;
 
-  const threadId = String(currentNotification.value.id);
-
   try {
-    if (props.markAsRead) {
-      if (await props.markAsRead(props.notification)) {
-        isLocallyRead.value = true;
-      }
-      return;
+    if (await markAsRead(props.notification)) {
+      isLocallyRead.value = true;
     }
-
-    const { error } = await useFetch(`/api/notifications/${threadId}`, {
-      method: 'PATCH',
-    });
-
-    if (error.value) {
-      console.error('Failed to mark notification as read:', error.value);
-      return;
-    }
-
-    isLocallyRead.value = true;
   } finally {
     markingAsRead.value = false;
   }
