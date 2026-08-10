@@ -204,41 +204,6 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    optimizeDeps: {
-      include: [
-        '@comark/vue',
-        '@lucide/vue',
-        '@shikijs/themes/catppuccin-latte',
-        '@shikijs/themes/catppuccin-mocha',
-        '@shikijs/themes/dark-plus',
-        '@shikijs/themes/dracula',
-        '@shikijs/themes/github-dark',
-        '@shikijs/themes/github-light',
-        '@shikijs/themes/light-plus',
-        '@shikijs/themes/min-dark',
-        '@shikijs/themes/min-light',
-        '@shikijs/themes/nord',
-        '@shikijs/themes/one-dark-pro',
-        '@shikijs/themes/rose-pine-dawn',
-        '@shikijs/themes/vitesse-dark',
-        '@shikijs/themes/vitesse-light',
-        '@vue/devtools-core',
-        '@vue/devtools-kit',
-        'comark',
-        'comark/plugins/shiki',
-        'comark/plugins/security',
-        'dayjs', // CJS
-        'dayjs/locale/zh-cn', // CJS
-        'dayjs/plugin/relativeTime.js', // CJS
-        'mermaid',
-        'shiki',
-        'shiki/langs',
-        'simplebar-vue',
-        'vue-draggable-plus',
-        'vue3-simple-icons',
-        'xss', // CJS
-      ],
-    },
     css: {
       preprocessorOptions: {
         scss: {
@@ -430,5 +395,9 @@ export default defineNuxtConfig({
     ],
     defaultLocale: 'en',
     strategy: 'prefix_except_default',
+  },
+
+  experimental: {
+    prefetchPreloadTags: true,
   },
 });
