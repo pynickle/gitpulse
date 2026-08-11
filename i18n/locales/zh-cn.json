@@ -609,6 +609,12 @@
     "meta": {
       "commentCount": "{count} 条评论"
     },
+    "notificationSubjectEnrichment": {
+      "failure": "部分通知详情无法刷新。",
+      "retry": "重试通知详情",
+      "itemLoading": "正在加载通知主题详情。",
+      "itemError": "详情无法刷新。"
+    },
     "notifications": {
       "empty": "暂无通知。",
       "emptyFiltered": "当前筛选条件下没有匹配的通知。",

@@ -95,7 +95,13 @@
               <SimpleBar class="dashboard-list-scroll">
                 <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
 
-                <template v-else-if="currentTab === 'todos'">
+                <NotificationSubjectEnrichmentNotice
+                  v-else-if="notificationSubjectEnrichmentFailed"
+                  :refreshing="notificationSubjectEnrichmentRetrying"
+                  @retry="retryNotificationSubjectEnrichment"
+                />
+
+                <template v-if="!dashboardListLoading && currentTab === 'todos'">
                   <div v-if="filteredTodoItems.length === 0" class="dashboard-empty-state">
                     {{ todoEmptyMessage }}
                   </div>
@@ -359,6 +365,7 @@ import DashboardPagination from '~/components/dashboard/DashboardPagination.vue'
 import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
+import NotificationSubjectEnrichmentNotice from '~/components/dashboard/NotificationSubjectEnrichmentNotice.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
@@ -458,6 +465,8 @@ watch(
 const {
   loading,
   error,
+  notificationSubjectEnrichmentError,
+  notificationSubjectEnrichmentRefreshing,
   notifications,
   issues,
   pulls,
@@ -469,6 +478,7 @@ const {
   fetchPulls,
   fetchRepos,
   fetchCustomTab,
+  retryNotificationSubjectEnrichment: retryNotificationEnrichment,
   markNotificationAsRead,
 } = useGithubData();
 
@@ -776,14 +786,50 @@ const currentTab = computed<DashboardTab>(() => {
 });
 
 const hasCompletedInitialDashboardLoad = shallowRef(false);
-const dashboardListLoading = computed(
-  () =>
-    !hasCompletedInitialDashboardLoad.value ||
-    (currentTab.value === 'todos' ? refreshingNotificationTodos.value : loading.value)
-);
-const dashboardListError = computed(() => {
-  return currentTab.value === 'todos' ? notificationTodoRefreshError.value : error.value;
+const dashboardListLoading = computed(() => {
+  const hasVisibleData =
+    currentTab.value === 'todos'
+      ? notificationTodos.value.length > 0
+      : currentTab.value === 'notifications'
+        ? notifications.value.length > 0
+        : false;
+
+  if (!hasCompletedInitialDashboardLoad.value && !hasVisibleData) {
+    return true;
+  }
+
+  if (currentTab.value === 'todos') {
+    return refreshingNotificationTodos.value && notificationTodos.value.length === 0;
+  }
+
+  if (currentTab.value === 'notifications') {
+    return loading.value && notifications.value.length === 0;
+  }
+
+  return loading.value;
 });
+const dashboardListError = computed(() => {
+  return currentTab.value === 'todos' ? null : error.value;
+});
+const notificationSubjectEnrichmentFailed = computed(() => {
+  return currentTab.value === 'todos'
+    ? notificationTodoRefreshError.value
+    : currentTab.value === 'notifications' && notificationSubjectEnrichmentError.value;
+});
+const notificationSubjectEnrichmentRetrying = computed(() => {
+  return currentTab.value === 'todos'
+    ? refreshingNotificationTodos.value
+    : notificationSubjectEnrichmentRefreshing.value;
+});
+
+const retryNotificationSubjectEnrichment = async () => {
+  if (currentTab.value === 'todos') {
+    await refreshNotificationTodos();
+    return;
+  }
+
+  await retryNotificationEnrichment();
+};
 
 const currentTabTitle = computed(() => {
   if (selectedCustomTab.value) return selectedCustomTab.value.name;

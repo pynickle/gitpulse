@@ -1,25 +1,16 @@
-import { ref } from 'vue';
+import { computed, ref, shallowRef } from 'vue';
 
 import type { CustomTabSource, GitHubSearchQuery } from '#shared/types/custom-search';
 import type { GitHubIssueType } from '#shared/types/issues';
-import type {
-  DashboardNotification,
-  NotificationSubjectState,
-  NotificationSubjectStateResult,
-  NotificationSubjectStateTarget,
-} from '#shared/types/notifications';
+import type { DashboardNotification, NotificationSubjectState } from '#shared/types/notifications';
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
 import { getGitHubSearchEndpoint } from '#shared/utils/github-search-query';
-import { isNotificationSubjectStateResultLoaded } from '#shared/utils/notifications';
 import {
   applyNotificationLocalFilters,
   hasNotificationPageLocalPredicates,
   type NotificationFilterAdapter,
 } from '~/composables/useDashboardFilters';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
-import parseGitHubNotificationSubjectTarget, {
-  toNotificationSubjectStateTarget,
-} from '~/utils/parseGitHubNotificationSubjectTarget';
 
 interface DashboardEntity {
   id: PropertyKey;
@@ -89,6 +80,10 @@ interface NotificationRawPageCache {
   hasNext: boolean;
 }
 
+interface NotificationRawPageResponse extends NotificationRawPageCache {
+  page: number;
+}
+
 interface NotificationStreamCache {
   rawPages: Record<number, NotificationRawPageCache>;
   filteredItems: DashboardNotification[];
@@ -106,7 +101,6 @@ const defaultPerPage = 20;
 const notificationApiPerPage = 50;
 const notificationInitialBatchSize = 3;
 const notificationMaxBatchSize = 5;
-const notificationSubjectStateChunkSize = 50;
 const maxCachedPagesPerCollection = 5;
 const maxCachedCustomTabQueries = 25;
 
@@ -258,121 +252,6 @@ const buildNotificationDisplayPage = (
   };
 };
 
-const chunkItems = <T>(items: T[], chunkSize: number) => {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += chunkSize) {
-    chunks.push(items.slice(index, index + chunkSize));
-  }
-  return chunks;
-};
-
-const parseNotificationSubjectStateTarget = (
-  notification: DashboardNotification
-): NotificationSubjectStateTarget | null => {
-  const target = parseGitHubNotificationSubjectTarget(notification.subject);
-  return target ? toNotificationSubjectStateTarget(target) : null;
-};
-
-const withPendingNotificationSubjectStates = (items: DashboardNotification[]) => {
-  return items.map((item) => {
-    const target = parseGitHubNotificationSubjectTarget(item.subject);
-    if (!target) {
-      return {
-        ...item,
-        subject: item.subject
-          ? {
-              ...item.subject,
-              stateStatus: 'unavailable' as const,
-            }
-          : item.subject,
-      };
-    }
-
-    return {
-      ...item,
-      subject: {
-        ...item.subject,
-        number: target.number,
-        state: undefined,
-        draft: undefined,
-        stateStatus: toNotificationSubjectStateTarget(target)
-          ? ('pending' as const)
-          : ('unavailable' as const),
-      },
-    };
-  });
-};
-
-const collectUniqueNotificationSubjectTargets = (items: DashboardNotification[]) => {
-  const targetsByKey = new Map<string, NotificationSubjectStateTarget>();
-
-  for (const item of items) {
-    const target = parseNotificationSubjectStateTarget(item);
-    if (target) {
-      targetsByKey.set(target.key, target);
-    }
-  }
-
-  return Array.from(targetsByKey.values());
-};
-
-const shouldEnrichNotificationSubjectStates = (items: DashboardNotification[]) => {
-  return items.some((item) => {
-    const target = parseNotificationSubjectStateTarget(item);
-    if (!target) return false;
-
-    return item.subject?.stateStatus !== 'loaded';
-  });
-};
-
-const applyNotificationSubjectStates = (
-  items: DashboardNotification[],
-  states: NotificationSubjectStateResult[]
-) => {
-  const statesByKey = new Map(states.map((item) => [item.key, item]));
-
-  return items.map((item) => {
-    const target = parseNotificationSubjectStateTarget(item);
-    if (!target) return item;
-
-    const result = statesByKey.get(target.key);
-    return {
-      ...item,
-      updated_at: result?.updatedAt ?? item.updated_at,
-      subject: {
-        ...item.subject,
-        title: result?.title ?? item.subject?.title,
-        state: result?.state,
-        draft: result?.draft,
-        isAnswered: result?.isAnswered,
-        issueType: result?.issueType,
-        labels: result?.labels,
-        comments: result?.comments,
-        authorLogin: result?.authorLogin,
-        authorAvatarUrl: result?.authorAvatarUrl,
-        stateStatus: isNotificationSubjectStateResultLoaded(target, result)
-          ? ('loaded' as const)
-          : ('error' as const),
-      },
-    };
-  });
-};
-
-const markNotificationSubjectStateErrors = (items: DashboardNotification[]) => {
-  return items.map((item) => {
-    const target = parseNotificationSubjectStateTarget(item);
-    if (!target) return item;
-
-    return {
-      ...item,
-      subject: {
-        ...item.subject,
-        stateStatus: 'error' as const,
-      },
-    };
-  });
-};
-
 const buildCustomTabQueryKey = (
   query: GitHubSearchQuery,
   source: CustomTabSource = 'github-search'
@@ -398,11 +277,11 @@ const buildCustomTabUrl = (page: number, query: GitHubSearchQuery, perPage = def
 
 export function useGithubData() {
   const apiFetch = useGitPulseApiFetch();
+  const subjectEnrichment = useNotificationSubjectEnrichment();
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const notificationSubjectEnrichmentError = shallowRef(false);
   const activeRequestId = ref(0);
-  const activeNotificationRequestId = ref(0);
-  const activeNotificationStateRequestId = ref(0);
   const activeNotificationCacheContext = ref<ActiveNotificationCacheContext | null>(null);
   const pageCache = ref(createPageCache());
   const notificationStreamCache = ref<Record<string, NotificationStreamCache>>({});
@@ -427,6 +306,11 @@ export function useGithubData() {
     issues: 0,
     prs: 0,
     repos: 0,
+  });
+  const notificationSubjectEnrichmentRefreshing = computed(() => {
+    return notifications.value.some(
+      (notification) => notification.subject?.stateStatus === 'pending'
+    );
   });
 
   const touchCachedPage = <T>(cache: Record<number, T>, order: number[], page: number) => {
@@ -513,112 +397,82 @@ export function useGithubData() {
     pagination.value.notifications = data.pagination;
   };
 
-  const enrichNotificationSubjectStates = async (
-    queryKey: string,
-    page: number,
-    items: DashboardNotification[],
-    notificationRequestId: number
+  const mergeNotificationEnrichment = (
+    currentItems: DashboardNotification[],
+    enrichedItems: DashboardNotification[]
   ) => {
-    const targets = collectUniqueNotificationSubjectTargets(items);
-    if (targets.length === 0) return;
+    const enrichedById = new Map(
+      enrichedItems.map((notification) => [String(notification.id), notification])
+    );
 
-    const stateRequestId = activeNotificationStateRequestId.value + 1;
-    activeNotificationStateRequestId.value = stateRequestId;
+    return currentItems.map((notification) => {
+      const enriched = enrichedById.get(String(notification.id));
+      if (!enriched) return notification;
 
-    try {
-      const data = await apiFetch<{ items: NotificationSubjectStateResult[] }>(
-        '/api/notifications/subject-states',
-        {
-          method: 'POST',
-          body: { targets },
-        }
-      );
-
-      if (
-        notificationRequestId !== activeNotificationRequestId.value ||
-        stateRequestId !== activeNotificationStateRequestId.value
-      ) {
-        return;
-      }
-
-      const cachedData = pageCache.value.notifications[queryKey]?.[page];
-      if (!cachedData) return;
-
-      const enrichedItems = applyNotificationSubjectStates(cachedData.items, data.items);
-      const enrichedData = {
-        ...cachedData,
-        items: enrichedItems,
+      return {
+        ...notification,
+        updated_at: enriched.updated_at,
+        subject: enriched.subject,
       };
-
-      const queryCache = pageCache.value.notifications[queryKey];
-      if (!queryCache) return;
-
-      queryCache[page] = enrichedData;
-      applyNotificationsData(enrichedData, { queryKey, page });
-    } catch (err) {
-      if (
-        notificationRequestId !== activeNotificationRequestId.value ||
-        stateRequestId !== activeNotificationStateRequestId.value
-      ) {
-        return;
-      }
-
-      const cachedData = pageCache.value.notifications[queryKey]?.[page];
-      if (!cachedData) return;
-
-      const erroredData = {
-        ...cachedData,
-        items: markNotificationSubjectStateErrors(cachedData.items),
-      };
-
-      const queryCache = pageCache.value.notifications[queryKey];
-      if (!queryCache) return;
-
-      queryCache[page] = erroredData;
-      applyNotificationsData(erroredData, { queryKey, page });
-      console.error('Error enriching notification subject states:', err);
-    }
+    });
   };
 
-  const enrichNotificationItems = async (items: DashboardNotification[]) => {
-    const pendingItems = withPendingNotificationSubjectStates(items);
-    const targets = collectUniqueNotificationSubjectTargets(pendingItems);
-    if (targets.length === 0) return pendingItems;
+  const startNotificationPageEnrichment = (
+    queryKey: string,
+    page: number,
+    data: PaginatedDashboardResponse<DashboardNotification>
+  ) => {
+    notificationSubjectEnrichmentError.value = false;
+    const run = subjectEnrichment.start(data.items);
+    const pendingData = {
+      ...data,
+      items: run.notifications,
+    };
 
-    try {
-      const responses = await Promise.all(
-        chunkItems(targets, notificationSubjectStateChunkSize).map((chunk) =>
-          apiFetch<{ items: NotificationSubjectStateResult[] }>(
-            '/api/notifications/subject-states',
-            {
-              method: 'POST',
-              body: { targets: chunk },
-            }
-          )
-        )
-      );
-
-      return applyNotificationSubjectStates(
-        pendingItems,
-        responses.flatMap((response) => response.items)
-      );
-    } catch (err) {
-      console.error('Error enriching notification subject states:', err);
-      return markNotificationSubjectStateErrors(pendingItems);
+    if (!pageCache.value.notifications[queryKey]) {
+      pageCache.value.notifications[queryKey] = {};
     }
+    pageCache.value.notifications[queryKey][page] = pendingData;
+
+    void run.completion
+      .then((outcome) => {
+        if (outcome.outcome === 'stale') return;
+
+        notificationSubjectEnrichmentError.value =
+          outcome.outcome === 'partial' || outcome.outcome === 'failed';
+        const cachedData = pageCache.value.notifications[queryKey]?.[page];
+        const queryCache = pageCache.value.notifications[queryKey];
+        if (!cachedData || !queryCache) return;
+
+        const enrichedData = {
+          ...cachedData,
+          items: mergeNotificationEnrichment(cachedData.items, outcome.notifications),
+        };
+        queryCache[page] = enrichedData;
+
+        const activeContext = activeNotificationCacheContext.value;
+        if (activeContext?.queryKey === queryKey && activeContext.page === page) {
+          applyNotificationsData(enrichedData);
+        }
+      })
+      .catch((enrichmentError) => {
+        console.error('Notification Subject Enrichment invariant failed:', enrichmentError);
+      });
+
+    return pendingData;
   };
 
   const fetchNotificationRawPage = async (
     page: number,
     notificationParams: Record<string, boolean | string | undefined>
-  ): Promise<{ page: number; items: DashboardNotification[]; hasNext: boolean }> => {
+  ): Promise<NotificationRawPageResponse> => {
     const data = await apiFetch<PaginatedDashboardResponse<DashboardNotification>>(
       buildPaginationUrl('/api/notifications', page, notificationApiPerPage, notificationParams)
     );
 
     return {
       page: data.pagination.page,
-      items: await enrichNotificationItems(data.items),
+      items: data.items,
       hasNext: data.pagination.hasNext,
     };
   };
@@ -637,7 +491,6 @@ export function useGithubData() {
   const fetchNotificationBatch = async (
     cache: NotificationStreamCache,
     notificationParams: Record<string, boolean | string | undefined>,
-    localFilters: NotificationFilterAdapter['local'],
     targetPage: number
   ) => {
     const requiredItemCount = Math.max(
@@ -646,19 +499,43 @@ export function useGithubData() {
     );
     const batchSize = getNotificationBatchSize(cache, requiredItemCount);
     const pages = Array.from({ length: batchSize }, (_, index) => cache.nextRawPage + index);
-    const fetchedPages = (
+    return (
       await Promise.all(
         pages.map((rawPage) => fetchNotificationRawPage(rawPage, notificationParams))
       )
     ).sort((left, right) => left.page - right.page);
+  };
 
+  const applyNotificationStreamEnrichment = (
+    cache: NotificationStreamCache,
+    pages: NotificationRawPageResponse[],
+    enrichedNotifications: DashboardNotification[]
+  ) => {
+    let offset = 0;
+    for (const page of pages) {
+      const enrichedPageItems = enrichedNotifications.slice(offset, offset + page.items.length);
+      offset += page.items.length;
+      const currentItems = cache.rawPages[page.page]?.items ?? page.items;
+
+      cache.rawPages[page.page] = {
+        items: mergeNotificationEnrichment(currentItems, enrichedPageItems),
+        hasNext: page.hasNext,
+      };
+    }
+  };
+
+  const updateNotificationStreamProgress = (
+    cache: NotificationStreamCache,
+    fetchedPages: NotificationRawPageResponse[],
+    localFilters: NotificationFilterAdapter['local']
+  ) => {
     let matchedItems = 0;
     for (const rawPage of fetchedPages) {
-      cache.rawPages[rawPage.page] = {
-        items: rawPage.items,
-        hasNext: rawPage.hasNext,
-      };
-      matchedItems += applyNotificationLocalFilters(rawPage.items, localFilters).length;
+      const cachedPage = cache.rawPages[rawPage.page];
+      matchedItems += applyNotificationLocalFilters(
+        cachedPage?.items ?? rawPage.items,
+        localFilters
+      ).length;
     }
 
     const lastFetchedPage = fetchedPages[fetchedPages.length - 1];
@@ -667,8 +544,66 @@ export function useGithubData() {
       cache.hasMoreRawPages = fetchedPages.every((rawPage) => rawPage.hasNext);
       cache.lastMatchesPerRawPage = matchedItems / fetchedPages.length;
     }
+  };
+
+  const rebuildNotificationQueryPages = (
+    queryKey: string,
+    cache: NotificationStreamCache,
+    targetPage: number
+  ) => {
+    const queryCache = pageCache.value.notifications[queryKey] ?? {};
+    pageCache.value.notifications[queryKey] = queryCache;
+    const displayPages = new Set([...Object.keys(queryCache).map(Number), targetPage]);
+
+    for (const displayPage of displayPages) {
+      queryCache[displayPage] = buildNotificationDisplayPage(cache, displayPage);
+    }
+
+    return queryCache[targetPage]!;
+  };
+
+  const startNotificationStreamEnrichment = (
+    queryKey: string,
+    cache: NotificationStreamCache,
+    localFilters: NotificationFilterAdapter['local'],
+    targetPage: number,
+    pages: NotificationRawPageResponse[],
+    advanceStream: boolean
+  ) => {
+    notificationSubjectEnrichmentError.value = false;
+    const run = subjectEnrichment.start(pages.flatMap((page) => page.items));
+    applyNotificationStreamEnrichment(cache, pages, run.notifications);
+
+    if (advanceStream) {
+      updateNotificationStreamProgress(cache, pages, localFilters);
+    }
 
     rebuildNotificationFilteredItems(cache, localFilters);
+    const pendingData = rebuildNotificationQueryPages(queryKey, cache, targetPage);
+
+    void run.completion
+      .then((outcome) => {
+        if (outcome.outcome === 'stale') return;
+
+        notificationSubjectEnrichmentError.value =
+          outcome.outcome === 'partial' || outcome.outcome === 'failed';
+        applyNotificationStreamEnrichment(cache, pages, outcome.notifications);
+        rebuildNotificationFilteredItems(cache, localFilters);
+        rebuildNotificationQueryPages(queryKey, cache, targetPage);
+
+        const activeContext = activeNotificationCacheContext.value;
+        if (activeContext?.queryKey !== queryKey) return;
+
+        const activeData = pageCache.value.notifications[queryKey]?.[activeContext.page];
+        if (activeData) {
+          applyNotificationsData(activeData);
+        }
+      })
+      .catch((enrichmentError) => {
+        console.error('Notification Subject Enrichment invariant failed:', enrichmentError);
+      });
+
+    return pendingData;
   };
 
   const applyIssuesData = (data: PaginatedDashboardResponse<DashboardEntity>) => {
@@ -692,24 +627,16 @@ export function useGithubData() {
   const fetchLegacyNotifications = async (
     page: number,
     options: DashboardFetchOptions,
-    notificationParams: Record<string, boolean | string | undefined>,
-    notificationRequestId: number
+    notificationParams: Record<string, boolean | string | undefined>
   ) => {
     const queryKey = buildParamQueryKey(notificationParams);
     const queryCache = pageCache.value.notifications[queryKey] ?? {};
     const cachedData = queryCache[page];
 
     if (cachedData && !options.force) {
+      const pendingData = startNotificationPageEnrichment(queryKey, page, cachedData);
       touchNotificationCache(queryKey, page);
-      applyNotificationsData(cachedData, { queryKey, page });
-      if (shouldEnrichNotificationSubjectStates(cachedData.items)) {
-        void enrichNotificationSubjectStates(
-          queryKey,
-          page,
-          cachedData.items,
-          notificationRequestId
-        );
-      }
+      applyNotificationsData(pendingData, { queryKey, page });
       error.value = null;
       loading.value = false;
       return;
@@ -726,24 +653,9 @@ export function useGithubData() {
       );
       if (requestId !== activeRequestId.value) return;
 
-      const pendingData = {
-        ...data,
-        items: withPendingNotificationSubjectStates(data.items),
-      };
-
-      if (!pageCache.value.notifications[queryKey]) {
-        pageCache.value.notifications[queryKey] = {};
-      }
-
-      pageCache.value.notifications[queryKey][data.pagination.page] = pendingData;
+      const pendingData = startNotificationPageEnrichment(queryKey, data.pagination.page, data);
       touchNotificationCache(queryKey, data.pagination.page);
       applyNotificationsData(pendingData, { queryKey, page: data.pagination.page });
-      void enrichNotificationSubjectStates(
-        queryKey,
-        data.pagination.page,
-        pendingData.items,
-        notificationRequestId
-      );
     } catch (err) {
       if (requestId !== activeRequestId.value) return;
 
@@ -759,11 +671,11 @@ export function useGithubData() {
     const notificationParams = options.notificationParams ?? { all: true };
     const localFilters = options.notificationFilters ?? createDefaultNotificationLocalFilters();
     activeRequestId.value += 1;
-    const notificationRequestId = activeNotificationRequestId.value + 1;
-    activeNotificationRequestId.value = notificationRequestId;
+    notificationSubjectEnrichmentError.value = false;
+    void subjectEnrichment.start([]).completion;
 
     if (!hasNotificationPageLocalPredicates(localFilters)) {
-      await fetchLegacyNotifications(page, options, notificationParams, notificationRequestId);
+      await fetchLegacyNotifications(page, options, notificationParams);
       return;
     }
 
@@ -785,8 +697,23 @@ export function useGithubData() {
     );
 
     if (cachedData && cachedPageIsFilled && !options.force) {
+      const cachedRawPages = Object.entries(streamCache.rawPages)
+        .sort(([left], [right]) => Number(left) - Number(right))
+        .map(([rawPage, cachedPage]) => ({
+          page: Number(rawPage),
+          items: cachedPage.items,
+          hasNext: cachedPage.hasNext,
+        }));
+      const pendingData = startNotificationStreamEnrichment(
+        queryKey,
+        streamCache,
+        localFilters,
+        page,
+        cachedRawPages,
+        false
+      );
       touchNotificationCache(queryKey, page);
-      applyNotificationsData(cachedData, { queryKey, page });
+      applyNotificationsData(pendingData, { queryKey, page });
       error.value = null;
       loading.value = false;
       return;
@@ -798,18 +725,24 @@ export function useGithubData() {
     error.value = null;
 
     try {
+      let fetchedPages: NotificationRawPageResponse[] = [];
       if (streamCache.filteredItems.length < page * defaultPerPage && streamCache.hasMoreRawPages) {
-        await fetchNotificationBatch(streamCache, notificationParams, localFilters, page);
+        fetchedPages = await fetchNotificationBatch(streamCache, notificationParams, page);
       }
 
       if (requestId !== activeRequestId.value) return;
 
-      if (!pageCache.value.notifications[queryKey]) {
-        pageCache.value.notifications[queryKey] = {};
-      }
-
-      const data = buildNotificationDisplayPage(streamCache, page);
-      pageCache.value.notifications[queryKey][page] = data;
+      const data =
+        fetchedPages.length > 0
+          ? startNotificationStreamEnrichment(
+              queryKey,
+              streamCache,
+              localFilters,
+              page,
+              fetchedPages,
+              true
+            )
+          : rebuildNotificationQueryPages(queryKey, streamCache, page);
       touchNotificationCache(queryKey, page);
       applyNotificationsData(data, { queryKey, page });
     } catch (err) {
@@ -821,6 +754,43 @@ export function useGithubData() {
         loading.value = false;
       }
     }
+  };
+
+  const retryNotificationSubjectEnrichment = async () => {
+    const activeContext = activeNotificationCacheContext.value;
+    if (!activeContext) return;
+
+    const streamCache = notificationStreamCache.value[activeContext.queryKey];
+    if (streamCache) {
+      const pages = Object.entries(streamCache.rawPages)
+        .sort(([left], [right]) => Number(left) - Number(right))
+        .map(([rawPage, cachedPage]) => ({
+          page: Number(rawPage),
+          items: cachedPage.items,
+          hasNext: cachedPage.hasNext,
+        }));
+      const localFilters = getNotificationLocalFiltersFromQueryKey(activeContext.queryKey);
+      const data = startNotificationStreamEnrichment(
+        activeContext.queryKey,
+        streamCache,
+        localFilters,
+        activeContext.page,
+        pages,
+        false
+      );
+      applyNotificationsData(data);
+      return;
+    }
+
+    const cachedData = pageCache.value.notifications[activeContext.queryKey]?.[activeContext.page];
+    if (!cachedData) return;
+
+    const pendingData = startNotificationPageEnrichment(
+      activeContext.queryKey,
+      activeContext.page,
+      cachedData
+    );
+    applyNotificationsData(pendingData);
   };
 
   const updateCachedNotificationReadState = (threadId: string) => {
@@ -1117,6 +1087,8 @@ export function useGithubData() {
   return {
     loading,
     error,
+    notificationSubjectEnrichmentError,
+    notificationSubjectEnrichmentRefreshing,
     notifications,
     issues,
     pulls,
@@ -1128,6 +1100,7 @@ export function useGithubData() {
     fetchPulls,
     fetchRepos,
     fetchCustomTab,
+    retryNotificationSubjectEnrichment,
     markNotificationAsRead,
   };
 }

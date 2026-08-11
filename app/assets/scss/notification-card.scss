@@ -76,8 +76,13 @@ $transition-hint:
 }
 
 .notification-type-badge--error {
-  border-color: var(--gitpulse-border-strong);
-  opacity: 0.45;
+  border-color: color-mix(in srgb, var(--gitpulse-warning) 55%, var(--gitpulse-border));
+  color: var(--gitpulse-warning);
+  opacity: 1;
+}
+
+.notification-card--subject-error {
+  border-color: color-mix(in srgb, var(--gitpulse-warning) 28%, var(--gitpulse-border));
 }
 
 .notification-type-badge--open {

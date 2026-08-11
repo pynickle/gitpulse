@@ -3,9 +3,9 @@ import { parseNotificationSubjectTargetsBody } from '#server/utils/notification-
 import type { IssueTypeSummary } from '#shared/types/issues';
 import type {
   NotificationLabel,
+  NotificationSubjectEnrichmentResult,
+  NotificationSubjectEnrichmentTarget,
   NotificationSubjectState,
-  NotificationSubjectStateResult,
-  NotificationSubjectStateTarget,
 } from '#shared/types/notifications';
 
 interface GraphQLLabelNode {
@@ -70,7 +70,7 @@ const normalizeLabels = (
 };
 
 const normalizeState = (
-  type: NotificationSubjectStateTarget['type'],
+  type: NotificationSubjectEnrichmentTarget['type'],
   node: GraphQLSubjectNode | null | undefined
 ): NotificationSubjectState | undefined => {
   if (type === 'discussions') return undefined;
@@ -83,7 +83,7 @@ const normalizeState = (
 };
 
 const normalizeIssueType = (
-  type: NotificationSubjectStateTarget['type'],
+  type: NotificationSubjectEnrichmentTarget['type'],
   node: GraphQLSubjectNode | null | undefined
 ): IssueTypeSummary | undefined => {
   if (type !== 'issues' || typeof node?.issueType?.name !== 'string') return undefined;
@@ -95,7 +95,7 @@ const normalizeIssueType = (
 };
 
 const normalizeCommentsCount = (
-  type: NotificationSubjectStateTarget['type'],
+  type: NotificationSubjectEnrichmentTarget['type'],
   node: GraphQLSubjectNode | null | undefined
 ): number | undefined => {
   if (type === 'discussions') return undefined;
@@ -105,7 +105,7 @@ const normalizeCommentsCount = (
   return count >= 0 ? count : undefined;
 };
 
-const buildSubjectStatesQuery = (targets: NotificationSubjectStateTarget[]) => {
+const buildSubjectStatesQuery = (targets: NotificationSubjectEnrichmentTarget[]) => {
   const variables: string[] = [];
   const fields: string[] = [];
   const values: Record<string, string | number> = {};
@@ -145,7 +145,7 @@ export default defineEventHandler(async (event) => {
   const targets = parseNotificationSubjectTargetsBody(await readBody(event));
 
   if (targets.length === 0) {
-    return { items: [] satisfies NotificationSubjectStateResult[] };
+    return { items: [] satisfies NotificationSubjectEnrichmentResult[] };
   }
 
   const octokit = await getGitHubClient(event);
@@ -154,7 +154,7 @@ export default defineEventHandler(async (event) => {
   try {
     const payload = await octokit.graphql<GraphQLSubjectResponse>(query, variables);
 
-    const items = targets.map((target, index): NotificationSubjectStateResult => {
+    const items = targets.map((target, index): NotificationSubjectEnrichmentResult => {
       const repository = payload[`subject${index}`];
       const node =
         target.type === 'pulls'

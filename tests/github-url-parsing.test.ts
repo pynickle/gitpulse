@@ -13,9 +13,7 @@ import {
 } from '../app/utils/dashboardUrlNavigationUtils';
 import { buildRepoRawFileUrl, parseMarkdownRepoResource } from '../app/utils/markdownRepoPathUtils';
 import parseGitHubMarkdownTarget from '../app/utils/parseGitHubMarkdownTarget';
-import parseGitHubNotificationSubjectTarget, {
-  toNotificationSubjectStateTarget,
-} from '../app/utils/parseGitHubNotificationSubjectTarget';
+import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
 import parseGitHubRepoPath from '../app/utils/parseGitHubRepoPath';
 
 describe('parseGitHubRepoPath', () => {
@@ -83,7 +81,7 @@ describe('parseGitHubMarkdownTarget', () => {
 });
 
 describe('parseGitHubNotificationSubjectTarget', () => {
-  test('converts discussion notification targets for subject enrichment', () => {
+  test('parses discussion Notification Subjects', () => {
     const target = parseGitHubNotificationSubjectTarget({
       type: 'Discussion',
       url: 'https://github.com/owner/repo/discussions/9',
@@ -95,16 +93,9 @@ describe('parseGitHubNotificationSubjectTarget', () => {
       number: 9,
       type: 'discussions',
     });
-    expect(target && toNotificationSubjectStateTarget(target)).toEqual({
-      key: 'owner/repo/discussions/9',
-      owner: 'owner',
-      repo: 'repo',
-      number: 9,
-      type: 'discussions',
-    });
   });
 
-  test('converts issue and pull request notification targets for state enrichment', () => {
+  test('parses issue and pull request Notification Subjects', () => {
     const issueTarget = parseGitHubNotificationSubjectTarget({
       type: 'Issue',
       url: 'https://github.com/owner/repo/issues/42',
@@ -114,15 +105,13 @@ describe('parseGitHubNotificationSubjectTarget', () => {
       url: 'https://github.com/owner/repo/pull/7',
     });
 
-    expect(issueTarget && toNotificationSubjectStateTarget(issueTarget)).toEqual({
-      key: 'owner/repo/issues/42',
+    expect(issueTarget).toEqual({
       owner: 'owner',
       repo: 'repo',
       number: 42,
       type: 'issues',
     });
-    expect(pullTarget && toNotificationSubjectStateTarget(pullTarget)).toEqual({
-      key: 'owner/repo/pulls/7',
+    expect(pullTarget).toEqual({
       owner: 'owner',
       repo: 'repo',
       number: 7,
@@ -130,7 +119,7 @@ describe('parseGitHubNotificationSubjectTarget', () => {
     });
   });
 
-  test('parses release notification targets without state enrichment', () => {
+  test('parses release Notification Subjects for navigation', () => {
     const target = parseGitHubNotificationSubjectTarget({
       type: 'Release',
       url: 'https://api.github.com/repos/owner/repo/releases/123',
@@ -142,7 +131,6 @@ describe('parseGitHubNotificationSubjectTarget', () => {
       number: 123,
       type: 'releases',
     });
-    expect(target && toNotificationSubjectStateTarget(target)).toBeNull();
   });
 });
 

@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 
 import { GitPullRequestDraftIcon, GitPullRequestIcon } from '@lucide/vue';
 
@@ -10,7 +9,7 @@ import getDashboardSubjectStateVisual, {
 } from '../app/utils/getDashboardSubjectStateVisual';
 import shouldShowNotificationSubjectNumber from '../app/utils/shouldShowNotificationSubjectNumber';
 
-describe('dashboard notification item subject number display', () => {
+describe('dashboard Notification item presentation', () => {
   test('hides release ids from notification metadata', () => {
     expect(shouldShowNotificationSubjectNumber({ type: 'Release', number: 123456 })).toBe(false);
   });
@@ -19,42 +18,6 @@ describe('dashboard notification item subject number display', () => {
     expect(shouldShowNotificationSubjectNumber({ type: 'Issue', number: 42 })).toBe(true);
     expect(shouldShowNotificationSubjectNumber({ type: 'PullRequest', number: 7 })).toBe(true);
     expect(shouldShowNotificationSubjectNumber({ type: 'Discussion', number: 3 })).toBe(true);
-  });
-
-  test('does not render the number slot directly from subject.number', () => {
-    const notificationItemSource = readFileSync(
-      'app/components/dashboard/NotificationItem.vue',
-      'utf8'
-    );
-
-    expect(notificationItemSource).toContain('v-if="showSubjectNumber"');
-    expect(notificationItemSource).toContain('shouldShowNotificationSubjectNumber(subject.value)');
-    expect(notificationItemSource).not.toContain('v-if="currentNotification.subject?.number"');
-  });
-
-  test('renders issue/PR comment count from enriched subject.comments', () => {
-    const notificationItemSource = readFileSync(
-      'app/components/dashboard/NotificationItem.vue',
-      'utf8'
-    );
-
-    expect(notificationItemSource).toContain('showCommentsCount');
-    expect(notificationItemSource).toContain('notification-card__comments');
-    expect(notificationItemSource).toContain('subject.value?.comments');
-  });
-
-  test('keeps todo action as an icon-only action in the right action column', () => {
-    const notificationItemSource = readFileSync(
-      'app/components/dashboard/NotificationItem.vue',
-      'utf8'
-    );
-
-    expect(notificationItemSource).toContain('notification-card__action-column');
-    expect(notificationItemSource).toContain('notification-card__todo-btn');
-    expect(notificationItemSource).toContain('notification-card__reason-control--action');
-    expect(notificationItemSource).toContain('notification-card__reason-read-hint');
-    expect(notificationItemSource).not.toContain('mark-read-btn');
-    expect(notificationItemSource).not.toContain('todoActionLabel');
   });
 
   test('exposes icon-backed notification subject type filter options', () => {

@@ -17,13 +17,13 @@ export interface DashboardNotificationSubject {
   url?: string;
   number?: number;
   state?: NotificationSubjectState;
-  /** Open draft PR — set by subject-state enrichment (`isDraft` from GraphQL). */
+  /** Open draft PR — set by Notification Subject Enrichment (`isDraft` from GraphQL). */
   draft?: boolean;
   isAnswered?: boolean;
   stateStatus?: NotificationSubjectStateStatus;
   issueType?: IssueTypeSummary;
   labels?: NotificationLabel[];
-  /** Issue/PR conversation comment count from subject-state enrichment. */
+  /** Issue/PR conversation comment count from Notification Subject Enrichment. */
   comments?: number;
   authorLogin?: string;
   authorAvatarUrl?: string;
@@ -49,7 +49,7 @@ export interface DashboardNotification {
   [key: string]: unknown;
 }
 
-export interface NotificationSubjectStateTarget {
+export interface NotificationSubjectEnrichmentTarget {
   key: string;
   owner: string;
   repo: string;
@@ -57,7 +57,7 @@ export interface NotificationSubjectStateTarget {
   number: number;
 }
 
-export interface NotificationSubjectStateResult {
+export interface NotificationSubjectEnrichmentResult {
   key: string;
   title?: string;
   updatedAt?: string;

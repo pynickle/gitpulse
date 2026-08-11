@@ -1,7 +1,10 @@
 <template>
   <div
     class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
-    :class="{ 'is-unread': currentNotification.unread }"
+    :class="{
+      'is-unread': currentNotification.unread,
+      'notification-card--subject-error': isSubjectStateError,
+    }"
   >
     <div class="card-content p-3">
       <div class="dashboard-list-card__main-row notification-card__main-row">
@@ -17,18 +20,31 @@
                 height="32"
                 loading="lazy"
               />
-              <div v-else key="skeleton" class="avatar-skeleton" />
+              <div
+                v-else
+                key="skeleton"
+                class="avatar-skeleton"
+                :class="{
+                  'avatar-skeleton--error': enrichmentPresentation.avatarMode === 'error',
+                  'avatar-skeleton--static': enrichmentPresentation.avatarMode === 'static',
+                }"
+              >
+                <AlertTriangleIcon v-if="isSubjectStateError" :size="15" aria-hidden="true" />
+              </div>
             </Transition>
             <span
               v-if="subjectVisual.icon"
               class="notification-type-badge"
               :class="{
-                'notification-type-badge--pending': isSubjectStatePending,
+                'notification-type-badge--pending': enrichmentPresentation.animatesSubjectBadge,
                 'notification-type-badge--error': isSubjectStateError,
                 [`notification-type-badge--${subjectVisual.state}`]: subjectVisual.state,
               }"
               :title="subjectStateTitle"
               :aria-label="subjectStateTitle"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
             >
               <Transition name="notification-state-icon" mode="out-in">
                 <component :is="subjectVisual.icon" :key="subjectVisual.label" :size="13" />
@@ -64,6 +80,14 @@
                   {{ label.name }}
                 </span>
               </div>
+
+              <p
+                v-if="enrichmentPresentation.showsFailureMessage"
+                class="notification-card__subject-error"
+              >
+                <AlertTriangleIcon :size="12" aria-hidden="true" />
+                <span>{{ t('dashboard.notificationSubjectEnrichment.itemError') }}</span>
+              </p>
 
               <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
                 <span v-if="showSubjectNumber" class="notification-card__number">
@@ -136,6 +160,7 @@
 <script setup lang="ts">
 import {
   ActivityIcon,
+  AlertTriangleIcon,
   AtSignIcon,
   BellIcon,
   BookmarkIcon,
@@ -201,21 +226,22 @@ const repository = computed(() => currentNotification.value.repository);
 const subjectTitle = computed(() => subject.value?.title ?? '');
 const subjectNumber = computed(() => subject.value?.number ?? '');
 const repositoryName = computed(() => repository.value?.full_name ?? '');
+const enrichmentPresentation = computed(() =>
+  getNotificationSubjectEnrichmentPresentation(subject.value)
+);
 
 const showSubjectNumber = computed(() => {
   return shouldShowNotificationSubjectNumber(subject.value);
 });
 
 const avatarSrc = computed(() => {
-  // Release类型直接使用repository.owner的头像，无需等待GraphQL加载
   if (subject.value?.type === 'Release') {
     return repository.value?.owner?.avatar_url;
   }
-  // 其他类型：只在loaded状态且有author信息时才显示
-  if (subject.value?.stateStatus === 'loaded' && subject.value.authorAvatarUrl) {
-    return subject.value.authorAvatarUrl;
-  }
-  return undefined; // 未加载完成返回undefined，触发骨架屏
+
+  return enrichmentPresentation.value.avatarMode === 'avatar'
+    ? subject.value?.authorAvatarUrl
+    : undefined;
 });
 
 const avatarAlt = computed(() => {
@@ -226,11 +252,11 @@ const avatarAlt = computed(() => {
 });
 
 const isSubjectStatePending = computed(() => {
-  return subject.value?.stateStatus === 'pending';
+  return enrichmentPresentation.value.isPending;
 });
 
 const isSubjectStateError = computed(() => {
-  return subject.value?.stateStatus === 'error';
+  return enrichmentPresentation.value.isError;
 });
 
 const isPullRequestSubject = computed(() => {
@@ -289,11 +315,11 @@ const todoActionTitle = computed(() => {
 
 const subjectStateTitle = computed(() => {
   if (isSubjectStatePending.value) {
-    return `${subjectVisual.value.label}: status loading`;
+    return t('dashboard.notificationSubjectEnrichment.itemLoading');
   }
 
   if (isSubjectStateError.value) {
-    return `${subjectVisual.value.label}: status unavailable`;
+    return t('dashboard.notificationSubjectEnrichment.itemError');
   }
 
   return subjectVisual.value.label;
@@ -341,15 +367,30 @@ const reasonIcon = computed(() => {
 <style scoped lang="scss" src="~/assets/scss/notification-card.scss" />
 <style scoped lang="scss">
 .avatar-skeleton {
+  display: inline-flex;
   width: 32px;
   height: 32px;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-.dark-mode .avatar-skeleton {
+.avatar-skeleton--error {
+  border: 1px solid color-mix(in srgb, var(--gitpulse-warning) 45%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-warning) 10%, var(--gitpulse-surface));
+  color: var(--gitpulse-warning);
+  animation: none;
+}
+
+.avatar-skeleton--static {
+  background: var(--gitpulse-surface-muted);
+  animation: none;
+}
+
+.dark-mode .avatar-skeleton:not(.avatar-skeleton--error):not(.avatar-skeleton--static) {
   background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
   background-size: 200% 100%;
 }
@@ -371,5 +412,15 @@ const reasonIcon = computed(() => {
 .notification-avatar-enter-from,
 .notification-avatar-leave-to {
   opacity: 0;
+}
+
+.notification-card__subject-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.3rem;
+  color: var(--gitpulse-warning);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 </style>

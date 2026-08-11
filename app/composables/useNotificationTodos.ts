@@ -1,24 +1,33 @@
-import type {
-  DashboardNotification,
-  NotificationSubjectStateResult,
-  NotificationSubjectStateTarget,
-} from '#shared/types/notifications';
+import { computed, shallowRef } from 'vue';
+
+import type { DashboardNotification } from '#shared/types/notifications';
 import type { NotificationTodoItem } from '#shared/types/user-settings';
-import { isNotificationSubjectStateResultLoaded } from '#shared/utils/notifications';
 import {
+  cloneDashboardNotification,
   cloneNotificationTodos,
-  normalizeDashboardNotification,
   normalizeNotificationTodoItem,
   normalizeNotificationTodos,
 } from '#shared/utils/user-settings';
-import parseGitHubNotificationSubjectTarget, {
-  toNotificationSubjectStateTarget,
-} from '~/utils/parseGitHubNotificationSubjectTarget';
-
-const notificationTodoSubjectStateChunkSize = 50;
 
 export const getNotificationTodoId = (notification: DashboardNotification) => {
   return String(notification.id);
+};
+
+const withoutTransientSubjectStatus = (
+  notification: DashboardNotification
+): DashboardNotification => {
+  const status = notification.subject?.stateStatus;
+  if (status !== 'pending' && status !== 'error') {
+    return cloneDashboardNotification(notification);
+  }
+
+  return {
+    ...cloneDashboardNotification(notification),
+    subject: {
+      ...notification.subject,
+      stateStatus: undefined,
+    },
+  };
 };
 
 export const createNotificationTodoItem = (
@@ -29,116 +38,68 @@ export const createNotificationTodoItem = (
     id: getNotificationTodoId(notification),
     addedAt,
     notification: {
-      ...notification,
+      ...withoutTransientSubjectStatus(notification),
       unread: false,
     },
   });
 };
 
-export const collectNotificationTodoSubjectStateTargets = (items: NotificationTodoItem[]) => {
-  const targetsByKey = new Map<string, NotificationSubjectStateTarget>();
-
-  for (const item of items) {
-    const target = parseGitHubNotificationSubjectTarget(item.notification.subject);
-    const subjectStateTarget = target ? toNotificationSubjectStateTarget(target) : null;
-    if (subjectStateTarget) {
-      targetsByKey.set(subjectStateTarget.key, subjectStateTarget);
-    }
-  }
-
-  return Array.from(targetsByKey.values());
-};
-
-const chunkItems = <T>(items: T[], chunkSize: number) => {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += chunkSize) {
-    chunks.push(items.slice(index, index + chunkSize));
-  }
-  return chunks;
-};
-
-const toSubjectStateTarget = (notification: DashboardNotification) => {
-  const target = parseGitHubNotificationSubjectTarget(notification.subject);
-  return target ? toNotificationSubjectStateTarget(target) : null;
-};
-
-const applyNotificationTodoState = (
-  item: NotificationTodoItem,
-  result: NotificationSubjectStateResult,
-  target: NotificationSubjectStateTarget
-) => {
-  const nextNotification = normalizeDashboardNotification({
-    ...item.notification,
-    unread: false,
-    updated_at: result.updatedAt ?? item.notification.updated_at,
-    subject: item.notification.subject
-      ? {
-          ...item.notification.subject,
-          title: result.title ?? item.notification.subject.title,
-          state: result.state,
-          draft: result.draft,
-          isAnswered: result.isAnswered,
-          issueType: result.issueType,
-          labels: result.labels,
-          comments: result.comments,
-          authorLogin: result.authorLogin,
-          authorAvatarUrl: result.authorAvatarUrl,
-          stateStatus: isNotificationSubjectStateResultLoaded(target, result) ? 'loaded' : 'error',
-        }
-      : item.notification.subject,
-  });
-
-  return normalizeNotificationTodoItem({
-    ...item,
-    notification: nextNotification ?? item.notification,
-  });
-};
-
-export const applyNotificationTodoSubjectStates = (
-  items: NotificationTodoItem[],
-  states: NotificationSubjectStateResult[]
-) => {
-  if (items.length === 0 || states.length === 0) {
-    return items;
-  }
-
-  const statesByKey = new Map(states.map((state) => [state.key, state]));
-  let changed = false;
-  const nextItems = items.map((item) => {
-    const target = toSubjectStateTarget(item.notification);
-    const result = target ? statesByKey.get(target.key) : undefined;
-    if (!target || !result) return item;
-
-    const nextItem = applyNotificationTodoState(item, result, target);
-    if (!nextItem) return item;
-
-    if (JSON.stringify(nextItem) !== JSON.stringify(item)) {
-      changed = true;
-    }
-
-    return nextItem;
-  });
-
-  return changed ? nextItems : items;
-};
-
 export function useNotificationTodos() {
   const { settings, loadSettings, updateSettings } = useUserSettings();
-  const apiFetch = useGitPulseApiFetch();
-  const refreshing = shallowRef(false);
-  const refreshError = shallowRef<string | null>(null);
+  const subjectEnrichment = useNotificationSubjectEnrichment();
+  const refreshError = shallowRef(false);
+  const transientNotifications = shallowRef<Record<string, DashboardNotification>>({});
 
   if (import.meta.client) {
     void loadSettings();
   }
 
-  const todos = computed(() => cloneNotificationTodos(settings.value.notificationTodos));
+  const todos = computed(() => {
+    return cloneNotificationTodos(settings.value.notificationTodos).map((item) => {
+      const transientNotification = transientNotifications.value[item.id];
+      return {
+        ...item,
+        notification: transientNotification
+          ? cloneDashboardNotification(transientNotification)
+          : withoutTransientSubjectStatus(item.notification),
+      };
+    });
+  });
+  const refreshing = computed(() => {
+    return todos.value.some((item) => item.notification.subject?.stateStatus === 'pending');
+  });
   const todoIds = computed(() => new Set(todos.value.map((item) => item.id)));
 
   const setTodos = async (nextTodos: NotificationTodoItem[]) => {
-    const normalizedTodos = normalizeNotificationTodos(nextTodos);
+    const normalizedTodos = normalizeNotificationTodos(
+      nextTodos.map((item) => ({
+        ...item,
+        notification: withoutTransientSubjectStatus(item.notification),
+      }))
+    );
     await updateSettings({ notificationTodos: normalizedTodos });
+
+    const persistedIds = new Set(normalizedTodos.map((item) => item.id));
+    transientNotifications.value = Object.fromEntries(
+      Object.entries(transientNotifications.value).filter(([id]) => persistedIds.has(id))
+    );
+
     return normalizedTodos;
+  };
+
+  const showEnrichedNotifications = (
+    currentTodos: NotificationTodoItem[],
+    notifications: DashboardNotification[]
+  ) => {
+    transientNotifications.value = {
+      ...transientNotifications.value,
+      ...Object.fromEntries(
+        currentTodos.map((item, index) => [
+          item.id,
+          cloneDashboardNotification(notifications[index] ?? item.notification),
+        ])
+      ),
+    };
   };
 
   const isNotificationTodo = (notification: DashboardNotification) => {
@@ -149,6 +110,8 @@ export function useNotificationTodos() {
     const todo = createNotificationTodoItem(notification);
     if (!todo) return null;
 
+    const { [todo.id]: _previousTransient, ...remainingTransient } = transientNotifications.value;
+    transientNotifications.value = remainingTransient;
     const nextTodos = [todo, ...todos.value.filter((item) => item.id !== todo.id)];
     await setTodos(nextTodos);
     return todo;
@@ -159,6 +122,8 @@ export function useNotificationTodos() {
       return false;
     }
 
+    const { [id]: _removedTransient, ...remainingTransient } = transientNotifications.value;
+    transientNotifications.value = remainingTransient;
     await setTodos(todos.value.filter((item) => item.id !== id));
     return true;
   };
@@ -175,44 +140,52 @@ export function useNotificationTodos() {
   };
 
   const refreshNotificationTodos = async () => {
-    const currentTodos = todos.value;
-    const targets = collectNotificationTodoSubjectStateTargets(currentTodos);
-    refreshError.value = null;
-
-    if (targets.length === 0) {
-      return currentTodos;
-    }
-
-    refreshing.value = true;
+    refreshError.value = false;
 
     try {
-      const responses = await Promise.all(
-        chunkItems(targets, notificationTodoSubjectStateChunkSize).map((chunk) =>
-          apiFetch<{ items: NotificationSubjectStateResult[] }>(
-            '/api/notifications/subject-states',
-            {
-              method: 'POST',
-              body: { targets: chunk },
-            }
-          )
-        )
+      await loadSettings();
+      const currentTodos = todos.value;
+      const run = subjectEnrichment.start(
+        currentTodos.map((item) => cloneDashboardNotification(item.notification))
       );
-      const nextTodos = applyNotificationTodoSubjectStates(
-        currentTodos,
-        responses.flatMap((response) => response.items)
-      );
+      showEnrichedNotifications(currentTodos, run.notifications);
 
-      if (nextTodos !== currentTodos) {
-        await setTodos(nextTodos);
+      const outcome = await run.completion;
+      if (outcome.outcome === 'stale') {
+        return todos.value;
       }
 
-      return nextTodos;
+      showEnrichedNotifications(currentTodos, outcome.notifications);
+      refreshError.value = outcome.outcome === 'partial' || outcome.outcome === 'failed';
+
+      const completedById = new Map(
+        currentTodos.map((item, index) => [item.id, outcome.notifications[index]])
+      );
+      const latestStoredTodos = cloneNotificationTodos(settings.value.notificationTodos);
+      const nextStoredTodos = latestStoredTodos.map((item) => {
+        const completedNotification = completedById.get(item.id);
+        const status = completedNotification?.subject?.stateStatus;
+        if (!completedNotification || (status !== 'loaded' && status !== 'unavailable')) {
+          return item;
+        }
+
+        return (
+          normalizeNotificationTodoItem({
+            ...item,
+            notification: completedNotification,
+          }) ?? item
+        );
+      });
+
+      if (JSON.stringify(nextStoredTodos) !== JSON.stringify(latestStoredTodos)) {
+        await setTodos(nextStoredTodos);
+      }
+
+      return todos.value;
     } catch (error) {
-      refreshError.value = error instanceof Error ? error.message : 'Unable to refresh todos.';
+      refreshError.value = true;
       console.error('Failed to refresh notification todos:', error);
-      return currentTodos;
-    } finally {
-      refreshing.value = false;
+      return todos.value;
     }
   };
 

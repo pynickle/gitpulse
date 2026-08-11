@@ -609,6 +609,12 @@
     "meta": {
       "commentCount": "{count} comments"
     },
+    "notificationSubjectEnrichment": {
+      "failure": "Some notification details could not be refreshed.",
+      "retry": "Retry notification details",
+      "itemLoading": "Notification subject details are loading.",
+      "itemError": "Details could not be refreshed."
+    },
     "notifications": {
       "empty": "No notifications to show.",
       "emptyFiltered": "No notifications match the current filters.",
