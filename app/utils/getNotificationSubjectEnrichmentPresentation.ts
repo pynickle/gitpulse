@@ -18,6 +18,7 @@ export default function getNotificationSubjectEnrichmentPresentation(
     isPending,
     isError,
     animatesSubjectBadge: isPending,
+    showsTypeBadge: !isError,
     showsFailureMessage: isError,
   };
 }

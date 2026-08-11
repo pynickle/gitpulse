@@ -170,10 +170,7 @@ export default defineEventHandler(async (event) => {
         state: normalizeState(target.type, node),
         draft:
           target.type === 'pulls' && typeof node?.isDraft === 'boolean' ? node.isDraft : undefined,
-        isAnswered:
-          target.type === 'discussions' && typeof node?.isAnswered === 'boolean'
-            ? node.isAnswered
-            : undefined,
+        isAnswered: target.type === 'discussions' && node ? Boolean(node.isAnswered) : undefined,
         issueType: normalizeIssueType(target.type, node),
         labels: normalizeLabels(node),
         comments: normalizeCommentsCount(target.type, node),

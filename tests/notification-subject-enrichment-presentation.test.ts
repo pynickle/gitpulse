@@ -13,6 +13,7 @@ describe('Notification Subject Enrichment presentation', () => {
       isPending: true,
       isError: false,
       animatesSubjectBadge: true,
+      showsTypeBadge: true,
       showsFailureMessage: false,
     });
   });
@@ -36,6 +37,7 @@ describe('Notification Subject Enrichment presentation', () => {
       isPending: false,
       isError: true,
       animatesSubjectBadge: false,
+      showsTypeBadge: false,
       showsFailureMessage: true,
     });
   });
@@ -47,6 +49,19 @@ describe('Notification Subject Enrichment presentation', () => {
         authorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       }).avatarMode
     ).toBe('avatar');
+  });
+
+  test('does not overlap an error avatar with the subject type badge', () => {
+    expect(
+      getNotificationSubjectEnrichmentPresentation({
+        stateStatus: 'error',
+      }).showsTypeBadge
+    ).toBe(false);
+    expect(
+      getNotificationSubjectEnrichmentPresentation({
+        stateStatus: 'loaded',
+      }).showsTypeBadge
+    ).toBe(true);
   });
 
   test('uses a non-animated neutral fallback for unavailable subjects', () => {

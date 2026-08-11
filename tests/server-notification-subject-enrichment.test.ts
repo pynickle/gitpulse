@@ -120,7 +120,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
           discussion: {
             title: 'Discussion title',
             updatedAt: '2026-08-12T03:00:00.000Z',
-            isAnswered: false,
+            isAnswered: null,
             author: {
               login: 'discussion-author',
               avatarUrl: 'https://avatars.example/discussion',

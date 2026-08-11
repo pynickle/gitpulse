@@ -3,7 +3,6 @@
     class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
     :class="{
       'is-unread': currentNotification.unread,
-      'notification-card--subject-error': isSubjectStateError,
     }"
   >
     <div class="card-content p-3">
@@ -33,11 +32,10 @@
               </div>
             </Transition>
             <span
-              v-if="subjectVisual.icon"
+              v-if="subjectVisual.icon && enrichmentPresentation.showsTypeBadge"
               class="notification-type-badge"
               :class="{
                 'notification-type-badge--pending': enrichmentPresentation.animatesSubjectBadge,
-                'notification-type-badge--error': isSubjectStateError,
                 [`notification-type-badge--${subjectVisual.state}`]: subjectVisual.state,
               }"
               :title="subjectStateTitle"
