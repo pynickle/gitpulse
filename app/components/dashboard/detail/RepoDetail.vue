@@ -22,16 +22,12 @@ import {
   TagIcon,
   XIcon,
 } from '@lucide/vue';
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch, type Component } from 'vue';
+import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import { formatDurationFromNow } from '#imports';
-import type {
-  RepoLanguagesPayload,
-  RepoLatestCommitPayload,
-  RepositoryDetailPayload,
-} from '#shared/types/repos';
+import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import RepoContributorsCard from '~/components/dashboard/detail/RepoContributorsCard.vue';
@@ -40,24 +36,10 @@ import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitB
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import { useRepoCommitList } from '~/composables/useRepoCommitList';
-import { useRepoIssuePrList } from '~/composables/useRepoIssuePrList';
+import { useRepoDetailSession, type RepoDetailPanel } from '~/composables/useRepoDetailSession';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
-import {
-  buildRepoDetailPanelQuery,
-  createDashboardFileTarget,
-  parseRepoDetailListState,
-  parseRepoDetailPage,
-  parseRepoDetailSection,
-  type RepoDetailSection,
-} from '~/utils/dashboardUrlNavigationUtils';
-import {
-  normalizeRepoIssuePrState,
-  type RepoIssuePrKind,
-  type RepoIssuePrState,
-} from '~/utils/repoIssuePrSearchQuery';
-
-type RepoDetailPanel = 'files' | 'commits' | RepoIssuePrKind;
+import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
+import type { RepoIssuePrState } from '~/utils/repoIssuePrSearchQuery';
 
 interface RepoPanelTab {
   value: RepoDetailPanel;
@@ -86,28 +68,56 @@ const emit = defineEmits<{
 type RepoDetailIcon = Component;
 
 const { locale, t } = useI18n();
-const route = useRoute();
-const router = useRouter();
 const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const { openRepository } = useDashboardRepositoryNavigation();
 const { opensGitHubLinks, getGitHubTargetUrl } = useGitHubLinkRouting();
-const {
-  branches,
-  currentBranch,
-  defaultBranch,
-  directoryContents,
-  loading: loadingFiles,
-  error: filesError,
-  navigateToBranch,
-} = useRepoFiles();
 
-interface LicenseInfo {
-  name: string | null;
-  spdxId: string | null;
-  url: string | null;
-  path: string | null;
-}
+const {
+  activePanel,
+  listState,
+  listKind,
+  selectPanel,
+  selectListState,
+  repoDefaultBranch,
+  repoCurrentBranch,
+  canonicalBranch,
+  currentBranchQueryValue,
+  branches,
+  directoryContents,
+  loadingFiles,
+  filesError,
+  navigateToBranch,
+  listItems,
+  listLoading,
+  listError,
+  listPagination,
+  listShowPagination,
+  listRefresh,
+  goToListPage,
+  commitItems,
+  commitsLoading,
+  commitsError,
+  commitsPagination,
+  commitsShowPagination,
+  commitsRefresh,
+  goToCommitsPage,
+  readmeContent,
+  readmePath,
+  loadingReadme,
+  licenseInfo,
+  loadingLicense,
+  latestCommit,
+  loadingLatestCommit,
+  latestCommitError,
+  refreshLatestCommit,
+  languageBytes,
+  loadingLanguages,
+} = useRepoDetailSession({
+  owner: () => props.owner,
+  repo: () => props.repo,
+  repository: () => props.repository,
+});
 
 interface AboutItem {
   label: string;
@@ -154,32 +164,6 @@ const copy = computed(() => ({
   watchers: t('repoDetail.watchers'),
   wiki: t('repoDetail.wiki'),
 }));
-
-// Restore panel/page/state from the route so Back remounts on the same place.
-const initialSection = parseRepoDetailSection(route.query.section);
-const initialPanel: RepoDetailPanel = initialSection ?? 'files';
-const initialPage = parseRepoDetailPage(route.query.repoPage) ?? 1;
-const initialListState: RepoIssuePrState =
-  initialSection === 'issues' || initialSection === 'pulls'
-    ? normalizeRepoIssuePrState(
-        initialSection,
-        parseRepoDetailListState(route.query.repoState) ?? 'open'
-      )
-    : 'open';
-
-const activePanel = shallowRef<RepoDetailPanel>(initialPanel);
-const listState = shallowRef<RepoIssuePrState>(initialListState);
-/** Resume page for Issues/PRs when the list panel activates or remounts. */
-const resumeListPage = shallowRef(
-  initialPanel === 'issues' || initialPanel === 'pulls' ? initialPage : 1
-);
-/** Resume page for Commits when that panel activates or remounts. */
-const resumeCommitsPage = shallowRef(initialPanel === 'commits' ? initialPage : 1);
-
-const listKind = computed<RepoIssuePrKind>(() =>
-  activePanel.value === 'pulls' ? 'pulls' : 'issues'
-);
-const isListPanel = computed(() => activePanel.value === 'issues' || activePanel.value === 'pulls');
 
 const panelTabs = computed<RepoPanelTab[]>(() => [
   {
@@ -241,22 +225,6 @@ const stateFilterOptions = computed<RepoStateFilterOption[]>(() => {
   return [openOption, closedOption, allOption];
 });
 
-// Only query while Issues/PRs is open — keep Files panel free of list traffic.
-const listOwner = computed(() => (isListPanel.value ? props.owner : ''));
-const listRepo = computed(() => (isListPanel.value ? props.repo : ''));
-
-const {
-  items: listItems,
-  loading: listLoading,
-  error: listError,
-  pagination: listPagination,
-  showPagination: listShowPagination,
-  goToPage: listGoToPage,
-  refresh: listRefresh,
-} = useRepoIssuePrList(listOwner, listRepo, listKind, listState, {
-  getResumePage: () => resumeListPage.value,
-});
-
 const listEmptyMessage = computed(() => {
   const state = listState.value;
   if (listKind.value === 'pulls') {
@@ -271,88 +239,19 @@ const listEmptyMessage = computed(() => {
   return t('repoDetail.issuesEmpty');
 });
 
-/** Keep `section` / `repoPage` / `repoState` in the URL so navigation history can restore them. */
-const syncRepoDetailLocation = async () => {
-  if (!getQueryParamValue(route.query.repo)) return;
-  // File browsing owns `path` and is a separate navigation entry.
-  if (Object.hasOwn(route.query, 'path')) return;
-
-  const section: RepoDetailSection | undefined =
-    activePanel.value === 'files' ? undefined : (activePanel.value as RepoDetailSection);
-  const page =
-    activePanel.value === 'commits'
-      ? resumeCommitsPage.value
-      : activePanel.value === 'issues' || activePanel.value === 'pulls'
-        ? resumeListPage.value
-        : 1;
-  const repoState: RepoIssuePrState | undefined =
-    activePanel.value === 'issues' || activePanel.value === 'pulls' ? listState.value : undefined;
-
-  const panelQuery = buildRepoDetailPanelQuery({
-    section,
-    repoPage: page,
-    repoState,
-  });
-
-  const nextSection = getQueryParamValue(panelQuery.section) || undefined;
-  const nextPage = getQueryParamValue(panelQuery.repoPage) || undefined;
-  const nextState = getQueryParamValue(panelQuery.repoState) || undefined;
-  const currentSection = getQueryParamValue(route.query.section) || undefined;
-  const currentPage = getQueryParamValue(route.query.repoPage) || undefined;
-  const currentState = getQueryParamValue(route.query.repoState) || undefined;
-
-  if (currentSection === nextSection && currentPage === nextPage && currentState === nextState) {
-    return;
-  }
-
-  await router.replace({
-    path: route.path,
-    query: {
-      ...route.query,
-      section: panelQuery.section,
-      repoPage: panelQuery.repoPage,
-      repoState: panelQuery.repoState,
-    },
-  });
-};
-
-const selectPanel = (value: RepoDetailPanel) => {
-  activePanel.value = value;
-  if (value === 'issues' || value === 'pulls') {
-    listState.value = 'open';
-    resumeListPage.value = 1;
-  }
-  if (value === 'commits') {
-    resumeCommitsPage.value = 1;
-  }
-  void syncRepoDetailLocation();
-};
-
 const handlePanelTablistKeydown = (event: KeyboardEvent) => {
   handleRovingTablistKeydown(event, {
     itemCount: panelTabs.value.length,
     activeIndex: panelTabs.value.findIndex((tab) => tab.value === activePanel.value),
     onSelect: (index) => {
       const tab = panelTabs.value[index];
-      if (tab) selectPanel(tab.value);
+      if (tab) void selectPanel(tab.value);
     },
   });
 };
 
 const viewAllCommits = () => {
-  selectPanel('commits');
-};
-
-const selectListState = (value: RepoIssuePrState) => {
-  listState.value = normalizeRepoIssuePrState(listKind.value, value);
-  resumeListPage.value = 1;
-  void syncRepoDetailLocation();
-};
-
-const handleListPageChange = async (page: number) => {
-  resumeListPage.value = page;
-  await listGoToPage(page);
-  await syncRepoDetailLocation();
+  void selectPanel('commits');
 };
 
 const handleStateFilterTablistKeydown = (event: KeyboardEvent) => {
@@ -361,7 +260,7 @@ const handleStateFilterTablistKeydown = (event: KeyboardEvent) => {
     activeIndex: stateFilterOptions.value.findIndex((option) => option.value === listState.value),
     onSelect: (index) => {
       const option = stateFilterOptions.value[index];
-      if (option) selectListState(option.value);
+      if (option) void selectListState(option.value);
     },
   });
 };
@@ -375,17 +274,6 @@ const handleIssuePrSelect = (item: DashboardIssuePrEntity) => {
   emit('open-issue', item);
 };
 
-watch(
-  () => [props.owner, props.repo] as const,
-  () => {
-    activePanel.value = 'files';
-    listState.value = 'open';
-    resumeListPage.value = 1;
-    resumeCommitsPage.value = 1;
-    void syncRepoDetailLocation();
-  }
-);
-
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -398,31 +286,6 @@ const watchState = ref<WatchState | null>(null);
 const loadingWatch = ref(false);
 const showWatchDropdown = ref(false);
 const watchCount = ref(props.repository.watchers_count ?? 0);
-
-const readmeContent = ref<string | null>(null);
-const readmePath = ref<string | null>(null);
-const loadingReadme = ref(false);
-const readmeRequestId = ref(0);
-
-const licenseInfo = ref<LicenseInfo | null>(null);
-const loadingLicense = ref(false);
-const licenseRequestId = ref(0);
-
-const latestCommit = shallowRef<RepoLatestCommitPayload | null>(null);
-const loadingLatestCommit = ref(false);
-const latestCommitError = ref<string | null>(null);
-const latestCommitRequestId = ref(0);
-
-const languageBytes = shallowRef<RepoLanguagesPayload | null>(null);
-const loadingLanguages = ref(false);
-const languagesRequestId = ref(0);
-
-// Session caches for README / license while this repo detail instance is mounted.
-const readmeSessionCache = new Map<string, { content: string | null; path: string | null }>();
-const licenseSessionCache = new Map<string, LicenseInfo | null>();
-const latestCommitSessionCache = new Map<string, RepoLatestCommitPayload | null>();
-// Languages are repo-scoped (GitHub has no ref param on this endpoint).
-const languagesSessionCache = new Map<string, RepoLanguagesPayload | null>();
 
 const formatLanguagePercentage = (value: number) => {
   const rounded = Math.round(value * 10) / 10;
@@ -439,11 +302,6 @@ const languageBarAriaLabel = computed(() => {
     .map((item) => `${item.name} ${formatLanguagePercentage(item.percentage)}`)
     .join(', ');
 });
-const repoDefaultBranch = computed(
-  () => defaultBranch.value || props.repository.default_branch || ''
-);
-const repoCurrentBranch = computed(() => currentBranch.value || repoDefaultBranch.value);
-const canonicalBranch = computed(() => repoCurrentBranch.value || undefined);
 
 // SEO: dynamic title based on repository
 usePageMeta(
@@ -452,35 +310,6 @@ usePageMeta(
     description: computed(() => props.repository?.description ?? ''),
   }
 );
-const currentBranchQueryValue = computed(() => {
-  return repoCurrentBranch.value && repoCurrentBranch.value !== repoDefaultBranch.value
-    ? repoCurrentBranch.value
-    : undefined;
-});
-
-// Only query while the Commits panel is open — keep other panels free of commit traffic.
-const commitsOwner = computed(() => (activePanel.value === 'commits' ? props.owner : ''));
-const commitsRepo = computed(() => (activePanel.value === 'commits' ? props.repo : ''));
-// Empty ref lets the API use the default branch; named refs follow the branch selector.
-const commitsRef = computed(() => currentBranchQueryValue.value ?? '');
-
-const {
-  items: commitItems,
-  loading: commitsLoading,
-  error: commitsError,
-  pagination: commitsPagination,
-  showPagination: commitsShowPagination,
-  goToPage: commitsGoToPage,
-  refresh: commitsRefresh,
-} = useRepoCommitList(commitsOwner, commitsRepo, commitsRef, {
-  getResumePage: () => resumeCommitsPage.value,
-});
-
-const handleCommitsPageChange = async (page: number) => {
-  resumeCommitsPage.value = page;
-  await commitsGoToPage(page);
-  await syncRepoDetailLocation();
-};
 
 const visibility = computed(() =>
   props.repository.private ? copy.value.private : copy.value.public
@@ -788,210 +617,9 @@ const fetchWatchState = async () => {
   }
 };
 
-const buildRefQuery = () => {
-  const branch = currentBranchQueryValue.value;
-  return branch ? `?ref=${encodeURIComponent(branch)}` : '';
-};
-
-const buildBranchScopedCacheKey = () => {
-  const branch = repoCurrentBranch.value || props.repository.default_branch || '';
-  return `${props.owner}/${props.repo}@${branch}`;
-};
-
-const fetchReadme = async () => {
-  const cacheKey = buildBranchScopedCacheKey();
-  const cached = readmeSessionCache.get(cacheKey);
-  if (cached) {
-    readmeRequestId.value += 1;
-    readmeContent.value = cached.content;
-    readmePath.value = cached.path;
-    loadingReadme.value = false;
-    return;
-  }
-
-  const requestId = readmeRequestId.value + 1;
-  readmeRequestId.value = requestId;
-  loadingReadme.value = true;
-  try {
-    const data = await apiFetch<{ content: string | null; path?: string | null }>(
-      `/api/repos/${props.owner}/${props.repo}/readme${buildRefQuery()}`
-    );
-    if (requestId !== readmeRequestId.value) return;
-
-    const entry = { content: data.content, path: data.path ?? null };
-    readmeSessionCache.set(cacheKey, entry);
-    readmeContent.value = entry.content;
-    readmePath.value = entry.path;
-  } catch {
-    if (requestId === readmeRequestId.value) {
-      readmeSessionCache.set(cacheKey, { content: null, path: null });
-      readmeContent.value = null;
-      readmePath.value = null;
-    }
-  } finally {
-    if (requestId === readmeRequestId.value) {
-      loadingReadme.value = false;
-    }
-  }
-};
-
-const fetchLicense = async () => {
-  const cacheKey = buildBranchScopedCacheKey();
-  if (licenseSessionCache.has(cacheKey)) {
-    licenseRequestId.value += 1;
-    licenseInfo.value = licenseSessionCache.get(cacheKey) ?? null;
-    loadingLicense.value = false;
-    return;
-  }
-
-  const requestId = licenseRequestId.value + 1;
-  licenseRequestId.value = requestId;
-  licenseInfo.value = null;
-  loadingLicense.value = true;
-  try {
-    const data = await apiFetch<LicenseInfo>(
-      `/api/repos/${props.owner}/${props.repo}/license${buildRefQuery()}`
-    );
-    if (requestId !== licenseRequestId.value) return;
-
-    licenseSessionCache.set(cacheKey, data);
-    licenseInfo.value = data;
-  } catch {
-    if (requestId === licenseRequestId.value) {
-      licenseSessionCache.set(cacheKey, null);
-      licenseInfo.value = null;
-    }
-  } finally {
-    if (requestId === licenseRequestId.value) {
-      loadingLicense.value = false;
-    }
-  }
-};
-
-const fetchLatestCommit = async (options: { force?: boolean } = {}) => {
-  if (activePanel.value !== 'files') return;
-  if (!repoCurrentBranch.value && !props.repository.default_branch) return;
-
-  const cacheKey = buildBranchScopedCacheKey();
-  if (!options.force && latestCommitSessionCache.has(cacheKey)) {
-    latestCommitRequestId.value += 1;
-    latestCommit.value = latestCommitSessionCache.get(cacheKey) ?? null;
-    latestCommitError.value = null;
-    loadingLatestCommit.value = false;
-    return;
-  }
-
-  if (options.force) {
-    latestCommitSessionCache.delete(cacheKey);
-  }
-
-  const requestId = latestCommitRequestId.value + 1;
-  latestCommitRequestId.value = requestId;
-  loadingLatestCommit.value = true;
-  latestCommitError.value = null;
-
-  try {
-    const data = await apiFetch<RepoLatestCommitPayload | null>(
-      `/api/repos/${props.owner}/${props.repo}/latest-commit${buildRefQuery()}`
-    );
-    if (requestId !== latestCommitRequestId.value) return;
-
-    latestCommitSessionCache.set(cacheKey, data);
-    latestCommit.value = data;
-  } catch {
-    if (requestId === latestCommitRequestId.value) {
-      latestCommit.value = null;
-      latestCommitError.value = t('repoDetail.commitLoadError');
-    }
-  } finally {
-    if (requestId === latestCommitRequestId.value) {
-      loadingLatestCommit.value = false;
-    }
-  }
-};
-
-const buildRepoCacheKey = () => `${props.owner}/${props.repo}`;
-
-const fetchLanguages = async () => {
-  const cacheKey = buildRepoCacheKey();
-  if (languagesSessionCache.has(cacheKey)) {
-    languagesRequestId.value += 1;
-    languageBytes.value = languagesSessionCache.get(cacheKey) ?? null;
-    loadingLanguages.value = false;
-    return;
-  }
-
-  const requestId = languagesRequestId.value + 1;
-  languagesRequestId.value = requestId;
-  languageBytes.value = null;
-  loadingLanguages.value = true;
-
-  try {
-    const data = await apiFetch<RepoLanguagesPayload>(
-      `/api/repos/${props.owner}/${props.repo}/languages`
-    );
-    if (requestId !== languagesRequestId.value) return;
-
-    languagesSessionCache.set(cacheKey, data);
-    languageBytes.value = data;
-  } catch {
-    if (requestId === languagesRequestId.value) {
-      languagesSessionCache.set(cacheKey, null);
-      languageBytes.value = null;
-    }
-  } finally {
-    if (requestId === languagesRequestId.value) {
-      loadingLanguages.value = false;
-    }
-  }
-};
-
 onMounted(() => {
   fetchStarState();
   fetchWatchState();
-});
-
-watch(
-  () => [props.owner, props.repo, repoCurrentBranch.value] as const,
-  ([owner, repo], previous) => {
-    if (!repoCurrentBranch.value) return;
-
-    // New repository instance: drop session caches from the previous repo.
-    if (previous && (previous[0] !== owner || previous[1] !== repo)) {
-      readmeSessionCache.clear();
-      licenseSessionCache.clear();
-      latestCommitSessionCache.clear();
-      latestCommit.value = null;
-      latestCommitError.value = null;
-    }
-
-    void fetchReadme();
-    void fetchLicense();
-    void fetchLatestCommit();
-  },
-  { immediate: true }
-);
-
-// Languages are repo-wide (not branch-scoped); load as soon as owner/repo are known.
-watch(
-  () => [props.owner, props.repo] as const,
-  ([owner, repo], previous) => {
-    if (!owner || !repo) return;
-
-    if (previous && (previous[0] !== owner || previous[1] !== repo)) {
-      languagesSessionCache.clear();
-      languageBytes.value = null;
-    }
-
-    void fetchLanguages();
-  },
-  { immediate: true }
-);
-
-watch(activePanel, (panel) => {
-  if (panel === 'files') {
-    void fetchLatestCommit();
-  }
 });
 
 // Close dropdown on outside click
@@ -1196,7 +824,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   :loading="loadingLatestCommit"
                   :error="latestCommitError"
                   :all-commits-in-app="!opensGitHubLinks"
-                  @retry="fetchLatestCommit({ force: true })"
+                  @retry="refreshLatestCommit"
                   @view-all-commits="viewAllCommits"
                 />
 
@@ -1226,7 +854,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     <DashboardPagination
                       v-if="commitsShowPagination || commitsLoading"
                       :pagination="commitsPagination"
-                      @change="handleCommitsPageChange"
+                      @change="goToCommitsPage"
                     />
                   </div>
                 </div>
@@ -1274,7 +902,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     <DashboardPagination
                       v-if="listShowPagination || listLoading"
                       :pagination="listPagination"
-                      @change="handleListPageChange"
+                      @change="goToListPage"
                     />
                   </div>
                 </div>
