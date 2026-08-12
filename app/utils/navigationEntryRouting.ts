@@ -3,6 +3,7 @@ import type { LocationQuery, LocationQueryRaw } from 'vue-router';
 import {
   buildChildPageRouteFromNavigationEntry,
   buildDashboardQueryFromNavigationEntry,
+  clearDashboardDetailQuery,
   parseDashboardDetailTarget,
   parseDashboardReleaseQuery,
   parseDashboardUrlTarget,
@@ -16,10 +17,9 @@ import getQueryParamValue from './getQueryParamValue';
 import parseGitHubRepoPath from './parseGitHubRepoPath';
 
 /**
- * Pure route <-> logical-navigation-entry derivation. The navigation history
- * stack is driven entirely by router.afterEach (see
- * plugins/navigation-history.client.ts); pages and components never record
- * entries manually.
+ * Logical Navigation: route <-> entry derivation plus the sequential event
+ * interface (`applyLogicalNavigationEvent`). vue-router and window.history
+ * stay as adapters; pages never record entries manually.
  */
 
 export interface NavigationRouteLocation {
@@ -354,7 +354,7 @@ const isSameRepo = (
  * - closing a PR review back onto the same pull request,
  * - dashboard-root tab switches (never stacked in the legacy system).
  */
-export function shouldReplaceNavigationEntry(
+function shouldReplaceNavigationEntry(
   previous: DashboardNavigationEntry | null | undefined,
   next: DashboardNavigationEntry
 ) {
@@ -441,12 +441,12 @@ export function resolveNavigationEntryRoute(
   };
 }
 
-export interface NavigationHistoryState {
+interface NavigationHistoryState {
   history: DashboardNavigationEntry[];
   current: DashboardNavigationEntry | null;
 }
 
-export type NavigationHistoryChange =
+type NavigationHistoryChange =
   | { kind: 'reset' }
   | { kind: 'replace' }
   | { kind: 'push' }
@@ -475,7 +475,7 @@ function dedupeAgainstCurrent(state: NavigationHistoryState): NavigationHistoryS
  * happens when browser positions desynced (e.g. a cancelled popstate followed
  * by a link click) — losing the current entry there would corrupt Back.
  */
-export function applyNavigationHistoryChange(
+function applyNavigationHistoryChange(
   state: NavigationHistoryState,
   entry: DashboardNavigationEntry | null,
   change: NavigationHistoryChange
@@ -505,4 +505,195 @@ export function applyNavigationHistoryChange(
   }
 
   return { history: [...state.history, state.current], current: entry };
+}
+
+export type NavigationIntent = 'back' | 'home';
+
+export type NavigationDecision = 'reset' | 'replace' | 'push' | 'pop';
+
+export type LogicalNavigationEvent =
+  | {
+      type: 'route';
+      route: NavigationRouteLocation;
+      position: number | null;
+      failed?: boolean;
+    }
+  | { type: 'back'; route: NavigationRouteLocation }
+  | { type: 'home'; route: NavigationRouteLocation }
+  | { type: 'cancel-intent' };
+
+export interface LogicalNavigationState {
+  history: DashboardNavigationEntry[];
+  current: DashboardNavigationEntry | null;
+  lastPosition: number | null;
+  pendingIntent: NavigationIntent | null;
+}
+
+export interface LogicalNavigationSnapshot {
+  history: DashboardNavigationEntry[];
+  current: DashboardNavigationEntry | null;
+  previousEntry: DashboardNavigationEntry | null;
+  canGoBack: boolean;
+  shouldShowHomeButton: boolean;
+}
+
+export interface LogicalNavigationResult {
+  state: LogicalNavigationState;
+  entry: DashboardNavigationEntry | null;
+  decision: NavigationDecision | null;
+  target: ResolvedNavigationEntryRoute | null;
+  snapshot: LogicalNavigationSnapshot;
+}
+
+export function createLogicalNavigationState(): LogicalNavigationState {
+  return {
+    history: [],
+    current: null,
+    lastPosition: null,
+    pendingIntent: null,
+  };
+}
+
+export function getLogicalNavigationSnapshot(
+  state: LogicalNavigationState
+): LogicalNavigationSnapshot {
+  const previousEntry = state.history.length > 0 ? state.history[state.history.length - 1]! : null;
+  const canGoBack = state.history.length > 0;
+  const shouldShowHomeButton = Boolean(
+    state.current && canGoBack && previousEntry?.type !== 'dashboard'
+  );
+
+  return {
+    history: state.history,
+    current: state.current,
+    previousEntry,
+    canGoBack,
+    shouldShowHomeButton,
+  };
+}
+
+function logicalNavigationResult(
+  state: LogicalNavigationState,
+  extras: Partial<Pick<LogicalNavigationResult, 'entry' | 'decision' | 'target'>> = {}
+): LogicalNavigationResult {
+  return {
+    state,
+    entry: extras.entry === undefined ? state.current : extras.entry,
+    decision: extras.decision ?? null,
+    target: extras.target ?? null,
+    snapshot: getLogicalNavigationSnapshot(state),
+  };
+}
+
+function resolveBackHomeTarget(
+  entry: DashboardNavigationEntry | null,
+  currentRoute: NavigationRouteLocation
+): ResolvedNavigationEntryRoute {
+  return resolveNavigationEntryRoute(entry, {
+    dashboardQuery: isDashboardRootPath(currentRoute.path)
+      ? clearDashboardDetailQuery(currentRoute.query)
+      : undefined,
+  });
+}
+
+function applyDerivedEntry(
+  state: LogicalNavigationState,
+  entry: DashboardNavigationEntry | null,
+  change: NavigationHistoryChange,
+  lastPosition: number | null
+): LogicalNavigationState {
+  const applied = applyNavigationHistoryChange(
+    { history: state.history, current: state.current },
+    entry,
+    change
+  );
+  return { ...state, ...applied, lastPosition };
+}
+
+/**
+ * The single Logical Navigation interface: consecutive events (route +
+ * position, logical Back/Home, or a cancelled intent) produce the
+ * route-derived entry, Back/Home target, and push/replace/browser-back
+ * decision. vue-router and window.history stay as adapters.
+ */
+export function applyLogicalNavigationEvent(
+  state: LogicalNavigationState,
+  event: LogicalNavigationEvent
+): LogicalNavigationResult {
+  if (event.type === 'cancel-intent') {
+    return logicalNavigationResult({ ...state, pendingIntent: null });
+  }
+
+  if (event.type === 'back') {
+    const popped = state.history.length > 0 ? state.history[state.history.length - 1]! : null;
+    const next: LogicalNavigationState = {
+      ...state,
+      history: state.history.length > 0 ? state.history.slice(0, -1) : [],
+      current: popped ?? { type: 'dashboard' },
+      pendingIntent: 'back',
+    };
+    return logicalNavigationResult(next, {
+      entry: popped,
+      target: resolveBackHomeTarget(popped, event.route),
+    });
+  }
+
+  if (event.type === 'home') {
+    const current: DashboardNavigationEntry = { type: 'dashboard' };
+    const next: LogicalNavigationState = {
+      ...state,
+      history: [],
+      current,
+      pendingIntent: 'home',
+    };
+    return logicalNavigationResult(next, {
+      entry: current,
+      target: resolveBackHomeTarget(current, event.route),
+    });
+  }
+
+  const pendingIntent = state.pendingIntent;
+  const consumed: LogicalNavigationState = { ...state, pendingIntent: null };
+
+  if (event.failed) {
+    return logicalNavigationResult(consumed, {
+      entry: consumed.current,
+      decision: null,
+    });
+  }
+
+  const entry = routeToNavigationEntry(event.route);
+
+  if (entry === null || consumed.lastPosition === null) {
+    const next: LogicalNavigationState = {
+      ...consumed,
+      history: [],
+      current: entry,
+      lastPosition: event.position,
+    };
+    return logicalNavigationResult(next, { entry, decision: 'reset' });
+  }
+
+  if (pendingIntent !== null) {
+    return logicalNavigationResult(
+      applyDerivedEntry(consumed, entry, { kind: 'replace' }, event.position),
+      { entry, decision: 'replace' }
+    );
+  }
+
+  const delta = event.position === null ? 1 : event.position - consumed.lastPosition;
+  const lastPosition = event.position !== null ? event.position : consumed.lastPosition;
+
+  if (delta < 0) {
+    return logicalNavigationResult(
+      applyDerivedEntry(consumed, entry, { kind: 'pop', depth: -delta }, lastPosition),
+      { entry, decision: 'pop' }
+    );
+  }
+
+  const decision: NavigationDecision = delta === 0 ? 'replace' : 'push';
+  return logicalNavigationResult(
+    applyDerivedEntry(consumed, entry, { kind: decision }, lastPosition),
+    { entry, decision }
+  );
 }

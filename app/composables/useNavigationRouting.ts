@@ -1,54 +1,35 @@
-import { clearDashboardDetailQuery } from '../utils/dashboardUrlNavigationUtils';
-import { isDashboardRootPath, resolveNavigationEntryRoute } from '../utils/navigationEntryRouting';
-import type { NavigationEntry, NavigationIntent } from './useNavigationHistory';
+import type { ResolvedNavigationEntryRoute } from '../utils/navigationEntryRouting';
 
 /**
- * The single Back/Home implementation for detail overlays and dashboard child
- * pages. Resolves popped entries through `resolveNavigationEntryRoute` and
- * marks the resulting navigation with an intent so the history plugin does not
- * treat it as a forward navigation.
+ * The single Back/Home adapter for detail overlays and dashboard child pages.
+ * Stack + intent live in Logical Navigation; this composable only localizes
+ * the target and asks vue-router to navigate.
  */
 export function useNavigationRouting() {
   const route = useRoute();
   const router = useRouter();
   const localePath = useLocalePath();
-  const {
-    canGoBack,
-    currentEntry,
-    popEntry,
-    previousEntry,
-    resetToHome,
-    setPendingIntent,
-    shouldShowHomeButton,
-  } = useNavigationHistory();
+  const { applyEvent, canGoBack, currentEntry, previousEntry, shouldShowHomeButton } =
+    useNavigationHistory();
 
-  const navigateToEntry = async (entry: NavigationEntry | null, intent: NavigationIntent) => {
-    const resolved = resolveNavigationEntryRoute(entry, {
-      // Back onto the dashboard keeps the residual query (tab, page, ...) the
-      // detail URL carried, mirroring the legacy clearDetailRoute behavior.
-      dashboardQuery: isDashboardRootPath(route.path)
-        ? clearDashboardDetailQuery(route.query)
-        : undefined,
-    });
+  const navigateToTarget = async (target: ResolvedNavigationEntryRoute | null) => {
+    if (!target) return;
 
-    const target = { path: localePath(resolved.path), query: resolved.query };
-
-    // The stack is already adjusted; skip navigation when it would be a no-op.
-    if (router.resolve(target).fullPath === route.fullPath) {
+    const localized = { path: localePath(target.path), query: target.query };
+    if (router.resolve(localized).fullPath === route.fullPath) {
+      applyEvent({ type: 'cancel-intent' });
       return;
     }
 
-    setPendingIntent(intent);
-    await router.push(target);
+    await router.push(localized);
   };
 
   const goBackToPreviousPage = async () => {
-    await navigateToEntry(popEntry(), 'back');
+    await navigateToTarget(applyEvent({ type: 'back', route }).target);
   };
 
   const goToDashboardHome = async () => {
-    resetToHome();
-    await navigateToEntry({ type: 'dashboard' }, 'home');
+    await navigateToTarget(applyEvent({ type: 'home', route }).target);
   };
 
   return {

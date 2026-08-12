@@ -2,14 +2,14 @@ import { describe, expect, test } from 'bun:test';
 
 import type { DashboardNavigationEntry } from '../app/utils/dashboardUrlNavigationUtils';
 import {
-  applyNavigationHistoryChange,
+  applyLogicalNavigationEvent,
+  createLogicalNavigationState,
   isDashboardAreaPath,
   isDashboardRootPath,
   isSameNavigationEntry,
   resolveNavigationEntryRoute,
   routeToNavigationEntry,
-  shouldReplaceNavigationEntry,
-  type NavigationHistoryState,
+  type LogicalNavigationState,
 } from '../app/utils/navigationEntryRouting';
 
 /** Mirrors vue-router query serialization: undefined/null params are dropped. */
@@ -596,384 +596,336 @@ describe('routeToNavigationEntry / resolveNavigationEntryRoute round trip', () =
   });
 });
 
-describe('shouldReplaceNavigationEntry', () => {
-  const replaceCases: Array<
-    [string, DashboardNavigationEntry | null, DashboardNavigationEntry, boolean]
-  > = [
-    ['no previous entry', null, { type: 'dashboard' }, false],
-    ['identical entries', { type: 'dashboard' }, { type: 'dashboard' }, true],
-    [
-      'dashboard tab switch',
-      { type: 'dashboard', data: { tab: 'issues' } },
-      { type: 'dashboard', data: { tab: 'pulls' } },
-      true,
-    ],
-    [
-      'same-user profile tab switch',
-      { type: 'profile', data: { user: 'a', tab: 'followers' } },
-      { type: 'profile', data: { user: 'a' } },
-      true,
-    ],
-    [
-      'different-user profile',
-      { type: 'profile', data: { user: 'a', tab: 'followers' } },
-      { type: 'profile', data: { user: 'b' } },
-      false,
-    ],
-    [
-      'same-repo wiki page switch',
-      { type: 'wiki', data: { owner: 'o', repo: 'r', path: 'Home' } },
-      { type: 'wiki', data: { owner: 'o', repo: 'r', path: 'Faq' } },
-      true,
-    ],
-    [
-      'different-repo wiki',
-      { type: 'wiki', data: { owner: 'o', repo: 'r' } },
-      { type: 'wiki', data: { owner: 'o', repo: 'r2' } },
-      false,
-    ],
-    [
-      'continuous file browsing',
-      { type: 'file', data: { owner: 'o', repo: 'r', path: 'a' } },
-      { type: 'file', data: { owner: 'o', repo: 'r', path: 'b' } },
-      true,
-    ],
-    [
-      'cross-repo file link',
-      { type: 'file', data: { owner: 'o', repo: 'r', path: 'a' } },
-      { type: 'file', data: { owner: 'o', repo: 'r2', path: 'b' } },
-      true,
-    ],
-    [
-      'repository branch switch',
-      { type: 'repository', data: { owner: 'o', repo: 'r', branch: 'main' } },
-      { type: 'repository', data: { owner: 'o', repo: 'r', branch: 'dev' } },
-      true,
-    ],
-    [
-      'different repository',
-      { type: 'repository', data: { owner: 'o', repo: 'r' } },
-      { type: 'repository', data: { owner: 'o', repo: 'r2' } },
-      false,
-    ],
-    [
-      'leaving file browsing up to the same repo',
-      { type: 'file', data: { owner: 'o', repo: 'r', path: 'src' } },
-      { type: 'repository', data: { owner: 'o', repo: 'r', tab: 'repos' } },
-      true,
-    ],
-    [
-      'file to a different repository',
-      { type: 'file', data: { owner: 'o', repo: 'r', path: 'src' } },
-      { type: 'repository', data: { owner: 'o', repo: 'r2' } },
-      false,
-    ],
-    [
-      'entering file browsing pushes',
-      { type: 'repository', data: { owner: 'o', repo: 'r' } },
-      { type: 'file', data: { owner: 'o', repo: 'r', path: 'src' } },
-      false,
-    ],
-    [
-      'closing a PR review',
-      { type: 'pull-request-review', data: { owner: 'o', repo: 'r', number: 5 } },
-      { type: 'pull-request', data: { owner: 'o', repo: 'r', number: 5, tab: 'pulls' } },
-      true,
-    ],
-    [
-      'opening a PR review pushes',
-      { type: 'pull-request', data: { owner: 'o', repo: 'r', number: 5 } },
-      { type: 'pull-request-review', data: { owner: 'o', repo: 'r', number: 5 } },
-      false,
-    ],
-    [
-      'review of a different PR',
-      { type: 'pull-request-review', data: { owner: 'o', repo: 'r', number: 5 } },
-      { type: 'pull-request', data: { owner: 'o', repo: 'r', number: 6 } },
-      false,
-    ],
-    [
-      'same-user starred list',
-      { type: 'starred', data: { user: 'a' } },
-      { type: 'starred', data: { user: 'a' } },
-      true,
-    ],
-    [
-      'issue to issue',
-      { type: 'issue', data: { owner: 'o', repo: 'r', number: 1 } },
-      { type: 'issue', data: { owner: 'o', repo: 'r', number: 2 } },
-      false,
-    ],
-  ];
-
-  for (const [label, previous, next, expected] of replaceCases) {
-    test(label, () => {
-      expect(shouldReplaceNavigationEntry(previous, next)).toBe(expected);
-    });
-  }
-});
-
-describe('applyNavigationHistoryChange', () => {
-  const dashboard: DashboardNavigationEntry = { type: 'dashboard', data: { tab: 'repos' } };
-  const profile: DashboardNavigationEntry = { type: 'profile', data: { user: 'octocat' } };
-  const repository: DashboardNavigationEntry = {
-    type: 'repository',
-    data: { owner: 'o', repo: 'r', branch: undefined, tab: 'repos' },
-  };
-  const file: DashboardNavigationEntry = {
-    type: 'file',
-    data: { owner: 'o', repo: 'r', path: 'src', branch: 'main' },
-  };
-
-  const push = (state: NavigationHistoryState, entry: DashboardNavigationEntry) =>
-    applyNavigationHistoryChange(state, entry, { kind: 'push' });
-
-  test('reset clears the stack', () => {
-    expect(
-      applyNavigationHistoryChange({ history: [dashboard], current: profile }, repository, {
-        kind: 'reset',
-      })
-    ).toEqual({ history: [], current: repository });
+const applyRoute = (
+  state: LogicalNavigationState,
+  path: string,
+  query: Record<string, unknown>,
+  position: number,
+  extras: { failed?: boolean } = {}
+) =>
+  applyLogicalNavigationEvent(state, {
+    type: 'route',
+    route: { path, query: normalizeQuery(query) },
+    position,
+    failed: extras.failed,
   });
 
-  test('a null entry (outside the dashboard area) clears everything', () => {
-    expect(
-      applyNavigationHistoryChange({ history: [dashboard], current: profile }, null, {
-        kind: 'push',
-      })
-    ).toEqual({ history: [], current: null });
-  });
+describe('applyLogicalNavigationEvent', () => {
+  test('a cold-start route derives the entry and leaves the stack empty', () => {
+    const result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
 
-  test('push stacks the current entry', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = push(state, dashboard);
-    // Without a current entry nothing is stacked.
-    expect(state).toEqual({ history: [], current: dashboard });
-
-    state = push(state, profile);
-    expect(state).toEqual({ history: [dashboard], current: profile });
-
-    state = push(state, repository);
-    expect(state).toEqual({ history: [dashboard, profile], current: repository });
-  });
-
-  test('push applies the in-place collapse rules', () => {
-    let state: NavigationHistoryState = { history: [dashboard], current: profile };
-    const profileTab: DashboardNavigationEntry = {
-      type: 'profile',
-      data: { user: 'octocat', tab: 'followers' },
-    };
-
-    state = push(state, profileTab);
-    expect(state).toEqual({ history: [dashboard], current: profileTab });
-  });
-
-  test('replace updates the current entry in place', () => {
-    const state = applyNavigationHistoryChange(
-      { history: [dashboard], current: profile },
-      { type: 'profile', data: { user: 'octocat', tab: 'packages' } },
-      { kind: 'replace' }
-    );
-    expect(state.history).toEqual([dashboard]);
-    expect(state.current?.data?.tab).toBe('packages');
-  });
-
-  test('a non-collapsible replace falls back to pushing', () => {
-    // Browser positions can desync (cancelled popstate followed by a link
-    // click), making a genuine forward navigation look like a replace. The
-    // current entry must not be lost from the back chain.
-    const issue: DashboardNavigationEntry = {
-      type: 'issue',
-      data: { owner: 'o', repo: 'r', number: 1, tab: 'issues' },
-    };
-
-    const state = applyNavigationHistoryChange(
-      { history: [dashboard, profile], current: repository },
-      issue,
-      { kind: 'replace' }
-    );
-    expect(state).toEqual({ history: [dashboard, profile, repository], current: issue });
-  });
-
-  test('closing a PR review collapses onto the pull request pushed at open', () => {
-    const pr: DashboardNavigationEntry = {
-      type: 'pull-request',
-      data: { owner: 'o', repo: 'r', number: 5, tab: 'pulls' },
-    };
-    const review: DashboardNavigationEntry = {
-      type: 'pull-request-review',
-      data: { owner: 'o', repo: 'r', number: 5, tab: 'pulls' },
-    };
-
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = push(state, dashboard);
-    state = push(state, pr);
-    state = push(state, review);
-    expect(state).toEqual({ history: [dashboard, pr], current: review });
-
-    // Closing the review navigates back to ?pr=; the review entry collapses
-    // and the duplicate pull request on the stack is deduped away.
-    state = push(state, pr);
-    expect(state).toEqual({ history: [dashboard], current: pr });
-  });
-
-  test('leaving file browsing via the repo header behaves like back', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = push(state, dashboard);
-    state = push(state, profile);
-    state = push(state, repository);
-    state = push(state, file);
-    expect(state).toEqual({ history: [dashboard, profile, repository], current: file });
-
-    state = push(state, repository);
-    expect(state).toEqual({ history: [dashboard, profile], current: repository });
-  });
-
-  test('pop follows the browser back to a matching entry', () => {
-    const state: NavigationHistoryState = {
-      history: [dashboard, profile],
-      current: repository,
-    };
-
-    expect(applyNavigationHistoryChange(state, profile, { kind: 'pop', depth: 1 })).toEqual({
-      history: [dashboard],
-      current: profile,
-    });
-
-    expect(applyNavigationHistoryChange(state, dashboard, { kind: 'pop', depth: 2 })).toEqual({
+    expect(result.decision).toBe('reset');
+    expect(result.entry).toEqual({ type: 'dashboard', data: { tab: 'repos' } });
+    expect(result.snapshot).toEqual({
       history: [],
-      current: dashboard,
+      current: { type: 'dashboard', data: { tab: 'repos' } },
+      previousEntry: null,
+      canGoBack: false,
+      shouldShowHomeButton: false,
     });
   });
 
-  test('pop without a matching entry only syncs the current entry', () => {
-    // Browser-back across a collapsed wiki page change: the previous wiki page
-    // never made it onto the stack, so nothing must be popped.
-    const wikiHome: DashboardNavigationEntry = {
-      type: 'wiki',
-      data: { owner: 'o', repo: 'r', path: undefined },
-    };
-    const wikiFaq: DashboardNavigationEntry = {
-      type: 'wiki',
-      data: { owner: 'o', repo: 'r', path: 'Faq' },
-    };
+  test('a later position is a forward push', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
+    result = applyRoute(
+      result.state,
+      '/dashboard/profile',
+      { user: 'octocat', tab: 'repositories' },
+      1
+    );
 
-    const state: NavigationHistoryState = { history: [dashboard, profile], current: wikiFaq };
-
-    expect(applyNavigationHistoryChange(state, wikiHome, { kind: 'pop', depth: 1 })).toEqual({
-      history: [dashboard, profile],
-      current: wikiHome,
-    });
-  });
-
-  test('cold start on a detail route leaves the stack empty', () => {
-    const issue: DashboardNavigationEntry = {
-      type: 'issue',
-      data: { owner: 'o', repo: 'r', number: 1, tab: 'issues' },
-    };
-
-    const state = applyNavigationHistoryChange({ history: [], current: null }, issue, {
-      kind: 'reset',
-    });
-    expect(state).toEqual({ history: [], current: issue });
-  });
-});
-
-describe('acceptance flows through derivation + reducer', () => {
-  const navigate = (
-    state: NavigationHistoryState,
-    path: string,
-    query: Record<string, unknown> = {},
-    kind: 'push' | 'replace' | 'reset' = 'push'
-  ) => applyNavigationHistoryChange(state, derive(path, query), { kind });
-
-  test('dashboard -> profile -> repository keeps the full back chain', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard', { tab: 'repos' }, 'reset');
-    state = navigate(state, '/dashboard/profile', { user: 'octocat', tab: 'repositories' });
-    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'octocat/repo' });
-
-    expect(state.current?.type).toBe('repository');
-    // Back target: the profile with its original tab.
-    expect(state.history[state.history.length - 1]).toEqual({
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.current).toEqual({
       type: 'profile',
       data: { user: 'octocat', tab: 'repositories' },
     });
-    // Home button: previous entry is not the dashboard.
-    expect(state.history[state.history.length - 1]?.type).not.toBe('dashboard');
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'repos' } }]);
+    expect(result.snapshot.canGoBack).toBe(true);
+    expect(result.snapshot.shouldShowHomeButton).toBe(false);
   });
 
-  test('profile A -> followers -> profile B goes back to A', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard/profile', { user: 'a' }, 'reset');
-    state = navigate(state, '/dashboard/profile', { user: 'a', tab: 'followers' }, 'replace');
-    state = navigate(state, '/dashboard/profile', { user: 'b' });
+  test('the same position replaces in place for a dashboard tab switch', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'issues' }, 0);
+    result = applyRoute(result.state, '/dashboard', { tab: 'pulls' }, 0);
 
-    expect(state.current).toEqual({ type: 'profile', data: { user: 'b', tab: undefined } });
-    expect(state.history).toEqual([{ type: 'profile', data: { user: 'a', tab: 'followers' } }]);
+    expect(result.decision).toBe('replace');
+    expect(result.snapshot.history).toEqual([]);
+    expect(result.snapshot.current).toEqual({ type: 'dashboard', data: { tab: 'pulls' } });
+  });
+
+  test('a smaller position is browser-back and pops a matching entry', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 1);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'octocat' }, 2);
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'octocat/repo' }, 3);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'octocat' }, 2);
+
+    expect(result.decision).toBe('pop');
+    expect(result.snapshot.current).toEqual({
+      type: 'profile',
+      data: { user: 'octocat', tab: undefined },
+    });
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'repos' } }]);
+  });
+
+  test('leaving the dashboard area resets the stack', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', {}, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'octocat' }, 1);
+    result = applyRoute(result.state, '/login', {}, 2);
+
+    expect(result.decision).toBe('reset');
+    expect(result.entry).toBeNull();
+    expect(result.snapshot).toEqual({
+      history: [],
+      current: null,
+      previousEntry: null,
+      canGoBack: false,
+      shouldShowHomeButton: false,
+    });
+  });
+
+  test('a failed route keeps the stack and consumes a pending back intent', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'octocat' }, 1);
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/profile', query: { user: 'octocat' } },
+    });
+
+    expect(result.target).toEqual({ path: '/dashboard', query: { tab: 'repos' } });
+
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos' }, 2, { failed: true });
+
+    expect(result.decision).toBeNull();
+    expect(result.snapshot.current).toEqual({ type: 'dashboard', data: { tab: 'repos' } });
+    expect(result.snapshot.history).toEqual([]);
+
+    result = applyRoute(result.state, '/dashboard/settings', {}, 3);
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'repos' } }]);
+  });
+
+  test('logical Back returns the previous route and the following route does not re-push', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'issues' }, 0);
+    result = applyRoute(result.state, '/dashboard', { tab: 'issues', issue: 'octo/repo/12' }, 1);
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard', query: { tab: 'issues', issue: 'octo/repo/12', page: '2' } },
+    });
+
+    expect(result.target).toEqual({
+      path: '/dashboard',
+      query: { tab: 'issues', page: '2' },
+    });
+    expect(result.snapshot.current).toEqual({ type: 'dashboard', data: { tab: 'issues' } });
+    expect(result.snapshot.history).toEqual([]);
+
+    result = applyRoute(result.state, '/dashboard', { tab: 'issues', page: '2' }, 2);
+
+    expect(result.decision).toBe('replace');
+    expect(result.snapshot.history).toEqual([]);
+    expect(result.snapshot.current).toEqual({ type: 'dashboard', data: { tab: 'issues' } });
+  });
+
+  test('logical Home clears the stack and the following route stays at the dashboard', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'a' }, 1);
+    result = applyRoute(result.state, '/dashboard/wiki', { repo: 'a/r' }, 2);
+
+    expect(result.snapshot.shouldShowHomeButton).toBe(true);
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'home',
+      route: { path: '/dashboard/wiki', query: { repo: 'a/r' } },
+    });
+
+    expect(result.target).toEqual({ path: '/dashboard', query: {} });
+    expect(result.snapshot.history).toEqual([]);
+    expect(result.snapshot.current).toEqual({ type: 'dashboard' });
+    expect(result.snapshot.canGoBack).toBe(false);
+    expect(result.snapshot.shouldShowHomeButton).toBe(false);
+
+    result = applyRoute(result.state, '/dashboard', {}, 3);
+
+    expect(result.decision).toBe('replace');
+    expect(result.snapshot.history).toEqual([]);
+    expect(result.snapshot.current).toEqual({ type: 'dashboard' });
+  });
+
+  test('cancel-intent lets the next route record as a real push', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', {}, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'octocat' }, 1);
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/profile', query: { user: 'octocat' } },
+    });
+    result = applyLogicalNavigationEvent(result.state, { type: 'cancel-intent' });
+    result = applyRoute(result.state, '/dashboard/settings', {}, 2);
+
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.current).toEqual({ type: 'settings' });
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard' }]);
+  });
+
+  test('child-page Back does not inherit the dashboard residual query', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'octocat' }, 1);
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/profile', query: { user: 'octocat' } },
+    });
+
+    expect(result.target).toEqual({ path: '/dashboard', query: { tab: 'repos' } });
+  });
+
+  test('a missing mid-session position is treated as a forward push', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', {}, 4);
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'route',
+      route: { path: '/dashboard/profile', query: { user: 'octocat' } },
+      position: null,
+    });
+
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard' }]);
+  });
+
+  test('browser-back across a collapsed wiki page only syncs the current entry', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { repo: 'o/r' }, 0);
+    result = applyRoute(result.state, '/dashboard/wiki', { repo: 'o/r' }, 1);
+    result = applyRoute(result.state, '/dashboard/wiki', { repo: 'o/r', page: 'Faq' }, 1);
+    result = applyRoute(result.state, '/dashboard/wiki', { repo: 'o/r' }, 0);
+
+    expect(result.decision).toBe('pop');
+    expect(result.snapshot.current).toEqual({
+      type: 'wiki',
+      data: { owner: 'o', repo: 'r', path: undefined },
+    });
+    expect(result.snapshot.history).toEqual([
+      {
+        type: 'repository',
+        data: {
+          owner: 'o',
+          repo: 'r',
+          branch: undefined,
+          tab: undefined,
+          section: undefined,
+          repoPage: undefined,
+          repoState: undefined,
+        },
+      },
+    ]);
+  });
+
+  test('closing a PR review via a later position collapses onto the pull request', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'pulls' }, 0);
+    result = applyRoute(result.state, '/dashboard', { tab: 'pulls', pr: 'o/r/5' }, 1);
+    result = applyRoute(result.state, '/dashboard', { tab: 'pulls', prReview: 'o/r/5' }, 2);
+    result = applyRoute(result.state, '/dashboard', { tab: 'pulls', pr: 'o/r/5' }, 3);
+
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.current).toEqual({
+      type: 'pull-request',
+      data: { owner: 'o', repo: 'r', number: 5, tab: 'pulls' },
+    });
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'pulls' } }]);
+  });
+
+  test('same-user profile tab switches replace; a different user pushes', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard/profile', { user: 'a' }, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'a', tab: 'followers' }, 0);
+    result = applyRoute(result.state, '/dashboard/profile', { user: 'b' }, 1);
+
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.current).toEqual({
+      type: 'profile',
+      data: { user: 'b', tab: undefined },
+    });
+    expect(result.snapshot.history).toEqual([
+      { type: 'profile', data: { user: 'a', tab: 'followers' } },
+    ]);
   });
 
   test('multi-level file browsing collapses into one entry', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard/profile', { user: 'a' }, 'reset');
-    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'a/r' });
-    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'a/r', path: '', branch: 'main' });
-    state = navigate(state, '/dashboard', {
-      tab: 'repos',
-      repo: 'a/r',
-      path: 'src',
-      branch: 'main',
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard/profile', { user: 'a' }, 0);
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'a/r' }, 1);
+    result = applyRoute(
+      result.state,
+      '/dashboard',
+      { tab: 'repos', repo: 'a/r', path: '', branch: 'main' },
+      2
+    );
+    result = applyRoute(
+      result.state,
+      '/dashboard',
+      { tab: 'repos', repo: 'a/r', path: 'src', branch: 'main' },
+      3
+    );
+    result = applyRoute(
+      result.state,
+      '/dashboard',
+      { tab: 'repos', repo: 'a/r', path: 'src/app.ts', branch: 'main' },
+      4
+    );
+
+    expect(result.snapshot.current?.type).toBe('file');
+    expect(result.snapshot.history.map((entry) => entry.type)).toEqual(['profile', 'repository']);
+  });
+
+  test('leaving file browsing via the repo header collapses back onto the repository', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard/profile', { user: 'a' }, 0);
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'a/r' }, 1);
+    result = applyRoute(
+      result.state,
+      '/dashboard',
+      { tab: 'repos', repo: 'a/r', path: 'src', branch: 'main' },
+      2
+    );
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'a/r' }, 3);
+
+    expect(result.snapshot.current).toEqual({
+      type: 'repository',
+      data: {
+        owner: 'a',
+        repo: 'r',
+        branch: undefined,
+        tab: 'repos',
+        section: undefined,
+        repoPage: undefined,
+        repoState: undefined,
+      },
     });
-    state = navigate(state, '/dashboard', {
-      tab: 'repos',
-      repo: 'a/r',
-      path: 'src/app.ts',
-      branch: 'main',
-    });
-
-    expect(state.current?.type).toBe('file');
-    expect(state.history.map((entry) => entry.type)).toEqual(['profile', 'repository']);
+    expect(result.snapshot.history.map((entry) => entry.type)).toEqual(['profile']);
   });
 
-  test('releases list -> release detail goes back to the list', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard/releases', { repo: 'o/r' }, 'reset');
-    state = navigate(state, '/dashboard', { release: 'o/r/9' });
+  test('releases list to a release detail keeps the list as Back', () => {
+    let result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard/releases',
+      { repo: 'o/r' },
+      0
+    );
+    result = applyRoute(result.state, '/dashboard', { release: 'o/r/9' }, 1);
 
-    expect(state.current?.type).toBe('release');
-    expect(state.history).toEqual([{ type: 'releases-list', data: { owner: 'o', repo: 'r' } }]);
+    expect(result.snapshot.current?.type).toBe('release');
+    expect(result.snapshot.history).toEqual([
+      { type: 'releases-list', data: { owner: 'o', repo: 'r' } },
+    ]);
   });
 
-  test('wiki page switches never accumulate history', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'o/r' }, 'reset');
-    state = navigate(state, '/dashboard/wiki', { repo: 'o/r' });
-    state = navigate(state, '/dashboard/wiki', { repo: 'o/r', page: 'Faq' });
-    state = navigate(state, '/dashboard/wiki', { repo: 'o/r', page: 'Setup' });
-
-    expect(state.current?.data?.path).toBe('Setup');
-    expect(state.history.map((entry) => entry.type)).toEqual(['repository']);
-  });
-
-  test('repo issues panel page survives open issue and back', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard', { tab: 'repos' }, 'reset');
-    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'octo/repo' });
-    // Panel + page switches collapse in place (same repo repository entry).
-    state = navigate(
-      state,
+  test('a repo issues panel page survives opening an issue', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'octo/repo' }, 1);
+    result = applyRoute(
+      result.state,
       '/dashboard',
       { tab: 'repos', repo: 'octo/repo', section: 'issues', repoPage: '3', repoState: 'closed' },
-      'replace'
+      1
     );
-    state = navigate(state, '/dashboard', {
-      tab: 'repos',
-      issue: 'octo/repo/12',
-    });
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', issue: 'octo/repo/12' }, 2);
 
-    expect(state.current?.type).toBe('issue');
-    const previous = state.history[state.history.length - 1];
-    expect(previous).toEqual({
+    expect(result.snapshot.current?.type).toBe('issue');
+    expect(result.snapshot.previousEntry).toEqual({
       type: 'repository',
       data: {
         owner: 'octo',
@@ -986,47 +938,32 @@ describe('acceptance flows through derivation + reducer', () => {
       },
     });
 
-    const resolved = resolveNavigationEntryRoute(previous);
-    expect(resolved.query).toEqual({
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard', query: { tab: 'repos', issue: 'octo/repo/12' } },
+    });
+    expect(result.target?.query).toMatchObject({
       tab: 'repos',
       repo: 'octo/repo',
-      branch: undefined,
       section: 'issues',
       repoPage: '3',
       repoState: 'closed',
     });
   });
 
-  test('repo commits panel page survives in-place history updates', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard', { tab: 'repos', repo: 'octo/repo' }, 'reset');
-    state = navigate(
-      state,
-      '/dashboard',
-      { tab: 'repos', repo: 'octo/repo', section: 'commits', repoPage: '4' },
-      'replace'
+  test('a same-position non-collapsible navigation still pushes so Back is not lost', () => {
+    let result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard/profile',
+      { user: 'octocat' },
+      0
     );
+    result = applyRoute(result.state, '/dashboard', { tab: 'issues', issue: 'o/r/1' }, 0);
 
-    expect(state.history).toEqual([]);
-    expect(state.current).toEqual({
-      type: 'repository',
-      data: {
-        owner: 'octo',
-        repo: 'repo',
-        branch: undefined,
-        tab: 'repos',
-        section: 'commits',
-        repoPage: 4,
-        repoState: undefined,
-      },
-    });
-  });
-
-  test('a detail opened from a dashboard tab goes back to that tab', () => {
-    let state: NavigationHistoryState = { history: [], current: null };
-    state = navigate(state, '/dashboard', { tab: 'notifications' }, 'reset');
-    state = navigate(state, '/dashboard', { tab: 'notifications', issue: 'o/r/1' });
-
-    expect(state.history).toEqual([{ type: 'dashboard', data: { tab: 'notifications' } }]);
+    expect(result.decision).toBe('replace');
+    expect(result.snapshot.history).toEqual([
+      { type: 'profile', data: { user: 'octocat', tab: undefined } },
+    ]);
+    expect(result.snapshot.current?.type).toBe('issue');
   });
 });
