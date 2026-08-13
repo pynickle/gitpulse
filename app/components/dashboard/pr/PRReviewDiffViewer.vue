@@ -450,17 +450,17 @@ onBeforeUnmount(() => {
 }
 
 .pr-review-diff-viewer__header {
-  // Chrome over Diff Rows: muted surface + always-on edge, because this bar
-  // is sticky and otherwise shares --gitpulse-surface with context lines.
-  --pr-review-file-header-shadow: 0 3px 8px -4px color-mix(in srgb, #000 14%, transparent);
+  // shell-bg, not surface-muted: muted (#f8fafc) is indistinguishable from
+  // context Diff Rows (#fff) and shares their --gitpulse-border hairline.
+  --pr-review-file-header-shadow: 0 6px 14px -6px color-mix(in srgb, #000 22%, transparent);
 
   position: sticky;
   top: 0;
   z-index: 2;
   min-height: 2.75rem;
-  padding: 0.55rem 0.6rem;
-  border-bottom: 1px solid var(--gitpulse-border);
-  background: var(--gitpulse-surface-muted);
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--gitpulse-border-strong);
+  background: var(--gitpulse-shell-bg);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -468,17 +468,17 @@ onBeforeUnmount(() => {
   user-select: none;
   border-left: 3px solid transparent;
   outline: none;
+  font-size: 0.8125rem;
+  line-height: 1.3;
   box-shadow: var(--pr-review-file-header-shadow);
 }
 
 html.dark .pr-review-diff-viewer__header {
-  --pr-review-file-header-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.4);
+  --pr-review-file-header-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.55);
 }
 
 .pr-review-diff-viewer__header:hover {
-  // Stay on the muted chrome, not --gitpulse-surface-hover (light hover is
-  // nearly white and would collapse back into context Diff Rows).
-  background: color-mix(in srgb, var(--gitpulse-surface-muted) 88%, var(--gitpulse-text-strong));
+  background: color-mix(in srgb, var(--gitpulse-shell-bg) 86%, var(--gitpulse-text-strong));
 }
 
 .pr-review-diff-viewer__header:focus-visible {
@@ -518,7 +518,7 @@ html.dark .pr-review-diff-viewer__header {
 }
 
 .pr-review-diff-viewer__header-info .title {
-  font-size: 0.82rem;
+  font-size: 0.875rem;
 }
 
 .pr-review-diff-viewer__body {
