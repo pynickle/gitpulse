@@ -100,10 +100,13 @@ const toggleFileCollapse = (filename: string) => {
 
 const scrollContainer = useTemplateRef<HTMLElement>('scrollContainer');
 const sectionElements = new Map<string, HTMLElement>();
+const stickySentinels = new Map<string, HTMLElement>();
+const stuckHeaders = shallowRef(new Set<string>());
 const isProgrammaticScroll = shallowRef(false);
 const lastScrollSyncedFilename = shallowRef<string | null>(null);
 let programmaticScrollTimer: number | undefined;
 let scrollSyncFrame: number | undefined;
+let stickyObserver: IntersectionObserver | undefined;
 
 const setFileSectionElement = (
   filename: string,
@@ -113,6 +116,74 @@ const setFileSectionElement = (
     sectionElements.set(filename, element);
   } else {
     sectionElements.delete(filename);
+  }
+};
+
+const isHeaderStuck = (filename: string) => stuckHeaders.value.has(filename);
+
+const setStickySentinel = (filename: string, element: Element | ComponentPublicInstance | null) => {
+  const previous = stickySentinels.get(filename);
+
+  if (previous && previous !== element) {
+    stickyObserver?.unobserve(previous);
+    stickySentinels.delete(filename);
+  }
+
+  if (element instanceof HTMLElement) {
+    stickySentinels.set(filename, element);
+    stickyObserver?.observe(element);
+    return;
+  }
+
+  if (stuckHeaders.value.has(filename)) {
+    const nextStuck = new Set(stuckHeaders.value);
+    nextStuck.delete(filename);
+    stuckHeaders.value = nextStuck;
+  }
+};
+
+const bindStickyObserver = (container: HTMLElement | null) => {
+  stickyObserver?.disconnect();
+  stickyObserver = undefined;
+
+  if (!container || typeof IntersectionObserver === 'undefined') {
+    return;
+  }
+
+  stickyObserver = new IntersectionObserver(
+    (entries) => {
+      const nextStuck = new Set(stuckHeaders.value);
+      let changed = false;
+
+      for (const entry of entries) {
+        const filename = entry.target instanceof HTMLElement ? entry.target.dataset.filename : '';
+
+        if (!filename) {
+          continue;
+        }
+
+        const rootTop = entry.rootBounds?.top ?? 0;
+        const stuck = !entry.isIntersecting && entry.boundingClientRect.top < rootTop;
+
+        if (stuck) {
+          if (!nextStuck.has(filename)) {
+            nextStuck.add(filename);
+            changed = true;
+          }
+        } else if (nextStuck.delete(filename)) {
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        stuckHeaders.value = nextStuck;
+      }
+    },
+    { root: container, threshold: 0 }
+  );
+
+  for (const sentinel of stickySentinels.values()) {
+    stickyObserver.observe(sentinel);
   }
 };
 
@@ -306,11 +377,15 @@ watch(
   { immediate: true }
 );
 
+watch(scrollContainer, (container) => bindStickyObserver(container), { flush: 'post' });
+
 onBeforeUnmount(() => {
   window.clearTimeout(programmaticScrollTimer);
   if (scrollSyncFrame) {
     window.cancelAnimationFrame(scrollSyncFrame);
   }
+  stickyObserver?.disconnect();
+  stickyObserver = undefined;
 });
 </script>
 
@@ -334,7 +409,14 @@ onBeforeUnmount(() => {
         }"
       >
         <div
+          class="pr-review-diff-viewer__sticky-sentinel"
+          aria-hidden="true"
+          :data-filename="section.file.filename"
+          :ref="(element) => setStickySentinel(section.file.filename, element)"
+        ></div>
+        <div
           class="pr-review-diff-viewer__header"
+          :class="{ 'pr-review-diff-viewer__header--stuck': isHeaderStuck(section.file.filename) }"
           role="button"
           tabindex="0"
           :aria-expanded="!collapsedFiles.has(section.file.filename)"
@@ -470,13 +552,21 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--gitpulse-surface);
+  background: var(--gitpulse-shell-bg);
   overflow: hidden;
 }
 
+.pr-review-diff-viewer__sticky-sentinel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
 .pr-review-diff-viewer__header {
-  // shell-bg, not surface-muted: muted (#f8fafc) is indistinguishable from
-  // context Diff Rows (#fff) and shares their --gitpulse-border hairline.
   --pr-review-file-header-shadow: 0 6px 14px -6px color-mix(in srgb, #000 22%, transparent);
 
   position: sticky;
@@ -484,14 +574,14 @@ onBeforeUnmount(() => {
   z-index: 2;
   min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--gitpulse-border-strong);
-  background: var(--gitpulse-shell-bg);
+  border: 1px solid transparent;
+  border-bottom-color: var(--gitpulse-border);
+  background: var(--gitpulse-surface-muted);
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
   user-select: none;
-  border-left: 3px solid transparent;
   outline: none;
   font-size: 0.8125rem;
   line-height: 1.3;
@@ -503,13 +593,30 @@ html.dark .pr-review-diff-viewer__header {
 }
 
 .pr-review-diff-viewer__header:hover {
-  background: color-mix(in srgb, var(--gitpulse-shell-bg) 86%, var(--gitpulse-text-strong));
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 86%, var(--gitpulse-text-strong));
 }
 
 .pr-review-diff-viewer__header:focus-visible {
   box-shadow:
     inset 0 0 0 2px var(--gitpulse-focus-ring),
     var(--pr-review-file-header-shadow);
+}
+
+.pr-review-diff-viewer__header--stuck {
+  top: 0.5rem;
+  margin: 0 0.75rem;
+  border-color: var(--gitpulse-border-strong);
+  border-radius: 999px;
+  box-shadow:
+    var(--pr-review-file-header-shadow),
+    0 8px 20px -10px color-mix(in srgb, #000 28%, transparent);
+}
+
+.pr-review-diff-viewer__header--stuck:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--gitpulse-focus-ring),
+    var(--pr-review-file-header-shadow),
+    0 8px 20px -10px color-mix(in srgb, #000 28%, transparent);
 }
 
 .pr-review-diff-viewer__file-link {
@@ -523,8 +630,8 @@ html.dark .pr-review-diff-viewer__header {
   text-decoration: underline;
 }
 
-.pr-review-diff-viewer__file-section--active .pr-review-diff-viewer__header {
-  border-left-color: var(--gitpulse-info);
+.pr-review-diff-viewer__file-section--active {
+  border-color: color-mix(in srgb, var(--gitpulse-info) 48%, var(--gitpulse-border));
 }
 
 .pr-review-diff-viewer__header-chevron {
@@ -605,6 +712,10 @@ html.dark .pr-review-diff-viewer__header {
   height: 100%;
   min-height: 0;
   max-height: 100%;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   -ms-overflow-style: none;
   overscroll-behavior: contain;
   font-size: 12px;
@@ -617,12 +728,14 @@ html.dark .pr-review-diff-viewer__header {
 }
 
 .pr-review-diff-viewer__file-section {
-  min-width: 100%;
-  border-bottom: 1px solid var(--gitpulse-border);
-}
-
-.pr-review-diff-viewer__file-section--collapsed {
-  border-bottom-color: transparent;
+  // clip (not hidden) keeps File Header sticky to the pane scroller.
+  position: relative;
+  min-width: 0;
+  overflow: clip;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-lg);
+  background: var(--gitpulse-surface);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .pr-review-diff-viewer__empty {

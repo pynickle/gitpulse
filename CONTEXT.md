@@ -32,8 +32,12 @@ _Avoid_: PR review page, review UI
 The middle pane of the PR Review Workspace that shows the files in the pull request as diffs.
 _Avoid_: middle part, code panel, diff panel
 
+**File Card**:
+One changed file in the Diff Viewer, containing its File Header and Diff Rows.
+_Avoid_: file section, file block
+
 **File Header**:
-The chrome bar above one file's diff: path, change status, and addition and deletion counts.
+The header of a File Card: path, change status, and addition and deletion counts.
 _Avoid_: header, filename header, file bar
 
 **Hunk Header**:
