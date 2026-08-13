@@ -450,13 +450,17 @@ onBeforeUnmount(() => {
 }
 
 .pr-review-diff-viewer__header {
+  // Chrome over Diff Rows: muted surface + always-on edge, because this bar
+  // is sticky and otherwise shares --gitpulse-surface with context lines.
+  --pr-review-file-header-shadow: 0 3px 8px -4px color-mix(in srgb, #000 14%, transparent);
+
   position: sticky;
   top: 0;
   z-index: 2;
   min-height: 2.75rem;
   padding: 0.55rem 0.6rem;
   border-bottom: 1px solid var(--gitpulse-border);
-  background: var(--gitpulse-surface);
+  background: var(--gitpulse-surface-muted);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -464,14 +468,23 @@ onBeforeUnmount(() => {
   user-select: none;
   border-left: 3px solid transparent;
   outline: none;
+  box-shadow: var(--pr-review-file-header-shadow);
+}
+
+html.dark .pr-review-diff-viewer__header {
+  --pr-review-file-header-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.4);
 }
 
 .pr-review-diff-viewer__header:hover {
-  background: var(--gitpulse-surface-hover);
+  // Stay on the muted chrome, not --gitpulse-surface-hover (light hover is
+  // nearly white and would collapse back into context Diff Rows).
+  background: color-mix(in srgb, var(--gitpulse-surface-muted) 88%, var(--gitpulse-text-strong));
 }
 
 .pr-review-diff-viewer__header:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--gitpulse-focus-ring);
+  box-shadow:
+    inset 0 0 0 2px var(--gitpulse-focus-ring),
+    var(--pr-review-file-header-shadow);
 }
 
 .pr-review-diff-viewer__file-link {
@@ -487,10 +500,6 @@ onBeforeUnmount(() => {
 
 .pr-review-diff-viewer__file-section--active .pr-review-diff-viewer__header {
   border-left-color: var(--gitpulse-info);
-}
-
-.pr-review-diff-viewer__file-section--collapsed .pr-review-diff-viewer__header {
-  border-bottom-color: transparent;
 }
 
 .pr-review-diff-viewer__header-chevron {
@@ -536,6 +545,10 @@ onBeforeUnmount(() => {
 .pr-review-diff-viewer__file-section {
   min-width: 100%;
   border-bottom: 1px solid var(--gitpulse-border);
+}
+
+.pr-review-diff-viewer__file-section--collapsed {
+  border-bottom-color: transparent;
 }
 
 .pr-review-diff-viewer__status-tag--added {
