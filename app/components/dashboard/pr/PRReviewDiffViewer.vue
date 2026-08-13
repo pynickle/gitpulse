@@ -74,6 +74,20 @@ const reviewThreadsByFile = computed(() => {
   return grouped;
 });
 
+const FILE_STATUS_LABEL_KEYS: Record<string, string> = {
+  added: 'prReview.fileStatus.added',
+  removed: 'prReview.fileStatus.removed',
+  modified: 'prReview.fileStatus.modified',
+  renamed: 'prReview.fileStatus.renamed',
+  copied: 'prReview.fileStatus.copied',
+  changed: 'prReview.fileStatus.changed',
+};
+
+const fileStatusLabel = (status: string) => {
+  const key = FILE_STATUS_LABEL_KEYS[status];
+  return key ? t(key) : status;
+};
+
 const toggleFileCollapse = (filename: string) => {
   const updated = new Set(collapsedFiles.value);
   if (updated.has(filename)) {
@@ -340,7 +354,7 @@ onBeforeUnmount(() => {
             aria-hidden="true"
           />
           <div class="pr-review-diff-viewer__header-info">
-            <h2 class="title is-6 mb-1">
+            <h2 class="title is-6 mb-0">
               <a
                 v-if="opensGitHubLinks && getFilePreferredHref(section.file.filename)"
                 :href="getFilePreferredHref(section.file.filename)!"
@@ -365,14 +379,25 @@ onBeforeUnmount(() => {
               {{ t('prReview.renamedFrom', { filename: section.file.previous_filename }) }}
             </p>
           </div>
-          <div class="tags mb-0">
+          <div class="pr-review-diff-viewer__header-meta">
             <span
-              class="tag"
-              :class="`pr-review-diff-viewer__status-tag--${section.file.status}`"
-              >{{ section.file.status }}</span
+              class="pr-review-diff-viewer__status"
+              :class="`pr-review-diff-viewer__status--${section.file.status}`"
             >
-            <span class="tag is-success is-light">+{{ section.file.additions }}</span>
-            <span class="tag is-danger is-light">-{{ section.file.deletions }}</span>
+              {{ fileStatusLabel(section.file.status) }}
+            </span>
+            <span
+              v-if="section.file.additions"
+              class="pr-review-diff-viewer__stat pr-review-diff-viewer__stat--add"
+            >
+              +{{ section.file.additions }}
+            </span>
+            <span
+              v-if="section.file.deletions"
+              class="pr-review-diff-viewer__stat pr-review-diff-viewer__stat--delete"
+            >
+              -{{ section.file.deletions }}
+            </span>
           </div>
         </div>
 
@@ -515,10 +540,59 @@ html.dark .pr-review-diff-viewer__header {
 .pr-review-diff-viewer__header-info {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
 }
 
 .pr-review-diff-viewer__header-info .title {
   font-size: 0.875rem;
+}
+
+.pr-review-diff-viewer__header-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-review-diff-viewer__status,
+.pr-review-diff-viewer__stat {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.pr-review-diff-viewer__status {
+  color: var(--gitpulse-text-muted);
+}
+
+.pr-review-diff-viewer__status--added {
+  color: var(--gitpulse-success);
+}
+
+.pr-review-diff-viewer__status--removed {
+  color: var(--gitpulse-danger);
+}
+
+.pr-review-diff-viewer__status--modified,
+.pr-review-diff-viewer__status--changed {
+  color: var(--gitpulse-warning);
+}
+
+.pr-review-diff-viewer__status--renamed,
+.pr-review-diff-viewer__status--copied {
+  color: var(--gitpulse-purple);
+}
+
+.pr-review-diff-viewer__stat--add {
+  color: var(--gitpulse-success);
+}
+
+.pr-review-diff-viewer__stat--delete {
+  color: var(--gitpulse-danger);
 }
 
 .pr-review-diff-viewer__body {
@@ -549,26 +623,6 @@ html.dark .pr-review-diff-viewer__header {
 
 .pr-review-diff-viewer__file-section--collapsed {
   border-bottom-color: transparent;
-}
-
-.pr-review-diff-viewer__status-tag--added {
-  background: var(--gitpulse-success-soft);
-  color: var(--gitpulse-success);
-}
-
-.pr-review-diff-viewer__status-tag--modified {
-  background: var(--gitpulse-info-soft);
-  color: var(--gitpulse-info);
-}
-
-.pr-review-diff-viewer__status-tag--removed {
-  background: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
-}
-
-.pr-review-diff-viewer__status-tag--renamed {
-  background: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-muted);
 }
 
 .pr-review-diff-viewer__empty {

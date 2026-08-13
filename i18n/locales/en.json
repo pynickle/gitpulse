@@ -875,6 +875,14 @@
     "filesShort": "Files",
     "added": "Added",
     "removed": "Removed",
+    "fileStatus": {
+      "added": "Added",
+      "removed": "Removed",
+      "modified": "Modified",
+      "renamed": "Renamed",
+      "copied": "Copied",
+      "changed": "Changed"
+    },
     "files": "Changed files",
     "filesCount": "{count} files",
     "commitFallbackTitle": "Commit",
