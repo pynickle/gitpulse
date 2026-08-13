@@ -17,6 +17,7 @@ import { TAB_GROUP_SOURCES } from '#shared/types/tab-groups';
 import {
   APP_FONT_IDS,
   CODE_FONT_IDS,
+  COMPOSER_LAYOUT_IDS,
   LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
@@ -106,6 +107,16 @@ const layoutSettingsPatchSchema = z
   })
   .refine((layout) => Object.keys(layout).length > 0, {
     message: 'At least one layout setting is required',
+  });
+
+const composerLayoutSchema = z.enum(COMPOSER_LAYOUT_IDS);
+const composerSettingsPatchSchema = z
+  .strictObject({
+    conversationDefaultLayout: composerLayoutSchema.optional(),
+    reviewInlineDefaultLayout: composerLayoutSchema.optional(),
+  })
+  .refine((composer) => Object.keys(composer).length > 0, {
+    message: 'At least one composer setting is required',
   });
 
 const tabGroupSchema = z.strictObject({
@@ -241,6 +252,7 @@ export const userSettingsPatchSchema = z
     notificationBehavior: notificationBehaviorSettingsPatchSchema.optional(),
     navigation: navigationSettingsPatchSchema.optional(),
     layout: layoutSettingsPatchSchema.optional(),
+    composer: composerSettingsPatchSchema.optional(),
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
+
 const props = defineProps<{
   path: string;
   line: number;
   body: string;
   submitting: boolean;
+  repoOwner: string;
+  repoName: string;
 }>();
 
 const emit = defineEmits<{
@@ -24,12 +28,14 @@ const trimmedDraft = computed(() => draft.value.trim());
 
 <template>
   <div class="pr-review-inline-comment">
-    <textarea
+    <MarkdownComposer
       v-model="draft"
-      class="textarea pr-review-inline-comment__textarea"
+      surface="review-inline"
+      :repo-owner="repoOwner"
+      :repo-name="repoName"
       :placeholder="t('prReview.inlinePlaceholder')"
-      rows="4"
       :disabled="submitting"
+      compact
     />
     <div class="buttons is-justify-content-flex-end mt-2 mb-0">
       <button
@@ -58,11 +64,5 @@ const trimmedDraft = computed(() => draft.value.trim());
   border-top: 1px solid var(--gitpulse-border);
   border-bottom: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-draft-bg);
-}
-
-.pr-review-inline-comment__textarea {
-  min-height: 7rem;
-  border-radius: 6px;
-  font-family: inherit;
 }
 </style>

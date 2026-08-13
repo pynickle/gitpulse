@@ -3,6 +3,7 @@ import { computed, readonly, watch } from 'vue';
 
 import type {
   UserAppearanceSettings,
+  UserComposerSettings,
   UserFontSettings,
   UserLayoutSettings,
   UserNavigationSettings,
@@ -53,6 +54,7 @@ export interface UserSettingsStore {
   ) => Promise<UserSettings | null>;
   updateNavigation: (navigation: Partial<UserNavigationSettings>) => Promise<UserSettings | null>;
   updateLayout: (layout: Partial<UserLayoutSettings>) => Promise<UserSettings | null>;
+  updateComposer: (composer: Partial<UserComposerSettings>) => Promise<UserSettings | null>;
   handleLoginChanged: () => void;
   ensureLoginWatcher: () => void;
 }
@@ -386,6 +388,10 @@ export function createUserSettingsActions({
     return updateSettings({ layout });
   };
 
+  const updateComposer = (composer: Partial<UserComposerSettings>) => {
+    return updateSettings({ composer });
+  };
+
   const handleLoginChanged = () => {
     syncActiveLogin();
   };
@@ -423,6 +429,7 @@ export function createUserSettingsActions({
     updateNotificationBehavior,
     updateNavigation,
     updateLayout,
+    updateComposer,
     handleLoginChanged,
     ensureLoginWatcher,
   };

@@ -335,6 +335,8 @@ onBeforeUnmount(clearGridAnimationFallback);
         :submitting="review.submitting.value"
         :error-message="review.submitError.value"
         :collapsed="reviewPanelCollapsed"
+        :repo-owner="owner"
+        :repo-name="repo"
         @update:event="review.selectedEvent.value = $event"
         @update:body="review.draftBody.value = $event"
         @update:collapsed="setReviewPanelCollapsed"

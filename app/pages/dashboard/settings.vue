@@ -13,9 +13,11 @@ import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import {
+  COMPOSER_LAYOUT_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   type AppFontId,
   type CodeFontId,
+  type ComposerLayoutId,
   type LinkTargetId,
   type NotificationReadMarkDelaySeconds,
   type NotificationReadMarkMode,
@@ -44,6 +46,7 @@ const {
   loadSettings,
   updateFonts,
   updateAppearance,
+  updateComposer,
   updateNavigation,
   updateNotificationBehavior,
 } = useUserSettings();
@@ -119,6 +122,17 @@ const shikiDarkDropdownOptions: FilterOption[] = shikiDarkThemeOptions.map((them
   value: theme.id,
   label: theme.label,
 }));
+
+const composerLayoutOptions: FilterOption[] = [
+  {
+    value: 'tabbed',
+    label: t('dashboard.settings.composerLayoutTabbed'),
+  },
+  {
+    value: 'split',
+    label: t('dashboard.settings.composerLayoutSplit'),
+  },
+];
 
 const notificationReadMarkModeOptions: FilterOption[] = [
   {
@@ -228,6 +242,18 @@ const applyLightShikiTheme = (themeId: string) => {
 const applyDarkShikiTheme = (themeId: string) => {
   if (shikiDarkThemeOptions.some((theme) => theme.id === themeId)) {
     void updateAppearance({ shikiDarkTheme: themeId as ShikiDarkThemeId });
+  }
+};
+
+const applyConversationComposerLayout = (layout: string) => {
+  if (COMPOSER_LAYOUT_IDS.includes(layout as ComposerLayoutId)) {
+    void updateComposer({ conversationDefaultLayout: layout as ComposerLayoutId });
+  }
+};
+
+const applyReviewInlineComposerLayout = (layout: string) => {
+  if (COMPOSER_LAYOUT_IDS.includes(layout as ComposerLayoutId)) {
+    void updateComposer({ reviewInlineDefaultLayout: layout as ComposerLayoutId });
   }
 };
 
@@ -497,6 +523,43 @@ onMounted(() => {
                       :placeholder="t('dashboard.settings.shikiDarkThemeLabel')"
                       :aria-label="t('dashboard.settings.shikiDarkThemeLabel')"
                       @update:model-value="applyDarkShikiTheme"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings__section">
+              <h2 class="settings__section-title">
+                {{ t('dashboard.settings.composerSection') }}
+              </h2>
+              <div class="settings__font-card">
+                <div class="settings__font-field">
+                  <label class="settings__label">
+                    {{ t('dashboard.settings.conversationComposerLayoutLabel') }}
+                  </label>
+                  <div class="settings__dropdown-row">
+                    <FilterDropdown
+                      :model-value="settings.composer.conversationDefaultLayout"
+                      :options="composerLayoutOptions"
+                      :placeholder="t('dashboard.settings.conversationComposerLayoutLabel')"
+                      :aria-label="t('dashboard.settings.conversationComposerLayoutLabel')"
+                      @update:model-value="applyConversationComposerLayout"
+                    />
+                  </div>
+                </div>
+
+                <div class="settings__font-field">
+                  <label class="settings__label">
+                    {{ t('dashboard.settings.reviewInlineComposerLayoutLabel') }}
+                  </label>
+                  <div class="settings__dropdown-row">
+                    <FilterDropdown
+                      :model-value="settings.composer.reviewInlineDefaultLayout"
+                      :options="composerLayoutOptions"
+                      :placeholder="t('dashboard.settings.reviewInlineComposerLayoutLabel')"
+                      :aria-label="t('dashboard.settings.reviewInlineComposerLayoutLabel')"
+                      @update:model-value="applyReviewInlineComposerLayout"
                     />
                   </div>
                 </div>

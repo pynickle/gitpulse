@@ -28,6 +28,7 @@ import type {
   ShikiDarkThemeId,
   ShikiLightThemeId,
   UserAppearanceSettings,
+  UserComposerSettings,
   UserFontSettings,
   UserLayoutSettings,
   UserNavigationSettings,
@@ -56,6 +57,7 @@ import {
 import {
   APP_FONT_IDS,
   CODE_FONT_IDS,
+  COMPOSER_LAYOUT_IDS,
   LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
@@ -113,6 +115,11 @@ export const DEFAULT_USER_NAVIGATION_SETTINGS: UserNavigationSettings = {
 
 export const DEFAULT_USER_LAYOUT_SETTINGS: UserLayoutSettings = {
   tabSidebarWidth: TAB_SIDEBAR_WIDTH_DEFAULT,
+};
+
+export const DEFAULT_USER_COMPOSER_SETTINGS: UserComposerSettings = {
+  conversationDefaultLayout: 'split',
+  reviewInlineDefaultLayout: 'tabbed',
 };
 
 const hasOwn = (value: object, key: string) => {
@@ -208,6 +215,7 @@ export function createDefaultUserSettings(): UserSettings {
     notificationBehavior: { ...DEFAULT_USER_NOTIFICATION_BEHAVIOR_SETTINGS },
     navigation: { ...DEFAULT_USER_NAVIGATION_SETTINGS },
     layout: { ...DEFAULT_USER_LAYOUT_SETTINGS },
+    composer: { ...DEFAULT_USER_COMPOSER_SETTINGS },
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
@@ -736,6 +744,26 @@ export function normalizeUserNavigationSettings(
   };
 }
 
+export function normalizeUserComposerSettings(
+  value: unknown,
+  fallback: UserComposerSettings = DEFAULT_USER_COMPOSER_SETTINGS
+): UserComposerSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback };
+  }
+
+  const candidate = value as Partial<UserComposerSettings>;
+
+  return {
+    conversationDefaultLayout: isOneOf(COMPOSER_LAYOUT_IDS, candidate.conversationDefaultLayout)
+      ? candidate.conversationDefaultLayout
+      : fallback.conversationDefaultLayout,
+    reviewInlineDefaultLayout: isOneOf(COMPOSER_LAYOUT_IDS, candidate.reviewInlineDefaultLayout)
+      ? candidate.reviewInlineDefaultLayout
+      : fallback.reviewInlineDefaultLayout,
+  };
+}
+
 export function normalizeUserLayoutSettings(
   value: unknown,
   fallback: UserLayoutSettings = DEFAULT_USER_LAYOUT_SETTINGS
@@ -766,6 +794,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       notificationBehavior: { ...fallback.notificationBehavior },
       navigation: { ...fallback.navigation },
       layout: { ...fallback.layout },
+      composer: { ...fallback.composer },
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
@@ -784,6 +813,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
     ),
     navigation: normalizeUserNavigationSettings(candidate.navigation, fallback.navigation),
     layout: normalizeUserLayoutSettings(candidate.layout, fallback.layout),
+    composer: normalizeUserComposerSettings(candidate.composer, fallback.composer),
     tabGroups: normalizeTabGroups(candidate.tabGroups, fallback.tabGroups),
     customTabs: normalizeCustomTabs(candidate.customTabs, fallback.customTabs),
     notificationTodos: normalizeNotificationTodos(
@@ -828,6 +858,9 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
     layout: hasOwn(candidate, 'layout')
       ? normalizeUserLayoutSettings({ ...base.layout, ...candidate.layout }, base.layout)
       : { ...base.layout },
+    composer: hasOwn(candidate, 'composer')
+      ? normalizeUserComposerSettings({ ...base.composer, ...candidate.composer }, base.composer)
+      : { ...base.composer },
     tabGroups: hasOwn(candidate, 'tabGroups')
       ? normalizeTabGroups(candidate.tabGroups, base.tabGroups)
       : cloneTabGroups(base.tabGroups),

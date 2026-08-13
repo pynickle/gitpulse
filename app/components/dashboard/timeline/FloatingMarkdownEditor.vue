@@ -6,6 +6,7 @@
       {
         'floating-markdown-editor--expanded': isExpanded,
         'floating-markdown-editor--compact': compact,
+        'floating-markdown-editor--bleed': isBleeding,
       },
     ]"
     :aria-hidden="isAnyModalOpen ? 'true' : undefined"
@@ -21,7 +22,6 @@
       <p class="is-size-7">{{ errorMessage }}</p>
     </div>
 
-    <!-- Collapsed capsule (non-compact mode only) -->
     <button
       v-if="!compact && !isExpanded"
       class="floating-markdown-editor__capsule button is-light"
@@ -45,135 +45,95 @@
       </span>
     </button>
 
-    <!-- Expanded panel -->
-    <div v-if="compact || isExpanded" class="floating-markdown-editor__panel">
-      <div class="floating-markdown-editor__header">
-        <div class="floating-markdown-editor__tabs tabs is-small mb-0">
-          <ul>
-            <li :class="{ 'is-active': activeTab === 'write' }">
-              <a href="#" @click.prevent="activeTab = 'write'">
-                {{ t('floatingMarkdownEditor.writeTab') }}
-              </a>
-            </li>
-            <li :class="{ 'is-active': activeTab === 'preview' }">
-              <a href="#" @click.prevent="activeTab = 'preview'">
-                {{ t('floatingMarkdownEditor.previewTab') }}
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div class="floating-markdown-editor__header-meta">
-          <span v-if="!compact" class="is-size-7 has-text-weight-medium has-text-grey">{{
-            currentUserLogin
-          }}</span>
-          <GitHubAvatar
-            variant="raised"
-            interactive
-            width="22"
-            height="22"
-            :src="currentUserAvatar"
-            :alt="currentUserLogin"
-            class="floating-markdown-editor__avatar"
-          />
-        </div>
-      </div>
+    <div
+      v-if="isBleeding"
+      ref="placeholderRef"
+      class="floating-markdown-editor__bleed-spacer floating-markdown-editor__bleed-spacer--active"
+      :style="{ height: `${bleedPanelHeight}px` }"
+      aria-hidden="true"
+    />
 
-      <div class="floating-markdown-editor__content-area">
-        <textarea
-          ref="textareaRef"
-          :value="draft"
-          class="textarea floating-markdown-editor__textarea"
-          :class="{ 'floating-markdown-editor__textarea--hidden': activeTab !== 'write' }"
-          role="combobox"
-          :rows="compact ? 4 : 6"
+    <Teleport :to="bleedTarget" :disabled="!isBleeding">
+      <div
+        v-if="compact || isExpanded"
+        v-show="!isAnyModalOpen"
+        ref="panelRef"
+        class="floating-markdown-editor__panel"
+        :class="{ 'floating-markdown-editor__panel--bleed': isBleeding }"
+        :style="isBleeding ? bleedStyle : undefined"
+        :aria-hidden="isAnyModalOpen ? 'true' : undefined"
+        :inert="isAnyModalOpen || undefined"
+      >
+        <MarkdownComposer
+          ref="composerRef"
+          v-model="draft"
+          :surface="composerSurface"
+          :repo-owner="repoOwner"
+          :repo-name="repoName"
           :placeholder="placeholder"
           :disabled="isSubmitting"
-          :aria-expanded="mentionOpen"
-          :aria-controls="mentionListboxId"
-          :aria-activedescendant="
-            mentionActiveIndex >= 0 ? `${mentionComponentId}-opt-${mentionActiveIndex}` : undefined
-          "
-          aria-haspopup="listbox"
-          autocomplete="off"
-          @input="handleDraftInput"
-          @keydown="handleTextareaKeydown"
-          @keyup="handleTextareaKeyup"
-          @click="refreshMentionTrigger"
-          @select="refreshMentionTrigger"
-        />
-
-        <div
-          class="floating-markdown-editor__preview content"
-          :class="{ 'floating-markdown-editor__preview--hidden': activeTab !== 'preview' }"
+          :compact="compact"
+          :autofocus="autofocus || isExpanded"
+          :expanded="compact || isExpanded"
+          @update:bleed="composerBleed = $event"
         >
-          <MarkdownRenderer
-            v-if="trimmedDraft"
-            :value="draft"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
-          />
-          <p v-else class="has-text-grey is-size-7 mb-0">
-            {{ t('floatingMarkdownEditor.previewEmpty') }}
+          <template #header-meta>
+            <span v-if="!compact" class="is-size-7 has-text-weight-medium has-text-grey">{{
+              currentUserLogin
+            }}</span>
+            <GitHubAvatar
+              variant="raised"
+              interactive
+              width="22"
+              height="22"
+              :src="currentUserAvatar"
+              :alt="currentUserLogin"
+              class="floating-markdown-editor__avatar"
+            />
+          </template>
+        </MarkdownComposer>
+
+        <div class="floating-markdown-editor__footer">
+          <p class="is-size-7 has-text-grey mb-0">
+            {{ t('floatingMarkdownEditor.markdownHint') }}
           </p>
-        </div>
-
-        <AutocompleteMenu
-          :open="mentionOpen"
-          :suggestions="mentionSuggestions"
-          :query="mentionQuery"
-          :active-index="mentionActiveIndex"
-          :listbox-id="mentionListboxId"
-          :option-id-prefix="mentionComponentId"
-          :panel-style="mentionPanelStyle"
-          :loading="mentionMenuLoading"
-          :empty-message="mentionEmptyMessage"
-          :aria-label="t('floatingMarkdownEditor.mentionSuggestions')"
-          @select="insertMentionSuggestion"
-          @activate="mentionActiveIndex = $event"
-        />
-      </div>
-
-      <div class="floating-markdown-editor__footer">
-        <p class="is-size-7 has-text-grey mb-0">
-          {{ t('floatingMarkdownEditor.markdownHint') }}
-        </p>
-        <div class="floating-markdown-editor__footer-actions">
-          <button
-            class="button is-light is-small"
-            type="button"
-            :disabled="isSubmitting"
-            @click="collapseComposer"
-          >
-            {{ t('floatingMarkdownEditor.cancel') }}
-          </button>
-          <button
-            class="button is-link is-small"
-            type="button"
-            :class="{ 'is-loading': isSubmitting }"
-            :disabled="isSubmitting || !trimmedDraft || !canSubmit"
-            @click="handleSubmit"
-          >
-            {{ isSubmitting ? submittingLabel : submitLabel }}
-          </button>
+          <div class="floating-markdown-editor__footer-actions">
+            <button
+              class="button is-light is-small"
+              type="button"
+              :disabled="isSubmitting"
+              @click="collapseComposer"
+            >
+              {{ t('floatingMarkdownEditor.cancel') }}
+            </button>
+            <button
+              class="button is-link is-small"
+              type="button"
+              :class="{ 'is-loading': isSubmitting }"
+              :disabled="isSubmitting || !trimmedDraft || !canSubmit"
+              @click="handleSubmit"
+            >
+              {{ isSubmitting ? submittingLabel : submitLabel }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, shallowRef, useId, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, shallowRef, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import type { MentionSuggestionsResponse } from '#shared/types/mention-suggestions';
 import {
-  findMarkdownMentionTrigger,
-  type MarkdownMentionTrigger,
-} from '#shared/utils/markdown-mentions';
-import type { AutocompleteSuggestion } from '~/components/ui/autocomplete';
-import AutocompleteMenu from '~/components/ui/AutocompleteMenu.vue';
+  COMPOSER_BLEED_MAX_VIEWPORT_WIDTH,
+  resolveComposerInitialLayout,
+  shouldComposerBleed,
+  type ComposerSurface,
+} from '#shared/utils/composer-presentation';
+import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 interface CreatedCommentResponse {
   id?: number | string;
@@ -211,18 +171,14 @@ const props = withDefaults(
   defineProps<{
     repoOwner: string;
     repoName: string;
-    // Mode 1: Self-submit (for issue/PR)
     itemNumber?: number | null;
-    // Mode 2: Callback submit (for discussion)
     submit?: SubmitHandler | null;
-    // Configuration
     placeholder?: string;
     submitLabel?: string;
     submittingLabel?: string;
     modelValue?: string;
     compact?: boolean;
     autofocus?: boolean;
-    // External state (for callback mode)
     submitting?: boolean;
   }>(),
   {
@@ -252,46 +208,50 @@ const apiFetch = useGitPulseApiFetch();
 const { user } = useUserSession();
 const { isAnyModalOpen } = useModalState();
 
-const textareaRef = useTemplateRef<HTMLTextAreaElement>('textareaRef');
-const mentionComponentId = useId();
-const mentionListboxId = `${mentionComponentId}-mentions`;
+const composerRef = useTemplateRef<InstanceType<typeof MarkdownComposer>>('composerRef');
+const placeholderRef = useTemplateRef<HTMLElement>('placeholderRef');
+const panelRef = useTemplateRef<HTMLElement>('panelRef');
 const isExpanded = shallowRef(false);
 const internalSubmitting = shallowRef(false);
-const activeTab = shallowRef<'write' | 'preview'>('write');
 const draft = shallowRef(props.modelValue ?? '');
 const errorMessage = shallowRef('');
-const mentionTrigger = shallowRef<MarkdownMentionTrigger | null>(null);
-const mentionQuery = shallowRef('');
-const mentionSuggestions = shallowRef<AutocompleteSuggestion[]>([]);
-const mentionLoading = shallowRef(false);
-const mentionLoadFailed = shallowRef(false);
-const mentionActiveIndex = shallowRef(-1);
-const mentionAnchorReady = shallowRef(false);
+const { settings } = useUserSettings();
+const composerSurface = computed<ComposerSurface>(() =>
+  props.compact ? 'conversation-reply' : 'conversation-sticky'
+);
 
-let mentionSearchTimer: ReturnType<typeof setTimeout> | null = null;
-let mentionSearchRequestId = 0;
+const seedBleedFromSettings = () => {
+  const isNarrowViewport =
+    import.meta.client &&
+    window.matchMedia(`(max-width: ${COMPOSER_BLEED_MAX_VIEWPORT_WIDTH}px)`).matches;
+
+  composerBleed.value = shouldComposerBleed({
+    surface: composerSurface.value,
+    layout: resolveComposerInitialLayout(composerSurface.value, settings.value.composer),
+    expanded: true,
+    viewportWidth: isNarrowViewport
+      ? COMPOSER_BLEED_MAX_VIEWPORT_WIDTH
+      : COMPOSER_BLEED_MAX_VIEWPORT_WIDTH + 1,
+  });
+};
+
+const composerBleed = shallowRef(false);
+seedBleedFromSettings();
+
+const isBleeding = computed(() => composerBleed.value && !props.compact && isExpanded.value);
+const {
+  bleedStyle,
+  panelHeight: bleedPanelHeight,
+  bleedTarget,
+} = useComposerBleedPosition({
+  enabled: isBleeding,
+  placeholder: placeholderRef,
+  panel: panelRef,
+});
 
 const trimmedDraft = computed(() => draft.value.trim());
-// Empty values fall back to GitHubAvatar's placeholder icon instead of a 404 image.
 const currentUserLogin = computed(() => user.value?.login || '');
 const currentUserAvatar = computed(() => user.value?.avatar_url || '');
-const mentionOpen = computed(
-  () =>
-    Boolean(mentionTrigger.value) &&
-    mentionAnchorReady.value &&
-    activeTab.value === 'write' &&
-    !isSubmitting.value
-);
-const mentionEmptyMessage = computed(() =>
-  mentionLoadFailed.value
-    ? t('floatingMarkdownEditor.mentionSuggestionsUnavailable')
-    : t('floatingMarkdownEditor.mentionSuggestionsEmpty')
-);
-const mentionMenuLoading = computed(
-  () => mentionLoading.value && mentionSuggestions.value.length === 0 && !mentionLoadFailed.value
-);
-
-// Determine submission mode
 const isSelfSubmitMode = computed(() => props.itemNumber != null);
 const isCallbackMode = computed(() => props.submit != null);
 const canSubmit = computed(() => {
@@ -300,299 +260,60 @@ const canSubmit = computed(() => {
   }
   return isCallbackMode.value;
 });
-
-// Use external submitting state in callback mode, internal in self-submit mode
 const isSubmitting = computed(() => {
   if (isCallbackMode.value) {
     return props.submitting;
   }
   return internalSubmitting.value;
 });
-
-// Default labels
 const placeholder = computed(() => props.placeholder || t('floatingMarkdownEditor.placeholder'));
 const submitLabel = computed(() => props.submitLabel || t('floatingMarkdownEditor.submit'));
 const submittingLabel = computed(
   () => props.submittingLabel || t('floatingMarkdownEditor.submitting')
 );
 
-const MENTION_PANEL_GAP = 4;
-const MENTION_PANEL_VIEWPORT_MARGIN = 8;
-const MENTION_PANEL_MIN_WIDTH = 240;
-const MENTION_PANEL_MAX_WIDTH = 360;
-const MENTION_PANEL_MAX_HEIGHT = 280;
-const MENTION_PANEL_MIN_HEIGHT = 120;
-
-const getMentionSuggestionsUrl = () =>
-  `/api/repos/${encodeURIComponent(props.repoOwner)}/${encodeURIComponent(
-    props.repoName
-  )}/mention-suggestions`;
-
-const closeMentionAutocomplete = () => {
-  mentionTrigger.value = null;
-  mentionAnchorReady.value = false;
-  mentionActiveIndex.value = -1;
-  mentionLoading.value = false;
-  mentionLoadFailed.value = false;
-  if (mentionSearchTimer) {
-    clearTimeout(mentionSearchTimer);
-    mentionSearchTimer = null;
-  }
-  mentionSearchRequestId += 1;
-};
-
-const getMentionInlineAnchor = (): { x: number; y: number; height: number } | null => {
-  const el = textareaRef.value;
-  if (!el) return null;
-
-  const trigger = mentionTrigger.value;
-  if (!trigger) return null;
-
-  return getTextareaCaretAnchorRect(el, trigger.start);
-};
-
-const { panelStyle: mentionPanelStyle, updatePanelPosition: updateMentionPanelPosition } =
-  useAutocompletePanel({
-    isOpen: mentionOpen,
-    listboxId: mentionListboxId,
-    getAnchor: () => textareaRef.value,
-    getInlineAnchor: getMentionInlineAnchor,
-    requireInlineAnchor: true,
-    onClose: closeMentionAutocomplete,
-    gap: MENTION_PANEL_GAP,
-    viewportMargin: MENTION_PANEL_VIEWPORT_MARGIN,
-    minWidth: MENTION_PANEL_MIN_WIDTH,
-    maxWidth: MENTION_PANEL_MAX_WIDTH,
-    maxHeight: MENTION_PANEL_MAX_HEIGHT,
-    minHeight: MENTION_PANEL_MIN_HEIGHT,
-  });
-
-const loadMentionSuggestions = async (query: string) => {
-  const requestId = ++mentionSearchRequestId;
-  mentionLoading.value = true;
-  mentionLoadFailed.value = false;
-
-  try {
-    const response = await apiFetch<MentionSuggestionsResponse>(getMentionSuggestionsUrl(), {
-      query: {
-        q: query,
-      },
-    });
-
-    if (requestId !== mentionSearchRequestId) {
-      return;
-    }
-
-    mentionSuggestions.value = response.items.map((item) => ({
-      value: item.login,
-      label: item.login,
-      description: item.name && item.name !== item.login ? item.name : undefined,
-      avatarUrl: item.avatarUrl,
-    }));
-    mentionLoadFailed.value = false;
-    mentionActiveIndex.value = mentionSuggestions.value.length > 0 ? 0 : -1;
-  } catch {
-    if (requestId === mentionSearchRequestId) {
-      mentionSuggestions.value = [];
-      mentionLoadFailed.value = true;
-      mentionActiveIndex.value = -1;
-    }
-  } finally {
-    if (requestId === mentionSearchRequestId) {
-      mentionLoading.value = false;
-    }
-  }
-};
-
-const scheduleMentionSearch = (query: string) => {
-  if (mentionSearchTimer) {
-    clearTimeout(mentionSearchTimer);
-  }
-
-  mentionLoadFailed.value = false;
-  mentionSearchTimer = setTimeout(() => {
-    mentionSearchTimer = null;
-    void loadMentionSuggestions(query);
-  }, 150);
-};
-
-const refreshMentionTrigger = () => {
-  const el = textareaRef.value;
-  if (!el || activeTab.value !== 'write' || isSubmitting.value) {
-    closeMentionAutocomplete();
-    return;
-  }
-
-  if (el.selectionStart !== el.selectionEnd) {
-    closeMentionAutocomplete();
-    return;
-  }
-
-  const trigger = findMarkdownMentionTrigger(draft.value, el.selectionStart);
-  if (!trigger) {
-    closeMentionAutocomplete();
-    return;
-  }
-
-  const previousTrigger = mentionTrigger.value;
-  const anchorChanged = previousTrigger?.start !== trigger.start;
-  const queryChanged = trigger.query !== mentionQuery.value || !previousTrigger;
-  mentionTrigger.value = trigger;
-  mentionQuery.value = trigger.query;
-  if (anchorChanged || !mentionAnchorReady.value) {
-    mentionAnchorReady.value = updateMentionPanelPosition();
-  }
-
-  if (queryChanged) {
-    scheduleMentionSearch(trigger.query);
-  }
-};
-
-const moveMentionActive = (direction: 1 | -1) => {
-  const len = mentionSuggestions.value.length;
-  if (!len) return;
-
-  if (mentionActiveIndex.value < 0) {
-    mentionActiveIndex.value = direction === 1 ? 0 : len - 1;
-  } else {
-    mentionActiveIndex.value = (mentionActiveIndex.value + direction + len) % len;
-  }
-};
-
-const insertMentionSuggestion = async (suggestion: AutocompleteSuggestion) => {
-  const trigger = mentionTrigger.value;
-  if (!trigger) return;
-
-  const mentionText = `@${suggestion.value} `;
-  const nextDraft =
-    draft.value.slice(0, trigger.start) + mentionText + draft.value.slice(trigger.end);
-  const nextCaret = trigger.start + mentionText.length;
-
-  setDraft(nextDraft);
-  closeMentionAutocomplete();
-  await nextTick();
-  const el = textareaRef.value;
-  if (el) {
-    el.focus();
-    el.setSelectionRange(nextCaret, nextCaret);
-  }
-  autoResizeTextarea();
-};
-
-const handleTextareaKeydown = (event: KeyboardEvent) => {
-  if (!mentionOpen.value) {
-    return;
-  }
-
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    closeMentionAutocomplete();
-    return;
-  }
-
-  if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    moveMentionActive(1);
-    return;
-  }
-
-  if (event.key === 'ArrowUp') {
-    event.preventDefault();
-    moveMentionActive(-1);
-    return;
-  }
-
-  if ((event.key === 'Enter' || event.key === 'Tab') && !event.isComposing) {
-    const suggestion =
-      mentionSuggestions.value[mentionActiveIndex.value] ?? mentionSuggestions.value[0];
-    if (!suggestion) {
-      return;
-    }
-
-    event.preventDefault();
-    void insertMentionSuggestion(suggestion);
-  }
-};
-
-const handleTextareaKeyup = (event: KeyboardEvent) => {
-  if (mentionOpen.value && ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab'].includes(event.key)) {
-    return;
-  }
-
-  refreshMentionTrigger();
-};
-
-const focus = async () => {
-  await nextTick();
-  textareaRef.value?.focus();
-};
-
 const setDraft = (value: string) => {
   draft.value = value;
   emit('update:modelValue', value);
 };
 
-const autoResizeTextarea = () => {
-  const el = textareaRef.value;
-  if (!el) return;
-  el.style.height = 'auto';
-  el.style.height = `${el.scrollHeight}px`;
-};
-
-const handleDraftInput = (event: Event) => {
-  setDraft((event.target as HTMLTextAreaElement).value);
-  autoResizeTextarea();
-  refreshMentionTrigger();
-};
-
-// Auto-resize textarea when switching to write tab
-watch(activeTab, async (tab) => {
-  if (tab === 'write') {
-    await nextTick();
-    autoResizeTextarea();
-    refreshMentionTrigger();
-  } else {
-    closeMentionAutocomplete();
+watch(draft, (value) => {
+  if (value !== props.modelValue) {
+    emit('update:modelValue', value);
   }
 });
 
 watch(
   () => props.modelValue,
-  async (value) => {
+  (value) => {
     if (value === undefined || value === draft.value) return;
-
     draft.value = value;
-    await nextTick();
-    autoResizeTextarea();
-    closeMentionAutocomplete();
   }
 );
 
+const focus = async () => {
+  await nextTick();
+  composerRef.value?.focus();
+};
+
 const expandComposer = async () => {
+  seedBleedFromSettings();
   isExpanded.value = true;
-  activeTab.value = 'write';
   emit('expanded');
   await nextTick();
-  autoResizeTextarea();
-  textareaRef.value?.focus();
+  composerRef.value?.seedLayout();
+  await focus();
+};
+
+const reset = () => {
+  setDraft('');
+  errorMessage.value = '';
 };
 
 const collapseComposer = () => {
   isExpanded.value = false;
   reset();
   emit('collapsed');
-};
-
-const reset = () => {
-  setDraft('');
-  errorMessage.value = '';
-  activeTab.value = 'write';
-  closeMentionAutocomplete();
-  // Reset textarea height
-  const el = textareaRef.value;
-  if (el) {
-    el.style.height = 'auto';
-  }
 };
 
 const handleSubmit = async () => {
@@ -610,10 +331,8 @@ const handleSubmit = async () => {
 
   try {
     if (isSelfSubmitMode.value && props.itemNumber) {
-      // Self-submit mode: call API directly
       await selfSubmit();
     } else if (isCallbackMode.value && props.submit) {
-      // Callback mode: call parent's submit function
       await props.submit(trimmedDraft.value);
       emit('submitted');
     }
@@ -621,6 +340,8 @@ const handleSubmit = async () => {
     reset();
     if (!props.compact) {
       isExpanded.value = false;
+    } else {
+      composerRef.value?.seedLayout();
     }
   } catch (error: unknown) {
     const message =
@@ -672,23 +393,6 @@ if (props.autofocus) {
   isExpanded.value = true;
   void focus();
 }
-
-// Auto-resize textarea on mount for compact mode
-if (props.compact) {
-  void nextTick().then(() => autoResizeTextarea());
-}
-
-watch(
-  () => [props.repoOwner, props.repoName],
-  () => {
-    closeMentionAutocomplete();
-    mentionSuggestions.value = [];
-  }
-);
-
-onBeforeUnmount(() => {
-  closeMentionAutocomplete();
-});
 
 defineExpose({ focus });
 </script>
@@ -750,6 +454,10 @@ defineExpose({ focus });
   flex: none;
 }
 
+.floating-markdown-editor__bleed-spacer--active {
+  width: 100%;
+}
+
 .floating-markdown-editor__panel {
   border: 1px solid var(--gitpulse-border);
   border-radius: 16px;
@@ -763,106 +471,19 @@ defineExpose({ focus });
     0 8px 16px rgba(0, 0, 0, 0.02);
 }
 
-.floating-markdown-editor__header,
-.floating-markdown-editor__footer {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.floating-markdown-editor__header {
-  margin-bottom: 0.75rem;
+.floating-markdown-editor__panel--bleed {
+  width: auto;
 }
 
 .floating-markdown-editor__avatar {
   flex: none;
 }
 
-.floating-markdown-editor__header-meta {
+.floating-markdown-editor__footer {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.floating-markdown-editor__tabs {
-  min-width: 0;
-
-  &.tabs ul {
-    border-bottom: none !important;
-    gap: 2px;
-  }
-
-  &.tabs li a {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.3rem 0.875rem;
-    font-size: 0.8rem;
-    transition: all 0.15s ease;
-  }
-
-  &.tabs li.is-active a {
-    background: var(--gitpulse-surface-muted, rgba(0, 0, 0, 0.06));
-    border-color: var(--gitpulse-border, rgba(0, 0, 0, 0.12));
-  }
-}
-
-.floating-markdown-editor__content-area {
-  display: grid;
-  max-height: 40vh;
-}
-
-.floating-markdown-editor--compact .floating-markdown-editor__panel {
-  border-radius: 8px;
-  backdrop-filter: none;
-  background: var(--gitpulse-surface);
-  box-shadow: none;
-}
-
-.floating-markdown-editor--compact .floating-markdown-editor__content-area {
-  max-height: 50vh;
-}
-
-.floating-markdown-editor__textarea,
-.floating-markdown-editor__preview {
-  grid-row: 1;
-  grid-column: 1;
-  min-height: 160px;
-  max-height: 40vh;
-  overflow-y: auto;
-  align-self: start;
-}
-
-.floating-markdown-editor--compact .floating-markdown-editor__textarea,
-.floating-markdown-editor--compact .floating-markdown-editor__preview {
-  min-height: 7rem;
-}
-
-.floating-markdown-editor__textarea {
-  resize: none;
-}
-
-.floating-markdown-editor__textarea--hidden {
-  visibility: hidden;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.floating-markdown-editor__preview {
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 8px;
-  padding: 0.875rem;
-  background: var(--gitpulse-surface-muted);
-}
-
-.floating-markdown-editor__preview--hidden {
-  visibility: hidden;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.floating-markdown-editor__footer {
   justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 0.75rem;
 }
 
@@ -870,6 +491,13 @@ defineExpose({ focus });
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.floating-markdown-editor--compact .floating-markdown-editor__panel {
+  border-radius: 8px;
+  backdrop-filter: none;
+  background: var(--gitpulse-surface);
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {

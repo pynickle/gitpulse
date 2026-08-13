@@ -10,6 +10,7 @@ import {
 } from '@lucide/vue';
 import { shallowRef } from 'vue';
 
+import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
 import type { PRReviewDraftComment, PRReviewEvent } from '~/composables/usePRReview';
 
 defineProps<{
@@ -21,6 +22,8 @@ defineProps<{
   submitting: boolean;
   errorMessage: string;
   collapsed: boolean;
+  repoOwner: string;
+  repoName: string;
 }>();
 
 const emit = defineEmits<{
@@ -53,12 +56,6 @@ const toggleSection = (section: string) => {
   }
 
   expandedSections.value = nextSections;
-};
-
-const handleBodyInput = (event: Event) => {
-  if (event.target instanceof HTMLTextAreaElement) {
-    emit('update:body', event.target.value);
-  }
 };
 </script>
 
@@ -147,13 +144,15 @@ const handleBodyInput = (event: Event) => {
             {{ t('prReview.reviewBody') }}
           </button>
           <div v-if="isSectionExpanded('summary')" class="pr-review-submit-bar__section-body">
-            <textarea
-              class="textarea pr-review-submit-bar__textarea"
-              :value="body"
-              rows="6"
+            <MarkdownComposer
+              :model-value="body"
+              surface="review-submit"
+              :repo-owner="repoOwner"
+              :repo-name="repoName"
               :placeholder="t('prReview.reviewBodyPlaceholder')"
               :disabled="submitting"
-              @input="handleBodyInput"
+              compact
+              @update:model-value="emit('update:body', $event)"
             />
             <p class="help mb-0">{{ t('prReview.bodyRequiredHint') }}</p>
           </div>
@@ -458,12 +457,6 @@ const handleBodyInput = (event: Event) => {
   border-color: var(--gitpulse-info);
   background: var(--gitpulse-info-soft);
   color: var(--gitpulse-info);
-}
-
-.pr-review-submit-bar__textarea {
-  min-height: 8rem;
-  border-radius: 6px;
-  font-size: 0.82rem;
 }
 
 .pr-review-submit-bar__count {

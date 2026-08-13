@@ -10,6 +10,7 @@ import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import { COMPOSER_BLEED_LAYER_ID } from '~/composables/useComposerBleedPosition';
 import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 
@@ -364,6 +365,7 @@ watch(activeDetailKey, () => {
             />
           </div>
         </Transition>
+        <div :id="COMPOSER_BLEED_LAYER_ID" class="composer-bleed-layer" />
       </div>
     </DashboardOverlayFrame>
   </Transition>
@@ -375,6 +377,13 @@ watch(activeDetailKey, () => {
   height: 100%;
   min-height: 0;
   background: var(--gitpulse-surface);
+}
+
+.composer-bleed-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
 }
 
 .detail-pane {

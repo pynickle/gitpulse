@@ -7,6 +7,7 @@ export const CODE_FONT_IDS = ['maple-mono', 'jetbrains-mono', 'system'] as const
 export const NOTIFICATION_READ_MARK_MODE_IDS = ['delayed', 'immediate', 'manual'] as const;
 export const NOTIFICATION_READ_MARK_DELAY_SECONDS = [3, 5, 10, 15, 30, 60] as const;
 export const LINK_TARGET_IDS = ['gitpulse', 'github'] as const;
+export const COMPOSER_LAYOUT_IDS = ['tabbed', 'split'] as const;
 export const TAB_SIDEBAR_WIDTH_MIN = 160 as const;
 export const TAB_SIDEBAR_WIDTH_MAX = 420 as const;
 export const TAB_SIDEBAR_WIDTH_DEFAULT = 220 as const;
@@ -35,6 +36,7 @@ export type NotificationReadMarkMode = (typeof NOTIFICATION_READ_MARK_MODE_IDS)[
 export type NotificationReadMarkDelaySeconds =
   (typeof NOTIFICATION_READ_MARK_DELAY_SECONDS)[number];
 export type LinkTargetId = (typeof LINK_TARGET_IDS)[number];
+export type ComposerLayoutId = (typeof COMPOSER_LAYOUT_IDS)[number];
 export type TabSidebarWidth = number;
 export type ShikiLightThemeId = (typeof SHIKI_LIGHT_THEME_IDS)[number];
 export type ShikiDarkThemeId = (typeof SHIKI_DARK_THEME_IDS)[number];
@@ -65,6 +67,11 @@ export interface UserLayoutSettings {
   tabSidebarWidth: TabSidebarWidth;
 }
 
+export interface UserComposerSettings {
+  conversationDefaultLayout: ComposerLayoutId;
+  reviewInlineDefaultLayout: ComposerLayoutId;
+}
+
 export interface NotificationTodoItem {
   id: string;
   addedAt: string;
@@ -78,6 +85,7 @@ export interface UserSettings {
   notificationBehavior: UserNotificationBehaviorSettings;
   navigation: UserNavigationSettings;
   layout: UserLayoutSettings;
+  composer: UserComposerSettings;
   tabGroups: TabGroup[];
   customTabs: CustomTab[];
   notificationTodos: NotificationTodoItem[];
@@ -90,6 +98,7 @@ export interface UserSettingsPatch {
   notificationBehavior?: Partial<UserNotificationBehaviorSettings>;
   navigation?: Partial<UserNavigationSettings>;
   layout?: Partial<UserLayoutSettings>;
+  composer?: Partial<UserComposerSettings>;
   tabGroups?: TabGroup[];
   customTabs?: CustomTab[];
   notificationTodos?: NotificationTodoItem[];

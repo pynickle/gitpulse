@@ -355,6 +355,18 @@ describe('server Zod request validation', () => {
         ],
       })
     ).toThrow('Invalid settings request body');
+    expect(
+      parseUserSettingsPatchBody({
+        composer: { conversationDefaultLayout: 'tabbed' },
+      })
+    ).toEqual({
+      composer: { conversationDefaultLayout: 'tabbed' },
+    });
+    expect(() =>
+      parseUserSettingsPatchBody({
+        composer: { conversationDefaultLayout: 'stacked' },
+      })
+    ).toThrow('Invalid settings request body');
   });
 
   test('validates repository mutation bodies with strict schemas', () => {

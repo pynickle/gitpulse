@@ -24,7 +24,7 @@ const OVERSCAN_ROWS = 6;
 const MIN_VISIBLE_ROWS = 12;
 const DIFF_ROW_ESTIMATED_HEIGHT = 26;
 const HUNK_ROW_ESTIMATED_HEIGHT = 28;
-const INLINE_COMMENT_ESTIMATED_HEIGHT = 180;
+const INLINE_COMMENT_ESTIMATED_HEIGHT = 260;
 const REVIEW_COMMENT_ESTIMATED_HEIGHT = 112;
 const CODE_LINE_TOKEN_CACHE_LIMIT = 2048;
 
@@ -806,6 +806,8 @@ onBeforeUnmount(() => {
         :path="filename"
         :line="virtualRow.row.newLineNumber"
         :body="activeDraftBody"
+        :repo-owner="repoOwner"
+        :repo-name="repoName"
         :submitting="submitting"
         @update:body="emit('update-active-draft-body', $event)"
         @save="(_path, line, body) => handleSaveDraft(line, body)"

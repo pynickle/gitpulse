@@ -47,3 +47,39 @@ _Avoid_: File Header
 **Diff Row**:
 A single context, added, deleted, or replaced line in a file diff.
 _Avoid_: code line when referring to the review row, including its line numbers and comment controls
+
+## Markdown Composer
+
+**Markdown Composer**:
+A surface for composing a GitHub comment in markdown, with a preview of the rendered body.
+_Avoid_: markdown input, comment box, input box when referring to the editor
+
+**Composer Layout**:
+Which panes a Markdown Composer shows: Tabbed Layout or Split Layout.
+_Avoid_: style, preview style
+
+**Tabbed Layout**:
+A Composer Layout that shows Write or Preview, never both.
+_Avoid_: write window, preview window, write/preview
+
+**Split Layout**:
+A Composer Layout that shows Write on the left and a live Preview on the right at the same time.
+_Avoid_: live preview, realtime preview when referring to the layout
+
+**Conversation Composer**:
+The Markdown Composer on an issue, pull request, or discussion conversation, including the sticky composer and in-thread discussion replies.
+_Avoid_: PR/issue comment, floating editor
+
+**Review Inline Composer**:
+The Markdown Composer for a pending comment on a Diff Row in the PR Review Workspace.
+_Avoid_: inline draft, line comment box
+
+**Review Submit Composer**:
+The Markdown Composer for the review summary in the PR Review Workspace submit rail. Always Tabbed Layout.
+_Avoid_: submit bar, review panel textarea
+
+**Conversation Composer Default Layout**:
+The user setting that seeds Composer Layout when a Conversation Composer opens.
+
+**Review Inline Composer Default Layout**:
+The user setting that seeds Composer Layout when a Review Inline Composer opens.

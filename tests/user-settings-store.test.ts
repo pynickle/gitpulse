@@ -112,6 +112,61 @@ describe('user settings store', () => {
     });
   });
 
+  test('defaults and normalizes composer layouts without changing settings version', () => {
+    expect(createDefaultUserSettings().version).toBe(1);
+    expect(createDefaultUserSettings().composer).toEqual({
+      conversationDefaultLayout: 'split',
+      reviewInlineDefaultLayout: 'tabbed',
+    });
+
+    expect(normalizeUserSettings({}).composer).toEqual({
+      conversationDefaultLayout: 'split',
+      reviewInlineDefaultLayout: 'tabbed',
+    });
+    expect(normalizeUserSettings({ composer: undefined }).version).toBe(1);
+    expect(
+      normalizeUserSettings({
+        composer: { conversationDefaultLayout: 'tabbed' },
+      }).composer
+    ).toEqual({
+      conversationDefaultLayout: 'tabbed',
+      reviewInlineDefaultLayout: 'tabbed',
+    });
+    expect(
+      normalizeUserSettings({
+        composer: { reviewInlineDefaultLayout: 'split' },
+      }).composer
+    ).toEqual({
+      conversationDefaultLayout: 'split',
+      reviewInlineDefaultLayout: 'split',
+    });
+    expect(
+      normalizeUserSettings({
+        composer: { conversationDefaultLayout: 'stacked', reviewInlineDefaultLayout: 'stacked' },
+      }).composer
+    ).toEqual({
+      conversationDefaultLayout: 'split',
+      reviewInlineDefaultLayout: 'tabbed',
+    });
+
+    const patchedConversation = mergeUserSettingsPatch(createDefaultUserSettings(), {
+      composer: { conversationDefaultLayout: 'tabbed' },
+    });
+    expect(patchedConversation.composer).toEqual({
+      conversationDefaultLayout: 'tabbed',
+      reviewInlineDefaultLayout: 'tabbed',
+    });
+
+    const patchedReviewInline = mergeUserSettingsPatch(patchedConversation, {
+      composer: { reviewInlineDefaultLayout: 'split' },
+    });
+    expect(patchedReviewInline.composer).toEqual({
+      conversationDefaultLayout: 'tabbed',
+      reviewInlineDefaultLayout: 'split',
+    });
+    expect(patchedReviewInline.version).toBe(1);
+  });
+
   test('migrates retired custom tab fields during settings normalization', () => {
     const settings = normalizeUserSettings({
       customTabs: [
@@ -363,6 +418,40 @@ describe('user settings store', () => {
       notificationBehavior: {
         readMarkMode: 'immediate',
         readMarkDelaySeconds: 15,
+      },
+    });
+  });
+
+  test('persists composer settings with optimistic save normalization', async () => {
+    const harness = createHarness('octocat');
+    markLoaded(harness);
+
+    const save = harness.store.updateComposer({ conversationDefaultLayout: 'tabbed' });
+    await tick();
+
+    expect(harness.settings.value.composer).toEqual({
+      conversationDefaultLayout: 'tabbed',
+      reviewInlineDefaultLayout: 'tabbed',
+    });
+    expect(harness.saveRequests).toHaveLength(1);
+    expect(harness.saveRequests[0]?.patch).toEqual({
+      composer: {
+        conversationDefaultLayout: 'tabbed',
+      },
+    });
+
+    harness.saveRequests[0]?.deferred.resolve(
+      createSettings({
+        composer: {
+          conversationDefaultLayout: 'tabbed',
+          reviewInlineDefaultLayout: 'tabbed',
+        },
+      })
+    );
+    await expect(save).resolves.toMatchObject({
+      composer: {
+        conversationDefaultLayout: 'tabbed',
+        reviewInlineDefaultLayout: 'tabbed',
       },
     });
   });
