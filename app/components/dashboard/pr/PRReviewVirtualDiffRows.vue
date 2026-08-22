@@ -714,6 +714,7 @@ onBeforeUnmount(() => {
                 v-for="thread in virtualRow.reviewThreads"
                 :key="thread.id"
                 class="pr-review-diff-viewer__review-thread"
+                :class="{ 'pr-review-diff-viewer__review-thread--resolved': thread.isResolved }"
               >
                 <article
                   v-for="(comment, commentIndex) in thread.comments"
@@ -964,11 +965,21 @@ onBeforeUnmount(() => {
 .pr-review-diff-viewer__new-line-threads {
   margin-top: 0.35rem;
   padding: 0 0.75rem 0 0.9rem;
-  border-left: 2px solid color-mix(in srgb, var(--gitpulse-border-strong) 75%, transparent);
+  border-left: 2px solid var(--gitpulse-border);
 }
 
 .pr-review-diff-viewer__review-thread {
   margin: 0 0 0.5rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-lg);
+  background: var(--gitpulse-surface);
+  box-shadow: var(--gitpulse-shadow-card);
+  overflow: hidden;
+}
+
+.pr-review-diff-viewer__review-thread--resolved {
+  border-color: color-mix(in srgb, var(--gitpulse-success) 30%, var(--gitpulse-border));
+  background: color-mix(in srgb, var(--gitpulse-success) 4%, var(--gitpulse-surface));
 }
 
 .pr-review-diff-viewer__thread-action {
@@ -998,14 +1009,12 @@ onBeforeUnmount(() => {
 
 .pr-review-diff-viewer__review-comment {
   position: relative;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 6px;
-  background: var(--gitpulse-surface);
+  padding: 0.6rem 0.7rem;
 }
 
 .pr-review-diff-viewer__review-comment + .pr-review-diff-viewer__review-comment {
-  margin-top: 0.5rem;
+  margin-top: 0;
+  border-top: 1px solid var(--gitpulse-border);
 }
 
 .pr-review-diff-viewer__review-comment-header {

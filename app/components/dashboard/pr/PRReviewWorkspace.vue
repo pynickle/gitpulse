@@ -452,7 +452,7 @@ onBeforeUnmount(clearGridAnimationFallback);
 .pr-review-workspace__summary-pill--draft {
   border-color: var(--gitpulse-draft-border);
   background: var(--gitpulse-draft-bg);
-  color: var(--gitpulse-warning);
+  color: var(--gitpulse-accent);
 }
 
 .pr-review-workspace__nav-buttons {

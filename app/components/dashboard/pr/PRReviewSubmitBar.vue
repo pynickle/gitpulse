@@ -363,11 +363,13 @@ const toggleSection = (section: string) => {
 }
 
 .pr-review-submit-bar__collapsed-handle strong {
-  width: 1.45rem;
+  min-width: 1.45rem;
   height: 1.45rem;
-  border-radius: 50%;
+  padding: 0 0.25rem;
+  border: 1px solid var(--gitpulse-draft-border);
+  border-radius: 999px;
   background: var(--gitpulse-draft-bg);
-  color: var(--gitpulse-warning);
+  color: var(--gitpulse-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -473,16 +475,34 @@ const toggleSection = (section: string) => {
 }
 
 .pr-review-submit-bar__draft {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
   padding: 0.65rem;
-  border: 1px solid var(--gitpulse-draft-border);
-  border-left: 3px solid var(--gitpulse-warning);
-  border-radius: 6px;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-md);
   background: var(--gitpulse-surface);
+  box-shadow: var(--gitpulse-shadow-card);
+  overflow: hidden;
   overflow-wrap: anywhere;
+
+  // Accent rail ties the draft card to the pending-draft state.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 3px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gitpulse-accent) 80%, transparent),
+      color-mix(in srgb, var(--gitpulse-accent) 35%, transparent)
+    );
+    pointer-events: none;
+  }
 }
 
 .pr-review-submit-bar__draft + .pr-review-submit-bar__draft {

@@ -518,7 +518,12 @@ onBeforeUnmount(() => {
             v-if="getDraftsForFile(section.file.filename).length"
             class="pr-review-diff-viewer__drafts"
           >
-            <h3 class="title is-6 mb-2">{{ t('prReview.pendingForFile') }}</h3>
+            <h3 class="pr-review-diff-viewer__drafts-title">
+              {{ t('prReview.pendingForFile') }}
+              <span class="pr-review-diff-viewer__drafts-count">{{
+                getDraftsForFile(section.file.filename).length
+              }}</span>
+            </h3>
             <div
               v-for="comment in getDraftsForFile(section.file.filename)"
               :key="comment.id"
@@ -754,18 +759,63 @@ html.dark .pr-review-diff-viewer__header {
   max-height: 10rem;
   overflow-y: auto;
   border-top: 1px solid var(--gitpulse-border);
-  padding: 0.75rem;
-  background: var(--gitpulse-draft-bg);
+  padding: 0.65rem 0.75rem 0.75rem;
+  background: var(--gitpulse-surface-muted);
+}
+
+.pr-review-diff-viewer__drafts-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.pr-review-diff-viewer__drafts-count {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.3rem;
+  border: 1px solid var(--gitpulse-draft-border);
+  border-radius: 999px;
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
 }
 
 .pr-review-diff-viewer__draft {
+  position: relative;
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem;
-  border: 1px solid var(--gitpulse-draft-border);
-  border-radius: 6px;
+  padding: 0.6rem 0.7rem 0.6rem 0.85rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-md);
   background: var(--gitpulse-surface);
+  box-shadow: var(--gitpulse-shadow-card);
+  overflow: hidden;
+
+  // Accent rail ties the draft card to the pending-draft state.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 3px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gitpulse-accent) 80%, transparent),
+      color-mix(in srgb, var(--gitpulse-accent) 35%, transparent)
+    );
+    pointer-events: none;
+  }
 }
 
 .pr-review-diff-viewer__draft + .pr-review-diff-viewer__draft {

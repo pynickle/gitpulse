@@ -256,7 +256,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
           <span class="pr-review-file-sidebar__meta">
             <span class="has-text-success">+{{ file.additions }}</span>
             <span class="has-text-danger">-{{ file.deletions }}</span>
-            <span v-if="getDraftCount(file.filename)" class="tag is-warning is-light">
+            <span v-if="getDraftCount(file.filename)" class="pr-review-file-sidebar__draft-count">
               {{ getDraftCount(file.filename) }}
             </span>
           </span>
@@ -657,11 +657,27 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   font-weight: 700;
 }
 
+.pr-review-file-sidebar__draft-count {
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border: 1px solid var(--gitpulse-draft-border);
+  border-radius: 999px;
+  background: var(--gitpulse-draft-bg);
+  color: var(--gitpulse-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
 .pr-review-file-sidebar__draft-dot {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
-  background: var(--gitpulse-warning);
+  background: var(--gitpulse-accent);
   flex: none;
 }
 </style>
