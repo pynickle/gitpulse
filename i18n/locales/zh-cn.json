@@ -405,6 +405,8 @@
       "codeFontLabel": "代码字体",
       "appFontSection": "应用字体",
       "codeFontSection": "代码字体",
+      "prReviewCodeFontSizeLabel": "PR 审查代码字号",
+      "prReviewCodeFontSizePixels": "{size}px",
       "codeHighlightSection": "代码高亮",
       "shikiLightThemeLabel": "浅色模式样式",
       "shikiDarkThemeLabel": "深色模式样式",

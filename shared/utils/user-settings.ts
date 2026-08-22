@@ -25,6 +25,7 @@ import type {
   NotificationTodoItem,
   NotificationReadMarkDelaySeconds,
   NotificationReadMarkMode,
+  PrReviewCodeFontSize,
   ShikiDarkThemeId,
   ShikiLightThemeId,
   UserAppearanceSettings,
@@ -61,6 +62,8 @@ import {
   LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
+  PR_REVIEW_CODE_FONT_SIZE_DEFAULT,
+  PR_REVIEW_CODE_FONT_SIZES,
   SHIKI_DARK_THEME_IDS,
   SHIKI_LIGHT_THEME_IDS,
   TAB_SIDEBAR_WIDTH_DEFAULT,
@@ -78,6 +81,7 @@ const NOTIFICATION_READ_MARK_DELAYS = new Set<NotificationReadMarkDelaySeconds>(
 );
 const SHIKI_LIGHT_THEMES = new Set<ShikiLightThemeId>(SHIKI_LIGHT_THEME_IDS);
 const SHIKI_DARK_THEMES = new Set<ShikiDarkThemeId>(SHIKI_DARK_THEME_IDS);
+const PR_REVIEW_CODE_FONT_SIZES_SET = new Set<number>(PR_REVIEW_CODE_FONT_SIZES);
 const NOTIFICATION_SUBJECT_STATES = new Set<NotificationSubjectState>(['open', 'closed', 'merged']);
 const NOTIFICATION_SUBJECT_STATE_STATUSES = new Set<NotificationSubjectStateStatus>([
   'pending',
@@ -97,6 +101,7 @@ const REQUIRED_BUILTIN_GROUP: TabGroup = {
 export const DEFAULT_USER_FONT_SETTINGS: UserFontSettings = {
   appFont: 'harmonyos-sans',
   codeFont: 'maple-mono',
+  prReviewCodeFontSize: PR_REVIEW_CODE_FONT_SIZE_DEFAULT,
 };
 
 export const DEFAULT_USER_APPEARANCE_SETTINGS: UserAppearanceSettings = {
@@ -675,11 +680,19 @@ export function normalizeUserFontSettings(
       fallback.codeFont === 'system' ? DEFAULT_USER_FONT_SETTINGS.codeFont : fallback.codeFont;
   }
 
+  const candidateSize = candidate.prReviewCodeFontSize;
+  const prReviewCodeFontSize = PR_REVIEW_CODE_FONT_SIZES_SET.has(
+    candidateSize as PrReviewCodeFontSize
+  )
+    ? (candidateSize as PrReviewCodeFontSize)
+    : fallback.prReviewCodeFontSize;
+
   return {
     appFont,
     codeFont,
     appSystemFont,
     codeSystemFont,
+    prReviewCodeFontSize,
   };
 }
 

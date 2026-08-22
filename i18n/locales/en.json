@@ -405,6 +405,8 @@
       "codeFontLabel": "Code font",
       "appFontSection": "App font",
       "codeFontSection": "Code font",
+      "prReviewCodeFontSizeLabel": "PR review code size",
+      "prReviewCodeFontSizePixels": "{size}px",
       "codeHighlightSection": "Code highlighting",
       "shikiLightThemeLabel": "Light mode style",
       "shikiDarkThemeLabel": "Dark mode style",

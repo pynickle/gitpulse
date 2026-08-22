@@ -11,6 +11,8 @@ export const COMPOSER_LAYOUT_IDS = ['tabbed', 'split'] as const;
 export const TAB_SIDEBAR_WIDTH_MIN = 160 as const;
 export const TAB_SIDEBAR_WIDTH_MAX = 420 as const;
 export const TAB_SIDEBAR_WIDTH_DEFAULT = 220 as const;
+export const PR_REVIEW_CODE_FONT_SIZES = [12, 13, 14, 15, 16, 18] as const;
+export const PR_REVIEW_CODE_FONT_SIZE_DEFAULT = 12 as const;
 export const SHIKI_LIGHT_THEME_IDS = [
   'github-light',
   'light-plus',
@@ -38,6 +40,7 @@ export type NotificationReadMarkDelaySeconds =
 export type LinkTargetId = (typeof LINK_TARGET_IDS)[number];
 export type ComposerLayoutId = (typeof COMPOSER_LAYOUT_IDS)[number];
 export type TabSidebarWidth = number;
+export type PrReviewCodeFontSize = (typeof PR_REVIEW_CODE_FONT_SIZES)[number];
 export type ShikiLightThemeId = (typeof SHIKI_LIGHT_THEME_IDS)[number];
 export type ShikiDarkThemeId = (typeof SHIKI_DARK_THEME_IDS)[number];
 export type ShikiThemeId = ShikiLightThemeId | ShikiDarkThemeId;
@@ -47,6 +50,7 @@ export interface UserFontSettings {
   codeFont: CodeFontId;
   appSystemFont?: string;
   codeSystemFont?: string;
+  prReviewCodeFontSize: PrReviewCodeFontSize;
 }
 
 export interface UserAppearanceSettings {

@@ -858,7 +858,7 @@ onBeforeUnmount(() => {
 .pr-review-diff-viewer__hunk code,
 .pr-review-diff-viewer__code {
   font-family: var(--gitpulse-code-font-family);
-  font-size: 12px;
+  font-size: var(--gitpulse-pr-review-code-font-size, 12px);
 }
 
 .pr-review-diff-viewer__split-divider {

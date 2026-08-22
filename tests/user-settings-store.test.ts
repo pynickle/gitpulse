@@ -167,6 +167,36 @@ describe('user settings store', () => {
     expect(patchedReviewInline.version).toBe(1);
   });
 
+  test('defaults and normalizes pr review code font sizes without losing font fields', () => {
+    expect(createDefaultUserSettings().fonts.prReviewCodeFontSize).toBe(12);
+
+    expect(normalizeUserSettings({}).fonts.prReviewCodeFontSize).toBe(12);
+    expect(
+      normalizeUserSettings({ fonts: { prReviewCodeFontSize: 14 } }).fonts.prReviewCodeFontSize
+    ).toBe(14);
+    expect(
+      normalizeUserSettings({ fonts: { prReviewCodeFontSize: 999 } }).fonts.prReviewCodeFontSize
+    ).toBe(12);
+    expect(
+      normalizeUserSettings({
+        fonts: { appFont: 'misans-latin' },
+      }).fonts
+    ).toEqual({
+      appFont: 'misans-latin',
+      codeFont: 'maple-mono',
+      appSystemFont: undefined,
+      codeSystemFont: undefined,
+      prReviewCodeFontSize: 12,
+    });
+
+    const patched = mergeUserSettingsPatch(createDefaultUserSettings(), {
+      fonts: { prReviewCodeFontSize: 16 },
+    });
+    expect(patched.fonts.prReviewCodeFontSize).toBe(16);
+    expect(patched.fonts.appFont).toBe('harmonyos-sans');
+    expect(patched.fonts.codeFont).toBe('maple-mono');
+  });
+
   test('migrates retired custom tab fields during settings normalization', () => {
     const settings = normalizeUserSettings({
       customTabs: [

@@ -140,7 +140,7 @@ const diffLines = computed(() => {
   border-radius: 6px;
   background: var(--gitpulse-surface);
   font-family: var(--gitpulse-code-font-family);
-  font-size: 12px;
+  font-size: var(--gitpulse-pr-review-code-font-size, 12px);
   line-height: 1.45;
 }
 
@@ -198,7 +198,7 @@ const diffLines = computed(() => {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
-  font-size: 12px;
+  font-size: var(--gitpulse-pr-review-code-font-size, 12px);
 }
 
 .timeline-review-diff__token--keyword {

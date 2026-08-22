@@ -21,10 +21,12 @@ import {
   LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
+  PR_REVIEW_CODE_FONT_SIZES,
   SHIKI_DARK_THEME_IDS,
   SHIKI_LIGHT_THEME_IDS,
   TAB_SIDEBAR_WIDTH_MAX,
   TAB_SIDEBAR_WIDTH_MIN,
+  type PrReviewCodeFontSize,
 } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
 
@@ -46,6 +48,16 @@ const notificationReadMarkDelaySecondsSchema = z
   );
 const shikiLightThemeSchema = z.enum(SHIKI_LIGHT_THEME_IDS);
 const shikiDarkThemeSchema = z.enum(SHIKI_DARK_THEME_IDS);
+const prReviewCodeFontSizeSchema = z
+  .number()
+  .int()
+  .refine(
+    (value): value is PrReviewCodeFontSize =>
+      PR_REVIEW_CODE_FONT_SIZES.includes(value as PrReviewCodeFontSize),
+    {
+      message: 'Invalid PR review code font size',
+    }
+  );
 const fontFamilySchema = z
   .string()
   .trim()
@@ -64,6 +76,7 @@ const fontSettingsPatchSchema = z
     codeFont: codeFontSchema.optional(),
     appSystemFont: fontFamilySchema.optional(),
     codeSystemFont: fontFamilySchema.optional(),
+    prReviewCodeFontSize: prReviewCodeFontSizeSchema.optional(),
   })
   .refine((fonts) => Object.keys(fonts).length > 0, {
     message: 'At least one font setting is required',

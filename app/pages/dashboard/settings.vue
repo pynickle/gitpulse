@@ -15,12 +15,14 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import {
   COMPOSER_LAYOUT_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
+  PR_REVIEW_CODE_FONT_SIZES,
   type AppFontId,
   type CodeFontId,
   type ComposerLayoutId,
   type LinkTargetId,
   type NotificationReadMarkDelaySeconds,
   type NotificationReadMarkMode,
+  type PrReviewCodeFontSize,
   type ShikiDarkThemeId,
   type ShikiLightThemeId,
 } from '#shared/types/user-settings';
@@ -161,6 +163,11 @@ const notificationReadMarkDelayOptions: FilterOption[] = NOTIFICATION_READ_MARK_
   })
 );
 
+const prReviewCodeFontSizeOptions: FilterOption[] = PR_REVIEW_CODE_FONT_SIZES.map((size) => ({
+  value: String(size),
+  label: t('dashboard.settings.prReviewCodeFontSizePixels', { size: String(size) }),
+}));
+
 const showNotificationReadMarkDelay = computed(() => {
   return settings.value.notificationBehavior.readMarkMode === 'delayed';
 });
@@ -230,6 +237,13 @@ const applyCodeFontFromModal = (fontId: string) => {
     }
   } else if (builtinCodeFontOptions.some((f) => f.id === fontId)) {
     void updateFonts({ codeFont: fontId as CodeFontId });
+  }
+};
+
+const applyPrReviewCodeFontSize = (sizeValue: string) => {
+  const size = Number.parseInt(sizeValue, 10);
+  if (PR_REVIEW_CODE_FONT_SIZES.includes(size as PrReviewCodeFontSize)) {
+    void updateFonts({ prReviewCodeFontSize: size as PrReviewCodeFontSize });
   }
 };
 
@@ -486,6 +500,21 @@ onMounted(() => {
                     >
                       <SearchIcon :size="14" />
                     </button>
+                  </div>
+                </div>
+
+                <div class="settings__font-field">
+                  <label class="settings__label">
+                    {{ t('dashboard.settings.prReviewCodeFontSizeLabel') }}
+                  </label>
+                  <div class="settings__dropdown-row">
+                    <FilterDropdown
+                      :model-value="String(settings.fonts.prReviewCodeFontSize)"
+                      :options="prReviewCodeFontSizeOptions"
+                      :placeholder="t('dashboard.settings.prReviewCodeFontSizeLabel')"
+                      :aria-label="t('dashboard.settings.prReviewCodeFontSizeLabel')"
+                      @update:model-value="applyPrReviewCodeFontSize"
+                    />
                   </div>
                 </div>
               </div>

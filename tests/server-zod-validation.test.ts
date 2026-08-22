@@ -367,6 +367,23 @@ describe('server Zod request validation', () => {
         composer: { conversationDefaultLayout: 'stacked' },
       })
     ).toThrow('Invalid settings request body');
+    expect(
+      parseUserSettingsPatchBody({
+        fonts: { prReviewCodeFontSize: 14 },
+      })
+    ).toEqual({
+      fonts: { prReviewCodeFontSize: 14 },
+    });
+    expect(() =>
+      parseUserSettingsPatchBody({
+        fonts: { prReviewCodeFontSize: 13.5 },
+      })
+    ).toThrow('Invalid settings request body');
+    expect(() =>
+      parseUserSettingsPatchBody({
+        fonts: { prReviewCodeFontSize: 999 },
+      })
+    ).toThrow('Invalid settings request body');
   });
 
   test('validates repository mutation bodies with strict schemas', () => {

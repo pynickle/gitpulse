@@ -718,7 +718,7 @@ html.dark .pr-review-diff-viewer__header {
   gap: 0.75rem;
   -ms-overflow-style: none;
   overscroll-behavior: contain;
-  font-size: 12px;
+  font-size: var(--gitpulse-pr-review-code-font-size, 12px);
   line-height: 1.45;
   scrollbar-width: none;
 }

@@ -45,6 +45,7 @@ export interface UserSettingsStore {
   error: Readonly<Ref<string | null>>;
   appFontFamily: ComputedRef<string>;
   codeFontFamily: ComputedRef<string>;
+  prReviewCodeFontSizePx: ComputedRef<string>;
   loadSettings: (options?: { force?: boolean }) => Promise<UserSettings | null>;
   updateSettings: (patch: UserSettingsPatch) => Promise<UserSettings | null>;
   updateFonts: (fonts: Partial<UserFontSettings>) => Promise<UserSettings | null>;
@@ -168,6 +169,7 @@ export function createUserSettingsActions({
   const error = computed(() => requestState.value.error);
   const appFontFamily = computed(() => getAppFontStack(settings.value.fonts));
   const codeFontFamily = computed(() => getCodeFontStack(settings.value.fonts));
+  const prReviewCodeFontSizePx = computed(() => `${settings.value.fonts.prReviewCodeFontSize}px`);
 
   const enqueueSettingsSave = <T>(task: () => Promise<T>) => {
     const nextSave = saveQueue.catch(() => undefined).then(task);
@@ -422,6 +424,7 @@ export function createUserSettingsActions({
     error: readonly(error),
     appFontFamily,
     codeFontFamily,
+    prReviewCodeFontSizePx,
     loadSettings,
     updateSettings,
     updateFonts,
