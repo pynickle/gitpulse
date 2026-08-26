@@ -11,6 +11,7 @@ import type {
   GitHubSearchVisibilityFilter,
 } from '#shared/types/custom-search';
 import type { IssueTypeSummary } from '#shared/types/issues';
+import type { LinkedPullRequestIdentity } from '#shared/types/linked-pull-requests';
 import type {
   DashboardNotification,
   DashboardNotificationRepository,
@@ -179,6 +180,24 @@ const normalizeNonNegativeCount = (value: unknown) => {
   return value;
 };
 
+const normalizeLinkedPullRequestIdentity = (
+  value: unknown
+): LinkedPullRequestIdentity | undefined => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const candidate = value as Partial<LinkedPullRequestIdentity>;
+  const owner = normalizeString(candidate.owner);
+  const repo = normalizeString(candidate.repo);
+  const number = normalizeNotificationNumber(candidate.number);
+  if (!owner || !repo || number === undefined) {
+    return undefined;
+  }
+
+  return { owner, repo, number };
+};
+
 const normalizeStringList = (values: unknown) => {
   if (!Array.isArray(values)) {
     return undefined;
@@ -258,6 +277,12 @@ const cloneNotificationLabels = (labels?: NotificationLabel[]) => {
   return labels?.map((label) => ({ ...label }));
 };
 
+const cloneLinkedPullRequestIdentity = (
+  identity?: LinkedPullRequestIdentity
+): LinkedPullRequestIdentity | undefined => {
+  return identity ? { ...identity } : undefined;
+};
+
 const cloneDashboardNotificationSubject = (
   subject?: DashboardNotificationSubject
 ): DashboardNotificationSubject | undefined => {
@@ -267,6 +292,7 @@ const cloneDashboardNotificationSubject = (
     ...subject,
     issueType: subject.issueType ? { ...subject.issueType } : undefined,
     labels: cloneNotificationLabels(subject.labels),
+    linkedPullRequest: cloneLinkedPullRequestIdentity(subject.linkedPullRequest),
   };
 };
 
@@ -365,6 +391,8 @@ const normalizeDashboardNotificationSubject = (
     comments: normalizeNonNegativeCount(candidate.comments),
     authorLogin: normalizeString(candidate.authorLogin),
     authorAvatarUrl: normalizeString(candidate.authorAvatarUrl, 1000),
+    linkedPullRequestCount: normalizeNonNegativeCount(candidate.linkedPullRequestCount),
+    linkedPullRequest: normalizeLinkedPullRequestIdentity(candidate.linkedPullRequest),
   };
 };
 

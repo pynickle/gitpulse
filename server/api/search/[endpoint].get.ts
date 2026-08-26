@@ -5,6 +5,7 @@ import {
   normalizeGenericSearchTotalCount,
   translateGitHubSearchError,
 } from '#server/utils/github-search-route-utils';
+import { attachLinkedPullRequestSummaries } from '#server/utils/linked-pull-request-graphql-utils';
 
 import { buildLinkedPaginationMeta } from '../../utils/github-pagination';
 
@@ -43,8 +44,16 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
           return octokit.request('GET /search/topics', searchParams);
         case 'users':
           return octokit.request('GET /search/users', searchParams);
-        case 'issues':
-          return octokit.request('GET /search/issues', searchParams);
+        case 'issues': {
+          const response = await octokit.request('GET /search/issues', searchParams);
+          return {
+            ...response,
+            data: {
+              ...response.data,
+              items: await attachLinkedPullRequestSummaries(octokit, response.data.items ?? []),
+            },
+          };
+        }
       }
     })();
 

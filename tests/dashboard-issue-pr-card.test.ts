@@ -1,10 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
-import toDashboardIssuePrCard, {
-  type DashboardIssuePrEntity,
-} from '../app/utils/dashboardIssuePrCard';
+import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+
+mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+
+import type { DashboardIssuePrEntity } from '../app/utils/dashboardIssuePrCard';
 import resolveIssueTypeColor from '../app/utils/issueTypeColor';
+
+const { default: toDashboardIssuePrCard } = await import('../app/utils/dashboardIssuePrCard');
 
 describe('dashboard issue/PR notification-style cards', () => {
   test('maps an open issue into the notification-style card view model', () => {
@@ -43,6 +47,8 @@ describe('dashboard issue/PR notification-style cards', () => {
       state: 'open',
       draft: false,
       comments: 1,
+      linkedPullRequestCount: null,
+      linkedPullRequest: null,
       actorLogin: 'octocat',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
       issueType: { name: 'Bug', color: 'red' },
@@ -87,6 +93,8 @@ describe('dashboard issue/PR notification-style cards', () => {
       state: 'merged',
       draft: false,
       comments: null,
+      linkedPullRequestCount: null,
+      linkedPullRequest: null,
       actorLogin: 'merge-bot',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       issueType: null,
@@ -155,10 +163,56 @@ describe('dashboard issue/PR notification-style cards', () => {
       state: 'closed',
       draft: false,
       comments: null,
+      linkedPullRequestCount: null,
+      linkedPullRequest: null,
       actorLogin: '',
       actorAvatarUrl: '',
       issueType: null,
       labels: [],
+    });
+  });
+
+  test('maps Linked Pull Request Count onto Issue cards and never onto pull request cards', () => {
+    expect(
+      toDashboardIssuePrCard({
+        id: 11,
+        title: 'Has linked pull requests',
+        repository_url: 'https://api.github.com/repos/acme/widgets',
+        number: 11,
+        linkedPullRequestCount: 1,
+        linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 22 },
+      })
+    ).toMatchObject({
+      subjectType: 'Issue',
+      linkedPullRequestCount: 1,
+      linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 22 },
+    });
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 12,
+        title: 'Several linked pull requests',
+        repository_url: 'https://api.github.com/repos/acme/widgets',
+        number: 12,
+        linkedPullRequestCount: 3,
+        linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 1 },
+      }).linkedPullRequest
+    ).toBeNull();
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 13,
+        title: 'Pull request',
+        repository_url: 'https://api.github.com/repos/acme/widgets',
+        number: 13,
+        pull_request: {},
+        linkedPullRequestCount: 2,
+        linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 1 },
+      })
+    ).toMatchObject({
+      subjectType: 'PullRequest',
+      linkedPullRequestCount: null,
+      linkedPullRequest: null,
     });
   });
 
@@ -204,7 +258,7 @@ describe('dashboard issue/PR notification-style cards', () => {
     expect(dashboardSource).toMatch(
       /<AsyncIssuePrNotificationItem\s+v-if="[\s\S]*selectedCustomTab\.query\.endpoint === 'issues'/
     );
-    expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="issue" />');
+    expect(dashboardSource).toMatch(/<AsyncIssuePrNotificationItem[\s\S]*:item="issue"/);
     expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="pull" />');
   });
 

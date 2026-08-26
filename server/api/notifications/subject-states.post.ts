@@ -1,4 +1,8 @@
 import { throwGitHubRouteError } from '#server/utils/github-auth-utils';
+import {
+  LINKED_PULL_REQUEST_LIST_NODE_FIELDS,
+  mapLinkedPullRequestConnection,
+} from '#server/utils/linked-pull-request-graphql-utils';
 import { parseNotificationSubjectTargetsBody } from '#server/utils/notification-subject-state-validation-utils';
 import type { IssueTypeSummary } from '#shared/types/issues';
 import type {
@@ -7,6 +11,7 @@ import type {
   NotificationSubjectEnrichmentTarget,
   NotificationSubjectState,
 } from '#shared/types/notifications';
+import { toLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 
 interface GraphQLLabelNode {
   name?: string;
@@ -43,6 +48,16 @@ interface GraphQLSubjectNode {
   author?: GraphQLAuthorNode;
   issueType?: GraphQLIssueTypeNode | null;
   labels?: GraphQLLabelsConnection;
+  closedByPullRequestsReferences?: {
+    totalCount?: number | null;
+    nodes?: Array<{
+      number?: number | null;
+      repository?: {
+        name?: string | null;
+        owner?: { login?: string | null } | null;
+      } | null;
+    } | null> | null;
+  } | null;
 }
 
 interface GraphQLSubjectRepository {
@@ -127,7 +142,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectEnrichmentTarget[])
         ? 'title updatedAt state mergedAt isDraft comments { totalCount }'
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
-          : 'title updatedAt state issueType { name color } comments { totalCount }';
+          : `title updatedAt state issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS}`;
     const labelsFields =
       target.type === 'discussions' ? '' : ' labels(first: 10) { nodes { name color } }';
     fields.push(
@@ -163,6 +178,14 @@ export default defineEventHandler(async (event) => {
             ? repository?.discussion
             : repository?.issue;
 
+      const linkedSummary =
+        target.type === 'issues'
+          ? toLinkedPullRequestListSummary(
+              mapLinkedPullRequestConnection(node?.closedByPullRequestsReferences),
+              { owner: target.owner, repo: target.repo }
+            )
+          : null;
+
       return {
         key: target.key,
         title: node?.title,
@@ -176,6 +199,12 @@ export default defineEventHandler(async (event) => {
         comments: normalizeCommentsCount(target.type, node),
         authorLogin: node?.author?.login,
         authorAvatarUrl: node?.author?.avatarUrl,
+        ...(linkedSummary
+          ? {
+              linkedPullRequestCount: linkedSummary.count,
+              linkedPullRequest: linkedSummary.identity ?? undefined,
+            }
+          : {}),
       };
     });
 

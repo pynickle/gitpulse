@@ -362,6 +362,7 @@ watch(activeDetailKey, () => {
               :repo="repositoryName"
               @open-issue="emit('open-issue', $event)"
               @open-pull-request="emit('open-pull-request', $event)"
+              @switch-pull-request="handleSwitchPullRequest"
             />
           </div>
         </Transition>

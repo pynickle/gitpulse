@@ -121,6 +121,7 @@
                       :show-mark-as-read="false"
                       todo-action="remove"
                       @todo-action="removeNotificationTodo(todo.id)"
+                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
                     />
                   </div>
                 </template>
@@ -145,6 +146,7 @@
                       :mark-as-read="markNotificationAsReadFromDashboard"
                       :todo-action="isNotificationTodo(notification) ? 'remove' : 'add'"
                       @todo-action="toggleNotificationTodo"
+                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
                     />
                   </div>
                 </template>
@@ -168,6 +170,7 @@
                         !selectedCustomTab.query.endpoint
                       "
                       :item="issue"
+                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
                     />
                     <AsyncGenericSearchItem
                       v-else
@@ -190,7 +193,10 @@
                     @click="handleIssueOpen(issue)"
                     @keydown="handleListRowKeydown($event, () => handleIssueOpen(issue))"
                   >
-                    <AsyncIssuePrNotificationItem :item="issue" />
+                    <AsyncIssuePrNotificationItem
+                      :item="issue"
+                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                    />
                   </div>
                 </template>
 
@@ -330,6 +336,15 @@
     @clear="clearVisibleFilters"
   />
 
+  <LinkedPullRequestPickerModal
+    :is-visible="isLinkedPullRequestPickerVisible"
+    :owner="linkedPullRequestPickerIssue?.owner ?? ''"
+    :repo="linkedPullRequestPickerIssue?.repo ?? ''"
+    :number="linkedPullRequestPickerIssue?.number ?? 1"
+    @close="closeLinkedPullRequestPicker"
+    @select="selectLinkedPullRequestFromPicker"
+  />
+
   <FloatingRefreshButton
     v-if="!isDashboardChildRoute && !showFileBrowsingView"
     :has-new-content="dashboardHasNewContent"
@@ -406,11 +421,14 @@ const AsyncGenericSearchItem = defineAsyncComponent(
 const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/RepoItem.vue'));
 const loadDetailOverlayHost = () => import('~/components/dashboard/detail/DetailOverlayHost.vue');
 const loadFilterModal = () => import('~/components/dashboard/filters/FilterModal.vue');
+const loadLinkedPullRequestPickerModal = () =>
+  import('~/components/dashboard/LinkedPullRequestPickerModal.vue');
 const loadRepoFileView = () => import('~/components/dashboard/repo-files/RepoFileView.vue');
 const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
   createDashboardDetailPaneLoaders();
 const DetailOverlayHost = defineAsyncComponent(loadDetailOverlayHost);
 const FilterModal = defineAsyncComponent(loadFilterModal);
+const LinkedPullRequestPickerModal = defineAsyncComponent(loadLinkedPullRequestPickerModal);
 const RepoFileView = defineAsyncComponent(loadRepoFileView);
 
 const { loggedIn, ready: sessionReady, user } = useUserSession();
@@ -532,6 +550,7 @@ const prefetchDashboardInteractionChunks = () => {
   void Promise.allSettled([
     loadDetailOverlayHost(),
     loadFilterModal(),
+    loadLinkedPullRequestPickerModal(),
     loadRepoFileView(),
     loadDiscussionDetail(),
     loadIssueDetail(),
@@ -1104,6 +1123,17 @@ const handleSwitchPRFromDetail = (owner: string, repo: string, pullNumber: numbe
   clearSourceNotification();
   handleSwitchPR(owner, repo, pullNumber);
 };
+
+const {
+  pickerIssue: linkedPullRequestPickerIssue,
+  isPickerVisible: isLinkedPullRequestPickerVisible,
+  handleLinkedPullRequestCountClick,
+  closePicker: closeLinkedPullRequestPicker,
+  selectFromPicker: selectLinkedPullRequestFromPicker,
+} = useLinkedPullRequestListNavigation((identity) => {
+  clearSourceNotification();
+  handleSwitchPR(identity.owner, identity.repo, identity.number);
+});
 
 const handleSwitchDiscussionFromDetail = (
   owner: string,

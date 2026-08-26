@@ -3,6 +3,7 @@ import {
   normalizeSearchTotalCount,
 } from '#server/utils/github-issue-search-route-utils';
 import { translateGitHubSearchError } from '#server/utils/github-search-route-utils';
+import { attachLinkedPullRequestSummaries } from '#server/utils/linked-pull-request-graphql-utils';
 
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 
@@ -19,10 +20,11 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     });
 
     const totalCount = normalizeSearchTotalCount(data.total_count);
+    const items = await attachLinkedPullRequestSummaries(octokit, data.items ?? []);
 
     return {
       total_count: totalCount,
-      items: data.items,
+      items,
       pagination: buildLinkedPaginationMeta({
         page,
         perPage,

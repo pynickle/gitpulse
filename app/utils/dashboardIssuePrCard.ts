@@ -1,9 +1,11 @@
 import type { GitHubIssueType, IssueTypeSummary } from '#shared/types/issues';
+import type { LinkedPullRequestIdentity } from '#shared/types/linked-pull-requests';
 import type {
   NotificationLabel,
   NotificationSubjectKind,
   NotificationSubjectState,
 } from '#shared/types/notifications';
+import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 
 import parseGitHubRepoPath from './parseGitHubRepoPath';
 
@@ -33,6 +35,10 @@ export interface DashboardIssuePrEntity {
   merged_at?: string | null;
   /** Issue comment count from GitHub Search/Issues APIs (not review comments). */
   comments?: number | null;
+  /** Linked Pull Request Count attached after the Search GraphQL pass. */
+  linkedPullRequestCount?: number | null;
+  /** Present only when Count is 1 and routing identity is complete. */
+  linkedPullRequest?: LinkedPullRequestIdentity | null;
   pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
@@ -52,6 +58,9 @@ export interface DashboardIssuePrCard {
   draft: boolean;
   /** Issue comment count when provided by the list payload. */
   comments: number | null;
+  /** Linked Pull Request Count when the list payload included it. Hidden when 0/null. */
+  linkedPullRequestCount: number | null;
+  linkedPullRequest: LinkedPullRequestIdentity | null;
   actorLogin: string;
   actorAvatarUrl: string;
   issueType: IssueTypeSummary | null;
@@ -84,6 +93,9 @@ export default function toDashboardIssuePrCard(
   const isPullRequest = typeof entity.pull_request === 'object' && entity.pull_request !== null;
   const mergedAt = isPullRequest ? getPullRequestMergedAt(entity) : null;
   const state: NotificationSubjectState = mergedAt ? 'merged' : (entity.state ?? 'closed');
+  const linkedSummary = isPullRequest
+    ? null
+    : readLinkedPullRequestListSummary(entity.linkedPullRequestCount, entity.linkedPullRequest);
 
   return {
     id: entity.id,
@@ -95,6 +107,8 @@ export default function toDashboardIssuePrCard(
     state,
     draft: isPullRequest && state === 'open' && Boolean(entity.draft),
     comments: normalizeCommentsCount(entity.comments),
+    linkedPullRequestCount: linkedSummary?.count ?? null,
+    linkedPullRequest: linkedSummary?.identity ?? null,
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
     issueType:

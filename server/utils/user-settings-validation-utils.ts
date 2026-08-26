@@ -229,6 +229,14 @@ const notificationSubjectSchema = z.strictObject({
   comments: z.number().int().nonnegative().optional(),
   authorLogin: optionalNonEmptyStringSchema,
   authorAvatarUrl: optionalLongNonEmptyStringSchema,
+  linkedPullRequestCount: z.number().int().nonnegative().optional(),
+  linkedPullRequest: z
+    .strictObject({
+      owner: nonEmptyStringSchema,
+      repo: nonEmptyStringSchema,
+      number: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 const notificationRepositorySchema = z.strictObject({

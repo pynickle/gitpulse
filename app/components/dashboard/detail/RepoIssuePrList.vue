@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { AlertTriangleIcon, Loader2Icon } from '@lucide/vue';
 
+import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import IssuePrNotificationItem from '~/components/dashboard/IssuePrNotificationItem.vue';
 import Button from '~/components/ui/Button.vue';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
@@ -17,12 +18,20 @@ defineProps<{
 const emit = defineEmits<{
   select: [item: DashboardIssuePrEntity];
   retry: [];
+  'linked-pull-request-count-click': [payload: LinkedPullRequestCountClickPayload];
 }>();
 
 const { t } = useI18n();
 
 const handleSelect = (item: DashboardIssuePrEntity) => {
   emit('select', item);
+};
+
+const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity) => {
+  if (event.target !== event.currentTarget) return;
+  if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+  event.preventDefault();
+  handleSelect(item);
 };
 </script>
 
@@ -53,15 +62,20 @@ const handleSelect = (item: DashboardIssuePrEntity) => {
       </div>
 
       <div v-else class="repo-issue-pr-list__items">
-        <button
+        <div
           v-for="item in items"
           :key="String(item.id)"
-          type="button"
           class="repo-issue-pr-list__item"
+          role="button"
+          tabindex="0"
           @click="handleSelect(item)"
+          @keydown="handleListRowKeydown($event, item)"
         >
-          <IssuePrNotificationItem :item="item" />
-        </button>
+          <IssuePrNotificationItem
+            :item="item"
+            @linked-pull-request-count-click="emit('linked-pull-request-count-click', $event)"
+          />
+        </div>
       </div>
     </template>
   </section>

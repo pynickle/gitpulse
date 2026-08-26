@@ -3,6 +3,7 @@ import type {
   NotificationSubjectEnrichmentResult,
   NotificationSubjectEnrichmentTarget,
 } from '#shared/types/notifications';
+import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 
 interface ParsedNotificationSubjectTarget {
   owner: string;
@@ -153,6 +154,14 @@ const toValidResult = (
     return null;
   }
 
+  const linkedSummary =
+    target.type === 'issues'
+      ? readLinkedPullRequestListSummary(value.linkedPullRequestCount, value.linkedPullRequest)
+      : null;
+  if (target.type === 'issues' && value.linkedPullRequestCount !== undefined && !linkedSummary) {
+    return null;
+  }
+
   return {
     key: target.key,
     title: value.title,
@@ -165,6 +174,12 @@ const toValidResult = (
     comments: comments as number | undefined,
     authorLogin: value.authorLogin as string | undefined,
     authorAvatarUrl: value.authorAvatarUrl as string | undefined,
+    ...(linkedSummary
+      ? {
+          linkedPullRequestCount: linkedSummary.count,
+          linkedPullRequest: linkedSummary.identity ?? undefined,
+        }
+      : {}),
   };
 };
 
@@ -188,11 +203,17 @@ const mergeEnrichmentResults = (
       };
     }
 
+    const {
+      linkedPullRequestCount: _previousCount,
+      linkedPullRequest: _previousIdentity,
+      ...subjectWithoutLinkedPullRequests
+    } = notification.subject;
+
     return {
       ...notification,
       updated_at: result.updatedAt ?? notification.updated_at,
       subject: {
-        ...notification.subject,
+        ...subjectWithoutLinkedPullRequests,
         title: result.title,
         state: result.state,
         draft: result.draft,
@@ -202,6 +223,12 @@ const mergeEnrichmentResults = (
         comments: result.comments,
         authorLogin: result.authorLogin,
         authorAvatarUrl: result.authorAvatarUrl,
+        ...(result.linkedPullRequestCount !== undefined
+          ? {
+              linkedPullRequestCount: result.linkedPullRequestCount,
+              linkedPullRequest: result.linkedPullRequest,
+            }
+          : {}),
         stateStatus: 'loaded' as const,
       },
     };

@@ -108,6 +108,13 @@
                     <span>{{ commentsLabel }}</span>
                   </span>
                 </template>
+                <template v-if="showLinkedPullRequestCount && linkedPullRequestSummary">
+                  <span class="dashboard-list-card__separator">&middot;</span>
+                  <LinkedPullRequestCountControl
+                    :count="linkedPullRequestSummary.count"
+                    @click="handleLinkedPullRequestCountClick"
+                  />
+                </template>
               </p>
             </div>
 
@@ -180,8 +187,11 @@ import {
 import { ref, computed } from 'vue';
 
 import { formatDurationFromNow } from '#imports';
+import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import type { DashboardNotification } from '#shared/types/notifications';
+import { toLinkedPullRequestIdentity } from '#shared/utils/linked-pull-requests';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
+import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
@@ -206,6 +216,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   'todo-action': [notification: DashboardNotification];
+  'linked-pull-request-count-click': [payload: LinkedPullRequestCountClickPayload];
 }>();
 
 const { locale, t } = useI18n();
@@ -291,6 +302,29 @@ const commentsTitle = computed(() => {
   if (subjectComments.value === null) return '';
   return t('dashboard.meta.commentCount', { count: subjectComments.value });
 });
+const linkedPullRequestSummary = computed(() =>
+  getNotificationLinkedPullRequestListSummary(subject.value)
+);
+const showLinkedPullRequestCount = computed(() => {
+  const count = linkedPullRequestSummary.value?.count;
+  return typeof count === 'number' && count > 0;
+});
+const linkedPullRequestIssue = computed(() => {
+  const target = parseGitHubNotificationSubjectTarget(subject.value);
+  return toLinkedPullRequestIdentity({
+    owner: target?.owner,
+    repo: target?.repo,
+    number: target?.number,
+  });
+});
+const handleLinkedPullRequestCountClick = () => {
+  const summary = linkedPullRequestSummary.value;
+  if (!summary) return;
+  emit('linked-pull-request-count-click', {
+    summary,
+    issue: linkedPullRequestIssue.value,
+  });
+};
 const showReason = computed(() => props.showReason);
 const showMarkAsRead = computed(() => props.showMarkAsRead);
 const todoAction = computed(() => props.todoAction);

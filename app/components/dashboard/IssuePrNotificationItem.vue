@@ -84,6 +84,20 @@
                     <span>{{ commentsLabel }}</span>
                   </span>
                 </template>
+                <template v-if="showLinkedPullRequestCount && linkedPullRequestSummary">
+                  <span
+                    v-if="
+                      card.number || card.repositoryName || card.updatedAt || card.comments !== null
+                    "
+                    class="dashboard-list-card__separator"
+                  >
+                    &middot;
+                  </span>
+                  <LinkedPullRequestCountControl
+                    :count="linkedPullRequestSummary.count"
+                    @click="handleLinkedPullRequestCountClick"
+                  />
+                </template>
               </p>
             </div>
           </div>
@@ -98,13 +112,23 @@ import { MessageSquareIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import { formatDurationFromNow } from '#imports';
+import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
+import {
+  readLinkedPullRequestListSummary,
+  toLinkedPullRequestIdentity,
+} from '#shared/utils/linked-pull-requests';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
+import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import toDashboardIssuePrCard, { type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
 
 const props = defineProps<{
   item: DashboardIssuePrEntity;
+}>();
+
+const emit = defineEmits<{
+  'linked-pull-request-count-click': [payload: LinkedPullRequestCountClickPayload];
 }>();
 
 const { locale, t } = useI18n();
@@ -122,6 +146,30 @@ const commentsTitle = computed(() => {
   if (card.value.comments === null) return '';
   return t('dashboard.meta.commentCount', { count: card.value.comments });
 });
+
+const linkedPullRequestSummary = computed(() =>
+  readLinkedPullRequestListSummary(card.value.linkedPullRequestCount, card.value.linkedPullRequest)
+);
+const showLinkedPullRequestCount = computed(() => {
+  const count = linkedPullRequestSummary.value?.count;
+  return typeof count === 'number' && count > 0;
+});
+const linkedPullRequestIssue = computed(() => {
+  const repoPath = parseGitHubRepoPath(props.item.repository_url);
+  return toLinkedPullRequestIdentity({
+    owner: repoPath?.owner,
+    repo: repoPath?.repo,
+    number: props.item.number,
+  });
+});
+const handleLinkedPullRequestCountClick = () => {
+  const summary = linkedPullRequestSummary.value;
+  if (!summary) return;
+  emit('linked-pull-request-count-click', {
+    summary,
+    issue: linkedPullRequestIssue.value,
+  });
+};
 
 const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({

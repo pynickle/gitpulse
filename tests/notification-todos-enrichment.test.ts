@@ -2,15 +2,19 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { shallowRef } from 'vue';
 
-import { createNotificationSubjectEnrichmentSession } from '../app/composables/notification-subject-enrichment/session';
 import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
 import type { DashboardNotification } from '../shared/types/notifications';
 import type { NotificationTodoItem } from '../shared/types/user-settings';
+import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
 
 const userSettingsUtils = await import('../shared/utils/user-settings');
 
+mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
+
+const { createNotificationSubjectEnrichmentSession } =
+  await import('../app/composables/notification-subject-enrichment/session');
 
 const { useNotificationTodos } = await import('../app/composables/useNotificationTodos');
 

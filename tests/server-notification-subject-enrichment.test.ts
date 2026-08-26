@@ -1,6 +1,13 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
+import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+
+mock.module('#shared/types/linked-pull-requests', () => linkedPullRequestTypes);
+mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+
 const validationUtils = await import('../server/utils/notification-subject-state-validation-utils');
+const linkedPullRequestGraphql = await import('../server/utils/linked-pull-request-graphql-utils');
 
 let requestBody: unknown;
 let graphQLRequest: (query: string, variables: Record<string, unknown>) => Promise<unknown>;
@@ -25,6 +32,7 @@ let routedError: unknown;
 })) as unknown as typeof getGitHubClient;
 
 mock.module('#server/utils/notification-subject-state-validation-utils', () => validationUtils);
+mock.module('#server/utils/linked-pull-request-graphql-utils', () => linkedPullRequestGraphql);
 mock.module('#server/utils/github-auth-utils', () => ({
   throwGitHubRouteError: (error: unknown) => {
     routedError = error;
@@ -84,8 +92,15 @@ describe('Notification Subject Enrichment server endpoint', () => {
     requestBody = { targets };
     graphQLRequest = async (query, variables) => {
       expect(query).toContain('issue(number: $number0)');
+      expect(query).toContain('closedByPullRequestsReferences(first: 1, includeClosedPrs: true)');
       expect(query).toContain('pullRequest(number: $number1)');
       expect(query).toContain('discussion(number: $number2)');
+      expect(query.indexOf('closedByPullRequestsReferences')).toBeGreaterThan(
+        query.indexOf('issue(number: $number0)')
+      );
+      expect(query.indexOf('closedByPullRequestsReferences')).toBeLessThan(
+        query.indexOf('pullRequest(number: $number1)')
+      );
       expect(variables).toMatchObject({
         owner0: 'acme',
         repo0: 'widgets',
@@ -170,6 +185,44 @@ describe('Notification Subject Enrichment server endpoint', () => {
       comments: undefined,
       authorLogin: undefined,
       authorAvatarUrl: undefined,
+    });
+    expect(response.items[1]).not.toHaveProperty('linkedPullRequestCount');
+    expect(response.items[2]).not.toHaveProperty('linkedPullRequestCount');
+  });
+
+  test('attaches Linked Pull Request Count and optional identity on Issue results', async () => {
+    requestBody = { targets: [targets[0]] };
+    graphQLRequest = async (query) => {
+      expect(query).toContain('includeClosedPrs: true');
+      return {
+        subject0: {
+          issue: {
+            title: 'Issue with Development links',
+            updatedAt: '2026-08-12T01:00:00.000Z',
+            state: 'OPEN',
+            comments: { totalCount: 1 },
+            author: { login: 'issue-author', avatarUrl: 'https://avatars.example/issue' },
+            closedByPullRequestsReferences: {
+              totalCount: 1,
+              nodes: [
+                {
+                  number: 44,
+                  repository: { name: 'widgets', owner: { login: 'acme' } },
+                },
+              ],
+            },
+          },
+        },
+      };
+    };
+
+    const response = await handler({});
+
+    expect(response.items[0]).toMatchObject({
+      key: 'acme/widgets/issues/1',
+      title: 'Issue with Development links',
+      linkedPullRequestCount: 1,
+      linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 44 },
     });
   });
 

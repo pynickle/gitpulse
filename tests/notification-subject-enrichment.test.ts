@@ -1,9 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
-import { createNotificationSubjectEnrichmentSession } from '../app/composables/notification-subject-enrichment/session';
 import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
 import type { DashboardNotification } from '../shared/types/notifications';
+import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
+
+mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+
+const { createNotificationSubjectEnrichmentSession } =
+  await import('../app/composables/notification-subject-enrichment/session');
 
 const notification = (
   id: string,
@@ -166,6 +171,51 @@ describe('Notification Subject Enrichment', () => {
       isAnswered: true,
       stateStatus: 'loaded',
     });
+    expect(outcome.notifications[0]?.subject).not.toHaveProperty('linkedPullRequestCount');
+    expect(outcome.notifications[1]?.subject).not.toHaveProperty('linkedPullRequestCount');
+  });
+
+  test('loads Linked Pull Request Count and identity onto Issue Notifications only', async () => {
+    const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
+      {
+        key: 'acme/widgets/issues/7',
+        title: 'Has a linked pull request',
+        state: 'open',
+        linkedPullRequestCount: 1,
+        linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 9 },
+      },
+      {
+        key: 'acme/widgets/pulls/2',
+        title: 'Pull request',
+        state: 'open',
+        linkedPullRequestCount: 4,
+        linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 1 },
+      },
+    ]);
+    const session = createNotificationSubjectEnrichmentSession({
+      adapter,
+      parseSubject: parseGitHubNotificationSubjectTarget,
+    });
+    const input = [
+      notification('issue', 'Issue', 'https://api.github.com/repos/acme/widgets/issues/7'),
+      notification('pull', 'PullRequest', 'https://api.github.com/repos/acme/widgets/pulls/2'),
+    ];
+
+    const outcome = await session.start(input).completion;
+
+    expect(outcome.outcome).toBe('complete');
+    if (outcome.outcome === 'stale') throw new Error('Expected applicable Notifications');
+    expect(outcome.notifications[0]?.subject).toMatchObject({
+      linkedPullRequestCount: 1,
+      linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 9 },
+      stateStatus: 'loaded',
+    });
+    expect(outcome.notifications[1]?.subject).toMatchObject({
+      title: 'Pull request',
+      stateStatus: 'loaded',
+    });
+    expect(outcome.notifications[1]?.subject).not.toHaveProperty('linkedPullRequestCount');
+    expect(outcome.notifications[1]?.subject).not.toHaveProperty('linkedPullRequest');
   });
 
   test('loads more targets than one adapter batch accepts', async () => {

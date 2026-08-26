@@ -279,6 +279,8 @@ describe('user settings store', () => {
               labels: [{ name: 'bug', color: 'd73a4a' }],
               authorLogin: 'octocat',
               authorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
+              linkedPullRequestCount: 1,
+              linkedPullRequest: { owner: 'owner', repo: 'repo', number: 9 },
             },
             repository: {
               full_name: 'owner/repo',
@@ -317,6 +319,8 @@ describe('user settings store', () => {
             labels: [{ name: 'bug', color: 'd73a4a' }],
             authorLogin: 'octocat',
             authorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
+            linkedPullRequestCount: 1,
+            linkedPullRequest: { owner: 'owner', repo: 'repo', number: 9 },
           },
           repository: {
             full_name: 'owner/repo',

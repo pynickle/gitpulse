@@ -1,4 +1,5 @@
 import type { IssueTypeSummary } from './issues';
+import type { LinkedPullRequestIdentity } from './linked-pull-requests';
 
 export type NotificationSubjectKind = 'Issue' | 'PullRequest' | 'Discussion' | 'Release' | string;
 
@@ -27,6 +28,10 @@ export interface DashboardNotificationSubject {
   comments?: number;
   authorLogin?: string;
   authorAvatarUrl?: string;
+  /** Linked Pull Request Count for Issues after Notification Subject Enrichment. */
+  linkedPullRequestCount?: number;
+  /** Present only when Linked Pull Request Count is 1 and routing identity is complete. */
+  linkedPullRequest?: LinkedPullRequestIdentity;
 }
 
 export interface DashboardNotificationRepository {
@@ -71,4 +76,8 @@ export interface NotificationSubjectEnrichmentResult {
   comments?: number;
   authorLogin?: string;
   authorAvatarUrl?: string;
+  /** Linked Pull Request Count. Present on Issue results only. */
+  linkedPullRequestCount?: number;
+  /** Present only when Count is 1 and owner, repository, and number are all present. */
+  linkedPullRequest?: LinkedPullRequestIdentity;
 }

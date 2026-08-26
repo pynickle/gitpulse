@@ -1,15 +1,19 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { createNotificationSubjectEnrichmentSession } from '../app/composables/notification-subject-enrichment/session';
 import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
 import type { DashboardNotification } from '../shared/types/notifications';
+import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
 
 const githubSearchQueryUtils = await import('../shared/utils/github-search-query');
 const dashboardFilters = await import('../app/composables/useDashboardFilters');
 
+mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/github-search-query', () => githubSearchQueryUtils);
 mock.module('~/composables/useDashboardFilters', () => dashboardFilters);
+
+const { createNotificationSubjectEnrichmentSession } =
+  await import('../app/composables/notification-subject-enrichment/session');
 
 const { useGithubData } = await import('../app/composables/useGithubData');
 

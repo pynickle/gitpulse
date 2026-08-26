@@ -33,6 +33,7 @@ import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import RepoContributorsCard from '~/components/dashboard/detail/RepoContributorsCard.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
+import LinkedPullRequestPickerModal from '~/components/dashboard/LinkedPullRequestPickerModal.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
@@ -63,6 +64,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'open-issue', item: DashboardIssuePrEntity): void;
   (e: 'open-pull-request', item: DashboardIssuePrEntity): void;
+  (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
 }>();
 
 type RepoDetailIcon = Component;
@@ -273,6 +275,16 @@ const handleIssuePrSelect = (item: DashboardIssuePrEntity) => {
 
   emit('open-issue', item);
 };
+
+const {
+  pickerIssue: linkedPullRequestPickerIssue,
+  isPickerVisible: isLinkedPullRequestPickerVisible,
+  handleLinkedPullRequestCountClick,
+  closePicker: closeLinkedPullRequestPicker,
+  selectFromPicker: selectLinkedPullRequestFromPicker,
+} = useLinkedPullRequestListNavigation((identity) => {
+  emit('switch-pull-request', identity.owner, identity.repo, identity.number);
+});
 
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
@@ -961,6 +973,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               :empty-message="listEmptyMessage"
               @select="handleIssuePrSelect"
               @retry="listRefresh"
+              @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
             />
           </div>
         </section>
@@ -1063,6 +1076,15 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
       </div>
     </div>
   </div>
+
+  <LinkedPullRequestPickerModal
+    :is-visible="isLinkedPullRequestPickerVisible"
+    :owner="linkedPullRequestPickerIssue?.owner ?? ''"
+    :repo="linkedPullRequestPickerIssue?.repo ?? ''"
+    :number="linkedPullRequestPickerIssue?.number ?? 1"
+    @close="closeLinkedPullRequestPicker"
+    @select="selectLinkedPullRequestFromPicker"
+  />
 </template>
 
 <style scoped lang="scss">

@@ -616,6 +616,21 @@
     "meta": {
       "commentCount": "{count} 条评论"
     },
+    "linkedPullRequests": {
+      "count": "{count} 个链接的拉取请求",
+      "pickerTitle": "链接的拉取请求",
+      "sameRepository": "此仓库",
+      "otherRepositories": "其他仓库",
+      "loading": "正在加载链接的拉取请求…",
+      "error": "无法加载链接的拉取请求。",
+      "empty": "没有链接的拉取请求。",
+      "remainder": "还有 {count} 个链接的拉取请求",
+      "closeAriaLabel": "关闭",
+      "stateOpen": "打开",
+      "stateDraft": "草稿",
+      "stateMerged": "已合并",
+      "stateClosed": "已关闭"
+    },
     "notificationSubjectEnrichment": {
       "failure": "部分通知详情无法刷新。",
       "retry": "重试通知详情",

@@ -616,6 +616,21 @@
     "meta": {
       "commentCount": "{count} comments"
     },
+    "linkedPullRequests": {
+      "count": "{count} linked pull requests",
+      "pickerTitle": "Linked pull requests",
+      "sameRepository": "This repository",
+      "otherRepositories": "Other repositories",
+      "loading": "Loading linked pull requests…",
+      "error": "Could not load linked pull requests.",
+      "empty": "No linked pull requests.",
+      "remainder": "{count} more linked pull requests",
+      "closeAriaLabel": "Close",
+      "stateOpen": "Open",
+      "stateDraft": "Draft",
+      "stateMerged": "Merged",
+      "stateClosed": "Closed"
+    },
     "notificationSubjectEnrichment": {
       "failure": "Some notification details could not be refreshed.",
       "retry": "Retry notification details",
