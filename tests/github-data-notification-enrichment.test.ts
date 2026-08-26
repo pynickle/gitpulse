@@ -7,10 +7,12 @@ import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemory
 
 const githubSearchQueryUtils = await import('../shared/utils/github-search-query');
 const dashboardFilters = await import('../app/composables/useDashboardFilters');
+const pendingPaginationPage = await import('../app/utils/withPendingPaginationPage');
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/github-search-query', () => githubSearchQueryUtils);
 mock.module('~/composables/useDashboardFilters', () => dashboardFilters);
+mock.module('~/utils/withPendingPaginationPage', () => pendingPaginationPage);
 
 const { createNotificationSubjectEnrichmentSession } =
   await import('../app/composables/notification-subject-enrichment/session');

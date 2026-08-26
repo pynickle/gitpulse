@@ -7,6 +7,7 @@ import type {
 } from '#shared/types/repos';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import createSessionLruCache from '~/utils/sessionLruCache';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 const DEFAULT_PER_PAGE = 20;
 /** Per list query (owner/repo/ref): keep recent pages for instant back-nav. */
@@ -73,7 +74,6 @@ export function useRepoCommitList(
 
   const showPagination = computed(() => {
     return (
-      !loading.value &&
       !error.value &&
       (pagination.value.hasPrev ||
         pagination.value.hasNext ||
@@ -118,6 +118,7 @@ export function useRepoCommitList(
     requestId = nextRequestId;
     loading.value = true;
     error.value = '';
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     const searchParams = new URLSearchParams({
       page: String(page),
@@ -164,7 +165,7 @@ export function useRepoCommitList(
   };
 
   const goToPage = async (page: number) => {
-    if (page < 1 || page === pagination.value.page || loading.value) return;
+    if (page < 1 || page === pagination.value.page) return;
     await fetchPage(page);
   };
 

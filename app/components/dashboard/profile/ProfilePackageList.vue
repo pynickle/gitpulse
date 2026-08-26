@@ -113,19 +113,19 @@ const updatedLabel = (pkg: PackageSummary) => {
       </button>
     </div>
 
-    <div v-if="loading" class="profile-package-list__status">
-      <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
-    </div>
-
-    <div v-else-if="error" class="profile-package-list__status profile-package-list__status--error">
+    <div v-if="error" class="profile-package-list__status profile-package-list__status--error">
       <p>{{ error }}</p>
       <button type="button" class="button is-small is-light" @click="refresh">
         {{ t('profile.retry') }}
       </button>
     </div>
 
-    <template v-else-if="items.length">
-      <div class="profile-package-list__items">
+    <template v-else>
+      <div v-if="loading" class="profile-package-list__status">
+        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+      </div>
+
+      <div v-else-if="items.length" class="profile-package-list__items">
         <button
           v-for="pkg in items"
           :key="`${pkg.packageType}:${pkg.id}`"
@@ -160,6 +160,11 @@ const updatedLabel = (pkg: PackageSummary) => {
         </button>
       </div>
 
+      <div v-else class="profile-package-list__status profile-package-list__status--empty">
+        <PackageIcon :size="26" aria-hidden="true" />
+        <p>{{ emptyLabel }}</p>
+      </div>
+
       <DashboardPagination
         v-if="showPagination"
         class="profile-package-list__pagination"
@@ -167,11 +172,6 @@ const updatedLabel = (pkg: PackageSummary) => {
         @change="goToPage"
       />
     </template>
-
-    <div v-else class="profile-package-list__status profile-package-list__status--empty">
-      <PackageIcon :size="26" aria-hidden="true" />
-      <p>{{ emptyLabel }}</p>
-    </div>
   </div>
 </template>
 

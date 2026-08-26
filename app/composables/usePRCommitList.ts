@@ -6,6 +6,7 @@ import type {
   RepoCommitListResponse,
 } from '#shared/types/repos';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 const DEFAULT_PER_PAGE = 30;
 
@@ -54,7 +55,6 @@ export function usePRCommitList(
 
   const showPagination = computed(() => {
     return (
-      !loading.value &&
       !error.value &&
       (pagination.value.hasPrev ||
         pagination.value.hasNext ||
@@ -75,6 +75,7 @@ export function usePRCommitList(
     requestId = nextRequestId;
     loading.value = true;
     error.value = '';
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     const searchParams = new URLSearchParams({
       page: String(page),
@@ -111,7 +112,7 @@ export function usePRCommitList(
   };
 
   const goToPage = async (page: number) => {
-    if (page < 1 || page === pagination.value.page || loading.value) return;
+    if (page < 1 || page === pagination.value.page) return;
     await fetchPage(page);
   };
 

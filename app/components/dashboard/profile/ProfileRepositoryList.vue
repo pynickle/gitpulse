@@ -19,25 +19,30 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
 
 <template>
   <div class="profile-repo-list">
-    <div v-if="loading" class="profile-repo-list__status">
-      <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
-    </div>
-
-    <div v-else-if="error" class="profile-repo-list__status profile-repo-list__status--error">
+    <div v-if="error" class="profile-repo-list__status profile-repo-list__status--error">
       <p>{{ error }}</p>
       <button type="button" class="button is-small is-light" @click="refresh">
         {{ t('profile.retry') }}
       </button>
     </div>
 
-    <template v-else-if="items.length">
-      <div class="profile-repo-list__items">
+    <template v-else>
+      <div v-if="loading" class="profile-repo-list__status">
+        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+      </div>
+
+      <div v-else-if="items.length" class="profile-repo-list__items">
         <RepoItem
           v-for="repo in items"
           :key="repo.id"
           :repo="repo"
           class="profile-repo-list__cell"
         />
+      </div>
+
+      <div v-else class="profile-repo-list__status profile-repo-list__status--empty">
+        <BookMarkedIcon :size="26" aria-hidden="true" />
+        <p>{{ emptyLabel }}</p>
       </div>
 
       <DashboardPagination
@@ -47,11 +52,6 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
         @change="goToPage"
       />
     </template>
-
-    <div v-else class="profile-repo-list__status profile-repo-list__status--empty">
-      <BookMarkedIcon :size="26" aria-hidden="true" />
-      <p>{{ emptyLabel }}</p>
-    </div>
   </div>
 </template>
 

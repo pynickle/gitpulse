@@ -13,6 +13,7 @@ import type {
 import type { UserConnectionPaginationMeta } from '#shared/types/users';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import createSessionLruCache from '~/utils/sessionLruCache';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 const DEFAULT_PER_PAGE = 30;
 /** Per list query (username/type/account): keep recent pages for instant back-nav. */
@@ -73,7 +74,6 @@ export function useUserPackages(
 
   const showPagination = computed(() => {
     return (
-      !loading.value &&
       !error.value &&
       (pagination.value.hasPrev ||
         pagination.value.hasNext ||
@@ -121,6 +121,7 @@ export function useUserPackages(
     requestId = nextRequestId;
     loading.value = true;
     error.value = '';
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     const searchParams = new URLSearchParams({
       page: String(page),
@@ -159,7 +160,7 @@ export function useUserPackages(
   };
 
   const goToPage = async (page: number) => {
-    if (page < 1 || page === pagination.value.page || loading.value) return;
+    if (page < 1 || page === pagination.value.page) return;
     await fetchPage(page);
   };
 
@@ -251,7 +252,6 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
 
   const versionsShowPagination = computed(() => {
     return (
-      !loadingVersions.value &&
       !versionsError.value &&
       (versionsPagination.value.hasPrev ||
         versionsPagination.value.hasNext ||
@@ -281,6 +281,7 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
 
     loadingVersions.value = true;
     versionsError.value = '';
+    versionsPagination.value = withPendingPaginationPage(versionsPagination.value, page);
 
     const searchParams = buildTargetSearchParams(currentTarget, {
       page: String(page),
@@ -313,7 +314,7 @@ export function useUserPackageDetail(target: () => PackageDetailTarget | null) {
   };
 
   const goToVersionsPage = async (page: number) => {
-    if (page < 1 || page === versionsPagination.value.page || loadingVersions.value) return;
+    if (page < 1 || page === versionsPagination.value.page) return;
     await fetchVersionsPage(page);
   };
 

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { FlaskConicalIcon, LayoutGridIcon, PencilLineIcon, RocketIcon, TagIcon } from '@lucide/vue';
+import {
+  FlaskConicalIcon,
+  LayoutGridIcon,
+  Loader2Icon,
+  PencilLineIcon,
+  RocketIcon,
+  TagIcon,
+} from '@lucide/vue';
 import { computed, onMounted, ref, watch, type Component } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
@@ -248,19 +255,19 @@ watch(repoFullName, () => {
           </button>
         </div>
 
-        <div v-else-if="!loading && items.length === 0" class="releases-page__empty">
+        <div v-else-if="loading" class="releases-page__empty" aria-busy="true">
+          <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+        </div>
+
+        <div v-else-if="items.length === 0" class="releases-page__empty">
           <p>{{ t('releasesPage.empty') }}</p>
         </div>
 
-        <div v-else-if="!loading && filteredItems.length === 0" class="releases-page__empty">
+        <div v-else-if="filteredItems.length === 0" class="releases-page__empty">
           <p>{{ t('releasesPage.emptyFiltered') }}</p>
         </div>
 
-        <div
-          v-else
-          class="releases-page__list"
-          :class="{ 'releases-page__list--loading': loading }"
-        >
+        <div v-else class="releases-page__list">
           <ReleaseListItemCard
             v-if="latestRelease"
             :release="latestRelease"
@@ -386,9 +393,18 @@ watch(repoFullName, () => {
   gap: 0.5rem;
 }
 
-.releases-page__list--loading {
-  opacity: 0.6;
-  pointer-events: none;
+.spin-animation {
+  animation: spin 1s linear infinite;
+  color: var(--gitpulse-accent);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .releases-page__section-label {

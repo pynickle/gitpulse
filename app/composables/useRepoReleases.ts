@@ -1,4 +1,5 @@
 import type { ReleaseListItem } from '#shared/types/releases';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 export interface ReleasePaginationMeta {
   page: number;
@@ -37,6 +38,7 @@ export function useRepoReleases() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     try {
       const params = new URLSearchParams({ page: String(page) });

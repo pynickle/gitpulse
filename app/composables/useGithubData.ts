@@ -11,6 +11,7 @@ import {
   type NotificationFilterAdapter,
 } from '~/composables/useDashboardFilters';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 interface DashboardEntity {
   id: PropertyKey;
@@ -646,6 +647,10 @@ export function useGithubData() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value.notifications = withPendingPaginationPage(
+      pagination.value.notifications,
+      page
+    );
 
     try {
       const data = await apiFetch<PaginatedDashboardResponse<DashboardNotification>>(
@@ -723,6 +728,10 @@ export function useGithubData() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value.notifications = withPendingPaginationPage(
+      pagination.value.notifications,
+      page
+    );
 
     try {
       let fetchedPages: NotificationRawPageResponse[] = [];
@@ -915,6 +924,7 @@ export function useGithubData() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value.issues = withPendingPaginationPage(pagination.value.issues, page);
 
     try {
       // Built-in issue tabs use GitHub Search when query-level filters are available.
@@ -969,6 +979,7 @@ export function useGithubData() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value.pulls = withPendingPaginationPage(pagination.value.pulls, page);
 
     try {
       // Built-in PR tabs use GitHub Search when query-level filters are available.
@@ -1015,6 +1026,7 @@ export function useGithubData() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value.repos = withPendingPaginationPage(pagination.value.repos, page);
 
     try {
       const data = await apiFetch<PaginatedDashboardResponse<DashboardRepo>>(
@@ -1058,6 +1070,7 @@ export function useGithubData() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value.issues = withPendingPaginationPage(pagination.value.issues, page);
 
     try {
       const data = await apiFetch<PaginatedDashboardResponse<DashboardEntity>>(

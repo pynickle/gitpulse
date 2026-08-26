@@ -7,6 +7,7 @@ import type {
 } from '#shared/types/users';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import createSessionLruCache from '~/utils/sessionLruCache';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 export type UserConnectionRelation = 'followers' | 'following';
 
@@ -67,7 +68,6 @@ function useUserPagedList<TItem>(
 
   const showPagination = computed(() => {
     return (
-      !loading.value &&
       !error.value &&
       (pagination.value.hasPrev ||
         pagination.value.hasNext ||
@@ -111,6 +111,7 @@ function useUserPagedList<TItem>(
     requestId = nextRequestId;
     loading.value = true;
     error.value = '';
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     const searchParams = new URLSearchParams({
       page: String(page),
@@ -154,7 +155,7 @@ function useUserPagedList<TItem>(
   };
 
   const goToPage = async (page: number) => {
-    if (page < 1 || page === pagination.value.page || loading.value) return;
+    if (page < 1 || page === pagination.value.page) return;
     await fetchPage(page);
   };
 

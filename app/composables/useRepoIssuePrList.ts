@@ -9,6 +9,7 @@ import {
   type RepoIssuePrState,
 } from '~/utils/repoIssuePrSearchQuery';
 import createSessionLruCache from '~/utils/sessionLruCache';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 export interface RepoIssuePrPagination {
   page: number;
@@ -92,7 +93,6 @@ export function useRepoIssuePrList(
 
   const showPagination = computed(() => {
     return (
-      !loading.value &&
       !error.value &&
       (pagination.value.hasPrev ||
         pagination.value.hasNext ||
@@ -138,6 +138,7 @@ export function useRepoIssuePrList(
     requestId = nextRequestId;
     loading.value = true;
     error.value = '';
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     const searchParams = new URLSearchParams({
       q: buildRepoIssuePrSearchQuery(currentOwner, currentRepo, currentKind, currentState),
@@ -184,7 +185,7 @@ export function useRepoIssuePrList(
   };
 
   const goToPage = async (page: number) => {
-    if (page < 1 || page === pagination.value.page || loading.value) return;
+    if (page < 1 || page === pagination.value.page) return;
     await fetchPage(page);
   };
 

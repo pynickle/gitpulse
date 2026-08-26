@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowDownIcon, ArrowUpIcon, ClockIcon, StarIcon } from '@lucide/vue';
+import { ArrowDownIcon, ArrowUpIcon, ClockIcon, Loader2Icon, StarIcon } from '@lucide/vue';
 import { computed, onMounted, watch } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
@@ -170,11 +170,15 @@ watch(requestedUser, () => {
           </button>
         </div>
 
-        <div v-else-if="!loading && items.length === 0" class="starred-page__empty">
+        <div v-else-if="loading" class="starred-page__empty" aria-busy="true">
+          <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+        </div>
+
+        <div v-else-if="items.length === 0" class="starred-page__empty">
           <p>{{ isOwnStars ? t('starred.empty') : t('starred.emptyUser') }}</p>
         </div>
 
-        <div v-else class="starred-page__grid" :class="{ 'starred-page__grid--loading': loading }">
+        <div v-else class="starred-page__grid">
           <RepoItem v-for="repo in items" :key="repo.id" :repo="repo" class="starred-page__cell" />
         </div>
       </div>
@@ -229,9 +233,18 @@ watch(requestedUser, () => {
   align-items: stretch;
 }
 
-.starred-page__grid--loading {
-  opacity: 0.6;
-  pointer-events: none;
+.spin-animation {
+  animation: spin 1s linear infinite;
+  color: var(--gitpulse-accent);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Cards fill their grid cell so rows stay even regardless of description length. */

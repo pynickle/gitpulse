@@ -804,6 +804,8 @@ const currentTab = computed<DashboardTab>(() => {
   return selectedCustomTab.value ? 'issues' : currentBuiltinTab.value;
 });
 
+const currentPage = computed(() => parseDashboardPage(route.query.page));
+
 const hasCompletedInitialDashboardLoad = shallowRef(false);
 const dashboardListLoading = computed(() => {
   const hasVisibleData =
@@ -821,8 +823,9 @@ const dashboardListLoading = computed(() => {
     return refreshingNotificationTodos.value && notificationTodos.value.length === 0;
   }
 
-  if (currentTab.value === 'notifications') {
-    return loading.value && notifications.value.length === 0;
+  const loadedPage = pagination.value[currentTab.value]?.page;
+  if (loadedPage !== currentPage.value) {
+    return true;
   }
 
   return loading.value;
@@ -894,9 +897,9 @@ const activityGroups = computed(() => {
   });
 });
 
-const currentPage = computed(() => parseDashboardPage(route.query.page));
-
-const currentPagination = computed(() => pagination.value[currentTab.value]);
+const currentPagination = computed(() =>
+  withPendingPaginationPage(pagination.value[currentTab.value], currentPage.value)
+);
 
 const notificationUsesBatchedFetch = computed(() => {
   return notificationFilterAdapter.value.usesPageLocalPredicates;
@@ -1334,7 +1337,7 @@ watch(selectedCustomTab, (customTab) => {
 });
 
 watch(
-  () => currentPagination.value.page,
+  () => pagination.value[currentTab.value].page,
   (resolvedPage) => {
     if (resolvedPage === currentPage.value) {
       return;

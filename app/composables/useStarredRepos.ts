@@ -3,6 +3,7 @@ import {
   type StarredDirection,
   type StarredSort,
 } from '#shared/utils/starred';
+import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 export type { StarredDirection, StarredSort };
 
@@ -72,6 +73,7 @@ export function useStarredRepos() {
     activeRequestId.value = requestId;
     loading.value = true;
     error.value = null;
+    pagination.value = withPendingPaginationPage(pagination.value, page);
 
     try {
       const params = new URLSearchParams({

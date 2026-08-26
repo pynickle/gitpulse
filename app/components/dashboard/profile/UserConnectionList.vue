@@ -26,25 +26,30 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
 
 <template>
   <div class="user-connection-list">
-    <div v-if="loading" class="user-connection-list__status">
-      <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
-    </div>
-
-    <div v-else-if="error" class="user-connection-list__status user-connection-list__status--error">
+    <div v-if="error" class="user-connection-list__status user-connection-list__status--error">
       <p>{{ error }}</p>
       <button type="button" class="button is-small is-light" @click="refresh">
         {{ t('profile.retry') }}
       </button>
     </div>
 
-    <template v-else-if="items.length">
-      <div class="user-connection-list__items">
+    <template v-else>
+      <div v-if="loading" class="user-connection-list__status">
+        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+      </div>
+
+      <div v-else-if="items.length" class="user-connection-list__items">
         <UserListItem
           v-for="user in items"
           :key="user.login"
           :user="user"
           @select="emit('select', $event)"
         />
+      </div>
+
+      <div v-else class="user-connection-list__status user-connection-list__status--empty">
+        <UsersIcon :size="26" aria-hidden="true" />
+        <p>{{ emptyLabel }}</p>
       </div>
 
       <DashboardPagination
@@ -54,11 +59,6 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
         @change="goToPage"
       />
     </template>
-
-    <div v-else class="user-connection-list__status user-connection-list__status--empty">
-      <UsersIcon :size="26" aria-hidden="true" />
-      <p>{{ emptyLabel }}</p>
-    </div>
   </div>
 </template>
 
