@@ -47,7 +47,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@j178/prek": "^0.4.14",
+    "@j178/prek": "^0.5.0",
     "@nuxtjs/i18n": "^10.6.0",
     "@types/node": "^26.3.0",
     "oxfmt": "^0.65.0",
