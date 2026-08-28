@@ -88,6 +88,8 @@
     "home": "Home",
     "retry": "Retry",
     "syncing": "Syncing data...",
+    "hideDetailSidebar": "Hide Detail Sidebar",
+    "showDetailSidebar": "Show Detail Sidebar",
     "loading": {
       "issue": "Loading issue...",
       "pullRequest": "Loading pull request...",

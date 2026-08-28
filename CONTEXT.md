@@ -97,3 +97,17 @@ The user setting that seeds Composer Layout when a Conversation Composer opens.
 
 **Review Inline Composer Default Layout**:
 The user setting that seeds Composer Layout when a Review Inline Composer opens.
+
+## Detail Overlays
+
+**Detail Overlay**:
+The full-screen surface that opens over the dashboard to show one subject in depth: a pull request, issue, discussion, or repository.
+_Avoid_: detail page, detail view
+
+**Detail Sidebar**:
+The metadata column on the right side of a Detail Overlay, holding cards such as labels, assignees, and actions. Present on pull request, issue, discussion, and repository Detail Overlays.
+_Avoid_: right panel, metadata column, "sidebar" used alone
+
+**Tab Sidebar**:
+The dashboard's left navigation sidebar listing tabs and tab groups.
+_Avoid_: left menu, main sidebar

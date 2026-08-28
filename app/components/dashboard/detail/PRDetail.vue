@@ -14,7 +14,7 @@
       @close="closeReviewWindow"
     />
 
-    <div v-else class="columns">
+    <div v-else class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
       <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
         <div v-if="detailError" class="notification is-danger is-light mb-4 py-2 px-3">
           <p class="is-size-7">{{ detailError }}</p>
@@ -119,7 +119,7 @@
         </div>
       </div>
 
-      <div class="column detail-sidebar-column">
+      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
         <div
           class="sidebar-scroll"
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
@@ -242,6 +242,7 @@ interface PRPanelTab {
 const props = defineProps<{
   pullRequest: PullRequestDetailViewModel;
   reviewActive?: boolean;
+  detailSidebarHidden?: boolean;
   sourceNotification?: DashboardNotification | null;
 }>();
 
@@ -1090,6 +1091,8 @@ watch(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-sidebar-columns' as *;
+
 .pr-detail-layout :deep(.columns) {
   height: 100%;
   min-height: 0;
@@ -1097,12 +1100,13 @@ watch(
   margin-bottom: 0;
 }
 
+@include detail-sidebar-columns('.pr-detail-layout');
+
 .pr-detail-layout :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-  flex: none;
-  width: 72%;
+  min-width: 0;
 }
 
 .detail-header-boundary {
@@ -1113,8 +1117,6 @@ watch(
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  flex: none;
-  width: 28%;
   padding-right: 1rem;
 }
 
@@ -1262,4 +1264,7 @@ watch(
   margin-top: 1.5rem;
   margin-bottom: 5rem;
 }
+
+/* After the base .pr-detail-layout rule so the stacking overrides win. */
+@include detail-sidebar-stacking('.pr-detail-layout');
 </style>

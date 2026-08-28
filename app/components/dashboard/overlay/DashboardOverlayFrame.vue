@@ -9,6 +9,9 @@
           :show-home-button="showHomeButton"
           :non-sticky="nonStickyHeader"
           :detail-summary="detailSummary"
+          :show-detail-sidebar-toggle="showDetailSidebarToggle"
+          :detail-sidebar-hidden="detailSidebarHidden"
+          @toggle-detail-sidebar="$emit('toggle-detail-sidebar')"
           @back="$emit('back')"
           @home="$emit('home')"
         />
@@ -61,11 +64,14 @@ defineProps<{
   contentClass?: string;
   hideHeader?: boolean;
   detailSummary?: DetailSummary | null;
+  showDetailSidebarToggle?: boolean;
+  detailSidebarHidden?: boolean;
 }>();
 
 defineEmits<{
   (e: 'back'): void;
   (e: 'home'): void;
+  (e: 'toggle-detail-sidebar'): void;
 }>();
 </script>
 

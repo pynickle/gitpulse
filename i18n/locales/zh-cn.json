@@ -88,6 +88,8 @@
     "home": "主页",
     "retry": "重试",
     "syncing": "同步数据中...",
+    "hideDetailSidebar": "隐藏详情侧边栏",
+    "showDetailSidebar": "显示详情侧边栏",
     "loading": {
       "issue": "正在加载议题...",
       "pullRequest": "正在加载拉取请求...",

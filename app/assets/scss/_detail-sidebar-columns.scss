@@ -1,0 +1,72 @@
+/*
+ * Shared Detail Sidebar collapse layout for the four Detail Overlay detail
+ * components. The two-column grid track list is driven by --detail-columns so
+ * hiding the Detail Sidebar transitions grid-template-columns, mirroring the
+ * repository file view precedent. $scope is the component's root selector.
+ */
+@mixin detail-sidebar-columns($scope) {
+  #{$scope} :deep(.columns) {
+    --detail-columns: minmax(0, 72%) minmax(0, 28%);
+
+    display: grid;
+    grid-template-columns: var(--detail-columns);
+    transition: grid-template-columns 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #{$scope} :deep(.columns--detail-sidebar-hidden) {
+    --detail-columns: minmax(0, 100%) minmax(0, 0%);
+  }
+
+  #{$scope} :deep(.detail-sidebar-column) {
+    transition:
+      opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0.22s;
+  }
+
+  /* Staged fade: while collapsing, the content fade lags the track collapse;
+     while showing, it starts immediately. */
+  #{$scope} :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+    opacity: 0;
+    visibility: hidden;
+    transition-delay: 0.06s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #{$scope} :deep(.columns),
+    #{$scope} :deep(.detail-sidebar-column) {
+      transition: none;
+    }
+  }
+}
+
+/*
+ * Below-1024px column stacking shared by the pull request, issue and
+ * discussion details; the repository detail keeps its own wider block.
+ */
+@mixin detail-sidebar-stacking($scope) {
+  @media (max-width: 1024px) {
+    #{$scope} {
+      overflow-y: auto;
+    }
+
+    #{$scope} :deep(.columns) {
+      display: block;
+      height: auto;
+    }
+
+    #{$scope} :deep(.detail-main-column),
+    #{$scope} :deep(.detail-sidebar-column) {
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    #{$scope} :deep(.detail-sidebar-column) {
+      padding-right: 0.75rem;
+    }
+
+    #{$scope} :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+      display: none;
+    }
+  }
+}

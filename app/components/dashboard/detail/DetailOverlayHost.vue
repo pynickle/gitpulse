@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Loader2Icon } from '@lucide/vue';
-import { computed, defineAsyncComponent, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, onUnmounted, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
@@ -17,6 +17,14 @@ import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
 type DetailSubjectType = 'issue' | 'pull-request' | 'discussion';
+
+/* Pane types whose subject has a Detail Sidebar and can hide it. */
+const DETAIL_SIDEBAR_PANE_TYPES: ReadonlySet<DetailPaneType> = new Set([
+  'issue',
+  'pull-request',
+  'discussion',
+  'repository',
+]);
 
 interface ActiveDetailPane {
   type: DetailPaneType;
@@ -83,6 +91,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
+const { isDetailSidebarHidden, syncDetailSidebarPane, toggleDetailSidebar } =
+  useDetailSidebarState();
 const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
   createDashboardDetailPaneLoaders();
 const isIssueHeaderNonSticky = shallowRef(false);
@@ -157,6 +167,26 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
 const activeDetailKey = computed(() => activeDetailPane.value?.key ?? 'empty');
 
 const isOverlayVisible = computed(() => Boolean(activeDetailPane.value));
+
+const isDetailSidebarToggleVisible = computed(() => {
+  const pane = activeDetailPane.value;
+  return Boolean(pane && DETAIL_SIDEBAR_PANE_TYPES.has(pane.type));
+});
+
+/*
+ * Identity of the active pane for Detail Sidebar state resets. The PR Review
+ * Workspace swaps the pane key for a `pr-review-` one while staying on the
+ * same subject, so both keys map to one identity and a review detour keeps
+ * the current collapsed choice.
+ */
+const detailSidebarPaneIdentity = computed(() => {
+  const pane = activeDetailPane.value;
+  if (!pane || !DETAIL_SIDEBAR_PANE_TYPES.has(pane.type)) return null;
+
+  const subjectKey =
+    pane.type === 'pull-request' ? pane.key.replace(/^pr-review-/, 'pr-') : pane.key;
+  return `${pane.type}:${subjectKey}`;
+});
 
 const repositoryOwner = computed(() => {
   const owner = props.repository?.owner;
@@ -253,6 +283,17 @@ watch(activeDetailKey, () => {
   isCompactHeaderVisible.value = false;
   pullRequestCompactSummary.value = null;
 });
+
+watch(detailSidebarPaneIdentity, (paneIdentity) => syncDetailSidebarPane(paneIdentity), {
+  immediate: true,
+});
+
+/*
+ * The volatile Detail Sidebar state outlives this host (app-scoped), so an
+ * unmount — closing the overlay, opening the file view, or leaving the
+ * dashboard — ends the session and the next overlay opens expanded again.
+ */
+onUnmounted(() => syncDetailSidebarPane(null));
 </script>
 
 <template>
@@ -268,6 +309,9 @@ watch(activeDetailKey, () => {
       :non-sticky-header="isHeaderNonSticky"
       :hide-header="isPullRequestReviewActive"
       :detail-summary="detailSummary"
+      :show-detail-sidebar-toggle="isDetailSidebarToggleVisible"
+      :detail-sidebar-hidden="isDetailSidebarHidden"
+      @toggle-detail-sidebar="toggleDetailSidebar"
       content-class="detail-host-content p-0 is-clipped"
       @back="emit('back')"
       @home="emit('home')"
@@ -319,6 +363,7 @@ watch(activeDetailKey, () => {
             <IssueDetail
               v-else-if="activeDetailPane?.type === 'issue' && issue"
               :issue="issue"
+              :detail-sidebar-hidden="isDetailSidebarHidden"
               :source-notification="sourceNotification"
               @update:non-sticky-header="isIssueHeaderNonSticky = $event"
               @update:compact-header-visible="isCompactHeaderVisible = $event"
@@ -330,6 +375,7 @@ watch(activeDetailKey, () => {
               v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
               :pull-request="pullRequest"
               :review-active="isPullRequestReviewRoute"
+              :detail-sidebar-hidden="isDetailSidebarHidden"
               :source-notification="sourceNotification"
               @update:review-active="isPullRequestReviewActive = $event"
               @update:compact-header-visible="isCompactHeaderVisible = $event"
@@ -343,6 +389,7 @@ watch(activeDetailKey, () => {
             <DiscussionDetail
               v-else-if="activeDetailPane?.type === 'discussion' && discussion"
               :discussion="discussion"
+              :detail-sidebar-hidden="isDetailSidebarHidden"
               :source-notification="sourceNotification"
               @update:compact-header-visible="isCompactHeaderVisible = $event"
               @switch-issue="handleSwitchIssue"
@@ -360,6 +407,7 @@ watch(activeDetailKey, () => {
               :repository="repository"
               :owner="repositoryOwner"
               :repo="repositoryName"
+              :detail-sidebar-hidden="isDetailSidebarHidden"
               @open-issue="emit('open-issue', $event)"
               @open-pull-request="emit('open-pull-request', $event)"
               @switch-pull-request="handleSwitchPullRequest"

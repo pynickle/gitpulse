@@ -1,6 +1,6 @@
 <template>
   <div ref="detailScrollRef" class="detail-scroll" @scroll="onCompactHeaderScroll">
-    <div class="columns">
+    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
       <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
         <div ref="detailHeaderRef" class="detail-header-boundary">
           <IssueHeader
@@ -29,7 +29,7 @@
         </div>
       </div>
 
-      <div class="column detail-sidebar-column">
+      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
         <div
           class="sidebar-scroll"
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
@@ -102,6 +102,7 @@ import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
   issue: IssueDetailPayload;
+  detailSidebarHidden?: boolean;
   sourceNotification?: DashboardNotification | null;
 }>();
 
@@ -412,6 +413,8 @@ watch(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-sidebar-columns' as *;
+
 .detail-scroll {
   height: 100%;
   min-height: 0;
@@ -425,12 +428,13 @@ watch(
   margin-bottom: 0;
 }
 
+@include detail-sidebar-columns('.detail-scroll');
+
 .detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-  flex: none;
-  width: 72%;
+  min-width: 0;
 }
 
 .detail-header-boundary {
@@ -441,8 +445,6 @@ watch(
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  flex: none;
-  width: 28%;
   padding-right: 1rem;
 }
 
@@ -483,4 +485,6 @@ watch(
 .issue-detail__timeline {
   padding-bottom: 5rem;
 }
+
+@include detail-sidebar-stacking('.detail-scroll');
 </style>

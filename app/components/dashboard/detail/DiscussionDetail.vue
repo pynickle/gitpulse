@@ -20,6 +20,7 @@ import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 const props = defineProps<{
   discussion: DiscussionDetailPayload;
+  detailSidebarHidden?: boolean;
   sourceNotification?: DashboardNotification | null;
 }>();
 
@@ -400,7 +401,7 @@ watch(
 
 <template>
   <div ref="detailScrollRef" class="detail-scroll" @scroll="onCompactHeaderScroll">
-    <div class="columns">
+    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
       <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
         <div ref="detailHeaderRef" class="detail-header-boundary">
           <DiscussionHeader
@@ -453,7 +454,7 @@ watch(
         />
       </div>
 
-      <div class="column detail-sidebar-column">
+      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
         <div
           class="sidebar-scroll"
           :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
@@ -470,6 +471,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-sidebar-columns' as *;
+
 .detail-scroll {
   height: 100%;
   min-height: 0;
@@ -483,12 +486,13 @@ watch(
   margin-bottom: 0;
 }
 
+@include detail-sidebar-columns('.detail-scroll');
+
 .detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-  flex: none;
-  width: 72%;
+  min-width: 0;
 }
 
 .detail-header-boundary {
@@ -499,8 +503,6 @@ watch(
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  flex: none;
-  width: 28%;
   padding-right: 1rem;
 }
 
@@ -545,25 +547,5 @@ watch(
   z-index: 6;
 }
 
-@media (max-width: 1024px) {
-  .detail-scroll {
-    overflow-y: auto;
-  }
-
-  .detail-scroll :deep(.columns) {
-    display: block;
-    height: auto;
-  }
-
-  .detail-scroll :deep(.detail-main-column),
-  .detail-scroll :deep(.detail-sidebar-column) {
-    width: 100%;
-    height: auto;
-    overflow: visible;
-  }
-
-  .detail-scroll :deep(.detail-sidebar-column) {
-    padding-right: 0.75rem;
-  }
-}
+@include detail-sidebar-stacking('.detail-scroll');
 </style>

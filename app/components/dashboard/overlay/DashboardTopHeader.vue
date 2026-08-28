@@ -32,6 +32,17 @@
         </Transition>
       </div>
       <div class="dashboard-top-header__actions">
+        <button
+          v-if="showDetailSidebarToggle"
+          type="button"
+          class="button is-light is-small dashboard-top-header__detail-sidebar-toggle"
+          :title="detailSidebarToggleLabel"
+          :aria-label="detailSidebarToggleLabel"
+          @click="$emit('toggle-detail-sidebar')"
+        >
+          <PanelRightCloseIcon v-if="!detailSidebarHidden" :size="16" aria-hidden="true" />
+          <PanelRightOpenIcon v-else :size="16" aria-hidden="true" />
+        </button>
         <LinkIcon to="https://github.com/pynickle/gitpulse">
           <GitHubIcon class="is-centered" />
         </LinkIcon>
@@ -49,8 +60,11 @@ import {
   CircleMinusIcon,
   HomeIcon,
   MessageSquareIcon,
+  PanelRightCloseIcon,
+  PanelRightOpenIcon,
 } from '@lucide/vue';
 import { type Component, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
@@ -76,12 +90,23 @@ const props = defineProps<{
   showHomeButton: boolean;
   nonSticky?: boolean;
   detailSummary?: DetailSummary | null;
+  showDetailSidebarToggle?: boolean;
+  detailSidebarHidden?: boolean;
 }>();
 
 defineEmits<{
   (e: 'back'): void;
   (e: 'home'): void;
+  (e: 'toggle-detail-sidebar'): void;
 }>();
+
+const { t } = useI18n();
+
+const detailSidebarToggleLabel = computed(() => {
+  return props.detailSidebarHidden
+    ? t('detailOverlay.showDetailSidebar')
+    : t('detailOverlay.hideDetailSidebar');
+});
 
 const detailTitle = computed(() => props.detailSummary?.title?.trim() ?? '');
 
@@ -273,6 +298,10 @@ const isDetailSummaryVisible = computed(() => {
   justify-content: flex-end;
   gap: 0.5rem;
   margin-left: auto;
+}
+
+.dashboard-top-header__detail-sidebar-toggle {
+  height: 2.25rem;
 }
 
 .dashboard-top-header__actions :deep(.dropdown),

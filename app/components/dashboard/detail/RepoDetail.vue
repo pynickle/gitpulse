@@ -59,6 +59,7 @@ const props = defineProps<{
   repository: RepositoryDetailPayload;
   owner: string;
   repo: string;
+  detailSidebarHidden?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -648,7 +649,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 <template>
   <div class="repo-detail-layout">
-    <div class="columns">
+    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
       <div class="column detail-main-column">
         <section class="repo-detail-header">
           <div class="repo-detail-header__title-row">
@@ -979,7 +980,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         </section>
       </div>
 
-      <div class="column detail-sidebar-column">
+      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
         <div class="sidebar-scroll">
           <div class="sidebar-card mb-4">
             <div class="sidebar-card__header">
@@ -1089,6 +1090,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/detail-sidebar-columns' as *;
 
 .repo-detail-layout {
   /* Page-level scroll lives on the parent detail pane so sticky chrome can pin
@@ -1101,9 +1103,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   margin-bottom: 0;
 }
 
+@include detail-sidebar-columns('.repo-detail-layout');
+
 .repo-detail-layout :deep(.detail-main-column) {
-  flex: none;
-  width: 72%;
   min-width: 0;
   overflow: visible;
 }
@@ -1111,8 +1113,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .repo-detail-layout :deep(.detail-sidebar-column) {
   position: sticky;
   top: 0.75rem;
-  flex: none;
-  width: 28%;
   /*
     Fit inside the page-scroll pane, not the full viewport:
     overlay header (~3.8rem) + sticky top (0.75rem) + pane bottom padding (2rem) + buffer.
@@ -1930,6 +1930,10 @@ html.dark .repo-detail-section__chrome {
     display: block;
     min-height: 0;
     padding-right: 0;
+  }
+
+  .repo-detail-layout :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+    display: none;
   }
 
   .sidebar-scroll {
