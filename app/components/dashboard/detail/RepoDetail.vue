@@ -1132,6 +1132,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   padding: 0.75rem 1rem 2.5rem 0;
 }
 
+/* The header section wraps the whole main column, so this readability cap is
+   lifted while the Detail Sidebar is hidden and the main column is expected
+   to fill the overlay width. */
+.repo-detail-layout .columns--detail-sidebar-hidden .repo-detail-header {
+  max-width: none;
+}
+
 .repo-detail-header__title-row {
   display: flex;
   align-items: center;
