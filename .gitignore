@@ -24,6 +24,7 @@ logs
 .claude/
 .codex/
 .grok/
+.zcode/
 .opencode/
 
 # === Code intelligence ===
