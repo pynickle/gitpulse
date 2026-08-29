@@ -66,6 +66,7 @@ export function useReleaseFollows() {
   };
 
   return {
+    loaded,
     followedRepositories,
     followedIds,
     addBlock,

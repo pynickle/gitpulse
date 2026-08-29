@@ -1163,6 +1163,13 @@
     "storedCap": "The followed list is full (150 repositories).",
     "closeSheet": "Close Followed Repositories"
   },
+  "releaseTimeline": {
+    "title": "Release Timeline",
+    "manage": "Manage Followed Repositories",
+    "emptyTitle": "No Followed Repositories",
+    "emptyDescription": "Follow repositories to see their releases in this timeline.",
+    "emptyAction": "Manage Followed Repositories"
+  },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",
     "heading": "Releases",

@@ -6,7 +6,7 @@ import {
   getCustomTabEndpointPath,
 } from './useCustomTabSettingsOptions';
 import type { DashboardFilterSourceState } from './useDashboardFilters';
-import type { DashboardTab } from './useDashboardTabs';
+import { RELEASE_TIMELINE_TAB, type DashboardTab } from './useDashboardTabs';
 import { useRefreshableView } from './useRefreshableView';
 
 interface FreshnessResponse {
@@ -68,6 +68,10 @@ export function useDashboardRefreshCoordinator(options: DashboardRefreshCoordina
   });
 
   const dashboardListFreshnessUrl = computed(() => {
+    if (toValue(options.currentRouteTabId) === RELEASE_TIMELINE_TAB) {
+      return '';
+    }
+
     const customTab = toValue(options.selectedCustomTab);
     if (customTab) {
       return buildSearchFreshnessUrl(customTab.query);

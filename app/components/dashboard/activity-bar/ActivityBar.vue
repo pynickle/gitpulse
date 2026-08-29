@@ -96,6 +96,7 @@ import {
   InboxIcon,
   ListTodoIcon,
   LogOutIcon,
+  RocketIcon,
   SettingsIcon,
   StarIcon,
   UserIcon,
@@ -137,6 +138,7 @@ const iconMap: Record<string, typeof UserIcon> = {
   'circle-dot': CircleDotIcon,
   'git-pull-request': GitPullRequestIcon,
   'book-marked': BookMarkedIcon,
+  rocket: RocketIcon,
   user: UserIcon,
   settings: SettingsIcon,
 };

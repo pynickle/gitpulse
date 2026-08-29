@@ -1,13 +1,21 @@
 import type { LocationQueryRaw } from 'vue-router';
 
 import getQueryParamValue from '../utils/getQueryParamValue';
-import type { DashboardTab } from './useDashboardTabs';
+import { RELEASE_TIMELINE_TAB, type DashboardRootTab, type DashboardTab } from './useDashboardTabs';
 
 export const dashboardTabs: DashboardTab[] = ['todos', 'notifications', 'issues', 'pulls', 'repos'];
 
-export const parseDashboardTab = (value: unknown): DashboardTab => {
+export const dashboardRootTabs: DashboardRootTab[] = [...dashboardTabs, RELEASE_TIMELINE_TAB];
+
+export const isDashboardListTab = (tab: string): tab is DashboardTab => {
+  return dashboardTabs.includes(tab as DashboardTab);
+};
+
+export const parseDashboardTab = (value: unknown): DashboardRootTab => {
   const tab = getQueryParamValue(value);
-  return dashboardTabs.includes(tab as DashboardTab) ? (tab as DashboardTab) : 'notifications';
+  return dashboardRootTabs.includes(tab as DashboardRootTab)
+    ? (tab as DashboardRootTab)
+    : 'notifications';
 };
 
 export const parseDashboardPage = (value: unknown) => {

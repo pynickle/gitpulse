@@ -1163,6 +1163,13 @@
     "storedCap": "关注列表已满（150 个仓库）。",
     "closeSheet": "关闭已关注仓库"
   },
+  "releaseTimeline": {
+    "title": "Release 时间线",
+    "manage": "管理已关注仓库",
+    "emptyTitle": "还没有已关注仓库",
+    "emptyDescription": "关注仓库后，它们的 Release 会按时间显示在这里。",
+    "emptyAction": "管理已关注仓库"
+  },
   "releasesPage": {
     "pageTitle": "{repo} 的 Releases",
     "heading": "发布",

@@ -14,6 +14,11 @@ describe('dashboard route state helpers', () => {
     expect(parseDashboardTab(undefined)).toBe('notifications');
   });
 
+  test('does not swallow the Release Timeline tab as notifications', () => {
+    expect(parseDashboardTab('release-timeline')).toBe('release-timeline');
+    expect(parseDashboardTab(['release-timeline', 'issues'])).toBe('release-timeline');
+  });
+
   test('parses positive integer pages only', () => {
     expect(parseDashboardPage('3')).toBe(3);
     expect(parseDashboardPage(['4'])).toBe(4);

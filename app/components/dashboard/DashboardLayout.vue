@@ -1,18 +1,22 @@
 <template>
   <div class="dashboard-layout">
-    <div class="columns dashboard-layout-columns">
+    <div
+      class="columns dashboard-layout-columns"
+      :class="{ 'dashboard-layout-columns--icon-bar-only': hideSideChrome }"
+    >
       <!-- Activity Bar: 48px fixed width (left) -->
       <div class="column column-activity-bar">
         <slot name="activity-bar"></slot>
       </div>
 
       <!-- Tab Sidebar: persisted width (left-center) -->
-      <div class="column column-tab-sidebar" :style="tabSidebarStyle">
+      <div v-if="!hideSideChrome" class="column column-tab-sidebar" :style="tabSidebarStyle">
         <slot name="tab-sidebar"></slot>
       </div>
 
       <!-- Draggable divider between the tab sidebar and the main list. -->
       <div
+        v-if="!hideSideChrome"
         ref="splitterHandleRef"
         class="dashboard-splitter"
         :class="{ 'is-dragging': isDragging }"
@@ -43,7 +47,7 @@
       </div>
 
       <!-- Widgets Panel: 320px width (right) -->
-      <div class="column column-widgets-panel">
+      <div v-if="!hideSideChrome" class="column column-widgets-panel">
         <slot name="widgets-panel"></slot>
       </div>
     </div>
@@ -59,6 +63,10 @@ import {
   TAB_SIDEBAR_WIDTH_MAX,
   TAB_SIDEBAR_WIDTH_MIN,
 } from '#shared/types/user-settings';
+
+const { hideSideChrome } = defineProps<{
+  hideSideChrome?: boolean;
+}>();
 
 const { t } = useI18n();
 const { settings, updateLayout } = useUserSettings();
@@ -263,6 +271,10 @@ $splitter-hover-zone: 14px;
   justify-content: center;
   min-width: 0;
   padding: 1.25rem 1.25rem;
+}
+
+.dashboard-layout-columns--icon-bar-only .column-main-content {
+  justify-content: flex-start;
 }
 
 // Right Widgets Panel

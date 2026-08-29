@@ -111,3 +111,29 @@ _Avoid_: right panel, metadata column, "sidebar" used alone
 **Tab Sidebar**:
 The dashboard's left navigation sidebar listing tabs and tab groups.
 _Avoid_: left menu, main sidebar
+
+## Release Follows
+
+**Release Follow**:
+A GitPulse-local subscription to a repository's releases, independent of GitHub Watch and Star.
+_Avoid_: watch, following, star, subscribe
+
+**Followed Repository**:
+A repository that has a Release Follow for the signed-in user.
+_Avoid_: watched repo, starred repo, selected repo
+
+**Release Timeline**:
+The newest-to-oldest sequence of releases from the user's Followed Repositories.
+_Avoid_: feed, release list when referring to this cross-repository sequence
+
+**Oldest Shown Release**:
+A Followed Repository's chronologically earliest release on the Release Timeline, marked only when older releases for that repository exist and were not loaded.
+_Avoid_: latest, last release when that means the newest
+
+**Unavailable Followed Repository**:
+A Followed Repository GitHub reports as missing or unresolvable — not one that failed to load from timeout, rate limit, or a transient error.
+_Avoid_: dead repo, invalid star, failed fetch when the identity still exists
+
+**Release Drawer**:
+The overlay that shows one release from the Release Timeline without changing page layout or URL: a right drawer on desktop, a bottom sheet on mobile.
+_Avoid_: Detail Overlay when referring to this surface

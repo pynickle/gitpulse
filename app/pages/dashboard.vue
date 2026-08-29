@@ -8,7 +8,7 @@
   </div>
 
   <div v-else class="dashboard-page">
-    <DashboardLayout>
+    <DashboardLayout :hide-side-chrome="isReleaseTimelineView">
       <template #activity-bar>
         <ActivityBar
           :user-avatar="user?.avatar_url"
@@ -35,7 +35,8 @@
       </template>
 
       <template #main-content>
-        <div class="card dashboard-main-card">
+        <ReleaseTimelineView v-if="isReleaseTimelineView" @manage="handleReleaseFollowsManage" />
+        <div v-else class="card dashboard-main-card">
           <div class="dashboard-tabs-header">
             <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
             <span
@@ -346,7 +347,7 @@
   />
 
   <FloatingRefreshButton
-    v-if="!isDashboardChildRoute && !showFileBrowsingView"
+    v-if="!isDashboardChildRoute && !showFileBrowsingView && !isReleaseTimelineView"
     :has-new-content="dashboardHasNewContent"
     :refreshing="dashboardRefreshing"
     :checking="dashboardChecking"
@@ -381,6 +382,7 @@ import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAd
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import NotificationSubjectEnrichmentNotice from '~/components/dashboard/NotificationSubjectEnrichmentNotice.vue';
+import ReleaseTimelineView from '~/components/dashboard/release-timeline/ReleaseTimelineView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
@@ -400,10 +402,11 @@ import {
 } from '~/composables/useDashboardFilterSuggestions';
 import {
   buildDashboardQuery,
+  isDashboardListTab,
   parseDashboardPage,
   parseDashboardTab,
 } from '~/composables/useDashboardRouteState';
-import type { DashboardTab } from '~/composables/useDashboardTabs';
+import { RELEASE_TIMELINE_TAB, type DashboardTab } from '~/composables/useDashboardTabs';
 import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 import { buildDashboardTabSwitchQuery } from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
@@ -606,6 +609,11 @@ const fetchTodos = async (_page = 1, _options: { force?: boolean } = {}) => {
 
 const { customTabs, getCustomTabById } = useCustomTabs();
 
+const initialRouteTab = parseDashboardTab(route.query.tab);
+const initialListTab: DashboardTab = isDashboardListTab(initialRouteTab)
+  ? initialRouteTab
+  : 'notifications';
+
 const {
   currentTab: currentBuiltinTab,
   refreshCurrentTab,
@@ -629,7 +637,7 @@ const {
       ...pullRequestFetchOptions.value,
     }),
   fetchRepos,
-  initialTab: parseDashboardTab(route.query.tab),
+  initialTab: initialListTab,
 });
 
 const {
@@ -641,7 +649,7 @@ const {
   selectTab,
   setBadgeCount,
 } = useTabMigration({
-  initialTab: parseDashboardTab(route.query.tab),
+  initialTab: initialListTab,
 });
 
 const { groups, toggleGroupCollapsed } = useTabGroups();
@@ -663,12 +671,16 @@ const fallbackCustomGroupId = computed(() => customSidebarGroups.value[0]?.id ??
 const selectedCustomTab = computed(() => {
   const tabId = getQueryParamValue(route.query.tab);
 
-  if (!tabId) {
+  if (!tabId || tabId === RELEASE_TIMELINE_TAB) {
     return null;
   }
 
   return getCustomTabById(tabId) ?? null;
 });
+
+const isReleaseTimelineView = computed(
+  () => parseDashboardTab(route.query.tab) === RELEASE_TIMELINE_TAB
+);
 
 const activeFilterSource = computed<DashboardFilterSource>(() => {
   return currentTab.value;
@@ -686,7 +698,9 @@ const hasActiveVisibleFilters = computed(() => {
     !selectedCustomTab.value && filterSourceStates.value[activeFilterSource.value].hasActiveFilters
   );
 });
-const showDashboardFilterButton = computed(() => !selectedCustomTab.value);
+const showDashboardFilterButton = computed(
+  () => !selectedCustomTab.value && !isReleaseTimelineView.value
+);
 const showDashboardFilterPills = computed(() => {
   if (selectedCustomTab.value) {
     return false;
@@ -728,6 +742,9 @@ const routeFilterFetchKey = computed(() => {
   }
 
   const source = parseDashboardTab(route.query.tab);
+  if (!isDashboardListTab(source)) {
+    return RELEASE_TIMELINE_TAB;
+  }
   const sourceState = filterSourceStates.value[source];
 
   if (source === 'notifications') {
@@ -854,6 +871,7 @@ const retryNotificationSubjectEnrichment = async () => {
 };
 
 const currentTabTitle = computed(() => {
+  if (isReleaseTimelineView.value) return t('releaseTimeline.title');
   if (selectedCustomTab.value) return selectedCustomTab.value.name;
   const foundTab = tabs.value.find((t) => t.id === currentTab.value);
   if (foundTab) return foundTab.name;
@@ -877,7 +895,10 @@ const currentTabSubtitle = computed(() => {
 // SEO: dynamic title based on current tab
 usePageMeta(currentTabTitle);
 
-const currentRouteTabId = computed(() => selectedCustomTab.value?.id ?? currentTab.value);
+const currentRouteTabId = computed(() => {
+  if (isReleaseTimelineView.value) return RELEASE_TIMELINE_TAB;
+  return selectedCustomTab.value?.id ?? currentTab.value;
+});
 
 const activityGroups = computed(() => {
   const iconByTab: Record<DashboardTab, string> = {
@@ -888,13 +909,20 @@ const activityGroups = computed(() => {
     repos: 'book-marked',
   };
 
-  return tabs.value.map((tab) => {
-    return {
-      id: tab.id,
-      name: tab.name,
-      icon: iconByTab[tab.id as DashboardTab] ?? 'inbox',
-    };
-  });
+  return [
+    ...tabs.value.map((tab) => {
+      return {
+        id: tab.id,
+        name: tab.name,
+        icon: iconByTab[tab.id as DashboardTab] ?? 'inbox',
+      };
+    }),
+    {
+      id: RELEASE_TIMELINE_TAB,
+      name: t('releaseTimeline.title'),
+      icon: 'rocket',
+    },
+  ];
 });
 
 const currentPagination = computed(() =>
@@ -1149,6 +1177,10 @@ const handleSwitchDiscussionFromDetail = (
 
 const refreshCurrentTabSafely = async () => {
   try {
+    if (isReleaseTimelineView.value) {
+      return;
+    }
+
     if (selectedCustomTab.value) {
       await fetchCustomTab(
         selectedCustomTab.value.query,
@@ -1205,6 +1237,12 @@ const {
 
 const loadRouteTabSafely = async (tab: unknown, page: number) => {
   try {
+    const dashboardTab = parseDashboardTab(tab);
+    if (dashboardTab === RELEASE_TIMELINE_TAB) {
+      setActiveTabId(RELEASE_TIMELINE_TAB);
+      return;
+    }
+
     const customTabId = getQueryParamValue(tab);
     const customTab = customTabId ? getCustomTabById(customTabId) : null;
 
@@ -1213,8 +1251,6 @@ const loadRouteTabSafely = async (tab: unknown, page: number) => {
       await fetchCustomTab(customTab.query, page, {}, customTab.source);
       return;
     }
-
-    const dashboardTab = parseDashboardTab(tab);
 
     if (dashboardTab === currentBuiltinTab.value) {
       setCurrentTab(dashboardTab);
@@ -1289,6 +1325,10 @@ const handleStarredClick = async () => {
   await router.push(localePath('/dashboard/starred'));
 };
 
+const handleReleaseFollowsManage = async () => {
+  await router.push(localePath('/dashboard/release-follows'));
+};
+
 const handleManageTabs = async () => {
   await router.push(localePath('/dashboard/tabs'));
 };
@@ -1309,6 +1349,11 @@ const handleSidebarTabSelect = async (tabId: string) => {
 };
 
 const handleActivityGroupSelect = async (groupId: string) => {
+  if (groupId === RELEASE_TIMELINE_TAB) {
+    await switchTabSafely(groupId);
+    return;
+  }
+
   const tab = toDashboardTab(groupId);
   await switchTabSafely(tab);
 };
@@ -1339,7 +1384,7 @@ watch(selectedCustomTab, (customTab) => {
 watch(
   () => pagination.value[currentTab.value].page,
   (resolvedPage) => {
-    if (resolvedPage === currentPage.value) {
+    if (isReleaseTimelineView.value || resolvedPage === currentPage.value) {
       return;
     }
 

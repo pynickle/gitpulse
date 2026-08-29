@@ -59,6 +59,10 @@ describe('routeToNavigationEntry', () => {
       type: 'dashboard',
       data: { tab: 'pulls' },
     });
+    expect(derive('/dashboard', { tab: 'release-timeline' })).toEqual({
+      type: 'dashboard',
+      data: { tab: 'release-timeline' },
+    });
   });
 
   test('derives detail entries following the watcher precedence', () => {
@@ -401,6 +405,10 @@ describe('routeToNavigationEntry / resolveNavigationEntryRoute round trip', () =
   const corpus: Array<{ label: string; entry: DashboardNavigationEntry }> = [
     { label: 'dashboard', entry: { type: 'dashboard' } },
     { label: 'dashboard tab', entry: { type: 'dashboard', data: { tab: 'pulls' } } },
+    {
+      label: 'dashboard release timeline tab',
+      entry: { type: 'dashboard', data: { tab: 'release-timeline' } },
+    },
     { label: 'profile self', entry: { type: 'profile', data: undefined } },
     { label: 'profile user', entry: { type: 'profile', data: { user: 'octocat' } } },
     {
@@ -708,6 +716,53 @@ describe('applyLogicalNavigationEvent', () => {
     result = applyRoute(result.state, '/dashboard/settings', {}, 3);
     expect(result.decision).toBe('push');
     expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'repos' } }]);
+  });
+
+  test('Release Timeline tab is a dashboard entry; configuration overlay pushes on top', () => {
+    let result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard',
+      { tab: 'release-timeline' },
+      0
+    );
+
+    expect(result.snapshot.current).toEqual({
+      type: 'dashboard',
+      data: { tab: 'release-timeline' },
+    });
+    expect(result.snapshot.history).toEqual([]);
+
+    result = applyRoute(result.state, '/dashboard', { tab: 'issues' }, 0);
+    expect(result.decision).toBe('replace');
+    expect(result.snapshot.current).toEqual({ type: 'dashboard', data: { tab: 'issues' } });
+    expect(result.snapshot.history).toEqual([]);
+
+    result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard',
+      { tab: 'release-timeline' },
+      0
+    );
+    result = applyRoute(result.state, '/dashboard/release-follows', {}, 1);
+
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.current).toEqual({ type: 'release-follows' });
+    expect(result.snapshot.history).toEqual([
+      { type: 'dashboard', data: { tab: 'release-timeline' } },
+    ]);
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/release-follows', query: {} },
+    });
+    expect(result.target).toEqual({ path: '/dashboard', query: { tab: 'release-timeline' } });
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'home',
+      route: { path: '/dashboard/release-follows', query: {} },
+    });
+    expect(result.target).toEqual({ path: '/dashboard', query: {} });
+    expect(result.snapshot.current).toEqual({ type: 'dashboard' });
   });
 
   test('Release Follows configuration overlay push, back, and home', () => {

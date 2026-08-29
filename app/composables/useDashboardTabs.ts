@@ -2,6 +2,10 @@ import { ref } from 'vue';
 
 export type DashboardTab = 'todos' | 'notifications' | 'issues' | 'pulls' | 'repos';
 
+export const RELEASE_TIMELINE_TAB = 'release-timeline' as const;
+
+export type DashboardRootTab = DashboardTab | typeof RELEASE_TIMELINE_TAB;
+
 interface DashboardTabFetchers {
   fetchTodos: (page?: number, options?: { force?: boolean }) => Promise<void>;
   fetchNotifications: (page?: number, options?: { force?: boolean }) => Promise<void>;

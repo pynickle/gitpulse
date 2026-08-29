@@ -144,4 +144,29 @@ describe('dashboard refresh coordinator', () => {
     expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('merged');
     expect(coordinator.activeDashboardFreshnessUrl.value).not.toContain('route-label');
   });
+
+  test('Release Timeline has no list freshness URL', async () => {
+    const coordinator = useDashboardRefreshCoordinator({
+      apiFetch: async (request) => ({ signature: request }),
+      currentTab: ref('notifications'),
+      currentPage: ref(1),
+      currentRouteTabId: ref('release-timeline'),
+      selectedCustomTab: ref(null),
+      filterSourceStates: createFilterSourceStates(),
+      routeFilterFetchKey: ref('release-timeline'),
+      hasVisibleDetail: ref(false),
+      currentDetailRefreshKey: ref(''),
+      currentDetailFreshnessUrl: ref(''),
+      dashboardListLoading: ref(false),
+      detailLoading: ref(false),
+      sessionReady: ref(true),
+      loggedIn: ref(true),
+      isDashboardChildRoute: ref(false),
+      showFileBrowsingView: ref(false),
+      refreshCurrentDetail: async () => {},
+      refreshCurrentTab: async () => {},
+    });
+
+    expect(coordinator.activeDashboardFreshnessUrl.value).toBe('');
+  });
 });
