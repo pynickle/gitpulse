@@ -1177,7 +1177,11 @@
     "readMore": "Read more",
     "expandError": "Failed to load the full changelog.",
     "oldestShown": "Earlier releases are not shown.",
-    "openRepo": "Open {repo}"
+    "openRepo": "Open {repo}",
+    "drawerLabel": "Release Drawer",
+    "closeDrawer": "Close Release Drawer",
+    "drawerError": "Failed to load this release.",
+    "dragHandle": "Drag to expand or dismiss"
   },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",

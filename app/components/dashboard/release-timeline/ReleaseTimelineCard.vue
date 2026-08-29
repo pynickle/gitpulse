@@ -10,6 +10,10 @@ const props = defineProps<{
   item: TimelineRelease;
 }>();
 
+const emit = defineEmits<{
+  open: [item: TimelineRelease];
+}>();
+
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -34,6 +38,15 @@ const handleOpenRepo = async () => {
   await openRepository(props.item.repository.owner, props.item.repository.name);
 };
 
+const handleOpenDrawer = () => {
+  emit('open', props.item);
+};
+
+const handleCardClick = (event: MouseEvent) => {
+  if (!shouldOpenReleaseDrawer(event.target)) return;
+  handleOpenDrawer();
+};
+
 const handleReadMore = async () => {
   if (expanded.value || expanding.value) return;
 
@@ -55,13 +68,14 @@ const handleReadMore = async () => {
 </script>
 
 <template>
-  <article class="release-timeline-card">
+  <article class="release-timeline-card" @click="handleCardClick">
     <div class="release-timeline-card__header">
       <button
         class="release-timeline-card__repo"
         type="button"
+        data-release-drawer-ignore
         :title="t('releaseTimeline.openRepo', { repo: repoFullName })"
-        @click="handleOpenRepo"
+        @click.stop="handleOpenRepo"
       >
         {{ repoFullName }}
       </button>
@@ -71,7 +85,9 @@ const handleReadMore = async () => {
     </div>
 
     <div class="release-timeline-card__title-row">
-      <h3 class="release-timeline-card__title">{{ item.title }}</h3>
+      <button class="release-timeline-card__title" type="button" @click.stop="handleOpenDrawer">
+        {{ item.title }}
+      </button>
       <span v-if="item.isPrerelease" class="release-timeline-card__prerelease">
         <FlaskConicalIcon
           :size="11"
@@ -98,8 +114,9 @@ const handleReadMore = async () => {
       v-if="showReadMore"
       class="release-timeline-card__read-more"
       type="button"
+      data-release-drawer-ignore
       :disabled="expanding"
-      @click="handleReadMore"
+      @click.stop="handleReadMore"
     >
       <Loader2Icon v-if="expanding" :size="14" class="spin-animation" aria-hidden="true" />
       <span>{{ t('releaseTimeline.readMore') }}</span>
@@ -128,6 +145,7 @@ const handleReadMore = async () => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 0.75rem;
   background: var(--gitpulse-surface);
+  cursor: pointer;
 }
 
 .release-timeline-card__header {
@@ -181,11 +199,21 @@ const handleReadMore = async () => {
 .release-timeline-card__title {
   margin: 0;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--gitpulse-text-strong);
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.3;
+  text-align: left;
   overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.release-timeline-card__title:focus-visible {
+  outline: 2px solid var(--gitpulse-info);
+  outline-offset: 2px;
 }
 
 .release-timeline-card__prerelease {

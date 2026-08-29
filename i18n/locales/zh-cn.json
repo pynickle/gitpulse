@@ -1177,7 +1177,11 @@
     "readMore": "阅读更多",
     "expandError": "加载完整更新说明失败。",
     "oldestShown": "更早的 Release 未显示。",
-    "openRepo": "打开 {repo}"
+    "openRepo": "打开 {repo}",
+    "drawerLabel": "Release 抽屉",
+    "closeDrawer": "关闭 Release 抽屉",
+    "drawerError": "加载该 Release 失败。",
+    "dragHandle": "拖动以展开或关闭"
   },
   "releasesPage": {
     "pageTitle": "{repo} 的 Releases",

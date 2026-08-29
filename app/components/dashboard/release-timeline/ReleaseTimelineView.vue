@@ -2,6 +2,7 @@
 import { Loader2Icon, RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
+import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
 
 const emit = defineEmits<{
@@ -11,6 +12,16 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { loaded, groups, loading, error, hasFollows, hasTransientFailures, fetchTimeline } =
   useReleaseTimeline();
+const {
+  openItem,
+  detail,
+  loading: drawerLoading,
+  error: drawerError,
+  isOpen,
+  open: openDrawer,
+  close: closeDrawer,
+  retry: retryDrawer,
+} = useReleaseDrawer();
 
 const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
 const showLoading = computed(
@@ -51,7 +62,7 @@ const showGrid = computed(() => groups.value.length > 0);
       </div>
     </div>
 
-    <div class="release-timeline__body">
+    <div class="release-timeline__body" :class="{ 'release-timeline__body--locked': isOpen }">
       <div v-if="showFollowsEmpty" class="release-timeline__empty">
         <div class="release-timeline__empty-icon" aria-hidden="true">
           <RocketIcon :size="32" />
@@ -89,8 +100,18 @@ const showGrid = computed(() => groups.value.length > 0);
         </p>
       </div>
 
-      <ReleaseTimelineGrid v-else-if="showGrid" :groups="groups" />
+      <ReleaseTimelineGrid v-else-if="showGrid" :groups="groups" @open="openDrawer" />
     </div>
+
+    <ReleaseDrawer
+      :open="isOpen"
+      :item="openItem"
+      :detail="detail"
+      :loading="drawerLoading"
+      :error="drawerError"
+      @close="closeDrawer"
+      @retry="retryDrawer"
+    />
   </div>
 </template>
 
@@ -148,6 +169,10 @@ const showGrid = computed(() => groups.value.length > 0);
   min-height: 0;
   flex: 1;
   overflow: auto;
+}
+
+.release-timeline__body--locked {
+  overflow: hidden;
 }
 
 .release-timeline__empty,

@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import type { ReleaseTimelineGroup } from '#shared/types/release-follows';
+import type { ReleaseTimelineGroup, TimelineRelease } from '#shared/types/release-follows';
 import ReleaseTimelineCard from '~/components/dashboard/release-timeline/ReleaseTimelineCard.vue';
 
 defineProps<{
   groups: ReleaseTimelineGroup[];
+}>();
+
+const emit = defineEmits<{
+  open: [item: TimelineRelease];
 }>();
 </script>
 
@@ -19,6 +23,7 @@ defineProps<{
         v-for="item in group.items"
         :key="`${item.repository.id}:${item.id}`"
         :item="item"
+        @open="emit('open', $event)"
       />
     </template>
   </div>
