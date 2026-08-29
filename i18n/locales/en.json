@@ -1168,7 +1168,16 @@
     "manage": "Manage Followed Repositories",
     "emptyTitle": "No Followed Repositories",
     "emptyDescription": "Follow repositories to see their releases in this timeline.",
-    "emptyAction": "Manage Followed Repositories"
+    "emptyAction": "Manage Followed Repositories",
+    "emptyReleasesTitle": "No releases yet",
+    "emptyReleasesDescription": "Followed Repositories have not published any releases in the loaded window.",
+    "loading": "Loading the Release Timeline",
+    "error": "Failed to load the Release Timeline.",
+    "retry": "Retry",
+    "readMore": "Read more",
+    "expandError": "Failed to load the full changelog.",
+    "oldestShown": "Earlier releases are not shown.",
+    "openRepo": "Open {repo}"
   },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",

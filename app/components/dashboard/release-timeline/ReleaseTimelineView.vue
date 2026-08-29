@@ -1,15 +1,37 @@
 <script setup lang="ts">
-import { RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
+import { Loader2Icon, RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
 import { computed } from 'vue';
+
+import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
 
 const emit = defineEmits<{
   manage: [];
 }>();
 
 const { t } = useI18n();
-const { loaded, followedRepositories } = useReleaseFollows();
+const { loaded, groups, loading, error, hasFollows, hasTransientFailures, fetchTimeline } =
+  useReleaseTimeline();
 
-const showEmptyState = computed(() => loaded.value && followedRepositories.value.length === 0);
+const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
+const showLoading = computed(
+  () => !showFollowsEmpty.value && loading.value && groups.value.length === 0 && !error.value
+);
+const showError = computed(
+  () =>
+    !showFollowsEmpty.value &&
+    groups.value.length === 0 &&
+    (Boolean(error.value) || (hasTransientFailures.value && !loading.value))
+);
+const showReleasesEmpty = computed(
+  () =>
+    loaded.value &&
+    hasFollows.value &&
+    !loading.value &&
+    !error.value &&
+    !hasTransientFailures.value &&
+    groups.value.length === 0
+);
+const showGrid = computed(() => groups.value.length > 0);
 </script>
 
 <template>
@@ -30,7 +52,7 @@ const showEmptyState = computed(() => loaded.value && followedRepositories.value
     </div>
 
     <div class="release-timeline__body">
-      <div v-if="showEmptyState" class="release-timeline__empty">
+      <div v-if="showFollowsEmpty" class="release-timeline__empty">
         <div class="release-timeline__empty-icon" aria-hidden="true">
           <RocketIcon :size="32" />
         </div>
@@ -42,6 +64,32 @@ const showEmptyState = computed(() => loaded.value && followedRepositories.value
           {{ t('releaseTimeline.emptyAction') }}
         </button>
       </div>
+
+      <div
+        v-else-if="showLoading"
+        class="release-timeline__status"
+        role="status"
+        :aria-label="t('releaseTimeline.loading')"
+        aria-busy="true"
+      >
+        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+      </div>
+
+      <div v-else-if="showError" class="release-timeline__status release-timeline__status--error">
+        <p class="release-timeline__empty-title">{{ t('releaseTimeline.error') }}</p>
+        <button class="button is-small is-danger is-outlined" type="button" @click="fetchTimeline">
+          {{ t('releaseTimeline.retry') }}
+        </button>
+      </div>
+
+      <div v-else-if="showReleasesEmpty" class="release-timeline__empty">
+        <p class="release-timeline__empty-title">{{ t('releaseTimeline.emptyReleasesTitle') }}</p>
+        <p class="release-timeline__empty-description">
+          {{ t('releaseTimeline.emptyReleasesDescription') }}
+        </p>
+      </div>
+
+      <ReleaseTimelineGrid v-else-if="showGrid" :groups="groups" />
     </div>
   </div>
 </template>
@@ -99,9 +147,11 @@ const showEmptyState = computed(() => loaded.value && followedRepositories.value
   display: flex;
   min-height: 0;
   flex: 1;
+  overflow: auto;
 }
 
-.release-timeline__empty {
+.release-timeline__empty,
+.release-timeline__status {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -137,5 +187,23 @@ const showEmptyState = computed(() => loaded.value && followedRepositories.value
   color: var(--gitpulse-text-muted);
   font-size: 0.875rem;
   line-height: 1.55;
+}
+
+.release-timeline__status--error .release-timeline__empty-title {
+  margin-bottom: 0.85rem;
+}
+
+.spin-animation {
+  animation: release-timeline-spin 1s linear infinite;
+  color: var(--gitpulse-accent);
+}
+
+@keyframes release-timeline-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -1168,7 +1168,16 @@
     "manage": "管理已关注仓库",
     "emptyTitle": "还没有已关注仓库",
     "emptyDescription": "关注仓库后，它们的 Release 会按时间显示在这里。",
-    "emptyAction": "管理已关注仓库"
+    "emptyAction": "管理已关注仓库",
+    "emptyReleasesTitle": "还没有 Release",
+    "emptyReleasesDescription": "已关注仓库在当前加载范围内还没有已发布的 Release。",
+    "loading": "正在加载 Release 时间线",
+    "error": "加载 Release 时间线失败。",
+    "retry": "重试",
+    "readMore": "阅读更多",
+    "expandError": "加载完整更新说明失败。",
+    "oldestShown": "更早的 Release 未显示。",
+    "openRepo": "打开 {repo}"
   },
   "releasesPage": {
     "pageTitle": "{repo} 的 Releases",
