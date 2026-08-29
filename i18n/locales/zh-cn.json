@@ -1139,6 +1139,23 @@
       "asc": "升序"
     }
   },
+  "releaseFollows": {
+    "pageTitle": "已关注仓库",
+    "loadingTitle": "正在加载已加星标的仓库",
+    "loadingSubtitle": "正在从 GitHub 获取你的星标",
+    "starredHeading": "星标",
+    "followedHeading": "已关注仓库",
+    "followedCount": "已关注 {count} 个",
+    "emptyFollowed": "还没有已关注仓库。点击星标仓库上的标记即可添加。",
+    "clear": "清空",
+    "return": "返回",
+    "remove": "移除 {repo}",
+    "follow": "关注 {repo} 的 Release",
+    "unfollow": "取消关注 {repo} 的 Release",
+    "validCap": "最多关注 100 个仓库。",
+    "storedCap": "关注列表已满（150 个仓库）。",
+    "closeSheet": "关闭已关注仓库"
+  },
   "releasesPage": {
     "pageTitle": "{repo} 的 Releases",
     "heading": "发布",

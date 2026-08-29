@@ -383,6 +383,11 @@ describe('routeToNavigationEntry', () => {
     expect(derive('/zh-cn/dashboard/tabs')).toEqual({ type: 'tabs-settings' });
   });
 
+  test('derives the Release Follows configuration overlay', () => {
+    expect(derive('/dashboard/release-follows')).toEqual({ type: 'release-follows' });
+    expect(derive('/zh-cn/dashboard/release-follows')).toEqual({ type: 'release-follows' });
+  });
+
   test('treats unrecognized child pages as the dashboard', () => {
     expect(derive('/dashboard/unknown-page')).toEqual({ type: 'dashboard' });
   });
@@ -442,6 +447,7 @@ describe('routeToNavigationEntry / resolveNavigationEntryRoute round trip', () =
     { label: 'starred user', entry: { type: 'starred', data: { user: 'octocat' } } },
     { label: 'settings', entry: { type: 'settings' } },
     { label: 'tabs settings', entry: { type: 'tabs-settings' } },
+    { label: 'release follows', entry: { type: 'release-follows' } },
   ];
 
   for (const owner of owners) {
@@ -702,6 +708,32 @@ describe('applyLogicalNavigationEvent', () => {
     result = applyRoute(result.state, '/dashboard/settings', {}, 3);
     expect(result.decision).toBe('push');
     expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'repos' } }]);
+  });
+
+  test('Release Follows configuration overlay push, back, and home', () => {
+    let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
+    result = applyRoute(result.state, '/dashboard/release-follows', {}, 1);
+
+    expect(result.decision).toBe('push');
+    expect(result.snapshot.current).toEqual({ type: 'release-follows' });
+    expect(result.snapshot.history).toEqual([{ type: 'dashboard', data: { tab: 'repos' } }]);
+    expect(result.snapshot.canGoBack).toBe(true);
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/release-follows', query: {} },
+    });
+    expect(result.target).toEqual({ path: '/dashboard', query: { tab: 'repos' } });
+
+    result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'issues' }, 0);
+    result = applyRoute(result.state, '/dashboard/release-follows', {}, 1);
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'home',
+      route: { path: '/dashboard/release-follows', query: {} },
+    });
+    expect(result.target).toEqual({ path: '/dashboard', query: {} });
+    expect(result.snapshot.history).toEqual([]);
+    expect(result.snapshot.current).toEqual({ type: 'dashboard' });
   });
 
   test('logical Back returns the previous route and the following route does not re-push', () => {

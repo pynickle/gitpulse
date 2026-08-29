@@ -61,7 +61,8 @@ export interface DashboardNavigationEntry {
     | 'wiki'
     | 'starred'
     | 'settings'
-    | 'tabs-settings';
+    | 'tabs-settings'
+    | 'release-follows';
   data?: {
     owner?: string;
     repo?: string;
@@ -451,6 +452,10 @@ export function buildChildPageRouteFromNavigationEntry(
 
   if (entry.type === 'tabs-settings') {
     return { path: '/dashboard/tabs', query: {} };
+  }
+
+  if (entry.type === 'release-follows') {
+    return { path: '/dashboard/release-follows', query: {} };
   }
 
   return null;

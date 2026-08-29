@@ -15,6 +15,7 @@ type CreateErrorInput = {
 const reactions = await import('../shared/utils/reactions');
 const customSearchTypes = await import('../shared/types/custom-search');
 const tabGroupTypes = await import('../shared/types/tab-groups');
+const releaseFollowsTypes = await import('../shared/types/release-follows');
 const userSettingsTypes = await import('../shared/types/user-settings');
 const userSettingsUtils = await import('../shared/utils/user-settings');
 const githubPagination = await import('../server/utils/github-pagination');
@@ -23,6 +24,7 @@ const zodValidationUtils = await import('../server/utils/zod-validation-utils');
 mock.module('#shared/utils/reactions', () => reactions);
 mock.module('#shared/types/custom-search', () => customSearchTypes);
 mock.module('#shared/types/tab-groups', () => tabGroupTypes);
+mock.module('#shared/types/release-follows', () => releaseFollowsTypes);
 mock.module('#shared/types/user-settings', () => userSettingsTypes);
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
 mock.module('#server/utils/github-pagination', () => githubPagination);
@@ -168,6 +170,13 @@ describe('server Zod request validation', () => {
           },
         },
       ],
+      followedRepositories: [
+        {
+          id: ' R_kgDONew ',
+          owner: ' octo ',
+          name: ' widgets ',
+        },
+      ],
       notificationTodos: [
         {
           id: 'todo-1',
@@ -249,6 +258,13 @@ describe('server Zod request validation', () => {
             review: 'required',
             base: 'main',
           },
+        },
+      ],
+      followedRepositories: [
+        {
+          id: 'R_kgDONew',
+          owner: 'octo',
+          name: 'widgets',
         },
       ],
       notificationTodos: [
@@ -357,6 +373,11 @@ describe('server Zod request validation', () => {
             extra: true,
           },
         ],
+      })
+    ).toThrow('Invalid settings request body');
+    expect(() =>
+      parseUserSettingsPatchBody({
+        followedRepositories: [{ id: 'R_1', owner: 'octo', name: 'widgets', extra: true }],
       })
     ).toThrow('Invalid settings request body');
     expect(

@@ -1139,6 +1139,23 @@
       "asc": "Asc"
     }
   },
+  "releaseFollows": {
+    "pageTitle": "Followed Repositories",
+    "loadingTitle": "Loading starred repositories",
+    "loadingSubtitle": "Fetching your stars from GitHub",
+    "starredHeading": "Starred",
+    "followedHeading": "Followed Repositories",
+    "followedCount": "{count} followed",
+    "emptyFollowed": "No Followed Repositories yet. Toggle a badge on a starred repository to add one.",
+    "clear": "Clear",
+    "return": "Return",
+    "remove": "Remove {repo}",
+    "follow": "Follow releases for {repo}",
+    "unfollow": "Unfollow releases for {repo}",
+    "validCap": "You can follow at most 100 repositories.",
+    "storedCap": "The followed list is full (150 repositories).",
+    "closeSheet": "Close Followed Repositories"
+  },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",
     "heading": "Releases",

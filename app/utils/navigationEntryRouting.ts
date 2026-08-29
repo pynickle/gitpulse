@@ -195,6 +195,10 @@ function childRouteToNavigationEntry(
     return { type: 'tabs-settings' };
   }
 
+  if (segment === 'release-follows') {
+    return { type: 'release-follows' };
+  }
+
   // Unrecognized child pages do not participate in the logical history; they
   // behave like the dashboard root.
   return dashboardEntry();

@@ -335,6 +335,36 @@ describe('user settings store', () => {
     ]);
   });
 
+  test('defaults and normalizes Followed Repositories through settings patches', () => {
+    expect(createDefaultUserSettings().followedRepositories).toEqual([]);
+    expect(normalizeUserSettings({}).followedRepositories).toEqual([]);
+    expect(normalizeUserSettings({ followedRepositories: undefined }).followedRepositories).toEqual(
+      []
+    );
+
+    const normalized = normalizeUserSettings({
+      followedRepositories: [
+        { id: 'R_new', owner: ' octo ', name: ' widgets ' },
+        { id: 'R_new', owner: 'octo', name: 'duplicate' },
+        { id: '', owner: 'octo', name: 'invalid' },
+        { id: 'R_old', owner: 'hubot', name: 'scripts' },
+      ],
+    });
+    expect(normalized.followedRepositories).toEqual([
+      { id: 'R_new', owner: 'octo', name: 'widgets' },
+      { id: 'R_old', owner: 'hubot', name: 'scripts' },
+    ]);
+
+    const patched = mergeUserSettingsPatch(createDefaultUserSettings(), {
+      followedRepositories: [{ id: 'R_one', owner: 'octo', name: 'one' }],
+    });
+    expect(patched.followedRepositories).toEqual([{ id: 'R_one', owner: 'octo', name: 'one' }]);
+
+    const preserved = mergeUserSettingsPatch(patched, { fonts: { appFont: 'misans-latin' } });
+    expect(preserved.followedRepositories).toEqual([{ id: 'R_one', owner: 'octo', name: 'one' }]);
+    expect(preserved.fonts.appFont).toBe('misans-latin');
+  });
+
   test('ignores stale load responses after the active login changes', async () => {
     const harness = createHarness('octocat');
 

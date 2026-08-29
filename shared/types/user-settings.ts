@@ -1,5 +1,6 @@
 import type { CustomTab } from '#shared/types/custom-search';
 import type { DashboardNotification } from '#shared/types/notifications';
+import type { FollowedRepository } from '#shared/types/release-follows';
 import type { TabGroup } from '#shared/types/tab-groups';
 
 export const APP_FONT_IDS = ['harmonyos-sans', 'misans-latin', 'system'] as const;
@@ -93,6 +94,7 @@ export interface UserSettings {
   tabGroups: TabGroup[];
   customTabs: CustomTab[];
   notificationTodos: NotificationTodoItem[];
+  followedRepositories: FollowedRepository[];
   updatedAt?: string;
 }
 
@@ -106,4 +108,5 @@ export interface UserSettingsPatch {
   tabGroups?: TabGroup[];
   customTabs?: CustomTab[];
   notificationTodos?: NotificationTodoItem[];
+  followedRepositories?: FollowedRepository[];
 }

@@ -71,6 +71,7 @@ import {
   TAB_SIDEBAR_WIDTH_MAX,
   TAB_SIDEBAR_WIDTH_MIN,
 } from '../types/user-settings';
+import { cloneFollowedRepositories, normalizeFollowedRepositories } from './release-follows';
 
 const APP_FONTS = new Set<AppFontId>(APP_FONT_IDS);
 const CODE_FONTS = new Set<CodeFontId>(CODE_FONT_IDS);
@@ -243,6 +244,7 @@ export function createDefaultUserSettings(): UserSettings {
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
+    followedRepositories: [],
   };
 }
 
@@ -839,6 +841,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
+      followedRepositories: cloneFollowedRepositories(fallback.followedRepositories),
     };
   }
 
@@ -861,6 +864,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       candidate.notificationTodos,
       fallback.notificationTodos
     ),
+    followedRepositories: normalizeFollowedRepositories(candidate.followedRepositories),
     updatedAt: normalizeString(candidate.updatedAt),
   };
 }
@@ -911,6 +915,9 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
     notificationTodos: hasOwn(candidate, 'notificationTodos')
       ? normalizeNotificationTodos(candidate.notificationTodos, base.notificationTodos)
       : cloneNotificationTodos(base.notificationTodos),
+    followedRepositories: hasOwn(candidate, 'followedRepositories')
+      ? normalizeFollowedRepositories(candidate.followedRepositories)
+      : cloneFollowedRepositories(base.followedRepositories),
     updatedAt: base.updatedAt,
   };
 }

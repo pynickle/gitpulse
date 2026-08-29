@@ -9,6 +9,7 @@ export type { StarredDirection, StarredSort };
 
 export interface StarredRepo {
   id: number;
+  node_id?: string;
   name: string;
   full_name?: string;
   description?: string | null;

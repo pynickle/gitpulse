@@ -13,6 +13,7 @@ import {
   GITHUB_SEARCH_SCOPES,
   GITHUB_SEARCH_VISIBILITY_FILTERS,
 } from '#shared/types/custom-search';
+import { FOLLOW_STORED_CAP } from '#shared/types/release-follows';
 import { TAB_GROUP_SOURCES } from '#shared/types/tab-groups';
 import {
   APP_FONT_IDS,
@@ -266,6 +267,12 @@ const notificationTodoSchema = z.strictObject({
   notification: dashboardNotificationSchema,
 });
 
+const followedRepositorySchema = z.strictObject({
+  id: nonEmptyStringSchema,
+  owner: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
+});
+
 export const userSettingsPatchSchema = z
   .strictObject({
     fonts: fontSettingsPatchSchema.optional(),
@@ -277,6 +284,7 @@ export const userSettingsPatchSchema = z
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),
+    followedRepositories: z.array(followedRepositorySchema).max(FOLLOW_STORED_CAP).optional(),
   })
   .refine((patch) => Object.keys(patch).length > 0, {
     message: 'At least one settings field is required',
