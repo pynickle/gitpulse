@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ArrowDownIcon, ArrowUpIcon, ClockIcon, Loader2Icon, StarIcon } from '@lucide/vue';
-import { computed, onMounted } from 'vue';
+import { ArrowDownIcon, ArrowUpIcon, ClockIcon, SearchIcon, StarIcon } from '@lucide/vue';
+import { computed, onMounted, shallowRef } from 'vue';
 
 import type { FollowedRepository } from '#shared/types/release-follows';
-import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
-import FollowableRepoCard from '~/components/dashboard/release-follows/FollowableRepoCard.vue';
 import FollowedRepositoriesPanel from '~/components/dashboard/release-follows/FollowedRepositoriesPanel.vue';
+import ReleaseFollowsRepoGrid from '~/components/dashboard/release-follows/ReleaseFollowsRepoGrid.vue';
 import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue';
 import FilterSegmentedControl from '~/components/ui/FilterSegmentedControl.vue';
 import type { StarredDirection, StarredSort } from '~/composables/useStarredRepos';
@@ -16,9 +15,44 @@ const emit = defineEmits<{
   return: [];
 }>();
 
-const { items, pagination, sort, direction, loading, error, fetchPage } = useStarredRepos();
+const activeTab = shallowRef<'starred' | 'search'>('starred');
+const isSearchTab = computed(() => activeTab.value === 'search');
+
+const {
+  items: starredItems,
+  pagination: starredPagination,
+  sort,
+  direction,
+  loading: starredLoading,
+  error: starredError,
+  fetchPage: fetchStarredPage,
+} = useStarredRepos();
+const {
+  query: searchQuery,
+  items: searchItems,
+  pagination: searchPagination,
+  loading: searchLoading,
+  error: searchError,
+  hasQuery: searchHasQuery,
+  fetchPage: fetchSearchPage,
+} = useRepositorySearch();
 const { followedRepositories, followedIds, addBlock, toggleFollow, removeFollow, clearFollows } =
   useReleaseFollows();
+
+const sourceOptions = computed<SegmentedOption[]>(() => [
+  {
+    value: 'starred',
+    label: t('releaseFollows.starredHeading'),
+    icon: StarIcon,
+    color: 'var(--gitpulse-accent)',
+  },
+  {
+    value: 'search',
+    label: t('releaseFollows.searchHeading'),
+    icon: SearchIcon,
+    color: 'var(--gitpulse-info)',
+  },
+]);
 
 const sortOptions = computed<SegmentedOption[]>(() => [
   {
@@ -50,18 +84,46 @@ const directionOptions = computed<SegmentedOption[]>(() => [
   },
 ]);
 
-const controlsDisabled = computed(() => loading.value);
+const controlsDisabled = computed(() => starredLoading.value);
+const gridItems = computed(() => (isSearchTab.value ? searchItems.value : starredItems.value));
+const gridPagination = computed(() =>
+  isSearchTab.value ? searchPagination.value : starredPagination.value
+);
+const gridLoading = computed(() =>
+  isSearchTab.value ? searchLoading.value : starredLoading.value
+);
+const gridError = computed(() => (isSearchTab.value ? searchError.value : starredError.value));
+const gridEmptyMessage = computed(() => {
+  if (!isSearchTab.value) return t('starred.empty');
+  return searchHasQuery.value ? t('releaseFollows.searchEmpty') : t('releaseFollows.searchPrompt');
+});
+const gridErrorMessage = computed(() => {
+  return isSearchTab.value ? t('releaseFollows.searchError') : t('starred.error');
+});
+const showPagination = computed(() => {
+  if (gridError.value) return false;
+  return isSearchTab.value ? searchHasQuery.value : true;
+});
 
-const reloadFirstPage = async () => {
-  await fetchPage({
+const reloadStarredFirstPage = async () => {
+  await fetchStarredPage({
     page: 1,
     sort: sort.value,
     direction: direction.value,
   });
 };
 
+const handleTabChange = (value: string) => {
+  activeTab.value = value === 'search' ? 'search' : 'starred';
+};
+
 const handlePageChange = async (page: number) => {
-  await fetchPage({
+  if (isSearchTab.value) {
+    await fetchSearchPage({ page });
+    return;
+  }
+
+  await fetchStarredPage({
     page,
     sort: sort.value,
     direction: direction.value,
@@ -72,19 +134,24 @@ const handleSortChange = async (value: string) => {
   const nextSort: StarredSort = value === 'updated' ? 'updated' : 'created';
   if (nextSort === sort.value) return;
   sort.value = nextSort;
-  await reloadFirstPage();
+  await reloadStarredFirstPage();
 };
 
 const handleDirectionChange = async (value: string) => {
   const nextDirection: StarredDirection = value === 'asc' ? 'asc' : 'desc';
   if (nextDirection === direction.value) return;
   direction.value = nextDirection;
-  await reloadFirstPage();
+  await reloadStarredFirstPage();
 };
 
 const handleRetry = async () => {
-  await fetchPage({
-    page: pagination.value.page,
+  if (isSearchTab.value) {
+    await fetchSearchPage({ page: searchPagination.value.page });
+    return;
+  }
+
+  await fetchStarredPage({
+    page: starredPagination.value.page,
     sort: sort.value,
     direction: direction.value,
   });
@@ -95,7 +162,7 @@ const handleToggle = async (repo: FollowedRepository) => {
 };
 
 onMounted(() => {
-  void reloadFirstPage();
+  void reloadStarredFirstPage();
 });
 </script>
 
@@ -104,12 +171,14 @@ onMounted(() => {
     <div class="release-follows-page__main">
       <div class="release-follows-page__chrome">
         <div class="release-follows-page__header">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
-            <StarIcon :size="18" class="mr-2" aria-hidden="true" />
-            {{ t('releaseFollows.starredHeading') }}
-          </h1>
+          <FilterSegmentedControl
+            :options="sourceOptions"
+            :model-value="activeTab"
+            :aria-label="t('releaseFollows.tablistLabel')"
+            @update:model-value="handleTabChange"
+          />
 
-          <div class="release-follows-page__controls">
+          <div v-if="!isSearchTab" class="release-follows-page__controls">
             <FilterSegmentedControl
               :options="sortOptions"
               :model-value="sort"
@@ -125,6 +194,18 @@ onMounted(() => {
               @update:model-value="handleDirectionChange"
             />
           </div>
+
+          <div v-else class="release-follows-page__search" role="search">
+            <SearchIcon :size="14" class="release-follows-page__search-icon" aria-hidden="true" />
+            <input
+              v-model="searchQuery"
+              type="search"
+              class="release-follows-page__search-input"
+              :placeholder="t('releaseFollows.searchPlaceholder')"
+              :aria-label="t('releaseFollows.searchPlaceholder')"
+              autocomplete="off"
+            />
+          </div>
         </div>
 
         <p v-if="addBlock === 'valid-cap'" class="release-follows-page__cap" role="status">
@@ -135,38 +216,21 @@ onMounted(() => {
         </p>
       </div>
 
-      <div class="release-follows-page__body">
-        <div v-if="error" class="notification is-danger is-light">
-          <p class="mb-2">{{ t('starred.error') }}</p>
-          <button class="button is-small is-danger is-outlined" type="button" @click="handleRetry">
-            {{ t('starred.retry') }}
-          </button>
-        </div>
-
-        <div v-else-if="loading" class="release-follows-page__empty" aria-busy="true">
-          <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
-        </div>
-
-        <div v-else-if="items.length === 0" class="release-follows-page__empty">
-          <p>{{ t('starred.empty') }}</p>
-        </div>
-
-        <div v-else class="release-follows-page__grid">
-          <FollowableRepoCard
-            v-for="repo in items"
-            :key="repo.node_id || repo.id"
-            class="release-follows-page__cell"
-            :repo="repo"
-            :followed="Boolean(repo.node_id && followedIds.has(repo.node_id))"
-            :add-block="addBlock"
-            @toggle="handleToggle"
-          />
-        </div>
-      </div>
-
-      <div v-if="!error" class="release-follows-page__pagination">
-        <DashboardPagination :pagination="pagination" @change="handlePageChange" />
-      </div>
+      <ReleaseFollowsRepoGrid
+        :items="gridItems"
+        :pagination="gridPagination"
+        :loading="gridLoading"
+        :error="gridError"
+        :followed-ids="followedIds"
+        :add-block="addBlock"
+        :empty-message="gridEmptyMessage"
+        :error-message="gridErrorMessage"
+        :retry-label="t('releaseFollows.retry')"
+        :show-pagination="showPagination"
+        @retry="handleRetry"
+        @page-change="handlePageChange"
+        @toggle="handleToggle"
+      />
     </div>
 
     <FollowedRepositoriesPanel
@@ -190,6 +254,8 @@ onMounted(() => {
 }
 
 .release-follows-page__main {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -230,72 +296,35 @@ onMounted(() => {
   min-width: 0;
 }
 
-.release-follows-page__empty {
+.release-follows-page__search {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 12rem;
+  flex: 1;
+  min-width: 12rem;
+  max-width: 28rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
+  background: var(--gitpulse-surface-muted);
+}
+
+.release-follows-page__search-icon {
+  flex-shrink: 0;
   color: var(--gitpulse-text-muted);
-  font-size: 0.9rem;
 }
 
-.release-follows-page__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-  gap: 1rem;
-  align-items: stretch;
-}
-
-.spin-animation {
-  animation: spin 1s linear infinite;
-  color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.release-follows-page__cell {
-  height: 100%;
-}
-
-.release-follows-page__cell :deep(.card-content) {
-  height: 100%;
-  display: flex;
-}
-
-.release-follows-page__cell :deep(.dashboard-list-card__content) {
-  display: flex;
-  flex-direction: column;
+.release-follows-page__search-input {
   width: 100%;
-}
+  border: 0;
+  background: transparent;
+  color: var(--gitpulse-text-strong);
+  font-size: 0.875rem;
+  outline: none;
 
-.release-follows-page__cell :deep(.dashboard-list-card__meta) {
-  margin-top: auto;
-}
-
-.release-follows-page__cell :deep(.dashboard-list-card__description) {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
-.release-follows-page__pagination {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  margin-top: 0.5rem;
-  padding: 0.75rem 0;
-  background: var(--gitpulse-surface);
-  border-top: 1px solid var(--gitpulse-border);
+  &::placeholder {
+    color: var(--gitpulse-text-muted);
+  }
 }
 
 @media (max-width: 860px) {
@@ -304,9 +333,8 @@ onMounted(() => {
     gap: 0;
   }
 
-  .release-follows-page__pagination {
-    position: sticky;
-    bottom: 0;
+  .release-follows-page__search {
+    max-width: none;
   }
 }
 </style>
