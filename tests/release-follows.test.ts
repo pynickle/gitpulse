@@ -9,6 +9,7 @@ import {
   applyFollowAdd,
   applyFollowClear,
   applyFollowRemove,
+  applyFollowRenames,
   getFollowAddBlock,
   normalizeFollowedRepositories,
 } from '../shared/utils/release-follows';
@@ -112,6 +113,26 @@ describe('applyFollowAdd', () => {
     });
   });
 
+  test('still blocks at 100 valid rows when Unavailable rows are also stored', () => {
+    const existing = [...listOf(FOLLOW_VALID_CAP), repo({ id: 'R_gone', name: 'gone' })];
+
+    expect(getFollowAddBlock(existing, new Set(['R_gone']))).toBe('valid-cap');
+    expect(applyFollowAdd(existing, repo({ id: 'R_overflow' }), new Set(['R_gone']))).toEqual({
+      ok: false,
+      error: 'valid-cap',
+    });
+  });
+
+  test('allows an add under both caps when Unavailable rows leave valid count below 100', () => {
+    const unavailable = listOf(FOLLOW_STORED_CAP - FOLLOW_VALID_CAP - 1, 'G_');
+    const existing = [...listOf(FOLLOW_VALID_CAP - 1), ...unavailable];
+    const unavailableIds = new Set(unavailable.map((item) => item.id));
+
+    expect(existing).toHaveLength(FOLLOW_STORED_CAP - 2);
+    expect(getFollowAddBlock(existing, unavailableIds)).toBeNull();
+    expect(applyFollowAdd(existing, repo({ id: 'R_next' }), unavailableIds).ok).toBe(true);
+  });
+
   test('blocks adds at 150 stored rows even when some are Unavailable', () => {
     const existing = listOf(FOLLOW_STORED_CAP);
     const unavailableIds = new Set(existing.slice(0, 50).map((item) => item.id));
@@ -121,6 +142,49 @@ describe('applyFollowAdd', () => {
       ok: false,
       error: 'stored-cap',
     });
+  });
+});
+
+describe('applyFollowRenames', () => {
+  test('updates stored owner and name when a successful payload has a new nameWithOwner', () => {
+    const existing = [
+      repo({ id: 'R_moved', owner: 'old-org', name: 'old-name' }),
+      repo({ id: 'R_same', owner: 'octo', name: 'widgets' }),
+    ];
+
+    expect(
+      applyFollowRenames(existing, {
+        R_moved: { status: 'available', owner: 'new-org', name: 'new-name' },
+        R_same: { status: 'available', owner: 'octo', name: 'widgets' },
+      })
+    ).toEqual([
+      repo({ id: 'R_moved', owner: 'new-org', name: 'new-name' }),
+      repo({ id: 'R_same', owner: 'octo', name: 'widgets' }),
+    ]);
+  });
+
+  test('does not rewrite names for Unavailable or transient lookups', () => {
+    const existing = [
+      repo({ id: 'R_gone', owner: 'octo', name: 'gone' }),
+      repo({ id: 'R_flaky', owner: 'octo', name: 'flaky' }),
+    ];
+
+    expect(
+      applyFollowRenames(existing, {
+        R_gone: { status: 'unavailable' },
+        R_flaky: { status: 'transient' },
+      })
+    ).toBeNull();
+  });
+
+  test('ignores empty owner or name so a partial payload cannot blank the stored identity', () => {
+    const existing = [repo({ id: 'R_live', owner: 'octo', name: 'widgets' })];
+
+    expect(
+      applyFollowRenames(existing, {
+        R_live: { status: 'available', owner: '  ', name: 'renamed' },
+      })
+    ).toBeNull();
   });
 });
 

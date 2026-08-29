@@ -1161,6 +1161,8 @@
     "unfollow": "Unfollow releases for {repo}",
     "validCap": "You can follow at most 100 repositories.",
     "storedCap": "The followed list is full (150 repositories).",
+    "unavailable": "{repo} is an Unavailable Followed Repository",
+    "unavailableLabel": "Unavailable",
     "closeSheet": "Close Followed Repositories"
   },
   "releaseTimeline": {
@@ -1174,6 +1176,11 @@
     "loading": "Loading the Release Timeline",
     "error": "Failed to load the Release Timeline.",
     "retry": "Retry",
+    "bannerUnavailableTitle": "Unavailable Followed Repositories",
+    "bannerUnavailableDescription": "{repos} could not be found on GitHub. They stay on your list until you remove them.",
+    "bannerTransientTitle": "Some Followed Repositories failed to load",
+    "bannerTransientDescription": "{repos} could not be loaded. This is usually temporary.",
+    "bannerManage": "Go to configuration",
     "readMore": "Read more",
     "expandError": "Failed to load the full changelog.",
     "oldestShown": "Earlier releases are not shown.",

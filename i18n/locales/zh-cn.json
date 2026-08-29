@@ -1161,6 +1161,8 @@
     "unfollow": "取消关注 {repo} 的 Release",
     "validCap": "最多关注 100 个仓库。",
     "storedCap": "关注列表已满（150 个仓库）。",
+    "unavailable": "{repo} 是不可用的已关注仓库",
+    "unavailableLabel": "不可用",
     "closeSheet": "关闭已关注仓库"
   },
   "releaseTimeline": {
@@ -1174,6 +1176,11 @@
     "loading": "正在加载 Release 时间线",
     "error": "加载 Release 时间线失败。",
     "retry": "重试",
+    "bannerUnavailableTitle": "不可用的已关注仓库",
+    "bannerUnavailableDescription": "{repos} 在 GitHub 上已找不到。它们会保留在列表中，直到你移除。",
+    "bannerTransientTitle": "部分已关注仓库加载失败",
+    "bannerTransientDescription": "{repos} 暂时无法加载。",
+    "bannerManage": "前往配置",
     "readMore": "阅读更多",
     "expandError": "加载完整更新说明失败。",
     "oldestShown": "更早的 Release 未显示。",

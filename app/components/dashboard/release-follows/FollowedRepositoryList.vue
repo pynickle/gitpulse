@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { XIcon } from '@lucide/vue';
+import { AlertCircleIcon, XIcon } from '@lucide/vue';
+import { computed } from 'vue';
 
 import type { FollowedRepository } from '#shared/types/release-follows';
 
-defineProps<{
+const props = defineProps<{
   items: FollowedRepository[];
+  unavailableIds?: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -15,6 +17,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
+const unavailableIdSet = computed(() => new Set(props.unavailableIds ?? []));
+const isUnavailable = (id: string) => unavailableIdSet.value.has(id);
 const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
 </script>
 
@@ -45,8 +49,31 @@ const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
     </p>
 
     <ul v-else class="followed-list__items">
-      <li v-for="item in items" :key="item.id" class="followed-list__item">
-        <span class="followed-list__name" :title="repoLabel(item)">{{ repoLabel(item) }}</span>
+      <li
+        v-for="item in items"
+        :key="item.id"
+        class="followed-list__item"
+        :class="{ 'followed-list__item--unavailable': isUnavailable(item.id) }"
+      >
+        <AlertCircleIcon
+          v-if="isUnavailable(item.id)"
+          class="followed-list__status-icon"
+          :size="14"
+          aria-hidden="true"
+        />
+        <span
+          class="followed-list__name"
+          :title="
+            isUnavailable(item.id)
+              ? t('releaseFollows.unavailable', { repo: repoLabel(item) })
+              : repoLabel(item)
+          "
+        >
+          {{ repoLabel(item) }}
+        </span>
+        <span v-if="isUnavailable(item.id)" class="followed-list__badge">
+          {{ t('releaseFollows.unavailableLabel') }}
+        </span>
         <button
           class="followed-list__remove"
           type="button"
@@ -143,6 +170,25 @@ const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
   gap: 0.5rem;
   padding: 0.4rem 0;
   border-bottom: 1px solid var(--gitpulse-border);
+}
+
+.followed-list__item--unavailable .followed-list__name {
+  color: var(--gitpulse-danger);
+}
+
+.followed-list__status-icon {
+  flex-shrink: 0;
+  color: var(--gitpulse-danger);
+}
+
+.followed-list__badge {
+  flex-shrink: 0;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 .followed-list__name {

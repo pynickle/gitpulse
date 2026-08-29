@@ -3,6 +3,7 @@ import { Loader2Icon, RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
+import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue';
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
 
 const emit = defineEmits<{
@@ -10,8 +11,17 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { loaded, groups, loading, error, hasFollows, hasTransientFailures, fetchTimeline } =
-  useReleaseTimeline();
+const {
+  loaded,
+  groups,
+  loading,
+  error,
+  hasFollows,
+  hasLookupFailures,
+  unavailableRepos,
+  transientRepos,
+  fetchTimeline,
+} = useReleaseTimeline();
 const {
   openItem,
   detail,
@@ -27,11 +37,13 @@ const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
 const showLoading = computed(
   () => !showFollowsEmpty.value && loading.value && groups.value.length === 0 && !error.value
 );
+const showFailureBanner = computed(() => !showFollowsEmpty.value && hasLookupFailures.value);
 const showError = computed(
   () =>
     !showFollowsEmpty.value &&
     groups.value.length === 0 &&
-    (Boolean(error.value) || (hasTransientFailures.value && !loading.value))
+    Boolean(error.value) &&
+    !showFailureBanner.value
 );
 const showReleasesEmpty = computed(
   () =>
@@ -39,7 +51,7 @@ const showReleasesEmpty = computed(
     hasFollows.value &&
     !loading.value &&
     !error.value &&
-    !hasTransientFailures.value &&
+    !showFailureBanner.value &&
     groups.value.length === 0
 );
 const showGrid = computed(() => groups.value.length > 0);
@@ -61,6 +73,14 @@ const showGrid = computed(() => groups.value.length > 0);
         </button>
       </div>
     </div>
+
+    <ReleaseTimelineFailureBanner
+      v-if="showFailureBanner"
+      :unavailable-repos="unavailableRepos"
+      :transient-repos="transientRepos"
+      @retry="fetchTimeline"
+      @manage="emit('manage')"
+    />
 
     <div class="release-timeline__body" :class="{ 'release-timeline__body--locked': isOpen }">
       <div v-if="showFollowsEmpty" class="release-timeline__empty">

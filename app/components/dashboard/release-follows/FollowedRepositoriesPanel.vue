@@ -7,6 +7,7 @@ import FollowedRepositoryList from '~/components/dashboard/release-follows/Follo
 
 defineProps<{
   items: FollowedRepository[];
+  unavailableIds?: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -58,6 +59,7 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
   <aside class="followed-panel followed-panel--desktop">
     <FollowedRepositoryList
       :items="items"
+      :unavailable-ids="unavailableIds"
       @remove="emit('remove', $event)"
       @clear="emit('clear')"
       @return="emit('return')"
@@ -103,6 +105,7 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
           </div>
           <FollowedRepositoryList
             :items="items"
+            :unavailable-ids="unavailableIds"
             @remove="emit('remove', $event)"
             @clear="emit('clear')"
             @return="emit('return')"

@@ -11,6 +11,7 @@ import {
 
 export function useReleaseFollows() {
   const { settings, loaded, loadSettings, updateSettings } = useUserSettings();
+  const { unavailableIdSet } = useFollowedRepositoryLookups();
 
   if (import.meta.client) {
     void loadSettings();
@@ -30,7 +31,9 @@ export function useReleaseFollows() {
     return new Set(followedRepositories.value.map((item) => item.id));
   });
 
-  const addBlock = computed(() => getFollowAddBlock(followedRepositories.value));
+  const addBlock = computed(() =>
+    getFollowAddBlock(followedRepositories.value, unavailableIdSet.value)
+  );
 
   const persist = async (list: FollowedRepository[]) => {
     await updateSettings({ followedRepositories: list });
@@ -38,7 +41,7 @@ export function useReleaseFollows() {
 
   const addFollow = async (repo: FollowedRepository): Promise<FollowAddResult> => {
     await ensureLoaded();
-    const result = applyFollowAdd(followedRepositories.value, repo);
+    const result = applyFollowAdd(followedRepositories.value, repo, unavailableIdSet.value);
     if (!result.ok) return result;
     await persist(result.list);
     return result;

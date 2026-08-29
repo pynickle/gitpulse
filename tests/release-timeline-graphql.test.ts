@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'bun:test';
 
 import {
+  fetchFollowedRepositoryIdentityLookups,
   fetchFollowedRepositoryReleaseLookups,
+  mapRepositoryIdentityLookup,
   mapRepositoryReleaseLookup,
 } from '../server/utils/release-timeline-graphql-utils';
 import type { FollowedRepository } from '../shared/types/release-follows';
@@ -79,6 +81,39 @@ describe('mapRepositoryReleaseLookup', () => {
   });
 });
 
+describe('mapRepositoryIdentityLookup', () => {
+  test('maps a repository node to an available identity and a null node to Unavailable', () => {
+    expect(
+      mapRepositoryIdentityLookup({
+        id: 'R_widgets',
+        name: 'widgets-renamed',
+        nameWithOwner: 'new-org/widgets-renamed',
+        owner: { login: 'new-org' },
+      })
+    ).toEqual({
+      status: 'available',
+      owner: 'new-org',
+      name: 'widgets-renamed',
+    });
+    expect(mapRepositoryIdentityLookup(null)).toEqual({ status: 'unavailable' });
+  });
+
+  test('prefers nameWithOwner when it differs from owner login and name', () => {
+    expect(
+      mapRepositoryIdentityLookup({
+        id: 'R_moved',
+        name: 'old-name',
+        nameWithOwner: 'new-org/new-name',
+        owner: { login: 'old-org' },
+      })
+    ).toEqual({
+      status: 'available',
+      owner: 'new-org',
+      name: 'new-name',
+    });
+  });
+});
+
 describe('fetchFollowedRepositoryReleaseLookups', () => {
   test('does not call GitHub when there are no Followed Repositories', async () => {
     let called = false;
@@ -151,5 +186,84 @@ describe('fetchFollowedRepositoryReleaseLookups', () => {
     expect(lookups.R_live?.status).toBe('available');
     expect(lookups.R_gone).toEqual({ status: 'unavailable' });
     expect(lookups.R_flaky).toEqual({ status: 'transient' });
+  });
+});
+
+describe('fetchFollowedRepositoryIdentityLookups', () => {
+  test('does not call GitHub when there are no Followed Repositories', async () => {
+    let called = false;
+
+    const lookups = await fetchFollowedRepositoryIdentityLookups(
+      {
+        graphql: async () => {
+          called = true;
+          return { nodes: [] };
+        },
+      },
+      []
+    );
+
+    expect(called).toBe(false);
+    expect(lookups).toEqual({});
+  });
+
+  test('classifies mixed identity nodes and a failed bulk lookup as transient', async () => {
+    const follows = [
+      follow('R_live', 'live'),
+      follow('R_gone', 'gone'),
+      follow('R_flaky', 'flaky'),
+    ];
+
+    const mixed = await fetchFollowedRepositoryIdentityLookups(
+      {
+        graphql: async (_query, variables) => ({
+          nodes: (variables?.ids as string[]).map((id) => {
+            if (id === 'R_gone') return null;
+            if (id === 'R_live') {
+              return {
+                id: 'R_live',
+                name: 'live-renamed',
+                nameWithOwner: 'octo/live-renamed',
+                owner: { login: 'octo' },
+              };
+            }
+            return {
+              id,
+              name: 'flaky',
+              nameWithOwner: 'octo/flaky',
+              owner: { login: 'octo' },
+            };
+          }),
+        }),
+      },
+      follows
+    );
+
+    expect(mixed.R_live).toEqual({
+      status: 'available',
+      owner: 'octo',
+      name: 'live-renamed',
+    });
+    expect(mixed.R_gone).toEqual({ status: 'unavailable' });
+    expect(mixed.R_flaky).toEqual({
+      status: 'available',
+      owner: 'octo',
+      name: 'flaky',
+    });
+
+    const failed = await fetchFollowedRepositoryIdentityLookups(
+      {
+        graphql: async () => {
+          throw new Error('bulk lookup failed');
+        },
+      },
+      follows
+    );
+
+    expect(failed).toEqual({
+      R_live: { status: 'transient' },
+      R_gone: { status: 'transient' },
+      R_flaky: { status: 'transient' },
+    });
   });
 });

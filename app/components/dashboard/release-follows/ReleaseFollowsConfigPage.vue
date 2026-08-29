@@ -38,6 +38,7 @@ const {
 } = useRepositorySearch();
 const { followedRepositories, followedIds, addBlock, toggleFollow, removeFollow, clearFollows } =
   useReleaseFollows();
+const { unavailableIds, fetchIdentities } = useFollowedRepositoryLookups();
 
 const sourceOptions = computed<SegmentedOption[]>(() => [
   {
@@ -163,6 +164,7 @@ const handleToggle = async (repo: FollowedRepository) => {
 
 onMounted(() => {
   void reloadStarredFirstPage();
+  void fetchIdentities();
 });
 </script>
 
@@ -235,6 +237,7 @@ onMounted(() => {
 
     <FollowedRepositoriesPanel
       :items="followedRepositories"
+      :unavailable-ids="unavailableIds"
       @remove="removeFollow"
       @clear="clearFollows"
       @return="emit('return')"

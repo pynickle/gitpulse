@@ -1,5 +1,7 @@
 import type {
+  ClassifiableLookup,
   FollowedRepository,
+  LookupClassification,
   ReleaseTimeline,
   ReleaseTimelineGroup,
   RepositoryReleaseItem,
@@ -16,8 +18,16 @@ const LOCAL_DATE_FORMAT: Intl.DateTimeFormatOptions = {
 
 export function classifyLookups(
   follows: FollowedRepository[],
-  payloadsById: Readonly<Record<string, RepositoryReleaseLookup | null | undefined>>
-): { availableIds: string[]; unavailableIds: string[]; transientIds: string[] } {
+  payloadsById: Readonly<Record<string, ClassifiableLookup | null | undefined>> | null
+): LookupClassification {
+  if (!payloadsById) {
+    return {
+      availableIds: [],
+      unavailableIds: [],
+      transientIds: follows.map((follow) => follow.id),
+    };
+  }
+
   const availableIds: string[] = [];
   const unavailableIds: string[] = [];
   const transientIds: string[] = [];
@@ -28,11 +38,11 @@ export function classifyLookups(
       unavailableIds.push(follow.id);
       continue;
     }
-    if (!lookup || lookup.status === 'transient') {
-      transientIds.push(follow.id);
+    if (lookup?.status === 'available') {
+      availableIds.push(follow.id);
       continue;
     }
-    availableIds.push(follow.id);
+    transientIds.push(follow.id);
   }
 
   return { availableIds, unavailableIds, transientIds };

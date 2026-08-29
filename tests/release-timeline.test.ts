@@ -5,7 +5,7 @@ import type {
   RepositoryReleaseItem,
   RepositoryReleaseLookup,
 } from '../shared/types/release-follows';
-import { assembleReleaseTimeline } from '../shared/utils/release-timeline';
+import { assembleReleaseTimeline, classifyLookups } from '../shared/utils/release-timeline';
 
 const repo = (
   overrides: Partial<FollowedRepository> & Pick<FollowedRepository, 'id'>
@@ -38,6 +38,53 @@ const available = (
   name: follow.name,
   hasOlderReleases,
   releases,
+});
+
+describe('classifyLookups', () => {
+  const widgets = repo({ id: 'R_widgets', name: 'widgets' });
+  const tools = repo({ id: 'R_tools', name: 'tools' });
+  const scripts = repo({ id: 'R_scripts', name: 'scripts' });
+  const follows = [widgets, tools, scripts];
+
+  test('maps null and explicit not-found to Unavailable Followed Repositories', () => {
+    expect(
+      classifyLookups(follows, {
+        R_widgets: null,
+        R_tools: { status: 'unavailable' },
+        R_scripts: available(scripts, []),
+      })
+    ).toEqual({
+      availableIds: ['R_scripts'],
+      unavailableIds: ['R_widgets', 'R_tools'],
+      transientIds: [],
+    });
+  });
+
+  test('maps request errors and missing results to transient failures', () => {
+    expect(
+      classifyLookups(follows, {
+        R_widgets: { status: 'transient' },
+        R_tools: { status: 'error' },
+      })
+    ).toEqual({
+      availableIds: [],
+      unavailableIds: [],
+      transientIds: ['R_widgets', 'R_tools', 'R_scripts'],
+    });
+  });
+
+  test('maps a failed bulk lookup to all-transient with zero Unavailable', () => {
+    expect(classifyLookups(follows, null)).toEqual({
+      availableIds: [],
+      unavailableIds: [],
+      transientIds: ['R_widgets', 'R_tools', 'R_scripts'],
+    });
+    expect(classifyLookups(follows, {})).toEqual({
+      availableIds: [],
+      unavailableIds: [],
+      transientIds: ['R_widgets', 'R_tools', 'R_scripts'],
+    });
+  });
 });
 
 describe('assembleReleaseTimeline', () => {

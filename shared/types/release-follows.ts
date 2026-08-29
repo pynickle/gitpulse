@@ -40,6 +40,19 @@ export type RepositoryReleaseLookup =
   | { status: 'unavailable' }
   | { status: 'transient' };
 
+export type RepositoryIdentityLookup =
+  | { status: 'available'; owner: string; name: string }
+  | { status: 'unavailable' }
+  | { status: 'transient' };
+
+export type ClassifiableLookup = { status: string };
+
+export interface LookupClassification {
+  availableIds: string[];
+  unavailableIds: string[];
+  transientIds: string[];
+}
+
 export interface TimelineRelease {
   repository: FollowedRepository;
   id: number;

@@ -109,3 +109,29 @@ export function applyFollowRemove(list: FollowedRepository[], id: string): Follo
 export function applyFollowClear(): FollowedRepository[] {
   return [];
 }
+
+export function applyFollowRenames(
+  list: FollowedRepository[],
+  lookups: Readonly<
+    Record<string, { status?: string; owner?: string; name?: string } | null | undefined>
+  >
+): FollowedRepository[] | null {
+  let changed = false;
+  const next = list.map((follow) => {
+    const lookup = lookups[follow.id];
+    if (!lookup || lookup.status !== 'available') {
+      return follow;
+    }
+
+    const owner = toNonEmptyString(lookup.owner, 100);
+    const name = toNonEmptyString(lookup.name, 100);
+    if (!owner || !name || (owner === follow.owner && name === follow.name)) {
+      return follow;
+    }
+
+    changed = true;
+    return { ...follow, owner, name };
+  });
+
+  return changed ? next : null;
+}

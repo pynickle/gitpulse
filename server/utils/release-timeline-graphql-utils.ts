@@ -2,6 +2,7 @@ import type { Octokit } from '@octokit/core';
 
 import type {
   FollowedRepository,
+  RepositoryIdentityLookup,
   RepositoryReleaseItem,
   RepositoryReleaseLookup,
 } from '#shared/types/release-follows';
@@ -33,11 +34,32 @@ export interface GraphQLRepositoryReleaseNode {
   } | null;
 }
 
-interface GraphQLReleaseTimelineResponse {
-  nodes?: (GraphQLRepositoryReleaseNode | null)[] | null;
+export interface GraphQLRepositoryIdentityNode {
+  id?: string | null;
+  name?: string | null;
+  nameWithOwner?: string | null;
+  owner?: { login?: string | null } | null;
+}
+
+interface GraphQLNodesResponse<TNode> {
+  nodes?: (TNode | null)[] | null;
 }
 
 export const RELEASE_TIMELINE_CHUNK_SIZE = 20;
+export const FOLLOWED_REPOSITORY_IDENTITY_CHUNK_SIZE = 150;
+
+const FOLLOWED_REPOSITORY_IDENTITY_QUERY = `
+query FollowedRepositoryIdentities($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Repository {
+      id
+      name
+      nameWithOwner
+      owner { login }
+    }
+  }
+}
+`;
 
 const RELEASE_TIMELINE_NODES_QUERY = `
 query ReleaseTimeline($ids: [ID!]!) {
@@ -121,8 +143,22 @@ const mapReleaseNode = (node: GraphQLReleaseNode | null): RepositoryReleaseItem 
   };
 };
 
+const isRepositoryIdentityNode = (node: GraphQLRepositoryIdentityNode) => {
+  return Boolean(node.id || node.name || node.nameWithOwner || node.owner);
+};
+
 const isRepositoryNode = (node: GraphQLRepositoryReleaseNode) => {
-  return Boolean(node.id || node.name || node.nameWithOwner || node.owner || node.releases);
+  return isRepositoryIdentityNode(node) || Boolean(node.releases);
+};
+
+const resolveRepositoryIdentity = (
+  node: GraphQLRepositoryIdentityNode
+): { owner: string; name: string } => {
+  const parsed = parseNameWithOwner(node.nameWithOwner);
+  return {
+    owner: parsed?.owner ?? toNonEmptyString(node.owner?.login) ?? '',
+    name: parsed?.name ?? toNonEmptyString(node.name) ?? '',
+  };
 };
 
 export function mapRepositoryReleaseLookup(
@@ -132,9 +168,7 @@ export function mapRepositoryReleaseLookup(
     return { status: 'unavailable' };
   }
 
-  const parsed = parseNameWithOwner(node.nameWithOwner);
-  const owner = toNonEmptyString(node.owner?.login) ?? parsed?.owner ?? '';
-  const name = toNonEmptyString(node.name) ?? parsed?.name ?? '';
+  const { owner, name } = resolveRepositoryIdentity(node);
 
   return {
     status: 'available',
@@ -158,24 +192,38 @@ const chunkItems = <T>(items: T[], chunkSize: number): T[][] => {
   return chunks;
 };
 
-const fetchChunkLookups = async (
+export function mapRepositoryIdentityLookup(
+  node: GraphQLRepositoryIdentityNode | null | undefined
+): RepositoryIdentityLookup {
+  if (!node || !isRepositoryIdentityNode(node)) {
+    return { status: 'unavailable' };
+  }
+
+  const { owner, name } = resolveRepositoryIdentity(node);
+  return { status: 'available', owner, name };
+}
+
+const fetchChunkLookups = async <T extends { status: string }>(
   octokit: ReleaseTimelineGraphQLClient | Octokit,
-  follows: FollowedRepository[]
-): Promise<Record<string, RepositoryReleaseLookup>> => {
-  const lookups: Record<string, RepositoryReleaseLookup> = {};
+  follows: FollowedRepository[],
+  query: string,
+  mapNode: (node: GraphQLRepositoryReleaseNode | null) => T
+): Promise<Record<string, T>> => {
+  const lookups: Record<string, T> = {};
   const markTransient = () => {
     for (const follow of follows) {
-      lookups[follow.id] = { status: 'transient' };
+      lookups[follow.id] = { status: 'transient' } as T;
     }
   };
 
-  let payload: GraphQLReleaseTimelineResponse;
+  let payload: GraphQLNodesResponse<GraphQLRepositoryReleaseNode>;
   try {
-    payload = await octokit.graphql<GraphQLReleaseTimelineResponse>(RELEASE_TIMELINE_NODES_QUERY, {
+    payload = await octokit.graphql<GraphQLNodesResponse<GraphQLRepositoryReleaseNode>>(query, {
       ids: follows.map((follow) => follow.id),
     });
   } catch (error: unknown) {
-    const partial = getPartialGraphQLData<GraphQLReleaseTimelineResponse>(error);
+    const partial =
+      getPartialGraphQLData<GraphQLNodesResponse<GraphQLRepositoryReleaseNode>>(error);
     if (!partial) {
       markTransient();
       return lookups;
@@ -186,11 +234,28 @@ const fetchChunkLookups = async (
   const nodes = Array.isArray(payload.nodes) ? payload.nodes : [];
   follows.forEach((follow, index) => {
     const node = index < nodes.length ? nodes[index] : undefined;
-    lookups[follow.id] =
-      node === undefined ? { status: 'transient' } : mapRepositoryReleaseLookup(node);
+    lookups[follow.id] = node === undefined ? ({ status: 'transient' } as T) : mapNode(node);
   });
 
   return lookups;
+};
+
+const fetchFollowedRepositoryLookups = async <T extends { status: string }>(
+  octokit: ReleaseTimelineGraphQLClient | Octokit,
+  follows: FollowedRepository[],
+  query: string,
+  mapNode: (node: GraphQLRepositoryReleaseNode | null) => T,
+  chunkSize: number
+): Promise<Record<string, T>> => {
+  if (follows.length === 0) {
+    return {};
+  }
+
+  const chunkLookups = await Promise.all(
+    chunkItems(follows, chunkSize).map((chunk) => fetchChunkLookups(octokit, chunk, query, mapNode))
+  );
+
+  return Object.assign({}, ...chunkLookups);
 };
 
 export async function fetchFollowedRepositoryReleaseLookups(
@@ -198,15 +263,25 @@ export async function fetchFollowedRepositoryReleaseLookups(
   follows: FollowedRepository[],
   options: { chunkSize?: number } = {}
 ): Promise<Record<string, RepositoryReleaseLookup>> {
-  if (follows.length === 0) {
-    return {};
-  }
-
-  const chunkLookups = await Promise.all(
-    chunkItems(follows, options.chunkSize ?? RELEASE_TIMELINE_CHUNK_SIZE).map((chunk) =>
-      fetchChunkLookups(octokit, chunk)
-    )
+  return fetchFollowedRepositoryLookups(
+    octokit,
+    follows,
+    RELEASE_TIMELINE_NODES_QUERY,
+    mapRepositoryReleaseLookup,
+    options.chunkSize ?? RELEASE_TIMELINE_CHUNK_SIZE
   );
+}
 
-  return Object.assign({}, ...chunkLookups);
+export async function fetchFollowedRepositoryIdentityLookups(
+  octokit: ReleaseTimelineGraphQLClient | Octokit,
+  follows: FollowedRepository[],
+  options: { chunkSize?: number } = {}
+): Promise<Record<string, RepositoryIdentityLookup>> {
+  return fetchFollowedRepositoryLookups(
+    octokit,
+    follows,
+    FOLLOWED_REPOSITORY_IDENTITY_QUERY,
+    mapRepositoryIdentityLookup,
+    options.chunkSize ?? FOLLOWED_REPOSITORY_IDENTITY_CHUNK_SIZE
+  );
 }
