@@ -29,7 +29,7 @@ export interface PageMetaOptions {
   ogDescription?: MaybeRef<string>;
   /** Open Graph type (default: 'website') */
   ogType?: MaybeRef<OpenGraphType>;
-  /** Twitter card type (default: 'summary') */
+  /** Twitter card type. Omit to inherit `seo.meta.twitterCard` from nuxt.config. */
   twitterCard?: MaybeRef<TwitterCardType>;
 }
 
@@ -74,7 +74,8 @@ export function usePageMeta(title?: MaybeRef<string | undefined>, meta?: PageMet
     ogTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
     ogDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
     ogType: () => unref(meta?.ogType) ?? 'website',
-    twitterCard: () => unref(meta?.twitterCard) ?? 'summary',
+    // Omit the key when unset: an undefined twitterCard still replaces the global default.
+    ...(meta?.twitterCard === undefined ? {} : { twitterCard: () => unref(meta.twitterCard) }),
     twitterTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
     twitterDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
   });

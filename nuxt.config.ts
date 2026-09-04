@@ -148,27 +148,6 @@ export default defineNuxtConfig({
           href: '/favicon.ico',
         },
       ],
-      meta: [
-        {
-          name: 'description',
-          content:
-            'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
-        },
-        { property: 'og:title', content: 'GitPulse' },
-        {
-          property: 'og:description',
-          content:
-            'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
-        },
-        { property: 'og:type', content: 'website' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: 'GitPulse' },
-        {
-          name: 'twitter:description',
-          content:
-            'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
-        },
-      ],
     },
   },
   ignore: [
@@ -229,13 +208,10 @@ export default defineNuxtConfig({
     defaultLocale: 'en',
   },
 
-  // Unified SEO meta configuration (powered by nuxt-seo-utils)
+  // Site-wide extras that nuxt-seo-utils does not infer from `site`.
+  // description / og:site_name / og:type come from site config + module defaults.
   seo: {
     meta: {
-      description:
-        'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
-      ogSiteName: 'GitPulse',
-      ogType: 'website',
       twitterCard: 'summary_large_image',
       themeColor: [
         { content: '#1f2937', media: '(prefers-color-scheme: dark)' },
