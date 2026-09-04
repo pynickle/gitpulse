@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Loader2Icon, RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
-import { computed } from 'vue';
+import { Loader2Icon, RefreshCwIcon, RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
+import { computed, shallowRef, useTemplateRef } from 'vue';
 
+import FloatingBackToTopButton from '~/components/dashboard/FloatingBackToTopButton.vue';
 import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
 import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue';
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
@@ -33,6 +34,10 @@ const {
   retry: retryDrawer,
 } = useReleaseDrawer();
 
+const gridRef = useTemplateRef<{ scrollToTop: () => void }>('grid');
+const scrollTop = shallowRef(0);
+const viewportHeight = shallowRef(0);
+
 const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
 const showLoading = computed(
   () => !showFollowsEmpty.value && loading.value && groups.value.length === 0 && !error.value
@@ -55,6 +60,21 @@ const showReleasesEmpty = computed(
     groups.value.length === 0
 );
 const showGrid = computed(() => groups.value.length > 0);
+const showBackToTop = computed(
+  () =>
+    showGrid.value &&
+    !isOpen.value &&
+    shouldShowReleaseTimelineBackToTop(scrollTop.value, viewportHeight.value)
+);
+
+const handleViewportScroll = (viewport: { scrollTop: number; viewportHeight: number }) => {
+  scrollTop.value = viewport.scrollTop;
+  viewportHeight.value = viewport.viewportHeight;
+};
+
+const scrollTimelineToTop = () => {
+  gridRef.value?.scrollToTop();
+};
 </script>
 
 <template>
@@ -62,6 +82,20 @@ const showGrid = computed(() => groups.value.length > 0);
     <div class="release-timeline__header">
       <h2 class="release-timeline__title">{{ t('releaseTimeline.title') }}</h2>
       <div class="release-timeline__actions">
+        <button
+          class="button is-ghost is-small release-timeline__reload"
+          type="button"
+          :aria-label="t('releaseTimeline.reload')"
+          :title="t('releaseTimeline.reload')"
+          @click="fetchTimeline"
+        >
+          <RefreshCwIcon
+            :size="18"
+            class="release-timeline__reload-icon"
+            :class="{ 'spin-animation': loading }"
+            aria-hidden="true"
+          />
+        </button>
         <button
           class="button is-ghost is-small release-timeline__manage"
           type="button"
@@ -122,9 +156,11 @@ const showGrid = computed(() => groups.value.length > 0);
 
       <ReleaseTimelineGrid
         v-else-if="showGrid"
+        ref="grid"
         :groups="groups"
         :scroll-locked="isOpen"
         @open="openDrawer"
+        @viewport-scroll="handleViewportScroll"
       />
     </div>
 
@@ -136,6 +172,12 @@ const showGrid = computed(() => groups.value.length > 0);
       :error="drawerError"
       @close="closeDrawer"
       @retry="retryDrawer"
+    />
+
+    <FloatingBackToTopButton
+      :visible="showBackToTop"
+      :label="t('releaseTimeline.backToTop')"
+      @activate="scrollTimelineToTop"
     />
   </div>
 </template>
@@ -178,15 +220,27 @@ const showGrid = computed(() => groups.value.length > 0);
   margin-left: auto;
 }
 
-.release-timeline__manage {
+.release-timeline__manage,
+.release-timeline__reload {
   flex-shrink: 0;
   color: var(--gitpulse-text-muted);
 }
 
 .release-timeline__manage:hover,
-.release-timeline__manage:focus-visible {
+.release-timeline__manage:focus-visible,
+.release-timeline__reload:hover,
+.release-timeline__reload:focus-visible {
   color: var(--gitpulse-link);
   background: var(--gitpulse-info-soft);
+}
+
+.release-timeline__reload:hover .release-timeline__reload-icon:not(.spin-animation),
+.release-timeline__reload:focus-visible .release-timeline__reload-icon:not(.spin-animation) {
+  transform: rotate(15deg);
+}
+
+.release-timeline__reload-icon {
+  transition: transform 0.2s ease;
 }
 
 .release-timeline__body {

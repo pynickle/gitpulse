@@ -1168,6 +1168,8 @@
   "releaseTimeline": {
     "title": "Release 时间线",
     "manage": "管理已关注仓库",
+    "reload": "重新加载",
+    "backToTop": "回到顶部",
     "emptyTitle": "还没有已关注仓库",
     "emptyDescription": "关注仓库后，它们的 Release 会按时间显示在这里。",
     "emptyAction": "管理已关注仓库",

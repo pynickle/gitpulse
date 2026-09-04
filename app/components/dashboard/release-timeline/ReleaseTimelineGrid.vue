@@ -26,6 +26,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   open: [item: TimelineRelease];
+  viewportScroll: [{ scrollTop: number; viewportHeight: number }];
 }>();
 
 const { stateFor, expand } = useReleaseTimelineExpansion();
@@ -44,6 +45,7 @@ let phoneMedia: MediaQueryList | undefined;
 let tabletMedia: MediaQueryList | undefined;
 let updateFrame: number | undefined;
 let measurementFrame: number | undefined;
+let backToTopFrame: number | undefined;
 
 const rows = computed(() => buildReleaseTimelineGridRows(props.groups, columnCount.value));
 
@@ -227,8 +229,66 @@ const syncColumnCount = () => {
   });
 };
 
+const emitViewportScroll = () => {
+  const el = scroller.value;
+  emit('viewportScroll', {
+    scrollTop: el?.scrollTop ?? 0,
+    viewportHeight: el?.clientHeight ?? 0,
+  });
+};
+
+const stopBackToTopAnimation = () => {
+  if (backToTopFrame === undefined || typeof window === 'undefined') {
+    backToTopFrame = undefined;
+    return;
+  }
+
+  window.cancelAnimationFrame(backToTopFrame);
+  backToTopFrame = undefined;
+};
+
+const scrollToTop = () => {
+  const el = scroller.value;
+  if (!el) {
+    return;
+  }
+
+  stopBackToTopAnimation();
+
+  const startScrollTop = el.scrollTop;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const durationMs = resolveReleaseTimelineBackToTopDurationMs(
+    startScrollTop,
+    prefersReducedMotion
+  );
+
+  if (durationMs <= 0) {
+    el.scrollTop = 0;
+    emitViewportScroll();
+    return;
+  }
+
+  const startTime = performance.now();
+  const step = (now: number) => {
+    const frame = resolveReleaseTimelineBackToTopFrame({
+      startScrollTop,
+      elapsedMs: now - startTime,
+      durationMs,
+    });
+    el.scrollTop = frame.scrollTop;
+    if (frame.done) {
+      backToTopFrame = undefined;
+      return;
+    }
+    backToTopFrame = window.requestAnimationFrame(step);
+  };
+
+  backToTopFrame = window.requestAnimationFrame(step);
+};
+
 const handleScroll = () => {
   scheduleVisibleRowsSync();
+  emitViewportScroll();
 };
 
 const handleBreakpointChange = () => {
@@ -259,6 +319,8 @@ onMounted(() => {
   tabletMedia = window.matchMedia(RELEASE_TIMELINE_TABLET_MEDIA);
   phoneMedia.addEventListener('change', handleBreakpointChange);
   tabletMedia.addEventListener('change', handleBreakpointChange);
+  scroller.value?.addEventListener('wheel', stopBackToTopAnimation, { passive: true });
+  scroller.value?.addEventListener('touchstart', stopBackToTopAnimation, { passive: true });
 
   void nextTick(() => {
     rowElements.forEach((element) => rowResizeObserver?.observe(element));
@@ -266,15 +328,22 @@ onMounted(() => {
     if (scroller.value && typeof ResizeObserver !== 'undefined') {
       viewportResizeObserver = new ResizeObserver(() => {
         scheduleVisibleRowsSync();
+        emitViewportScroll();
       });
       viewportResizeObserver.observe(scroller.value);
     }
 
     scheduleVisibleRowsSync();
+    emitViewportScroll();
   });
 });
 
+defineExpose({
+  scrollToTop,
+});
+
 onBeforeUnmount(() => {
+  stopBackToTopAnimation();
   if (updateFrame) {
     window.cancelAnimationFrame(updateFrame);
   }
@@ -283,6 +352,8 @@ onBeforeUnmount(() => {
   }
   phoneMedia?.removeEventListener('change', handleBreakpointChange);
   tabletMedia?.removeEventListener('change', handleBreakpointChange);
+  scroller.value?.removeEventListener('wheel', stopBackToTopAnimation);
+  scroller.value?.removeEventListener('touchstart', stopBackToTopAnimation);
   rowResizeObserver?.disconnect();
   viewportResizeObserver?.disconnect();
 });

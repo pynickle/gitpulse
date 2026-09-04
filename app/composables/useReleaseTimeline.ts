@@ -3,10 +3,19 @@ import { computed, shallowRef, watch } from 'vue';
 import type { FollowedRepository, ReleaseTimeline } from '#shared/types/release-follows';
 import { classifyLookups } from '#shared/utils/release-timeline';
 
+type ReleaseTimelineSessionEntry = {
+  followKey: string;
+  timeline: ReleaseTimeline;
+};
+
 export function useReleaseTimeline() {
   const apiFetch = useGitPulseApiFetch();
   const { loaded, followedRepositories } = useReleaseFollows();
   const { applyLookupIds, unavailableIds, transientIds } = useFollowedRepositoryLookups();
+  const sessionCache = useState<ReleaseTimelineSessionEntry | null>(
+    'release-timeline-session',
+    () => null
+  );
 
   const emptyTimeline = (): ReleaseTimeline => ({
     groups: [],
@@ -34,6 +43,11 @@ export function useReleaseTimeline() {
     () => unavailableRepos.value.length > 0 || transientRepos.value.length > 0
   );
 
+  const applyTimeline = (next: ReleaseTimeline) => {
+    timeline.value = next;
+    applyLookupIds(next.unavailableIds, next.transientIds);
+  };
+
   const fetchTimeline = async () => {
     if (!loaded.value) {
       return;
@@ -41,10 +55,10 @@ export function useReleaseTimeline() {
 
     const nextRequestId = requestId.value + 1;
     requestId.value = nextRequestId;
+    const requestedFollowKey = followKey.value;
 
     if (!hasFollows.value) {
-      timeline.value = emptyTimeline();
-      applyLookupIds([], []);
+      applyTimeline(emptyTimeline());
       error.value = null;
       loading.value = false;
       return;
@@ -61,22 +75,25 @@ export function useReleaseTimeline() {
 
       const nextUnavailableIds = Array.isArray(data.unavailableIds) ? data.unavailableIds : [];
       const nextTransientIds = Array.isArray(data.transientIds) ? data.transientIds : [];
-      timeline.value = {
+      const nextTimeline: ReleaseTimeline = {
         groups: Array.isArray(data.groups) ? data.groups : [],
         unavailableIds: nextUnavailableIds,
         transientIds: nextTransientIds,
       };
-      applyLookupIds(nextUnavailableIds, nextTransientIds);
+      applyTimeline(nextTimeline);
+      sessionCache.value = {
+        followKey: requestedFollowKey,
+        timeline: nextTimeline,
+      };
     } catch (err) {
       if (nextRequestId !== requestId.value) return;
       error.value = getFetchErrorMessage(err, 'An error occurred');
       const failed = classifyLookups(followedRepositories.value, null);
-      timeline.value = {
+      applyTimeline({
         groups: timeline.value.groups,
         unavailableIds: failed.unavailableIds,
         transientIds: failed.transientIds,
-      };
-      applyLookupIds(failed.unavailableIds, failed.transientIds);
+      });
     } finally {
       if (nextRequestId === requestId.value) {
         loading.value = false;
@@ -87,7 +104,24 @@ export function useReleaseTimeline() {
   watch(
     [loaded, followKey],
     () => {
-      void fetchTimeline();
+      if (!loaded.value) {
+        return;
+      }
+
+      const decision = resolveReleaseTimelineSessionLoad({
+        hasFollows: hasFollows.value,
+        followKey: followKey.value,
+        cache: sessionCache.value,
+      });
+      applyTimeline(decision.timeline);
+      error.value = null;
+
+      if (decision.shouldFetch) {
+        void fetchTimeline();
+        return;
+      }
+
+      loading.value = false;
     },
     { immediate: true }
   );

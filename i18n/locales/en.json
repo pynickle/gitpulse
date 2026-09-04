@@ -1168,6 +1168,8 @@
   "releaseTimeline": {
     "title": "Release Timeline",
     "manage": "Manage Followed Repositories",
+    "reload": "Reload",
+    "backToTop": "Back to top",
     "emptyTitle": "No Followed Repositories",
     "emptyDescription": "Follow repositories to see their releases in this timeline.",
     "emptyAction": "Manage Followed Repositories",
