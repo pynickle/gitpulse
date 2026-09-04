@@ -89,6 +89,10 @@ const props = defineProps<{
   deferViewerState?: boolean;
 }>();
 
+const emit = defineEmits<{
+  'update:items': [items: ReactionSummaryItem[]];
+}>();
+
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 const rootEl = useTemplateRef<HTMLElement>('rootEl');
@@ -163,8 +167,13 @@ function cloneSummaryItems(items: ReactionSummaryItem[] | undefined): ReactionSu
   return items?.map((item) => ({ ...item })) ?? [];
 }
 
+function publishSummary(items: ReactionSummaryItem[]) {
+  summaryItems.value = items;
+  emit('update:items', cloneSummaryItems(items));
+}
+
 function applySummary(payload: ReactionSummaryPayload) {
-  summaryItems.value = cloneSummaryItems(payload.items);
+  publishSummary(cloneSummaryItems(payload.items));
 }
 
 function getItem(content: ReactionContent): ReactionSummaryItem | null {
@@ -244,7 +253,7 @@ async function toggleReaction(content: ReactionContent) {
 
     applySummary(payload);
   } catch {
-    summaryItems.value = snapshot;
+    publishSummary(snapshot);
     errorMessage.value = t('reactions.updateFailed');
   } finally {
     pendingContent.value = null;
@@ -283,7 +292,7 @@ function applyOptimisticReaction(content: ReactionContent, viewerHasReacted: boo
     };
   }
 
-  summaryItems.value = existingItems.filter((item) => item.count > 0);
+  publishSummary(existingItems.filter((item) => item.count > 0));
 }
 
 function onDocumentClick(event: MouseEvent) {

@@ -51,6 +51,7 @@ const {
   updateComposer,
   updateNavigation,
   updateNotificationBehavior,
+  updateReleaseTimeline,
 } = useUserSettings();
 
 // SEO: settings page title
@@ -289,6 +290,13 @@ const applyNotificationReadMarkDelay = (secondsValue: string) => {
 const applyLinkTarget = (value: string) => {
   if (value === 'gitpulse' || value === 'github') {
     void updateNavigation({ linkTarget: value });
+  }
+};
+
+const applyShowReleaseReactions = (event: Event) => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement) {
+    void updateReleaseTimeline({ showReactions: target.checked });
   }
 };
 
@@ -592,6 +600,32 @@ onMounted(() => {
                     />
                   </div>
                 </div>
+              </div>
+            </section>
+
+            <section class="settings__section">
+              <h2 class="settings__section-title">
+                {{ t('dashboard.settings.releaseTimelineSection') }}
+              </h2>
+              <div class="settings__font-card">
+                <label class="settings__toggle-row">
+                  <span class="settings__option-body">
+                    <span class="settings__option-label">
+                      {{ t('dashboard.settings.releaseTimelineShowReactionsLabel') }}
+                    </span>
+                    <span class="settings__option-desc">
+                      {{ t('dashboard.settings.releaseTimelineShowReactionsDescription') }}
+                    </span>
+                  </span>
+                  <input
+                    class="settings__toggle-input"
+                    type="checkbox"
+                    :checked="settings.releaseTimeline.showReactions"
+                    :aria-label="t('dashboard.settings.releaseTimelineShowReactionsLabel')"
+                    @change="applyShowReleaseReactions"
+                  />
+                  <span class="settings__toggle" aria-hidden="true" />
+                </label>
               </div>
             </section>
           </template>
@@ -1029,6 +1063,58 @@ onMounted(() => {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+.settings__toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+}
+
+.settings__toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.settings__toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: var(--gitpulse-border);
+  transition: background-color 0.15s ease;
+}
+
+.settings__toggle::after {
+  content: '';
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: var(--gitpulse-surface);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 18%);
+  transition: transform 0.15s ease;
+}
+
+.settings__toggle-input:checked + .settings__toggle {
+  background: var(--gitpulse-accent);
+}
+
+.settings__toggle-input:checked + .settings__toggle::after {
+  transform: translateX(1.1rem);
+}
+
+.settings__toggle-input:focus-visible + .settings__toggle {
+  box-shadow: 0 0 0 3px var(--gitpulse-accent-soft);
 }
 
 .settings__font-picker-btn {

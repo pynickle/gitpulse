@@ -21,6 +21,7 @@ const release = (id: number, overrides: Partial<TimelineRelease> = {}): Timeline
   isPrerelease: false,
   isOldestShown: false,
   htmlUrl: null,
+  reactions: [],
   ...overrides,
 });
 

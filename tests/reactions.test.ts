@@ -4,6 +4,7 @@ import {
   extractCommentIdFromUrl,
   getReactionApiPathForTarget,
   getReactionContentsForTarget,
+  normalizeGraphQLReactionGroups,
   normalizeReactionContent,
   normalizeReactionSummary,
 } from '../shared/utils/reactions';
@@ -41,6 +42,40 @@ describe('reactions utilities', () => {
         viewerReactionId: 12,
       },
     ]);
+  });
+
+  it('maps GraphQL reaction groups into the release reaction summary shape', () => {
+    expect(
+      normalizeGraphQLReactionGroups(
+        [
+          { content: 'THUMBS_UP', viewerHasReacted: true, reactors: { totalCount: 3 } },
+          { content: 'THUMBS_DOWN', viewerHasReacted: false, reactors: { totalCount: 2 } },
+          { content: 'ROCKET', viewerHasReacted: false, reactors: { totalCount: 1 } },
+          { content: 'HEART', viewerHasReacted: true, reactors: { totalCount: 0 } },
+          { content: 'UNKNOWN', viewerHasReacted: true, reactors: { totalCount: 9 } },
+          null,
+        ],
+        'release'
+      )
+    ).toEqual([
+      {
+        content: '+1',
+        count: 3,
+        viewerHasReacted: true,
+        viewerReactionId: null,
+      },
+      {
+        content: 'rocket',
+        count: 1,
+        viewerHasReacted: false,
+        viewerReactionId: null,
+      },
+    ]);
+  });
+
+  it('treats missing GraphQL reaction groups as an empty summary', () => {
+    expect(normalizeGraphQLReactionGroups(undefined, 'release')).toEqual([]);
+    expect(normalizeGraphQLReactionGroups(null, 'release')).toEqual([]);
   });
 
   it('limits release reactions to GitHub supported contents', () => {

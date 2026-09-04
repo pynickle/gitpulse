@@ -5,6 +5,7 @@ import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseAsset, ReleaseDetailPayload } from '#shared/types/releases';
+import ReleaseTimelineReactionBar from '~/components/dashboard/release-timeline/ReleaseTimelineReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
@@ -84,6 +85,8 @@ const formatAssetSize = (size: number) => {
       <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
       <p v-else class="release-drawer-body__empty">{{ t('releaseDetail.noDescription') }}</p>
     </article>
+
+    <ReleaseTimelineReactionBar :item="item" />
 
     <section class="release-drawer-body__section" :aria-label="t('releaseDetail.assets')">
       <div class="release-drawer-body__section-header">

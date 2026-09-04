@@ -1,5 +1,6 @@
 import type {
   GitHubReaction,
+  GraphQLReactionGroup,
   ReactionContent,
   ReactionSummaryItem,
   ReactionTargetKind,
@@ -94,6 +95,68 @@ export function normalizeReactionContent(
 
   const trimmed = content.trim();
   return isAllowedReactionContent(trimmed, target) ? trimmed : null;
+}
+
+const GRAPHQL_REACTION_CONTENT_MAP: Record<string, ReactionContent> = {
+  THUMBS_UP: '+1',
+  THUMBS_DOWN: '-1',
+  LAUGH: 'laugh',
+  HOORAY: 'hooray',
+  CONFUSED: 'confused',
+  HEART: 'heart',
+  ROCKET: 'rocket',
+  EYES: 'eyes',
+};
+
+export function normalizeGraphQLReactionGroups(
+  groups: Array<GraphQLReactionGroup | null | undefined> | null | undefined,
+  target: ReactionTargetKind
+): ReactionSummaryItem[] {
+  if (!Array.isArray(groups)) {
+    return [];
+  }
+
+  const allowedContents = getReactionContentsForTarget(target);
+  const allowedContentSet = new Set(allowedContents);
+  const counts = new Map<ReactionContent, { count: number; viewerHasReacted: boolean }>();
+
+  for (const group of groups) {
+    if (!group) {
+      continue;
+    }
+
+    const content =
+      typeof group.content === 'string' ? GRAPHQL_REACTION_CONTENT_MAP[group.content] : undefined;
+    if (!content || !allowedContentSet.has(content)) {
+      continue;
+    }
+
+    const count = group.reactors?.totalCount;
+    if (typeof count !== 'number' || !Number.isSafeInteger(count) || count < 1) {
+      continue;
+    }
+
+    counts.set(content, {
+      count,
+      viewerHasReacted: Boolean(group.viewerHasReacted),
+    });
+  }
+
+  return allowedContents.flatMap((content) => {
+    const item = counts.get(content);
+    if (!item) {
+      return [];
+    }
+
+    return [
+      {
+        content,
+        count: item.count,
+        viewerHasReacted: item.viewerHasReacted,
+        viewerReactionId: null,
+      },
+    ];
+  });
 }
 
 export function normalizeReactionSummary(

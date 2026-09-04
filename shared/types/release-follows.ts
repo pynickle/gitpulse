@@ -1,3 +1,5 @@
+import type { ReactionSummaryItem } from './reactions';
+
 /**
  * A GitPulse-local Release Follow identity.
  * `id` is GitHub's GraphQL node id (REST `node_id`), not the numeric REST id.
@@ -27,6 +29,7 @@ export interface RepositoryReleaseItem {
   isPrerelease: boolean;
   assetCount: number;
   htmlUrl: string | null;
+  reactions: ReactionSummaryItem[];
 }
 
 export type RepositoryReleaseLookup =
@@ -65,6 +68,7 @@ export interface TimelineRelease {
   isPrerelease: boolean;
   isOldestShown: boolean;
   htmlUrl: string | null;
+  reactions: ReactionSummaryItem[];
 }
 
 export interface ReleaseTimelineGroup {

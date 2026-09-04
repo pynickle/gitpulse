@@ -8,6 +8,7 @@ import type {
   UserLayoutSettings,
   UserNavigationSettings,
   UserNotificationBehaviorSettings,
+  UserReleaseTimelineSettings,
   UserSettings,
   UserSettingsPatch,
 } from '#shared/types/user-settings';
@@ -56,6 +57,9 @@ export interface UserSettingsStore {
   updateNavigation: (navigation: Partial<UserNavigationSettings>) => Promise<UserSettings | null>;
   updateLayout: (layout: Partial<UserLayoutSettings>) => Promise<UserSettings | null>;
   updateComposer: (composer: Partial<UserComposerSettings>) => Promise<UserSettings | null>;
+  updateReleaseTimeline: (
+    releaseTimeline: Partial<UserReleaseTimelineSettings>
+  ) => Promise<UserSettings | null>;
   handleLoginChanged: () => void;
   ensureLoginWatcher: () => void;
 }
@@ -394,6 +398,10 @@ export function createUserSettingsActions({
     return updateSettings({ composer });
   };
 
+  const updateReleaseTimeline = (releaseTimeline: Partial<UserReleaseTimelineSettings>) => {
+    return updateSettings({ releaseTimeline });
+  };
+
   const handleLoginChanged = () => {
     syncActiveLogin();
   };
@@ -433,6 +441,7 @@ export function createUserSettingsActions({
     updateNavigation,
     updateLayout,
     updateComposer,
+    updateReleaseTimeline,
     handleLoginChanged,
     ensureLoginWatcher,
   };

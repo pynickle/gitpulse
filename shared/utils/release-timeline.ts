@@ -1,3 +1,4 @@
+import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type {
   ClassifiableLookup,
   FollowedRepository,
@@ -120,8 +121,20 @@ const toTimelineRelease = (
     isPrerelease: item.isPrerelease,
     isOldestShown: lookup.hasOlderReleases && oldestPublishedId === item.id,
     htmlUrl: item.htmlUrl,
+    reactions: item.reactions ?? [],
   };
 };
+
+export function timelineReleaseKey(item: { repository: { id: string }; id: number }): string {
+  return `${item.repository.id}:${item.id}`;
+}
+
+export function resolveTimelineReleaseReactions(
+  item: { repository: { id: string }; id: number; reactions: ReactionSummaryItem[] },
+  overlays: ReadonlyMap<string, ReactionSummaryItem[]>
+): ReactionSummaryItem[] {
+  return overlays.get(timelineReleaseKey(item)) ?? item.reactions;
+}
 
 export function assembleReleaseTimeline(
   follows: FollowedRepository[],

@@ -5,7 +5,12 @@ import type {
   RepositoryReleaseItem,
   RepositoryReleaseLookup,
 } from '../shared/types/release-follows';
-import { assembleReleaseTimeline, classifyLookups } from '../shared/utils/release-timeline';
+import {
+  assembleReleaseTimeline,
+  classifyLookups,
+  resolveTimelineReleaseReactions,
+  timelineReleaseKey,
+} from '../shared/utils/release-timeline';
 
 const repo = (
   overrides: Partial<FollowedRepository> & Pick<FollowedRepository, 'id'>
@@ -25,6 +30,7 @@ const release = (
   isPrerelease: overrides.isPrerelease ?? false,
   assetCount: overrides.assetCount ?? 0,
   htmlUrl: overrides.htmlUrl ?? null,
+  reactions: overrides.reactions ?? [],
   ...overrides,
 });
 
@@ -370,5 +376,71 @@ describe('assembleReleaseTimeline', () => {
     });
     expect(timeline.groups[0]?.items[0]?.tagName).toBe('v1');
     expect(timeline.groups[0]?.items[0]?.assetCount).toBe(0);
+  });
+
+  test('carries GitHub release reaction summaries onto timeline cards', () => {
+    const widgets = repo({ id: 'R_widgets', name: 'widgets' });
+    const reactions = [
+      {
+        content: '+1' as const,
+        count: 4,
+        viewerHasReacted: true,
+        viewerReactionId: null,
+      },
+      {
+        content: 'rocket' as const,
+        count: 1,
+        viewerHasReacted: false,
+        viewerReactionId: null,
+      },
+    ];
+
+    const timeline = assembleReleaseTimeline(
+      [widgets],
+      {
+        R_widgets: available(widgets, [
+          release({
+            id: 11,
+            publishedAt: '2026-08-22T12:00:00.000Z',
+            name: 'Widgets 1.1',
+            reactions,
+          }),
+        ]),
+      },
+      { timeZone: 'UTC' }
+    );
+
+    expect(timeline.groups[0]?.items[0]?.reactions).toEqual(reactions);
+  });
+});
+
+describe('resolveTimelineReleaseReactions', () => {
+  test('prefers a session overlay over the assembled card summary for the same release', () => {
+    const item = {
+      repository: { id: 'R_widgets', owner: 'octo', name: 'widgets' },
+      id: 11,
+      reactions: [
+        {
+          content: '+1' as const,
+          count: 1,
+          viewerHasReacted: false,
+          viewerReactionId: null,
+        },
+      ],
+    };
+    const overlay = [
+      {
+        content: '+1' as const,
+        count: 2,
+        viewerHasReacted: true,
+        viewerReactionId: 99,
+      },
+    ];
+
+    expect(timelineReleaseKey(item)).toBe('R_widgets:11');
+    expect(resolveTimelineReleaseReactions(item, new Map())).toEqual(item.reactions);
+    expect(resolveTimelineReleaseReactions(item, new Map([['R_widgets:11', overlay]]))).toEqual(
+      overlay
+    );
   });
 });

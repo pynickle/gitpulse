@@ -77,6 +77,10 @@ export interface UserComposerSettings {
   reviewInlineDefaultLayout: ComposerLayoutId;
 }
 
+export interface UserReleaseTimelineSettings {
+  showReactions: boolean;
+}
+
 export interface NotificationTodoItem {
   id: string;
   addedAt: string;
@@ -91,6 +95,7 @@ export interface UserSettings {
   navigation: UserNavigationSettings;
   layout: UserLayoutSettings;
   composer: UserComposerSettings;
+  releaseTimeline: UserReleaseTimelineSettings;
   tabGroups: TabGroup[];
   customTabs: CustomTab[];
   notificationTodos: NotificationTodoItem[];
@@ -105,6 +110,7 @@ export interface UserSettingsPatch {
   navigation?: Partial<UserNavigationSettings>;
   layout?: Partial<UserLayoutSettings>;
   composer?: Partial<UserComposerSettings>;
+  releaseTimeline?: Partial<UserReleaseTimelineSettings>;
   tabGroups?: TabGroup[];
   customTabs?: CustomTab[];
   notificationTodos?: NotificationTodoItem[];

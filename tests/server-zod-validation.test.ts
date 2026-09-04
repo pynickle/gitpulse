@@ -387,6 +387,18 @@ describe('server Zod request validation', () => {
     ).toEqual({
       composer: { conversationDefaultLayout: 'tabbed' },
     });
+    expect(
+      parseUserSettingsPatchBody({
+        releaseTimeline: { showReactions: false },
+      })
+    ).toEqual({
+      releaseTimeline: { showReactions: false },
+    });
+    expect(() =>
+      parseUserSettingsPatchBody({
+        releaseTimeline: { showReactions: 'no' },
+      })
+    ).toThrow('Invalid settings request body');
     expect(() =>
       parseUserSettingsPatchBody({
         composer: { conversationDefaultLayout: 'stacked' },

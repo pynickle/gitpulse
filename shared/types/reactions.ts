@@ -32,3 +32,9 @@ export interface ReactionSummaryItem {
 export interface ReactionSummaryPayload {
   items: ReactionSummaryItem[];
 }
+
+export interface GraphQLReactionGroup {
+  content?: string | null;
+  viewerHasReacted?: boolean | null;
+  reactors?: { totalCount?: number | null } | null;
+}

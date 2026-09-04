@@ -133,6 +133,14 @@ const composerSettingsPatchSchema = z
     message: 'At least one composer setting is required',
   });
 
+const releaseTimelineSettingsPatchSchema = z
+  .strictObject({
+    showReactions: z.boolean().optional(),
+  })
+  .refine((releaseTimeline) => Object.keys(releaseTimeline).length > 0, {
+    message: 'At least one release timeline setting is required',
+  });
+
 const tabGroupSchema = z.strictObject({
   id: nonEmptyStringSchema,
   name: nonEmptyStringSchema,
@@ -281,6 +289,7 @@ export const userSettingsPatchSchema = z
     navigation: navigationSettingsPatchSchema.optional(),
     layout: layoutSettingsPatchSchema.optional(),
     composer: composerSettingsPatchSchema.optional(),
+    releaseTimeline: releaseTimelineSettingsPatchSchema.optional(),
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),

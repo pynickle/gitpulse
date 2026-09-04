@@ -35,6 +35,7 @@ import type {
   UserLayoutSettings,
   UserNavigationSettings,
   UserNotificationBehaviorSettings,
+  UserReleaseTimelineSettings,
   UserSettings,
 } from '#shared/types/user-settings';
 
@@ -127,6 +128,10 @@ export const DEFAULT_USER_LAYOUT_SETTINGS: UserLayoutSettings = {
 export const DEFAULT_USER_COMPOSER_SETTINGS: UserComposerSettings = {
   conversationDefaultLayout: 'split',
   reviewInlineDefaultLayout: 'tabbed',
+};
+
+export const DEFAULT_USER_RELEASE_TIMELINE_SETTINGS: UserReleaseTimelineSettings = {
+  showReactions: true,
 };
 
 const hasOwn = (value: object, key: string) => {
@@ -241,6 +246,7 @@ export function createDefaultUserSettings(): UserSettings {
     navigation: { ...DEFAULT_USER_NAVIGATION_SETTINGS },
     layout: { ...DEFAULT_USER_LAYOUT_SETTINGS },
     composer: { ...DEFAULT_USER_COMPOSER_SETTINGS },
+    releaseTimeline: { ...DEFAULT_USER_RELEASE_TIMELINE_SETTINGS },
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
@@ -807,6 +813,24 @@ export function normalizeUserComposerSettings(
   };
 }
 
+export function normalizeUserReleaseTimelineSettings(
+  value: unknown,
+  fallback: UserReleaseTimelineSettings = DEFAULT_USER_RELEASE_TIMELINE_SETTINGS
+): UserReleaseTimelineSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback };
+  }
+
+  const candidate = value as Partial<UserReleaseTimelineSettings>;
+
+  return {
+    showReactions:
+      typeof candidate.showReactions === 'boolean'
+        ? candidate.showReactions
+        : fallback.showReactions,
+  };
+}
+
 export function normalizeUserLayoutSettings(
   value: unknown,
   fallback: UserLayoutSettings = DEFAULT_USER_LAYOUT_SETTINGS
@@ -838,6 +862,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       navigation: { ...fallback.navigation },
       layout: { ...fallback.layout },
       composer: { ...fallback.composer },
+      releaseTimeline: { ...fallback.releaseTimeline },
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
@@ -858,6 +883,10 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
     navigation: normalizeUserNavigationSettings(candidate.navigation, fallback.navigation),
     layout: normalizeUserLayoutSettings(candidate.layout, fallback.layout),
     composer: normalizeUserComposerSettings(candidate.composer, fallback.composer),
+    releaseTimeline: normalizeUserReleaseTimelineSettings(
+      candidate.releaseTimeline,
+      fallback.releaseTimeline
+    ),
     tabGroups: normalizeTabGroups(candidate.tabGroups, fallback.tabGroups),
     customTabs: normalizeCustomTabs(candidate.customTabs, fallback.customTabs),
     notificationTodos: normalizeNotificationTodos(
@@ -906,6 +935,12 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
     composer: hasOwn(candidate, 'composer')
       ? normalizeUserComposerSettings({ ...base.composer, ...candidate.composer }, base.composer)
       : { ...base.composer },
+    releaseTimeline: hasOwn(candidate, 'releaseTimeline')
+      ? normalizeUserReleaseTimelineSettings(
+          { ...base.releaseTimeline, ...candidate.releaseTimeline },
+          base.releaseTimeline
+        )
+      : { ...base.releaseTimeline },
     tabGroups: hasOwn(candidate, 'tabGroups')
       ? normalizeTabGroups(candidate.tabGroups, base.tabGroups)
       : cloneTabGroups(base.tabGroups),

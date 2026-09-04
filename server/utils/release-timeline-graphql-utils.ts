@@ -1,11 +1,13 @@
 import type { Octokit } from '@octokit/core';
 
+import type { GraphQLReactionGroup } from '#shared/types/reactions';
 import type {
   FollowedRepository,
   RepositoryIdentityLookup,
   RepositoryReleaseItem,
   RepositoryReleaseLookup,
 } from '#shared/types/release-follows';
+import { normalizeGraphQLReactionGroups } from '#shared/utils/reactions';
 
 export interface ReleaseTimelineGraphQLClient {
   graphql: <T>(query: string, variables?: Record<string, unknown>) => Promise<T>;
@@ -21,6 +23,7 @@ export interface GraphQLReleaseNode {
   isDraft?: boolean | null;
   isPrerelease?: boolean | null;
   releaseAssets?: { totalCount?: number | null } | null;
+  reactionGroups?: (GraphQLReactionGroup | null)[] | null;
 }
 
 export interface GraphQLRepositoryReleaseNode {
@@ -81,6 +84,11 @@ query ReleaseTimeline($ids: [ID!]!) {
           isDraft
           isPrerelease
           releaseAssets(first: 1) { totalCount }
+          reactionGroups {
+            content
+            viewerHasReacted
+            reactors(first: 1) { totalCount }
+          }
         }
       }
     }
@@ -140,6 +148,7 @@ const mapReleaseNode = (node: GraphQLReleaseNode | null): RepositoryReleaseItem 
     isPrerelease: Boolean(node.isPrerelease),
     assetCount: toAssetCount(node.releaseAssets?.totalCount),
     htmlUrl: toNonEmptyString(node.url),
+    reactions: normalizeGraphQLReactionGroups(node.reactionGroups, 'release'),
   };
 };
 

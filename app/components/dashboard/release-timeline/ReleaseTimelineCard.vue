@@ -3,6 +3,7 @@ import { FlaskConicalIcon, Loader2Icon, PackageIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
+import ReleaseTimelineReactionBar from '~/components/dashboard/release-timeline/ReleaseTimelineReactionBar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const props = defineProps<{
@@ -117,6 +118,8 @@ const handleReadMore = () => {
         {{ t('releaseTimeline.oldestShown') }}
       </p>
     </div>
+
+    <ReleaseTimelineReactionBar :item="item" />
   </article>
 </template>
 

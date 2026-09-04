@@ -335,6 +335,47 @@ describe('user settings store', () => {
     ]);
   });
 
+  test('defaults and normalizes Release Timeline reaction visibility without changing settings version', () => {
+    expect(createDefaultUserSettings().version).toBe(1);
+    expect(createDefaultUserSettings().releaseTimeline).toEqual({
+      showReactions: true,
+    });
+
+    expect(normalizeUserSettings({}).releaseTimeline).toEqual({
+      showReactions: true,
+    });
+    expect(normalizeUserSettings({ releaseTimeline: undefined }).version).toBe(1);
+    expect(
+      normalizeUserSettings({
+        releaseTimeline: { showReactions: false },
+      }).releaseTimeline
+    ).toEqual({
+      showReactions: false,
+    });
+    expect(
+      normalizeUserSettings({
+        releaseTimeline: { showReactions: 'no' },
+      }).releaseTimeline
+    ).toEqual({
+      showReactions: true,
+    });
+
+    const patchedOff = mergeUserSettingsPatch(createDefaultUserSettings(), {
+      releaseTimeline: { showReactions: false },
+    });
+    expect(patchedOff.releaseTimeline).toEqual({
+      showReactions: false,
+    });
+
+    const patchedOn = mergeUserSettingsPatch(patchedOff, {
+      releaseTimeline: { showReactions: true },
+    });
+    expect(patchedOn.releaseTimeline).toEqual({
+      showReactions: true,
+    });
+    expect(patchedOn.version).toBe(1);
+  });
+
   test('defaults and normalizes Followed Repositories through settings patches', () => {
     expect(createDefaultUserSettings().followedRepositories).toEqual([]);
     expect(normalizeUserSettings({}).followedRepositories).toEqual([]);
@@ -516,6 +557,37 @@ describe('user settings store', () => {
       composer: {
         conversationDefaultLayout: 'tabbed',
         reviewInlineDefaultLayout: 'tabbed',
+      },
+    });
+  });
+
+  test('persists Release Timeline reaction visibility with optimistic save normalization', async () => {
+    const harness = createHarness('octocat');
+    markLoaded(harness);
+
+    const save = harness.store.updateReleaseTimeline({ showReactions: false });
+    await tick();
+
+    expect(harness.settings.value.releaseTimeline).toEqual({
+      showReactions: false,
+    });
+    expect(harness.saveRequests).toHaveLength(1);
+    expect(harness.saveRequests[0]?.patch).toEqual({
+      releaseTimeline: {
+        showReactions: false,
+      },
+    });
+
+    harness.saveRequests[0]?.deferred.resolve(
+      createSettings({
+        releaseTimeline: {
+          showReactions: false,
+        },
+      })
+    );
+    await expect(save).resolves.toMatchObject({
+      releaseTimeline: {
+        showReactions: false,
       },
     });
   });

@@ -15,6 +15,7 @@ const release = (title: string): TimelineRelease => ({
   isPrerelease: false,
   isOldestShown: false,
   htmlUrl: null,
+  reactions: [],
 });
 
 const timeline = (title: string): ReleaseTimeline => ({

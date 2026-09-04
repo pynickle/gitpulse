@@ -1,11 +1,14 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 
-import {
+const reactions = await import('../shared/utils/reactions');
+mock.module('#shared/utils/reactions', () => reactions);
+
+const {
   fetchFollowedRepositoryIdentityLookups,
   fetchFollowedRepositoryReleaseLookups,
   mapRepositoryIdentityLookup,
   mapRepositoryReleaseLookup,
-} from '../server/utils/release-timeline-graphql-utils';
+} = await import('../server/utils/release-timeline-graphql-utils');
 import type { FollowedRepository } from '../shared/types/release-follows';
 
 const follow = (id: string, name = `repo-${id}`): FollowedRepository => ({
@@ -35,6 +38,11 @@ describe('mapRepositoryReleaseLookup', () => {
               isDraft: false,
               isPrerelease: true,
               releaseAssets: { totalCount: 3 },
+              reactionGroups: [
+                { content: 'THUMBS_UP', viewerHasReacted: true, reactors: { totalCount: 4 } },
+                { content: 'ROCKET', viewerHasReacted: false, reactors: { totalCount: 1 } },
+                { content: 'THUMBS_DOWN', viewerHasReacted: false, reactors: { totalCount: 2 } },
+              ],
             },
             {
               databaseId: 10,
@@ -71,6 +79,20 @@ describe('mapRepositoryReleaseLookup', () => {
           isPrerelease: true,
           assetCount: 3,
           htmlUrl: 'https://github.com/octo/widgets/releases/tag/v1.1',
+          reactions: [
+            {
+              content: '+1',
+              count: 4,
+              viewerHasReacted: true,
+              viewerReactionId: null,
+            },
+            {
+              content: 'rocket',
+              count: 1,
+              viewerHasReacted: false,
+              viewerReactionId: null,
+            },
+          ],
         },
       ],
     });
