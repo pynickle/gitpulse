@@ -4,44 +4,46 @@
   >
     <div class="card-content p-3 pl-4">
       <div class="dashboard-list-card__content">
-        <div class="is-flex is-align-items-flex-start mb-2">
-          <div class="dashboard-list-card__text-stack">
-            <p class="title is-6 mb-1 dashboard-list-card__title">{{ repo.name }}</p>
-            <p
-              v-if="repo.description"
-              class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__description"
-            >
-              {{ repo.description }}
-            </p>
-          </div>
-          <div v-if="repo.language" class="repo-language ml-3">
-            <span class="repo-language-dot" :style="{ backgroundColor: languageColor }" />
-            <span class="repo-language-text">{{ repo.language }}</span>
-          </div>
+        <div class="dashboard-list-card__text-stack mb-2">
+          <p class="title is-6 mb-1 dashboard-list-card__title">{{ repo.name }}</p>
+          <p
+            v-if="repo.description"
+            class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__description"
+          >
+            {{ repo.description }}
+          </p>
         </div>
 
-        <div class="is-flex is-align-items-center dashboard-list-card__meta">
-          <div class="is-flex is-align-items-center mr-4">
-            <StarIcon :size="14" class="mr-1 has-text-grey" />
-            <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.stargazers_count)">
-              {{ compactCount(repo.stargazers_count) }}
-            </span>
+        <div
+          class="is-flex is-align-items-center is-justify-content-space-between dashboard-list-card__meta"
+        >
+          <div class="is-flex is-align-items-center repo-item__stats">
+            <div class="is-flex is-align-items-center mr-4">
+              <StarIcon :size="14" class="mr-1 has-text-grey" />
+              <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.stargazers_count)">
+                {{ compactCount(repo.stargazers_count) }}
+              </span>
+            </div>
+            <div class="is-flex is-align-items-center mr-4">
+              <EyeIcon :size="14" class="mr-1 has-text-grey" />
+              <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.watchers_count)">
+                {{ compactCount(repo.watchers_count) }}
+              </span>
+            </div>
+            <div class="is-flex is-align-items-center mr-4">
+              <GitForkIcon :size="14" class="mr-1 has-text-grey" />
+              <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.forks_count)">
+                {{ compactCount(repo.forks_count) }}
+              </span>
+            </div>
+            <div v-if="repo.private" class="is-flex is-align-items-center repo-private-badge">
+              <LockIcon :size="12" class="mr-1" />
+              <span class="is-size-7">{{ t('repoItem.private') }}</span>
+            </div>
           </div>
-          <div class="is-flex is-align-items-center mr-4">
-            <EyeIcon :size="14" class="mr-1 has-text-grey" />
-            <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.watchers_count)">
-              {{ compactCount(repo.watchers_count) }}
-            </span>
-          </div>
-          <div class="is-flex is-align-items-center mr-4">
-            <GitForkIcon :size="14" class="mr-1 has-text-grey" />
-            <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.forks_count)">
-              {{ compactCount(repo.forks_count) }}
-            </span>
-          </div>
-          <div v-if="repo.private" class="is-flex is-align-items-center repo-private-badge">
-            <LockIcon :size="12" class="mr-1" />
-            <span class="is-size-7">{{ t('repoItem.private') }}</span>
+          <div v-if="repo.language" class="repo-language">
+            <span class="repo-language-dot" :style="{ backgroundColor: languageColor }" />
+            <span class="repo-language-text">{{ repo.language }}</span>
           </div>
         </div>
       </div>
@@ -150,6 +152,15 @@ const languageColor = computed(() => {
 .repo-item__link:focus-visible {
   outline: 2px solid var(--gitpulse-link);
   outline-offset: 2px;
+}
+
+.dashboard-list-card__meta {
+  gap: 0.5rem;
+}
+
+.repo-item__stats {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .repo-language {

@@ -80,8 +80,8 @@ const handleToggle = (event: MouseEvent) => {
   height: 100%;
 }
 
-.followable-repo-card :deep(.card-content) {
-  padding-right: 2.75rem;
+.followable-repo-card :deep(.dashboard-list-card__text-stack) {
+  padding-right: 2rem;
 }
 
 .followable-repo-card__item {
