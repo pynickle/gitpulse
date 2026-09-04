@@ -1,28 +1,27 @@
 <script setup lang="ts">
 import { FlaskConicalIcon, Loader2Icon, PackageIcon } from '@lucide/vue';
-import { computed, shallowRef } from 'vue';
+import { computed } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
-import type { ReleaseDetailPayload } from '#shared/types/releases';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const props = defineProps<{
   item: TimelineRelease;
+  expandedBody?: string | null;
+  expanding?: boolean;
+  expandError?: string | null;
 }>();
 
 const emit = defineEmits<{
   open: [item: TimelineRelease];
+  expand: [item: TimelineRelease];
 }>();
 
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 const { openRepository } = useDashboardRepositoryNavigation();
-const apiFetch = useGitPulseApiFetch();
 
-const expanded = shallowRef(false);
-const expanding = shallowRef(false);
-const expandError = shallowRef<string | null>(null);
-const expandedBody = shallowRef<string | null>(null);
+const expanded = computed(() => props.expandedBody != null);
 
 const repoFullName = computed(() => `${props.item.repository.owner}/${props.item.repository.name}`);
 const releasedAtLabel = computed(() =>
@@ -47,23 +46,9 @@ const handleCardClick = (event: MouseEvent) => {
   handleOpenDrawer();
 };
 
-const handleReadMore = async () => {
-  if (expanded.value || expanding.value) return;
-
-  expanding.value = true;
-  expandError.value = null;
-
-  try {
-    const detail = await apiFetch<ReleaseDetailPayload>(
-      `/api/releases/${props.item.repository.owner}/${props.item.repository.name}/${props.item.id}`
-    );
-    expandedBody.value = detail.body?.trim() ?? '';
-    expanded.value = true;
-  } catch (err) {
-    expandError.value = getFetchErrorMessage(err, t('releaseTimeline.expandError'));
-  } finally {
-    expanding.value = false;
-  }
+const handleReadMore = () => {
+  if (expanded.value || props.expanding) return;
+  emit('expand', props.item);
 };
 </script>
 

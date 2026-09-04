@@ -82,7 +82,7 @@ const showGrid = computed(() => groups.value.length > 0);
       @manage="emit('manage')"
     />
 
-    <div class="release-timeline__body" :class="{ 'release-timeline__body--locked': isOpen }">
+    <div class="release-timeline__body">
       <div v-if="showFollowsEmpty" class="release-timeline__empty">
         <div class="release-timeline__empty-icon" aria-hidden="true">
           <RocketIcon :size="32" />
@@ -120,7 +120,12 @@ const showGrid = computed(() => groups.value.length > 0);
         </p>
       </div>
 
-      <ReleaseTimelineGrid v-else-if="showGrid" :groups="groups" @open="openDrawer" />
+      <ReleaseTimelineGrid
+        v-else-if="showGrid"
+        :groups="groups"
+        :scroll-locked="isOpen"
+        @open="openDrawer"
+      />
     </div>
 
     <ReleaseDrawer
@@ -188,10 +193,6 @@ const showGrid = computed(() => groups.value.length > 0);
   display: flex;
   min-height: 0;
   flex: 1;
-  overflow: auto;
-}
-
-.release-timeline__body--locked {
   overflow: hidden;
 }
 
