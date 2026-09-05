@@ -27,7 +27,6 @@ export const DASHBOARD_DETAIL_QUERY_KEYS = [
   'repo',
   'path',
   'branch',
-  'url',
 ] as const;
 
 export type DashboardDetailQueryKey = (typeof DASHBOARD_DETAIL_QUERY_KEYS)[number];
@@ -179,7 +178,6 @@ export function clearDashboardDetailQuery(query: LocationQueryRaw): LocationQuer
     section: undefined,
     repoPage: undefined,
     repoState: undefined,
-    url: undefined,
   };
 }
 

@@ -440,7 +440,6 @@ const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
 const apiFetch = useGitPulseApiFetch();
-const { resolveDashboardUrlTarget, getDashboardUrlRoute } = useDashboardUrlNavigation();
 
 const isDashboardChildRoute = computed(() => {
   return !route.path.replace(/\/$/, '').endsWith('/dashboard');
@@ -456,32 +455,6 @@ const hasFileBrowsingPath = computed(() => Object.hasOwn(route.query, 'path'));
 const showFileBrowsingView = computed(() => {
   return Boolean(fileBrowsingRepo.value && hasFileBrowsingPath.value);
 });
-
-const normalizeUrlQuery = async () => {
-  const rawUrl = getQueryParamValue(route.query.url);
-  if (!rawUrl) {
-    return;
-  }
-
-  const target = resolveDashboardUrlTarget(rawUrl);
-  if (!target) {
-    return;
-  }
-
-  await router.replace(getDashboardUrlRoute(target));
-};
-
-watch(
-  () => route.query.url,
-  () => {
-    if (!import.meta.client) {
-      return;
-    }
-
-    void normalizeUrlQuery();
-  },
-  { immediate: true }
-);
 
 const {
   loading,

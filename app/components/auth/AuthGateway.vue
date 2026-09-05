@@ -9,7 +9,7 @@
     <div class="auth-gateway__content">
       <Button
         v-if="providers.oauthEnabled"
-        href="/auth/github"
+        :href="oauthHref"
         class="is-fullwidth is-justify-content-center mb-0"
       >
         <GitHubIcon class="mr-3" />
@@ -86,8 +86,8 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { fetch: fetchUserSession } = useUserSession();
-const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
+const { continueToReturnTarget, oauthHref } = useAuthReturnNavigation();
 const token = ref('');
 const tokenError = ref('');
 const submitting = ref(false);
@@ -158,7 +158,7 @@ const handlePatSubmit = async () => {
     });
 
     await fetchUserSession();
-    await navigateTo(localePath('/dashboard'));
+    await continueToReturnTarget();
   } catch (error) {
     const statusMessage = getTokenLoginErrorMessage(error);
 

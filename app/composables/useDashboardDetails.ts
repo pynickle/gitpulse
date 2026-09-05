@@ -620,7 +620,6 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
       ...route.query,
       pr: undefined,
       prReview: serializeDashboardDetailTarget(target.owner, target.repo, target.number),
-      url: undefined,
     });
   };
 
@@ -633,7 +632,6 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
         ? serializeDashboardDetailTarget(target.owner, target.repo, target.number)
         : undefined,
       prReview: undefined,
-      url: undefined,
     });
   };
 

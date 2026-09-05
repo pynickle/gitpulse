@@ -57,10 +57,10 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
-const localePath = useLocalePath();
+const { continueToReturnTarget } = useAuthReturnNavigation();
 
 const handleGoToDashboard = async () => {
-  await navigateTo(localePath('/dashboard'));
+  await continueToReturnTarget();
 };
 </script>
 

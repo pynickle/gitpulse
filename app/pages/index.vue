@@ -66,8 +66,8 @@ import RoundImg from '~/components/ui/RoundImg.vue';
 
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
-const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
+const { continueToReturnTarget } = useAuthReturnNavigation();
 
 usePageMeta(undefined, {
   description: t('landing.heroDescription'),
@@ -127,7 +127,7 @@ if (import.meta.client) {
           await nextTick();
 
           if (loggedIn.value) {
-            await navigateTo(localePath('/dashboard'));
+            await continueToReturnTarget();
           }
         } catch (error) {
           console.error('Auto-restore session refresh failed', error);

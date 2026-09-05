@@ -195,6 +195,8 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { appLayout: 'landing' },
+    '/open': { appLayout: 'landing' },
+    '/**/open': { appLayout: 'landing' },
     '/**/dashboard': { appLayout: 'dashboard' },
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },

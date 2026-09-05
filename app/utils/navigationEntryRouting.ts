@@ -6,12 +6,10 @@ import {
   clearDashboardDetailQuery,
   parseDashboardDetailTarget,
   parseDashboardReleaseQuery,
-  parseDashboardUrlTarget,
   parseRepoDetailListState,
   parseRepoDetailPage,
   parseRepoDetailSection,
   type DashboardNavigationEntry,
-  type DashboardUrlTarget,
 } from './dashboardUrlNavigationUtils';
 import getQueryParamValue from './getQueryParamValue';
 import parseGitHubRepoPath from './parseGitHubRepoPath';
@@ -56,57 +54,6 @@ const getTab = (query: NavigationRouteLocation['query']) => {
 
 function dashboardEntry(tab?: string): DashboardNavigationEntry {
   return tab ? { type: 'dashboard', data: { tab } } : { type: 'dashboard' };
-}
-
-function entryFromDashboardUrlTarget(
-  target: DashboardUrlTarget,
-  tab: string | undefined
-): DashboardNavigationEntry {
-  if (target.type === 'release') {
-    return {
-      type: 'release',
-      data: {
-        owner: target.owner,
-        repo: target.repo,
-        number: target.releaseRef.kind === 'id' ? target.releaseRef.id : undefined,
-        releaseRef: target.releaseRef,
-        tab,
-      },
-    };
-  }
-
-  if (target.type === 'repository') {
-    return {
-      type: 'repository',
-      data: {
-        owner: target.owner,
-        repo: target.repo,
-        branch: target.branch,
-        tab,
-        section: undefined,
-        repoPage: undefined,
-        repoState: undefined,
-      },
-    };
-  }
-
-  if (target.type === 'file') {
-    return {
-      type: 'file',
-      data: {
-        owner: target.owner,
-        repo: target.repo,
-        path: target.path,
-        branch: target.branch,
-        tab,
-      },
-    };
-  }
-
-  return {
-    type: target.type,
-    data: { owner: target.owner, repo: target.repo, number: target.number, tab },
-  };
 }
 
 function childRouteToNavigationEntry(
@@ -295,13 +242,6 @@ export function routeToNavigationEntry(
         repoState,
       },
     };
-  }
-
-  // `?url=` deep links are normalized away by the dashboard, but derive the
-  // target entry directly so the transient URL still records correctly.
-  const urlTarget = parseDashboardUrlTarget(getQueryParamValue(query.url));
-  if (urlTarget) {
-    return entryFromDashboardUrlTarget(urlTarget, tab);
   }
 
   return dashboardEntry(tab);

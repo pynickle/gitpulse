@@ -1,4 +1,9 @@
 {
+  "launch": {
+    "opening": "正在 GitPulse 中打开…",
+    "unsupportedTitle": "无法在 GitPulse 中打开此链接",
+    "unsupportedDescription": "GitHub 链接无效，或暂不支持此类页面。你可以继续前往仪表盘。"
+  },
   "app": {
     "title": "GitPulse",
     "subtitle": "GitHub 工作仪表板"

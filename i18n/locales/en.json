@@ -1,4 +1,9 @@
 {
+  "launch": {
+    "opening": "Opening in GitPulse…",
+    "unsupportedTitle": "This link cannot be opened in GitPulse",
+    "unsupportedDescription": "The GitHub link is invalid or this page is not supported yet. You can continue to the dashboard."
+  },
   "app": {
     "title": "GitPulse",
     "subtitle": "GitHub Work Dashboard"
