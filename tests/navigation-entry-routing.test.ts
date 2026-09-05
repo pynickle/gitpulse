@@ -304,18 +304,15 @@ describe('routeToNavigationEntry', () => {
     });
   });
 
-  test('derives entries for transient ?url= deep links', () => {
-    expect(
-      derive('/dashboard', { url: 'https://github.com/octo/repo/issues/42', tab: 'issues' })
-    ).toEqual({
-      type: 'issue',
-      data: { owner: 'octo', repo: 'repo', number: 42, tab: 'issues' },
-    });
-  });
-
   test('falls back to a dashboard entry for malformed detail queries', () => {
     expect(derive('/dashboard', { issue: 'octo/repo' })).toEqual({ type: 'dashboard' });
     expect(derive('/dashboard', { issue: 'octo/repo/not-a-number' })).toEqual({
+      type: 'dashboard',
+    });
+  });
+
+  test('does not interpret the retired dashboard url query as a detail entry', () => {
+    expect(derive('/dashboard', { url: 'https://github.com/octo/repo/issues/42' })).toEqual({
       type: 'dashboard',
     });
   });

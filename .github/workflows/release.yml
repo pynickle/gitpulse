@@ -46,6 +46,8 @@ jobs:
 
       - name: Zip extensions
         working-directory: extension
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
         run: |
           bun run zip
           bun run zip:firefox

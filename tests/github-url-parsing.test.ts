@@ -569,7 +569,6 @@ describe('buildDashboardTabSwitchQuery', () => {
       repo: undefined,
       path: undefined,
       branch: undefined,
-      url: undefined,
     });
   });
 });

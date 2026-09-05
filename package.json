@@ -10,6 +10,7 @@
     "extension:zip": "bun run --cwd extension zip",
     "extension:zip:firefox": "bun run --cwd extension zip:firefox",
     "extension:test": "bun test --cwd extension",
+    "extension:typecheck": "bun run --cwd extension typecheck",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
