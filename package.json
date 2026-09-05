@@ -55,7 +55,7 @@
     "oxlint": "^1.81.0",
     "oxlint-tsgolint": "^7.0.2001",
     "sass-embedded": "1.100.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.0",
     "vue-tsc": "^3.3.11",
     "vue3-simple-icons": "^16.10.0"
   }
