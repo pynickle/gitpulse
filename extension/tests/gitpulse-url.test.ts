@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
 
-import { parseDashboardUrlTarget } from '../../app/utils/dashboardUrlNavigationUtils';
 import {
   DEFAULT_GITPULSE_BASE_URL,
   buildGitPulseUrl,
@@ -55,33 +54,33 @@ describe('isGithubWebUrl', () => {
 });
 
 describe('buildGitPulseUrl', () => {
-  test('builds dashboard URL with the current GitHub URL', () => {
+  test('builds open URL with the current GitHub URL', () => {
     expect(
       buildGitPulseUrl('https://gitpulse.example.com', 'https://github.com/owner/repo/pull/7')
     ).toBe(
-      'https://gitpulse.example.com/dashboard?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo%2Fpull%2F7'
+      'https://gitpulse.example.com/open?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo%2Fpull%2F7'
     );
   });
 
   test('keeps a configured deployment subpath', () => {
     expect(buildGitPulseUrl('https://example.com/gitpulse', 'https://github.com/owner/repo')).toBe(
-      'https://example.com/gitpulse/dashboard?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo'
+      'https://example.com/gitpulse/open?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo'
     );
   });
 
-  test('does not duplicate dashboard when base points at dashboard', () => {
-    expect(buildGitPulseUrl('https://example.com/dashboard', 'https://github.com/owner/repo')).toBe(
-      'https://example.com/dashboard?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo'
+  test('does not duplicate open when base points at open', () => {
+    expect(buildGitPulseUrl('https://example.com/open', 'https://github.com/owner/repo')).toBe(
+      'https://example.com/open?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo'
     );
   });
 
-  test('opens dashboard without url query outside GitHub', () => {
+  test('opens the launch page without url query outside GitHub', () => {
     expect(buildGitPulseUrl('https://gitpulse.example.com', 'https://example.com/owner/repo')).toBe(
-      'https://gitpulse.example.com/dashboard'
+      'https://gitpulse.example.com/open'
     );
   });
 
-  test('passes GitHub targets through the dashboard parser contract', () => {
+  test('preserves the GitHub target for the launch page contract', () => {
     const gitPulseUrl = new URL(
       buildGitPulseUrl(
         'https://gitpulse.example.com',
@@ -89,16 +88,9 @@ describe('buildGitPulseUrl', () => {
       )
     );
 
-    expect(gitPulseUrl.pathname).toBe('/dashboard');
-    expect(parseDashboardUrlTarget(gitPulseUrl.searchParams.get('url'))).toEqual({
-      type: 'pull-request-review',
-      owner: 'owner',
-      repo: 'repo',
-      number: 7,
-      query: {
-        prReview: 'owner/repo/7',
-      },
-      hash: '#diff-abc',
-    });
+    expect(gitPulseUrl.pathname).toBe('/open');
+    expect(gitPulseUrl.searchParams.get('url')).toBe(
+      'https://github.com/owner/repo/pull/7/files#diff-abc'
+    );
   });
 });

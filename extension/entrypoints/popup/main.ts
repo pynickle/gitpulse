@@ -2,8 +2,8 @@ import './style.css';
 import { browser } from 'wxt/browser';
 
 import { bindBaseUrlForm, setBaseUrlStatus } from '@/utils/base-url-form';
-import { buildGitPulseUrl, isGithubWebUrl } from '@/utils/gitpulse-url';
-import { gitPulseBaseUrl } from '@/utils/settings';
+import { isGithubWebUrl } from '@/utils/gitpulse-url';
+import { requestGitPulseLaunch } from '@/utils/request-launch';
 
 const baseUrlInput = document.querySelector<HTMLInputElement>('#base-url');
 const form = document.querySelector<HTMLFormElement>('#settings-form');
@@ -31,9 +31,8 @@ openButton.addEventListener('click', async () => {
   setBaseUrlStatus(statusElement, 'Opening...');
 
   try {
-    const baseUrl = await gitPulseBaseUrl.getValue();
     const githubUrl = await getActiveGithubUrl();
-    await browser.tabs.create({ url: buildGitPulseUrl(baseUrl, githubUrl) });
+    await requestGitPulseLaunch(githubUrl);
     window.close();
   } catch (error) {
     setBaseUrlStatus(

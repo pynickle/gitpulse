@@ -41,7 +41,7 @@ export function normalizeGitPulseBaseUrl(value: string | null | undefined): stri
   return url.toString();
 }
 
-export function isGithubWebUrl(value: string | null | undefined): boolean {
+export function isGithubWebUrl(value: string | null | undefined): value is string {
   if (!value) return false;
 
   try {
@@ -60,9 +60,9 @@ export function buildGitPulseUrl(
   const normalizedBasePath = trimTrailingSlashes(target.pathname);
 
   if (!normalizedBasePath || normalizedBasePath === '/') {
-    target.pathname = '/dashboard';
-  } else if (!normalizedBasePath.endsWith('/dashboard')) {
-    target.pathname = `${normalizedBasePath}/dashboard`;
+    target.pathname = '/open';
+  } else if (!normalizedBasePath.endsWith('/open')) {
+    target.pathname = `${normalizedBasePath}/open`;
   } else {
     target.pathname = normalizedBasePath;
   }

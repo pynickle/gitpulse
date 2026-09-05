@@ -8,11 +8,16 @@
     "build:firefox": "wxt build -b firefox",
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox",
+    "typecheck": "wxt prepare && tsc --noEmit",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "test": "bun test tests"
   },
   "dependencies": {
-    "wxt": "^0.21.0"
+    "wxt": "^0.21.4"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.1",
+    "typescript": "^6.0.3"
   }
 }
