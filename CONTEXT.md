@@ -2,6 +2,13 @@
 
 GitPulse presents GitHub activity for focused review and follow-up in one dashboard.
 
+## Integration
+
+**Browser Launch Link**:
+A URL that asks GitPulse to open a supported GitHub page and resolve it into the matching GitPulse
+surface after authentication.
+_Avoid_: dashboard deep link when referring to the browser integration contract
+
 ## Notifications
 
 **Notifications**:
