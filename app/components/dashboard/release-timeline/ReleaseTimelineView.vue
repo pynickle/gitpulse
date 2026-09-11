@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { Loader2Icon, RefreshCwIcon, RocketIcon, SlidersHorizontalIcon } from '@lucide/vue';
+import { Loader2Icon, RocketIcon } from '@lucide/vue';
 import { computed, shallowRef, useTemplateRef } from 'vue';
 
 import FloatingBackToTopButton from '~/components/dashboard/FloatingBackToTopButton.vue';
 import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
 import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue';
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
+import ReleaseTimelineHeader from '~/components/dashboard/release-timeline/ReleaseTimelineHeader.vue';
 
 const emit = defineEmits<{
   manage: [];
@@ -37,6 +38,10 @@ const {
 const gridRef = useTemplateRef<{ scrollToTop: () => void }>('grid');
 const scrollTop = shallowRef(0);
 const viewportHeight = shallowRef(0);
+const searchQuery = shallowRef('');
+const visibleGroups = computed(() =>
+  filterReleaseTimelineGroupsByTitle(groups.value, searchQuery.value)
+);
 
 const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
 const showLoading = computed(
@@ -59,7 +64,8 @@ const showReleasesEmpty = computed(
     !showFailureBanner.value &&
     groups.value.length === 0
 );
-const showGrid = computed(() => groups.value.length > 0);
+const showSearchEmpty = computed(() => groups.value.length > 0 && visibleGroups.value.length === 0);
+const showGrid = computed(() => visibleGroups.value.length > 0);
 const showBackToTop = computed(
   () =>
     showGrid.value &&
@@ -79,34 +85,12 @@ const scrollTimelineToTop = () => {
 
 <template>
   <div class="release-timeline">
-    <div class="release-timeline__header">
-      <h2 class="release-timeline__title">{{ t('releaseTimeline.title') }}</h2>
-      <div class="release-timeline__actions">
-        <button
-          class="button is-ghost is-small release-timeline__reload"
-          type="button"
-          :aria-label="t('releaseTimeline.reload')"
-          :title="t('releaseTimeline.reload')"
-          @click="fetchTimeline"
-        >
-          <RefreshCwIcon
-            :size="18"
-            class="release-timeline__reload-icon"
-            :class="{ 'spin-animation': loading }"
-            aria-hidden="true"
-          />
-        </button>
-        <button
-          class="button is-ghost is-small release-timeline__manage"
-          type="button"
-          :aria-label="t('releaseTimeline.manage')"
-          :title="t('releaseTimeline.manage')"
-          @click="emit('manage')"
-        >
-          <SlidersHorizontalIcon v-once :size="18" aria-hidden="true" />
-        </button>
-      </div>
-    </div>
+    <ReleaseTimelineHeader
+      v-model="searchQuery"
+      :loading="loading"
+      @reload="fetchTimeline"
+      @manage="emit('manage')"
+    />
 
     <ReleaseTimelineFailureBanner
       v-if="showFailureBanner"
@@ -154,10 +138,17 @@ const scrollTimelineToTop = () => {
         </p>
       </div>
 
+      <div v-else-if="showSearchEmpty" class="release-timeline__empty">
+        <p class="release-timeline__empty-title">{{ t('releaseTimeline.emptySearchTitle') }}</p>
+        <p class="release-timeline__empty-description">
+          {{ t('releaseTimeline.emptySearchDescription') }}
+        </p>
+      </div>
+
       <ReleaseTimelineGrid
         v-else-if="showGrid"
         ref="grid"
-        :groups="groups"
+        :groups="visibleGroups"
         :scroll-locked="isOpen"
         @open="openDrawer"
         @viewport-scroll="handleViewportScroll"
@@ -193,54 +184,6 @@ const scrollTimelineToTop = () => {
   background: var(--gitpulse-surface, var(--gitpulse-page-bg));
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-md, 12px);
-}
-
-.release-timeline__header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem 0.5rem;
-  border-bottom: 1px solid var(--gitpulse-border);
-  min-width: 0;
-}
-
-.release-timeline__title {
-  margin-bottom: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--bulma-text-strong);
-  letter-spacing: -0.01em;
-  flex-shrink: 0;
-}
-
-.release-timeline__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.release-timeline__manage,
-.release-timeline__reload {
-  flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
-}
-
-.release-timeline__manage:hover,
-.release-timeline__manage:focus-visible,
-.release-timeline__reload:hover,
-.release-timeline__reload:focus-visible {
-  color: var(--gitpulse-link);
-  background: var(--gitpulse-info-soft);
-}
-
-.release-timeline__reload:hover .release-timeline__reload-icon:not(.spin-animation),
-.release-timeline__reload:focus-visible .release-timeline__reload-icon:not(.spin-animation) {
-  transform: rotate(15deg);
-}
-
-.release-timeline__reload-icon {
-  transition: transform 0.2s ease;
 }
 
 .release-timeline__body {
