@@ -1195,8 +1195,6 @@
     "bannerTransientTitle": "部分已关注仓库加载失败",
     "bannerTransientDescription": "{repos} 暂时无法加载。",
     "bannerManage": "前往配置",
-    "readMore": "阅读更多",
-    "expandError": "加载完整更新说明失败。",
     "oldestShown": "更早的 Release 未显示。",
     "openRepo": "打开 {repo}",
     "drawerLabel": "Release 抽屉",

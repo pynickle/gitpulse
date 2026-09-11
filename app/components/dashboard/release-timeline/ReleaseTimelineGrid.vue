@@ -29,8 +29,6 @@ const emit = defineEmits<{
   viewportScroll: [{ scrollTop: number; viewportHeight: number }];
 }>();
 
-const { stateFor, expand } = useReleaseTimelineExpansion();
-
 const scroller = useTemplateRef<HTMLElement>('scroller');
 const rowsRoot = useTemplateRef<HTMLElement>('rowsRoot');
 const columnCount = shallowRef(resolveReleaseTimelineColumnCount(Number.POSITIVE_INFINITY));
@@ -74,13 +72,7 @@ const visibleRows = computed(() => {
   const end = Math.min(visibleRange.value.end, rowMetrics.value.length);
   return rowMetrics.value.slice(start, end).map((virtualRow) => ({
     ...virtualRow,
-    cards:
-      virtualRow.row.type === 'cards'
-        ? virtualRow.row.items.map((item) => ({
-            item,
-            ...stateFor(item),
-          }))
-        : [],
+    cards: virtualRow.row.type === 'cards' ? virtualRow.row.items : [],
   }));
 });
 
@@ -396,14 +388,10 @@ onBeforeUnmount(() => {
           :class="`release-timeline-grid__cards--${columnCount}`"
         >
           <ReleaseTimelineCard
-            v-for="card in virtualRow.cards"
-            :key="card.key"
-            :item="card.item"
-            :expanded-body="card.expandedBody"
-            :expanding="card.expanding"
-            :expand-error="card.expandError"
+            v-for="item in virtualRow.cards"
+            :key="`${item.repository.id}:${item.id}`"
+            :item="item"
             @open="emit('open', $event)"
-            @expand="expand"
           />
         </div>
       </div>

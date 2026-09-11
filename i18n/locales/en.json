@@ -1195,8 +1195,6 @@
     "bannerTransientTitle": "Some Followed Repositories failed to load",
     "bannerTransientDescription": "{repos} could not be loaded. This is usually temporary.",
     "bannerManage": "Go to configuration",
-    "readMore": "Read more",
-    "expandError": "Failed to load the full changelog.",
     "oldestShown": "Earlier releases are not shown.",
     "openRepo": "Open {repo}",
     "drawerLabel": "Release Drawer",
