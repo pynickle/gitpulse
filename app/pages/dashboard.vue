@@ -38,15 +38,26 @@
         <ReleaseTimelineView v-if="isReleaseTimelineView" @manage="handleReleaseFollowsManage" />
         <div v-else class="card dashboard-main-card">
           <div class="dashboard-tabs-header">
-            <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
-            <span
-              v-if="currentTabSubtitle"
-              class="dashboard-tab-subtitle"
-              :title="currentTabSubtitle"
+            <div class="dashboard-tabs-header__lead">
+              <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
+              <span
+                v-if="currentTabSubtitle"
+                class="dashboard-tab-subtitle"
+                :title="currentTabSubtitle"
+              >
+                · {{ currentTabSubtitle }}
+              </span>
+            </div>
+            <div
+              v-if="showDashboardFilterPills || showDashboardFilterButton"
+              class="dashboard-tab-actions"
             >
-              · {{ currentTabSubtitle }}
-            </span>
-            <div class="dashboard-tab-actions">
+              <FilterPills
+                v-if="showDashboardFilterPills"
+                :current-tab="activeFilterSource"
+                :filters="visibleDashboardFilters"
+                @update="handleFilterUpdate"
+              />
               <button
                 v-if="showDashboardFilterButton"
                 class="button is-ghost is-small dashboard-tab-filter"
@@ -58,41 +69,11 @@
               >
                 <FilterIcon v-once :size="18" aria-hidden="true" />
               </button>
-              <button
-                class="button is-ghost is-small dashboard-tab-refresh"
-                type="button"
-                :aria-label="t('dashboard.actions.refreshCurrentTab')"
-                :title="t('dashboard.actions.refreshCurrentTab')"
-                @click="refreshCurrentTabSafely"
-              >
-                <RefreshCwIcon v-once :size="18" class="dashboard-tab-refresh__icon" />
-              </button>
             </div>
           </div>
 
-          <div v-if="showDashboardControlsRow" class="dashboard-controls-row">
-            <FilterPills
-              v-if="showDashboardFilterPills"
-              :current-tab="activeFilterSource"
-              :filters="visibleDashboardFilters"
-              @update="handleFilterUpdate"
-            />
-            <DashboardPagination
-              v-if="showPagination"
-              :pagination="currentPagination"
-              :current-page-only="currentTab === 'notifications' && notificationUsesBatchedFetch"
-              @change="goToPage"
-            />
-          </div>
-
           <div class="card-content dashboard-list-card-content">
-            <div
-              v-if="dashboardListLoading || !dashboardListError"
-              :class="[
-                'dashboard-list-shell',
-                { 'dashboard-list-shell--without-pagination': !showPagination },
-              ]"
-            >
+            <div v-if="dashboardListLoading || !dashboardListError" class="dashboard-list-shell">
               <SimpleBar class="dashboard-list-scroll">
                 <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
 
@@ -263,6 +244,14 @@
               </div>
             </div>
           </div>
+
+          <div v-if="showPagination" class="dashboard-pagination-footer">
+            <DashboardPagination
+              :pagination="currentPagination"
+              :current-page-only="currentTab === 'notifications' && notificationUsesBatchedFetch"
+              @change="goToPage"
+            />
+          </div>
         </div>
       </template>
 
@@ -366,7 +355,6 @@ import {
   FilterIcon,
   GitPullRequestIcon,
   ListTodoIcon,
-  RefreshCwIcon,
   SearchIcon,
 } from '@lucide/vue';
 
@@ -682,9 +670,6 @@ const showDashboardFilterPills = computed(() => {
   const source = activeFilterSource.value;
   return source === 'todos' || sourceSupportsDashboardFilter(source, 'state');
 });
-const showDashboardControlsRow = computed(
-  () => showPagination.value || showDashboardFilterPills.value
-);
 const showDashboardAdvancedFilters = computed(() => {
   if (selectedCustomTab.value) {
     return false;
@@ -897,11 +882,12 @@ const notificationUsesBatchedFetch = computed(() => {
 });
 
 const showPagination = computed(() => {
-  const activePagination = currentPagination.value;
-  if (currentTab.value === 'notifications' && notificationUsesBatchedFetch.value) {
-    return true;
+  if (dashboardListError.value && !dashboardListLoading.value) {
+    return false;
   }
-  return activePagination.totalPages !== 1 || activePagination.hasPrev || activePagination.hasNext;
+
+  const { hasPrev, hasNext, totalPages } = currentPagination.value;
+  return hasPrev || hasNext || (totalPages != null && totalPages > 1);
 });
 
 const filteredNotifications = computed(() => {
@@ -1433,47 +1419,29 @@ watch(
   min-height: 0;
   flex-direction: column;
   flex: 1;
+  overflow: hidden;
 }
 
 .dashboard-tabs-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  padding: 1.25rem 1.5rem 0.5rem;
-  border-bottom: 1px solid var(--gitpulse-border);
+  padding: 1.25rem 1.5rem 0.75rem;
   min-width: 0;
 }
 
-.dashboard-controls-row {
+.dashboard-tabs-header__lead {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.5rem 1.5rem;
-  border-bottom: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
+  align-items: baseline;
+  gap: 0.5rem;
   min-width: 0;
-
-  :deep(.filter-pills) {
-    flex-shrink: 0;
-  }
-
-  :deep(.dashboard-pagination) {
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-}
-
-@media (max-width: 860px) {
-  .dashboard-controls-row {
-    :deep(.dashboard-pagination) {
-      margin-left: 0;
-    }
-  }
+  flex: 1 1 auto;
 }
 
 .dashboard-tab-title {
   margin-bottom: 0;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--bulma-text-strong);
   letter-spacing: -0.01em;
   flex-shrink: 0;
@@ -1492,13 +1460,14 @@ watch(
 .dashboard-tab-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
-  margin-left: auto;
-}
-
-.dashboard-tab-refresh {
   flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
+  min-width: 0;
+
+  :deep(.filter-pills) {
+    flex-wrap: nowrap;
+  }
 }
 
 .dashboard-tab-filter {
@@ -1512,28 +1481,46 @@ watch(
   background: var(--gitpulse-info-soft);
 }
 
-.dashboard-tab-refresh:hover,
-.dashboard-tab-refresh:focus-visible,
 .dashboard-tab-filter:hover,
 .dashboard-tab-filter:focus-visible {
   color: var(--gitpulse-link);
   background: var(--gitpulse-info-soft);
 }
 
-.dashboard-tab-refresh:hover .dashboard-tab-refresh__icon,
-.dashboard-tab-refresh:focus-visible .dashboard-tab-refresh__icon {
-  transform: rotate(15deg);
-}
-
-.dashboard-tab-refresh__icon {
-  transition: transform 0.2s ease;
-}
-
 .dashboard-list-card-content {
   display: flex;
   min-height: 0;
-  padding-top: 0.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.75rem;
   flex: 1;
+}
+
+.dashboard-main-card:has(.dashboard-pagination-footer) .dashboard-list-card-content {
+  padding-bottom: 0;
+}
+
+.dashboard-pagination-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  background: var(--gitpulse-surface);
+
+  :deep(.dashboard-pagination) {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 0;
+    justify-content: center;
+    margin: 0;
+  }
+
+  :deep(.pagination-list) {
+    flex-grow: 0;
+  }
 }
 
 .dashboard-list-shell {
@@ -1546,6 +1533,12 @@ watch(
 .dashboard-list-scroll {
   min-height: 0;
   height: 100%;
+}
+
+.dashboard-main-card:has(.dashboard-pagination-footer)
+  .dashboard-list-scroll
+  :deep(.simplebar-content > .mb-4:last-child) {
+  margin-bottom: 0;
 }
 
 .dashboard-empty-state {
