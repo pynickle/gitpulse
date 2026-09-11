@@ -203,7 +203,7 @@ describe('useGithubData Notification Subject Enrichment integration', () => {
     const githubData = useGithubData();
 
     await githubData.fetchNotifications(1, {
-      notificationFilters: { readState: 'read' },
+      notificationFilters: { subjectType: 'Issue' },
     });
     await flushPromises();
 

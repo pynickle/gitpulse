@@ -3,7 +3,6 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   BellIcon,
-  CheckCircleIcon,
   CircleDotIcon,
   CircleMinusIcon,
   ClockIcon,
@@ -52,12 +51,6 @@ const stateOptions = computed<SegmentedOption[]>(() => {
         label: t('dashboard.filters.options.unread'),
         icon: BellIcon,
         color: 'var(--gitpulse-info)',
-      },
-      {
-        value: 'read',
-        label: t('dashboard.filters.options.read'),
-        icon: CheckCircleIcon,
-        color: 'var(--gitpulse-text-subtle)',
       },
     ];
   }

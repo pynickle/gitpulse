@@ -17,11 +17,10 @@ const getQueryString = (value: unknown) => {
 const applyNotificationFreshnessFilters = (
   notifications: DashboardNotification[],
   filters: {
-    readState?: 'read' | 'unread';
+    readState?: 'unread';
   }
 ) => {
   return notifications.filter((notification) => {
-    if (filters.readState === 'read' && notification.unread) return false;
     if (filters.readState === 'unread' && !notification.unread) return false;
 
     return true;
@@ -39,9 +38,8 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
   const before =
     typeof query.before === 'string' && query.before.trim() ? query.before.trim() : undefined;
   const readState = getQueryString(query.read_state);
-  const filters = {
-    readState:
-      readState === 'read' || readState === 'unread' ? (readState as 'read' | 'unread') : undefined,
+  const filters: { readState?: 'unread' } = {
+    readState: readState === 'unread' ? 'unread' : undefined,
   };
 
   try {

@@ -28,7 +28,6 @@ const stateOptions = computed<{ value: DashboardRouteState | ''; label: string }
     return [
       { value: '', label: t('dashboard.filters.options.all') },
       { value: 'unread', label: t('dashboard.filters.options.unread') },
-      { value: 'read', label: t('dashboard.filters.options.read') },
     ];
   }
 

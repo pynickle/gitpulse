@@ -353,7 +353,6 @@
         "any": "Any",
         "all": "All",
         "unread": "Unread",
-        "read": "Read",
         "open": "Open",
         "closed": "Closed",
         "merged": "Merged",
@@ -691,14 +690,13 @@
           "open": "Open",
           "closed": "Closed",
           "merged": "Merged",
-          "unread": "Unread",
-          "read": "Read"
+          "unread": "Unread"
         }
       },
       "actions": {
         "title": "Links",
         "notifications": {
-          "tip": "Unread items stay visible until GitHub marks them read. Use the filters above to compare unread and read work without changing state.",
+          "tip": "Unread items stay visible until GitHub marks them read. Use All to include already-read threads, or Unread to hide them.",
           "settings": "Manage notification settings"
         },
         "issues": {

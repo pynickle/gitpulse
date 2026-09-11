@@ -72,7 +72,6 @@ const stateOptions = computed<SegmentedOption[]>(() => {
     return [
       { value: '', label: t('dashboard.filters.options.all') },
       { value: 'unread', label: t('dashboard.filters.options.unread') },
-      { value: 'read', label: t('dashboard.filters.options.read') },
     ];
   }
   if (props.currentTab === 'pulls') {

@@ -722,21 +722,11 @@ const routeFilterFetchKey = computed(() => {
 
   if (source === 'notifications') {
     const apiParams = sourceState.notificationAdapter.apiParams;
-    const localFilters = sourceState.notificationAdapter.local;
-    if (!sourceState.notificationAdapter.usesPageLocalPredicates) {
-      return new URLSearchParams(
-        Object.entries(apiParams)
-          .filter(([, value]) => value !== undefined)
-          .map(([key, value]) => [key, String(value)])
-      ).toString();
-    }
-
-    return JSON.stringify({
-      apiParams,
-      localFilters: {
-        readState: localFilters.readState,
-      },
-    });
+    return new URLSearchParams(
+      Object.entries(apiParams)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [key, String(value)])
+    ).toString();
   }
 
   if (source === 'todos') {

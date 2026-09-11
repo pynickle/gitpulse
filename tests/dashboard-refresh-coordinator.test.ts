@@ -15,7 +15,7 @@ const createFilterSourceStates = () =>
     todos: createDashboardFilterSourceState('todos', { labels: [] }),
     notifications: createDashboardFilterSourceState('notifications', {
       labels: [],
-      state: 'read',
+      state: 'all',
       repo: 'owner/repo',
       reason: 'mention',
       subjectType: 'Issue',
@@ -60,7 +60,7 @@ describe('dashboard refresh coordinator', () => {
     });
 
     expect(coordinator.activeDashboardFreshnessUrl.value).toBe(
-      '/api/notifications/freshness?all=true&read_state=read'
+      '/api/notifications/freshness?all=true'
     );
     expect(coordinator.activeDashboardRefreshKey.value).toBe(
       JSON.stringify({

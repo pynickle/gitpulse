@@ -181,12 +181,12 @@ const parseNotificationQueryParams = (queryKey: string) => {
 
 const getReadStateFromQueryParams = (params: URLSearchParams) => {
   const readState = params.get('read_state');
-  return readState === 'read' || readState === 'unread' ? readState : undefined;
+  return readState === 'unread' ? readState : undefined;
 };
 
 const isUnreadOnlyNotificationQueryKey = (queryKey: string) => {
   const params = parseNotificationQueryParams(queryKey);
-  return params.get('all') !== 'true' && getReadStateFromQueryParams(params) !== 'read';
+  return params.get('all') !== 'true';
 };
 
 const getNotificationLocalFiltersFromQueryKey = (

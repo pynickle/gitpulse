@@ -65,10 +65,7 @@ const TAB_OPTIONS = computed<Record<string, { label: string; value: string }[]>>
     { label: t('dashboard.widgets.filters.options.closed'), value: 'closed' },
     { label: t('dashboard.widgets.filters.options.merged'), value: 'merged' },
   ],
-  notifications: [
-    { label: t('dashboard.widgets.filters.options.unread'), value: 'unread' },
-    { label: t('dashboard.widgets.filters.options.read'), value: 'read' },
-  ],
+  notifications: [{ label: t('dashboard.widgets.filters.options.unread'), value: 'unread' }],
 }));
 
 const options = computed(() => {

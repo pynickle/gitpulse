@@ -14,7 +14,7 @@ import getQueryParamValue from '../utils/getQueryParamValue';
 import parseGitHubRepoPath from '../utils/parseGitHubRepoPath';
 import type { DashboardTab } from './useDashboardTabs';
 
-export type DashboardRouteState = 'all' | 'unread' | 'read' | 'open' | 'closed' | 'merged';
+export type DashboardRouteState = 'all' | 'unread' | 'open' | 'closed' | 'merged';
 export type DashboardIssuePrSort = Exclude<GitHubSearchSort, 'best-match'>;
 export type DashboardTodoSort = 'added' | 'updated';
 export type DashboardRouteSort = DashboardIssuePrSort | DashboardTodoSort;
@@ -51,7 +51,7 @@ export interface NotificationFilterAdapter {
     before?: string;
   };
   local: {
-    readState?: 'unread' | 'read';
+    readState?: 'unread';
     repo?: string;
     subjectType?: string;
   };
@@ -132,14 +132,7 @@ export const sourceSupportsDashboardFilter = (
 export const sourceUsesDashboardTodoSortControls = (source: DashboardFilterSource) =>
   source === 'todos';
 
-const STATE_VALUES = new Set<DashboardRouteState>([
-  'all',
-  'unread',
-  'read',
-  'open',
-  'closed',
-  'merged',
-]);
+const STATE_VALUES = new Set<DashboardRouteState>(['all', 'unread', 'open', 'closed', 'merged']);
 const REVIEW_VALUES = new Set<Exclude<GitHubSearchReviewFilter, 'any'>>([
   'none',
   'required',
@@ -176,9 +169,7 @@ const createEmptyDashboardRouteFilters = (): DashboardRouteFilters => ({ labels:
 export const hasNotificationPageLocalPredicates = (
   localFilters: NotificationFilterAdapter['local']
 ) => {
-  return Boolean(
-    localFilters.readState === 'read' || localFilters.repo || localFilters.subjectType
-  );
+  return Boolean(localFilters.repo || localFilters.subjectType);
 };
 
 const getStringValue = (query: Record<string, unknown>, key: DashboardFilterQueryKey) => {
@@ -304,7 +295,7 @@ export const createDashboardEffectiveFilters = (
   }
 
   if (source === 'notifications') {
-    if (filters.state === 'all' || filters.state === 'unread' || filters.state === 'read') {
+    if (filters.state === 'all' || filters.state === 'unread') {
       effective.state = filters.state;
     }
     return effective;
@@ -416,10 +407,7 @@ export const buildNotificationFilterAdapter = (
   source: DashboardFilterSource,
   filters: DashboardRouteFilters
 ): NotificationFilterAdapter => {
-  const readState =
-    source === 'notifications' && (filters.state === 'read' || filters.state === 'unread')
-      ? filters.state
-      : undefined;
+  const readState = source === 'notifications' && filters.state === 'unread' ? 'unread' : undefined;
   const localFilters: NotificationFilterAdapter['local'] =
     source === 'todos'
       ? {
@@ -479,7 +467,6 @@ export const applyNotificationLocalFilters = (
   localFilters: NotificationFilterAdapter['local']
 ) => {
   return items.filter((notification) => {
-    if (localFilters.readState === 'read' && notification.unread) return false;
     if (localFilters.readState === 'unread' && !notification.unread) return false;
 
     const repoName =
