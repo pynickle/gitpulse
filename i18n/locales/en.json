@@ -1195,6 +1195,7 @@
     "bannerManage": "Go to configuration",
     "oldestShown": "Earlier releases are not shown.",
     "openRepo": "Open {repo}",
+    "openRelease": "Open release page",
     "drawerLabel": "Release Drawer",
     "closeDrawer": "Close Release Drawer",
     "drawerError": "Failed to load this release.",

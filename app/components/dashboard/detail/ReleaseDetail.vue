@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   CalendarIcon,
-  DownloadIcon,
   ExternalLinkIcon,
   FileArchiveIcon,
   GitBranchIcon,
@@ -12,6 +11,7 @@ import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { ReleaseAsset, ReleaseDetailPayload } from '#shared/types/releases';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
+import ReleaseAssetsList from '~/components/dashboard/releases/ReleaseAssetsList.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
@@ -45,8 +45,6 @@ const body = computed(() => props.release.body?.trim() || '');
 
 const assets = computed<ReleaseAsset[]>(() => props.release.assets ?? []);
 
-const hasAssets = computed(() => assets.value.length > 0);
-
 const archiveLinks = computed(() =>
   [
     {
@@ -63,25 +61,6 @@ const archiveLinks = computed(() =>
     Boolean(item.href)
   )
 );
-
-const formatAssetSize = (size: number) => {
-  if (!Number.isFinite(size) || size <= 0) return t('releaseDetail.sizeUnknown');
-
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let value = size;
-  let unitIndex = 0;
-
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-
-  return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
-};
-
-const formatDownloadCount = (count: number) => {
-  return formatCompactNumber(Math.max(0, count), locale.value);
-};
 
 const handleRepoClick = async () => {
   if (!repoOwner.value || !repoName.value) return;
@@ -191,29 +170,7 @@ usePageMeta(
               :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
               @scroll="onSidebarScroll"
             >
-              <div v-if="hasAssets" class="release-assets">
-                <a
-                  v-for="asset in assets"
-                  :key="asset.id"
-                  :href="asset.browser_download_url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="release-asset"
-                >
-                  <DownloadIcon :size="14" class="release-asset__icon" />
-                  <span class="release-asset__content">
-                    <span class="release-asset__name">{{ asset.name }}</span>
-                    <span class="release-asset__meta">
-                      <span class="release-asset__size">{{ formatAssetSize(asset.size) }}</span>
-                      <span class="release-asset__downloads">
-                        <DownloadIcon :size="10" />
-                        <span>{{ formatDownloadCount(asset.download_count) }}</span>
-                      </span>
-                    </span>
-                  </span>
-                </a>
-              </div>
-              <p v-else class="release-sidebar__empty">{{ t('releaseDetail.noAssets') }}</p>
+              <ReleaseAssetsList :assets="assets" />
             </div>
           </section>
 
@@ -393,8 +350,7 @@ usePageMeta(
   margin-top: 0.75rem;
 }
 
-.release-body__empty,
-.release-sidebar__empty {
+.release-body__empty {
   color: var(--gitpulse-text-muted);
   font-size: 0.9rem;
 }
@@ -506,70 +462,6 @@ usePageMeta(
 .release-sidebar__count {
   font-size: 0.8rem;
   color: var(--gitpulse-text-muted);
-}
-
-.release-assets {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.release-asset {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 6px;
-  color: var(--gitpulse-text-strong);
-  background: var(--gitpulse-surface);
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease;
-
-  &:hover {
-    border-color: var(--gitpulse-link);
-    color: var(--gitpulse-link);
-  }
-}
-
-.release-asset__icon {
-  flex-shrink: 0;
-  color: var(--gitpulse-accent);
-}
-
-.release-asset__content {
-  display: grid;
-  min-width: 0;
-  gap: 0.15rem;
-  flex: 1;
-}
-
-.release-asset__name {
-  overflow: hidden;
-  font-weight: 600;
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.release-asset__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-}
-
-.release-asset__size {
-  color: var(--gitpulse-text-muted);
-}
-
-.release-asset__downloads {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--gitpulse-accent);
-  font-weight: 500;
 }
 
 .release-archives {

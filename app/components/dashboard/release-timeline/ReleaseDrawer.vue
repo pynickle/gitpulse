@@ -21,6 +21,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { openModal, closeModal } = useModalState();
+const { openRepository, openRelease } = useDashboardRepositoryNavigation();
+const { opensGitHubLinks } = useGitHubLinkRouting();
 const titleId = useId();
 const panel = shallowRef<HTMLElement | null>(null);
 const focusTrap = createFocusTrapController();
@@ -29,9 +31,27 @@ const dragging = shallowRef(false);
 const dragOffsetY = shallowRef(0);
 const dragStartY = shallowRef<number | null>(null);
 
-const title = computed(
-  () => props.detail?.name?.trim() || props.item?.title || t('releaseTimeline.drawerLabel')
+const repoFullName = computed(() =>
+  props.item ? `${props.item.repository.owner}/${props.item.repository.name}` : ''
 );
+const chromeTitle = computed(() => repoFullName.value || t('releaseTimeline.drawerLabel'));
+const openRepoLabel = computed(() =>
+  repoFullName.value
+    ? t('releaseTimeline.openRepo', { repo: repoFullName.value })
+    : t('releaseTimeline.drawerLabel')
+);
+
+const handleOpenRepo = async () => {
+  if (!props.item) return;
+  if (!opensGitHubLinks.value) emit('close');
+  await openRepository(props.item.repository.owner, props.item.repository.name);
+};
+
+const handleOpenReleasePage = async () => {
+  if (!props.item) return;
+  emit('close');
+  await openRelease(props.item.repository.owner, props.item.repository.name, props.item.id);
+};
 
 const panelStyle = computed(() => {
   const offset = dragOffsetY.value;
@@ -165,7 +185,15 @@ const onPointerUp = (event: PointerEvent) => {
           </div>
 
           <header class="release-drawer__chrome">
-            <h2 :id="titleId" class="release-drawer__chrome-title">{{ title }}</h2>
+            <button
+              :id="titleId"
+              class="release-drawer__repo"
+              type="button"
+              :title="openRepoLabel"
+              @click="handleOpenRepo"
+            >
+              {{ chromeTitle }}
+            </button>
             <button
               class="release-drawer__close"
               type="button"
@@ -200,7 +228,12 @@ const onPointerUp = (event: PointerEvent) => {
             </button>
           </div>
 
-          <ReleaseDrawerBody v-else-if="detail" :item="item" :detail="detail" />
+          <ReleaseDrawerBody
+            v-else-if="detail"
+            :item="item"
+            :detail="detail"
+            @open-release="handleOpenReleasePage"
+          />
         </div>
       </aside>
     </div>
@@ -290,15 +323,31 @@ const onPointerUp = (event: PointerEvent) => {
   border-bottom: 1px solid var(--gitpulse-border);
 }
 
-.release-drawer__chrome-title {
+.release-drawer__repo {
   margin: 0;
   min-width: 0;
+  flex: 1;
   overflow: hidden;
-  color: var(--gitpulse-text-strong);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gitpulse-link);
   font-size: 0.95rem;
   font-weight: 650;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.release-drawer__repo:hover,
+.release-drawer__repo:focus-visible {
+  text-decoration: underline;
+}
+
+.release-drawer__repo:focus-visible {
+  outline: 2px solid var(--gitpulse-info);
+  outline-offset: 2px;
 }
 
 .release-drawer__close {

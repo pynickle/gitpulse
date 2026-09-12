@@ -2,6 +2,7 @@ import type { LocationQueryRaw } from 'vue-router';
 
 import { createDashboardRepositoryTarget } from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
+import { resolveNavigationEntryRoute } from '~/utils/navigationEntryRouting';
 
 interface OpenDashboardRepositoryOptions {
   tab?: string;
@@ -42,7 +43,28 @@ export function useDashboardRepositoryNavigation() {
     });
   };
 
+  const openRelease = async (owner: string, repo: string, releaseId: number) => {
+    if (!owner || !repo || !releaseId) return;
+
+    const resolved = resolveNavigationEntryRoute({
+      type: 'release',
+      data: {
+        owner,
+        repo,
+        number: releaseId,
+        releaseRef: { kind: 'id', id: releaseId },
+        tab: getCurrentTab() ?? undefined,
+      },
+    });
+
+    await router.push({
+      path: localePath(resolved.path),
+      query: resolved.query,
+    });
+  };
+
   return {
     openRepository,
+    openRelease,
   };
 }

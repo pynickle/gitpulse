@@ -1195,6 +1195,7 @@
     "bannerManage": "前往配置",
     "oldestShown": "更早的 Release 未显示。",
     "openRepo": "打开 {repo}",
+    "openRelease": "打开 Release 页面",
     "drawerLabel": "Release 抽屉",
     "closeDrawer": "关闭 Release 抽屉",
     "drawerError": "加载该 Release 失败。",
