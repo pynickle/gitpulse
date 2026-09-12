@@ -21,7 +21,6 @@ const MIN_VISIBLE_ROWS = 4;
 
 const props = defineProps<{
   groups: ReleaseTimelineGroup[];
-  scrollLocked?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -352,12 +351,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    ref="scroller"
-    class="release-timeline-grid"
-    :class="{ 'release-timeline-grid--locked': scrollLocked }"
-    @scroll="handleScroll"
-  >
+  <div ref="scroller" class="release-timeline-grid" @scroll="handleScroll">
     <div ref="rowsRoot" class="release-timeline-grid__rows">
       <div
         v-if="topSpacerHeight"
@@ -415,10 +409,7 @@ onBeforeUnmount(() => {
   overflow-anchor: none;
   flex: 1;
   padding: 1rem 1.25rem 1.5rem;
-}
-
-.release-timeline-grid--locked {
-  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 
 .release-timeline-grid__rows {

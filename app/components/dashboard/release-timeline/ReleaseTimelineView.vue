@@ -149,7 +149,6 @@ const scrollTimelineToTop = () => {
         v-else-if="showGrid"
         ref="grid"
         :groups="visibleGroups"
-        :scroll-locked="isOpen"
         @open="openDrawer"
         @viewport-scroll="handleViewportScroll"
       />
