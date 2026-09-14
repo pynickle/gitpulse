@@ -385,6 +385,18 @@
       "tabGroups": "标签页分组",
       "logout": "退出登录"
     },
+    "menu": {
+      "open": "打开仪表盘菜单",
+      "close": "关闭仪表盘菜单",
+      "title": "仪表盘菜单",
+      "builtInTabs": "内置标签"
+    },
+    "accountMenu": {
+      "open": "打开账户菜单",
+      "close": "关闭账户菜单",
+      "title": "账户",
+      "github": "GitHub"
+    },
     "tabs": {
       "todos": "待办",
       "notifications": "通知",

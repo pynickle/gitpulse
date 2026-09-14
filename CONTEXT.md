@@ -105,6 +105,28 @@ The user setting that seeds Composer Layout when a Conversation Composer opens.
 **Review Inline Composer Default Layout**:
 The user setting that seeds Composer Layout when a Review Inline Composer opens.
 
+## Dashboard
+
+**Landing**:
+The unauthenticated marketing and sign-in surface at `/`.
+_Avoid_: homepage, Dashboard Home
+
+**Dashboard Home**:
+The signed-in `/dashboard` surface: Activity Bar, Tab Sidebar, and the active tab's list, including the Release Timeline. Child routes and Detail Overlays leave this surface.
+_Avoid_: homepage, landing, dashboard page, "pages" of the dashboard when referring to this surface
+
+**Activity Bar**:
+The dashboard chrome that switches built-in tabs (Todos, Notifications, Issues, Pulls, Repos, Release Timeline) and holds account actions (profile, starred, settings, logout). On the wide layout it is the far-left icon rail.
+_Avoid_: left icon bar, dock, bottom nav when referring to this chrome on the wide layout
+
+**Tab Sidebar**:
+The dashboard's left navigation sidebar listing tabs and tab groups.
+_Avoid_: left menu, main sidebar, Dashboard Menu
+
+**Dashboard Menu**:
+The narrow-viewport overlay on Dashboard Home that lists built-in tabs and Tab Sidebar views so the list can use the full width.
+_Avoid_: hamburger menu, sidebar, Tab Sidebar when referring to this overlay
+
 ## Detail Overlays
 
 **Detail Overlay**:
@@ -114,10 +136,6 @@ _Avoid_: detail page, detail view
 **Detail Sidebar**:
 The metadata column on the right side of a Detail Overlay, holding cards such as labels, assignees, and actions. Present on pull request, issue, discussion, and repository Detail Overlays.
 _Avoid_: right panel, metadata column, "sidebar" used alone
-
-**Tab Sidebar**:
-The dashboard's left navigation sidebar listing tabs and tab groups.
-_Avoid_: left menu, main sidebar
 
 ## Release Follows
 

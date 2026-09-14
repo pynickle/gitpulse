@@ -7,8 +7,38 @@
     </KeepAlive>
   </div>
 
-  <div v-else class="dashboard-page">
-    <DashboardLayout :hide-side-chrome="isReleaseTimelineView">
+  <div
+    v-else
+    class="dashboard-page"
+    :class="{ 'dashboard-page--narrow': dashboardHomeChrome.showTopBar }"
+  >
+    <DashboardHomeTopBar
+      v-if="dashboardHomeChrome.showTopBar"
+      :title="currentTabTitle"
+      :show-filter-button="dashboardHomeChrome.showTopBarFilterButton"
+      :filter-active="hasActiveVisibleFilters"
+      :refreshing="dashboardRefreshing"
+      :refresh-disabled="activeDashboardLoading"
+      :user-avatar="user?.avatar_url"
+      :user-name="user?.name"
+      :dashboard-menu-open="dashboardHomeChrome.dashboardMenuMayBeOpen"
+      :account-menu-open="dashboardHomeChrome.accountMenuMayBeOpen"
+      @menu-click="dispatchDashboardHomeChrome({ type: 'toggle-dashboard-menu' })"
+      @filter-click="openNarrowFilter"
+      @refresh-click="handleTopBarRefresh"
+      @avatar-click="dispatchDashboardHomeChrome({ type: 'toggle-account-menu' })"
+      @account-close="dispatchDashboardHomeChrome({ type: 'close-account-menu' })"
+      @account-escape="dispatchDashboardHomeChrome({ type: 'escape' })"
+      @profile="handleAccountDestination(handleProfileClick)"
+      @starred="handleAccountDestination(handleStarredClick)"
+      @settings="handleAccountDestination(handleSettingsClick)"
+      @logout="handleAccountDestination(handleLogout)"
+    />
+    <DashboardLayout
+      :show-activity-bar="dashboardHomeChrome.showActivityBar"
+      :show-tab-sidebar="dashboardHomeChrome.showTabSidebar"
+      :show-widgets="dashboardHomeChrome.showWidgets"
+    >
       <template #activity-bar>
         <ActivityBar
           :user-avatar="user?.avatar_url"
@@ -35,13 +65,22 @@
       </template>
 
       <template #main-content>
-        <ReleaseTimelineView v-if="isReleaseTimelineView" @manage="handleReleaseFollowsManage" />
+        <ReleaseTimelineView
+          v-if="isReleaseTimelineView"
+          ref="releaseTimelineView"
+          :show-title="dashboardHomeChrome.showListTitleRow"
+          :show-reload="!dashboardHomeChrome.showTopBarRefresh"
+          @manage="handleReleaseFollowsManage"
+        />
         <div v-else class="card dashboard-main-card">
-          <div class="dashboard-tabs-header">
-            <div class="dashboard-tabs-header__lead">
+          <div
+            v-if="dashboardHomeChrome.showListTitleRow || dashboardHomeChrome.showFilterPills"
+            class="dashboard-tabs-header"
+          >
+            <div v-if="dashboardHomeChrome.showListTitleRow" class="dashboard-tabs-header__lead">
               <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
               <span
-                v-if="currentTabSubtitle"
+                v-if="dashboardHomeChrome.showCustomSubtitle && currentTabSubtitle"
                 class="dashboard-tab-subtitle"
                 :title="currentTabSubtitle"
               >
@@ -49,26 +88,14 @@
               </span>
             </div>
             <div
-              v-if="showDashboardFilterPills || showDashboardFilterButton"
+              v-if="dashboardHomeChrome.showFilterPills && showDashboardFilterPills"
               class="dashboard-tab-actions"
             >
               <FilterPills
-                v-if="showDashboardFilterPills"
                 :current-tab="activeFilterSource"
                 :filters="visibleDashboardFilters"
                 @update="handleFilterUpdate"
               />
-              <button
-                v-if="showDashboardFilterButton"
-                class="button is-ghost is-small dashboard-tab-filter"
-                :class="{ 'is-active': hasActiveVisibleFilters }"
-                type="button"
-                :aria-label="t('dashboard.filters.openDrawer')"
-                :title="t('dashboard.filters.openDrawer')"
-                @click="isFilterDrawerOpen = true"
-              >
-                <FilterIcon v-once :size="18" aria-hidden="true" />
-              </button>
             </div>
           </div>
 
@@ -203,7 +230,7 @@
                   <div v-if="repos.length === 0" class="dashboard-empty-state">
                     {{ reposEmptyMessage }}
                   </div>
-                  <div v-for="repo in repos" class="mb-4 mr-4" :key="repo.id">
+                  <div v-for="repo in repos" class="mb-4 mr-4 dashboard-list-row" :key="repo.id">
                     <AsyncRepoItem :repo="repo" />
                   </div>
                 </template>
@@ -249,6 +276,7 @@
             <DashboardPagination
               :pagination="currentPagination"
               :current-page-only="currentTab === 'notifications' && notificationUsesBatchedFetch"
+              :comfortable-hit-targets="dashboardHomeChrome.showTopBar"
               @change="goToPage"
             />
           </div>
@@ -270,6 +298,20 @@
         </WidgetsPanel>
       </template>
     </DashboardLayout>
+
+    <DashboardMenu
+      v-if="dashboardHomeChrome.showTopBar"
+      :open="dashboardHomeChrome.dashboardMenuMayBeOpen"
+      :built-in-tabs="activityGroups"
+      :active-tab-id="activeTabId"
+      :sidebar-groups="sidebarGroups"
+      :sidebar-tabs="sidebarTabs"
+      @close="dispatchDashboardHomeChrome({ type: 'scrim' })"
+      @escape="dispatchDashboardHomeChrome({ type: 'escape' })"
+      @tab-select="handleDashboardMenuTabSelect"
+      @group-toggle="handleSidebarGroupToggle"
+      @manage-tabs="handleDashboardMenuManageTabs"
+    />
   </div>
 
   <DetailOverlayHost
@@ -336,7 +378,9 @@
   />
 
   <FloatingRefreshButton
-    v-if="!isDashboardChildRoute && !showFileBrowsingView && !isReleaseTimelineView"
+    v-if="
+      dashboardHomeChrome.showFloatingRefresh && !isDashboardChildRoute && !showFileBrowsingView
+    "
     :has-new-content="dashboardHasNewContent"
     :refreshing="dashboardRefreshing"
     :checking="dashboardChecking"
@@ -352,7 +396,6 @@ import {
   BellIcon,
   BookMarkedIcon,
   CircleDotIcon,
-  FilterIcon,
   GitPullRequestIcon,
   ListTodoIcon,
   SearchIcon,
@@ -360,11 +403,13 @@ import {
 
 import 'simplebar-vue/dist/simplebar.min.css';
 import SimpleBar from 'simplebar-vue';
-import { defineAsyncComponent, computed, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, shallowRef, useTemplateRef, watch } from 'vue';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
+import DashboardHomeTopBar from '~/components/dashboard/DashboardHomeTopBar.vue';
 import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
 import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
+import DashboardMenu from '~/components/dashboard/DashboardMenu.vue';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
@@ -840,6 +885,17 @@ const currentTabSubtitle = computed(() => {
   return resolveCustomTabSubtitle(customTab, t) ?? '';
 });
 
+const { presentation: dashboardHomeChrome, dispatch: dispatchDashboardHomeChrome } =
+  useDashboardHomeChrome({
+    hasCustomSubtitle: computed(() => Boolean(currentTabSubtitle.value)),
+    supportsDashboardFilterButton: showDashboardFilterButton,
+    isReleaseTimeline: isReleaseTimelineView,
+  });
+
+const releaseTimelineViewRef = useTemplateRef<{ reload: () => Promise<void> }>(
+  'releaseTimelineView'
+);
+
 // SEO: dynamic title based on current tab
 usePageMeta(currentTabTitle);
 
@@ -1184,6 +1240,15 @@ const {
   refreshCurrentTab: refreshCurrentTabSafely,
 });
 
+const handleTopBarRefresh = async () => {
+  if (isReleaseTimelineView.value) {
+    await releaseTimelineViewRef.value?.reload();
+    return;
+  }
+
+  await refreshDashboard();
+};
+
 const loadRouteTabSafely = async (tab: unknown, page: number) => {
   try {
     const dashboardTab = parseDashboardTab(tab);
@@ -1280,6 +1345,31 @@ const handleReleaseFollowsManage = async () => {
 
 const handleManageTabs = async () => {
   await router.push(localePath('/dashboard/tabs'));
+};
+
+const handleDashboardMenuTabSelect = async (tabId: string) => {
+  dispatchDashboardHomeChrome({ type: 'select-destination' });
+  if (activityGroups.value.some((group) => group.id === tabId)) {
+    await handleActivityGroupSelect(tabId);
+    return;
+  }
+  await handleSidebarTabSelect(tabId);
+};
+
+const handleDashboardMenuManageTabs = async () => {
+  dispatchDashboardHomeChrome({ type: 'select-destination' });
+  await handleManageTabs();
+};
+
+const handleAccountDestination = async (navigate: () => Promise<void>) => {
+  dispatchDashboardHomeChrome({ type: 'select-destination' });
+  await navigate();
+};
+
+const openNarrowFilter = () => {
+  dispatchDashboardHomeChrome({ type: 'close-dashboard-menu' });
+  dispatchDashboardHomeChrome({ type: 'close-account-menu' });
+  isFilterDrawerOpen.value = true;
 };
 
 const handleSidebarGroupToggle = (groupId: string) => {
@@ -1403,6 +1493,53 @@ watch(
   background: var(--gitpulse-page-bg);
 }
 
+@media (max-width: 860px) {
+  .dashboard-page {
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+}
+
+.dashboard-page--narrow {
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  isolation: isolate;
+}
+
+.dashboard-page--narrow :deep(.dashboard-layout) {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+.dashboard-page--narrow :deep(.dashboard-list-row) {
+  margin-right: 0;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dashboard-page--narrow :deep(.dashboard-list-scroll) {
+  overflow-x: hidden;
+}
+
+.dashboard-page--narrow :deep(.dashboard-empty-state),
+.dashboard-page--narrow :deep(.dashboard-error-state__description) {
+  overflow-wrap: anywhere;
+}
+
+.dashboard-page--narrow :deep(.dashboard-error-state__actions .button) {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
 .dashboard-file-browser {
   width: 100%;
   height: 100vh;
@@ -1468,23 +1605,6 @@ watch(
   :deep(.filter-pills) {
     flex-wrap: nowrap;
   }
-}
-
-.dashboard-tab-filter {
-  display: none;
-  flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
-}
-
-.dashboard-tab-filter.is-active {
-  color: var(--gitpulse-link);
-  background: var(--gitpulse-info-soft);
-}
-
-.dashboard-tab-filter:hover,
-.dashboard-tab-filter:focus-visible {
-  color: var(--gitpulse-link);
-  background: var(--gitpulse-info-soft);
 }
 
 .dashboard-list-card-content {
@@ -1650,11 +1770,5 @@ watch(
   text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-@media (max-width: 860px) {
-  .dashboard-tab-filter {
-    display: inline-flex;
-  }
 }
 </style>

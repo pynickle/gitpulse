@@ -2,21 +2,24 @@
   <div class="dashboard-layout">
     <div
       class="columns dashboard-layout-columns"
-      :class="{ 'dashboard-layout-columns--icon-bar-only': hideSideChrome }"
+      :class="{
+        'dashboard-layout-columns--icon-bar-only': showActivityBar && !showTabSidebar,
+        'dashboard-layout-columns--narrow': !showActivityBar,
+      }"
     >
       <!-- Activity Bar: 48px fixed width (left) -->
-      <div class="column column-activity-bar">
+      <div v-if="showActivityBar" class="column column-activity-bar">
         <slot name="activity-bar"></slot>
       </div>
 
       <!-- Tab Sidebar: persisted width (left-center) -->
-      <div v-if="!hideSideChrome" class="column column-tab-sidebar" :style="tabSidebarStyle">
+      <div v-if="showTabSidebar" class="column column-tab-sidebar" :style="tabSidebarStyle">
         <slot name="tab-sidebar"></slot>
       </div>
 
       <!-- Draggable divider between the tab sidebar and the main list. -->
       <div
-        v-if="!hideSideChrome"
+        v-if="showTabSidebar"
         ref="splitterHandleRef"
         class="dashboard-splitter"
         :class="{ 'is-dragging': isDragging }"
@@ -47,7 +50,7 @@
       </div>
 
       <!-- Widgets Panel: 320px width (right) -->
-      <div v-if="!hideSideChrome" class="column column-widgets-panel">
+      <div v-if="showWidgets" class="column column-widgets-panel">
         <slot name="widgets-panel"></slot>
       </div>
     </div>
@@ -64,8 +67,14 @@ import {
   TAB_SIDEBAR_WIDTH_MIN,
 } from '#shared/types/user-settings';
 
-const { hideSideChrome } = defineProps<{
-  hideSideChrome?: boolean;
+const {
+  showActivityBar = true,
+  showTabSidebar = true,
+  showWidgets = true,
+} = defineProps<{
+  showActivityBar?: boolean;
+  showTabSidebar?: boolean;
+  showWidgets?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -82,8 +91,6 @@ const dragWidth = shallowRef(settingsWidth.value);
 
 const displayWidth = computed(() => (isDragging.value ? dragWidth.value : settingsWidth.value));
 
-// Drive the column width through a CSS custom property rather than an inline
-// `width` so the mobile media query (which sets `width: 100%`) can still win.
 const tabSidebarStyle = computed(() => ({
   '--tab-sidebar-width': `${displayWidth.value}px`,
 }));
@@ -165,8 +172,7 @@ $splitter-hover-zone: 14px;
 }
 
 // Left-Center Tab Sidebar. Width is driven by the inline `--tab-sidebar-width`
-// custom property (set from user settings); the media query below overrides
-// this with `width: 100%` for mobile stacking.
+// custom property (set from user settings).
 .column-tab-sidebar {
   flex: none;
   width: var(--tab-sidebar-width, 220px);
@@ -277,6 +283,16 @@ $splitter-hover-zone: 14px;
   justify-content: flex-start;
 }
 
+.dashboard-layout-columns--narrow {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.dashboard-layout-columns--narrow .column-main-content {
+  padding: 0.75rem;
+}
+
 // Right Widgets Panel
 .column-widgets-panel {
   flex: none;
@@ -284,46 +300,18 @@ $splitter-hover-zone: 14px;
   padding: 1.25rem 0.75rem 1.25rem 0;
 }
 
-// Responsive behavior
-@media screen and (max-width: 768px) {
-  .dashboard-layout {
-    display: block;
-  }
-
-  .dashboard-layout-columns {
-    display: flex;
-    flex-direction: column;
-  }
-
+@media (max-width: 860px) {
   .column-activity-bar,
   .column-tab-sidebar,
-  .column-main-content {
-    width: 100%;
-    max-width: 100%;
-    flex: none;
-  }
-
-  .column-activity-bar {
-    padding: 0;
-  }
-
-  .column-tab-sidebar {
-    order: 1;
-    padding: 0.75rem;
-  }
-
-  .column-main-content {
-    order: 2;
-    padding: 0.75rem;
-  }
-
+  .dashboard-splitter,
   .column-widgets-panel {
     display: none;
   }
 
-  // No resizing on mobile — the sidebar is full-width above the list.
-  .dashboard-splitter {
-    display: none;
+  .column-main-content {
+    width: 100%;
+    max-width: 100%;
+    padding: 0.75rem;
   }
 }
 </style>

@@ -1,6 +1,7 @@
 <template>
   <nav
     class="pagination is-centered dashboard-pagination"
+    :class="{ 'dashboard-pagination--comfortable': comfortableHitTargets }"
     role="navigation"
     aria-label="pagination"
   >
@@ -63,9 +64,11 @@ const props = withDefaults(
   defineProps<{
     pagination: PaginationMeta;
     currentPageOnly?: boolean;
+    comfortableHitTargets?: boolean;
   }>(),
   {
     currentPageOnly: false,
+    comfortableHitTargets: false,
   }
 );
 
@@ -206,5 +209,12 @@ html.dark .pagination-link.is-current:focus {
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+
+.dashboard-pagination--comfortable .pagination-link,
+.dashboard-pagination--comfortable .pagination-previous,
+.dashboard-pagination--comfortable .pagination-next {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
 }
 </style>

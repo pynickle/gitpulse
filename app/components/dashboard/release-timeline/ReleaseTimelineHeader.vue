@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { FilterIcon, RefreshCwIcon, SearchIcon, SlidersHorizontalIcon } from '@lucide/vue';
 
-defineProps<{
-  loading: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    loading: boolean;
+    showTitle?: boolean;
+    showReload?: boolean;
+  }>(),
+  {
+    showTitle: true,
+    showReload: true,
+  }
+);
 
 const emit = defineEmits<{
   reload: [];
@@ -17,7 +25,9 @@ const { t } = useI18n();
 
 <template>
   <div class="release-timeline-header">
-    <h2 class="release-timeline-header__title">{{ t('releaseTimeline.title') }}</h2>
+    <h2 v-if="showTitle" class="release-timeline-header__title">
+      {{ t('releaseTimeline.title') }}
+    </h2>
     <div class="release-timeline-header__toolbar">
       <div class="release-timeline-header__search" role="search">
         <SearchIcon
@@ -37,6 +47,7 @@ const { t } = useI18n();
         />
       </div>
       <button
+        v-if="showReload"
         class="button is-ghost is-small release-timeline-header__action"
         type="button"
         :aria-label="t('releaseTimeline.reload')"

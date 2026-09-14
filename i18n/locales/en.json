@@ -292,6 +292,18 @@
       "tabGroups": "Tab groups",
       "logout": "Logout"
     },
+    "menu": {
+      "open": "Open dashboard menu",
+      "close": "Close dashboard menu",
+      "title": "Dashboard menu",
+      "builtInTabs": "Built-in tabs"
+    },
+    "accountMenu": {
+      "open": "Open account menu",
+      "close": "Close account menu",
+      "title": "Account",
+      "github": "GitHub"
+    },
     "tabs": {
       "todos": "Todo",
       "notifications": "Notifications",

@@ -8,6 +8,11 @@ import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timelin
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
 import ReleaseTimelineHeader from '~/components/dashboard/release-timeline/ReleaseTimelineHeader.vue';
 
+const { showTitle = true, showReload = true } = defineProps<{
+  showTitle?: boolean;
+  showReload?: boolean;
+}>();
+
 const emit = defineEmits<{
   manage: [];
 }>();
@@ -81,6 +86,10 @@ const handleViewportScroll = (viewport: { scrollTop: number; viewportHeight: num
 const scrollTimelineToTop = () => {
   gridRef.value?.scrollToTop();
 };
+
+defineExpose({
+  reload: fetchTimeline,
+});
 </script>
 
 <template>
@@ -88,6 +97,8 @@ const scrollTimelineToTop = () => {
     <ReleaseTimelineHeader
       v-model="searchQuery"
       :loading="loading"
+      :show-title="showTitle"
+      :show-reload="showReload"
       @reload="fetchTimeline"
       @manage="emit('manage')"
     />
