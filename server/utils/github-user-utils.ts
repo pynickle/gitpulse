@@ -120,7 +120,6 @@ export interface GitHubRepositoryResponse {
   description?: string | null;
   language?: string | null;
   stargazers_count?: number;
-  watchers_count?: number;
   forks_count?: number;
   private?: boolean;
   fork?: boolean;
@@ -147,7 +146,6 @@ export function mapGitHubRepositoryToSummary(
     description: toNonEmptyString(repo.description),
     language: toNonEmptyString(repo.language),
     stargazers_count: toCount(repo.stargazers_count),
-    watchers_count: toCount(repo.watchers_count),
     forks_count: toCount(repo.forks_count),
     private: Boolean(repo.private),
     fork: Boolean(repo.fork),

@@ -37,7 +37,6 @@ interface DashboardRepo {
   description?: string | null;
   language?: string | null;
   stargazers_count?: number;
-  watchers_count?: number;
   forks_count?: number;
   private?: boolean;
   owner?: {

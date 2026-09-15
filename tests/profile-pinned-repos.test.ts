@@ -30,8 +30,6 @@ describe('mapGraphQLRepositoryToSummary', () => {
       description: 'My first repo',
       language: 'TypeScript',
       stargazers_count: 128,
-      // REST reports watchers equal to stars; the GraphQL mapping mirrors that.
-      watchers_count: 128,
       forks_count: 16,
       private: false,
       fork: false,

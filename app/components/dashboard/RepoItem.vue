@@ -25,12 +25,6 @@
               </span>
             </div>
             <div class="is-flex is-align-items-center mr-4">
-              <EyeIcon :size="14" class="mr-1 has-text-grey" />
-              <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.watchers_count)">
-                {{ compactCount(repo.watchers_count) }}
-              </span>
-            </div>
-            <div class="is-flex is-align-items-center mr-4">
               <GitForkIcon :size="14" class="mr-1 has-text-grey" />
               <span class="is-size-7 has-text-grey" :title="fullCountTitle(repo.forks_count)">
                 {{ compactCount(repo.forks_count) }}
@@ -68,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { EyeIcon, GitForkIcon, LockIcon, StarIcon } from '@lucide/vue';
+import { GitForkIcon, LockIcon, StarIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import { createDashboardRepositoryTarget } from '~/utils/dashboardUrlNavigationUtils';
@@ -78,7 +72,6 @@ interface RepositoryListItem {
   description?: string | null;
   language?: string | null;
   stargazers_count?: number;
-  watchers_count?: number;
   forks_count?: number;
   private?: boolean;
   owner?: {

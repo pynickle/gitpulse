@@ -24,7 +24,8 @@ export interface RepositoryDetailPayload {
   default_branch?: string | null;
   language?: string | null;
   stargazers_count?: number;
-  watchers_count?: number;
+  /** Real watcher count. GitHub's `watchers_count` is an alias for the star count. */
+  subscribers_count?: number;
   forks_count?: number;
   open_issues_count?: number;
   private?: boolean;

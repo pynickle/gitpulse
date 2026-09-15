@@ -99,8 +99,7 @@ const toNonEmptyString = (value: unknown): string | null => {
 
 /**
  * Map a GraphQL repository node onto the REST-cased summary the shared repo
- * card consumes. GitHub REST reports `watchers_count` equal to the star count,
- * so the GraphQL mapping mirrors that for visual parity with the repo tabs.
+ * card consumes.
  */
 export function mapGraphQLRepositoryToSummary(
   node: GraphQLRepositoryNode | null | undefined
@@ -121,7 +120,6 @@ export function mapGraphQLRepositoryToSummary(
     description: toNonEmptyString(node.description),
     language: toNonEmptyString(node.primaryLanguage?.name),
     stargazers_count: stargazers,
-    watchers_count: stargazers,
     forks_count: toCount(node.forkCount),
     private: Boolean(node.isPrivate),
     fork: Boolean(node.isFork),

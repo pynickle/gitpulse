@@ -127,6 +127,12 @@ _Avoid_: left menu, main sidebar, Dashboard Menu
 The narrow-viewport overlay on Dashboard Home that lists built-in tabs and Tab Sidebar views so the list can use the full width.
 _Avoid_: hamburger menu, sidebar, Tab Sidebar when referring to this overlay
 
+## Repositories
+
+**Watcher Count**:
+The number of users watching a repository — the total behind GitHub's Watch button.
+_Avoid_: watchers_count, Star Count
+
 ## Detail Overlays
 
 **Detail Overlay**:

@@ -298,7 +298,7 @@ type WatchState = 'all' | 'default' | 'ignore';
 const watchState = ref<WatchState | null>(null);
 const loadingWatch = ref(false);
 const showWatchDropdown = ref(false);
-const watchCount = ref(props.repository.watchers_count ?? 0);
+const watchCount = ref(props.repository.subscribers_count ?? 0);
 
 const formatLanguagePercentage = (value: number) => {
   const rounded = Math.round(value * 10) / 10;
