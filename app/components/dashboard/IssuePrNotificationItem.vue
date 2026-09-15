@@ -111,7 +111,6 @@
 import { MessageSquareIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
-import { formatDurationFromNow } from '#imports';
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import {
   readLinkedPullRequestListSummary,

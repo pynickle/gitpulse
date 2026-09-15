@@ -102,7 +102,6 @@ import {
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { formatDurationFromNow } from '#imports';
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';

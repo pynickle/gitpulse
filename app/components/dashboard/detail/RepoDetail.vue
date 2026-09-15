@@ -26,7 +26,6 @@ import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 import { GitHubIcon } from 'vue3-simple-icons';
 
-import { formatDurationFromNow } from '#imports';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';

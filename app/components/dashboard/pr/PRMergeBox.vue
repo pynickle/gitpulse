@@ -299,7 +299,6 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import { formatDurationFromNow } from '#imports';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type {
   PRCheckRunSummary,

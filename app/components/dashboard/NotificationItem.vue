@@ -186,7 +186,6 @@ import {
 } from '@lucide/vue';
 import { ref, computed } from 'vue';
 
-import { formatDurationFromNow } from '#imports';
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import type { DashboardNotification } from '#shared/types/notifications';
 import { toLinkedPullRequestIdentity } from '#shared/utils/linked-pull-requests';

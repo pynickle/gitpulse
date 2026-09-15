@@ -76,7 +76,6 @@ import {
   UserIcon,
 } from '@lucide/vue';
 
-import { formatDurationFromNow, getRepoName } from '#imports';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
 

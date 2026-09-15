@@ -44,7 +44,6 @@ import {
 } from '@lucide/vue';
 import { computed } from 'vue';
 
-import { formatDurationFromNow, getRepoName } from '#imports';
 import type { GitHubSearchEndpoint } from '#shared/types/custom-search';
 
 interface GenericSearchItem {
