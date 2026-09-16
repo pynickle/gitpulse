@@ -158,6 +158,12 @@ export default defineNuxtConfig({
   ],
 
   runtimeConfig: {
+    session: {
+      password: '',
+      cookie: {
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
     gitPulseAuth: {
       personalModeEnabled: String(personalModeEnabled),
       tokenEnabled: String(personalModeEnabled ? false : tokenEnabled),
