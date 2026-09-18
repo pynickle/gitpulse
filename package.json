@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@comark/nuxt": "^0.7.0",
-    "@lucide/vue": "^1.46.0",
+    "@lucide/vue": "^1.47.0",
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/image": "^2.1.0",
     "@nuxtjs/color-mode": "^4.0.1",
@@ -50,10 +50,10 @@
   "devDependencies": {
     "@j178/prek": "^0.5.3",
     "@nuxtjs/i18n": "^10.6.0",
-    "@types/node": "^26.5.1",
+    "@types/node": "^26.6.1",
     "oxfmt": "^0.68.0",
     "oxlint": "^1.83.0",
-    "oxlint-tsgolint": "^7.0.2001",
+    "oxlint-tsgolint": "^7.0.2002",
     "sass-embedded": "1.100.0",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.11",
