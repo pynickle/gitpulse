@@ -43,8 +43,20 @@ const showNavbar = computed(() => {
     display: none;
   }
 
-  .dashboard-frame--home .dashboard-shell {
-    min-height: 100vh;
+  .dashboard-frame--home,
+  .dashboard-frame--home .dashboard-shell,
+  .dashboard-frame--home .dashboard-shell.is-fullheight,
+  .dashboard-frame--home .dashboard-shell.is-fullheight-with-navbar {
+    height: var(--gitpulse-frame-height);
+    max-height: var(--gitpulse-frame-height);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-frame--home .dashboard-shell__body {
+    height: 100%;
+    min-height: 0;
+    padding: 0;
   }
 }
 </style>

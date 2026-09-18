@@ -187,12 +187,16 @@ onBeforeUnmount(() => {
   flex-direction: column;
   width: min(80vw, 20rem);
   max-width: 20rem;
-  padding-top: calc(3rem + env(safe-area-inset-top));
+  padding-top: 3rem;
   background: var(--gitpulse-shell-bg, var(--gitpulse-surface));
   box-shadow: 0.5rem 0 1.5rem color-mix(in srgb, #0f172a 16%, transparent);
   overflow: hidden;
   outline: none;
   pointer-events: auto;
+
+  @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    padding-top: calc(3rem + env(safe-area-inset-top));
+  }
 }
 
 .dashboard-menu__built-in {

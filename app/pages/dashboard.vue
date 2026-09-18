@@ -1487,8 +1487,8 @@ watch(
 .dashboard-page {
   display: flex;
   width: 100%;
-  height: calc(100vh - var(--bulma-navbar-height, 3.25rem));
-  min-height: calc(100vh - var(--bulma-navbar-height, 3.25rem));
+  height: calc(var(--gitpulse-frame-height) - var(--bulma-navbar-height, 3.25rem));
+  min-height: 0;
   overflow: hidden;
   background: var(--gitpulse-page-bg);
 }
@@ -1496,21 +1496,15 @@ watch(
 @media (max-width: 860px) {
   .dashboard-page {
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 100vh;
-    min-height: 100dvh;
-    overflow-x: hidden;
+    height: var(--gitpulse-frame-height);
+    overflow: hidden;
   }
 }
 
 .dashboard-page--narrow {
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow-x: hidden;
+  height: var(--gitpulse-frame-height);
+  overflow: hidden;
   isolation: isolate;
 }
 
@@ -1542,8 +1536,8 @@ watch(
 
 .dashboard-file-browser {
   width: 100%;
-  height: 100vh;
-  min-height: 100vh;
+  height: var(--gitpulse-frame-height);
+  min-height: 0;
   overflow: hidden;
   background: var(--gitpulse-page-bg);
 }
@@ -1629,6 +1623,10 @@ watch(
   justify-content: center;
   padding: 0.5rem 1.5rem;
   background: var(--gitpulse-surface);
+
+  @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
 
   :deep(.dashboard-pagination) {
     flex: 0 0 auto;

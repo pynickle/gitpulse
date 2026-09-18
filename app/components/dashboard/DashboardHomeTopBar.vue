@@ -148,13 +148,19 @@ onBeforeUnmount(() => {
   // Dashboard Menu overlay (scrim 23 / panel 24).
   z-index: 22;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.25rem;
   min-height: 2.75rem;
   padding: 0.25rem 0.5rem;
-  padding-top: max(0.25rem, env(safe-area-inset-top));
   border-bottom: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface);
+
+  // Browser chrome already sits outside the layout viewport. Insets only
+  // apply when the page draws edge-to-edge (installed / fullscreen).
+  @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    padding-top: max(0.25rem, env(safe-area-inset-top));
+  }
 }
 
 .dashboard-home-top-bar__title {

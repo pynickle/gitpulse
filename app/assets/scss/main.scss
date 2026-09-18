@@ -2,6 +2,8 @@
 
 :root {
   color-scheme: light;
+  /* Visible app-shell height. A client plugin may replace this with visualViewport pixels. */
+  --gitpulse-frame-height: 100vh;
 
   /* ── Border radius scale ── */
   --gitpulse-radius-sm: 4px;
@@ -120,6 +122,12 @@
   --bulma-background-hover: rgba(15, 23, 42, 0.045);
   --bulma-border-hover: rgba(15, 23, 42, 0.22);
   --bulma-link-soft: rgba(79, 70, 229, 0.08);
+}
+
+@supports (height: 100svh) {
+  :root {
+    --gitpulse-frame-height: 100svh;
+  }
 }
 
 html.dark {
