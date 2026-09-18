@@ -144,7 +144,9 @@ onBeforeUnmount(() => {
 .dashboard-home-top-bar {
   position: sticky;
   top: 0;
-  z-index: auto;
+  // Above the list card (Bulma `.card` is `position: relative`), below the
+  // Dashboard Menu overlay (scrim 23 / panel 24).
+  z-index: 22;
   display: flex;
   align-items: center;
   gap: 0.25rem;
