@@ -67,6 +67,8 @@ const sourceRepo = computed(() => {
 }
 
 .profile-readme__body {
+  min-width: 0;
   padding: 1.5rem;
+  overflow-x: auto;
 }
 </style>

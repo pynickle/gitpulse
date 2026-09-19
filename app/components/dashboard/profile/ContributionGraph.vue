@@ -168,6 +168,7 @@ const onGridLeave = () => {
   --contribution-cell-size: 11px;
   --contribution-cell-gap: 3px;
 
+  min-width: 0;
   padding: 1rem 1.25rem;
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-lg, 10px);

@@ -9,10 +9,11 @@ import ProfilePackageList from '~/components/dashboard/profile/ProfilePackageLis
 import ProfilePinnedRepos from '~/components/dashboard/profile/ProfilePinnedRepos.vue';
 import ProfileReadme from '~/components/dashboard/profile/ProfileReadme.vue';
 import ProfileRepositoryList from '~/components/dashboard/profile/ProfileRepositoryList.vue';
+import ProfileTabNav, { type ProfileTab } from '~/components/dashboard/profile/ProfileTabNav.vue';
 import UserConnectionList from '~/components/dashboard/profile/UserConnectionList.vue';
 import { useUserProfile } from '~/composables/useUserProfile';
 
-export type ProfileTab = 'overview' | 'repositories' | 'packages' | 'followers' | 'following';
+export type { ProfileTab };
 
 /** Everything the profile page needs to route to the package detail page. */
 export interface ProfilePackageSelection {
@@ -109,23 +110,7 @@ const showOverviewSkeleton = computed(
       </aside>
 
       <div class="profile-view__main">
-        <nav class="profile-view__tabs" role="tablist">
-          <button
-            v-for="item in tabs"
-            :key="item.id"
-            type="button"
-            role="tab"
-            class="profile-view__tab"
-            :class="{ 'profile-view__tab--active': tab === item.id }"
-            :aria-selected="tab === item.id"
-            @click="tab = item.id"
-          >
-            <span>{{ item.label }}</span>
-            <span v-if="typeof item.count === 'number'" class="profile-view__tab-count">
-              {{ item.count }}
-            </span>
-          </button>
-        </nav>
+        <ProfileTabNav v-model="tab" :tabs="tabs" />
 
         <div v-if="tab === 'overview'" class="profile-view__overview">
           <div v-if="showOverviewSkeleton" class="profile-view__status">
@@ -181,7 +166,9 @@ const showOverviewSkeleton = computed(
 .profile-view {
   width: 100%;
   max-width: 76rem;
+  min-width: 0;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .profile-view__layout {
@@ -203,56 +190,10 @@ const showOverviewSkeleton = computed(
   gap: 1.25rem;
 }
 
-.profile-view__tabs {
-  display: flex;
-  gap: 0.35rem;
-  border-bottom: 1px solid var(--gitpulse-border);
-}
-
-.profile-view__tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 0.85rem;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--gitpulse-text-muted);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease;
-
-  &:hover {
-    color: var(--gitpulse-text-strong);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring);
-    outline-offset: -2px;
-  }
-}
-
-.profile-view__tab--active {
-  border-bottom-color: var(--gitpulse-accent);
-  color: var(--gitpulse-text-strong);
-  font-weight: 600;
-}
-
-.profile-view__tab-count {
-  padding: 0.05rem 0.45rem;
-  border-radius: 999px;
-  background: var(--gitpulse-surface-active);
-  color: var(--gitpulse-text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
 .profile-view__overview {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 1.25rem;
 }
 

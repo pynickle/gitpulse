@@ -65,7 +65,7 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
 
 .profile-pinned__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   gap: 0.75rem;
   align-items: stretch;
 }

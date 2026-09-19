@@ -71,14 +71,16 @@ const starredTo = computed(() => ({
 
 <template>
   <header class="profile-header">
-    <GitHubAvatar
-      :src="profile.avatarUrl"
-      :alt="displayName"
-      size="260"
-      variant="raised"
-      loading="eager"
-      class="profile-header__avatar"
-    />
+    <div class="profile-header__avatar">
+      <GitHubAvatar
+        :src="profile.avatarUrl"
+        :alt="displayName"
+        size="260"
+        fluid
+        variant="raised"
+        loading="eager"
+      />
+    </div>
 
     <div class="profile-header__identity">
       <h1 class="profile-header__name">{{ displayName }}</h1>
@@ -195,10 +197,10 @@ const starredTo = computed(() => ({
 }
 
 .profile-header__avatar {
+  display: flex;
   width: 100%;
   max-width: 260px;
   aspect-ratio: 1;
-  height: auto;
 }
 
 .profile-header__identity {

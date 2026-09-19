@@ -22,6 +22,8 @@ const props = withDefaults(
     size?: number | string;
     width?: number | string;
     height?: number | string;
+    /** Skip inline width/height so CSS can size the box. `size` still drives the image URL. */
+    fluid?: boolean;
     loading?: GitHubAvatarLoading;
     fetchPriority?: GitHubAvatarFetchPriority;
     preload?: GitHubAvatarPreload;
@@ -31,6 +33,7 @@ const props = withDefaults(
   {
     alt: '',
     loading: 'lazy',
+    fluid: false,
     variant: 'plain',
     interactive: false,
   }
@@ -46,10 +49,16 @@ const resolvedWidth = computed(() => toCssSize(props.width ?? props.size));
 const resolvedHeight = computed(() => toCssSize(props.height ?? props.size));
 const avatarElement = ref<HTMLElement | null>(null);
 
-const avatarStyle = computed(() => ({
-  width: resolvedWidth.value,
-  height: resolvedHeight.value,
-}));
+const avatarStyle = computed(() => {
+  if (props.fluid) {
+    return undefined;
+  }
+
+  return {
+    width: resolvedWidth.value,
+    height: resolvedHeight.value,
+  };
+});
 
 const imageWidth = computed(() => props.width ?? props.size);
 const imageHeight = computed(() => props.height ?? props.size);
@@ -76,6 +85,7 @@ const resolvedPreload = computed<NuxtImagePreload | undefined>(() => {
     :class="[
       `github-avatar--${variant}`,
       {
+        'github-avatar--fluid': fluid,
         'github-avatar--interactive': interactive,
       },
     ]"
@@ -117,6 +127,11 @@ $motion-normal: 0.3s;
   box-shadow: var(--github-avatar-ring);
   vertical-align: middle;
   color: var(--gitpulse-text-muted);
+}
+
+.github-avatar--fluid {
+  width: 100%;
+  height: 100%;
 }
 
 .github-avatar--raised {

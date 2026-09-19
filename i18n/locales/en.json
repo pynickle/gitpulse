@@ -1080,7 +1080,8 @@
       "repositories": "Repositories",
       "packages": "Packages",
       "followers": "Followers",
-      "following": "Following"
+      "following": "Following",
+      "selectLabel": "Profile section"
     },
     "readme": {
       "title": "{login}/README.md"
