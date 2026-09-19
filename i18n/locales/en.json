@@ -95,6 +95,8 @@
     "syncing": "Syncing data...",
     "hideDetailSidebar": "Hide Detail Sidebar",
     "showDetailSidebar": "Show Detail Sidebar",
+    "detailSidebarSheetTitle": "Details",
+    "moreActions": "More actions",
     "loading": {
       "issue": "Loading issue...",
       "pullRequest": "Loading pull request...",

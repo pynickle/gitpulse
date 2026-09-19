@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Loader2Icon } from '@lucide/vue';
-import { computed, defineAsyncComponent, onUnmounted, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onUnmounted, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
@@ -93,6 +93,7 @@ const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
 const { isDetailSidebarHidden, syncDetailSidebarPane, toggleDetailSidebar } =
   useDetailSidebarState();
+const { isDetailSidebarSheetViewport } = useDetailSidebarViewport();
 const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
   createDashboardDetailPaneLoaders();
 const isIssueHeaderNonSticky = shallowRef(false);
@@ -172,6 +173,24 @@ const isDetailSidebarToggleVisible = computed(() => {
   const pane = activeDetailPane.value;
   return Boolean(pane && DETAIL_SIDEBAR_PANE_TYPES.has(pane.type));
 });
+
+/*
+ * The mobile bottom sheet mirrors the shared hidden flag: a hidden sidebar is
+ * a closed sheet, the expanded default an open one. Release detail has no
+ * sidebar toggle, so it never gets a sheet.
+ */
+const isDetailSidebarSheetOpen = computed(() => {
+  return resolveDetailSidebarSheetOpen(
+    isDetailSidebarToggleVisible.value,
+    isDetailSidebarSheetViewport.value,
+    isDetailSidebarHidden.value
+  );
+});
+
+const closeDetailSidebarSheet = () => {
+  if (!isDetailSidebarSheetOpen.value) return;
+  toggleDetailSidebar();
+};
 
 /*
  * Identity of the active pane for Detail Sidebar state resets. The PR Review
@@ -289,6 +308,20 @@ watch(detailSidebarPaneIdentity, (paneIdentity) => syncDetailSidebarPane(paneIde
 });
 
 /*
+ * Closing the sheet restores focus to the header toggle that opened it; the
+ * backdrop click path would otherwise leave focus on the now-hidden sheet.
+ */
+watch(isDetailSidebarSheetOpen, (isOpen, wasOpen) => {
+  if (!isOpen && wasOpen) {
+    nextTick(() => {
+      document
+        .querySelector<HTMLElement>('.dashboard-top-header__detail-sidebar-toggle')
+        ?.focus({ preventScroll: true });
+    });
+  }
+});
+
+/*
  * The volatile Detail Sidebar state outlives this host (app-scoped), so an
  * unmount — closing the overlay, opening the file view, or leaving the
  * dashboard — ends the session and the next overlay opens expanded again.
@@ -318,7 +351,10 @@ onUnmounted(() => syncDetailSidebarPane(null));
     >
       <div
         class="detail-pane-stage is-clipped"
-        :class="{ 'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository' }"
+        :class="{
+          'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository',
+          'detail-pane-stage--sidebar-sheet': isDetailSidebarSheetViewport,
+        }"
       >
         <Transition name="detail-pane-slide">
           <div
@@ -414,6 +450,14 @@ onUnmounted(() => syncDetailSidebarPane(null));
             />
           </div>
         </Transition>
+        <Transition name="detail-sidebar-sheet-fade">
+          <div
+            v-if="isDetailSidebarSheetOpen"
+            class="detail-sidebar-sheet-backdrop"
+            aria-hidden="true"
+            @click="closeDetailSidebarSheet"
+          />
+        </Transition>
         <div :id="COMPOSER_BLEED_LAYER_ID" class="composer-bleed-layer" />
       </div>
     </DashboardOverlayFrame>
@@ -421,11 +465,34 @@ onUnmounted(() => syncDetailSidebarPane(null));
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-sidebar-columns' as *;
+
 .detail-pane-stage {
   position: relative;
   height: 100%;
   min-height: 0;
   background: var(--gitpulse-surface);
+}
+
+/* Mobile Detail Sidebar bottom sheet: the host owns one ruleset covering every
+   detail component, so their templates stay untouched. */
+@include detail-sidebar-sheet('.detail-pane-stage');
+
+.detail-sidebar-sheet-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.detail-sidebar-sheet-fade-enter-active,
+.detail-sidebar-sheet-fade-leave-active {
+  transition: opacity 0.28s ease;
+}
+
+.detail-sidebar-sheet-fade-enter-from,
+.detail-sidebar-sheet-fade-leave-to {
+  opacity: 0;
 }
 
 .composer-bleed-layer {

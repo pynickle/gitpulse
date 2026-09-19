@@ -70,3 +70,81 @@
     }
   }
 }
+
+/*
+ * Mobile Detail Sidebar bottom sheet. Applied by the Detail Overlay host on
+ * its pane stage so one ruleset covers every detail component without
+ * touching their templates: the sidebar column is pulled out of the stacked
+ * flow and pinned to the viewport bottom as a sheet. The shared
+ * `isDetailSidebarHidden` flag drives it — hidden means the sheet is slid
+ * down (not unmounted), so the slide transition can play and the existing
+ * `inert` binding keeps the closed sheet out of the tab order.
+ *
+ * The doubled stage class raises specificity above the stacking mixin's
+ * `display: none` collapse and the collapse fade without `!important`.
+ */
+@mixin detail-sidebar-sheet($stage) {
+  @media (max-width: 1024px) {
+    #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column) {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 30;
+      width: auto;
+      max-height: 75dvh;
+      padding: 0.5rem 1.25rem 1.5rem;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border-radius: 16px 16px 0 0;
+      background: var(--gitpulse-surface);
+      box-shadow: 0 -8px 32px rgb(0 0 0 / 0.25);
+      transform: translateY(0);
+      visibility: visible;
+      opacity: 1;
+      overscroll-behavior: contain;
+      transition:
+        transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+        opacity 0.28s ease,
+        visibility 0.28s;
+
+      /* Drag handle affordance. Sticky so it stays on top while scrolling. */
+      &::before {
+        content: '';
+        position: sticky;
+        top: 0.25rem;
+        display: block;
+        width: 2.25rem;
+        height: 0.25rem;
+        margin: 0.25rem auto 0.75rem;
+        border-radius: 999px;
+        background: var(--gitpulse-border);
+      }
+    }
+
+    #{$stage}#{$stage}--sidebar-sheet
+      :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+      display: block;
+      transform: translateY(105%);
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* The column scrolls as the sheet; the inner scroll region must not
+       impose its own 100% height or nested scrollbar. */
+    #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column .sidebar-scroll) {
+      height: auto;
+      max-height: none;
+      padding-right: 0;
+      overflow: visible;
+      scrollbar-gutter: auto;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column) {
+        transition: none;
+      }
+    }
+  }
+}
