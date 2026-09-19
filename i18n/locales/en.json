@@ -412,6 +412,7 @@
     "settings": {
       "pageKicker": "Dashboard",
       "pageTitle": "Settings",
+      "categoryDetailBack": "Back to settings",
       "fontsTitle": "Fonts",
       "appearanceTitle": "Appearance",
       "appearanceDescription": "Tune the dashboard typography, code highlighting, and composer layout.",

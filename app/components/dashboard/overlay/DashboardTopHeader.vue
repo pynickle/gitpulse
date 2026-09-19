@@ -173,16 +173,20 @@ const isDetailSummaryVisible = computed(() => {
 }
 
 .dashboard-top-header__toolbar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   min-height: 3rem;
   padding: 0.4rem 0.75rem;
-  gap: 0.75rem;
+  gap: 0.5rem 0.75rem;
 }
 
 .dashboard-top-header__nav {
+  display: flex;
+  flex: none;
+  flex-wrap: nowrap;
   align-items: center;
+  width: auto;
   gap: 0.5rem;
   margin-bottom: 0;
 }
@@ -194,6 +198,7 @@ const isDetailSummaryVisible = computed(() => {
 }
 
 .dashboard-top-header__summary-shell {
+  flex: 1 1 0;
   min-width: 0;
 }
 
@@ -294,6 +299,8 @@ const isDetailSummaryVisible = computed(() => {
 
 .dashboard-top-header__actions {
   display: flex;
+  flex: none;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -314,19 +321,5 @@ const isDetailSummaryVisible = computed(() => {
   display: inline-flex;
   align-items: center;
   height: 2.25rem;
-}
-
-@media (max-width: 760px) {
-  .dashboard-top-header__toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .dashboard-top-header__summary-shell {
-    grid-column: 1 / -1;
-  }
-
-  .dashboard-top-header__summary {
-    padding-bottom: 0.15rem;
-  }
 }
 </style>

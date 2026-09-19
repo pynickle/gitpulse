@@ -107,6 +107,13 @@ defineEmits<{
      would otherwise eat ~128px of width on phones. */
   @media (max-width: 860px) {
     padding: 1.25rem 1.25rem 1.5rem;
+
+    &.is-flush {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow: hidden;
+    }
   }
 }
 

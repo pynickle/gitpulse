@@ -412,6 +412,7 @@
     "settings": {
       "pageKicker": "仪表盘",
       "pageTitle": "设置",
+      "categoryDetailBack": "返回设置",
       "fontsTitle": "字体",
       "appearanceTitle": "外观",
       "appearanceDescription": "调整仪表盘字体、代码高亮和编辑器布局。",

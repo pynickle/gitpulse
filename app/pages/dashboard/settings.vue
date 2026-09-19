@@ -2,11 +2,11 @@
 import {
   BellIcon,
   CheckIcon,
+  ChevronLeftIcon,
   LayoutPanelLeftIcon,
   LinkIcon,
   PaletteIcon,
   SearchIcon,
-  TypeIcon,
 } from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
@@ -28,6 +28,7 @@ import {
 } from '#shared/types/user-settings';
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import SettingsCategoryNav from '~/components/dashboard/settings/SettingsCategoryNav.vue';
 import FilterDropdown from '~/components/ui/FilterDropdown.vue';
 import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
 import FontPickerModal from '~/components/ui/FontPickerModal.vue';
@@ -57,9 +58,13 @@ const {
 // SEO: settings page title
 usePageMeta(t('dashboard.settings.pageTitle'));
 
-type SettingsCategory = 'appearance' | 'notifications' | 'navigation';
+const SETTINGS_CATEGORY_IDS = ['appearance', 'notifications', 'navigation'] as const;
+
+type SettingsCategory = (typeof SETTINGS_CATEGORY_IDS)[number];
 
 const activeSettingsCategory = shallowRef<SettingsCategory>('appearance');
+const mobileDetailOpen = shallowRef(false);
+const settingsMainRef = useTemplateRef<HTMLElement>('settingsMain');
 const settingsCategoryMeta = {
   appearance: {
     icon: PaletteIcon,
@@ -85,9 +90,36 @@ const settingsCategoryMeta = {
   }
 >;
 
+const settingsCategoryItems = computed(() =>
+  SETTINGS_CATEGORY_IDS.map((id) => ({
+    id,
+    icon: settingsCategoryMeta[id].icon,
+    title: t(settingsCategoryMeta[id].titleKey),
+    description: t(settingsCategoryMeta[id].descriptionKey),
+  }))
+);
+
 const activeSettingsCategoryMeta = computed(
   () => settingsCategoryMeta[activeSettingsCategory.value]
 );
+
+const isSettingsCategory = (value: string): value is SettingsCategory => {
+  return SETTINGS_CATEGORY_IDS.includes(value as SettingsCategory);
+};
+
+const openSettingsCategory = (categoryId: string) => {
+  if (!isSettingsCategory(categoryId)) {
+    return;
+  }
+
+  activeSettingsCategory.value = categoryId;
+  mobileDetailOpen.value = true;
+  void nextTick(() => settingsMainRef.value?.scrollTo({ top: 0 }));
+};
+
+const closeSettingsCategoryDetail = () => {
+  mobileDetailOpen.value = false;
+};
 
 // Font picker modal state
 const showAppFontPicker = shallowRef(false);
@@ -384,51 +416,38 @@ onMounted(() => {
     :loading="loading"
     :loading-title="t('dashboard.settings.statusLoading')"
     loading-subtitle=""
+    content-class="is-flush"
     :back-label="t('detailOverlay.back')"
     :home-label="t('detailOverlay.home')"
     :show-home-button="shouldShowHomeButton"
     @back="handleBack"
     @home="handleHome"
   >
-    <div class="settings">
-      <!-- Sidebar -->
+    <div class="settings" :class="{ 'is-detail': mobileDetailOpen }">
       <aside class="settings__sidebar">
-        <nav class="settings__nav">
-          <div class="settings__nav-group">
-            <span class="settings__nav-label">{{ t('dashboard.settings.pageTitle') }}</span>
-            <button
-              class="settings__nav-item"
-              :class="{ 'is-active': activeSettingsCategory === 'appearance' }"
-              type="button"
-              @click="activeSettingsCategory = 'appearance'"
-            >
-              <TypeIcon :size="15" />
-              <span>{{ t('dashboard.settings.appearanceTitle') }}</span>
-            </button>
-            <button
-              class="settings__nav-item"
-              :class="{ 'is-active': activeSettingsCategory === 'notifications' }"
-              type="button"
-              @click="activeSettingsCategory = 'notifications'"
-            >
-              <BellIcon :size="15" />
-              <span>{{ t('dashboard.settings.notificationBehaviorTitle') }}</span>
-            </button>
-            <button
-              class="settings__nav-item"
-              :class="{ 'is-active': activeSettingsCategory === 'navigation' }"
-              type="button"
-              @click="activeSettingsCategory = 'navigation'"
-            >
-              <LinkIcon :size="15" />
-              <span>{{ t('dashboard.settings.navigationTitle') }}</span>
-            </button>
-          </div>
+        <div class="settings__list-header">
+          <h1 class="settings__list-title">{{ t('dashboard.settings.pageTitle') }}</h1>
+        </div>
+        <nav class="settings__nav" :aria-label="t('dashboard.settings.pageTitle')">
+          <span class="settings__nav-label">{{ t('dashboard.settings.pageTitle') }}</span>
+          <SettingsCategoryNav
+            :items="settingsCategoryItems"
+            :active-id="activeSettingsCategory"
+            @select="openSettingsCategory"
+          />
         </nav>
       </aside>
 
-      <!-- Main -->
-      <main class="settings__main">
+      <main ref="settingsMain" class="settings__main">
+        <button
+          class="settings__category-back"
+          type="button"
+          :aria-label="t('dashboard.settings.categoryDetailBack')"
+          @click="closeSettingsCategoryDetail"
+        >
+          <ChevronLeftIcon :size="18" aria-hidden="true" />
+          <span>{{ t('dashboard.settings.pageTitle') }}</span>
+        </button>
         <div class="settings__content">
           <div class="settings__header">
             <div class="settings__header-icon">
@@ -734,8 +753,10 @@ onMounted(() => {
 <style scoped lang="scss">
 .settings {
   display: flex;
+  flex: 1;
   width: 100%;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -749,14 +770,14 @@ onMounted(() => {
   background: transparent;
 }
 
+.settings__list-header {
+  display: none;
+}
+
 .settings__nav {
   flex: 1;
   padding: 0.75rem 0.5rem;
   overflow-y: auto;
-}
-
-.settings__nav-group {
-  margin-bottom: 0.5rem;
 }
 
 .settings__nav-label {
@@ -769,32 +790,8 @@ onMounted(() => {
   letter-spacing: 0.1em;
 }
 
-.settings__nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.45rem 0.6rem 0.45rem 0.85rem;
-  margin-left: 0.25rem;
-  border-radius: 0 6px 6px 0;
-  border: 0;
-  border-left: 2px solid transparent;
-  background: transparent;
-  color: var(--gitpulse-text-muted);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 550;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease;
-
-  &.is-active {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-left-color: var(--gitpulse-accent);
-    font-weight: 650;
-  }
+.settings__category-back {
+  display: none;
 }
 
 /* ── Main ── */
@@ -1149,45 +1146,95 @@ onMounted(() => {
   opacity: 0;
 }
 
-/* ── Mobile ── */
-@media screen and (max-width: 768px) {
+/* Same breakpoint as dashboard home chrome / overlay padding. */
+@media screen and (max-width: 860px) {
   .settings {
     flex-direction: column;
   }
 
   .settings__sidebar {
     width: 100%;
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  .settings__list-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: block;
+    padding: 1.25rem 1.25rem 0.75rem;
+    background: var(--gitpulse-surface);
+  }
+
+  .settings__list-title {
+    margin: 0;
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
   }
 
   .settings__nav {
-    padding: 0.5rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .settings__nav-group {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-bottom: 0;
+    flex: none;
+    padding: 0 1.25rem 1.5rem;
+    overflow: visible;
   }
 
   .settings__nav-label {
     display: none;
   }
 
-  .settings__nav-item {
+  .settings__main {
+    display: none;
+  }
+
+  .settings.is-detail .settings__sidebar {
+    display: none;
+  }
+
+  .settings.is-detail .settings__main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .settings__category-back {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: inline-flex;
     flex-shrink: 0;
-    padding: 0.4rem 0.75rem;
-    font-size: 0.78rem;
+    align-items: center;
+    gap: 0.15rem;
+    width: 100%;
+    margin: 0;
+    padding: 0.75rem 1.25rem;
+    border: 0;
+    background: var(--gitpulse-surface);
+    color: var(--gitpulse-accent);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--gitpulse-focus-ring);
+      outline-offset: -2px;
+    }
   }
 
   .settings__content {
-    padding: 1.5rem 1rem 3rem;
+    padding: 0.5rem 1.25rem 3rem;
   }
 
   .settings__header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
   }
 }
 </style>
