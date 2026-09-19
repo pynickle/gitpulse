@@ -23,6 +23,7 @@ const DETAIL_SIDEBAR_PANE_TYPES: ReadonlySet<DetailPaneType> = new Set([
   'issue',
   'pull-request',
   'discussion',
+  'release',
   'repository',
 ]);
 
@@ -176,8 +177,9 @@ const isDetailSidebarToggleVisible = computed(() => {
 
 /*
  * The mobile bottom sheet mirrors the shared hidden flag: a hidden sidebar is
- * a closed sheet, the expanded default an open one. Release detail has no
- * sidebar toggle, so it never gets a sheet.
+ * a closed sheet, the expanded default an open one. The sheet class is only
+ * applied for panes that actually have a Detail Sidebar, so a subject without
+ * a toggle never gets pinned as an undismissable sheet.
  */
 const isDetailSidebarSheetOpen = computed(() => {
   return resolveDetailSidebarSheetOpen(
@@ -353,7 +355,8 @@ onUnmounted(() => syncDetailSidebarPane(null));
         class="detail-pane-stage is-clipped"
         :class="{
           'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository',
-          'detail-pane-stage--sidebar-sheet': isDetailSidebarSheetViewport,
+          'detail-pane-stage--sidebar-sheet':
+            isDetailSidebarSheetViewport && isDetailSidebarToggleVisible,
         }"
       >
         <Transition name="detail-pane-slide">
@@ -436,6 +439,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
             <ReleaseDetail
               v-else-if="activeDetailPane?.type === 'release' && release"
               :release="release"
+              :detail-sidebar-hidden="isDetailSidebarHidden"
             />
 
             <RepoDetail

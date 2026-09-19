@@ -18,6 +18,7 @@ import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 
 const props = defineProps<{
   release: ReleaseDetailPayload;
+  detailSidebarHidden?: boolean;
 }>();
 
 const { locale, t } = useI18n();
@@ -78,7 +79,7 @@ usePageMeta(
 
 <template>
   <div class="release-detail detail-scroll">
-    <div class="columns">
+    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
       <div class="column detail-main-column">
         <header class="release-header">
           <div class="release-header__top">
@@ -153,7 +154,7 @@ usePageMeta(
         />
       </div>
 
-      <aside class="column detail-sidebar-column">
+      <aside class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
         <div class="release-sidebar">
           <section class="sidebar-card release-sidebar__assets-card">
             <div class="sidebar-card__header">
@@ -166,7 +167,7 @@ usePageMeta(
               </span>
             </div>
             <div
-              class="sidebar-card__content sidebar-card__content--scrollable"
+              class="sidebar-card__content sidebar-card__content--scrollable sidebar-scroll"
               :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
               @scroll="onSidebarScroll"
             >
@@ -221,6 +222,8 @@ usePageMeta(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-sidebar-columns' as *;
+
 .detail-scroll {
   height: 100%;
   min-height: 0;
@@ -234,20 +237,19 @@ usePageMeta(
   margin-bottom: 0;
 }
 
+@include detail-sidebar-columns('.detail-scroll');
+
 .detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
-  flex: none;
-  width: 72%;
+  min-width: 0;
 }
 
 .detail-scroll :deep(.detail-sidebar-column) {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  flex: none;
-  width: 28%;
   padding-right: 1rem;
 }
 
@@ -529,27 +531,9 @@ usePageMeta(
   }
 }
 
+@include detail-sidebar-stacking('.detail-scroll');
+
 @media (max-width: 1024px) {
-  .detail-scroll {
-    overflow-y: auto;
-  }
-
-  .detail-scroll :deep(.columns) {
-    display: block;
-    height: auto;
-  }
-
-  .detail-scroll :deep(.detail-main-column),
-  .detail-scroll :deep(.detail-sidebar-column) {
-    width: 100%;
-    height: auto;
-    overflow: visible;
-  }
-
-  .detail-scroll :deep(.detail-sidebar-column) {
-    padding-right: 0.75rem;
-  }
-
   .release-sidebar {
     height: auto;
     overflow: visible;

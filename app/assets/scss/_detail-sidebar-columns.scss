@@ -87,6 +87,9 @@
   @media (max-width: 1024px) {
     #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column) {
       position: fixed;
+      /* Cancel sticky `top` from repository detail; otherwise the sheet
+         stretches from that offset instead of sitting on the bottom edge. */
+      top: auto;
       right: 0;
       bottom: 0;
       left: 0;
