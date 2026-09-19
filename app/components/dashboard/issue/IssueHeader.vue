@@ -1,9 +1,9 @@
 <template>
   <div class="mb-4">
     <!-- Title row -->
-    <div class="is-flex is-align-items-center mb-3">
-      <component :size="22" :is="stateIcon" :style="stateColor" />
-      <h1 class="title is-3 ml-3 mb-0">{{ issue?.title }}</h1>
+    <div class="is-flex is-align-items-center mb-3 header-title">
+      <component :size="22" :is="stateIcon" :style="stateColor" class="header-title__icon" />
+      <h1 class="title is-3 ml-3 mb-0 header-title__text">{{ issue?.title }}</h1>
     </div>
 
     <!-- Meta row -->
@@ -131,6 +131,18 @@ const handleRepoClick = async () => {
 </script>
 
 <style scoped lang="scss">
+.header-title__icon {
+  flex-shrink: 0;
+}
+
+.header-title__text {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: clamp(1.3rem, 1rem + 1.5vw, 2rem);
+  line-height: 1.25;
+}
+
 .header-meta {
   gap: 0.75rem;
 }
