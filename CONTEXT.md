@@ -168,3 +168,15 @@ _Avoid_: dead repo, invalid star, failed fetch when the identity still exists
 **Release Drawer**:
 The overlay that shows one release from the Release Timeline without changing page layout or URL: a right drawer on desktop, a bottom sheet on mobile.
 _Avoid_: Detail Overlay when referring to this surface
+
+**Release Timeline Filter**:
+The client-side display filter on the Release Timeline that narrows visible releases by Followed Repository and published date range.
+_Avoid_: timeline search, filter bar, dashboard filters when referring to this surface
+
+**Active Timeline Filter**:
+The set of Release Timeline Filter conditions currently applied to the Release Timeline.
+_Avoid_: applied filters, active filters
+
+**Release Timeline Filter Panel**:
+The overlay that holds the Release Timeline Filter controls: a right-side panel with a scrim, following the Release Drawer layout pattern.
+_Avoid_: filter bar, filter popover, filter modal

@@ -5,8 +5,12 @@ import { computed, shallowRef, useTemplateRef } from 'vue';
 import FloatingBackToTopButton from '~/components/dashboard/FloatingBackToTopButton.vue';
 import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
 import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue';
+import ReleaseTimelineFilterPanel from '~/components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue';
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
 import ReleaseTimelineHeader from '~/components/dashboard/release-timeline/ReleaseTimelineHeader.vue';
+import type { DateRange } from '~/utils/filterDateRange';
+import { EMPTY_DATE_RANGE } from '~/utils/filterDateRange';
+import { hasActiveTimelineFilter } from '~/utils/filterReleaseTimelineGroups';
 
 const { showTitle = true, showReload = true } = defineProps<{
   showTitle?: boolean;
@@ -44,8 +48,23 @@ const gridRef = useTemplateRef<{ scrollToTop: () => void }>('grid');
 const scrollTop = shallowRef(0);
 const viewportHeight = shallowRef(0);
 const searchQuery = shallowRef('');
+const filterRepositories = shallowRef<string[]>([]);
+const filterDateRange = shallowRef<DateRange>(EMPTY_DATE_RANGE);
+const filterPanelOpen = shallowRef(false);
+
+const filterActive = computed(() =>
+  hasActiveTimelineFilter({
+    repositories: filterRepositories.value,
+    dateRange: filterDateRange.value,
+  })
+);
+
 const visibleGroups = computed(() =>
-  filterReleaseTimelineGroupsByTitle(groups.value, searchQuery.value)
+  filterReleaseTimelineGroups(groups.value, {
+    repositories: filterRepositories.value,
+    dateRange: filterDateRange.value,
+    query: searchQuery.value,
+  })
 );
 
 const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
@@ -69,7 +88,12 @@ const showReleasesEmpty = computed(
     !showFailureBanner.value &&
     groups.value.length === 0
 );
-const showSearchEmpty = computed(() => groups.value.length > 0 && visibleGroups.value.length === 0);
+const showFilterEmpty = computed(
+  () => filterActive.value && groups.value.length > 0 && visibleGroups.value.length === 0
+);
+const showSearchEmpty = computed(
+  () => !filterActive.value && groups.value.length > 0 && visibleGroups.value.length === 0
+);
 const showGrid = computed(() => visibleGroups.value.length > 0);
 const showBackToTop = computed(
   () =>
@@ -87,6 +111,12 @@ const scrollTimelineToTop = () => {
   gridRef.value?.scrollToTop();
 };
 
+const clearTimelineFilters = () => {
+  filterRepositories.value = [];
+  filterDateRange.value = EMPTY_DATE_RANGE;
+  searchQuery.value = '';
+};
+
 defineExpose({
   reload: fetchTimeline,
 });
@@ -99,8 +129,10 @@ defineExpose({
       :loading="loading"
       :show-title="showTitle"
       :show-reload="showReload"
+      :filter-active="filterActive"
       @reload="fetchTimeline"
       @manage="emit('manage')"
+      @filter-click="filterPanelOpen = true"
     />
 
     <ReleaseTimelineFailureBanner
@@ -149,6 +181,16 @@ defineExpose({
         </p>
       </div>
 
+      <div v-else-if="showFilterEmpty" class="release-timeline__empty">
+        <p class="release-timeline__empty-title">{{ t('releaseTimeline.filterEmptyTitle') }}</p>
+        <p class="release-timeline__empty-description">
+          {{ t('releaseTimeline.filterEmptyDescription') }}
+        </p>
+        <button class="button is-primary is-small" type="button" @click="clearTimelineFilters">
+          {{ t('releaseTimeline.filterEmptyAction') }}
+        </button>
+      </div>
+
       <div v-else-if="showSearchEmpty" class="release-timeline__empty">
         <p class="release-timeline__empty-title">{{ t('releaseTimeline.emptySearchTitle') }}</p>
         <p class="release-timeline__empty-description">
@@ -164,6 +206,15 @@ defineExpose({
         @viewport-scroll="handleViewportScroll"
       />
     </div>
+
+    <ReleaseTimelineFilterPanel
+      :open="filterPanelOpen"
+      :repositories="filterRepositories"
+      :date-range="filterDateRange"
+      @update:repositories="filterRepositories = $event"
+      @update:date-range="filterDateRange = $event"
+      @close="filterPanelOpen = false"
+    />
 
     <ReleaseDrawer
       :open="isOpen"

@@ -6,16 +6,19 @@ withDefaults(
     loading: boolean;
     showTitle?: boolean;
     showReload?: boolean;
+    filterActive?: boolean;
   }>(),
   {
     showTitle: true,
     showReload: true,
+    filterActive: false,
   }
 );
 
 const emit = defineEmits<{
   reload: [];
   manage: [];
+  'filter-click': [];
 }>();
 
 const searchQuery = defineModel<string>({ required: true });
@@ -72,9 +75,12 @@ const { t } = useI18n();
       </button>
       <button
         class="button is-ghost is-small release-timeline-header__action"
+        :class="{ 'release-timeline-header__action--active': filterActive }"
         type="button"
         :aria-label="t('releaseTimeline.filter')"
-        :title="t('releaseTimeline.filter')"
+        :title="filterActive ? t('releaseTimeline.filterActive') : t('releaseTimeline.filter')"
+        :aria-pressed="filterActive"
+        @click="emit('filter-click')"
       >
         <FilterIcon v-once :size="18" aria-hidden="true" />
       </button>
@@ -165,6 +171,17 @@ const { t } = useI18n();
 .release-timeline-header__action:hover,
 .release-timeline-header__action:focus-visible {
   color: var(--gitpulse-link);
+  background: var(--gitpulse-info-soft);
+}
+
+.release-timeline-header__action--active {
+  border-color: var(--gitpulse-accent);
+  color: var(--gitpulse-accent);
+}
+
+.release-timeline-header__action--active:hover,
+.release-timeline-header__action--active:focus-visible {
+  color: var(--gitpulse-accent);
   background: var(--gitpulse-info-soft);
 }
 
