@@ -51,7 +51,7 @@
     "@j178/prek": "^0.5.3",
     "@nuxtjs/i18n": "^10.6.0",
     "@types/node": "^26.6.1",
-    "oxfmt": "^0.68.0",
+    "oxfmt": "^0.70.0",
     "oxlint": "^1.83.0",
     "oxlint-tsgolint": "^7.0.2002",
     "sass-embedded": "1.100.0",
