@@ -198,4 +198,14 @@ const navigateToItem = async (item: RepoContentItem) => {
     transform: rotate(360deg);
   }
 }
+
+/* Phone width: comfortable touch targets, matching the card padding the
+   profile lists settle into on narrow screens. */
+@media (max-width: 1024px) {
+  .repo-file-tree__item {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.8125rem;
+  }
+}
 </style>

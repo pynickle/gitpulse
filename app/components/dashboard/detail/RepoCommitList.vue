@@ -306,4 +306,25 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
     transform: rotate(360deg);
   }
 }
+
+/* Phone width: give commit messages up to two lines (the profile cards clamp
+   descriptions the same way) and let the meta row wrap instead of squeezing
+   the author, timestamp and SHA chip into one line. */
+@media (max-width: 1024px) {
+  .repo-commit-list__message {
+    display: -webkit-box;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .repo-commit-list__meta {
+    flex-wrap: wrap;
+  }
+
+  .repo-commit-list__author {
+    max-width: 8rem;
+  }
+}
 </style>

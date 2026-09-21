@@ -32,6 +32,7 @@ import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import RepoContributorsCard from '~/components/dashboard/detail/RepoContributorsCard.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
+import RepoPanelNav, { type RepoPanelNavTab } from '~/components/dashboard/detail/RepoPanelNav.vue';
 import LinkedPullRequestPickerModal from '~/components/dashboard/LinkedPullRequestPickerModal.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
@@ -40,12 +41,6 @@ import { useRepoDetailSession, type RepoDetailPanel } from '~/composables/useRep
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
 import type { RepoIssuePrState } from '~/utils/repoIssuePrSearchQuery';
-
-interface RepoPanelTab {
-  value: RepoDetailPanel;
-  label: string;
-  icon: Component;
-}
 
 interface RepoStateFilterOption {
   value: RepoIssuePrState;
@@ -167,7 +162,7 @@ const copy = computed(() => ({
   wiki: t('repoDetail.wiki'),
 }));
 
-const panelTabs = computed<RepoPanelTab[]>(() => [
+const panelTabs = computed<RepoPanelNavTab<RepoDetailPanel>[]>(() => [
   {
     value: 'files',
     label: t('repoDetail.files'),
@@ -241,15 +236,9 @@ const listEmptyMessage = computed(() => {
   return t('repoDetail.issuesEmpty');
 });
 
-const handlePanelTablistKeydown = (event: KeyboardEvent) => {
-  handleRovingTablistKeydown(event, {
-    itemCount: panelTabs.value.length,
-    activeIndex: panelTabs.value.findIndex((tab) => tab.value === activePanel.value),
-    onSelect: (index) => {
-      const tab = panelTabs.value[index];
-      if (tab) void selectPanel(tab.value);
-    },
-  });
+const handlePanelSelect = (value: string) => {
+  const tab = panelTabs.value.find((item) => item.value === value);
+  if (tab) void selectPanel(tab.value);
 };
 
 const viewAllCommits = () => {
@@ -807,27 +796,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
           <div class="repo-detail-section">
             <div class="repo-detail-section__chrome">
-              <div
-                class="repo-detail-tabs"
-                role="tablist"
-                :aria-label="t('repoDetail.panelSwitch')"
-                @keydown="handlePanelTablistKeydown"
-              >
-                <button
-                  v-for="tab in panelTabs"
-                  :key="tab.value"
-                  type="button"
-                  role="tab"
-                  class="repo-detail-tabs__tab"
-                  :class="{ 'is-active': activePanel === tab.value }"
-                  :aria-selected="activePanel === tab.value"
-                  :tabindex="activePanel === tab.value ? 0 : -1"
-                  @click="selectPanel(tab.value)"
-                >
-                  <component :is="tab.icon" :size="14" class="repo-detail-tabs__icon" />
-                  <span>{{ tab.label }}</span>
-                </button>
-              </div>
+              <RepoPanelNav
+                :tabs="panelTabs"
+                :model-value="activePanel"
+                :label="t('repoDetail.panelSwitch')"
+                @update:model-value="handlePanelSelect"
+              />
 
               <div class="repo-detail-subtoolbar">
                 <RepoLatestCommitBar
@@ -1442,55 +1416,6 @@ html.dark .repo-detail-section__chrome {
   overflow: hidden;
 }
 
-.repo-detail-tabs {
-  display: flex;
-  align-items: stretch;
-  gap: 0.1rem;
-  min-width: 0;
-  padding: 0 0.15rem;
-  border-bottom: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
-}
-
-.repo-detail-tabs__tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: -1px;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--gitpulse-text-muted);
-  font-family: var(--gitpulse-app-font-family);
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.25;
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease;
-
-  &:hover:not(.is-active) {
-    color: var(--gitpulse-text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
-    outline-offset: -2px;
-    border-radius: 4px;
-  }
-
-  &.is-active {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-bottom-color: var(--gitpulse-accent, var(--gitpulse-link));
-  }
-}
-
-.repo-detail-tabs__icon {
-  flex-shrink: 0;
-}
-
 .repo-detail-list-toolbar {
   display: flex;
   align-items: center;
@@ -1961,6 +1886,7 @@ html.dark .repo-detail-section__chrome {
     width: 100%;
     margin-top: 0.5rem;
     margin-left: 0;
+    flex-wrap: wrap;
   }
 }
 </style>
