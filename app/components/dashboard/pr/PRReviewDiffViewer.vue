@@ -11,6 +11,8 @@ import {
   type ComponentPublicInstance,
 } from 'vue';
 
+import type { PRReviewDiffArrangement } from '#shared/utils/pr-review-workspace-presentation';
+import PRReviewFilePath from '~/components/dashboard/pr/PRReviewFilePath.vue';
 import PRReviewVirtualDiffRows from '~/components/dashboard/pr/PRReviewVirtualDiffRows.vue';
 import type {
   PRReviewDiffSection,
@@ -32,6 +34,7 @@ const props = defineProps<{
   activeDraftTarget: { path: string; line: number } | null;
   submitting: boolean;
   resolvingReviewThreadId?: string | null;
+  diffArrangement: PRReviewDiffArrangement;
 }>();
 
 const emit = defineEmits<{
@@ -436,7 +439,7 @@ onBeforeUnmount(() => {
             aria-hidden="true"
           />
           <div class="pr-review-diff-viewer__header-info">
-            <h2 class="title is-6 mb-0">
+            <h2 class="title is-6 mb-0 pr-review-diff-viewer__file-title">
               <a
                 v-if="opensGitHubLinks && getFilePreferredHref(section.file.filename)"
                 :href="getFilePreferredHref(section.file.filename)!"
@@ -445,7 +448,7 @@ onBeforeUnmount(() => {
                 class="pr-review-diff-viewer__file-link"
                 @click.stop
               >
-                {{ section.file.filename }}
+                <PRReviewFilePath :filename="section.file.filename" />
               </a>
               <NuxtLinkLocale
                 v-else-if="getFileDashboardRoute(section.file.filename)"
@@ -453,9 +456,11 @@ onBeforeUnmount(() => {
                 class="pr-review-diff-viewer__file-link"
                 @click.stop
               >
-                {{ section.file.filename }}
+                <PRReviewFilePath :filename="section.file.filename" />
               </NuxtLinkLocale>
-              <span v-else>{{ section.file.filename }}</span>
+              <span v-else class="pr-review-diff-viewer__file-label">
+                <PRReviewFilePath :filename="section.file.filename" />
+              </span>
             </h2>
             <p v-if="section.file.previous_filename" class="is-size-7 has-text-grey mb-0">
               {{ t('prReview.renamedFrom', { filename: section.file.previous_filename }) }}
@@ -495,6 +500,7 @@ onBeforeUnmount(() => {
           <template v-else>
             <PRReviewVirtualDiffRows
               :rows="section.rows"
+              :diff-arrangement="diffArrangement"
               :filename="section.file.filename"
               :repo-owner="repoOwner"
               :repo-name="repoName"

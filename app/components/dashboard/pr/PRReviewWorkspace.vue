@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, GitPullRequestIcon, HomeIcon, MessageSquareIcon } from '@lucide/vue';
-import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 
+import { buildPRReviewWorkspaceNarrowLayoutCss } from '#shared/utils/pr-review-workspace-presentation';
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
@@ -20,6 +21,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { presentation } = usePRReviewWorkspacePresentation();
+const narrowLayoutCss = buildPRReviewWorkspaceNarrowLayoutCss();
 const { canGoBack, goBackToPreviousPage, goToDashboardHome, previousEntry, shouldShowHomeButton } =
   useNavigationRouting();
 
@@ -194,10 +197,28 @@ const setReviewPanelCollapsed = (collapsed: boolean) => {
 };
 
 onBeforeUnmount(clearGridAnimationFallback);
+
+watch(
+  () => presentation.value.mode,
+  () => {
+    gridAnimating.value = false;
+    clearGridAnimationFallback();
+    gridAnimationToken += 1;
+    const grid = gridElement.value;
+
+    if (!grid) {
+      return;
+    }
+
+    grid.style.gridTemplateColumns = '';
+    grid.style.removeProperty(CENTER_PIN_PROPERTY);
+  }
+);
 </script>
 
 <template>
   <section class="pr-review-workspace">
+    <component :is="'style'">{{ narrowLayoutCss }}</component>
     <header class="pr-review-workspace__header">
       <div class="pr-review-workspace__identity">
         <GitPullRequestIcon
@@ -318,6 +339,7 @@ onBeforeUnmount(clearGridAnimationFallback);
         :active-draft-target="review.activeDraftTarget.value"
         :submitting="review.submitting.value"
         :resolving-review-thread-id="review.resolvingReviewThreadId.value"
+        :diff-arrangement="presentation.diffArrangement"
         @visible-file-changed="review.syncVisibleFile"
         @open-draft-editor="review.openDraftEditor"
         @close-draft-editor="review.closeDraftEditor"

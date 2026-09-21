@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CheckIcon, XIcon } from '@lucide/vue';
 import {
   computed,
   nextTick,
@@ -11,11 +10,14 @@ import {
   type ComponentPublicInstance,
 } from 'vue';
 
+import {
+  presentUnifiedDiffLines,
+  type PRReviewDiffArrangement,
+  type UnifiedDiffLine,
+} from '#shared/utils/pr-review-workspace-presentation';
+import PRReviewDiffReviewThreads from '~/components/dashboard/pr/PRReviewDiffReviewThreads.vue';
 import PRReviewInlineComment from '~/components/dashboard/pr/PRReviewInlineComment.vue';
-import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { PRReviewCommentThread, PRReviewDiffRow } from '~/composables/usePRReview';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
 import tokenizeCodeLine from '~/utils/tokenizeCodeLine';
 
 const VIRTUAL_ROW_THRESHOLD = 120;
@@ -38,11 +40,18 @@ interface VirtualRow {
 
 type CodeLineTokens = ReturnType<typeof tokenizeCodeLine>;
 
+interface RenderedUnifiedLine extends UnifiedDiffLine {
+  tokens: CodeLineTokens;
+  reviewThreads: PRReviewCommentThread[];
+  hasActiveDraftTarget: boolean;
+}
+
 interface RenderedVirtualRow extends VirtualRow {
   oldTokens: CodeLineTokens;
   newTokens: CodeLineTokens;
   reviewThreads: PRReviewCommentThread[];
   hasActiveDraftTarget: boolean;
+  unifiedLines: RenderedUnifiedLine[];
 }
 
 const props = defineProps<{
@@ -56,6 +65,7 @@ const props = defineProps<{
   submitting: boolean;
   resolvingReviewThreadId?: string | null;
   scrollContainer: HTMLElement | null;
+  diffArrangement: PRReviewDiffArrangement;
 }>();
 
 const emit = defineEmits<{
@@ -66,9 +76,7 @@ const emit = defineEmits<{
   (e: 'toggle-review-thread', payload: { threadId: string; resolved: boolean }): void;
 }>();
 
-const { t, locale } = useI18n();
-const localeCode = computed(() => locale.value);
-const relativeTimeNow = useRelativeTimeNow();
+const { t } = useI18n();
 const rowsRoot = useTemplateRef<HTMLElement>('rowsRoot');
 const isRowsNearViewport = shallowRef(false);
 const visibleRange = shallowRef({ start: 0, end: 0 });
@@ -159,7 +167,10 @@ const getEstimatedRowHeight = (row: PRReviewDiffRow) => {
     return HUNK_ROW_ESTIMATED_HEIGHT;
   }
 
-  let estimate = DIFF_ROW_ESTIMATED_HEIGHT;
+  let estimate =
+    props.diffArrangement === 'unified' && row.type === 'replace'
+      ? DIFF_ROW_ESTIMATED_HEIGHT * 2
+      : DIFF_ROW_ESTIMATED_HEIGHT;
   const threads = getReviewThreadsForLine(row.newLineNumber);
 
   if (threads.length) {
@@ -220,10 +231,34 @@ const visibleRows = computed(() => {
   return rowMetrics.value.slice(range.start, range.end);
 });
 
+const unifiedLinesBySourceKey = computed(() => {
+  const grouped = new Map<string, UnifiedDiffLine[]>();
+
+  for (const line of presentUnifiedDiffLines(props.rows)) {
+    const lines = grouped.get(line.sourceRowKey);
+
+    if (lines) {
+      lines.push(line);
+    } else {
+      grouped.set(line.sourceRowKey, [line]);
+    }
+  }
+
+  return grouped;
+});
+
+const renderUnifiedLine = (line: UnifiedDiffLine): RenderedUnifiedLine => ({
+  ...line,
+  tokens: line.kind === 'hunk' ? [] : getCachedCodeLineTokens(line.content || ' ', props.filename),
+  reviewThreads: getReviewThreadsForLine(line.newLineNumber),
+  hasActiveDraftTarget: isActiveDraftTarget(line.newLineNumber),
+});
+
 const renderedVisibleRows = computed<RenderedVirtualRow[]>(() =>
   visibleRows.value.map((virtualRow) => {
     const row = virtualRow.row;
     const hasActiveDraftTarget = isActiveDraftTarget(row.newLineNumber);
+    const unifiedLines = (unifiedLinesBySourceKey.value.get(row.key) ?? []).map(renderUnifiedLine);
 
     if (row.type === 'hunk') {
       return {
@@ -232,6 +267,7 @@ const renderedVisibleRows = computed<RenderedVirtualRow[]>(() =>
         newTokens: [],
         reviewThreads: [],
         hasActiveDraftTarget,
+        unifiedLines,
       };
     }
 
@@ -241,6 +277,7 @@ const renderedVisibleRows = computed<RenderedVirtualRow[]>(() =>
       newTokens: getCachedCodeLineTokens(getSideContent(row, 'new'), props.filename),
       reviewThreads: getReviewThreadsForLine(row.newLineNumber),
       hasActiveDraftTarget,
+      unifiedLines,
     };
   })
 );
@@ -507,31 +544,6 @@ const handleSaveDraft = (line: number, body: string) => {
   emit('save-draft-comment', props.filename, line, row.position, body);
 };
 
-const isReviewThreadResolving = (thread: PRReviewCommentThread) =>
-  Boolean(thread.threadId && props.resolvingReviewThreadId === thread.threadId);
-
-const reviewThreadActionLabel = (thread: PRReviewCommentThread) =>
-  thread.isResolved ? t('prReview.unresolveThread') : t('prReview.resolveThread');
-
-const reviewThreadStateLabel = (thread: PRReviewCommentThread) =>
-  thread.isResolved ? t('prReview.threadResolved') : t('prReview.threadUnresolved');
-
-const reviewThreadStateClass = (thread: PRReviewCommentThread) =>
-  thread.isResolved
-    ? 'pr-review-diff-viewer__thread-action--resolved'
-    : 'pr-review-diff-viewer__thread-action--unresolved';
-
-const toggleReviewThread = (thread: PRReviewCommentThread) => {
-  if (!thread.threadId || isReviewThreadResolving(thread)) {
-    return;
-  }
-
-  emit('toggle-review-thread', {
-    threadId: thread.threadId,
-    resolved: !Boolean(thread.isResolved),
-  });
-};
-
 const openDraftEditorForLine = (line: number | null) => {
   if (!line) {
     return;
@@ -540,7 +552,9 @@ const openDraftEditorForLine = (line: number | null) => {
   emit('open-draft-editor', props.filename, line);
 };
 
-watch(() => [props.filename, props.rows], resetMeasurements, { flush: 'post' });
+watch(() => [props.filename, props.rows, props.diffArrangement], resetMeasurements, {
+  flush: 'post',
+});
 
 watch(activeDraftLineForFile, clearMeasurements, { flush: 'post' });
 
@@ -632,201 +646,178 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="rowsRoot" class="pr-review-diff-viewer__rows">
-    <div
-      v-if="topSpacerHeight"
-      class="pr-review-diff-viewer__row-spacer"
-      :style="{ height: `${topSpacerHeight}px` }"
-      aria-hidden="true"
-    ></div>
+    <div class="pr-review-diff-viewer__rows-track">
+      <div
+        v-if="topSpacerHeight"
+        class="pr-review-diff-viewer__row-spacer"
+        :style="{ height: `${topSpacerHeight}px` }"
+        aria-hidden="true"
+      ></div>
 
-    <div
-      v-for="virtualRow in renderedVisibleRows"
-      :key="virtualRow.key"
-      :ref="(element) => setRowElement(virtualRow.key, element)"
-      class="pr-review-diff-viewer__virtual-row"
-      :data-row-key="virtualRow.key"
-    >
-      <div v-if="virtualRow.row.type === 'hunk'" class="pr-review-diff-viewer__hunk">
-        <code>{{ virtualRow.row.content }}</code>
-      </div>
-
-      <div v-else class="pr-review-diff-viewer__split-row">
-        <div :class="getRowSideClass(virtualRow.row, 'old')">
-          <span class="pr-review-diff-viewer__line-number">{{
-            virtualRow.row.oldLineNumber ?? ''
-          }}</span>
-          <code class="pr-review-diff-viewer__code">
-            <span
-              v-for="token in virtualRow.oldTokens"
-              :key="token.key"
-              class="pr-review-diff-viewer__token"
-              :class="`pr-review-diff-viewer__token--${token.kind}`"
-              >{{ token.text }}</span
-            >
-          </code>
+      <div
+        v-for="virtualRow in renderedVisibleRows"
+        :key="virtualRow.key"
+        :ref="(element) => setRowElement(virtualRow.key, element)"
+        class="pr-review-diff-viewer__virtual-row"
+        :data-row-key="virtualRow.key"
+      >
+        <div v-if="virtualRow.row.type === 'hunk'" class="pr-review-diff-viewer__hunk-line">
+          <div class="pr-review-diff-viewer__hunk">
+            <code>{{ virtualRow.row.content }}</code>
+          </div>
         </div>
 
-        <span class="pr-review-diff-viewer__split-divider" aria-hidden="true"></span>
-
-        <div :class="getRowSideClass(virtualRow.row, 'new')">
-          <span class="pr-review-diff-viewer__line-number">
-            <span class="pr-review-diff-viewer__line-num">{{
-              virtualRow.row.newLineNumber ?? ''
+        <div v-else class="pr-review-diff-viewer__split-row">
+          <div :class="getRowSideClass(virtualRow.row, 'old')">
+            <span class="pr-review-diff-viewer__line-number">{{
+              virtualRow.row.oldLineNumber ?? ''
             }}</span>
-            <button
-              class="pr-review-diff-viewer__comment-button"
-              type="button"
-              :aria-label="
-                virtualRow.row.newLineNumber
-                  ? t('prReview.addLineCommentForLine', {
-                      line: virtualRow.row.newLineNumber,
-                    })
-                  : t('prReview.addLineComment')
-              "
-              :disabled="
-                !virtualRow.row.isCommentable || !virtualRow.row.newLineNumber || submitting
-              "
-              :title="
-                virtualRow.row.isCommentable
-                  ? t('prReview.addLineComment')
-                  : t('prReview.lineNotCommentable')
-              "
-              @click="openDraftEditorForLine(virtualRow.row.newLineNumber)"
-            >
-              +
-            </button>
-          </span>
-          <div class="pr-review-diff-viewer__new-line">
             <code class="pr-review-diff-viewer__code">
               <span
-                v-for="token in virtualRow.newTokens"
+                v-for="token in virtualRow.oldTokens"
                 :key="token.key"
                 class="pr-review-diff-viewer__token"
                 :class="`pr-review-diff-viewer__token--${token.kind}`"
                 >{{ token.text }}</span
               >
             </code>
-            <div
-              v-if="virtualRow.reviewThreads.length"
-              class="pr-review-diff-viewer__new-line-threads"
-            >
-              <div
-                v-for="thread in virtualRow.reviewThreads"
-                :key="thread.id"
-                class="pr-review-diff-viewer__review-thread"
-                :class="{ 'pr-review-diff-viewer__review-thread--resolved': thread.isResolved }"
+          </div>
+
+          <span class="pr-review-diff-viewer__split-divider" aria-hidden="true"></span>
+
+          <div :class="getRowSideClass(virtualRow.row, 'new')">
+            <span class="pr-review-diff-viewer__line-number">
+              <span class="pr-review-diff-viewer__line-num">{{
+                virtualRow.row.newLineNumber ?? ''
+              }}</span>
+              <button
+                class="pr-review-diff-viewer__comment-button"
+                type="button"
+                :aria-label="
+                  virtualRow.row.newLineNumber
+                    ? t('prReview.addLineCommentForLine', {
+                        line: virtualRow.row.newLineNumber,
+                      })
+                    : t('prReview.addLineComment')
+                "
+                :disabled="
+                  !virtualRow.row.isCommentable || !virtualRow.row.newLineNumber || submitting
+                "
+                :title="
+                  virtualRow.row.isCommentable
+                    ? t('prReview.addLineComment')
+                    : t('prReview.lineNotCommentable')
+                "
+                @click="openDraftEditorForLine(virtualRow.row.newLineNumber)"
               >
-                <article
-                  v-for="(comment, commentIndex) in thread.comments"
-                  :key="comment.id"
-                  class="pr-review-diff-viewer__review-comment"
+                +
+              </button>
+            </span>
+            <div class="pr-review-diff-viewer__new-line">
+              <code class="pr-review-diff-viewer__code">
+                <span
+                  v-for="token in virtualRow.newTokens"
+                  :key="token.key"
+                  class="pr-review-diff-viewer__token"
+                  :class="`pr-review-diff-viewer__token--${token.kind}`"
+                  >{{ token.text }}</span
                 >
-                  <button
-                    v-if="thread.threadId && commentIndex === 0"
-                    class="button is-small pr-review-diff-viewer__thread-action"
-                    type="button"
-                    :class="[
-                      reviewThreadStateClass(thread),
-                      { 'is-loading': isReviewThreadResolving(thread) },
-                    ]"
-                    :disabled="isReviewThreadResolving(thread)"
-                    :aria-label="reviewThreadActionLabel(thread)"
-                    :title="reviewThreadActionLabel(thread)"
-                    @click="toggleReviewThread(thread)"
-                  >
-                    <component
-                      :is="thread.isResolved ? XIcon : CheckIcon"
-                      :size="13"
-                      :stroke-width="2.5"
-                      aria-hidden="true"
-                    />
-                    <span>{{ reviewThreadStateLabel(thread) }}</span>
-                  </button>
-                  <div class="pr-review-diff-viewer__review-comment-header">
-                    <GitHubAvatar
-                      variant="raised"
-                      interactive
-                      width="24"
-                      height="24"
-                      :src="comment.author?.avatarUrl || ''"
-                      :alt="comment.author?.login || ''"
-                    />
-                    <div class="pr-review-diff-viewer__review-comment-meta">
-                      <a
-                        v-if="comment.author?.url"
-                        :href="comment.author.url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="has-text-link has-text-weight-semibold"
-                      >
-                        {{ comment.author.login }}
-                      </a>
-                      <strong v-else>{{
-                        comment.author?.login || t('prReview.unknownReviewAuthor')
-                      }}</strong>
-                      <a
-                        v-if="comment.url"
-                        :href="comment.url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="has-text-grey"
-                      >
-                        {{
-                          formatDurationFromNow(
-                            comment.createdAt || '',
-                            localeCode,
-                            relativeTimeNow
-                          )
-                        }}
-                      </a>
-                      <span v-else-if="comment.createdAt" class="has-text-grey">
-                        {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="pr-review-diff-viewer__review-comment-body content">
-                    <MarkdownRenderer
-                      v-if="comment.body"
-                      :value="comment.body"
-                      :repo-owner="repoOwner"
-                      :repo-name="repoName"
-                    />
-                    <p v-else class="has-text-grey mb-0">
-                      {{ t('prReview.noReviewCommentBody') }}
-                    </p>
-                  </div>
-                </article>
-              </div>
+              </code>
+              <PRReviewDiffReviewThreads
+                v-if="virtualRow.reviewThreads.length"
+                :threads="virtualRow.reviewThreads"
+                :repo-owner="repoOwner"
+                :repo-name="repoName"
+                :resolving-review-thread-id="resolvingReviewThreadId"
+                @toggle-review-thread="emit('toggle-review-thread', $event)"
+              />
             </div>
           </div>
         </div>
+
+        <template v-for="line in virtualRow.unifiedLines" :key="line.key">
+          <div
+            v-if="line.kind !== 'hunk'"
+            class="pr-review-diff-viewer__unified-line"
+            :class="[
+              `pr-review-diff-viewer__unified-line--${line.kind}`,
+              { 'pr-review-diff-viewer__unified-line--commentable': line.isCommentable },
+            ]"
+          >
+            <span class="pr-review-diff-viewer__line-number">
+              <span class="pr-review-diff-viewer__unified-nums">
+                <span class="pr-review-diff-viewer__line-num">{{ line.oldLineNumber ?? '' }}</span>
+                <span class="pr-review-diff-viewer__line-num">{{ line.newLineNumber ?? '' }}</span>
+              </span>
+              <button
+                v-if="line.isCommentable && line.newLineNumber"
+                class="pr-review-diff-viewer__comment-button"
+                type="button"
+                :aria-label="t('prReview.addLineCommentForLine', { line: line.newLineNumber })"
+                :disabled="submitting"
+                :title="t('prReview.addLineComment')"
+                @click="openDraftEditorForLine(line.newLineNumber)"
+              >
+                +
+              </button>
+            </span>
+            <div class="pr-review-diff-viewer__unified-main">
+              <code class="pr-review-diff-viewer__code">
+                <span
+                  v-for="token in line.tokens"
+                  :key="token.key"
+                  class="pr-review-diff-viewer__token"
+                  :class="`pr-review-diff-viewer__token--${token.kind}`"
+                  >{{ token.text }}</span
+                >
+              </code>
+              <PRReviewDiffReviewThreads
+                v-if="line.reviewThreads.length"
+                :threads="line.reviewThreads"
+                :repo-owner="repoOwner"
+                :repo-name="repoName"
+                :resolving-review-thread-id="resolvingReviewThreadId"
+                @toggle-review-thread="emit('toggle-review-thread', $event)"
+              />
+            </div>
+          </div>
+        </template>
+
+        <PRReviewInlineComment
+          v-if="virtualRow.row.newLineNumber && virtualRow.hasActiveDraftTarget"
+          :path="filename"
+          :line="virtualRow.row.newLineNumber"
+          :body="activeDraftBody"
+          :repo-owner="repoOwner"
+          :repo-name="repoName"
+          :submitting="submitting"
+          @update:body="emit('update-active-draft-body', $event)"
+          @save="(_path, line, body) => handleSaveDraft(line, body)"
+          @cancel="emit('close-draft-editor')"
+        />
       </div>
 
-      <PRReviewInlineComment
-        v-if="virtualRow.row.newLineNumber && virtualRow.hasActiveDraftTarget"
-        :path="filename"
-        :line="virtualRow.row.newLineNumber"
-        :body="activeDraftBody"
-        :repo-owner="repoOwner"
-        :repo-name="repoName"
-        :submitting="submitting"
-        @update:body="emit('update-active-draft-body', $event)"
-        @save="(_path, line, body) => handleSaveDraft(line, body)"
-        @cancel="emit('close-draft-editor')"
-      />
+      <div
+        v-if="bottomSpacerHeight"
+        class="pr-review-diff-viewer__row-spacer"
+        :style="{ height: `${bottomSpacerHeight}px` }"
+        aria-hidden="true"
+      ></div>
     </div>
-
-    <div
-      v-if="bottomSpacerHeight"
-      class="pr-review-diff-viewer__row-spacer"
-      :style="{ height: `${bottomSpacerHeight}px` }"
-      aria-hidden="true"
-    ></div>
   </div>
 </template>
 
 <style scoped lang="scss">
 .pr-review-diff-viewer__rows {
+  --pr-review-unified-gutter: 6rem;
+  min-width: 100%;
+}
+
+.pr-review-diff-viewer__rows-track {
+  min-width: 100%;
+}
+
+.pr-review-diff-viewer__hunk-line {
   min-width: 100%;
 }
 
@@ -927,6 +918,10 @@ onBeforeUnmount(() => {
 .pr-review-diff-viewer__pane--commentable:hover
   .pr-review-diff-viewer__comment-button:not(:disabled),
 .pr-review-diff-viewer__pane--commentable:focus-within
+  .pr-review-diff-viewer__comment-button:not(:disabled),
+.pr-review-diff-viewer__unified-line--commentable:hover
+  .pr-review-diff-viewer__comment-button:not(:disabled),
+.pr-review-diff-viewer__unified-line--commentable:focus-within
   .pr-review-diff-viewer__comment-button:not(:disabled) {
   width: 1rem;
   font-size: 11px;
@@ -962,86 +957,61 @@ onBeforeUnmount(() => {
   display: block;
 }
 
-.pr-review-diff-viewer__new-line-threads {
-  margin-top: 0.35rem;
-  padding: 0 0.75rem 0 0.9rem;
-  border-left: 2px solid var(--gitpulse-border);
-}
-
-.pr-review-diff-viewer__review-thread {
-  margin: 0 0 0.5rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: var(--gitpulse-radius-lg);
-  background: var(--gitpulse-surface);
-  box-shadow: var(--gitpulse-shadow-card);
-  overflow: hidden;
-}
-
-.pr-review-diff-viewer__review-thread--resolved {
-  border-color: color-mix(in srgb, var(--gitpulse-success) 30%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-success) 4%, var(--gitpulse-surface));
-}
-
-.pr-review-diff-viewer__thread-action {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 1;
-  gap: 0.25rem;
-  height: 1.5rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.pr-review-diff-viewer__thread-action--resolved {
-  border-color: color-mix(in srgb, var(--gitpulse-success) 42%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-success) 12%, var(--gitpulse-surface));
-  color: var(--gitpulse-success);
-}
-
-.pr-review-diff-viewer__thread-action--unresolved {
-  border-color: color-mix(in srgb, var(--gitpulse-warning) 42%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-warning) 12%, var(--gitpulse-surface));
-  color: var(--gitpulse-warning);
-}
-
-.pr-review-diff-viewer__review-comment {
-  position: relative;
-  padding: 0.6rem 0.7rem;
-}
-
-.pr-review-diff-viewer__review-comment + .pr-review-diff-viewer__review-comment {
-  margin-top: 0;
-  border-top: 1px solid var(--gitpulse-border);
-}
-
-.pr-review-diff-viewer__review-comment-header {
-  display: flex;
+.pr-review-diff-viewer__unified-line {
   align-items: flex-start;
-  gap: 0.5rem;
+  width: max-content;
+  min-width: 100%;
+  min-height: 1.55rem;
+  border-bottom: 1px solid var(--gitpulse-border);
 }
 
-.pr-review-diff-viewer__review-comment-meta {
+.pr-review-diff-viewer__unified-line--add {
+  background: var(--gitpulse-diff-add-bg);
+}
+
+.pr-review-diff-viewer__unified-line--delete {
+  background: var(--gitpulse-diff-delete-bg);
+}
+
+.pr-review-diff-viewer__unified-line--context {
+  background: var(--gitpulse-surface);
+}
+
+.pr-review-diff-viewer__unified-line .pr-review-diff-viewer__line-number {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  flex: none;
+  align-self: stretch;
+  width: var(--pr-review-unified-gutter);
+  background: inherit;
+}
+
+.pr-review-diff-viewer__unified-nums {
+  display: inline-flex;
+  gap: 0.35rem;
   min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-review-diff-viewer__unified-main {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-  align-items: center;
+  flex-direction: column;
+  min-width: max-content;
 }
 
-.pr-review-diff-viewer__review-comment-body {
-  margin-top: 0.55rem;
-  margin-bottom: 0;
+.pr-review-diff-viewer__unified-main > .pr-review-diff-viewer__code {
+  display: block;
+  width: max-content;
+  max-width: none;
 }
 
-.pr-review-diff-viewer__review-comment-body :deep(.markdown-body) {
-  font-size: 12px;
-}
-
-.pr-review-diff-viewer__review-comment-body :deep(.markdown-body code) {
-  font-size: 12px;
+.pr-review-diff-viewer__unified-line .pr-review-diff-viewer__new-line-threads {
+  position: sticky;
+  left: var(--pr-review-unified-gutter);
+  width: calc(100cqi - var(--pr-review-unified-gutter));
+  max-width: calc(100cqi - var(--pr-review-unified-gutter));
+  box-sizing: border-box;
 }
 
 .pr-review-diff-viewer__token--keyword {
