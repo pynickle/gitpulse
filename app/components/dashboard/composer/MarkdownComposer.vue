@@ -556,6 +556,10 @@ defineExpose({
   }
 
   &.tabs li a {
+    /* Bulma pulls tab links down by 1px to cover the ul border. These pills have
+       no ul border, and `.tabs` clips overflow-y, so that margin cuts off the
+       bottom of the active pill. */
+    margin-bottom: 0;
     border-radius: 8px;
     border: 1px solid transparent;
     padding: 0.3rem 0.875rem;
