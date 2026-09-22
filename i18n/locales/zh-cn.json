@@ -970,6 +970,8 @@
     "listView": "列表视图",
     "treeView": "树状视图",
     "reviewPanel": "审查",
+    "bottomBar": "拉取请求审查",
+    "closeSheet": "关闭",
     "collapseReviewPanel": "收起审查面板",
     "expandReviewPanel": "展开审查面板",
     "noPendingDrafts": "还没有待提交的内联评论。",

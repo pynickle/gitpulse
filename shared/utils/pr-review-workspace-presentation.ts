@@ -55,6 +55,94 @@ export function resolvePRReviewWorkspacePresentation(
   return widePresentation;
 }
 
+export type ReviewBottomBarSheet = 'files' | 'review';
+
+export interface ReviewBottomBarState {
+  openSheet: ReviewBottomBarSheet | null;
+}
+
+export type ReviewBottomBarAction =
+  | { type: 'toggle-files' }
+  | { type: 'toggle-review' }
+  | { type: 'choose-file' }
+  | { type: 'scrim' }
+  | { type: 'enter-wide' };
+
+export interface ReviewBottomBarPresentationInput {
+  mode: PRReviewWorkspaceMode;
+  openSheet: ReviewBottomBarSheet | null;
+  keyboardOpen: boolean;
+  inlineComposerOpen: boolean;
+}
+
+export interface ReviewBottomBarPresentation {
+  openSheet: ReviewBottomBarSheet | null;
+  showBottomBar: boolean;
+}
+
+/**
+ * Browser chrome can shrink the visual viewport by less than this. A software
+ * keyboard is larger, so a smaller gap does not hide the Review Bottom Bar.
+ */
+export const PR_REVIEW_KEYBOARD_OPEN_GAP_PX = 120;
+
+const KEYBOARD_PINCH_SCALE_MIN = 0.99;
+const KEYBOARD_PINCH_SCALE_MAX = 1.01;
+
+export function reduceReviewBottomBar(
+  state: ReviewBottomBarState,
+  action: ReviewBottomBarAction
+): ReviewBottomBarState {
+  if (action.type === 'toggle-files') {
+    return { openSheet: state.openSheet === 'files' ? null : 'files' };
+  }
+
+  if (action.type === 'toggle-review') {
+    return { openSheet: state.openSheet === 'review' ? null : 'review' };
+  }
+
+  return { openSheet: null };
+}
+
+export function presentReviewBottomBar(
+  input: ReviewBottomBarPresentationInput
+): ReviewBottomBarPresentation {
+  if (input.mode === 'wide') {
+    return { openSheet: null, showBottomBar: false };
+  }
+
+  return {
+    openSheet: input.openSheet,
+    showBottomBar: !input.keyboardOpen && !input.inlineComposerOpen,
+  };
+}
+
+export function resolveReviewKeyboardInset(input: {
+  innerHeight: number;
+  visualViewportHeight: number | null;
+  visualViewportOffsetTop: number | null;
+  visualViewportScale: number | null;
+}): number {
+  const visualHeight = input.visualViewportHeight;
+  const scale = input.visualViewportScale;
+
+  if (visualHeight == null || visualHeight <= 0) {
+    return 0;
+  }
+
+  if (scale != null && (scale < KEYBOARD_PINCH_SCALE_MIN || scale > KEYBOARD_PINCH_SCALE_MAX)) {
+    return 0;
+  }
+
+  const gap = input.innerHeight - (input.visualViewportOffsetTop ?? 0) - visualHeight;
+
+  if (gap <= PR_REVIEW_KEYBOARD_OPEN_GAP_PX) {
+    return 0;
+  }
+
+  return Math.round(gap);
+}
+
 const commentableUnifiedLine = (row: PRReviewDiffRow, newLineNumber: number | null) =>
   row.isCommentable && newLineNumber != null;
 
@@ -167,9 +255,17 @@ export function buildPRReviewWorkspaceNarrowLayoutCss() {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .pr-review-workspace .pr-review-file-sidebar,
-  .pr-review-workspace .pr-review-submit-bar {
+  .pr-review-workspace .pr-review-workspace__grid > .pr-review-file-sidebar,
+  .pr-review-workspace .pr-review-workspace__grid > .pr-review-submit-bar {
     display: none !important;
+  }
+
+  .pr-review-workspace:not(.pr-review-workspace--bottom-bar-suppressed) {
+    --pr-review-bottom-bar-offset: var(--pr-review-bottom-bar-block);
+  }
+
+  .pr-review-workspace:not(.pr-review-workspace--bottom-bar-suppressed) .pr-review-bottom-bar {
+    display: flex !important;
   }
 
   .pr-review-workspace .pr-review-diff-viewer__split-row {

@@ -2,7 +2,14 @@
 import { ArrowLeftIcon, GitPullRequestIcon, HomeIcon, MessageSquareIcon } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 
-import { buildPRReviewWorkspaceNarrowLayoutCss } from '#shared/utils/pr-review-workspace-presentation';
+import {
+  buildPRReviewWorkspaceNarrowLayoutCss,
+  presentReviewBottomBar,
+  reduceReviewBottomBar,
+  type ReviewBottomBarAction,
+  type ReviewBottomBarSheet,
+} from '#shared/utils/pr-review-workspace-presentation';
+import PRReviewBottomBar from '~/components/dashboard/pr/PRReviewBottomBar.vue';
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
@@ -21,7 +28,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { presentation } = usePRReviewWorkspacePresentation();
+const { presentation, keyboardInsetPx } = usePRReviewWorkspacePresentation();
 const narrowLayoutCss = buildPRReviewWorkspaceNarrowLayoutCss();
 const { canGoBack, goBackToPreviousPage, goToDashboardHome, previousEntry, shouldShowHomeButton } =
   useNavigationRouting();
@@ -59,6 +66,7 @@ const workspaceTitle = computed(() => props.title || t('prReview.untitledPullReq
 const fileViewMode = shallowRef<'list' | 'tree'>('tree');
 const sidebarCollapsed = shallowRef(false);
 const reviewPanelCollapsed = shallowRef(true);
+const openSheet = shallowRef<ReviewBottomBarSheet | null>(null);
 const totalAdditions = computed(() =>
   review.files.value.reduce((total, file) => total + file.additions, 0)
 );
@@ -77,6 +85,30 @@ const goHome = async () => {
 
 const goToPullRequestDetails = () => {
   emit('close');
+};
+
+const bottomBar = computed(() =>
+  presentReviewBottomBar({
+    mode: presentation.value.mode,
+    openSheet: openSheet.value,
+    keyboardOpen: keyboardInsetPx.value > 0,
+    inlineComposerOpen: review.activeDraftTarget.value != null,
+  })
+);
+const suppressBottomBar = computed(
+  () => presentation.value.mode === 'narrow' && !bottomBar.value.showBottomBar
+);
+const keyboardInsetStyle = computed(() => ({
+  '--pr-review-keyboard-inset': `${keyboardInsetPx.value}px`,
+}));
+
+const applyBottomBarAction = (action: ReviewBottomBarAction) => {
+  openSheet.value = reduceReviewBottomBar({ openSheet: openSheet.value }, action).openSheet;
+};
+
+const handleSelectFile = (filename: string) => {
+  applyBottomBarAction({ type: 'choose-file' });
+  review.selectFile(filename);
 };
 
 // Keep in sync with the grid transition duration in <style>.
@@ -200,7 +232,11 @@ onBeforeUnmount(clearGridAnimationFallback);
 
 watch(
   () => presentation.value.mode,
-  () => {
+  (mode) => {
+    if (mode === 'wide') {
+      applyBottomBarAction({ type: 'enter-wide' });
+    }
+
     gridAnimating.value = false;
     clearGridAnimationFallback();
     gridAnimationToken += 1;
@@ -217,7 +253,11 @@ watch(
 </script>
 
 <template>
-  <section class="pr-review-workspace">
+  <section
+    class="pr-review-workspace"
+    :class="{ 'pr-review-workspace--bottom-bar-suppressed': suppressBottomBar }"
+    :style="keyboardInsetStyle"
+  >
     <component :is="'style'">{{ narrowLayoutCss }}</component>
     <header class="pr-review-workspace__header">
       <div class="pr-review-workspace__identity">
@@ -316,6 +356,7 @@ watch(
       @transitionend.self="handleGridTransitionEnd"
     >
       <PRReviewFileSidebar
+        v-if="presentation.showFileColumn"
         :files="review.files.value"
         :active-filename="review.activeFilename.value"
         :draft-comments="review.draftComments.value"
@@ -325,7 +366,7 @@ watch(
         :collapsed="sidebarCollapsed"
         @update:view-mode="fileViewMode = $event"
         @update:collapsed="setSidebarCollapsed"
-        @select-file="review.selectFile"
+        @select-file="handleSelectFile"
         @load-more="review.loadMoreFiles"
       />
 
@@ -349,6 +390,7 @@ watch(
       />
 
       <PRReviewSubmitBar
+        v-if="presentation.showSubmitColumn"
         :event="review.selectedEvent.value"
         :body="review.draftBody.value"
         :pending-comment-count="review.pendingCommentCount.value"
@@ -366,17 +408,112 @@ watch(
         @remove-draft-comment="review.removeDraftComment"
       />
     </div>
+
+    <button
+      v-if="bottomBar.openSheet"
+      type="button"
+      class="pr-review-sheet-scrim"
+      :aria-label="t('prReview.closeSheet')"
+      @click="applyBottomBarAction({ type: 'scrim' })"
+    />
+
+    <div
+      v-if="bottomBar.openSheet === 'files'"
+      class="pr-review-sheet"
+      role="dialog"
+      :aria-label="t('prReview.files')"
+    >
+      <PRReviewFileSidebar
+        variant="sheet"
+        :files="review.files.value"
+        :active-filename="review.activeFilename.value"
+        :draft-comments="review.draftComments.value"
+        :loading-more="review.loadingMore.value"
+        :has-more-files="hasMoreFiles"
+        :view-mode="fileViewMode"
+        :collapsed="false"
+        @update:view-mode="fileViewMode = $event"
+        @select-file="handleSelectFile"
+        @load-more="review.loadMoreFiles"
+      />
+    </div>
+    <div
+      v-else-if="bottomBar.openSheet === 'review'"
+      class="pr-review-sheet"
+      role="dialog"
+      :aria-label="t('prReview.reviewPanel')"
+    >
+      <PRReviewSubmitBar
+        variant="sheet"
+        :event="review.selectedEvent.value"
+        :body="review.draftBody.value"
+        :pending-comment-count="review.pendingCommentCount.value"
+        :draft-comments="review.draftComments.value"
+        :can-submit="review.canSubmit.value"
+        :submitting="review.submitting.value"
+        :error-message="review.submitError.value"
+        :collapsed="false"
+        :repo-owner="owner"
+        :repo-name="repo"
+        @update:event="review.selectedEvent.value = $event"
+        @update:body="review.draftBody.value = $event"
+        @submit="review.submitReview"
+        @remove-draft-comment="review.removeDraftComment"
+      />
+    </div>
+
+    <PRReviewBottomBar
+      :file-count="review.files.value.length"
+      :pending-comment-count="review.pendingCommentCount.value"
+      :open-sheet="bottomBar.openSheet"
+      @toggle-files="applyBottomBarAction({ type: 'toggle-files' })"
+      @toggle-review="applyBottomBarAction({ type: 'toggle-review' })"
+    />
   </section>
 </template>
 
 <style scoped lang="scss">
 .pr-review-workspace {
+  --pr-review-bottom-bar-block: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+  --pr-review-bottom-bar-offset: 0px;
+  --pr-review-keyboard-inset: 0px;
+  position: relative;
   height: 100%;
   min-height: 0;
   background: var(--gitpulse-surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.pr-review-sheet-scrim {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: calc(var(--pr-review-bottom-bar-offset) + var(--pr-review-keyboard-inset));
+  z-index: 30;
+  border: 0;
+  padding: 0;
+  background: rgb(0 0 0 / 0.4);
+  cursor: pointer;
+}
+
+.pr-review-sheet {
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: calc(var(--pr-review-bottom-bar-offset) + var(--pr-review-keyboard-inset));
+  z-index: 35;
+  height: 75dvh;
+  max-height: calc(100% - var(--pr-review-bottom-bar-offset) - var(--pr-review-keyboard-inset));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  border-radius: 16px 16px 0 0;
+  background: var(--gitpulse-surface);
+  box-shadow: 0 -8px 32px rgb(0 0 0 / 0.25);
 }
 
 .pr-review-workspace__header {

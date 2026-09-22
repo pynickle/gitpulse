@@ -13,6 +13,8 @@ import { computed, ref } from 'vue';
 
 import type { PRReviewDraftComment, PRReviewFile } from '~/composables/usePRReview';
 
+type FileSidebarVariant = 'column' | 'sheet';
+
 type FileViewMode = 'list' | 'tree';
 
 interface FileTreeNode {
@@ -30,15 +32,19 @@ interface VisibleTreeRow {
   collapsePath: string;
 }
 
-const props = defineProps<{
-  files: PRReviewFile[];
-  activeFilename: string;
-  draftComments: PRReviewDraftComment[];
-  loadingMore: boolean;
-  hasMoreFiles: boolean;
-  viewMode: FileViewMode;
-  collapsed: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    files: PRReviewFile[];
+    activeFilename: string;
+    draftComments: PRReviewDraftComment[];
+    loadingMore: boolean;
+    hasMoreFiles: boolean;
+    viewMode: FileViewMode;
+    collapsed: boolean;
+    variant?: FileSidebarVariant;
+  }>(),
+  { variant: 'column' }
+);
 
 const emit = defineEmits<{
   (e: 'select-file', filename: string): void;
@@ -184,7 +190,15 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 </script>
 
 <template>
-  <aside :class="['pr-review-file-sidebar', { 'pr-review-file-sidebar--collapsed': collapsed }]">
+  <aside
+    :class="[
+      'pr-review-file-sidebar',
+      {
+        'pr-review-file-sidebar--collapsed': collapsed && variant === 'column',
+        'pr-review-file-sidebar--sheet': variant === 'sheet',
+      },
+    ]"
+  >
     <div class="pr-review-file-sidebar__content">
       <div class="pr-review-file-sidebar__header">
         <h2 class="title is-6 mb-1">{{ t('prReview.files') }}</h2>
@@ -222,6 +236,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
             </button>
           </div>
           <button
+            v-if="variant === 'column'"
             type="button"
             class="pr-review-file-sidebar__collapse-button"
             :aria-label="t('prReview.collapseFileSidebar')"
@@ -317,7 +332,13 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
               {{ statusLabel(row.node.file.status) }}
             </span>
             <span
-              v-if="getDraftCount(row.node.file.filename)"
+              v-if="getDraftCount(row.node.file.filename) && variant === 'sheet'"
+              class="pr-review-file-sidebar__draft-count"
+            >
+              {{ getDraftCount(row.node.file.filename) }}
+            </span>
+            <span
+              v-else-if="getDraftCount(row.node.file.filename)"
               class="pr-review-file-sidebar__draft-dot"
             ></span>
           </button>
@@ -337,6 +358,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
     </div>
 
     <button
+      v-if="variant === 'column'"
       type="button"
       class="pr-review-file-sidebar__collapsed-handle"
       :aria-label="t('prReview.expandFileSidebar')"
@@ -364,6 +386,18 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 
 .pr-review-file-sidebar--collapsed {
   background: var(--gitpulse-surface);
+}
+
+.pr-review-file-sidebar--sheet {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.pr-review-file-sidebar--sheet .pr-review-file-sidebar__content {
+  width: 100%;
 }
 
 // Fixed at the expanded width and clipped by the aside while the grid track

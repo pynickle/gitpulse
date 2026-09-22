@@ -13,18 +13,22 @@ import { shallowRef } from 'vue';
 import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
 import type { PRReviewDraftComment, PRReviewEvent } from '~/composables/usePRReview';
 
-defineProps<{
-  event: PRReviewEvent;
-  body: string;
-  pendingCommentCount: number;
-  draftComments: PRReviewDraftComment[];
-  canSubmit: boolean;
-  submitting: boolean;
-  errorMessage: string;
-  collapsed: boolean;
-  repoOwner: string;
-  repoName: string;
-}>();
+withDefaults(
+  defineProps<{
+    event: PRReviewEvent;
+    body: string;
+    pendingCommentCount: number;
+    draftComments: PRReviewDraftComment[];
+    canSubmit: boolean;
+    submitting: boolean;
+    errorMessage: string;
+    collapsed: boolean;
+    repoOwner: string;
+    repoName: string;
+    variant?: 'column' | 'sheet';
+  }>(),
+  { variant: 'column' }
+);
 
 const emit = defineEmits<{
   (e: 'update:event', event: PRReviewEvent): void;
@@ -60,7 +64,15 @@ const toggleSection = (section: string) => {
 </script>
 
 <template>
-  <aside :class="['pr-review-submit-bar', { 'pr-review-submit-bar--collapsed': collapsed }]">
+  <aside
+    :class="[
+      'pr-review-submit-bar',
+      {
+        'pr-review-submit-bar--collapsed': collapsed && variant === 'column',
+        'pr-review-submit-bar--sheet': variant === 'sheet',
+      },
+    ]"
+  >
     <div class="pr-review-submit-bar__content">
       <div class="pr-review-submit-bar__header">
         <div class="pr-review-submit-bar__header-title">
@@ -73,6 +85,7 @@ const toggleSection = (section: string) => {
           </div>
         </div>
         <button
+          v-if="variant === 'column'"
           class="pr-review-submit-bar__collapse-button"
           type="button"
           :aria-label="t('prReview.collapseReviewPanel')"
@@ -223,6 +236,7 @@ const toggleSection = (section: string) => {
     </div>
 
     <button
+      v-if="variant === 'column'"
       type="button"
       class="pr-review-submit-bar__collapsed-handle"
       :aria-label="t('prReview.expandReviewPanel')"
@@ -251,6 +265,19 @@ const toggleSection = (section: string) => {
 
 .pr-review-submit-bar--collapsed {
   background: var(--gitpulse-surface);
+}
+
+.pr-review-submit-bar--sheet {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.pr-review-submit-bar--sheet .pr-review-submit-bar__content {
+  width: 100%;
+  align-self: stretch;
 }
 
 // Fixed at the expanded width and anchored to the outer edge so the panel

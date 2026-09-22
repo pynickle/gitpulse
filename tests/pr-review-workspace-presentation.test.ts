@@ -2,9 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import type { PRReviewDiffRow } from '../shared/utils/pr-review-patch';
 import {
+  presentReviewBottomBar,
   presentUnifiedDiffLines,
+  reduceReviewBottomBar,
   resolvePRReviewWorkspacePresentation,
+  resolveReviewKeyboardInset,
   type PRReviewWorkspacePresentation,
+  type ReviewBottomBarState,
 } from '../shared/utils/pr-review-workspace-presentation';
 
 const narrowWorkspace = {
@@ -197,5 +201,127 @@ describe('PR review workspace presentation', () => {
         isCommentable: false,
       },
     ]);
+  });
+});
+
+const closedSheet: ReviewBottomBarState = { openSheet: null };
+
+describe('Review Bottom Bar presentation', () => {
+  test('toggling Files opens the Review File Sheet and toggling it again closes the sheet', () => {
+    const opened = reduceReviewBottomBar(closedSheet, { type: 'toggle-files' });
+
+    expect(opened).toEqual({ openSheet: 'files' });
+    expect(reduceReviewBottomBar(opened, { type: 'toggle-files' })).toEqual(closedSheet);
+  });
+
+  test('toggling Review opens the Review Submit Sheet and closes the file sheet', () => {
+    const filesOpen = reduceReviewBottomBar(closedSheet, { type: 'toggle-files' });
+    const reviewOpen = reduceReviewBottomBar(filesOpen, { type: 'toggle-review' });
+
+    expect(reviewOpen).toEqual({ openSheet: 'review' });
+    expect(reduceReviewBottomBar(reviewOpen, { type: 'toggle-review' })).toEqual(closedSheet);
+  });
+
+  test('choosing a file closes the Review File Sheet', () => {
+    const filesOpen = reduceReviewBottomBar(closedSheet, { type: 'toggle-files' });
+
+    expect(reduceReviewBottomBar(filesOpen, { type: 'choose-file' })).toEqual(closedSheet);
+  });
+
+  test('the scrim closes the open sheet', () => {
+    const reviewOpen = reduceReviewBottomBar(closedSheet, { type: 'toggle-review' });
+
+    expect(reduceReviewBottomBar(reviewOpen, { type: 'scrim' })).toEqual(closedSheet);
+  });
+
+  test('crossing above 1024px closes the open sheet and hides the bar', () => {
+    const filesOpen = reduceReviewBottomBar(closedSheet, { type: 'toggle-files' });
+
+    expect(reduceReviewBottomBar(filesOpen, { type: 'enter-wide' })).toEqual(closedSheet);
+    expect(
+      presentReviewBottomBar({
+        mode: 'wide',
+        openSheet: 'files',
+        keyboardOpen: false,
+        inlineComposerOpen: false,
+      })
+    ).toEqual({
+      openSheet: null,
+      showBottomBar: false,
+    });
+  });
+
+  test('the keyboard hides the bar and leaves the Review Submit Sheet open above it', () => {
+    expect(
+      presentReviewBottomBar({
+        mode: 'narrow',
+        openSheet: 'review',
+        keyboardOpen: true,
+        inlineComposerOpen: false,
+      })
+    ).toEqual({
+      openSheet: 'review',
+      showBottomBar: false,
+    });
+    expect(
+      resolveReviewKeyboardInset({
+        innerHeight: 800,
+        visualViewportHeight: 430,
+        visualViewportOffsetTop: 0,
+        visualViewportScale: 1,
+      })
+    ).toBe(370);
+    expect(
+      resolveReviewKeyboardInset({
+        innerHeight: 800,
+        visualViewportHeight: 430,
+        visualViewportOffsetTop: 20,
+        visualViewportScale: 1,
+      })
+    ).toBe(350);
+    expect(
+      resolveReviewKeyboardInset({
+        innerHeight: 800,
+        visualViewportHeight: 760,
+        visualViewportOffsetTop: 0,
+        visualViewportScale: 1,
+      })
+    ).toBe(0);
+    expect(
+      resolveReviewKeyboardInset({
+        innerHeight: 800,
+        visualViewportHeight: 400,
+        visualViewportOffsetTop: 0,
+        visualViewportScale: 2,
+      })
+    ).toBe(0);
+  });
+
+  test('an open Review Inline Composer hides the bar', () => {
+    expect(
+      presentReviewBottomBar({
+        mode: 'narrow',
+        openSheet: null,
+        keyboardOpen: false,
+        inlineComposerOpen: true,
+      })
+    ).toEqual({
+      openSheet: null,
+      showBottomBar: false,
+    });
+  });
+
+  test('a narrow workspace with nothing else open shows the bar and no sheet', () => {
+    expect(
+      presentReviewBottomBar({
+        mode: 'narrow',
+        openSheet: null,
+        keyboardOpen: false,
+        inlineComposerOpen: false,
+      })
+    ).toEqual({
+      openSheet: null,
+      showBottomBar: true,
+    });
   });
 });

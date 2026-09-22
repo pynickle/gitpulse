@@ -970,6 +970,8 @@
     "listView": "List view",
     "treeView": "Tree view",
     "reviewPanel": "Review",
+    "bottomBar": "Pull request review",
+    "closeSheet": "Close",
     "collapseReviewPanel": "Collapse review panel",
     "expandReviewPanel": "Expand review panel",
     "noPendingDrafts": "No pending inline comments yet.",
