@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue';
-import { computed, onBeforeUnmount, onMounted, shallowRef, toValue } from 'vue';
+import { computed, onBeforeUnmount, onMounted, shallowRef, toValue, watch } from 'vue';
 
 import type { ComposerLayoutId } from '#shared/types/user-settings';
 import {
@@ -8,6 +8,7 @@ import {
   resolveComposerActivePaneAfterLayoutChange,
   resolveComposerInitialLayout,
   shouldComposerBleed,
+  type ComposerLayoutContext,
   type ComposerPane,
   type ComposerSurface,
 } from '#shared/utils/composer-presentation';
@@ -15,14 +16,21 @@ import {
 export function useComposerPresentation(options: {
   surface: MaybeRefOrGetter<ComposerSurface>;
   expanded?: MaybeRefOrGetter<boolean>;
+  reviewWorkspaceMode?: MaybeRefOrGetter<ComposerLayoutContext['reviewWorkspaceMode']>;
 }) {
   const { settings } = useUserSettings();
   const surface = computed(() => toValue(options.surface));
   const expanded = computed(() =>
     options.expanded === undefined ? true : toValue(options.expanded)
   );
+  const reviewWorkspaceMode = computed(() =>
+    options.reviewWorkspaceMode === undefined ? undefined : toValue(options.reviewWorkspaceMode)
+  );
+  const layoutContext = computed<ComposerLayoutContext | undefined>(() =>
+    reviewWorkspaceMode.value ? { reviewWorkspaceMode: reviewWorkspaceMode.value } : undefined
+  );
   const layout = shallowRef<ComposerLayoutId>(
-    resolveComposerInitialLayout(surface.value, settings.value.composer)
+    resolveComposerInitialLayout(surface.value, settings.value.composer, layoutContext.value)
   );
   const activePane = shallowRef<ComposerPane>('write');
   const isNarrowViewport = shallowRef(
@@ -30,7 +38,7 @@ export function useComposerPresentation(options: {
       window.matchMedia(`(max-width: ${COMPOSER_BLEED_MAX_VIEWPORT_WIDTH}px)`).matches
   );
 
-  const switchable = computed(() => canSwitchComposerLayout(surface.value));
+  const switchable = computed(() => canSwitchComposerLayout(surface.value, layoutContext.value));
   const bleed = computed(() =>
     shouldComposerBleed({
       surface: surface.value,
@@ -43,7 +51,11 @@ export function useComposerPresentation(options: {
   );
 
   const seedLayout = () => {
-    layout.value = resolveComposerInitialLayout(surface.value, settings.value.composer);
+    layout.value = resolveComposerInitialLayout(
+      surface.value,
+      settings.value.composer,
+      layoutContext.value
+    );
     activePane.value = 'write';
   };
 
@@ -67,6 +79,12 @@ export function useComposerPresentation(options: {
   };
 
   seedLayout();
+
+  watch(reviewWorkspaceMode, () => {
+    if (surface.value === 'review-inline') {
+      seedLayout();
+    }
+  });
 
   if (import.meta.client) {
     let media: MediaQueryList | undefined;

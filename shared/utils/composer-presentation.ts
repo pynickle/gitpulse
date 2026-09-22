@@ -15,23 +15,40 @@ export type ComposerPane = (typeof COMPOSER_PANES)[number];
 
 export const COMPOSER_BLEED_MAX_VIEWPORT_WIDTH = 860;
 
+export interface ComposerLayoutContext {
+  reviewWorkspaceMode?: 'narrow' | 'wide';
+}
+
 export function resolveComposerInitialLayout(
   surface: ComposerSurface,
-  settings: UserComposerSettings
+  settings: UserComposerSettings,
+  context?: ComposerLayoutContext
 ): ComposerLayoutId {
   if (surface === 'review-submit') {
     return 'tabbed';
   }
 
   if (surface === 'review-inline') {
+    if (context?.reviewWorkspaceMode === 'narrow') {
+      return 'tabbed';
+    }
+
     return settings.reviewInlineDefaultLayout;
   }
 
   return settings.conversationDefaultLayout;
 }
 
-export function canSwitchComposerLayout(surface: ComposerSurface) {
-  return surface !== 'review-submit';
+export function canSwitchComposerLayout(surface: ComposerSurface, context?: ComposerLayoutContext) {
+  if (surface === 'review-submit') {
+    return false;
+  }
+
+  if (surface === 'review-inline' && context?.reviewWorkspaceMode === 'narrow') {
+    return false;
+  }
+
+  return true;
 }
 
 export function shouldComposerBleed(input: {

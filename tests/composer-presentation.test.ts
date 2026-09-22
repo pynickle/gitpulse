@@ -88,6 +88,31 @@ describe('composer presentation policy', () => {
     expect(canSwitchComposerLayout('review-inline')).toBe(true);
   });
 
+  test('a narrow Review Inline Composer is Tabbed and does not change the stored Split setting', () => {
+    const settings: UserComposerSettings = {
+      conversationDefaultLayout: 'split',
+      reviewInlineDefaultLayout: 'split',
+    };
+
+    expect(
+      resolveComposerInitialLayout('review-inline', settings, { reviewWorkspaceMode: 'narrow' })
+    ).toBe('tabbed');
+    expect(settings.reviewInlineDefaultLayout).toBe('split');
+    expect(canSwitchComposerLayout('review-inline', { reviewWorkspaceMode: 'narrow' })).toBe(false);
+  });
+
+  test('a wide Review Inline Composer still comes from the stored setting', () => {
+    const settings: UserComposerSettings = {
+      conversationDefaultLayout: 'tabbed',
+      reviewInlineDefaultLayout: 'split',
+    };
+
+    expect(
+      resolveComposerInitialLayout('review-inline', settings, { reviewWorkspaceMode: 'wide' })
+    ).toBe('split');
+    expect(canSwitchComposerLayout('review-inline', { reviewWorkspaceMode: 'wide' })).toBe(true);
+  });
+
   test.each([
     {
       name: 'expanded sticky conversation split on a wide viewport',

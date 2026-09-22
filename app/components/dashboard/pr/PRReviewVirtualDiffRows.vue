@@ -12,9 +12,20 @@ import {
 
 import {
   presentUnifiedDiffLines,
+  resolveInlineComposerScrollTop,
   type PRReviewDiffArrangement,
+  type PRReviewWorkspaceMode,
   type UnifiedDiffLine,
 } from '#shared/utils/pr-review-workspace-presentation';
+import {
+  beginUnifiedDiffPointer,
+  cancelUnifiedDiffPointer,
+  endUnifiedDiffPointer,
+  holdUnifiedDiffPointer,
+  moveUnifiedDiffPointer,
+  UNIFIED_DIFF_LONG_PRESS_MS,
+  type UnifiedDiffPointerGesture,
+} from '#shared/utils/unified-diff-pointer';
 import PRReviewDiffReviewThreads from '~/components/dashboard/pr/PRReviewDiffReviewThreads.vue';
 import PRReviewInlineComment from '~/components/dashboard/pr/PRReviewInlineComment.vue';
 import type { PRReviewCommentThread, PRReviewDiffRow } from '~/composables/usePRReview';
@@ -66,6 +77,8 @@ const props = defineProps<{
   resolvingReviewThreadId?: string | null;
   scrollContainer: HTMLElement | null;
   diffArrangement: PRReviewDiffArrangement;
+  workspaceMode: PRReviewWorkspaceMode;
+  keyboardInsetPx: number;
 }>();
 
 const emit = defineEmits<{
@@ -552,11 +565,389 @@ const openDraftEditorForLine = (line: number | null) => {
   emit('open-draft-editor', props.filename, line);
 };
 
+interface UnifiedDiffPointerSession {
+  pointerId: number;
+  lineNumber: number | null;
+  lineKey: string;
+  commentable: boolean;
+  gesture: UnifiedDiffPointerGesture;
+  timer: number;
+  target: HTMLElement;
+  rowsScroller: HTMLElement | null;
+  scrollLeft: number;
+  scrollTop: number;
+  lastX: number;
+  lastY: number;
+  anchor: Range | null;
+}
+
+let pointerSession: UnifiedDiffPointerSession | null = null;
+const selectingLineKey = shallowRef<string | null>(null);
+let composerScrollToken = 0;
+
+const caretRangeFromClientPoint = (x: number, y: number) => {
+  const doc = document as Document & {
+    caretRangeFromPoint?: (clientX: number, clientY: number) => Range | null;
+    caretPositionFromPoint?: (
+      clientX: number,
+      clientY: number
+    ) => { offsetNode: Node; offset: number } | null;
+  };
+  const range = doc.caretRangeFromPoint?.(x, y);
+
+  if (range) {
+    return range;
+  }
+
+  const position = doc.caretPositionFromPoint?.(x, y);
+
+  if (!position) {
+    return null;
+  }
+
+  const fallback = document.createRange();
+  fallback.setStart(position.offsetNode, position.offset);
+  fallback.collapse(true);
+  return fallback;
+};
+
+const selectFromSession = (session: UnifiedDiffPointerSession, x: number, y: number) => {
+  const focus = caretRangeFromClientPoint(x, y);
+  const selection = window.getSelection();
+
+  if (!focus || !selection) {
+    return;
+  }
+
+  if (!session.anchor) {
+    session.anchor = focus;
+  }
+
+  selection.setBaseAndExtent(
+    session.anchor.startContainer,
+    session.anchor.startOffset,
+    focus.startContainer,
+    focus.startOffset
+  );
+};
+
+const beginLongPressSelection = (session: UnifiedDiffPointerSession) => {
+  selectingLineKey.value = session.lineKey;
+
+  try {
+    if (!session.target.hasPointerCapture(session.pointerId)) {
+      session.target.setPointerCapture(session.pointerId);
+    }
+  } catch {
+    // The pointer can already be gone if the browser took the gesture for scrolling.
+  }
+
+  void nextTick(() => {
+    if (selectingLineKey.value !== session.lineKey) {
+      return;
+    }
+
+    selectFromSession(session, session.gesture.origin.x, session.gesture.origin.y);
+  });
+};
+
+const onDocumentPointerMove = (event: PointerEvent) => {
+  onUnifiedCodePointerMove(event);
+};
+
+const onDocumentPointerUp = (event: PointerEvent) => {
+  finishUnifiedCodePointer(event, false);
+};
+
+const onDocumentPointerCancel = (event: PointerEvent) => {
+  finishUnifiedCodePointer(event, true);
+};
+
+const unbindDocumentPointer = () => {
+  document.removeEventListener('pointermove', onDocumentPointerMove);
+  document.removeEventListener('pointerup', onDocumentPointerUp);
+  document.removeEventListener('pointercancel', onDocumentPointerCancel);
+};
+
+const bindDocumentPointer = () => {
+  document.addEventListener('pointermove', onDocumentPointerMove);
+  document.addEventListener('pointerup', onDocumentPointerUp);
+  document.addEventListener('pointercancel', onDocumentPointerCancel);
+};
+
+const endPointerSession = () => {
+  if (pointerSession) {
+    window.clearTimeout(pointerSession.timer);
+  }
+
+  unbindDocumentPointer();
+  pointerSession = null;
+};
+
+const onUnifiedCodePointerDown = (line: RenderedUnifiedLine, event: PointerEvent) => {
+  if (props.diffArrangement !== 'unified' || !event.isPrimary) {
+    return;
+  }
+
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return;
+  }
+
+  const target = event.currentTarget;
+
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  endPointerSession();
+  selectingLineKey.value = null;
+  event.preventDefault();
+
+  const rowsScroller = target.closest<HTMLElement>('.pr-review-diff-viewer__rows');
+  const session: UnifiedDiffPointerSession = {
+    pointerId: event.pointerId,
+    lineNumber: line.newLineNumber,
+    lineKey: line.key,
+    commentable: line.isCommentable,
+    gesture: beginUnifiedDiffPointer({
+      x: event.clientX,
+      y: event.clientY,
+      timeMs: event.timeStamp,
+    }),
+    timer: 0,
+    target,
+    rowsScroller,
+    scrollLeft: rowsScroller?.scrollLeft ?? 0,
+    scrollTop: props.scrollContainer?.scrollTop ?? 0,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    anchor: null,
+  };
+
+  session.timer = window.setTimeout(() => {
+    if (pointerSession !== session) {
+      return;
+    }
+
+    session.gesture = holdUnifiedDiffPointer(
+      session.gesture,
+      session.gesture.origin.timeMs + UNIFIED_DIFF_LONG_PRESS_MS
+    );
+
+    if (session.gesture.classification === 'long-press') {
+      beginLongPressSelection(session);
+    }
+  }, UNIFIED_DIFF_LONG_PRESS_MS);
+  pointerSession = session;
+  bindDocumentPointer();
+};
+
+const onUnifiedCodePointerMove = (event: PointerEvent) => {
+  const session = pointerSession;
+
+  if (!session || event.pointerId !== session.pointerId) {
+    return;
+  }
+
+  const next = moveUnifiedDiffPointer(session.gesture, {
+    x: event.clientX,
+    y: event.clientY,
+    timeMs: event.timeStamp,
+  });
+  const becameLongPress =
+    next.classification === 'long-press' && session.gesture.classification !== 'long-press';
+
+  if (next.classification === 'pan' && session.gesture.classification !== 'pan') {
+    window.clearTimeout(session.timer);
+    selectingLineKey.value = null;
+  }
+
+  session.gesture = next;
+
+  if (next.classification === 'pan') {
+    const deltaX = event.clientX - session.lastX;
+    const deltaY = event.clientY - session.lastY;
+    session.lastX = event.clientX;
+    session.lastY = event.clientY;
+
+    if (session.rowsScroller) {
+      session.rowsScroller.scrollLeft -= deltaX;
+    }
+
+    if (props.scrollContainer) {
+      props.scrollContainer.scrollTop -= deltaY;
+    }
+
+    event.preventDefault();
+    return;
+  }
+
+  session.lastX = event.clientX;
+  session.lastY = event.clientY;
+
+  if (becameLongPress) {
+    window.clearTimeout(session.timer);
+    beginLongPressSelection(session);
+    return;
+  }
+
+  if (next.classification !== 'long-press') {
+    return;
+  }
+
+  event.preventDefault();
+  selectFromSession(session, event.clientX, event.clientY);
+};
+
+const finishUnifiedCodePointer = (event: PointerEvent, cancelled: boolean) => {
+  const session = pointerSession;
+
+  if (!session || event.pointerId !== session.pointerId) {
+    return;
+  }
+
+  window.clearTimeout(session.timer);
+  unbindDocumentPointer();
+
+  try {
+    if (session.target.hasPointerCapture(event.pointerId)) {
+      session.target.releasePointerCapture(event.pointerId);
+    }
+  } catch {
+    // pointerup can arrive after the browser has already released the pointer.
+  }
+
+  let classification = session.gesture.classification;
+  const scrolled =
+    (session.rowsScroller?.scrollLeft ?? 0) !== session.scrollLeft ||
+    (props.scrollContainer?.scrollTop ?? 0) !== session.scrollTop;
+
+  if (cancelled) {
+    classification = cancelUnifiedDiffPointer(session.gesture).classification;
+  } else {
+    classification = endUnifiedDiffPointer(session.gesture, {
+      x: event.clientX,
+      y: event.clientY,
+      timeMs: event.timeStamp,
+    }).classification;
+  }
+
+  pointerSession = null;
+
+  if (
+    !cancelled &&
+    !scrolled &&
+    classification === 'tap' &&
+    session.commentable &&
+    session.lineNumber != null &&
+    !props.submitting
+  ) {
+    openDraftEditorForLine(session.lineNumber);
+    return;
+  }
+
+  if (cancelled || classification !== 'long-press') {
+    selectingLineKey.value = null;
+  }
+};
+
+const scrollActiveComposerIntoView = () => {
+  const line = activeDraftLineForFile.value;
+  const container = props.scrollContainer;
+
+  if (!line || !container) {
+    return;
+  }
+
+  const row = props.rows.find((diffRow) => diffRow.newLineNumber === line);
+  const rowElement = row ? rowElements.get(getRowKey(row)) : undefined;
+  const composer = rowElement?.querySelector<HTMLElement>('.pr-review-inline-comment');
+  const lineElement = rowElement?.querySelector<HTMLElement>(
+    props.diffArrangement === 'unified'
+      ? '.pr-review-diff-viewer__unified-line--commentable .pr-review-diff-viewer__code'
+      : '.pr-review-diff-viewer__split-row'
+  );
+
+  if (!rowElement || !composer || !lineElement) {
+    return;
+  }
+
+  const containerRect = container.getBoundingClientRect();
+  const visualViewport = window.visualViewport;
+  const visualTop = visualViewport?.offsetTop ?? 0;
+  const visualBottom = visualTop + (visualViewport?.height ?? window.innerHeight);
+  const visibleBottom = Math.min(containerRect.bottom, visualBottom);
+  let visibleTop = Math.max(containerRect.top, visualTop);
+  const header = rowElement
+    .closest('.pr-review-diff-viewer__file-section')
+    ?.querySelector<HTMLElement>('.pr-review-diff-viewer__header');
+  const headerRect = header?.getBoundingClientRect();
+
+  if (headerRect && headerRect.bottom > visibleTop && headerRect.top < visibleBottom) {
+    visibleTop = Math.max(visibleTop, headerRect.bottom);
+  }
+
+  const lineRect = lineElement.getBoundingClientRect();
+  const composerRect = composer.getBoundingClientRect();
+  const rowHeight = lineRect.height;
+  const nextScrollTop = resolveInlineComposerScrollTop({
+    scrollTop: container.scrollTop,
+    visibleTop,
+    visibleHeight: Math.max(0, visibleBottom - visibleTop),
+    rowTop: lineRect.top,
+    rowHeight,
+    composerTop: composerRect.top,
+    composerHeight: composerRect.height,
+  });
+
+  if (nextScrollTop !== container.scrollTop) {
+    container.scrollTo({ top: nextScrollTop, behavior: 'auto' });
+  }
+};
+
+const scheduleComposerScroll = () => {
+  const token = ++composerScrollToken;
+
+  void nextTick(() => {
+    if (token !== composerScrollToken) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (token !== composerScrollToken) {
+          return;
+        }
+
+        scrollActiveComposerIntoView();
+      });
+    });
+  });
+};
+
 watch(() => [props.filename, props.rows, props.diffArrangement], resetMeasurements, {
   flush: 'post',
 });
 
-watch(activeDraftLineForFile, clearMeasurements, { flush: 'post' });
+watch(
+  activeDraftLineForFile,
+  () => {
+    clearMeasurements();
+    scheduleComposerScroll();
+  },
+  { flush: 'post' }
+);
+
+watch(
+  () => props.keyboardInsetPx,
+  () => {
+    if (activeDraftLineForFile.value == null) {
+      return;
+    }
+
+    scheduleComposerScroll();
+  }
+);
 
 watch(reviewThreadsMeasurementKey, clearMeasurements, { flush: 'post' });
 
@@ -641,6 +1032,8 @@ onBeforeUnmount(() => {
   rowResizeObserver?.disconnect();
   viewportResizeObserver?.disconnect();
   rowsIntersectionObserver?.disconnect();
+  endPointerSession();
+  composerScrollToken += 1;
 });
 </script>
 
@@ -762,7 +1155,13 @@ onBeforeUnmount(() => {
               </button>
             </span>
             <div class="pr-review-diff-viewer__unified-main">
-              <code class="pr-review-diff-viewer__code">
+              <code
+                class="pr-review-diff-viewer__code"
+                :class="{
+                  'pr-review-diff-viewer__code--selecting': selectingLineKey === line.key,
+                }"
+                @pointerdown="onUnifiedCodePointerDown(line, $event)"
+              >
                 <span
                   v-for="token in line.tokens"
                   :key="token.key"
@@ -791,6 +1190,7 @@ onBeforeUnmount(() => {
           :repo-owner="repoOwner"
           :repo-name="repoName"
           :submitting="submitting"
+          :workspace-mode="workspaceMode"
           @update:body="emit('update-active-draft-body', $event)"
           @save="(_path, line, body) => handleSaveDraft(line, body)"
           @cancel="emit('close-draft-editor')"
@@ -915,18 +1315,27 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-.pr-review-diff-viewer__pane--commentable:hover
-  .pr-review-diff-viewer__comment-button:not(:disabled),
-.pr-review-diff-viewer__pane--commentable:focus-within
-  .pr-review-diff-viewer__comment-button:not(:disabled),
-.pr-review-diff-viewer__unified-line--commentable:hover
-  .pr-review-diff-viewer__comment-button:not(:disabled),
-.pr-review-diff-viewer__unified-line--commentable:focus-within
-  .pr-review-diff-viewer__comment-button:not(:disabled) {
+@mixin pr-review-comment-button-visible {
   width: 1rem;
   font-size: 11px;
   color: var(--gitpulse-info);
   font-weight: 700;
+}
+
+.pr-review-diff-viewer__pane--commentable:hover
+  .pr-review-diff-viewer__comment-button:not(:disabled),
+.pr-review-diff-viewer__pane--commentable:focus-within
+  .pr-review-diff-viewer__comment-button:not(:disabled),
+.pr-review-diff-viewer__unified-line--commentable:focus-within
+  .pr-review-diff-viewer__comment-button:not(:disabled) {
+  @include pr-review-comment-button-visible;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pr-review-diff-viewer__unified-line--commentable:hover
+    .pr-review-diff-viewer__comment-button:not(:disabled) {
+    @include pr-review-comment-button-visible;
+  }
 }
 
 .pr-review-diff-viewer__comment-button:disabled {
@@ -1004,6 +1413,14 @@ onBeforeUnmount(() => {
   display: block;
   width: max-content;
   max-width: none;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.pr-review-diff-viewer__unified-main > .pr-review-diff-viewer__code--selecting {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .pr-review-diff-viewer__unified-line .pr-review-diff-viewer__new-line-threads {

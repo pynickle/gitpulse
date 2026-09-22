@@ -392,6 +392,8 @@ watch(
         :submitting="review.submitting.value"
         :resolving-review-thread-id="review.resolvingReviewThreadId.value"
         :diff-arrangement="presentation.diffArrangement"
+        :workspace-mode="presentation.mode"
+        :keyboard-inset-px="keyboardInsetPx"
         @visible-file-changed="review.syncVisibleFile"
         @open-draft-editor="review.openDraftEditor"
         @close-draft-editor="review.closeDraftEditor"

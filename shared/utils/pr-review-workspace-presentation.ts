@@ -178,6 +178,52 @@ export function resolveReviewKeyboardInset(input: {
   return Math.round(gap);
 }
 
+export interface InlineComposerScrollInput {
+  scrollTop: number;
+  visibleTop: number;
+  visibleHeight: number;
+  rowTop: number;
+  rowHeight: number;
+  composerTop: number;
+  composerHeight: number;
+}
+
+/**
+ * Scroll offset that brings the Review Inline Composer into the visible area.
+ * When that area can hold the Diff Row and the composer, the row stays visible
+ * even if threads between them make the span taller than the area.
+ */
+export function resolveInlineComposerScrollTop(input: InlineComposerScrollInput): number {
+  const visibleBottom = input.visibleTop + input.visibleHeight;
+  const rowBottom = input.rowTop + input.rowHeight;
+  const composerBottom = input.composerTop + input.composerHeight;
+  let delta = 0;
+
+  if (input.rowHeight + input.composerHeight <= input.visibleHeight) {
+    const rowDeltaMin = rowBottom - visibleBottom;
+    const rowDeltaMax = input.rowTop - input.visibleTop;
+    let desired = 0;
+
+    if (composerBottom > visibleBottom) {
+      desired = composerBottom - visibleBottom;
+    } else if (input.composerTop < input.visibleTop) {
+      desired = input.composerTop - input.visibleTop;
+    }
+
+    delta = Math.min(rowDeltaMax, Math.max(rowDeltaMin, desired));
+  } else if (input.composerHeight <= input.visibleHeight) {
+    if (composerBottom > visibleBottom) {
+      delta = composerBottom - visibleBottom;
+    } else if (input.composerTop < input.visibleTop) {
+      delta = input.composerTop - input.visibleTop;
+    }
+  } else if (input.composerTop !== input.visibleTop) {
+    delta = input.composerTop - input.visibleTop;
+  }
+
+  return Math.max(0, input.scrollTop + delta);
+}
+
 const commentableUnifiedLine = (row: PRReviewDiffRow, newLineNumber: number | null) =>
   row.isCommentable && newLineNumber != null;
 

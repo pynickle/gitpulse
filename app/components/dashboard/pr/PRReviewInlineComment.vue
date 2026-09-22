@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import type { PRReviewWorkspaceMode } from '#shared/utils/pr-review-workspace-presentation';
 import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
 
 const props = defineProps<{
@@ -10,6 +11,7 @@ const props = defineProps<{
   submitting: boolean;
   repoOwner: string;
   repoName: string;
+  workspaceMode: PRReviewWorkspaceMode;
 }>();
 
 const emit = defineEmits<{
@@ -36,6 +38,8 @@ const trimmedDraft = computed(() => draft.value.trim());
         :repo-name="repoName"
         :placeholder="t('prReview.inlinePlaceholder')"
         :disabled="submitting"
+        :review-workspace-mode="workspaceMode"
+        :autofocus="workspaceMode === 'narrow'"
         compact
       />
       <footer class="pr-review-inline-comment__footer">

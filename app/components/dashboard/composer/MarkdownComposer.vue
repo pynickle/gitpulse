@@ -7,6 +7,7 @@ import type { MentionSuggestionsResponse } from '#shared/types/mention-suggestio
 import type { ComposerLayoutId } from '#shared/types/user-settings';
 import {
   mapProportionalScrollOffset,
+  type ComposerLayoutContext,
   type ComposerSurface,
 } from '#shared/utils/composer-presentation';
 import {
@@ -27,6 +28,7 @@ const props = withDefaults(
     compact?: boolean;
     autofocus?: boolean;
     expanded?: boolean;
+    reviewWorkspaceMode?: ComposerLayoutContext['reviewWorkspaceMode'];
   }>(),
   {
     placeholder: undefined,
@@ -34,6 +36,7 @@ const props = withDefaults(
     compact: false,
     autofocus: false,
     expanded: true,
+    reviewWorkspaceMode: undefined,
   }
 );
 
@@ -55,6 +58,7 @@ const { layout, activePane, switchable, bleed, seedLayout, toggleLayout, setActi
   useComposerPresentation({
     surface: () => props.surface,
     expanded: () => props.expanded,
+    reviewWorkspaceMode: () => props.reviewWorkspaceMode,
   });
 
 const mentionTrigger = shallowRef<MarkdownMentionTrigger | null>(null);

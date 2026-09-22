@@ -11,7 +11,10 @@ import {
   type ComponentPublicInstance,
 } from 'vue';
 
-import type { PRReviewDiffArrangement } from '#shared/utils/pr-review-workspace-presentation';
+import type {
+  PRReviewDiffArrangement,
+  PRReviewWorkspaceMode,
+} from '#shared/utils/pr-review-workspace-presentation';
 import PRReviewFilePath from '~/components/dashboard/pr/PRReviewFilePath.vue';
 import PRReviewVirtualDiffRows from '~/components/dashboard/pr/PRReviewVirtualDiffRows.vue';
 import type {
@@ -35,6 +38,8 @@ const props = defineProps<{
   submitting: boolean;
   resolvingReviewThreadId?: string | null;
   diffArrangement: PRReviewDiffArrangement;
+  workspaceMode: PRReviewWorkspaceMode;
+  keyboardInsetPx: number;
 }>();
 
 const emit = defineEmits<{
@@ -510,6 +515,8 @@ onBeforeUnmount(() => {
               :submitting="submitting"
               :resolving-review-thread-id="resolvingReviewThreadId"
               :scroll-container="scrollContainer"
+              :workspace-mode="workspaceMode"
+              :keyboard-inset-px="keyboardInsetPx"
               @open-draft-editor="handleOpenDraftEditor"
               @close-draft-editor="handleCloseDraftEditor"
               @update-active-draft-body="

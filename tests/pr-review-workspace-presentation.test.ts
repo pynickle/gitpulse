@@ -5,6 +5,7 @@ import {
   presentReviewBottomBar,
   presentUnifiedDiffLines,
   reduceReviewBottomBar,
+  resolveInlineComposerScrollTop,
   resolvePRReviewWorkspacePresentation,
   resolveReviewFileCount,
   resolveReviewKeyboardFrame,
@@ -203,6 +204,78 @@ describe('PR review workspace presentation', () => {
         isCommentable: false,
       },
     ]);
+  });
+});
+
+describe('Review Inline Composer scroll', () => {
+  test('scrolls the row and the composer into the area above the keyboard when both fit', () => {
+    expect(
+      resolveInlineComposerScrollTop({
+        scrollTop: 40,
+        visibleTop: 100,
+        visibleHeight: 300,
+        rowTop: 360,
+        rowHeight: 24,
+        composerTop: 384,
+        composerHeight: 160,
+      })
+    ).toBe(184);
+  });
+
+  test('keeps the row visible when the area above the keyboard is tall enough', () => {
+    expect(
+      resolveInlineComposerScrollTop({
+        scrollTop: 80,
+        visibleTop: 50,
+        visibleHeight: 400,
+        rowTop: 20,
+        rowHeight: 30,
+        composerTop: 50,
+        composerHeight: 100,
+      })
+    ).toBe(50);
+  });
+
+  test('fits the composer when the area is too short to keep the row as well', () => {
+    expect(
+      resolveInlineComposerScrollTop({
+        scrollTop: 0,
+        visibleTop: 0,
+        visibleHeight: 100,
+        rowTop: 0,
+        rowHeight: 30,
+        composerTop: 30,
+        composerHeight: 90,
+      })
+    ).toBe(20);
+  });
+
+  test('keeps the tapped line on screen when threads sit between it and the composer', () => {
+    expect(
+      resolveInlineComposerScrollTop({
+        scrollTop: 0,
+        visibleTop: 0,
+        visibleHeight: 200,
+        rowTop: 300,
+        rowHeight: 20,
+        composerTop: 480,
+        composerHeight: 80,
+      })
+    ).toBe(300);
+  });
+
+  test('pins a composer taller than the visible area to the top of that area', () => {
+    expect(
+      resolveInlineComposerScrollTop({
+        scrollTop: 40,
+        visibleTop: 80,
+        visibleHeight: 100,
+        rowTop: 40,
+        rowHeight: 20,
+        composerTop: 60,
+        composerHeight: 220,
+      })
+    ).toBe(20);
   });
 });
 
