@@ -117,6 +117,41 @@ export function presentReviewBottomBar(
   };
 }
 
+export function resolveReviewFileCount(input: {
+  loadedCount: number;
+  changedFiles: number | null;
+}): number {
+  if (input.changedFiles == null || input.changedFiles < input.loadedCount) {
+    return input.loadedCount;
+  }
+
+  return input.changedFiles;
+}
+
+export interface ReviewKeyboardFrame {
+  insetPx: number;
+  /** Visual-viewport height while the keyboard is open. Null keeps the sheet on the workspace. */
+  visibleHeightPx: number | null;
+}
+
+export function resolveReviewKeyboardFrame(input: {
+  innerHeight: number;
+  visualViewportHeight: number | null;
+  visualViewportOffsetTop: number | null;
+  visualViewportScale: number | null;
+}): ReviewKeyboardFrame {
+  const insetPx = resolveReviewKeyboardInset(input);
+
+  if (insetPx <= 0 || input.visualViewportHeight == null) {
+    return { insetPx: 0, visibleHeightPx: null };
+  }
+
+  return {
+    insetPx,
+    visibleHeightPx: Math.round(input.visualViewportHeight),
+  };
+}
+
 export function resolveReviewKeyboardInset(input: {
   innerHeight: number;
   visualViewportHeight: number | null;

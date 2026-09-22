@@ -6,6 +6,8 @@ import {
   presentUnifiedDiffLines,
   reduceReviewBottomBar,
   resolvePRReviewWorkspacePresentation,
+  resolveReviewFileCount,
+  resolveReviewKeyboardFrame,
   resolveReviewKeyboardInset,
   type PRReviewWorkspacePresentation,
   type ReviewBottomBarState,
@@ -280,6 +282,14 @@ describe('Review Bottom Bar presentation', () => {
       })
     ).toBe(350);
     expect(
+      resolveReviewKeyboardFrame({
+        innerHeight: 800,
+        visualViewportHeight: 430,
+        visualViewportOffsetTop: 20,
+        visualViewportScale: 1,
+      })
+    ).toEqual({ insetPx: 350, visibleHeightPx: 430 });
+    expect(
       resolveReviewKeyboardInset({
         innerHeight: 800,
         visualViewportHeight: 760,
@@ -309,6 +319,12 @@ describe('Review Bottom Bar presentation', () => {
       openSheet: null,
       showBottomBar: false,
     });
+  });
+
+  test('Files uses the pull request file count when more files exist than are loaded', () => {
+    expect(resolveReviewFileCount({ loadedCount: 100, changedFiles: 150 })).toBe(150);
+    expect(resolveReviewFileCount({ loadedCount: 12, changedFiles: null })).toBe(12);
+    expect(resolveReviewFileCount({ loadedCount: 12, changedFiles: 8 })).toBe(12);
   });
 
   test('a narrow workspace with nothing else open shows the bar and no sheet', () => {

@@ -6,6 +6,7 @@ import {
   buildPRReviewWorkspaceNarrowLayoutCss,
   presentReviewBottomBar,
   reduceReviewBottomBar,
+  resolveReviewFileCount,
   type ReviewBottomBarAction,
   type ReviewBottomBarSheet,
 } from '#shared/utils/pr-review-workspace-presentation';
@@ -21,6 +22,7 @@ const props = defineProps<{
   pullNumber: number;
   commitId: string;
   title?: string;
+  changedFiles?: number;
 }>();
 
 const emit = defineEmits<{
@@ -28,7 +30,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { presentation, keyboardInsetPx } = usePRReviewWorkspacePresentation();
+const { presentation, keyboardInsetPx, keyboardVisibleHeightPx } =
+  usePRReviewWorkspacePresentation();
 const narrowLayoutCss = buildPRReviewWorkspaceNarrowLayoutCss();
 const { canGoBack, goBackToPreviousPage, goToDashboardHome, previousEntry, shouldShowHomeButton } =
   useNavigationRouting();
@@ -61,6 +64,12 @@ const review = usePRReview({
 });
 
 const hasFiles = computed(() => review.files.value.length > 0);
+const fileCount = computed(() =>
+  resolveReviewFileCount({
+    loadedCount: review.files.value.length,
+    changedFiles: props.changedFiles ?? null,
+  })
+);
 const hasMoreFiles = computed(() => review.pagination.value.hasNext);
 const workspaceTitle = computed(() => props.title || t('prReview.untitledPullRequest'));
 const fileViewMode = shallowRef<'list' | 'tree'>('tree');
@@ -100,6 +109,8 @@ const suppressBottomBar = computed(
 );
 const keyboardInsetStyle = computed(() => ({
   '--pr-review-keyboard-inset': `${keyboardInsetPx.value}px`,
+  '--pr-review-keyboard-visible-height':
+    keyboardVisibleHeightPx.value == null ? '100%' : `${keyboardVisibleHeightPx.value}px`,
 }));
 
 const applyBottomBarAction = (action: ReviewBottomBarAction) => {
@@ -463,7 +474,7 @@ watch(
     </div>
 
     <PRReviewBottomBar
-      :file-count="review.files.value.length"
+      :file-count="fileCount"
       :pending-comment-count="review.pendingCommentCount.value"
       :open-sheet="bottomBar.openSheet"
       @toggle-files="applyBottomBarAction({ type: 'toggle-files' })"
@@ -506,7 +517,10 @@ watch(
   bottom: calc(var(--pr-review-bottom-bar-offset) + var(--pr-review-keyboard-inset));
   z-index: 35;
   height: 75dvh;
-  max-height: calc(100% - var(--pr-review-bottom-bar-offset) - var(--pr-review-keyboard-inset));
+  max-height: min(
+    calc(100% - var(--pr-review-bottom-bar-offset) - var(--pr-review-keyboard-inset)),
+    var(--pr-review-keyboard-visible-height, 100%)
+  );
   display: flex;
   flex-direction: column;
   overflow: hidden;

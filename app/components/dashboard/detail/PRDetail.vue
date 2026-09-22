@@ -11,6 +11,7 @@
       :pull-number="currentPullRequest?.number || 0"
       :commit-id="reviewCommitId"
       :title="currentPullRequest?.title"
+      :changed-files="currentPullRequest?.changed_files"
       @close="closeReviewWindow"
     />
 
