@@ -46,12 +46,32 @@ _Avoid_: associated PR modal, PR chooser
 ## Pull Request Review
 
 **PR Review Workspace**:
-The three-pane surface for reviewing one pull request: file list, diff, and review submission.
+The surface for reviewing one pull request: its changed files, its diff, and its review submission. On a wide viewport these are three panes. On a narrow viewport the Diff Viewer stays on screen, and a bottom bar opens the changed files and the review submission each in its own sheet.
 _Avoid_: PR review page, review UI
 
+**Review Bottom Bar**:
+The bar on a narrow PR Review Workspace that opens the Review File Sheet and the Review Submit Sheet. It stays at the bottom of the screen while the diff scrolls, and both sheets open above it. It hides while the keyboard is open or a Review Inline Composer is open.
+_Avoid_: bottom nav, tab bar, Dashboard Menu
+
+**Review File Sheet**:
+The sheet on a narrow PR Review Workspace that lists the pull request's changed files. It opens above the Review Bottom Bar. Choosing a file closes the sheet and moves the Diff Viewer to that File Card.
+_Avoid_: file sidebar, file drawer
+
+**Review Submit Sheet**:
+The sheet on a narrow PR Review Workspace that holds the review submission, including the Review Submit Composer. It opens above the Review Bottom Bar.
+_Avoid_: submit bar, review panel
+
 **Diff Viewer**:
-The middle pane of the PR Review Workspace that shows the files in the pull request as diffs.
+The part of the PR Review Workspace that shows the pull request's files as diffs. On a wide viewport it is the middle pane and uses Split Diff. On a narrow viewport it uses Unified Diff.
 _Avoid_: middle part, code panel, diff panel
+
+**Split Diff**:
+The Diff Viewer arrangement that shows each Diff Row's old and new sides side by side. Used on a wide PR Review Workspace.
+_Avoid_: dual pane, side-by-side
+
+**Unified Diff**:
+The Diff Viewer arrangement that shows each Diff Row in one column. A replaced line appears as its deleted line followed by its added line. The line number stays in place while the code scrolls horizontally. Used on a narrow PR Review Workspace.
+_Avoid_: single column, stacked diff
 
 **File Card**:
 One changed file in the Diff Viewer, containing its File Header and Diff Rows.
@@ -92,18 +112,18 @@ The Markdown Composer on an issue, pull request, or discussion conversation, inc
 _Avoid_: PR/issue comment, floating editor
 
 **Review Inline Composer**:
-The Markdown Composer for a pending comment on a Diff Row in the PR Review Workspace.
+The Markdown Composer for a pending comment on a Diff Row in the PR Review Workspace. It sits under that row. On a narrow viewport it is always Tabbed Layout, and a tap on that row's code opens it.
 _Avoid_: inline draft, line comment box
 
 **Review Submit Composer**:
-The Markdown Composer for the review summary in the PR Review Workspace submit rail. Always Tabbed Layout.
+The Markdown Composer for the review summary in the PR Review Workspace. On a wide viewport it sits in the submit pane. On a narrow viewport it sits in the Review Submit Sheet. Always Tabbed Layout.
 _Avoid_: submit bar, review panel textarea
 
 **Conversation Composer Default Layout**:
 The user setting that seeds Composer Layout when a Conversation Composer opens.
 
 **Review Inline Composer Default Layout**:
-The user setting that seeds Composer Layout when a Review Inline Composer opens.
+The user setting that seeds Composer Layout when a Review Inline Composer opens on a wide viewport.
 
 ## Dashboard
 
