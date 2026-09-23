@@ -40,7 +40,8 @@ const { t } = useI18n();
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  margin: 0.85rem 0 0.3rem;
+  margin: 12px 0 4px;
+  padding-left: 34px;
   color: var(--gitpulse-text-muted, #6b7280);
   font-size: 0.72rem;
   font-weight: 600;
@@ -48,7 +49,7 @@ const { t } = useI18n();
   letter-spacing: 0.04em;
 
   &:first-child {
-    margin-top: 0.35rem;
+    margin-top: 12px;
   }
 }
 
@@ -68,36 +69,58 @@ const { t } = useI18n();
 
 .check-list__row {
   display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  padding: 0.18rem 0;
+  align-items: center;
+  gap: 12px;
+  min-height: 22px;
+  padding: 0.12rem 0;
   font-size: 0.78rem;
   line-height: 1.4;
 }
 
 .check-list__dot {
+  position: relative;
   flex: none;
+  width: 22px;
+  height: 18px;
+  border-radius: 0;
+  background: transparent;
+}
+
+.check-list__dot::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--gitpulse-text-muted, #6b7280);
+  content: '';
+  transform: translate(-50%, -50%);
 }
 
 .check-list__dot[data-kind='failure'] {
-  background: var(--gitpulse-danger, #cf222e);
+  &::before {
+    background: var(--gitpulse-danger, #cf222e);
+  }
 }
 
 .check-list__dot[data-kind='pending'] {
-  background: var(--gitpulse-warning, #bf8700);
+  &::before {
+    background: var(--gitpulse-warning, #bf8700);
+  }
 }
 
 .check-list__dot[data-kind='success'] {
-  background: var(--gitpulse-success, #1a7f37);
+  &::before {
+    background: var(--gitpulse-success, #1a7f37);
+  }
 }
 
 .check-list__dot[data-kind='neutral'],
 .check-list__dot[data-kind='skipped'] {
-  background: var(--gitpulse-text-subtle, #9ca3af);
+  &::before {
+    background: var(--gitpulse-text-subtle, #9ca3af);
+  }
 }
 
 .check-list__name {

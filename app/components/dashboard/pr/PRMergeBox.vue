@@ -1006,9 +1006,9 @@ watch(
 .merge-box__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 12px 16px;
+  padding: 12px 20px;
   border: 0;
   border-bottom: 1px solid var(--gitpulse-border);
   background: transparent;
@@ -1093,12 +1093,12 @@ watch(
   margin: 0;
   max-height: 240px;
   overflow-y: auto;
-  padding: 0 16px 0 22px;
+  padding: 0 20px 10px;
   background: var(--gitpulse-surface-muted);
   border-bottom: 1px solid var(--gitpulse-border);
 
   :deep(.check-list__row) {
-    gap: 8px;
+    gap: 12px;
     font-size: 12px;
   }
 

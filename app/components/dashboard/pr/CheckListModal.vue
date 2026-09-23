@@ -111,7 +111,9 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
           <div class="check-list-modal__content">
             <!-- Summary line first: the headline before the list is scanned. -->
             <p class="check-list-modal__summary" :data-tone="summaryTone">
-              <component :is="getCheckStatusToneIcon(summaryTone)" :size="15" aria-hidden="true" />
+              <span class="check-list-modal__summary-icon" aria-hidden="true">
+                <component :is="getCheckStatusToneIcon(summaryTone)" :size="14" />
+              </span>
               <span>{{ summary }}</span>
             </p>
 
@@ -157,7 +159,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px 8px;
+  padding: 16px 20px 0;
 }
 
 .check-list-modal__title {
@@ -198,9 +200,12 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 .check-list-modal__summary {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  margin: 0 0 0.35rem;
-  font-size: 0.82rem;
+  gap: 12px;
+  min-height: 46px;
+  margin: 0 -20px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--gitpulse-border);
+  font-size: 13px;
   font-weight: 600;
   color: var(--gitpulse-text);
 }
@@ -213,10 +218,42 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   color: var(--gitpulse-warning, #bf8700);
 }
 
+.check-list-modal__summary-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gitpulse-surface-hover);
+  color: var(--gitpulse-text-muted);
+}
+
+.check-list-modal__summary[data-tone='success'] .check-list-modal__summary-icon {
+  background: var(--gitpulse-success-soft);
+  color: var(--gitpulse-success);
+}
+
+.check-list-modal__summary[data-tone='danger'] .check-list-modal__summary-icon {
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+}
+
+.check-list-modal__summary[data-tone='warning'] .check-list-modal__summary-icon {
+  background: var(--gitpulse-warning-soft);
+  color: var(--gitpulse-warning);
+}
+
 .check-list-modal__truncated {
-  margin: 0 0 0.35rem;
+  margin: 0;
+  padding: 10px 0 0 34px;
   color: var(--gitpulse-text-muted);
   font-size: 0.72rem;
+}
+
+.check-list-modal__content :deep(.check-list) {
+  padding-bottom: 4px;
 }
 
 .check-list-modal-enter-active,
