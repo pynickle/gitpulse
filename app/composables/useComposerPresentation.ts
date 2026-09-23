@@ -26,17 +26,18 @@ export function useComposerPresentation(options: {
   const reviewWorkspaceMode = computed(() =>
     options.reviewWorkspaceMode === undefined ? undefined : toValue(options.reviewWorkspaceMode)
   );
-  const layoutContext = computed<ComposerLayoutContext | undefined>(() =>
-    reviewWorkspaceMode.value ? { reviewWorkspaceMode: reviewWorkspaceMode.value } : undefined
-  );
-  const layout = shallowRef<ComposerLayoutId>(
-    resolveComposerInitialLayout(surface.value, settings.value.composer, layoutContext.value)
-  );
-  const activePane = shallowRef<ComposerPane>('write');
   const isNarrowViewport = shallowRef(
     import.meta.client &&
       window.matchMedia(`(max-width: ${COMPOSER_BLEED_MAX_VIEWPORT_WIDTH}px)`).matches
   );
+  const layoutContext = computed<ComposerLayoutContext>(() => ({
+    isMobile: isNarrowViewport.value,
+    ...(reviewWorkspaceMode.value ? { reviewWorkspaceMode: reviewWorkspaceMode.value } : {}),
+  }));
+  const layout = shallowRef<ComposerLayoutId>(
+    resolveComposerInitialLayout(surface.value, settings.value.composer, layoutContext.value)
+  );
+  const activePane = shallowRef<ComposerPane>('write');
 
   const switchable = computed(() => canSwitchComposerLayout(surface.value, layoutContext.value));
   const bleed = computed(() =>

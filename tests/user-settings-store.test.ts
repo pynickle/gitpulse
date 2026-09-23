@@ -117,11 +117,15 @@ describe('user settings store', () => {
     expect(createDefaultUserSettings().composer).toEqual({
       conversationDefaultLayout: 'split',
       reviewInlineDefaultLayout: 'tabbed',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
 
     expect(normalizeUserSettings({}).composer).toEqual({
       conversationDefaultLayout: 'split',
       reviewInlineDefaultLayout: 'tabbed',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
     expect(normalizeUserSettings({ composer: undefined }).version).toBe(1);
     expect(
@@ -131,6 +135,8 @@ describe('user settings store', () => {
     ).toEqual({
       conversationDefaultLayout: 'tabbed',
       reviewInlineDefaultLayout: 'tabbed',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
     expect(
       normalizeUserSettings({
@@ -139,6 +145,8 @@ describe('user settings store', () => {
     ).toEqual({
       conversationDefaultLayout: 'split',
       reviewInlineDefaultLayout: 'split',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
     expect(
       normalizeUserSettings({
@@ -147,6 +155,8 @@ describe('user settings store', () => {
     ).toEqual({
       conversationDefaultLayout: 'split',
       reviewInlineDefaultLayout: 'tabbed',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
 
     const patchedConversation = mergeUserSettingsPatch(createDefaultUserSettings(), {
@@ -155,6 +165,8 @@ describe('user settings store', () => {
     expect(patchedConversation.composer).toEqual({
       conversationDefaultLayout: 'tabbed',
       reviewInlineDefaultLayout: 'tabbed',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
 
     const patchedReviewInline = mergeUserSettingsPatch(patchedConversation, {
@@ -163,6 +175,8 @@ describe('user settings store', () => {
     expect(patchedReviewInline.composer).toEqual({
       conversationDefaultLayout: 'tabbed',
       reviewInlineDefaultLayout: 'split',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
     expect(patchedReviewInline.version).toBe(1);
   });
@@ -537,6 +551,8 @@ describe('user settings store', () => {
     expect(harness.settings.value.composer).toEqual({
       conversationDefaultLayout: 'tabbed',
       reviewInlineDefaultLayout: 'tabbed',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     });
     expect(harness.saveRequests).toHaveLength(1);
     expect(harness.saveRequests[0]?.patch).toEqual({

@@ -389,6 +389,13 @@ describe('server Zod request validation', () => {
     });
     expect(
       parseUserSettingsPatchBody({
+        composer: { reviewInlineMobileDefaultLayout: 'split' },
+      })
+    ).toEqual({
+      composer: { reviewInlineMobileDefaultLayout: 'split' },
+    });
+    expect(
+      parseUserSettingsPatchBody({
         releaseTimeline: { showReactions: false },
       })
     ).toEqual({

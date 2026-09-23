@@ -17,6 +17,7 @@ export const COMPOSER_BLEED_MAX_VIEWPORT_WIDTH = 860;
 
 export interface ComposerLayoutContext {
   reviewWorkspaceMode?: 'narrow' | 'wide';
+  isMobile?: boolean;
 }
 
 export function resolveComposerInitialLayout(
@@ -29,11 +30,19 @@ export function resolveComposerInitialLayout(
   }
 
   if (surface === 'review-inline') {
-    if (context?.reviewWorkspaceMode === 'narrow') {
+    if (context?.reviewWorkspaceMode === 'narrow' && !context.isMobile) {
       return 'tabbed';
     }
 
+    if (context?.isMobile) {
+      return settings.reviewInlineMobileDefaultLayout;
+    }
+
     return settings.reviewInlineDefaultLayout;
+  }
+
+  if (context?.isMobile) {
+    return settings.conversationMobileDefaultLayout;
   }
 
   return settings.conversationDefaultLayout;
@@ -44,7 +53,11 @@ export function canSwitchComposerLayout(surface: ComposerSurface, context?: Comp
     return false;
   }
 
-  if (surface === 'review-inline' && context?.reviewWorkspaceMode === 'narrow') {
+  if (
+    surface === 'review-inline' &&
+    context?.reviewWorkspaceMode === 'narrow' &&
+    !context.isMobile
+  ) {
     return false;
   }
 

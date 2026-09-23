@@ -128,6 +128,8 @@ const composerSettingsPatchSchema = z
   .strictObject({
     conversationDefaultLayout: composerLayoutSchema.optional(),
     reviewInlineDefaultLayout: composerLayoutSchema.optional(),
+    conversationMobileDefaultLayout: composerLayoutSchema.optional(),
+    reviewInlineMobileDefaultLayout: composerLayoutSchema.optional(),
   })
   .refine((composer) => Object.keys(composer).length > 0, {
     message: 'At least one composer setting is required',

@@ -13,11 +13,15 @@ import {
 const defaultSettings: UserComposerSettings = {
   conversationDefaultLayout: 'split',
   reviewInlineDefaultLayout: 'tabbed',
+  conversationMobileDefaultLayout: 'tabbed',
+  reviewInlineMobileDefaultLayout: 'tabbed',
 };
 
 const tabbedConversationSettings: UserComposerSettings = {
   conversationDefaultLayout: 'tabbed',
   reviewInlineDefaultLayout: 'split',
+  conversationMobileDefaultLayout: 'tabbed',
+  reviewInlineMobileDefaultLayout: 'tabbed',
 };
 
 describe('composer presentation policy', () => {
@@ -92,6 +96,8 @@ describe('composer presentation policy', () => {
     const settings: UserComposerSettings = {
       conversationDefaultLayout: 'split',
       reviewInlineDefaultLayout: 'split',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'tabbed',
     };
 
     expect(
@@ -105,12 +111,39 @@ describe('composer presentation policy', () => {
     const settings: UserComposerSettings = {
       conversationDefaultLayout: 'tabbed',
       reviewInlineDefaultLayout: 'split',
+      conversationMobileDefaultLayout: 'split',
+      reviewInlineMobileDefaultLayout: 'split',
     };
 
     expect(
       resolveComposerInitialLayout('review-inline', settings, { reviewWorkspaceMode: 'wide' })
     ).toBe('split');
     expect(canSwitchComposerLayout('review-inline', { reviewWorkspaceMode: 'wide' })).toBe(true);
+  });
+
+  test('uses mobile defaults for narrow conversation and review inline composers', () => {
+    const settings: UserComposerSettings = {
+      conversationDefaultLayout: 'split',
+      reviewInlineDefaultLayout: 'split',
+      conversationMobileDefaultLayout: 'tabbed',
+      reviewInlineMobileDefaultLayout: 'split',
+    };
+
+    expect(resolveComposerInitialLayout('conversation-reply', settings, { isMobile: true })).toBe(
+      'tabbed'
+    );
+    expect(
+      resolveComposerInitialLayout('review-inline', settings, {
+        isMobile: true,
+        reviewWorkspaceMode: 'narrow',
+      })
+    ).toBe('split');
+    expect(
+      canSwitchComposerLayout('review-inline', {
+        isMobile: true,
+        reviewWorkspaceMode: 'narrow',
+      })
+    ).toBe(true);
   });
 
   test.each([

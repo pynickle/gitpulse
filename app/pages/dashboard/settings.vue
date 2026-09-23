@@ -304,6 +304,18 @@ const applyReviewInlineComposerLayout = (layout: string) => {
   }
 };
 
+const applyConversationMobileComposerLayout = (layout: string) => {
+  if (COMPOSER_LAYOUT_IDS.includes(layout as ComposerLayoutId)) {
+    void updateComposer({ conversationMobileDefaultLayout: layout as ComposerLayoutId });
+  }
+};
+
+const applyReviewInlineMobileComposerLayout = (layout: string) => {
+  if (COMPOSER_LAYOUT_IDS.includes(layout as ComposerLayoutId)) {
+    void updateComposer({ reviewInlineMobileDefaultLayout: layout as ComposerLayoutId });
+  }
+};
+
 const applyNotificationReadMarkMode = (mode: string) => {
   if (mode === 'delayed' || mode === 'immediate' || mode === 'manual') {
     void updateNotificationBehavior({ readMarkMode: mode as NotificationReadMarkMode });
@@ -619,6 +631,40 @@ onMounted(() => {
                     />
                   </div>
                 </div>
+
+                <div class="settings__composer-subsection-title">
+                  {{ t('dashboard.settings.composerMobileSection') }}
+                </div>
+
+                <div class="settings__font-field">
+                  <label class="settings__label">
+                    {{ t('dashboard.settings.conversationMobileComposerLayoutLabel') }}
+                  </label>
+                  <div class="settings__dropdown-row">
+                    <FilterDropdown
+                      :model-value="settings.composer.conversationMobileDefaultLayout"
+                      :options="composerLayoutOptions"
+                      :placeholder="t('dashboard.settings.conversationMobileComposerLayoutLabel')"
+                      :aria-label="t('dashboard.settings.conversationMobileComposerLayoutLabel')"
+                      @update:model-value="applyConversationMobileComposerLayout"
+                    />
+                  </div>
+                </div>
+
+                <div class="settings__font-field">
+                  <label class="settings__label">
+                    {{ t('dashboard.settings.reviewInlineMobileComposerLayoutLabel') }}
+                  </label>
+                  <div class="settings__dropdown-row">
+                    <FilterDropdown
+                      :model-value="settings.composer.reviewInlineMobileDefaultLayout"
+                      :options="composerLayoutOptions"
+                      :placeholder="t('dashboard.settings.reviewInlineMobileComposerLayoutLabel')"
+                      :aria-label="t('dashboard.settings.reviewInlineMobileComposerLayoutLabel')"
+                      @update:model-value="applyReviewInlineMobileComposerLayout"
+                    />
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -889,6 +935,17 @@ onMounted(() => {
   &:last-child {
     margin-bottom: 0;
   }
+}
+
+.settings__composer-subsection-title {
+  padding-top: 0.75rem;
+  margin: 0 0 0.5rem;
+  border-top: 1px solid var(--gitpulse-border);
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .settings__label {

@@ -75,6 +75,8 @@ export interface UserLayoutSettings {
 export interface UserComposerSettings {
   conversationDefaultLayout: ComposerLayoutId;
   reviewInlineDefaultLayout: ComposerLayoutId;
+  conversationMobileDefaultLayout: ComposerLayoutId;
+  reviewInlineMobileDefaultLayout: ComposerLayoutId;
 }
 
 export interface UserReleaseTimelineSettings {

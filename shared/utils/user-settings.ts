@@ -128,6 +128,8 @@ export const DEFAULT_USER_LAYOUT_SETTINGS: UserLayoutSettings = {
 export const DEFAULT_USER_COMPOSER_SETTINGS: UserComposerSettings = {
   conversationDefaultLayout: 'split',
   reviewInlineDefaultLayout: 'tabbed',
+  conversationMobileDefaultLayout: 'tabbed',
+  reviewInlineMobileDefaultLayout: 'tabbed',
 };
 
 export const DEFAULT_USER_RELEASE_TIMELINE_SETTINGS: UserReleaseTimelineSettings = {
@@ -810,6 +812,18 @@ export function normalizeUserComposerSettings(
     reviewInlineDefaultLayout: isOneOf(COMPOSER_LAYOUT_IDS, candidate.reviewInlineDefaultLayout)
       ? candidate.reviewInlineDefaultLayout
       : fallback.reviewInlineDefaultLayout,
+    conversationMobileDefaultLayout: isOneOf(
+      COMPOSER_LAYOUT_IDS,
+      candidate.conversationMobileDefaultLayout
+    )
+      ? candidate.conversationMobileDefaultLayout
+      : fallback.conversationMobileDefaultLayout,
+    reviewInlineMobileDefaultLayout: isOneOf(
+      COMPOSER_LAYOUT_IDS,
+      candidate.reviewInlineMobileDefaultLayout
+    )
+      ? candidate.reviewInlineMobileDefaultLayout
+      : fallback.reviewInlineMobileDefaultLayout,
   };
 }
 
