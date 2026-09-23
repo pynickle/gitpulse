@@ -34,6 +34,7 @@ import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
 import RepoPanelNav, { type RepoPanelNavTab } from '~/components/dashboard/detail/RepoPanelNav.vue';
 import LinkedPullRequestPickerModal from '~/components/dashboard/LinkedPullRequestPickerModal.vue';
+import CheckListModal from '~/components/dashboard/pr/CheckListModal.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
@@ -274,6 +275,12 @@ const {
 } = useLinkedPullRequestListNavigation((identity) => {
   emit('switch-pull-request', identity.owner, identity.repo, identity.number);
 });
+
+const {
+  isVisible: isCheckListVisible,
+  view: checkListView,
+  close: closeCheckList,
+} = useCheckListModal();
 
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
@@ -1059,6 +1066,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     @close="closeLinkedPullRequestPicker"
     @select="selectLinkedPullRequestFromPicker"
   />
+
+  <CheckListModal :is-visible="isCheckListVisible" :view="checkListView" @close="closeCheckList" />
 </template>
 
 <style scoped lang="scss">

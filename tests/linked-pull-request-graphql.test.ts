@@ -1,8 +1,10 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import * as githubGraphqlUtils from '../server/utils/github-graphql-utils';
 import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 
+mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#shared/types/linked-pull-requests', () => linkedPullRequestTypes);
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 

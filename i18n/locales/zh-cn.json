@@ -728,6 +728,22 @@
           "new": "在 GitHub 创建仓库"
         }
       }
+    },
+    "checks": {
+      "chipPassed": "{total} 个检查中通过 {passed} 个",
+      "chipFailed": "{total} 个检查中失败 {failed} 个",
+      "chipPending": "已通过 {passed} 个，共 {total} 个检查，仍在运行",
+      "modalTitle": "检查",
+      "summaryPassed": "{total} 个检查中通过 {passed} 个",
+      "summaryFailed": "{total} 个检查中失败 {failed} 个",
+      "summaryPending": "已通过 {passed} 个，共 {total} 个检查，仍在运行",
+      "truncated": "仅列出前 {limit} 个检查。",
+      "group_failure": "失败",
+      "group_pending": "进行中",
+      "group_success": "通过",
+      "group_neutral": "中性",
+      "group_skipped": "已跳过",
+      "overLimit": "共 {total} 个检查，仅列出前 {limit} 个"
     }
   },
   "floatingMarkdownEditor": {
@@ -1011,6 +1027,8 @@
       "reviewRequired": "需要审查",
       "reviewNone": "无需审查",
       "checksPassed": "所有检查均已通过",
+      "checksPassedCount": "{total} 个检查中通过 {passed} 个",
+      "checksPendingCount": "已通过 {passed} 个，共 {total} 个检查，仍在运行",
       "checksFailed": "部分检查未成功",
       "checksFailedCount": "{failed}/{total} 项检查失败",
       "checksPending": "部分检查尚未完成",

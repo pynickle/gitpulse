@@ -2,8 +2,10 @@ import { describe, expect, mock, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+import * as prChecks from '../shared/utils/pr-checks';
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+mock.module('#shared/utils/pr-checks', () => prChecks);
 
 import type { DashboardIssuePrEntity } from '../app/utils/dashboardIssuePrCard';
 import resolveIssueTypeColor from '../app/utils/issueTypeColor';
@@ -49,6 +51,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       comments: 1,
       linkedPullRequestCount: null,
       linkedPullRequest: null,
+      checkRollup: null,
       actorLogin: 'octocat',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
       issueType: { name: 'Bug', color: 'red' },
@@ -95,6 +98,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       comments: null,
       linkedPullRequestCount: null,
       linkedPullRequest: null,
+      checkRollup: null,
       actorLogin: 'merge-bot',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       issueType: null,
@@ -165,6 +169,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       comments: null,
       linkedPullRequestCount: null,
       linkedPullRequest: null,
+      checkRollup: null,
       actorLogin: '',
       actorAvatarUrl: '',
       issueType: null,
@@ -213,6 +218,41 @@ describe('dashboard issue/PR notification-style cards', () => {
       subjectType: 'PullRequest',
       linkedPullRequestCount: null,
       linkedPullRequest: null,
+      checkRollup: null,
+    });
+  });
+
+  test('carries the Check Rollup through onto pull request cards and never onto issue cards', () => {
+    const checkRollup = {
+      state: 'FAILURE',
+      contexts: { totalCount: 2, nodes: [] },
+    };
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 14,
+        title: 'Pull request with a failing check',
+        repository_url: 'https://api.github.com/repos/acme/widgets',
+        number: 14,
+        pull_request: {},
+        checkRollup,
+      })
+    ).toMatchObject({
+      subjectType: 'PullRequest',
+      checkRollup,
+    });
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 15,
+        title: 'Issue with a rollup field it must ignore',
+        repository_url: 'https://api.github.com/repos/acme/widgets',
+        number: 15,
+        checkRollup,
+      })
+    ).toMatchObject({
+      subjectType: 'Issue',
+      checkRollup: null,
     });
   });
 

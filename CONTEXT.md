@@ -45,6 +45,18 @@ _Avoid_: associated PR modal, PR chooser
 
 ## Pull Request Review
 
+**Check Rollup**:
+GitHub's own precomputed summary of a Pull Request's checks for its head commit: one aggregate state plus the deduplicated set of check runs and status contexts GitHub shows on the Checks tab.
+_Avoid_: CI status, action status, workflow status, combined status
+
+**Check Status Chip**:
+The meta-row indicator on a Pull Request Card and Notification Card that shows the Check Rollup's passed count over its total count and opens the Check List Modal. It is absent when the Check Rollup has no contexts.
+_Avoid_: CI badge, action badge, checks icon, checks count
+
+**Check List Modal**:
+The modal opened from a Check Status Chip that shows the Check Rollup's summary line and its checks grouped by conclusion. It renders the same list as the PR Review Workspace merge box.
+_Avoid_: checks panel, checks popover, checks drawer, CI details
+
 **PR Review Workspace**:
 The surface for reviewing one pull request: its changed files, its diff, and its review submission. On a wide viewport these are three panes. On a narrow viewport the Diff Viewer stays on screen, and a bottom bar opens the changed files and the review submission each in its own sheet.
 _Avoid_: PR review page, review UI

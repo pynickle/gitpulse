@@ -108,6 +108,10 @@
                     <span>{{ commentsLabel }}</span>
                   </span>
                 </template>
+                <template v-if="showCheckStatusChip">
+                  <span class="dashboard-list-card__separator">&middot;</span>
+                  <CheckStatusChip :rollup="checkRollup" @open="openCheckList" />
+                </template>
                 <template v-if="showLinkedPullRequestCount && linkedPullRequestSummary">
                   <span class="dashboard-list-card__separator">&middot;</span>
                   <LinkedPullRequestCountControl
@@ -189,8 +193,10 @@ import { ref, computed } from 'vue';
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import type { DashboardNotification } from '#shared/types/notifications';
 import { toLinkedPullRequestIdentity } from '#shared/utils/linked-pull-requests';
+import { toPullRequestChecksView } from '#shared/utils/pr-checks';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
+import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
@@ -219,6 +225,7 @@ const emit = defineEmits<{
 }>();
 
 const { locale, t } = useI18n();
+const { open: openCheckList } = useCheckListModal();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const markingAsRead = ref(false);
@@ -324,6 +331,11 @@ const handleLinkedPullRequestCountClick = () => {
     issue: linkedPullRequestIssue.value,
   });
 };
+const checkRollup = computed(() => subject.value?.checkRollup);
+const showCheckStatusChip = computed(
+  () =>
+    subject.value?.type === 'PullRequest' && toPullRequestChecksView(checkRollup.value).isVisible
+);
 const showReason = computed(() => props.showReason);
 const showMarkAsRead = computed(() => props.showMarkAsRead);
 const todoAction = computed(() => props.todoAction);

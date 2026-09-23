@@ -5,7 +5,9 @@ import type {
   NotificationSubjectKind,
   NotificationSubjectState,
 } from '#shared/types/notifications';
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
+import { readPullRequestCheckRollup } from '#shared/utils/pr-checks';
 
 import parseGitHubRepoPath from './parseGitHubRepoPath';
 
@@ -39,6 +41,8 @@ export interface DashboardIssuePrEntity {
   linkedPullRequestCount?: number | null;
   /** Present only when Count is 1 and routing identity is complete. */
   linkedPullRequest?: LinkedPullRequestIdentity | null;
+  /** Check Rollup attached after the Search GraphQL pass. Pull requests only. */
+  checkRollup?: PullRequestCheckRollup | null;
   pull_request?: DashboardIssuePrPullRequest | unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
@@ -61,6 +65,8 @@ export interface DashboardIssuePrCard {
   /** Linked Pull Request Count when the list payload included it. Hidden when 0/null. */
   linkedPullRequestCount: number | null;
   linkedPullRequest: LinkedPullRequestIdentity | null;
+  /** Check Rollup when the list payload included it. Pull requests only. */
+  checkRollup: PullRequestCheckRollup | null;
   actorLogin: string;
   actorAvatarUrl: string;
   issueType: IssueTypeSummary | null;
@@ -109,6 +115,7 @@ export default function toDashboardIssuePrCard(
     comments: normalizeCommentsCount(entity.comments),
     linkedPullRequestCount: linkedSummary?.count ?? null,
     linkedPullRequest: linkedSummary?.identity ?? null,
+    checkRollup: isPullRequest ? readPullRequestCheckRollup(entity) : null,
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
     issueType:

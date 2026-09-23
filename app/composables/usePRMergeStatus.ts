@@ -1,3 +1,4 @@
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { PullRequestHeadBranchState } from '#shared/types/pulls';
 
 export type PRState = 'open' | 'closed' | 'merged';
@@ -15,23 +16,6 @@ export interface PRReviewSummary {
   changesRequested: number;
 }
 
-export interface PRCheckRunSummary {
-  name: string;
-  status: string;
-  conclusion: string | null;
-  htmlUrl: string | null;
-  appName: string | null;
-}
-
-export interface PRChecksSummary {
-  total: number;
-  success: number;
-  failure: number;
-  pending: number;
-  neutral: number;
-  runs: PRCheckRunSummary[];
-}
-
 export interface PRMergeStatus {
   state: PRState;
   merged: boolean;
@@ -44,7 +28,8 @@ export interface PRMergeStatus {
   draft: boolean;
   reviewDecision: PRReviewDecision;
   reviewSummary: PRReviewSummary;
-  checks: PRChecksSummary;
+  /** GitHub's own Check Rollup. Null when GitHub reports none. */
+  checkRollup: PullRequestCheckRollup | null;
   headSha: string | null;
   headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;

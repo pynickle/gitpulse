@@ -377,6 +377,8 @@
     @select="selectLinkedPullRequestFromPicker"
   />
 
+  <CheckListModal :is-visible="isCheckListVisible" :view="checkListView" @close="closeCheckList" />
+
   <FloatingRefreshButton
     v-if="
       dashboardHomeChrome.showFloatingRefresh && !isDashboardChildRoute && !showFileBrowsingView
@@ -459,12 +461,14 @@ const loadDetailOverlayHost = () => import('~/components/dashboard/detail/Detail
 const loadFilterModal = () => import('~/components/dashboard/filters/FilterModal.vue');
 const loadLinkedPullRequestPickerModal = () =>
   import('~/components/dashboard/LinkedPullRequestPickerModal.vue');
+const loadCheckListModal = () => import('~/components/dashboard/pr/CheckListModal.vue');
 const loadRepoFileView = () => import('~/components/dashboard/repo-files/RepoFileView.vue');
 const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
   createDashboardDetailPaneLoaders();
 const DetailOverlayHost = defineAsyncComponent(loadDetailOverlayHost);
 const FilterModal = defineAsyncComponent(loadFilterModal);
 const LinkedPullRequestPickerModal = defineAsyncComponent(loadLinkedPullRequestPickerModal);
+const CheckListModal = defineAsyncComponent(loadCheckListModal);
 const RepoFileView = defineAsyncComponent(loadRepoFileView);
 
 const { loggedIn, ready: sessionReady, user } = useUserSession();
@@ -560,6 +564,7 @@ const prefetchDashboardInteractionChunks = () => {
     loadDetailOverlayHost(),
     loadFilterModal(),
     loadLinkedPullRequestPickerModal(),
+    loadCheckListModal(),
     loadRepoFileView(),
     loadDiscussionDetail(),
     loadIssueDetail(),
@@ -1170,6 +1175,12 @@ const {
   clearSourceNotification();
   handleSwitchPR(identity.owner, identity.repo, identity.number);
 });
+
+const {
+  isVisible: isCheckListVisible,
+  view: checkListView,
+  close: closeCheckList,
+} = useCheckListModal();
 
 const handleSwitchDiscussionFromDetail = (
   owner: string,

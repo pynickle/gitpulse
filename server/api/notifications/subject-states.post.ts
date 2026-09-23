@@ -4,6 +4,10 @@ import {
   mapLinkedPullRequestConnection,
 } from '#server/utils/linked-pull-request-graphql-utils';
 import { parseNotificationSubjectTargetsBody } from '#server/utils/notification-subject-state-validation-utils';
+import {
+  PR_CHECK_ROLLUP_NODE_FIELDS,
+  mapPullRequestCheckRollup,
+} from '#server/utils/pr-check-rollup-graphql-utils';
 import type { IssueTypeSummary } from '#shared/types/issues';
 import type {
   NotificationLabel,
@@ -57,6 +61,13 @@ interface GraphQLSubjectNode {
         owner?: { login?: string | null } | null;
       } | null;
     } | null> | null;
+  } | null;
+  statusCheckRollup?: {
+    state?: string | null;
+    contexts?: {
+      totalCount?: number | null;
+      nodes?: Array<Record<string, unknown> | null> | null;
+    } | null;
   } | null;
 }
 
@@ -139,7 +150,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectEnrichmentTarget[])
           : 'issue';
     const nodeFields =
       target.type === 'pulls'
-        ? 'title updatedAt state mergedAt isDraft comments { totalCount }'
+        ? `title updatedAt state mergedAt isDraft comments { totalCount } ${PR_CHECK_ROLLUP_NODE_FIELDS}`
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
           : `title updatedAt state issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS}`;
@@ -185,6 +196,8 @@ export default defineEventHandler(async (event) => {
               { owner: target.owner, repo: target.repo }
             )
           : null;
+      const checkRollup =
+        target.type === 'pulls' ? mapPullRequestCheckRollup(node?.statusCheckRollup) : null;
 
       return {
         key: target.key,
@@ -205,6 +218,7 @@ export default defineEventHandler(async (event) => {
               linkedPullRequest: linkedSummary.identity ?? undefined,
             }
           : {}),
+        ...(checkRollup ? { checkRollup } : {}),
       };
     });
 

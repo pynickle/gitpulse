@@ -84,6 +84,17 @@
                     <span>{{ commentsLabel }}</span>
                   </span>
                 </template>
+                <template v-if="showCheckStatusChip">
+                  <span
+                    v-if="
+                      card.number || card.repositoryName || card.updatedAt || card.comments !== null
+                    "
+                    class="dashboard-list-card__separator"
+                  >
+                    &middot;
+                  </span>
+                  <CheckStatusChip :rollup="card.checkRollup" @open="openCheckList" />
+                </template>
                 <template v-if="showLinkedPullRequestCount && linkedPullRequestSummary">
                   <span
                     v-if="
@@ -116,8 +127,10 @@ import {
   readLinkedPullRequestListSummary,
   toLinkedPullRequestIdentity,
 } from '#shared/utils/linked-pull-requests';
+import { toPullRequestChecksView } from '#shared/utils/pr-checks';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
+import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import toDashboardIssuePrCard, { type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
@@ -131,6 +144,7 @@ const emit = defineEmits<{
 }>();
 
 const { locale, t } = useI18n();
+const { open: openCheckList } = useCheckListModal();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -169,6 +183,13 @@ const handleLinkedPullRequestCountClick = () => {
     issue: linkedPullRequestIssue.value,
   });
 };
+
+/** Pull requests only: an Issue has no Check Rollup to show. */
+const showCheckStatusChip = computed(
+  () =>
+    card.value.subjectType === 'PullRequest' &&
+    toPullRequestChecksView(card.value.checkRollup).isVisible
+);
 
 const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({

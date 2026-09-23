@@ -3,6 +3,7 @@ import type {
   NotificationSubjectEnrichmentResult,
   NotificationSubjectEnrichmentTarget,
 } from '#shared/types/notifications';
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 
 interface ParsedNotificationSubjectTarget {
@@ -162,6 +163,11 @@ const toValidResult = (
     return null;
   }
 
+  const checkRollup = value.checkRollup;
+  if (checkRollup !== undefined && !isRecord(checkRollup)) {
+    return null;
+  }
+
   return {
     key: target.key,
     title: value.title,
@@ -180,6 +186,7 @@ const toValidResult = (
           linkedPullRequest: linkedSummary.identity ?? undefined,
         }
       : {}),
+    ...(checkRollup !== undefined ? { checkRollup: checkRollup as PullRequestCheckRollup } : {}),
   };
 };
 
@@ -206,14 +213,15 @@ const mergeEnrichmentResults = (
     const {
       linkedPullRequestCount: _previousCount,
       linkedPullRequest: _previousIdentity,
-      ...subjectWithoutLinkedPullRequests
+      checkRollup: _previousCheckRollup,
+      ...subjectWithoutAttachedData
     } = notification.subject;
 
     return {
       ...notification,
       updated_at: result.updatedAt ?? notification.updated_at,
       subject: {
-        ...subjectWithoutLinkedPullRequests,
+        ...subjectWithoutAttachedData,
         title: result.title,
         state: result.state,
         draft: result.draft,
@@ -229,6 +237,7 @@ const mergeEnrichmentResults = (
               linkedPullRequest: result.linkedPullRequest,
             }
           : {}),
+        ...(result.checkRollup !== undefined ? { checkRollup: result.checkRollup } : {}),
         stateStatus: 'loaded' as const,
       },
     };

@@ -728,6 +728,22 @@
           "new": "Create a repository on GitHub"
         }
       }
+    },
+    "checks": {
+      "chipPassed": "{passed} of {total} checks passed",
+      "chipFailed": "{failed} of {total} checks failed",
+      "chipPending": "{passed} of {total} checks passed so far, still running",
+      "modalTitle": "Checks",
+      "summaryPassed": "{passed} of {total} checks passed",
+      "summaryFailed": "{failed} of {total} checks failed",
+      "summaryPending": "{passed} of {total} checks passed so far, still running",
+      "truncated": "Only the first {limit} checks are listed.",
+      "group_failure": "Failed",
+      "group_pending": "In progress",
+      "group_success": "Passed",
+      "group_neutral": "Neutral",
+      "group_skipped": "Skipped",
+      "overLimit": "{total} checks in total; only the first {limit} are listed"
     }
   },
   "floatingMarkdownEditor": {
@@ -1011,6 +1027,8 @@
       "reviewRequired": "Review required",
       "reviewNone": "No reviews required",
       "checksPassed": "All checks have passed",
+      "checksPassedCount": "{passed} of {total} checks passed",
+      "checksPendingCount": "{passed} of {total} checks passed so far, still running",
       "checksFailed": "Some checks were not successful",
       "checksFailedCount": "{failed}/{total} checks failed",
       "checksPending": "Some checks haven't completed yet",

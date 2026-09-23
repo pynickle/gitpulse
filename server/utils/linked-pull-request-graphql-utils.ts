@@ -1,5 +1,6 @@
 import type { Octokit } from '@octokit/core';
 
+import { getPartialGraphQLData } from '#server/utils/github-graphql-utils';
 import type {
   LinkedPullRequestConnection,
   LinkedPullRequestDisplayState,
@@ -119,20 +120,6 @@ export function mapLinkedPullRequestConnection(
 
   return { totalCount, nodes };
 }
-
-const getPartialGraphQLData = <T>(error: unknown): T | null => {
-  if (
-    error &&
-    typeof error === 'object' &&
-    'data' in error &&
-    error.data &&
-    typeof error.data === 'object'
-  ) {
-    return error.data as T;
-  }
-
-  return null;
-};
 
 const buildLinkedPullRequestListQuery = (
   targets: Array<{ owner: string; repo: string; number: number }>

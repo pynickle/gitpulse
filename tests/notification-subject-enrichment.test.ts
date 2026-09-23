@@ -175,6 +175,75 @@ describe('Notification Subject Enrichment', () => {
     expect(outcome.notifications[1]?.subject).not.toHaveProperty('linkedPullRequestCount');
   });
 
+  test('loads the Check Rollup onto Pull Request Notifications only', async () => {
+    const checkRollup = {
+      state: 'FAILURE',
+      contexts: {
+        totalCount: 2,
+        nodes: [
+          { __typename: 'CheckRun', name: 'build', conclusion: 'FAILURE', status: 'COMPLETED' },
+        ],
+      },
+    };
+    const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
+      {
+        key: 'acme/widgets/pulls/2',
+        title: 'Pull request with a failing check',
+        state: 'open',
+        checkRollup,
+      },
+      {
+        key: 'acme/widgets/issues/7',
+        title: 'Issue',
+        state: 'open',
+        checkRollup,
+      },
+    ]);
+    const session = createNotificationSubjectEnrichmentSession({
+      adapter,
+      parseSubject: parseGitHubNotificationSubjectTarget,
+    });
+    const input = [
+      notification('pull', 'PullRequest', 'https://api.github.com/repos/acme/widgets/pulls/2'),
+      notification('issue', 'Issue', 'https://api.github.com/repos/acme/widgets/issues/7'),
+    ];
+
+    const outcome = await session.start(input).completion;
+
+    expect(outcome.outcome).toBe('complete');
+    if (outcome.outcome === 'stale') throw new Error('Expected applicable Notifications');
+    expect(outcome.notifications[0]?.subject).toMatchObject({
+      title: 'Pull request with a failing check',
+      checkRollup,
+      stateStatus: 'loaded',
+    });
+    expect(outcome.notifications[1]?.subject).toHaveProperty('checkRollup');
+  });
+
+  test('drops an enrichment result whose Check Rollup is not a rollup', async () => {
+    const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
+      {
+        key: 'acme/widgets/pulls/2',
+        title: 'Pull request with a malformed rollup',
+        state: 'open',
+        checkRollup: 'not-a-rollup',
+      },
+    ]);
+    const session = createNotificationSubjectEnrichmentSession({
+      adapter,
+      parseSubject: parseGitHubNotificationSubjectTarget,
+    });
+
+    const outcome = await session.start([
+      notification('pull', 'PullRequest', 'https://api.github.com/repos/acme/widgets/pulls/2'),
+    ]).completion;
+
+    expect(outcome.outcome).toBe('failed');
+    if (outcome.outcome === 'stale') throw new Error('Expected applicable Notifications');
+    expect(outcome.notifications[0]?.subject).not.toHaveProperty('checkRollup');
+    expect(outcome.notifications[0]?.subject?.stateStatus).toBe('error');
+  });
+
   test('loads Linked Pull Request Count and identity onto Issue Notifications only', async () => {
     const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
       {

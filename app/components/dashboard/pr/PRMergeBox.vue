@@ -100,29 +100,12 @@
             />
           </button>
           <Transition name="expand">
-            <ul v-if="checksExpanded" class="merge-box__check-list">
-              <li
-                v-for="(run, index) in status.checks.runs"
-                :key="`${run.name}:${index}`"
-                class="merge-box__check-item"
-              >
-                <span
-                  class="merge-box__check-dot"
-                  :class="`merge-box__check-dot--${runTone(run)}`"
-                />
-                <a
-                  v-if="run.htmlUrl"
-                  :href="run.htmlUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="merge-box__check-name merge-box__check-name--link"
-                >
-                  {{ run.name }}
-                </a>
-                <span v-else class="merge-box__check-name">{{ run.name }}</span>
-                <span v-if="run.appName" class="merge-box__check-app">{{ run.appName }}</span>
-              </li>
-            </ul>
+            <p v-if="checksView.isTruncated" class="merge-box__check-truncated">
+              {{ t('dashboard.checks.truncated', { limit: CHECK_ROLLUP_CONTEXT_LIMIT }) }}
+            </p>
+            <div v-if="checksExpanded" class="merge-box__check-list">
+              <CheckListRows :groups="checksView.groups" />
+            </div>
           </Transition>
         </template>
 
@@ -299,12 +282,10 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
+import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import type {
-  PRCheckRunSummary,
-  PRMergeMethod,
-  PRMergeStatus,
-} from '~/composables/usePRMergeStatus';
+import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
 
 const props = defineProps<{
   owner: string;
@@ -432,36 +413,59 @@ const reviewRow = computed<MergeBoxRow>(() => {
   }
 });
 
+/** The same Check Rollup view model the Check Status Chip reads. */
+const checksView = computed(() => toPullRequestChecksView(status.value?.checkRollup));
+
 const checksRow = computed<MergeBoxRow | null>(() => {
-  const checks = status.value?.checks;
-  if (!checks || checks.total <= 0) {
+  if (!checksView.value.isVisible) {
     return null;
   }
 
-  if (checks.failure > 0) {
+  const { tone, passedCount, totalCount } = checksView.value;
+  const counts = {
+    passed: passedCount ?? 0,
+    failed: totalCount - (passedCount ?? 0),
+    total: totalCount,
+  };
+
+  if (tone === 'danger') {
     return {
       tone: 'danger',
-      icon: XIcon,
+      icon: getCheckStatusToneIcon('danger'),
       title: t('prReview.mergeBox.checksFailed'),
-      detail: t('prReview.mergeBox.checksFailedCount', {
-        failed: checks.failure,
-        total: checks.total,
-      }),
+      detail: checksView.value.isTruncated
+        ? t('dashboard.checks.overLimit', {
+            total: totalCount,
+            limit: CHECK_ROLLUP_CONTEXT_LIMIT,
+          })
+        : t('prReview.mergeBox.checksFailedCount', counts),
     };
   }
 
-  if (checks.pending > 0) {
+  if (tone === 'warning') {
     return {
       tone: 'warning',
-      icon: ClockIcon,
+      icon: getCheckStatusToneIcon('warning'),
       title: t('prReview.mergeBox.checksPending'),
+      detail: checksView.value.isTruncated
+        ? t('dashboard.checks.overLimit', {
+            total: totalCount,
+            limit: CHECK_ROLLUP_CONTEXT_LIMIT,
+          })
+        : t('prReview.mergeBox.checksPendingCount', counts),
     };
   }
 
   return {
     tone: 'success',
-    icon: CheckIcon,
+    icon: getCheckStatusToneIcon('success'),
     title: t('prReview.mergeBox.checksPassed'),
+    detail: checksView.value.isTruncated
+      ? t('dashboard.checks.overLimit', {
+          total: totalCount,
+          limit: CHECK_ROLLUP_CONTEXT_LIMIT,
+        })
+      : t('prReview.mergeBox.checksPassedCount', counts),
   };
 });
 
@@ -516,25 +520,6 @@ const mergeabilityRow = computed<MergeBoxRow>(() => {
       };
   }
 });
-
-const runTone = (run: PRCheckRunSummary): RowTone => {
-  if (run.status !== 'completed') {
-    return 'warning';
-  }
-
-  switch (run.conclusion) {
-    case 'success':
-      return 'success';
-    case 'failure':
-    case 'timed_out':
-    case 'cancelled':
-    case 'action_required':
-    case 'startup_failure':
-      return 'danger';
-    default:
-      return 'muted';
-  }
-};
 
 const mergeDisabled = computed(() => {
   const current = status.value;
@@ -1108,67 +1093,41 @@ watch(
 /* ── Checks list ── */
 .merge-box__check-list {
   margin: 0;
-  padding: 6px 0;
-  list-style: none;
   max-height: 240px;
   overflow-y: auto;
+  padding: 0 16px 0 22px;
   background: var(--gitpulse-surface-muted);
   border-bottom: 1px solid var(--gitpulse-border);
-}
 
-.merge-box__check-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 16px 5px 22px;
-  font-size: 12px;
-}
-
-.merge-box__check-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-
-  &--success {
-    background: var(--gitpulse-success);
+  :deep(.check-list__row) {
+    gap: 8px;
+    font-size: 12px;
   }
 
-  &--danger {
-    background: var(--gitpulse-danger);
-  }
+  :deep(.check-list__name) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 
-  &--warning {
-    background: var(--gitpulse-warning);
-  }
-
-  &--muted {
-    background: var(--gitpulse-text-subtle);
-  }
-}
-
-.merge-box__check-name {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  &--link {
-    text-decoration: none;
-    transition: color 0.2s ease;
-
-    &:hover {
+    &--link:hover {
       color: var(--gitpulse-accent);
-      text-decoration: underline;
     }
   }
+
+  :deep(.check-list__app) {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
 }
 
-.merge-box__check-app {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-size: 11px;
+.merge-box__check-truncated {
+  margin: 0;
+  padding: 6px 16px 0 22px;
+  background: var(--gitpulse-surface-muted);
   color: var(--gitpulse-text-subtle);
+  font-size: 11px;
 }
 
 /* ── Merge actions ── */

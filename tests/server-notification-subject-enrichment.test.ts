@@ -2,12 +2,16 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+import * as prChecks from '../shared/utils/pr-checks';
 
 mock.module('#shared/types/linked-pull-requests', () => linkedPullRequestTypes);
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+mock.module('#shared/utils/pr-checks', () => prChecks);
 
 const validationUtils = await import('../server/utils/notification-subject-state-validation-utils');
 const linkedPullRequestGraphql = await import('../server/utils/linked-pull-request-graphql-utils');
+const checkRollupGraphql = await import('../server/utils/pr-check-rollup-graphql-utils');
+const githubGraphqlUtils = await import('../server/utils/github-graphql-utils');
 
 let requestBody: unknown;
 let graphQLRequest: (query: string, variables: Record<string, unknown>) => Promise<unknown>;
@@ -33,6 +37,8 @@ let routedError: unknown;
 
 mock.module('#server/utils/notification-subject-state-validation-utils', () => validationUtils);
 mock.module('#server/utils/linked-pull-request-graphql-utils', () => linkedPullRequestGraphql);
+mock.module('#server/utils/pr-check-rollup-graphql-utils', () => checkRollupGraphql);
+mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#server/utils/github-auth-utils', () => ({
   throwGitHubRouteError: (error: unknown) => {
     routedError = error;
@@ -224,6 +230,99 @@ describe('Notification Subject Enrichment server endpoint', () => {
       linkedPullRequestCount: 1,
       linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 44 },
     });
+  });
+
+  test('attaches the Check Rollup on Pull Request results with the context list capped at 100', async () => {
+    requestBody = { targets: [targets[1]] };
+    graphQLRequest = async (query) => {
+      expect(query).toContain('statusCheckRollup');
+      expect(query).toContain('contexts(first: 100)');
+      expect(query).not.toContain('isRequired');
+      return {
+        subject0: {
+          pullRequest: {
+            title: 'Pull with checks',
+            updatedAt: '2026-08-12T02:00:00.000Z',
+            state: 'OPEN',
+            comments: { totalCount: 2 },
+            author: { login: 'pull-author', avatarUrl: 'https://avatars.example/pull' },
+            statusCheckRollup: {
+              state: 'FAILURE',
+              contexts: {
+                totalCount: 148,
+                nodes: [
+                  {
+                    __typename: 'CheckRun',
+                    name: 'build',
+                    status: 'COMPLETED',
+                    conclusion: 'SUCCESS',
+                    detailsUrl: 'https://github.com/acme/widgets/runs/1',
+                    checkSuite: { app: { name: 'GitHub Actions' } },
+                  },
+                  {
+                    __typename: 'StatusContext',
+                    context: 'legacy/ci',
+                    state: 'FAILURE',
+                    targetUrl: 'https://ci.example/legacy',
+                    creator: { login: 'old-bot' },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      };
+    };
+
+    const response = await handler({});
+
+    expect(response.items[0]).toMatchObject({
+      key: 'acme/widgets/pulls/2',
+      checkRollup: {
+        state: 'FAILURE',
+        contexts: {
+          totalCount: 148,
+          nodes: [
+            {
+              __typename: 'CheckRun',
+              name: 'build',
+              status: 'COMPLETED',
+              conclusion: 'SUCCESS',
+              detailsUrl: 'https://github.com/acme/widgets/runs/1',
+              checkSuite: { app: { name: 'GitHub Actions' } },
+              creator: null,
+            },
+            {
+              __typename: 'StatusContext',
+              name: 'legacy/ci',
+              conclusion: 'FAILURE',
+              status: null,
+              detailsUrl: 'https://ci.example/legacy',
+              checkSuite: null,
+              creator: { login: 'old-bot' },
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  test('omits the Check Rollup when GitHub reports none', async () => {
+    requestBody = { targets: [targets[1]] };
+    graphQLRequest = async () => ({
+      subject0: {
+        pullRequest: {
+          title: 'Pull without checks',
+          updatedAt: '2026-08-12T02:00:00.000Z',
+          state: 'OPEN',
+          author: { login: 'pull-author', avatarUrl: 'https://avatars.example/pull' },
+        },
+      },
+    });
+
+    const response = await handler({});
+
+    expect(response.items[0]).not.toHaveProperty('checkRollup');
   });
 
   test('routes GitHub failures through the endpoint error policy', async () => {

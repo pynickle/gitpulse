@@ -1,9 +1,10 @@
 import type { Octokit } from '@octokit/core';
 import * as z from 'zod';
 
-import { parseLinkHeader } from '#server/utils/github-pagination';
 import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
+import { fetchPullRequestCheckRollup } from '#server/utils/pr-check-rollup-graphql-utils';
 import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { PullRequestHeadBranchState } from '#shared/types/pulls';
 
 import { fetchPullHeadBranchState } from './pr-head-branch-utils';
@@ -32,22 +33,9 @@ interface GitHubRequestedReviewersResponse {
   teams?: unknown[];
 }
 
-interface GitHubCheckRunResponse {
-  name?: string;
-  status?: string | null;
-  conclusion?: string | null;
-  html_url?: string | null;
-  app?: {
-    name?: string | null;
-  } | null;
-}
-
-interface GitHubCheckRunsResponse {
-  check_runs?: GitHubCheckRunResponse[];
-}
-
 interface GitHubPullRequestResponse {
   state?: string | null;
+  node_id?: string | null;
   merged?: boolean | null;
   merged_at?: string | null;
   merged_by?: GitHubUserSummary | null;
@@ -82,23 +70,6 @@ export interface PRMergedBy {
   htmlUrl: string;
 }
 
-export interface PRCheckRunSummary {
-  name: string;
-  status: string;
-  conclusion: string | null;
-  htmlUrl: string | null;
-  appName: string | null;
-}
-
-export interface PRChecksSummary {
-  total: number;
-  success: number;
-  failure: number;
-  pending: number;
-  neutral: number;
-  runs: PRCheckRunSummary[];
-}
-
 export interface PRReviewSummary {
   approved: number;
   changesRequested: number;
@@ -116,7 +87,11 @@ export interface PRMergeStatus {
   draft: boolean;
   reviewDecision: PRReviewDecision;
   reviewSummary: PRReviewSummary;
-  checks: PRChecksSummary;
+  /**
+   * GitHub's own Check Rollup for the head commit. Null when GitHub reports
+   * none or the rollup could not be read; every surface then hides its checks.
+   */
+  checkRollup: PullRequestCheckRollup | null;
   headSha: string | null;
   headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;
@@ -242,81 +217,6 @@ function computeReviewDecision(params: {
   return { decision: 'none', summary };
 }
 
-function getCheckRunBucket(
-  run: GitHubCheckRunResponse
-): 'success' | 'failure' | 'pending' | 'neutral' {
-  if (run.status !== 'completed') return 'pending';
-
-  switch (run.conclusion) {
-    case 'success':
-      return 'success';
-    case 'neutral':
-    case 'skipped':
-      return 'neutral';
-    default:
-      return 'failure';
-  }
-}
-
-function buildChecksSummary(runs: GitHubCheckRunResponse[]): PRChecksSummary {
-  const checks: PRChecksSummary = {
-    total: runs.length,
-    success: 0,
-    failure: 0,
-    pending: 0,
-    neutral: 0,
-    runs: [],
-  };
-
-  for (const run of runs) {
-    checks[getCheckRunBucket(run)] += 1;
-    checks.runs.push({
-      name: run.name ?? 'Unnamed check',
-      status: run.status ?? 'unknown',
-      conclusion: run.conclusion ?? null,
-      htmlUrl: run.html_url ?? null,
-      appName: run.app?.name ?? null,
-    });
-  }
-
-  return checks;
-}
-
-async function fetchCheckRuns(
-  octokit: GitHubClient,
-  owner: string,
-  repo: string,
-  headSha: string | null
-): Promise<GitHubCheckRunResponse[]> {
-  if (!headSha) {
-    return [];
-  }
-
-  const runs: GitHubCheckRunResponse[] = [];
-  let page = 1;
-
-  while (true) {
-    const response = await octokit.request('GET /repos/{owner}/{repo}/commits/{ref}/check-runs', {
-      owner,
-      repo,
-      ref: headSha,
-      per_page: 100,
-      page,
-    });
-    const payload = response.data as GitHubCheckRunsResponse;
-    runs.push(...(payload.check_runs ?? []));
-
-    const links = parseLinkHeader(
-      typeof response.headers.link === 'string' ? response.headers.link : undefined
-    );
-    if (!links.next) {
-      return runs;
-    }
-
-    page += 1;
-  }
-}
-
 export function normalizeMergePullRequestBody(body: unknown): NormalizedMergePullRequestBody {
   const requestBody = parseZodRequestBody(
     mergePullRequestBodySchema,
@@ -356,30 +256,32 @@ export async function fetchPRMergeStatus(
   const normalizedPullRequest = pullRequest as GitHubPullRequestResponse;
   const headSha = normalizedPullRequest.head?.sha ?? null;
 
-  const [reviews, requestedReviewers, checkRuns, repoPermissions, headBranch] = await Promise.all([
-    fetchPaginatedArray<GitHubPullReviewResponse>(
-      octokit,
-      'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
-      {
-        owner,
-        repo,
-        pull_number: pullNumber,
-      }
-    ),
-    octokit
-      .request('GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers', {
-        owner,
-        repo,
-        pull_number: pullNumber,
-      })
-      .then(({ data }) => data as GitHubRequestedReviewersResponse),
-    fetchCheckRuns(octokit, owner, repo, headSha),
-    fetchRepositoryPermissions(octokit, owner, repo),
-    fetchPullHeadBranchState(octokit, normalizedPullRequest).catch((error: unknown) => {
-      console.warn('Failed to fetch pull request head branch action state:', error);
-      return null;
-    }),
-  ]);
+  const [reviews, requestedReviewers, repoPermissions, headBranch, checkRollup] = await Promise.all(
+    [
+      fetchPaginatedArray<GitHubPullReviewResponse>(
+        octokit,
+        'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
+        {
+          owner,
+          repo,
+          pull_number: pullNumber,
+        }
+      ),
+      octokit
+        .request('GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers', {
+          owner,
+          repo,
+          pull_number: pullNumber,
+        })
+        .then(({ data }) => data as GitHubRequestedReviewersResponse),
+      fetchRepositoryPermissions(octokit, owner, repo),
+      fetchPullHeadBranchState(octokit, normalizedPullRequest).catch((error: unknown) => {
+        console.warn('Failed to fetch pull request head branch action state:', error);
+        return null;
+      }),
+      fetchPullRequestCheckRollup(octokit, normalizedPullRequest.node_id ?? null),
+    ]
+  );
 
   const review = computeReviewDecision({
     reviews,
@@ -398,7 +300,7 @@ export async function fetchPRMergeStatus(
     draft: Boolean(normalizedPullRequest.draft),
     reviewDecision: review.decision,
     reviewSummary: review.summary,
-    checks: buildChecksSummary(checkRuns),
+    checkRollup,
     headSha,
     headBranch,
     viewerCanMerge: getViewerCanMerge(

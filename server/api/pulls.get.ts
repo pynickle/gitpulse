@@ -3,6 +3,7 @@ import {
   normalizeSearchTotalCount,
 } from '#server/utils/github-issue-search-route-utils';
 import { translateGitHubSearchError } from '#server/utils/github-search-route-utils';
+import { attachPullRequestCheckRollups } from '#server/utils/pr-check-rollup-graphql-utils';
 
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '../utils/github-pagination';
 
@@ -18,11 +19,12 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       per_page: perPage,
     });
 
+    const items = await attachPullRequestCheckRollups(octokit, data.items ?? []);
     const totalCount = normalizeSearchTotalCount(data.total_count);
 
     return {
       total_count: totalCount,
-      items: data.items,
+      items,
       pagination: buildLinkedPaginationMeta({
         page,
         perPage,
