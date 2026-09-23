@@ -206,10 +206,6 @@
   &:hover {
     background: var(--gitpulse-surface-hover);
   }
-
-  &.is-selected {
-    background: var(--gitpulse-accent-soft);
-  }
 }
 
 .label-row-check {

@@ -214,10 +214,6 @@
     background: var(--gitpulse-surface-hover);
   }
 
-  &--selected {
-    background: var(--gitpulse-accent-soft) !important;
-  }
-
   &--requested {
     opacity: 0.6;
     cursor: not-allowed;
