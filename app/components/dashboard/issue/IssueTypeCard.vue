@@ -57,52 +57,51 @@
               </div>
 
               <div v-else class="label-editor-list">
-                <label class="label-row" :class="{ 'is-selected': selectedTypeName === '' }">
-                  <span class="label-row-check">
-                    <input
-                      type="radio"
-                      name="issue-type"
-                      value=""
-                      :checked="selectedTypeName === ''"
-                      :disabled="savingIssueType"
-                      @change="selectIssueType('')"
-                    />
-                    <span class="issue-type-radio" aria-hidden="true">
-                      <span class="issue-type-radio__dot"></span>
+                <label class="issue-type-row" :class="{ 'is-selected': selectedTypeName === '' }">
+                  <input
+                    class="issue-type-row__input"
+                    type="radio"
+                    name="issue-type"
+                    value=""
+                    :checked="selectedTypeName === ''"
+                    :disabled="savingIssueType"
+                    @change="selectIssueType('')"
+                  />
+                  <span class="issue-type-row__bar" aria-hidden="true"></span>
+                  <span class="issue-type-row__text">
+                    <span class="issue-type-row__head">
+                      <span class="issue-type-row__name">{{ t('detailIssueType.none') }}</span>
+                      <CheckIcon class="issue-type-row__check" :size="14" aria-hidden="true" />
                     </span>
-                  </span>
-                  <span class="label-row-dot label-row-dot--empty"></span>
-                  <span class="label-row-text">
-                    <span class="label-row-name">{{ t('detailIssueType.none') }}</span>
                   </span>
                 </label>
 
                 <label
                   v-for="type in selectableIssueTypes"
                   :key="type.id"
-                  class="label-row"
+                  class="issue-type-row"
                   :class="{ 'is-selected': selectedTypeName === type.name }"
                 >
-                  <span class="label-row-check">
-                    <input
-                      type="radio"
-                      name="issue-type"
-                      :value="type.name"
-                      :checked="selectedTypeName === type.name"
-                      :disabled="savingIssueType"
-                      @change="selectIssueType(type.name)"
-                    />
-                    <span class="issue-type-radio" aria-hidden="true">
-                      <span class="issue-type-radio__dot"></span>
-                    </span>
-                  </span>
+                  <input
+                    class="issue-type-row__input"
+                    type="radio"
+                    name="issue-type"
+                    :value="type.name"
+                    :checked="selectedTypeName === type.name"
+                    :disabled="savingIssueType"
+                    @change="selectIssueType(type.name)"
+                  />
                   <span
-                    class="label-row-dot"
-                    :style="{ backgroundColor: resolveIssueTypeColor(type.color) }"
+                    class="issue-type-row__bar"
+                    :style="issueTypeBarStyle(type)"
+                    aria-hidden="true"
                   ></span>
-                  <span class="label-row-text">
-                    <span class="label-row-name">{{ type.name }}</span>
-                    <span v-if="type.description" class="label-row-desc">
+                  <span class="issue-type-row__text">
+                    <span class="issue-type-row__head">
+                      <span class="issue-type-row__name">{{ type.name }}</span>
+                      <CheckIcon class="issue-type-row__check" :size="14" aria-hidden="true" />
+                    </span>
+                    <span v-if="type.description" class="issue-type-row__desc">
                       {{ type.description }}
                     </span>
                   </span>
@@ -141,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { AlertCircleIcon, Loader2Icon, PencilIcon, Tags, XIcon } from '@lucide/vue';
+import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, Tags, XIcon } from '@lucide/vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 
 import type { GitHubIssueType } from '#shared/types/issues';
@@ -242,6 +241,10 @@ const selectIssueType = (typeName: string) => {
   selectedTypeName.value = typeName;
 };
 
+const issueTypeBarStyle = (type: GitHubIssueType) => ({
+  '--issue-type-color': resolveIssueTypeColor(type.color),
+});
+
 const saveIssueType = async () => {
   if (!props.repoInfo || !props.issueNumber) return;
 
@@ -286,50 +289,108 @@ onUnmounted(() => {
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/issue-metadata-editor';
 
-.label-row-dot--empty {
-  background: var(--gitpulse-border-strong);
-}
-
-.issue-type-radio {
+.issue-type-row {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--gitpulse-input-border);
-  border-radius: 50%;
-  background: var(--gitpulse-input-bg);
-  transition: all 0.12s ease;
-  pointer-events: none;
+  gap: 12px;
+  padding: 9px 10px 9px 8px;
+  margin: 0 -8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  user-select: none;
 
-  .label-row:hover & {
-    border-color: var(--gitpulse-border-strong);
+  &:hover {
+    background: var(--gitpulse-surface-hover);
   }
 
-  .label-row-check input:checked + & {
-    border-color: $brand-primary;
+  &:has(.issue-type-row__input:focus-visible) {
+    outline: 2px solid $brand-primary;
+    outline-offset: -2px;
+  }
+
+  &:has(.issue-type-row__input:disabled) {
+    cursor: progress;
+    opacity: 0.6;
   }
 }
 
-.issue-type-radio__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: $brand-primary;
+.issue-type-row__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
   opacity: 0;
-  transform: scale(0.5);
+  clip-path: inset(50%);
+  pointer-events: none;
+}
+
+.issue-type-row__bar {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--issue-type-color, var(--gitpulse-border-strong));
+  opacity: 0.5;
+  transition: opacity 0.12s ease;
+}
+
+.issue-type-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.issue-type-row__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.issue-type-row__name {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  transition: color 0.12s ease;
+}
+
+.issue-type-row__desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--gitpulse-text-muted);
+  word-break: break-word;
+}
+
+.issue-type-row__check {
+  flex-shrink: 0;
+  color: var(--gitpulse-accent);
+  opacity: 0;
+  transform: scale(0.7);
   transition:
-    opacity 0.12s ease,
-    transform 0.12s ease;
+    opacity 0.14s ease,
+    transform 0.14s ease;
 }
 
-.label-row-check input:checked + .issue-type-radio .issue-type-radio__dot {
-  opacity: 1;
-  transform: scale(1);
-}
+.issue-type-row.is-selected {
+  .issue-type-row__bar {
+    opacity: 1;
+  }
 
-.label-row-check input:focus-visible + .issue-type-radio {
-  outline: 2px solid $brand-primary;
-  outline-offset: 2px;
+  .issue-type-row__name {
+    font-weight: 600;
+    color: var(--gitpulse-accent);
+  }
+
+  .issue-type-row__check {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>
