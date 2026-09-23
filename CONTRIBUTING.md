@@ -84,5 +84,10 @@ If you changed the browser extension, also run:
 bun run extension:test
 ```
 
+If you changed a component's template or styles, also run `bun run generate`.
+`nuxi typecheck` does not catch Vite pre-transform failures — a `<Transition>`
+given more than one child, or a suffix nested inside a `:deep()` selector — so
+the checks above can all pass while the app fails to build.
+
 Do not bypass `prek` unless there is an exceptional reason. If you must bypass a
 hook locally, run the same checks manually before pushing.

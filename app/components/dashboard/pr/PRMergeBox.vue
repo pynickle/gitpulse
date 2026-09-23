@@ -100,10 +100,8 @@
             />
           </button>
           <Transition name="expand">
-            <p v-if="checksView.isTruncated" class="merge-box__check-truncated">
-              {{ t('dashboard.checks.truncated', { limit: CHECK_ROLLUP_CONTEXT_LIMIT }) }}
-            </p>
             <div v-if="checksExpanded" class="merge-box__check-list">
+              <!-- A truncated rollup already says so on the checks row itself. -->
               <CheckListRows :groups="checksView.groups" />
             </div>
           </Transition>
@@ -1109,10 +1107,16 @@ watch(
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 
-    &--link:hover {
-      color: var(--gitpulse-accent);
-    }
+  :deep(.check-list__name--link) {
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  :deep(.check-list__name--link:hover) {
+    color: var(--gitpulse-accent);
+    text-decoration: underline;
   }
 
   :deep(.check-list__app) {
@@ -1120,14 +1124,6 @@ watch(
     flex-shrink: 0;
     font-size: 11px;
   }
-}
-
-.merge-box__check-truncated {
-  margin: 0;
-  padding: 6px 16px 0 22px;
-  background: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-subtle);
-  font-size: 11px;
 }
 
 /* ── Merge actions ── */
