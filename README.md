@@ -18,6 +18,10 @@ Leverage GitHub search to build your own workspace. Go to the view management pa
 
 Notifications can be cluttered and don't always reflect your real priorities. Add truly important tasks to your Todo list and focus on them without distractions.
 
+### 🚀 Release Timeline
+
+Follow the repositories you care about and all their releases land in one feed, newest first. Search by title, filter by repository or publish date, and click a card to read the full changelog, browse the assets, or leave a reaction.
+
 ### 🌐 Internationalization
 
 Built-in English and Simplified Chinese, with automatic language detection based on your browser settings.
