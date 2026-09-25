@@ -1,15 +1,10 @@
-<script setup lang="ts">
-import 'simplebar-vue/dist/simplebar.min.css';
-import SimpleBar from 'simplebar-vue';
-</script>
-
 <template>
   <div class="widgets-panel">
-    <SimpleBar class="widgets-panel__scroll">
+    <div class="widgets-panel__scroll">
       <div class="widgets-panel__content">
         <slot></slot>
       </div>
-    </SimpleBar>
+    </div>
   </div>
 </template>
 <style scoped lang="scss">
@@ -26,6 +21,7 @@ import SimpleBar from 'simplebar-vue';
     height: 100%;
     min-height: 0;
     padding-right: 1.25rem;
+    overflow-y: auto;
   }
 
   &__content {

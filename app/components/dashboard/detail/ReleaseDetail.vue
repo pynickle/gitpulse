@@ -22,7 +22,6 @@ const props = defineProps<{
 }>();
 
 const { locale, t } = useI18n();
-const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 const { openRepository } = useDashboardRepositoryNavigation();
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -166,11 +165,7 @@ usePageMeta(
                 {{ t('releaseDetail.assetCount', { count: assets.length }) }}
               </span>
             </div>
-            <div
-              class="sidebar-card__content sidebar-card__content--scrollable sidebar-scroll"
-              :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
-              @scroll="onSidebarScroll"
-            >
+            <div class="sidebar-card__content sidebar-card__content--scrollable sidebar-scroll">
               <ReleaseAssetsList :assets="assets" />
             </div>
           </section>
@@ -422,33 +417,6 @@ usePageMeta(
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
-
-  &:hover,
-  &.sidebar-scroll--active {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-    transition: background-color 0.3s ease;
-  }
-
-  &:hover::-webkit-scrollbar-thumb,
-  &.sidebar-scroll--active::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .release-sidebar__title {

@@ -1629,29 +1629,6 @@ html.dark .repo-detail-section__chrome {
   /* Keep the last Links card fully inside the scrollport (border + shadow). */
   padding: 0 0.75rem 0.75rem 0;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-
-  &:hover {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .sidebar-card {

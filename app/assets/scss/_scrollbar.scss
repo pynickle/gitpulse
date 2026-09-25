@@ -1,0 +1,37 @@
+@mixin scrollbars {
+  $target: ':where(*)';
+
+  #{$target} {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  #{$target}:is(:hover, .gp-scrollbar-active) {
+    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
+  }
+
+  #{$target}::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  #{$target}::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #{$target}::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+  }
+
+  #{$target}:is(:hover, .gp-scrollbar-active)::-webkit-scrollbar-thumb {
+    background-color: var(--gitpulse-scrollbar-thumb);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #{$target}::-webkit-scrollbar-thumb {
+      transition: none;
+    }
+  }
+}

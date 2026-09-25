@@ -1,4 +1,5 @@
 @use 'variables' as *;
+@use 'scrollbar' as scrollbar;
 
 :root {
   color-scheme: light;
@@ -700,3 +701,5 @@ hr {
     transform: rotate(360deg);
   }
 }
+
+@include scrollbar.scrollbars;

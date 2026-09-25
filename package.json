@@ -40,7 +40,6 @@
     "nuxt-site-config": "^4.2.3",
     "redis": "^6.2.1",
     "shiki": "^4.4.3",
-    "simplebar-vue": "^2.4.2",
     "vue": "3.5.40",
     "vue-draggable-plus": "^0.6.1",
     "vue-router": "^5.3.1",

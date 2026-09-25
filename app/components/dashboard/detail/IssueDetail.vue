@@ -30,11 +30,7 @@
       </div>
 
       <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
-        <div
-          class="sidebar-scroll"
-          :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
-          @scroll="onSidebarScroll"
-        >
+        <div class="sidebar-scroll">
           <IssueTypeCard
             :issue-type="currentIssue?.type"
             :can-edit-issue-type="canEditIssueType"
@@ -149,8 +145,6 @@ usePageMeta(
     }),
   }
 );
-
-const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const repoInfo = computed(() => {
   return parseGitHubRepoPath(currentIssue.value?.repository_url);
@@ -453,33 +447,6 @@ watch(
   overflow-y: auto;
   padding-right: 0.75rem;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
-
-  &:hover,
-  &--active {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-    transition: background-color 0.3s ease;
-  }
-
-  &:hover::-webkit-scrollbar-thumb,
-  &--active::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .issue-detail__timeline {

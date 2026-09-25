@@ -101,7 +101,7 @@
 
           <div class="card-content dashboard-list-card-content">
             <div v-if="dashboardListLoading || !dashboardListError" class="dashboard-list-shell">
-              <SimpleBar class="dashboard-list-scroll">
+              <div class="dashboard-list-scroll">
                 <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
 
                 <NotificationSubjectEnrichmentNotice
@@ -234,7 +234,7 @@
                     <AsyncRepoItem :repo="repo" />
                   </div>
                 </template>
-              </SimpleBar>
+              </div>
             </div>
 
             <div v-else class="dashboard-error-state">
@@ -402,9 +402,6 @@ import {
   ListTodoIcon,
   SearchIcon,
 } from '@lucide/vue';
-
-import 'simplebar-vue/dist/simplebar.min.css';
-import SimpleBar from 'simplebar-vue';
 import { computed, defineAsyncComponent, shallowRef, useTemplateRef, watch } from 'vue';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
@@ -1662,11 +1659,11 @@ watch(
 .dashboard-list-scroll {
   min-height: 0;
   height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
-.dashboard-main-card:has(.dashboard-pagination-footer)
-  .dashboard-list-scroll
-  :deep(.simplebar-content > .mb-4:last-child) {
+.dashboard-main-card:has(.dashboard-pagination-footer) .dashboard-list-scroll > .mb-4:last-child {
   margin-bottom: 0;
 }
 

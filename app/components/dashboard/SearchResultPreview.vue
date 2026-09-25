@@ -259,19 +259,6 @@ const getStateIcon = (item: SearchResultItem) => {
   overflow-y: auto;
   padding-right: 0.25rem;
   flex: 1;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--gitpulse-accent) 25%, transparent);
-    border-radius: 4px;
-  }
 }
 
 .srp-card {
