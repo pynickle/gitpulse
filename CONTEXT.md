@@ -210,5 +210,5 @@ The set of Release Timeline Filter conditions currently applied to the Release T
 _Avoid_: applied filters, active filters
 
 **Release Timeline Filter Panel**:
-The overlay that holds the Release Timeline Filter controls: a right-side panel with a scrim, following the Release Drawer layout pattern.
+The overlay that holds the Release Timeline Filter controls with a scrim: a right-side panel on desktop and a bottom sheet on mobile, following the Release Drawer layout pattern.
 _Avoid_: filter bar, filter popover, filter modal

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Loader2Icon, XIcon } from '@lucide/vue';
-import { computed, nextTick, onUnmounted, shallowRef, useId, watch } from 'vue';
+import { computed, useId, useTemplateRef } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
@@ -20,16 +20,27 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { openModal, closeModal } = useModalState();
 const { openRepository, openRelease } = useDashboardRepositoryNavigation();
 const { opensGitHubLinks } = useGitHubLinkRouting();
 const titleId = useId();
-const panel = shallowRef<HTMLElement | null>(null);
-const focusTrap = createFocusTrapController();
-const expanded = shallowRef(false);
-const dragging = shallowRef(false);
-const dragOffsetY = shallowRef(0);
-const dragStartY = shallowRef<number | null>(null);
+const panel = useTemplateRef<HTMLElement>('panel');
+const { handleKeydown } = useModalLifecycle({
+  open: () => props.open && props.item !== null,
+  panel,
+  onRequestClose: () => emit('close'),
+});
+const {
+  expanded,
+  dragging,
+  panelStyle,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+} = useReleaseOverlaySheet({
+  open: () => props.open && props.item !== null,
+  onRequestClose: () => emit('close'),
+});
 
 const repoFullName = computed(() =>
   props.item ? `${props.item.repository.owner}/${props.item.repository.name}` : ''
@@ -51,96 +62,6 @@ const handleOpenReleasePage = async () => {
   if (!props.item) return;
   emit('close');
   await openRelease(props.item.repository.owner, props.item.repository.name, props.item.id);
-};
-
-const panelStyle = computed(() => {
-  const offset = dragOffsetY.value;
-  const lift = Math.max(0, -offset);
-  const drop = Math.max(0, offset);
-  return {
-    transform: drop ? `translateY(${drop}px)` : undefined,
-    height: !expanded.value && lift ? `calc(70vh + ${lift}px)` : undefined,
-  };
-});
-
-const resetGesture = () => {
-  expanded.value = false;
-  dragging.value = false;
-  dragOffsetY.value = 0;
-  dragStartY.value = null;
-};
-
-watch(
-  () => props.open,
-  async (open) => {
-    if (!import.meta.client) return;
-
-    if (!open) {
-      closeModal();
-      resetGesture();
-      await nextTick();
-      focusTrap.restorePreviousFocus();
-      return;
-    }
-
-    openModal();
-    focusTrap.capturePreviousFocus();
-    await nextTick();
-    if (panel.value) focusTrap.focusInitialElement(panel.value);
-  }
-);
-
-onUnmounted(() => {
-  if (props.open) closeModal();
-});
-
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    emit('close');
-    return;
-  }
-  if (panel.value) focusTrap.trapTabKey(event, panel.value);
-};
-
-const isSheetViewport = () => import.meta.client && window.matchMedia('(max-width: 860px)').matches;
-
-const onPointerDown = (event: PointerEvent) => {
-  if (event.button !== 0 || !isSheetViewport()) return;
-  const target = event.target;
-  if (target instanceof Element && target.closest('button, a[href]')) return;
-  dragStartY.value = event.clientY;
-  dragging.value = true;
-  (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-};
-
-const applySheetGesture = (event: PointerEvent, phase: 'move' | 'end') => {
-  if (dragStartY.value == null) return;
-  const result = resolveReleaseDrawerSheetGesture({
-    deltaY: event.clientY - dragStartY.value,
-    expanded: expanded.value,
-    phase,
-  });
-  dragOffsetY.value = result.offsetY;
-  if (phase === 'move') return;
-
-  dragging.value = false;
-  dragStartY.value = null;
-  dragOffsetY.value = 0;
-
-  if (result.outcome === 'dismiss') {
-    emit('close');
-    return;
-  }
-  if (result.outcome === 'expand') expanded.value = true;
-  if (result.outcome === 'collapse') expanded.value = false;
-};
-
-const onPointerMove = (event: PointerEvent) => {
-  applySheetGesture(event, 'move');
-};
-
-const onPointerUp = (event: PointerEvent) => {
-  applySheetGesture(event, 'end');
 };
 </script>
 
@@ -178,7 +99,8 @@ const onPointerUp = (event: PointerEvent) => {
           @pointerdown="onPointerDown"
           @pointermove="onPointerMove"
           @pointerup="onPointerUp"
-          @pointercancel="onPointerUp"
+          @pointercancel="onPointerCancel"
+          @lostpointercapture="onPointerCancel"
         >
           <div class="release-drawer__handle-row">
             <div class="release-drawer__handle" :aria-label="t('releaseTimeline.dragHandle')" />

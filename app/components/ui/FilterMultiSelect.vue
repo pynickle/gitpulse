@@ -230,8 +230,10 @@ const handleContainerMouseDown = (event: MouseEvent) => {
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
-    event.preventDefault();
-    close();
+    if (isOpen.value) {
+      event.preventDefault();
+      close();
+    }
     return;
   }
 

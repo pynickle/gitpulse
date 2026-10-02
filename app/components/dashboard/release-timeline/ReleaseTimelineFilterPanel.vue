@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { XIcon } from '@lucide/vue';
-import { computed, nextTick, onUnmounted, shallowRef, useId, watch } from 'vue';
+import { computed, useId, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import FilterDateRange from '~/components/ui/FilterDateRange.vue';
@@ -25,11 +25,23 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { openModal, closeModal } = useModalState();
 const { followedRepositories } = useReleaseFollows();
 const titleId = useId();
-const panel = shallowRef<HTMLElement | null>(null);
-const focusTrap = createFocusTrapController();
+const panel = useTemplateRef<HTMLElement>('panel');
+const { handleKeydown } = useModalLifecycle({
+  open: () => props.open,
+  panel,
+  onRequestClose: () => emit('close'),
+});
+const {
+  expanded,
+  dragging,
+  panelStyle,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+} = useReleaseOverlaySheet({ open: () => props.open, onRequestClose: () => emit('close') });
 const repositoryOptions = computed<FilterMultiSelectOption[]>(() =>
   followedRepositories.value
     .map((repo) => {
@@ -48,37 +60,6 @@ const repositoryEmptyMessage = computed(() =>
     : t('releaseTimeline.filterPanelRepositoriesNoMatch')
 );
 
-watch(
-  () => props.open,
-  async (open) => {
-    if (!import.meta.client) return;
-
-    if (!open) {
-      closeModal();
-      await nextTick();
-      focusTrap.restorePreviousFocus();
-      return;
-    }
-
-    openModal();
-    focusTrap.capturePreviousFocus();
-    await nextTick();
-    if (panel.value) focusTrap.focusInitialElement(panel.value);
-  }
-);
-
-onUnmounted(() => {
-  if (props.open) closeModal();
-});
-
-const handleKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    emit('close');
-    return;
-  }
-  if (panel.value) focusTrap.trapTabKey(event, panel.value);
-};
-
 const clearAll = () => {
   emit('update:repositories', []);
   emit('update:date-range', EMPTY_DATE_RANGE);
@@ -91,6 +72,7 @@ const clearAll = () => {
       <div
         v-if="open"
         class="release-timeline-filter-panel"
+        :class="{ 'release-timeline-filter-panel--dragging': dragging }"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="titleId"
@@ -104,19 +86,37 @@ const clearAll = () => {
           @click="emit('close')"
         />
 
-        <aside ref="panel" class="release-timeline-filter-panel__panel" tabindex="-1">
-          <header class="release-timeline-filter-panel__header">
-            <h2 :id="titleId">{{ t('releaseTimeline.filterPanelTitle') }}</h2>
-            <button
-              class="release-timeline-filter-panel__close"
-              type="button"
-              :aria-label="t('releaseTimeline.closeFilterPanel')"
-              :title="t('releaseTimeline.closeFilterPanel')"
-              @click="emit('close')"
-            >
-              <XIcon :size="18" aria-hidden="true" />
-            </button>
-          </header>
+        <aside
+          ref="panel"
+          class="release-timeline-filter-panel__panel"
+          :class="{ 'release-timeline-filter-panel__panel--expanded': expanded }"
+          :style="panelStyle"
+          tabindex="-1"
+        >
+          <div
+            class="release-timeline-filter-panel__grab"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerCancel"
+            @lostpointercapture="onPointerCancel"
+          >
+            <div class="release-timeline-filter-panel__handle-row" aria-hidden="true">
+              <div class="release-timeline-filter-panel__handle" />
+            </div>
+            <header class="release-timeline-filter-panel__header">
+              <h2 :id="titleId">{{ t('releaseTimeline.filterPanelTitle') }}</h2>
+              <button
+                class="release-timeline-filter-panel__close"
+                type="button"
+                :aria-label="t('releaseTimeline.closeFilterPanel')"
+                :title="t('releaseTimeline.closeFilterPanel')"
+                @click="emit('close')"
+              >
+                <XIcon :size="18" aria-hidden="true" />
+              </button>
+            </header>
+          </div>
 
           <div class="release-timeline-filter-panel__body">
             <section class="release-timeline-filter-panel__section">
@@ -177,6 +177,7 @@ const clearAll = () => {
   border: 0;
   background: var(--gitpulse-overlay-bg);
   cursor: pointer;
+  touch-action: none;
 }
 
 .release-timeline-filter-panel__panel {
@@ -188,6 +189,14 @@ const clearAll = () => {
   flex-direction: column;
   background: var(--gitpulse-surface);
   box-shadow: -1rem 0 2rem rgb(0 0 0 / 0.18);
+}
+
+.release-timeline-filter-panel__grab {
+  flex-shrink: 0;
+}
+
+.release-timeline-filter-panel__handle-row {
+  display: none;
 }
 
 .release-timeline-filter-panel__header {
@@ -297,5 +306,64 @@ const clearAll = () => {
 .release-timeline-filter-panel-enter-active .release-timeline-filter-panel__scrim,
 .release-timeline-filter-panel-leave-active .release-timeline-filter-panel__scrim {
   cursor: default;
+}
+
+@media (max-width: 860px) {
+  .release-timeline-filter-panel {
+    align-items: flex-end;
+  }
+
+  .release-timeline-filter-panel__panel {
+    width: 100%;
+    height: 70vh;
+    max-height: 100dvh;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -1rem 2rem rgb(0 0 0 / 0.18);
+    transition:
+      transform 0.2s ease,
+      height 0.2s ease,
+      border-radius 0.2s ease;
+  }
+
+  .release-timeline-filter-panel__panel--expanded {
+    height: 100dvh;
+    border-radius: 0;
+  }
+
+  .release-timeline-filter-panel--dragging .release-timeline-filter-panel__panel {
+    transition: none;
+  }
+
+  .release-timeline-filter-panel__grab {
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .release-timeline-filter-panel--dragging .release-timeline-filter-panel__grab {
+    cursor: grabbing;
+  }
+
+  .release-timeline-filter-panel__handle-row {
+    display: flex;
+    justify-content: center;
+    padding: 0.55rem 0 0.2rem;
+  }
+
+  .release-timeline-filter-panel__handle {
+    width: 2.5rem;
+    height: 0.28rem;
+    border-radius: 999px;
+    background: var(--gitpulse-border-strong, var(--gitpulse-border));
+  }
+
+  .release-timeline-filter-panel__header {
+    padding: 0.35rem 1rem 0.75rem;
+  }
+
+  .release-timeline-filter-panel-enter-from .release-timeline-filter-panel__panel,
+  .release-timeline-filter-panel-leave-to .release-timeline-filter-panel__panel {
+    transform: translateY(100%);
+  }
 }
 </style>

@@ -2,6 +2,7 @@
 import { Loader2Icon, RocketIcon } from '@lucide/vue';
 import { computed, shallowRef, useTemplateRef } from 'vue';
 
+import type { TimelineRelease } from '#shared/types/release-follows';
 import FloatingBackToTopButton from '~/components/dashboard/FloatingBackToTopButton.vue';
 import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
 import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue';
@@ -51,6 +52,16 @@ const searchQuery = shallowRef('');
 const filterRepositories = shallowRef<string[]>([]);
 const filterDateRange = shallowRef<DateRange>(EMPTY_DATE_RANGE);
 const filterPanelOpen = shallowRef(false);
+
+const handleOpenFilterPanel = () => {
+  closeDrawer();
+  filterPanelOpen.value = true;
+};
+
+const handleOpenDrawer = (item: TimelineRelease) => {
+  filterPanelOpen.value = false;
+  openDrawer(item);
+};
 
 const filterActive = computed(() =>
   hasActiveTimelineFilter({
@@ -132,7 +143,7 @@ defineExpose({
       :filter-active="filterActive"
       @reload="fetchTimeline"
       @manage="emit('manage')"
-      @filter-click="filterPanelOpen = true"
+      @filter-click="handleOpenFilterPanel"
     />
 
     <ReleaseTimelineFailureBanner
@@ -202,7 +213,7 @@ defineExpose({
         v-else-if="showGrid"
         ref="grid"
         :groups="visibleGroups"
-        @open="openDrawer"
+        @open="handleOpenDrawer"
         @viewport-scroll="handleViewportScroll"
       />
     </div>
