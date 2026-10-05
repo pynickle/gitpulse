@@ -53,7 +53,7 @@
     "@types/node": "^26.6.2",
     "@vue/compiler-sfc": "3.5.40",
     "happy-dom": "^20.14.5",
-    "oxfmt": "^0.70.0",
+    "oxfmt": "^0.72.0",
     "oxlint": "^1.85.0",
     "oxlint-tsgolint": "^7.0.2002",
     "sass-embedded": "1.100.0",
