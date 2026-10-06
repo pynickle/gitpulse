@@ -180,6 +180,10 @@ export default defineNuxtConfig({
 
   nitro: {
     minify: true,
+    externals: {
+      // Nuxt 4.6's inline rule misses Windows paths: https://github.com/nuxt/nuxt/issues/36467
+      inline: [/[\\/]node_modules[\\/]nuxt[\\/]dist[\\/]/],
+    },
     storage: {
       userSettings: userSettingsStorageConfig(),
     },
@@ -383,5 +387,6 @@ export default defineNuxtConfig({
 
   experimental: {
     prefetchPreloadTags: true,
+    routeTypedFetch: true,
   },
 });

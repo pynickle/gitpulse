@@ -80,7 +80,7 @@ const {
   data: providersData,
   pending: providersPending,
   error: providersError,
-} = await useFetch<AuthProviderState>('/api/auth/providers');
+} = await useFetch('/api/auth/providers');
 
 const providerState = computed(() => providersData.value ?? null);
 const isPersonalMode = computed(() => providerState.value?.mode === 'personal');
