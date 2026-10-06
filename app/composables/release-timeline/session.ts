@@ -1,7 +1,8 @@
 import { computed, onScopeDispose, shallowRef, watch, type Ref } from 'vue';
 
 import type { FollowedRepository, ReleaseTimeline } from '#shared/types/release-follows';
-import { classifyLookups } from '#shared/utils/release-timeline';
+
+import type { getFollowedRepositoryQueries } from '../followed-repositories/queries';
 
 export type ReleaseTimelineSessionEntry = {
   login: string;
@@ -14,13 +15,8 @@ type ReleaseTimelineSessionOptions = {
   loaded: Readonly<Ref<boolean>>;
   repositories: Readonly<Ref<FollowedRepository[]>>;
   cache: Ref<ReleaseTimelineSessionEntry | null>;
-  load: () => Promise<ReleaseTimeline>;
   describeError: (error: unknown) => string;
-  lookups: {
-    unavailableIds: Readonly<Ref<string[]>>;
-    transientIds: Readonly<Ref<string[]>>;
-    applyLookupIds: (unavailable: string[], transient: string[]) => void;
-  };
+  lookups: ReturnType<typeof getFollowedRepositoryQueries>;
 };
 
 const emptyTimeline = (): ReleaseTimeline => ({
@@ -34,7 +30,6 @@ export function createReleaseTimelineSession({
   loaded,
   repositories,
   cache,
-  load,
   lookups,
   describeError,
 }: ReleaseTimelineSessionOptions) {
@@ -48,7 +43,12 @@ export function createReleaseTimelineSession({
     requestId += 1;
   });
 
-  const followKey = computed(() => repositories.value.map((item) => item.id).join('\0'));
+  const followKey = computed(() =>
+    repositories.value
+      .map((item) => item.id)
+      .sort()
+      .join('\0')
+  );
   const hasFollows = computed(() => repositories.value.length > 0);
   const groups = computed(() => timeline.value.groups);
   const reposForIds = (ids: readonly string[]) => {
@@ -63,18 +63,13 @@ export function createReleaseTimelineSession({
     () => unavailableRepos.value.length > 0 || transientRepos.value.length > 0
   );
 
-  const applyTimeline = (next: ReleaseTimeline) => {
-    timeline.value = next;
-    lookups.applyLookupIds(next.unavailableIds, next.transientIds);
-  };
-
   const fetchTimeline = async () => {
     if (disposed || !loaded.value || !login.value) return;
     const nextRequestId = ++requestId;
     const requestedLogin = login.value;
     const requestedFollowKey = followKey.value;
     if (!hasFollows.value) {
-      applyTimeline(emptyTimeline());
+      timeline.value = emptyTimeline();
       error.value = null;
       loading.value = false;
       return;
@@ -83,14 +78,14 @@ export function createReleaseTimelineSession({
     loading.value = true;
     error.value = null;
     try {
-      const data = await load();
-      if (nextRequestId !== requestId) return;
+      const data = await lookups.fetchTimeline();
+      if (nextRequestId !== requestId || !data) return;
       const nextTimeline: ReleaseTimeline = {
         groups: Array.isArray(data.groups) ? data.groups : [],
         unavailableIds: Array.isArray(data.unavailableIds) ? data.unavailableIds : [],
         transientIds: Array.isArray(data.transientIds) ? data.transientIds : [],
       };
-      applyTimeline(nextTimeline);
+      timeline.value = nextTimeline;
       cache.value = {
         login: requestedLogin,
         followKey: requestedFollowKey,
@@ -99,12 +94,6 @@ export function createReleaseTimelineSession({
     } catch (err) {
       if (nextRequestId !== requestId) return;
       error.value = describeError(err);
-      const failed = classifyLookups(repositories.value, null);
-      applyTimeline({
-        groups: timeline.value.groups,
-        unavailableIds: failed.unavailableIds,
-        transientIds: failed.transientIds,
-      });
     } finally {
       if (nextRequestId === requestId) loading.value = false;
     }
@@ -129,14 +118,16 @@ export function createReleaseTimelineSession({
       error.value = null;
       loading.value = false;
       if (!login.value || !loaded.value) {
-        applyTimeline(emptyTimeline());
+        timeline.value = emptyTimeline();
         return;
       }
-      applyTimeline(
-        hasFollows.value ? (cache.value?.timeline ?? emptyTimeline()) : emptyTimeline()
-      );
+      timeline.value = hasFollows.value
+        ? (cache.value?.timeline ?? emptyTimeline())
+        : emptyTimeline();
       if (hasFollows.value && cache.value?.followKey !== followKey.value) {
         void fetchTimeline();
+      } else if (hasFollows.value) {
+        void lookups.ensureClassification();
       }
     },
     { immediate: true }

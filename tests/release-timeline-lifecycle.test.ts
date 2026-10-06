@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 
-import { effectScope, nextTick, shallowRef, type EffectScope } from 'vue';
+import {
+  defineComponent,
+  effectScope,
+  getCurrentInstance,
+  h,
+  nextTick,
+  shallowRef,
+  type EffectScope,
+} from 'vue';
 
 import type { FollowedRepository, ReleaseTimeline } from '#shared/types/release-follows';
 
+import { getFollowedRepositoryQueries } from '../app/composables/followed-repositories/queries';
 import * as timelineUtils from '../shared/utils/release-timeline';
+import { createVueDom } from './helpers/vue-dom';
 
 mock.module('#shared/utils/release-timeline', () => timelineUtils);
 
@@ -12,8 +22,10 @@ const { createReleaseTimelineSession } =
   await import('../app/composables/release-timeline/session');
 
 const scopes: EffectScope[] = [];
-afterEach(() => {
+const cleanups: (() => Promise<void>)[] = [];
+afterEach(async () => {
   for (const scope of scopes.splice(0)) scope.stop();
+  for (const cleanup of cleanups.splice(0).reverse()) await cleanup();
 });
 
 const repository: FollowedRepository = { id: 'R_widgets', owner: 'octo', name: 'widgets' };
@@ -41,8 +53,34 @@ function createHarness() {
     import('../app/composables/release-timeline/session').ReleaseTimelineSessionEntry | null
   >(null);
   const requests: ReturnType<typeof deferred<ReleaseTimeline>>[] = [];
-  const unavailableIds = shallowRef<string[]>([]);
-  const transientIds = shallowRef<string[]>([]);
+  const dom = createVueDom();
+  cleanups.push(dom.cleanup);
+  let lookups!: ReturnType<typeof getFollowedRepositoryQueries>;
+  dom.mount(
+    defineComponent({
+      setup() {
+        lookups = getFollowedRepositoryQueries(getCurrentInstance()!.appContext.app, {
+          login,
+          loaded,
+          repositories,
+          loadSettings: async () => {},
+          adapter: {
+            identities: async () => ({
+              availableIds: repositories.value.map((repo) => repo.id),
+              unavailableIds: [],
+              transientIds: [],
+            }),
+            timeline: () => {
+              const request = deferred<ReleaseTimeline>();
+              requests.push(request);
+              return request.promise;
+            },
+          },
+        });
+        return () => h('div');
+      },
+    })
+  );
   const open = () => {
     const scope = effectScope();
     scopes.push(scope);
@@ -52,19 +90,7 @@ function createHarness() {
         loaded,
         repositories,
         cache,
-        load: () => {
-          const request = deferred<ReleaseTimeline>();
-          requests.push(request);
-          return request.promise;
-        },
-        lookups: {
-          unavailableIds,
-          transientIds,
-          applyLookupIds: (unavailable, transient) => {
-            unavailableIds.value = unavailable;
-            transientIds.value = transient;
-          },
-        },
+        lookups,
         describeError: (error) => (error instanceof Error ? error.message : 'An error occurred'),
       })
     )!;
@@ -74,7 +100,7 @@ function createHarness() {
 }
 
 const settle = async () => {
-  await Promise.resolve();
+  for (let turn = 0; turn < 10; turn++) await Promise.resolve();
   await nextTick();
 };
 
@@ -128,7 +154,7 @@ describe('Release Timeline lifecycle', () => {
     first.close();
     const second = harness.open();
     expect(second.view.groups.value).toEqual(timeline('2026-10-01').groups);
-    expect(second.view.hasLookupFailures.value).toBe(false);
+    expect(second.view.hasLookupFailures.value).toBe(true);
     expect(harness.requests).toHaveLength(2);
     const retry = second.view.fetchTimeline();
     harness.requests[2]!.resolve(timeline());
@@ -241,7 +267,7 @@ describe('Release Timeline lifecycle', () => {
 
     harness.requests[1]!.resolve({ ...timeline(), unavailableIds: [repository.id] });
     await refresh;
-    expect(second.view.hasLookupFailures.value).toBe(false);
+    expect(second.view.hasLookupFailures.value).toBe(true);
     second.close();
     const third = harness.open();
     expect(third.view.groups.value).toEqual(timeline('2026-10-01').groups);
