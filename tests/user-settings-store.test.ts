@@ -10,6 +10,9 @@ mock.module('#shared/types/tab-groups', () => tabGroups);
 const userSettingsUtils = await import('../shared/utils/user-settings');
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
 
+const bundledFonts = await import('../shared/utils/bundled-fonts');
+mock.module('#shared/utils/bundled-fonts', () => bundledFonts);
+
 const { createDefaultUserSettings, mergeUserSettingsPatch, normalizeUserSettings } =
   userSettingsUtils;
 const { createInitialUserSettingsRequestState, createUserSettingsActions } =

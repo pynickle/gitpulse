@@ -1,4 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { bundledFontFaces, bundledFontWeights } from './shared/utils/bundled-fonts';
 import {
   defaultUserSettingsStorageBase,
   normalizeOptionalString,
@@ -8,7 +9,6 @@ import {
 
 const ENABLED_VALUES = new Set(['1', 'true']);
 const DISABLED_VALUES = new Set(['0', 'false']);
-const FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
 
 type UserSettingsStorageConfig = {
   driver: string;
@@ -43,22 +43,6 @@ const USER_SETTINGS_STORAGE_DRIVER = normalizeUserSettingsStorageDriver(
 const USER_SETTINGS_STORAGE_BASE =
   normalizeOptionalString(process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE) ||
   defaultUserSettingsStorageBase(USER_SETTINGS_STORAGE_DRIVER);
-
-function fontsourceLatinFaces(options: {
-  name: string;
-  packageName: string;
-  slug: string;
-  version: string;
-}) {
-  return FONT_WEIGHTS.map((weight) => ({
-    name: options.name,
-    src: `https://cdn.jsdelivr.net/npm/${options.packageName}@${options.version}/files/${options.slug}-latin-${weight}-normal.woff2`,
-    weight: String(weight),
-    style: 'normal',
-    preload: false,
-    global: true,
-  }));
-}
 
 function normalizeBoolean(value: string | undefined, defaultValue: boolean): boolean {
   if (typeof value !== 'string') return defaultValue;
@@ -180,10 +164,6 @@ export default defineNuxtConfig({
 
   nitro: {
     minify: true,
-    externals: {
-      // Nuxt 4.6's inline rule misses Windows paths: https://github.com/nuxt/nuxt/issues/36467
-      inline: [/[\\/]node_modules[\\/]nuxt[\\/]dist[\\/]/],
-    },
     storage: {
       userSettings: userSettingsStorageConfig(),
     },
@@ -245,109 +225,19 @@ export default defineNuxtConfig({
   ],
 
   fonts: {
-    provider: 'npm',
+    // Faces are explicit files, so no provider is set. v1 applies a provider to
+    // every discovered family and fails the production build when that provider
+    // does not ship it. Leave CSS variables unprocessed: the v1 default
+    // (`font-prefixed-only`) would try to download `--gitpulse-*-font-family`,
+    // whose stacks include system faces.
     processCSSVariables: false,
     defaults: {
-      weights: [...FONT_WEIGHTS],
+      weights: [...bundledFontWeights],
       styles: ['normal'],
       subsets: ['latin'],
       preload: false,
     },
-    families: [
-      {
-        name: 'HarmonyOS Sans',
-        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Regular.woff2',
-        weight: '400',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'HarmonyOS Sans',
-        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Medium.woff2',
-        weight: '500',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      // HarmonyOS Sans does not ship a Semibold file; Medium is the nearest bundled face for 600.
-      {
-        name: 'HarmonyOS Sans',
-        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Medium.woff2',
-        weight: '600',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'HarmonyOS Sans',
-        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Bold.woff2',
-        weight: '700',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'HarmonyOS Sans',
-        src: 'https://cdn.jsdelivr.net/npm/@lobehub/webfont-harmony-sans@1.0.0/fonts/HarmonyOS_Sans_Black.woff2',
-        weight: '800',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'MiSans Latin',
-        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Regular.woff2',
-        weight: '400',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'MiSans Latin',
-        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Medium.woff2',
-        weight: '500',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'MiSans Latin',
-        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Semibold.woff2',
-        weight: '600',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'MiSans Latin',
-        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Bold.woff2',
-        weight: '700',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      {
-        name: 'MiSans Latin',
-        src: 'https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Latin/MiSansLatin-Heavy.woff2',
-        weight: '800',
-        style: 'normal',
-        preload: false,
-        global: true,
-      },
-      ...fontsourceLatinFaces({
-        name: 'Maple Mono',
-        packageName: '@fontsource/maple-mono',
-        slug: 'maple-mono',
-        version: '5.2.6',
-      }),
-      ...fontsourceLatinFaces({
-        name: 'JetBrains Mono',
-        packageName: '@fontsource/jetbrains-mono',
-        slug: 'jetbrains-mono',
-        version: '5.2.8',
-      }),
-    ],
+    families: bundledFontFaces,
   },
 
   colorMode: {
