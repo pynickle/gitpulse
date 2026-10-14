@@ -49,17 +49,9 @@ release-notes/
 skills-lock.json
 opencode.jsonc
 .mcp.json
-reasonix.toml
 
 # === AI agent memory ===
 AGENTS.md
-CLAUDE.md
-DESIGN.md
-
-# === Sisyphus / OMC ===
-/.sisyphus/
-/.omc/
-/.omo/
 
 # === Extension ===
 extension/.output
