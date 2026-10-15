@@ -24,18 +24,19 @@ end
 
 return 0
 `;
+const WRITE_LOCKED_SETTINGS_SCRIPT = `
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  redis.call("SET", KEYS[2], ARGV[2])
+  return 1
+end
+return 0
+`;
 const userSettingsWriteQueues = new Map<string, Promise<unknown>>();
-let cachedUserSettingsStorageAdapter:
-  | {
-      signature: string;
-      adapter: UserSettingsStorageAdapter;
-    }
-  | undefined;
+const cachedUserSettingsStorageAdapters = new Map<
+  string,
+  { signature: string; adapter: unknown }
+>();
 
-type UserSettingsStorageDriver = 'fs' | 'redis' | 'upstash';
-type UserSettingsStorageAdapterFactory = (
-  context: UserSettingsStorageContext
-) => UserSettingsStorageAdapter;
 type UpstashRedisClient = Pick<Redis, 'eval' | 'get' | 'set'>;
 type RedisClient = Pick<RedisClientType, 'eval' | 'get' | 'set'>;
 type UserSettingsStorageContext = {
@@ -43,34 +44,18 @@ type UserSettingsStorageContext = {
   base?: string;
   redisUrl?: string;
   upstashCredentials?: UpstashRedisCredentials;
+  collection?: string;
 };
 
-export type UserSettingsStorageUpdater = (
-  currentSettings: UserSettings | null
-) => Promise<UserSettings> | UserSettings;
+export type UserSettingsStorageUpdater<T = UserSettings> = (
+  currentSettings: T | null
+) => Promise<T> | T;
 
-export interface UserSettingsStorageAdapter {
-  read: (userLogin: string) => Promise<UserSettings | null>;
-  write: (userLogin: string, settings: UserSettings) => Promise<void>;
-  update: (userLogin: string, updater: UserSettingsStorageUpdater) => Promise<UserSettings>;
+export interface UserSettingsStorageAdapter<T = UserSettings> {
+  read: (userLogin: string) => Promise<T | null>;
+  write: (userLogin: string, settings: T) => Promise<void>;
+  update: (userLogin: string, updater: UserSettingsStorageUpdater<T>) => Promise<T>;
 }
-
-const USER_SETTINGS_STORAGE_ADAPTERS: Record<
-  UserSettingsStorageDriver,
-  UserSettingsStorageAdapterFactory
-> = {
-  fs: () => createNitroUserSettingsStorageAdapter(),
-  redis: (context) =>
-    createRedisUserSettingsStorageAdapter({
-      base: context.base,
-      url: context.redisUrl,
-    }),
-  upstash: (context) =>
-    createUpstashRedisUserSettingsStorageAdapter({
-      base: context.base,
-      credentials: context.upstashCredentials,
-    }),
-};
 
 const normalizeStorageBase = (base: string | undefined) => {
   return normalizeOptionalString(base)
@@ -101,12 +86,16 @@ const getConfiguredRedisUrl = () => {
   );
 };
 
-const getSettingsKey = (userLogin: string) => {
-  return `users:${encodeURIComponent(userLogin.trim().toLowerCase())}`;
+// Filesystem storage maps ":" to "/". The settings document is a file at
+// users/<login>, so a collection cannot be stored beneath that path.
+export const getUserSettingsItemKey = (userLogin: string, collection = '') => {
+  const login = encodeURIComponent(userLogin.trim().toLowerCase());
+  if (!collection) return `users:${login}`;
+  return `collections:${encodeURIComponent(collection)}:users:${login}`;
 };
 
-const getNamespacedSettingsKey = (base: string | undefined, userLogin: string) => {
-  const settingsKey = getSettingsKey(userLogin);
+const getNamespacedSettingsKey = (base: string | undefined, userLogin: string, collection = '') => {
+  const settingsKey = getUserSettingsItemKey(userLogin, collection);
   const normalizedBase = normalizeStorageBase(base);
 
   return normalizedBase ? `${normalizedBase}:${settingsKey}` : settingsKey;
@@ -169,7 +158,7 @@ const releaseRedisWriteLock = async (
 const runWithUpstashWriteLock = async <T>(
   redis: UpstashRedisClient,
   settingsKey: string,
-  task: () => Promise<T>
+  task: (lock: { key: string; token: string }) => Promise<T>
 ) => {
   const lockKey = getWriteLockKey(settingsKey);
   const lockToken = createWriteLockToken();
@@ -183,7 +172,7 @@ const runWithUpstashWriteLock = async <T>(
 
     if (result === 'OK') {
       try {
-        return await task();
+        return await task({ key: lockKey, token: lockToken });
       } finally {
         await releaseUpstashWriteLock(redis, lockKey, lockToken);
       }
@@ -201,7 +190,7 @@ const runWithUpstashWriteLock = async <T>(
 const runWithRedisWriteLock = async <T>(
   redis: Pick<RedisClient, 'eval' | 'set'>,
   settingsKey: string,
-  task: () => Promise<T>
+  task: (lock: { key: string; token: string }) => Promise<T>
 ) => {
   const lockKey = getWriteLockKey(settingsKey);
   const lockToken = createWriteLockToken();
@@ -215,7 +204,7 @@ const runWithRedisWriteLock = async <T>(
 
     if (result === 'OK') {
       try {
-        return await task();
+        return await task({ key: lockKey, token: lockToken });
       } finally {
         await releaseRedisWriteLock(redis, lockKey, lockToken);
       }
@@ -230,21 +219,23 @@ const runWithRedisWriteLock = async <T>(
   throw new Error('Timed out while acquiring GitPulse user settings storage lock.');
 };
 
-export function createNitroUserSettingsStorageAdapter(): UserSettingsStorageAdapter {
+export function createNitroUserSettingsStorageAdapter<T extends object = UserSettings>(
+  collection = ''
+): UserSettingsStorageAdapter<T> {
   const storage = useStorage(STORAGE_MOUNT);
 
   return {
     async read(userLogin) {
-      return storage.getItem<UserSettings>(getSettingsKey(userLogin));
+      return storage.getItem<T>(getUserSettingsItemKey(userLogin, collection));
     },
     async write(userLogin, settings) {
-      await storage.setItem(getSettingsKey(userLogin), settings);
+      await storage.setItem(getUserSettingsItemKey(userLogin, collection), settings);
     },
     async update(userLogin, updater) {
-      const settingsKey = getSettingsKey(userLogin);
+      const settingsKey = getUserSettingsItemKey(userLogin, collection);
 
       return enqueueUserSettingsWrite(settingsKey, async () => {
-        const currentSettings = await storage.getItem<UserSettings>(settingsKey);
+        const currentSettings = await storage.getItem<T>(settingsKey);
         const nextSettings = await updater(currentSettings);
 
         await storage.setItem(settingsKey, nextSettings);
@@ -254,11 +245,14 @@ export function createNitroUserSettingsStorageAdapter(): UserSettingsStorageAdap
   };
 }
 
-export function createUpstashRedisUserSettingsStorageAdapter(options: {
+export function createUpstashRedisUserSettingsStorageAdapter<
+  T extends object = UserSettings,
+>(options: {
   base?: string;
+  collection?: string;
   credentials?: UpstashRedisCredentials;
   redis?: UpstashRedisClient;
-}): UserSettingsStorageAdapter {
+}): UserSettingsStorageAdapter<T> {
   const redis =
     options.redis ??
     (() => {
@@ -269,20 +263,29 @@ export function createUpstashRedisUserSettingsStorageAdapter(options: {
 
   return {
     async read(userLogin) {
-      return redis.get<UserSettings>(getNamespacedSettingsKey(options.base, userLogin));
+      return redis.get<T>(getNamespacedSettingsKey(options.base, userLogin, options.collection));
     },
     async write(userLogin, settings) {
-      await redis.set(getNamespacedSettingsKey(options.base, userLogin), settings);
+      await redis.set(
+        getNamespacedSettingsKey(options.base, userLogin, options.collection),
+        settings
+      );
     },
     async update(userLogin, updater) {
-      const settingsKey = getNamespacedSettingsKey(options.base, userLogin);
+      const settingsKey = getNamespacedSettingsKey(options.base, userLogin, options.collection);
 
       return enqueueUserSettingsWrite(settingsKey, async () => {
-        return runWithUpstashWriteLock(redis, settingsKey, async () => {
-          const currentSettings = await redis.get<UserSettings>(settingsKey);
+        return runWithUpstashWriteLock(redis, settingsKey, async (lock) => {
+          const currentSettings = await redis.get<T>(settingsKey);
           const nextSettings = await updater(currentSettings);
 
-          await redis.set(settingsKey, nextSettings);
+          const committed = await redis.eval(
+            WRITE_LOCKED_SETTINGS_SCRIPT,
+            [lock.key, settingsKey],
+            [lock.token, JSON.stringify(nextSettings)]
+          );
+          if (committed !== 1)
+            throw new Error('User data storage lock expired before saving. Retry the update.');
           return nextSettings;
         });
       });
@@ -290,11 +293,12 @@ export function createUpstashRedisUserSettingsStorageAdapter(options: {
   };
 }
 
-export function createRedisUserSettingsStorageAdapter(options: {
+export function createRedisUserSettingsStorageAdapter<T extends object = UserSettings>(options: {
   base?: string;
+  collection?: string;
   url?: string;
   redis?: RedisClient;
-}): UserSettingsStorageAdapter {
+}): UserSettingsStorageAdapter<T> {
   const redis = options.redis;
   let redisPromise: Promise<RedisClient> | undefined;
 
@@ -324,10 +328,10 @@ export function createRedisUserSettingsStorageAdapter(options: {
       return null;
     }
 
-    return JSON.parse(serializedSettings) as UserSettings;
+    return JSON.parse(serializedSettings) as T;
   };
 
-  const writeSettings = async (settingsKey: string, settings: UserSettings) => {
+  const writeSettings = async (settingsKey: string, settings: T) => {
     const client = await getRedis();
 
     await client.set(settingsKey, JSON.stringify(settings));
@@ -335,22 +339,30 @@ export function createRedisUserSettingsStorageAdapter(options: {
 
   return {
     async read(userLogin) {
-      return readSettings(getNamespacedSettingsKey(options.base, userLogin));
+      return readSettings(getNamespacedSettingsKey(options.base, userLogin, options.collection));
     },
     async write(userLogin, settings) {
-      await writeSettings(getNamespacedSettingsKey(options.base, userLogin), settings);
+      await writeSettings(
+        getNamespacedSettingsKey(options.base, userLogin, options.collection),
+        settings
+      );
     },
     async update(userLogin, updater) {
-      const settingsKey = getNamespacedSettingsKey(options.base, userLogin);
+      const settingsKey = getNamespacedSettingsKey(options.base, userLogin, options.collection);
 
       return enqueueUserSettingsWrite(settingsKey, async () => {
         const client = await getRedis();
 
-        return runWithRedisWriteLock(client, settingsKey, async () => {
+        return runWithRedisWriteLock(client, settingsKey, async (lock) => {
           const currentSettings = await readSettings(settingsKey);
           const nextSettings = await updater(currentSettings);
 
-          await writeSettings(settingsKey, nextSettings);
+          const committed = await client.eval(WRITE_LOCKED_SETTINGS_SCRIPT, {
+            keys: [lock.key, settingsKey],
+            arguments: [lock.token, JSON.stringify(nextSettings)],
+          });
+          if (committed !== 1)
+            throw new Error('User data storage lock expired before saving. Retry the update.');
           return nextSettings;
         });
       });
@@ -358,9 +370,12 @@ export function createRedisUserSettingsStorageAdapter(options: {
   };
 }
 
-export function getUserSettingsStorageAdapter() {
+export function getUserSettingsStorageAdapter<T extends object = UserSettings>(
+  collection = ''
+): UserSettingsStorageAdapter<T> {
   const driver = getConfiguredUserSettingsStorageDriver();
-  const context = {
+  const context: UserSettingsStorageContext = {
+    collection,
     driver,
     base: getConfiguredUserSettingsStorageBase(driver),
     redisUrl:
@@ -376,20 +391,28 @@ export function getUserSettingsStorageAdapter() {
     context.upstashCredentials?.token ?? '',
   ].join(':');
 
-  if (cachedUserSettingsStorageAdapter?.signature === signature) {
-    return cachedUserSettingsStorageAdapter.adapter;
-  }
+  const cached = cachedUserSettingsStorageAdapters.get(collection);
+  if (cached?.signature === signature) return cached.adapter as UserSettingsStorageAdapter<T>;
 
-  const createAdapter =
-    USER_SETTINGS_STORAGE_ADAPTERS[driver as UserSettingsStorageDriver] ??
-    createNitroUserSettingsStorageAdapter;
-
-  const adapter = createAdapter(context);
-  cachedUserSettingsStorageAdapter = { signature, adapter };
+  const adapter =
+    driver === 'redis'
+      ? createRedisUserSettingsStorageAdapter<T>({
+          base: context.base,
+          collection,
+          url: context.redisUrl,
+        })
+      : driver === 'upstash'
+        ? createUpstashRedisUserSettingsStorageAdapter<T>({
+            base: context.base,
+            collection,
+            credentials: context.upstashCredentials,
+          })
+        : createNitroUserSettingsStorageAdapter<T>(collection);
+  cachedUserSettingsStorageAdapters.set(collection, { signature, adapter });
 
   return adapter;
 }
 
 export function clearCachedUserSettingsStorageAdapterForTesting() {
-  cachedUserSettingsStorageAdapter = undefined;
+  cachedUserSettingsStorageAdapters.clear();
 }

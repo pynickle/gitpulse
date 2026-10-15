@@ -1,6 +1,6 @@
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { fetchFollowedRepositoryIdentityLookups } from '#server/utils/release-timeline-graphql-utils';
-import { patchUserSettings, readUserSettings } from '#server/utils/user-settings-utils';
+import { renameFollowedRepositories, readUserSettings } from '#server/utils/user-settings-utils';
 import { applyFollowRenames } from '#shared/utils/release-follows';
 import { classifyLookups } from '#shared/utils/release-timeline';
 
@@ -18,7 +18,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     const renamed = applyFollowRenames(follows, lookups);
     if (renamed) {
       try {
-        await patchUserSettings(userLogin, { followedRepositories: renamed });
+        await renameFollowedRepositories(userLogin, lookups);
       } catch (error: unknown) {
         console.warn('Failed to write back renamed Followed Repositories:', error);
       }

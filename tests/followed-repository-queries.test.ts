@@ -10,10 +10,11 @@ import type {
 
 import { createFollowedRepositoryHttpAdapter } from '../app/composables/followed-repositories/httpAdapter';
 import { getFollowedRepositoryQueries } from '../app/composables/followed-repositories/queries';
-import {
-  createReleaseTimelineSession,
-  type ReleaseTimelineSessionEntry,
-} from '../app/composables/release-timeline/session';
+import type { ReleaseTimelineSessionEntry } from '../app/composables/release-timeline/session';
+import * as timelineUtils from '../shared/utils/release-timeline';
+mock.module('#shared/utils/release-timeline', () => timelineUtils);
+const { createReleaseTimelineSession } =
+  await import('../app/composables/release-timeline/session');
 import * as followUtils from '../shared/utils/release-follows';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -514,7 +515,7 @@ test('the production adapter owns identity and timezone-aware Timeline requests'
   expect(await adapter.timeline()).toEqual(releases());
   expect(paths[0]).toBe('/api/release-follows/identities');
   const url = new URL(paths[1]!, 'https://gitpulse.example');
-  expect(url.pathname).toBe('/api/release-timeline');
+  expect(url.pathname).toBe('/api/release-timeline/refresh');
   expect(url.searchParams.get('timeZone')).toBe(
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
   );

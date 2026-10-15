@@ -186,8 +186,28 @@ A repository that has a Release Follow for the signed-in user.
 _Avoid_: watched repo, starred repo, selected repo
 
 **Release Timeline**:
-The newest-to-oldest sequence of releases from the user's Followed Repositories.
+The sequence of published releases from the user's Followed Repositories, ordered from newest to oldest by publication time.
 _Avoid_: feed, release list when referring to this cross-repository sequence
+
+**Shared Timeline Window**:
+The publication-time interval currently exposed on the Release Timeline across Followed Repositories. It represents the history covered so far, without guaranteeing that every release in that interval has been found.
+_Avoid_: Complete Timeline Window for bounded pagination coverage
+
+**Partial Timeline Window**:
+A Shared Timeline Window displayed while one or more Followed Repositories could not be included in the current load.
+_Avoid_: full repository coverage when a repository could not be loaded
+
+**Timeline Refresh Baseline**:
+The time of the user's previous Release Timeline refresh that returned usable results, including partial results. It distinguishes new releases from earlier ones and does not represent reading progress.
+_Avoid_: last read time, reading position
+
+**Recovered Release**:
+A previously missing release discovered after the Release Timeline had already shown its publication interval.
+_Avoid_: new release when referring to discovery of an earlier omission
+
+**Recovered Release History**:
+The user's retained collection of Recovered Releases, preserved across Release Timeline refreshes until explicitly cleared. Clearing it marks those releases as handled, so they do not re-enter the collection.
+_Avoid_: unread releases, new releases list
 
 **Oldest Shown Release**:
 A Followed Repository's chronologically earliest release on the Release Timeline, marked only when older releases for that repository exist and were not loaded.

@@ -13,11 +13,12 @@ import type {
   FollowedRepository,
   LookupClassification,
   ReleaseTimeline,
+  ReleaseTimelineRequest,
 } from '#shared/types/release-follows';
 
 export interface FollowedRepositoryAdapter {
   identities: () => Promise<LookupClassification & { renamed?: boolean }>;
-  timeline: () => Promise<ReleaseTimeline>;
+  timeline: (request?: ReleaseTimelineRequest) => Promise<ReleaseTimeline>;
 }
 interface QueryOptions {
   login: Readonly<Ref<string | null>>;
@@ -92,9 +93,9 @@ function createQueries({ login, loaded, repositories, loadSettings, adapter }: Q
   };
   const dispatch = <T extends LookupClassification | ReleaseTimeline>(
     request: () => Promise<T>,
-    identity: boolean
+    identity: boolean,
+    requestedIds = [...ids.value]
   ): Promise<T> => {
-    const requestedIds = [...ids.value];
     latest?.wake();
     let wake!: () => void;
     const ticket = {
@@ -112,20 +113,24 @@ function createQueries({ login, loaded, repositories, loadSettings, adapter }: Q
       const unavailable = new Set(data?.unavailableIds ?? []);
       const transient = new Set(data?.transientIds ?? []);
       const available = new Set(data && 'availableIds' in data ? data.availableIds : []);
-      classification.value = new Map(
-        requestedIds.map((id) => [
-          id,
-          !data
-            ? 'transient'
-            : unavailable.has(id)
-              ? 'unavailable'
-              : transient.has(id)
+      classification.value = new Map([
+        ...classification.value,
+        ...requestedIds.map(
+          (id) =>
+            [
+              id,
+              !data
                 ? 'transient'
-                : !identity || available.has(id)
-                  ? 'available'
-                  : 'transient',
-        ])
-      );
+                : unavailable.has(id)
+                  ? 'unavailable'
+                  : transient.has(id)
+                    ? 'transient'
+                    : !identity || available.has(id)
+                      ? 'available'
+                      : 'transient',
+            ] as const
+        ),
+      ]);
     };
     const result = (async () => {
       let data: T;
@@ -157,11 +162,15 @@ function createQueries({ login, loaded, repositories, loadSettings, adapter }: Q
       /* Explicit retries remain available. */
     }
   };
-  const fetchTimeline = async () => {
+  const fetchTimeline = async (request?: ReleaseTimelineRequest) => {
     const account = accountGeneration;
     if (!loaded.value && !(await ensureSettings())) return null;
     if (account !== accountGeneration || !canQuery()) return null;
-    return dispatch(adapter.timeline, false);
+    return dispatch(
+      () => adapter.timeline(request),
+      false,
+      request?.cursors ? Object.keys(request.cursors) : [...ids.value]
+    );
   };
   const ensureClassification = async () => {
     const account = accountGeneration;
@@ -177,6 +186,8 @@ function createQueries({ login, loaded, repositories, loadSettings, adapter }: Q
       const current = latest;
       if (!current) return;
       await Promise.race([current.done, current.changed]);
+      if (latest === current && ids.value.some((id) => !classification.value.has(id)))
+        latest = null;
     }
   };
   const unavailableIds = computed(() =>

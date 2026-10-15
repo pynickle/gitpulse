@@ -68,6 +68,7 @@ describe('mapRepositoryReleaseLookup', () => {
       owner: 'octo',
       name: 'widgets',
       hasOlderReleases: true,
+      endCursor: null,
       releases: [
         {
           id: 11,
@@ -137,6 +138,42 @@ describe('mapRepositoryIdentityLookup', () => {
 });
 
 describe('fetchFollowedRepositoryReleaseLookups', () => {
+  test('requests 100 releases per connection and resumes independent cursors', async () => {
+    const requests: { query: string; variables?: Record<string, unknown> }[] = [];
+    const result = await fetchFollowedRepositoryReleaseLookups(
+      {
+        graphql: async (query, variables) => {
+          requests.push({ query, variables });
+          return {
+            repo0: {
+              id: 'A',
+              releases: { nodes: [], pageInfo: { hasNextPage: true, endCursor: 'A2' } },
+            },
+            repo1: null,
+          };
+        },
+      },
+      [follow('A'), follow('B')],
+      { cursors: { A: 'A1', B: 'B1' } }
+    );
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.query).toContain('first: 100');
+    expect(requests[0]!.query).toContain('after: $after0');
+    expect(requests[0]!.query).toContain('after: $after1');
+    expect(requests[0]!.variables).toMatchObject({
+      id0: 'A',
+      after0: 'A1',
+      id1: 'B',
+      after1: 'B1',
+    });
+    expect(result.A).toMatchObject({
+      status: 'available',
+      endCursor: 'A2',
+      hasOlderReleases: true,
+    });
+    expect(result.B).toEqual({ status: 'unavailable' });
+  });
+
   test('does not call GitHub when there are no Followed Repositories', async () => {
     let called = false;
 
@@ -166,38 +203,39 @@ describe('fetchFollowedRepositoryReleaseLookups', () => {
       {
         graphql: async (_query, variables) => {
           calls += 1;
-          const ids = variables?.ids as string[];
+          const ids = Object.entries(variables!)
+            .filter(([name]) => name.startsWith('id'))
+            .map(([, id]) => id as string);
           if (ids.includes('R_flaky') && ids.length === 1) {
             throw new Error('chunk failed');
           }
 
-          return {
-            nodes: ids.map((id) => {
-              if (id === 'R_gone') return null;
-              if (id === 'R_live') {
-                return {
-                  id: 'R_live',
-                  name: 'live',
-                  owner: { login: 'octo' },
-                  releases: {
-                    pageInfo: { hasNextPage: false },
-                    nodes: [
-                      {
-                        databaseId: 1,
-                        tagName: 'v1',
-                        name: 'Live',
-                        publishedAt: '2026-08-22T12:00:00.000Z',
-                        isDraft: false,
-                        isPrerelease: false,
-                        releaseAssets: { totalCount: 0 },
-                      },
-                    ],
-                  },
-                };
-              }
-              return null;
-            }),
-          };
+          const nodes = ids.map((id) => {
+            if (id === 'R_gone') return null;
+            if (id === 'R_live') {
+              return {
+                id: 'R_live',
+                name: 'live',
+                owner: { login: 'octo' },
+                releases: {
+                  pageInfo: { hasNextPage: false },
+                  nodes: [
+                    {
+                      databaseId: 1,
+                      tagName: 'v1',
+                      name: 'Live',
+                      publishedAt: '2026-08-22T12:00:00.000Z',
+                      isDraft: false,
+                      isPrerelease: false,
+                      releaseAssets: { totalCount: 0 },
+                    },
+                  ],
+                },
+              };
+            }
+            return null;
+          });
+          return Object.fromEntries(nodes.map((node, index) => [`repo${index}`, node]));
         },
       },
       follows,
@@ -288,4 +326,94 @@ describe('fetchFollowedRepositoryIdentityLookups', () => {
       R_flaky: { status: 'transient' },
     });
   });
+});
+
+test('a coordinated round spans bounded GraphQL chunks and preserves valid partial repository pages', async () => {
+  const follows = Array.from({ length: 43 }, (_, index) => follow(`R${index}`));
+  const counts: number[] = [];
+  const result = await fetchFollowedRepositoryReleaseLookups(
+    {
+      graphql: async (_query, variables) => {
+        const ids = Object.entries(variables!)
+          .filter(([name]) => name.startsWith('id'))
+          .map(([, id]) => id as string);
+        counts.push(ids.length);
+        const data = Object.fromEntries(
+          ids.map((id, index) => [
+            `repo${index}`,
+            id === 'R1'
+              ? null
+              : { id, releases: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } } },
+          ])
+        );
+        if (ids.includes('R0')) throw { data, errors: [{ path: ['repo1'], type: 'RATE_LIMITED' }] };
+        return data;
+      },
+    },
+    follows,
+    { cursors: Object.fromEntries(follows.map((repo) => [repo.id, null])) }
+  );
+  expect(counts).toEqual([20, 20, 3]);
+  expect(Object.keys(result)).toHaveLength(43);
+  expect(result.R0?.status).toBe('available');
+  expect(result.R1?.status).toBe('transient');
+  expect(result.R42?.status).toBe('available');
+});
+
+test('optional nested GraphQL errors preserve usable cards and connection progress', async () => {
+  const result = await fetchFollowedRepositoryReleaseLookups(
+    {
+      graphql: async () => {
+        throw {
+          data: {
+            repo0: {
+              id: 'A',
+              releases: {
+                nodes: [
+                  {
+                    databaseId: 1,
+                    tagName: 'v1',
+                    publishedAt: '2026-10-10T00:00:00Z',
+                    reactionGroups: null,
+                  },
+                ],
+                pageInfo: { hasNextPage: true, endCursor: 'next' },
+              },
+            },
+          },
+          errors: [{ path: ['repo0', 'releases', 'nodes', 0, 'reactionGroups'], type: 'INTERNAL' }],
+        };
+      },
+    },
+    [follow('A')],
+    { cursors: { A: null } }
+  );
+  expect(result.A).toMatchObject({ status: 'available', endCursor: 'next', releases: [{ id: 1 }] });
+});
+
+test('missing release nodes retain valid siblings but mark the page incomplete for retry', async () => {
+  const result = await fetchFollowedRepositoryReleaseLookups(
+    {
+      graphql: async () => {
+        throw {
+          data: {
+            repo0: {
+              id: 'A',
+              releases: {
+                nodes: [
+                  { databaseId: 1, tagName: 'v1', publishedAt: '2026-10-10T00:00:00Z' },
+                  null,
+                ],
+                pageInfo: { hasNextPage: true, endCursor: 'next' },
+              },
+            },
+          },
+          errors: [{ path: ['repo0', 'releases', 'nodes', 1], type: 'INTERNAL' }],
+        };
+      },
+    },
+    [follow('A')],
+    { cursors: { A: null } }
+  );
+  expect(result.A).toMatchObject({ status: 'available', incomplete: true, releases: [{ id: 1 }] });
 });

@@ -4,11 +4,13 @@ import { computed, shallowRef, useTemplateRef } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
 import FloatingBackToTopButton from '~/components/dashboard/FloatingBackToTopButton.vue';
+import RecoveredReleaseHistory from '~/components/dashboard/release-timeline/RecoveredReleaseHistory.vue';
 import ReleaseDrawer from '~/components/dashboard/release-timeline/ReleaseDrawer.vue';
 import ReleaseTimelineFailureBanner from '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue';
 import ReleaseTimelineFilterPanel from '~/components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue';
 import ReleaseTimelineGrid from '~/components/dashboard/release-timeline/ReleaseTimelineGrid.vue';
 import ReleaseTimelineHeader from '~/components/dashboard/release-timeline/ReleaseTimelineHeader.vue';
+import ReleaseTimelineStatus from '~/components/dashboard/release-timeline/ReleaseTimelineStatus.vue';
 import type { DateRange } from '~/utils/filterDateRange';
 import { EMPTY_DATE_RANGE } from '~/utils/filterDateRange';
 import { hasActiveTimelineFilter } from '~/utils/filterReleaseTimelineGroups';
@@ -23,6 +25,14 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const searchQuery = shallowRef('');
+const filterRepositories = shallowRef<string[]>([]);
+const filterDateRange = shallowRef<DateRange>(EMPTY_DATE_RANGE);
+const activeFilter = computed(() => ({
+  repositories: filterRepositories.value,
+  dateRange: filterDateRange.value,
+  query: searchQuery.value,
+}));
 const {
   loaded,
   groups,
@@ -33,7 +43,21 @@ const {
   unavailableRepos,
   transientRepos,
   fetchTimeline,
-} = useReleaseTimeline();
+  visibleGroups,
+  hasMore,
+  canRetry,
+  partial,
+  previousBaseline,
+  baselineExposed,
+  loadedNewCount,
+  recoveredRecords,
+  clearingHistory,
+  persistenceError,
+  loadOlder,
+  retryFailed,
+  clearRecovered,
+  retryPersistence,
+} = useReleaseTimeline(activeFilter);
 const {
   openItem,
   detail,
@@ -48,17 +72,23 @@ const {
 const gridRef = useTemplateRef<{ scrollToTop: () => void }>('grid');
 const scrollTop = shallowRef(0);
 const viewportHeight = shallowRef(0);
-const searchQuery = shallowRef('');
-const filterRepositories = shallowRef<string[]>([]);
-const filterDateRange = shallowRef<DateRange>(EMPTY_DATE_RANGE);
 const filterPanelOpen = shallowRef(false);
 
+const recoveryOpen = shallowRef(false);
+const handleOpenRecovery = () => {
+  closeDrawer();
+  filterPanelOpen.value = false;
+  recoveryOpen.value = true;
+};
+
 const handleOpenFilterPanel = () => {
+  recoveryOpen.value = false;
   closeDrawer();
   filterPanelOpen.value = true;
 };
 
 const handleOpenDrawer = (item: TimelineRelease) => {
+  recoveryOpen.value = false;
   filterPanelOpen.value = false;
   openDrawer(item);
 };
@@ -67,14 +97,6 @@ const filterActive = computed(() =>
   hasActiveTimelineFilter({
     repositories: filterRepositories.value,
     dateRange: filterDateRange.value,
-  })
-);
-
-const visibleGroups = computed(() =>
-  filterReleaseTimelineGroups(groups.value, {
-    repositories: filterRepositories.value,
-    dateRange: filterDateRange.value,
-    query: searchQuery.value,
   })
 );
 
@@ -138,9 +160,12 @@ defineExpose({
     <ReleaseTimelineHeader
       v-model="searchQuery"
       :loading="loading"
+      :previous-baseline="previousBaseline"
       :show-title="showTitle"
       :show-reload="showReload"
       :filter-active="filterActive"
+      :recovered-count="recoveredRecords.length"
+      @recovery="handleOpenRecovery"
       @reload="fetchTimeline"
       @manage="emit('manage')"
       @filter-click="handleOpenFilterPanel"
@@ -150,7 +175,7 @@ defineExpose({
       v-if="showFailureBanner"
       :unavailable-repos="unavailableRepos"
       :transient-repos="transientRepos"
-      @retry="fetchTimeline"
+      @retry="retryFailed"
       @manage="emit('manage')"
     />
 
@@ -213,11 +238,33 @@ defineExpose({
         v-else-if="showGrid"
         ref="grid"
         :groups="visibleGroups"
+        :previous-baseline="baselineExposed ? previousBaseline : null"
         @open="handleOpenDrawer"
         @viewport-scroll="handleViewportScroll"
       />
     </div>
 
+    <ReleaseTimelineStatus
+      :count="loadedNewCount"
+      :partial="partial"
+      :has-more="hasMore"
+      :can-retry="canRetry"
+      :loading="loading"
+      :persistence-error="persistenceError"
+      :error="error"
+      @older="loadOlder"
+      @retry="retryFailed"
+      @save="retryPersistence"
+    />
+    <RecoveredReleaseHistory
+      :open="recoveryOpen"
+      :records="recoveredRecords"
+      :saving="clearingHistory"
+      :error="persistenceError"
+      @close="recoveryOpen = false"
+      @clear="clearRecovered"
+      @open="handleOpenDrawer"
+    />
     <ReleaseTimelineFilterPanel
       :open="filterPanelOpen"
       :repositories="filterRepositories"

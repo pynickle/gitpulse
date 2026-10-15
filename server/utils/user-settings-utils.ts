@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3';
 
+import type { RepositoryIdentityLookup } from '#shared/types/release-follows';
 import type { UserSettings } from '#shared/types/user-settings';
+import { applyFollowRenames } from '#shared/utils/release-follows';
 import {
   createDefaultUserSettings,
   mergeUserSettingsPatch,
@@ -16,6 +18,10 @@ type UserSettingsService = {
   read: (userLogin: string) => Promise<UserSettings>;
   save: (userLogin: string, settings: UserSettings) => Promise<UserSettings>;
   patch: (userLogin: string, patch: unknown) => Promise<UserSettings>;
+  renameFollows: (
+    userLogin: string,
+    lookups: Record<string, RepositoryIdentityLookup>
+  ) => Promise<UserSettings>;
 };
 
 const normalizeStoredUserSettings = (storedSettings: UserSettings | null) => {
@@ -41,6 +47,15 @@ export function createUserSettingsService(
 
       await storage.write(userLogin, nextSettings);
       return nextSettings;
+    },
+    async renameFollows(userLogin, lookups) {
+      return storage.update(userLogin, (storedSettings) => {
+        const current = normalizeStoredUserSettings(storedSettings);
+        const renamed = applyFollowRenames(current.followedRepositories ?? [], lookups);
+        return renamed
+          ? prepareUserSettingsForWrite({ ...current, followedRepositories: renamed })
+          : current;
+      });
     },
     async patch(userLogin, patch) {
       return storage.update(userLogin, (storedSettings) => {
@@ -77,4 +92,11 @@ export async function saveUserSettings(userLogin: string, settings: UserSettings
 
 export async function patchUserSettings(userLogin: string, patch: unknown) {
   return createUserSettingsService().patch(userLogin, patch);
+}
+
+export async function renameFollowedRepositories(
+  userLogin: string,
+  lookups: Record<string, RepositoryIdentityLookup>
+) {
+  return createUserSettingsService().renameFollows(userLogin, lookups);
 }

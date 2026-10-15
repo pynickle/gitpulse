@@ -1,4 +1,10 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { createStorage } from 'unstorage';
+import fsLiteDriver from 'unstorage/drivers/fs-lite';
 
 import { createDefaultUserSettings } from '../shared/utils/user-settings';
 import * as userSettingsStorageEnv from '../shared/utils/user-settings-storage-env';
@@ -51,7 +57,10 @@ class FakeRedisClient {
 
   async eval(script: string, options: RedisEvalOptions) {
     this.evalCalls.push({ script, options });
-    this.values.delete(options.keys[0]);
+    if (options.keys.length === 2) {
+      if (this.values.get(options.keys[0]!) !== options.arguments[0]) return 0;
+      this.values.set(options.keys[1]!, options.arguments[1]!);
+    } else this.values.delete(options.keys[0]!);
     return 1;
   }
 
@@ -132,8 +141,25 @@ describe('createRedisUserSettingsStorageAdapter', () => {
       key: 'gitpulse:test:users:octocat:write-lock',
       options: { NX: true, PX: 10_000 },
     });
-    expect(redis.evalCalls).toHaveLength(1);
-    expect(redis.evalCalls[0].options.keys).toEqual(['gitpulse:test:users:octocat:write-lock']);
+    expect(redis.evalCalls).toHaveLength(2);
+    expect(redis.evalCalls[1].options.keys).toEqual(['gitpulse:test:users:octocat:write-lock']);
+  });
+
+  test('stores a collection outside the user settings key', async () => {
+    const redis = new FakeRedisClient();
+    const adapter = storageUtils.createRedisUserSettingsStorageAdapter({
+      base: 'gitpulse:test',
+      collection: 'release-timeline',
+      redis,
+    });
+    const settings = createDefaultUserSettings();
+
+    await adapter.write('Octo Cat', settings);
+
+    expect(redis.values.get('gitpulse:test:collections:release-timeline:users:octo%20cat')).toBe(
+      JSON.stringify(settings)
+    );
+    expect(redis.values.has('gitpulse:test:users:octo%20cat:release-timeline')).toBe(false);
   });
 });
 
@@ -159,4 +185,77 @@ describe('getUserSettingsStorageAdapter', () => {
       'NUXT_GITPULSE_USER_SETTINGS_STORAGE_REDIS_URL'
     );
   });
+});
+
+test('a collection can be saved beside an existing user settings file', async () => {
+  const base = await mkdtemp(join(tmpdir(), 'gitpulse-settings-'));
+
+  try {
+    const storage = createStorage({ driver: fsLiteDriver({ base }) });
+    const settingsKey = storageUtils.getUserSettingsItemKey('pynickle');
+    const historyKey = storageUtils.getUserSettingsItemKey('pynickle', 'release-timeline');
+    const history = {
+      baseline: '2026-10-15T00:00:00.000Z',
+      records: [],
+      handled: [],
+      revision: 1,
+    };
+
+    await storage.setItem(settingsKey, { version: 1 });
+    await storage.setItem(historyKey, history);
+
+    expect(historyKey.startsWith(`${settingsKey}:`)).toBe(false);
+    expect(await storage.getItem(settingsKey)).toEqual({ version: 1 });
+    expect(await storage.getItem(historyKey)).toEqual(history);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test('an expired remote lock cannot commit stale data over a newer update', async () => {
+  const redis = new FakeRedisClient();
+  const adapter = storageUtils.createRedisUserSettingsStorageAdapter({
+    base: 'gitpulse:test',
+    redis,
+  });
+  await expect(
+    adapter.update('octocat', () => {
+      redis.values.set('gitpulse:test:users:octocat:write-lock', 'new-owner');
+      return createDefaultUserSettings();
+    })
+  ).rejects.toThrow('lock expired');
+  expect(await adapter.read('octocat')).toBeNull();
+});
+
+test('late repository renames update current follows without resurrecting removed repositories', async () => {
+  const sharedSettings = await import('../shared/utils/user-settings');
+  const sharedFollows = await import('../shared/utils/release-follows');
+  mock.module('#shared/utils/user-settings', () => sharedSettings);
+  mock.module('#shared/utils/release-follows', () => sharedFollows);
+  const { createUserSettingsService } = await import('../server/utils/user-settings-utils');
+  const redis = new FakeRedisClient();
+  const service = createUserSettingsService(
+    storageUtils.createRedisUserSettingsStorageAdapter({ redis })
+  );
+  await service.save('octo', {
+    ...createDefaultUserSettings(),
+    followedRepositories: [
+      { id: 'A', owner: 'old', name: 'A' },
+      { id: 'B', owner: 'octo', name: 'B' },
+    ],
+  });
+  await service.patch('octo', {
+    followedRepositories: [
+      { id: 'B', owner: 'octo', name: 'B' },
+      { id: 'C', owner: 'octo', name: 'C' },
+    ],
+  });
+  await service.renameFollows('octo', {
+    A: { status: 'available', owner: 'new', name: 'A' },
+    B: { status: 'available', owner: 'new', name: 'B' },
+  });
+  expect((await service.read('octo')).followedRepositories).toEqual([
+    { id: 'B', owner: 'new', name: 'B' },
+    { id: 'C', owner: 'octo', name: 'C' },
+  ]);
 });

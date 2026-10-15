@@ -3,15 +3,21 @@ import type { LookupClassification, ReleaseTimeline } from '#shared/types/releas
 import type { FollowedRepositoryAdapter } from './queries';
 
 export function createFollowedRepositoryHttpAdapter(
-  fetch: <T>(path: string) => Promise<T>
+  fetch: <T>(path: string, options?: { method: 'POST' }) => Promise<T>
 ): FollowedRepositoryAdapter {
   return {
     identities: () =>
       fetch<LookupClassification & { renamed?: boolean }>('/api/release-follows/identities'),
-    timeline: () => {
+    timeline: (request) => {
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const params = new URLSearchParams({ timeZone });
-      return fetch<ReleaseTimeline>(`/api/release-timeline?${params.toString()}`);
+      if (request?.cursors) {
+        params.set('cursors', JSON.stringify(request.cursors));
+        return fetch<ReleaseTimeline>(`/api/release-timeline?${params.toString()}`);
+      }
+      return fetch<ReleaseTimeline>(`/api/release-timeline/refresh?${params.toString()}`, {
+        method: 'POST',
+      });
     },
   };
 }

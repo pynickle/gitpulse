@@ -38,6 +38,8 @@ export type RepositoryReleaseLookup =
       owner: string;
       name: string;
       hasOlderReleases: boolean;
+      endCursor?: string | null;
+      incomplete?: boolean;
       releases: RepositoryReleaseItem[];
     }
   | { status: 'unavailable' }
@@ -48,7 +50,7 @@ export type RepositoryIdentityLookup =
   | { status: 'unavailable' }
   | { status: 'transient' };
 
-export type ClassifiableLookup = { status: string };
+export type ClassifiableLookup = { status: string; incomplete?: boolean };
 
 export interface LookupClassification {
   availableIds: string[];
@@ -77,7 +79,20 @@ export interface ReleaseTimelineGroup {
 }
 
 export interface ReleaseTimeline {
+  pages?: Record<string, RepositoryReleaseLookup>;
+  refresh?: { previousBaseline: string | null; startedAt: string };
+  persistenceError?: string;
   groups: ReleaseTimelineGroup[];
   unavailableIds: string[];
   transientIds: string[];
+}
+
+/** One bounded round, with continuation state for each requested repository. */
+export interface ReleaseTimelinePage extends ReleaseTimeline {
+  pages: Record<string, RepositoryReleaseLookup>;
+  refresh?: { previousBaseline: string | null; startedAt: string };
+  persistenceError?: string;
+}
+export interface ReleaseTimelineRequest {
+  cursors?: Record<string, string | null>;
 }

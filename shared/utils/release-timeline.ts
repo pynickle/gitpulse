@@ -39,7 +39,7 @@ export function classifyLookups(
       unavailableIds.push(follow.id);
       continue;
     }
-    if (lookup?.status === 'available') {
+    if (lookup?.status === 'available' && !lookup.incomplete) {
       availableIds.push(follow.id);
       continue;
     }
@@ -78,9 +78,8 @@ const truncateChangelog = (description: string | null): { text: string; truncate
 };
 
 const comparePublishedDesc = (left: TimelineRelease, right: TimelineRelease) => {
-  if (left.publishedAt !== right.publishedAt) {
-    return right.publishedAt < left.publishedAt ? -1 : 1;
-  }
+  const timeDifference = Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+  if (timeDifference !== 0) return timeDifference;
   if (left.repository.id !== right.repository.id) {
     return left.repository.id < right.repository.id ? -1 : 1;
   }
@@ -152,7 +151,7 @@ export function assembleReleaseTimeline(
 
     const published = lookup.releases.filter(isPublishedRelease);
     const oldestPublished = published.reduce<(typeof published)[number] | null>((oldest, item) => {
-      if (!oldest || item.publishedAt < oldest.publishedAt) {
+      if (!oldest || Date.parse(item.publishedAt) < Date.parse(oldest.publishedAt)) {
         return item;
       }
       return oldest;

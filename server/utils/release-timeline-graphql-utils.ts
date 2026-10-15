@@ -32,7 +32,7 @@ export interface GraphQLRepositoryReleaseNode {
   nameWithOwner?: string | null;
   owner?: { login?: string | null } | null;
   releases?: {
-    pageInfo?: { hasNextPage?: boolean | null } | null;
+    pageInfo?: { hasNextPage?: boolean | null; endCursor?: string | null } | null;
     nodes?: (GraphQLReleaseNode | null)[] | null;
   } | null;
 }
@@ -64,16 +64,14 @@ query FollowedRepositoryIdentities($ids: [ID!]!) {
 }
 `;
 
-const RELEASE_TIMELINE_NODES_QUERY = `
-query ReleaseTimeline($ids: [ID!]!) {
-  nodes(ids: $ids) {
+const RELEASE_TIMELINE_REPOSITORY_FIELDS = `
     ... on Repository {
       id
       name
       nameWithOwner
       owner { login }
-      releases(first: 30, orderBy: { field: CREATED_AT, direction: DESC }) {
-        pageInfo { hasNextPage }
+      releases(first: 100, orderBy: { field: CREATED_AT, direction: DESC }) {
+        pageInfo { hasNextPage endCursor }
         nodes {
           databaseId
           url
@@ -92,8 +90,6 @@ query ReleaseTimeline($ids: [ID!]!) {
         }
       }
     }
-  }
-}
 `;
 
 const toNonEmptyString = (value: unknown): string | null => {
@@ -184,6 +180,7 @@ export function mapRepositoryReleaseLookup(
     owner,
     name,
     hasOlderReleases: Boolean(node.releases?.pageInfo?.hasNextPage),
+    endCursor: node.releases?.pageInfo?.endCursor ?? null,
     releases: Array.isArray(node.releases?.nodes)
       ? node.releases.nodes
           .map((release) => mapReleaseNode(release))
@@ -270,15 +267,64 @@ const fetchFollowedRepositoryLookups = async <T extends { status: string }>(
 export async function fetchFollowedRepositoryReleaseLookups(
   octokit: ReleaseTimelineGraphQLClient | Octokit,
   follows: FollowedRepository[],
-  options: { chunkSize?: number } = {}
+  options: { chunkSize?: number; cursors?: Record<string, string | null> } = {}
 ): Promise<Record<string, RepositoryReleaseLookup>> {
-  return fetchFollowedRepositoryLookups(
-    octokit,
-    follows,
-    RELEASE_TIMELINE_NODES_QUERY,
-    mapRepositoryReleaseLookup,
-    options.chunkSize ?? RELEASE_TIMELINE_CHUNK_SIZE
+  const results = await Promise.all(
+    chunkItems(follows, options.chunkSize ?? RELEASE_TIMELINE_CHUNK_SIZE).map(async (chunk) => {
+      const variables: Record<string, unknown> = {};
+      const declarations = chunk.map((follow, index) => {
+        variables[`id${index}`] = follow.id;
+        variables[`after${index}`] = options.cursors?.[follow.id] ?? null;
+        return `$id${index}: ID!, $after${index}: String`;
+      });
+      const query = `query ReleaseTimelinePages(${declarations.join(', ')}) { ${chunk
+        .map(
+          (_, index) =>
+            `repo${index}: node(id: $id${index}) { ${RELEASE_TIMELINE_REPOSITORY_FIELDS.replace('first: 100,', `first: 100, after: $after${index},`)} }`
+        )
+        .join('\n')} }`;
+      type Payload = Record<string, GraphQLRepositoryReleaseNode | null>;
+      let payload: Payload | null;
+      let errors: { path?: (string | number)[]; type?: string }[] = [];
+      try {
+        payload = await octokit.graphql<Payload>(query, variables);
+      } catch (error) {
+        payload = getPartialGraphQLData<Payload>(error);
+        if (error && typeof error === 'object' && 'errors' in error && Array.isArray(error.errors))
+          errors = error.errors;
+      }
+      return Object.fromEntries(
+        chunk.map((follow, index) => {
+          const alias = `repo${index}`;
+          const node = payload?.[alias];
+          const nodeErrors = errors.filter((error) => error.path?.[0] === alias);
+          if (
+            node === undefined ||
+            (node === null && nodeErrors.some((error) => error.type !== 'NOT_FOUND'))
+          )
+            return [follow.id, { status: 'transient' }];
+          if (node === null) return [follow.id, { status: 'unavailable' }];
+          const page = mapRepositoryReleaseLookup(node);
+          if (page.status !== 'available') return [follow.id, { status: 'transient' }];
+          const optionalFields = new Set([
+            'reactionGroups',
+            'releaseAssets',
+            'description',
+            'name',
+            'url',
+          ]);
+          const incomplete =
+            !Array.isArray(node.releases?.nodes) ||
+            typeof node.releases?.pageInfo?.hasNextPage !== 'boolean' ||
+            (page.hasOlderReleases && !page.endCursor) ||
+            nodeErrors.some((error) => !optionalFields.has(String(error.path?.[4])));
+          const lookup: RepositoryReleaseLookup = incomplete ? { ...page, incomplete: true } : page;
+          return [follow.id, lookup];
+        })
+      );
+    })
   );
+  return Object.assign({}, ...results);
 }
 
 export async function fetchFollowedRepositoryIdentityLookups(

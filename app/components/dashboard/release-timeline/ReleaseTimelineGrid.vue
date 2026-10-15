@@ -21,6 +21,7 @@ const MIN_VISIBLE_ROWS = 4;
 
 const props = defineProps<{
   groups: ReleaseTimelineGroup[];
+  previousBaseline?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -28,6 +29,7 @@ const emit = defineEmits<{
   viewportScroll: [{ scrollTop: number; viewportHeight: number }];
 }>();
 
+const { t } = useI18n();
 const scroller = useTemplateRef<HTMLElement>('scroller');
 const rowsRoot = useTemplateRef<HTMLElement>('rowsRoot');
 const columnCount = shallowRef(resolveReleaseTimelineColumnCount(Number.POSITIVE_INFINITY));
@@ -44,10 +46,12 @@ let updateFrame: number | undefined;
 let measurementFrame: number | undefined;
 let backToTopFrame: number | undefined;
 
-const rows = computed(() => buildReleaseTimelineGridRows(props.groups, columnCount.value));
+const rows = computed(() =>
+  buildReleaseTimelineGridRows(props.groups, columnCount.value, props.previousBaseline)
+);
 
-const getEstimatedRowHeight = (type: 'date' | 'cards') =>
-  type === 'date' ? DATE_ROW_ESTIMATED_HEIGHT : CARD_ROW_ESTIMATED_HEIGHT;
+const getEstimatedRowHeight = (type: 'date' | 'cards' | 'baseline') =>
+  type !== 'cards' ? DATE_ROW_ESTIMATED_HEIGHT : CARD_ROW_ESTIMATED_HEIGHT;
 
 const rowMetrics = computed(() => {
   let top = 0;
@@ -278,6 +282,7 @@ const scrollToTop = () => {
 };
 
 const handleScroll = () => {
+  if (scroller.value?.scrollTop !== anchoredScrollTop) pendingAnchor = null;
   scheduleVisibleRowsSync();
   emitViewportScroll();
 };
@@ -285,6 +290,58 @@ const handleScroll = () => {
 const handleBreakpointChange = () => {
   syncColumnCount();
 };
+
+// Capture the release in the old DOM before Vue regroups rows. Restore after the
+// new rows render, and repeat for measured heights instead of anchoring a row index.
+let pendingAnchor: { key: string; offset: number } | null = null;
+let anchorRevision = 0;
+let anchoredScrollTop: number | null = null;
+watch([rowMetrics, visibleRange], ([next], [previous]) => {
+  const container = scroller.value;
+  if (!container) return;
+  const viewport = container.getBoundingClientRect();
+  if (!pendingAnchor) {
+    for (const metric of previous) {
+      if (metric.row.type !== 'cards') continue;
+      const element = rowElements.get(metric.key);
+      const box = element?.getBoundingClientRect();
+      const item = metric.row.items[0];
+      if (box && item && box.bottom > viewport.top && box.top < viewport.bottom) {
+        pendingAnchor = { key: `${item.repository.id}:${item.id}`, offset: box.top - viewport.top };
+        break;
+      }
+    }
+  }
+  const anchor = pendingAnchor;
+  if (!anchor) return;
+  const index = next.findIndex(
+    ({ row }) =>
+      row.type === 'cards' &&
+      row.items.some((item) => `${item.repository.id}:${item.id}` === anchor.key)
+  );
+  if (index < 0) {
+    pendingAnchor = null;
+    return;
+  }
+  // Make the anchor available even if a large insertion moves it beyond overscan.
+  if (index < visibleRange.value.start || index >= visibleRange.value.end) {
+    setVisibleRange(
+      Math.max(0, index - OVERSCAN_ROWS),
+      Math.min(next.length, index + MIN_VISIBLE_ROWS + OVERSCAN_ROWS)
+    );
+  }
+  const revision = ++anchorRevision;
+  void nextTick(() => {
+    if (revision !== anchorRevision) return;
+    const element = rowElements.get(next[index]!.key);
+    if (element)
+      container.scrollTop +=
+        element.getBoundingClientRect().top - container.getBoundingClientRect().top - anchor.offset;
+    anchoredScrollTop = container.scrollTop;
+    emitViewportScroll();
+    scheduleVisibleRowsSync();
+  });
+});
 
 watch(columnCount, () => {
   pendingMeasuredHeights.clear();
@@ -377,6 +434,17 @@ onBeforeUnmount(() => {
         </div>
 
         <div
+          v-else-if="virtualRow.row.type === 'baseline'"
+          class="release-timeline-baseline"
+          role="separator"
+        >
+          <span class="release-timeline-baseline__rule" aria-hidden="true" />
+          <span class="release-timeline-baseline__label">{{
+            t('releaseTimeline.previousRefreshMark')
+          }}</span>
+          <span class="release-timeline-baseline__rule" aria-hidden="true" />
+        </div>
+        <div
           v-else
           class="release-timeline-grid__cards"
           :class="`release-timeline-grid__cards--${columnCount}`"
@@ -436,6 +504,27 @@ onBeforeUnmount(() => {
 
 .release-timeline-grid__cards--3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.release-timeline-baseline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.release-timeline-baseline__rule {
+  flex: 1;
+  border-top: 1px dashed var(--gitpulse-accent);
+}
+
+.release-timeline-baseline__label {
+  flex-shrink: 0;
+  color: var(--gitpulse-accent);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .release-timeline-date {

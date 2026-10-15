@@ -1261,7 +1261,18 @@
     "drawerLabel": "Release Drawer",
     "closeDrawer": "Close Release Drawer",
     "drawerError": "Failed to load this release.",
-    "dragHandle": "Drag to expand or dismiss"
+    "dragHandle": "Drag to expand or dismiss",
+    "recoveredEntry": "Recovered releases ({count})",
+    "recoveredTitle": "Recovered Release History",
+    "recoveredDescription": "Releases discovered later in dates already shown. Clearing permanently handles these records; they can still appear in the timeline.",
+    "clearRecovered": "Clear recovered history",
+    "recoveredEmpty": "No retained recovered releases.",
+    "loadedNew": "{count} loaded new releases",
+    "partialWindow": "Partial timeline coverage",
+    "previousRefresh": "Previous refresh: {time}",
+    "previousRefreshMark": "Previous refresh",
+    "persistenceError": "Timeline changes could not be saved. Loaded releases are still available.",
+    "loadOlder": "Load older releases"
   },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",

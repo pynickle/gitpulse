@@ -1,9 +1,19 @@
 <script setup lang="ts">
-import { FilterIcon, RefreshCwIcon, SearchIcon, SlidersHorizontalIcon } from '@lucide/vue';
+import {
+  ClockIcon,
+  FilterIcon,
+  HistoryIcon,
+  RefreshCwIcon,
+  SearchIcon,
+  SlidersHorizontalIcon,
+} from '@lucide/vue';
+import { computed } from 'vue';
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     loading: boolean;
+    previousBaseline?: string | null;
+    recoveredCount?: number;
     showTitle?: boolean;
     showReload?: boolean;
     filterActive?: boolean;
@@ -12,25 +22,60 @@ withDefaults(
     showTitle: true,
     showReload: true,
     filterActive: false,
+    previousBaseline: null,
+    recoveredCount: 0,
   }
 );
 
 const emit = defineEmits<{
   reload: [];
   manage: [];
+  recovery: [];
   'filter-click': [];
 }>();
 
 const searchQuery = defineModel<string>({ required: true });
 
 const { t } = useI18n();
+const previousRefreshLabel = computed(() =>
+  props.previousBaseline
+    ? t('releaseTimeline.previousRefresh', {
+        time: new Date(props.previousBaseline).toLocaleString(),
+      })
+    : ''
+);
+const previousRefreshTime = computed(() => {
+  if (!props.previousBaseline) return '';
+  const date = new Date(props.previousBaseline);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  return new Intl.DateTimeFormat(
+    undefined,
+    sameDay
+      ? { hour: '2-digit', minute: '2-digit' }
+      : { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }
+  ).format(date);
+});
 </script>
 
 <template>
   <div class="release-timeline-header">
-    <h2 v-if="showTitle" class="release-timeline-header__title">
-      {{ t('releaseTimeline.title') }}
-    </h2>
+    <div v-if="showTitle || previousBaseline" class="release-timeline-header__heading">
+      <h2 v-if="showTitle" class="release-timeline-header__title">
+        {{ t('releaseTimeline.title') }}
+      </h2>
+      <time
+        v-if="previousBaseline"
+        class="release-timeline-header__baseline"
+        :datetime="previousBaseline"
+        :title="previousRefreshLabel"
+        :aria-label="previousRefreshLabel"
+      >
+        <ClockIcon :size="13" aria-hidden="true" />
+        <span>{{ previousRefreshTime }}</span>
+      </time>
+    </div>
     <div class="release-timeline-header__toolbar">
       <div class="release-timeline-header__search" role="search">
         <SearchIcon
@@ -49,6 +94,15 @@ const { t } = useI18n();
           spellcheck="false"
         />
       </div>
+      <button
+        class="button is-ghost is-small release-timeline-header__recovery"
+        type="button"
+        :aria-label="t('releaseTimeline.recoveredEntry', { count: recoveredCount })"
+        :title="t('releaseTimeline.recoveredEntry', { count: recoveredCount })"
+        @click="emit('recovery')"
+      >
+        <HistoryIcon :size="18" aria-hidden="true" /><span>{{ recoveredCount }}</span>
+      </button>
       <button
         v-if="showReload"
         class="button is-ghost is-small release-timeline-header__action"
@@ -97,6 +151,14 @@ const { t } = useI18n();
   min-width: 0;
 }
 
+.release-timeline-header__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
 .release-timeline-header__title {
   margin-bottom: 0;
   font-size: 1.25rem;
@@ -104,6 +166,23 @@ const { t } = useI18n();
   color: var(--bulma-text-strong);
   letter-spacing: -0.01em;
   flex-shrink: 0;
+}
+
+.release-timeline-header__baseline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: none;
+  height: 1.5rem;
+  padding: 0 0.55rem 0 0.45rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 999px;
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .release-timeline-header__toolbar {
@@ -155,6 +234,11 @@ const { t } = useI18n();
   &::-webkit-search-decoration {
     appearance: none;
   }
+}
+
+.release-timeline-header__recovery {
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .release-timeline-header__action {

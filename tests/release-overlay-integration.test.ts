@@ -45,12 +45,19 @@ const FilterPanel = await compileVue(
     '~/utils/filterReleaseTimelineGroups': filters,
   }
 );
+const Recovery = await compileVue(
+  'app/components/dashboard/release-timeline/RecoveredReleaseHistory.vue',
+  { '@lucide/vue': icons }
+);
 const Header = defineComponent({
-  emits: ['filter-click'],
+  emits: ['filter-click', 'recovery'],
   setup:
     (_, { emit }) =>
     () =>
-      h('button', { class: 'open-filter', onClick: () => emit('filter-click') }, 'Filter'),
+      h('div', [
+        h('button', { class: 'open-filter', onClick: () => emit('filter-click') }, 'Filter'),
+        h('button', { class: 'open-recovery', onClick: () => emit('recovery') }, 'Recovered'),
+      ]),
 });
 const Grid = defineComponent({
   emits: ['open'],
@@ -61,6 +68,8 @@ const Grid = defineComponent({
 });
 const View = await compileVue('app/components/dashboard/release-timeline/ReleaseTimelineView.vue', {
   '@lucide/vue': icons,
+  '~/components/dashboard/release-timeline/RecoveredReleaseHistory.vue': { default: Recovery },
+  '~/components/dashboard/release-timeline/ReleaseTimelineStatus.vue': { default: empty },
   '~/components/dashboard/FloatingBackToTopButton.vue': { default: empty },
   '~/components/dashboard/release-timeline/ReleaseDrawer.vue': { default: Drawer },
   '~/components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue': {
@@ -96,6 +105,20 @@ beforeEach(() => {
     shouldShowReleaseTimelineBackToTop: () => false,
     useReleaseTimeline: () => ({
       loaded: shallowRef(true),
+      visibleGroups: shallowRef([{ date: '2026-10-02', items: [item] }]),
+      recoveredRecords: shallowRef([{ ...item, discoveredAt: '2026-10-15T00:00:00Z' }]),
+      clearingHistory: shallowRef(false),
+      persistenceError: shallowRef(null),
+      loadedNewCount: shallowRef(0),
+      previousBaseline: shallowRef(null),
+      baselineExposed: shallowRef(false),
+      partial: shallowRef(false),
+      hasMore: shallowRef(true),
+      canRetry: shallowRef(false),
+      loadOlder: () => {},
+      retryFailed: () => {},
+      clearRecovered: () => {},
+      retryPersistence: () => {},
       groups: shallowRef([{ date: '2026-10-02', items: [item] }]),
       loading: shallowRef(false),
       error: shallowRef(null),
@@ -146,5 +169,26 @@ test('Timeline replaces either overlay, preserves return focus and invalidates c
   // The parent propagates the closed prop first; the lifecycle then restores after that DOM flush.
   await nextTick();
   expect(dom.document.activeElement === filterTrigger).toBe(true);
+  expect(useModalState().openModalCount.value).toBe(0);
+});
+
+test('retained recovery summaries open through the existing Drawer and hand off focus and modal ownership', async () => {
+  dom.mount(View);
+  const trigger = dom.document.querySelector<HTMLButtonElement>('.open-recovery')!;
+  trigger.focus();
+  trigger.click();
+  await nextTick();
+  expect(dom.document.querySelector('.recovered-history__record')?.textContent).toContain('v1');
+  expect(useModalState().openModalCount.value).toBe(1);
+  dom.document.querySelector<HTMLButtonElement>('.recovered-history__record')!.click();
+  await nextTick();
+  expect(drawer.openItem.value?.id).toBe(1);
+  expect(dom.document.querySelector('.recovered-history')).toBeNull();
+  expect(dom.document.activeElement?.className).toBe('release-drawer__repo');
+  expect(useModalState().openModalCount.value).toBe(1);
+  dom.document.querySelector<HTMLButtonElement>('.release-drawer__close')!.click();
+  await nextTick();
+  await nextTick();
+  expect(dom.document.activeElement).toBe(trigger);
   expect(useModalState().openModalCount.value).toBe(0);
 });
