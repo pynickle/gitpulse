@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import {
-  ClockIcon,
   FilterIcon,
   HistoryIcon,
   RefreshCwIcon,
   SearchIcon,
   SlidersHorizontalIcon,
 } from '@lucide/vue';
-import { computed } from 'vue';
 
-const props = withDefaults(
+import ReleaseTimelineBaselineChip from '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue';
+
+withDefaults(
   defineProps<{
     loading: boolean;
     previousBaseline?: string | null;
@@ -37,44 +37,18 @@ const emit = defineEmits<{
 const searchQuery = defineModel<string>({ required: true });
 
 const { t } = useI18n();
-const previousRefreshLabel = computed(() =>
-  props.previousBaseline
-    ? t('releaseTimeline.previousRefresh', {
-        time: new Date(props.previousBaseline).toLocaleString(),
-      })
-    : ''
-);
-const previousRefreshTime = computed(() => {
-  if (!props.previousBaseline) return '';
-  const date = new Date(props.previousBaseline);
-  if (Number.isNaN(date.getTime())) return '';
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  return new Intl.DateTimeFormat(
-    undefined,
-    sameDay
-      ? { hour: '2-digit', minute: '2-digit' }
-      : { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-  ).format(date);
-});
 </script>
 
 <template>
-  <div class="release-timeline-header">
-    <div v-if="showTitle || previousBaseline" class="release-timeline-header__heading">
-      <h2 v-if="showTitle" class="release-timeline-header__title">
+  <div
+    class="release-timeline-header"
+    :class="{ 'release-timeline-header--titleless': !showTitle }"
+  >
+    <div v-if="showTitle" class="release-timeline-header__heading">
+      <h2 class="release-timeline-header__title">
         {{ t('releaseTimeline.title') }}
       </h2>
-      <time
-        v-if="previousBaseline"
-        class="release-timeline-header__baseline"
-        :datetime="previousBaseline"
-        :title="previousRefreshLabel"
-        :aria-label="previousRefreshLabel"
-      >
-        <ClockIcon :size="13" aria-hidden="true" />
-        <span>{{ previousRefreshTime }}</span>
-      </time>
+      <ReleaseTimelineBaselineChip v-if="previousBaseline" :baseline="previousBaseline" />
     </div>
     <div class="release-timeline-header__toolbar">
       <div class="release-timeline-header__search" role="search">
@@ -154,35 +128,33 @@ const previousRefreshTime = computed(() => {
 .release-timeline-header__heading {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 0.625rem;
   min-width: 0;
   flex: 0 1 auto;
+  max-width: 100%;
 }
 
 .release-timeline-header__title {
   margin-bottom: 0;
+  min-width: 0;
+  overflow: hidden;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--bulma-text-strong);
   letter-spacing: -0.01em;
-  flex-shrink: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.release-timeline-header__baseline {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex: none;
-  height: 1.5rem;
-  padding: 0 0.55rem 0 0.45rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 999px;
-  background: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-muted);
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
+.release-timeline-header--titleless .release-timeline-header__toolbar {
+  flex: 1 1 auto;
+  margin-left: 0;
+}
+
+.release-timeline-header--titleless .release-timeline-header__search {
+  flex: 1 1 auto;
+  width: auto;
 }
 
 .release-timeline-header__toolbar {
@@ -297,6 +269,10 @@ const previousRefreshTime = computed(() => {
   .release-timeline-header {
     align-items: flex-start;
     flex-wrap: wrap;
+  }
+
+  .release-timeline-header__heading {
+    flex-wrap: nowrap;
   }
 
   .release-timeline-header__toolbar {

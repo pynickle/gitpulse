@@ -33,7 +33,11 @@
       @starred="handleAccountDestination(handleStarredClick)"
       @settings="handleAccountDestination(handleSettingsClick)"
       @logout="handleAccountDestination(handleLogout)"
-    />
+    >
+      <template v-if="narrowReleaseTimelineBaseline" #title-extra>
+        <ReleaseTimelineBaselineChip :baseline="narrowReleaseTimelineBaseline" />
+      </template>
+    </DashboardHomeTopBar>
     <DashboardLayout
       :show-activity-bar="dashboardHomeChrome.showActivityBar"
       :show-tab-sidebar="dashboardHomeChrome.showTabSidebar"
@@ -417,6 +421,7 @@ import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAd
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import NotificationSubjectEnrichmentNotice from '~/components/dashboard/NotificationSubjectEnrichmentNotice.vue';
+import ReleaseTimelineBaselineChip from '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue';
 import ReleaseTimelineView from '~/components/dashboard/release-timeline/ReleaseTimelineView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
@@ -896,6 +901,12 @@ const { presentation: dashboardHomeChrome, dispatch: dispatchDashboardHomeChrome
     supportsDashboardFilterButton: showDashboardFilterButton,
     isReleaseTimeline: isReleaseTimelineView,
   });
+
+const releaseTimelinePreviousBaseline = useReleaseTimelinePreviousBaseline();
+const narrowReleaseTimelineBaseline = computed(() => {
+  if (!isReleaseTimelineView.value || dashboardHomeChrome.value.showListTitleRow) return null;
+  return releaseTimelinePreviousBaseline.value;
+});
 
 const releaseTimelineViewRef = useTemplateRef<{ reload: () => Promise<void> }>(
   'releaseTimelineView'

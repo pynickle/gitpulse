@@ -28,7 +28,7 @@ const item: TimelineRelease = {
   reactions: [],
 };
 const empty = defineComponent({ setup: () => () => h('span') });
-const icons = { Loader2Icon: empty, RocketIcon: empty, XIcon: empty };
+const icons = { Loader2Icon: empty, RocketIcon: empty, XIcon: empty, HistoryIcon: empty };
 const i18n = { useI18n: () => ({ t: (key: string) => key }) };
 const Drawer = await compileVue('app/components/dashboard/release-timeline/ReleaseDrawer.vue', {
   '@lucide/vue': icons,
@@ -191,4 +191,23 @@ test('retained recovery summaries open through the existing Drawer and hand off 
   await nextTick();
   expect(dom.document.activeElement).toBe(trigger);
   expect(useModalState().openModalCount.value).toBe(0);
+});
+
+test('empty recovered history fills the panel instead of a blank list', async () => {
+  const host = defineComponent({
+    setup: () => () =>
+      h(Recovery, {
+        open: true,
+        records: [],
+        saving: false,
+        error: null,
+      }),
+  });
+  dom.mount(host);
+  await nextTick();
+  const emptyState = dom.document.querySelector('.recovered-history__empty');
+  expect(emptyState?.textContent).toContain('releaseTimeline.recoveredEmpty');
+  expect(emptyState?.textContent).toContain('releaseTimeline.recoveredDescription');
+  expect(dom.document.querySelector('.recovered-history__list')).toBeNull();
+  expect(dom.document.querySelector('.recovered-history__clear')).toBeNull();
 });

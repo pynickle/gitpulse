@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { XIcon } from '@lucide/vue';
+import { HistoryIcon, XIcon } from '@lucide/vue';
 import { useId, useTemplateRef } from 'vue';
 
 import type { RecoveredRelease } from '#shared/types/timeline-history';
@@ -65,7 +65,9 @@ const {
             <div class="recovered-history__handle" :aria-label="t('releaseTimeline.dragHandle')" />
           </div>
           <header class="recovered-history__chrome">
-            <h2 :id="titleId">{{ t('releaseTimeline.recoveredTitle') }} ({{ records.length }})</h2>
+            <h2 :id="titleId" class="recovered-history__title">
+              {{ t('releaseTimeline.recoveredTitle') }} ({{ records.length }})
+            </h2>
             <button
               class="recovered-history__close"
               type="button"
@@ -77,32 +79,47 @@ const {
           </header>
         </div>
         <div class="recovered-history__content">
-          <p class="recovered-history__description">
-            {{ t('releaseTimeline.recoveredDescription') }}
+          <p v-if="error" class="recovered-history__error" role="alert">
+            {{ t('releaseTimeline.persistenceError') }}
           </p>
-          <p v-if="error" role="alert">{{ t('releaseTimeline.persistenceError') }}</p>
-          <button
-            v-if="records.length"
-            class="button is-small"
-            type="button"
-            :disabled="saving"
-            @click="emit('clear')"
-          >
-            {{ t('releaseTimeline.clearRecovered') }}
-          </button>
-          <p v-else>{{ t('releaseTimeline.recoveredEmpty') }}</p>
-          <ul class="recovered-history__list">
-            <li v-for="record in records" :key="`${record.repository.id}:${record.id}`">
-              <button class="recovered-history__record" type="button" @click="emit('open', record)">
-                <span>{{ record.repository.owner }}/{{ record.repository.name }}</span>
-                <strong>{{ record.title }}</strong>
-                <time :datetime="record.publishedAt">{{
-                  new Date(record.publishedAt).toLocaleString()
-                }}</time>
-                <span class="recovered-history__summary">{{ record.changelog }}</span>
-              </button>
-            </li>
-          </ul>
+          <template v-if="records.length">
+            <p class="recovered-history__description">
+              {{ t('releaseTimeline.recoveredDescription') }}
+            </p>
+            <button
+              class="button is-small recovered-history__clear"
+              type="button"
+              :disabled="saving"
+              @click="emit('clear')"
+            >
+              {{ t('releaseTimeline.clearRecovered') }}
+            </button>
+            <ul class="recovered-history__list">
+              <li v-for="record in records" :key="`${record.repository.id}:${record.id}`">
+                <button
+                  class="recovered-history__record"
+                  type="button"
+                  @click="emit('open', record)"
+                >
+                  <span>{{ record.repository.owner }}/{{ record.repository.name }}</span>
+                  <strong>{{ record.title }}</strong>
+                  <time :datetime="record.publishedAt">{{
+                    new Date(record.publishedAt).toLocaleString()
+                  }}</time>
+                  <span class="recovered-history__summary">{{ record.changelog }}</span>
+                </button>
+              </li>
+            </ul>
+          </template>
+          <div v-else class="recovered-history__empty">
+            <div class="recovered-history__empty-icon" aria-hidden="true">
+              <HistoryIcon :size="28" />
+            </div>
+            <p class="recovered-history__empty-title">{{ t('releaseTimeline.recoveredEmpty') }}</p>
+            <p class="recovered-history__empty-description">
+              {{ t('releaseTimeline.recoveredDescription') }}
+            </p>
+          </div>
         </div>
       </aside>
     </div>
@@ -191,6 +208,18 @@ const {
   border-bottom: 1px solid var(--gitpulse-border);
 }
 
+.recovered-history__title {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--bulma-text-strong);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .recovered-history__close {
   display: inline-flex;
   align-items: center;
@@ -218,8 +247,10 @@ const {
 }
 
 .recovered-history__content {
+  display: flex;
   min-height: 0;
   flex: 1;
+  flex-direction: column;
   overflow: auto;
   padding: 1rem 1.15rem 1.35rem;
   overscroll-behavior: contain;
@@ -256,13 +287,69 @@ const {
   }
 }
 .recovered-history__description {
-  margin-bottom: 1rem;
+  margin: 0 0 1rem;
   color: var(--gitpulse-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
 }
+
+.recovered-history__error {
+  margin: 0 0 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.recovered-history__clear {
+  align-self: flex-start;
+}
+
+.recovered-history__empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 12rem;
+  padding: clamp(1.5rem, 6vh, 3rem) 0.5rem;
+  text-align: center;
+}
+
+.recovered-history__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  background-color: var(--gitpulse-info-soft, var(--gitpulse-surface-muted));
+  color: var(--gitpulse-accent, var(--gitpulse-link));
+}
+
+.recovered-history__empty-title {
+  margin: 0 0 0.5rem;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.recovered-history__empty-description {
+  max-width: 24rem;
+  margin: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
 .recovered-history__list {
   list-style: none;
   padding: 0;
-  margin: 1rem 0;
+  margin: 1rem 0 0;
 }
 .recovered-history__record {
   display: flex;

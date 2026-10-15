@@ -74,9 +74,12 @@ onBeforeUnmount(() => {
       <MenuIcon :size="20" aria-hidden="true" />
     </button>
 
-    <h1 class="dashboard-home-top-bar__title" :title="title">
-      {{ title }}
-    </h1>
+    <div class="dashboard-home-top-bar__heading">
+      <h1 class="dashboard-home-top-bar__title" :title="title">
+        {{ title }}
+      </h1>
+      <slot name="title-extra" />
+    </div>
 
     <button
       v-if="showFilterButton"
@@ -163,10 +166,20 @@ onBeforeUnmount(() => {
   }
 }
 
-.dashboard-home-top-bar__title {
+.dashboard-home-top-bar__heading {
+  display: flex;
+  align-items: center;
   flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
   min-width: 0;
   margin: 0 0.35rem;
+}
+
+.dashboard-home-top-bar__title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
   overflow: hidden;
   color: var(--gitpulse-text-strong);
   font-size: 1rem;
