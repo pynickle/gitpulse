@@ -37,6 +37,7 @@ const emit = defineEmits<{
 }>();
 
 const searchQuery = defineModel<string>({ required: true });
+const includeReleaseNotes = defineModel<boolean>('includeReleaseNotes', { required: true });
 
 const { t } = useI18n();
 </script>
@@ -56,22 +57,28 @@ const { t } = useI18n();
       </span>
     </div>
     <div class="release-timeline-header__toolbar">
-      <div class="release-timeline-header__search" role="search">
-        <SearchIcon
-          v-once
-          :size="16"
-          class="release-timeline-header__search-icon"
-          aria-hidden="true"
-        />
-        <input
-          v-model="searchQuery"
-          type="search"
-          class="release-timeline-header__search-input"
-          :placeholder="t('releaseTimeline.searchPlaceholder')"
-          :aria-label="t('releaseTimeline.searchPlaceholder')"
-          autocomplete="off"
-          spellcheck="false"
-        />
+      <div class="release-timeline-header__search-controls" role="search">
+        <div class="release-timeline-header__search">
+          <SearchIcon
+            v-once
+            :size="16"
+            class="release-timeline-header__search-icon"
+            aria-hidden="true"
+          />
+          <input
+            v-model="searchQuery"
+            type="search"
+            class="release-timeline-header__search-input"
+            :placeholder="t('releaseTimeline.searchPlaceholder')"
+            :aria-label="t('releaseTimeline.searchPlaceholder')"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <label class="release-timeline-header__notes-option">
+          <input v-model="includeReleaseNotes" type="checkbox" />
+          <span>{{ t('releaseTimeline.includeReleaseNotes') }}</span>
+        </label>
       </div>
       <button
         class="button is-ghost is-small release-timeline-header__recovery"
@@ -168,7 +175,7 @@ const { t } = useI18n();
   margin-left: 0;
 }
 
-.release-timeline-header--titleless .release-timeline-header__search {
+.release-timeline-header--titleless .release-timeline-header__search-controls {
   flex: 1 1 auto;
   width: auto;
 }
@@ -181,13 +188,20 @@ const { t } = useI18n();
   min-width: 0;
 }
 
+.release-timeline-header__search-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 0 1 16.5rem;
+  width: 16.5rem;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .release-timeline-header__search {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex: 0 1 16.5rem;
-  width: 16.5rem;
-  max-width: 100%;
   min-width: 0;
   height: 2.25rem;
   padding: 0 0.75rem;
@@ -198,6 +212,20 @@ const { t } = useI18n();
 
 .release-timeline-header__search:focus-within {
   border-color: var(--gitpulse-link);
+}
+
+.release-timeline-header__notes-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  input {
+    flex-shrink: 0;
+    accent-color: var(--gitpulse-accent);
+  }
 }
 
 .release-timeline-header__search-icon {
@@ -296,7 +324,7 @@ const { t } = useI18n();
     margin-left: 0;
   }
 
-  .release-timeline-header__search {
+  .release-timeline-header__search-controls {
     flex: 1 1 auto;
     width: auto;
   }

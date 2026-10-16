@@ -343,6 +343,194 @@ const round = (pages: Record<string, RepositoryReleaseLookup>): ReleaseTimeline 
 const dates = (view: ReturnType<ReturnType<typeof createHarness>['open']>['view']) =>
   view.groups.value.flatMap((group) => group.items.map((item) => item.tagName));
 
+const searchFilter = () => ({
+  repositories: [] as string[],
+  dateRange: { from: null as string | null, to: null as string | null },
+  query: '',
+  hidePrereleases: false,
+  includeReleaseNotes: false,
+});
+const searchPage = (
+  repositoryId: string,
+  releases: Partial<import('#shared/types/release-follows').RepositoryReleaseItem>[]
+) => {
+  const page = releasePage(repositoryId, ['2026-10-15'], null);
+  return {
+    ...page,
+    releases: releases.map((release, index) => ({
+      ...page.releases[0]!,
+      id: index + 1,
+      ...release,
+    })),
+  };
+};
+const visibleKeys = (view: ReturnType<ReturnType<typeof createHarness>['open']>['view']) =>
+  view.visibleGroups.value.flatMap((group) => group.items.map(timelineUtils.timelineReleaseKey));
+
+test('search requires every term on one release across repository, title and tag without fetching', async () => {
+  const filter = shallowRef({ ...searchFilter(), query: 'OCTO/widgets 3.12' });
+  const app = createHarness(undefined, filter);
+  const { view } = app.open();
+  app.requests[0]!.resolve(
+    round({
+      R_widgets: {
+        ...searchPage('R_widgets', [
+          { name: 'Autumn improvements', tagName: 'v3.12.0' },
+          { name: 'Widgets migration', tagName: 'v2.0.0' },
+        ]),
+        name: 'widgets',
+      },
+    })
+  );
+  await settle();
+  expect(visibleKeys(view)).toEqual(['R_widgets:1']);
+  filter.value = { ...filter.value, query: 'autumn migration' };
+  expect(visibleKeys(view)).toEqual([]);
+  expect(app.requests).toHaveLength(1);
+});
+
+test('search handles literal terms, phrases and numeric version boundaries in the session', async () => {
+  const filter = shallowRef(searchFilter());
+  const app = createHarness(undefined, filter);
+  const { view } = app.open();
+  app.requests[0]!.resolve(
+    round({
+      R_widgets: {
+        ...searchPage('R_widgets', [
+          { name: 'Node.js AUTH_TOKEN 搜索改进 for R', tagName: 'v3.12.0' },
+          { name: 'preact caching\n  improvements 搜索 支持 C', tagName: 'v3.120.0' },
+          { name: 'caching scattered improvements', tagName: 'v13.12.0' },
+          { name: '   ', tagName: '3.12.1' },
+        ]),
+        owner: 'Example',
+        name: 'widgets',
+      },
+    })
+  );
+  await settle();
+  const cases: [string, string[]][] = [
+    ['example', ['R_widgets:1', 'R_widgets:2', 'R_widgets:3', 'R_widgets:4']],
+    ['widg', ['R_widgets:1', 'R_widgets:2', 'R_widgets:3', 'R_widgets:4']],
+    ['EXAMPLE/WIDGETS\t\n node.JS    auth_token', ['R_widgets:1']],
+    ['nodejs', []],
+    ['react', ['R_widgets:2']],
+    ['搜索改进', ['R_widgets:1']],
+    ['搜索 支持', ['R_widgets:2']],
+    ['改', ['R_widgets:1']],
+    ['R for', ['R_widgets:1']],
+    ['C', ['R_widgets:2', 'R_widgets:3']],
+    ['3.12', ['R_widgets:1', 'R_widgets:4']],
+    ['v3.12', ['R_widgets:1']],
+    ['"3.12"', ['R_widgets:1', 'R_widgets:4']],
+    ['3.120', ['R_widgets:2']],
+    ['13.12', ['R_widgets:3']],
+    ['"caching  improvements"', ['R_widgets:2']],
+    ['widgets "caching\n improvements', ['R_widgets:2']],
+    ['"widgets node.js"', []],
+    ['"improvements caching"', []],
+    ['\t \n ', ['R_widgets:1', 'R_widgets:2', 'R_widgets:3', 'R_widgets:4']],
+    ['', ['R_widgets:1', 'R_widgets:2', 'R_widgets:3', 'R_widgets:4']],
+  ];
+  for (const [query, expected] of cases) {
+    filter.value = { ...filter.value, query };
+    expect(visibleKeys(view), query).toEqual(expected);
+  }
+  expect(app.requests).toHaveLength(1);
+});
+
+test('optional note search uses full readable Markdown and code while excluding invisible markup', async () => {
+  const filter = shallowRef(searchFilter());
+  const app = createHarness(undefined, filter);
+  const { view } = app.open();
+  app.requests[0]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        {
+          name: 'Autumn',
+          description: `${'preview '.repeat(80)}Deep feature\n  improvements\n[Readable label](https://hidden-link.example/path)\n![Diagram](https://hidden-image.example/pic)\n[Reference label][ref]\n\n[ref]: https://reference-destination.example\n\n<strong data-hidden="attribute-secret">Visible HTML &amp; text</strong>\n<!-- hidden-comment -->\n<script>hidden-script</script>\n<style>hidden-style</style>\n\n\`AUTH_TOKEN\`\n\n\`\`\`html\n<config>CODE_IDENTIFIER</config>\n\`\`\``,
+        },
+        { name: 'Other', description: null },
+      ]),
+    })
+  );
+  await settle();
+  expect(view.groups.value[0]!.items[0]!.changelog).not.toContain('Deep feature');
+  filter.value = { ...filter.value, query: 'feature' };
+  expect(visibleKeys(view)).toEqual([]);
+  filter.value = { ...filter.value, includeReleaseNotes: true };
+  expect(visibleKeys(view)).toEqual(['R_widgets:1']);
+  const cases: [string, string[]][] = [
+    ['octo autumn feature', ['R_widgets:1']],
+    ['"feature improvements"', ['R_widgets:1']],
+    ['"readable label"', ['R_widgets:1']],
+    ['"reference label"', ['R_widgets:1']],
+    ['"visible html & text"', ['R_widgets:1']],
+    ['AUTH_TOKEN', ['R_widgets:1']],
+    ['CODE_IDENTIFIER', ['R_widgets:1']],
+    ['"<config>code_identifier</config>"', ['R_widgets:1']],
+    ['hidden-link', []],
+    ['hidden-image', []],
+    ['reference-destination', []],
+    ['data-hidden', []],
+    ['attribute-secret', []],
+    ['strong', []],
+    ['hidden-comment', []],
+    ['hidden-script', []],
+    ['hidden-style', []],
+    ['missing', []],
+  ];
+  for (const [query, expected] of cases) {
+    filter.value = { ...filter.value, query };
+    expect(visibleKeys(view), query).toEqual(expected);
+  }
+  filter.value = { ...filter.value, query: 'feature', includeReleaseNotes: false };
+  expect(visibleKeys(view)).toEqual([]);
+  expect(app.requests).toHaveLength(1);
+});
+
+test('notes search ANDs repository, local date and prerelease filters while preserving order and groups', async () => {
+  const filter = shallowRef({ ...searchFilter(), query: 'feature', includeReleaseNotes: true });
+  const app = createHarness(undefined, filter);
+  app.repositories.value = [
+    { id: 'A', owner: 'octo', name: 'A' },
+    { id: 'B', owner: 'octo', name: 'B' },
+  ];
+  const { view } = app.open();
+  app.requests[0]!.resolve({
+    ...round({
+      A: searchPage('A', [
+        { id: 10, publishedAt: '2026-10-15T12:00:00Z', description: 'feature', isPrerelease: true },
+        { id: 11, publishedAt: '2026-10-14T12:00:00Z', description: 'feature' },
+        { id: 12, publishedAt: '2026-10-13T12:00:00Z', description: 'feature' },
+        { id: 13, publishedAt: '2026-10-14T12:00:00Z', description: 'other' },
+      ]),
+      B: searchPage('B', [{ id: 1, publishedAt: '2026-10-14T12:00:00Z', description: 'feature' }]),
+    }),
+    refresh: { previousBaseline: '2026-10-14T00:00:00Z', startedAt: '2026-10-16T00:00:00Z' },
+  });
+  await settle();
+  expect(visibleKeys(view)).toEqual(['A:10', 'A:11', 'B:1', 'A:12']);
+  expect(view.visibleGroups.value.map((group) => group.date)).toEqual([
+    '2026-10-15',
+    '2026-10-14',
+    '2026-10-13',
+  ]);
+  expect(view.loadedNewCount.value).toBe(3);
+  filter.value = {
+    ...filter.value,
+    repositories: ['octo/A'],
+    dateRange: { from: '2026-10-14', to: '2026-10-14' },
+    hidePrereleases: true,
+  };
+  expect(visibleKeys(view)).toEqual(['A:11']);
+  expect(view.visibleGroups.value.map((group) => group.date)).toEqual(['2026-10-14']);
+  expect(view.loadedNewCount.value).toBe(1);
+  filter.value = { ...filter.value, query: '   ' };
+  expect(visibleKeys(view)).toEqual(['A:11', 'A:13']);
+  expect(view.loadedNewCount.value).toBe(2);
+  expect(app.requests).toHaveLength(1);
+});
+
 test('coordinated rounds expose the shared timestamp, retain buffers and resume cached independent cursors', async () => {
   const harness = createHarness();
   harness.repositories.value = [
@@ -723,4 +911,286 @@ test('equal-time cards remain visible and the refresh marker is exposed only aft
   app.requests[1]!.resolve(round({ A: releasePage('A', [], null), B: releasePage('B', [], null) }));
   await older;
   expect(view.baselineExposed.value).toBe(true);
+});
+
+test('notes search preserves the loaded window until an explicit older round reveals buffered matches', async () => {
+  const filter = shallowRef(searchFilter());
+  const app = createHarness(undefined, filter);
+  app.repositories.value = [
+    { id: 'A', owner: 'octo', name: 'A' },
+    { id: 'B', owner: 'octo', name: 'B' },
+  ];
+  const { view } = app.open();
+  app.requests[0]!.resolve({
+    ...round({
+      A: {
+        ...searchPage('A', [
+          {
+            id: 1,
+            publishedAt: '2026-10-15T12:00:00Z',
+            description: `${'intro '.repeat(120)}visibleword`,
+          },
+          {
+            id: 2,
+            publishedAt: '2026-10-08T12:00:00Z',
+            description: `${'intro '.repeat(120)}bufferword`,
+          },
+        ]),
+        hasOlderReleases: true,
+        endCursor: 'A1',
+      },
+      B: releasePage('B', ['2026-10-10'], 'B1'),
+    }),
+    refresh: { previousBaseline: '2026-10-09T00:00:00Z', startedAt: '2026-10-16T00:00:00Z' },
+  });
+  await settle();
+  expect(visibleKeys(view)).toEqual(['A:1', 'B:20261010']);
+  expect(view.loadedNewCount.value).toBe(2);
+  expect(view.baselineExposed.value).toBe(false);
+  filter.value = { ...filter.value, query: 'bufferword', includeReleaseNotes: true };
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  expect(view.hasMore.value).toBe(true);
+  expect(view.baselineExposed.value).toBe(false);
+  expect(view.loadedNewCount.value).toBe(0);
+  filter.value = { ...filter.value, query: 'visibleword' };
+  expect(visibleKeys(view)).toEqual(['A:1']);
+  expect(view.loadedNewCount.value).toBe(1);
+  filter.value = { ...filter.value, includeReleaseNotes: false };
+  expect(visibleKeys(view)).toEqual([]);
+  filter.value = { ...filter.value, query: 'bufferword', includeReleaseNotes: true };
+  await settle();
+  expect(app.requests).toHaveLength(1);
+  const older = view.loadOlder();
+  expect(app.requests[1]!.input).toEqual({ cursors: { A: 'A1', B: 'B1' } });
+  app.requests[1]!.resolve(round({ A: releasePage('A', [], null), B: releasePage('B', [], null) }));
+  await older;
+  expect(visibleKeys(view)).toEqual(['A:2']);
+  expect(view.hasMore.value).toBe(false);
+  expect(view.baselineExposed.value).toBe(true);
+  expect(view.loadedNewCount.value).toBe(0);
+});
+
+test('notes matches remain isolated when repositories contain the same numeric release id', async () => {
+  const filter = shallowRef({ ...searchFilter(), query: 'heliopause', includeReleaseNotes: true });
+  const app = createHarness(undefined, filter);
+  app.repositories.value = [
+    { id: 'A', owner: 'octo', name: 'A' },
+    { id: 'B', owner: 'octo', name: 'B' },
+  ];
+  const { view } = app.open();
+  app.requests[0]!.resolve(
+    round({
+      A: searchPage('A', [{ id: 7, description: `${'intro '.repeat(120)}heliopause` }]),
+      B: searchPage('B', [{ id: 7, description: `${'intro '.repeat(120)}magnetopause` }]),
+    })
+  );
+  await settle();
+  expect(visibleKeys(view)).toEqual(['A:7']);
+  filter.value = { ...filter.value, query: 'magnetopause' };
+  expect(visibleKeys(view)).toEqual(['B:7']);
+  filter.value = { ...filter.value, query: 'heliopause magnetopause' };
+  expect(visibleKeys(view)).toEqual([]);
+  expect(app.requests).toHaveLength(1);
+});
+
+test('an empty notes search retains partial coverage and allows explicit retry and older loading', async () => {
+  const filter = shallowRef({ ...searchFilter(), query: 'needle', includeReleaseNotes: true });
+  const app = createHarness(undefined, filter);
+  app.repositories.value = [
+    { id: 'A', owner: 'octo', name: 'A' },
+    { id: 'B', owner: 'octo', name: 'B' },
+  ];
+  const { view } = app.open();
+  app.requests[0]!.resolve(
+    round({
+      A: {
+        ...searchPage('A', [{ id: 1, description: 'ordinary changes' }]),
+        hasOlderReleases: true,
+        endCursor: 'A1',
+      },
+      B: { status: 'transient' },
+    })
+  );
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  expect(view.partial.value).toBe(true);
+  expect(view.canRetry.value).toBe(true);
+  expect(view.hasMore.value).toBe(true);
+  expect(app.requests).toHaveLength(1);
+  const retry = view.retryFailed();
+  expect(app.requests[1]!.input).toEqual({ cursors: { B: null } });
+  app.requests[1]!.resolve(
+    round({
+      B: searchPage('B', [
+        {
+          id: 2,
+          publishedAt: '2026-10-16T12:00:00Z',
+          description: `${'intro '.repeat(120)}needle`,
+        },
+      ]),
+    })
+  );
+  await retry;
+  expect(visibleKeys(view)).toEqual(['B:2']);
+  expect(view.partial.value).toBe(false);
+  expect(view.canRetry.value).toBe(false);
+  filter.value = { ...filter.value, query: 'olderneedle' };
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  expect(view.hasMore.value).toBe(true);
+  expect(app.requests).toHaveLength(2);
+  const older = view.loadOlder();
+  expect(app.requests[2]!.input).toEqual({ cursors: { A: 'A1' } });
+  app.requests[2]!.resolve(
+    round({
+      A: searchPage('A', [
+        {
+          id: 3,
+          publishedAt: '2026-10-12T12:00:00Z',
+          description: `${'intro '.repeat(120)}olderneedle`,
+        },
+      ]),
+    })
+  );
+  await older;
+  expect(visibleKeys(view)).toEqual(['A:3']);
+  expect(view.partial.value).toBe(false);
+  expect(view.hasMore.value).toBe(false);
+});
+
+test('refresh replaces searchable notes when the repository and release ids stay the same', async () => {
+  const filter = shallowRef({
+    ...searchFilter(),
+    query: 'retiredtoken',
+    includeReleaseNotes: true,
+  });
+  const app = createHarness(undefined, filter);
+  const { view } = app.open();
+  app.requests[0]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        { id: 41, description: `${'intro '.repeat(120)}retiredtoken` },
+      ]),
+    })
+  );
+  await settle();
+  expect(visibleKeys(view)).toEqual(['R_widgets:41']);
+  const refresh = view.fetchTimeline();
+  app.requests[1]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        { id: 41, description: `${'intro '.repeat(120)}replacementtoken` },
+      ]),
+    })
+  );
+  await refresh;
+  expect(visibleKeys(view)).toEqual([]);
+  filter.value = { ...filter.value, query: 'replacementtoken' };
+  expect(visibleKeys(view)).toEqual(['R_widgets:41']);
+  expect(app.requests).toHaveLength(2);
+});
+
+test('cached notes survive returning to the view and are discarded across account and logout changes', async () => {
+  const filter = shallowRef({
+    ...searchFilter(),
+    query: 'firstaccount',
+    includeReleaseNotes: true,
+  });
+  const app = createHarness(undefined, filter);
+  const first = app.open();
+  app.requests[0]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        { id: 41, description: `${'intro '.repeat(120)}firstaccount` },
+      ]),
+    })
+  );
+  await settle();
+  expect(visibleKeys(first.view)).toEqual(['R_widgets:41']);
+  first.close();
+  const { view } = app.open();
+  await settle();
+  expect(visibleKeys(view)).toEqual(['R_widgets:41']);
+  expect(app.requests).toHaveLength(1);
+  app.login.value = 'other';
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  app.requests[1]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        { id: 41, description: `${'intro '.repeat(120)}secondaccount` },
+      ]),
+    })
+  );
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  filter.value = { ...filter.value, query: 'secondaccount' };
+  expect(visibleKeys(view)).toEqual(['R_widgets:41']);
+  app.login.value = null;
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  app.login.value = 'other';
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  app.requests[2]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        { id: 41, description: `${'intro '.repeat(120)}newsession` },
+      ]),
+    })
+  );
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  filter.value = { ...filter.value, query: 'newsession' };
+  expect(visibleKeys(view)).toEqual(['R_widgets:41']);
+  expect(app.requests).toHaveLength(3);
+});
+
+test('notes search does not filter or suppress recovered release history', async () => {
+  const filter = shallowRef({ ...searchFilter(), query: 'absent', includeReleaseNotes: true });
+  const saved: import('#shared/types/timeline-history').RecoveredRelease[] = [];
+  const app = createHarness(
+    {
+      read: async () => ({ baseline: null, records: [], revision: 0 }),
+      merge: async (records) => {
+        saved.push(...records);
+        return { baseline: null, records: saved, revision: 1 };
+      },
+      clear: async () => ({ baseline: null, records: [], revision: 2 }),
+    },
+    filter
+  );
+  const { view } = app.open();
+  app.requests[0]!.resolve(round({ R_widgets: releasePage('R_widgets', ['2026-10-10'], 'next') }));
+  await settle();
+  expect(visibleKeys(view)).toEqual([]);
+  const older = view.loadOlder();
+  app.requests[1]!.resolve(
+    round({
+      R_widgets: searchPage('R_widgets', [
+        {
+          id: 2,
+          publishedAt: '2026-10-12T12:00:00Z',
+          description: `${'intro '.repeat(120)}recoveredneedle`,
+        },
+      ]),
+    })
+  );
+  await older;
+  expect(visibleKeys(view)).toEqual([]);
+  expect(view.recoveredRecords.value.map(timelineUtils.timelineReleaseKey)).toEqual([
+    'R_widgets:2',
+  ]);
+  filter.value = { ...filter.value, query: 'recoveredneedle' };
+  expect(visibleKeys(view)).toEqual(['R_widgets:2']);
+  expect(view.recoveredRecords.value.map(timelineUtils.timelineReleaseKey)).toEqual([
+    'R_widgets:2',
+  ]);
+  filter.value = { ...filter.value, includeReleaseNotes: false };
+  expect(visibleKeys(view)).toEqual([]);
+  expect(view.recoveredRecords.value.map(timelineUtils.timelineReleaseKey)).toEqual([
+    'R_widgets:2',
+  ]);
+  expect(app.requests).toHaveLength(2);
 });

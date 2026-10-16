@@ -8,7 +8,10 @@ import type {
 import type { TimelineHistoryAdapter } from '#shared/types/timeline-history';
 import { assembleReleaseTimeline, timelineReleaseKey } from '#shared/utils/release-timeline';
 
-import type { ReleaseTimelineFilterState } from '../../utils/filterReleaseTimelineGroups';
+import {
+  prepareReleaseTimelineSearch,
+  type ReleaseTimelineFilterState,
+} from '../../utils/filterReleaseTimelineGroups';
 import type { getFollowedRepositoryQueries } from '../followed-repositories/queries';
 import { createTimelineHistoryState, type TimelineHistoryCache } from './history';
 
@@ -82,8 +85,13 @@ export function createReleaseTimelineSession({
   );
   const hasFollows = computed(() => repositories.value.length > 0);
   const groups = computed(() => timeline.value.groups);
+  const preparedSearch = computed(() =>
+    prepareReleaseTimelineSearch(groups.value, cycle.value.pages)
+  );
   const visibleGroups = computed(() =>
-    filter ? filterReleaseTimelineGroups(groups.value, filter.value) : groups.value
+    filter
+      ? filterReleaseTimelineGroups(groups.value, filter.value, preparedSearch.value)
+      : groups.value
   );
   const previousBaseline = computed(() => cycle.value.previousBaseline);
   const loadedNewCount = computed(() =>

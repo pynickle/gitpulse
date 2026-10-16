@@ -26,6 +26,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const searchQuery = shallowRef('');
+const includeReleaseNotes = shallowRef(false);
 const filterRepositories = shallowRef<string[]>([]);
 const filterDateRange = shallowRef<DateRange>(EMPTY_DATE_RANGE);
 const hidePrereleases = shallowRef(false);
@@ -33,6 +34,7 @@ const activeFilter = computed(() => ({
   repositories: filterRepositories.value,
   dateRange: filterDateRange.value,
   query: searchQuery.value,
+  includeReleaseNotes: includeReleaseNotes.value,
   hidePrereleases: hidePrereleases.value,
 }));
 const {
@@ -163,6 +165,7 @@ const clearTimelineFilters = () => {
   filterRepositories.value = [];
   filterDateRange.value = EMPTY_DATE_RANGE;
   searchQuery.value = '';
+  includeReleaseNotes.value = false;
   hidePrereleases.value = false;
 };
 
@@ -175,6 +178,7 @@ defineExpose({
   <div class="release-timeline">
     <ReleaseTimelineHeader
       v-model="searchQuery"
+      v-model:include-release-notes="includeReleaseNotes"
       :loading="loading"
       :previous-baseline="previousBaseline"
       :new-count="loadedNewCount"

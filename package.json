@@ -33,6 +33,8 @@
     "bulma": "^1.0.4",
     "comark": "^0.7.0",
     "dayjs": "^1.11.23",
+    "htmlparser2": "12.0.0",
+    "markdown-exit": "1.1.0-beta.2",
     "mermaid": "^12.2.0",
     "nuxt": "^4.6.1",
     "nuxt-auth-utils": "^0.5.30",

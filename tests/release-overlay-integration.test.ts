@@ -11,7 +11,11 @@ import {
   type Ref,
 } from 'vue';
 
-import type { ReleaseTimelineGroup, TimelineRelease } from '#shared/types/release-follows';
+import type {
+  ReleaseTimelineGroup,
+  RepositoryReleaseLookup,
+  TimelineRelease,
+} from '#shared/types/release-follows';
 import type { ReleaseListItem } from '#shared/types/releases';
 
 import { useModalLifecycle } from '../app/composables/useModalLifecycle';
@@ -27,6 +31,7 @@ import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
 import getFetchErrorMessage from '../app/utils/getFetchErrorMessage';
 import handleRovingTablistKeydown from '../app/utils/handleRovingTablistKeydown';
 import withPendingPaginationPage from '../app/utils/withPendingPaginationPage';
+import english from '../i18n/locales/en.json';
 import { compileVue as compileSfc } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
 const compileVue = (path: string, modules: Record<string, unknown> = {}) =>
@@ -63,6 +68,10 @@ const icons = {
   PencilLineIcon: empty,
   ChevronRightIcon: empty,
   DownloadIcon: empty,
+  FilterIcon: empty,
+  RefreshCwIcon: empty,
+  SearchIcon: empty,
+  SlidersHorizontalIcon: empty,
 };
 const i18n = {
   useI18n: () => ({
@@ -156,7 +165,7 @@ const Recovery = await compileVue(
 );
 const Status = await compileVue(
   'app/components/dashboard/release-timeline/ReleaseTimelineStatus.vue',
-  { '@lucide/vue': { AlertCircleIcon: empty } }
+  { '@lucide/vue': { AlertCircleIcon: empty, ArrowDownIcon: empty, Loader2Icon: empty } }
 );
 const Header = defineComponent({
   props: { filterActive: Boolean },
@@ -178,6 +187,13 @@ const Header = defineComponent({
         h('button', { class: 'reload-timeline', onClick: () => emit('reload') }, 'Reload'),
       ]),
 });
+const SearchHeader = await compileVue(
+  'app/components/dashboard/release-timeline/ReleaseTimelineHeader.vue',
+  {
+    '@lucide/vue': icons,
+    '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue': { default: empty },
+  }
+);
 const Grid = defineComponent({
   props: { groups: { type: Array as PropType<ReleaseTimelineGroup[]>, required: true } },
   emits: ['open'],
@@ -202,7 +218,7 @@ const Grid = defineComponent({
       );
   },
 });
-const View = await compileVue('app/components/dashboard/release-timeline/ReleaseTimelineView.vue', {
+const viewModules = {
   '@lucide/vue': icons,
   '~/components/dashboard/release-timeline/RecoveredReleaseHistory.vue': { default: Recovery },
   '~/components/dashboard/release-timeline/ReleaseTimelineStatus.vue': { default: Status },
@@ -216,7 +232,18 @@ const View = await compileVue('app/components/dashboard/release-timeline/Release
   '~/components/dashboard/release-timeline/ReleaseTimelineFailureBanner.vue': { default: empty },
   '~/utils/filterDateRange': dateRange,
   '~/utils/filterReleaseTimelineGroups': filters,
-});
+};
+const View = await compileVue(
+  'app/components/dashboard/release-timeline/ReleaseTimelineView.vue',
+  viewModules
+);
+const SearchView = await compileVue(
+  'app/components/dashboard/release-timeline/ReleaseTimelineView.vue',
+  {
+    ...viewModules,
+    '~/components/dashboard/release-timeline/ReleaseTimelineHeader.vue': { default: SearchHeader },
+  }
+);
 
 let dom: ReturnType<typeof createVueDom>;
 let drawer: ReturnType<typeof useReleaseDrawer>;
@@ -227,6 +254,9 @@ let githubLinks = shallowRef(false);
 let timelineItems: TimelineRelease[];
 let timelineGroups: Ref<ReleaseTimelineGroup[]>;
 let timelineScrolls: number;
+let timelinePages: Record<string, RepositoryReleaseLookup>;
+let timelinePartial: Ref<boolean>;
+let olderLoads: number;
 const recoveredItem: TimelineRelease = {
   ...item,
   id: 9,
@@ -248,6 +278,9 @@ beforeEach(() => {
   githubLinks = shallowRef(false);
   timelineItems = [item];
   timelineScrolls = 0;
+  timelinePages = {};
+  timelinePartial = shallowRef(false);
+  olderLoads = 0;
   dom = createVueDom({
     ...i18n,
     useModalLifecycle,
@@ -286,7 +319,11 @@ beforeEach(() => {
     useReleaseTimeline: (filter: Readonly<Ref<filters.ReleaseTimelineFilterState>>) => ({
       loaded: shallowRef(true),
       visibleGroups: computed(() =>
-        filterReleaseTimelineGroups(timelineGroups.value, filter.value)
+        filterReleaseTimelineGroups(
+          timelineGroups.value,
+          filter.value,
+          filters.prepareReleaseTimelineSearch(timelineGroups.value, timelinePages)
+        )
       ),
       recoveredRecords: shallowRef([{ ...recoveredItem, discoveredAt: '2026-10-15T00:00:00Z' }]),
       clearingHistory: shallowRef(false),
@@ -294,10 +331,12 @@ beforeEach(() => {
       loadedNewCount: shallowRef(0),
       previousBaseline: shallowRef(null),
       baselineExposed: shallowRef(false),
-      partial: shallowRef(false),
+      partial: timelinePartial,
       hasMore: shallowRef(true),
       canRetry: shallowRef(false),
-      loadOlder: () => {},
+      loadOlder: () => {
+        olderLoads += 1;
+      },
       retryFailed: () => {},
       clearRecovered: () => {},
       retryPersistence: () => {},
@@ -324,6 +363,79 @@ beforeEach(() => {
       return this.parentElement;
     },
   });
+});
+
+test('release-note search starts off and the real header option includes full notes in visible results', async () => {
+  timelinePages = {
+    [item.repository.id]: {
+      status: 'available',
+      owner: item.repository.owner,
+      name: item.repository.name,
+      hasOlderReleases: true,
+      releases: [
+        {
+          id: item.id,
+          tagName: item.tagName,
+          name: item.title,
+          description: 'Migration guide',
+          publishedAt: item.publishedAt,
+          isDraft: false,
+          isPrerelease: false,
+          assetCount: 0,
+          htmlUrl: item.htmlUrl,
+        },
+      ],
+    },
+  };
+  dom.mount(SearchView);
+  const option = dom.document.querySelector<HTMLInputElement>(
+    '[role="search"] input[type="checkbox"]'
+  );
+  expect(option).not.toBeNull();
+  expect(option!.checked).toBe(false);
+  expect(option!.closest('label')?.textContent).toContain('releaseTimeline.includeReleaseNotes');
+  const search = dom.document.querySelector<HTMLInputElement>('input[type="search"]')!;
+  search.value = 'migration';
+  search.dispatchEvent(new dom.window.Event('input', { bubbles: true }) as unknown as Event);
+  await nextTick();
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(0);
+  option!.click();
+  await nextTick();
+  expect(option!.checked).toBe(true);
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(1);
+  option!.click();
+  await nextTick();
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(0);
+});
+
+test('release-note search empty states describe the loaded range and keep partial history controls usable', async () => {
+  const translations: Record<string, string> = english.releaseTimeline;
+  (globalThis as Record<string, unknown>).useI18n = () => ({
+    locale: shallowRef('en'),
+    t: (key: string) => translations[key.replace('releaseTimeline.', '')] ?? key,
+  });
+  timelinePartial.value = true;
+  dom.mount(SearchView);
+  const search = dom.document.querySelector<HTMLInputElement>('input[type="search"]')!;
+  search.value = 'not-present';
+  search.dispatchEvent(new dom.window.Event('input', { bubbles: true }) as unknown as Event);
+  await nextTick();
+  expect(dom.document.querySelector('.release-timeline__empty-description')?.textContent).toBe(
+    'No releases in the currently loaded range match this search.'
+  );
+  expect(dom.document.querySelector('.timeline-status__meta')?.textContent).toContain(
+    english.releaseTimeline.partialWindow
+  );
+  await click('.timeline-status__older');
+  expect(olderLoads).toBe(1);
+  await click('[aria-label="Filter"]');
+  await click('[role="switch"]');
+  await click('.release-timeline-filter-panel__close');
+  expect(dom.document.querySelector('.release-timeline__empty-description')?.textContent).toBe(
+    'No releases in the currently loaded range match these filters. Try widening the date range or clearing the filters.'
+  );
+  await click('.timeline-status__older');
+  expect(olderLoads).toBe(2);
 });
 
 test('hiding prereleases applies immediately, survives panel reopening and clears with all filters', async () => {

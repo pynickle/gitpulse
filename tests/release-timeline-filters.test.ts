@@ -117,7 +117,7 @@ describe('filterReleaseTimelineGroups', () => {
     ).toEqual([]);
   });
 
-  describe('title query', () => {
+  describe('search query', () => {
     test('filters releases by title with case-insensitive partial matches', () => {
       expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: 'CONTEXT BAR' })).toEqual([
         group('2026-08-22', [api]),
@@ -133,9 +133,13 @@ describe('filterReleaseTimelineGroups', () => {
       ]);
     });
 
-    test('does not match repository names, tags, or changelog text', () => {
-      expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: 'widgets' })).toEqual([]);
-      expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: 'v2.0.0' })).toEqual([]);
+    test('matches repository names and tags while excluding notes by default', () => {
+      expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: 'widgets' })).toEqual([
+        group('2026-08-22', [widgets]),
+      ]);
+      expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: 'v2.0.0' })).toEqual([
+        group('2026-08-22', [api]),
+      ]);
       expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: 'notes' })).toEqual([]);
     });
   });

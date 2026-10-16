@@ -1,4 +1,12 @@
-import type { FollowedRepository, ReleaseTimelineGroup } from '#shared/types/release-follows';
+import { Parser } from 'htmlparser2';
+import { createMarkdownExit } from 'markdown-exit';
+
+import type {
+  FollowedRepository,
+  ReleaseTimelineGroup,
+  RepositoryReleaseLookup,
+  TimelineRelease,
+} from '#shared/types/release-follows';
 
 import type { DateRange } from './filterDateRange';
 
@@ -7,8 +15,10 @@ export type ReleaseTimelineFilterState = {
   repositories: string[];
   /** Inclusive published-date range as local date keys; either bound may be null. */
   dateRange: DateRange;
-  /** Title search, ANDed with the other dimensions. */
+  /** Required search terms across enabled fields, ANDed with the other dimensions. */
   query: string;
+  /** Add full release notes to the default repository, title and tag fields. */
+  includeReleaseNotes?: boolean;
   /** Hide releases GitHub marks as prereleases. */
   hidePrereleases: boolean;
 };
@@ -18,6 +28,119 @@ export function toFollowedRepositoryKey(repository: FollowedRepository): string 
 }
 
 const toRepositoryMatchKey = (owner: string, name: string) => `${owner}/${name}`.toLowerCase();
+const normalizeSearchText = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+type SearchFields = { defaults: string[]; notes: string };
+const markdown = createMarkdownExit({ html: true });
+const blockTags = new Set([
+  'address',
+  'article',
+  'aside',
+  'blockquote',
+  'br',
+  'caption',
+  'dd',
+  'div',
+  'dl',
+  'dt',
+  'figcaption',
+  'figure',
+  'footer',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'header',
+  'hr',
+  'li',
+  'main',
+  'ol',
+  'p',
+  'pre',
+  'section',
+  'table',
+  'td',
+  'th',
+  'tr',
+  'ul',
+]);
+
+function releaseNoteSearchText(source: string): string {
+  if (!source) return '';
+  const text: string[] = [];
+  let hiddenDepth = 0;
+  // Parse off-DOM: collect visible text only, never render this HTML or search its attributes.
+  // Markdown rendering escapes code first, preserving literal HTML inside code examples.
+  const parser = new Parser({
+    onopentag(name, attributes) {
+      if (name === 'script' || name === 'style') hiddenDepth++;
+      if (hiddenDepth) return;
+      if (blockTags.has(name)) text.push(' ');
+      if (name === 'img' && attributes.alt) text.push(attributes.alt);
+    },
+    ontext(value) {
+      if (!hiddenDepth) text.push(value);
+    },
+    onclosetag(name) {
+      if (name === 'script' || name === 'style') hiddenDepth = Math.max(0, hiddenDepth - 1);
+      if (!hiddenDepth && blockTags.has(name)) text.push(' ');
+    },
+  });
+  parser.end(markdown.render(source));
+  return normalizeSearchText(text.join(''));
+}
+
+/** Prepare on source changes; full notes belong to pagination pages, never card previews. */
+export function prepareReleaseTimelineSearch(
+  groups: ReleaseTimelineGroup[],
+  pages: Readonly<Record<string, RepositoryReleaseLookup>> = {}
+): ReadonlyMap<TimelineRelease, SearchFields> {
+  const descriptions = new Map<string, Map<number, string>>();
+  for (const [repositoryId, page] of Object.entries(pages)) {
+    if (page.status !== 'available') continue;
+    descriptions.set(
+      repositoryId,
+      new Map(page.releases.map((release) => [release.id, release.description ?? '']))
+    );
+  }
+  return new Map(
+    groups.flatMap((group) =>
+      group.items.map((item) => [
+        item,
+        {
+          defaults: [
+            `${item.repository.owner}/${item.repository.name}`,
+            item.title,
+            item.tagName,
+          ].map(normalizeSearchText),
+          notes: releaseNoteSearchText(descriptions.get(item.repository.id)?.get(item.id) ?? ''),
+        },
+      ])
+    )
+  );
+}
+
+function parseSearchTerms(query: string) {
+  return [...query.matchAll(/"([^"]*)"?|([^\s"]+)/g)]
+    .map((match) => normalizeSearchText(match[1] ?? match[2]!))
+    .filter(Boolean)
+    .map((text) => ({ text, versionLike: /^v?\d+(?:\.\d+)+(?:[-+][\da-z.-]+)?$/.test(text) }));
+}
+
+function matchesSearchTerm(field: string, term: ReturnType<typeof parseSearchTerms>[number]) {
+  let position = field.indexOf(term.text);
+  while (position !== -1) {
+    if (
+      !term.versionLike ||
+      (!/\d/.test(field[position - 1] ?? '') &&
+        !/\d/.test(field[position + term.text.length] ?? ''))
+    )
+      return true;
+    position = field.indexOf(term.text, position + 1);
+  }
+  return false;
+}
 
 export function hasActiveTimelineFilter(
   state: Pick<ReleaseTimelineFilterState, 'repositories' | 'dateRange' | 'hidePrereleases'>
@@ -32,9 +155,10 @@ export function hasActiveTimelineFilter(
 
 export default function filterReleaseTimelineGroups(
   groups: ReleaseTimelineGroup[],
-  filters: ReleaseTimelineFilterState
+  filters: ReleaseTimelineFilterState,
+  preparedSearch?: ReadonlyMap<TimelineRelease, SearchFields>
 ): ReleaseTimelineGroup[] {
-  const normalizedQuery = filters.query.trim().toLowerCase();
+  const terms = parseSearchTerms(filters.query);
   const selectedRepositories = new Set(
     filters.repositories.map((value) => value.trim().toLowerCase()).filter(Boolean)
   );
@@ -43,11 +167,13 @@ export default function filterReleaseTimelineGroups(
 
   const hasRepositoryFilter = selectedRepositories.size > 0;
   const hasDateFilter = dateFrom !== null || dateTo !== null;
-  const hasQueryFilter = Boolean(normalizedQuery);
+  const hasQueryFilter = terms.length > 0;
 
   if (!hasRepositoryFilter && !hasDateFilter && !hasQueryFilter && !filters.hidePrereleases) {
     return groups;
   }
+
+  const search = hasQueryFilter ? (preparedSearch ?? prepareReleaseTimelineSearch(groups)) : null;
 
   const filtered: ReleaseTimelineGroup[] = [];
 
@@ -73,7 +199,14 @@ export default function filterReleaseTimelineGroups(
     }
 
     if (hasQueryFilter) {
-      const matched = items.filter((item) => item.title.toLowerCase().includes(normalizedQuery));
+      const matched = items.filter((item) => {
+        const prepared = search!.get(item);
+        if (!prepared) return false;
+        const fields = filters.includeReleaseNotes
+          ? [...prepared.defaults, prepared.notes]
+          : prepared.defaults;
+        return terms.every((term) => fields.some((field) => matchesSearchTerm(field, term)));
+      });
       itemsChanged = itemsChanged || matched.length !== items.length;
       items = matched;
     }
