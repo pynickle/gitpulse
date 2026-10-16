@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RocketIcon, XIcon } from '@lucide/vue';
+import { XIcon } from '@lucide/vue';
 import { nextTick, onUnmounted, shallowRef, watch } from 'vue';
 
 import type { FollowedRepository } from '#shared/types/release-follows';
@@ -15,25 +15,28 @@ const emit = defineEmits<{
   clear: [];
 }>();
 
+// The page renders the narrow-screen trigger inside its own fixed footer bar,
+// so it owns the open state and this panel only draws the wide aside and sheet.
+const open = defineModel<boolean>('open', { default: false });
+
 const { t } = useI18n();
 const { openModal, closeModal } = useModalState();
-const sheetOpen = shallowRef(false);
 const sheetPanel = shallowRef<HTMLElement | null>(null);
 const sheetCloseRef = shallowRef<HTMLElement | null>(null);
 const focusTrap = createFocusTrapController();
 
 const closeSheet = () => {
-  sheetOpen.value = false;
+  open.value = false;
 };
 
 onUnmounted(() => {
-  if (sheetOpen.value) closeModal();
+  if (open.value) closeModal();
 });
 
-watch(sheetOpen, async (open) => {
+watch(open, async (isOpen) => {
   if (!import.meta.client) return;
 
-  if (!open) {
+  if (!isOpen) {
     closeModal();
     await nextTick();
     focusTrap.restorePreviousFocus();
@@ -67,20 +70,10 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
     />
   </aside>
 
-  <button
-    class="followed-panel__mobile-bar"
-    type="button"
-    :aria-expanded="sheetOpen"
-    @click="sheetOpen = true"
-  >
-    <RocketIcon :size="16" aria-hidden="true" />
-    <span>{{ t('releaseFollows.followedCount', { count: items.length }) }}</span>
-  </button>
-
   <Teleport to="body">
     <Transition name="followed-sheet">
       <div
-        v-if="sheetOpen"
+        v-if="open"
         class="followed-sheet-overlay"
         @click.self="closeSheet"
         @keydown="handleSheetKeydown"
@@ -132,32 +125,6 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
   @media (min-width: 861px) {
     display: flex;
     flex-direction: column;
-  }
-}
-
-.followed-panel__mobile-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-  z-index: 2;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 0;
-  border-top: 1px solid var(--gitpulse-border);
-  background: var(--gitpulse-surface);
-  color: var(--gitpulse-text-strong);
-  font-size: 0.9rem;
-  cursor: pointer;
-
-  @media (min-width: 861px) {
-    display: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
-    outline-offset: -2px;
   }
 }
 

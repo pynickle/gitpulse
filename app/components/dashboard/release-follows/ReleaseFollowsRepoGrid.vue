@@ -2,13 +2,11 @@
 import { Loader2Icon } from '@lucide/vue';
 
 import type { FollowAddError, FollowedRepository } from '#shared/types/release-follows';
-import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import FollowableRepoCard from '~/components/dashboard/release-follows/FollowableRepoCard.vue';
-import type { StarredPaginationMeta, StarredRepo } from '~/composables/useStarredRepos';
+import type { StarredRepo } from '~/composables/useStarredRepos';
 
 defineProps<{
   items: StarredRepo[];
-  pagination: StarredPaginationMeta;
   loading: boolean;
   error: string | null;
   followedIds: Set<string>;
@@ -16,49 +14,41 @@ defineProps<{
   emptyMessage: string;
   errorMessage: string;
   retryLabel: string;
-  showPagination: boolean;
 }>();
 
 const emit = defineEmits<{
   retry: [];
-  pageChange: [page: number];
   toggle: [repo: FollowedRepository];
 }>();
 </script>
 
 <template>
   <div class="release-follows-grid">
-    <div class="release-follows-grid__body">
-      <div v-if="error" class="notification is-danger is-light">
-        <p class="mb-2">{{ errorMessage }}</p>
-        <button class="button is-small is-danger is-outlined" type="button" @click="emit('retry')">
-          {{ retryLabel }}
-        </button>
-      </div>
-
-      <div v-else-if="loading" class="release-follows-grid__empty" aria-busy="true">
-        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
-      </div>
-
-      <div v-else-if="items.length === 0" class="release-follows-grid__empty">
-        <p>{{ emptyMessage }}</p>
-      </div>
-
-      <div v-else class="release-follows-grid__cards">
-        <FollowableRepoCard
-          v-for="repo in items"
-          :key="repo.node_id || repo.id"
-          class="release-follows-grid__cell"
-          :repo="repo"
-          :followed="Boolean(repo.node_id && followedIds.has(repo.node_id))"
-          :add-block="addBlock"
-          @toggle="emit('toggle', $event)"
-        />
-      </div>
+    <div v-if="error" class="notification is-danger is-light">
+      <p class="mb-2">{{ errorMessage }}</p>
+      <button class="button is-small is-danger is-outlined" type="button" @click="emit('retry')">
+        {{ retryLabel }}
+      </button>
     </div>
 
-    <div v-if="showPagination" class="release-follows-grid__pagination">
-      <DashboardPagination :pagination="pagination" @change="emit('pageChange', $event)" />
+    <div v-else-if="loading" class="release-follows-grid__empty" aria-busy="true">
+      <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+    </div>
+
+    <div v-else-if="items.length === 0" class="release-follows-grid__empty">
+      <p>{{ emptyMessage }}</p>
+    </div>
+
+    <div v-else class="release-follows-grid__cards">
+      <FollowableRepoCard
+        v-for="repo in items"
+        :key="repo.node_id || repo.id"
+        class="release-follows-grid__cell"
+        :repo="repo"
+        :followed="Boolean(repo.node_id && followedIds.has(repo.node_id))"
+        :add-block="addBlock"
+        @toggle="emit('toggle', $event)"
+      />
     </div>
   </div>
 </template>
@@ -67,14 +57,16 @@ const emit = defineEmits<{
 .release-follows-grid {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
-  flex: 1;
+  padding: 1rem 0 0;
 }
 
 .release-follows-grid__empty {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1 1 auto;
   min-height: 12rem;
   color: var(--gitpulse-text-muted);
   font-size: 0.9rem;
@@ -128,14 +120,11 @@ const emit = defineEmits<{
   line-clamp: 3;
 }
 
-.release-follows-grid__pagination {
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  margin-top: 0.5rem;
-  padding: 0.75rem 0;
-  background: var(--gitpulse-surface);
-  border-top: 1px solid var(--gitpulse-border);
+/* The narrow page runs its bands edge to edge, so the grid carries the gutter
+   the wide layout gets from the page padding. */
+@media (max-width: 860px) {
+  .release-follows-grid {
+    padding: 0.85rem 0.9rem 1.25rem;
+  }
 }
 </style>

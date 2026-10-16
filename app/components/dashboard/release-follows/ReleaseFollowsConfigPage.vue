@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { ArrowDownIcon, ArrowUpIcon, ClockIcon, SearchIcon, StarIcon } from '@lucide/vue';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ClockIcon,
+  RocketIcon,
+  SearchIcon,
+  StarIcon,
+} from '@lucide/vue';
 import { computed, onMounted, shallowRef } from 'vue';
 
 import type { FollowedRepository } from '#shared/types/release-follows';
+import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import FollowedRepositoriesPanel from '~/components/dashboard/release-follows/FollowedRepositoriesPanel.vue';
 import ReleaseFollowsRepoGrid from '~/components/dashboard/release-follows/ReleaseFollowsRepoGrid.vue';
 import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue';
@@ -14,6 +22,7 @@ const { t } = useI18n();
 
 const activeTab = shallowRef<'starred' | 'search'>('starred');
 const isSearchTab = computed(() => activeTab.value === 'search');
+const followedSheetOpen = shallowRef(false);
 
 const {
   items: starredItems,
@@ -102,6 +111,9 @@ const showPagination = computed(() => {
   if (gridError.value) return false;
   return isSearchTab.value ? searchHasQuery.value : true;
 });
+const followedCountLabel = computed(() =>
+  t('releaseFollows.followedCount', { count: followedRepositories.value.length })
+);
 
 const reloadStarredFirstPage = async () => {
   await fetchStarredPage({
@@ -167,44 +179,45 @@ onMounted(() => {
 
 <template>
   <div class="release-follows-page">
-    <ScrollArea class="release-follows-page__main" content-class="release-follows-page__flow">
+    <div class="release-follows-page__main">
       <div class="release-follows-page__chrome">
-        <div class="release-follows-page__header">
+        <FilterSegmentedControl
+          class="release-follows-page__source"
+          :options="sourceOptions"
+          :model-value="activeTab"
+          :aria-label="t('releaseFollows.tablistLabel')"
+          @update:model-value="handleTabChange"
+        />
+
+        <template v-if="!isSearchTab">
           <FilterSegmentedControl
-            :options="sourceOptions"
-            :model-value="activeTab"
-            :aria-label="t('releaseFollows.tablistLabel')"
-            @update:model-value="handleTabChange"
+            class="release-follows-page__sort"
+            :options="sortOptions"
+            :model-value="sort"
+            :disabled="controlsDisabled"
+            :aria-label="t('starred.sortLabel')"
+            @update:model-value="handleSortChange"
           />
+          <FilterSegmentedControl
+            class="release-follows-page__direction"
+            :options="directionOptions"
+            :model-value="direction"
+            :disabled="controlsDisabled"
+            :aria-label="t('starred.orderLabel')"
+            @update:model-value="handleDirectionChange"
+          />
+        </template>
 
-          <div v-if="!isSearchTab" class="release-follows-page__controls">
-            <FilterSegmentedControl
-              :options="sortOptions"
-              :model-value="sort"
-              :disabled="controlsDisabled"
-              :aria-label="t('starred.sortLabel')"
-              @update:model-value="handleSortChange"
-            />
-            <FilterSegmentedControl
-              :options="directionOptions"
-              :model-value="direction"
-              :disabled="controlsDisabled"
-              :aria-label="t('starred.orderLabel')"
-              @update:model-value="handleDirectionChange"
-            />
-          </div>
-
-          <div v-else class="release-follows-page__search" role="search">
-            <SearchIcon :size="14" class="release-follows-page__search-icon" aria-hidden="true" />
-            <input
-              v-model="searchQuery"
-              type="search"
-              class="release-follows-page__search-input"
-              :placeholder="t('releaseFollows.searchPlaceholder')"
-              :aria-label="t('releaseFollows.searchPlaceholder')"
-              autocomplete="off"
-            />
-          </div>
+        <div v-else class="release-follows-page__search" role="search">
+          <SearchIcon :size="14" class="release-follows-page__search-icon" aria-hidden="true" />
+          <input
+            v-model="searchQuery"
+            type="search"
+            class="release-follows-page__search-input"
+            :placeholder="t('releaseFollows.searchPlaceholder')"
+            :aria-label="t('releaseFollows.searchPlaceholder')"
+            autocomplete="off"
+          />
         </div>
 
         <p v-if="addBlock === 'valid-cap'" class="release-follows-page__cap" role="status">
@@ -215,24 +228,49 @@ onMounted(() => {
         </p>
       </div>
 
-      <ReleaseFollowsRepoGrid
-        :items="gridItems"
-        :pagination="gridPagination"
-        :loading="gridLoading"
-        :error="gridError"
-        :followed-ids="followedIds"
-        :add-block="addBlock"
-        :empty-message="gridEmptyMessage"
-        :error-message="gridErrorMessage"
-        :retry-label="t('releaseFollows.retry')"
-        :show-pagination="showPagination"
-        @retry="handleRetry"
-        @page-change="handlePageChange"
-        @toggle="handleToggle"
-      />
-    </ScrollArea>
+      <ScrollArea
+        class="release-follows-page__scroll"
+        content-class="release-follows-page__scroll-flow"
+      >
+        <ReleaseFollowsRepoGrid
+          :items="gridItems"
+          :loading="gridLoading"
+          :error="gridError"
+          :followed-ids="followedIds"
+          :add-block="addBlock"
+          :empty-message="gridEmptyMessage"
+          :error-message="gridErrorMessage"
+          :retry-label="t('releaseFollows.retry')"
+          @retry="handleRetry"
+          @toggle="handleToggle"
+        />
+      </ScrollArea>
+
+      <div
+        class="release-follows-page__footer"
+        :class="{ 'release-follows-page__footer--pager-hidden': !showPagination }"
+      >
+        <div v-if="showPagination" class="release-follows-page__pager">
+          <DashboardPagination :pagination="gridPagination" @change="handlePageChange" />
+        </div>
+        <button
+          class="release-follows-page__followed-trigger"
+          type="button"
+          :aria-expanded="followedSheetOpen"
+          :aria-label="followedCountLabel"
+          :title="followedCountLabel"
+          @click="followedSheetOpen = true"
+        >
+          <RocketIcon :size="16" aria-hidden="true" />
+          <span class="release-follows-page__followed-count">
+            {{ followedRepositories.length }}
+          </span>
+        </button>
+      </div>
+    </div>
 
     <FollowedRepositoriesPanel
+      v-model:open="followedSheetOpen"
       :items="followedRepositories"
       :unavailable-ids="unavailableIds"
       @remove="removeFollow"
@@ -242,41 +280,56 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+/* The overlay hands this page one definite-height flex box, so the filter and
+   pager bands are plain flex items and only the middle band scrolls. Nothing
+   here depends on position: sticky inside a nested scroll area. */
 .release-follows-page {
   display: flex;
   align-items: stretch;
   gap: 1.25rem;
   width: 100%;
-  height: 100%;
-  min-height: 0;
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 1.5rem;
 }
 
 .release-follows-page__main {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
   min-height: 0;
 }
 
 .release-follows-page__chrome {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--gitpulse-surface);
-  padding-bottom: 0.25rem;
-}
-
-.release-follows-page__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  flex: 0 0 auto;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid var(--gitpulse-border);
+}
+
+.release-follows-page__source {
+  flex: 0 0 auto;
+}
+
+.release-follows-page__sort {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.release-follows-page__direction {
+  flex: 0 0 auto;
 }
 
 .release-follows-page__cap {
-  margin: -0.25rem 0 1rem;
+  flex: 1 1 100%;
+  margin: 0;
   padding: 0.55rem 0.75rem;
   border-radius: var(--gitpulse-radius-md, 6px);
   background: var(--gitpulse-accent-soft);
@@ -284,21 +337,14 @@ onMounted(() => {
   font-size: 0.85rem;
 }
 
-.release-follows-page__controls {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
 .release-follows-page__search {
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 12rem;
+  flex: 1 1 16rem;
+  min-width: 0;
   max-width: 28rem;
   gap: 0.5rem;
+  margin-left: auto;
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
@@ -312,6 +358,7 @@ onMounted(() => {
 
 .release-follows-page__search-input {
   width: 100%;
+  min-width: 0;
   border: 0;
   background: transparent;
   color: var(--gitpulse-text-strong);
@@ -323,19 +370,147 @@ onMounted(() => {
   }
 }
 
+.release-follows-page__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Keeps the grid's empty and loading states vertically centred inside the
+   scrolling band. */
+:deep(.release-follows-page__scroll-flow) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.release-follows-page__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  min-height: 3rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--gitpulse-border);
+}
+
+.release-follows-page__pager {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.release-follows-page__pager > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The wide layout keeps the followed list in the side panel, so its trigger
+   only exists where that panel is replaced by the sheet. */
+.release-follows-page__followed-trigger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  /* Keeps the trigger on the trailing edge when no pager shares the row. */
+  margin-left: auto;
+  height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 999px;
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-accent);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--gitpulse-accent);
+    background: var(--gitpulse-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
+  }
+}
+
+.release-follows-page__followed-count {
+  color: var(--gitpulse-text-strong);
+  font-size: 0.85rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 860px) {
   .release-follows-page {
     flex-direction: column;
     gap: 0;
+    padding: 0;
+  }
+
+  .release-follows-page__chrome {
+    gap: 0.5rem;
+    padding: 0.7rem 0.9rem;
+  }
+
+  /* Source tabs own the first row so both halves stay equal, then the sort and
+     order controls share the second row. The order control keeps its labels
+     only for assistive tech, which holds the pair on one row at any width. */
+  .release-follows-page__source {
+    flex: 1 1 100%;
+  }
+
+  .release-follows-page__sort {
+    flex: 1 1 auto;
+    margin-left: 0;
+  }
+
+  .release-follows-page__sort :deep(.segmented-control-option) {
+    min-width: 0;
+  }
+
+  .release-follows-page__sort :deep(.segmented-control-option-label) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .release-follows-page__direction :deep(.segmented-control-option) {
+    padding: 0.375rem 0.7rem;
+  }
+
+  .release-follows-page__direction :deep(.segmented-control-option-label) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
   }
 
   .release-follows-page__search {
+    flex: 1 1 100%;
     max-width: none;
+    margin-left: 0;
+  }
+
+  .release-follows-page__footer {
+    padding: 0.5rem 0.9rem;
+  }
+
+  .release-follows-page__followed-trigger {
+    display: inline-flex;
   }
 }
-:deep(.release-follows-page__flow) {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
+
+@media (min-width: 861px) {
+  .release-follows-page__footer--pager-hidden {
+    display: none;
+  }
 }
 </style>
