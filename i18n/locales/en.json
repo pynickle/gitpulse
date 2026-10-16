@@ -1217,6 +1217,7 @@
     "title": "Release Timeline",
     "searchPlaceholder": "Search repository, title, or tag",
     "includeReleaseNotes": "Include release notes",
+    "includeReleaseNotesShort": "Notes",
     "manage": "Manage Followed Repositories",
     "reload": "Reload",
     "filter": "Filter",

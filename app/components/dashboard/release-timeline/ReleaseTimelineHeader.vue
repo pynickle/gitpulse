@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  FileTextIcon,
   FilterIcon,
   HistoryIcon,
   RefreshCwIcon,
@@ -58,7 +59,10 @@ const { t } = useI18n();
     </div>
     <div class="release-timeline-header__toolbar">
       <div class="release-timeline-header__search-controls" role="search">
-        <div class="release-timeline-header__search">
+        <div
+          class="release-timeline-header__search"
+          :class="{ 'release-timeline-header__search--notes': includeReleaseNotes }"
+        >
           <SearchIcon
             v-once
             :size="16"
@@ -74,11 +78,27 @@ const { t } = useI18n();
             autocomplete="off"
             spellcheck="false"
           />
+          <label
+            class="release-timeline-header__notes"
+            :class="{ 'release-timeline-header__notes--active': includeReleaseNotes }"
+            :title="t('releaseTimeline.includeReleaseNotes')"
+          >
+            <input
+              v-model="includeReleaseNotes"
+              type="checkbox"
+              class="release-timeline-header__notes-input"
+              :aria-label="t('releaseTimeline.includeReleaseNotes')"
+            />
+            <FileTextIcon
+              :size="13"
+              class="release-timeline-header__notes-icon"
+              aria-hidden="true"
+            />
+            <span class="release-timeline-header__notes-label">
+              {{ t('releaseTimeline.includeReleaseNotesShort') }}
+            </span>
+          </label>
         </div>
-        <label class="release-timeline-header__notes-option">
-          <input v-model="includeReleaseNotes" type="checkbox" />
-          <span>{{ t('releaseTimeline.includeReleaseNotes') }}</span>
-        </label>
       </div>
       <button
         class="button is-ghost is-small release-timeline-header__recovery"
@@ -190,10 +210,9 @@ const { t } = useI18n();
 
 .release-timeline-header__search-controls {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  flex: 0 1 16.5rem;
-  width: 16.5rem;
+  align-items: center;
+  flex: 0 1 19rem;
+  width: 19rem;
   max-width: 100%;
   min-width: 0;
 }
@@ -202,30 +221,82 @@ const { t } = useI18n();
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex: 1 1 auto;
   min-width: 0;
   height: 2.25rem;
-  padding: 0 0.75rem;
+  padding: 0 0.375rem 0 0.75rem;
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-lg);
   background: var(--gitpulse-surface, var(--gitpulse-page-bg));
+  transition: border-color 0.15s ease;
 }
 
 .release-timeline-header__search:focus-within {
   border-color: var(--gitpulse-link);
 }
 
-.release-timeline-header__notes-option {
+.release-timeline-header__search--notes {
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 45%, var(--gitpulse-border));
+}
+
+.release-timeline-header__notes {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 999px;
+  background: var(--gitpulse-surface-muted);
   color: var(--gitpulse-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.15;
   cursor: pointer;
+  user-select: none;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
 
-  input {
-    flex-shrink: 0;
-    accent-color: var(--gitpulse-accent);
-  }
+.release-timeline-header__notes:hover {
+  border-color: var(--gitpulse-border-strong);
+  color: var(--gitpulse-text);
+}
+
+.release-timeline-header__notes:has(.release-timeline-header__notes-input:focus-visible) {
+  outline: 2px solid var(--gitpulse-focus-ring);
+  outline-offset: 1px;
+}
+
+.release-timeline-header__notes--active,
+.release-timeline-header__notes--active:hover {
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 55%, var(--gitpulse-border));
+  background: var(--gitpulse-info-soft);
+  color: var(--gitpulse-accent);
+}
+
+.release-timeline-header__notes-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.release-timeline-header__notes-icon {
+  flex-shrink: 0;
+}
+
+.release-timeline-header__notes-label {
+  pointer-events: none;
 }
 
 .release-timeline-header__search-icon {
@@ -234,7 +305,7 @@ const { t } = useI18n();
 }
 
 .release-timeline-header__search-input {
-  width: 100%;
+  flex: 1 1 0%;
   min-width: 0;
   border: 0;
   background: transparent;

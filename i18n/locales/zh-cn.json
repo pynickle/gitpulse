@@ -1217,6 +1217,7 @@
     "title": "Release 时间线",
     "searchPlaceholder": "搜索仓库、标题或标签",
     "includeReleaseNotes": "包含 Release 说明",
+    "includeReleaseNotesShort": "说明",
     "manage": "管理已关注仓库",
     "reload": "重新加载",
     "filter": "筛选",
