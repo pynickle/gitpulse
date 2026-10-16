@@ -77,7 +77,8 @@ test('filesystem history round-trips separately from preferences and serializes 
   const storage = createStorage({ driver: fsDriver({ base: directory }) });
   Object.assign(globalThis, { useStorage: () => storage });
   try {
-    const prefs = createNitroUserSettingsStorageAdapter();
+    const prefs = createNitroUserSettingsStorageAdapter<{ theme: string }>();
+    await prefs.write('octo cat', { theme: 'dark' });
     const history = createTimelineHistoryService(
       createNitroUserSettingsStorageAdapter<TimelineHistory>('release-timeline')
     );
@@ -86,7 +87,7 @@ test('filesystem history round-trips separately from preferences and serializes 
       { ...record(), repository: { ...record().repository, name: 'renamed' } },
     ]);
     expect((await history.read('octo cat')).records).toHaveLength(1);
-    expect(await prefs.read('octo cat')).toBeNull();
+    expect(await prefs.read('octo cat')).toEqual({ theme: 'dark' });
     await Promise.all([
       history.clear('OCTO CAT'),
       history.merge('octo cat', [record(), record(2)]),
@@ -99,7 +100,8 @@ test('filesystem history round-trips separately from preferences and serializes 
     await Promise.all([history.merge('octo cat', [record(3)]), reopened.clear('octo cat')]);
     await history.merge('octo cat', [record(2), record(3)]);
     expect((await reopened.read('octo cat')).records).toEqual([]);
-    await storage.setItem('users:broken:release-timeline', { records: 'corrupt' });
+    expect(await prefs.read('octo cat')).toEqual({ theme: 'dark' });
+    await storage.setItem('collections:release-timeline:users:broken', { records: 'corrupt' });
     await expect(reopened.read('broken')).rejects.toThrow();
   } finally {
     await storage.dispose();
@@ -140,7 +142,7 @@ test('Upstash uses canonical account/collection keys, JSON snapshots and atomic 
     });
   const history = createTimelineHistoryService(adapter());
   await history.merge(' Octo Cat ', [record()]);
-  expect(values.has('gitpulse:test:users:octo%20cat:release-timeline')).toBe(true);
+  expect(values.has('gitpulse:test:collections:release-timeline:users:octo%20cat')).toBe(true);
   const recreated = createTimelineHistoryService(adapter());
   await Promise.all([
     history.clear('octo cat'),
@@ -150,6 +152,6 @@ test('Upstash uses canonical account/collection keys, JSON snapshots and atomic 
   await recreated.advanceBaseline('octo cat', '2026-10-15T00:00:00Z');
   await history.advanceBaseline('octo cat', '2026-10-01T00:00:00Z');
   expect((await recreated.read('octo cat')).baseline).toBe('2026-10-15T00:00:00Z');
-  values.set('gitpulse:test:users:broken:release-timeline', '{broken');
+  values.set('gitpulse:test:collections:release-timeline:users:broken', '{broken');
   await expect(recreated.read('broken')).rejects.toThrow();
 });
