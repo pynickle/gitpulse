@@ -177,6 +177,7 @@ defineExpose({
       v-model="searchQuery"
       :loading="loading"
       :previous-baseline="previousBaseline"
+      :new-count="loadedNewCount"
       :show-title="showTitle"
       :show-reload="showReload"
       :filter-active="filterActive"
@@ -257,21 +258,35 @@ defineExpose({
         :previous-baseline="baselineExposed ? previousBaseline : null"
         @open="handleOpenDrawer"
         @viewport-scroll="handleViewportScroll"
+      >
+        <template #footer>
+          <ReleaseTimelineStatus
+            :partial="partial"
+            :has-more="hasMore"
+            :can-retry="canRetry"
+            :loading="loading"
+            :persistence-error="persistenceError"
+            :error="error"
+            @older="loadOlder"
+            @retry="retryFailed"
+            @save="retryPersistence"
+          />
+        </template>
+      </ReleaseTimelineGrid>
+      <ReleaseTimelineStatus
+        v-if="!showGrid"
+        :partial="partial"
+        :has-more="hasMore"
+        :can-retry="canRetry"
+        :loading="loading"
+        :persistence-error="persistenceError"
+        :error="error"
+        @older="loadOlder"
+        @retry="retryFailed"
+        @save="retryPersistence"
       />
     </div>
 
-    <ReleaseTimelineStatus
-      :count="loadedNewCount"
-      :partial="partial"
-      :has-more="hasMore"
-      :can-retry="canRetry"
-      :loading="loading"
-      :persistence-error="persistenceError"
-      :error="error"
-      @older="loadOlder"
-      @retry="retryFailed"
-      @save="retryPersistence"
-    />
     <RecoveredReleaseHistory
       :open="recoveryOpen"
       :records="recoveredRecords"

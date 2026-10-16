@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { AlertCircleIcon } from '@lucide/vue';
+import { AlertCircleIcon, ArrowDownIcon, Loader2Icon } from '@lucide/vue';
+import { computed } from 'vue';
 
-defineProps<{
-  count: number;
+const props = defineProps<{
   partial: boolean;
   hasMore: boolean;
   canRetry: boolean;
@@ -12,10 +12,16 @@ defineProps<{
 }>();
 const emit = defineEmits<{ older: []; retry: []; save: [] }>();
 const { t } = useI18n();
+const visible = computed(
+  () =>
+    props.hasMore ||
+    props.partial ||
+    props.canRetry ||
+    Boolean(props.error || props.persistenceError)
+);
 </script>
 <template>
-  <div class="timeline-status" aria-live="polite">
-    <p class="timeline-status__meta">{{ t('releaseTimeline.loadedNew', { count }) }}</p>
+  <div v-if="visible" class="timeline-status" aria-live="polite">
     <p v-if="partial" class="timeline-status__meta">{{ t('releaseTimeline.partialWindow') }}</p>
     <p v-if="error" class="timeline-status__alert timeline-status__alert--danger" role="alert">
       <AlertCircleIcon class="timeline-status__alert-icon" :size="14" aria-hidden="true" />
@@ -39,12 +45,14 @@ const { t } = useI18n();
     </button>
     <button
       v-if="hasMore"
-      class="button is-small"
+      class="button is-small timeline-status__older"
       type="button"
       :disabled="loading"
       @click="emit('older')"
     >
-      {{ t('releaseTimeline.loadOlder') }}
+      <Loader2Icon v-if="loading" :size="14" class="spin-animation" aria-hidden="true" />
+      <ArrowDownIcon v-else :size="14" aria-hidden="true" />
+      <span>{{ t('releaseTimeline.loadOlder') }}</span>
     </button>
   </div>
 </template>
@@ -52,11 +60,10 @@ const { t } = useI18n();
 .timeline-status {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
-  min-height: 2.75rem;
-  padding: 0.4rem 1.25rem;
-  border-top: 1px solid var(--gitpulse-border);
+  padding: 0.5rem 0 0.25rem;
   font-size: 0.8rem;
   color: var(--gitpulse-text-muted);
 }
@@ -64,6 +71,12 @@ const { t } = useI18n();
 .timeline-status__meta {
   margin: 0;
   line-height: 1.4;
+}
+
+.timeline-status__older {
+  gap: 0.4rem;
+  min-width: 12rem;
+  border-style: dashed;
 }
 
 .timeline-status__alert {

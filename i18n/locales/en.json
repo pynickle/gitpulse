@@ -1270,6 +1270,7 @@
     "clearRecovered": "Clear recovered history",
     "recoveredEmpty": "No retained recovered releases.",
     "loadedNew": "{count} loaded new releases",
+    "newBadge": "{count} new",
     "partialWindow": "Partial timeline coverage",
     "previousRefresh": "Previous refresh: {time}",
     "previousRefreshMark": "Previous refresh",

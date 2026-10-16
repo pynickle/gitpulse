@@ -14,6 +14,7 @@ withDefaults(
     loading: boolean;
     previousBaseline?: string | null;
     recoveredCount?: number;
+    newCount?: number;
     showTitle?: boolean;
     showReload?: boolean;
     filterActive?: boolean;
@@ -24,6 +25,7 @@ withDefaults(
     filterActive: false,
     previousBaseline: null,
     recoveredCount: 0,
+    newCount: 0,
   }
 );
 
@@ -49,6 +51,9 @@ const { t } = useI18n();
         {{ t('releaseTimeline.title') }}
       </h2>
       <ReleaseTimelineBaselineChip v-if="previousBaseline" :baseline="previousBaseline" />
+      <span v-if="newCount > 0" class="release-timeline-header__new" aria-live="polite">
+        {{ t('releaseTimeline.newBadge', { count: newCount }) }}
+      </span>
     </div>
     <div class="release-timeline-header__toolbar">
       <div class="release-timeline-header__search" role="search">
@@ -133,6 +138,17 @@ const { t } = useI18n();
   min-width: 0;
   flex: 0 1 auto;
   max-width: 100%;
+}
+
+.release-timeline-header__new {
+  flex-shrink: 0;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--gitpulse-info-soft);
+  color: var(--gitpulse-accent);
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 .release-timeline-header__title {

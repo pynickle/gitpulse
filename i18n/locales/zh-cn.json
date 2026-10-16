@@ -1270,6 +1270,7 @@
     "clearRecovered": "清空补回历史",
     "recoveredEmpty": "暂无保留的补回版本。",
     "loadedNew": "已加载 {count} 个新版本",
+    "newBadge": "{count} 个新版本",
     "partialWindow": "时间线覆盖不完整",
     "previousRefresh": "上次刷新：{time}",
     "previousRefreshMark": "上次刷新",

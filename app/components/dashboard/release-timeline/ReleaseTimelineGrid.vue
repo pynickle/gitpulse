@@ -482,6 +482,7 @@ onBeforeUnmount(() => {
         :style="{ height: `${bottomSpacerHeight}px` }"
         aria-hidden="true"
       />
+      <slot name="footer" />
     </div>
   </ScrollArea>
 </template>
