@@ -50,8 +50,8 @@ skills-lock.json
 opencode.jsonc
 .mcp.json
 
-# === AI agent memory ===
-AGENTS.md
+# === Local agent guidance backup ===
+AGENTS.md.bak
 
 # === Extension ===
 extension/.output

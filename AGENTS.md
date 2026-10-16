@@ -1,0 +1,118 @@
+# AGENTS.md — GitPulse
+
+> Compact guidance for AI agents working in this repository. Every entry answers: "Would an agent likely miss this without help?" Update when build/auth/storage/CSRF/conventions change. Commands, commit format, and pre-PR checks live in `CONTRIBUTING.md`; this file holds what that guide cannot say.
+
+## Commands
+
+Full command reference and pre-PR checks: `CONTRIBUTING.md`.
+
+- **Pre-commit verification** (matches CI intent): `bun run fmt:check && bun run lint && bunx nuxi typecheck`.
+- `bun run build` is **intentionally reserved for CI** — do not invoke locally unless asked. `bun run generate` is the static export, not a build.
+- **CI has no test job** (format, lint, typecheck, extension-typecheck, build only). Run `bun test` and `bun run extension:test` locally before pushing.
+- The extension is a separate WXT package; root `extension:*` scripts are wrappers. After a clean checkout, `cd extension && bun install` may be needed for WXT/editor state.
+
+## Layout & Wiring
+
+- Global layouts via `routeRules` `appLayout` in `nuxt.config.ts` (not `layout:` / `definePageMeta` in pages). Locale prefixes need the `/**/` rules:
+  - `/` → `landing`
+  - `/open` and `/**/open` → `landing` (the browser integration launch entry)
+  - `/**/dashboard` and `/**/dashboard/**` → `dashboard`
+- `nuxt.config.ts` does early auth validation at load time and will throw if no provider is available.
+- `nuxt.config.ts` ignores the entire `extension/` tree.
+- Logical navigation history is **derived from the route** — pages and components must never record it manually. The client plugin `app/plugins/navigation-history.client.ts` feeds each `router.afterEach` (route + vue-router `history.state.position`) into `useNavigationHistory` → `applyLogicalNavigationEvent` in `app/utils/navigationEntryRouting.ts`; logical Back/Home are the same function. New dashboard URL shapes must be added to `routeToNavigationEntry` and covered by the round-trip tests in `tests/navigation-entry-routing.test.ts`. Sequential push/replace/back/home cases belong on `applyLogicalNavigationEvent` in that same file.
+- Dashboard child pages (`/dashboard/profile`, `/dashboard/package`, `/dashboard/releases`, `/dashboard/branches`, `/dashboard/wiki`, …) must use the generic **Back + Home** header unless explicitly required otherwise: labels `t('detailOverlay.back')` / `t('detailOverlay.home')` and `useNavigationRouting` (`goBackToPreviousPage`/`goToDashboardHome`/`shouldShowHomeButton`). Never hardcode "Back to X" labels, fixed back targets, or local entry→route fallbacks — `resolveNavigationEntryRoute` is the only resolver.
+
+## Imports (Strict)
+
+- `app/utils/*.ts` → **default** exports, auto-imported by Nuxt. Reference them by name in SFCs and other app code; Nuxt resolves them with no import statement.
+- Named-export util modules (for example `navigationEntryRouting.ts`) are imported explicitly.
+- `server/utils/*.ts` → **named** exports. Import explicitly.
+- Shared: reach through the `#shared/*` alias; `server/utils/` exposes its named exports directly, with no thin re-export wrappers.
+- Auto-imported composables (`~/composables/*`): reference by name, same as the `app/utils/` defaults.
+
+## Auth & Sessions (Must-Use)
+
+- **Every** GitHub auth session write goes through `establishGitHubSession()` from `server/utils/auth-session-utils.ts` — the only writer of `github`/`pat` sessions, and the owner of their shape and cookie wiring.
+- Read provider availability with `resolveAuthProviderState()` / `assertAuthProviderState()` (`server/utils/auth-providers.ts`). Do not inspect raw `NUXT_*` env vars.
+- Personal mode defaults **on** (`NUXT_AUTH_PERSONAL_MODE_ENABLED`, default `true`). Startup validation is `server/plugins/personal-mode.ts` (baked token against GitHub `/user`) plus `server/plugins/personal-mode-validate-secret.ts` (cookie-secret strength). Required values: `NUXT_GIT_PULSE_AUTH_GITHUB_TOKEN`, `NUXT_GIT_PULSE_AUTH_PERSONAL_PASSWORD`, `NUXT_GIT_PULSE_AUTH_PERSONAL_COOKIE_SECRET`. Old `AUTH_PERSONAL_*` names are not read. Fails fatally on error.
+- Single global auth gate: `app/middleware/auth.global.ts`. Do not scatter checks.
+- Browser launch links use `/open?url=<GitHub URL>`. `resolveGitPulseLaunchRoute` owns GitHub URL parsing and resolves supported targets through `resolveNavigationEntryRoute`; `/dashboard?url=` is not a supported entry shape. Cover new mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
+- OAuth/PAT/unlock/logout live under `/auth/**` (`server/routes/auth/`), not `/api/auth/*`.
+- The browser extension is navigation-only. It opens the configured GitPulse base URL and does not call Web App API endpoints; keep its independently released WXT package decoupled from app APIs.
+- Session shape is declared in `shared/types/auth.d.ts`.
+
+## CSRF (Non-Negotiable)
+
+- Mutating methods under `/api/` are protected by `server/middleware/csrf.ts` (double-submit cookie `gitpulse_csrf` + `x-csrf-token` header). Cookie issuance is `server/plugins/csrf.ts`.
+- `/auth/**` is outside that middleware. Session mutations live there (`/auth/github`, `/auth/pat`, `/auth/unlock`, `/auth/logout`).
+- Add a mutating `/api` exemption only via `CSRF_EXEMPT_PATHS` in that middleware, plus a security review.
+- Client: `useGitPulseApiFetch()` for all mutating same-origin `/api/**` and `/auth/**` calls. Nuxt 4.5+ auto-imports `$fetch` as a module binding; that module binding is the `$fetch` to patch.
+- Constant-time check + optional Origin/Referer host validation lives in `server/utils/csrf-utils.ts`.
+
+## Server API & Data
+
+- GET private API handlers should use `definePrivateApiCoalescedEventHandler` (`server/utils/api-cache-utils.ts`) for in-flight coalescing. GET `/api/**` cache headers (`private, max-age=0, must-revalidate`) are set by `server/middleware/api-cache-control.ts`.
+- GitHub client: `getGitHubClient(event)`, `getGitHubRequestContext(event)`, or `getGitHubSessionContext(event)` from `server/utils/github-auth-utils.ts`. Never `new Octokit(...)` in route handlers.
+- User HTML must pass through `app/utils/sanitizeHtml.ts` (xss allowlist).
+
+## User Settings Storage
+
+- Backed by Nitro mount `userSettings`. Client entry: `app/composables/useUserSettings.ts` (optimistic store in `app/composables/user-settings/store.ts`).
+- Driver and env-var matrix (`fs` / `redis` / `upstash`): `docs/self-hosted.md`.
+
+## Linting, Formatting, Hooks
+
+- Formatter and linter config: `.oxfmtrc.json` / `.oxlintrc.json` (source files enable the `unicorn` plugin with a few rules disabled). Commands and the `prek` pre-commit hook: `CONTRIBUTING.md`.
+- LF enforced by `.gitattributes`.
+- Commits: use the project skill `.agents/skills/conventional-commit/SKILL.md`.
+
+## Testing
+
+- Root: `bun test` (`tests/`). Extension: `bun run extension:test` (`extension/tests/`); extension typecheck: `bun run extension:typecheck`.
+- Timeline/detail response shapes and launch GitHub URL mappings are the highest-risk surfaces; re-verify against real GitHub payloads after changes, and cover new launch mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
+- Tests exercise behavior, outputs, or public contracts — never source files read as plain text.
+- Verify UI and layout changes with `bun test`, `bun run lint`, and `bunx nuxi typecheck`.
+- Drive a real browser — Chrome DevTools, browser-use, or clicking through `bun run dev` — only when the user explicitly asks for browser testing; do not start the dev server on your own initiative.
+
+## Anti-Patterns (High-Miss)
+
+- Do not create a second Octokit factory — extend `server/utils/github-auth-utils.ts`.
+- Do not duplicate timeline parsing in components — use the dedicated composables.
+- Do not bypass `app/utils/sanitizeHtml.ts`.
+- Do not add mutating `/api` routes without CSRF middleware.
+- Do not scatter auth checks — the global middleware is the only gate.
+- Do not manually import auto-imported `app/utils/` defaults or `app/composables/`.
+- Do not write session shape inline in auth routes; keep `shared/types/auth.d.ts` + `establishGitHubSession` in sync.
+- Do not treat `.nuxt/` or `.output/` as source of truth — read `nuxt.config.ts` and the app source.
+- Extension releases are independent (`extension-v*` tags). Main app uses `vX.Y.Z`. The two release workflows do not trigger each other.
+
+## Design options
+
+- Present options as compact labeled lists (`A`/`B`/`C` or `1`/`2`/`3`) using symbols, letters, and numbers. Short title plus a few bullets; no generated pictures.
+- Call Imagine / `image_gen` / `image_edit` only when the user explicitly asks for images.
+
+## Agent harness
+
+- Determine the harness from the runtime instructions and the question tool's own name, namespace, and description. Under Codex CLI, ask directly in the ordinary response and end the turn — never invoke its `request_user_input*` tools; this holds inside skill workflows too. Other harnesses (Claude Code, Grok Build CLI, OpenCode) are unaffected.
+
+## References
+
+- Self-hosting / env matrix: `docs/self-hosted.md`
+- Extension details: `extension/README.md`
+- Conventional commits skill: `.agents/skills/conventional-commit/SKILL.md`
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in GitHub Issues for `pynickle/gitpulse`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical triage labels without overrides. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use the single-context domain layout. See `docs/agents/domain.md`.
+Domain files such as `CONTEXT.md` and `docs/adr/` may be git-ignored. Because fff cannot see
+ignored files, inspect these paths through the filesystem before treating them as absent.
