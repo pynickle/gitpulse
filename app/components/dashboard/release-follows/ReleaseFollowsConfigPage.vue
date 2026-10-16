@@ -12,10 +12,6 @@ import type { StarredDirection, StarredSort } from '~/composables/useStarredRepo
 
 const { t } = useI18n();
 
-const emit = defineEmits<{
-  return: [];
-}>();
-
 const activeTab = shallowRef<'starred' | 'search'>('starred');
 const isSearchTab = computed(() => activeTab.value === 'search');
 
@@ -241,7 +237,6 @@ onMounted(() => {
       :unavailable-ids="unavailableIds"
       @remove="removeFollow"
       @clear="clearFollows"
-      @return="emit('return')"
     />
   </div>
 </template>

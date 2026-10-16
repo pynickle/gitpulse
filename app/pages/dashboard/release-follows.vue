@@ -28,7 +28,7 @@ const handleHome = async () => {
     @back="handleBack"
     @home="handleHome"
   >
-    <ReleaseFollowsConfigPage @return="handleBack" />
+    <ReleaseFollowsConfigPage />
   </DashboardOverlayFrame>
 </template>
 
