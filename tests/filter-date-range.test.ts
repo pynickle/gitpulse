@@ -8,7 +8,6 @@ import {
   formatMonthKeyLabel,
   formatWeekdayLabels,
   isDateInRange,
-  resolveDateRangePreset,
   shiftCalendarMonth,
   toLocalDateKey,
   type DateRange,
@@ -19,45 +18,6 @@ describe('toLocalDateKey', () => {
     expect(toLocalDateKey(new Date(2026, 7, 22, 23, 30))).toBe('2026-08-22');
     expect(toLocalDateKey(new Date(2026, 0, 5, 0, 30))).toBe('2026-01-05');
     expect(toLocalDateKey(new Date(2025, 11, 31, 12, 0))).toBe('2025-12-31');
-  });
-});
-
-describe('resolveDateRangePreset', () => {
-  test('resolves last 30 / 90 days as inclusive ranges ending today', () => {
-    expect(resolveDateRangePreset('last-30-days', '2026-08-22')).toEqual({
-      from: '2026-07-24',
-      to: '2026-08-22',
-    });
-    expect(resolveDateRangePreset('last-90-days', '2026-08-22')).toEqual({
-      from: '2026-05-25',
-      to: '2026-08-22',
-    });
-  });
-
-  test('resolves this year from January 1st to today', () => {
-    expect(resolveDateRangePreset('this-year', '2026-08-22')).toEqual({
-      from: '2026-01-01',
-      to: '2026-08-22',
-    });
-    expect(resolveDateRangePreset('this-year', '2026-01-01')).toEqual({
-      from: '2026-01-01',
-      to: '2026-01-01',
-    });
-  });
-
-  test('resolves all time to an open range', () => {
-    expect(resolveDateRangePreset('all-time', '2026-08-22')).toEqual({ from: null, to: null });
-  });
-
-  test('crosses month and year boundaries when counting back', () => {
-    expect(resolveDateRangePreset('last-30-days', '2026-03-01')).toEqual({
-      from: '2026-01-31',
-      to: '2026-03-01',
-    });
-    expect(resolveDateRangePreset('last-30-days', '2026-01-05')).toEqual({
-      from: '2025-12-07',
-      to: '2026-01-05',
-    });
   });
 });
 

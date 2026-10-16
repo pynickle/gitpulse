@@ -18,11 +18,9 @@ import {
   formatMonthKeyLabel,
   formatWeekdayLabels,
   isDateInRange,
-  resolveDateRangePreset,
   shiftCalendarMonth,
   toLocalDateKey,
   type DateRange,
-  type DateRangePresetId,
 } from '~/utils/filterDateRange';
 
 const modelValue = defineModel<DateRange>({ required: true });
@@ -31,13 +29,6 @@ const { t, locale } = useI18n();
 
 const todayKey = toLocalDateKey(new Date());
 const todayMonth = todayKey.slice(0, 7);
-
-const presets: { id: DateRangePresetId; labelKey: string }[] = [
-  { id: 'last-30-days', labelKey: 'releaseTimeline.filterPanelPresetLast30' },
-  { id: 'last-90-days', labelKey: 'releaseTimeline.filterPanelPresetLast90' },
-  { id: 'this-year', labelKey: 'releaseTimeline.filterPanelPresetThisYear' },
-  { id: 'all-time', labelKey: 'releaseTimeline.filterPanelPresetAllTime' },
-];
 
 const visibleMonth = ref(
   clampCalendarMonth(
@@ -57,12 +48,6 @@ const shiftMonth = (months: number) => {
   visibleMonth.value = clampCalendarMonth(shiftCalendarMonth(visibleMonth.value, months), todayKey);
 };
 
-const applyPreset = (preset: DateRangePresetId) => {
-  const range = resolveDateRangePreset(preset, todayKey);
-  modelValue.value = range;
-  visibleMonth.value = clampCalendarMonth((range.to ?? todayKey).slice(0, 7), todayKey);
-};
-
 const selectDay = (key: string) => {
   if (key > todayKey) return;
   modelValue.value = applyDateRangeClick(modelValue.value, key);
@@ -75,58 +60,44 @@ const removeBound = (bound: 'from' | 'to') => {
 
 <template>
   <div class="filter-date-range">
-    <div class="filter-date-range__presets">
-      <button
-        v-for="preset in presets"
-        :key="preset.id"
-        class="filter-date-range__preset"
-        type="button"
-        @click="applyPreset(preset.id)"
-      >
-        {{ t(preset.labelKey) }}
-      </button>
-    </div>
-
     <div class="filter-date-range__chips">
       <span v-if="!modelValue.from && !modelValue.to" class="filter-date-range__chips-empty">
-        {{ t('releaseTimeline.filterPanelPresetAllTime') }}
+        {{ t('releaseTimeline.filterPanelDateRangeEmpty') }}
       </span>
-      <template v-else>
-        <span v-if="modelValue.from" class="filter-date-range__chip">
-          <span class="filter-date-range__chip-label">{{
-            formatDateKeyLabel(modelValue.from, locale)
-          }}</span>
-          <button
-            class="filter-date-range__chip-remove"
-            type="button"
-            :aria-label="t('releaseTimeline.filterPanelRemoveFrom')"
-            :title="t('releaseTimeline.filterPanelRemoveFrom')"
-            @click="removeBound('from')"
-          >
-            <XIcon :size="12" aria-hidden="true" />
-          </button>
-        </span>
-        <ArrowRightIcon
-          v-if="modelValue.from && modelValue.to"
-          :size="14"
-          class="filter-date-range__chips-arrow"
-          aria-hidden="true"
-        />
-        <span v-if="modelValue.to" class="filter-date-range__chip">
-          <span class="filter-date-range__chip-label">{{
-            formatDateKeyLabel(modelValue.to, locale)
-          }}</span>
-          <button
-            class="filter-date-range__chip-remove"
-            type="button"
-            :aria-label="t('releaseTimeline.filterPanelRemoveTo')"
-            :title="t('releaseTimeline.filterPanelRemoveTo')"
-            @click="removeBound('to')"
-          >
-            <XIcon :size="12" aria-hidden="true" />
-          </button>
-        </span>
-      </template>
+      <span v-if="modelValue.from" class="filter-date-range__chip">
+        <span class="filter-date-range__chip-label">{{
+          formatDateKeyLabel(modelValue.from, locale)
+        }}</span>
+        <button
+          class="filter-date-range__chip-remove"
+          type="button"
+          :aria-label="t('releaseTimeline.filterPanelRemoveFrom')"
+          :title="t('releaseTimeline.filterPanelRemoveFrom')"
+          @click="removeBound('from')"
+        >
+          <XIcon :size="12" aria-hidden="true" />
+        </button>
+      </span>
+      <ArrowRightIcon
+        v-if="modelValue.from && modelValue.to"
+        :size="14"
+        class="filter-date-range__chips-arrow"
+        aria-hidden="true"
+      />
+      <span v-if="modelValue.to" class="filter-date-range__chip">
+        <span class="filter-date-range__chip-label">{{
+          formatDateKeyLabel(modelValue.to, locale)
+        }}</span>
+        <button
+          class="filter-date-range__chip-remove"
+          type="button"
+          :aria-label="t('releaseTimeline.filterPanelRemoveTo')"
+          :title="t('releaseTimeline.filterPanelRemoveTo')"
+          @click="removeBound('to')"
+        >
+          <XIcon :size="12" aria-hidden="true" />
+        </button>
+      </span>
     </div>
 
     <div class="filter-date-range__calendar">
@@ -208,34 +179,6 @@ const removeBound = (bound: 'from' | 'to') => {
   display: grid;
   gap: 0.75rem;
   min-width: 0;
-}
-
-.filter-date-range__presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.filter-date-range__preset {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 999px;
-  background: var(--gitpulse-surface, var(--gitpulse-page-bg));
-  color: var(--gitpulse-text-muted);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    border-color 0.12s ease,
-    color 0.12s ease,
-    background 0.12s ease;
-}
-
-.filter-date-range__preset:hover,
-.filter-date-range__preset:focus-visible {
-  border-color: var(--gitpulse-accent);
-  color: var(--gitpulse-accent);
-  background: var(--gitpulse-info-soft);
 }
 
 .filter-date-range__chips {

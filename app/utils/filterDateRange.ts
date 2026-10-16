@@ -11,8 +11,6 @@ export type DateRange = {
 
 export const EMPTY_DATE_RANGE: DateRange = { from: null, to: null };
 
-export type DateRangePresetId = 'last-30-days' | 'last-90-days' | 'this-year' | 'all-time';
-
 export type CalendarDay = {
   /** Local date key (`YYYY-MM-DD`). */
   key: string;
@@ -37,28 +35,6 @@ const parseDateKey = (key: string) => {
   if (!match) return null;
   return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
 };
-
-const shiftDateKey = (key: string, days: number): string => {
-  const parsed = parseDateKey(key);
-  if (!parsed) return key;
-  const shifted = new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day + days));
-  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}`;
-};
-
-export function resolveDateRangePreset(preset: DateRangePresetId, todayKey: string): DateRange {
-  switch (preset) {
-    case 'last-30-days':
-      return { from: shiftDateKey(todayKey, -29), to: todayKey };
-    case 'last-90-days':
-      return { from: shiftDateKey(todayKey, -89), to: todayKey };
-    case 'this-year': {
-      const parsed = parseDateKey(todayKey);
-      return { from: parsed ? `${parsed.year}-01-01` : null, to: todayKey };
-    }
-    case 'all-time':
-      return { from: null, to: null };
-  }
-}
 
 export function shiftCalendarMonth(monthKey: string, months: number): string {
   const match = MONTH_KEY_PATTERN.exec(monthKey);
