@@ -1225,6 +1225,7 @@
     "filterPanelRepositoriesNoMatch": "没有匹配的仓库",
     "filterPanelRemoveRepo": "移除",
     "filterPanelDateRange": "发布时间",
+    "filterPanelHidePrereleases": "隐藏预发布版",
     "filterPanelPresetLast30": "最近 30 天",
     "filterPanelPresetLast90": "最近 90 天",
     "filterPanelPresetThisYear": "今年",

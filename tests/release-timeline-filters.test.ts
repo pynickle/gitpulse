@@ -33,6 +33,7 @@ const noFilters = {
   repositories: [] as string[],
   dateRange: EMPTY_DATE_RANGE,
   query: '',
+  hidePrereleases: false,
 };
 
 const widgets = release(1, { title: 'v1.4.200' });
@@ -58,24 +59,48 @@ describe('toFollowedRepositoryKey', () => {
 });
 
 describe('hasActiveTimelineFilter', () => {
+  test('is active when only hiding prereleases', () => {
+    expect(hasActiveTimelineFilter({ ...noFilters, hidePrereleases: true })).toBe(true);
+  });
+
   test('is false when repositories and the date range are both empty', () => {
-    expect(hasActiveTimelineFilter({ repositories: [], dateRange: EMPTY_DATE_RANGE })).toBe(false);
+    expect(hasActiveTimelineFilter(noFilters)).toBe(false);
   });
 
   test('is true when repositories or either date bound is set', () => {
+    expect(hasActiveTimelineFilter({ ...noFilters, repositories: ['octo/widgets'] })).toBe(true);
     expect(
-      hasActiveTimelineFilter({ repositories: ['octo/widgets'], dateRange: EMPTY_DATE_RANGE })
+      hasActiveTimelineFilter({ ...noFilters, dateRange: { from: '2026-08-01', to: null } })
     ).toBe(true);
     expect(
-      hasActiveTimelineFilter({ repositories: [], dateRange: { from: '2026-08-01', to: null } })
-    ).toBe(true);
-    expect(
-      hasActiveTimelineFilter({ repositories: [], dateRange: { from: null, to: '2026-08-01' } })
+      hasActiveTimelineFilter({ ...noFilters, dateRange: { from: null, to: '2026-08-01' } })
     ).toBe(true);
   });
 });
 
 describe('filterReleaseTimelineGroups', () => {
+  test('hides flagged prereleases and removes emptied dates without changing loaded releases', () => {
+    const preview = release(4, { title: 'Release 4', isPrerelease: true });
+    const olderPreview = release(5, { isPrerelease: true });
+    const loaded = [
+      group('2026-08-22', [widgets, preview]),
+      group('2026-08-21', [olderPreview, docs]),
+    ];
+
+    expect(filterReleaseTimelineGroups(loaded, noFilters)).toBe(loaded);
+    expect(filterReleaseTimelineGroups(loaded, { ...noFilters, hidePrereleases: true })).toEqual([
+      group('2026-08-22', [widgets]),
+      group('2026-08-21', [docs]),
+    ]);
+    expect(
+      filterReleaseTimelineGroups([group('2026-08-21', [olderPreview])], {
+        ...noFilters,
+        hidePrereleases: true,
+      })
+    ).toEqual([]);
+    expect(loaded[0]!.items).toEqual([widgets, preview]);
+  });
+
   test('returns the original groups when every condition is empty', () => {
     expect(filterReleaseTimelineGroups(groups, noFilters)).toBe(groups);
     expect(filterReleaseTimelineGroups(groups, { ...noFilters, query: '   ' })).toBe(groups);
@@ -84,6 +109,7 @@ describe('filterReleaseTimelineGroups', () => {
   test('returns an empty list for empty group lists', () => {
     expect(
       filterReleaseTimelineGroups([], {
+        ...noFilters,
         repositories: ['octo/widgets'],
         dateRange: { from: '2026-08-01', to: null },
         query: 'release',
@@ -194,6 +220,7 @@ describe('filterReleaseTimelineGroups', () => {
   test('ANDs repository, date range, and title query together', () => {
     expect(
       filterReleaseTimelineGroups(groups, {
+        ...noFilters,
         repositories: ['acme/api', 'octo/widgets'],
         dateRange: { from: '2026-08-22', to: null },
         query: 'context bar',
@@ -202,10 +229,31 @@ describe('filterReleaseTimelineGroups', () => {
 
     expect(
       filterReleaseTimelineGroups(groups, {
+        ...noFilters,
         repositories: ['acme/api'],
         dateRange: { from: '2026-08-01', to: '2026-08-21' },
         query: '',
       })
     ).toEqual([]);
+  });
+
+  test('ANDs hiding prereleases with repository, date and title conditions', () => {
+    const preview = release(4, {
+      title: api.title,
+      repository: api.repository,
+      isPrerelease: true,
+    });
+    const loaded = [
+      group('2026-08-22', [widgets, api, preview]),
+      group('2026-08-21', [release(5, { title: api.title, repository: api.repository })]),
+    ];
+    expect(
+      filterReleaseTimelineGroups(loaded, {
+        repositories: ['acme/api'],
+        dateRange: { from: '2026-08-22', to: null },
+        query: 'context bar',
+        hidePrereleases: true,
+      })
+    ).toEqual([group('2026-08-22', [api])]);
   });
 });

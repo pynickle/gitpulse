@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 
-import { defineComponent, h, nextTick, ref, shallowRef, type PropType } from 'vue';
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  ref,
+  shallowRef,
+  type PropType,
+  type Ref,
+} from 'vue';
 
 import type { ReleaseTimelineGroup, TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseListItem } from '#shared/types/releases';
@@ -140,14 +149,28 @@ const Recovery = await compileVue(
   'app/components/dashboard/release-timeline/RecoveredReleaseHistory.vue',
   { '@lucide/vue': icons }
 );
+const Status = await compileVue(
+  'app/components/dashboard/release-timeline/ReleaseTimelineStatus.vue',
+  { '@lucide/vue': { AlertCircleIcon: empty } }
+);
 const Header = defineComponent({
-  emits: ['filter-click', 'recovery'],
+  props: { filterActive: Boolean },
+  emits: ['filter-click', 'recovery', 'reload'],
   setup:
-    (_, { emit }) =>
+    (props, { emit }) =>
     () =>
       h('div', [
-        h('button', { class: 'open-filter', onClick: () => emit('filter-click') }, 'Filter'),
+        h(
+          'button',
+          {
+            class: 'open-filter',
+            'aria-pressed': props.filterActive,
+            onClick: () => emit('filter-click'),
+          },
+          'Filter'
+        ),
         h('button', { class: 'open-recovery', onClick: () => emit('recovery') }, 'Recovered'),
+        h('button', { class: 'reload-timeline', onClick: () => emit('reload') }, 'Reload'),
       ]),
 });
 const Grid = defineComponent({
@@ -177,7 +200,7 @@ const Grid = defineComponent({
 const View = await compileVue('app/components/dashboard/release-timeline/ReleaseTimelineView.vue', {
   '@lucide/vue': icons,
   '~/components/dashboard/release-timeline/RecoveredReleaseHistory.vue': { default: Recovery },
-  '~/components/dashboard/release-timeline/ReleaseTimelineStatus.vue': { default: empty },
+  '~/components/dashboard/release-timeline/ReleaseTimelineStatus.vue': { default: Status },
   '~/components/dashboard/FloatingBackToTopButton.vue': { default: empty },
   '~/components/dashboard/release-timeline/ReleaseDrawer.vue': { default: Drawer },
   '~/components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue': {
@@ -197,6 +220,7 @@ let requests: { url: string; resolve: (value: unknown) => void; reject: (error: 
 let navigation: { kind: string; args: unknown[]; drawerOpen: boolean }[];
 let githubLinks = shallowRef(false);
 let timelineItems: TimelineRelease[];
+let timelineGroups: Ref<ReleaseTimelineGroup[]>;
 let timelineScrolls: number;
 const recoveredItem: TimelineRelease = {
   ...item,
@@ -254,9 +278,11 @@ beforeEach(() => {
     useGitHubLinkRouting: () => ({ opensGitHubLinks: githubLinks }),
     useReleaseFollows: () => ({ followedRepositories: shallowRef([item.repository]) }),
     shouldShowReleaseTimelineBackToTop: () => false,
-    useReleaseTimeline: () => ({
+    useReleaseTimeline: (filter: Readonly<Ref<filters.ReleaseTimelineFilterState>>) => ({
       loaded: shallowRef(true),
-      visibleGroups: shallowRef([{ date: '2026-10-02', items: timelineItems }]),
+      visibleGroups: computed(() =>
+        filterReleaseTimelineGroups(timelineGroups.value, filter.value)
+      ),
       recoveredRecords: shallowRef([{ ...recoveredItem, discoveredAt: '2026-10-15T00:00:00Z' }]),
       clearingHistory: shallowRef(false),
       persistenceError: shallowRef(null),
@@ -270,7 +296,7 @@ beforeEach(() => {
       retryFailed: () => {},
       clearRecovered: () => {},
       retryPersistence: () => {},
-      groups: shallowRef([{ date: '2026-10-02', items: timelineItems }]),
+      groups: (timelineGroups = shallowRef([{ date: '2026-10-02', items: timelineItems }])),
       loading: shallowRef(false),
       error: shallowRef(null),
       hasFollows: shallowRef(true),
@@ -293,6 +319,54 @@ beforeEach(() => {
       return this.parentElement;
     },
   });
+});
+
+test('hiding prereleases applies immediately, survives panel reopening and clears with all filters', async () => {
+  timelineItems.push({ ...item, id: 2, tagName: 'v2-preview', isPrerelease: true });
+  dom.mount(View);
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(2);
+  await click('.open-filter');
+  const toggle = '[role="switch"][aria-label="releaseTimeline.filterPanelHidePrereleases"]';
+  expect(dom.document.querySelector(toggle)?.getAttribute('aria-checked')).toBe('false');
+  await click(toggle);
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(1);
+  expect(dom.document.querySelector('.open-filter')?.getAttribute('aria-pressed')).toBe('true');
+  await click('.release-timeline-filter-panel__close');
+  await click('.reload-timeline');
+  timelineGroups.value = [{ date: '2026-10-02', items: [...timelineItems] }];
+  await click('.open-filter');
+  expect(dom.document.querySelector(toggle)?.getAttribute('aria-checked')).toBe('true');
+  await click('.release-timeline-filter-panel__footer button');
+  expect(dom.document.querySelector(toggle)?.getAttribute('aria-checked')).toBe('false');
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(2);
+  expect(dom.document.querySelector('.open-filter')?.getAttribute('aria-pressed')).toBe('false');
+});
+
+test('a prerelease-only timeline uses the filter empty state, can be cleared and resets on remount', async () => {
+  timelineItems = [{ ...item, isPrerelease: true }];
+  const mounted = dom.mount(View);
+  await click('.open-filter');
+  const toggle = '[role="switch"]';
+  await click(toggle);
+  await click('.release-timeline-filter-panel__close');
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(0);
+  expect(dom.document.querySelector('.release-timeline__empty-title')?.textContent).toBe(
+    'releaseTimeline.filterEmptyTitle'
+  );
+  expect(dom.document.querySelector('.timeline-status button')?.textContent?.trim()).toBe(
+    'releaseTimeline.loadOlder'
+  );
+  await click('.release-timeline__empty button');
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(1);
+  await click('.open-filter');
+  expect(dom.document.querySelector(toggle)?.getAttribute('aria-checked')).toBe('false');
+  await click(toggle);
+  mounted.unmount();
+  await settle();
+  dom.mount(View);
+  await click('.open-filter');
+  expect(dom.document.querySelector(toggle)?.getAttribute('aria-checked')).toBe('false');
+  expect(dom.document.querySelectorAll('.open-drawer')).toHaveLength(1);
 });
 
 test('body navigation closes the drawer before changing the GitPulse surface', async () => {

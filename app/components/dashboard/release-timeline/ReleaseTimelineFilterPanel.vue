@@ -16,11 +16,13 @@ const props = defineProps<{
   open: boolean;
   repositories: string[];
   dateRange: DateRange;
+  hidePrereleases: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:repositories': [value: string[]];
   'update:date-range': [value: DateRange];
+  'update:hide-prereleases': [value: boolean];
   close: [];
 }>();
 
@@ -51,9 +53,7 @@ const repositoryOptions = computed<FilterMultiSelectOption[]>(() =>
     .sort((a, b) => a.value.localeCompare(b.value))
 );
 
-const hasActiveFilter = computed(() =>
-  hasActiveTimelineFilter({ repositories: props.repositories, dateRange: props.dateRange })
-);
+const hasActiveFilter = computed(() => hasActiveTimelineFilter(props));
 const repositoryEmptyMessage = computed(() =>
   repositoryOptions.value.length === 0
     ? t('releaseTimeline.filterPanelRepositoriesEmpty')
@@ -63,6 +63,7 @@ const repositoryEmptyMessage = computed(() =>
 const clearAll = () => {
   emit('update:repositories', []);
   emit('update:date-range', EMPTY_DATE_RANGE);
+  emit('update:hide-prereleases', false);
 };
 </script>
 
@@ -142,6 +143,20 @@ const clearAll = () => {
                 :model-value="dateRange"
                 @update:modelValue="emit('update:date-range', $event)"
               />
+            </section>
+
+            <section class="release-timeline-filter-panel__section">
+              <button
+                class="release-timeline-filter-panel__toggle"
+                type="button"
+                role="switch"
+                :aria-checked="hidePrereleases"
+                :aria-label="t('releaseTimeline.filterPanelHidePrereleases')"
+                @click="emit('update:hide-prereleases', !hidePrereleases)"
+              >
+                <span>{{ t('releaseTimeline.filterPanelHidePrereleases') }}</span>
+                <span class="release-timeline-filter-panel__toggle-track" aria-hidden="true" />
+              </button>
             </section>
           </div>
 
@@ -276,6 +291,56 @@ const clearAll = () => {
   flex-shrink: 0;
   padding: 0.85rem 1.15rem;
   border-top: 1px solid var(--gitpulse-border);
+}
+
+.release-timeline-filter-panel__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--gitpulse-text-strong);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.release-timeline-filter-panel__toggle:focus-visible {
+  outline: 2px solid var(--gitpulse-info);
+  outline-offset: 4px;
+}
+
+.release-timeline-filter-panel__toggle-track {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: var(--gitpulse-border-strong, var(--gitpulse-border));
+}
+
+.release-timeline-filter-panel__toggle-track::after {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--gitpulse-surface);
+  content: '';
+}
+
+.release-timeline-filter-panel__toggle[aria-checked='true'] {
+  .release-timeline-filter-panel__toggle-track {
+    background: var(--gitpulse-info);
+  }
+
+  .release-timeline-filter-panel__toggle-track::after {
+    transform: translateX(1rem);
+  }
 }
 
 .release-timeline-filter-panel-enter-active {

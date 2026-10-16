@@ -468,11 +468,50 @@ test('empty displayable pages retain continuation without automatically fetching
   expect(dates(view)).toEqual(['2026-09-01']);
 });
 
+test('hiding prereleases updates the loaded count while retaining manual continuation and original releases', async () => {
+  const filter = shallowRef({
+    repositories: [] as string[],
+    dateRange: { from: null as string | null, to: null as string | null },
+    query: '',
+    hidePrereleases: false,
+  });
+  const harness = createHarness(undefined, filter);
+  const { view } = harness.open();
+  const previewPage = releasePage('R_widgets', ['2026-10-15'], 'next');
+  previewPage.releases[0]!.isPrerelease = true;
+  harness.requests[0]!.resolve({
+    ...round({ R_widgets: previewPage }),
+    refresh: { previousBaseline: '2026-10-01T00:00:00Z', startedAt: '2026-10-16T00:00:00Z' },
+  });
+  await settle();
+  expect(view.loadedNewCount.value).toBe(1);
+  filter.value = { ...filter.value, hidePrereleases: true };
+  await settle();
+  expect(view.visibleGroups.value).toEqual([]);
+  expect(view.loadedNewCount.value).toBe(0);
+  expect(view.hasMore.value).toBe(true);
+  expect(harness.requests).toHaveLength(1);
+  const load = view.loadOlder();
+  expect(harness.requests[1]!.input).toEqual({ cursors: { R_widgets: 'next' } });
+  harness.requests[1]!.resolve(
+    round({ R_widgets: releasePage('R_widgets', ['2026-10-12'], null) })
+  );
+  await load;
+  expect(
+    view.visibleGroups.value.flatMap((group) => group.items.map((item) => item.tagName))
+  ).toEqual(['2026-10-12']);
+  expect(view.loadedNewCount.value).toBe(1);
+  filter.value = { ...filter.value, hidePrereleases: false };
+  expect(view.loadedNewCount.value).toBe(2);
+  expect(dates(view)).toEqual(['2026-10-15', '2026-10-12']);
+});
+
 test('the loaded new count follows repository, local-date and title filters without preventing recovery', async () => {
   const filter = shallowRef({
     repositories: [] as string[],
     dateRange: { from: null as string | null, to: null as string | null },
     query: '',
+    hidePrereleases: false,
   });
   const saved: import('../shared/types/timeline-history').RecoveredRelease[] = [];
   const app = createHarness(

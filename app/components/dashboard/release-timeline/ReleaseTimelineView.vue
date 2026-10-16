@@ -28,10 +28,12 @@ const { t } = useI18n();
 const searchQuery = shallowRef('');
 const filterRepositories = shallowRef<string[]>([]);
 const filterDateRange = shallowRef<DateRange>(EMPTY_DATE_RANGE);
+const hidePrereleases = shallowRef(false);
 const activeFilter = computed(() => ({
   repositories: filterRepositories.value,
   dateRange: filterDateRange.value,
   query: searchQuery.value,
+  hidePrereleases: hidePrereleases.value,
 }));
 const {
   loaded,
@@ -111,12 +113,7 @@ const handleOpenDrawer = (item: TimelineRelease) => {
   openDrawer(item);
 };
 
-const filterActive = computed(() =>
-  hasActiveTimelineFilter({
-    repositories: filterRepositories.value,
-    dateRange: filterDateRange.value,
-  })
-);
+const filterActive = computed(() => hasActiveTimelineFilter(activeFilter.value));
 
 const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
 const showLoading = computed(
@@ -166,6 +163,7 @@ const clearTimelineFilters = () => {
   filterRepositories.value = [];
   filterDateRange.value = EMPTY_DATE_RANGE;
   searchQuery.value = '';
+  hidePrereleases.value = false;
 };
 
 defineExpose({
@@ -287,8 +285,10 @@ defineExpose({
       :open="filterPanelOpen"
       :repositories="filterRepositories"
       :date-range="filterDateRange"
+      :hide-prereleases="hidePrereleases"
       @update:repositories="filterRepositories = $event"
       @update:date-range="filterDateRange = $event"
+      @update:hide-prereleases="hidePrereleases = $event"
       @close="filterPanelOpen = false"
     />
 

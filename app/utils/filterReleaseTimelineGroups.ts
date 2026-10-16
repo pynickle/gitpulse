@@ -9,6 +9,8 @@ export type ReleaseTimelineFilterState = {
   dateRange: DateRange;
   /** Title search, ANDed with the other dimensions. */
   query: string;
+  /** Hide releases GitHub marks as prereleases. */
+  hidePrereleases: boolean;
 };
 
 export function toFollowedRepositoryKey(repository: FollowedRepository): string {
@@ -18,10 +20,13 @@ export function toFollowedRepositoryKey(repository: FollowedRepository): string 
 const toRepositoryMatchKey = (owner: string, name: string) => `${owner}/${name}`.toLowerCase();
 
 export function hasActiveTimelineFilter(
-  state: Pick<ReleaseTimelineFilterState, 'repositories' | 'dateRange'>
+  state: Pick<ReleaseTimelineFilterState, 'repositories' | 'dateRange' | 'hidePrereleases'>
 ): boolean {
   return (
-    state.repositories.length > 0 || state.dateRange.from !== null || state.dateRange.to !== null
+    state.repositories.length > 0 ||
+    state.dateRange.from !== null ||
+    state.dateRange.to !== null ||
+    state.hidePrereleases
   );
 }
 
@@ -40,7 +45,9 @@ export default function filterReleaseTimelineGroups(
   const hasDateFilter = dateFrom !== null || dateTo !== null;
   const hasQueryFilter = Boolean(normalizedQuery);
 
-  if (!hasRepositoryFilter && !hasDateFilter && !hasQueryFilter) return groups;
+  if (!hasRepositoryFilter && !hasDateFilter && !hasQueryFilter && !filters.hidePrereleases) {
+    return groups;
+  }
 
   const filtered: ReleaseTimelineGroup[] = [];
 
@@ -50,6 +57,12 @@ export default function filterReleaseTimelineGroups(
 
     let items = group.items;
     let itemsChanged = false;
+
+    if (filters.hidePrereleases) {
+      const matched = items.filter((item) => !item.isPrerelease);
+      itemsChanged = matched.length !== items.length;
+      items = matched;
+    }
 
     if (hasRepositoryFilter) {
       const matched = items.filter((item) =>
