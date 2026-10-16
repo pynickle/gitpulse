@@ -107,13 +107,24 @@ defineExpose({ scrollElement });
   }
 
   :deep(.simplebar-track.simplebar-vertical) {
-    width: 8px;
+    width: var(--gitpulse-scrollbar-track-size);
   }
   :deep(.simplebar-track.simplebar-horizontal) {
-    height: 8px;
+    height: var(--gitpulse-scrollbar-track-size);
   }
   :deep(.simplebar-scrollbar::before) {
     background: var(--gitpulse-scrollbar-thumb);
+    border-radius: var(--gitpulse-scrollbar-thumb-radius);
+  }
+  // The library insets the thumb by 2px inside an 11px track; keep the same
+  // breathing room against our own track size so the capsule stays centered.
+  :deep(.simplebar-track.simplebar-vertical .simplebar-scrollbar::before) {
+    left: var(--gitpulse-scrollbar-thumb-inset);
+    right: var(--gitpulse-scrollbar-thumb-inset);
+  }
+  :deep(.simplebar-track.simplebar-horizontal .simplebar-scrollbar::before) {
+    top: var(--gitpulse-scrollbar-thumb-inset);
+    bottom: var(--gitpulse-scrollbar-thumb-inset);
   }
   :deep(.simplebar-scrollbar.simplebar-visible::before) {
     opacity: 0.75;

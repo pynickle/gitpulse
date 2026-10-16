@@ -11,15 +11,15 @@ textarea,
   scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
 
   &::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: var(--gitpulse-scrollbar-track-size);
+    height: var(--gitpulse-scrollbar-track-size);
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    border: 2px solid transparent;
-    border-radius: 8px;
+    border: var(--gitpulse-scrollbar-thumb-inset) solid transparent;
+    border-radius: var(--gitpulse-scrollbar-thumb-radius);
     background: var(--gitpulse-scrollbar-thumb);
     background-clip: padding-box;
   }
@@ -38,6 +38,12 @@ textarea,
   --gitpulse-radius-md: 6px;
   --gitpulse-radius-lg: 8px;
   --gitpulse-radius-xl: 12px;
+
+  /* ── Scrollbar scale ── */
+  /* The track reserves the pointer area; the thumb is the visible capsule inside it. */
+  --gitpulse-scrollbar-track-size: 10px;
+  --gitpulse-scrollbar-thumb-inset: 2px;
+  --gitpulse-scrollbar-thumb-radius: 999px;
 
   --gitpulse-page-bg: #f8fafc;
   --gitpulse-shell-bg: #f1f5f9;
