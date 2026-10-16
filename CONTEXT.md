@@ -233,6 +233,10 @@ _Avoid_: Detail Overlay when referring to this surface
 The client-side display filter on the Release Timeline that narrows visible releases by Followed Repository and published date range.
 _Avoid_: timeline search, filter bar, dashboard filters when referring to this surface
 
+**Release Timeline Search**:
+The text search used to locate releases on the Release Timeline by repository identity, release title, tag, or optionally release notes.
+_Avoid_: Release Timeline Filter when referring to the text search
+
 **Active Timeline Filter**:
 The set of Release Timeline Filter conditions currently applied to the Release Timeline.
 _Avoid_: applied filters, active filters
