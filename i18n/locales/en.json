@@ -1225,6 +1225,7 @@
     "filterPanelRepositoriesNoMatch": "No matching repositories",
     "filterPanelRemoveRepo": "Remove",
     "filterPanelDateRange": "Published date",
+    "filterPanelPrereleases": "Prereleases",
     "filterPanelHidePrereleases": "Hide prereleases",
     "filterPanelPresetLast30": "Last 30 days",
     "filterPanelPresetLast90": "Last 90 days",

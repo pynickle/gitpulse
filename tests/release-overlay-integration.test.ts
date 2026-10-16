@@ -134,6 +134,7 @@ const Drawer = await compileVue('app/components/dashboard/release-timeline/Relea
   '~/components/dashboard/release-timeline/ReleaseDrawerBody.vue': { default: Body },
   '~/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue': { default: DrawerList },
 });
+const ToggleSwitch = await compileVue('app/components/ui/ToggleSwitch.vue');
 const FilterPanel = await compileVue(
   'app/components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue',
   {
@@ -141,6 +142,7 @@ const FilterPanel = await compileVue(
     'vue-i18n': i18n,
     '~/components/ui/FilterDateRange.vue': { default: empty },
     '~/components/ui/FilterMultiSelect.vue': { default: empty },
+    '~/components/ui/ToggleSwitch.vue': { default: ToggleSwitch },
     '~/utils/filterDateRange': dateRange,
     '~/utils/filterReleaseTimelineGroups': filters,
   }

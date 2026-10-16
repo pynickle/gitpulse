@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import FilterDateRange from '~/components/ui/FilterDateRange.vue';
 import FilterMultiSelect from '~/components/ui/FilterMultiSelect.vue';
 import type { FilterMultiSelectOption } from '~/components/ui/FilterMultiSelect.vue';
+import ToggleSwitch from '~/components/ui/ToggleSwitch.vue';
 import { EMPTY_DATE_RANGE, type DateRange } from '~/utils/filterDateRange';
 import {
   hasActiveTimelineFilter,
@@ -146,17 +147,19 @@ const clearAll = () => {
             </section>
 
             <section class="release-timeline-filter-panel__section">
-              <button
-                class="release-timeline-filter-panel__toggle"
-                type="button"
-                role="switch"
-                :aria-checked="hidePrereleases"
-                :aria-label="t('releaseTimeline.filterPanelHidePrereleases')"
-                @click="emit('update:hide-prereleases', !hidePrereleases)"
-              >
-                <span>{{ t('releaseTimeline.filterPanelHidePrereleases') }}</span>
-                <span class="release-timeline-filter-panel__toggle-track" aria-hidden="true" />
-              </button>
+              <h3 class="release-timeline-filter-panel__section-title">
+                {{ t('releaseTimeline.filterPanelPrereleases') }}
+              </h3>
+              <label class="release-timeline-filter-panel__toggle-row">
+                <span class="release-timeline-filter-panel__toggle-label">
+                  {{ t('releaseTimeline.filterPanelHidePrereleases') }}
+                </span>
+                <ToggleSwitch
+                  :model-value="hidePrereleases"
+                  :aria-label="t('releaseTimeline.filterPanelHidePrereleases')"
+                  @update:model-value="emit('update:hide-prereleases', $event)"
+                />
+              </label>
             </section>
           </div>
 
@@ -293,54 +296,25 @@ const clearAll = () => {
   border-top: 1px solid var(--gitpulse-border);
 }
 
-.release-timeline-filter-panel__toggle {
+.release-timeline-filter-panel__toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  width: 100%;
-  padding: 0.25rem 0;
-  border: 0;
-  background: transparent;
-  color: var(--gitpulse-text-strong);
-  font: inherit;
-  text-align: start;
+  padding: 0.4rem 0.55rem;
+  margin: 0 -0.55rem;
+  border-radius: var(--gitpulse-radius-md);
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-.release-timeline-filter-panel__toggle:focus-visible {
-  outline: 2px solid var(--gitpulse-info);
-  outline-offset: 4px;
+.release-timeline-filter-panel__toggle-row:hover {
+  background: var(--bulma-background-hover);
 }
 
-.release-timeline-filter-panel__toggle-track {
-  position: relative;
-  flex-shrink: 0;
-  width: 2.25rem;
-  height: 1.25rem;
-  border-radius: 999px;
-  background: var(--gitpulse-border-strong, var(--gitpulse-border));
-}
-
-.release-timeline-filter-panel__toggle-track::after {
-  position: absolute;
-  top: 0.125rem;
-  left: 0.125rem;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  background: var(--gitpulse-surface);
-  content: '';
-}
-
-.release-timeline-filter-panel__toggle[aria-checked='true'] {
-  .release-timeline-filter-panel__toggle-track {
-    background: var(--gitpulse-info);
-  }
-
-  .release-timeline-filter-panel__toggle-track::after {
-    transform: translateX(1rem);
-  }
+.release-timeline-filter-panel__toggle-label {
+  color: var(--gitpulse-text);
+  font-size: 0.875rem;
 }
 
 .release-timeline-filter-panel-enter-active {
