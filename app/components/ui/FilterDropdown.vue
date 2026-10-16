@@ -66,12 +66,13 @@
             </button>
           </div>
 
-          <ul
+          <ScrollArea
             :id="listboxId"
-            ref="listRef"
+            @scroll-element="listRef = $event"
             class="filter-dropdown-list"
             role="listbox"
             :aria-label="ariaLabel"
+            content-class="filter-dropdown-options"
           >
             <template
               v-for="(item, idx) in visibleItems"
@@ -116,7 +117,7 @@
               <SearchIcon :size="16" />
               <span>{{ noResultsLabel }}</span>
             </li>
-          </ul>
+          </ScrollArea>
         </div>
       </Transition>
     </Teleport>
@@ -127,6 +128,8 @@
 import { CheckIcon, ChevronDownIcon, SearchIcon, XIcon } from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
+
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 export interface FilterOption {
   value: string;
@@ -178,7 +181,7 @@ const focusedIndex = shallowRef(-1);
 const triggerRef = ref<HTMLDivElement | null>(null);
 const buttonRef = ref<HTMLButtonElement | null>(null);
 const panelRef = ref<HTMLDivElement | null>(null);
-const listRef = ref<HTMLUListElement | null>(null);
+const listRef = ref<HTMLElement | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const panelStyle = shallowRef<Record<string, string>>({});
@@ -548,10 +551,7 @@ watch(
   max-height: 280px;
   margin: 0;
   padding: 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
+
   overscroll-behavior: contain;
   list-style: none;
 }
@@ -665,5 +665,10 @@ watch(
 :global(.filter-dropdown-panel-leave-from) {
   opacity: 1;
   transform: translateY(0);
+}
+:deep(.filter-dropdown-options) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 </style>

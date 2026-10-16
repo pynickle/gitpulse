@@ -14,6 +14,7 @@ import type {
   GitHubSearchSyntaxAst,
   GitHubSearchSyntaxHighlight,
 } from '#shared/utils/github-search-syntax';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const props = defineProps<{
   modelValue: string;
@@ -364,7 +365,7 @@ watch(
 </script>
 
 <template>
-  <div class="syntax-editor" :class="{ 'is-empty': modelValue.length === 0 }">
+  <ScrollArea class="syntax-editor" axis="both" :class="{ 'is-empty': modelValue.length === 0 }">
     <div
       ref="editor"
       class="syntax-editor__surface"
@@ -384,13 +385,14 @@ watch(
     >
       <SyntaxHighlightedContent :parts="highlightedParts" />
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped lang="scss">
 .syntax-editor {
   position: relative;
   min-height: 11rem;
+  max-height: 18rem;
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   background: var(--gitpulse-surface);
@@ -399,10 +401,8 @@ watch(
 
 .syntax-editor__surface {
   min-height: 11rem;
-  max-height: 18rem;
   width: 100%;
   padding: 0.85rem 0.95rem;
-  overflow: auto;
   color: var(--gitpulse-text);
   caret-color: var(--gitpulse-accent);
   font-family: var(--gitpulse-code-font-family, monospace);

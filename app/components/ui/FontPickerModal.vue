@@ -27,7 +27,7 @@
             </button>
           </div>
 
-          <div class="font-modal-content">
+          <ScrollArea class="font-modal-content">
             <div class="font-modal-search">
               <div class="font-modal-search-input-wrapper">
                 <SearchIcon :size="14" class="font-modal-search-icon" />
@@ -105,7 +105,7 @@
               <TypeIcon :size="24" />
               <p>{{ t('fontModal.noFontsFound') }}</p>
             </div>
-          </div>
+          </ScrollArea>
 
           <div class="font-modal-footer">
             <div class="font-modal-footer-info">
@@ -131,6 +131,7 @@ import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';
 import CollapsibleGroup from '~/components/ui/CollapsibleGroup.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 export interface FontOption {
   id: string;
@@ -346,7 +347,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 
 .font-modal-content {
   flex: 1;
-  overflow-y: auto;
+
   padding: 0 12px 12px;
   min-height: 0;
 }

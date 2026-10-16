@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { SearchIcon } from '@lucide/vue';
-import { nextTick, useTemplateRef, watch } from 'vue';
+import { nextTick, shallowRef, watch } from 'vue';
+
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 import type { AutocompleteSuggestion } from './autocomplete';
 
@@ -30,7 +32,7 @@ const emit = defineEmits<{
   activate: [index: number];
 }>();
 
-const listRef = useTemplateRef<HTMLElement>('listEl');
+const listRef = shallowRef<HTMLElement | null>(null);
 
 const getDisplayLabel = (suggestion: AutocompleteSuggestion) =>
   suggestion.label ?? suggestion.value;
@@ -66,9 +68,9 @@ watch(() => props.activeIndex, scrollActiveOptionIntoView);
 <template>
   <Teleport to="body">
     <Transition name="fa-panel">
-      <div
+      <ScrollArea
         v-if="open"
-        ref="listEl"
+        @scroll-element="listRef = $event"
         :id="listboxId"
         class="fa-panel"
         :style="panelStyle"
@@ -119,7 +121,7 @@ watch(() => props.activeIndex, scrollActiveOptionIntoView);
           <SearchIcon :size="16" class="fa-empty-icon" aria-hidden="true" />
           <span>{{ emptyMessage }}</span>
         </div>
-      </div>
+      </ScrollArea>
     </Transition>
   </Teleport>
 </template>
@@ -129,7 +131,7 @@ watch(() => props.activeIndex, scrollActiveOptionIntoView);
   position: fixed;
   z-index: 99998;
   max-height: 280px;
-  overflow-y: auto;
+
   padding: 4px;
   border: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface);

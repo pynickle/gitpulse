@@ -1,5 +1,33 @@
 @use 'variables' as *;
 
+// Native editing and generated Markdown retain their own scrollports.
+// Limit the approximation to these exceptions; document scrolling stays native.
+textarea,
+.markdown-body pre,
+.markdown-body table,
+.wiki-page__html pre,
+.wiki-page__html table {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background: var(--gitpulse-scrollbar-thumb);
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--gitpulse-text-muted);
+  }
+}
+
 :root {
   color-scheme: light;
   /* Visible app-shell height. A client plugin may replace this with visualViewport pixels. */

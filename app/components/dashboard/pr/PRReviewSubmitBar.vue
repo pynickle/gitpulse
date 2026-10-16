@@ -11,6 +11,7 @@ import {
 import { shallowRef } from 'vue';
 
 import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewDraftComment, PRReviewEvent } from '~/composables/usePRReview';
 
 withDefaults(
@@ -96,7 +97,7 @@ const toggleSection = (section: string) => {
         </button>
       </div>
 
-      <div class="pr-review-submit-bar__body">
+      <ScrollArea class="pr-review-submit-bar__body">
         <section class="pr-review-submit-bar__section">
           <button
             class="pr-review-submit-bar__section-header"
@@ -217,7 +218,7 @@ const toggleSection = (section: string) => {
             </div>
           </div>
         </section>
-      </div>
+      </ScrollArea>
 
       <div class="pr-review-submit-bar__footer">
         <div v-if="errorMessage" class="notification is-danger is-light py-2 px-3 mb-3">
@@ -409,7 +410,6 @@ const toggleSection = (section: string) => {
 }
 
 .pr-review-submit-bar__body {
-  overflow-y: auto;
   flex: 1;
   padding: 0.75rem;
 }

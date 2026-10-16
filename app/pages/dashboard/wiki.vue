@@ -14,6 +14,7 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import { splitWikiHtmlSegments, type WikiHtmlSegment } from '#shared/utils/github-wiki';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const AsyncMermaidBlock = defineAsyncComponent(() => import('~/components/ui/MermaidBlock.vue'));
 
@@ -385,19 +386,21 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
               <span>{{ t('wikiPage.pagesTitle') }}</span>
               <span class="wiki-page__sidebar-count">{{ pages.length }}</span>
             </h2>
-            <ul class="wiki-page__sidebar-list">
-              <li v-for="entry in pages" :key="entry.slug">
-                <button
-                  type="button"
-                  class="wiki-page__sidebar-item"
-                  :class="{ 'is-active': entry.slug === activeSlug }"
-                  :title="entry.title"
-                  @click="selectPage(entry.slug)"
-                >
-                  {{ entry.title }}
-                </button>
-              </li>
-            </ul>
+            <ScrollArea class="wiki-page__sidebar-list" axis="y"
+              ><ul class="wiki-page__sidebar-list-text">
+                <li v-for="entry in pages" :key="entry.slug">
+                  <button
+                    type="button"
+                    class="wiki-page__sidebar-item"
+                    :class="{ 'is-active': entry.slug === activeSlug }"
+                    :title="entry.title"
+                    @click="selectPage(entry.slug)"
+                  >
+                    {{ entry.title }}
+                  </button>
+                </li>
+              </ul></ScrollArea
+            >
           </aside>
 
           <section ref="contentRef" class="wiki-page__content">
@@ -457,20 +460,22 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
               <ListIcon :size="14" aria-hidden="true" />
               <span>{{ t('wikiPage.toc') }}</span>
             </h2>
-            <ul class="wiki-page__toc-list">
-              <li v-for="item in tocItems" :key="item.id">
-                <button
-                  type="button"
-                  class="wiki-page__toc-item"
-                  :class="{ 'is-active': item.id === activeTocId }"
-                  :style="{ paddingLeft: `${0.75 + (item.level - tocMinLevel) * 0.7}rem` }"
-                  :title="item.text"
-                  @click="scrollToHeading(item.id)"
-                >
-                  {{ item.text }}
-                </button>
-              </li>
-            </ul>
+            <ScrollArea class="wiki-page__toc-list" axis="y"
+              ><ul class="wiki-page__toc-list-text">
+                <li v-for="item in tocItems" :key="item.id">
+                  <button
+                    type="button"
+                    class="wiki-page__toc-item"
+                    :class="{ 'is-active': item.id === activeTocId }"
+                    :style="{ paddingLeft: `${0.75 + (item.level - tocMinLevel) * 0.7}rem` }"
+                    :title="item.text"
+                    @click="scrollToHeading(item.id)"
+                  >
+                    {{ item.text }}
+                  </button>
+                </li>
+              </ul></ScrollArea
+            >
           </aside>
         </div>
       </div>
@@ -586,7 +591,6 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   margin: 0;
   padding: 0.25rem 0;
   list-style: none;
-  overflow-y: auto;
 }
 
 .wiki-page__sidebar-item {
@@ -825,7 +829,6 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   margin: 0;
   padding: 0.25rem 0;
   list-style: none;
-  overflow-y: auto;
 }
 
 .wiki-page__toc-item {
@@ -894,5 +897,21 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   .wiki-page__sidebar-list {
     max-height: 16rem;
   }
+}
+:deep(.wiki-page__sidebar-list-text) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+:deep(.wiki-page__toc-list-text) {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 </style>

@@ -4,6 +4,7 @@ import { computed, nextTick, onMounted, shallowRef, useId, watch } from 'vue';
 
 import { estimateMermaidPreviewHeight } from '#shared/utils/mermaid-preview-height';
 import MermaidViewerModal from '~/components/ui/MermaidViewerModal.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const props = defineProps<{
   code: string;
@@ -106,7 +107,7 @@ watch(
           </button>
 
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="mermaid-output" v-html="state.svg" />
+          <ScrollArea class="mermaid-output" axis="both"><div v-html="state.svg" /></ScrollArea>
         </template>
       </div>
 
@@ -174,7 +175,6 @@ watch(
 }
 
 .mermaid-output {
-  overflow: auto;
   max-height: min(var(--mermaid-preview-height), 70vh);
   padding: 1rem;
 }

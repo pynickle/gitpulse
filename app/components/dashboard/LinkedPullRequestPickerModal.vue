@@ -9,6 +9,7 @@ import type {
 import { toLinkedPullRequestPickerModel } from '#shared/utils/linked-pull-requests';
 import LinkedPullRequestPickerRow from '~/components/dashboard/LinkedPullRequestPickerRow.vue';
 import CollapsibleGroup from '~/components/ui/CollapsibleGroup.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 interface PickerResponse {
   owner: string;
@@ -162,7 +163,7 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
             </button>
           </div>
 
-          <div class="linked-pr-picker-content">
+          <ScrollArea class="linked-pr-picker-content">
             <div v-if="loading" class="linked-pr-picker-status">
               <Loader2Icon class="spin-animation" :size="18" />
               <span>{{ t('dashboard.linkedPullRequests.loading') }}</span>
@@ -221,7 +222,7 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
                 }}
               </p>
             </div>
-          </div>
+          </ScrollArea>
         </div>
       </div>
     </Transition>
@@ -289,7 +290,7 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
 
 .linked-pr-picker-content {
   flex: 1;
-  overflow-y: auto;
+
   padding: 0 12px 12px;
   min-height: 0;
 }

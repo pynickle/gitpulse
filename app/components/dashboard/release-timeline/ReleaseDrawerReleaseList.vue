@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Loader2Icon, TagIcon } from '@lucide/vue';
-import { computed, onMounted, shallowRef, useTemplateRef } from 'vue';
+import { computed, onMounted, shallowRef } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseListItem } from '#shared/types/releases';
@@ -9,11 +9,12 @@ import ReleaseDrawerReleaseFilters, {
   type ReleaseTypeFilter,
 } from '~/components/dashboard/release-timeline/ReleaseDrawerReleaseFilters.vue';
 import ReleaseDrawerReleaseRows from '~/components/dashboard/release-timeline/ReleaseDrawerReleaseRows.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const props = defineProps<{ entry: TimelineRelease }>();
 const emit = defineEmits<{ select: [release: ReleaseListItem] }>();
 const { t } = useI18n();
-const scroller = useTemplateRef<HTMLElement>('scroller');
+const scroller = shallowRef<HTMLElement | null>(null);
 const { items, pagination, loading, error, fetchPage } = useRepoReleases();
 const filter = shallowRef<ReleaseTypeFilter>('all');
 const visibleItems = computed(() =>
@@ -53,7 +54,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section ref="scroller" class="release-drawer-list">
+  <ScrollArea @scroll-element="scroller = $event" class="release-drawer-list" axis="both">
     <header class="release-drawer-list__header">
       <h2 class="release-drawer-list__heading">
         <TagIcon :size="17" aria-hidden="true" />
@@ -104,14 +105,14 @@ onMounted(() => {
       <!-- Same rendering as the fullscreen Releases page: default compact pagination. -->
       <DashboardPagination :pagination="pagination" @change="changePage" />
     </div>
-  </section>
+  </ScrollArea>
 </template>
 
 <style scoped lang="scss">
 .release-drawer-list {
   min-height: 0;
   flex: 1;
-  overflow: auto;
+
   padding: 0 1.15rem;
   overscroll-behavior: contain;
 }

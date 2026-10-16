@@ -1,8 +1,11 @@
 <template>
-  <div
-    ref="detailScrollRef"
-    :class="['pr-detail-layout', { 'pr-detail-layout--review': isReviewWindowOpen }]"
+  <ScrollArea
+    @scroll-element="detailScrollRef = $event"
+    class="pr-detail-layout"
+    :class="{ 'pr-detail-layout--review': isReviewWindowOpen }"
     @scroll="onCompactHeaderScroll"
+    media="(max-width: 1024px)"
+    :disabled="isReviewWindowOpen"
   >
     <PRReviewWorkspace
       v-if="isReviewWindowOpen"
@@ -16,7 +19,12 @@
     />
 
     <div v-else class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
+      <ScrollArea
+        @scroll-element="mainColumnRef = $event"
+        class="column detail-main-column"
+        @scroll="onCompactHeaderScroll"
+        media="(min-width: 1025px)"
+      >
         <div v-if="detailError" class="notification is-danger is-light mb-4 py-2 px-3">
           <p class="is-size-7">{{ detailError }}</p>
         </div>
@@ -118,14 +126,14 @@
             />
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
-      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
-        <div
-          class="sidebar-scroll"
-          :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
-          @scroll="onSidebarScroll"
-        >
+      <ScrollArea
+        class="column detail-sidebar-column"
+        :inert="detailSidebarHidden || undefined"
+        media="(max-width: 1024px)"
+      >
+        <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <PRLabels
             :labels="currentPullRequest?.labels || []"
             :can-edit-labels="canEditLabels"
@@ -183,10 +191,10 @@
             @submit="requestReviewerSelection"
             @clear-error="clearReviewerPickerError"
           />
-        </div>
-      </div>
+        </ScrollArea>
+      </ScrollArea>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <script setup lang="ts">
@@ -216,6 +224,7 @@ import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { usePRCommitList } from '~/composables/usePRCommitList';
 import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
 import type {
@@ -328,8 +337,6 @@ usePageMeta(
     }),
   }
 );
-
-const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const repoPermissions = ref(createEmptyRepoPermissions());
 
@@ -1099,7 +1106,6 @@ watch(
 .pr-detail-layout :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
   min-width: 0;
 }
 
@@ -1116,36 +1122,7 @@ watch(
 
 .sidebar-scroll {
   height: 100%;
-  overflow-y: auto;
   padding-right: 0.75rem;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
-
-  &:hover,
-  &--active {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-    transition: background-color 0.3s ease;
-  }
-
-  &:hover::-webkit-scrollbar-thumb,
-  &--active::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .pr-detail-layout {

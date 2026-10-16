@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { CheckIcon, ChevronDownIcon, GitBranchIcon, Loader2Icon, SearchIcon } from '@lucide/vue';
-import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { RepoBranch } from '~/composables/useRepoFiles';
 
 const props = defineProps<{
@@ -179,7 +180,7 @@ onBeforeUnmount(() => {
               </button>
             </div>
 
-            <div class="branch-selector-panel__content">
+            <ScrollArea class="branch-selector-panel__content">
               <div class="branch-selector-panel__search">
                 <SearchIcon
                   :size="14"
@@ -242,7 +243,7 @@ onBeforeUnmount(() => {
                   />
                 </button>
               </div>
-            </div>
+            </ScrollArea>
 
             <div class="branch-selector-panel__footer">
               <button
@@ -394,7 +395,7 @@ onBeforeUnmount(() => {
 // ─── Content area ──────────────────────────────────────────────
 .branch-selector-panel__content {
   flex: 1;
-  overflow-y: auto;
+
   padding: 0 12px;
   min-height: 0;
 }

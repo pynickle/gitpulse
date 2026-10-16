@@ -5,6 +5,7 @@ import { computed, nextTick, shallowRef, watch } from 'vue';
 import type { CheckStatusTone, PullRequestChecksView } from '#shared/types/pr-checks';
 import { CHECK_ROLLUP_CONTEXT_LIMIT } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import createFocusTrapController from '~/utils/createFocusTrapController';
 
 const props = defineProps<{
@@ -108,7 +109,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
             </button>
           </div>
 
-          <div class="check-list-modal__content">
+          <ScrollArea class="check-list-modal__content">
             <!-- Summary line first: the headline before the list is scanned. -->
             <p class="check-list-modal__summary" :data-tone="summaryTone">
               <span class="check-list-modal__summary-icon" aria-hidden="true">
@@ -122,7 +123,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
             </p>
 
             <CheckListRows :groups="view.groups" />
-          </div>
+          </ScrollArea>
         </div>
       </div>
     </Transition>
@@ -193,7 +194,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 .check-list-modal__content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+
   padding: 0 20px 16px;
 }
 

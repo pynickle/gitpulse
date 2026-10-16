@@ -7,6 +7,7 @@ import FollowedRepositoriesPanel from '~/components/dashboard/release-follows/Fo
 import ReleaseFollowsRepoGrid from '~/components/dashboard/release-follows/ReleaseFollowsRepoGrid.vue';
 import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue';
 import FilterSegmentedControl from '~/components/ui/FilterSegmentedControl.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { StarredDirection, StarredSort } from '~/composables/useStarredRepos';
 
 const { t } = useI18n();
@@ -170,7 +171,7 @@ onMounted(() => {
 
 <template>
   <div class="release-follows-page">
-    <div class="release-follows-page__main">
+    <ScrollArea class="release-follows-page__main" content-class="release-follows-page__flow">
       <div class="release-follows-page__chrome">
         <div class="release-follows-page__header">
           <FilterSegmentedControl
@@ -233,7 +234,7 @@ onMounted(() => {
         @page-change="handlePageChange"
         @toggle="handleToggle"
       />
-    </div>
+    </ScrollArea>
 
     <FollowedRepositoriesPanel
       :items="followedRepositories"
@@ -257,12 +258,9 @@ onMounted(() => {
 }
 
 .release-follows-page__main {
-  display: flex;
-  flex-direction: column;
   flex: 1;
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .release-follows-page__chrome {
@@ -339,5 +337,10 @@ onMounted(() => {
   .release-follows-page__search {
     max-width: none;
   }
+}
+:deep(.release-follows-page__flow) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 </style>

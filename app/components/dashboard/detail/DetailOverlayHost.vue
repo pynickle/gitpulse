@@ -10,6 +10,7 @@ import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { COMPOSER_BLEED_LAYER_ID } from '~/composables/useComposerBleedPosition';
 import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
@@ -360,10 +361,11 @@ onUnmounted(() => syncDetailSidebarPane(null));
         }"
       >
         <Transition name="detail-pane-slide">
-          <div
+          <ScrollArea
             :key="activeDetailKey"
             class="detail-pane"
             :class="{ 'detail-pane--page-scroll': activeDetailPane?.type === 'repository' }"
+            :disabled="activeDetailPane?.type !== 'repository'"
           >
             <div
               v-if="isContentLoading"
@@ -452,7 +454,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
               @open-pull-request="emit('open-pull-request', $event)"
               @switch-pull-request="handleSwitchPullRequest"
             />
-          </div>
+          </ScrollArea>
         </Transition>
         <Transition name="detail-sidebar-sheet-fade">
           <div
@@ -527,7 +529,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
   /* Less top padding so sticky repo chrome sits closer under the page header. */
   padding-top: 0.75rem;
   overflow-x: hidden;
-  overflow-y: auto;
   scrollbar-gutter: stable;
 }
 

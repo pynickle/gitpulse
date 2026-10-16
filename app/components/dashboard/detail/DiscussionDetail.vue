@@ -16,6 +16,7 @@ import DiscussionAnswerCard from '~/components/dashboard/discussion/DiscussionAn
 import DiscussionComments from '~/components/dashboard/discussion/DiscussionComments.vue';
 import DiscussionHeader from '~/components/dashboard/discussion/DiscussionHeader.vue';
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 const props = defineProps<{
@@ -38,7 +39,6 @@ const EMPTY_PAGE_INFO: DiscussionPageInfo = {
 
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
-const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const discussionState = shallowRef<DiscussionDetailPayload>(cloneDiscussion(props.discussion));
 const comments = shallowRef<DiscussionComment[]>([]);
@@ -400,9 +400,19 @@ watch(
 </script>
 
 <template>
-  <div ref="detailScrollRef" class="detail-scroll" @scroll="onCompactHeaderScroll">
+  <ScrollArea
+    @scroll-element="detailScrollRef = $event"
+    class="detail-scroll"
+    @scroll="onCompactHeaderScroll"
+    media="(max-width: 1024px)"
+  >
     <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
+      <ScrollArea
+        @scroll-element="mainColumnRef = $event"
+        class="column detail-main-column"
+        @scroll="onCompactHeaderScroll"
+        media="(min-width: 1025px)"
+      >
         <div ref="detailHeaderRef" class="detail-header-boundary">
           <DiscussionHeader
             :discussion="displayDiscussion"
@@ -452,22 +462,22 @@ watch(
           :submitting="submittingComment"
           :submit="submitComment"
         />
-      </div>
+      </ScrollArea>
 
-      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
-        <div
-          class="sidebar-scroll"
-          :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
-          @scroll="onSidebarScroll"
-        >
+      <ScrollArea
+        class="column detail-sidebar-column"
+        :inert="detailSidebarHidden || undefined"
+        media="(max-width: 1024px)"
+      >
+        <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <DiscussionActions
             :discussion="displayDiscussion"
             :source-notification="sourceNotification"
           />
-        </div>
-      </div>
+        </ScrollArea>
+      </ScrollArea>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped lang="scss">
@@ -491,7 +501,6 @@ watch(
 .detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
   min-width: 0;
 }
 
@@ -508,36 +517,7 @@ watch(
 
 .sidebar-scroll {
   height: 100%;
-  overflow-y: auto;
   padding-right: 0.75rem;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
-
-  &:hover,
-  &--active {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-    transition: background-color 0.3s ease;
-  }
-
-  &:hover::-webkit-scrollbar-thumb,
-  &--active::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .discussion-detail__composer {

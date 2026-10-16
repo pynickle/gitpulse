@@ -105,7 +105,11 @@
 
           <div class="card-content dashboard-list-card-content">
             <div v-if="dashboardListLoading || !dashboardListError" class="dashboard-list-shell">
-              <SimpleBar class="dashboard-list-scroll">
+              <ScrollArea
+                class="dashboard-list-scroll"
+                axis="both"
+                content-class="dashboard-list-content"
+              >
                 <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
 
                 <NotificationSubjectEnrichmentNotice
@@ -238,7 +242,7 @@
                     <AsyncRepoItem :repo="repo" />
                   </div>
                 </template>
-              </SimpleBar>
+              </ScrollArea>
             </div>
 
             <div v-else class="dashboard-error-state">
@@ -268,9 +272,13 @@
                         : t('dashboard.error.showDetails')
                     }}
                   </button>
-                  <pre v-if="showErrorDetails" class="dashboard-error-state__details">{{
-                    dashboardListError
-                  }}</pre>
+                  <ScrollArea
+                    v-if="showErrorDetails"
+                    class="dashboard-error-state__details"
+                    axis="both"
+                  >
+                    <pre class="dashboard-error-state__details-text">{{ dashboardListError }}</pre>
+                  </ScrollArea>
                 </div>
               </div>
             </div>
@@ -406,9 +414,6 @@ import {
   ListTodoIcon,
   SearchIcon,
 } from '@lucide/vue';
-
-import 'simplebar-vue/dist/simplebar.min.css';
-import SimpleBar from 'simplebar-vue';
 import { computed, defineAsyncComponent, shallowRef, useTemplateRef, watch } from 'vue';
 
 import ActivityBar from '~/components/dashboard/activity-bar/ActivityBar.vue';
@@ -427,6 +432,7 @@ import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
 import Button from '~/components/ui/Button.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOptions';
 import {
   applyNotificationLocalFilters,
@@ -1677,7 +1683,7 @@ watch(
 
 .dashboard-main-card:has(.dashboard-pagination-footer)
   .dashboard-list-scroll
-  :deep(.simplebar-content > .mb-4:last-child) {
+  :deep(.dashboard-list-content > .mb-4:last-child) {
   margin-bottom: 0;
 }
 
@@ -1779,7 +1785,6 @@ watch(
   width: 100%;
   max-width: min(100%, 32rem);
   max-height: clamp(120px, 25vh, 220px);
-  overflow: auto;
   font-family: var(--gitpulse-code-font-family);
   font-size: 0.8rem;
   line-height: 1.5;
@@ -1790,5 +1795,14 @@ watch(
   text-align: left;
   white-space: pre-wrap;
   word-break: break-word;
+}
+:deep(.dashboard-error-state__details-text) {
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 </style>

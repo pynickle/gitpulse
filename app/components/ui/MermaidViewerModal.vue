@@ -11,6 +11,8 @@ import {
   watch,
 } from 'vue';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
+
 const props = defineProps<{
   code: string;
 }>();
@@ -378,7 +380,9 @@ onBeforeUnmount(() => {
             :style="transformStyle"
             v-html="renderState.svg"
           />
-          <pre v-else class="mermaid-viewer-modal__fallback"><code>{{ props.code }}</code></pre>
+          <ScrollArea v-else class="mermaid-viewer-modal__fallback" axis="both">
+            <pre class="mermaid-viewer-modal__fallback-text"><code>{{ props.code }}</code></pre>
+          </ScrollArea>
         </div>
       </section>
 
@@ -524,7 +528,6 @@ onBeforeUnmount(() => {
 }
 
 .mermaid-viewer-modal__fallback {
-  overflow: auto;
   width: 100%;
   height: 100%;
   margin: 0;
@@ -654,5 +657,14 @@ onBeforeUnmount(() => {
   .mermaid-viewer-modal__close {
     order: 2;
   }
+}
+:deep(.mermaid-viewer-modal__fallback-text) {
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 </style>

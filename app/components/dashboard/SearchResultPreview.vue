@@ -16,7 +16,11 @@
       </span>
     </div>
 
-    <div v-if="!loading && !error && items && items.length > 0" class="srp-results">
+    <ScrollArea
+      v-if="!loading && !error && items && items.length > 0"
+      class="srp-results"
+      content-class="srp-results-flow"
+    >
       <article
         v-for="(item, i) in items"
         :key="item.id ?? i"
@@ -56,7 +60,7 @@
           </div>
         </div>
       </article>
-    </div>
+    </ScrollArea>
 
     <div v-if="!loading && !error && items && items.length === 0" class="srp-empty">
       {{ emptyLabel }}
@@ -76,6 +80,7 @@ import {
   UserIcon,
 } from '@lucide/vue';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
 
@@ -254,24 +259,8 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-results {
-  display: grid;
-  gap: 0.35rem;
-  overflow-y: auto;
   padding-right: 0.25rem;
   flex: 1;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, var(--gitpulse-accent) 25%, transparent);
-    border-radius: 4px;
-  }
 }
 
 .srp-card {
@@ -385,5 +374,9 @@ const getStateIcon = (item: SearchResultItem) => {
   font-size: 0.82rem;
   border: 1px dashed var(--gitpulse-border);
   border-radius: 6px;
+}
+:deep(.srp-results-flow) {
+  display: grid;
+  gap: 0.35rem;
 }
 </style>

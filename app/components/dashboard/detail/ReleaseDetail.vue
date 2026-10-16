@@ -14,6 +14,7 @@ import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import ReleaseAssetsList from '~/components/dashboard/releases/ReleaseAssetsList.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
 
 const props = defineProps<{
@@ -22,7 +23,6 @@ const props = defineProps<{
 }>();
 
 const { locale, t } = useI18n();
-const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 const { openRepository } = useDashboardRepositoryNavigation();
 const relativeTimeNow = useRelativeTimeNow();
 
@@ -78,9 +78,9 @@ usePageMeta(
 </script>
 
 <template>
-  <div class="release-detail detail-scroll">
+  <ScrollArea class="release-detail detail-scroll" media="(max-width: 1024px)">
     <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div class="column detail-main-column">
+      <ScrollArea class="column detail-main-column" media="(min-width: 1025px)">
         <header class="release-header">
           <div class="release-header__top">
             <div class="release-header__tag-row">
@@ -152,9 +152,13 @@ usePageMeta(
           :initial-items="release.reactions"
           initial-items-include-viewer-state
         />
-      </div>
+      </ScrollArea>
 
-      <aside class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
+      <ScrollArea
+        class="column detail-sidebar-column"
+        :inert="detailSidebarHidden || undefined"
+        media="(max-width: 1024px)"
+      >
         <div class="release-sidebar">
           <section class="sidebar-card release-sidebar__assets-card">
             <div class="sidebar-card__header">
@@ -166,13 +170,12 @@ usePageMeta(
                 {{ t('releaseDetail.assetCount', { count: assets.length }) }}
               </span>
             </div>
-            <div
+            <ScrollArea
               class="sidebar-card__content sidebar-card__content--scrollable sidebar-scroll"
-              :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
-              @scroll="onSidebarScroll"
+              media="(min-width: 1025px)"
             >
               <ReleaseAssetsList :assets="assets" />
-            </div>
+            </ScrollArea>
           </section>
 
           <section class="sidebar-card">
@@ -216,9 +219,9 @@ usePageMeta(
             </div>
           </section>
         </div>
-      </aside>
+      </ScrollArea>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped lang="scss">
@@ -242,7 +245,6 @@ usePageMeta(
 .detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
   min-width: 0;
 }
 
@@ -420,35 +422,6 @@ usePageMeta(
 .sidebar-card__content--scrollable {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
-
-  &:hover,
-  &.sidebar-scroll--active {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-    transition: background-color 0.3s ease;
-  }
-
-  &:hover::-webkit-scrollbar-thumb,
-  &.sidebar-scroll--active::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .release-sidebar__title {

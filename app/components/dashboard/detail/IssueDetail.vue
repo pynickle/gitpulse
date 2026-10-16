@@ -1,7 +1,17 @@
 <template>
-  <div ref="detailScrollRef" class="detail-scroll" @scroll="onCompactHeaderScroll">
+  <ScrollArea
+    @scroll-element="detailScrollRef = $event"
+    class="detail-scroll"
+    @scroll="onCompactHeaderScroll"
+    media="(max-width: 1024px)"
+  >
     <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div ref="mainColumnRef" class="column detail-main-column" @scroll="onCompactHeaderScroll">
+      <ScrollArea
+        @scroll-element="mainColumnRef = $event"
+        class="column detail-main-column"
+        @scroll="onCompactHeaderScroll"
+        media="(min-width: 1025px)"
+      >
         <div ref="detailHeaderRef" class="detail-header-boundary">
           <IssueHeader
             :issue="currentIssue"
@@ -27,14 +37,14 @@
             @load-more="loadMoreTimeline"
           />
         </div>
-      </div>
+      </ScrollArea>
 
-      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
-        <div
-          class="sidebar-scroll"
-          :class="{ 'sidebar-scroll--active': isSidebarScrolling }"
-          @scroll="onSidebarScroll"
-        >
+      <ScrollArea
+        class="column detail-sidebar-column"
+        :inert="detailSidebarHidden || undefined"
+        media="(max-width: 1024px)"
+      >
+        <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <IssueTypeCard
             :issue-type="currentIssue?.type"
             :can-edit-issue-type="canEditIssueType"
@@ -77,10 +87,10 @@
             @update:state="updateIssueState"
             @add-timeline-event="addTimelineEvent"
           />
-        </div>
-      </div>
+        </ScrollArea>
+      </ScrollArea>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <script setup lang="ts">
@@ -95,6 +105,7 @@ import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
 import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
 import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
@@ -149,8 +160,6 @@ usePageMeta(
     }),
   }
 );
-
-const { isScrolling: isSidebarScrolling, onScroll: onSidebarScroll } = useAutoHideScrollState();
 
 const repoInfo = computed(() => {
   return parseGitHubRepoPath(currentIssue.value?.repository_url);
@@ -433,7 +442,6 @@ watch(
 .detail-scroll :deep(.detail-main-column) {
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
   min-width: 0;
 }
 
@@ -450,36 +458,7 @@ watch(
 
 .sidebar-scroll {
   height: 100%;
-  overflow-y: auto;
   padding-right: 0.75rem;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease;
-
-  &:hover,
-  &--active {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-    transition: background-color 0.3s ease;
-  }
-
-  &:hover::-webkit-scrollbar-thumb,
-  &--active::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .issue-detail__timeline {

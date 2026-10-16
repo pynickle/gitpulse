@@ -712,16 +712,20 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
 }
 
 .drawer-body {
+  min-height: 0;
+}
+
+.drawer-body-flow {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   min-height: 0;
+  height: 100%;
 }
 
 .drawer-form,
 .drawer-preview {
   min-width: 0;
   padding: 1.15rem 1.25rem 1.5rem;
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -751,7 +755,6 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
 .preview-content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .preview-content .search-result-preview {
@@ -1051,8 +1054,12 @@ const { t, editorOpen, startNewTab, closeEditor } = props.model;
 
 @media (max-width: 1160px) {
   .drawer-body {
+    display: block;
+  }
+  .drawer-body-flow {
+    display: grid;
     grid-template-columns: 1fr;
-    overflow-y: auto;
+    height: auto;
   }
 
   .drawer-form,

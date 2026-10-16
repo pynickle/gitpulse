@@ -21,6 +21,7 @@ import type { LocationQueryRaw } from 'vue-router';
 import type { ShikiDarkThemeId, ShikiLightThemeId } from '#shared/types/user-settings';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { RepoContentItem } from '~/composables/useRepoFiles';
 
 import {
@@ -144,6 +145,10 @@ const restoreTreeScrollPosition = async () => {
 
   element.scrollTop = treeScrollPositions.value[treeScrollKey.value] ?? element.scrollTop;
 };
+
+watch(treeScrollElement, (element) => {
+  if (element) void restoreTreeScrollPosition();
+});
 
 const highlighter = shallowRef<HighlighterCore | null>(null);
 const highlightedHtml = ref('');
@@ -957,11 +962,11 @@ onActivated(() => {
             <span>{{ t('repoFileView.loadingTree') }}</span>
           </div>
 
-          <div
+          <ScrollArea
             v-else
-            ref="treeScrollElement"
+            @scroll-element="treeScrollElement = $event"
             class="repo-file-view__tree"
-            @scroll.passive="saveTreeScrollPosition"
+            @scroll="saveTreeScrollPosition"
           >
             <button
               type="button"
@@ -1028,7 +1033,7 @@ onActivated(() => {
                 <span class="repo-file-view__tree-label">{{ row.node.name }}</span>
               </button>
             </template>
-          </div>
+          </ScrollArea>
         </template>
       </aside>
 
@@ -1044,7 +1049,7 @@ onActivated(() => {
         </div>
 
         <template v-else-if="!fileContent">
-          <div v-if="sortedDirectoryContents.length" class="repo-file-view__file-list">
+          <ScrollArea v-if="sortedDirectoryContents.length" class="repo-file-view__file-list">
             <div class="repo-file-view__file-list-header">
               <span class="repo-file-view__file-list-col--name">
                 {{ t('repoFileView.name') }}
@@ -1092,7 +1097,7 @@ onActivated(() => {
                 {{ item.type === 'file' ? formatFileSize(item.size) : '' }}
               </span>
             </button>
-          </div>
+          </ScrollArea>
 
           <div v-else class="repo-file-view__empty">
             <p>{{ t('repoFileView.emptyDirectory') }}</p>
@@ -1161,8 +1166,9 @@ onActivated(() => {
             </button>
           </div>
 
-          <div
+          <ScrollArea
             v-else
+            axis="both"
             :class="[
               'repo-file-view__code-wrapper',
               { 'repo-file-view__code-wrapper--wrap': wordWrap },
@@ -1190,7 +1196,7 @@ onActivated(() => {
                 </tbody>
               </table>
             </div>
-          </div>
+          </ScrollArea>
         </template>
 
         <div v-else class="repo-file-view__empty" />
@@ -1457,7 +1463,6 @@ onActivated(() => {
 }
 
 .repo-file-view__tree {
-  overflow-y: auto;
   flex: 1;
   padding: 0.35rem;
 }
@@ -1590,7 +1595,6 @@ onActivated(() => {
 
 .repo-file-view__file-list {
   flex: 1;
-  overflow-y: auto;
 }
 
 .repo-file-view__file-list-header {
@@ -1764,7 +1768,6 @@ onActivated(() => {
 
 .repo-file-view__code-wrapper {
   flex: 1;
-  overflow: auto;
   min-height: 0;
   background: var(--gitpulse-surface);
 }
@@ -1796,6 +1799,7 @@ onActivated(() => {
   :deep(pre) {
     margin: 0;
     padding: 0.75rem;
+    overflow: visible;
   }
 
   :deep(code) {

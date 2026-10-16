@@ -9,7 +9,7 @@ import {
   SearchIcon,
 } from '@lucide/vue';
 import type { Component } from 'vue';
-import { computed, nextTick, onMounted, shallowRef, useTemplateRef } from 'vue';
+import { computed, nextTick, onMounted, shallowRef } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
 import {
@@ -32,6 +32,7 @@ import SettingsCategoryNav from '~/components/dashboard/settings/SettingsCategor
 import FilterDropdown from '~/components/ui/FilterDropdown.vue';
 import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
 import FontPickerModal from '~/components/ui/FontPickerModal.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import {
   builtinAppFontOptions,
   builtinCodeFontOptions,
@@ -64,7 +65,7 @@ type SettingsCategory = (typeof SETTINGS_CATEGORY_IDS)[number];
 
 const activeSettingsCategory = shallowRef<SettingsCategory>('appearance');
 const mobileDetailOpen = shallowRef(false);
-const settingsMainRef = useTemplateRef<HTMLElement>('settingsMain');
+const settingsMainRef = shallowRef<HTMLElement | null>(null);
 const settingsCategoryMeta = {
   appearance: {
     icon: PaletteIcon,
@@ -436,21 +437,31 @@ onMounted(() => {
     @home="handleHome"
   >
     <div class="settings" :class="{ 'is-detail': mobileDetailOpen }">
-      <aside class="settings__sidebar">
+      <ScrollArea
+        class="settings__sidebar"
+        media="(max-width: 860px)"
+        role="complementary"
+        content-class="settings__sidebar-flow"
+      >
         <div class="settings__list-header">
           <h1 class="settings__list-title">{{ t('dashboard.settings.pageTitle') }}</h1>
         </div>
-        <nav class="settings__nav" :aria-label="t('dashboard.settings.pageTitle')">
+        <ScrollArea
+          class="settings__nav"
+          :aria-label="t('dashboard.settings.pageTitle')"
+          media="(min-width: 861px)"
+          role="navigation"
+        >
           <span class="settings__nav-label">{{ t('dashboard.settings.pageTitle') }}</span>
           <SettingsCategoryNav
             :items="settingsCategoryItems"
             :active-id="activeSettingsCategory"
             @select="openSettingsCategory"
           />
-        </nav>
-      </aside>
+        </ScrollArea>
+      </ScrollArea>
 
-      <main ref="settingsMain" class="settings__main">
+      <ScrollArea @scroll-element="settingsMainRef = $event" class="settings__main" role="main">
         <button
           class="settings__category-back"
           type="button"
@@ -772,7 +783,7 @@ onMounted(() => {
             </section>
           </template>
         </div>
-      </main>
+      </ScrollArea>
     </div>
 
     <!-- Font Picker Modals -->
@@ -823,7 +834,6 @@ onMounted(() => {
 .settings__nav {
   flex: 1;
   padding: 0.75rem 0.5rem;
-  overflow-y: auto;
 }
 
 .settings__nav-label {
@@ -843,12 +853,13 @@ onMounted(() => {
 /* ── Main ── */
 .settings__main {
   flex: 1;
-  overflow-y: auto;
-  /* Reserve scrollbar gutter so centered content (.settings__content uses
-     margin: 0 auto) doesn't shift horizontally when the scrollbar appears
-     or disappears across tabs with different content heights. */
-  scrollbar-gutter: stable;
   background: var(--gitpulse-surface);
+}
+
+:deep(.settings__sidebar-flow) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 .settings__content {
@@ -1214,7 +1225,6 @@ onMounted(() => {
     flex: 1;
     min-height: 0;
     padding: 0;
-    overflow-y: auto;
   }
 
   .settings__list-header {

@@ -3,6 +3,7 @@ import { HistoryIcon, XIcon } from '@lucide/vue';
 import { useId, useTemplateRef } from 'vue';
 
 import type { RecoveredRelease } from '#shared/types/timeline-history';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 const props = defineProps<{
   open: boolean;
   records: RecoveredRelease[];
@@ -78,7 +79,11 @@ const {
             </button>
           </header>
         </div>
-        <div class="recovered-history__content">
+        <ScrollArea
+          class="recovered-history__content"
+          axis="both"
+          content-class="recovered-history__flow"
+        >
           <p v-if="error" class="recovered-history__error" role="alert">
             {{ t('releaseTimeline.persistenceError') }}
           </p>
@@ -120,7 +125,7 @@ const {
               {{ t('releaseTimeline.recoveredDescription') }}
             </p>
           </div>
-        </div>
+        </ScrollArea>
       </aside>
     </div>
   </Teleport>
@@ -247,11 +252,10 @@ const {
 }
 
 .recovered-history__content {
-  display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  overflow: auto;
+
   padding: 1rem 1.15rem 1.35rem;
   overscroll-behavior: contain;
 }
@@ -372,5 +376,10 @@ const {
 .recovered-history__summary {
   white-space: pre-wrap;
   color: var(--gitpulse-text-muted);
+}
+:deep(.recovered-history__flow) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 </style>

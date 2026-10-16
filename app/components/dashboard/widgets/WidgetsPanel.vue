@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import 'simplebar-vue/dist/simplebar.min.css';
-import SimpleBar from 'simplebar-vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 </script>
 
 <template>
   <div class="widgets-panel">
-    <SimpleBar class="widgets-panel__scroll">
+    <ScrollArea class="widgets-panel__scroll" axis="both">
       <div class="widgets-panel__content">
         <slot></slot>
       </div>
-    </SimpleBar>
+    </ScrollArea>
   </div>
 </template>
 <style scoped lang="scss">

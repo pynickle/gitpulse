@@ -6,7 +6,6 @@ import {
   onBeforeUnmount,
   shallowRef,
   ref,
-  useTemplateRef,
   watch,
   type ComponentPublicInstance,
 } from 'vue';
@@ -17,6 +16,7 @@ import type {
 } from '#shared/utils/pr-review-workspace-presentation';
 import PRReviewFilePath from '~/components/dashboard/pr/PRReviewFilePath.vue';
 import PRReviewVirtualDiffRows from '~/components/dashboard/pr/PRReviewVirtualDiffRows.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type {
   PRReviewDiffSection,
   PRReviewDraftComment,
@@ -106,7 +106,7 @@ const toggleFileCollapse = (filename: string) => {
   collapsedFiles.value = updated;
 };
 
-const scrollContainer = useTemplateRef<HTMLElement>('scrollContainer');
+const scrollContainer = shallowRef<HTMLElement | null>(null);
 const sectionElements = new Map<string, HTMLElement>();
 const stickySentinels = new Map<string, HTMLElement>();
 const stuckHeaders = shallowRef(new Set<string>());
@@ -385,7 +385,18 @@ watch(
   { immediate: true }
 );
 
-watch(scrollContainer, (container) => bindStickyObserver(container), { flush: 'post' });
+watch(
+  scrollContainer,
+  (container) => {
+    window.clearTimeout(programmaticScrollTimer);
+    isProgrammaticScroll.value = false;
+    if (scrollSyncFrame) window.cancelAnimationFrame(scrollSyncFrame);
+    scrollSyncFrame = undefined;
+    bindStickyObserver(container);
+    if (container) void scrollToActiveFile();
+  },
+  { flush: 'post' }
+);
 
 onBeforeUnmount(() => {
   window.clearTimeout(programmaticScrollTimer);
@@ -403,7 +414,14 @@ onBeforeUnmount(() => {
       {{ t('prReview.selectFile') }}
     </div>
 
-    <div v-else ref="scrollContainer" class="pr-review-diff-viewer__body" @scroll="handleScroll">
+    <ScrollArea
+      v-else
+      @scroll-element="scrollContainer = $event"
+      class="pr-review-diff-viewer__body"
+      @scroll="handleScroll"
+      :axis="workspaceMode === 'narrow' ? 'y' : 'both'"
+      content-class="pr-review-diff-viewer__flow"
+    >
       <article
         v-for="section in sections"
         :key="section.file.filename"
@@ -527,7 +545,7 @@ onBeforeUnmount(() => {
             />
           </template>
 
-          <div
+          <ScrollArea
             v-if="getDraftsForFile(section.file.filename).length"
             class="pr-review-diff-viewer__drafts"
           >
@@ -556,10 +574,10 @@ onBeforeUnmount(() => {
                 @click="handleRemoveDraftComment(comment.id)"
               ></button>
             </div>
-          </div>
+          </ScrollArea>
         </template>
       </article>
-    </div>
+    </ScrollArea>
   </section>
 </template>
 
@@ -725,24 +743,22 @@ html.dark .pr-review-diff-viewer__header {
   // animates, so code lines never re-wrap mid-animation; the section's
   // overflow: hidden clips the overflow instead.
   width: var(--pr-review-center-pin, auto);
-  overflow: auto;
+
   flex: 1 1 0;
   height: 100%;
   min-height: 0;
   max-height: 100%;
   padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  -ms-overflow-style: none;
+
   overscroll-behavior: contain;
   font-size: var(--gitpulse-pr-review-code-font-size, 12px);
   line-height: 1.45;
-  scrollbar-width: none;
 }
 
-.pr-review-diff-viewer__body::-webkit-scrollbar {
-  display: none;
+:deep(.pr-review-diff-viewer__flow) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .pr-review-diff-viewer__file-section {
@@ -770,7 +786,7 @@ html.dark .pr-review-diff-viewer__header {
 
 .pr-review-diff-viewer__drafts {
   max-height: 10rem;
-  overflow-y: auto;
+
   border-top: 1px solid var(--gitpulse-border);
   padding: 0.65rem 0.75rem 0.75rem;
   background: var(--gitpulse-surface-muted);

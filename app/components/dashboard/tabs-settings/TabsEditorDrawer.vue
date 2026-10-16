@@ -15,6 +15,7 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import SearchResultPreview from '~/components/dashboard/SearchResultPreview.vue';
 import GitHubSearchAstPanel from '~/components/dashboard/tabs-settings/GitHubSearchAstPanel.vue';
 import GitHubSearchSyntaxEditor from '~/components/dashboard/tabs-settings/GitHubSearchSyntaxEditor.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
 
 const props = defineProps<{
@@ -79,8 +80,8 @@ const {
       </button>
     </header>
 
-    <div class="drawer-body">
-      <div class="drawer-form">
+    <ScrollArea class="drawer-body" media="(max-width: 1160px)" content-class="drawer-body-flow">
+      <ScrollArea class="drawer-form" media="(min-width: 1161px)">
         <div class="field">
           <label class="label">{{ t('dashboard.tabsSettings.viewNameLabel') }}</label>
           <div class="control has-icons-left">
@@ -182,7 +183,7 @@ const {
             :t="t"
           />
         </section>
-      </div>
+      </ScrollArea>
       <aside class="drawer-preview">
         <div class="pr-header">
           <div class="section-label drawer-preview__label">
@@ -218,7 +219,7 @@ const {
             </button>
           </div>
         </div>
-        <div class="preview-content">
+        <ScrollArea class="preview-content">
           <SearchResultPreview
             :items="previewResult?.items ?? null"
             :loading="previewLoading"
@@ -227,9 +228,9 @@ const {
             :waiting-label="t('dashboard.tabsSettings.previewWaiting')"
             :empty-label="t('dashboard.tabsSettings.previewEmptyResults')"
           />
-        </div>
+        </ScrollArea>
       </aside>
-    </div>
+    </ScrollArea>
 
     <footer class="drawer-footer">
       <button class="button is-light drawer-cancel-btn" type="button" @click="closeEditor">

@@ -28,6 +28,7 @@ import {
 } from '#shared/utils/unified-diff-pointer';
 import PRReviewDiffReviewThreads from '~/components/dashboard/pr/PRReviewDiffReviewThreads.vue';
 import PRReviewInlineComment from '~/components/dashboard/pr/PRReviewInlineComment.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewCommentThread, PRReviewDiffRow } from '~/composables/usePRReview';
 import tokenizeCodeLine from '~/utils/tokenizeCodeLine';
 
@@ -91,6 +92,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const rowsRoot = useTemplateRef<HTMLElement>('rowsRoot');
+const horizontalScroller = shallowRef<HTMLElement | null>(null);
 const isRowsNearViewport = shallowRef(false);
 const visibleRange = shallowRef({ start: 0, end: 0 });
 const measuredRowHeights = shallowRef(new Map<string, number>());
@@ -684,6 +686,8 @@ const endPointerSession = () => {
   pointerSession = null;
 };
 
+watch(horizontalScroller, endPointerSession);
+
 const onUnifiedCodePointerDown = (line: RenderedUnifiedLine, event: PointerEvent) => {
   if (props.diffArrangement !== 'unified' || !event.isPrimary) {
     return;
@@ -703,7 +707,7 @@ const onUnifiedCodePointerDown = (line: RenderedUnifiedLine, event: PointerEvent
   selectingLineKey.value = null;
   event.preventDefault();
 
-  const rowsScroller = target.closest<HTMLElement>('.pr-review-diff-viewer__rows');
+  const rowsScroller = horizontalScroller.value;
   const session: UnifiedDiffPointerSession = {
     pointerId: event.pointerId,
     lineNumber: line.newLineNumber,
@@ -1038,176 +1042,191 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="rowsRoot" class="pr-review-diff-viewer__rows">
-    <div class="pr-review-diff-viewer__rows-track">
-      <div
-        v-if="topSpacerHeight"
-        class="pr-review-diff-viewer__row-spacer"
-        :style="{ height: `${topSpacerHeight}px` }"
-        aria-hidden="true"
-      ></div>
+  <ScrollArea
+    class="pr-review-diff-viewer__rows-scroll"
+    axis="x"
+    media="(max-width: 1024px)"
+    @scroll-element="horizontalScroller = $event"
+  >
+    <div ref="rowsRoot" class="pr-review-diff-viewer__rows">
+      <div class="pr-review-diff-viewer__rows-track">
+        <div
+          v-if="topSpacerHeight"
+          class="pr-review-diff-viewer__row-spacer"
+          :style="{ height: `${topSpacerHeight}px` }"
+          aria-hidden="true"
+        ></div>
 
-      <div
-        v-for="virtualRow in renderedVisibleRows"
-        :key="virtualRow.key"
-        :ref="(element) => setRowElement(virtualRow.key, element)"
-        class="pr-review-diff-viewer__virtual-row"
-        :data-row-key="virtualRow.key"
-      >
-        <div v-if="virtualRow.row.type === 'hunk'" class="pr-review-diff-viewer__hunk-line">
-          <div class="pr-review-diff-viewer__hunk">
-            <code>{{ virtualRow.row.content }}</code>
-          </div>
-        </div>
-
-        <div v-else class="pr-review-diff-viewer__split-row">
-          <div :class="getRowSideClass(virtualRow.row, 'old')">
-            <span class="pr-review-diff-viewer__line-number">{{
-              virtualRow.row.oldLineNumber ?? ''
-            }}</span>
-            <code class="pr-review-diff-viewer__code">
-              <span
-                v-for="token in virtualRow.oldTokens"
-                :key="token.key"
-                class="pr-review-diff-viewer__token"
-                :class="`pr-review-diff-viewer__token--${token.kind}`"
-                >{{ token.text }}</span
-              >
-            </code>
+        <div
+          v-for="virtualRow in renderedVisibleRows"
+          :key="virtualRow.key"
+          :ref="(element) => setRowElement(virtualRow.key, element)"
+          class="pr-review-diff-viewer__virtual-row"
+          :data-row-key="virtualRow.key"
+        >
+          <div v-if="virtualRow.row.type === 'hunk'" class="pr-review-diff-viewer__hunk-line">
+            <div class="pr-review-diff-viewer__hunk">
+              <code>{{ virtualRow.row.content }}</code>
+            </div>
           </div>
 
-          <span class="pr-review-diff-viewer__split-divider" aria-hidden="true"></span>
-
-          <div :class="getRowSideClass(virtualRow.row, 'new')">
-            <span class="pr-review-diff-viewer__line-number">
-              <span class="pr-review-diff-viewer__line-num">{{
-                virtualRow.row.newLineNumber ?? ''
+          <div v-else class="pr-review-diff-viewer__split-row">
+            <div :class="getRowSideClass(virtualRow.row, 'old')">
+              <span class="pr-review-diff-viewer__line-number">{{
+                virtualRow.row.oldLineNumber ?? ''
               }}</span>
-              <button
-                class="pr-review-diff-viewer__comment-button"
-                type="button"
-                :aria-label="
-                  virtualRow.row.newLineNumber
-                    ? t('prReview.addLineCommentForLine', {
-                        line: virtualRow.row.newLineNumber,
-                      })
-                    : t('prReview.addLineComment')
-                "
-                :disabled="
-                  !virtualRow.row.isCommentable || !virtualRow.row.newLineNumber || submitting
-                "
-                :title="
-                  virtualRow.row.isCommentable
-                    ? t('prReview.addLineComment')
-                    : t('prReview.lineNotCommentable')
-                "
-                @click="openDraftEditorForLine(virtualRow.row.newLineNumber)"
-              >
-                +
-              </button>
-            </span>
-            <div class="pr-review-diff-viewer__new-line">
               <code class="pr-review-diff-viewer__code">
                 <span
-                  v-for="token in virtualRow.newTokens"
+                  v-for="token in virtualRow.oldTokens"
                   :key="token.key"
                   class="pr-review-diff-viewer__token"
                   :class="`pr-review-diff-viewer__token--${token.kind}`"
                   >{{ token.text }}</span
                 >
               </code>
-              <PRReviewDiffReviewThreads
-                v-if="virtualRow.reviewThreads.length"
-                :threads="virtualRow.reviewThreads"
-                :repo-owner="repoOwner"
-                :repo-name="repoName"
-                :resolving-review-thread-id="resolvingReviewThreadId"
-                @toggle-review-thread="emit('toggle-review-thread', $event)"
-              />
+            </div>
+
+            <span class="pr-review-diff-viewer__split-divider" aria-hidden="true"></span>
+
+            <div :class="getRowSideClass(virtualRow.row, 'new')">
+              <span class="pr-review-diff-viewer__line-number">
+                <span class="pr-review-diff-viewer__line-num">{{
+                  virtualRow.row.newLineNumber ?? ''
+                }}</span>
+                <button
+                  class="pr-review-diff-viewer__comment-button"
+                  type="button"
+                  :aria-label="
+                    virtualRow.row.newLineNumber
+                      ? t('prReview.addLineCommentForLine', {
+                          line: virtualRow.row.newLineNumber,
+                        })
+                      : t('prReview.addLineComment')
+                  "
+                  :disabled="
+                    !virtualRow.row.isCommentable || !virtualRow.row.newLineNumber || submitting
+                  "
+                  :title="
+                    virtualRow.row.isCommentable
+                      ? t('prReview.addLineComment')
+                      : t('prReview.lineNotCommentable')
+                  "
+                  @click="openDraftEditorForLine(virtualRow.row.newLineNumber)"
+                >
+                  +
+                </button>
+              </span>
+              <div class="pr-review-diff-viewer__new-line">
+                <code class="pr-review-diff-viewer__code">
+                  <span
+                    v-for="token in virtualRow.newTokens"
+                    :key="token.key"
+                    class="pr-review-diff-viewer__token"
+                    :class="`pr-review-diff-viewer__token--${token.kind}`"
+                    >{{ token.text }}</span
+                  >
+                </code>
+                <PRReviewDiffReviewThreads
+                  v-if="virtualRow.reviewThreads.length"
+                  :threads="virtualRow.reviewThreads"
+                  :repo-owner="repoOwner"
+                  :repo-name="repoName"
+                  :resolving-review-thread-id="resolvingReviewThreadId"
+                  @toggle-review-thread="emit('toggle-review-thread', $event)"
+                />
+              </div>
             </div>
           </div>
+
+          <template v-for="line in virtualRow.unifiedLines" :key="line.key">
+            <div
+              v-if="line.kind !== 'hunk'"
+              class="pr-review-diff-viewer__unified-line"
+              :class="[
+                `pr-review-diff-viewer__unified-line--${line.kind}`,
+                { 'pr-review-diff-viewer__unified-line--commentable': line.isCommentable },
+              ]"
+            >
+              <span class="pr-review-diff-viewer__line-number">
+                <span class="pr-review-diff-viewer__unified-nums">
+                  <span class="pr-review-diff-viewer__line-num">{{
+                    line.oldLineNumber ?? ''
+                  }}</span>
+                  <span class="pr-review-diff-viewer__line-num">{{
+                    line.newLineNumber ?? ''
+                  }}</span>
+                </span>
+                <button
+                  v-if="line.isCommentable && line.newLineNumber"
+                  class="pr-review-diff-viewer__comment-button"
+                  type="button"
+                  :aria-label="t('prReview.addLineCommentForLine', { line: line.newLineNumber })"
+                  :disabled="submitting"
+                  :title="t('prReview.addLineComment')"
+                  @click="openDraftEditorForLine(line.newLineNumber)"
+                >
+                  +
+                </button>
+              </span>
+              <div class="pr-review-diff-viewer__unified-main">
+                <code
+                  class="pr-review-diff-viewer__code"
+                  :class="{
+                    'pr-review-diff-viewer__code--selecting': selectingLineKey === line.key,
+                  }"
+                  @pointerdown="onUnifiedCodePointerDown(line, $event)"
+                >
+                  <span
+                    v-for="token in line.tokens"
+                    :key="token.key"
+                    class="pr-review-diff-viewer__token"
+                    :class="`pr-review-diff-viewer__token--${token.kind}`"
+                    >{{ token.text }}</span
+                  >
+                </code>
+                <PRReviewDiffReviewThreads
+                  v-if="line.reviewThreads.length"
+                  :threads="line.reviewThreads"
+                  :repo-owner="repoOwner"
+                  :repo-name="repoName"
+                  :resolving-review-thread-id="resolvingReviewThreadId"
+                  @toggle-review-thread="emit('toggle-review-thread', $event)"
+                />
+              </div>
+            </div>
+          </template>
+
+          <PRReviewInlineComment
+            v-if="virtualRow.row.newLineNumber && virtualRow.hasActiveDraftTarget"
+            :path="filename"
+            :line="virtualRow.row.newLineNumber"
+            :body="activeDraftBody"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+            :submitting="submitting"
+            :workspace-mode="workspaceMode"
+            @update:body="emit('update-active-draft-body', $event)"
+            @save="(_path, line, body) => handleSaveDraft(line, body)"
+            @cancel="emit('close-draft-editor')"
+          />
         </div>
 
-        <template v-for="line in virtualRow.unifiedLines" :key="line.key">
-          <div
-            v-if="line.kind !== 'hunk'"
-            class="pr-review-diff-viewer__unified-line"
-            :class="[
-              `pr-review-diff-viewer__unified-line--${line.kind}`,
-              { 'pr-review-diff-viewer__unified-line--commentable': line.isCommentable },
-            ]"
-          >
-            <span class="pr-review-diff-viewer__line-number">
-              <span class="pr-review-diff-viewer__unified-nums">
-                <span class="pr-review-diff-viewer__line-num">{{ line.oldLineNumber ?? '' }}</span>
-                <span class="pr-review-diff-viewer__line-num">{{ line.newLineNumber ?? '' }}</span>
-              </span>
-              <button
-                v-if="line.isCommentable && line.newLineNumber"
-                class="pr-review-diff-viewer__comment-button"
-                type="button"
-                :aria-label="t('prReview.addLineCommentForLine', { line: line.newLineNumber })"
-                :disabled="submitting"
-                :title="t('prReview.addLineComment')"
-                @click="openDraftEditorForLine(line.newLineNumber)"
-              >
-                +
-              </button>
-            </span>
-            <div class="pr-review-diff-viewer__unified-main">
-              <code
-                class="pr-review-diff-viewer__code"
-                :class="{
-                  'pr-review-diff-viewer__code--selecting': selectingLineKey === line.key,
-                }"
-                @pointerdown="onUnifiedCodePointerDown(line, $event)"
-              >
-                <span
-                  v-for="token in line.tokens"
-                  :key="token.key"
-                  class="pr-review-diff-viewer__token"
-                  :class="`pr-review-diff-viewer__token--${token.kind}`"
-                  >{{ token.text }}</span
-                >
-              </code>
-              <PRReviewDiffReviewThreads
-                v-if="line.reviewThreads.length"
-                :threads="line.reviewThreads"
-                :repo-owner="repoOwner"
-                :repo-name="repoName"
-                :resolving-review-thread-id="resolvingReviewThreadId"
-                @toggle-review-thread="emit('toggle-review-thread', $event)"
-              />
-            </div>
-          </div>
-        </template>
-
-        <PRReviewInlineComment
-          v-if="virtualRow.row.newLineNumber && virtualRow.hasActiveDraftTarget"
-          :path="filename"
-          :line="virtualRow.row.newLineNumber"
-          :body="activeDraftBody"
-          :repo-owner="repoOwner"
-          :repo-name="repoName"
-          :submitting="submitting"
-          :workspace-mode="workspaceMode"
-          @update:body="emit('update-active-draft-body', $event)"
-          @save="(_path, line, body) => handleSaveDraft(line, body)"
-          @cancel="emit('close-draft-editor')"
-        />
+        <div
+          v-if="bottomSpacerHeight"
+          class="pr-review-diff-viewer__row-spacer"
+          :style="{ height: `${bottomSpacerHeight}px` }"
+          aria-hidden="true"
+        ></div>
       </div>
-
-      <div
-        v-if="bottomSpacerHeight"
-        class="pr-review-diff-viewer__row-spacer"
-        :style="{ height: `${bottomSpacerHeight}px` }"
-        aria-hidden="true"
-      ></div>
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped lang="scss">
+.pr-review-diff-viewer__rows-scroll {
+  width: 100%;
+  max-width: 100%;
+}
 .pr-review-diff-viewer__rows {
   --pr-review-unified-gutter: 6rem;
   min-width: 100%;

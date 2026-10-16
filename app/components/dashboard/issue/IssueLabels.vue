@@ -53,7 +53,7 @@
               </button>
             </div>
 
-            <div class="label-editor-content">
+            <ScrollArea class="label-editor-content">
               <div v-if="labelError" class="label-editor-error">
                 <AlertCircleIcon :size="14" />
                 <span>{{ labelError }}</span>
@@ -100,7 +100,7 @@
                   {{ t('detailLabels.noneAvailable') }}
                 </div>
               </div>
-            </div>
+            </ScrollArea>
 
             <div class="label-editor-footer">
               <button class="label-btn-cancel" @click="toggleLabelEditor" :disabled="savingLabels">
@@ -127,6 +127,7 @@ import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, TagIcon, XIcon } f
 import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 
 interface DashboardLabel {

@@ -3,6 +3,7 @@ import { AlertCircleIcon, XIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import type { FollowedRepository } from '#shared/types/release-follows';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const props = defineProps<{
   items: FollowedRepository[];
@@ -48,7 +49,7 @@ const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
       {{ t('releaseFollows.emptyFollowed') }}
     </p>
 
-    <ul v-else class="followed-list__items">
+    <ScrollArea v-else class="followed-list__items" role="list">
       <li
         v-for="item in items"
         :key="item.id"
@@ -83,7 +84,7 @@ const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
           <XIcon :size="14" aria-hidden="true" />
         </button>
       </li>
-    </ul>
+    </ScrollArea>
   </div>
 </template>
 
@@ -160,7 +161,7 @@ const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
   list-style: none;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
+
   min-height: 0;
 }
 

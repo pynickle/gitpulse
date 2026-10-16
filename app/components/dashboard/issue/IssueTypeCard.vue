@@ -42,7 +42,7 @@
               </button>
             </div>
 
-            <div class="label-editor-content">
+            <ScrollArea class="label-editor-content">
               <div v-if="issueTypeError" class="label-editor-error">
                 <AlertCircleIcon :size="14" />
                 <span>{{ issueTypeError }}</span>
@@ -111,7 +111,7 @@
                   {{ t('detailIssueType.noneAvailable') }}
                 </div>
               </div>
-            </div>
+            </ScrollArea>
 
             <div class="label-editor-footer">
               <button
@@ -145,6 +145,7 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 
 import type { GitHubIssueType } from '#shared/types/issues';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 import resolveIssueTypeColor from '~/utils/issueTypeColor';
 

@@ -11,6 +11,8 @@ import {
   watch,
 } from 'vue';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
+
 export interface FilterMultiSelectOption {
   value: string;
   label?: string;
@@ -47,7 +49,7 @@ const inputValue = shallowRef('');
 const panelStyle = shallowRef<Record<string, string>>({});
 
 const inputRef = useTemplateRef<HTMLInputElement>('inputEl');
-const listRef = useTemplateRef<HTMLElement>('listEl');
+const listRef = shallowRef<HTMLElement | null>(null);
 const containerRef = useTemplateRef<HTMLElement>('containerEl');
 
 const normalizeLabel = (label: string) => label.trim().toLowerCase();
@@ -281,7 +283,7 @@ const handleClickOutside = (event: MouseEvent) => {
   if (!isOpen.value) return;
   const target = event.target as Node;
   if (containerRef.value?.contains(target)) return;
-  if (listRef.value?.contains(target)) return;
+  if (document.getElementById(listboxId)?.contains(target)) return;
   if (isScrollbarPress(event)) return;
   close();
 };
@@ -326,10 +328,11 @@ watch(visibleSuggestions, (suggestions) => {
 
 <template>
   <div ref="containerEl" class="filter-multiselect">
-    <div
+    <ScrollArea
       class="filter-multiselect__control"
       :class="{ 'filter-multiselect__control--open': isOpen }"
       @mousedown="handleContainerMouseDown"
+      content-class="filter-multiselect__tokens"
     >
       <SearchIcon
         v-if="modelValue.length === 0"
@@ -371,13 +374,13 @@ watch(visibleSuggestions, (suggestions) => {
         @focus="handleFocus"
         @keydown="handleKeydown"
       />
-    </div>
+    </ScrollArea>
 
     <Teleport to="body">
       <Transition name="filter-multiselect-panel">
-        <div
+        <ScrollArea
           v-if="isOpen"
-          ref="listEl"
+          @scroll-element="listRef = $event"
           :id="listboxId"
           class="filter-multiselect__panel"
           :style="panelStyle"
@@ -409,7 +412,7 @@ watch(visibleSuggestions, (suggestions) => {
             <SearchIcon :size="16" class="filter-multiselect__empty-icon" aria-hidden="true" />
             <span>{{ emptyMessage }}</span>
           </div>
-        </div>
+        </ScrollArea>
       </Transition>
     </Teleport>
   </div>
@@ -422,16 +425,11 @@ watch(visibleSuggestions, (suggestions) => {
 }
 
 .filter-multiselect__control {
-  display: flex;
-  align-items: flex-start;
-  align-content: flex-start;
-  flex-wrap: wrap;
-  gap: 4px;
   width: 100%;
   min-height: 30px;
   max-height: 58px;
   padding: 3px 7px;
-  overflow-y: auto;
+
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-md);
   background: var(--gitpulse-input-bg);
@@ -534,7 +532,7 @@ watch(visibleSuggestions, (suggestions) => {
   position: fixed;
   z-index: 99998;
   max-height: 280px;
-  overflow-y: auto;
+
   padding: 4px;
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-md);
@@ -613,5 +611,12 @@ watch(visibleSuggestions, (suggestions) => {
 .filter-multiselect-panel-leave-to {
   opacity: 0;
   transform: translateY(-4px) scale(0.98);
+}
+:deep(.filter-multiselect__tokens) {
+  display: flex;
+  align-items: flex-start;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 </style>

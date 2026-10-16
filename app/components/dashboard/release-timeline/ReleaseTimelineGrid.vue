@@ -12,6 +12,7 @@ import {
 
 import type { ReleaseTimelineGroup, TimelineRelease } from '#shared/types/release-follows';
 import ReleaseTimelineCard from '~/components/dashboard/release-timeline/ReleaseTimelineCard.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const DATE_ROW_ESTIMATED_HEIGHT = 48;
 const CARD_ROW_ESTIMATED_HEIGHT = 182;
@@ -30,7 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const scroller = useTemplateRef<HTMLElement>('scroller');
+const scroller = shallowRef<HTMLElement | null>(null);
 const rowsRoot = useTemplateRef<HTMLElement>('rowsRoot');
 const columnCount = shallowRef(resolveReleaseTimelineColumnCount(Number.POSITIVE_INFINITY));
 const visibleRange = shallowRef({ start: 0, end: MIN_VISIBLE_ROWS });
@@ -367,27 +368,38 @@ onMounted(() => {
   tabletMedia = window.matchMedia(RELEASE_TIMELINE_TABLET_MEDIA);
   phoneMedia.addEventListener('change', handleBreakpointChange);
   tabletMedia.addEventListener('change', handleBreakpointChange);
-  scroller.value?.addEventListener('wheel', stopBackToTopAnimation, { passive: true });
-  scroller.value?.addEventListener('touchstart', stopBackToTopAnimation, { passive: true });
 
   void nextTick(() => {
     rowElements.forEach((element) => rowResizeObserver?.observe(element));
-
-    if (scroller.value && typeof ResizeObserver !== 'undefined') {
-      viewportResizeObserver = new ResizeObserver(() => {
-        scheduleVisibleRowsSync();
-        emitViewportScroll();
-      });
-      viewportResizeObserver.observe(scroller.value);
-    }
 
     scheduleVisibleRowsSync();
     emitViewportScroll();
   });
 });
 
+watch(scroller, (element, previous) => {
+  stopBackToTopAnimation();
+  previous?.removeEventListener('wheel', stopBackToTopAnimation);
+  previous?.removeEventListener('touchstart', stopBackToTopAnimation);
+  viewportResizeObserver?.disconnect();
+  pendingAnchor = null;
+  anchorRevision++;
+  element?.addEventListener('wheel', stopBackToTopAnimation, { passive: true });
+  element?.addEventListener('touchstart', stopBackToTopAnimation, { passive: true });
+  if (element && typeof ResizeObserver !== 'undefined') {
+    viewportResizeObserver = new ResizeObserver(() => {
+      scheduleVisibleRowsSync();
+      emitViewportScroll();
+    });
+    viewportResizeObserver.observe(element);
+  }
+  scheduleVisibleRowsSync();
+  emitViewportScroll();
+});
+
 defineExpose({
   scrollToTop,
+  scrollElement: scroller,
 });
 
 onBeforeUnmount(() => {
@@ -408,7 +420,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="scroller" class="release-timeline-grid" @scroll="handleScroll">
+  <ScrollArea
+    class="release-timeline-grid"
+    axis="both"
+    @scroll-element="scroller = $event"
+    @scroll="handleScroll"
+    @pointerdown="stopBackToTopAnimation"
+  >
     <div ref="rowsRoot" class="release-timeline-grid__rows">
       <div
         v-if="topSpacerHeight"
@@ -465,7 +483,7 @@ onBeforeUnmount(() => {
         aria-hidden="true"
       />
     </div>
-  </div>
+  </ScrollArea>
 </template>
 
 <style scoped lang="scss">
@@ -473,11 +491,9 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   min-height: 0;
-  overflow: auto;
   overflow-anchor: none;
   flex: 1;
   padding: 1rem 1.25rem 1.5rem;
-  scrollbar-gutter: stable;
 }
 
 .release-timeline-grid__rows {

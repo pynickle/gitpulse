@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import FilterDateRange from '~/components/ui/FilterDateRange.vue';
 import FilterMultiSelect from '~/components/ui/FilterMultiSelect.vue';
 import type { FilterMultiSelectOption } from '~/components/ui/FilterMultiSelect.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import ToggleSwitch from '~/components/ui/ToggleSwitch.vue';
 import { EMPTY_DATE_RANGE, type DateRange } from '~/utils/filterDateRange';
 import {
@@ -120,7 +121,10 @@ const clearAll = () => {
             </header>
           </div>
 
-          <div class="release-timeline-filter-panel__body">
+          <ScrollArea
+            class="release-timeline-filter-panel__body"
+            content-class="release-timeline-filter-panel__flow"
+          >
             <section class="release-timeline-filter-panel__section">
               <h3 class="release-timeline-filter-panel__section-title">
                 {{ t('releaseTimeline.filterPanelRepositories') }}
@@ -161,7 +165,7 @@ const clearAll = () => {
                 />
               </label>
             </section>
-          </div>
+          </ScrollArea>
 
           <footer class="release-timeline-filter-panel__footer">
             <button
@@ -261,12 +265,9 @@ const clearAll = () => {
 }
 
 .release-timeline-filter-panel__body {
-  display: grid;
   min-height: 0;
   flex: 1;
-  align-content: start;
-  gap: 1.35rem;
-  overflow-y: auto;
+
   padding: 1.15rem;
   overscroll-behavior: contain;
 }
@@ -404,5 +405,10 @@ const clearAll = () => {
   .release-timeline-filter-panel-leave-to .release-timeline-filter-panel__panel {
     transform: translateY(100%);
   }
+}
+:deep(.release-timeline-filter-panel__flow) {
+  display: grid;
+  align-content: start;
+  gap: 1.35rem;
 }
 </style>

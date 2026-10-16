@@ -17,6 +17,7 @@ import {
 import type { AutocompleteSuggestion } from '~/components/ui/autocomplete';
 import AutocompleteMenu from '~/components/ui/AutocompleteMenu.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const props = withDefaults(
   defineProps<{
@@ -50,7 +51,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 const textareaRef = useTemplateRef<HTMLTextAreaElement>('textareaRef');
-const previewRef = useTemplateRef<HTMLElement>('previewRef');
+const previewRef = shallowRef<HTMLElement | null>(null);
 const mentionComponentId = useId();
 const mentionListboxId = `${mentionComponentId}-mentions`;
 
@@ -492,8 +493,8 @@ defineExpose({
         @scroll="handleSplitScroll('write')"
       />
 
-      <div
-        ref="previewRef"
+      <ScrollArea
+        @scroll-element="previewRef = $event"
         class="markdown-composer__preview content"
         :class="{ 'markdown-composer__preview--hidden': !previewVisible }"
         @scroll="handleSplitScroll('preview')"
@@ -507,7 +508,7 @@ defineExpose({
         <p v-else class="has-text-grey is-size-7 mb-0">
           {{ t('floatingMarkdownEditor.previewEmpty') }}
         </p>
-      </div>
+      </ScrollArea>
 
       <AutocompleteMenu
         :open="mentionOpen"
@@ -592,7 +593,7 @@ defineExpose({
   grid-column: 1;
   min-height: 160px;
   max-height: 40vh;
-  overflow-y: auto;
+
   align-self: stretch;
 }
 

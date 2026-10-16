@@ -100,10 +100,10 @@
             />
           </button>
           <Transition name="expand">
-            <div v-if="checksExpanded" class="merge-box__check-list">
+            <ScrollArea v-if="checksExpanded" class="merge-box__check-list">
               <!-- A truncated rollup already says so on the checks row itself. -->
               <CheckListRows :groups="checksView.groups" />
-            </div>
+            </ScrollArea>
           </Transition>
         </template>
 
@@ -283,6 +283,7 @@ import { useI18n } from 'vue-i18n';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
 
 const props = defineProps<{
@@ -1092,7 +1093,7 @@ watch(
 .merge-box__check-list {
   margin: 0;
   max-height: 240px;
-  overflow-y: auto;
+
   padding: 0 20px 10px;
   background: var(--gitpulse-surface-muted);
   border-bottom: 1px solid var(--gitpulse-border);

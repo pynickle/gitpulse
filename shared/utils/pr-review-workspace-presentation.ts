@@ -370,9 +370,6 @@ export function buildPRReviewWorkspaceNarrowLayoutCss() {
     container-type: inline-size;
     width: 100%;
     max-width: 100%;
-    overflow-x: auto;
-    overflow-y: clip;
-    scrollbar-width: thin;
   }
 
   /* One track per File Card, as wide as its longest line, so a short

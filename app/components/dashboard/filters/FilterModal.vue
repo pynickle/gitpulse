@@ -8,6 +8,7 @@ import FilterDropdown from '~/components/ui/FilterDropdown.vue';
 import FilterMultiSelect from '~/components/ui/FilterMultiSelect.vue';
 import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue';
 import FilterSegmentedControl from '~/components/ui/FilterSegmentedControl.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type {
   DashboardFilterSource,
   DashboardFilterKey,
@@ -197,7 +198,7 @@ watch(
           </button>
         </header>
 
-        <div class="filter-modal__content">
+        <ScrollArea class="filter-modal__content" content-class="filter-modal__flow">
           <section v-if="stateOptions.length > 0" class="filter-modal__section">
             <h3 class="filter-modal__section-title">
               {{ t('dashboard.filters.state') }}
@@ -408,7 +409,7 @@ watch(
               </label>
             </div>
           </details>
-        </div>
+        </ScrollArea>
 
         <footer class="filter-modal__footer">
           <button class="filter-modal__clear" type="button" @click="clearLocalFilters">
@@ -501,11 +502,8 @@ watch(
 
 .filter-modal__content {
   flex: 1;
-  overflow-y: auto;
+
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
   overscroll-behavior: contain;
 }
 
@@ -632,5 +630,10 @@ watch(
   .filter-modal {
     display: none;
   }
+}
+:deep(.filter-modal__flow) {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 </style>

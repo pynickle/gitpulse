@@ -4,6 +4,7 @@ import { computed } from 'vue';
 
 import type { UserReadmeResponse } from '#shared/types/users';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const props = defineProps<{
   login: string;
@@ -30,7 +31,7 @@ const sourceRepo = computed(() => {
       <BookOpenIcon :size="16" aria-hidden="true" />
       <h2 class="profile-readme__title">{{ t('profile.readme.title', { login }) }}</h2>
     </header>
-    <div class="profile-readme__body content">
+    <ScrollArea class="profile-readme__body content" axis="x">
       <MarkdownRenderer
         :value="readme.content ?? ''"
         :repo-owner="sourceRepo.owner"
@@ -38,7 +39,7 @@ const sourceRepo = computed(() => {
         :base-path="readme.path ?? undefined"
         :branch="readme.branch ?? undefined"
       />
-    </div>
+    </ScrollArea>
   </section>
 </template>
 
@@ -69,6 +70,5 @@ const sourceRepo = computed(() => {
 .profile-readme__body {
   min-width: 0;
   padding: 1.5rem;
-  overflow-x: auto;
 }
 </style>

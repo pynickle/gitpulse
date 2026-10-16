@@ -6,6 +6,7 @@ import type { TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseDetailPayload, ReleaseListItem } from '#shared/types/releases';
 import ReleaseDrawerBody from '~/components/dashboard/release-timeline/ReleaseDrawerBody.vue';
 import ReleaseDrawerReleaseList from '~/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { DrawerRelease } from '~/composables/useReleaseDrawer';
 
 const props = defineProps<{
@@ -176,7 +177,7 @@ const handleOpenReleasePage = async () => {
           :entry="item"
           @select="emit('select', $event)"
         />
-        <div v-show="!showingList" class="release-drawer__content">
+        <ScrollArea v-show="!showingList" class="release-drawer__content" axis="both">
           <div
             v-if="loading && !detail"
             class="release-drawer__status"
@@ -206,7 +207,7 @@ const handleOpenReleasePage = async () => {
             @open-release="handleOpenReleasePage"
             @navigate="emit('close')"
           />
-        </div>
+        </ScrollArea>
       </aside>
     </div>
   </Teleport>
@@ -355,7 +356,7 @@ const handleOpenReleasePage = async () => {
 .release-drawer__content {
   min-height: 0;
   flex: 1;
-  overflow: auto;
+
   padding: 1rem 1.15rem 1.35rem;
   overscroll-behavior: contain;
 }

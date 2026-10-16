@@ -46,7 +46,6 @@
 @mixin detail-sidebar-stacking($scope) {
   @media (max-width: 1024px) {
     #{$scope} {
-      overflow-y: auto;
     }
 
     #{$scope} :deep(.columns) {
@@ -98,7 +97,6 @@
       max-height: 75dvh;
       padding: 0.5rem 1.25rem 1.5rem;
       overflow-x: hidden;
-      overflow-y: auto;
       border-radius: 16px 16px 0 0;
       background: var(--gitpulse-surface);
       box-shadow: 0 -8px 32px rgb(0 0 0 / 0.25);
@@ -141,7 +139,6 @@
       max-height: none;
       padding-right: 0;
       overflow: visible;
-      scrollbar-gutter: auto;
     }
 
     @media (prefers-reduced-motion: reduce) {

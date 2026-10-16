@@ -27,7 +27,10 @@ import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
 import getFetchErrorMessage from '../app/utils/getFetchErrorMessage';
 import handleRovingTablistKeydown from '../app/utils/handleRovingTablistKeydown';
 import withPendingPaginationPage from '../app/utils/withPendingPaginationPage';
-import { compileVue } from './helpers/compile-vue';
+import { compileVue as compileSfc } from './helpers/compile-vue';
+import { ScrollArea } from './helpers/scroll-area';
+const compileVue = (path: string, modules: Record<string, unknown> = {}) =>
+  compileSfc(path, { '~/components/ui/ScrollArea.vue': { default: ScrollArea }, ...modules });
 import { createVueDom } from './helpers/vue-dom';
 
 const item: TimelineRelease = {
@@ -553,7 +556,7 @@ test('list page, filter, scroll and expanded sheet survive detail browsing, then
   requests[2]!.resolve(releasePage([listRelease(2, { draft: true })], 2, true));
   await settle();
   await click('[data-filter="draft"]');
-  const list = dom.document.querySelector<HTMLElement>('.release-drawer-list')!;
+  const list = dom.document.querySelector<HTMLElement>('.release-drawer-list [role="region"]')!;
   list.scrollTop = 143;
   await click('.release-drawer-list__row');
   requests[3]!.resolve(releaseDetail(2));
@@ -582,7 +585,9 @@ test('list page, filter, scroll and expanded sheet survive detail browsing, then
   expect(dom.document.querySelector('[data-filter="all"]')?.getAttribute('aria-selected')).toBe(
     'true'
   );
-  expect(dom.document.querySelector<HTMLElement>('.release-drawer-list')?.scrollTop).toBe(0);
+  expect(
+    dom.document.querySelector<HTMLElement>('.release-drawer-list [role="region"]')?.scrollTop
+  ).toBe(0);
   expect(dom.document.querySelector('.release-drawer--expanded')).toBeNull();
 });
 

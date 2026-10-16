@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 
 import type { ContributionCalendar } from '#shared/types/users';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import buildContributionGrid from '~/utils/buildContributionGrid';
 
 const props = defineProps<{
@@ -83,7 +84,7 @@ const onGridLeave = () => {
       </h3>
     </header>
 
-    <div class="contribution-graph__scroll">
+    <ScrollArea class="contribution-graph__scroll" axis="x">
       <div ref="canvas" class="contribution-graph__canvas">
         <div class="contribution-graph__months" aria-hidden="true">
           <span
@@ -159,7 +160,7 @@ const onGridLeave = () => {
           {{ tooltip.text }}
         </div>
       </div>
-    </div>
+    </ScrollArea>
   </section>
 </template>
 
@@ -187,7 +188,6 @@ const onGridLeave = () => {
 }
 
 .contribution-graph__scroll {
-  overflow-x: auto;
   padding-bottom: 0.25rem;
 }
 

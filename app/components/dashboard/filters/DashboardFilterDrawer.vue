@@ -2,6 +2,7 @@
 import { XIcon } from '@lucide/vue';
 import { nextTick, ref, watch } from 'vue';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import createFocusTrapController from '~/utils/createFocusTrapController';
 
 const props = defineProps<{
@@ -75,9 +76,13 @@ const handlePanelKeydown = (event: KeyboardEvent) => {
             <XIcon v-once :size="18" aria-hidden="true" />
           </button>
         </header>
-        <div class="dashboard-filter-drawer__body">
+        <ScrollArea
+          class="dashboard-filter-drawer__body"
+          content-class="dashboard-filter-drawer__flow"
+          axis="both"
+        >
           <slot />
-        </div>
+        </ScrollArea>
       </aside>
     </div>
   </Teleport>
@@ -126,9 +131,6 @@ const handlePanelKeydown = (event: KeyboardEvent) => {
 }
 
 .dashboard-filter-drawer__body {
-  display: grid;
-  gap: 1rem;
-  overflow: auto;
   padding: 1rem;
 }
 
@@ -136,5 +138,9 @@ const handlePanelKeydown = (event: KeyboardEvent) => {
   .dashboard-filter-drawer {
     display: block;
   }
+}
+:deep(.dashboard-filter-drawer__flow) {
+  display: grid;
+  gap: 1rem;
 }
 </style>

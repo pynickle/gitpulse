@@ -31,9 +31,13 @@
           </div>
         </div>
 
-        <div v-else :class="['card-content', 'is-flex-grow-1', contentClass]">
+        <ScrollArea
+          v-else
+          :class="['card-content', 'is-flex-grow-1', contentClass]"
+          :disabled="contentClass?.includes('is-clipped') || contentClass?.includes('is-flush')"
+        >
           <slot />
-        </div>
+        </ScrollArea>
       </div>
     </div>
   </div>
@@ -43,6 +47,7 @@
 import { Loader2Icon } from '@lucide/vue';
 
 import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 interface DetailSummary {
   title?: string;
@@ -100,7 +105,6 @@ defineEmits<{
 .card-content {
   min-height: 0;
   padding: 2rem 4rem;
-  overflow-y: auto;
   background: var(--gitpulse-surface);
 
   /* Same breakpoint as the mobile filter modal; the fixed 4rem side padding

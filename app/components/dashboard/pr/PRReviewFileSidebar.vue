@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewDraftComment, PRReviewFile } from '~/composables/usePRReview';
 
 type FileSidebarVariant = 'column' | 'sheet';
@@ -253,7 +254,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
         <span>{{ t('prReview.filesCount', { count: files.length }) }}</span>
       </div>
 
-      <div v-if="files.length && viewMode === 'list'" class="pr-review-file-sidebar__list">
+      <ScrollArea v-if="files.length && viewMode === 'list'" class="pr-review-file-sidebar__list">
         <button
           v-for="file in treeOrderedFiles"
           :key="file.filename"
@@ -276,9 +277,9 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
             </span>
           </span>
         </button>
-      </div>
+      </ScrollArea>
 
-      <div v-else-if="files.length" class="pr-review-file-sidebar__tree">
+      <ScrollArea v-else-if="files.length" class="pr-review-file-sidebar__tree">
         <template v-for="row in visibleTreeRows" :key="row.node.path">
           <div v-if="row.node.type === 'directory'" class="pr-review-file-sidebar__tree-group">
             <button
@@ -343,7 +344,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
             ></span>
           </button>
         </template>
-      </div>
+      </ScrollArea>
 
       <button
         v-if="hasMoreFiles"
@@ -549,7 +550,6 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 
 .pr-review-file-sidebar__list,
 .pr-review-file-sidebar__tree {
-  overflow-y: auto;
   flex: 1;
   padding: 0.35rem;
 }

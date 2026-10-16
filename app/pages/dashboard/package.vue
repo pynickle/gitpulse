@@ -14,6 +14,7 @@ import { GitHubIcon } from 'vue3-simple-icons';
 import type { PackageVersionFilter, PackageVersionSummary } from '#shared/types/packages';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import {
   packageTypeHasVersionTags,
   useUserPackageDetail,
@@ -341,7 +342,9 @@ const handleHome = async () => {
             <TerminalIcon :size="15" aria-hidden="true" />
             {{ t('packageDetail.install') }}
           </h2>
-          <pre class="package-page__install-command"><code>{{ installCommand }}</code></pre>
+          <ScrollArea class="package-page__install-command" axis="x">
+            <pre class="package-page__install-command-text"><code>{{ installCommand }}</code></pre>
+          </ScrollArea>
         </section>
 
         <section class="package-page__versions">
@@ -542,7 +545,6 @@ const handleHome = async () => {
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-lg, 10px);
   background: var(--gitpulse-surface-active);
-  overflow-x: auto;
   font-size: 0.85rem;
 }
 
@@ -694,5 +696,14 @@ const handleHome = async () => {
   to {
     transform: rotate(360deg);
   }
+}
+:deep(.package-page__install-command-text) {
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
 }
 </style>

@@ -13,6 +13,7 @@ import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 
 import CollapsibleGroup from '~/components/ui/CollapsibleGroup.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type {
   DetailPeoplePickerCandidate,
   DetailPeoplePickerSubmitPayload,
@@ -277,7 +278,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
             </button>
           </div>
 
-          <div class="reviewer-modal-content">
+          <ScrollArea class="reviewer-modal-content">
             <form class="reviewer-modal-search" @submit.prevent>
               <div class="reviewer-modal-search-input-wrapper">
                 <SearchIcon :size="14" class="reviewer-modal-search-icon" />
@@ -377,7 +378,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
               </slot>
               <p>{{ emptyLabel }}</p>
             </div>
-          </div>
+          </ScrollArea>
 
           <div class="reviewer-modal-footer">
             <button

@@ -38,6 +38,7 @@ import CheckListModal from '~/components/dashboard/pr/CheckListModal.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { useRepoDetailSession, type RepoDetailPanel } from '~/composables/useRepoDetailSession';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
@@ -853,11 +854,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 </div>
 
                 <div v-else class="repo-detail-list-toolbar">
-                  <div
+                  <ScrollArea
                     class="repo-detail-state-filters"
                     role="tablist"
                     :aria-label="t('repoDetail.stateFilter')"
                     @keydown="handleStateFilterTablistKeydown"
+                    axis="x"
+                    content-class="repo-detail-state-filters__flow"
                   >
                     <button
                       v-for="option in stateFilterOptions"
@@ -881,7 +884,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                       />
                       <span>{{ option.label }}</span>
                     </button>
-                  </div>
+                  </ScrollArea>
 
                   <!-- Always reserve pagination height so loading ↔ ready does not jump. -->
                   <div
@@ -960,8 +963,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         </section>
       </div>
 
-      <div class="column detail-sidebar-column" :inert="detailSidebarHidden || undefined">
-        <div class="sidebar-scroll">
+      <ScrollArea
+        class="column detail-sidebar-column"
+        :inert="detailSidebarHidden || undefined"
+        media="(max-width: 1024px)"
+      >
+        <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <div class="sidebar-card mb-4">
             <div class="sidebar-card__header">
               <div class="sidebar-card__header-left">
@@ -1053,8 +1060,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               </a>
             </div>
           </div>
-        </div>
-      </div>
+        </ScrollArea>
+      </ScrollArea>
     </div>
   </div>
 
@@ -1100,7 +1107,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     overlay header (~3.8rem) + sticky top (0.75rem) + pane bottom padding (2rem) + buffer.
     Previous 100vh - 4.5rem was ~2rem too tall and clipped the Links card.
   */
-  max-height: calc(100dvh - 7.25rem);
+  --repo-detail-sidebar-max-height: calc(100dvh - 7.25rem);
+  max-height: var(--repo-detail-sidebar-max-height);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1467,21 +1475,18 @@ html.dark .repo-detail-section__chrome {
 }
 
 .repo-detail-state-filters {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 0.2rem;
   height: 100%;
   min-width: 0;
   flex: 1 1 auto;
   /* Keep first option off the chrome edge (active/hover fill needs breathing room). */
   padding: 0 0.1rem 0 0.2rem;
-  overflow-x: auto;
-  scrollbar-width: none;
+}
 
-  &::-webkit-scrollbar {
-    display: none;
-  }
+:deep(.repo-detail-state-filters__flow) {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.2rem;
 }
 
 .repo-detail-state-filters__option {
@@ -1620,38 +1625,9 @@ html.dark .repo-detail-section__chrome {
 .sidebar-scroll {
   flex: 1 1 auto;
   min-height: 0;
-  /* Inherit the column max-height calc(); percentage max-height is unreliable
-     when the parent only has max-height (not an explicit height). */
-  max-height: inherit;
-  overflow-x: hidden;
-  overflow-y: auto;
+  max-height: var(--repo-detail-sidebar-max-height);
   overscroll-behavior: contain;
-  /* Keep the last Links card fully inside the scrollport (border + shadow). */
   padding: 0 0.75rem 0.75rem 0;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-
-  &:hover {
-    scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
-  }
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-    border-radius: 3px;
-  }
-
-  &:hover::-webkit-scrollbar-thumb {
-    background-color: var(--gitpulse-scrollbar-thumb);
-  }
 }
 
 .sidebar-card {
