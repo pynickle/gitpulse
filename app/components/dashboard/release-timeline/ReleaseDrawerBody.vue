@@ -3,7 +3,7 @@ import { CalendarIcon, PackageIcon, TagIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { GitHubIcon } from 'vue3-simple-icons';
 
-import type { TimelineRelease } from '#shared/types/release-follows';
+import type { FollowedRepository, TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import ReleaseTimelineReactionBar from '~/components/dashboard/release-timeline/ReleaseTimelineReactionBar.vue';
 import ReleaseAssetsList from '~/components/dashboard/releases/ReleaseAssetsList.vue';
@@ -11,26 +11,28 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const props = defineProps<{
-  item: TimelineRelease;
+  item: TimelineRelease | null;
+  repository: FollowedRepository;
   detail: ReleaseDetailPayload;
 }>();
 
 const emit = defineEmits<{
   'open-release': [];
+  navigate: [];
 }>();
 
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 
-const repoOwner = computed(() => props.item.repository.owner);
-const repoName = computed(() => props.item.repository.name);
+const repoOwner = computed(() => props.repository.owner);
+const repoName = computed(() => props.repository.name);
 const releaseTitle = computed(
-  () => props.detail.name?.trim() || props.detail.tag_name || props.item.title
+  () => props.detail.name?.trim() || props.detail.tag_name || props.item?.title
 );
-const tagName = computed(() => props.detail.tag_name || props.item.tagName);
-const isPrerelease = computed(() => Boolean(props.detail.prerelease || props.item.isPrerelease));
+const tagName = computed(() => props.detail.tag_name || props.item?.tagName);
+const isPrerelease = computed(() => Boolean(props.detail.prerelease || props.item?.isPrerelease));
 const releasedAt = computed(
-  () => props.detail.published_at || props.item.publishedAt || props.detail.created_at || ''
+  () => props.detail.published_at || props.item?.publishedAt || props.detail.created_at || ''
 );
 const releasedAtLabel = computed(() =>
   releasedAt.value
@@ -39,8 +41,31 @@ const releasedAtLabel = computed(() =>
 );
 const body = computed(() => props.detail.body?.trim() || '');
 const assets = computed(() => props.detail.assets ?? []);
-const githubUrl = computed(() => props.detail.html_url || props.item.htmlUrl || '');
+const githubUrl = computed(() => props.detail.html_url || props.item?.htmlUrl || '');
 const author = computed(() => props.detail.author ?? null);
+
+const handleBodyNavigation = (event: MouseEvent) => {
+  if (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  const link =
+    event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
+  if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+  const destination = new URL(link.href, window.location.href);
+  const current = window.location;
+  if (
+    destination.origin === current.origin &&
+    (destination.pathname !== current.pathname || destination.search !== current.search)
+  ) {
+    emit('navigate');
+  }
+};
 </script>
 
 <template>
@@ -95,12 +120,12 @@ const author = computed(() => props.detail.author ?? null);
       </div>
     </header>
 
-    <article class="release-drawer-body__changelog">
+    <article class="release-drawer-body__changelog" @click.capture="handleBodyNavigation">
       <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
       <p v-else class="release-drawer-body__empty">{{ t('releaseDetail.noDescription') }}</p>
     </article>
 
-    <ReleaseTimelineReactionBar :item="item" />
+    <ReleaseTimelineReactionBar v-if="item" :item="item" />
 
     <section class="release-drawer-body__section" :aria-label="t('releaseDetail.assets')">
       <div class="release-drawer-body__section-header">

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { Loader2Icon, XIcon } from '@lucide/vue';
-import { computed, useId, useTemplateRef } from 'vue';
+import { ArrowLeftIcon, ListIcon, Loader2Icon, XIcon } from '@lucide/vue';
+import { computed, useId, useTemplateRef, watch } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
-import type { ReleaseDetailPayload } from '#shared/types/releases';
+import type { ReleaseDetailPayload, ReleaseListItem } from '#shared/types/releases';
 import ReleaseDrawerBody from '~/components/dashboard/release-timeline/ReleaseDrawerBody.vue';
+import ReleaseDrawerReleaseList from '~/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue';
+import type { DrawerRelease } from '~/composables/useReleaseDrawer';
 
 const props = defineProps<{
   open: boolean;
@@ -12,11 +14,19 @@ const props = defineProps<{
   detail: ReleaseDetailPayload | null;
   loading: boolean;
   error: string | null;
+  showingList: boolean;
+  listOpened: boolean;
+  selectedRelease: DrawerRelease | null;
+  isEntryRelease: boolean;
+  timelineItem: TimelineRelease | null;
 }>();
 
 const emit = defineEmits<{
   close: [];
   retry: [];
+  showList: [];
+  showEntry: [];
+  select: [release: ReleaseListItem];
 }>();
 
 const { t } = useI18n();
@@ -51,6 +61,17 @@ const openRepoLabel = computed(() =>
     ? t('releaseTimeline.openRepo', { repo: repoFullName.value })
     : t('releaseTimeline.drawerLabel')
 );
+const returnLabel = computed(() =>
+  t('releaseTimeline.returnToEntryRelease', { tag: props.item?.tagName || '' })
+);
+
+watch(
+  () => [props.showingList, props.selectedRelease?.id],
+  () => {
+    if (props.open) panel.value?.querySelector<HTMLButtonElement>('.release-drawer__repo')?.focus();
+  },
+  { flush: 'post' }
+);
 
 const handleOpenRepo = async () => {
   if (!props.item) return;
@@ -59,9 +80,10 @@ const handleOpenRepo = async () => {
 };
 
 const handleOpenReleasePage = async () => {
-  if (!props.item) return;
+  const release = props.selectedRelease;
+  if (!release) return;
   emit('close');
-  await openRelease(props.item.repository.owner, props.item.repository.name, props.item.id);
+  await openRelease(release.repository.owner, release.repository.name, release.id);
 };
 </script>
 
@@ -117,6 +139,26 @@ const handleOpenReleasePage = async () => {
               {{ chromeTitle }}
             </button>
             <button
+              v-if="showingList || !isEntryRelease"
+              class="release-drawer__action"
+              type="button"
+              :aria-label="returnLabel"
+              :title="returnLabel"
+              @click="emit('showEntry')"
+            >
+              <ArrowLeftIcon :size="16" aria-hidden="true" />
+            </button>
+            <button
+              v-if="!showingList"
+              class="release-drawer__action"
+              type="button"
+              :aria-label="t('releaseTimeline.openRepositoryReleases', { repo: repoFullName })"
+              :title="t('releaseTimeline.openRepositoryReleases', { repo: repoFullName })"
+              @click="emit('showList')"
+            >
+              <ListIcon :size="16" aria-hidden="true" />
+            </button>
+            <button
               class="release-drawer__close"
               type="button"
               :aria-label="t('releaseTimeline.closeDrawer')"
@@ -128,7 +170,13 @@ const handleOpenReleasePage = async () => {
           </header>
         </div>
 
-        <div class="release-drawer__content">
+        <ReleaseDrawerReleaseList
+          v-if="listOpened"
+          v-show="showingList"
+          :entry="item"
+          @select="emit('select', $event)"
+        />
+        <div v-show="!showingList" class="release-drawer__content">
           <div
             v-if="loading && !detail"
             class="release-drawer__status"
@@ -152,9 +200,11 @@ const handleOpenReleasePage = async () => {
 
           <ReleaseDrawerBody
             v-else-if="detail"
-            :item="item"
+            :item="timelineItem"
+            :repository="item.repository"
             :detail="detail"
             @open-release="handleOpenReleasePage"
+            @navigate="emit('close')"
           />
         </div>
       </aside>
@@ -272,6 +322,7 @@ const handleOpenReleasePage = async () => {
   outline-offset: 2px;
 }
 
+.release-drawer__action,
 .release-drawer__close {
   display: inline-flex;
   align-items: center;
@@ -287,12 +338,15 @@ const handleOpenReleasePage = async () => {
   cursor: pointer;
 }
 
+.release-drawer__action:hover,
+.release-drawer__action:focus-visible,
 .release-drawer__close:hover,
 .release-drawer__close:focus-visible {
   background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
   color: var(--gitpulse-text-strong);
 }
 
+.release-drawer__action:focus-visible,
 .release-drawer__close:focus-visible {
   outline: 2px solid var(--gitpulse-info);
   outline-offset: 2px;

@@ -53,9 +53,10 @@ export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
     },
     patchProp: (element, key, previous, next) => {
       if (key.startsWith('on')) {
-        const event = key.slice(2).toLowerCase();
-        if (previous) element.removeEventListener(event, previous);
-        if (next) element.addEventListener(event, next);
+        const capture = key.endsWith('Capture');
+        const event = key.slice(2, capture ? -7 : undefined).toLowerCase();
+        if (previous) element.removeEventListener(event, previous, capture);
+        if (next) element.addEventListener(event, next, capture);
       } else if (key === 'style') {
         element.removeAttribute('style');
         Object.assign(element.style, next);

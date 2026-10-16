@@ -1,5 +1,4 @@
 import type { ReleaseListItem } from '#shared/types/releases';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
 
 export interface ReleasePaginationMeta {
   page: number;

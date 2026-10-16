@@ -60,14 +60,32 @@ const {
 } = useReleaseTimeline(activeFilter);
 const {
   openItem,
+  selectedRelease,
+  isEntryRelease,
   detail,
   loading: drawerLoading,
   error: drawerError,
   isOpen,
+  showingList,
+  listOpened,
+  showList,
+  showEntry,
+  selectRelease,
   open: openDrawer,
   close: closeDrawer,
   retry: retryDrawer,
 } = useReleaseDrawer();
+
+const drawerTimelineItem = computed(() => {
+  const selected = selectedRelease.value;
+  if (!selected) return null;
+  return (
+    groups.value
+      .flatMap((group) => group.items)
+      .find((item) => item.id === selected.id && item.repository.id === selected.repository.id) ??
+    null
+  );
+});
 
 const gridRef = useTemplateRef<{ scrollToTop: () => void }>('grid');
 const scrollTop = shallowRef(0);
@@ -280,6 +298,14 @@ defineExpose({
       :detail="detail"
       :loading="drawerLoading"
       :error="drawerError"
+      :showing-list="showingList"
+      :list-opened="listOpened"
+      :selected-release="selectedRelease"
+      :is-entry-release="isEntryRelease"
+      :timeline-item="drawerTimelineItem"
+      @show-list="showList"
+      @show-entry="showEntry"
+      @select="selectRelease"
       @close="closeDrawer"
       @retry="retryDrawer"
     />
