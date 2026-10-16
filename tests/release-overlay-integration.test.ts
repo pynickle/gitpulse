@@ -46,6 +46,11 @@ const icons = {
   CalendarIcon: empty,
   PackageIcon: empty,
   TagIcon: empty,
+  LayoutGridIcon: empty,
+  FlaskConicalIcon: empty,
+  PencilLineIcon: empty,
+  ChevronRightIcon: empty,
+  DownloadIcon: empty,
 };
 const i18n = {
   useI18n: () => ({
@@ -58,10 +63,15 @@ const Pagination = await compileVue('app/components/dashboard/DashboardPaginatio
   '@lucide/vue': { ChevronLeftIcon: empty, ChevronRightIcon: empty },
 });
 const DrawerFilters = await compileVue(
-  'app/components/dashboard/release-timeline/ReleaseDrawerReleaseFilters.vue'
+  'app/components/dashboard/release-timeline/ReleaseDrawerReleaseFilters.vue',
+  { '@lucide/vue': icons }
 );
 const DrawerRows = await compileVue(
-  'app/components/dashboard/release-timeline/ReleaseDrawerReleaseRows.vue'
+  'app/components/dashboard/release-timeline/ReleaseDrawerReleaseRows.vue',
+  {
+    '@lucide/vue': icons,
+    '~/components/ui/GitHubAvatar.vue': { default: empty },
+  }
 );
 const DrawerList = await compileVue(
   'app/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon } from '@lucide/vue';
+import { Loader2Icon, TagIcon } from '@lucide/vue';
 import { computed, onMounted, shallowRef, useTemplateRef } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
@@ -36,6 +36,10 @@ const latestId = computed(() =>
         ?.id
     : null
 );
+/** Empty state: no releases at all vs. none matching the active type filter. */
+const emptyMessage = computed(() =>
+  t(items.value.length ? 'releasesPage.emptyFiltered' : 'releasesPage.empty')
+);
 const loadPage = (page: number) =>
   fetchPage(props.entry.repository.owner, props.entry.repository.name, page);
 const changePage = (page: number) => {
@@ -50,16 +54,22 @@ onMounted(() => {
 
 <template>
   <section ref="scroller" class="release-drawer-list">
-    <h2 class="release-drawer-list__heading">{{ t('releasesPage.heading') }}</h2>
-    <ReleaseDrawerReleaseFilters v-model="filter" />
+    <header class="release-drawer-list__header">
+      <h2 class="release-drawer-list__heading">
+        <TagIcon :size="17" aria-hidden="true" />
+        <span>{{ t('releasesPage.heading') }}</span>
+      </h2>
+      <ReleaseDrawerReleaseFilters v-model="filter" />
+    </header>
+
     <div
       v-if="loading"
-      class="release-drawer-list__message"
+      class="release-drawer-list__message release-drawer-list__loading"
       role="status"
       :aria-label="t('releasesPage.loadingTitle')"
       aria-busy="true"
     >
-      <Loader2Icon :size="22" aria-hidden="true" />
+      <Loader2Icon :size="22" class="release-drawer-list__spinner" aria-hidden="true" />
     </div>
     <div
       v-else-if="error"
@@ -67,7 +77,7 @@ onMounted(() => {
       role="alert"
     >
       <p>{{ t('releasesPage.error') }}</p>
-      <p>{{ error }}</p>
+      <p class="release-drawer-list__error-detail">{{ error }}</p>
       <button
         class="button is-small is-danger is-outlined release-drawer-list__retry"
         type="button"
@@ -80,7 +90,7 @@ onMounted(() => {
       v-else-if="!visibleItems.length"
       class="release-drawer-list__message release-drawer-list__empty"
     >
-      {{ t(items.length ? 'releasesPage.emptyFiltered' : 'releasesPage.empty') }}
+      {{ emptyMessage }}
     </p>
     <ReleaseDrawerReleaseRows
       v-else
@@ -89,13 +99,10 @@ onMounted(() => {
       :entry-id="entry.id"
       @select="emit('select', $event)"
     />
-    <div :inert="loading">
-      <DashboardPagination
-        :pagination="pagination"
-        current-page-only
-        comfortable-hit-targets
-        @change="changePage"
-      />
+
+    <div class="release-drawer-list__pagination" :inert="loading">
+      <!-- Same rendering as the fullscreen Releases page: default compact pagination. -->
+      <DashboardPagination :pagination="pagination" @change="changePage" />
     </div>
   </section>
 </template>
@@ -105,25 +112,88 @@ onMounted(() => {
   min-height: 0;
   flex: 1;
   overflow: auto;
-  padding: 1rem 1.15rem 1.35rem;
+  padding: 0 1.15rem;
   overscroll-behavior: contain;
 }
+
+/* Sticky toolbar: heading + type filters stay reachable while the list scrolls. */
+.release-drawer-list__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0 -1.15rem;
+  padding: 1rem 1.15rem 0.8rem;
+  border-bottom: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface);
+}
+
 .release-drawer-list__heading {
-  margin: 0 0 0.85rem;
-  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 1.05rem;
   font-weight: 650;
   color: var(--gitpulse-text-strong);
 }
+
+/* Flat states: the header and pagination already frame this area with
+   dividers, so loading / empty / error stay plain centred text. */
 .release-drawer-list__message {
   display: flex;
-  min-height: 10rem;
+  min-height: 7.5rem;
   align-items: center;
   justify-content: center;
+  padding: 1.25rem 0.25rem;
   color: var(--gitpulse-text-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  text-align: center;
 }
+
+.release-drawer-list__message p {
+  margin: 0;
+  max-width: 26rem;
+  overflow-wrap: anywhere;
+}
+
 .release-drawer-list__error {
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.55rem;
   color: var(--gitpulse-danger);
+}
+
+.release-drawer-list__error-detail {
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
+}
+
+.release-drawer-list__spinner {
+  color: var(--gitpulse-accent);
+  animation: release-drawer-list-spin 1s linear infinite;
+}
+
+@keyframes release-drawer-list-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pinned to the bottom edge of the drawer's scrollport, like the fullscreen list. */
+.release-drawer-list__pagination {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  margin: 0.35rem -1.15rem 0;
+  padding: 0.7rem 1.15rem 0.85rem;
+  border-top: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface);
 }
 </style>
