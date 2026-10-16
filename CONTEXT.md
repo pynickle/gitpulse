@@ -187,7 +187,7 @@ _Avoid_: watched repo, starred repo, selected repo
 
 **Release Timeline**:
 The sequence of published releases from the user's Followed Repositories, ordered from newest to oldest by publication time.
-_Avoid_: feed, release list when referring to this cross-repository sequence
+_Avoid_: feed, Repository Release List
 
 **Shared Timeline Window**:
 The publication-time interval currently exposed on the Release Timeline across Followed Repositories. It represents the history covered so far, without guaranteeing that every release in that interval has been found.
@@ -217,8 +217,16 @@ _Avoid_: latest, last release when that means the newest
 A Followed Repository GitHub reports as missing or unresolvable — not one that failed to load from timeout, rate limit, or a transient error.
 _Avoid_: dead repo, invalid star, failed fetch when the identity still exists
 
+**Repository Release List**:
+The releases that belong to one repository, including drafts and prereleases.
+_Avoid_: Release Timeline
+
+**Entry Release**:
+The release open in the Release Drawer when that drawer was opened from the Release Timeline. It stays fixed until the drawer closes; the list marks its row when that row is visible, and one step from the list or another release returns to it.
+_Avoid_: current release, latest release, the repository's first release
+
 **Release Drawer**:
-The overlay that shows one release from the Release Timeline without changing page layout or URL: a right drawer on desktop, a bottom sheet on mobile.
+The overlay on the Release Timeline that shows one release, or that repository's Repository Release List, without changing page layout or URL. A right drawer on desktop, a bottom sheet on mobile.
 _Avoid_: Detail Overlay when referring to this surface
 
 **Release Timeline Filter**:
