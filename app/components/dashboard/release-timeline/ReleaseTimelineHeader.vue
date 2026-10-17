@@ -107,7 +107,11 @@ const { t } = useI18n();
         :title="t('releaseTimeline.recoveredEntry', { count: recoveredCount })"
         @click="emit('recovery')"
       >
-        <HistoryIcon :size="18" aria-hidden="true" /><span>{{ recoveredCount }}</span>
+        <HistoryIcon :size="18" aria-hidden="true" />
+        <span class="release-timeline-header__action-label">
+          {{ t('releaseTimeline.recoveredShort') }}
+        </span>
+        <span>{{ recoveredCount }}</span>
       </button>
       <button
         v-if="showReload"
@@ -123,6 +127,9 @@ const { t } = useI18n();
           :class="{ 'spin-animation': loading }"
           aria-hidden="true"
         />
+        <span class="release-timeline-header__action-label">
+          {{ t('releaseTimeline.reload') }}
+        </span>
       </button>
       <button
         class="button is-ghost is-small release-timeline-header__action"
@@ -132,6 +139,9 @@ const { t } = useI18n();
         @click="emit('manage')"
       >
         <SlidersHorizontalIcon v-once :size="18" aria-hidden="true" />
+        <span class="release-timeline-header__action-label">
+          {{ t('releaseTimeline.manageShort') }}
+        </span>
       </button>
       <button
         class="button is-ghost is-small release-timeline-header__action"
@@ -143,6 +153,9 @@ const { t } = useI18n();
         @click="emit('filter-click')"
       >
         <FilterIcon v-once :size="18" aria-hidden="true" />
+        <span class="release-timeline-header__action-label">
+          {{ t('releaseTimeline.filter') }}
+        </span>
       </button>
     </div>
   </div>
@@ -339,6 +352,12 @@ const { t } = useI18n();
   color: var(--gitpulse-text-muted);
 }
 
+// Visible labels for the wrapped narrow-screen chip row; hidden on wide screens
+// where the buttons stay icon-only.
+.release-timeline-header__action-label {
+  display: none;
+}
+
 .release-timeline-header__action:hover,
 .release-timeline-header__action:focus-visible {
   color: var(--gitpulse-link);
@@ -390,14 +409,55 @@ const { t } = useI18n();
     flex-wrap: nowrap;
   }
 
-  .release-timeline-header__toolbar {
+  // Narrow screens split the toolbar into two rows: the search field owns a
+  // full-width row and the action buttons wrap to a second row beneath it,
+  // instead of all of them competing for (and crushing) one line.
+  .release-timeline-header__toolbar,
+  .release-timeline-header--titleless .release-timeline-header__toolbar {
     flex: 1 1 100%;
+    flex-wrap: wrap;
     margin-left: 0;
+    row-gap: 0.625rem;
   }
 
-  .release-timeline-header__search-controls {
-    flex: 1 1 auto;
+  .release-timeline-header__search-controls,
+  .release-timeline-header--titleless .release-timeline-header__search-controls {
+    flex: 1 1 100%;
     width: auto;
+    max-width: 100%;
+  }
+
+  // Slightly taller targets for thumbs.
+  .release-timeline-header__search {
+    height: 2.5rem;
+  }
+
+  // The wrapped second row reads as one pill toolbar: labeled chips instead of
+  // bare icons, so the row looks deliberate and each action keeps a visible name.
+  .release-timeline-header__action-label {
+    display: inline;
+  }
+
+  .release-timeline-header__recovery,
+  .release-timeline-header__action {
+    height: 2.5rem;
+    width: auto;
+    gap: 0.25rem;
+    padding: 0 0.625rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .release-timeline-header__recovery {
+    border: 1px solid var(--gitpulse-border);
+    background: var(--gitpulse-surface, var(--gitpulse-page-bg));
+    color: var(--gitpulse-text-muted);
+  }
+
+  .release-timeline-header__recovery:hover,
+  .release-timeline-header__recovery:focus-visible {
+    color: var(--gitpulse-link);
+    background: var(--gitpulse-info-soft);
   }
 }
 </style>
