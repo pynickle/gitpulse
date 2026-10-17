@@ -10,6 +10,7 @@ import {
 import { computed, onMounted, shallowRef } from 'vue';
 
 import type { FollowedRepository } from '#shared/types/release-follows';
+import type { FollowedRepositoryView } from '#shared/types/user-settings';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import FollowedRepositoriesPanel from '~/components/dashboard/release-follows/FollowedRepositoriesPanel.vue';
 import ReleaseFollowsRepoGrid from '~/components/dashboard/release-follows/ReleaseFollowsRepoGrid.vue';
@@ -45,6 +46,15 @@ const {
 const { followedRepositories, followedIds, addBlock, toggleFollow, removeFollow, clearFollows } =
   useReleaseFollows();
 const { unavailableIds, fetchIdentities } = useFollowedRepositoryLookups();
+const { settings, updateReleaseFollows } = useUserSettings();
+const { entries: followedRepositoryMetadata, retry: retryFollowedRepositoryMetadata } =
+  useFollowedRepositoryMetadata();
+const followedView = computed(() => settings.value.releaseFollows.view);
+
+const handleViewChange = (view: FollowedRepositoryView) => {
+  if (view === followedView.value) return;
+  void updateReleaseFollows({ view });
+};
 
 const sourceOptions = computed<SegmentedOption[]>(() => [
   {
@@ -273,8 +283,12 @@ onMounted(() => {
       v-model:open="followedSheetOpen"
       :items="followedRepositories"
       :unavailable-ids="unavailableIds"
+      :view="followedView"
+      :metadata="followedRepositoryMetadata"
       @remove="removeFollow"
       @clear="clearFollows"
+      @update:view="handleViewChange"
+      @retry="retryFollowedRepositoryMetadata"
     />
   </div>
 </template>

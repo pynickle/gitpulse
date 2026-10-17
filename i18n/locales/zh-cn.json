@@ -1211,7 +1211,12 @@
     "storedCap": "关注列表已满（150 个仓库）。",
     "unavailable": "{repo} 是不可用的已关注仓库",
     "unavailableLabel": "不可用",
-    "closeSheet": "关闭已关注仓库"
+    "closeSheet": "关闭已关注仓库",
+    "viewLabel": "已关注仓库视图",
+    "compactView": "紧凑",
+    "detailedView": "详细",
+    "retryMetadata": "重试加载 {repo} 的详情",
+    "starCount": "{count} 星"
   },
   "releaseTimeline": {
     "title": "Release 时间线",

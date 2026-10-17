@@ -1211,7 +1211,12 @@
     "storedCap": "The followed list is full (150 repositories).",
     "unavailable": "{repo} is an Unavailable Followed Repository",
     "unavailableLabel": "Unavailable",
-    "closeSheet": "Close Followed Repositories"
+    "closeSheet": "Close Followed Repositories",
+    "viewLabel": "Followed repository view",
+    "compactView": "Compact",
+    "detailedView": "Detailed",
+    "retryMetadata": "Retry details for {repo}",
+    "starCount": "{count} stars"
   },
   "releaseTimeline": {
     "title": "Release Timeline",

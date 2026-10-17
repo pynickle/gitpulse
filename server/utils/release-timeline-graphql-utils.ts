@@ -3,6 +3,7 @@ import type { Octokit } from '@octokit/core';
 import type { GraphQLReactionGroup } from '#shared/types/reactions';
 import type {
   FollowedRepository,
+  FollowedRepositoryMetadata,
   RepositoryIdentityLookup,
   RepositoryReleaseItem,
   RepositoryReleaseLookup,
@@ -44,6 +45,12 @@ export interface GraphQLRepositoryIdentityNode {
   owner?: { login?: string | null } | null;
 }
 
+export interface GraphQLRepositoryMetadataNode extends GraphQLRepositoryIdentityNode {
+  description?: string | null;
+  primaryLanguage?: { name?: string | null } | null;
+  stargazerCount?: number | null;
+}
+
 interface GraphQLNodesResponse<TNode> {
   nodes?: (TNode | null)[] | null;
 }
@@ -59,6 +66,22 @@ query FollowedRepositoryIdentities($ids: [ID!]!) {
       name
       nameWithOwner
       owner { login }
+    }
+  }
+}
+`;
+
+const FOLLOWED_REPOSITORY_METADATA_QUERY = `
+query FollowedRepositoryMetadata($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Repository {
+      id
+      name
+      nameWithOwner
+      owner { login }
+      description
+      primaryLanguage { name }
+      stargazerCount
     }
   }
 }
@@ -223,6 +246,7 @@ const fetchChunkLookups = async <T extends { status: string }>(
   };
 
   let payload: GraphQLNodesResponse<GraphQLRepositoryReleaseNode>;
+  let errors: { path?: (string | number)[]; type?: string }[] = [];
   try {
     payload = await octokit.graphql<GraphQLNodesResponse<GraphQLRepositoryReleaseNode>>(query, {
       ids: follows.map((follow) => follow.id),
@@ -235,12 +259,23 @@ const fetchChunkLookups = async <T extends { status: string }>(
       return lookups;
     }
     payload = partial;
+    if (error && typeof error === 'object' && 'errors' in error && Array.isArray(error.errors)) {
+      errors = error.errors;
+    }
   }
 
   const nodes = Array.isArray(payload.nodes) ? payload.nodes : [];
   follows.forEach((follow, index) => {
     const node = index < nodes.length ? nodes[index] : undefined;
-    lookups[follow.id] = node === undefined ? ({ status: 'transient' } as T) : mapNode(node);
+    const nodeErrors = errors.filter(
+      (error) =>
+        !error.path?.length ||
+        (error.path[0] === 'nodes' && (error.path[1] === undefined || error.path[1] === index))
+    );
+    lookups[follow.id] =
+      node === undefined || nodeErrors.some((error) => node !== null || error.type !== 'NOT_FOUND')
+        ? ({ status: 'transient' } as T)
+        : mapNode(node);
   });
 
   return lookups;
@@ -325,6 +360,52 @@ export async function fetchFollowedRepositoryReleaseLookups(
     })
   );
   return Object.assign({}, ...results);
+}
+
+const isRepositoryMetadataNode = (node: GraphQLRepositoryMetadataNode) => {
+  return (
+    isRepositoryIdentityNode(node) ||
+    typeof node.stargazerCount === 'number' ||
+    typeof node.description === 'string' ||
+    node.primaryLanguage != null
+  );
+};
+
+export function mapRepositoryMetadataLookup(
+  node: GraphQLRepositoryMetadataNode | null | undefined
+): FollowedRepositoryMetadata {
+  if (!node || !isRepositoryMetadataNode(node)) {
+    return { status: 'unavailable' };
+  }
+
+  const starCount = node.stargazerCount;
+  if (typeof starCount !== 'number' || !Number.isSafeInteger(starCount) || starCount < 0) {
+    return { status: 'transient' };
+  }
+
+  const { owner, name } = resolveRepositoryIdentity(node);
+  return {
+    status: 'available',
+    owner,
+    name,
+    description: toNonEmptyString(node.description),
+    primaryLanguage: toNonEmptyString(node.primaryLanguage?.name),
+    starCount,
+  };
+}
+
+export async function fetchFollowedRepositoryMetadataLookups(
+  octokit: ReleaseTimelineGraphQLClient | Octokit,
+  follows: FollowedRepository[],
+  options: { chunkSize?: number } = {}
+): Promise<Record<string, FollowedRepositoryMetadata>> {
+  return fetchFollowedRepositoryLookups(
+    octokit,
+    follows,
+    FOLLOWED_REPOSITORY_METADATA_QUERY,
+    (node) => mapRepositoryMetadataLookup(node as GraphQLRepositoryMetadataNode | null),
+    options.chunkSize ?? FOLLOWED_REPOSITORY_IDENTITY_CHUNK_SIZE
+  );
 }
 
 export async function fetchFollowedRepositoryIdentityLookups(

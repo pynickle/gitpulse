@@ -35,6 +35,7 @@ import type {
   UserLayoutSettings,
   UserNavigationSettings,
   UserNotificationBehaviorSettings,
+  UserReleaseFollowSettings,
   UserReleaseTimelineSettings,
   UserSettings,
 } from '#shared/types/user-settings';
@@ -61,6 +62,7 @@ import {
   APP_FONT_IDS,
   CODE_FONT_IDS,
   COMPOSER_LAYOUT_IDS,
+  FOLLOWED_REPOSITORY_VIEW_IDS,
   LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
@@ -134,6 +136,10 @@ export const DEFAULT_USER_COMPOSER_SETTINGS: UserComposerSettings = {
 
 export const DEFAULT_USER_RELEASE_TIMELINE_SETTINGS: UserReleaseTimelineSettings = {
   showReactions: true,
+};
+
+export const DEFAULT_USER_RELEASE_FOLLOW_SETTINGS: UserReleaseFollowSettings = {
+  view: 'compact',
 };
 
 const hasOwn = (value: object, key: string) => {
@@ -249,6 +255,7 @@ export function createDefaultUserSettings(): UserSettings {
     layout: { ...DEFAULT_USER_LAYOUT_SETTINGS },
     composer: { ...DEFAULT_USER_COMPOSER_SETTINGS },
     releaseTimeline: { ...DEFAULT_USER_RELEASE_TIMELINE_SETTINGS },
+    releaseFollows: { ...DEFAULT_USER_RELEASE_FOLLOW_SETTINGS },
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
@@ -845,6 +852,21 @@ export function normalizeUserReleaseTimelineSettings(
   };
 }
 
+export function normalizeUserReleaseFollowSettings(
+  value: unknown,
+  fallback: UserReleaseFollowSettings = DEFAULT_USER_RELEASE_FOLLOW_SETTINGS
+): UserReleaseFollowSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback };
+  }
+
+  const candidate = value as Partial<UserReleaseFollowSettings>;
+
+  return {
+    view: isOneOf(FOLLOWED_REPOSITORY_VIEW_IDS, candidate.view) ? candidate.view : fallback.view,
+  };
+}
+
 export function normalizeUserLayoutSettings(
   value: unknown,
   fallback: UserLayoutSettings = DEFAULT_USER_LAYOUT_SETTINGS
@@ -877,6 +899,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       layout: { ...fallback.layout },
       composer: { ...fallback.composer },
       releaseTimeline: { ...fallback.releaseTimeline },
+      releaseFollows: { ...fallback.releaseFollows },
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
@@ -900,6 +923,10 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
     releaseTimeline: normalizeUserReleaseTimelineSettings(
       candidate.releaseTimeline,
       fallback.releaseTimeline
+    ),
+    releaseFollows: normalizeUserReleaseFollowSettings(
+      candidate.releaseFollows,
+      fallback.releaseFollows
     ),
     tabGroups: normalizeTabGroups(candidate.tabGroups, fallback.tabGroups),
     customTabs: normalizeCustomTabs(candidate.customTabs, fallback.customTabs),
@@ -955,6 +982,12 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
           base.releaseTimeline
         )
       : { ...base.releaseTimeline },
+    releaseFollows: hasOwn(candidate, 'releaseFollows')
+      ? normalizeUserReleaseFollowSettings(
+          { ...base.releaseFollows, ...candidate.releaseFollows },
+          base.releaseFollows
+        )
+      : { ...base.releaseFollows },
     tabGroups: hasOwn(candidate, 'tabGroups')
       ? normalizeTabGroups(candidate.tabGroups, base.tabGroups)
       : cloneTabGroups(base.tabGroups),

@@ -185,6 +185,10 @@ _Avoid_: watch, following, star, subscribe
 A repository that has a Release Follow for the signed-in user.
 _Avoid_: watched repo, starred repo, selected repo
 
+**Followed Repository View**:
+The presentation of the user's Followed Repositories: Compact View emphasizes repository identity; Detailed View adds information that helps the user recognize what each project does.
+_Avoid_: Release Timeline when referring to the followed-repository collection
+
 **Release Timeline**:
 The sequence of published releases from the user's Followed Repositories, ordered from newest to oldest by publication time.
 _Avoid_: feed, Repository Release List

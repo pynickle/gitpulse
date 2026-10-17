@@ -8,6 +8,7 @@ import type {
   UserLayoutSettings,
   UserNavigationSettings,
   UserNotificationBehaviorSettings,
+  UserReleaseFollowSettings,
   UserReleaseTimelineSettings,
   UserSettings,
   UserSettingsPatch,
@@ -59,6 +60,9 @@ export interface UserSettingsStore {
   updateComposer: (composer: Partial<UserComposerSettings>) => Promise<UserSettings | null>;
   updateReleaseTimeline: (
     releaseTimeline: Partial<UserReleaseTimelineSettings>
+  ) => Promise<UserSettings | null>;
+  updateReleaseFollows: (
+    releaseFollows: Partial<UserReleaseFollowSettings>
   ) => Promise<UserSettings | null>;
   handleLoginChanged: () => void;
   ensureLoginWatcher: () => void;
@@ -402,6 +406,10 @@ export function createUserSettingsActions({
     return updateSettings({ releaseTimeline });
   };
 
+  const updateReleaseFollows = (releaseFollows: Partial<UserReleaseFollowSettings>) => {
+    return updateSettings({ releaseFollows });
+  };
+
   const handleLoginChanged = () => {
     syncActiveLogin();
   };
@@ -442,6 +450,7 @@ export function createUserSettingsActions({
     updateLayout,
     updateComposer,
     updateReleaseTimeline,
+    updateReleaseFollows,
     handleLoginChanged,
     ensureLoginWatcher,
   };

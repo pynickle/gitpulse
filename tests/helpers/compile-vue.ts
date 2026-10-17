@@ -12,15 +12,18 @@ export async function compileVue(path: string, modules: Record<string, unknown> 
     templateOptions: { compilerOptions: { hoistStatic: false } },
   });
   const code = new Bun.Transpiler({ loader: 'ts' }).transformSync(script.content);
-  const executable = code.replace(
-    /import\s+({[^}]+}|[\w$]+)\s+from\s+['"]([^'"]+)['"];?/g,
-    (_, binding: string, name: string) => {
-      const source = `modules[${JSON.stringify(name)}]`;
-      return binding.startsWith('{')
-        ? `const ${binding.replace(/\s+as\s+/g, ': ')} = ${source};`
-        : `const ${binding} = ${source}.default;`;
-    }
-  );
+  const executable = code
+    .replace(
+      /import\s+({[^}]+}|[\w$]+)\s+from\s+['"]([^'"]+)['"];?/g,
+      (_, binding: string, name: string) => {
+        const source = `modules[${JSON.stringify(name)}]`;
+        return binding.startsWith('{')
+          ? `const ${binding.replace(/\s+as\s+/g, ': ')} = ${source};`
+          : `const ${binding} = ${source}.default;`;
+      }
+    )
+    .replaceAll('import.meta.client', 'true')
+    .replaceAll('import.meta.server', 'false');
   return new Function('modules', `${executable}\nreturn __component;`)({
     vue: Vue,
     ...modules,

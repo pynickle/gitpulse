@@ -2,17 +2,22 @@
 import { XIcon } from '@lucide/vue';
 import { nextTick, onUnmounted, shallowRef, watch } from 'vue';
 
-import type { FollowedRepository } from '#shared/types/release-follows';
+import type { FollowedRepository, FollowedRepositoryMetadata } from '#shared/types/release-follows';
+import type { FollowedRepositoryView } from '#shared/types/user-settings';
 import FollowedRepositoryList from '~/components/dashboard/release-follows/FollowedRepositoryList.vue';
 
 defineProps<{
   items: FollowedRepository[];
   unavailableIds?: readonly string[];
+  view: FollowedRepositoryView;
+  metadata: ReadonlyMap<string, FollowedRepositoryMetadata>;
 }>();
 
 const emit = defineEmits<{
   remove: [id: string];
   clear: [];
+  'update:view': [view: FollowedRepositoryView];
+  retry: [id: string];
 }>();
 
 // The page renders the narrow-screen trigger inside its own fixed footer bar,
@@ -65,8 +70,12 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
     <FollowedRepositoryList
       :items="items"
       :unavailable-ids="unavailableIds"
+      :view="view"
+      :metadata="metadata"
       @remove="emit('remove', $event)"
       @clear="emit('clear')"
+      @update:view="emit('update:view', $event)"
+      @retry="emit('retry', $event)"
     />
   </aside>
 
@@ -89,8 +98,12 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
           <FollowedRepositoryList
             :items="items"
             :unavailable-ids="unavailableIds"
+            :view="view"
+            :metadata="metadata"
             @remove="emit('remove', $event)"
             @clear="emit('clear')"
+            @update:view="emit('update:view', $event)"
+            @retry="emit('retry', $event)"
           >
             <template #close>
               <button

@@ -19,6 +19,7 @@ import {
   APP_FONT_IDS,
   CODE_FONT_IDS,
   COMPOSER_LAYOUT_IDS,
+  FOLLOWED_REPOSITORY_VIEW_IDS,
   LINK_TARGET_IDS,
   NOTIFICATION_READ_MARK_DELAY_SECONDS,
   NOTIFICATION_READ_MARK_MODE_IDS,
@@ -141,6 +142,14 @@ const releaseTimelineSettingsPatchSchema = z
   })
   .refine((releaseTimeline) => Object.keys(releaseTimeline).length > 0, {
     message: 'At least one release timeline setting is required',
+  });
+
+const releaseFollowSettingsPatchSchema = z
+  .strictObject({
+    view: z.enum(FOLLOWED_REPOSITORY_VIEW_IDS).optional(),
+  })
+  .refine((releaseFollows) => Object.keys(releaseFollows).length > 0, {
+    message: 'At least one release follow setting is required',
   });
 
 const tabGroupSchema = z.strictObject({
@@ -292,6 +301,7 @@ export const userSettingsPatchSchema = z
     layout: layoutSettingsPatchSchema.optional(),
     composer: composerSettingsPatchSchema.optional(),
     releaseTimeline: releaseTimelineSettingsPatchSchema.optional(),
+    releaseFollows: releaseFollowSettingsPatchSchema.optional(),
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),

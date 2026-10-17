@@ -393,6 +393,26 @@ describe('user settings store', () => {
     expect(patchedOn.version).toBe(1);
   });
 
+  test('defaults Followed Repository View to Compact and keeps a saved Detailed choice', () => {
+    expect(createDefaultUserSettings().releaseFollows).toEqual({ view: 'compact' });
+    expect(normalizeUserSettings({}).releaseFollows).toEqual({ view: 'compact' });
+    expect(normalizeUserSettings({ releaseFollows: { view: 'detailed' } }).releaseFollows).toEqual({
+      view: 'detailed',
+    });
+    expect(normalizeUserSettings({ releaseFollows: { view: 'grid' } }).releaseFollows).toEqual({
+      view: 'compact',
+    });
+
+    const detailed = mergeUserSettingsPatch(createDefaultUserSettings(), {
+      releaseFollows: { view: 'detailed' },
+    });
+    expect(detailed.releaseFollows).toEqual({ view: 'detailed' });
+    expect(detailed.followedRepositories).toEqual([]);
+    expect(
+      mergeUserSettingsPatch(detailed, { releaseFollows: { view: 'compact' } }).releaseFollows
+    ).toEqual({ view: 'compact' });
+  });
+
   test('defaults and normalizes Followed Repositories through settings patches', () => {
     expect(createDefaultUserSettings().followedRepositories).toEqual([]);
     expect(normalizeUserSettings({}).followedRepositories).toEqual([]);

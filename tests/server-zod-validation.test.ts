@@ -32,6 +32,9 @@ mock.module('#server/utils/github-timeline-utils', () => ({
   fetchPaginatedArray: async () => [],
 }));
 mock.module('#server/utils/zod-validation-utils', () => zodValidationUtils);
+mock.module('#server/utils/pr-check-rollup-graphql-utils', () => ({
+  fetchPullRequestCheckRollup: async () => null,
+}));
 
 const { normalizeReactionMutationBody } = await import('../server/utils/github-reaction-utils');
 const { normalizeMergePullRequestBody } = await import('../server/utils/pr-merge-status-utils');
@@ -406,6 +409,12 @@ describe('server Zod request validation', () => {
         releaseTimeline: { showReactions: 'no' },
       })
     ).toThrow('Invalid settings request body');
+    expect(parseUserSettingsPatchBody({ releaseFollows: { view: 'detailed' } })).toEqual({
+      releaseFollows: { view: 'detailed' },
+    });
+    expect(() => parseUserSettingsPatchBody({ releaseFollows: { view: 'grid' } })).toThrow(
+      'Invalid settings request body'
+    );
     expect(() =>
       parseUserSettingsPatchBody({
         composer: { conversationDefaultLayout: 'stacked' },

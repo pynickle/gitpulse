@@ -58,8 +58,16 @@ export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
         if (previous) element.removeEventListener(event, previous, capture);
         if (next) element.addEventListener(event, next, capture);
       } else if (key === 'style') {
-        element.removeAttribute('style');
-        Object.assign(element.style, next);
+        if (typeof next === 'string') {
+          element.setAttribute('style', next);
+        } else if (next && typeof next === 'object') {
+          element.removeAttribute('style');
+          Object.assign(element.style, next);
+          const lineClamp = next.webkitLineClamp ?? next.WebkitLineClamp;
+          if (lineClamp != null) element.style.webkitLineClamp = String(lineClamp);
+        } else {
+          element.removeAttribute('style');
+        }
       } else if (next == null || (next === false && !key.startsWith('aria-'))) {
         element.removeAttribute(key);
       } else {

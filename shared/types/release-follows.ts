@@ -50,6 +50,24 @@ export type RepositoryIdentityLookup =
   | { status: 'unavailable' }
   | { status: 'transient' };
 
+/** Recognition details for one Followed Repository. Star Count is present only after a successful read. */
+export type FollowedRepositoryMetadata =
+  | {
+      status: 'available';
+      owner: string;
+      name: string;
+      description: string | null;
+      primaryLanguage: string | null;
+      starCount: number;
+    }
+  | { status: 'unavailable' }
+  | { status: 'transient' };
+
+export interface FollowedRepositoryMetadataResult {
+  repositories: Record<string, FollowedRepositoryMetadata>;
+  renamed: boolean;
+}
+
 export type ClassifiableLookup = { status: string; incomplete?: boolean };
 
 export interface LookupClassification {

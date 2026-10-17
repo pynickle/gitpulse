@@ -9,6 +9,7 @@ export const NOTIFICATION_READ_MARK_MODE_IDS = ['delayed', 'immediate', 'manual'
 export const NOTIFICATION_READ_MARK_DELAY_SECONDS = [3, 5, 10, 15, 30, 60] as const;
 export const LINK_TARGET_IDS = ['gitpulse', 'github'] as const;
 export const COMPOSER_LAYOUT_IDS = ['tabbed', 'split'] as const;
+export const FOLLOWED_REPOSITORY_VIEW_IDS = ['compact', 'detailed'] as const;
 export const TAB_SIDEBAR_WIDTH_MIN = 160 as const;
 export const TAB_SIDEBAR_WIDTH_MAX = 420 as const;
 export const TAB_SIDEBAR_WIDTH_DEFAULT = 220 as const;
@@ -40,6 +41,7 @@ export type NotificationReadMarkDelaySeconds =
   (typeof NOTIFICATION_READ_MARK_DELAY_SECONDS)[number];
 export type LinkTargetId = (typeof LINK_TARGET_IDS)[number];
 export type ComposerLayoutId = (typeof COMPOSER_LAYOUT_IDS)[number];
+export type FollowedRepositoryView = (typeof FOLLOWED_REPOSITORY_VIEW_IDS)[number];
 export type TabSidebarWidth = number;
 export type PrReviewCodeFontSize = (typeof PR_REVIEW_CODE_FONT_SIZES)[number];
 export type ShikiLightThemeId = (typeof SHIKI_LIGHT_THEME_IDS)[number];
@@ -83,6 +85,10 @@ export interface UserReleaseTimelineSettings {
   showReactions: boolean;
 }
 
+export interface UserReleaseFollowSettings {
+  view: FollowedRepositoryView;
+}
+
 export interface NotificationTodoItem {
   id: string;
   addedAt: string;
@@ -98,6 +104,7 @@ export interface UserSettings {
   layout: UserLayoutSettings;
   composer: UserComposerSettings;
   releaseTimeline: UserReleaseTimelineSettings;
+  releaseFollows: UserReleaseFollowSettings;
   tabGroups: TabGroup[];
   customTabs: CustomTab[];
   notificationTodos: NotificationTodoItem[];
@@ -113,6 +120,7 @@ export interface UserSettingsPatch {
   layout?: Partial<UserLayoutSettings>;
   composer?: Partial<UserComposerSettings>;
   releaseTimeline?: Partial<UserReleaseTimelineSettings>;
+  releaseFollows?: Partial<UserReleaseFollowSettings>;
   tabGroups?: TabGroup[];
   customTabs?: CustomTab[];
   notificationTodos?: NotificationTodoItem[];
