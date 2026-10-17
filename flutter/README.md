@@ -31,6 +31,13 @@ committed DTO mappings. Run `flutter doctor -v` to check the host toolchain. Roo
 Nuxt commands and extension commands remain independent; root formatting/lint
 and Nuxt discovery exclude this directory.
 
+Android Kotlin incremental compilation is disabled in `android/gradle.properties`
+because a Windows Pub cache and checkout on different drives can fail with
+`this and base files have different roots` / `Could not close incremental caches`.
+This trades incremental Kotlin compilation speed for reliable cross-drive builds;
+Gradle can still skip unchanged tasks. See the
+[Kotlin cache documentation](https://kotlinlang.org/docs/gradle-compilation-and-caches.html).
+
 Dependencies use the newest jointly compatible stable versions resolved on
 2026-10-17, with a committed application lockfile and no overrides. `flutter pub
 outdated` reports all direct runtime dependencies current. `build_runner 2.16.2`
@@ -133,8 +140,10 @@ slice.
 
 All five platform runners were generated with the stable SDK. Automated widget
 tests and analysis on Windows do **not** verify native builds, plugin integration,
-credential stores, device networking, or packaging. No platform runtime has been
-validated as part of this change. Windows and Android are the owner's planned
+credential stores, device networking, or packaging. Android debug APK compilation,
+installation, and process startup were smoke-tested on a V2548A running Android 17
+(API 37) on 2026-10-18. Live backend sign-in and native credential persistence
+were not verified by that startup check. Windows and Android remain the owner's
 manual-debug targets; Linux/macOS/iOS remain scaffolding and configuration only.
 
 | Target | Native setup |
