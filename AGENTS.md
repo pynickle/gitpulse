@@ -103,6 +103,8 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Agent skills
 
+Skills in `.agents/skills/` (plus user-level skills) cover Nuxt/Vue and Flutter/Dart work, among others; load the one whose description matches the task.
+
 ### Issue tracker
 
 Issues and specs are tracked in GitHub Issues for `pynickle/gitpulse`. See `docs/agents/issue-tracker.md`.
