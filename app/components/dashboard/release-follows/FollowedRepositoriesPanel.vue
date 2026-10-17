@@ -11,6 +11,7 @@ defineProps<{
   unavailableIds?: readonly string[];
   view: FollowedRepositoryView;
   metadata: ReadonlyMap<string, FollowedRepositoryMetadata>;
+  pendingIds?: ReadonlySet<string>;
 }>();
 
 const emit = defineEmits<{
@@ -72,6 +73,7 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
       :unavailable-ids="unavailableIds"
       :view="view"
       :metadata="metadata"
+      :pending-ids="pendingIds"
       @remove="emit('remove', $event)"
       @clear="emit('clear')"
       @update:view="emit('update:view', $event)"
@@ -100,6 +102,7 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
             :unavailable-ids="unavailableIds"
             :view="view"
             :metadata="metadata"
+            :pending-ids="pendingIds"
             @remove="emit('remove', $event)"
             @clear="emit('clear')"
             @update:view="emit('update:view', $event)"

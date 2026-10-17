@@ -14,7 +14,11 @@ export function useFollowedRepositoryMetadata() {
     login: computed(() => user.value?.login?.trim().toLowerCase() || null),
     repositories: followedRepositories,
     enabled: computed(() => settings.value.releaseFollows.view === 'detailed'),
-    load: () => apiFetch<FollowedRepositoryMetadataResult>('/api/release-follows/metadata'),
+    load: (repositories) =>
+      apiFetch<FollowedRepositoryMetadataResult>('/api/release-follows/metadata', {
+        method: 'POST',
+        body: { repositories },
+      }),
     onRenamed: () => loadSettings({ force: true }),
   });
 }

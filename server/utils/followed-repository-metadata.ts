@@ -7,19 +7,32 @@ import type {
   FollowedRepositoryMetadataResult,
   RepositoryIdentityLookup,
 } from '#shared/types/release-follows';
-import { applyFollowRenames } from '#shared/utils/release-follows';
+import { applyFollowRenames, normalizeFollowedRepositories } from '#shared/utils/release-follows';
 
 interface FollowedRepositoryMetadataSettings {
   followedRepositories?: FollowedRepository[] | null;
+}
+
+/**
+ * The lookup set is the client's current follows. A new follow is visible
+ * before its settings save lands, so stored settings alone would omit it.
+ */
+export function followedRepositoriesFromMetadataBody(body: unknown): FollowedRepository[] {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return [];
+  const repositories = (body as { repositories?: unknown }).repositories;
+  if (!Array.isArray(repositories)) return [];
+  return normalizeFollowedRepositories(repositories);
 }
 
 export async function loadFollowedRepositoryMetadata(deps: {
   octokit: ReleaseTimelineGraphQLClient;
   readSettings: () => Promise<FollowedRepositoryMetadataSettings>;
   renameFollows: (lookups: Record<string, RepositoryIdentityLookup>) => Promise<unknown>;
+  follows?: FollowedRepository[];
 }): Promise<FollowedRepositoryMetadataResult> {
   const settings = await deps.readSettings();
-  const follows = settings.followedRepositories ?? [];
+  const stored = settings.followedRepositories ?? [];
+  const follows = deps.follows ?? stored;
   if (follows.length === 0) {
     return { repositories: {}, renamed: false };
   }
@@ -33,7 +46,7 @@ export async function loadFollowedRepositoryMetadata(deps: {
         : { status: item.status };
   }
 
-  const renamed = applyFollowRenames(follows, identityLookups);
+  const renamed = applyFollowRenames(stored, identityLookups);
   if (renamed) {
     try {
       await deps.renameFollows(identityLookups);

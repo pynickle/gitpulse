@@ -1,12 +1,18 @@
-import { loadFollowedRepositoryMetadata } from '#server/utils/followed-repository-metadata';
+import {
+  followedRepositoriesFromMetadataBody,
+  loadFollowedRepositoryMetadata,
+} from '#server/utils/followed-repository-metadata';
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { readUserSettings, renameFollowedRepositories } from '#server/utils/user-settings-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
+  const follows = followedRepositoriesFromMetadataBody(await readBody(event).catch(() => null));
+
   try {
     const { octokit, userLogin } = await getGitHubSessionContext(event);
     return await loadFollowedRepositoryMetadata({
       octokit,
+      follows,
       readSettings: () => readUserSettings(userLogin),
       renameFollows: (lookups) => renameFollowedRepositories(userLogin, lookups),
     });

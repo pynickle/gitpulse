@@ -48,6 +48,7 @@ const icons = {
   ChevronLeftIcon: icon,
   ChevronRightIcon: icon,
   ClockIcon: icon,
+  RefreshCwIcon: icon,
   RocketIcon: icon,
   SearchIcon: icon,
   StarIcon: icon,
@@ -134,7 +135,11 @@ function harness(options?: {
   const user = ref<{ login: string } | null>({ login: 'octocat' });
   const unavailableIds = ref([...(options?.unavailable ?? [])]);
   const opened: Array<{ owner: string; repo: string }> = [];
-  const metadataRequests: Deferred<FollowedRepositoryMetadataResult>[] = [];
+  const metadataRequests: Array<
+    Deferred<FollowedRepositoryMetadataResult> & {
+      repositories: Array<{ id: string; owner: string; name: string }>;
+    }
+  > = [];
   const loadRequests: Deferred<UserSettings>[] = [];
   const saveRequests: Array<{ patch: UserSettingsPatch; deferred: Deferred<UserSettings> }> = [];
   const starredFetches: Array<Record<string, unknown>> = [];
@@ -245,14 +250,21 @@ function harness(options?: {
         opened.push({ owner, repo: repoName });
       },
     }),
-    useGitPulseApiFetch: () => (path: string) => {
-      if (path !== '/api/release-follows/metadata') {
-        return Promise.reject(new Error(String(path)));
-      }
-      const request = deferred<FollowedRepositoryMetadataResult>();
-      metadataRequests.push(request);
-      return request.promise;
-    },
+    useGitPulseApiFetch:
+      () =>
+      (
+        path: string,
+        options?: { body?: { repositories?: Array<{ id: string; owner: string; name: string }> } }
+      ) => {
+        if (path !== '/api/release-follows/metadata') {
+          return Promise.reject(new Error(String(path)));
+        }
+        const request = Object.assign(deferred<FollowedRepositoryMetadataResult>(), {
+          repositories: options?.body?.repositories ?? [],
+        });
+        metadataRequests.push(request);
+        return request.promise;
+      },
   });
   cleanups.push(dom.cleanup);
   const mounted = dom.mount(Page);
@@ -370,7 +382,9 @@ test('Compact View is the default and Detailed View switches the whole collectio
   expect(beta.querySelector('.followed-list__language')).toBeNull();
   expect(beta.textContent).toContain('0');
   expect(gamma.querySelector('.followed-list__stars')).toBeNull();
-  expect(gamma.textContent).toContain('Retry details for gamma/tools');
+  const retry = gamma.querySelector('.followed-list__retry');
+  expect(retry?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Retry');
+  expect(retry?.getAttribute('aria-label')).toBe('Retry details for gamma/tools');
   expect(page.desktop().querySelectorAll('.followed-list__badge')).toHaveLength(0);
   expect(page.dom.document.body.textContent).not.toContain(
     'You can follow at most 100 repositories.'
@@ -455,6 +469,10 @@ test('retries a failed repository without discarding successful metadata or foll
   page.buttonIn(page.desktop(), 'Retry details for gamma/tools').click();
   await flush();
   expect(page.metadataRequests).toHaveLength(2);
+  const pendingRetry = page.desktop().querySelector<HTMLButtonElement>('.followed-list__retry');
+  expect(pendingRetry?.disabled).toBe(true);
+  expect(pendingRetry?.getAttribute('aria-busy')).toBe('true');
+  expect(pendingRetry?.querySelector('.is-spinning')).not.toBeNull();
   page.metadataRequests[1]!.resolve({
     renamed: false,
     repositories: {
@@ -478,6 +496,53 @@ test('retries a failed repository without discarding successful metadata or foll
   expect(page.opened).toEqual([{ owner: 'alpha', repo: 'widgets' }]);
   expect(desktop.textContent).not.toContain('gamma/tools');
   expect(page.settings.value.followedRepositories.map((item) => item.id)).toEqual(['R_alpha']);
+});
+
+test('loads metadata for a repository added while its settings save is still in flight', async () => {
+  const page = harness({
+    view: 'detailed',
+    follows: [repo('R_alpha', 'alpha', 'widgets')],
+  });
+  await flush();
+  page.metadataRequests[0]!.resolve({
+    renamed: false,
+    repositories: {
+      R_alpha: available('alpha', 'widgets', 'Alpha tools', 'Go', 4),
+    },
+  });
+  await flush();
+
+  const added = page.store.updateSettings({
+    followedRepositories: [
+      repo('R_new', 'new', 'lib'),
+      ...page.settings.value.followedRepositories,
+    ],
+  });
+  await flush();
+
+  expect(page.saveRequests).toHaveLength(1);
+  expect(page.metadataRequests).toHaveLength(2);
+  expect(page.metadataRequests[1]!.repositories).toEqual([repo('R_new', 'new', 'lib')]);
+
+  page.metadataRequests[1]!.resolve({
+    renamed: false,
+    repositories: {
+      R_new: available('new', 'lib', 'Brand new', 'Rust', 1),
+    },
+  });
+  await flush();
+
+  const row = page.desktop().querySelector('[data-followed-id="R_new"]');
+  expect(row?.textContent).toContain('Brand new');
+  expect(row?.querySelector('.followed-list__retry')).toBeNull();
+  expect(page.desktop().textContent).toContain('Alpha tools');
+
+  page.saveRequests[0]!.deferred.resolve(
+    mergeUserSettingsPatch(page.settings.value, page.saveRequests[0]!.patch)
+  );
+  await added;
+  await flush();
+  expect(page.metadataRequests).toHaveLength(2);
 });
 
 test('drops late metadata after a follow is removed or the account changes', async () => {

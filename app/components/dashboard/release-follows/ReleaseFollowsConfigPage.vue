@@ -47,8 +47,11 @@ const { followedRepositories, followedIds, addBlock, toggleFollow, removeFollow,
   useReleaseFollows();
 const { unavailableIds, fetchIdentities } = useFollowedRepositoryLookups();
 const { settings, updateReleaseFollows } = useUserSettings();
-const { entries: followedRepositoryMetadata, retry: retryFollowedRepositoryMetadata } =
-  useFollowedRepositoryMetadata();
+const {
+  entries: followedRepositoryMetadata,
+  pendingIds: metadataPendingIds,
+  retry: retryFollowedRepositoryMetadata,
+} = useFollowedRepositoryMetadata();
 const followedView = computed(() => settings.value.releaseFollows.view);
 
 const handleViewChange = (view: FollowedRepositoryView) => {
@@ -285,6 +288,7 @@ onMounted(() => {
       :unavailable-ids="unavailableIds"
       :view="followedView"
       :metadata="followedRepositoryMetadata"
+      :pending-ids="metadataPendingIds"
       @remove="removeFollow"
       @clear="clearFollows"
       @update:view="handleViewChange"

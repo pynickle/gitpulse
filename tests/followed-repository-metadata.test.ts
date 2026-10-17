@@ -12,7 +12,7 @@ mock.module('#shared/utils/release-follows', () => follows);
 
 const graphql = await import('../server/utils/release-timeline-graphql-utils');
 mock.module('#server/utils/release-timeline-graphql-utils', () => graphql);
-const { loadFollowedRepositoryMetadata } =
+const { followedRepositoriesFromMetadataBody, loadFollowedRepositoryMetadata } =
   await import('../server/utils/followed-repository-metadata');
 
 const stored: FollowedRepository[] = [
@@ -29,7 +29,7 @@ function harness(followsInSettings = stored) {
   const renames: Array<Record<string, unknown>> = [];
   let failRename = false;
 
-  const load = () =>
+  const load = (follows?: FollowedRepository[]) =>
     loadFollowedRepositoryMetadata({
       octokit: {
         graphql: async (query: string, variables?: Record<string, unknown>) => {
@@ -47,6 +47,7 @@ function harness(followsInSettings = stored) {
         renames.push(lookups);
         if (failRename) throw new Error('storage down');
       },
+      follows,
     });
 
   return {
@@ -275,4 +276,49 @@ test('keeps metadata when a rename write fails and skips GitHub when nothing is 
   const empty = harness([]);
   expect(await empty.load()).toEqual({ repositories: {}, renamed: false });
   expect(empty.calls).toEqual([]);
+});
+
+test('loads a newly followed repository before it is stored', async () => {
+  const app = harness([]);
+  app.setResponse({
+    nodes: [
+      {
+        id: 'R_new',
+        nameWithOwner: 'new/lib',
+        description: 'Brand new',
+        primaryLanguage: { name: 'Rust' },
+        stargazerCount: 1,
+      },
+    ],
+  });
+
+  expect(followedRepositoriesFromMetadataBody(null)).toEqual([]);
+  expect(
+    followedRepositoriesFromMetadataBody({
+      repositories: [{ id: '', owner: 'drop', name: 'me' }],
+    })
+  ).toEqual([]);
+  const capped = followedRepositoriesFromMetadataBody({
+    repositories: Array.from({ length: 200 }, (_, index) => ({
+      id: `R_${index}`,
+      owner: 'extra',
+      name: `repo-${index}`,
+    })),
+  });
+  expect(capped).toHaveLength(150);
+  expect(capped[0]?.id).toBe('R_0');
+  expect(capped.at(-1)?.id).toBe('R_149');
+
+  const result = await app.load([{ id: 'R_new', owner: 'new', name: 'lib' }]);
+  expect(app.calls[0]?.ids).toEqual(['R_new']);
+  expect(result.repositories.R_new).toEqual({
+    status: 'available',
+    owner: 'new',
+    name: 'lib',
+    description: 'Brand new',
+    primaryLanguage: 'Rust',
+    starCount: 1,
+  });
+  expect(result.renamed).toBe(false);
+  expect(app.renames).toEqual([]);
 });

@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { AlertCircleIcon, AlertTriangleIcon, StarIcon, Trash2Icon, XIcon } from '@lucide/vue';
+import {
+  AlertCircleIcon,
+  AlertTriangleIcon,
+  RefreshCwIcon,
+  StarIcon,
+  Trash2Icon,
+  XIcon,
+} from '@lucide/vue';
 import { computed, nextTick, ref, shallowRef, useId, watch } from 'vue';
 
 import type { FollowedRepository, FollowedRepositoryMetadata } from '#shared/types/release-follows';
@@ -12,6 +19,7 @@ const props = defineProps<{
   unavailableIds?: readonly string[];
   view: FollowedRepositoryView;
   metadata: ReadonlyMap<string, FollowedRepositoryMetadata>;
+  pendingIds?: ReadonlySet<string>;
 }>();
 
 const emit = defineEmits<{
@@ -47,6 +55,7 @@ const starCountFor = (id: string) => {
   return metadata?.status === 'available' ? metadata.starCount : null;
 };
 const metadataFailed = (id: string) => metadataFor(id)?.status === 'transient';
+const isRetrying = (id: string) => props.pendingIds?.has(id) ?? false;
 const formattedStarCount = (id: string) => {
   const count = starCountFor(id);
   if (count === null) return '';
@@ -262,6 +271,7 @@ watch(
         :class="{
           'followed-list__item--unavailable': isUnavailable(item.id),
           'followed-list__item--detailed': isDetailed,
+          'followed-list__item--metadata-failed': isDetailed && metadataFailed(item.id),
         }"
         :data-followed-id="item.id"
       >
@@ -329,24 +339,33 @@ watch(
               {{ formattedStarCount(item.id) }}
             </span>
           </div>
-
+        </div>
+        <div class="followed-list__trailing">
           <button
             v-if="isDetailed && metadataFailed(item.id)"
             class="followed-list__retry"
             type="button"
+            :disabled="isRetrying(item.id)"
+            :aria-busy="isRetrying(item.id)"
+            :aria-label="t('releaseFollows.retryMetadata', { repo: repoLabel(item) })"
             @click="emit('retry', item.id)"
           >
-            {{ t('releaseFollows.retryMetadata', { repo: repoLabel(item) }) }}
+            <RefreshCwIcon
+              :size="13"
+              :class="{ 'is-spinning': isRetrying(item.id) }"
+              aria-hidden="true"
+            />
+            <span>{{ t('releaseFollows.retry') }}</span>
+          </button>
+          <button
+            class="followed-list__remove"
+            type="button"
+            :aria-label="t('releaseFollows.remove', { repo: repoLabel(item) })"
+            @click="emit('remove', item.id)"
+          >
+            <XIcon :size="14" aria-hidden="true" />
           </button>
         </div>
-        <button
-          class="followed-list__remove"
-          type="button"
-          :aria-label="t('releaseFollows.remove', { repo: repoLabel(item) })"
-          @click="emit('remove', item.id)"
-        >
-          <XIcon :size="14" aria-hidden="true" />
-        </button>
       </li>
     </ScrollArea>
   </div>
@@ -587,8 +606,10 @@ watch(
   flex: 1;
   list-style: none;
   margin: 0;
-  padding: 0;
   min-height: 0;
+  // SimpleBar copies the host padding onto its content and parks the thumb
+  // in that strip. Padding the inner content directly is overwritten.
+  padding: 0 calc(var(--gitpulse-scrollbar-track-size) + 0.5rem) 0 0;
 }
 
 .followed-list__item {
@@ -605,6 +626,17 @@ watch(
 
 .followed-list__item--detailed {
   align-items: flex-start;
+}
+
+.followed-list__item--metadata-failed {
+  align-items: center;
+}
+
+.followed-list__trailing {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
 }
 
 .followed-list__main {
@@ -754,19 +786,54 @@ watch(
 }
 
 .followed-list__retry {
-  align-self: flex-start;
-  margin-top: 0.3rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--gitpulse-accent);
-  font-size: 0.75rem;
-  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  height: 1.7rem;
+  padding: 0 0.6rem 0 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-warning) 55%, transparent);
+  border-radius: 999px;
+  background: var(--gitpulse-warning-soft);
+  color: var(--gitpulse-warning);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: var(--gitpulse-warning-solid);
+    background: var(--gitpulse-warning-solid);
+    color: #fff;
+  }
 
   &:focus-visible {
     outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
     outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.72;
+  }
+
+  :deep(.is-spinning) {
+    animation: followed-retry-spin 0.8s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .followed-list__retry :deep(.is-spinning) {
+    animation: none;
+  }
+}
+
+@keyframes followed-retry-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
