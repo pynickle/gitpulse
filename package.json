@@ -53,7 +53,7 @@
     "@j178/prek": "^0.5.5",
     "@nuxtjs/i18n": "^10.6.0",
     "@types/node": "^26.6.5",
-    "@vue/compiler-sfc": "3.5.43",
+    "@vue/compiler-sfc": "3.5.44",
     "happy-dom": "^21.0.3",
     "nuxtseo-devtools-host": "^1.0.2",
     "oxfmt": "^0.73.0",
