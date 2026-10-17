@@ -131,4 +131,21 @@ const visible = computed(
 .timeline-status__retry:hover {
   background: var(--gitpulse-warning-solid-hover);
 }
+
+.spin-animation {
+  flex: none;
+  transform-origin: center;
+  animation: timeline-status-spin 1s linear infinite;
+  color: var(--gitpulse-accent);
+}
+
+@keyframes timeline-status-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

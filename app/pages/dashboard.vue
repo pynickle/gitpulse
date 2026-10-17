@@ -17,7 +17,7 @@
       :title="currentTabTitle"
       :show-filter-button="dashboardHomeChrome.showTopBarFilterButton"
       :filter-active="hasActiveVisibleFilters"
-      :refreshing="dashboardRefreshing"
+      :refreshing="topBarRefreshing"
       :refresh-disabled="activeDashboardLoading"
       :user-avatar="user?.avatar_url"
       :user-name="user?.name"
@@ -917,6 +917,7 @@ const narrowReleaseTimelineBaseline = computed(() => {
 const releaseTimelineViewRef = useTemplateRef<{ reload: () => Promise<void> }>(
   'releaseTimelineView'
 );
+const releaseTimelineRefreshing = shallowRef(false);
 
 // SEO: dynamic title based on current tab
 usePageMeta(currentTabTitle);
@@ -1268,9 +1269,19 @@ const {
   refreshCurrentTab: refreshCurrentTabSafely,
 });
 
+const topBarRefreshing = computed(
+  () =>
+    dashboardRefreshing.value || (isReleaseTimelineView.value && releaseTimelineRefreshing.value)
+);
+
 const handleTopBarRefresh = async () => {
   if (isReleaseTimelineView.value) {
-    await releaseTimelineViewRef.value?.reload();
+    releaseTimelineRefreshing.value = true;
+    try {
+      await releaseTimelineViewRef.value?.reload();
+    } finally {
+      releaseTimelineRefreshing.value = false;
+    }
     return;
   }
 
