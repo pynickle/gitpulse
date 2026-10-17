@@ -1,18 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../session/gitpulse_http.dart';
+import '../session/secure_storage.dart';
 import 'backend_address_store.dart';
 import 'backend_service.dart';
 
 final connectionDioProvider = Provider<Dio>((ref) {
-  final dio = Dio(
-    BaseOptions(
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-      sendTimeout: const Duration(seconds: 10),
-    ),
-  );
+  final dio = createGitPulseDio(ref.watch(cookieJarProvider));
   ref.onDispose(() => dio.close(force: true));
   return dio;
 });
@@ -22,7 +17,7 @@ final backendServiceProvider = Provider(
 );
 
 final backendAddressStoreProvider = Provider(
-  (ref) => const BackendAddressStore(FlutterSecureStorage()),
+  (ref) => BackendAddressStore(ref.watch(secureStorageProvider)),
 );
 
 final connectionControllerProvider =

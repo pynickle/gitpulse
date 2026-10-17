@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'connection/connection_controller.dart';
 import 'connection/connection_screen.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'session/session_controller.dart';
+import 'session/sign_in_panel.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -42,24 +44,29 @@ class GitPulseApp extends ConsumerWidget {
   const GitPulseApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => MaterialApp.router(
-    title: 'GitPulse',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff238636)),
-    ),
-    darkTheme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xff238636),
-        brightness: Brightness.dark,
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Keep the session lifecycle alive across the connection screen so logout
+    // and backend changes finish after the shell route is gone.
+    ref.listen(sessionControllerProvider, (_, _) {});
+    return MaterialApp.router(
+      title: 'GitPulse',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff238636)),
       ),
-    ),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    routerConfig: ref.watch(_routerProvider),
-  );
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xff238636),
+          brightness: Brightness.dark,
+        ),
+      ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: ref.watch(_routerProvider),
+    );
+  }
 }
 
 class _AppShell extends ConsumerWidget {
@@ -71,6 +78,7 @@ class _AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final connection = ref.watch(connectionControllerProvider).value;
+    final session = ref.watch(sessionControllerProvider);
     final backend = connection?.backend;
     if (backend == null) return const SizedBox.shrink();
     final providers = backend.capabilities.providers;
@@ -131,17 +139,18 @@ class _AppShell extends ConsumerWidget {
                           Chip(label: Text(l10n.githubOAuth)),
                       ],
                     ),
-                    Text(l10n.signInPending),
+                    const SignInPanel(),
                     const SizedBox(height: 24),
-                    if (index == 0) Text(l10n.timelinePending),
+                    if (index == 0 && session.phase == SessionPhase.signedIn)
+                      Text(l10n.timelinePending),
                     if (index == 1) Text(l10n.followsPending),
                     if (index == 2)
                       Align(
                         alignment: Alignment.centerLeft,
                         child: OutlinedButton(
                           onPressed: () => ref
-                              .read(connectionControllerProvider.notifier)
-                              .changeBackend(),
+                              .read(sessionControllerProvider.notifier)
+                              .leaveBackend(),
                           child: Text(l10n.changeBackend),
                         ),
                       ),

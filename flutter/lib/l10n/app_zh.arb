@@ -17,11 +17,34 @@
   "personalPassword": "个人模式密码",
   "personalAccessToken": "个人访问令牌",
   "githubOAuth": "GitHub OAuth",
-  "signInPending": "登录功能将在后续客户端版本中提供。",
+  "passwordLabel": "密码",
+  "unlock": "解锁",
+  "unlocking": "正在解锁…",
+  "invalidPassword": "这个密码无法用于此服务器。",
+  "tokenLabel": "GitHub 令牌",
+  "continueWithToken": "继续",
+  "signingIn": "正在登录…",
+  "invalidToken": "这个个人访问令牌被拒绝了。",
+  "signInNetwork": "无法连接服务器。你的会话没有改变。",
+  "signInRateLimited": "服务器正在限制请求。你的会话没有改变。",
+  "signInUnavailable": "此服务器未启用这种登录方式。",
+  "signInFailed": "登录未能完成。请重试。",
+  "sessionExpired": "会话已结束。使用同一账号重新登录，以恢复此设备上保存的历史。",
+  "signedInAs": "已登录为 {login}",
+  "@signedInAs": {
+    "placeholders": {
+      "login": {"type": "String"}
+    }
+  },
+  "signOut": "退出登录",
+  "useDifferentAccount": "使用其他账号",
+  "oauthOnly": "此服务器只提供 GitHub OAuth。未启用密码或个人访问令牌登录。",
+  "offlineSession": "当前离线。此账号保持登录，已保存的数据仍留在此设备上。",
+  "credentialStorage": "无法访问系统凭据存储。",
   "timeline": "时间线",
   "follows": "关注",
   "settings": "设置",
-  "timelinePending": "登录功能完成后，这里将显示你的 Release 时间线。",
+  "timelinePending": "Release 时间线将在后续版本中显示在这里。",
   "followsPending": "Release 关注管理将在后续客户端版本中提供。",
   "changeBackend": "更换后端"
 }

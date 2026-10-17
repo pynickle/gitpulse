@@ -4,10 +4,10 @@ The focused Release Timeline client lives in this independent Flutter package.
 Application identity: **GitPulse**, `ink.euphony.gitpulse`. Client releases use
 `flutter-vX.Y.Z` tags, independently of the main app and browser extension.
 
-This first slice implements backend connection and provider discovery. Timeline,
-Follows, and Settings establish the navigation shell; authentication and release
-data are implemented in later slices. Available sign-in methods describe the
-server's providers, not implemented client login buttons.
+This client connects to a GitPulse backend, discovers its sign-in methods, and
+signs in with the server's personal password or PAT. Timeline, Follows, and
+Settings establish the navigation shell. Release data and the browser OAuth
+handoff are implemented in later slices.
 
 ## Development
 
@@ -39,13 +39,13 @@ is the newest resolvable generator runner: 2.17.0 requires `build ^4.1.0` and
 and `build_config 1.3.3`; 2.17.1 requires `build >=5.0.0 <5.1.0`.
 
 Riverpod declarations and presentation state are handwritten. DTO mapping uses
-json_serializable. Dio owns typed backend discovery; GoRouter owns routing; SDK
-ARB localization supports English and Simplified Chinese with the system locale.
-The Material 3 shell follows the system theme and switches between a navigation
-rail and bottom navigation with available width. Drift/SQLite, secure storage,
-cookie handling, document rendering, and the default pure-Dart Shiki engine are
-resolved for the agreed later slices. No cache, session persistence, Markdown
-renderer, or OAuth handoff is claimed by this shell.
+json_serializable. Dio owns backend discovery and the cookie session; GoRouter
+owns routing; SDK ARB localization supports English and Simplified Chinese with
+the system locale. The Material 3 shell follows the system theme and switches
+between a navigation rail and bottom navigation with available width.
+Drift/SQLite, document rendering, and the default pure-Dart Shiki engine are
+resolved for later slices. No release cache, Markdown renderer, or OAuth handoff
+is claimed by this shell.
 
 ## Backend connection contract
 
@@ -87,6 +87,48 @@ capabilities only with working implementations and contract tests; native login
 handoff and account-synchronized retention are deliberately absent today. A
 future client that requires those features must require their capabilities.
 
+## Sign-in and session
+
+Password and PAT forms are shown only for providers the connected server enables.
+Personal mode shows the password form and not a PAT form. A rejected password or
+token is reported as invalid credentials; the message does not offer a provider
+the server has not enabled. OAuth-only servers show that GitHub OAuth is the
+available method. The browser handoff that completes OAuth is a later slice.
+
+Sign-in calls the existing `/auth/unlock` and `/auth/pat` routes. Those routes,
+and later mutating `/api/` calls, send the `gitpulse_csrf` cookie back in the
+`x-csrf-token` header. The client does not send an `Authorization` bearer token
+and does not write the password or PAT to disk. `remember` is false: the app
+does not ask the server for a second device-remember credential.
+
+The opaque `nuxt-session` cookie is the session. Dio's cookie manager stores it
+through `flutter_secure_storage`, including a personal-mode cookie that has no
+`Max-Age`, because the sealed session stays valid until logout or rejection.
+Cookies with `Expires` or `Max-Age` are dropped at that time, including `Secure`
+cookies on HTTPS. When both lifetime attributes are present, `Max-Age` takes
+precedence. After backend discovery succeeds, restarting the app sends the stored
+cookie to
+`GET /api/_auth/session` and restores the same account without asking for the
+password or PAT again.
+
+Explicit sign-out and a backend change emit an identity-clearing transition and
+cancel in-flight requests before the local cookie and public identity are
+removed. A later 401 hides signed-in content and keeps that identity so the same
+account can sign in again; a different login clears the previous identity first.
+Choosing a different account clears the current identity before the new sign-in
+form is enabled. Sign-out and backend/account switching keep sign-in disabled
+until cookie cleanup finishes. Storage failures are shown, and cleanup can be
+retried with Sign out or Change backend; a backend change waits for successful
+local cleanup. A rejected session cancels pending work and pauses further API
+requests until sign-in succeeds. Network loss, HTTP 429, a repository 403, and a
+server error during session restoration leave the signed-in identity in place.
+
+The public identity (login, name, avatar URL, backend) is stored beside the
+cookie so a failed session probe after discovery is not treated as sign-out. It
+is not a credential. Startup still requires successful capability discovery;
+entering the app after a fully offline restart is deferred to the offline-cache
+slice.
+
 ## Native prerequisites and verification
 
 All five platform runners were generated with the stable SDK. Automated widget
@@ -97,11 +139,11 @@ manual-debug targets; Linux/macOS/iOS remain scaffolding and configuration only.
 
 | Target | Native setup |
 | --- | --- |
-| Windows | Visual Studio with Desktop development with C++, Windows SDK, CMake, and the C++ ATL component required by flutter_secure_storage. Build/run on Windows. A future ZIP must contain the complete release directory, including DLLs and data. |
-| Android | Android Studio/SDK, Java 17, the SDK/NDK versions selected by Flutter, and licenses accepted through `flutter doctor --android-licenses`. Minimum API 23. Internet permission is in the main manifest; cleartext supports entered HTTP backends. Auto backup is disabled for platform secure storage. The emulator reaches the host through `10.0.2.2`, not its own localhost. |
-| Linux | Build on Linux with Clang, CMake, Ninja, pkg-config, GTK 3 development packages, and libsecret development/runtime packages. A running D-Bus Secret Service (such as GNOME Keyring or KWallet) is needed to remember the address. On Debian/Ubuntu install `libsecret-1-dev` alongside Flutter's Linux prerequisites. |
-| macOS | Build on macOS with Xcode and its command-line tools; install CocoaPods if requested by the Flutter/plugin tooling. Debug/Profile and Release entitlements include outbound networking and the app's Keychain access group. Configure an Apple development team and provisioning for Keychain Sharing; inspect the signed entitlements before distribution. |
-| iOS | Build on macOS with Xcode, signing/provisioning, and CocoaPods if requested. The runner's Debug/Profile/Release configurations reference `Runner.entitlements` for the app's Keychain access group. The SDK template targets iOS 15. Local-network usage text and HTTP transport settings support entered self-hosted addresses. |
+| Windows | Visual Studio with Desktop development with C++, Windows SDK, CMake, and the C++ ATL headers the secure-storage plugin still compiles (`atlstr.h`). The default runtime store is the plugin's DPAPI file `flutter_secure_storage.dat` in the app support directory, not the legacy Credential Manager blobs. Leave `WindowsOptions.useBackwardCompatibility` unset so session cookies are not forced through that size-limited store. Build/run on Windows. A future ZIP must contain the complete release directory, including DLLs and data. |
+| Android | Android Studio/SDK, Java 17, the SDK/NDK versions selected by Flutter, and licenses accepted through `flutter doctor --android-licenses`. Minimum API 23, which the default `AndroidOptions` need for AES-GCM data and RSA-OAEP key wrapping. No biometric prompt is configured. Internet permission is in the main manifest; cleartext supports entered HTTP backends. `android:allowBackup="false"` keeps the encrypted session material out of Android backup. The emulator reaches the host through `10.0.2.2`, not its own localhost. |
+| Linux | Build on Linux with Clang, CMake, Ninja, pkg-config, GTK 3 development packages, and libsecret development/runtime packages. A running D-Bus Secret Service (such as GNOME Keyring or KWallet) is required before the address or session cookie can be stored. On Debian/Ubuntu install `libsecret-1-dev` and `libsecret-1-0` alongside Flutter's Linux prerequisites. This has not been run here. |
+| macOS | Build on macOS with Xcode and its command-line tools; install CocoaPods if requested by the Flutter/plugin tooling. Debug/Profile and Release entitlements include outbound networking and the Keychain access group `$(AppIdentifierPrefix)ink.euphony.gitpulse`. Configure an Apple development team and provisioning for Keychain Sharing before the session cookie can be written; inspect the signed entitlements before distribution. This has not been run here. |
+| iOS | Build on macOS with Xcode, signing/provisioning, and CocoaPods if requested. The runner's Debug/Profile/Release configurations reference `Runner.entitlements` for the same Keychain access group. No extra Keychain usage string is required. The SDK template targets iOS 15. Local-network usage text and HTTP transport settings support entered self-hosted addresses. This has not been run here. |
 
 Apple transport settings allow user-selected HTTP instances. Local-network access
 can prompt the user; denied access appears as a connection failure. Do not assume

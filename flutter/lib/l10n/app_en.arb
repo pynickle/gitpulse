@@ -17,11 +17,34 @@
   "personalPassword": "Personal password",
   "personalAccessToken": "Personal access token",
   "githubOAuth": "GitHub OAuth",
-  "signInPending": "Sign-in will be available in a later client release.",
+  "passwordLabel": "Password",
+  "unlock": "Unlock",
+  "unlocking": "Unlocking…",
+  "invalidPassword": "That password is not valid for this server.",
+  "tokenLabel": "GitHub token",
+  "continueWithToken": "Continue",
+  "signingIn": "Signing in…",
+  "invalidToken": "That personal access token was rejected.",
+  "signInNetwork": "Could not reach the server. Your session was not changed.",
+  "signInRateLimited": "The server is rate limiting requests. Your session was not changed.",
+  "signInUnavailable": "This sign-in method is not enabled on the server.",
+  "signInFailed": "Sign-in could not be completed. Try again.",
+  "sessionExpired": "Your session ended. Sign in again with the same account to restore saved history on this device.",
+  "signedInAs": "Signed in as {login}",
+  "@signedInAs": {
+    "placeholders": {
+      "login": {"type": "String"}
+    }
+  },
+  "signOut": "Sign out",
+  "useDifferentAccount": "Use a different account",
+  "oauthOnly": "This server only offers GitHub OAuth. Password and personal access token sign-in are not enabled.",
+  "offlineSession": "You are offline. This account stays signed in and its saved data remains on this device.",
+  "credentialStorage": "Could not access the secure credential store.",
   "timeline": "Timeline",
   "follows": "Follows",
   "settings": "Settings",
-  "timelinePending": "Your Release Timeline will appear here after sign-in is implemented.",
+  "timelinePending": "Your Release Timeline will appear here in a later release.",
   "followsPending": "Release Follow management will be available in a later client release.",
   "changeBackend": "Change backend"
 }

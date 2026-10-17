@@ -9,6 +9,10 @@ A URL that asks GitPulse to open a supported GitHub page and resolve it into the
 surface after authentication.
 _Avoid_: dashboard deep link when referring to the browser integration contract
 
+**Native Login Handoff**:
+A single-use authorization that lets the app which started a browser sign-in receive its own GitPulse session after sign-in completes. It does not transfer the browser's session to the app.
+_Avoid_: OAuth callback when referring to this separate browser-to-app handoff
+
 ## Notifications
 
 **Notifications**:
@@ -201,8 +205,20 @@ _Avoid_: Complete Timeline Window for bounded pagination coverage
 A Shared Timeline Window displayed while one or more Followed Repositories could not be included in the current load.
 _Avoid_: full repository coverage when a repository could not be loaded
 
+**Timeline Cache Retention Window**:
+The rolling publication-time interval for which the Flutter application retains Release Timeline history for later reuse. Its duration is shared by an account's app installations; it expresses eligibility for retention, not completeness of the retained history.
+_Avoid_: request age, cached-at window when referring to this publication-time interval
+
+**Connected Cached History**:
+A repository's retained release history that the current refresh has reached by loading successive release pages back into previously retained records. This connection permits history reuse without establishing complete publication-time coverage.
+_Avoid_: complete history, date overlap when referring to a verified connection
+
+**Saved Visible Timeline**:
+The most recently saved Release Timeline window exposed by the Flutter application before user display filters, available for offline reading. It excludes retained history disconnected from that window.
+_Avoid_: all cached history, per-request snapshot
+
 **Timeline Refresh Baseline**:
-The time of the user's previous Release Timeline refresh that returned usable results, including partial results. It distinguishes new releases from earlier ones and does not represent reading progress.
+The time of the account's previous Release Timeline refresh that returned usable results, including partial results, shared by web and app clients. It distinguishes new releases from earlier ones and does not represent reading progress.
 _Avoid_: last read time, reading position
 
 **Recovered Release**:
