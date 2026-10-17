@@ -59,7 +59,7 @@ const emit = defineEmits<{
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  padding: 1rem 0 0;
+  padding: 1rem calc(var(--gitpulse-scrollbar-track-size) + 0.5rem) 0 0;
 }
 
 .release-follows-grid__empty {

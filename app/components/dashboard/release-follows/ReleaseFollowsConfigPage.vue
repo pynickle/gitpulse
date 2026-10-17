@@ -386,6 +386,9 @@ onMounted(() => {
 
 .release-follows-page__scroll {
   flex: 1 1 auto;
+  // SimpleBar's wrapper inherits this height; flex sizing alone leaves it auto
+  // and lets the placeholder create a second scrollport on the host.
+  height: 100%;
   min-height: 0;
 }
 
