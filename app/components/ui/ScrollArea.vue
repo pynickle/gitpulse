@@ -91,6 +91,13 @@ defineExpose({ scrollElement });
 }
 
 .scroll-area {
+  // Resolve against the host's allocated height, including flex/grid sizing.
+  // SimpleBar's `height: inherit` stays auto in flex panes, letting its
+  // placeholder overflow the host and create a second native scrollport.
+  > :deep(.simplebar-wrapper) {
+    height: 100%;
+  }
+
   &--y {
     overflow-x: hidden;
   }
