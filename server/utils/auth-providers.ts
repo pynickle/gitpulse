@@ -72,7 +72,7 @@ export function resolveAuthProviderState(): AuthProviderState {
 
   return {
     personalMode,
-    patEnabled: tokenEnabled,
+    patEnabled: personalMode ? false : tokenEnabled,
     oauthEnabled: personalMode ? false : oauthEnabled,
     oauthRequested: personalMode ? false : oauthRequested,
     oauthEnvReady,

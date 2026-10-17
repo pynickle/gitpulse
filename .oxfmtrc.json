@@ -4,5 +4,5 @@
   "tabWidth": 2,
   "singleQuote": true,
   "sortImports": true,
-  "ignorePatterns": [".github/renovate.jsonc"]
+  "ignorePatterns": [".github/renovate.jsonc", "flutter/**"]
 }

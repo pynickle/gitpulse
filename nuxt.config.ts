@@ -135,6 +135,7 @@ export default defineNuxtConfig({
     },
   },
   ignore: [
+    'flutter/**',
     'extension/**',
     'extension/.output/**',
     'extension/.wxt/**',

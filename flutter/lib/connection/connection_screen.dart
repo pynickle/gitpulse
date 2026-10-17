@@ -1,0 +1,116 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../l10n/generated/app_localizations.dart';
+import 'backend_service.dart';
+import 'connection_controller.dart';
+
+String connectionProblemLabel(
+  AppLocalizations l10n,
+  ConnectionProblem problem,
+) => switch (problem) {
+  ConnectionProblem.invalidAddress => l10n.invalidAddress,
+  ConnectionProblem.unreachable => l10n.unreachable,
+  ConnectionProblem.serverUpgrade => l10n.serverUpgrade,
+  ConnectionProblem.clientUpgrade => l10n.clientUpgrade,
+  ConnectionProblem.noProviders => l10n.noProviders,
+  ConnectionProblem.storageRead => l10n.storageRead,
+  ConnectionProblem.storageWrite => l10n.storageWrite,
+};
+
+class ConnectionScreen extends ConsumerWidget {
+  const ConnectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final connection = ref.watch(connectionControllerProvider);
+    return Scaffold(
+      appBar: AppBar(title: const Text('GitPulse')),
+      body: connection.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(connectionControllerProvider),
+            child: Text(AppLocalizations.of(context).connect),
+          ),
+        ),
+        data: (state) => _ConnectionForm(state: state),
+      ),
+    );
+  }
+}
+
+class _ConnectionForm extends ConsumerStatefulWidget {
+  const _ConnectionForm({required this.state});
+
+  final BackendConnectionState state;
+
+  @override
+  ConsumerState<_ConnectionForm> createState() => _ConnectionFormState();
+}
+
+class _ConnectionFormState extends ConsumerState<_ConnectionForm> {
+  late final _address = TextEditingController(
+    text: widget.state.rememberedAddress,
+  );
+
+  @override
+  void dispose() {
+    _address.dispose();
+    super.dispose();
+  }
+
+  void _connect() =>
+      ref.read(connectionControllerProvider.notifier).connect(_address.text);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final state = widget.state;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.connectTitle,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 12),
+              Text(l10n.connectDescription),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _address,
+                enabled: !state.connecting,
+                keyboardType: TextInputType.url,
+                autocorrect: false,
+                textInputAction: TextInputAction.go,
+                decoration: InputDecoration(
+                  labelText: l10n.backendAddress,
+                  hintText: 'https://your-gitpulse.example',
+                  border: const OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => _connect(),
+              ),
+              if (state.problem case final problem?) ...[
+                const SizedBox(height: 16),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(connectionProblemLabel(l10n, problem)),
+                ),
+              ],
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: state.connecting ? null : _connect,
+                child: Text(state.connecting ? l10n.connecting : l10n.connect),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

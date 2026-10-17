@@ -1,3 +1,5 @@
+import { defineEventHandler } from 'h3';
+
 import type { AuthProviderState } from '#shared/types/auth-provider';
 
 import { resolveAuthProviderState } from '../../utils/auth-providers';

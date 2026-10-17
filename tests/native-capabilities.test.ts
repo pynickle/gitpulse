@@ -1,0 +1,68 @@
+import { afterEach, describe, expect, test } from 'bun:test';
+
+import { createApp, toWebHandler } from 'h3';
+
+const originalRuntimeConfig = globalThis.useRuntimeConfig;
+afterEach(() => {
+  globalThis.useRuntimeConfig = originalRuntimeConfig;
+});
+
+function configureProviders(personal: boolean, pat = true, oauth = true) {
+  globalThis.useRuntimeConfig = (() => ({
+    gitPulseAuth: {
+      personalModeEnabled: personal,
+      tokenEnabled: pat,
+      githubOAuthEnabled: oauth,
+      githubToken: 'server-only-token',
+      personalPassword: 'server-only-password',
+      personalCookieSecret: 'server-only-secret',
+    },
+  })) as typeof useRuntimeConfig;
+}
+
+async function getPublicResponse(path: 'native/capabilities' | 'auth/providers') {
+  const handler =
+    path === 'native/capabilities'
+      ? (await import('../server/api/native/capabilities.get')).default
+      : (await import('../server/api/auth/providers.get')).default;
+  const app = createApp();
+  app.use(`/api/${path}`, handler);
+  const response = await toWebHandler(app)(new Request(`https://gitpulse.test/api/${path}`));
+  expect(response.status).toBe(200);
+  return response.json();
+}
+
+describe('public native connection contract', () => {
+  test('personal mode advertises only password unlock and implemented discovery', async () => {
+    configureProviders(true);
+    expect(await getPublicResponse('native/capabilities')).toEqual({
+      protocolVersion: 1,
+      capabilities: ['provider-discovery'],
+      providers: { personalMode: true, patEnabled: false, oauthEnabled: false, mode: 'personal' },
+    });
+    const providers = await getPublicResponse('auth/providers');
+    expect(providers.personalMode).toBe(true);
+    expect(providers.patEnabled).toBe(false);
+    expect(providers.oauthEnabled).toBe(false);
+  });
+
+  test.each([
+    [true, false, 'pat-only'],
+    [false, true, 'oauth-only'],
+    [true, true, 'hybrid'],
+  ] as const)(
+    'discovers PAT=%s OAuth=%s as %s without authentication',
+    async (pat, oauth, mode) => {
+      configureProviders(false, pat, oauth);
+      const result = await getPublicResponse('native/capabilities');
+      expect(result.providers).toEqual({
+        personalMode: false,
+        patEnabled: pat,
+        oauthEnabled: oauth,
+        mode,
+      });
+      expect(await getPublicResponse('auth/providers')).toMatchObject(result.providers);
+      expect(JSON.stringify(result)).not.toContain('server-only');
+    }
+  );
+});
