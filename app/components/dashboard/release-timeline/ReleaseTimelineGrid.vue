@@ -250,6 +250,9 @@ const scrollToTop = () => {
   }
 
   stopBackToTopAnimation();
+  // Explicit navigation supersedes the reading position retained across row updates.
+  pendingAnchor = null;
+  anchorRevision++;
 
   const startScrollTop = el.scrollTop;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -298,6 +301,9 @@ let pendingAnchor: { key: string; offset: number } | null = null;
 let anchorRevision = 0;
 let anchoredScrollTop: number | null = null;
 watch([rowMetrics, visibleRange], ([next], [previous]) => {
+  // Windowing and new row measurements must follow the animation, not retain
+  // an intermediate reading position and pull the viewport back to it.
+  if (backToTopFrame !== undefined) return;
   const container = scroller.value;
   if (!container) return;
   const viewport = container.getBoundingClientRect();

@@ -104,13 +104,23 @@ const item = (id: number): TimelineRelease => ({
   reactions: [],
 });
 
-test('production virtual grid preserves the visible release offset when the same day regroups into columns and rows are measured', async () => {
+const gridActions = [
+  'regroup',
+  'return to top',
+  'return to top with reduced motion',
+  'return to top from distant rows',
+  'return to top from distant rows with reduced motion',
+] as const;
+test.each(gridActions)('production virtual grid: %s with measured rows', async (action) => {
+  const distant = action.includes('distant rows');
   const frames = new Map<number, FrameRequestCallback>();
-  const grid = shallowRef<{ scrollElement: HTMLElement | null } | null>(null);
+  const grid = shallowRef<{ scrollElement: HTMLElement | null; scrollToTop(): void } | null>(null);
   let frameId = 0;
   const dom = createVueDom({
     buildReleaseTimelineGridRows,
     resolveReleaseTimelineVisibleRange,
+    resolveReleaseTimelineBackToTopFrame,
+    resolveReleaseTimelineBackToTopDurationMs,
     resolveReleaseTimelineColumnCount: () => 3,
     resolveReleaseTimelineColumnCountFromMedia: () => 3,
     RELEASE_TIMELINE_PHONE_MEDIA: '(max-width: 700px)',
@@ -173,7 +183,10 @@ test('production virtual grid preserves the visible release offset when the same
   });
   try {
     const groups = shallowRef([
-      { date: '2026-10-10', items: Array.from({ length: 60 }, (_, i) => item(i + 1)) },
+      {
+        date: '2026-10-10',
+        items: Array.from({ length: distant ? 600 : 60 }, (_, i) => item(i + 1)),
+      },
     ]);
     dom.mount(
       defineComponent({
@@ -187,9 +200,50 @@ test('production virtual grid preserves the visible release offset when the same
     await flush();
     const scroller = grid.value!.scrollElement!;
     expect(scroller).not.toBe(dom.document.querySelector('.release-timeline-grid'));
-    scroller.scrollTop = 1000;
+    scroller.scrollTop = distant ? 15000 : 1000;
     scroller.dispatchEvent(new dom.window.Event('scroll'));
     await flush();
+    if (action !== 'regroup') {
+      if (!distant)
+        groups.value = [
+          {
+            date: '2026-10-10',
+            items: [item(101), item(102), item(103), ...groups.value[0]!.items],
+          },
+        ];
+      await flush();
+      if (action.includes('reduced motion')) {
+        const matchMedia = dom.window.matchMedia.bind(dom.window);
+        dom.window.matchMedia = (query) => {
+          const media = matchMedia(query);
+          if (query === '(prefers-reduced-motion: reduce)') {
+            Object.defineProperty(media, 'matches', { value: true });
+          }
+          return media;
+        };
+      }
+      grid.value!.scrollToTop();
+      const start = performance.now();
+      const scrollPositions = [scroller.scrollTop];
+      for (let elapsed = 16; elapsed <= 1000; elapsed += 16) {
+        // Native scroll events precede rAF; scrollTop writes notify on the next frame.
+        scroller.dispatchEvent(new dom.window.Event('scroll'));
+        const batch = [...frames.values()];
+        frames.clear();
+        for (const callback of batch) callback(start + elapsed);
+        await nextTick();
+        await nextTick();
+        scrollPositions.push(scroller.scrollTop);
+      }
+      expect(scroller.scrollTop).toBe(0);
+      expect(dom.document.querySelector<HTMLElement>('[data-release]')?.dataset.release).toBe(
+        distant ? '1' : '101'
+      );
+      expect(
+        scrollPositions.every((top, index) => index === 0 || top <= scrollPositions[index - 1]!)
+      ).toBe(true);
+      return;
+    }
     const anchor = Array.from(dom.document.querySelectorAll<HTMLElement>('[data-release]')).find(
       (node) => {
         const box = node.getBoundingClientRect();
