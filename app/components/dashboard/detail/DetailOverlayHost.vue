@@ -224,6 +224,13 @@ const isContentLoading = computed(() => {
   return !pane || pane.loading || (!pane.hasData && !pane.error);
 });
 
+const isFeedbackVisible = computed(
+  () => isContentLoading.value || Boolean(activeDetailPane.value?.error)
+);
+const isRepositoryContentVisible = computed(
+  () => activeDetailPane.value?.type === 'repository' && !isFeedbackVisible.value
+);
+
 const isHeaderNonSticky = computed(() => {
   return activeDetailPane.value?.type === 'issue' && isIssueHeaderNonSticky.value;
 });
@@ -364,8 +371,11 @@ onUnmounted(() => syncDetailSidebarPane(null));
           <ScrollArea
             :key="activeDetailKey"
             class="detail-pane"
-            :class="{ 'detail-pane--page-scroll': activeDetailPane?.type === 'repository' }"
-            :disabled="activeDetailPane?.type !== 'repository'"
+            :class="{
+              'detail-pane--page-scroll': isRepositoryContentVisible,
+              'detail-pane--feedback': isFeedbackVisible,
+            }"
+            :disabled="!isRepositoryContentVisible"
           >
             <div
               v-if="isContentLoading"
@@ -532,17 +542,20 @@ onUnmounted(() => syncDetailSidebarPane(null));
   scrollbar-gutter: stable;
 }
 
-.detail-loading-pane {
+/* Feedback fills the pane directly, without a scrolling content box or
+   negative margins tied to the loaded content's responsive padding. */
+.detail-pane--feedback {
+  padding: 0;
+}
+
+.detail-loading-pane,
+.detail-feedback-pane {
   height: 100%;
-  margin: -2rem -4rem;
   background: var(--gitpulse-surface-muted);
 }
 
 .detail-feedback-pane {
-  height: 100%;
-  margin: -2rem -4rem;
   padding: 2rem;
-  background: var(--gitpulse-surface-muted);
 }
 
 .detail-loading-box {
