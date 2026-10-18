@@ -173,8 +173,20 @@ String prepareDocument(
           if (tag == 'details') 'open',
           if (tag == 'td' || tag == 'th') ...['colspan', 'rowspan'],
           if (tag == 'ol') 'start',
+          if (tag == 'code' || tag == 'pre') 'class',
         }.contains(name),
       );
+      if (tag == 'code' || tag == 'pre') {
+        final languages = element.classes
+            .where(
+              (name) => RegExp(r'^language-[a-zA-Z0-9_+#.\-]+$').hasMatch(name),
+            )
+            .toList();
+        element.attributes.remove('class');
+        if (languages.isNotEmpty) {
+          element.attributes['class'] = languages.first;
+        }
+      }
       for (final attribute in ['href', 'src']) {
         final original = element.attributes[attribute];
         if (original == null) continue;

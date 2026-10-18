@@ -130,6 +130,8 @@
   "releaseAssetsOnline": "Asset information is current for this request. Downloads open in your browser and may require GitHub sign-in.",
   "releaseAssetMetadata": "{bytes} bytes · {downloads} downloads",
   "@releaseAssetMetadata": {"placeholders": {"bytes": {"type": "int"}, "downloads": {"type": "int"}}},
+  "contentCopyCode": "Copy code",
+  "contentPlainText": "Plain text",
   "releaseResourceUnavailable": "Image unavailable",
   "releaseLinkFailed": "Could not open this link in your browser."
 }

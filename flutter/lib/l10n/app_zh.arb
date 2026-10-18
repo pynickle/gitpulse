@@ -116,6 +116,8 @@
   "releaseOpenOnGitHub": "在 GitHub 中打开",
   "releaseAssetsOnline": "附件信息来自本次请求。下载将在浏览器中打开，可能需要登录 GitHub。",
   "releaseAssetMetadata": "{bytes} 字节 · {downloads} 次下载",
+  "contentCopyCode": "复制代码",
+  "contentPlainText": "纯文本",
   "releaseResourceUnavailable": "图片不可用",
   "releaseLinkFailed": "无法在浏览器中打开此链接。"
 }

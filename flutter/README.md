@@ -50,8 +50,38 @@ json_serializable. Dio owns backend discovery and the cookie session; GoRouter
 owns routing; SDK ARB localization supports English and Simplified Chinese with
 the system locale. The Material 3 shell follows the system theme and switches
 between a navigation rail and bottom navigation with available width.
-Drift/SQLite, document rendering, and the default pure-Dart Shiki engine are
-resolved for later slices. Release caching and Markdown rendering remain later work.
+Document rendering uses the core native HTML renderer and the default pure-Dart
+Shiki engine. Release caching is described below.
+
+## Native release content
+
+`ReleaseDocument` accepts Markdown plus `RepositoryDocumentContext`; the same
+component can render a repository README by supplying its ref and document path.
+It converts and sanitizes content through the existing Markdown/HTML pipeline,
+resolves repository resources, and exposes selectable native code blocks through
+`NativeCodeBlock`. No WebView or editor is involved.
+
+Code uses bundled GitHub Light/Dark themes and an explicit fence-alias map for
+Shell, PowerShell, TypeScript/TSX, JavaScript/JSX, C/C++, C#, HTML/CSS, JSON,
+YAML, Dart, Python, Rust, Go, and Java. Unlabelled/unknown fences and highlighting
+failures remain selectable plain text. Copy uses the unhighlighted code, including
+blank lines and trailing newlines; code scrolls horizontally without wrapping.
+English and Simplified Chinese copy controls follow the app locale.
+
+A scope-owned Shiki highlighter reuses its pure-Dart background worker, coalesces
+in-flight tokenization, and uses the package's bounded token cache (64 entries /
+4 Mi source characters). Widget futures change only with source, language, theme,
+or highlighter; ordinary rebuilds reuse pending/completed work. Only referenced
+language/theme resources are bundled and no runtime grammar download is needed.
+
+SVG badges use `fwfh_svg` with the same normalized resource URLs and anonymous
+loading as raster images. Image URLs without a known raster extension try SVG
+when raster decoding fails, including badge paths with dotted version numbers.
+Extensionless PNGs still use raster decoding. Failed resources retain their alt
+text. The adapter catches duplicate asynchronous load errors in the selected SVG
+libraries before mounting compiled vectors.
+Inline SVG, local files, and active document content remain filtered out. Images,
+including badges, remain outside the offline guarantee.
 
 ## Backend connection contract
 
