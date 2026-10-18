@@ -57,6 +57,9 @@ this tree — verify with the Flutter toolchain.
 
 ## Verification bar
 
+Use Marionette MCP only when the user explicitly requests it. For routine
+changes, use the Flutter checks above.
+
 `flutter analyze` + `flutter test` cover Dart behavior only; native builds,
 plugin integration, credential stores, and device networking are owner-manual
 (Windows/Android). Linux/macOS/iOS runners are scaffolding: macOS/iOS need a
