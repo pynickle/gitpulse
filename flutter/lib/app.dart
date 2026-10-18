@@ -65,6 +65,37 @@ class GitPulseApp extends ConsumerWidget {
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        final theme = Theme.of(context);
+        final chinese = Localizations.localeOf(context).languageCode == 'zh';
+        // Choose desktop system fonts after the app locale has resolved so
+        // headings, body text and buttons share the same Chinese typeface.
+        final (fontFamily, fallbacks) = switch (theme.platform) {
+          TargetPlatform.windows => (
+            chinese ? 'Microsoft YaHei UI' : 'Segoe UI',
+            const ['Microsoft YaHei UI', 'Microsoft JhengHei UI'],
+          ),
+          TargetPlatform.linux => (
+            chinese ? 'Noto Sans CJK SC' : 'Noto Sans',
+            const ['Noto Sans CJK SC', 'Noto Sans CJK TC'],
+          ),
+          _ => (null, const <String>[]),
+        };
+        if (fontFamily == null) return child!;
+        return Theme(
+          data: theme.copyWith(
+            textTheme: theme.textTheme.apply(
+              fontFamily: fontFamily,
+              fontFamilyFallback: fallbacks,
+            ),
+            primaryTextTheme: theme.primaryTextTheme.apply(
+              fontFamily: fontFamily,
+              fontFamilyFallback: fallbacks,
+            ),
+          ),
+          child: child!,
+        );
+      },
       routerConfig: ref.watch(_routerProvider),
     );
   }
