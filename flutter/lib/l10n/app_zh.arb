@@ -119,5 +119,19 @@
   "contentCopyCode": "复制代码",
   "contentPlainText": "纯文本",
   "releaseResourceUnavailable": "图片不可用",
-  "releaseLinkFailed": "无法在浏览器中打开此链接。"
+  "releaseLinkFailed": "无法在浏览器中打开此链接。",
+  "repositoryReleasesTitle": "仓库发布列表",
+  "repositoryReleasesAll": "全部",
+  "repositoryReleasesStable": "稳定版",
+  "repositoryReleasesPageFilter": "筛选仅作用于当前页。草稿是否可见取决于仓库权限。",
+  "repositoryReleasesLoading": "正在加载仓库发布列表",
+  "repositoryReleasesPermission": "此账户没有读取该仓库发布列表的权限。",
+  "repositoryReleasesUnavailable": "此仓库不可用或此账户无权访问。",
+  "repositoryReleasesFailed": "无法加载仓库发布列表，请在网络恢复后重试。",
+  "repositoryReleasesEmpty": "当前页没有发布。",
+  "repositoryReleasesFilteredEmpty": "当前页没有符合筛选条件的发布。",
+  "repositoryReleasesEntry": "入口发布",
+  "repositoryReleasesPrevious": "上一页",
+  "repositoryReleasesNext": "下一页",
+  "repositoryReleasesPage": "第 {page} 页"
 }

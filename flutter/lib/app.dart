@@ -9,6 +9,7 @@ import 'session/session_controller.dart';
 import 'session/sign_in_panel.dart';
 import 'timeline/timeline_screen.dart';
 import 'follows/release_follows_screen.dart';
+import 'releases/repository_releases_screen.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -21,6 +22,13 @@ final _routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const ConnectionScreen()),
+      GoRoute(
+        path: '/repositories/:owner/:repository/releases',
+        builder: (context, state) => RepositoryReleasesScreen(
+          owner: state.pathParameters['owner']!,
+          repository: state.pathParameters['repository']!,
+        ),
+      ),
       for (final (index, path) in [
         '/timeline',
         '/follows',

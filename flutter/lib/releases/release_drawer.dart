@@ -11,6 +11,8 @@ import '../timeline/timeline_layout.dart';
 import 'document_content.dart';
 import 'release_detail_service.dart';
 import 'release_details_view.dart';
+import 'repository_releases_controller.dart';
+import 'repository_releases_view.dart';
 
 Future<void> showReleaseDrawer(BuildContext context, ReleaseTarget entry) {
   return showGeneralDialog<void>(
@@ -34,6 +36,12 @@ class ReleaseDrawer extends ConsumerStatefulWidget {
 
 class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   late ReleaseTarget _target = widget.entry;
+  late final ReleaseTarget _entry = widget.entry;
+  final _opening = Object();
+  final _visitedLists = <RepositoryReleasesScope>{};
+  RepositoryReleasesScope? _listScope;
+  bool _showList = false;
+  ReleaseTarget? _entryIdentity;
   late final _identity = ref.read(sessionControllerProvider).identity;
   final _sheetController = DraggableScrollableController();
 
@@ -93,6 +101,23 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       return const SizedBox.shrink();
     }
     final result = ref.watch(releaseDetailProvider(_target));
+    if (_target == _entry) {
+      if (result.value?.release case final release?) {
+        _entryIdentity = (
+          owner: release.owner,
+          repository: release.repository,
+          id: release.id,
+          tag: null,
+        );
+      }
+    }
+    // Keep every visited list alive for this opening, including while reading
+    // another repository's release. Closing the drawer releases all of them.
+    final listStates = {
+      for (final scope in _visitedLists)
+        scope: ref.watch(repositoryReleasesControllerProvider(scope)),
+    };
+    final listState = listStates[_listScope];
     final l10n = AppLocalizations.of(context);
 
     Widget panel({
@@ -142,16 +167,21 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
               ),
             Row(
               children: [
-                if (_target != widget.entry)
+                if (_showList || _target != _entry)
                   IconButton(
                     tooltip: l10n.releaseEntry,
-                    onPressed: () => setState(() => _target = widget.entry),
+                    onPressed: () => setState(() {
+                      _target = _entry;
+                      _showList = false;
+                    }),
                     icon: const Icon(Icons.arrow_back),
                   ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    l10n.releaseDetails,
+                    _showList
+                        ? l10n.repositoryReleasesTitle
+                        : l10n.releaseDetails,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -166,33 +196,78 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
             const Divider(height: 1),
             Expanded(
               child: SingleChildScrollView(
-                key: ValueKey(_target),
+                key: ValueKey(_showList ? _listScope : _target),
                 controller: controller,
                 padding: const EdgeInsets.all(20),
-                child: result.when(
-                  skipLoadingOnRefresh: false,
-                  loading: () => Semantics(
-                    label: l10n.releaseLoading,
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (error, stack) => _ReleaseFailure(
-                    failure: ReleaseDetailFailure.server,
-                    onRetry: () =>
-                        ref.invalidate(releaseDetailProvider(_target)),
-                  ),
-                  data: (data) => data.release == null
-                      ? _ReleaseFailure(
-                          failure: data.failure!,
+                child: _showList && listState != null
+                    ? RepositoryReleasesView(
+                        repository:
+                            '${_listScope!.owner}/${_listScope!.repository}',
+                        state: listState,
+                        onPage: (page) => ref
+                            .read(
+                              repositoryReleasesControllerProvider(_listScope!)
+                                  .notifier,
+                            )
+                            .loadPage(page),
+                        onFilter: (filter) => ref
+                            .read(
+                              repositoryReleasesControllerProvider(_listScope!)
+                                  .notifier,
+                            )
+                            .setFilter(filter),
+                        isEntry: (item) =>
+                            _entryIdentity?.owner.toLowerCase() ==
+                                _listScope!.owner.toLowerCase() &&
+                            _entryIdentity?.repository.toLowerCase() ==
+                                _listScope!.repository.toLowerCase() &&
+                            _entryIdentity?.id == item.id,
+                        onRelease: (item) => setState(() {
+                          _target = (
+                            owner: _listScope!.owner,
+                            repository: _listScope!.repository,
+                            id: item.id,
+                            tag: null,
+                          );
+                          _showList = false;
+                        }),
+                      )
+                    : result.when(
+                        skipLoadingOnRefresh: false,
+                        loading: () => Semantics(
+                          label: l10n.releaseLoading,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        error: (error, stack) => _ReleaseFailure(
+                          failure: ReleaseDetailFailure.server,
                           onRetry: () =>
                               ref.invalidate(releaseDetailProvider(_target)),
-                        )
-                      : ReleaseDetailsView(
-                          release: data.release!,
-                          onTapUrl: _openLink,
-                          onOpenExternal: (url) =>
-                              _openLink(url, external: true),
                         ),
-                ),
+                        data: (data) => data.release == null
+                            ? _ReleaseFailure(
+                                failure: data.failure!,
+                                onRetry: () => ref.invalidate(
+                                  releaseDetailProvider(_target),
+                                ),
+                              )
+                            : ReleaseDetailsView(
+                                release: data.release!,
+                                onOpenReleases: () => setState(() {
+                                  _listScope = (
+                                    owner: data.release!.owner,
+                                    repository: data.release!.repository,
+                                    opening: _opening,
+                                  );
+                                  _visitedLists.add(_listScope!);
+                                  _showList = true;
+                                }),
+                                onTapUrl: _openLink,
+                                onOpenExternal: (url) =>
+                                    _openLink(url, external: true),
+                              ),
+                      ),
               ),
             ),
           ],

@@ -12,11 +12,13 @@ class ReleaseDetailsView extends StatelessWidget {
     required this.release,
     required this.onTapUrl,
     required this.onOpenExternal,
+    this.onOpenReleases,
   });
 
   final ReleaseDetail release;
   final Future<bool> Function(String) onTapUrl;
   final Future<bool> Function(String) onOpenExternal;
+  final VoidCallback? onOpenReleases;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,15 @@ class ReleaseDetailsView extends StatelessWidget {
             child: Text('${release.owner}/${release.repository}'),
           ),
         ),
+        if (onOpenReleases != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onOpenReleases,
+              icon: const Icon(Icons.list_alt),
+              label: Text(l10n.repositoryReleasesTitle),
+            ),
+          ),
         SelectableText(release.title, style: theme.textTheme.headlineSmall),
         const SizedBox(height: 8),
         Wrap(

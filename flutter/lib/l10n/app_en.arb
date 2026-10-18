@@ -133,5 +133,20 @@
   "contentCopyCode": "Copy code",
   "contentPlainText": "Plain text",
   "releaseResourceUnavailable": "Image unavailable",
-  "releaseLinkFailed": "Could not open this link in your browser."
+  "releaseLinkFailed": "Could not open this link in your browser.",
+  "repositoryReleasesTitle": "Repository releases",
+  "repositoryReleasesAll": "All",
+  "repositoryReleasesStable": "Stable",
+  "repositoryReleasesPageFilter": "Filters apply to this page only. Draft visibility depends on repository permissions.",
+  "repositoryReleasesLoading": "Loading repository releases",
+  "repositoryReleasesPermission": "This account does not have permission to read this repository's releases.",
+  "repositoryReleasesUnavailable": "This repository is unavailable or is not accessible to this account.",
+  "repositoryReleasesFailed": "Could not load repository releases. Retry when your connection recovers.",
+  "repositoryReleasesEmpty": "No releases on this page.",
+  "repositoryReleasesFilteredEmpty": "No releases match on this page.",
+  "repositoryReleasesEntry": "Entry Release",
+  "repositoryReleasesPrevious": "Previous page",
+  "repositoryReleasesNext": "Next page",
+  "repositoryReleasesPage": "Page {page}",
+  "@repositoryReleasesPage": {"placeholders":{"page":{"type":"int"}}}
 }
