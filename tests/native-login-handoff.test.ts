@@ -308,6 +308,44 @@ test('the browser can explicitly approve using a CSRF-protected form and return 
   );
 });
 
+test('the approval page keeps a real Origin on its form POST instead of no-referrer', async () => {
+  const attempt = await createAttempt();
+  const browser = await request('/test/oauth-success');
+  const cookie = browser.headers
+    .getSetCookie()
+    .map((value) => value.split(';')[0])
+    .join('; ');
+  const url = new URL(attempt.browserUrl);
+  const page = await request(`${url.pathname}${url.search}`, undefined, cookie);
+  expect(page.status).toBe(200);
+  // A `no-referrer` policy would make the browser serialize this form's Origin
+  // as the literal `null`, which the double-submit check rejects.
+  expect(page.headers.get('referrer-policy')).toBe('same-origin');
+
+  const form = new URLSearchParams({
+    id: attempt.id,
+    browserToken: url.searchParams.get('browserToken')!,
+    csrfToken: 'test-csrf',
+  });
+  const formRequest = (originHeader: string) =>
+    handle(
+      new Request(`${origin}/auth/native/approve`, {
+        method: 'POST',
+        headers: {
+          host: 'gitpulse.test',
+          'x-forwarded-proto': 'https',
+          'content-type': 'application/x-www-form-urlencoded',
+          cookie: `${cookie}; gitpulse_csrf=test-csrf`,
+          origin: originHeader,
+        },
+        body: form,
+      })
+    );
+
+  expect((await formRequest('null')).status).toBe(403);
+  expect((await formRequest(origin)).status).toBe(303);
+});
+
 test('two Nitro workers sharing filesystem storage cannot redeem case variants of the same grant twice', async () => {
   const attempt = await createAttempt();
   await approveAttempt(attempt);

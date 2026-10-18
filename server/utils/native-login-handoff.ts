@@ -68,7 +68,11 @@ export function nativeLoginHandoffAvailable() {
 
 export function assertNativeLoginHandoffAvailable(event: H3Event) {
   setHeader(event, 'Cache-Control', 'no-store');
-  setHeader(event, 'Referrer-Policy', 'no-referrer');
+  // `no-referrer` would make the browser serialize the approval form's Origin
+  // as the literal `null`, which the double-submit check rejects. `same-origin`
+  // keeps the app sign-in identifiers out of cross-origin referrers (the OAuth
+  // link to GitHub sends none) while still sending a real Origin here.
+  setHeader(event, 'Referrer-Policy', 'same-origin');
   if (!nativeLoginHandoffAvailable()) {
     throw createError({ statusCode: 503, statusMessage: 'Native browser sign-in is unavailable' });
   }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -93,12 +94,17 @@ void main() {
       contains(app.read(sessionControllerProvider).browserSignInCode!),
     );
     expect(page.data, isNot(contains('github-token-never-in-urls')));
+    // A browser form POST must carry a real Origin: the page's referrer policy
+    // decides that, and `no-referrer` would make the origin the literal `null`,
+    // which the double-submit check rejects.
+    expect(page.headers.value('referrer-policy'), 'same-origin');
     final approved = await browser.post<Object?>(
       backend.resolve('auth/native/approve').toString(),
       data: {
         'id': browserUrl!.queryParameters['id'],
         'browserToken': browserUrl!.queryParameters['browserToken'],
       },
+      options: Options(headers: {'origin': backend.origin}),
     );
     expect(approved.statusCode, 200);
     expect(app.read(sessionControllerProvider).phase, SessionPhase.signedOut);
