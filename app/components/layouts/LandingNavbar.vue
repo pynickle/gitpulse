@@ -1,17 +1,11 @@
 <template>
-  <nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar-menu">
-      <div class="navbar-end">
-        <div class="navbar-item">
-          <LinkIcon to="https://github.com/pynickle/gitpulse">
-            <GitHubIcon class="is-centered" />
-          </LinkIcon>
-        </div>
-        <div class="navbar-item navbar-controls">
-          <LanguageSwitcher />
-          <ColorModeToggle />
-        </div>
-      </div>
+  <nav class="navbar" aria-label="main navigation">
+    <div class="landing-navbar__bar">
+      <LinkIcon to="https://github.com/pynickle/gitpulse">
+        <GitHubIcon class="is-centered" />
+      </LinkIcon>
+      <LanguageSwitcher />
+      <ColorModeToggle />
     </div>
   </nav>
 </template>
@@ -24,15 +18,18 @@ import LinkIcon from '~/components/ui/LinkIcon.vue';
 </script>
 
 <style scoped lang="scss">
-.navbar-end .navbar-item {
-  &:hover,
-  &:focus {
-    background-color: transparent;
-    color: inherit;
-  }
+.landing-navbar__bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1rem;
 }
 
-.navbar-end .navbar-item:first-child a {
+.landing-navbar__bar :deep(a) {
+  display: inline-flex;
   transition: opacity 0.16s ease;
 
   &:hover {
@@ -40,9 +37,10 @@ import LinkIcon from '~/components/ui/LinkIcon.vue';
   }
 }
 
-.navbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+@media (max-width: 480px) {
+  .landing-navbar__bar {
+    gap: 0.5rem;
+    padding-inline: 0.75rem;
+  }
 }
 </style>

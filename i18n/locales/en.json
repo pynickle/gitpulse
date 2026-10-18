@@ -88,6 +88,24 @@
     "unlocking": "Unlocking...",
     "invalidPassword": "Invalid password. Please try again."
   },
+  "nativeLogin": {
+    "pageTitle": "App sign-in",
+    "pageDescription": "Confirm the code from your GitPulse app, then approve sign-in.",
+    "eyebrow": "App sign-in",
+    "title": "Approve app sign-in",
+    "lead": "Approve only if you started sign-in in your GitPulse app and this code matches the one shown there.",
+    "codeLabel": "Confirmation code",
+    "continueWithGithub": "Continue with GitHub",
+    "approve": "Approve app sign-in",
+    "approveHelp": "This lets the GitPulse app use this GitHub account. Return to the app after you approve.",
+    "status": {
+      "pending": "Return to the app after you approve.",
+      "approved": "Approved. Return to the GitPulse app.",
+      "cancelled": "Cancelled. Start again in the app.",
+      "expired": "This sign-in expired. Start again in the app.",
+      "redeemed": "App sign-in is complete."
+    }
+  },
   "detailOverlay": {
     "back": "Back",
     "home": "Home",

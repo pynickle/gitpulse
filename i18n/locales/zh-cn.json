@@ -88,6 +88,24 @@
     "unlocking": "解锁中...",
     "invalidPassword": "密码无效，请重试。"
   },
+  "nativeLogin": {
+    "pageTitle": "应用登录",
+    "pageDescription": "核对 GitPulse 应用中的确认码，然后批准登录。",
+    "eyebrow": "应用登录",
+    "title": "批准应用登录",
+    "lead": "仅当你在 GitPulse 应用中发起了登录，且此确认码与应用中显示的一致时才批准。",
+    "codeLabel": "确认码",
+    "continueWithGithub": "使用 GitHub 继续",
+    "approve": "批准应用登录",
+    "approveHelp": "这会允许 GitPulse 应用使用此 GitHub 账号。批准后请返回应用。",
+    "status": {
+      "pending": "批准后请返回应用。",
+      "approved": "已批准，请返回 GitPulse 应用。",
+      "cancelled": "已取消，请在应用中重新发起。",
+      "expired": "登录已过期，请在应用中重新发起。",
+      "redeemed": "应用登录已完成。"
+    }
+  },
   "detailOverlay": {
     "back": "返回",
     "home": "主页",

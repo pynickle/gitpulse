@@ -8,7 +8,9 @@ import {
   createRouter,
   defineEventHandler,
   getCookie,
+  getQuery,
   setCookie,
+  setHeader,
   toWebHandler,
   useSession,
 } from 'h3';
@@ -46,7 +48,15 @@ export async function createNativeLoginTestHandler(baseURL = '/') {
   );
   router.get(
     route('/native-login'),
-    (await import('../../server/routes/native-login.get')).default
+    defineEventHandler(async (event) => {
+      const { loadNativeLoginBrowserPage } =
+        await import('../../server/utils/native-login-browser-page');
+      const page = await loadNativeLoginBrowserPage(event, getQuery(event));
+      // The real approval screen is the Nuxt page. This fixture only exposes
+      // the confirmation code and the page headers to HTTP clients.
+      setHeader(event, 'content-type', 'text/plain; charset=utf-8');
+      return page.confirmationCode;
+    })
   );
   router.get(
     route('/api/native/capabilities'),

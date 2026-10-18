@@ -188,6 +188,24 @@ export default defineNuxtConfig({
     '/': { appLayout: 'landing' },
     '/open': { appLayout: 'landing' },
     '/**/open': { appLayout: 'landing' },
+    '/native-login': {
+      appLayout: 'native-login',
+      headers: {
+        'Referrer-Policy': 'same-origin',
+        'Cache-Control': 'no-store',
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "frame-ancestors 'none'",
+      },
+    },
+    '/**/native-login': {
+      appLayout: 'native-login',
+      headers: {
+        'Referrer-Policy': 'same-origin',
+        'Cache-Control': 'no-store',
+        'X-Frame-Options': 'DENY',
+        'Content-Security-Policy': "frame-ancestors 'none'",
+      },
+    },
     '/**/dashboard': { appLayout: 'dashboard' },
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },

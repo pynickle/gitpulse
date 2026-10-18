@@ -43,7 +43,7 @@ slash or deployment path. No redirects are followed by the native HTTP client.
 Every POST requires the existing CSRF cookie/header contract. The browser's
 HTML approval form submits the same double-submit token in its body and is also
 subject to Origin/Referer validation. The existing CSRF plugin issues the token.
-The browser page denies framing and scripts and uses no-store and `same-origin`
+The browser page is a Nuxt page. It denies framing and uses no-store and `same-origin`
 referrer headers; `no-referrer` is deliberately avoided because the browser then
 serializes the approval form's `Origin` as the literal `null`, which the
 double-submit check rejects. App verifier values are sent only to the selected

@@ -66,4 +66,32 @@ describe('normalizeAuthReturnTo', () => {
       Object.assign(globals, originals);
     }
   });
+
+  test('lets a signed-out visitor open the app sign-in page', async () => {
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const replacements = {
+      defineNuxtRouteMiddleware: (handler: unknown) => handler,
+      useUserSession: () => ({ loggedIn: { value: false } }),
+      useLocalePath: () => (path: string) => path,
+      navigateTo: (target: unknown) => target,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(replacements).map((key) => [key, globals[key]])
+    );
+
+    Object.assign(globals, replacements);
+    try {
+      const { default: middleware } = await import('../app/middleware/auth.global');
+      const visit = middleware as unknown as (to: unknown) => unknown;
+
+      expect(
+        await visit({ path: '/native-login', fullPath: '/native-login?id=1' })
+      ).toBeUndefined();
+      expect(
+        await visit({ path: '/zh-cn/native-login', fullPath: '/zh-cn/native-login?id=1' })
+      ).toBeUndefined();
+    } finally {
+      Object.assign(globals, originals);
+    }
+  });
 });
