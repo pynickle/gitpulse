@@ -47,6 +47,10 @@ A password-gated vault with a pre-configured token. On each new browser you see 
 
 ### User Settings Storage
 
+Flutter GitHub sign-in uses the [Native Login Handoff](native-login-handoff.md)
+with the same storage configuration and session encryption key. Its transactions
+occupy a separate collection and require an explicit browser approval.
+
 Dashboard user settings, including font choices, tab groups, and custom search tabs, are persisted through the server user settings storage layer. You can configure it to use Redis, Upstash Redis, or the local filesystem.
 
 By default GitPulse uses local filesystem storage at `./.data/user-settings`.

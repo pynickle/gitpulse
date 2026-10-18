@@ -1,6 +1,11 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 
 import { createApp, toWebHandler } from 'h3';
+
+import * as authReturn from '../shared/utils/auth-return-route';
+import * as env from '../shared/utils/user-settings-storage-env';
+mock.module('#shared/utils/auth-return-route', () => authReturn);
+mock.module('#shared/utils/user-settings-storage-env', () => env);
 
 const originalRuntimeConfig = globalThis.useRuntimeConfig;
 afterEach(() => {
@@ -17,6 +22,7 @@ function configureProviders(personal: boolean, pat = true, oauth = true) {
       personalPassword: 'server-only-password',
       personalCookieSecret: 'server-only-secret',
     },
+    session: { password: 'native-capabilities-session-password-32-characters' },
   })) as typeof useRuntimeConfig;
 }
 
@@ -61,6 +67,7 @@ describe('public native connection contract', () => {
         oauthEnabled: oauth,
         mode,
       });
+      expect(result.capabilities.includes('native-login-handoff')).toBe(oauth);
       expect(await getPublicResponse('auth/providers')).toMatchObject(result.providers);
       expect(JSON.stringify(result)).not.toContain('server-only');
     }

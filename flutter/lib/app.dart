@@ -135,7 +135,7 @@ class _AppShell extends ConsumerWidget {
                           Chip(label: Text(l10n.personalPassword)),
                         if (providers.patEnabled)
                           Chip(label: Text(l10n.personalAccessToken)),
-                        if (providers.oauthEnabled)
+                        if (backend.capabilities.supportsNativeLogin)
                           Chip(label: Text(l10n.githubOAuth)),
                       ],
                     ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:gitpulse/session/lifetime_cookie_jar.dart';
 import 'package:gitpulse/session/secure_cookie_storage.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/session/secure_storage.dart';
+import 'package:gitpulse/session/native_login_handoff.dart';
 
 class FaultyStorage extends FlutterSecureStorage {
   String? failWrite;
@@ -104,6 +106,10 @@ class AuthServer implements HttpClientAdapter {
   bool holding = false;
   String heldPath = 'release-timeline';
   int sessionStatus = 200;
+  bool handoffEnabled = false;
+  String handoffStatus = 'pending';
+  String? handoffChallenge;
+  int handoffNumber = 0;
 
   @override
   Future<ResponseBody> fetch(
@@ -150,11 +156,61 @@ class AuthServer implements HttpClientAdapter {
         200,
         {
           'protocolVersion': 1,
-          'capabilities': ['provider-discovery'],
+          'capabilities': [
+            'provider-discovery',
+            if (handoffEnabled) 'native-login-handoff',
+          ],
           'providers': providers,
         },
         cookies: ['gitpulse_csrf=$csrf; Path=/; SameSite=Lax'],
       );
+    }
+    if (path.endsWith('/auth/native/create')) {
+      final input = jsonDecode(body) as Map<String, dynamic>;
+      handoffChallenge = input['challenge'] as String;
+      handoffStatus = 'pending';
+      handoffNumber++;
+      return _json(200, {
+        'id': 'attempt-$handoffNumber',
+        'browserUrl':
+            '${options.uri.origin}/native-login?id=attempt-$handoffNumber&browserToken=browser-only',
+        'expiresAt': DateTime.now()
+            .add(const Duration(minutes: 10))
+            .millisecondsSinceEpoch,
+        'confirmationCode': 'ABCD1234',
+        'interval': 2,
+      });
+    }
+    if (path.endsWith('/auth/native/status') ||
+        path.endsWith('/auth/native/redeem')) {
+      final input = body.isEmpty
+          ? null
+          : jsonDecode(body) as Map<String, dynamic>;
+      final proof =
+          input?['verifier'] as String? ?? headers['x-native-verifier'];
+      final challenge = base64Url
+          .encode(sha256.convert(utf8.encode(proof ?? '')).bytes)
+          .replaceAll('=', '');
+      if (challenge != handoffChallenge) {
+        return _json(403, {'statusMessage': 'Invalid app sign-in proof'});
+      }
+      if (path.endsWith('/status')) {
+        return _json(200, {'status': handoffStatus});
+      }
+      if (handoffStatus != 'approved') {
+        return _json(409, {'statusMessage': handoffStatus});
+      }
+      handoffStatus = 'redeemed';
+      acceptedLogin = 'octocat';
+      return _json(
+        200,
+        {'user': _user('octocat')},
+        cookies: ['nuxt-session=$sessionValue; $sessionAttributes'],
+      );
+    }
+    if (path.endsWith('/auth/native/cancel')) {
+      handoffStatus = 'cancelled';
+      return _json(200, {'status': 'cancelled'});
     }
     if (path.endsWith('/auth/unlock') || path.endsWith('/auth/pat')) {
       final csrfHeader = headers['x-csrf-token'];
@@ -284,6 +340,8 @@ Future<ProviderContainer> mountApp(
   bool resetStorage = true,
   FlutterSecureStorage? storage,
   UnreadableCookieJar? jar,
+  Future<bool> Function(Uri)? launchBrowser,
+  DateTime Function()? clock,
 }) async {
   if (resetStorage) FlutterSecureStorage.setMockInitialValues({});
   await tester.pumpWidget(
@@ -291,6 +349,9 @@ Future<ProviderContainer> mountApp(
       overrides: [
         if (storage != null) secureStorageProvider.overrideWithValue(storage),
         if (jar != null) cookieJarProvider.overrideWithValue(jar),
+        if (launchBrowser != null)
+          browserLauncherProvider.overrideWithValue(launchBrowser),
+        if (clock != null) nativeLoginClockProvider.overrideWithValue(clock),
         connectionDioProvider.overrideWith((ref) {
           final dio = createGitPulseDio(ref.watch(cookieJarProvider));
           dio.httpClientAdapter = server;
@@ -339,6 +400,162 @@ Future<void> submitField(
 }
 
 void main() {
+  testWidgets(
+    'a cancelled attempt ignores a held poll and can be superseded by a fresh login',
+    (tester) async {
+      final server = AuthServer(
+        providers: {
+          'personalMode': false,
+          'patEnabled': false,
+          'oauthEnabled': true,
+          'mode': 'oauth-only',
+        },
+      )..handoffEnabled = true;
+      final container = await mountApp(
+        tester,
+        server,
+        launchBrowser: (_) async => true,
+      );
+      await connectTo(tester, 'https://gitpulse.example');
+      final session = container.read(sessionControllerProvider.notifier);
+      await pumped(tester, session.startBrowserSignIn());
+      await tester.pumpAndSettle();
+      final held = Completer<void>();
+      server
+        ..hold = held.future
+        ..heldPath = '/auth/native/status';
+      final polling = session.pollBrowserSignIn();
+      await tester.pumpAndSettle();
+      expect(server.holding, isTrue);
+      await pumped(tester, session.cancelBrowserSignIn());
+      held.complete();
+      await pumped(tester, polling);
+      server.hold = null;
+      expect(
+        container.read(sessionControllerProvider).browserSignInCode,
+        isNull,
+      );
+      expect(
+        container.read(sessionControllerProvider).phase,
+        SessionPhase.signedOut,
+      );
+      expect(
+        server.requests.any((request) => request.uri.path.endsWith('/redeem')),
+        isFalse,
+      );
+      await pumped(tester, session.startBrowserSignIn());
+      await tester.pumpAndSettle();
+      server.handoffStatus = 'approved';
+      await pumped(tester, session.pollBrowserSignIn());
+      expect(
+        container.read(sessionControllerProvider).phase,
+        SessionPhase.signedIn,
+      );
+      expect(server.handoffNumber, 2);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'foreground return expires a pending attempt and reports browser launch failure',
+    (tester) async {
+      final server = AuthServer(
+        providers: {
+          'personalMode': false,
+          'patEnabled': false,
+          'oauthEnabled': true,
+          'mode': 'oauth-only',
+        },
+      )..handoffEnabled = true;
+      var now = DateTime.now();
+      var launch = true;
+      final container = await mountApp(
+        tester,
+        server,
+        launchBrowser: (_) async => launch,
+        clock: () => now,
+      );
+      await connectTo(tester, 'https://gitpulse.example');
+      final session = container.read(sessionControllerProvider.notifier);
+      await pumped(tester, session.startBrowserSignIn());
+      session.pauseBrowserSignIn();
+      now = now.add(const Duration(minutes: 11));
+      session.resumeBrowserSignIn();
+      await tester.pumpAndSettle();
+      expect(
+        container.read(sessionControllerProvider).failure,
+        SignInFailure.expired,
+      );
+      expect(
+        find.text('Browser sign-in expired. Start a new attempt.'),
+        findsOneWidget,
+      );
+      expect(container.read(sessionControllerProvider).busy, isFalse);
+      launch = false;
+      await pumped(tester, session.startBrowserSignIn());
+      await tester.pumpAndSettle();
+      expect(
+        container.read(sessionControllerProvider).failure,
+        SignInFailure.browserLaunch,
+      );
+      expect(server.handoffStatus, 'cancelled');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'OAuth opens the system browser and foreground resume redeems an independent app session',
+    (tester) async {
+      final server = AuthServer(
+        providers: {
+          'personalMode': false,
+          'patEnabled': false,
+          'oauthEnabled': true,
+          'mode': 'oauth-only',
+        },
+      )..handoffEnabled = true;
+      Uri? launched;
+      final container = await mountApp(
+        tester,
+        server,
+        launchBrowser: (uri) async {
+          launched = uri;
+          return true;
+        },
+      );
+      await connectTo(tester, 'https://gitpulse.example');
+      await tester.tap(find.text('Continue with GitHub'));
+      await tester.pumpAndSettle();
+      expect(launched?.origin, 'https://gitpulse.example');
+      expect(find.textContaining('ABCD1234'), findsOneWidget);
+      expect(
+        container.read(sessionControllerProvider).phase,
+        SessionPhase.signedOut,
+      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      server.handoffStatus = 'approved';
+      await tester.pump(const Duration(seconds: 5));
+      expect(server.handoffStatus, 'approved');
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(find.text('Signed in as octocat'), findsOneWidget);
+      final redeem = server.requests.singleWhere(
+        (request) => request.uri.path.endsWith('/auth/native/redeem'),
+      );
+      expect(redeem.headers['x-csrf-token'], server.csrf);
+      expect(redeem.headers['cookie'], isNot(contains('nuxt-session=')));
+      expect(
+        launched.toString(),
+        isNot(contains(jsonDecode(redeem.body)['verifier'] as String)),
+      );
+      final stored = await const FlutterSecureStorage().readAll();
+      expect(stored.values.join(), contains(server.sessionValue));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'CSRF credential-store reads fail as storage errors, not network loss',
     (tester) async {
@@ -795,7 +1012,8 @@ void main() {
       await connectTo(tester, 'http://127.0.0.1:3000/gitpulse');
       expect(fieldLabeled('Password'), findsNothing);
       expect(fieldLabeled('GitHub token'), findsOneWidget);
-      expect(find.text('GitHub OAuth'), findsOneWidget);
+      expect(find.text('GitHub OAuth'), findsNothing);
+      expect(find.text('Continue with GitHub'), findsNothing);
 
       await submitField(
         tester,
@@ -836,6 +1054,7 @@ void main() {
     tester,
   ) async {
     final server = AuthServer()
+      ..handoffEnabled = true
       ..providers = {
         'personalMode': false,
         'patEnabled': false,

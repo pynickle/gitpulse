@@ -85,6 +85,11 @@ class BackendService {
         !providers.oauthEnabled) {
       throw const ConnectionException(ConnectionProblem.noProviders);
     }
+    if (!providers.personalMode &&
+        !providers.patEnabled &&
+        !capabilities.supportsNativeLogin) {
+      throw const ConnectionException(ConnectionProblem.serverUpgrade);
+    }
     return ConnectedBackend(base, capabilities);
   }
 

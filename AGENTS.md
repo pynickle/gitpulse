@@ -38,6 +38,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Single global auth gate: `app/middleware/auth.global.ts`. Do not scatter checks.
 - Browser launch links use `/open?url=<GitHub URL>`. `resolveGitPulseLaunchRoute` owns GitHub URL parsing and resolves supported targets through `resolveNavigationEntryRoute`; `/dashboard?url=` is not a supported entry shape. Cover new mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
 - OAuth/PAT/unlock/logout live under `/auth/**` (`server/routes/auth/`), not `/api/auth/*`.
+- Native Login Handoff changes must preserve verifier/origin binding and atomic consumption in `server/utils/native-login-handoff.ts`. Read `docs/native-login-handoff.md` before changing its browser approval, storage, or Flutter lifecycle; `/native-login` is a server-rendered OAuth return target, and only mutating redemption establishes the app session.
 - The browser extension is navigation-only. It opens the configured GitPulse base URL and does not call Web App API endpoints; keep its independently released WXT package decoupled from app APIs.
 - Session shape is declared in `shared/types/auth.d.ts`.
 
@@ -48,6 +49,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Add a mutating `/api` exemption only via `CSRF_EXEMPT_PATHS` in that middleware, plus a security review.
 - Client: `useGitPulseApiFetch()` for all mutating same-origin `/api/**` and `/auth/**` calls. Nuxt 4.5+ auto-imports `$fetch` as a module binding; that module binding is the `$fetch` to patch.
 - Constant-time check + optional Origin/Referer host validation lives in `server/utils/csrf-utils.ts`.
+- The server-rendered native approval form supplies its double-submit token through `assertCsrfToken`'s form-token argument. Other programmatic mutations keep the header contract; first-response form tokens come from the CSRF plugin's event context.
 
 ## Server API & Data
 

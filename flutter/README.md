@@ -5,9 +5,9 @@ Application identity: **GitPulse**, `ink.euphony.gitpulse`. Client releases use
 `flutter-vX.Y.Z` tags, independently of the main app and browser extension.
 
 This client connects to a GitPulse backend, discovers its sign-in methods, and
-signs in with the server's personal password or PAT. Timeline, Follows, and
-Settings establish the navigation shell. Release data and the browser OAuth
-handoff are implemented in later slices.
+signs in with the server's personal password, PAT, or GitHub through the system
+browser. Timeline, Follows, and Settings establish the navigation shell. Release
+data is implemented in later slices.
 
 ## Development
 
@@ -20,7 +20,7 @@ flutter pub get
 dart run build_runner build
 flutter gen-l10n
 flutter analyze
-flutter test
+flutter test # Also needs Bun for the local Nitro handoff contract test.
 dart format --output=none --set-exit-if-changed lib test
 flutter run -d windows
 # Or choose an attached Android device from flutter devices.
@@ -51,8 +51,7 @@ owns routing; SDK ARB localization supports English and Simplified Chinese with
 the system locale. The Material 3 shell follows the system theme and switches
 between a navigation rail and bottom navigation with available width.
 Drift/SQLite, document rendering, and the default pure-Dart Shiki engine are
-resolved for later slices. No release cache, Markdown renderer, or OAuth handoff
-is claimed by this shell.
+resolved for later slices. Release caching and Markdown rendering remain later work.
 
 ## Backend connection contract
 
@@ -89,12 +88,33 @@ claiming persistence.
 
 `resolveAuthProviderState()` remains the only server provider authority. Personal
 mode takes precedence over PAT and OAuth. The existing web provider endpoint keeps
-its response shape and reflects the same precedence. Later slices must add
-capabilities only with working implementations and contract tests; native login
-handoff and account-synchronized retention are deliberately absent today. A
-future client that requires those features must require their capabilities.
+its response shape and reflects the same precedence. OAuth sign-in also requires
+`native-login-handoff`. The app hides OAuth when that capability is absent;
+an OAuth-only server without it requests a server update. Personal password and
+PAT remain usable independently. Account-synchronized retention is a later slice.
 
 ## Sign-in and session
+
+On an OAuth-enabled server with `native-login-handoff`, choose **Continue with
+GitHub**. Check that the code in the system browser matches the app, sign in with
+GitHub, explicitly approve the app, and switch back to GitPulse. The app resumes
+polling and exchanges the single-use approval for its own server Cookie session.
+The browser's Cookie jar is never copied. All five platforms use the same
+external-browser flow without registering callback links or a background service.
+
+Pending attempts stop polling while the app is inactive/hidden and resume on
+foreground return. They expire after ten minutes and can be cancelled; starting
+another attempt or clearing the identity invalidates old responses. Temporary
+network failures leave the previous account and cached data alone. Pending proof
+is held only in memory: if the app process exits, start sign-in again; a completed
+session persists securely as described below. Browser launch, cancellation, and
+expiry messages support English and Simplified Chinese.
+
+See [the server handoff contract](../docs/native-login-handoff.md) for deployment
+and protocol details. The automated suite uses actual local HTTP handlers with
+isolated storage and separate browser/app jars; only external GitHub success is
+simulated. No production browser automation or native browser/plugin runtime
+verification is claimed.
 
 Password and PAT forms are shown only for providers the connected server enables.
 Personal mode shows the password form and not a PAT form. A rejected password or

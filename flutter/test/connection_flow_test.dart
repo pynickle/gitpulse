@@ -167,6 +167,20 @@ void main() {
     ('non-GitPulse response', '<html>Another application</html>', 200),
     ('missing capability endpoint', {}, 404),
     (
+      'OAuth-only server without app handoff',
+      {
+        'protocolVersion': 1,
+        'capabilities': ['provider-discovery'],
+        'providers': {
+          'personalMode': false,
+          'patEnabled': false,
+          'oauthEnabled': true,
+          'mode': 'oauth-only',
+        },
+      },
+      200,
+    ),
+    (
       'conflicting personal providers',
       {
         'protocolVersion': 1,
@@ -217,7 +231,11 @@ void main() {
       final server = CapabilityServer()
         ..payload = {
           'protocolVersion': 1,
-          'capabilities': ['provider-discovery', 'future-additive-capability'],
+          'capabilities': [
+            'provider-discovery',
+            if (oauth) 'native-login-handoff',
+            'future-additive-capability',
+          ],
           'providers': {
             'personalMode': false,
             'patEnabled': pat,

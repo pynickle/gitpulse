@@ -25,9 +25,9 @@ function timingSafeStringEqual(left: string, right: string): boolean {
   return mismatch === 0;
 }
 
-export function assertCsrfToken(event: H3Event, pathname: string): void {
+export function assertCsrfToken(event: H3Event, pathname: string, formToken?: string): void {
   const method = (event.method ?? 'GET').toUpperCase();
-  const headerToken = getHeader(event, CSRF_HEADER_NAME) ?? '';
+  const headerToken = formToken ?? getHeader(event, CSRF_HEADER_NAME) ?? '';
   const cookieToken = getCookie(event, CSRF_COOKIE_NAME) ?? '';
 
   if (!headerToken || !cookieToken || !timingSafeStringEqual(headerToken, cookieToken)) {

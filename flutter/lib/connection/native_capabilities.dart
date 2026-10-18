@@ -16,6 +16,11 @@ class NativeCapabilities {
   final int protocolVersion;
   final List<String> capabilities;
   final SignInProviders providers;
+
+  bool get supportsNativeLogin =>
+      !providers.personalMode &&
+      providers.oauthEnabled &&
+      capabilities.contains('native-login-handoff');
 }
 
 @JsonSerializable(checked: true, createToJson: false)

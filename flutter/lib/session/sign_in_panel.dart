@@ -114,6 +114,29 @@ class _SignInPanelState extends ConsumerState<SignInPanel> {
               }
             },
           ),
+        if (showForm && backend!.capabilities.supportsNativeLogin) ...[
+          const SizedBox(height: 16),
+          if (session.browserSignInCode case final code?) ...[
+            Semantics(
+              liveRegion: true,
+              child: Text(l10n.browserSignInPending(code)),
+            ),
+            OutlinedButton(
+              onPressed: () => ref
+                  .read(sessionControllerProvider.notifier)
+                  .cancelBrowserSignIn(),
+              child: Text(l10n.cancelBrowserSignIn),
+            ),
+          ] else
+            FilledButton(
+              onPressed: session.busy
+                  ? null
+                  : () => ref
+                        .read(sessionControllerProvider.notifier)
+                        .startBrowserSignIn(),
+              child: Text(l10n.continueWithGitHub),
+            ),
+        ],
         if (showForm &&
             !providers.personalMode &&
             !providers.patEnabled &&
@@ -197,4 +220,7 @@ String _failureLabel(
   SignInFailure.providerUnavailable => l10n.signInUnavailable,
   SignInFailure.storage => l10n.credentialStorage,
   SignInFailure.unavailable => l10n.signInFailed,
+  SignInFailure.browserLaunch => l10n.browserLaunchFailed,
+  SignInFailure.expired => l10n.browserSignInExpired,
+  SignInFailure.cancelled => l10n.browserSignInCancelled,
 };

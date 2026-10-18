@@ -21,7 +21,11 @@ export default defineNitroPlugin((nitroApp) => {
       return;
     }
 
-    setCookie(event, CSRF_COOKIE_NAME, generateCsrfToken(), {
+    const token = generateCsrfToken();
+    // Server-rendered auth forms need the token on the first response, before
+    // the browser sends the new cookie back on its next request.
+    event.context.gitpulseCsrfToken = token;
+    setCookie(event, CSRF_COOKIE_NAME, token, {
       httpOnly: false,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
