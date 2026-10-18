@@ -31,7 +31,7 @@ class BackendService {
   final Dio _dio;
 
   Future<ConnectedBackend> connect(String address) async {
-    final base = _parseAddress(address);
+    final base = parseBackendAddress(address);
     final NativeCapabilities capabilities;
     try {
       final response = await _dio.get<Object?>(
@@ -93,22 +93,22 @@ class BackendService {
     }
     return ConnectedBackend(base, capabilities);
   }
+}
 
-  Uri _parseAddress(String address) {
-    final value = address.trim();
-    final uri = Uri.tryParse(value);
-    if (uri == null ||
-        !['https', 'http'].contains(uri.scheme) ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty ||
-        uri.hasQuery ||
-        uri.hasFragment ||
-        value.contains(RegExp(r'[\s\\]'))) {
-      throw const ConnectionException(ConnectionProblem.invalidAddress);
-    }
-    final normalized = uri.normalizePath();
-    return normalized.replace(
-      path: '${normalized.path.replaceFirst(RegExp(r'/+$'), '')}/',
-    );
+Uri parseBackendAddress(String address) {
+  final value = address.trim();
+  final uri = Uri.tryParse(value);
+  if (uri == null ||
+      !['https', 'http'].contains(uri.scheme) ||
+      uri.host.isEmpty ||
+      uri.userInfo.isNotEmpty ||
+      uri.hasQuery ||
+      uri.hasFragment ||
+      value.contains(RegExp(r'[\s\\]'))) {
+    throw const ConnectionException(ConnectionProblem.invalidAddress);
   }
+  final normalized = uri.normalizePath();
+  return normalized.replace(
+    path: '${normalized.path.replaceFirst(RegExp(r'/+$'), '')}/',
+  );
 }

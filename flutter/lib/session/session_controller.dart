@@ -327,8 +327,13 @@ class SessionController extends Notifier<SessionState> {
 
   /// Backend changes drop the previous identity before the connection screen
   /// returns, including when the server cannot be reached.
-  Future<void> leaveBackend() async {
+  Future<void> leaveBackend({String? address}) async {
     await _clearIdentity(IdentityClearReason.backendChange);
+    if (address != null &&
+        ref.mounted &&
+        ref.read(connectionControllerProvider).value?.backend == null) {
+      await ref.read(connectionControllerProvider.notifier).connect(address);
+    }
   }
 
   Future<void> _clearIdentity(IdentityClearReason reason) async {

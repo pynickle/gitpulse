@@ -21,6 +21,10 @@ void main() {
     HttpOverrides.global = null;
     addTearDown(() => HttpOverrides.global = overrides);
     final server = await TimelineHttpServer.start();
+    await const FlutterSecureStorage().write(
+      key: 'last_successful_backend',
+      value: server.address.toString(),
+    );
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});

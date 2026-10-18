@@ -12,6 +12,41 @@ class SignInPanel extends ConsumerStatefulWidget {
   ConsumerState<SignInPanel> createState() => _SignInPanelState();
 }
 
+class SessionNotice extends ConsumerWidget {
+  const SessionNotice({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(sessionControllerProvider);
+    final l10n = AppLocalizations.of(context);
+    final providers = ref
+        .watch(connectionControllerProvider)
+        .value
+        ?.backend
+        ?.capabilities
+        .providers;
+    if (!session.offline && session.failure == null) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Semantics(
+        liveRegion: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (session.offline) Text(l10n.offlineSession),
+            if (session.failure case final failure?)
+              Text(
+                _failureLabel(l10n, failure, providers?.personalMode ?? false),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SignInPanelState extends ConsumerState<SignInPanel> {
   final _password = TextEditingController();
   final _token = TextEditingController();

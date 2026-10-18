@@ -119,6 +119,10 @@ void main() {
     addTearDown(() => HttpOverrides.global = overrides);
     final server = await TimelineHttpServer.start();
     final backend = server.address;
+    await const FlutterSecureStorage().write(
+      key: 'last_successful_backend',
+      value: backend.toString(),
+    );
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});
@@ -301,6 +305,10 @@ void main() {
     addTearDown(() => HttpOverrides.global = overrides);
     final server = await TimelineHttpServer.start();
     final backend = server.address;
+    await const FlutterSecureStorage().write(
+      key: 'last_successful_backend',
+      value: backend.toString(),
+    );
     final container = ProviderContainer();
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});

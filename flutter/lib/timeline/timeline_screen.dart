@@ -8,12 +8,15 @@ import 'timeline_layout.dart';
 import 'timeline_models.dart';
 import 'timeline_session.dart';
 import 'timeline_state.dart';
+import 'timeline_toolbar.dart';
 
 /// The Release Timeline: published releases of the account's Followed
 /// Repositories, grouped by display date, with the shared Timeline Refresh
 /// Baseline and its loaded-new count.
 class TimelineScreen extends ConsumerWidget {
-  const TimelineScreen({super.key});
+  const TimelineScreen({super.key, this.showTitle = true});
+
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,7 +32,11 @@ class TimelineScreen extends ConsumerWidget {
       builder: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Header(state: state, onRefresh: refresh),
+          TimelineToolbar(
+            state: state,
+            onRefresh: refresh,
+            showTitle: showTitle,
+          ),
           if (state.hasLookupFailures)
             ConstrainedBox(
               constraints: BoxConstraints(
@@ -49,92 +56,6 @@ class TimelineScreen extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({required this.state, required this.onRefresh});
-
-  final TimelineViewState state;
-  final Future<void> Function() onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final baseline = state.previousBaseline;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 12,
-        runSpacing: 8,
-        children: [
-          Text(l10n.timelineTitle, style: theme.textTheme.titleLarge),
-          if (baseline != null) _BaselineChip(baseline: baseline),
-          if (state.loadedNewCount > 0)
-            Semantics(
-              liveRegion: true,
-              child: Chip(
-                label: Text(l10n.timelineLoadedNew(state.loadedNewCount)),
-              ),
-            ),
-          IconButton(
-            tooltip: l10n.timelineReload,
-            onPressed: state.loading ? null : () => onRefresh(),
-            icon: state.loading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BaselineChip extends StatelessWidget {
-  const _BaselineChip({required this.baseline});
-
-  final String baseline;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final parsed = DateTime.tryParse(baseline);
-    final label = parsed == null
-        ? ''
-        : timelineTimeLabel(context, parsed.toLocal());
-
-    return Tooltip(
-      message: l10n.timelinePreviousRefresh(
-        parsed == null ? baseline : parsed.toLocal().toString(),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.history,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Text(label, style: theme.textTheme.labelSmall),
-          ],
-        ),
       ),
     );
   }

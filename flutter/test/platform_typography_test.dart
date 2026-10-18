@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:dio/dio.dart';
+import 'package:gitpulse/connection/connection_controller.dart';
+
+import 'connection_flow_test.dart' show CapabilityServer;
 
 void main() {
   setUp(() {
@@ -17,7 +21,16 @@ void main() {
     tester.binding.platformDispatcher.localesTestValue = [
       const Locale('zh', 'CN'),
     ];
-    await tester.pumpWidget(const ProviderScope(child: GitPulseApp()));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          connectionDioProvider.overrideWithValue(
+            Dio()..httpClientAdapter = CapabilityServer(),
+          ),
+        ],
+        child: const GitPulseApp(),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 

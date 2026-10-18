@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/lifetime_cookie_jar.dart';
@@ -368,8 +369,13 @@ Future<ProviderContainer> mountApp(
 }
 
 Future<void> connectTo(WidgetTester tester, String address) async {
-  await tester.enterText(find.byType(TextField), address);
-  await tester.tap(find.text('Connect'));
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(GitPulseApp)),
+  );
+  await pumped(
+    tester,
+    container.read(connectionControllerProvider.notifier).connect(address),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -400,7 +406,94 @@ Future<void> submitField(
   await tester.pumpAndSettle();
 }
 
+void expectIdentity(WidgetTester tester, String login) {
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(GitPulseApp)),
+  );
+  expect(container.read(sessionControllerProvider).identity?.login, login);
+}
+
 void main() {
+  testWidgets(
+    'opening, cancelling, or submitting an invalid backend keeps the session',
+    (tester) async {
+      final server = AuthServer();
+      final container = await mountApp(tester, server);
+      await submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      await tester.tap(find.text('Settings').last);
+      await tester.pumpAndSettle();
+      final storage = await const FlutterSecureStorage().readAll();
+      final before = server.requests.length;
+      await tester.tap(find.text('Change backend'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        fieldLabeled('Backend address'),
+        'invalid.example',
+      );
+      await tester.tap(find.text('Connect'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Enter an HTTP or HTTPS'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expectIdentity(tester, 'octocat');
+      expect(server.requests, hasLength(before));
+      expect(
+        container
+            .read(sessionControllerProvider.notifier)
+            .transitionLog
+            .whereType<IdentityCleared>(),
+        isEmpty,
+      );
+      expect(await const FlutterSecureStorage().readAll(), storage);
+      expect(find.text('Signed in as octocat'), findsOneWidget);
+    },
+  );
+
+  for (final width in [390.0, 1280.0]) {
+    testWidgets('account actions stay in Settings at width $width', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.padding = const FakeViewPadding(top: 24);
+      addTearDown(tester.view.resetPadding);
+      await mountApp(tester, AuthServer());
+      await submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      expect(find.text('Signed in as octocat'), findsNothing);
+      expect(find.text('Sign out'), findsNothing);
+      expect(find.text('Release Timeline'), findsNothing);
+      expect(find.textContaining('GitPulse ·'), findsNothing);
+      final refresh = find.byTooltip('Reload');
+      expect(refresh, findsOneWidget);
+      expect(tester.getTopLeft(refresh).dy, greaterThanOrEqualTo(24));
+      expect(tester.getCenter(refresh).dy, lessThan(90));
+      expect(tester.getCenter(refresh).dx, greaterThan(width - 80));
+      await tester.tap(find.text('Follows').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Signed in as octocat'), findsNothing);
+      expect(find.text('Sign out'), findsNothing);
+      await tester.tap(find.text('Settings').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expect(find.text('Sign out'), findsOneWidget);
+      expect(find.text('Change backend'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets(
     'a cancelled attempt ignores a held poll and can be superseded by a fresh login',
     (tester) async {
@@ -545,7 +638,7 @@ void main() {
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pumpAndSettle();
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       final redeem = server.requests.singleWhere(
         (request) => request.uri.path.endsWith('/auth/native/redeem'),
       );
@@ -630,7 +723,7 @@ void main() {
         value: 'correct-horse',
         action: 'Unlock',
       );
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       expect(tester.takeException(), isNull);
     },
   );
@@ -695,9 +788,8 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
     await mountApp(tester, server, resetStorage: false);
-    await tester.tap(find.text('Connect'));
-    await tester.pumpAndSettle();
-    expect(find.text('Signed in as octocat'), findsOneWidget);
+
+    expectIdentity(tester, 'octocat');
     expect(fieldLabeled('Password'), findsNothing);
   });
 
@@ -719,7 +811,7 @@ void main() {
         find.text('Could not access the secure credential store.'),
         findsOneWidget,
       );
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       expect(tester.takeException(), isNull);
     },
   );
@@ -798,7 +890,7 @@ void main() {
       value: 'correct-horse',
       action: 'Unlock',
     );
-    expect(find.text('Signed in as octocat'), findsOneWidget);
+    expectIdentity(tester, 'octocat');
     final cookies = await container
         .read(cookieJarProvider)
         .loadForRequest(
@@ -871,8 +963,7 @@ void main() {
       await tester.pumpAndSettle();
       server.sessionStatus = status;
       final container = await mountApp(tester, server, resetStorage: false);
-      await tester.tap(find.text('Connect'));
-      await tester.pumpAndSettle();
+
       expect(
         container.read(sessionControllerProvider).phase,
         SessionPhase.signedIn,
@@ -919,6 +1010,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 10));
       }
       expect(server.holding, isTrue);
+      await tester.tap(find.text('Settings').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Use a different account'));
       expect(container.read(sessionControllerProvider).identity, isNull);
       expect(
@@ -954,10 +1047,10 @@ void main() {
         action: 'Unlock',
       );
 
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       // The Timeline destination shows the Release Timeline itself now that the
       // placeholder of the connection shell has been replaced.
-      expect(find.text('Release Timeline'), findsOneWidget);
+      expect(find.byType(TimelineScreen), findsOneWidget);
       final unlock = server.requests
           .where((request) => request.uri.path.endsWith('/auth/unlock'))
           .single;
@@ -1038,7 +1131,7 @@ void main() {
         value: 'ghp_octocat',
         action: 'Continue',
       );
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       final pat = server.requests
           .where(
             (request) =>
@@ -1109,7 +1202,7 @@ void main() {
         value: 'correct-horse',
         action: 'Unlock',
       );
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -1117,10 +1210,8 @@ void main() {
           .where((request) => request.uri.path.endsWith('/auth/unlock'))
           .length;
       await mountApp(tester, server, resetStorage: false);
-      await tester.tap(find.text('Connect'));
-      await tester.pumpAndSettle();
 
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       expect(fieldLabeled('Password'), findsNothing);
       expect(
         server.requests
@@ -1164,7 +1255,7 @@ void main() {
         .single;
     expect(timeline.headers['cookie'] ?? '', isNot(contains('nuxt-session=')));
     expect(find.textContaining('Your session ended'), findsOneWidget);
-    expect(find.text('Release Timeline'), findsNothing);
+    expect(find.byType(TimelineScreen), findsNothing);
   });
 
   testWidgets(
@@ -1181,17 +1272,16 @@ void main() {
         value: 'correct-horse',
         action: 'Unlock',
       );
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(seconds: 2)),
       );
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       final container = await mountApp(tester, server, resetStorage: false);
-      await tester.tap(find.text('Connect'));
-      await tester.pumpAndSettle();
+
       expect(find.textContaining('Your session ended'), findsOneWidget);
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
       expect(
         container
             .read(sessionControllerProvider.notifier)
@@ -1302,6 +1392,14 @@ void main() {
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Change backend'));
+      await tester.pumpAndSettle();
+      expectIdentity(tester, 'octocat');
+      expect(notifier.transitionLog.whereType<IdentityCleared>(), isEmpty);
+      await tester.enterText(
+        fieldLabeled('Backend address'),
+        'https://other.example',
+      );
+      await tester.tap(find.text('Connect'));
       hold.complete();
       final result = await pumped(tester, pending);
       await tester.pumpAndSettle();
@@ -1316,14 +1414,13 @@ void main() {
       expect(stored.values.join('\n').contains(server.sessionValue), isFalse);
 
       server.hold = null;
-      await connectTo(tester, 'https://other.example');
       await submitField(
         tester,
         label: 'Password',
         value: 'correct-horse',
         action: 'Unlock',
       );
-      expect(find.text('Signed in as hubot'), findsOneWidget);
+      expectIdentity(tester, 'hubot');
       expect(notifier.transitionLog.whereType<IdentityRestored>(), isEmpty);
     },
   );
@@ -1356,7 +1453,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(rejected.problem, BackendProblem.authenticationRejected);
       expect(find.textContaining('Your session ended'), findsOneWidget);
-      expect(find.text('Release Timeline'), findsNothing);
+      expect(find.byType(TimelineScreen), findsNothing);
 
       // Signing in again ends the rejection: the fixture stops rejecting every
       // call, so the Timeline destination loads against a working session.
@@ -1371,7 +1468,7 @@ void main() {
       );
       expect(notifier.transitionLog.whereType<IdentityCleared>(), isEmpty);
       expect(notifier.transitionLog.whereType<IdentityRestored>(), isNotEmpty);
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
 
       String? loginAtSwitch;
       final subscription = notifier.transitions.listen((event) {
@@ -1382,6 +1479,8 @@ void main() {
               ?.login;
         }
       });
+      await tester.tap(find.text('Settings').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Use a different account'));
       await tester.pumpAndSettle();
       await submitField(
@@ -1393,7 +1492,7 @@ void main() {
       // Let the test binding coordinate the root-zone cancellation future.
       await tester.runAsync(subscription.cancel);
       expect(loginAtSwitch, 'octocat');
-      expect(find.text('Signed in as hubot'), findsOneWidget);
+      expectIdentity(tester, 'hubot');
       expect(
         notifier.transitionLog.whereType<IdentityCleared>().single.reason,
         IdentityClearReason.accountSwitch,
@@ -1423,8 +1522,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(offline.problem, BackendProblem.network);
       expect(find.textContaining('You are offline'), findsOneWidget);
-      expect(find.text('Signed in as octocat'), findsOneWidget);
-      expect(find.text('Release Timeline'), findsOneWidget);
+      expectIdentity(tester, 'octocat');
+      expect(find.byType(TimelineScreen), findsOneWidget);
 
       server.offline = false;
       server.featureStatus = 429;
@@ -1512,12 +1611,7 @@ void main() {
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
       final server = AuthServer();
       await mountApp(tester, server);
-      await tester.enterText(
-        find.byType(TextField),
-        'https://gitpulse.example',
-      );
-      await tester.tap(find.text('连接'));
-      await tester.pumpAndSettle();
+      await connectTo(tester, 'https://gitpulse.example');
       await tester.enterText(fieldLabeled('密码'), 'nope');
       await tester.tap(find.text('解锁'));
       await tester.pumpAndSettle();

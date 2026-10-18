@@ -24,7 +24,7 @@ The user answered `B, B, A, A, A` to Q1–Q5.
 
 ## Accepted decisions — round 2
 
-- Q6 A: Users can configure a compatible GitPulse backend address. The application is not restricted to `gitpulse.euphony.ink`; Q38 later selected an initially empty backend field.
+- Q6 A: Users can configure a compatible GitPulse backend address. The application is not restricted to `gitpulse.euphony.ink`; the 2026-10-18 clarification below supersedes Q38's initially empty backend field.
 - Q7 A, confirmed after clarification: Determine connection separately for each repository by reading successive API pages back into cached release records. The worked example was cached `8,7,6`, a fresh page `12,11,10`, and a later page `9,8,7`: only after the later page reconnects can the cached tail be reused and duplicate records removed. This does not promise complete publication-time coverage. Q13 later selected a shared cache-display gate and Q14 selected manual bridging.
 - Q8 A: Allow offline reading of the last successfully saved visible timeline, with offline/update-time indication. A successful online refresh returning disconnected data must still obey the rule against mixing in disconnected cached history.
 - Q9 A: Include timeline refresh, pagination, failure retry, text/body search, repository/date/prerelease filters; repository discovery and Release Follow management; repository overview, primary metrics, README, and releases entry; release body, repository release list, asset information, and external download links; login, backend, theme, retention, and cache-clearing settings. Reactions, GitHub Star/Watch mutations, file browsing, commit history, and an in-app download manager are outside this first-version scope.
@@ -76,13 +76,30 @@ The user accepted recommendations for Q34–Q40 and Q42. Q41 was reopened for fu
 - Q35 A: A server-rejected/expired session pauses authenticated requests and hides cached data without immediately deleting it. Reauthenticate the same identity to restore access, subject to retention pruning. Explicit logout or identity/backend switching still clears the old identity's cache. Network failures are distinct from rejected authentication.
 - Q36 A: Desktop uses a narrow Timeline/Follows/Settings navigation and one to three date-grouped timeline columns; mobile uses three bottom-navigation destinations and one column. Releases use a desktop drawer/mobile bottom sheet with the same-repository release list and Entry Release return. Repository details are separate pages. Follow management supports repository search, pasted GitHub repository URLs, and current follows. Android Back/Escape close overlays before page navigation, preserving timeline scroll position.
 - Q37 A: Ship Simplified Chinese and English, following the system by default with manual selection. Offer light/dark/system themes using GitPulse colors, SDK localization, and intl.
-- Q38 A: App name GitPulse; directory flutter/; application identifier ink.euphony.gitpulse; independent release tags flutter-vX.Y.Z. Initial backend address is empty; remember the last successfully connected address.
+- Q38 A: App name GitPulse; directory flutter/; application identifier ink.euphony.gitpulse; independent release tags flutter-vX.Y.Z. The original empty initial backend address is superseded by the 2026-10-18 clarification below.
 - Q39 A: First distribution targets are a complete Windows release-directory ZIP and a signed Android APK. Linux/macOS/iOS retain platform code/configuration and documented prerequisites without claiming runtime verification. No installer/store integration is selected for version one.
 - Q40 A: Check required backend capabilities on connection and require an updated compatible server rather than silently degrading native authentication or account-synchronized retention behavior.
 - Q41 A, after follow-up research: Select shiki_flutter 1.1.0 with its default pure-Dart engine, plus the independently proposed fwfh_svg support. Use native selectable/copyable/scrollable code blocks with plain-text fallback on unknown languages or highlighting failures. Do not use flutter_highlight Git source overrides or the native Shiki engine. This replaces the earlier re_highlight recommendation.
 - Q42 A: Use json_serializable/json_annotation for DTO mapping; keep state classes and Riverpod declarations handwritten. Do not add Freezed or riverpod_generator. Drift generation remains selected.
 
 ## Published handoff
+
+### Owner clarification — 2026-10-18
+
+Issue #95 now requires automatic first-launch connection to
+`https://gitpulse.euphony.ink` and automatic reconnection to the last saved
+successful backend on later launches, including normal secure-session restoration.
+Users can change servers in Settings and before sign-in. Connection errors retain
+the saved address and identity data and offer retry/editing. Opening or cancelling
+the server editor does not clear the session; confirming a backend change retains
+the existing identity/cache-clearing boundary.
+
+Account management belongs in Settings rather than Timeline or Follows. A narrow
+Timeline has a single title and a fixed trailing refresh action, with compact
+secondary status. Wide layouts use the navigation rail for destination identity
+and the operating-system window title for GitPulse branding, with no repeated
+application or timeline headings. Refresh stays at the trailing edge of the
+status toolbar. Release cards and date grouping retain their existing design.
 
 The user invoked to-spec instead of another interview/confirmation round. [Issue #95](https://github.com/pynickle/gitpulse/issues/95) now captures the accepted product/library choices, 80 user stories, the proposed highest-level testing seam, and clearly identified recommended engineering defaults. No additional interview or application implementation was performed as part of publishing the issue.
 

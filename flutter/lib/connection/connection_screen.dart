@@ -34,14 +34,85 @@ class ConnectionScreen extends ConsumerWidget {
             child: Text(AppLocalizations.of(context).connect),
           ),
         ),
-        data: (state) => _ConnectionForm(state: state),
+        data: (state) => _ConnectionForm(
+          key: ValueKey(state.attemptedAddress ?? state.rememberedAddress),
+          state: state,
+        ),
       ),
     );
   }
 }
 
+Future<String?> showBackendAddressEditor(
+  BuildContext context,
+  String address,
+) => showDialog<String>(
+  context: context,
+  builder: (_) => _BackendAddressEditor(address: address),
+);
+
+class _BackendAddressEditor extends StatefulWidget {
+  const _BackendAddressEditor({required this.address});
+
+  final String address;
+
+  @override
+  State<_BackendAddressEditor> createState() => _BackendAddressEditorState();
+}
+
+class _BackendAddressEditorState extends State<_BackendAddressEditor> {
+  late final _address = TextEditingController(text: widget.address);
+  bool _invalid = false;
+
+  void _submit() {
+    try {
+      final address = parseBackendAddress(_address.text);
+      Navigator.of(context).pop(address.toString());
+    } on ConnectionException {
+      setState(() => _invalid = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _address.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.changeBackend),
+      content: SizedBox(
+        width: 400,
+        child: TextField(
+          controller: _address,
+          autofocus: true,
+          keyboardType: TextInputType.url,
+          autocorrect: false,
+          textInputAction: TextInputAction.go,
+          decoration: InputDecoration(
+            labelText: l10n.backendAddress,
+            errorText: _invalid ? l10n.invalidAddress : null,
+            errorMaxLines: 3,
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.connect)),
+      ],
+    );
+  }
+}
+
 class _ConnectionForm extends ConsumerStatefulWidget {
-  const _ConnectionForm({required this.state});
+  const _ConnectionForm({super.key, required this.state});
 
   final BackendConnectionState state;
 
@@ -51,7 +122,7 @@ class _ConnectionForm extends ConsumerStatefulWidget {
 
 class _ConnectionFormState extends ConsumerState<_ConnectionForm> {
   late final _address = TextEditingController(
-    text: widget.state.rememberedAddress,
+    text: widget.state.attemptedAddress ?? widget.state.rememberedAddress,
   );
 
   @override

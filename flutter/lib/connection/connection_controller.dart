@@ -25,15 +25,19 @@ final connectionControllerProvider =
       ConnectionController.new,
     );
 
+const defaultBackendAddress = 'https://gitpulse.euphony.ink/';
+
 class BackendConnectionState {
   const BackendConnectionState({
     this.rememberedAddress = '',
+    this.attemptedAddress,
     this.connecting = false,
     this.backend,
     this.problem,
   });
 
   final String rememberedAddress;
+  final String? attemptedAddress;
   final bool connecting;
   final ConnectedBackend? backend;
   final ConnectionProblem? problem;
@@ -42,52 +46,64 @@ class BackendConnectionState {
 class ConnectionController extends AsyncNotifier<BackendConnectionState> {
   @override
   Future<BackendConnectionState> build() async {
+    final store = ref.watch(backendAddressStoreProvider);
+    String? address;
     try {
-      final address = await ref.watch(backendAddressStoreProvider).read();
-      return BackendConnectionState(rememberedAddress: address ?? '');
+      address = await store.read();
     } catch (_) {
       return const BackendConnectionState(
+        rememberedAddress: defaultBackendAddress,
         problem: ConnectionProblem.storageRead,
       );
     }
+    if (!ref.mounted) return const BackendConnectionState();
+    return _connect(address ?? defaultBackendAddress);
   }
 
   Future<void> connect(String address) async {
     final previous = state.value;
     if (previous == null || previous.connecting) return;
-    final service = ref.read(backendServiceProvider);
-    final store = ref.read(backendAddressStoreProvider);
     state = AsyncData(
       BackendConnectionState(
         rememberedAddress: previous.rememberedAddress,
+        attemptedAddress: address,
         connecting: true,
       ),
     );
+    final result = await _connect(
+      address,
+      rememberedAddress: previous.rememberedAddress,
+    );
+    if (ref.mounted) state = AsyncData(result);
+  }
+
+  Future<BackendConnectionState> _connect(
+    String address, {
+    String? rememberedAddress,
+  }) async {
+    final service = ref.read(backendServiceProvider);
+    final store = ref.read(backendAddressStoreProvider);
     try {
       final backend = await service.connect(address);
+      if (!ref.mounted) return const BackendConnectionState();
       ConnectionProblem? storageProblem;
       try {
         await store.remember(backend.address);
       } catch (_) {
         storageProblem = ConnectionProblem.storageWrite;
       }
-      if (!ref.mounted) return;
-      state = AsyncData(
-        BackendConnectionState(
-          rememberedAddress: storageProblem == null
-              ? backend.address.toString()
-              : previous.rememberedAddress,
-          backend: backend,
-          problem: storageProblem,
-        ),
+      return BackendConnectionState(
+        rememberedAddress: storageProblem == null
+            ? backend.address.toString()
+            : rememberedAddress ?? address,
+        backend: backend,
+        problem: storageProblem,
       );
     } on ConnectionException catch (error) {
-      if (!ref.mounted) return;
-      state = AsyncData(
-        BackendConnectionState(
-          rememberedAddress: previous.rememberedAddress,
-          problem: error.problem,
-        ),
+      return BackendConnectionState(
+        rememberedAddress: rememberedAddress ?? address,
+        attemptedAddress: address,
+        problem: error.problem,
       );
     }
   }

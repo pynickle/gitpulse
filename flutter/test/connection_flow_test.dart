@@ -65,12 +65,36 @@ Future<void> mountApp(WidgetTester tester, CapabilityServer server) async {
 }
 
 Future<void> connectTo(WidgetTester tester, String address) async {
-  await tester.enterText(find.byType(TextField), address);
+  final field = find.byWidgetPredicate(
+    (widget) =>
+        widget is TextField &&
+        widget.decoration?.labelText == 'Backend address',
+  );
+  if (field.evaluate().isEmpty) {
+    await tester.tap(find.text('Change backend'));
+    await tester.pumpAndSettle();
+  }
+  await tester.enterText(field, address);
   await tester.tap(find.text('Connect'));
   await tester.pumpAndSettle();
 }
 
 void main() {
+  testWidgets(
+    'first launch connects to the hosted backend without confirmation',
+    (tester) async {
+      FlutterSecureStorage.setMockInitialValues({});
+      final server = CapabilityServer();
+      await mountApp(tester, server);
+      expect(server.requests.map((request) => request.toString()), [
+        'https://gitpulse.euphony.ink/api/native/capabilities',
+      ]);
+      expect(find.text('Password'), findsOneWidget);
+      expect(find.text('Connect to GitPulse'), findsNothing);
+      expect(find.text('Change backend'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'phone shell exposes Timeline, Follows and Settings without overflow',
     (tester) async {
@@ -138,6 +162,13 @@ void main() {
       server.offline = true;
       await connectTo(tester, 'https://failed.example');
       expect(find.textContaining('Could not reach'), findsOneWidget);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'https://failed.example/',
+      );
+      await tester.tap(find.text('Connect'));
+      await tester.pumpAndSettle();
+      expect(server.requests.last.host, 'failed.example');
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       await mountApp(tester, server);
@@ -227,7 +258,7 @@ void main() {
         await mountApp(tester, server);
         expect(
           tester.widget<TextField>(find.byType(TextField)).controller!.text,
-          isEmpty,
+          'https://gitpulse.euphony.ink/',
         );
       },
     );
@@ -261,7 +292,7 @@ void main() {
       await mountApp(tester, server);
       await connectTo(tester, 'http://127.0.0.1:3000/gitpulse');
       expect(
-        server.requests.single.toString(),
+        server.requests.last.toString(),
         'http://127.0.0.1:3000/gitpulse/api/native/capabilities',
       );
       expect(find.text('Personal password'), findsNothing);
@@ -281,7 +312,8 @@ void main() {
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
       final server = CapabilityServer();
       await mountApp(tester, server);
-      expect(find.text('连接 GitPulse'), findsOneWidget);
+      await tester.tap(find.text('更换后端'));
+      await tester.pumpAndSettle();
       for (final address in [
         '',
         'gitpulse.example',
@@ -289,12 +321,12 @@ void main() {
         'https://example.org?token=secret',
         'https://example.org/#fragment',
       ]) {
-        await tester.enterText(find.byType(TextField), address);
+        await tester.enterText(find.byType(TextField).last, address);
         await tester.tap(find.text('连接'));
         await tester.pumpAndSettle();
         expect(find.textContaining('请输入 HTTP 或 HTTPS'), findsOneWidget);
       }
-      expect(server.requests, isEmpty);
+      expect(server.requests, hasLength(1));
     },
   );
 
@@ -355,13 +387,13 @@ void main() {
       await mount();
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        isEmpty,
+        'https://gitpulse.euphony.ink/',
       );
     },
   );
 
   testWidgets(
-    'starts empty, discovers personal mode and remembers a successful backend',
+    'a saved custom backend reconnects automatically with its base path',
     (tester) async {
       FlutterSecureStorage.setMockInitialValues({});
       final server = CapabilityServer();
@@ -378,19 +410,10 @@ void main() {
       }
 
       await mount();
+      await connectTo(tester, ' https://self-hosted.example/gitpulse/ ');
       expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        isEmpty,
-      );
-      await tester.enterText(
-        find.byType(TextField),
-        ' https://gitpulse.euphony.ink/ ',
-      );
-      await tester.tap(find.text('Connect'));
-      await tester.pumpAndSettle();
-      expect(
-        server.requests.single.toString(),
-        'https://gitpulse.euphony.ink/api/native/capabilities',
+        server.requests.last.toString(),
+        'https://self-hosted.example/gitpulse/api/native/capabilities',
       );
       expect(find.text('Personal password'), findsOneWidget);
       expect(find.text('GitHub OAuth'), findsNothing);
@@ -401,12 +424,11 @@ void main() {
       await tester.pumpAndSettle();
       await mount();
       expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
-        'https://gitpulse.euphony.ink/',
+        server.requests.last.toString(),
+        'https://self-hosted.example/gitpulse/api/native/capabilities',
       );
-      // Remembering an address does not claim that a new connection succeeded.
-      expect(server.requests, hasLength(1));
-      expect(find.text('Personal password'), findsNothing);
+      expect(find.text('Connect to GitPulse'), findsNothing);
+      expect(find.text('Personal password'), findsOneWidget);
     },
   );
 }

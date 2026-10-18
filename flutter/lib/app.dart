@@ -102,7 +102,7 @@ class GitPulseApp extends ConsumerWidget {
   }
 }
 
-/// The signed-in destination with account status and session actions.
+/// Keeps transient session notices visible beside the signed-in destination.
 class _SignedInTab extends StatelessWidget {
   const _SignedInTab({required this.child});
 
@@ -113,10 +113,7 @@ class _SignedInTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: SignInPanel(),
-        ),
+        const SessionNotice(),
         Expanded(child: child),
       ],
     );
@@ -149,72 +146,94 @@ class _AppShell extends ConsumerWidget {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 720;
         return Scaffold(
-          appBar: AppBar(title: Text('GitPulse · ${labels[index]}')),
-          body: Row(
-            children: [
-              if (wide)
-                NavigationRail(
-                  selectedIndex: index,
-                  onDestinationSelected: navigate,
-                  labelType: NavigationRailLabelType.all,
-                  destinations: [
-                    for (var i = 0; i < labels.length; i++)
-                      NavigationRailDestination(
-                        icon: Icon(icons[i]),
-                        label: Text(labels[i]),
-                      ),
-                  ],
-                ),
-              Expanded(
-                child: index < 2 && session.phase == SessionPhase.signedIn
-                    ? _SignedInTab(
-                        child: index == 0
-                            ? const TimelineScreen()
-                            : const ReleaseFollowsScreen(),
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          Text(
-                            l10n.compatibleBackend,
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          SelectableText(backend.address.toString()),
-                          if (connection?.problem case final problem?)
-                            Text(connectionProblemLabel(l10n, problem)),
-                          const SizedBox(height: 24),
-                          Text(
-                            l10n.availableProviders,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            children: [
-                              if (providers.personalMode)
-                                Chip(label: Text(l10n.personalPassword)),
-                              if (providers.patEnabled)
-                                Chip(label: Text(l10n.personalAccessToken)),
-                              if (backend.capabilities.supportsNativeLogin)
-                                Chip(label: Text(l10n.githubOAuth)),
-                            ],
-                          ),
-                          const SignInPanel(),
-                          const SizedBox(height: 24),
-                          if (index == 2)
+          appBar: wide || (index == 0 && session.phase == SessionPhase.signedIn)
+              ? null
+              : AppBar(title: Text(labels[index])),
+          body: SafeArea(
+            bottom: false,
+            child: Row(
+              children: [
+                if (wide)
+                  NavigationRail(
+                    selectedIndex: index,
+                    onDestinationSelected: navigate,
+                    labelType: NavigationRailLabelType.all,
+                    destinations: [
+                      for (var i = 0; i < labels.length; i++)
+                        NavigationRailDestination(
+                          icon: Icon(icons[i]),
+                          label: Text(labels[i]),
+                        ),
+                    ],
+                  ),
+                Expanded(
+                  child: index < 2 && session.phase == SessionPhase.signedIn
+                      ? _SignedInTab(
+                          child: index == 0
+                              ? TimelineScreen(showTitle: !wide)
+                              : const ReleaseFollowsScreen(),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.all(24),
+                          children: [
+                            Text(
+                              l10n.compatibleBackend,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            SelectableText(backend.address.toString()),
+                            if (connection?.problem case final problem?)
+                              Text(connectionProblemLabel(l10n, problem)),
+                            const SizedBox(height: 24),
+                            Text(
+                              l10n.availableProviders,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                if (providers.personalMode)
+                                  Chip(label: Text(l10n.personalPassword)),
+                                if (providers.patEnabled)
+                                  Chip(label: Text(l10n.personalAccessToken)),
+                                if (backend.capabilities.supportsNativeLogin)
+                                  Chip(label: Text(l10n.githubOAuth)),
+                              ],
+                            ),
+                            const SignInPanel(),
+                            const SizedBox(height: 24),
                             Align(
                               alignment: Alignment.centerLeft,
                               child: OutlinedButton(
-                                onPressed: () => ref
-                                    .read(sessionControllerProvider.notifier)
-                                    .leaveBackend(),
+                                onPressed: session.busy
+                                    ? null
+                                    : () async {
+                                        final address =
+                                            await showBackendAddressEditor(
+                                              context,
+                                              backend.address.toString(),
+                                            );
+                                        if (address == null ||
+                                            !context.mounted ||
+                                            Uri.parse(address) ==
+                                                backend.address) {
+                                          return;
+                                        }
+                                        await ref
+                                            .read(
+                                              sessionControllerProvider
+                                                  .notifier,
+                                            )
+                                            .leaveBackend(address: address);
+                                      },
                                 child: Text(l10n.changeBackend),
                               ),
                             ),
-                        ],
-                      ),
-              ),
-            ],
+                          ],
+                        ),
+                ),
+              ],
+            ),
           ),
           bottomNavigationBar: wide
               ? null

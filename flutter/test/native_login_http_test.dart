@@ -60,6 +60,10 @@ void main() {
           onTimeout: () => throw StateError('Fixture did not start: $errors'),
         );
     final backend = Uri.parse(address);
+    await const FlutterSecureStorage().write(
+      key: 'last_successful_backend',
+      value: address,
+    );
     Uri? browserUrl;
     ProviderContainer createApp() => ProviderContainer(
       overrides: [
@@ -135,7 +139,6 @@ void main() {
     app = createApp();
     app.listen(sessionControllerProvider, (_, _) {});
     await app.read(connectionControllerProvider.future);
-    await app.read(connectionControllerProvider.notifier).connect(address);
     await waitForSession(app, (state) => state.phase == SessionPhase.signedIn);
     expect(app.read(sessionControllerProvider).identity?.login, 'octocat');
   });

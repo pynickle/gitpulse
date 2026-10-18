@@ -23,7 +23,7 @@ Reuse Nitro Cookie sessions, the existing provider/session authorities, and CSRF
 3. As a Linux, macOS, or iOS user, I want compatible platform code and configuration, so that the same client can be built for my platform without a different product architecture.
 4. As a self-hosted GitPulse user, I want to enter my backend address, so that I can use my own instance instead of depending on a central hosted service.
 5. As the instance owner, I want to connect to gitpulse.euphony.ink, so that I can reuse my deployed Nitro backend.
-6. As a returning user, I want the last successfully connected backend remembered, so that I do not have to enter it on every launch.
+6. As a returning user, I want the last successfully connected backend remembered and connected automatically, so that I do not have to enter or confirm it on every launch.
 7. As a first-time user, I want unsupported backend capabilities explained, so that I know when my server must be upgraded.
 8. As a personal-mode user, I want password unlock, so that I can use the server-owned GitHub identity without entering its GitHub token.
 9. As a PAT-mode user, I want PAT sign-in when the server enables it, so that I can authenticate through my instance's supported mechanism.
@@ -105,7 +105,7 @@ Reuse Nitro Cookie sessions, the existing provider/session authorities, and CSRF
 
 - Add a dedicated Flutter package alongside the existing web/backend and extension packages in the monorepo. Use the app name GitPulse, application identifier `ink.euphony.gitpulse`, and independent `flutter-vX.Y.Z` release tags.
 - Target Windows, Android, Linux, macOS, and iOS. Windows and Android are the owner's manual-debug targets. Other platforms require compatible dependencies, scaffolding, permissions/entitlements, and prerequisite documentation; runtime verification is not promised.
-- The backend address is user-configurable, initially empty, and remembered after successful connection. Check the required native backend capabilities and clearly require an upgrade rather than silently degrading agreed functionality on an old server.
+- The backend address defaults to https://gitpulse.euphony.ink, is user-configurable, and is remembered after successful connection. Automatically connect to the saved address on later launches, or the default address on first launch, without asking the user to confirm it. Check the required native backend capabilities and clearly require an upgrade rather than silently degrading agreed functionality on an old server.
 - Preserve existing web behavior and the extension's independent release lifecycle. Isolate Flutter tooling/generated content from unrelated Nuxt checks and packaging.
 
 ### App modules and public interface
@@ -242,3 +242,23 @@ These details were proposed in the final implementation plan rather than individ
 - Formal distribution prepares a complete Windows runtime-directory ZIP and an Android APK signed with the intended release identity. Keep the Android signing identity stable across updates; a debug-signed build is not the final release artifact. Native prerequisites, especially system credential storage configuration, must be documented.
 - Core scope and major technology choices were explicitly accepted during the interview. The final draft's engineering defaults and auxiliary dependencies are identified above as recommendations because the user requested synthesis/publication instead of conducting another confirmation round.
 - This issue is the self-contained implementation specification. The publication request authorizes creating the tracker issue with the canonical ready-for-agent label; it does not itself start implementation or deploy the existing backend.
+
+## Acceptance Clarification — Default Connection and Application Header (2026-10-18)
+
+These requirements supersede the earlier initially-empty backend-address decision. They refine the in-progress Flutter implementation; they do not expand the client to unrelated web-dashboard features.
+
+### Default and saved backend connection
+
+- On first launch, automatically connect to `https://gitpulse.euphony.ink` and discover its capabilities without an address-confirmation step.
+- On later launches, automatically connect to the last successfully saved backend, including its base path, and restore the existing secure session through the normal session-validation flow. Do not force a logged-in user through an address-confirmation screen.
+- Keep the backend address editable in Settings and provide a change-server entry before sign-in, so self-hosted users can use their own compatible instance.
+- Failed connection/capability validation must offer retry and address editing, preserve the last successful saved address and existing credentials/cache, and never silently reset a custom server to the hosted default. Capability/version/provider errors remain explicit.
+- Explicit backend changes continue to clear the previous identity's session/cache and invalidate in-flight work before connecting to another backend. Merely opening the address editor must not clear the current identity.
+
+### Timeline and application chrome
+
+- On narrow Flutter layouts, show one page title (`Timeline` / `时间线`) with the refresh action at a stable trailing position in that same top bar. On wide layouts, use the navigation rail to identify the destination and show compact status plus the trailing refresh action without another page heading. Keep the operating-system window title as the application name; remove repeated GitPulse branding and the `Release Timeline` content heading from application chrome.
+- Signed-in Timeline and Follows pages must not render the account-management panel. Show the current account, logout, and provider-appropriate account-switch action in Settings instead. Sign-in and expired-session recovery must remain accessible.
+- Show refresh-baseline time and loaded-new count as compact secondary information. Long localized labels, narrow windows, and larger text must not displace the refresh action to another row or cause horizontal overflow.
+- Preserve existing timeline refresh, loading/disabled states, offline/partial-failure indicators, date grouping, navigation, release cards, and detail interactions. Do not redesign release cards.
+- Add behavioral coverage for first-launch connection, saved custom-server restart and session restoration, failure/retry/address preservation, pre-sign-in server editing, and signed-in phone/desktop navigation with account actions confined to Settings and a stable refresh action.
