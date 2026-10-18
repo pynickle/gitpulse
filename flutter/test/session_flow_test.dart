@@ -158,6 +158,7 @@ class AuthServer implements HttpClientAdapter {
           'protocolVersion': 1,
           'capabilities': [
             'provider-discovery',
+            'release-timeline',
             if (handoffEnabled) 'native-login-handoff',
           ],
           'providers': providers,
@@ -452,6 +453,10 @@ void main() {
         SessionPhase.signedIn,
       );
       expect(server.handoffNumber, 2);
+      // The Timeline destination starts its first round as soon as the session
+      // is established; let that request finish instead of ending the test with
+      // its timer still pending.
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     },
   );
@@ -950,10 +955,9 @@ void main() {
       );
 
       expect(find.text('Signed in as octocat'), findsOneWidget);
-      expect(
-        find.text('Your Release Timeline will appear here in a later release.'),
-        findsOneWidget,
-      );
+      // The Timeline destination shows the Release Timeline itself now that the
+      // placeholder of the connection shell has been replaced.
+      expect(find.text('Release Timeline'), findsOneWidget);
       final unlock = server.requests
           .where((request) => request.uri.path.endsWith('/auth/unlock'))
           .single;
@@ -1160,10 +1164,7 @@ void main() {
         .single;
     expect(timeline.headers['cookie'] ?? '', isNot(contains('nuxt-session=')));
     expect(find.textContaining('Your session ended'), findsOneWidget);
-    expect(
-      find.text('Your Release Timeline will appear here in a later release.'),
-      findsNothing,
-    );
+    expect(find.text('Release Timeline'), findsNothing);
   });
 
   testWidgets(
@@ -1355,11 +1356,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(rejected.problem, BackendProblem.authenticationRejected);
       expect(find.textContaining('Your session ended'), findsOneWidget);
-      expect(
-        find.text('Your Release Timeline will appear here in a later release.'),
-        findsNothing,
-      );
+      expect(find.text('Release Timeline'), findsNothing);
 
+      // Signing in again ends the rejection: the fixture stops rejecting every
+      // call, so the Timeline destination loads against a working session.
+      server
+        ..featureStatus = 200
+        ..featureMessage = 'OK';
       await submitField(
         tester,
         label: 'GitHub token',
@@ -1421,10 +1424,7 @@ void main() {
       expect(offline.problem, BackendProblem.network);
       expect(find.textContaining('You are offline'), findsOneWidget);
       expect(find.text('Signed in as octocat'), findsOneWidget);
-      expect(
-        find.text('Your Release Timeline will appear here in a later release.'),
-        findsOneWidget,
-      );
+      expect(find.text('Release Timeline'), findsOneWidget);
 
       server.offline = false;
       server.featureStatus = 429;

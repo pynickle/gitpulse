@@ -51,7 +51,42 @@
   "timeline": "Timeline",
   "follows": "Follows",
   "settings": "Settings",
-  "timelinePending": "Your Release Timeline will appear here in a later release.",
+  "timelineTitle": "Release Timeline",
+  "timelineReload": "Reload",
+  "timelineLoadedNew": "{count, plural, =1 {1 loaded new release} other {{count} loaded new releases}}",
+  "@timelineLoadedNew": {"placeholders": {"count": {"type": "int"}}},
+  "timelinePreviousRefresh": "Previous refresh: {time}",
+  "@timelinePreviousRefresh": {
+    "placeholders": {"time": {"type": "String"}}
+  },
+  "timelinePreviousRefreshMark": "Previous refresh",
+  "timelinePartialWindow": "Partial timeline coverage",
+  "timelineLoading": "Loading the Release Timeline",
+  "timelineError": "Failed to load the Release Timeline.",
+  "timelineErrorServer": "The GitPulse backend could not return the timeline. Try again.",
+  "timelineErrorNetwork": "Could not reach the GitPulse backend. Check your connection, then retry.",
+  "timelineErrorRateLimited": "The server is rate limiting requests. Try again shortly.",
+  "timelineRetry": "Retry",
+  "timelineEmptyTitle": "No Followed Repositories",
+  "timelineEmptyDescription": "Follow repositories to see their releases in this timeline.",
+  "timelineEmptyFollowsHint": "Follow repositories in the GitPulse web app; this client reads the same account's Release Follows.",
+  "timelineEmptyReleasesTitle": "No releases yet",
+  "timelineEmptyReleasesDescription": "Followed Repositories have not published any releases in the loaded window.",
+  "timelineBannerUnavailableTitle": "Unavailable Followed Repositories",
+  "timelineBannerUnavailableDescription": "{repos} could not be found on GitHub. They stay on your list until you remove them.",
+  "@timelineBannerUnavailableDescription": {
+    "placeholders": {"repos": {"type": "String"}}
+  },
+  "timelineBannerTransientTitle": "Some Followed Repositories failed to load",
+  "timelineBannerTransientDescription": "{repos} could not be loaded. This is usually temporary.",
+  "@timelineBannerTransientDescription": {
+    "placeholders": {"repos": {"type": "String"}}
+  },
+  "timelinePersistenceError": "Timeline changes could not be saved. Loaded releases are still available.",
+  "timelineOldestShown": "Earlier releases are not shown.",
+  "timelinePrerelease": "Prerelease",
+  "timelineAssetCount": "{count, plural, =0 {No assets} =1 {1 asset} other {{count} assets}}",
+  "@timelineAssetCount": {"placeholders": {"count": {"type": "int"}}},
   "followsPending": "Release Follow management will be available in a later client release.",
   "changeBackend": "Change backend"
 }

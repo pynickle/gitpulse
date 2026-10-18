@@ -14,7 +14,7 @@ class CapabilityServer implements HttpClientAdapter {
   int statusCode = 200;
   Object? payload = {
     'protocolVersion': 1,
-    'capabilities': ['provider-discovery'],
+    'capabilities': ['provider-discovery', 'release-timeline'],
     'providers': {
       'personalMode': true,
       'patEnabled': false,
@@ -100,7 +100,7 @@ void main() {
       final server = CapabilityServer()
         ..payload = {
           'protocolVersion': 1,
-          'capabilities': ['provider-discovery'],
+          'capabilities': ['provider-discovery', 'release-timeline'],
           'providers': {
             'personalMode': false,
             'patEnabled': false,
@@ -164,13 +164,27 @@ void main() {
       },
       200,
     ),
+    (
+      'missing timeline capability',
+      {
+        'protocolVersion': 1,
+        'capabilities': ['provider-discovery'],
+        'providers': {
+          'personalMode': true,
+          'patEnabled': false,
+          'oauthEnabled': false,
+          'mode': 'personal',
+        },
+      },
+      200,
+    ),
     ('non-GitPulse response', '<html>Another application</html>', 200),
     ('missing capability endpoint', {}, 404),
     (
       'OAuth-only server without app handoff',
       {
         'protocolVersion': 1,
-        'capabilities': ['provider-discovery'],
+        'capabilities': ['provider-discovery', 'release-timeline'],
         'providers': {
           'personalMode': false,
           'patEnabled': false,
@@ -184,7 +198,7 @@ void main() {
       'conflicting personal providers',
       {
         'protocolVersion': 1,
-        'capabilities': ['provider-discovery'],
+        'capabilities': ['provider-discovery', 'release-timeline'],
         'providers': {
           'personalMode': true,
           'patEnabled': true,
@@ -233,6 +247,7 @@ void main() {
           'protocolVersion': 1,
           'capabilities': [
             'provider-discovery',
+            'release-timeline',
             if (oauth) 'native-login-handoff',
             'future-additive-capability',
           ],

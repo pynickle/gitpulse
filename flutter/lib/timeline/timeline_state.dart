@@ -1,0 +1,123 @@
+import 'timeline_models.dart';
+
+/// Why a Timeline round could not be read.
+enum TimelineFailureKind {
+  network,
+  rateLimited,
+  session,
+  server,
+  invalidResponse,
+  cancelled,
+}
+
+class TimelineFailure {
+  const TimelineFailure(this.kind);
+
+  final TimelineFailureKind kind;
+
+  /// A rejected session needs sign-in again; a cancelled round needs nothing.
+  bool get retryable =>
+      kind != TimelineFailureKind.session &&
+      kind != TimelineFailureKind.cancelled;
+}
+
+/// The immutable Release Timeline the widgets read.
+class TimelineViewState {
+  const TimelineViewState({
+    this.active = false,
+    this.loading = false,
+    this.hasFollows = false,
+    this.groups = const [],
+    this.unavailableRepositories = const [],
+    this.transientRepositories = const [],
+    this.previousBaseline,
+    this.baselineExposed = false,
+    this.loadedNewCount = 0,
+    this.partial = false,
+    this.canRetry = false,
+    this.failure,
+    this.persistenceFailed = false,
+  });
+
+  /// Nobody is signed in with a connected backend yet.
+  const TimelineViewState.inactive() : this();
+
+  /// Signed in, waiting for the first coordinated round.
+  const TimelineViewState.activeLoading() : this(active: true, loading: true);
+
+  /// Whether the signed-in account's timeline is being read.
+  final bool active;
+  final bool loading;
+
+  /// Whether the account follows any repository.
+  final bool hasFollows;
+  final List<TimelineGroup> groups;
+
+  /// Followed Repositories GitHub reports as missing, and the ones that failed
+  /// to load and can be retried.
+  final List<TimelineRepository> unavailableRepositories;
+  final List<TimelineRepository> transientRepositories;
+
+  /// The cycle's captured Timeline Refresh Baseline, fixed while reading.
+  final String? previousBaseline;
+
+  /// Whether the baseline's publication-time position is inside the window.
+  final bool baselineExposed;
+
+  /// Releases newer than the captured baseline, after the current filters.
+  final int loadedNewCount;
+
+  /// Whether the Shared Timeline Window is a Partial Timeline Window.
+  final bool partial;
+
+  /// Whether another round could recover a failed repository.
+  final bool canRetry;
+
+  final TimelineFailure? failure;
+
+  /// Whether usable results returned while their bookmark could not be saved.
+  final bool persistenceFailed;
+
+  bool get hasReleases => groups.isNotEmpty;
+
+  bool get hasLookupFailures =>
+      unavailableRepositories.isNotEmpty || transientRepositories.isNotEmpty;
+
+  TimelineViewState copyWith({
+    bool? active,
+    bool? loading,
+    bool? hasFollows,
+    List<TimelineGroup>? groups,
+    List<TimelineRepository>? unavailableRepositories,
+    List<TimelineRepository>? transientRepositories,
+    String? previousBaseline,
+    bool clearPreviousBaseline = false,
+    bool? baselineExposed,
+    int? loadedNewCount,
+    bool? partial,
+    bool? canRetry,
+    TimelineFailure? failure,
+    bool clearFailure = false,
+    bool? persistenceFailed,
+  }) {
+    return TimelineViewState(
+      active: active ?? this.active,
+      loading: loading ?? this.loading,
+      hasFollows: hasFollows ?? this.hasFollows,
+      groups: groups ?? this.groups,
+      unavailableRepositories:
+          unavailableRepositories ?? this.unavailableRepositories,
+      transientRepositories:
+          transientRepositories ?? this.transientRepositories,
+      previousBaseline: clearPreviousBaseline
+          ? null
+          : previousBaseline ?? this.previousBaseline,
+      baselineExposed: baselineExposed ?? this.baselineExposed,
+      loadedNewCount: loadedNewCount ?? this.loadedNewCount,
+      partial: partial ?? this.partial,
+      canRetry: canRetry ?? this.canRetry,
+      failure: clearFailure ? null : failure ?? this.failure,
+      persistenceFailed: persistenceFailed ?? this.persistenceFailed,
+    );
+  }
+}

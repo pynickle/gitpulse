@@ -39,11 +39,11 @@ async function getPublicResponse(path: 'native/capabilities' | 'auth/providers')
 }
 
 describe('public native connection contract', () => {
-  test('personal mode advertises only password unlock and implemented discovery', async () => {
+  test('personal mode advertises only password unlock, discovery, and timeline reading', async () => {
     configureProviders(true);
     expect(await getPublicResponse('native/capabilities')).toEqual({
       protocolVersion: 1,
-      capabilities: ['provider-discovery'],
+      capabilities: ['provider-discovery', 'release-timeline'],
       providers: { personalMode: true, patEnabled: false, oauthEnabled: false, mode: 'personal' },
     });
     const providers = await getPublicResponse('auth/providers');
@@ -67,7 +67,11 @@ describe('public native connection contract', () => {
         oauthEnabled: oauth,
         mode,
       });
-      expect(result.capabilities.includes('native-login-handoff')).toBe(oauth);
+      expect(result.capabilities).toEqual([
+        'provider-discovery',
+        'release-timeline',
+        ...(oauth ? ['native-login-handoff'] : []),
+      ]);
       expect(await getPublicResponse('auth/providers')).toMatchObject(result.providers);
       expect(JSON.stringify(result)).not.toContain('server-only');
     }

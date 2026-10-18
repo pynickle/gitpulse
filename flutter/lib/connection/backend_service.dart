@@ -64,7 +64,8 @@ class BackendService {
     }
 
     if (capabilities.protocolVersion != 1 ||
-        !capabilities.capabilities.contains('provider-discovery')) {
+        !capabilities.capabilities.contains('provider-discovery') ||
+        !capabilities.capabilities.contains('release-timeline')) {
       throw const ConnectionException(ConnectionProblem.serverUpgrade);
     }
     final providers = capabilities.providers;

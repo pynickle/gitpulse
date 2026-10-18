@@ -12,6 +12,8 @@ export default defineEventHandler((): NativeCapabilities => {
     // Add capabilities only alongside the implementation and its contract tests.
     capabilities: [
       'provider-discovery',
+      // Core release reading: the app requires these routes instead of degrading.
+      'release-timeline',
       ...(nativeLoginHandoffAvailable() ? ['native-login-handoff'] : []),
     ],
     providers: { personalMode, patEnabled, oauthEnabled, mode },

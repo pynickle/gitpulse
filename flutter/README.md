@@ -20,7 +20,7 @@ flutter pub get
 dart run build_runner build
 flutter gen-l10n
 flutter analyze
-flutter test # Also needs Bun for the local Nitro handoff contract test.
+flutter test # Also needs Bun for the local Nitro contract tests.
 dart format --output=none --set-exit-if-changed lib test
 flutter run -d windows
 # Or choose an attached Android device from flutter devices.
@@ -68,7 +68,7 @@ The public, unauthenticated `GET /api/native/capabilities` returns:
 ```json
 {
   "protocolVersion": 1,
-  "capabilities": ["provider-discovery"],
+  "capabilities": ["provider-discovery", "release-timeline"],
   "providers": {
     "personalMode": true,
     "patEnabled": false,
@@ -78,13 +78,13 @@ The public, unauthenticated `GET /api/native/capabilities` returns:
 }
 ```
 
-Version 1 requires the `provider-discovery` capability and a normalized provider
-combination. Missing/older/malformed contracts request a server update; a newer
-protocol requests a client update. Connectivity errors are retryable and do not
-replace the last successful backend. The address is saved through the platform
-credential store only after successful discovery. A saved address is prefilled
-on restart and must be checked again. Storage errors are shown without silently
-claiming persistence.
+Version 1 requires the `provider-discovery` and `release-timeline` capabilities
+and a normalized provider combination. Missing/older/malformed contracts request
+a server update; a newer protocol requests a client update. Connectivity errors
+are retryable and do not replace the last successful backend. The address is
+saved through the platform credential store only after successful discovery. A
+saved address is prefilled on restart and must be checked again. Storage errors
+are shown without silently claiming persistence.
 
 `resolveAuthProviderState()` remains the only server provider authority. Personal
 mode takes precedence over PAT and OAuth. The existing web provider endpoint keeps
@@ -155,6 +155,36 @@ cookie so a failed session probe after discovery is not treated as sign-out. It
 is not a credential. Startup still requires successful capability discovery;
 entering the app after a fully offline restart is deferred to the offline-cache
 slice.
+
+## Release Timeline
+
+The Timeline destination reads the account's Release Follows and one coordinated
+round of releases. It calls `GET /api/settings` for the Followed Repositories and
+`POST /api/release-timeline/refresh`, and it never treats the response's groups as
+a ready-made window. The app assembles the Shared Timeline Window from the
+per-repository pages itself: publication order, stable repository and release
+identities, then grouping by the device's display time zone. Older releases a
+repository still reports are buffered rather than displayed, so a repository that
+has not caught up cannot widen the window, and the newest release's date group can
+stay hidden until every participating repository reaches it.
+
+The refresh response's `previousBaseline` is captured for the cycle and stays
+fixed while that window is read, so a later refresh cannot move the counts of the
+window currently on screen. The loaded-new count is the distinct exposed releases
+published after that captured baseline, and the header labels it as loaded new
+releases rather than an upstream or unread total. The server advances the
+account's shared Timeline Refresh Baseline only after a round returned usable
+results, so a wholly failed round, including one answered with HTTP 200, leaves
+the previous reference point in place; the app verifies and relies on that through
+the real route. The Previous Refresh marker appears at its publication-time
+position once the window reaches it.
+
+The screen covers the existing-follow, no-follow, loading, empty, partial, and
+retryable-failure states, in one column on phones and up to three on wide windows.
+Follow management, loading older pages, per-repository retry, retention, and
+release details belong to later slices; Followed Repositories are still managed in
+the web application, and this client reads the same account list. Nothing in this
+slice is cached or reused across restarts.
 
 ## Native prerequisites and verification
 

@@ -7,6 +7,7 @@ import 'connection/connection_screen.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'session/session_controller.dart';
 import 'session/sign_in_panel.dart';
+import 'timeline/timeline_screen.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -69,6 +70,27 @@ class GitPulseApp extends ConsumerWidget {
   }
 }
 
+/// The Timeline destination. The signed-in session state (identity, offline or
+/// rejected notices, sign-out) stays visible above the Release Timeline, as it
+/// is on the other destinations.
+class _TimelineTab extends StatelessWidget {
+  const _TimelineTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: SignInPanel(),
+        ),
+        Expanded(child: TimelineScreen()),
+      ],
+    );
+  }
+}
+
 class _AppShell extends ConsumerWidget {
   const _AppShell({required this.index});
 
@@ -112,50 +134,50 @@ class _AppShell extends ConsumerWidget {
                   ],
                 ),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    Text(
-                      l10n.compatibleBackend,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    SelectableText(backend.address.toString()),
-                    if (connection?.problem case final problem?)
-                      Text(connectionProblemLabel(l10n, problem)),
-                    const SizedBox(height: 24),
-                    Text(
-                      l10n.availableProviders,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        if (providers.personalMode)
-                          Chip(label: Text(l10n.personalPassword)),
-                        if (providers.patEnabled)
-                          Chip(label: Text(l10n.personalAccessToken)),
-                        if (backend.capabilities.supportsNativeLogin)
-                          Chip(label: Text(l10n.githubOAuth)),
-                      ],
-                    ),
-                    const SignInPanel(),
-                    const SizedBox(height: 24),
-                    if (index == 0 && session.phase == SessionPhase.signedIn)
-                      Text(l10n.timelinePending),
-                    if (index == 1) Text(l10n.followsPending),
-                    if (index == 2)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton(
-                          onPressed: () => ref
-                              .read(sessionControllerProvider.notifier)
-                              .leaveBackend(),
-                          child: Text(l10n.changeBackend),
-                        ),
+                child: index == 0 && session.phase == SessionPhase.signedIn
+                    ? const _TimelineTab()
+                    : ListView(
+                        padding: const EdgeInsets.all(24),
+                        children: [
+                          Text(
+                            l10n.compatibleBackend,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          SelectableText(backend.address.toString()),
+                          if (connection?.problem case final problem?)
+                            Text(connectionProblemLabel(l10n, problem)),
+                          const SizedBox(height: 24),
+                          Text(
+                            l10n.availableProviders,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              if (providers.personalMode)
+                                Chip(label: Text(l10n.personalPassword)),
+                              if (providers.patEnabled)
+                                Chip(label: Text(l10n.personalAccessToken)),
+                              if (backend.capabilities.supportsNativeLogin)
+                                Chip(label: Text(l10n.githubOAuth)),
+                            ],
+                          ),
+                          const SignInPanel(),
+                          const SizedBox(height: 24),
+                          if (index == 1) Text(l10n.followsPending),
+                          if (index == 2)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: OutlinedButton(
+                                onPressed: () => ref
+                                    .read(sessionControllerProvider.notifier)
+                                    .leaveBackend(),
+                                child: Text(l10n.changeBackend),
+                              ),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
               ),
             ],
           ),
