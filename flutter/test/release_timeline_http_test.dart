@@ -206,6 +206,49 @@ void main() {
     );
     expect(await readBaseline(), isNot(firstBaseline));
 
+    // Pagination and recovery read the real GET route, so they cannot advance
+    // the shared account baseline, even when they return usable releases.
+    await setScenario({
+      'pages': {
+        'R_alpha': {
+          ...fixturePage('octo', 'alpha', [
+            fixtureRelease(13, 'v1.3', '2026-10-06T10:00:00Z'),
+          ]),
+          'hasOlderReleases': true,
+          'endCursor': 'cursor-1',
+        },
+      },
+    });
+    await facade.refresh();
+    final pagingBaseline = await readBaseline();
+    final capturedBaseline = container
+        .read(releaseTimelineSessionProvider)
+        .previousBaseline;
+    await setScenario({
+      'pages': {
+        'R_alpha': {'status': 'transient'},
+      },
+    });
+    await facade.loadOlder();
+    expect(container.read(releaseTimelineSessionProvider).canRetry, isTrue);
+    expect(await readBaseline(), pagingBaseline);
+    await setScenario({
+      'pages': {
+        'R_alpha': fixturePage('octo', 'alpha', [
+          fixtureRelease(11, 'v1.1', '2026-10-04T10:00:00Z'),
+        ]),
+      },
+    });
+    await facade.retryFailed();
+    state = container.read(releaseTimelineSessionProvider);
+    expect(state.groups.expand((g) => g.items).map((item) => item.key), [
+      'R_alpha:13',
+      'R_alpha:11',
+    ]);
+    expect(state.canRetry, isFalse);
+    expect(state.previousBaseline, capturedBaseline);
+    expect(await readBaseline(), pagingBaseline);
+
     // A wholly failed round reports a retryable failure, keeps what is
     // readable, and must not move the shared baseline.
     final baselineBeforeFailure = await readBaseline();
@@ -221,7 +264,7 @@ void main() {
     expect(state.failure, isNotNull);
     expect(state.canRetry, isTrue);
     expect(state.hasReleases, isTrue);
-    expect(state.loadedNewCount, 1);
+    expect(state.previousBaseline, capturedBaseline);
     expect(await readBaseline(), baselineBeforeFailure);
 
     // Another installation already refreshed later: the shared baseline must

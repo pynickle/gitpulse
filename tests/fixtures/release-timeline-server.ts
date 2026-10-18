@@ -67,6 +67,10 @@ export async function createReleaseTimelineTestHandler(baseURL = '/') {
     route('/api/release-timeline/refresh'),
     (await import('../../server/api/release-timeline/refresh.post')).default
   );
+  router.get(
+    route('/api/release-timeline'),
+    (await import('../../server/api/release-timeline.get')).default
+  );
   router.post(
     route('/auth/logout'),
     (await import('../../server/routes/auth/logout.post')).default

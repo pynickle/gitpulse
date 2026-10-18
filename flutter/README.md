@@ -6,8 +6,8 @@ Application identity: **GitPulse**, `ink.euphony.gitpulse`. Client releases use
 
 This client connects to a GitPulse backend, discovers its sign-in methods, and
 signs in with the server's personal password, PAT, or GitHub through the system
-browser. Timeline, Follows, and Settings establish the navigation shell. Release
-data is implemented in later slices.
+browser. Timeline displays published releases with explicit older-history loading
+and failed-repository retry. Follows and Settings establish the navigation shell.
 
 ## Development
 
@@ -163,10 +163,21 @@ round of releases. It calls `GET /api/settings` for the Followed Repositories an
 `POST /api/release-timeline/refresh`, and it never treats the response's groups as
 a ready-made window. The app assembles the Shared Timeline Window from the
 per-repository pages itself: publication order, stable repository and release
-identities, then grouping by the device's display time zone. Older releases a
-repository still reports are buffered rather than displayed, so a repository that
-has not caught up cannot widen the window, and the newest release's date group can
-stay hidden until every participating repository reaches it.
+identities, then grouping by the device's display time zone. Fetched records older
+than the shared publication-time boundary stay buffered until participating
+repositories reach them. Failed repositories allow a Partial Timeline Window;
+recovering one never hides history already exposed in the current cycle.
+
+Load older performs one coordinated `GET /api/release-timeline?cursors=...` round
+using each successful repository's own continuation and skipping exhausted or
+failed repositories. Retry targets failed pages at their preserved cursors; the
+public session also accepts a stable repository ID to retry just that repository.
+Unavailable repositories remain distinct from transient errors. Empty display
+pages with continuation stay loadable. Incomplete or non-progressing pages stay
+retryable. Neither pagination nor retry advances the shared refresh baseline.
+Late-discovered releases merge in publication order with deterministic identity
+deduplication. The lazy timeline anchors the visible card and its pixel offset
+across insertions, including one-to-three-column regrouping and banner removal.
 
 The refresh response's `previousBaseline` is captured for the cycle and stays
 fixed while that window is read, so a later refresh cannot move the counts of the
@@ -181,8 +192,8 @@ position once the window reaches it.
 
 The screen covers the existing-follow, no-follow, loading, empty, partial, and
 retryable-failure states, in one column on phones and up to three on wide windows.
-Follow management, loading older pages, per-repository retry, retention, and
-release details belong to later slices; Followed Repositories are still managed in
+Follow management, retention, and release details belong to later slices;
+Followed Repositories are still managed in
 the web application, and this client reads the same account list. Nothing in this
 slice is cached or reused across restarts.
 

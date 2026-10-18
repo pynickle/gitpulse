@@ -63,6 +63,7 @@
   "timelineErrorNetwork": "无法连接 GitPulse 后端。请检查网络后重试。",
   "timelineErrorRateLimited": "服务器正在限制请求，请稍后重试。",
   "timelineRetry": "重试",
+  "timelineLoadOlder": "加载更早",
   "timelineEmptyTitle": "还没有已关注仓库",
   "timelineEmptyDescription": "关注仓库后，它们的 Release 会显示在这里。",
   "timelineEmptyFollowsHint": "请在 GitPulse 网页端关注仓库；此客户端读取同一账号的关注列表。",

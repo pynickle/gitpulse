@@ -231,6 +231,10 @@ void main() {
               refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
             ),
           ),
+          pageRequest({'R_beta': null}): () => BackendResult(
+            statusCode: 200,
+            data: roundJson(pages: {'R_beta': pageJson('octo', 'beta', [])}),
+          ),
         },
       );
 
@@ -242,9 +246,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
+      expect(mounted.session.requests, [
+        'GET api/settings',
+        'POST api/release-timeline/refresh',
+        pageRequest({'R_beta': null}),
+      ]);
+      expect(find.text('v1.1'), findsOneWidget);
       expect(
-        mounted.session.requests.where((request) => request.startsWith('POST')),
-        hasLength(2),
+        find.text('Some Followed Repositories failed to load'),
+        findsNothing,
       );
     },
   );
@@ -276,6 +286,16 @@ void main() {
                     refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
                   ),
                 ),
+          pageRequest({'R_alpha': null}): () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson('octo', 'alpha', [
+                  releaseJson(11, 'v1.1', '2026-10-04T10:00:00Z'),
+                ]),
+              },
+            ),
+          ),
         },
       );
 

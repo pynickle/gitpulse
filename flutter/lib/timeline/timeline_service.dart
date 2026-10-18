@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../session/gitpulse_http.dart';
@@ -68,6 +70,19 @@ class ReleaseTimelineService {
   Future<TimelineResult<TimelineRoundDto>> refresh() {
     return _read('POST', refreshPath, TimelineRoundDto.fromJson);
   }
+
+  /// Reads exactly the requested repository pages without advancing the shared
+  /// refresh baseline. A null cursor retries that repository's first page.
+  Future<TimelineResult<TimelineRoundDto>> loadPages(
+    Map<String, String?> cursors,
+  ) => _read(
+    'GET',
+    Uri(
+      path: 'api/release-timeline',
+      queryParameters: {'cursors': jsonEncode(cursors)},
+    ).toString(),
+    TimelineRoundDto.fromJson,
+  );
 
   Future<TimelineResult<T>> _read<T>(
     String method,

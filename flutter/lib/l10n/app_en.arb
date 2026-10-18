@@ -67,6 +67,7 @@
   "timelineErrorNetwork": "Could not reach the GitPulse backend. Check your connection, then retry.",
   "timelineErrorRateLimited": "The server is rate limiting requests. Try again shortly.",
   "timelineRetry": "Retry",
+  "timelineLoadOlder": "Load older",
   "timelineEmptyTitle": "No Followed Repositories",
   "timelineEmptyDescription": "Follow repositories to see their releases in this timeline.",
   "timelineEmptyFollowsHint": "Follow repositories in the GitPulse web app; this client reads the same account's Release Follows.",

@@ -20,6 +20,10 @@ class TimelineScreen extends ConsumerWidget {
     final state = ref.watch(releaseTimelineSessionProvider);
     Future<void> refresh() =>
         ref.read(releaseTimelineSessionProvider.notifier).refresh();
+    Future<void> retry() =>
+        ref.read(releaseTimelineSessionProvider.notifier).retryFailed();
+    Future<void> loadOlder() =>
+        ref.read(releaseTimelineSessionProvider.notifier).loadOlder();
 
     return LayoutBuilder(
       builder: (context, constraints) => Column(
@@ -27,11 +31,13 @@ class TimelineScreen extends ConsumerWidget {
         children: [
           _Header(state: state, onRefresh: refresh),
           if (state.hasLookupFailures)
-            _LookupFailureBanner(state: state, onRefresh: refresh),
+            _LookupFailureBanner(state: state, onRetry: retry),
           Expanded(
             child: _Body(
               state: state,
               columns: resolveTimelineColumnCount(constraints.maxWidth),
+              onRetry: retry,
+              onLoadOlder: loadOlder,
               onRefresh: refresh,
             ),
           ),
@@ -132,11 +138,15 @@ class _Body extends StatelessWidget {
     required this.state,
     required this.columns,
     required this.onRefresh,
+    required this.onRetry,
+    required this.onLoadOlder,
   });
 
   final TimelineViewState state;
   final int columns;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onRetry;
+  final Future<void> Function() onLoadOlder;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +158,7 @@ class _Body extends StatelessWidget {
     // A failure outranks the no-follows state: a Followed Repository read that
     // failed has not established that the account follows nothing.
     if (state.failure != null && !state.hasReleases) {
-      return _FailureState(state: state, onRefresh: onRefresh);
+      return _FailureState(state: state, onRetry: onRetry);
     }
     if (!state.hasFollows) {
       return _EmptyState(
@@ -163,12 +173,29 @@ class _Body extends StatelessWidget {
         state: state,
         columns: columns,
         onRefresh: onRefresh,
+        onRetry: onRetry,
+        onLoadOlder: onLoadOlder,
       );
     }
-    return _EmptyState(
-      icon: Icons.inbox_outlined,
-      title: l10n.timelineEmptyReleasesTitle,
-      description: l10n.timelineEmptyReleasesDescription,
+    return Column(
+      children: [
+        Expanded(
+          child: _EmptyState(
+            icon: Icons.inbox_outlined,
+            title: l10n.timelineEmptyReleasesTitle,
+            description: l10n.timelineEmptyReleasesDescription,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: _StatusFooter(
+            state: state,
+            onRetry: onRetry,
+            onLoadOlder: onLoadOlder,
+            onRefresh: onRefresh,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -240,10 +267,10 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _FailureState extends StatelessWidget {
-  const _FailureState({required this.state, required this.onRefresh});
+  const _FailureState({required this.state, required this.onRetry});
 
   final TimelineViewState state;
-  final Future<void> Function() onRefresh;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -280,7 +307,7 @@ class _FailureState extends StatelessWidget {
             if (failure == null || failure.retryable) ...[
               const SizedBox(height: 12),
               FilledButton.tonal(
-                onPressed: () => onRefresh(),
+                onPressed: state.loading ? null : () => onRetry(),
                 child: Text(l10n.timelineRetry),
               ),
             ],
@@ -292,10 +319,10 @@ class _FailureState extends StatelessWidget {
 }
 
 class _LookupFailureBanner extends StatelessWidget {
-  const _LookupFailureBanner({required this.state, required this.onRefresh});
+  const _LookupFailureBanner({required this.state, required this.onRetry});
 
   final TimelineViewState state;
-  final Future<void> Function() onRefresh;
+  final Future<void> Function() onRetry;
 
   static String _names(List<TimelineRepository> repositories) =>
       repositories.map((repository) => repository.fullName).join(', ');
@@ -344,7 +371,7 @@ class _LookupFailureBanner extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton(
-              onPressed: state.loading ? null : () => onRefresh(),
+              onPressed: state.loading ? null : () => onRetry(),
               child: Text(l10n.timelineRetry),
             ),
           ),
@@ -354,43 +381,161 @@ class _LookupFailureBanner extends StatelessWidget {
   }
 }
 
-class _TimelineList extends StatelessWidget {
+class _TimelineList extends StatefulWidget {
   const _TimelineList({
     required this.state,
     required this.columns,
     required this.onRefresh,
+    required this.onRetry,
+    required this.onLoadOlder,
   });
 
   final TimelineViewState state;
   final int columns;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onRetry;
+  final Future<void> Function() onLoadOlder;
+
+  @override
+  State<_TimelineList> createState() => _TimelineListState();
+}
+
+class _TimelineListState extends State<_TimelineList> {
+  final _centerKey = GlobalKey();
+  final _cardKeys = <String, GlobalKey>{};
+  ScrollController _controller = ScrollController(keepScrollOffset: false);
+  String? _anchor;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_TimelineList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(oldWidget.state.groups, widget.state.groups)) return;
+    final viewport = context.findRenderObject() as RenderBox?;
+    if (viewport == null || !viewport.hasSize) return;
+    final top = viewport.localToGlobal(Offset.zero).dy;
+    final bottom = top + viewport.size.height;
+    String? anchor;
+    double? anchorTop;
+    final remaining = {
+      for (final group in widget.state.groups)
+        for (final item in group.items) item.key,
+    };
+    for (final entry in _cardKeys.entries) {
+      if (!remaining.contains(entry.key)) continue;
+      final box = entry.value.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached || !box.hasSize) continue;
+      final y = box.localToGlobal(Offset.zero).dy;
+      if (y + box.size.height <= top || y >= bottom) continue;
+      if (anchorTop == null || y < anchorTop) {
+        anchor = entry.key;
+        anchorTop = y;
+      }
+    }
+    if (anchor == null || anchorTop == null) return;
+    // Put the row containing the visible release at the scroll view's center.
+    // Rows inserted above it then grow upwards, including unbuilt, variable
+    // height rows. This needs no estimate of their combined height.
+    _anchor = anchor;
+    final previous = _controller;
+    _controller = ScrollController(
+      initialScrollOffset: top - anchorTop,
+      keepScrollOffset: false,
+    );
+    final savedTop = anchorTop;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      previous.dispose();
+      if (!mounted || !_controller.hasClients) return;
+      final box =
+          _cardKeys[anchor]?.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached || !box.hasSize) return;
+      // Header/banner height changes can move the viewport as well.
+      final delta = box.localToGlobal(Offset.zero).dy - savedTop;
+      if (delta.abs() > 0.1) {
+        _controller.jumpTo(_controller.offset + delta);
+      }
+      _cardKeys.removeWhere((key, _) => !remaining.contains(key));
+    });
+  }
+
+  Key _rowKey(TimelineRow row) => ValueKey(switch (row) {
+    TimelineDateRow(:final date) => 'date/$date',
+    TimelineCardsRow(:final items) => 'cards/${items.first.key}',
+    TimelineBaselineRow(:final timestamp) => 'baseline/$timestamp',
+  });
+
+  Widget _row(TimelineRow row) => KeyedSubtree(
+    key: _rowKey(row),
+    child: switch (row) {
+      TimelineDateRow(:final date) => _DateHeader(date: date),
+      TimelineCardsRow(:final items) => _CardsRow(
+        items: items,
+        columns: widget.columns,
+        cardKey: (key) => _cardKeys.putIfAbsent(key, () => GlobalKey()),
+      ),
+      TimelineBaselineRow(:final timestamp) => _BaselineDivider(
+        timestamp: timestamp,
+      ),
+    },
+  );
 
   @override
   Widget build(BuildContext context) {
     final rows = buildTimelineRows(
-      state.groups,
-      columns,
-      state.baselineExposed ? state.previousBaseline : null,
+      widget.state.groups,
+      widget.columns,
+      widget.state.baselineExposed ? widget.state.previousBaseline : null,
     );
+    final found = rows.indexWhere(
+      (row) =>
+          row is TimelineCardsRow &&
+          row.items.any((item) => item.key == _anchor),
+    );
+    final pivot = found < 0 ? 0 : found;
+    final before = rows.take(pivot).toList().reversed.toList();
+    final after = rows.skip(pivot).toList();
+    final beforeIndices = {
+      for (var i = 0; i < before.length; i++) _rowKey(before[i]): i,
+    };
+    final afterIndices = {
+      for (var i = 0; i < after.length; i++) _rowKey(after[i]): i,
+    };
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      itemCount: rows.length + 1,
-      itemBuilder: (context, index) {
-        if (index == rows.length) {
-          return _StatusFooter(state: state, onRefresh: onRefresh);
-        }
-        return switch (rows[index]) {
-          TimelineDateRow(:final date) => _DateHeader(date: date),
-          TimelineCardsRow(:final items) => _CardsRow(
-            items: items,
-            columns: columns,
+    return CustomScrollView(
+      key: ObjectKey(_controller),
+      controller: _controller,
+      center: _centerKey,
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList.builder(
+            itemCount: before.length,
+            findChildIndexCallback: (key) => beforeIndices[key],
+            itemBuilder: (context, index) => _row(before[index]),
           ),
-          TimelineBaselineRow(:final timestamp) => _BaselineDivider(
-            timestamp: timestamp,
+        ),
+        SliverPadding(
+          key: _centerKey,
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          sliver: SliverList.builder(
+            itemCount: after.length + 1,
+            findChildIndexCallback: (key) => afterIndices[key],
+            itemBuilder: (context, index) => index < after.length
+                ? _row(after[index])
+                : _StatusFooter(
+                    state: widget.state,
+                    onRefresh: widget.onRefresh,
+                    onRetry: widget.onRetry,
+                    onLoadOlder: widget.onLoadOlder,
+                  ),
           ),
-        };
-      },
+        ),
+      ],
     );
   }
 }
@@ -462,10 +607,15 @@ class _RuleRow extends StatelessWidget {
 }
 
 class _CardsRow extends StatelessWidget {
-  const _CardsRow({required this.items, required this.columns});
+  const _CardsRow({
+    required this.items,
+    required this.columns,
+    required this.cardKey,
+  });
 
   final List<TimelineRelease> items;
   final int columns;
+  final Key Function(String) cardKey;
 
   @override
   Widget build(BuildContext context) {
@@ -479,7 +629,10 @@ class _CardsRow extends StatelessWidget {
               if (column > 0) const SizedBox(width: 12),
               Expanded(
                 child: column < items.length
-                    ? ReleaseTimelineCard(item: items[column])
+                    ? ReleaseTimelineCard(
+                        key: cardKey(items[column].key),
+                        item: items[column],
+                      )
                     : const SizedBox.shrink(),
               ),
             ],
@@ -491,10 +644,17 @@ class _CardsRow extends StatelessWidget {
 }
 
 class _StatusFooter extends StatelessWidget {
-  const _StatusFooter({required this.state, required this.onRefresh});
+  const _StatusFooter({
+    required this.state,
+    required this.onRefresh,
+    required this.onRetry,
+    required this.onLoadOlder,
+  });
 
   final TimelineViewState state;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onRetry;
+  final Future<void> Function() onLoadOlder;
 
   @override
   Widget build(BuildContext context) {
@@ -524,10 +684,26 @@ class _StatusFooter extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               ),
             ),
-          if (state.canRetry || state.persistenceFailed)
+          if (state.canLoadOlder)
+            FilledButton.tonal(
+              onPressed: state.loading ? null : () => onLoadOlder(),
+              child: Text(l10n.timelineLoadOlder),
+            ),
+          if (state.failure != null)
+            Text(switch (state.failure!.kind) {
+              TimelineFailureKind.network => l10n.timelineErrorNetwork,
+              TimelineFailureKind.rateLimited => l10n.timelineErrorRateLimited,
+              _ => l10n.timelineErrorServer,
+            }),
+          if (state.canRetry)
+            OutlinedButton(
+              onPressed: state.loading ? null : () => onRetry(),
+              child: Text(l10n.timelineRetry),
+            ),
+          if (state.persistenceFailed)
             OutlinedButton(
               onPressed: state.loading ? null : () => onRefresh(),
-              child: Text(l10n.timelineRetry),
+              child: Text(l10n.timelineReload),
             ),
         ],
       ),

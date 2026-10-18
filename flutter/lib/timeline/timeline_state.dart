@@ -35,6 +35,7 @@ class TimelineViewState {
     this.loadedNewCount = 0,
     this.partial = false,
     this.canRetry = false,
+    this.canLoadOlder = false,
     this.failure,
     this.persistenceFailed = false,
   });
@@ -73,6 +74,10 @@ class TimelineViewState {
   /// Whether another round could recover a failed repository.
   final bool canRetry;
 
+  /// Successful repositories still have another page available. Failed pages
+  /// are retried explicitly instead of being advanced by Load older.
+  final bool canLoadOlder;
+
   final TimelineFailure? failure;
 
   /// Whether usable results returned while their bookmark could not be saved.
@@ -96,6 +101,7 @@ class TimelineViewState {
     int? loadedNewCount,
     bool? partial,
     bool? canRetry,
+    bool? canLoadOlder,
     TimelineFailure? failure,
     bool clearFailure = false,
     bool? persistenceFailed,
@@ -116,6 +122,7 @@ class TimelineViewState {
       loadedNewCount: loadedNewCount ?? this.loadedNewCount,
       partial: partial ?? this.partial,
       canRetry: canRetry ?? this.canRetry,
+      canLoadOlder: canLoadOlder ?? this.canLoadOlder,
       failure: clearFailure ? null : failure ?? this.failure,
       persistenceFailed: persistenceFailed ?? this.persistenceFailed,
     );

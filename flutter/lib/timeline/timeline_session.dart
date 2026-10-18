@@ -36,6 +36,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   TimelineCycle _cycle = TimelineCycle.empty;
   String? _context;
   int _generation = 0;
+  final Map<String, RepositoryPageStatus> _failures = {};
+  final Set<String> _firstPageRetries = {};
 
   @override
   TimelineViewState build() {
@@ -54,10 +56,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   }
 
   /// Reads one coordinated round for every Followed Repository.
-  ///
-  /// This is the only Timeline command in this slice. Loading older pages and
-  /// retrying individual repositories with their own cursors belong to the
-  /// pagination slice.
   Future<void> refresh() async {
     final context = _sessionContext();
     if (context == null) return;
@@ -80,6 +78,52 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     await _startCycle(++_generation);
   }
 
+  /// Advances successful, non-exhausted repositories by one coordinated round.
+  Future<void> loadOlder() async {
+    if (state.loading || !state.active || !state.canLoadOlder) return;
+    await _continueRound({
+      for (final repository in _followedRepositories)
+        if (!_cycle.failedIds.contains(repository.id) &&
+            _cycle.pages[repository.id]?.hasOlderReleases == true)
+          repository.id: _cycle.pages[repository.id]?.endCursor,
+    });
+  }
+
+  /// Retries failed pages at their original cursors. An optional stable ID
+  /// restricts the action to one failed repository.
+  Future<void> retryFailed({String? repositoryId}) async {
+    if (state.loading || !state.active || !state.canRetry) return;
+    if (_followedRepositories.isEmpty) {
+      await refresh();
+      return;
+    }
+    await _continueRound({
+      for (final repository in _followedRepositories)
+        if (_cycle.failedIds.contains(repository.id) &&
+            (repositoryId == null || repository.id == repositoryId))
+          repository.id: _firstPageRetries.contains(repository.id)
+              ? null
+              : _cycle.pages[repository.id]?.endCursor,
+    });
+  }
+
+  Future<void> _continueRound(Map<String, String?> cursors) async {
+    if (cursors.isEmpty) return;
+    final ticket = _generation;
+    state = state.copyWith(loading: true, clearFailure: true);
+    final response = await ref
+        .read(releaseTimelineServiceProvider)
+        .loadPages(cursors);
+    if (!_isCurrent(ticket)) return;
+    _acceptRound(
+      ticket,
+      response,
+      cursors.keys.toList(),
+      refresh: false,
+      cursors: cursors,
+    );
+  }
+
   void _onSessionChanged() {
     final context = _sessionContext();
     if (context == null) {
@@ -87,6 +131,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       _context = null;
       _followedRepositories = const [];
       _cycle = TimelineCycle.empty;
+      _failures.clear();
+      _firstPageRetries.clear();
       state = const TimelineViewState.inactive();
       return;
     }
@@ -94,6 +140,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _context = context;
     _followedRepositories = const [];
     _cycle = TimelineCycle.empty;
+    _failures.clear();
+    _firstPageRetries.clear();
     state = const TimelineViewState.activeLoading();
     unawaited(_startCycle(++_generation));
   }
@@ -109,6 +157,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> _startCycle(int ticket) async {
     if (!_isCurrent(ticket)) return;
+    _cycle = TimelineCycle.empty;
+    _followedRepositories = const [];
+    _failures.clear();
+    _firstPageRetries.clear();
     state = state.copyWith(
       active: true,
       loading: true,
@@ -121,6 +173,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       loadedNewCount: 0,
       partial: false,
       canRetry: false,
+      canLoadOlder: false,
       persistenceFailed: false,
     );
 
@@ -153,27 +206,76 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final response = await ref.read(releaseTimelineServiceProvider).refresh();
     if (!_isCurrent(ticket)) return;
 
+    _acceptRound(ticket, response, [
+      for (final follow in _followedRepositories) follow.id,
+    ], refresh: true);
+  }
+
+  void _acceptRound(
+    int ticket,
+    TimelineResult<TimelineRoundDto> response,
+    List<String> requestedIds, {
+    required bool refresh,
+    Map<String, String?> cursors = const {},
+  }) {
     final round = response.data;
-    if (round == null || !_hasUsablePage(round)) {
-      _fail(ticket, response.failure, round: round);
+    final pages = round?.toDomainPages() ?? <String, RepositoryPage>{};
+    pages.removeWhere((id, _) => !requestedIds.contains(id));
+    for (final entry in pages.entries.toList()) {
+      final page = entry.value;
+      if (page.isAvailable &&
+          page.hasOlderReleases &&
+          (page.endCursor == null ||
+              page.endCursor!.isEmpty ||
+              page.endCursor == cursors[entry.key])) {
+        pages[entry.key] = RepositoryPage(
+          status: page.status,
+          owner: page.owner,
+          name: page.name,
+          hasOlderReleases: true,
+          incomplete: true,
+          releases: page.releases,
+        );
+      }
+    }
+    if (round == null || !pages.values.any((page) => page.isUsable)) {
+      if (refresh) {
+        _firstPageRetries
+          ..clear()
+          ..addAll(requestedIds);
+        _failures.clear();
+      }
+      _fail(ticket, response.failure, pages: pages, requestedIds: requestedIds);
       return;
     }
 
-    final pages = round.toDomainPages();
+    if (refresh) {
+      _failures.clear();
+      _firstPageRetries.clear();
+    }
+    for (final id in requestedIds) {
+      final page = pages[id];
+      if (page != null && page.isAvailable && !page.incomplete) {
+        _firstPageRetries.remove(id);
+      }
+    }
+    _recordFailures(requestedIds, pages);
     final result = mergeTimelineRound(
       cycle: _cycle,
       followedRepositories: _followedRepositories,
       pages: pages,
-      requestedIds: [for (final follow in _followedRepositories) follow.id],
-      refresh: true,
+      requestedIds: requestedIds,
+      refresh: refresh,
       environment: ref.read(timelineEnvironmentProvider),
-      capturedBaseline: round.refresh?.previousBaseline,
+      capturedBaseline: refresh
+          ? round.refresh?.previousBaseline
+          : _cycle.previousBaseline,
     );
     _cycle = result.cycle;
 
     final baseline = _cycle.previousBaseline;
-    final unavailable = _repositoriesFor(round.unavailableIds ?? const []);
-    final transient = _repositoriesFor(round.transientIds ?? const []);
+    final unavailable = _failedRepositories(RepositoryPageStatus.unavailable);
+    final transient = _failedRepositories(RepositoryPageStatus.transient);
 
     state = TimelineViewState(
       active: true,
@@ -185,22 +287,37 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       baselineExposed: isBaselineExposed(baseline, _cycle.windowLowerBound),
       loadedNewCount: countLoadedNewReleases(result.groups, baseline),
       partial: _cycle.partial || unavailable.isNotEmpty || transient.isNotEmpty,
-      canRetry: _cycle.failedIds.isNotEmpty || _hasLookupFailures(round),
-      persistenceFailed: round.persistenceError != null,
+      canRetry: _cycle.failedIds.isNotEmpty,
+      canLoadOlder: _canLoadOlder,
+      persistenceFailed: refresh
+          ? round.persistenceError != null
+          : state.persistenceFailed || round.persistenceError != null,
     );
   }
 
-  /// A round is usable when at least one repository returned releases, or when
-  /// a partially failed page carried some. HTTP success alone is not usable.
-  bool _hasUsablePage(TimelineRoundDto round) {
-    final pages = round.pages;
-    if (pages == null) return false;
-    return pages.entries.any((entry) => entry.value.toDomain().isUsable);
+  bool get _canLoadOlder => _cycle.pages.entries.any(
+    (entry) =>
+        !_cycle.failedIds.contains(entry.key) && entry.value.hasOlderReleases,
+  );
+
+  void _recordFailures(List<String> ids, Map<String, RepositoryPage> pages) {
+    for (final id in ids) {
+      final page = pages[id];
+      if (page == null || !page.isAvailable || page.incomplete) {
+        _failures[id] = page?.status == RepositoryPageStatus.unavailable
+            ? RepositoryPageStatus.unavailable
+            : RepositoryPageStatus.transient;
+      } else {
+        _failures.remove(id);
+      }
+    }
   }
 
-  bool _hasLookupFailures(TimelineRoundDto round) =>
-      (round.unavailableIds ?? const []).isNotEmpty ||
-      (round.transientIds ?? const []).isNotEmpty;
+  List<TimelineRepository> _failedRepositories(RepositoryPageStatus status) =>
+      _repositoriesFor([
+        for (final entry in _failures.entries)
+          if (entry.value == status) entry.key,
+      ]);
 
   List<TimelineRepository> _repositoriesFor(List<String> ids) {
     final byId = {
@@ -212,22 +329,31 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// A round that returned no usable results keeps the releases already read
   /// and its captured baseline, and reports a retryable failure naming the
   /// repositories the backend could not include.
-  void _fail(int ticket, TimelineFailure? failure, {TimelineRoundDto? round}) {
+  void _fail(
+    int ticket,
+    TimelineFailure? failure, {
+    Map<String, RepositoryPage> pages = const {},
+    List<String>? requestedIds,
+  }) {
     if (!_isCurrent(ticket)) return;
-    _cycle = _cycle.withFailed([
-      for (final follow in _followedRepositories) follow.id,
-    ]);
+    final ids =
+        requestedIds ?? [for (final follow in _followedRepositories) follow.id];
+    _cycle = _cycle.withFailed(ids);
+    _recordFailures(ids, pages);
     final baseline = _cycle.previousBaseline;
     state = state.copyWith(
       active: true,
       loading: false,
       hasFollows: _followedRepositories.isNotEmpty,
-      unavailableRepositories: _repositoriesFor(
-        round?.unavailableIds ?? const [],
+      unavailableRepositories: _failedRepositories(
+        RepositoryPageStatus.unavailable,
       ),
-      transientRepositories: _repositoriesFor(round?.transientIds ?? const []),
+      transientRepositories: _failedRepositories(
+        RepositoryPageStatus.transient,
+      ),
       partial: true,
       canRetry: true,
+      canLoadOlder: _canLoadOlder,
       failure:
           failure ?? const TimelineFailure(TimelineFailureKind.invalidResponse),
       baselineExposed: isBaselineExposed(baseline, _cycle.windowLowerBound),

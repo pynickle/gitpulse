@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -128,6 +129,9 @@ Map<String, Object?> roundJson({
   'transientIds': transientIds,
   'groups': groups,
 };
+
+String pageRequest(Map<String, String?> cursors) =>
+    'GET ${Uri(path: 'api/release-timeline', queryParameters: {'cursors': jsonEncode(cursors)})}';
 
 ({ProviderContainer container, FakeSessionController session}) createHarness({
   String login = 'octocat',
