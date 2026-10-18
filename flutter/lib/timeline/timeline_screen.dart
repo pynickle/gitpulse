@@ -31,7 +31,14 @@ class TimelineScreen extends ConsumerWidget {
         children: [
           _Header(state: state, onRefresh: refresh),
           if (state.hasLookupFailures)
-            _LookupFailureBanner(state: state, onRetry: retry),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: constraints.maxHeight * 0.35,
+              ),
+              child: SingleChildScrollView(
+                child: _LookupFailureBanner(state: state, onRetry: retry),
+              ),
+            ),
           Expanded(
             child: _Body(
               state: state,
@@ -285,7 +292,7 @@ class _FailureState extends StatelessWidget {
     };
 
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,

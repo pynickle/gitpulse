@@ -85,7 +85,7 @@ void main() {
       expect(find.byType(NavigationRail), findsNothing);
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Release Follow management'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       expect(find.text('Change backend'), findsOneWidget);

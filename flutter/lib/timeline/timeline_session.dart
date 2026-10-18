@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import 'timeline_dto.dart';
 import 'timeline_models.dart';
@@ -31,13 +32,33 @@ final releaseTimelineSessionProvider =
       ReleaseTimelineSession.new,
     );
 
+/// Confirmed removals from an account's shared follow set.
+///
+/// Durable-history adapters consume this lifecycle rather than letting widgets
+/// delete records.
+class TimelineFollowRemoval {
+  TimelineFollowRemoval({
+    required this.identity,
+    required Set<String> repositoryIds,
+  }) : repositoryIds = Set.unmodifiable(repositoryIds);
+
+  final AuthenticatedIdentity identity;
+  final Set<String> repositoryIds;
+}
+
 class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   List<TimelineRepository> _followedRepositories = const [];
   TimelineCycle _cycle = TimelineCycle.empty;
   String? _context;
   int _generation = 0;
+  bool _followsKnown = false;
   final Map<String, RepositoryPageStatus> _failures = {};
   final Set<String> _firstPageRetries = {};
+  final _followRemovals = StreamController<TimelineFollowRemoval>.broadcast(
+    sync: true,
+  );
+
+  Stream<TimelineFollowRemoval> get followRemovals => _followRemovals.stream;
 
   @override
   TimelineViewState build() {
@@ -46,11 +67,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     });
     ref.onDispose(() {
       _generation += 1;
+      _followRemovals.close();
     });
     final context = _sessionContext();
     if (context != null) {
       _context = context;
-      Future<void>.microtask(() => _startCycle(++_generation));
+      final ticket = ++_generation;
+      Future<void>.microtask(() => _startCycle(ticket));
     }
     return const TimelineViewState.inactive();
   }
@@ -61,7 +84,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (context == null) return;
     // A new account, or a first cycle that never reached the Followed
     // Repositories, restarts from the account's settings.
-    if (context != _context || _followedRepositories.isEmpty) {
+    if (context != _context ||
+        !_followsKnown ||
+        _followedRepositories.isEmpty) {
       _context = context;
       await _startCycle(++_generation);
       return;
@@ -76,6 +101,30 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (context == null) return;
     _context = context;
     await _startCycle(++_generation);
+  }
+
+  /// Accepts the backend-confirmed account list.
+  ///
+  /// Invalidates the previous window immediately, then loads additions from
+  /// their first page.
+  Future<void> applyFollows(List<TimelineRepository> repositories) async {
+    final context = _sessionContext();
+    if (context == null) return;
+    if (_followsKnown &&
+        context == _context &&
+        repositories.length == _followedRepositories.length &&
+        repositories.indexed.every((entry) {
+          final previous = _followedRepositories[entry.$1];
+          return previous.id == entry.$2.id &&
+              previous.fullName == entry.$2.fullName;
+        })) {
+      return;
+    }
+    _context = context;
+    await _startCycle(
+      ++_generation,
+      confirmedFollows: List.unmodifiable(repositories),
+    );
   }
 
   /// Advances successful, non-exhausted repositories by one coordinated round.
@@ -93,7 +142,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// restricts the action to one failed repository.
   Future<void> retryFailed({String? repositoryId}) async {
     if (state.loading || !state.active || !state.canRetry) return;
-    if (_followedRepositories.isEmpty) {
+    if (!_followsKnown || _followedRepositories.isEmpty) {
       await refresh();
       return;
     }
@@ -130,6 +179,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       _generation += 1;
       _context = null;
       _followedRepositories = const [];
+      _followsKnown = false;
       _cycle = TimelineCycle.empty;
       _failures.clear();
       _firstPageRetries.clear();
@@ -139,6 +189,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (context == _context) return;
     _context = context;
     _followedRepositories = const [];
+    _followsKnown = false;
     _cycle = TimelineCycle.empty;
     _failures.clear();
     _firstPageRetries.clear();
@@ -155,10 +206,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     return '${identity.backend}|${identity.login}';
   }
 
-  Future<void> _startCycle(int ticket) async {
+  Future<void> _startCycle(
+    int ticket, {
+    List<TimelineRepository>? confirmedFollows,
+  }) async {
     if (!_isCurrent(ticket)) return;
     _cycle = TimelineCycle.empty;
-    _followedRepositories = const [];
+    _followsKnown = false;
     _failures.clear();
     _firstPageRetries.clear();
     state = state.copyWith(
@@ -177,9 +231,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       persistenceFailed: false,
     );
 
-    final response = await ref
-        .read(releaseTimelineServiceProvider)
-        .readFollowedRepositories();
+    final response = confirmedFollows == null
+        ? await ref
+              .read(releaseTimelineServiceProvider)
+              .readFollowedRepositories()
+        : TimelineResult.data(confirmedFollows);
     if (!_isCurrent(ticket)) return;
 
     if (response.data == null) {
@@ -188,6 +244,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
 
     final follows = response.data!;
+    _followsKnown = true;
+    final nextIds = follows.map((repository) => repository.id).toSet();
+    final removed = _followedRepositories
+        .map((repository) => repository.id)
+        .where((id) => !nextIds.contains(id))
+        .toSet();
+    _followedRepositories = follows;
+    final identity = ref.read(sessionControllerProvider).identity;
+    if (removed.isNotEmpty && identity != null) {
+      _followRemovals.add(
+        TimelineFollowRemoval(identity: identity, repositoryIds: removed),
+      );
+    }
     if (follows.isEmpty) {
       _followedRepositories = const [];
       _cycle = TimelineCycle.empty;

@@ -67,6 +67,7 @@ export async function createReleaseTimelineTestHandler(baseURL = '/') {
     route('/api/release-timeline/refresh'),
     (await import('../../server/api/release-timeline/refresh.post')).default
   );
+  router.put(route('/api/settings'), (await import('../../server/api/settings.put')).default);
   router.get(
     route('/api/release-timeline'),
     (await import('../../server/api/release-timeline.get')).default
@@ -167,6 +168,7 @@ if (import.meta.main) {
   Object.assign(globalThis, {
     createError,
     defineEventHandler,
+    readBody,
     useStorage: () => storage,
     useRuntimeConfig: () => ({
       app: { baseURL: '/pulse/' },

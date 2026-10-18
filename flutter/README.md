@@ -192,10 +192,38 @@ position once the window reaches it.
 
 The screen covers the existing-follow, no-follow, loading, empty, partial, and
 retryable-failure states, in one column on phones and up to three on wide windows.
-Follow management, retention, and release details belong to later slices;
-Followed Repositories are still managed in
-the web application, and this client reads the same account list. Nothing in this
-slice is cached or reused across restarts.
+Retention and release details belong to later slices. Timeline content is not
+yet cached or reused across restarts.
+
+## Release Follows
+
+The Follows destination searches repositories with paginated
+`GET /api/search/repositories`, or resolves a pasted GitHub repository URL with
+`GET /api/repos/:owner/:repo`. Release Follows use GitHub's stable `node_id` and
+remain independent of Watch and Star. English and Simplified Chinese screens
+show the account's current list, canonical renamed identities, unavailable
+repositories, and retryable lookup failures.
+
+The app reads the latest account settings before each edit and sends only
+`followedRepositories` to `PUT /api/settings`, preserving unrelated preferences.
+It enforces the existing 100 available / 150 stored follow limits; transient
+lookup failures still count toward the available limit. Failed or malformed
+save responses keep the last confirmed list visible. Reload follows, or return
+to the Follows destination, to read edits made in another client.
+
+Confirmed follow changes pass through the public timeline session's
+`applyFollows` method, which invalidates obsolete requests and starts the new
+set from its first pages. Its `followRemovals` stream emits stable repository
+IDs together with the backend/account identity, including removals discovered
+by a settings reload. Future durable-history adapters can use that lifecycle
+to apply deletion policy without widget-owned cache writes. Renames preserve
+identity and do not emit removals.
+
+Tests drive mounted screens and the Cookie/CSRF HTTP session, including failed
+saves and responses that arrive after sign-out or a follow-set change. A local
+HTTP fixture also runs the real settings route/storage with independent app
+and browser sessions to verify shared follows, preserved preferences, and
+account isolation.
 
 ## Native prerequisites and verification
 

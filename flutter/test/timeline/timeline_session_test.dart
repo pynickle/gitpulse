@@ -9,6 +9,86 @@ import 'package:gitpulse/timeline/timeline_state.dart';
 import 'timeline_test_support.dart';
 
 void main() {
+  test('retry after a failed follow reload rereads shared settings before requesting repository pages', () async {
+    final harness = createHarness();
+    var settings = BackendResult(
+      statusCode: 200,
+      data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+    );
+    harness.session.handlers['GET api/settings'] = () => settings;
+    var pages = {
+      'R_alpha': pageJson('octo', 'alpha', [
+        releaseJson(12, 'v1.2', '2026-10-05T10:00:00Z'),
+      ]),
+    };
+    harness.session.handlers['POST api/release-timeline/refresh'] = () =>
+        BackendResult(statusCode: 200, data: roundJson(pages: pages));
+    await pumpEventQueue(times: 10);
+    final facade = harness.container.read(
+      releaseTimelineSessionProvider.notifier,
+    );
+    final removals = <TimelineFollowRemoval>[];
+    final subscription = facade.followRemovals.listen(removals.add);
+    addTearDown(subscription.cancel);
+    settings = const BackendResult(
+      statusCode: 503,
+      problem: BackendProblem.unavailable,
+    );
+    await facade.reloadFollows();
+    expect(readState(harness.container).canRetry, isTrue);
+    settings = BackendResult(
+      statusCode: 200,
+      data: settingsJson([followJson('R_beta', 'octo', 'beta')]),
+    );
+    pages = {
+      'R_beta': pageJson('octo', 'beta', [
+        releaseJson(21, 'v2.1', '2026-10-06T10:00:00Z'),
+      ]),
+    };
+    await facade.retryFailed();
+    expect(
+      readState(harness.container).groups.single.items.single.key,
+      'R_beta:21',
+    );
+    expect(removals.single.repositoryIds, {'R_alpha'});
+    expect(harness.session.requests.skip(2), [
+      'GET api/settings',
+      'GET api/settings',
+      'POST api/release-timeline/refresh',
+    ]);
+  });
+
+  test('a confirmed empty follow set supersedes an initial settings read still in flight', () async {
+    final harness = createHarness();
+    final held = Completer<BackendResult>();
+    harness.session.handlers['GET api/settings'] = () => held.future;
+    harness.session.handlers['POST api/release-timeline/refresh'] = () =>
+        BackendResult(
+          statusCode: 200,
+          data: roundJson(
+            pages: {
+              'R_alpha': pageJson('octo', 'alpha', [
+                releaseJson(12, 'v1.2', '2026-10-05T10:00:00Z'),
+              ]),
+            },
+          ),
+        );
+    await pumpEventQueue(times: 10);
+    await harness.container
+        .read(releaseTimelineSessionProvider.notifier)
+        .applyFollows([]);
+    held.complete(
+      BackendResult(
+        statusCode: 200,
+        data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+      ),
+    );
+    await pumpEventQueue(times: 10);
+    expect(readState(harness.container).hasFollows, isFalse);
+    expect(readState(harness.container).groups, isEmpty);
+    expect(harness.session.requests, ['GET api/settings']);
+  });
+
   test('a signed-in user reads Followed Repository releases newest first, grouped by display date, with no new count on first use', () async {
     final harness = createHarness();
     harness.session.handlers['GET api/settings'] = () => BackendResult(

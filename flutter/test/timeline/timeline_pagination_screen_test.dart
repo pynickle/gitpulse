@@ -179,7 +179,13 @@ void main() {
           ),
         },
       );
-      await tester.drag(find.byType(Scrollable), const Offset(0, -600));
+      await tester.drag(
+        find.descendant(
+          of: find.byType(CustomScrollView),
+          matching: find.byType(Scrollable),
+        ),
+        const Offset(0, -600),
+      );
       await tester.pumpAndSettle();
       final card = find.byType(ReleaseTimelineCard).evaluate().firstWhere((
         element,

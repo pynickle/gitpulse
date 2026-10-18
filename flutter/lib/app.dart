@@ -8,6 +8,7 @@ import 'l10n/generated/app_localizations.dart';
 import 'session/session_controller.dart';
 import 'session/sign_in_panel.dart';
 import 'timeline/timeline_screen.dart';
+import 'follows/release_follows_screen.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -101,22 +102,22 @@ class GitPulseApp extends ConsumerWidget {
   }
 }
 
-/// The Timeline destination. The signed-in session state (identity, offline or
-/// rejected notices, sign-out) stays visible above the Release Timeline, as it
-/// is on the other destinations.
-class _TimelineTab extends StatelessWidget {
-  const _TimelineTab();
+/// The signed-in destination with account status and session actions.
+class _SignedInTab extends StatelessWidget {
+  const _SignedInTab({required this.child});
+
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
+        const Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: SignInPanel(),
         ),
-        Expanded(child: TimelineScreen()),
+        Expanded(child: child),
       ],
     );
   }
@@ -165,8 +166,12 @@ class _AppShell extends ConsumerWidget {
                   ],
                 ),
               Expanded(
-                child: index == 0 && session.phase == SessionPhase.signedIn
-                    ? const _TimelineTab()
+                child: index < 2 && session.phase == SessionPhase.signedIn
+                    ? _SignedInTab(
+                        child: index == 0
+                            ? const TimelineScreen()
+                            : const ReleaseFollowsScreen(),
+                      )
                     : ListView(
                         padding: const EdgeInsets.all(24),
                         children: [
@@ -196,7 +201,6 @@ class _AppShell extends ConsumerWidget {
                           ),
                           const SignInPanel(),
                           const SizedBox(height: 24),
-                          if (index == 1) Text(l10n.followsPending),
                           if (index == 2)
                             Align(
                               alignment: Alignment.centerLeft,
