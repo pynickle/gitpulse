@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../releases/release_drawer.dart';
 import 'timeline_date_labels.dart';
 import 'timeline_models.dart';
 
 /// One release card in a date group of the Release Timeline.
 ///
-/// Opening release details belongs to the release-drawer slice, so the card is
-/// readable but not yet interactive.
 class ReleaseTimelineCard extends StatelessWidget {
   const ReleaseTimelineCard({super.key, required this.item});
 
@@ -22,77 +21,89 @@ class ReleaseTimelineCard extends StatelessWidget {
       color: scheme.onSurfaceVariant,
     );
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        color: scheme.surfaceContainerLow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        onTap: () => showReleaseDrawer(context, (
+          owner: item.repository.owner,
+          repository: item.repository.name,
+          id: item.id,
+          tag: null,
+        )),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.dividerColor),
+            borderRadius: BorderRadius.circular(12),
+            color: scheme.surfaceContainerLow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Text(
-                  item.repository.fullName,
-                  maxLines: 1,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.repository.fullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    timelineTimeLabel(context, item.publishedAt.toLocal()),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    item.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (item.isPrerelease)
+                    _PrereleaseBadge(label: l10n.timelinePrerelease),
+                ],
+              ),
+              if (item.changelog.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  item.changelog,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: scheme.primary,
-                    fontWeight: FontWeight.w600,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                timelineTimeLabel(context, item.publishedAt.toLocal()),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+              ],
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 12,
+                runSpacing: 4,
+                children: [
+                  Text(l10n.timelineAssetCount(item.assetCount), style: muted),
+                  if (item.isOldestShown)
+                    Text(l10n.timelineOldestShown, style: muted),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Text(
-                item.title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (item.isPrerelease)
-                _PrereleaseBadge(label: l10n.timelinePrerelease),
-            ],
-          ),
-          if (item.changelog.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              item.changelog,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 12,
-            runSpacing: 4,
-            children: [
-              Text(l10n.timelineAssetCount(item.assetCount), style: muted),
-              if (item.isOldestShown)
-                Text(l10n.timelineOldestShown, style: muted),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
+import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
@@ -27,6 +28,7 @@ Future<MountedTimeline> pumpTimelineScreen(
   WidgetTester tester, {
   required Map<String, FutureOr<BackendResult> Function()> handlers,
   Size? size,
+  Future<bool> Function(Uri)? launchBrowser,
 }) async {
   if (size != null) {
     tester.view.physicalSize = size;
@@ -38,6 +40,8 @@ Future<MountedTimeline> pumpTimelineScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        if (launchBrowser != null)
+          browserLauncherProvider.overrideWithValue(launchBrowser),
         sessionControllerProvider.overrideWith(() {
           session = FakeSessionController(
             SessionState(

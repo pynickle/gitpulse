@@ -102,5 +102,20 @@
   "followsUnavailable": "GitHub 上不可用。请重试或取消关注此仓库。",
   "followsTransient": "暂时无法加载。请在网络恢复后重试。",
   "followsRenamed": "原名：{name}",
-  "changeBackend": "更换后端"
+  "changeBackend": "更换后端",
+  "releaseDetails": "Release 详情",
+  "releaseResizeSheet": "展开或收起 Release 详情",
+  "releaseClose": "关闭 Release 详情",
+  "releaseEntry": "返回入口 Release",
+  "releaseLoading": "正在加载 Release 详情",
+  "releaseUnavailable": "此 Release 不可用，或当前账号无权访问。",
+  "releaseFailed": "无法加载 Release 详情。请在连接恢复后重试。",
+  "releaseNoNotes": "暂无发布说明。",
+  "releaseDraft": "草稿",
+  "releaseDownload": "在浏览器中下载",
+  "releaseOpenOnGitHub": "在 GitHub 中打开",
+  "releaseAssetsOnline": "附件信息来自本次请求。下载将在浏览器中打开，可能需要登录 GitHub。",
+  "releaseAssetMetadata": "{bytes} 字节 · {downloads} 次下载",
+  "releaseResourceUnavailable": "图片不可用",
+  "releaseLinkFailed": "无法在浏览器中打开此链接。"
 }

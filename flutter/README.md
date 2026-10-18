@@ -192,8 +192,47 @@ position once the window reaches it.
 
 The screen covers the existing-follow, no-follow, loading, empty, partial, and
 retryable-failure states, in one column on phones and up to three on wide windows.
-Retention and release details belong to later slices. Timeline content is not
-yet cached or reused across restarts.
+Retention belongs to a later slice. Timeline content is not yet cached or reused
+across restarts.
+
+## Release details
+
+Open a timeline card to read its current release details in a right drawer on
+wide windows or a bottom sheet on phones. The sheet starts at 70% height; drag
+its handle or contents to expand it, tap the handle to expand/collapse, or drag
+down to dismiss. Close, Android Back, desktop Escape, and the scrim return to
+the same timeline position. Keyboard focus returns to the opening card when
+it remains mounted. Signing out, session rejection, or changing identities
+hides and closes the drawer, including while requests are pending.
+
+Details use the existing numeric REST release endpoint; release links use the
+existing by-tag endpoint with the full encoded tag. Stable repository node IDs
+remain separate from these navigation addresses. Current asset sizes, download
+counts, content types and update dates come from the detail response. Downloads
+and Open on GitHub use the external browser, which may require its own GitHub
+sign-in. No app session credentials are attached to these URLs.
+
+Release Markdown is converted locally and rendered as native HTML widgets,
+including nested/default-open details, images and tables. An allowlist removes
+active content and CSS/resource attributes before rendering. Relative documents
+and raw images resolve separately using the canonical repository, release tag
+and document directory; root-relative paths start at the repository root, matching
+[GitHub's Markdown convention](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#relative-links).
+Image loading uses the native renderer's independent HTTP client without the
+backend's Cookie jar or CSRF headers; missing images retain alternative text.
+Private images that require authentication may therefore remain unavailable.
+
+Supported release links change the release inside the drawer, with one action
+back to the Entry Release. Repository and release-list destinations currently
+open externally until their own native slices are implemented. Issues, pull
+requests and other excluded destinations also open externally. Unsafe schemes
+and URLs containing embedded credentials are blocked. Highlighting, SVG support
+and durable offline release-body fallback belong to subsequent slices; current
+asset metadata and arbitrary images have no offline guarantee.
+
+Tests cover HTTP identity/nullability/errors, document/resource policy, native
+image requests without credentials, mounted HTML reading, adaptive presentation,
+keyboard focus, Back/Escape, Entry Release navigation and timeline position.
 
 ## Release Follows
 

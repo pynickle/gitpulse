@@ -115,5 +115,21 @@
   "followsTransient": "Temporarily unavailable. Retry when your connection recovers.",
   "followsRenamed": "Renamed from {name}",
   "@followsRenamed": {"placeholders": {"name": {"type": "String"}}},
-  "changeBackend": "Change backend"
+  "changeBackend": "Change backend",
+  "releaseDetails": "Release details",
+  "releaseResizeSheet": "Expand or collapse release details",
+  "releaseClose": "Close release details",
+  "releaseEntry": "Return to Entry Release",
+  "releaseLoading": "Loading release details",
+  "releaseUnavailable": "This release is unavailable or is not accessible to this account.",
+  "releaseFailed": "Could not load release details. Retry when your connection recovers.",
+  "releaseNoNotes": "No release notes.",
+  "releaseDraft": "Draft",
+  "releaseDownload": "Download in browser",
+  "releaseOpenOnGitHub": "Open on GitHub",
+  "releaseAssetsOnline": "Asset information is current for this request. Downloads open in your browser and may require GitHub sign-in.",
+  "releaseAssetMetadata": "{bytes} bytes · {downloads} downloads",
+  "@releaseAssetMetadata": {"placeholders": {"bytes": {"type": "int"}, "downloads": {"type": "int"}}},
+  "releaseResourceUnavailable": "Image unavailable",
+  "releaseLinkFailed": "Could not open this link in your browser."
 }
