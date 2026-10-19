@@ -178,7 +178,9 @@ void main() {
       ),
     );
     await session.retryFailed(repositoryId: 'A');
-    expect(releaseKeys(harness.container), ['A:5', 'B:2']);
+    // The first usable retry establishes the new refresh window. Records kept
+    // readable during the failed refresh are not pages fetched in this cycle.
+    expect(releaseKeys(harness.container), ['A:5']);
     expect(
       readState(harness.container).unavailableRepositories.map((r) => r.id),
       ['B'],
@@ -195,7 +197,7 @@ void main() {
       ),
     );
     await session.retryFailed(repositoryId: 'B');
-    expect(releaseKeys(harness.container), ['A:5', 'B:4', 'B:2']);
+    expect(releaseKeys(harness.container), ['A:5', 'B:4']);
     expect(readState(harness.container).canRetry, isFalse);
     expect(readState(harness.container).partial, isFalse);
     expect(

@@ -1,5 +1,8 @@
 {
   "@@locale": "zh",
+  "timelineCacheWaiting": "已保存的历史正在等待 {repositories} 连通，请加载更早记录或重试。",
+  "@timelineCacheWaiting": {"placeholders": {"repositories": {"type": "String"}}},
+  "timelineCacheConnected": "已连通保存的历史",
   "timelineOffline": "离线 · 已保存的时间线",
   "timelineCacheFailed": "无法在此设备上保存时间线，当前获取的内容仍可阅读。",
   "timelineSavedAt": "保存于 {time}",

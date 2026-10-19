@@ -597,6 +597,20 @@ class _StatusFooter extends StatelessWidget {
         spacing: 12,
         runSpacing: 8,
         children: [
+          if (state.cacheConnection != TimelineCacheConnection.none)
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                state.cacheConnection == TimelineCacheConnection.waiting
+                    ? l10n.timelineCacheWaiting(
+                        state.waitingRepositories
+                            .map((repository) => repository.fullName)
+                            .join(', '),
+                      )
+                    : l10n.timelineCacheConnected,
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
           if (state.partial)
             Text(
               l10n.timelinePartialWindow,

@@ -312,6 +312,7 @@ TimelineRound mergeTimelineRound({
   required bool refresh,
   required TimelineEnvironment environment,
   String? capturedBaseline,
+  Map<String, RepositoryPage> retainedPages = const {},
 }) {
   final before = refresh ? TimelineCycle.empty : cycle;
   final nextPages = {...before.pages};
@@ -355,6 +356,7 @@ TimelineRound mergeTimelineRound({
     );
   }
 
+  nextPages.addAll(retainedPages);
   final assembled = assembleTimelineGroups(
     followedRepositories,
     nextPages,

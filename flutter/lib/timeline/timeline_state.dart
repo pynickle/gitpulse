@@ -21,6 +21,8 @@ class TimelineFailure {
       kind != TimelineFailureKind.cancelled;
 }
 
+enum TimelineCacheConnection { none, waiting, connected }
+
 /// The immutable Release Timeline the widgets read.
 class TimelineViewState {
   const TimelineViewState({
@@ -42,6 +44,8 @@ class TimelineViewState {
     this.offline = false,
     this.restored = false,
     this.savedAt,
+    this.cacheConnection = TimelineCacheConnection.none,
+    this.waitingRepositories = const [],
   });
 
   /// Nobody is signed in with a connected backend yet.
@@ -90,6 +94,8 @@ class TimelineViewState {
   final bool offline;
   final bool restored;
   final DateTime? savedAt;
+  final TimelineCacheConnection cacheConnection;
+  final List<TimelineRepository> waitingRepositories;
 
   bool get hasReleases => groups.isNotEmpty;
 
@@ -117,6 +123,8 @@ class TimelineViewState {
     bool? offline,
     bool? restored,
     DateTime? savedAt,
+    TimelineCacheConnection? cacheConnection,
+    List<TimelineRepository>? waitingRepositories,
   }) {
     return TimelineViewState(
       active: active ?? this.active,
@@ -141,6 +149,8 @@ class TimelineViewState {
       offline: offline ?? this.offline,
       restored: restored ?? this.restored,
       savedAt: savedAt ?? this.savedAt,
+      cacheConnection: cacheConnection ?? this.cacheConnection,
+      waitingRepositories: waitingRepositories ?? this.waitingRepositories,
     );
   }
 }

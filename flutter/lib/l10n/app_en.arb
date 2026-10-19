@@ -1,5 +1,8 @@
 {
   "@@locale": "en",
+  "timelineCacheWaiting": "Saved history is waiting for {repositories}. Load older or retry to connect it.",
+  "@timelineCacheWaiting": {"placeholders": {"repositories": {"type": "String"}}},
+  "timelineCacheConnected": "Connected saved history",
   "timelineOffline": "Offline · saved timeline",
   "timelineCacheFailed": "Could not save the timeline on this device. Fresh results remain readable.",
   "timelineSavedAt": "Saved {time}",

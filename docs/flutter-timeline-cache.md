@@ -21,9 +21,28 @@ recover evicted content. A failed preference synchronization uses the installati
 last valid account value; without a valid value, fresh results remain session-only.
 
 Startup restores eligible exposed membership and attempts a fresh round. A wholly
-failed round preserves the committed view. Fresh usable results replace that view
-without importing older stored segments: online segment reconnection belongs to
-the next cache slice. Foreground return prunes expired records without refreshing
+failed round preserves the committed view. Fresh usable results replace that view.
+Retained page membership and same-cycle continuation cursors determine which
+cached page suffixes the fetched chain has reached, separately for each repository.
+Shared release identities can connect saved page chains, including across restarts;
+dates and an arbitrary stored release cannot. Repeating a separately saved latest
+page therefore cannot unlock an older disconnected island.
+
+Fresh results stay readable while repositories with retained history wait for
+connection. Only after every required repository connects (or successfully exhausts
+upstream without an anchor) do reachable cached suffixes enter the existing shared
+window calculation. Unavailable repositories remain visible blockers. Incomplete
+pages cannot connect or prove exhaustion; empty complete pages can continue using
+their returned cursor. Explicit load-older and retry actions each perform one round,
+keeping live cursors rather than treating a cursor from an old cycle as a fresh
+connection. Successful exhaustion without an anchor removes only that repository's
+obsolete history, retaining records fetched in the current cycle.
+
+The facade exposes waiting repositories and a connection state alongside partial
+coverage and retry actions. Connected cache uses the same publication ordering,
+buffering, latest-content deduplication, fixed baseline and saved visible membership
+as online results. Search and counts consume only that exposed window.
+Foreground return prunes expired records without refreshing
 the currently read timeline. Stored buffers and disconnected history never become
 visible merely because they are present in SQLite.
 

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../session/gitpulse_http.dart';
 import 'timeline_dto.dart';
 import 'timeline_models.dart';
+import 'timeline_history.dart';
 
 part 'timeline_cache.g.dart';
 
@@ -245,6 +246,70 @@ class TimelineCache extends _$TimelineCache {
     if (days != null) await _prune(now, days);
   });
 
+  Future<RetainedTimelineHistory> readHistory({
+    required String scope,
+    required DateTime now,
+  }) => _queue(
+    () => transaction(() async {
+      await _claim(scope);
+      final account = await customSelect(
+        'SELECT retention_days FROM cache_account WHERE scope = ?',
+        variables: [Variable(scope)],
+      ).getSingle();
+      final days = account.readNullable<int>('retention_days');
+      if (days == null) return const RetainedTimelineHistory();
+      await _prune(now, days);
+      final releases = <String, Map<int, ReleaseItem>>{};
+      for (final row in await customSelect(
+        'SELECT * FROM cache_releases',
+      ).get()) {
+        final item = ReleaseItemDto.fromJson(
+          jsonDecode(row.read<String>('content')) as Map<String, dynamic>,
+        ).toDomain();
+        releases.putIfAbsent(
+          row.read<String>('repository_id'),
+          () => {},
+        )[item.id] = item;
+      }
+      final members = <int, Set<int>>{};
+      for (final row in await customSelect(
+        'SELECT * FROM cache_page_members',
+      ).get()) {
+        members
+            .putIfAbsent(row.read<int>('segment_id'), () => {})
+            .add(row.read<int>('release_id'));
+      }
+      final pages = <String, List<RetainedTimelinePage>>{};
+      for (final row in await customSelect(
+        'SELECT * FROM cache_segments',
+      ).get()) {
+        final id = row.read<int>('id');
+        pages
+            .putIfAbsent(row.read<String>('repository_id'), () => [])
+            .add(
+              RetainedTimelinePage(
+                id: id,
+                cycle: row.read<String>('cycle'),
+                requestCursor: row.readNullable<String>('request_cursor'),
+                endCursor: row.readNullable<String>('end_cursor'),
+                hasOlder: row.read<int>('has_older') == 1,
+                incomplete: row.read<int>('incomplete') == 1,
+                members: members[id] ?? const {},
+              ),
+            );
+      }
+      return RetainedTimelineHistory(
+        repositories: {
+          for (final entry in releases.entries)
+            entry.key: RetainedRepositoryHistory(
+              releases: entry.value,
+              pages: pages[entry.key] ?? const [],
+            ),
+        },
+      );
+    }),
+  );
+
   Future<void> save({
     required String scope,
     required String cycleId,
@@ -254,6 +319,7 @@ class TimelineCache extends _$TimelineCache {
     required TimelineCycle cycle,
     required DateTime now,
     required bool Function() isCurrent,
+    Set<String> obsoleteRepositories = const {},
   }) => _writeCurrent(isCurrent, () async {
     final account = await customSelect(
       'SELECT retention_days FROM cache_account WHERE scope = ?',
@@ -262,6 +328,34 @@ class TimelineCache extends _$TimelineCache {
     final days = account?.readNullable<int>('retention_days');
     if (days == null) return;
     final cutoff = now.toUtc().subtract(Duration(days: days));
+    for (final id in obsoleteRepositories) {
+      await customStatement(
+        '''DELETE FROM cache_page_members WHERE segment_id IN
+        (SELECT id FROM cache_segments WHERE repository_id = ? AND cycle != ?)''',
+        [id, cycleId],
+      );
+      await customStatement(
+        'DELETE FROM cache_segments WHERE repository_id = ? AND cycle != ?',
+        [id, cycleId],
+      );
+      final currentIds = {
+        for (final item in cycle.pages[id]?.releases ?? const <ReleaseItem>[])
+          item.id,
+      };
+      final stored = await customSelect(
+        'SELECT id FROM cache_releases WHERE repository_id = ?',
+        variables: [Variable(id)],
+      ).get();
+      for (final row in stored) {
+        final releaseId = row.read<int>('id');
+        if (!currentIds.contains(releaseId)) {
+          await customStatement(
+            'DELETE FROM cache_releases WHERE repository_id = ? AND id = ?',
+            [id, releaseId],
+          );
+        }
+      }
+    }
     for (final entry in pages.entries) {
       final page = entry.value;
       if (!page.isAvailable) continue;

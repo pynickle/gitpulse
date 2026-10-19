@@ -11,6 +11,7 @@ import 'timeline_service.dart';
 import 'timeline_state.dart';
 import 'timeline_cache.dart';
 import 'timeline_cache_lifecycle.dart';
+import 'timeline_history.dart';
 
 /// The device clock and display time zone. Tests replace this seam.
 final timelineEnvironmentProvider = Provider<TimelineEnvironment>(
@@ -55,8 +56,12 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   String? _context;
   int _generation = 0;
   bool _followsKnown = false;
+  bool _awaitingFreshWindow = true;
   String _cycleId = '';
   int? _retentionDays;
+  TimelineHistoryConnection _history = TimelineHistoryConnection(
+    const RetainedTimelineHistory(),
+  );
   final Map<String, RepositoryPageStatus> _failures = {};
   final Set<String> _firstPageRetries = {};
   final _followRemovals = StreamController<TimelineFollowRemoval>.broadcast(
@@ -320,7 +325,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _followsKnown = false;
     _failures.clear();
     _firstPageRetries.clear();
+    _awaitingFreshWindow = true;
     _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
+    _history = TimelineHistoryConnection(const RetainedTimelineHistory());
     state = state.copyWith(
       active: true,
       loading: true,
@@ -341,6 +348,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (confirmedFollows == null && settings?.data == null) {
       _followsKnown = false;
       if (settings?.failure?.kind != TimelineFailureKind.session) {
+        await _loadHistory(ticket);
+        if (!_isCurrent(ticket)) return;
         await _runRound(ticket, inferFollows: _followedRepositories.isEmpty);
         if (_isCurrent(ticket)) state = state.copyWith(canRetry: true);
         return;
@@ -406,6 +415,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         state = state.copyWith(cacheFailed: true);
       }
       if (!_isCurrent(ticket)) return;
+      await _loadHistory(ticket);
+      if (!_isCurrent(ticket)) return;
       if (state.restored) {
         await pruneRetainedHistory();
         if (!_isCurrent(ticket)) return;
@@ -420,6 +431,20 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
     _followedRepositories = follows;
     await _runRound(ticket);
+  }
+
+  Future<void> _loadHistory(int ticket) async {
+    final identity = ref.read(sessionControllerProvider).identity;
+    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    if (scope == null || _retentionDays == null) return;
+    try {
+      final history = await ref
+          .read(timelineCacheProvider)
+          .readHistory(scope: scope, now: ref.read(timelineClockProvider)());
+      if (_isCurrent(ticket)) _history = TimelineHistoryConnection(history);
+    } catch (_) {
+      if (_isCurrent(ticket)) state = state.copyWith(cacheFailed: true);
+    }
   }
 
   Future<void> _runRound(int ticket, {bool inferFollows = false}) async {
@@ -486,6 +511,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         );
       }
     }
+    _history.accept(
+      pages,
+      cutoff: ref
+          .read(timelineClockProvider)()
+          .toUtc()
+          .subtract(Duration(days: _retentionDays ?? 1)),
+    );
     if (round == null || !pages.values.any((page) => page.isUsable)) {
       if (refresh) {
         _firstPageRetries
@@ -508,18 +540,39 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       }
     }
     _recordFailures(requestedIds, pages);
-    final result = mergeTimelineRound(
+    final startsWindow = refresh || _awaitingFreshWindow;
+    var result = mergeTimelineRound(
       cycle: _cycle,
       followedRepositories: _followedRepositories,
       pages: pages,
-      requestedIds: requestedIds,
-      refresh: refresh,
+      requestedIds: startsWindow
+          ? [for (final repository in _followedRepositories) repository.id]
+          : requestedIds,
+      refresh: startsWindow,
       environment: ref.read(timelineEnvironmentProvider),
       capturedBaseline: refresh
           ? round.refresh?.previousBaseline
           : _cycle.previousBaseline,
     );
+    _awaitingFreshWindow = false;
     _cycle = result.cycle;
+    final extension = _history.extensionPages(
+      _cycle,
+      now: ref.read(timelineClockProvider)(),
+      retentionDays: _retentionDays ?? 1,
+    );
+    if (extension.isNotEmpty) {
+      result = mergeTimelineRound(
+        cycle: _cycle,
+        followedRepositories: _followedRepositories,
+        pages: const {},
+        requestedIds: const [],
+        retainedPages: extension,
+        refresh: false,
+        environment: ref.read(timelineEnvironmentProvider),
+      );
+      _cycle = result.cycle;
+    }
 
     final baseline = _cycle.previousBaseline;
     final unavailable = _failedRepositories(RepositoryPageStatus.unavailable);
@@ -527,6 +580,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
     state = TimelineViewState(
       active: true,
+      loading: true,
       hasFollows: true,
       groups: result.groups,
       unavailableRepositories: unavailable,
@@ -542,6 +596,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           : state.persistenceFailed || round.persistenceError != null,
       cacheFailed: state.cacheFailed,
       savedAt: state.savedAt,
+      cacheConnection: _cacheConnection,
+      waitingRepositories: _repositoriesFor(
+        _history.waitingRepositories.toList(),
+      ),
     );
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
@@ -559,6 +617,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
               cycle: _cycle,
               now: now,
               isCurrent: () => _isCurrent(ticket),
+              obsoleteRepositories: Set.of(_history.obsoleteRepositories),
             );
         if (_isCurrent(ticket)) {
           state = state.copyWith(savedAt: now, cacheFailed: false);
@@ -567,12 +626,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         if (_isCurrent(ticket)) state = state.copyWith(cacheFailed: true);
       }
     }
+    if (_isCurrent(ticket)) state = state.copyWith(loading: false);
   }
 
   bool get _canLoadOlder => _cycle.pages.entries.any(
     (entry) =>
         !_cycle.failedIds.contains(entry.key) && entry.value.hasOlderReleases,
   );
+
+  TimelineCacheConnection get _cacheConnection => !_history.hasRetainedHistory
+      ? TimelineCacheConnection.none
+      : _history.connected
+      ? TimelineCacheConnection.connected
+      : TimelineCacheConnection.waiting;
 
   void _recordFailures(List<String> ids, Map<String, RepositoryPage> pages) {
     for (final id in ids) {
@@ -634,6 +700,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           ? state.baselineExposed
           : isBaselineExposed(baseline, _cycle.windowLowerBound),
       offline: failure?.kind == TimelineFailureKind.network,
+      cacheConnection: _cacheConnection,
+      waitingRepositories: _repositoriesFor(
+        _history.waitingRepositories.toList(),
+      ),
     );
   }
 
