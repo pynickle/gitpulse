@@ -646,6 +646,7 @@ class SessionController extends Notifier<SessionState> {
     final uri = backend is String ? Uri.tryParse(backend) : null;
     if (uri == null || login is! String || login.isEmpty) return null;
     return AuthenticatedIdentity(
+      githubId: decoded['githubId'] as String?,
       backend: uri,
       login: login,
       name: name is String && name.isNotEmpty ? name : login,
@@ -659,6 +660,7 @@ class SessionController extends Notifier<SessionState> {
         .write(
           key: _identityKey,
           value: jsonEncode({
+            'githubId': identity.githubId,
             'backend': identity.backend.toString(),
             'login': identity.login,
             'name': identity.name,

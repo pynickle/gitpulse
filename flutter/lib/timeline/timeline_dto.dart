@@ -8,13 +8,28 @@ part 'timeline_dto.g.dart';
 /// preferences stay untouched and unread.
 @JsonSerializable(checked: true, createToJson: false)
 class UserSettingsDto {
-  const UserSettingsDto({this.followedRepositories});
+  const UserSettingsDto({this.followedRepositories, this.releaseTimeline});
 
   factory UserSettingsDto.fromJson(Map<String, dynamic> json) =>
       _$UserSettingsDtoFromJson(json);
 
   final List<FollowedRepositoryDto>? followedRepositories;
+  final TimelinePreferencesDto? releaseTimeline;
 }
+
+@JsonSerializable(checked: true, createToJson: false)
+class TimelinePreferencesDto {
+  const TimelinePreferencesDto({this.retentionDays});
+
+  factory TimelinePreferencesDto.fromJson(Map<String, dynamic> json) =>
+      _$TimelinePreferencesDtoFromJson(json);
+
+  @JsonKey(fromJson: validatedRetentionDays)
+  final int? retentionDays;
+}
+
+int? validatedRetentionDays(Object? value) =>
+    value is int && value >= 1 && value <= 90 ? value : null;
 
 /// A Followed Repository as the account stores it.
 @JsonSerializable(checked: true, createToJson: false)

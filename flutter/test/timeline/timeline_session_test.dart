@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
-import 'package:gitpulse/timeline/timeline_state.dart';
 
 import 'timeline_test_support.dart';
 
@@ -53,6 +52,7 @@ void main() {
     expect(removals.single.repositoryIds, {'R_alpha'});
     expect(harness.session.requests.skip(2), [
       'GET api/settings',
+      'POST api/release-timeline/refresh',
       'GET api/settings',
       'POST api/release-timeline/refresh',
     ]);
@@ -233,6 +233,7 @@ void main() {
     expect(harness.session.requests, [
       'GET api/settings',
       'POST api/release-timeline/refresh',
+      'GET api/settings',
       'POST api/release-timeline/refresh',
     ]);
     // Equal publication times fall back to stable repository and release ids.
@@ -411,7 +412,7 @@ void main() {
     expect(state.failure, isNull);
   });
 
-  test('a Followed Repository read failure is retryable and only then requests the timeline', () async {
+  test('a failed settings read remains retryable while usable fresh results stay readable', () async {
     final harness = createHarness();
     var failing = true;
     harness.session.handlers['GET api/settings'] = () => failing
@@ -442,8 +443,11 @@ void main() {
     await pumpEventQueue(times: 50);
 
     var state = readState(harness.container);
-    expect(harness.session.requests, ['GET api/settings']);
-    expect(state.failure?.kind, TimelineFailureKind.server);
+    expect(harness.session.requests, [
+      'GET api/settings',
+      'POST api/release-timeline/refresh',
+    ]);
+    expect(state.failure, isNull);
     expect(state.canRetry, isTrue);
     expect(state.loading, isFalse);
 
@@ -455,6 +459,7 @@ void main() {
     state = readState(harness.container);
     expect(harness.session.requests, [
       'GET api/settings',
+      'POST api/release-timeline/refresh',
       'GET api/settings',
       'POST api/release-timeline/refresh',
     ]);

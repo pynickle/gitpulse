@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
+import '../timeline/timeline_session.dart';
 import 'release_detail_dto.dart';
 
 // Navigation addresses are distinct from stable timeline/cache node identities.
@@ -36,11 +37,19 @@ class ReleaseDetailResult {
 }
 
 class ReleaseDetail {
-  ReleaseDetail(this.dto, this.owner, this.repository);
+  ReleaseDetail(
+    this.dto,
+    this.owner,
+    this.repository, {
+    this.offline = false,
+    this.savedAt,
+  });
 
   final ReleaseDetailDto dto;
   final String owner;
   final String repository;
+  final bool offline;
+  final DateTime? savedAt;
   int get id => dto.id;
   String get tag => dto.tagName;
   String get title =>
@@ -72,7 +81,43 @@ final releaseDetailProvider = FutureProvider.autoDispose
       if (session.$1 != SessionPhase.signedIn) {
         return const ReleaseDetailResult.failed(ReleaseDetailFailure.session);
       }
-      return ref.watch(releaseDetailServiceProvider).load(target);
+      final result = await ref.watch(releaseDetailServiceProvider).load(target);
+      if (!ref.mounted || result.failure != ReleaseDetailFailure.network) {
+        return result;
+      }
+      final saved = ref
+          .read(releaseTimelineSessionProvider.notifier)
+          .savedRelease(
+            owner: target.owner,
+            repository: target.repository,
+            id: target.id,
+            tag: target.tag,
+          );
+      if (saved == null) return result;
+      return ReleaseDetailResult.data(
+        ReleaseDetail(
+          ReleaseDetailDto(
+            id: saved.id,
+            tagName: saved.tagName,
+            name: saved.title,
+            htmlUrl:
+                saved.htmlUrl ??
+                Uri.https(
+                  'github.com',
+                  '/${saved.repository.fullName}/releases/tag/${saved.tagName}',
+                ).toString(),
+            body: saved.notes,
+            publishedAt: saved.publishedAt,
+            assets: const [],
+            draft: false,
+            prerelease: saved.isPrerelease,
+          ),
+          saved.repository.owner,
+          saved.repository.name,
+          offline: true,
+          savedAt: ref.read(releaseTimelineSessionProvider).savedAt,
+        ),
+      );
     });
 
 class ReleaseDetailService {

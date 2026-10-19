@@ -34,7 +34,10 @@ const proofSchema = idSchema.extend({
 });
 const browserSchema = idSchema.extend({ browserToken: secretSchema });
 type Status = 'pending' | 'approved' | 'cancelled' | 'expired' | 'redeemed';
-type Grant = { accessToken: string; user: { login: string; name: string; avatar_url: string } };
+type Grant = {
+  accessToken: string;
+  user: { id?: number; login: string; name: string; avatar_url: string };
+};
 interface Transaction {
   origin: string;
   challenge: string;

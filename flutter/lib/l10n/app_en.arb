@@ -1,5 +1,10 @@
 {
   "@@locale": "en",
+  "timelineOffline": "Offline · saved timeline",
+  "timelineCacheFailed": "Could not save the timeline on this device. Fresh results remain readable.",
+  "timelineSavedAt": "Saved {time}",
+  "@timelineSavedAt": { "placeholders": { "time": { "type": "String" } } },
+  "releaseOfflineBody": "Offline · saved release notes. Images and current assets may be unavailable.",
   "connectTitle": "Connect to GitPulse",
   "connectDescription": "Enter your GitPulse backend address to check compatibility and available sign-in methods.",
   "backendAddress": "Backend address",

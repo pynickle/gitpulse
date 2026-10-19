@@ -160,6 +160,7 @@ class AuthServer implements HttpClientAdapter {
           'capabilities': [
             'provider-discovery',
             'release-timeline',
+            'timeline-retention',
             if (handoffEnabled) 'native-login-handoff',
           ],
           'providers': providers,
@@ -1226,6 +1227,38 @@ void main() {
         probe.headers['cookie'],
         contains('nuxt-session=${server.sessionValue}'),
       );
+    },
+  );
+
+  testWidgets(
+    'offline restart restores the last verified backend and secure account without another sign-in',
+    (tester) async {
+      final server = AuthServer();
+      await mountApp(tester, server);
+      await connectTo(tester, 'https://gitpulse.example/base/');
+      await submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      server.offline = true;
+      final restored = await mountApp(tester, server, resetStorage: false);
+      expect(
+        restored
+            .read(connectionControllerProvider)
+            .value
+            ?.backend
+            ?.address
+            .toString(),
+        'https://gitpulse.example/base/',
+      );
+      expectIdentity(tester, 'octocat');
+      expect(restored.read(sessionControllerProvider).offline, isTrue);
+      expect(find.byType(TimelineScreen), findsOneWidget);
+      expect(fieldLabeled('Password'), findsNothing);
     },
   );
 

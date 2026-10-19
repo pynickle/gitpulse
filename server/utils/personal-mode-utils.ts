@@ -4,6 +4,7 @@ import type { H3Event } from 'h3';
 import { deleteCookie, getCookie, setCookie } from 'h3';
 
 export interface PersonalIdentity {
+  id?: number;
   login: string;
   name: string;
   avatar_url: string;
@@ -144,6 +145,7 @@ function verifySignedRememberPayload(value: string, secret: string): RememberCoo
 
 export function cachePersonalModeIdentity(identity: PersonalIdentity) {
   personalIdentityCache = {
+    ...(identity.id === undefined ? {} : { id: identity.id }),
     login: identity.login,
     name: identity.name,
     avatar_url: identity.avatar_url,

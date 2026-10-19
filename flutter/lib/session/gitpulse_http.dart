@@ -42,6 +42,7 @@ class BackendResult {
 
 class AuthenticatedIdentity {
   const AuthenticatedIdentity({
+    this.githubId,
     required this.backend,
     required this.login,
     required this.name,
@@ -49,12 +50,16 @@ class AuthenticatedIdentity {
   });
 
   final Uri backend;
+  final String? githubId;
   final String login;
   final String name;
   final String avatarUrl;
 
   bool sameAccount(AuthenticatedIdentity other) =>
-      login == other.login && backend == other.backend;
+      backend == other.backend &&
+      (githubId != null && other.githubId != null
+          ? githubId == other.githubId
+          : login.toLowerCase() == other.login.toLowerCase());
 }
 
 final cookieJarProvider = Provider<CookieJar>(
@@ -157,6 +162,7 @@ AuthenticatedIdentity? readSessionUser(Object? data, Uri backend) {
   final avatar = user['avatar_url'];
   final normalizedLogin = login.trim();
   return AuthenticatedIdentity(
+    githubId: user['id'] is int ? user['id'].toString() : null,
     backend: backend,
     login: normalizedLogin,
     name: name is String && name.trim().isNotEmpty

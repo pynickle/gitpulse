@@ -16,9 +16,9 @@ Run from `flutter/`. Root `bun run lint` / `fmt:check` / Nuxt discovery ignore
 this tree — verify with the Flutter toolchain.
 
 1. `flutter pub get`
-2. `dart run build_runner build` — regenerates the **committed** DTO mappings;
+2. `dart run build_runner build` — regenerates the **committed** DTO mappings and Drift schema;
    commit the generated files with the change that caused the regen. Codegen
-   covers json_serializable DTOs only — Riverpod and presentation state are
+   covers json_serializable DTOs and `timeline_cache.drift` — Riverpod and presentation state are
    handwritten.
 3. `flutter gen-l10n` — required after every `lib/l10n/*.arb` edit.
 4. `flutter analyze` && `dart format --output=none --set-exit-if-changed lib test`
@@ -42,6 +42,10 @@ this tree — verify with the Flutter toolchain.
   `server/utils/native-login-handoff.ts`.
 
 ## Gotchas (written nowhere in config)
+
+- Cache/schema, retention, offline startup, or session-clearing changes: read
+  `../docs/flutter-timeline-cache.md`. Online refresh and offline saved membership
+  are separate; storing a record does not authorize exposing it.
 
 - Android `kotlin.incremental=false` is deliberate — a Windows Pub cache and
   checkout on different drives break incremental caches. Keep it disabled.

@@ -389,7 +389,7 @@ void main() {
   });
 
   testWidgets(
-    'a failed Followed Repository read shows a retryable error instead of the no-follows state',
+    'failed settings and fresh reads show a retryable error instead of the no-follows state',
     (tester) async {
       var failing = true;
       await pumpTimelineScreen(
@@ -404,17 +404,22 @@ void main() {
                   statusCode: 200,
                   data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
                 ),
-          'POST api/release-timeline/refresh': () => BackendResult(
-            statusCode: 200,
-            data: roundJson(
-              pages: {
-                'R_alpha': pageJson('octo', 'alpha', [
-                  releaseJson(11, 'v1.1', '2026-10-04T10:00:00Z'),
-                ]),
-              },
-              refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
-            ),
-          ),
+          'POST api/release-timeline/refresh': () => failing
+              ? const BackendResult(
+                  statusCode: 503,
+                  problem: BackendProblem.unavailable,
+                )
+              : BackendResult(
+                  statusCode: 200,
+                  data: roundJson(
+                    pages: {
+                      'R_alpha': pageJson('octo', 'alpha', [
+                        releaseJson(11, 'v1.1', '2026-10-04T10:00:00Z'),
+                      ]),
+                    },
+                    refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
+                  ),
+                ),
         },
       );
 

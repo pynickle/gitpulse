@@ -31,6 +31,24 @@ class ReleaseDetailsView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (release.offline)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.releaseOfflineBody),
+                if (release.savedAt case final savedAt?)
+                  Text(
+                    l10n.timelineSavedAt(
+                      DateFormat.yMMMd(
+                        Localizations.localeOf(context).toLanguageTag(),
+                      ).add_jm().format(savedAt.toLocal()),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton(

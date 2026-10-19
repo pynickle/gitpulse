@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/native.dart';
+import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
@@ -43,13 +45,16 @@ class FakeSessionController extends SessionController {
   void emit(SessionState next) => state = next;
 }
 
-AuthenticatedIdentity signedInIdentity({String login = 'octocat'}) =>
-    AuthenticatedIdentity(
-      backend: Uri.parse('https://gitpulse.example/'),
-      login: login,
-      name: login,
-      avatarUrl: '',
-    );
+AuthenticatedIdentity signedInIdentity({
+  String login = 'octocat',
+  String? githubId,
+}) => AuthenticatedIdentity(
+  githubId: githubId,
+  backend: Uri.parse('https://gitpulse.example/'),
+  login: login,
+  name: login,
+  avatarUrl: '',
+);
 
 /// Groups by a fixed +08:00 display zone so grouping is deterministic.
 String utcPlusEight(DateTime instant) {
@@ -135,21 +140,35 @@ String pageRequest(Map<String, String?> cursors) =>
 
 ({ProviderContainer container, FakeSessionController session}) createHarness({
   String login = 'octocat',
+  AuthenticatedIdentity? identity,
+  TimelineCache? cache,
+  DateTime Function()? now,
+  String Function(DateTime)? localDateKey,
 }) {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late FakeSessionController session;
+  final history = cache ?? TimelineCache(NativeDatabase.memory());
+  if (cache == null) addTearDown(history.close);
   final container = ProviderContainer(
     overrides: [
+      timelineCacheProvider.overrideWithValue(history),
+      if (now != null) timelineClockProvider.overrideWithValue(now),
       sessionControllerProvider.overrideWith(() {
         session = FakeSessionController(
           SessionState(
             phase: SessionPhase.signedIn,
-            identity: signedInIdentity(login: login),
+            identity:
+                identity ??
+                signedInIdentity(
+                  login: login,
+                  githubId: login == 'octocat' ? '1' : '2',
+                ),
           ),
         );
         return session;
       }),
       timelineEnvironmentProvider.overrideWithValue(
-        TimelineEnvironment(localDateKey: utcPlusEight),
+        TimelineEnvironment(localDateKey: localDateKey ?? utcPlusEight),
       ),
     ],
   );

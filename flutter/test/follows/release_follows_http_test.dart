@@ -79,7 +79,10 @@ void main() {
       ['R_native', 'R_web'],
     );
     expect(settings['navigation'], {'linkTarget': 'github'});
-    expect(settings['releaseTimeline'], {'showReactions': false});
+    expect(settings['releaseTimeline'], {
+      'showReactions': false,
+      'retentionDays': 30,
+    });
     await facade.unfollow('R_web');
     settings = (await web.get<Map<String, dynamic>>('api/settings')).data!;
     expect(

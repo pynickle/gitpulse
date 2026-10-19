@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/native.dart';
+import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -123,7 +125,11 @@ void main() {
       key: 'last_successful_backend',
       value: backend.toString(),
     );
-    final container = ProviderContainer();
+    final cache = TimelineCache(NativeDatabase.memory());
+    addTearDown(cache.close);
+    final container = ProviderContainer(
+      overrides: [timelineCacheProvider.overrideWithValue(cache)],
+    );
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});
     container.listen(releaseTimelineSessionProvider, (_, _) {});
@@ -309,7 +315,11 @@ void main() {
       key: 'last_successful_backend',
       value: backend.toString(),
     );
-    final container = ProviderContainer();
+    final cache = TimelineCache(NativeDatabase.memory());
+    addTearDown(cache.close);
+    final container = ProviderContainer(
+      overrides: [timelineCacheProvider.overrideWithValue(cache)],
+    );
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});
     container.listen(releaseTimelineSessionProvider, (_, _) {});

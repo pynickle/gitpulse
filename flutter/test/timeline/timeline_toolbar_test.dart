@@ -34,6 +34,9 @@ void main() {
                     state: TimelineViewState(
                       previousBaseline: '2026-10-18T14:43:00.000Z',
                       loadedNewCount: 12345,
+                      offline: true,
+                      cacheFailed: true,
+                      savedAt: DateTime.utc(2026, 10, 19, 12),
                       loading: loading,
                     ),
                     onRefresh: () async {
@@ -55,6 +58,12 @@ void main() {
           expect(tester.getCenter(refresh).dy, lessThan(75));
           expect(find.byIcon(Icons.history), findsOneWidget);
           expect(find.text(l10n.timelineLoadedNew(12345)), findsOneWidget);
+          expect(find.text(l10n.timelineOffline), findsOneWidget);
+          expect(find.text(l10n.timelineCacheFailed), findsOneWidget);
+          expect(
+            find.textContaining(locale.languageCode == 'zh' ? '保存于' : 'Saved'),
+            findsOneWidget,
+          );
           expect(
             find.text(l10n.timeline),
             width < 720 ? findsOneWidget : findsNothing,

@@ -50,6 +50,7 @@ class TimelineToolbar extends StatelessWidget {
             ],
           ),
           if (showTitle) _TimelineStatus(state: state),
+          if (state.cacheFailed) Text(l10n.timelineCacheFailed),
         ],
       ),
     );
@@ -70,6 +71,13 @@ class _TimelineStatus extends StatelessWidget {
         runSpacing: 4,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          if (state.offline) Text(l10n.timelineOffline),
+          if (state.savedAt case final savedAt?)
+            Text(
+              l10n.timelineSavedAt(
+                timelineTimeLabel(context, savedAt.toLocal()),
+              ),
+            ),
           if (state.previousBaseline case final baseline?)
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: constraints.maxWidth),

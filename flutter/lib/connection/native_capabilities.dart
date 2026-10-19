@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'native_capabilities.g.dart';
 
-@JsonSerializable(checked: true, createToJson: false)
+@JsonSerializable(checked: true, explicitToJson: true)
 class NativeCapabilities {
   const NativeCapabilities({
     required this.protocolVersion,
@@ -16,6 +16,7 @@ class NativeCapabilities {
   final int protocolVersion;
   final List<String> capabilities;
   final SignInProviders providers;
+  Map<String, dynamic> toJson() => _$NativeCapabilitiesToJson(this);
 
   bool get supportsNativeLogin =>
       !providers.personalMode &&
@@ -23,7 +24,7 @@ class NativeCapabilities {
       capabilities.contains('native-login-handoff');
 }
 
-@JsonSerializable(checked: true, createToJson: false)
+@JsonSerializable(checked: true)
 class SignInProviders {
   const SignInProviders({
     required this.personalMode,
@@ -39,4 +40,5 @@ class SignInProviders {
   final bool patEnabled;
   final bool oauthEnabled;
   final String mode;
+  Map<String, dynamic> toJson() => _$SignInProvidersToJson(this);
 }

@@ -83,6 +83,7 @@ export interface UserComposerSettings {
 
 export interface UserReleaseTimelineSettings {
   showReactions: boolean;
+  retentionDays: number;
 }
 
 export interface UserReleaseFollowSettings {

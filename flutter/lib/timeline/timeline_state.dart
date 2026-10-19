@@ -38,6 +38,10 @@ class TimelineViewState {
     this.canLoadOlder = false,
     this.failure,
     this.persistenceFailed = false,
+    this.cacheFailed = false,
+    this.offline = false,
+    this.restored = false,
+    this.savedAt,
   });
 
   /// Nobody is signed in with a connected backend yet.
@@ -82,6 +86,10 @@ class TimelineViewState {
 
   /// Whether usable results returned while their bookmark could not be saved.
   final bool persistenceFailed;
+  final bool cacheFailed;
+  final bool offline;
+  final bool restored;
+  final DateTime? savedAt;
 
   bool get hasReleases => groups.isNotEmpty;
 
@@ -105,6 +113,10 @@ class TimelineViewState {
     TimelineFailure? failure,
     bool clearFailure = false,
     bool? persistenceFailed,
+    bool? cacheFailed,
+    bool? offline,
+    bool? restored,
+    DateTime? savedAt,
   }) {
     return TimelineViewState(
       active: active ?? this.active,
@@ -125,6 +137,10 @@ class TimelineViewState {
       canLoadOlder: canLoadOlder ?? this.canLoadOlder,
       failure: clearFailure ? null : failure ?? this.failure,
       persistenceFailed: persistenceFailed ?? this.persistenceFailed,
+      cacheFailed: cacheFailed ?? this.cacheFailed,
+      offline: offline ?? this.offline,
+      restored: restored ?? this.restored,
+      savedAt: savedAt ?? this.savedAt,
     );
   }
 }

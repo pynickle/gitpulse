@@ -55,6 +55,9 @@ class ReleaseTimelineService {
 
   final TimelineTransport _transport;
 
+  Future<TimelineResult<UserSettingsDto>> readSettings() =>
+      _read('GET', settingsPath, UserSettingsDto.fromJson);
+
   Future<TimelineResult<List<TimelineRepository>>>
   readFollowedRepositories() async {
     final response = await _read('GET', settingsPath, UserSettingsDto.fromJson);

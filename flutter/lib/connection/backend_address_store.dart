@@ -1,5 +1,10 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'dart:convert';
+
+import 'backend_service.dart';
+import 'native_capabilities.dart';
+
 class BackendAddressStore {
   const BackendAddressStore(this._storage);
 
@@ -10,4 +15,28 @@ class BackendAddressStore {
 
   Future<void> remember(Uri address) =>
       _storage.write(key: _key, value: address.toString());
+
+  Future<void> rememberCapabilities(ConnectedBackend backend) => _storage.write(
+    key: 'last_backend_capabilities',
+    value: jsonEncode({
+      'address': backend.address.toString(),
+      'capabilities': backend.capabilities.toJson(),
+    }),
+  );
+
+  Future<ConnectedBackend?> readOfflineBackend(String address) async {
+    final raw = await _storage.read(key: 'last_backend_capabilities');
+    if (raw == null) return null;
+    final saved = jsonDecode(raw) as Map<String, dynamic>;
+    final base = parseBackendAddress(address);
+    if (saved['address'] != base.toString()) return null;
+    final capabilities = NativeCapabilities.fromJson(
+      saved['capabilities'] as Map<String, dynamic>,
+    );
+    if (capabilities.protocolVersion != 1 ||
+        !capabilities.capabilities.contains('timeline-retention')) {
+      return null;
+    }
+    return ConnectedBackend(base, capabilities);
+  }
 }

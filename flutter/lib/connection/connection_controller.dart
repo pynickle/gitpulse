@@ -57,7 +57,10 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
       );
     }
     if (!ref.mounted) return const BackendConnectionState();
-    return _connect(address ?? defaultBackendAddress);
+    return _connect(
+      address ?? defaultBackendAddress,
+      allowOffline: address != null,
+    );
   }
 
   Future<void> connect(String address) async {
@@ -80,6 +83,7 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
   Future<BackendConnectionState> _connect(
     String address, {
     String? rememberedAddress,
+    bool allowOffline = false,
   }) async {
     final service = ref.read(backendServiceProvider);
     final store = ref.read(backendAddressStoreProvider);
@@ -89,6 +93,7 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
       ConnectionProblem? storageProblem;
       try {
         await store.remember(backend.address);
+        await store.rememberCapabilities(backend);
       } catch (_) {
         storageProblem = ConnectionProblem.storageWrite;
       }
@@ -100,6 +105,19 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
         problem: storageProblem,
       );
     } on ConnectionException catch (error) {
+      if (allowOffline && error.problem == ConnectionProblem.unreachable) {
+        try {
+          final offline = await store.readOfflineBackend(address);
+          if (offline != null && ref.mounted) {
+            return BackendConnectionState(
+              rememberedAddress: address,
+              backend: offline,
+            );
+          }
+        } catch (_) {
+          // A missing or damaged connection hint cannot authorize offline access.
+        }
+      }
       return BackendConnectionState(
         rememberedAddress: rememberedAddress ?? address,
         attemptedAddress: address,

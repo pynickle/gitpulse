@@ -3,6 +3,7 @@ import { createGitHubClient } from '../utils/github-auth-utils';
 import { cachePersonalModeIdentity } from '../utils/personal-mode-utils';
 
 interface PersonalModeIdentity {
+  id?: number;
   login: string;
   name: string;
   avatar_url: string;
@@ -58,6 +59,7 @@ export default defineNitroPlugin(async (_nitroApp) => {
     const octokit = createGitHubClient(personalPat);
     const { data: user } = await octokit.request('GET /user');
     const identity: PersonalModeIdentity = {
+      id: Number(user.id),
       login: user.login,
       name: user.name ?? user.login,
       avatar_url: user.avatar_url ?? '',

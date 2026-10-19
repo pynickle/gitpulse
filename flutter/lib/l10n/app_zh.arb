@@ -1,5 +1,10 @@
 {
   "@@locale": "zh",
+  "timelineOffline": "离线 · 已保存的时间线",
+  "timelineCacheFailed": "无法在此设备上保存时间线，当前获取的内容仍可阅读。",
+  "timelineSavedAt": "保存于 {time}",
+  "@timelineSavedAt": { "placeholders": { "time": { "type": "String" } } },
+  "releaseOfflineBody": "离线 · 已保存的发布说明。图片和当前附件信息可能不可用。",
   "connectTitle": "连接 GitPulse",
   "connectDescription": "输入你的 GitPulse 后端地址，检查兼容性与可用的登录方式。",
   "backendAddress": "后端地址",

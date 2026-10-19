@@ -8,6 +8,7 @@ import 'l10n/generated/app_localizations.dart';
 import 'session/session_controller.dart';
 import 'session/sign_in_panel.dart';
 import 'timeline/timeline_screen.dart';
+import 'timeline/timeline_cache_lifecycle.dart';
 import 'follows/release_follows_screen.dart';
 import 'releases/repository_releases_screen.dart';
 import 'repositories/repository_screen.dart';
@@ -66,6 +67,7 @@ class GitPulseApp extends ConsumerWidget {
     // Keep the session lifecycle alive across the connection screen so logout
     // and backend changes finish after the shell route is gone.
     ref.listen(sessionControllerProvider, (_, _) {});
+    ref.watch(timelineCacheLifecycleProvider);
     return MaterialApp.router(
       title: 'GitPulse',
       debugShowCheckedModeBanner: false,

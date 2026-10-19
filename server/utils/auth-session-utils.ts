@@ -5,6 +5,7 @@ type GitHubAuthProvider = 'github' | 'pat';
 export const PERSISTENT_AUTH_SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 interface GitHubIdentity {
+  id?: number | bigint;
   login: string;
   name?: string | null;
   avatar_url?: string | null;
@@ -21,6 +22,7 @@ export async function establishGitHubSession(
     event,
     {
       user: {
+        ...(user.id === undefined ? {} : { id: Number(user.id) }),
         login: user.login,
         name: user.name ?? user.login,
         avatar_url: user.avatar_url ?? '',

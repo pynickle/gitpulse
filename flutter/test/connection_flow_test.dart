@@ -14,7 +14,11 @@ class CapabilityServer implements HttpClientAdapter {
   int statusCode = 200;
   Object? payload = {
     'protocolVersion': 1,
-    'capabilities': ['provider-discovery', 'release-timeline'],
+    'capabilities': [
+      'provider-discovery',
+      'release-timeline',
+      'timeline-retention',
+    ],
     'providers': {
       'personalMode': true,
       'patEnabled': false,
@@ -124,7 +128,11 @@ void main() {
       final server = CapabilityServer()
         ..payload = {
           'protocolVersion': 1,
-          'capabilities': ['provider-discovery', 'release-timeline'],
+          'capabilities': [
+            'provider-discovery',
+            'release-timeline',
+            'timeline-retention',
+          ],
           'providers': {
             'personalMode': false,
             'patEnabled': false,
@@ -172,10 +180,19 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
       await mountApp(tester, server);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(GitPulseApp)),
+      );
       expect(
-        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        container
+            .read(connectionControllerProvider)
+            .value
+            ?.backend
+            ?.address
+            .toString(),
         'https://first.example/',
       );
+      expect(find.text('Compatible backend'), findsOneWidget);
     },
   );
 
@@ -215,7 +232,11 @@ void main() {
       'OAuth-only server without app handoff',
       {
         'protocolVersion': 1,
-        'capabilities': ['provider-discovery', 'release-timeline'],
+        'capabilities': [
+          'provider-discovery',
+          'release-timeline',
+          'timeline-retention',
+        ],
         'providers': {
           'personalMode': false,
           'patEnabled': false,
@@ -229,7 +250,11 @@ void main() {
       'conflicting personal providers',
       {
         'protocolVersion': 1,
-        'capabilities': ['provider-discovery', 'release-timeline'],
+        'capabilities': [
+          'provider-discovery',
+          'release-timeline',
+          'timeline-retention',
+        ],
         'providers': {
           'personalMode': true,
           'patEnabled': true,
@@ -279,6 +304,7 @@ void main() {
           'capabilities': [
             'provider-discovery',
             'release-timeline',
+            'timeline-retention',
             if (oauth) 'native-login-handoff',
             'future-additive-capability',
           ],

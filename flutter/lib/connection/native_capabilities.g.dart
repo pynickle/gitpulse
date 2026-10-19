@@ -25,6 +25,13 @@ NativeCapabilities _$NativeCapabilitiesFromJson(Map<String, dynamic> json) =>
       return val;
     });
 
+Map<String, dynamic> _$NativeCapabilitiesToJson(NativeCapabilities instance) =>
+    <String, dynamic>{
+      'protocolVersion': instance.protocolVersion,
+      'capabilities': instance.capabilities,
+      'providers': instance.providers.toJson(),
+    };
+
 SignInProviders _$SignInProvidersFromJson(Map<String, dynamic> json) =>
     $checkedCreate('SignInProviders', json, ($checkedConvert) {
       final val = SignInProviders(
@@ -35,3 +42,11 @@ SignInProviders _$SignInProvidersFromJson(Map<String, dynamic> json) =>
       );
       return val;
     });
+
+Map<String, dynamic> _$SignInProvidersToJson(SignInProviders instance) =>
+    <String, dynamic>{
+      'personalMode': instance.personalMode,
+      'patEnabled': instance.patEnabled,
+      'oauthEnabled': instance.oauthEnabled,
+      'mode': instance.mode,
+    };
