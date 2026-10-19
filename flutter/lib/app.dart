@@ -12,6 +12,7 @@ import 'timeline/timeline_cache_lifecycle.dart';
 import 'follows/release_follows_screen.dart';
 import 'releases/repository_releases_screen.dart';
 import 'repositories/repository_screen.dart';
+import 'settings/timeline_cache_settings.dart';
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -247,6 +248,12 @@ class _AppShell extends ConsumerWidget {
                                 child: Text(l10n.changeBackend),
                               ),
                             ),
+                            if (session.phase == SessionPhase.signedIn) ...[
+                              const SizedBox(height: 24),
+                              TimelineCacheSettingsPanel(
+                                key: ValueKey(session.identity),
+                              ),
+                            ],
                           ],
                         ),
                 ),

@@ -13,7 +13,11 @@ import 'timeline_state.dart';
 /// The app implements it with the signed-in session, so an explicit session
 /// rejection, cancellation, and CSRF behave like every other native request.
 abstract class TimelineTransport {
-  Future<BackendResult> send({required String method, required String path});
+  Future<BackendResult> send({
+    required String method,
+    required String path,
+    Object? body,
+  });
 }
 
 class SessionTimelineTransport implements TimelineTransport {
@@ -22,7 +26,11 @@ class SessionTimelineTransport implements TimelineTransport {
   final Ref _ref;
 
   @override
-  Future<BackendResult> send({required String method, required String path}) {
+  Future<BackendResult> send({
+    required String method,
+    required String path,
+    Object? body,
+  }) {
     // The Timeline session may be disposed while a round is in flight, which
     // also disposes its transport. Report the round as cancelled instead of
     // throwing, so the superseded result is simply dropped.
@@ -33,7 +41,7 @@ class SessionTimelineTransport implements TimelineTransport {
     }
     return _ref
         .read(sessionControllerProvider.notifier)
-        .request(method: method, path: path);
+        .request(method: method, path: path, body: body);
   }
 }
 
@@ -57,6 +65,21 @@ class ReleaseTimelineService {
 
   Future<TimelineResult<UserSettingsDto>> readSettings() =>
       _read('GET', settingsPath, UserSettingsDto.fromJson);
+
+  Future<TimelineResult<UserSettingsDto>> saveRetention(int days) => _read(
+    'PUT',
+    settingsPath,
+    (json) {
+      final settings = UserSettingsDto.fromJson(json);
+      if (settings.releaseTimeline?.retentionDays != days) {
+        throw const FormatException('Retention was not confirmed');
+      }
+      return settings;
+    },
+    body: {
+      'releaseTimeline': {'retentionDays': days},
+    },
+  );
 
   Future<TimelineResult<List<TimelineRepository>>>
   readFollowedRepositories() async {
@@ -90,9 +113,14 @@ class ReleaseTimelineService {
   Future<TimelineResult<T>> _read<T>(
     String method,
     String path,
-    T Function(Map<String, dynamic> json) parse,
-  ) async {
-    final result = await _transport.send(method: method, path: path);
+    T Function(Map<String, dynamic> json) parse, {
+    Object? body,
+  }) async {
+    final result = await _transport.send(
+      method: method,
+      path: path,
+      body: body,
+    );
     final failure = _failureOf(result);
     if (failure != null) return TimelineResult.failed(failure);
     final payload = result.data;

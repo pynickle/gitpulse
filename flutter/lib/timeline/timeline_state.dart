@@ -23,6 +23,48 @@ class TimelineFailure {
 
 enum TimelineCacheConnection { none, waiting, connected }
 
+/// Account policy and installation-local cache actions exposed to Settings.
+class TimelineCacheSettings {
+  const TimelineCacheSettings({
+    this.retentionDays,
+    this.syncFailed = false,
+    this.saving = false,
+    this.saveFailed = false,
+    this.clearing = false,
+    this.clearFailed = false,
+    this.cleared = false,
+  });
+
+  final int? retentionDays;
+  final bool syncFailed;
+  final bool saving;
+  final bool saveFailed;
+  final bool clearing;
+  final bool clearFailed;
+  final bool cleared;
+
+  TimelineCacheSettings copyWith({
+    int? retentionDays,
+    bool clearRetentionDays = false,
+    bool? syncFailed,
+    bool? saving,
+    bool? saveFailed,
+    bool? clearing,
+    bool? clearFailed,
+    bool? cleared,
+  }) => TimelineCacheSettings(
+    retentionDays: clearRetentionDays
+        ? null
+        : retentionDays ?? this.retentionDays,
+    syncFailed: syncFailed ?? this.syncFailed,
+    saving: saving ?? this.saving,
+    saveFailed: saveFailed ?? this.saveFailed,
+    clearing: clearing ?? this.clearing,
+    clearFailed: clearFailed ?? this.clearFailed,
+    cleared: cleared ?? this.cleared,
+  );
+}
+
 /// The immutable Release Timeline the widgets read.
 class TimelineViewState {
   const TimelineViewState({
@@ -46,6 +88,7 @@ class TimelineViewState {
     this.savedAt,
     this.cacheConnection = TimelineCacheConnection.none,
     this.waitingRepositories = const [],
+    this.cacheSettings = const TimelineCacheSettings(),
   });
 
   /// Nobody is signed in with a connected backend yet.
@@ -96,6 +139,7 @@ class TimelineViewState {
   final DateTime? savedAt;
   final TimelineCacheConnection cacheConnection;
   final List<TimelineRepository> waitingRepositories;
+  final TimelineCacheSettings cacheSettings;
 
   bool get hasReleases => groups.isNotEmpty;
 
@@ -125,6 +169,7 @@ class TimelineViewState {
     DateTime? savedAt,
     TimelineCacheConnection? cacheConnection,
     List<TimelineRepository>? waitingRepositories,
+    TimelineCacheSettings? cacheSettings,
   }) {
     return TimelineViewState(
       active: active ?? this.active,
@@ -151,6 +196,7 @@ class TimelineViewState {
       savedAt: savedAt ?? this.savedAt,
       cacheConnection: cacheConnection ?? this.cacheConnection,
       waitingRepositories: waitingRepositories ?? this.waitingRepositories,
+      cacheSettings: cacheSettings ?? this.cacheSettings,
     );
   }
 }

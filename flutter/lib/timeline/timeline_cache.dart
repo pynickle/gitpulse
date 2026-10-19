@@ -86,6 +86,26 @@ class TimelineCache extends _$TimelineCache {
     return _queue(() async {});
   }
 
+  /// Removes this installation's history while keeping its last account policy.
+  Future<void> clearHistory() {
+    _revision++;
+    return _queue(
+      () => transaction(() async {
+        for (final table in [
+          'cache_visible',
+          'cache_page_members',
+          'cache_segments',
+          'cache_releases',
+        ]) {
+          await customStatement('DELETE FROM $table');
+        }
+        await customStatement(
+          'UPDATE cache_account SET saved_at = NULL, lower_bound = NULL, baseline = NULL, partial = 0',
+        );
+      }),
+    );
+  }
+
   Future<void> _deleteAll() async {
     for (final table in [
       'cache_visible',

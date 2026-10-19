@@ -58,7 +58,17 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   bool _followsKnown = false;
   bool _awaitingFreshWindow = true;
   String _cycleId = '';
-  int? _retentionDays;
+  Future<void>? _cacheAction;
+  int? get _retentionDays => state.cacheSettings.retentionDays;
+  set _retentionDays(int? days) {
+    state = state.copyWith(
+      cacheSettings: state.cacheSettings.copyWith(
+        retentionDays: days,
+        clearRetentionDays: days == null,
+      ),
+    );
+  }
+
   TimelineHistoryConnection _history = TimelineHistoryConnection(
     const RetainedTimelineHistory(),
   );
@@ -104,6 +114,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   /// Reads one coordinated round for every Followed Repository.
   Future<void> refresh() async {
+    if (state.cacheSettings.saving || state.cacheSettings.clearing) return;
     final context = _sessionContext();
     if (context == null) return;
     // A new account, or a first cycle that never reached the Followed
@@ -123,6 +134,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   Future<void> reloadFollows() async {
     final context = _sessionContext();
     if (context == null) return;
+    while (_cacheAction != null) {
+      await _cacheAction;
+    }
+    if (!ref.mounted || context != _sessionContext()) return;
     _context = context;
     await _startCycle(++_generation);
   }
@@ -134,6 +149,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   Future<void> applyFollows(List<TimelineRepository> repositories) async {
     final context = _sessionContext();
     if (context == null) return;
+    while (_cacheAction != null) {
+      await _cacheAction;
+    }
+    if (!ref.mounted || context != _sessionContext()) return;
     if (_followsKnown &&
         context == _context &&
         repositories.length == _followedRepositories.length &&
@@ -153,7 +172,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   /// Advances successful, non-exhausted repositories by one coordinated round.
   Future<void> loadOlder() async {
-    if (state.loading || !state.active || !state.canLoadOlder) return;
+    if (state.loading ||
+        state.cacheSettings.saving ||
+        state.cacheSettings.clearing ||
+        !state.active ||
+        !state.canLoadOlder) {
+      return;
+    }
     await _continueRound({
       for (final repository in _followedRepositories)
         if (!_cycle.failedIds.contains(repository.id) &&
@@ -165,7 +190,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// Retries failed pages at their original cursors. An optional stable ID
   /// restricts the action to one failed repository.
   Future<void> retryFailed({String? repositoryId}) async {
-    if (state.loading || !state.active || !state.canRetry) return;
+    if (state.loading ||
+        state.cacheSettings.saving ||
+        state.cacheSettings.clearing ||
+        !state.active ||
+        !state.canRetry) {
+      return;
+    }
     if (!_followsKnown || _followedRepositories.isEmpty) {
       await refresh();
       return;
@@ -251,6 +282,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           state = TimelineViewState(
             active: true,
             loading: true,
+            cacheSettings: state.cacheSettings,
             hasFollows: saved.repositories.isNotEmpty,
             groups: saved.groups,
             previousBaseline: saved.baseline,
@@ -317,6 +349,135 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
   }
 
+  /// Applies an account preference only after the server confirms persistence.
+  Future<void> saveRetention(int days) =>
+      _runCacheAction(() => _saveRetention(days));
+
+  Future<void> _runCacheAction(Future<void> Function() action) async {
+    if (_cacheAction != null) return;
+    final completed = Completer<void>();
+    _cacheAction = completed.future;
+    try {
+      await action();
+    } finally {
+      _cacheAction = null;
+      completed.complete();
+    }
+  }
+
+  Future<void> _saveRetention(int days) async {
+    if (_sessionContext() == null ||
+        state.loading ||
+        state.cacheSettings.saving ||
+        state.cacheSettings.clearing) {
+      return;
+    }
+    if (validatedRetentionDays(days) == null) {
+      state = state.copyWith(
+        cacheSettings: state.cacheSettings.copyWith(saveFailed: true),
+      );
+      return;
+    }
+    final ticket = _generation;
+    state = state.copyWith(
+      cacheSettings: state.cacheSettings.copyWith(
+        saving: true,
+        saveFailed: false,
+      ),
+    );
+    final result = await ref
+        .read(releaseTimelineServiceProvider)
+        .saveRetention(days);
+    if (!_isCurrent(ticket)) return;
+    if (result.data == null) {
+      state = state.copyWith(
+        cacheSettings: state.cacheSettings.copyWith(
+          saving: false,
+          saveFailed: true,
+        ),
+      );
+      return;
+    }
+    _retentionDays = days;
+    state = state.copyWith(
+      cacheSettings: state.cacheSettings.copyWith(syncFailed: false),
+    );
+    final identity = ref.read(sessionControllerProvider).identity;
+    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    if (scope != null) {
+      try {
+        await ref
+            .read(timelineCacheProvider)
+            .synchronize(
+              scope: scope,
+              retentionDays: days,
+              repositories: _followedRepositories,
+              now: ref.read(timelineClockProvider)(),
+              isCurrent: () => _isCurrent(ticket),
+            );
+        if (!_isCurrent(ticket)) return;
+        await _loadHistory(ticket);
+        if (!_isCurrent(ticket)) return;
+        await pruneRetainedHistory();
+      } catch (_) {
+        if (!_isCurrent(ticket)) return;
+        _retentionDays = null;
+        state = state.copyWith(cacheFailed: true);
+      }
+    }
+    if (_isCurrent(ticket)) {
+      state = state.copyWith(
+        cacheSettings: state.cacheSettings.copyWith(saving: false),
+      );
+    }
+  }
+
+  /// Clears local content and continuation state without an account mutation.
+  Future<void> clearCache() => _runCacheAction(_clearCache);
+
+  Future<void> _clearCache() async {
+    if (_sessionContext() == null ||
+        state.cacheSettings.clearing ||
+        state.cacheSettings.saving) {
+      return;
+    }
+    final ticket = ++_generation;
+    _cycle = TimelineCycle.empty;
+    _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
+    _awaitingFreshWindow = true;
+    _history = TimelineHistoryConnection(const RetainedTimelineHistory());
+    _failures.clear();
+    _firstPageRetries.clear();
+    state = TimelineViewState(
+      active: true,
+      hasFollows: _followedRepositories.isNotEmpty,
+      cacheSettings: state.cacheSettings.copyWith(
+        clearing: true,
+        clearFailed: false,
+        cleared: false,
+      ),
+    );
+    try {
+      await ref.read(timelineCacheProvider).clearHistory();
+      if (!_isCurrent(ticket)) return;
+      state = state.copyWith(
+        cacheSettings: state.cacheSettings.copyWith(
+          clearing: false,
+          cleared: true,
+        ),
+      );
+    } catch (_) {
+      if (!_isCurrent(ticket)) return;
+      state = state.copyWith(
+        cacheFailed: true,
+        cacheSettings: state.cacheSettings.copyWith(
+          clearing: false,
+          clearFailed: true,
+        ),
+      );
+    }
+  }
+
   Future<void> _startCycle(
     int ticket, {
     List<TimelineRepository>? confirmedFollows,
@@ -346,6 +507,12 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (!_isCurrent(ticket)) return;
 
     if (confirmedFollows == null && settings?.data == null) {
+      state = state.copyWith(
+        cacheSettings: state.cacheSettings.copyWith(
+          syncFailed: true,
+          saving: false,
+        ),
+      );
       _followsKnown = false;
       if (settings?.failure?.kind != TimelineFailureKind.session) {
         await _loadHistory(ticket);
@@ -368,6 +535,14 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (!sameFollows) _cycle = TimelineCycle.empty;
     _retentionDays =
         settings?.data?.releaseTimeline?.retentionDays ?? _retentionDays;
+    state = state.copyWith(
+      cacheSettings: state.cacheSettings.copyWith(
+        syncFailed:
+            confirmedFollows == null &&
+            settings?.data?.releaseTimeline?.retentionDays == null,
+        saving: false,
+      ),
+    );
     _followsKnown = true;
     final nextIds = follows.map((repository) => repository.id).toSet();
     final removed = _followedRepositories
@@ -425,7 +600,12 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (follows.isEmpty) {
       _followedRepositories = const [];
       _cycle = TimelineCycle.empty;
-      state = const TimelineViewState(active: true, hasFollows: false);
+      state = TimelineViewState(
+        active: true,
+        hasFollows: false,
+        cacheSettings: state.cacheSettings,
+        cacheFailed: state.cacheFailed,
+      );
       return;
     }
 
@@ -581,6 +761,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     state = TimelineViewState(
       active: true,
       loading: true,
+      cacheSettings: state.cacheSettings,
       hasFollows: true,
       groups: result.groups,
       unavailableRepositories: unavailable,

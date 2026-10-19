@@ -86,10 +86,14 @@ export async function createReleaseTimelineTestHandler(baseURL = '/') {
   router.post(
     route('/test/sign-in'),
     defineEventHandler(async (event) => {
-      const body = (await readBody(event).catch(() => null)) as { login?: string } | null;
+      const body = (await readBody(event).catch(() => null)) as {
+        login?: string;
+        githubId?: number;
+      } | null;
       const login = body?.login ?? 'octocat';
       const { establishGitHubSession } = await import('../../server/utils/auth-session-utils');
       await establishGitHubSession(event, 'personal', 'fixture-server-token', {
+        ...(body?.githubId ? { id: body.githubId } : {}),
         login,
         name: login === 'hubot' ? 'Hubot' : 'The Octocat',
         avatar_url: 'https://github.test/avatar',
