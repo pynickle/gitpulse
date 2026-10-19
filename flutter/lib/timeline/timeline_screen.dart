@@ -36,6 +36,12 @@ class TimelineScreen extends ConsumerWidget {
             state: state,
             onRefresh: refresh,
             showTitle: showTitle,
+            onRetryCache: ref
+                .read(releaseTimelineSessionProvider.notifier)
+                .retryCache,
+            onRebuildCache: ref
+                .read(releaseTimelineSessionProvider.notifier)
+                .rebuildCache,
           ),
           if (state.hasLookupFailures)
             ConstrainedBox(

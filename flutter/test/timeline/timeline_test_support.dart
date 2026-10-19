@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -142,16 +143,33 @@ String pageRequest(Map<String, String?> cursors) =>
   String login = 'octocat',
   AuthenticatedIdentity? identity,
   TimelineCache? cache,
+  File? cacheFile,
+  Future<File> Function()? cacheFileLookup,
   DateTime Function()? now,
   String Function(DateTime)? localDateKey,
 }) {
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeSessionController session;
-  final history = cache ?? TimelineCache(NativeDatabase.memory());
-  if (cache == null) addTearDown(history.close);
+  final history =
+      cache ??
+      (cacheFile == null ? TimelineCache(NativeDatabase.memory()) : null);
+  if (cache == null && history != null) addTearDown(history.close);
   final container = ProviderContainer(
     overrides: [
-      timelineCacheProvider.overrideWithValue(history),
+      if (cacheFile == null)
+        timelineCacheProvider.overrideWithValue(history!)
+      else ...[
+        timelineCacheFileProvider.overrideWithValue(
+          cacheFileLookup ?? () async => cacheFile,
+        ),
+        timelineCacheProvider.overrideWith((ref) {
+          final cache = TimelineCache(NativeDatabase(cacheFile));
+          ref.onDispose(
+            () => unawaited(cache.close().catchError((Object _) {})),
+          );
+          return cache;
+        }),
+      ],
       if (now != null) timelineClockProvider.overrideWithValue(now),
       sessionControllerProvider.overrideWith(() {
         session = FakeSessionController(
@@ -172,7 +190,7 @@ String pageRequest(Map<String, String?> cursors) =>
       ),
     ],
   );
-  addTearDown(container.dispose);
+  if (cacheFile == null) addTearDown(container.dispose);
   // Mounting the session starts the first cycle, as the app does on sign-in;
   // the listener keeps it alive, as the mounted Timeline destination does.
   container.listen(releaseTimelineSessionProvider, (_, _) {});

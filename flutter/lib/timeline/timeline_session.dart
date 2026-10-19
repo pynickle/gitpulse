@@ -59,6 +59,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   bool _awaitingFreshWindow = true;
   String _cycleId = '';
   Future<void>? _cacheAction;
+  final List<TimelineCachePage> _cyclePages = [];
+  int _persistedPageCount = 0;
+  bool _cacheSynchronized = false;
   int? get _retentionDays => state.cacheSettings.retentionDays;
   set _retentionDays(int? days) {
     state = state.copyWith(
@@ -232,22 +235,28 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final context = _sessionContext();
     if (context == null) {
       _generation += 1;
+      _cyclePages.clear();
+      _persistedPageCount = 0;
       _context = null;
       _followedRepositories = const [];
       _followsKnown = false;
       _cycle = TimelineCycle.empty;
       _failures.clear();
       _firstPageRetries.clear();
+      _cacheSynchronized = false;
       state = const TimelineViewState.inactive();
       return;
     }
     if (context == _context) return;
+    _cyclePages.clear();
+    _persistedPageCount = 0;
     _context = context;
     _followedRepositories = const [];
     _followsKnown = false;
     _cycle = TimelineCycle.empty;
     _failures.clear();
     _firstPageRetries.clear();
+    _cacheSynchronized = false;
     state = const TimelineViewState.activeLoading();
     _retentionDays = null;
     unawaited(_restoreAndStart(++_generation));
@@ -264,6 +273,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   }
 
   Future<void> _restoreAndStart(int ticket) async {
+    while (_cacheAction != null) {
+      await _cacheAction;
+    }
+    if (!_isCurrent(ticket)) return;
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
     if (scope != null) {
@@ -277,6 +290,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             );
         if (!_isCurrent(ticket)) return;
         if (saved != null) {
+          _cacheSynchronized = true;
           _retentionDays = saved.retentionDays;
           _followedRepositories = saved.repositories;
           state = TimelineViewState(
@@ -300,9 +314,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             offline: ref.read(sessionControllerProvider).offline,
           );
         }
-      } catch (_) {
+      } catch (error) {
         if (!_isCurrent(ticket)) return;
-        state = state.copyWith(cacheFailed: true);
+        _cacheFailure(error);
       }
     }
     if (_isCurrent(ticket)) await _startCycle(ticket);
@@ -338,14 +352,17 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             now: ref.read(timelineClockProvider)(),
             environment: ref.read(timelineEnvironmentProvider),
           );
-      if (_isCurrent(ticket) && state.restored && saved != null) {
+      if (_isCurrent(ticket) &&
+          state.restored &&
+          saved != null &&
+          _cacheSynchronized) {
         state = state.copyWith(
           groups: saved.groups,
           loadedNewCount: countLoadedNewReleases(saved.groups, saved.baseline),
         );
       }
-    } catch (_) {
-      if (_isCurrent(ticket)) state = state.copyWith(cacheFailed: true);
+    } catch (error) {
+      if (_isCurrent(ticket)) _cacheFailure(error);
     }
   }
 
@@ -406,23 +423,14 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
     if (scope != null) {
       try {
-        await ref
-            .read(timelineCacheProvider)
-            .synchronize(
-              scope: scope,
-              retentionDays: days,
-              repositories: _followedRepositories,
-              now: ref.read(timelineClockProvider)(),
-              isCurrent: () => _isCurrent(ticket),
-            );
+        await _synchronizeCache(scope, ticket);
         if (!_isCurrent(ticket)) return;
         await _loadHistory(ticket);
         if (!_isCurrent(ticket)) return;
         await pruneRetainedHistory();
-      } catch (_) {
+      } catch (error) {
         if (!_isCurrent(ticket)) return;
-        _retentionDays = null;
-        state = state.copyWith(cacheFailed: true);
+        _cacheFailure(error);
       }
     }
     if (_isCurrent(ticket)) {
@@ -435,6 +443,135 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// Clears local content and continuation state without an account mutation.
   Future<void> clearCache() => _runCacheAction(_clearCache);
 
+  Future<void> retryCache() => _runCacheAction(() async {
+    if (_sessionContext() == null || state.loading || state.cacheCorrupted) {
+      return;
+    }
+    if (_cyclePages.isEmpty || _retentionDays == null) {
+      await refresh();
+      return;
+    }
+    final ticket = _generation;
+    state = state.copyWith(loading: true);
+    if (!_cacheSynchronized) {
+      final identity = ref.read(sessionControllerProvider).identity!;
+      final scope = TimelineCache.scopeOf(identity);
+      if (scope != null) {
+        try {
+          await _synchronizeCache(scope, ticket);
+          if (!_isCurrent(ticket)) return;
+        } catch (error) {
+          if (_isCurrent(ticket)) {
+            _cacheFailure(error);
+            state = state.copyWith(loading: false);
+          }
+          return;
+        }
+      }
+    }
+    await _persistCurrent(ticket);
+    if (_isCurrent(ticket)) state = state.copyWith(loading: false);
+  });
+
+  Future<void> rebuildCache() => _runCacheAction(() async {
+    final identity = ref.read(sessionControllerProvider).identity;
+    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    if (_sessionContext() == null || scope == null) return;
+    final ticket = ++_generation;
+    state = state.copyWith(
+      loading: true,
+      cacheSettings: state.cacheSettings.copyWith(clearing: true),
+    );
+    _cacheSynchronized = false;
+    try {
+      await ref.read(timelineCacheRebuildProvider)(() => _isCurrent(ticket));
+      if (!_isCurrent(ticket)) return;
+      await _synchronizeCache(scope, ticket);
+      if (!_isCurrent(ticket)) return;
+      _persistedPageCount = 0;
+      _history = TimelineHistoryConnection(const RetainedTimelineHistory());
+      // Rebuild from the actual fetched pages, excluding the discarded cached
+      // extension. No synthetic page can certify a connection to old history.
+      var recovered = TimelineRound(
+        cycle: TimelineCycle.empty,
+        groups: const [],
+      );
+      for (final entry in _cyclePages) {
+        recovered = mergeTimelineRound(
+          cycle: recovered.cycle,
+          followedRepositories: _followedRepositories,
+          pages: {entry.repositoryId: entry.page},
+          requestedIds: [entry.repositoryId],
+          refresh: false,
+          environment: ref.read(timelineEnvironmentProvider),
+        );
+      }
+      recovered = mergeTimelineRound(
+        cycle: TimelineCycle(
+          pages: recovered.cycle.pages,
+          failedIds: _cycle.failedIds,
+          previousBaseline: state.previousBaseline,
+        ),
+        followedRepositories: _followedRepositories,
+        pages: const {},
+        requestedIds: const [],
+        refresh: false,
+        environment: ref.read(timelineEnvironmentProvider),
+      );
+      _cycle = recovered.cycle;
+      state = state.copyWith(
+        groups: recovered.groups,
+        cacheFailed: false,
+        cacheCorrupted: false,
+        restored: false,
+        partial: _cycle.partial,
+        clearSavedAt: true,
+        cacheConnection: TimelineCacheConnection.none,
+        waitingRepositories: const [],
+        canLoadOlder: _canLoadOlder,
+        loadedNewCount: countLoadedNewReleases(
+          recovered.groups,
+          state.previousBaseline,
+        ),
+        baselineExposed: isBaselineExposed(
+          state.previousBaseline,
+          _cycle.windowLowerBound,
+        ),
+      );
+      if (_cyclePages.isNotEmpty) await _persistCurrent(ticket);
+    } catch (error) {
+      if (_isCurrent(ticket)) _cacheFailure(error);
+    } finally {
+      if (_isCurrent(ticket)) {
+        state = state.copyWith(
+          loading: false,
+          cacheSettings: state.cacheSettings.copyWith(clearing: false),
+        );
+      }
+    }
+  });
+
+  Future<void> _synchronizeCache(String scope, int ticket) async {
+    _cacheSynchronized = false;
+    await ref
+        .read(timelineCacheProvider)
+        .synchronize(
+          scope: scope,
+          retentionDays: _retentionDays,
+          repositories: _followedRepositories,
+          now: ref.read(timelineClockProvider)(),
+          isCurrent: () => _isCurrent(ticket),
+        );
+    if (_isCurrent(ticket)) _cacheSynchronized = true;
+  }
+
+  void _cacheFailure(Object error) {
+    state = state.copyWith(
+      cacheFailed: true,
+      cacheCorrupted: state.cacheCorrupted || error is TimelineCacheCorruption,
+    );
+  }
+
   Future<void> _clearCache() async {
     if (_sessionContext() == null ||
         state.cacheSettings.clearing ||
@@ -442,6 +579,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       return;
     }
     final ticket = ++_generation;
+    _cyclePages.clear();
+    _persistedPageCount = 0;
     _cycle = TimelineCycle.empty;
     _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
     _awaitingFreshWindow = true;
@@ -451,6 +590,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     state = TimelineViewState(
       active: true,
       hasFollows: _followedRepositories.isNotEmpty,
+      cacheCorrupted: state.cacheCorrupted,
       cacheSettings: state.cacheSettings.copyWith(
         clearing: true,
         clearFailed: false,
@@ -461,15 +601,16 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       await ref.read(timelineCacheProvider).clearHistory();
       if (!_isCurrent(ticket)) return;
       state = state.copyWith(
+        cacheCorrupted: false,
         cacheSettings: state.cacheSettings.copyWith(
           clearing: false,
           cleared: true,
         ),
       );
-    } catch (_) {
+    } catch (error) {
       if (!_isCurrent(ticket)) return;
+      _cacheFailure(error);
       state = state.copyWith(
-        cacheFailed: true,
         cacheSettings: state.cacheSettings.copyWith(
           clearing: false,
           clearFailed: true,
@@ -487,7 +628,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _failures.clear();
     _firstPageRetries.clear();
     _awaitingFreshWindow = true;
-    _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
     _history = TimelineHistoryConnection(const RetainedTimelineHistory());
     state = state.copyWith(
       active: true,
@@ -557,6 +697,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       );
     }
     if (removed.isNotEmpty) {
+      _persistedPageCount = _cyclePages
+          .take(_persistedPageCount)
+          .where((page) => nextIds.contains(page.repositoryId))
+          .length;
+      _cyclePages.removeWhere((page) => !nextIds.contains(page.repositoryId));
       state = state.copyWith(
         groups: [
           for (final group in state.groups)
@@ -573,21 +718,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
     if (scope != null) {
       try {
-        await ref
-            .read(timelineCacheProvider)
-            .synchronize(
-              scope: scope,
-              retentionDays: _retentionDays,
-              repositories: follows,
-              now: ref.read(timelineClockProvider)(),
-              isCurrent: () => _isCurrent(ticket),
-            );
-      } catch (_) {
+        await _synchronizeCache(scope, ticket);
         if (!_isCurrent(ticket)) return;
-        // Content must not be saved under an older policy when the newly
-        // synchronized account preference could not be committed locally.
-        _retentionDays = null;
-        state = state.copyWith(cacheFailed: true);
+      } catch (error) {
+        if (!_isCurrent(ticket)) return;
+        _cacheFailure(error);
       }
       if (!_isCurrent(ticket)) return;
       await _loadHistory(ticket);
@@ -605,6 +740,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         hasFollows: false,
         cacheSettings: state.cacheSettings,
         cacheFailed: state.cacheFailed,
+        cacheCorrupted: state.cacheCorrupted,
       );
       return;
     }
@@ -616,14 +752,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   Future<void> _loadHistory(int ticket) async {
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
-    if (scope == null || _retentionDays == null) return;
+    if (scope == null ||
+        _retentionDays == null ||
+        !_cacheSynchronized ||
+        state.cacheCorrupted) {
+      return;
+    }
     try {
       final history = await ref
           .read(timelineCacheProvider)
           .readHistory(scope: scope, now: ref.read(timelineClockProvider)());
       if (_isCurrent(ticket)) _history = TimelineHistoryConnection(history);
-    } catch (_) {
-      if (_isCurrent(ticket)) state = state.copyWith(cacheFailed: true);
+    } catch (error) {
+      if (_isCurrent(ticket)) _cacheFailure(error);
     }
   }
 
@@ -721,6 +862,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
     _recordFailures(requestedIds, pages);
     final startsWindow = refresh || _awaitingFreshWindow;
+    if (startsWindow) {
+      _cyclePages.clear();
+      _persistedPageCount = 0;
+      _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
+    }
     var result = mergeTimelineRound(
       cycle: _cycle,
       followedRepositories: _followedRepositories,
@@ -776,15 +922,32 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           ? round.persistenceError != null
           : state.persistenceFailed || round.persistenceError != null,
       cacheFailed: state.cacheFailed,
+      cacheCorrupted: state.cacheCorrupted,
       savedAt: state.savedAt,
       cacheConnection: _cacheConnection,
       waitingRepositories: _repositoriesFor(
         _history.waitingRepositories.toList(),
       ),
     );
+    _cyclePages.addAll([
+      for (final entry in pages.entries)
+        (
+          repositoryId: entry.key,
+          cursor: cursors[entry.key],
+          page: entry.value,
+        ),
+    ]);
+    await _persistCurrent(ticket);
+    if (_isCurrent(ticket)) state = state.copyWith(loading: false);
+  }
+
+  Future<void> _persistCurrent(int ticket) async {
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
-    if (scope != null && _retentionDays != null) {
+    if (scope != null &&
+        _retentionDays != null &&
+        _cacheSynchronized &&
+        !state.cacheCorrupted) {
       final now = ref.read(timelineClockProvider)();
       try {
         await ref
@@ -792,22 +955,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             .save(
               scope: scope,
               cycleId: _cycleId,
-              pages: pages,
-              cursors: cursors,
-              groups: result.groups,
+              pages: _cyclePages.skip(_persistedPageCount).toList(),
+              groups: state.groups,
               cycle: _cycle,
               now: now,
               isCurrent: () => _isCurrent(ticket),
               obsoleteRepositories: Set.of(_history.obsoleteRepositories),
             );
         if (_isCurrent(ticket)) {
+          _persistedPageCount = _cyclePages.length;
           state = state.copyWith(savedAt: now, cacheFailed: false);
         }
-      } catch (_) {
-        if (_isCurrent(ticket)) state = state.copyWith(cacheFailed: true);
+      } catch (error) {
+        if (_isCurrent(ticket)) _cacheFailure(error);
       }
     }
-    if (_isCurrent(ticket)) state = state.copyWith(loading: false);
   }
 
   bool get _canLoadOlder => _cycle.pages.entries.any(

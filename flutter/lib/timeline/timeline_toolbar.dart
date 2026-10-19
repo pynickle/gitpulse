@@ -10,11 +10,15 @@ class TimelineToolbar extends StatelessWidget {
     required this.state,
     required this.onRefresh,
     required this.showTitle,
+    this.onRetryCache,
+    this.onRebuildCache,
   });
 
   final TimelineViewState state;
   final Future<void> Function() onRefresh;
   final bool showTitle;
+  final Future<void> Function()? onRetryCache;
+  final Future<void> Function()? onRebuildCache;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +54,28 @@ class TimelineToolbar extends StatelessWidget {
             ],
           ),
           if (showTitle) _TimelineStatus(state: state),
-          if (state.cacheFailed) Text(l10n.timelineCacheFailed),
+          if (state.cacheFailed)
+            Text(
+              state.cacheCorrupted
+                  ? l10n.timelineCacheCorrupted
+                  : l10n.timelineCacheFailed,
+            ),
+          if (state.cacheFailed && onRetryCache != null)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: state.loading || state.cacheSettings.clearing
+                    ? null
+                    : state.cacheCorrupted
+                    ? onRebuildCache
+                    : onRetryCache,
+                child: Text(
+                  state.cacheCorrupted
+                      ? l10n.timelineRebuildCache
+                      : l10n.timelineRetrySaving,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:sqlite3/common.dart';
 
 import '../session/gitpulse_http.dart';
 import 'timeline_dto.dart';
@@ -13,16 +16,53 @@ import 'timeline_history.dart';
 
 part 'timeline_cache.g.dart';
 
+typedef TimelineCachePage = ({
+  String repositoryId,
+  String? cursor,
+  RepositoryPage page,
+});
+
 final timelineClockProvider = Provider<DateTime Function()>(
   (ref) => DateTime.now,
 );
 
+final timelineCacheFileProvider = Provider<Future<File> Function()>(
+  (ref) =>
+      () async => File(
+        p.join(
+          (await getApplicationSupportDirectory()).path,
+          'release_timeline.sqlite',
+        ),
+      ),
+);
+
+final timelineCacheRebuildProvider =
+    Provider<Future<void> Function(bool Function())>((ref) {
+      return (isCurrent) async {
+        final file = await ref.read(timelineCacheFileProvider)();
+        if (!isCurrent()) return;
+        await ref.read(timelineCacheProvider).close();
+        // Close the connection before removing only this database and its journals.
+        // Retrying a failed rebuild repeats this same, idempotent operation.
+        try {
+          if (!isCurrent()) return;
+          for (final suffix in ['', '-wal', '-shm', '-journal']) {
+            final target = File('${file.path}$suffix');
+            if (await target.exists()) await target.delete();
+          }
+        } finally {
+          if (ref.mounted) ref.invalidate(timelineCacheProvider);
+        }
+      };
+    });
+
 final timelineCacheProvider = Provider<TimelineCache>((ref) {
+  final databaseFile = ref.read(timelineCacheFileProvider);
   final cache = TimelineCache(
     driftDatabase(
       name: 'release_timeline',
-      native: const DriftNativeOptions(
-        databaseDirectory: getApplicationSupportDirectory,
+      native: DriftNativeOptions(
+        databasePath: () async => (await databaseFile()).path,
       ),
     ),
   );
@@ -40,19 +80,34 @@ class TimelineCache extends _$TimelineCache {
   Future<void> _pending = Future.value();
   int _revision = 0;
   bool _clearRequired = false;
+  bool _historyClearRequired = false;
+  Future<void>? _closing;
 
   // One queue orders account changes, pruning and writes even when different
   // presentation controllers initiate operations concurrently.
   Future<T> _queue<T>(Future<T> Function() action) {
+    if (_closing != null) return Future.error(const _ObsoleteWrite());
     final next = _pending.then((_) async {
       if (_clearRequired) {
         await transaction(_deleteAll);
         _clearRequired = false;
+        _historyClearRequired = false;
+      } else if (_historyClearRequired) {
+        await transaction(_deleteHistory);
+        _historyClearRequired = false;
       }
       return action();
     });
     _pending = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
-    return next;
+    return next.catchError((Object error, StackTrace stack) {
+      if (error is SqliteException &&
+              (error.resultCode == 11 || error.resultCode == 26) ||
+          error is FormatException ||
+          error is TypeError) {
+        Error.throwWithStackTrace(const TimelineCacheCorruption(), stack);
+      }
+      Error.throwWithStackTrace(error, stack);
+    });
   }
 
   Future<void> _writeCurrent(
@@ -89,20 +144,21 @@ class TimelineCache extends _$TimelineCache {
   /// Removes this installation's history while keeping its last account policy.
   Future<void> clearHistory() {
     _revision++;
-    return _queue(
-      () => transaction(() async {
-        for (final table in [
-          'cache_visible',
-          'cache_page_members',
-          'cache_segments',
-          'cache_releases',
-        ]) {
-          await customStatement('DELETE FROM $table');
-        }
-        await customStatement(
-          'UPDATE cache_account SET saved_at = NULL, lower_bound = NULL, baseline = NULL, partial = 0',
-        );
-      }),
+    _historyClearRequired = true;
+    return _queue(() async {});
+  }
+
+  Future<void> _deleteHistory() async {
+    for (final table in [
+      'cache_visible',
+      'cache_page_members',
+      'cache_segments',
+      'cache_releases',
+    ]) {
+      await customStatement('DELETE FROM $table');
+    }
+    await customStatement(
+      'UPDATE cache_account SET saved_at = NULL, lower_bound = NULL, baseline = NULL, partial = 0',
     );
   }
 
@@ -333,8 +389,7 @@ class TimelineCache extends _$TimelineCache {
   Future<void> save({
     required String scope,
     required String cycleId,
-    required Map<String, RepositoryPage> pages,
-    required Map<String, String?> cursors,
+    required List<TimelineCachePage> pages,
     required List<TimelineGroup> groups,
     required TimelineCycle cycle,
     required DateTime now,
@@ -376,22 +431,22 @@ class TimelineCache extends _$TimelineCache {
         }
       }
     }
-    for (final entry in pages.entries) {
-      final page = entry.value;
+    for (final entry in pages) {
+      final page = entry.page;
       if (!page.isAvailable) continue;
       if (page.owner.isNotEmpty && page.name.isNotEmpty) {
         await customStatement(
           'UPDATE cache_repositories SET owner = ?, name = ? WHERE id = ?',
-          [page.owner, page.name, entry.key],
+          [page.owner, page.name, entry.repositoryId],
         );
       }
       // A page stores provenance and stable membership, never a response copy.
       await customStatement(
         'INSERT INTO cache_segments(repository_id, cycle, request_cursor, end_cursor, has_older, incomplete) VALUES (?, ?, ?, ?, ?, ?)',
         [
-          entry.key,
+          entry.repositoryId,
           cycleId,
-          cursors[entry.key],
+          entry.cursor,
           page.endCursor,
           page.hasOlderReleases ? 1 : 0,
           page.incomplete ? 1 : 0,
@@ -405,14 +460,14 @@ class TimelineCache extends _$TimelineCache {
           // A latest response can unpublish or move a formerly retained item.
           await customStatement(
             'DELETE FROM cache_releases WHERE repository_id = ? AND id = ?',
-            [entry.key, item.id],
+            [entry.repositoryId, item.id],
           );
           continue;
         }
         await customStatement(
           'INSERT OR REPLACE INTO cache_releases(repository_id, id, published_at, content) VALUES (?, ?, ?, ?)',
           [
-            entry.key,
+            entry.repositoryId,
             item.id,
             item.publishedAt!.microsecondsSinceEpoch,
             jsonEncode({
@@ -430,18 +485,18 @@ class TimelineCache extends _$TimelineCache {
         );
         await customStatement(
           'INSERT OR IGNORE INTO cache_page_members(segment_id, repository_id, release_id) VALUES (?, ?, ?)',
-          [segment, entry.key, item.id],
+          [segment, entry.repositoryId, item.id],
         );
       }
       // Repeating a page within a cycle updates its provenance in place.
       await customStatement(
         '''DELETE FROM cache_page_members WHERE segment_id IN
           (SELECT id FROM cache_segments WHERE repository_id = ? AND cycle = ? AND request_cursor IS ? AND id != ?)''',
-        [entry.key, cycleId, cursors[entry.key], segment],
+        [entry.repositoryId, cycleId, entry.cursor, segment],
       );
       await customStatement(
         'DELETE FROM cache_segments WHERE repository_id = ? AND cycle = ? AND request_cursor IS ? AND id != ?',
-        [entry.key, cycleId, cursors[entry.key], segment],
+        [entry.repositoryId, cycleId, entry.cursor, segment],
       );
     }
     await customStatement('DELETE FROM cache_visible');
@@ -466,10 +521,14 @@ class TimelineCache extends _$TimelineCache {
   });
 
   @override
-  Future<void> close() async {
-    await _pending;
-    await super.close();
+  Future<void> close() {
+    _revision++;
+    return _closing ??= _pending.then((_) => super.close());
   }
+}
+
+class TimelineCacheCorruption implements Exception {
+  const TimelineCacheCorruption();
 }
 
 class SavedTimeline {

@@ -64,6 +64,21 @@ and backend/account changes clear local timeline data and invalidate outstanding
 writes. Database writes and exposed membership updates commit transactionally;
 failed writes leave fresh results readable with a cache-error indication.
 
+Timeline and Settings expose **Retry saving** after a local write failure. The
+facade keeps the current cycle's fetched pages until they can be committed with
+the exposed membership, so a later successful page cannot silently omit an
+earlier failed write. Retrying a known local write does not fetch releases or
+advance the shared refresh baseline. Failed cache clearing remains pending:
+subsequent reads must complete it before any saved history can be restored.
+
+Damaged SQLite files and malformed cached content show a separate **Rebuild
+cache** action. Rebuilding closes the old database, removes only the timeline
+file and its SQLite journals, and opens a new database. It preserves the secure
+session and server-owned follows/preferences/baseline. Fresh pages from the
+current cycle are saved again under the synchronized retention policy; discarded
+cached extensions are not treated as fetched pages. A failed rebuild remains
+retryable. The old database's queued writes cannot enter its replacement.
+
 Offline release details use complete notes from the exposed timeline, with offline
 and saved-update indicators. Repository README, images, and current release asset
 metadata are outside this cache's offline guarantee.
@@ -74,6 +89,12 @@ retention boundaries, isolation, deduplication, saved membership, full notes,
 transaction rollback, and lifecycle invalidation. `flutter test` includes the
 HTTP/session and mounted offline-startup checks. Native device/plugin behavior
 still requires the owner's Windows and Android checks.
+
+`flutter test test/timeline/timeline_recovery_test.dart` covers mounted save and
+rebuild actions, an invalid-cursor retry, failed-clear recovery, rejected-session
+pruning, and delayed cache connections overtaken by refresh, unfollow, clear,
+logout, backend changes, or account changes. Assertions include offline reopen
+through the public facade, using temporary on-disk SQLite databases.
 
 `flutter test test/settings/timeline_settings_test.dart` drives Settings through
 the real session and Nitro settings handlers with independent account sessions and

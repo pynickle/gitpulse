@@ -57,7 +57,25 @@ class _TimelineCacheSettingsPanelState
                   ? l10n.retentionSyncUnavailable
                   : l10n.retentionSyncFailed,
             ),
-          if (timeline.cacheFailed) Text(l10n.timelineCacheFailed),
+          if (timeline.cacheFailed)
+            Text(
+              timeline.cacheCorrupted
+                  ? l10n.timelineCacheCorrupted
+                  : l10n.timelineCacheFailed,
+            ),
+          if (timeline.cacheFailed)
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : timeline.cacheCorrupted
+                  ? facade.rebuildCache
+                  : facade.retryCache,
+              child: Text(
+                timeline.cacheCorrupted
+                    ? l10n.timelineRebuildCache
+                    : l10n.timelineRetrySaving,
+              ),
+            ),
           const SizedBox(height: 12),
           TextFormField(
             controller: _days,

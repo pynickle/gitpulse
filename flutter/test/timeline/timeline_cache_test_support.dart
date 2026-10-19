@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
@@ -37,7 +36,7 @@ class DiskTimeline {
   DiskTimeline(this.directory);
   final Directory directory;
   final now = DateTime.utc(2026, 10, 19, 12);
-  TimelineCache? cache;
+  TimelineCache? get cache => container?.read(timelineCacheProvider);
   ProviderContainer? container;
 
   static Future<DiskTimeline> create() async {
@@ -56,12 +55,11 @@ class DiskTimeline {
     AuthenticatedIdentity? identity,
     DateTime Function()? now,
     String Function(DateTime)? localDateKey,
+    Future<File> Function()? cacheFileLookup,
   }) {
-    cache = TimelineCache(
-      NativeDatabase(File(p.join(directory.path, 'timeline.sqlite'))),
-    );
     final h = createHarness(
-      cache: cache,
+      cacheFile: File(p.join(directory.path, 'timeline.sqlite')),
+      cacheFileLookup: cacheFileLookup,
       now: now ?? () => this.now,
       identity: identity,
       login: login,
@@ -72,10 +70,10 @@ class DiskTimeline {
   }
 
   Future<void> close() async {
+    final history = cache;
     container?.dispose();
     container = null;
-    await cache?.close();
-    cache = null;
+    await history?.close();
   }
 }
 

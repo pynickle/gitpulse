@@ -83,6 +83,7 @@ class TimelineViewState {
     this.failure,
     this.persistenceFailed = false,
     this.cacheFailed = false,
+    this.cacheCorrupted = false,
     this.offline = false,
     this.restored = false,
     this.savedAt,
@@ -134,6 +135,7 @@ class TimelineViewState {
   /// Whether usable results returned while their bookmark could not be saved.
   final bool persistenceFailed;
   final bool cacheFailed;
+  final bool cacheCorrupted;
   final bool offline;
   final bool restored;
   final DateTime? savedAt;
@@ -164,9 +166,11 @@ class TimelineViewState {
     bool clearFailure = false,
     bool? persistenceFailed,
     bool? cacheFailed,
+    bool? cacheCorrupted,
     bool? offline,
     bool? restored,
     DateTime? savedAt,
+    bool clearSavedAt = false,
     TimelineCacheConnection? cacheConnection,
     List<TimelineRepository>? waitingRepositories,
     TimelineCacheSettings? cacheSettings,
@@ -191,9 +195,10 @@ class TimelineViewState {
       failure: clearFailure ? null : failure ?? this.failure,
       persistenceFailed: persistenceFailed ?? this.persistenceFailed,
       cacheFailed: cacheFailed ?? this.cacheFailed,
+      cacheCorrupted: cacheCorrupted ?? this.cacheCorrupted,
       offline: offline ?? this.offline,
       restored: restored ?? this.restored,
-      savedAt: savedAt ?? this.savedAt,
+      savedAt: clearSavedAt ? null : savedAt ?? this.savedAt,
       cacheConnection: cacheConnection ?? this.cacheConnection,
       waitingRepositories: waitingRepositories ?? this.waitingRepositories,
       cacheSettings: cacheSettings ?? this.cacheSettings,
