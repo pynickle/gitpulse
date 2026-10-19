@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import 'timeline_date_labels.dart';
+import 'timeline_filters.dart';
 import 'timeline_state.dart';
 
-class TimelineToolbar extends StatelessWidget {
+class TimelineToolbar extends StatefulWidget {
   const TimelineToolbar({
     super.key,
     required this.state,
     required this.onRefresh,
     required this.showTitle,
+    this.onFiltersChanged,
+    this.onOpenFilters,
     this.onRetryCache,
     this.onRebuildCache,
   });
@@ -17,12 +20,51 @@ class TimelineToolbar extends StatelessWidget {
   final TimelineViewState state;
   final Future<void> Function() onRefresh;
   final bool showTitle;
+  final ValueChanged<TimelineFilterState>? onFiltersChanged;
+  final VoidCallback? onOpenFilters;
   final Future<void> Function()? onRetryCache;
   final Future<void> Function()? onRebuildCache;
 
   @override
+  State<TimelineToolbar> createState() => _TimelineToolbarState();
+}
+
+class _TimelineToolbarState extends State<TimelineToolbar> {
+  late final TextEditingController _query;
+
+  @override
+  void initState() {
+    super.initState();
+    _query = TextEditingController(text: widget.state.filters.query);
+  }
+
+  @override
+  void didUpdateWidget(TimelineToolbar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final query = widget.state.filters.query;
+    if (query != _query.text) {
+      _query.value = TextEditingValue(
+        text: query,
+        selection: TextSelection.collapsed(offset: query.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  void _change(TimelineFilterState Function(TimelineFilterState) update) {
+    widget.onFiltersChanged?.call(update(widget.state.filters));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final state = widget.state;
+    final filters = state.filters;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -31,7 +73,7 @@ class TimelineToolbar extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: showTitle
+                child: widget.showTitle
                     ? Text(
                         l10n.timeline,
                         maxLines: 1,
@@ -42,7 +84,7 @@ class TimelineToolbar extends StatelessWidget {
               ),
               IconButton(
                 tooltip: l10n.timelineReload,
-                onPressed: state.loading ? null : () => onRefresh(),
+                onPressed: state.loading ? null : () => widget.onRefresh(),
                 icon: state.loading
                     ? const SizedBox(
                         width: 18,
@@ -53,22 +95,66 @@ class TimelineToolbar extends StatelessWidget {
               ),
             ],
           ),
-          if (showTitle) _TimelineStatus(state: state),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _query,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    hintText: l10n.timelineSearchPlaceholder,
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _query.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: l10n.timelineSearchClear,
+                            onPressed: () {
+                              _query.clear();
+                              _change((filters) => filters.copyWith(query: ''));
+                            },
+                            icon: const Icon(Icons.close, size: 18),
+                          ),
+                  ),
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) =>
+                      _change((filters) => filters.copyWith(query: value)),
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.timelineIncludeNotes,
+                isSelected: filters.includeReleaseNotes,
+                onPressed: () => _change(
+                  (filters) => filters.copyWith(
+                    includeReleaseNotes: !filters.includeReleaseNotes,
+                  ),
+                ),
+                icon: const Icon(Icons.article_outlined),
+                selectedIcon: const Icon(Icons.article),
+              ),
+              IconButton(
+                tooltip: l10n.timelineFilters,
+                isSelected: filters.hasActiveTimelineFilter,
+                onPressed: widget.onOpenFilters,
+                icon: const Icon(Icons.filter_list),
+              ),
+            ],
+          ),
+          if (widget.showTitle) _TimelineStatus(state: state),
           if (state.cacheFailed)
             Text(
               state.cacheCorrupted
                   ? l10n.timelineCacheCorrupted
                   : l10n.timelineCacheFailed,
             ),
-          if (state.cacheFailed && onRetryCache != null)
+          if (state.cacheFailed && widget.onRetryCache != null)
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: TextButton(
                 onPressed: state.loading || state.cacheSettings.clearing
                     ? null
                     : state.cacheCorrupted
-                    ? onRebuildCache
-                    : onRetryCache,
+                    ? widget.onRebuildCache
+                    : widget.onRetryCache,
                 child: Text(
                   state.cacheCorrupted
                       ? l10n.timelineRebuildCache

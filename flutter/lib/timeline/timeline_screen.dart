@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/generated/app_localizations.dart';
 import 'release_timeline_card.dart';
 import 'timeline_date_labels.dart';
+import 'timeline_filter_panel.dart';
 import 'timeline_layout.dart';
 import 'timeline_models.dart';
 import 'timeline_session.dart';
@@ -27,6 +28,7 @@ class TimelineScreen extends ConsumerWidget {
         ref.read(releaseTimelineSessionProvider.notifier).retryFailed();
     Future<void> loadOlder() =>
         ref.read(releaseTimelineSessionProvider.notifier).loadOlder();
+    void openFilters() => showTimelineFilterPanel(context);
 
     return LayoutBuilder(
       builder: (context, constraints) => Column(
@@ -36,6 +38,10 @@ class TimelineScreen extends ConsumerWidget {
             state: state,
             onRefresh: refresh,
             showTitle: showTitle,
+            onFiltersChanged: (filters) => ref
+                .read(releaseTimelineSessionProvider.notifier)
+                .applyFilters(filters),
+            onOpenFilters: openFilters,
             onRetryCache: ref
                 .read(releaseTimelineSessionProvider.notifier)
                 .retryCache,
@@ -86,12 +92,12 @@ class _Body extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    if (state.loading && !state.hasReleases) {
+    if (state.loading && !state.hasExposedReleases) {
       return const _LoadingState();
     }
     // A failure outranks the no-follows state: a Followed Repository read that
     // failed has not established that the account follows nothing.
-    if (state.failure != null && !state.hasReleases) {
+    if (state.failure != null && !state.hasExposedReleases) {
       return _FailureState(state: state, onRetry: onRetry);
     }
     if (!state.hasFollows) {
@@ -111,14 +117,22 @@ class _Body extends StatelessWidget {
         onLoadOlder: onLoadOlder,
       );
     }
+    // No visible releases, but the footer stays so an Active Timeline Filter
+    // can never prevent explicitly loading more history.
     return Column(
       children: [
         Expanded(
-          child: _EmptyState(
-            icon: Icons.inbox_outlined,
-            title: l10n.timelineEmptyReleasesTitle,
-            description: l10n.timelineEmptyReleasesDescription,
-          ),
+          child: state.filteredEmpty
+              ? _EmptyState(
+                  icon: Icons.filter_alt_off_outlined,
+                  title: l10n.timelineFilteredEmptyTitle,
+                  description: l10n.timelineFilteredEmptyDescription,
+                )
+              : _EmptyState(
+                  icon: Icons.inbox_outlined,
+                  title: l10n.timelineEmptyReleasesTitle,
+                  description: l10n.timelineEmptyReleasesDescription,
+                ),
         ),
         Padding(
           padding: const EdgeInsets.all(16),
@@ -349,7 +363,9 @@ class _TimelineListState extends State<_TimelineList> {
   @override
   void didUpdateWidget(_TimelineList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (identical(oldWidget.state.groups, widget.state.groups)) return;
+    if (identical(oldWidget.state.visibleGroups, widget.state.visibleGroups)) {
+      return;
+    }
     final viewport = context.findRenderObject() as RenderBox?;
     if (viewport == null || !viewport.hasSize) return;
     final top = viewport.localToGlobal(Offset.zero).dy;
@@ -357,7 +373,7 @@ class _TimelineListState extends State<_TimelineList> {
     String? anchor;
     double? anchorTop;
     final remaining = {
-      for (final group in widget.state.groups)
+      for (final group in widget.state.visibleGroups)
         for (final item in group.items) item.key,
     };
     for (final entry in _cardKeys.entries) {
@@ -421,7 +437,7 @@ class _TimelineListState extends State<_TimelineList> {
   @override
   Widget build(BuildContext context) {
     final rows = buildTimelineRows(
-      widget.state.groups,
+      widget.state.visibleGroups,
       widget.columns,
       widget.state.baselineExposed ? widget.state.previousBaseline : null,
     );

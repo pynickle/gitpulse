@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import 'timeline_dto.dart';
+import 'timeline_filters.dart';
 import 'timeline_models.dart';
 import 'timeline_service.dart';
 import 'timeline_state.dart';
@@ -62,6 +63,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   final List<TimelineCachePage> _cyclePages = [];
   int _persistedPageCount = 0;
   bool _cacheSynchronized = false;
+  TimelineFilterState _filters = const TimelineFilterState();
+  List<TimelineGroup>? _preparedForGroups;
+  PreparedTimelineSearch? _preparedSearch;
   int? get _retentionDays => state.cacheSettings.retentionDays;
   set _retentionDays(int? days) {
     state = state.copyWith(
@@ -173,6 +177,61 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     );
   }
 
+  /// The account's currently confirmed Followed Repositories, which the filter
+  /// controls offer as options.
+  List<TimelineRepository> get followedRepositories =>
+      List.unmodifiable(_followedRepositories);
+
+  /// Applies the Active Timeline Filter and Release Timeline Search to the
+  /// exposed window. This never requests releases: offline filter changes stay
+  /// within the Saved Visible Timeline.
+  void applyFilters(TimelineFilterState filters) {
+    if (filters == _filters) return;
+    _filters = filters;
+    state = _withGroups(
+      state,
+      state.groups,
+      state.previousBaseline,
+    ).copyWith(filters: filters);
+  }
+
+  /// Replaces the exposed window, keeping its filtered view and loaded-new
+  /// count in step. Every `groups` write goes through here or through an
+  /// equivalent constructor pair.
+  TimelineViewState _withGroups(
+    TimelineViewState base,
+    List<TimelineGroup> groups,
+    String? previousBaseline,
+  ) {
+    final view = _visibleIn(groups, previousBaseline);
+    return base.copyWith(
+      groups: groups,
+      visibleGroups: view.groups,
+      loadedNewCount: view.loadedNewCount,
+    );
+  }
+
+  /// The visible groups and loaded-new count of one exposed window under the
+  /// current filters.
+  ({List<TimelineGroup> groups, int loadedNewCount}) _visibleIn(
+    List<TimelineGroup> exposed,
+    String? previousBaseline,
+  ) {
+    PreparedTimelineSearch? prepared;
+    if (_filters.query.trim().isNotEmpty) {
+      if (_preparedSearch == null || !identical(_preparedForGroups, exposed)) {
+        _preparedForGroups = exposed;
+        _preparedSearch = PreparedTimelineSearch.fromGroups(exposed);
+      }
+      prepared = _preparedSearch;
+    }
+    final groups = filterTimelineGroups(exposed, _filters, prepared: prepared);
+    return (
+      groups: groups,
+      loadedNewCount: countLoadedNewReleases(groups, previousBaseline),
+    );
+  }
+
   /// Advances successful, non-exhausted repositories by one coordinated round.
   Future<void> loadOlder() async {
     if (state.loading ||
@@ -244,6 +303,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       _failures.clear();
       _firstPageRetries.clear();
       _cacheSynchronized = false;
+      _resetFilters();
       state = const TimelineViewState.inactive();
       return;
     }
@@ -257,9 +317,18 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _failures.clear();
     _firstPageRetries.clear();
     _cacheSynchronized = false;
+    _resetFilters();
     state = const TimelineViewState.activeLoading();
     _retentionDays = null;
     unawaited(_restoreAndStart(++_generation));
+  }
+
+  /// Display conditions belong to one identity's session, so another account
+  /// never inherits a filter that would hide its releases.
+  void _resetFilters() {
+    _filters = const TimelineFilterState();
+    _preparedForGroups = null;
+    _preparedSearch = null;
   }
 
   /// The signed-in account and its backend, which scope every stored rule.
@@ -293,21 +362,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           _cacheSynchronized = true;
           _retentionDays = saved.retentionDays;
           _followedRepositories = saved.repositories;
+          final view = _visibleIn(saved.groups, saved.baseline);
           state = TimelineViewState(
             active: true,
             loading: true,
             cacheSettings: state.cacheSettings,
             hasFollows: saved.repositories.isNotEmpty,
             groups: saved.groups,
+            visibleGroups: view.groups,
+            filters: _filters,
             previousBaseline: saved.baseline,
             baselineExposed: isBaselineExposed(
               saved.baseline,
               saved.lowerBound,
             ),
-            loadedNewCount: countLoadedNewReleases(
-              saved.groups,
-              saved.baseline,
-            ),
+            loadedNewCount: view.loadedNewCount,
             partial: saved.partial,
             savedAt: saved.savedAt,
             restored: true,
@@ -356,10 +425,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           state.restored &&
           saved != null &&
           _cacheSynchronized) {
-        state = state.copyWith(
-          groups: saved.groups,
-          loadedNewCount: countLoadedNewReleases(saved.groups, saved.baseline),
-        );
+        state = _withGroups(state, saved.groups, saved.baseline);
       }
     } catch (error) {
       if (_isCurrent(ticket)) _cacheFailure(error);
@@ -519,24 +585,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         environment: ref.read(timelineEnvironmentProvider),
       );
       _cycle = recovered.cycle;
-      state = state.copyWith(
-        groups: recovered.groups,
-        cacheFailed: false,
-        cacheCorrupted: false,
-        restored: false,
-        partial: _cycle.partial,
-        clearSavedAt: true,
-        cacheConnection: TimelineCacheConnection.none,
-        waitingRepositories: const [],
-        canLoadOlder: _canLoadOlder,
-        loadedNewCount: countLoadedNewReleases(
-          recovered.groups,
-          state.previousBaseline,
+      final baseline = state.previousBaseline;
+      state = _withGroups(
+        state.copyWith(
+          cacheFailed: false,
+          cacheCorrupted: false,
+          restored: false,
+          partial: _cycle.partial,
+          clearSavedAt: true,
+          cacheConnection: TimelineCacheConnection.none,
+          waitingRepositories: const [],
+          canLoadOlder: _canLoadOlder,
+          baselineExposed: isBaselineExposed(baseline, _cycle.windowLowerBound),
         ),
-        baselineExposed: isBaselineExposed(
-          state.previousBaseline,
-          _cycle.windowLowerBound,
-        ),
+        recovered.groups,
+        baseline,
       );
       if (_cyclePages.isNotEmpty) await _persistCurrent(ticket);
     } catch (error) {
@@ -590,6 +653,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     state = TimelineViewState(
       active: true,
       hasFollows: _followedRepositories.isNotEmpty,
+      filters: _filters,
       cacheCorrupted: state.cacheCorrupted,
       cacheSettings: state.cacheSettings.copyWith(
         clearing: true,
@@ -702,18 +766,17 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           .where((page) => nextIds.contains(page.repositoryId))
           .length;
       _cyclePages.removeWhere((page) => !nextIds.contains(page.repositoryId));
-      state = state.copyWith(
-        groups: [
-          for (final group in state.groups)
-            if (group.items.any((item) => nextIds.contains(item.repository.id)))
-              TimelineGroup(
-                date: group.date,
-                items: group.items
-                    .where((item) => nextIds.contains(item.repository.id))
-                    .toList(),
-              ),
-        ],
-      );
+      final groups = [
+        for (final group in state.groups)
+          if (group.items.any((item) => nextIds.contains(item.repository.id)))
+            TimelineGroup(
+              date: group.date,
+              items: group.items
+                  .where((item) => nextIds.contains(item.repository.id))
+                  .toList(),
+            ),
+      ];
+      state = _withGroups(state, groups, state.previousBaseline);
     }
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
     if (scope != null) {
@@ -738,6 +801,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       state = TimelineViewState(
         active: true,
         hasFollows: false,
+        filters: _filters,
         cacheSettings: state.cacheSettings,
         cacheFailed: state.cacheFailed,
         cacheCorrupted: state.cacheCorrupted,
@@ -903,6 +967,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final baseline = _cycle.previousBaseline;
     final unavailable = _failedRepositories(RepositoryPageStatus.unavailable);
     final transient = _failedRepositories(RepositoryPageStatus.transient);
+    final view = _visibleIn(result.groups, baseline);
 
     state = TimelineViewState(
       active: true,
@@ -910,11 +975,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       cacheSettings: state.cacheSettings,
       hasFollows: true,
       groups: result.groups,
+      visibleGroups: view.groups,
+      filters: _filters,
       unavailableRepositories: unavailable,
       transientRepositories: transient,
       previousBaseline: baseline,
       baselineExposed: isBaselineExposed(baseline, _cycle.windowLowerBound),
-      loadedNewCount: countLoadedNewReleases(result.groups, baseline),
+      loadedNewCount: view.loadedNewCount,
       partial: _cycle.partial || unavailable.isNotEmpty || transient.isNotEmpty,
       canRetry: _cycle.failedIds.isNotEmpty,
       canLoadOlder: _canLoadOlder,

@@ -80,7 +80,14 @@ void main() {
           await mount();
           await tester.pump();
           expect(
-            tester.widget<IconButton>(find.byType(IconButton)).onPressed,
+            tester
+                .widget<IconButton>(
+                  find.ancestor(
+                    of: find.byTooltip(l10n.timelineReload),
+                    matching: find.byType(IconButton),
+                  ),
+                )
+                .onPressed,
             isNull,
           );
           expect(find.byType(CircularProgressIndicator), findsOneWidget);

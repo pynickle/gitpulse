@@ -250,7 +250,7 @@ The overlay on the Release Timeline that shows one release, or that repository's
 _Avoid_: Detail Overlay when referring to this surface
 
 **Release Timeline Filter**:
-The client-side display filter on the Release Timeline that narrows visible releases by Followed Repository and published date range.
+The client-side display filter on the Release Timeline that narrows visible releases by Followed Repository, published date range, and prerelease status.
 _Avoid_: timeline search, filter bar, dashboard filters when referring to this surface
 
 **Release Timeline Search**:

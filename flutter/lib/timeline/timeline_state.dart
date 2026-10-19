@@ -1,3 +1,4 @@
+import 'timeline_filters.dart';
 import 'timeline_models.dart';
 
 /// Why a Timeline round could not be read.
@@ -72,6 +73,8 @@ class TimelineViewState {
     this.loading = false,
     this.hasFollows = false,
     this.groups = const [],
+    this.visibleGroups = const [],
+    this.filters = const TimelineFilterState(),
     this.unavailableRepositories = const [],
     this.transientRepositories = const [],
     this.previousBaseline,
@@ -104,7 +107,18 @@ class TimelineViewState {
 
   /// Whether the account follows any repository.
   final bool hasFollows;
+
+  /// The exposed Shared Timeline Window, before the Active Timeline Filter.
   final List<TimelineGroup> groups;
+
+  /// The exposed groups after the Release Timeline Filter and Search.
+  ///
+  /// These are the only releases widgets display or count, so retained records
+  /// outside the exposed window can never appear in a result.
+  final List<TimelineGroup> visibleGroups;
+
+  /// The Active Timeline Filter and Release Timeline Search.
+  final TimelineFilterState filters;
 
   /// Followed Repositories GitHub reports as missing, and the ones that failed
   /// to load and can be retried.
@@ -143,7 +157,15 @@ class TimelineViewState {
   final List<TimelineRepository> waitingRepositories;
   final TimelineCacheSettings cacheSettings;
 
-  bool get hasReleases => groups.isNotEmpty;
+  bool get hasReleases => visibleGroups.isNotEmpty;
+
+  /// The exposed window holds releases, even if the Active Timeline Filter
+  /// currently hides them all.
+  bool get hasExposedReleases => groups.isNotEmpty;
+
+  /// The exposed window is not empty, but no release matches the Active
+  /// Timeline Filter.
+  bool get filteredEmpty => hasExposedReleases && visibleGroups.isEmpty;
 
   bool get hasLookupFailures =>
       unavailableRepositories.isNotEmpty || transientRepositories.isNotEmpty;
@@ -153,6 +175,8 @@ class TimelineViewState {
     bool? loading,
     bool? hasFollows,
     List<TimelineGroup>? groups,
+    List<TimelineGroup>? visibleGroups,
+    TimelineFilterState? filters,
     List<TimelineRepository>? unavailableRepositories,
     List<TimelineRepository>? transientRepositories,
     String? previousBaseline,
@@ -180,6 +204,8 @@ class TimelineViewState {
       loading: loading ?? this.loading,
       hasFollows: hasFollows ?? this.hasFollows,
       groups: groups ?? this.groups,
+      visibleGroups: visibleGroups ?? this.visibleGroups,
+      filters: filters ?? this.filters,
       unavailableRepositories:
           unavailableRepositories ?? this.unavailableRepositories,
       transientRepositories:

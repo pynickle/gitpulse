@@ -56,6 +56,10 @@ this tree — verify with the Flutter toolchain.
 - The timeline assembles its Shared Timeline Window from per-repository pages —
   never treat the refresh response's groups as a ready-made window, and neither
   pagination nor retry advances the shared refresh baseline.
+- `TimelineViewState.groups` is the exposed window (what is saved, and what
+  offline release bodies resolve against); `visibleGroups` is what the filter
+  and search display. Recompute both plus `loadedNewCount` whenever `groups`
+  changes, and keep `applyFilters` request-free.
 - Follow edits send only `followedRepositories` to `PUT /api/settings`
   (100 available / 150 stored limits) so unrelated preferences survive.
 

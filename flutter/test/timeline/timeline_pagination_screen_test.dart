@@ -111,7 +111,13 @@ void main() {
             ),
           },
         );
-        await tester.drag(find.byType(Scrollable), const Offset(0, -1100));
+        await tester.drag(
+          find.descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          ),
+          const Offset(0, -1100),
+        );
         await tester.pumpAndSettle();
         final cards = find.byType(ReleaseTimelineCard).evaluate().where((
           element,
