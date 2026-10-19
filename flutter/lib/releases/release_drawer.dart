@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
-import '../session/native_login_handoff.dart';
+import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
 import '../timeline/timeline_layout.dart';
 import 'document_content.dart';
@@ -68,17 +68,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       setState(() => _target = target);
       return true;
     }
-    try {
-      if (await ref.read(browserLauncherProvider)(uri)) return true;
-    } catch (_) {
-      // Report failed browser launches locally without falling back to a WebView.
-    }
-    if (mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).releaseLinkFailed)),
-      );
-    }
-    return true;
+    return openNativeContentLink(context, ref, value, external: external);
   }
 
   @override
@@ -89,8 +79,14 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
           previous?.identity?.backend != next.identity?.backend ||
           previous?.identity?.login != next.identity?.login) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          if (!mounted) return;
+          final route = ModalRoute.of(context);
+          if (route?.isCurrent == true) {
             Navigator.of(context).pop();
+          } else if (route?.isActive == true) {
+            // A repository page may cover this drawer. Remove its old-account
+            // route too, so Back cannot return to an invisible modal barrier.
+            Navigator.of(context).removeRoute(route!);
           }
         });
       }

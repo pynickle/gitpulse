@@ -133,5 +133,35 @@
   "repositoryReleasesEntry": "入口发布",
   "repositoryReleasesPrevious": "上一页",
   "repositoryReleasesNext": "下一页",
-  "repositoryReleasesPage": "第 {page} 页"
+  "repositoryReleasesPage": "第 {page} 页",
+  "repositoryTitle": "仓库",
+  "repositoryStars": "星标：{count}",
+  "repositoryForks": "复刻：{count}",
+  "repositoryWatchers": "关注者：{count}",
+  "repositoryNoReadme": "此仓库暂无 README 内容。",
+  "repositoryUnavailable": "此仓库不可用，或当前账号无权访问。",
+  "repositoryPermission": "当前账号无权读取此仓库内容。",
+  "repositoryFailed": "无法加载仓库内容，请重试。",
+  "navigationHome": "主页",
+  "@repositoryStars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repositoryForks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repositoryWatchers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

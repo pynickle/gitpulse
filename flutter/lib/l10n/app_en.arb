@@ -148,5 +148,35 @@
   "repositoryReleasesPrevious": "Previous page",
   "repositoryReleasesNext": "Next page",
   "repositoryReleasesPage": "Page {page}",
-  "@repositoryReleasesPage": {"placeholders":{"page":{"type":"int"}}}
+  "@repositoryReleasesPage": {"placeholders":{"page":{"type":"int"}}},
+  "repositoryTitle": "Repository",
+  "repositoryStars": "Stars: {count}",
+  "repositoryForks": "Forks: {count}",
+  "repositoryWatchers": "Watchers: {count}",
+  "repositoryNoReadme": "This repository has no README content.",
+  "repositoryUnavailable": "This repository is unavailable or is not accessible to this account.",
+  "repositoryPermission": "This account does not have permission to read this repository content.",
+  "repositoryFailed": "Could not load repository content. Try again.",
+  "navigationHome": "Home",
+  "@repositoryStars": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repositoryForks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@repositoryWatchers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

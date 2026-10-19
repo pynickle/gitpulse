@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
 import '../session/sign_in_panel.dart';
 import 'release_drawer.dart';
@@ -41,17 +41,8 @@ class _RepositoryReleasesScreenState
       repositoryReleasesControllerProvider(scope).notifier,
     );
     return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/timeline');
-            }
-          },
-        ),
-        title: Text(AppLocalizations.of(context).repositoryReleasesTitle),
+      appBar: RepositoryPageAppBar(
+        title: AppLocalizations.of(context).repositoryReleasesTitle,
       ),
       body: SafeArea(
         child: Column(
