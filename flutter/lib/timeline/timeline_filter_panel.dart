@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import 'timeline_cache.dart';
 import 'timeline_filters.dart';
 import 'timeline_layout.dart';
 import 'timeline_models.dart';
@@ -112,15 +113,13 @@ class TimelineFilterPanel extends ConsumerWidget {
     void update(TimelineFilterState next) => facade.applyFilters(next);
     final repositories = _sortedRepositories(facade.followedRepositories);
 
-    final dates = [
-      for (final group in state.groups) ?parseTimelineDateKey(group.date),
-    ]..sort();
-    final earliest = dates.isEmpty ? DateTime(2008, 1, 1) : dates.first;
-    // The exposed window bounds the picker: filtering never reaches retained
-    // records outside it.
-    final latest = dates.isEmpty ? DateTime.now() : dates.last;
-
     Future<void> pick({required bool from}) async {
+      // Date conditions are independent of loaded cards; only the matching
+      // candidates are restricted to the exposed window.
+      final earliest = DateTime(1);
+      final latest = DateUtils.dateOnly(
+        ref.read(timelineClockProvider)().toLocal(),
+      );
       final current = parseTimelineDateKey(
         (from ? filters.dateRange.from : filters.dateRange.to) ?? '',
       );

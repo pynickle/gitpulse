@@ -7,6 +7,7 @@ import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
+import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_filters.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
@@ -43,6 +44,9 @@ Future<MountedTimeline> pumpTimeline(
         }),
         timelineEnvironmentProvider.overrideWithValue(
           TimelineEnvironment(localDateKey: utcPlusEight),
+        ),
+        timelineClockProvider.overrideWithValue(
+          () => DateTime(2026, 10, 20, 12),
         ),
       ],
       child: MaterialApp(
@@ -248,6 +252,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await tester.tap(find.text('12'));
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(filters().dateRange.from, '2026-10-12');
@@ -265,6 +270,130 @@ void main() {
       await tester.pump();
       expect(filters().hasActiveTimelineFilter, isFalse);
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(3));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'date bounds outside the exposed window apply without fetching until older loading',
+    (tester) async {
+      final mounted = await pumpTimeline(
+        tester,
+        handlers: {
+          'GET api/settings': () => BackendResult(
+            statusCode: 200,
+            data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+          ),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson(
+                  'octo',
+                  'alpha',
+                  [
+                    releaseJson(
+                      1,
+                      'v1.0.0',
+                      '2026-10-12T10:00:00Z',
+                      name: 'Recent release',
+                    ),
+                  ],
+                  hasOlderReleases: true,
+                  endCursor: 'a1',
+                ),
+              },
+              refresh: baselineRefresh('2026-10-10T00:00:00.000Z'),
+            ),
+          ),
+          pageRequest({'R_alpha': 'a1'}): () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson('octo', 'alpha', [
+                  releaseJson(
+                    2,
+                    'v0.1.0',
+                    '2026-09-29T10:00:00Z',
+                    name: 'Older release',
+                  ),
+                ]),
+              },
+            ),
+          ),
+        },
+      );
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(TimelineScreen)),
+      );
+      final requests = List.of(mounted.session.requests);
+      TimelineFilterState filters() =>
+          mounted.container.read(releaseTimelineSessionProvider).filters;
+
+      Future<void> enterDate(DateTime date) async {
+        final material = MaterialLocalizations.of(
+          tester.element(find.byType(DatePickerDialog)),
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.byType(DatePickerDialog),
+            matching: find.byType(TextField),
+          ),
+          material.formatCompactDate(date),
+        );
+        await tester.tap(find.text(material.okButtonLabel));
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> openDate(String label) async {
+        await tester.tap(find.widgetWithText(OutlinedButton, label));
+        await tester.pumpAndSettle();
+        final material = MaterialLocalizations.of(
+          tester.element(find.byType(DatePickerDialog)),
+        );
+        await tester.tap(find.byTooltip(material.inputDateModeButtonLabel));
+        await tester.pumpAndSettle();
+      }
+
+      await tester.tap(find.byTooltip(l10n.timelineFilters));
+      await tester.pumpAndSettle();
+      await openDate(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate));
+
+      // Future dates remain invalid, while today can hide every exposed card.
+      await enterDate(DateTime(2026, 10, 21));
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+      expect(filters().dateRange.from, isNull);
+      await enterDate(DateTime(2026, 10, 20));
+      expect(find.byType(DatePickerDialog), findsNothing);
+      expect(filters().dateRange.from, '2026-10-20');
+      expect(find.text(l10n.timelineFilteredEmptyTitle), findsOneWidget);
+      expect(
+        mounted.container.read(releaseTimelineSessionProvider).loadedNewCount,
+        0,
+      );
+      expect(mounted.session.requests, requests);
+
+      await openDate(l10n.timelineFilterTo(l10n.timelineFilterAnyDate));
+      await enterDate(DateTime(2026, 9, 30));
+      expect(filters().dateRange.to, '2026-09-30');
+      expect(filters().dateRange.from, isNull);
+      expect(find.text(l10n.timelineFilteredEmptyTitle), findsOneWidget);
+      expect(mounted.session.requests, requests);
+      await tester.tap(find.text(l10n.timelineFilterDone));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.widgetWithText(FilledButton, l10n.timelineLoadOlder),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Older release'), findsOneWidget);
+      expect(find.text('Recent release'), findsNothing);
+      expect(mounted.session.requests, [
+        ...requests,
+        pageRequest({'R_alpha': 'a1'}),
+      ]);
       expect(tester.takeException(), isNull);
     },
   );
