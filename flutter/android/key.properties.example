@@ -1,0 +1,6 @@
+# Copy to key.properties (ignored). Use the existing release identity.
+# Absolute paths with forward slashes also work on Windows.
+storeFile=C:/private/gitpulse-release.jks
+storePassword=REPLACE_WITH_EXISTING_STORE_PASSWORD
+keyAlias=REPLACE_WITH_EXISTING_RELEASE_ALIAS
+keyPassword=REPLACE_WITH_EXISTING_KEY_PASSWORD

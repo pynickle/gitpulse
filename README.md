@@ -44,6 +44,14 @@ No. Your token is kept in an encrypted server-side session cookie – it is neve
 
 For details, see the [Self-hosting Guide](docs/self-hosted.md).
 
+## Native Release Timeline client
+
+The independent [Flutter client](flutter/README.md) focuses on Release Timeline,
+Release Follows, and repository/release details on Windows and Android. See the
+[distribution and acceptance guide](docs/flutter-release.md) for signing, portable
+Windows ZIPs, independent `flutter-vX.Y.Z` versions, and the code-level support
+limits for Linux, macOS, and iOS.
+
 ---
 
 ## Acknowledgements

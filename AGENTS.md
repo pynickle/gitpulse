@@ -8,7 +8,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 - **Pre-commit verification** (matches CI intent): `bun run fmt:check && bun run lint && bunx nuxi typecheck`.
 - `bun run build` is **intentionally reserved for CI** — do not invoke locally unless asked. `bun run generate` is the static export, not a build.
-- **CI has no test job** (format, lint, typecheck, extension-typecheck, build only). Run `bun test` and `bun run extension:test` locally before pushing.
+- **Root CI has no web test job** (format, lint, typecheck, extension-typecheck, build only); the separate Flutter CI runs Flutter tests. Run `bun test` and `bun run extension:test` locally before pushing.
 - The extension is a separate WXT package; root `extension:*` scripts are wrappers. After a clean checkout, `cd extension && bun install` may be needed for WXT/editor state.
 
 ## Layout & Wiring
@@ -86,7 +86,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Do not manually import auto-imported `app/utils/` defaults or `app/composables/`.
 - Do not write session shape inline in auth routes; keep `shared/types/auth.d.ts` + `establishGitHubSession` in sync.
 - Do not treat `.nuxt/` or `.output/` as source of truth — read `nuxt.config.ts` and the app source.
-- Extension releases are independent (`extension-v*` tags). Main app uses `vX.Y.Z`. The two release workflows do not trigger each other.
+- Extension releases (`extension-v*`), Flutter distributions (`flutter-vX.Y.Z`) and main app releases (`vX.Y.Z`) are independent. Their release workflows do not trigger each other.
 
 ## Design options
 

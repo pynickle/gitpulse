@@ -1,7 +1,45 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Local builds can use the ignored key.properties; CI supplies the same values
+// through environment variables so passwords never need to be written to disk.
+val releaseProperties = Properties().apply {
+    val propertiesFile = rootProject.file("key.properties")
+    if (propertiesFile.isFile) {
+        propertiesFile.inputStream().use { load(it) }
+    }
+}
+val releaseSigning = mapOf(
+    "storeFile" to "GITPULSE_ANDROID_KEYSTORE_PATH",
+    "storePassword" to "GITPULSE_ANDROID_STORE_PASSWORD",
+    "keyAlias" to "GITPULSE_ANDROID_KEY_ALIAS",
+    "keyPassword" to "GITPULSE_ANDROID_KEY_PASSWORD",
+).mapValues { (property, environment) ->
+    providers.environmentVariable(environment).orNull
+        ?: releaseProperties.getProperty(property)
+}
+val validateReleaseSigning = tasks.register("validateReleaseSigning") {
+    doLast {
+        check(releaseSigning.values.all { !it.isNullOrBlank() }) {
+            "Release signing requires storeFile, storePassword, keyAlias, and keyPassword " +
+                "in android/key.properties or the GITPULSE_ANDROID_* environment variables. " +
+                "See docs/flutter-release.md. Debug signing is not a release fallback."
+        }
+        check(!releaseSigning["keyAlias"].equals("androiddebugkey", ignoreCase = true)) {
+            "The Android debug key cannot be used for a formal release."
+        }
+        check(rootProject.file(releaseSigning.getValue("storeFile")!!).isFile) {
+            "The configured release keystore does not exist."
+        }
+    }
+}
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    dependsOn(validateReleaseSigning)
 }
 
 android {
@@ -28,11 +66,18 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = releaseSigning["storeFile"]?.let { rootProject.file(it) }
+            storePassword = releaseSigning["storePassword"]
+            keyAlias = releaseSigning["keyAlias"]
+            keyPassword = releaseSigning["keyPassword"]
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

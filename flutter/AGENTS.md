@@ -49,8 +49,9 @@ this tree — verify with the Flutter toolchain.
 
 - Android `kotlin.incremental=false` is deliberate — a Windows Pub cache and
   checkout on different drives break incremental caches. Keep it disabled.
-- Android release APKs are **debug-signed**; a private release key outside
-  version control is required before distributing.
+- Android release builds require the existing private release identity and fail
+  without it; debug signing is never a release fallback. Signing inputs, portable
+  Windows packaging and the owner/device checklist live in `../docs/flutter-release.md`.
 - `build_runner` is pinned at 2.16.2: 2.17.x needs `build`/`build_config`
   versions the selected generators cannot resolve. Keep the pin.
 - The timeline assembles its Shared Timeline Window from per-repository pages —
@@ -77,9 +78,10 @@ this tree — verify with the Flutter toolchain.
 Use Marionette MCP only when the user explicitly requests it. For routine
 changes, use the Flutter checks above.
 
-`flutter analyze` + `flutter test` cover Dart behavior only; native builds,
-plugin integration, credential stores, and device networking are owner-manual
-(Windows/Android). Linux/macOS/iOS runners are scaffolding: macOS/iOS need a
+`flutter analyze` + `flutter test` cover Dart behavior; Flutter Release additionally
+builds Windows/Android distributions. Credential stores, device networking and
+install/update remain owner-manual (Windows/Android). Linux/macOS/iOS runners
+provide code-level support: macOS/iOS need a
 configured Keychain access group and Linux a running D-Bus Secret Service
 before the session cookie can be stored. Plugin platform badges are not
 runtime evidence — state exactly what was run.

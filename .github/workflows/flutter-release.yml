@@ -1,0 +1,200 @@
+name: Flutter Release
+
+on:
+  push:
+    tags:
+      - 'flutter-v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate Flutter release version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      build_number: ${{ steps.version.outputs.build_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Validate version and independent tag
+        id: version
+        shell: python
+        run: |
+          import os
+          import pathlib
+          import re
+
+          pubspec = pathlib.Path('flutter/pubspec.yaml').read_text()
+          match = re.search(r'^version: (\d+\.\d+\.\d+)\+([1-9]\d*)\s*$', pubspec, re.M)
+          if not match:
+              raise SystemExit('Expected Flutter version X.Y.Z+N with a positive build number.')
+          version, build_number = match.groups()
+          if int(build_number) > 2100000000:
+              raise SystemExit('The Android version code exceeds its supported limit.')
+          if os.environ['GITHUB_REF_TYPE'] == 'tag':
+              if os.environ['GITHUB_REF_NAME'] != f'flutter-v{version}':
+                  raise SystemExit('The tag must be flutter-vX.Y.Z and match flutter/pubspec.yaml.')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\nbuild_number={build_number}\n')
+
+  checks:
+    name: Feature and regression checks
+    needs: validate
+    uses: ./.github/workflows/flutter-ci.yml
+
+  windows:
+    name: Windows x64 runtime ZIP
+    needs: [validate, checks]
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: flutter
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version-file: flutter/pubspec.yaml
+          cache: true
+
+      - name: Resolve the committed dependency graph
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build the complete Windows runtime
+        run: flutter build windows --release --no-pub
+
+      - name: Package the complete runtime and checksum
+        run: ./tool/package_windows.ps1
+
+      - name: Upload Windows distribution
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: gitpulse-flutter-v${{ needs.validate.outputs.version }}-windows-x64
+          path: |
+            flutter/build/distributions/*.zip
+            flutter/build/distributions/*.sha256
+          if-no-files-found: error
+
+  android:
+    name: Android release identity APK
+    needs: [validate, checks]
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version-file: flutter/pubspec.yaml
+          cache: true
+
+      - name: Resolve the committed dependency graph
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build with the owner-supplied release identity
+        shell: bash
+        env:
+          GITPULSE_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/gitpulse-release.jks
+          KEYSTORE_BASE64: ${{ secrets.FLUTTER_ANDROID_KEYSTORE_BASE64 }}
+          GITPULSE_ANDROID_STORE_PASSWORD: ${{ secrets.FLUTTER_ANDROID_STORE_PASSWORD }}
+          GITPULSE_ANDROID_KEY_ALIAS: ${{ secrets.FLUTTER_ANDROID_KEY_ALIAS }}
+          GITPULSE_ANDROID_KEY_PASSWORD: ${{ secrets.FLUTTER_ANDROID_KEY_PASSWORD }}
+          EXPECTED_CERT_SHA256: ${{ vars.FLUTTER_ANDROID_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          for required in KEYSTORE_BASE64 GITPULSE_ANDROID_STORE_PASSWORD GITPULSE_ANDROID_KEY_ALIAS GITPULSE_ANDROID_KEY_PASSWORD EXPECTED_CERT_SHA256; do
+            if [ -z "${!required}" ]; then
+              echo "Missing release signing input: ${required}. See docs/flutter-release.md." >&2
+              exit 1
+            fi
+          done
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$GITPULSE_ANDROID_KEYSTORE_PATH"
+          flutter build apk --release --no-pub
+
+      - name: Verify the APK signer, application ID and version
+        shell: python
+        env:
+          EXPECTED_CERT_SHA256: ${{ vars.FLUTTER_ANDROID_CERT_SHA256 }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+          RELEASE_BUILD_NUMBER: ${{ needs.validate.outputs.build_number }}
+        run: |
+          import hashlib
+          import os
+          import pathlib
+          import re
+          import shutil
+          import subprocess
+
+          tools_root = pathlib.Path(os.environ['ANDROID_HOME']) / 'build-tools'
+          tools = max(
+              (p for p in tools_root.iterdir() if re.fullmatch(r'\d+\.\d+\.\d+', p.name)),
+              key=lambda p: tuple(map(int, p.name.split('.'))),
+          )
+          apk = pathlib.Path('build/app/outputs/flutter-apk/app-release.apk')
+          signer = subprocess.run(
+              [str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)],
+              check=True, capture_output=True, text=True,
+          ).stdout
+          expected = os.environ['EXPECTED_CERT_SHA256'].replace(':', '').strip().lower()
+          digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)$', signer, re.M)
+          if not re.fullmatch(r'[0-9a-f]{64}', expected) or [d.lower() for d in digests] != [expected]:
+              raise SystemExit('APK signer does not match the pinned release certificate.')
+          if re.search(r'certificate DN: .*CN\s*=\s*Android Debug', signer, re.I):
+              raise SystemExit('A debug certificate is not a release identity.')
+          badging = subprocess.run(
+              [str(tools / 'aapt2'), 'dump', 'badging', str(apk)],
+              check=True, capture_output=True, text=True,
+          ).stdout.splitlines()[0]
+          package = dict(re.findall(r"(\w+)='([^']*)'", badging))
+          if (package.get('name'), package.get('versionName'), package.get('versionCode')) != (
+              'ink.euphony.gitpulse', os.environ['RELEASE_VERSION'], os.environ['RELEASE_BUILD_NUMBER'],
+          ):
+              raise SystemExit('Unexpected APK application ID or version.')
+          directory = pathlib.Path('build/distributions')
+          directory.mkdir(parents=True, exist_ok=True)
+          artifact = directory / f"GitPulse-flutter-v{os.environ['RELEASE_VERSION']}-android.apk"
+          shutil.copyfile(apk, artifact)
+          with artifact.open('rb') as source:
+              digest = hashlib.file_digest(source, 'sha256').hexdigest()
+          artifact.with_suffix('.apk.sha256').write_text(f'{digest}  {artifact.name}\n')
+          print(f'Verified ink.euphony.gitpulse; release certificate SHA-256: {expected}')
+
+      - name: Remove the temporary signing key
+        if: always()
+        shell: bash
+        env:
+          GITPULSE_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/gitpulse-release.jks
+        run: rm -f -- "$GITPULSE_ANDROID_KEYSTORE_PATH"
+
+      - name: Upload verified Android distribution
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: gitpulse-flutter-v${{ needs.validate.outputs.version }}-android
+          path: |
+            flutter/build/distributions/*.apk
+            flutter/build/distributions/*.sha256
+          if-no-files-found: error

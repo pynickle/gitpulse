@@ -91,3 +91,12 @@ the checks above can all pass while the app fails to build.
 
 Do not bypass `prek` unless there is an exceptional reason. If you must bypass a
 hook locally, run the same checks manually before pushing.
+
+## Flutter Client
+
+The native client is an independent package in `flutter/`. Use its pinned stable
+Flutter SDK and committed lockfile; run Flutter formatting, analysis and tests
+from that directory in addition to the root checks. Its HTTP contract tests need
+Bun and the root dependencies. See [Flutter distribution and acceptance](docs/flutter-release.md)
+for the commands, five-platform prerequisites, release signing and Windows/Android
+owner acceptance. Flutter CI runs separately from the existing web/extension jobs.
