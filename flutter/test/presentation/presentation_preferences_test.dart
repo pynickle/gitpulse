@@ -130,6 +130,64 @@ void main() {
   });
 
   group('PresentationPreferencesController', () {
+    for (final languageFirst in [true, false]) {
+      test('startup choices preserve both fields and reopen '
+          '(${languageFirst ? 'language' : 'appearance'} first)', () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'gitpulse-presentation-startup-',
+        );
+        addTearDown(() => directory.delete(recursive: true));
+        final file = File(
+          p.join(directory.path, 'presentation_preferences.json'),
+        );
+        final store = PresentationPreferencesStore(() async => file);
+        await store.write(
+          const PresentationPreferences(
+            language: AppLanguage.english,
+            appearance: AppAppearance.light,
+          ),
+        );
+        final loaded = Completer<void>();
+        final container = ProviderContainer(
+          overrides: [
+            presentationPreferencesStoreProvider.overrideWithValue(
+              _DelayedReadStore(file, loaded.future),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        container.read(presentationPreferencesProvider);
+        final controller = container.read(
+          presentationPreferencesProvider.notifier,
+        );
+        final selections = languageFirst
+            ? [
+                controller.selectLanguage(AppLanguage.simplifiedChinese),
+                controller.selectAppearance(AppAppearance.dark),
+              ]
+            : [
+                controller.selectAppearance(AppAppearance.dark),
+                controller.selectLanguage(AppLanguage.simplifiedChinese),
+              ];
+
+        loaded.complete();
+        await Future.wait(selections);
+
+        const expected = PresentationPreferences(
+          language: AppLanguage.simplifiedChinese,
+          appearance: AppAppearance.dark,
+        );
+        final applied = container
+            .read(presentationPreferencesProvider)
+            .value!
+            .preferences;
+        expect(applied.language, expected.language);
+        expect(applied.appearance, expected.appearance);
+        final reopened = PresentationPreferencesStore(() async => file);
+        expect(await reopened.read(), expected);
+      });
+    }
+
     test(
       'a choice made while the saved file is still loading is kept',
       () async {
@@ -195,6 +253,18 @@ void main() {
       },
     );
   });
+}
+
+class _DelayedReadStore extends PresentationPreferencesStore {
+  _DelayedReadStore(File file, this.loaded) : super(() async => file);
+
+  final Future<void> loaded;
+
+  @override
+  Future<PresentationPreferences> read() async {
+    await loaded;
+    return super.read();
+  }
 }
 
 class _ControlledStore extends PresentationPreferencesStore {

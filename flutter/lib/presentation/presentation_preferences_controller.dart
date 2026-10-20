@@ -72,10 +72,11 @@ class PresentationPreferencesController
   Future<void> _select(
     PresentationPreferences Function(PresentationPreferences) update,
   ) async {
-    // A choice made while the saved file is still being read is kept: wait for
-    // the loaded preferences, then apply the choice on top of them.
-    final current = state.value ?? await future;
+    // Wait for the saved preferences, then read the latest state: another
+    // choice waiting on the same read may already have updated it.
+    if (state.value == null) await future;
     if (!ref.mounted) return;
+    final current = state.requireValue;
     final preferences = update(current.preferences);
     if (preferences == current.preferences) return;
     state = AsyncData(PresentationPreferencesState(preferences: preferences));

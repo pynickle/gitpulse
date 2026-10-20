@@ -6,13 +6,131 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/releases/document_content.dart';
 import 'package:gitpulse/releases/release_document.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 
 void main() {
+  testWidgets(
+    'mounted SVG currentColor follows the app theme and keeps explicit colors',
+    (tester) async {
+      final overrides = HttpOverrides.current;
+      HttpOverrides.global = null;
+      addTearDown(() => HttpOverrides.global = overrides);
+      final server = (await tester.runAsync(
+        () => HttpServer.bind(InternetAddress.loopbackIPv4, 0),
+      ))!;
+      addTearDown(() => server.close(force: true));
+      server.listen((request) async {
+        request.response.headers.contentType = ContentType('image', 'svg+xml');
+        request.response.write(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">'
+          '<rect width="20" height="40" fill="currentColor"/>'
+          '<rect x="20" width="20" height="40" fill="#00ff00"/></svg>',
+        );
+        await request.response.close();
+      });
+      final themeMode = ValueNotifier(ThemeMode.light);
+      addTearDown(themeMode.dispose);
+      const paintKey = ValueKey('document-paint');
+      final home = Scaffold(
+        body: RepaintBoundary(
+          key: paintKey,
+          child: ReleaseDocument(
+            source:
+                '![Themed badge](http://127.0.0.1:${server.port}/badge.svg)',
+            document: const RepositoryDocumentContext(
+              owner: 'octo',
+              repository: 'app',
+              ref: 'v2',
+            ),
+            onTapUrl: (_) async => true,
+          ),
+        ),
+      );
+      await tester.pumpWidget(
+        ValueListenableBuilder(
+          valueListenable: themeMode,
+          builder: (context, mode, child) => MaterialApp(
+            theme: gitPulseTheme(Brightness.light),
+            darkTheme: gitPulseTheme(Brightness.dark),
+            themeMode: mode,
+            themeAnimationDuration: Duration.zero,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: child,
+          ),
+          child: home,
+        ),
+      );
+
+      for (final mode in [ThemeMode.light, ThemeMode.dark, ThemeMode.light]) {
+        themeMode.value = mode;
+        await tester.pump();
+        for (var attempt = 0; attempt < 100; attempt++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pump();
+          if (find.byType(SvgPicture).evaluate().isNotEmpty) break;
+        }
+        final badge = find.byType(SvgPicture);
+        expect(badge, findsOneWidget);
+        final brightness = mode == ThemeMode.dark
+            ? Brightness.dark
+            : Brightness.light;
+        final theme = Theme.of(tester.element(badge));
+        expect(theme.brightness, brightness);
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(paintKey),
+        );
+        final origin =
+            tester.getTopLeft(badge) - boundary.localToGlobal(Offset.zero);
+        final size = tester.getSize(badge);
+        final image = (await tester.runAsync(
+          () => boundary.toImage(pixelRatio: 1),
+        ))!;
+        try {
+          final data = (await tester.runAsync(
+            () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
+          ))!;
+          final pixels = data.buffer.asUint8List();
+          Color pixelAt(double horizontalFraction) {
+            final offset =
+                ((origin.dy + size.height / 2).floor() * image.width +
+                    (origin.dx + size.width * horizontalFraction).floor()) *
+                4;
+            return Color.fromARGB(
+              pixels[offset + 3],
+              pixels[offset],
+              pixels[offset + 1],
+              pixels[offset + 2],
+            );
+          }
+
+          expect(
+            pixelAt(0.25),
+            theme.colorScheme.onSurface,
+            reason: 'SVG currentColor must follow the mounted $mode theme',
+          );
+          expect(
+            pixelAt(0.75),
+            const Color(0xff00ff00),
+            reason: 'Theme changes must preserve explicit SVG colors',
+          );
+        } finally {
+          image.dispose();
+        }
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'SVG badges render safely and failed resources keep their alt text',
     (tester) async {

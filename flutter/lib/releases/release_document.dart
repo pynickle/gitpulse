@@ -35,42 +35,45 @@ class ReleaseDocument extends StatelessWidget {
         ...document.documentPath.split('/').where((part) => part.isNotEmpty),
       ],
     );
-    return SelectionArea(
-      child: HtmlWidget(
-        prepareDocument(
-          source,
-          document,
-          detailsLabel: AppLocalizations.of(context).releaseDetails,
-        ),
-        baseUrl: baseUrl,
-        factoryBuilder: _DocumentWidgetFactory.new,
-        customWidgetBuilder: (element) {
-          if (element.localName != 'pre') return null;
-          final code = element.querySelector('code');
-          final classes = [...?code?.classes, ...element.classes];
-          final language = classes
-              .where((name) => name.startsWith('language-'))
-              .firstOrNull;
-          return NativeCodeBlock(
-            source: (code ?? element).text,
-            language: language?.substring('language-'.length) ?? '',
-          );
-        },
-        onTapUrl: (url) {
-          final uri = Uri.tryParse(url);
-          if (uri != null &&
-              uri.hasFragment &&
-              uri.removeFragment() == baseUrl) {
-            return Future.value(false);
-          }
-          return onTapUrl(url);
-        },
-        textStyle: Theme.of(context).textTheme.bodyMedium,
-        // Core NetworkImage is deliberately independent of the authenticated Dio
-        // client. No session cookies/CSRF headers reach document resources.
-        onErrorBuilder: (context, element, error) => Text(
-          element.attributes['alt'] ??
-              AppLocalizations.of(context).releaseResourceUnavailable,
+    return DefaultSvgTheme(
+      theme: SvgTheme(currentColor: Theme.of(context).colorScheme.onSurface),
+      child: SelectionArea(
+        child: HtmlWidget(
+          prepareDocument(
+            source,
+            document,
+            detailsLabel: AppLocalizations.of(context).releaseDetails,
+          ),
+          baseUrl: baseUrl,
+          factoryBuilder: _DocumentWidgetFactory.new,
+          customWidgetBuilder: (element) {
+            if (element.localName != 'pre') return null;
+            final code = element.querySelector('code');
+            final classes = [...?code?.classes, ...element.classes];
+            final language = classes
+                .where((name) => name.startsWith('language-'))
+                .firstOrNull;
+            return NativeCodeBlock(
+              source: (code ?? element).text,
+              language: language?.substring('language-'.length) ?? '',
+            );
+          },
+          onTapUrl: (url) {
+            final uri = Uri.tryParse(url);
+            if (uri != null &&
+                uri.hasFragment &&
+                uri.removeFragment() == baseUrl) {
+              return Future.value(false);
+            }
+            return onTapUrl(url);
+          },
+          textStyle: Theme.of(context).textTheme.bodyMedium,
+          // Core NetworkImage is deliberately independent of the authenticated Dio
+          // client. No session cookies/CSRF headers reach document resources.
+          onErrorBuilder: (context, element, error) => Text(
+            element.attributes['alt'] ??
+                AppLocalizations.of(context).releaseResourceUnavailable,
+          ),
         ),
       ),
     );
@@ -146,7 +149,9 @@ class _DocumentSvgState extends State<_DocumentSvg> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _bytes ??= _load();
+    // The loader caches by SVG theme, so refresh compiled vectors when the
+    // inherited currentColor changes.
+    _bytes = _load();
   }
 
   @override
