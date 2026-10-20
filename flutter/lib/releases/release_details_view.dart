@@ -6,28 +6,34 @@ import 'document_content.dart';
 import 'release_detail_service.dart';
 import 'release_document.dart';
 
+/// The reading body of the Release Drawer: offline notice, the release's name,
+/// one quiet meta line, the notes, and the assets. The drawer's chrome line
+/// owns the release identity and every action that leaves the notes — the
+/// repository page, the Repository Release List, GitHub and close — so nothing
+/// here competes with the notes for the top of the surface.
 class ReleaseDetailsView extends StatelessWidget {
   const ReleaseDetailsView({
     super.key,
     required this.release,
     required this.onTapUrl,
     required this.onOpenExternal,
-    this.onOpenReleases,
   });
 
   final ReleaseDetail release;
   final Future<bool> Function(String) onTapUrl;
   final Future<bool> Function(String) onOpenExternal;
-  final VoidCallback? onOpenReleases;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final repositoryUrl = Uri.https(
-      'github.com',
-      '/${release.owner}/${release.repository}',
-    );
+    final meta = [
+      if (release.publishedAt case final date?)
+        gitPulseDateTime(context, date.toLocal()),
+      if (release.dto.author case final author?) author.login,
+      if (release.dto.prerelease) l10n.timelinePrerelease,
+      if (release.dto.draft) l10n.releaseDraft,
+    ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -47,42 +53,30 @@ class ReleaseDetailsView extends StatelessWidget {
               ],
             ),
           ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            onPressed: () => onTapUrl(repositoryUrl.toString()),
-            child: Text('${release.owner}/${release.repository}'),
-          ),
-        ),
-        if (onOpenReleases != null)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: onOpenReleases,
-              icon: const Icon(Icons.list_alt),
-              label: Text(l10n.repositoryReleasesTitle),
-            ),
-          ),
-        SelectableText(release.title, style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
+        // The release's name and its meta line are one tightly grouped block:
+        // they are the app's header, not part of the author's markdown. The
+        // name stays even when it repeats the tag, because it is the release's
+        // own title rather than the chrome line's identity.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Chip(label: Text(release.tag)),
-            if (release.dto.prerelease)
-              Chip(label: Text(l10n.timelinePrerelease)),
-            if (release.dto.draft) Chip(label: Text(l10n.releaseDraft)),
-            if (release.dto.author case final author?)
-              Chip(label: Text(author.login)),
+            SelectableText(release.title, style: theme.textTheme.titleMedium),
+            if (meta.isNotEmpty) const SizedBox(height: 4),
+            if (meta.isNotEmpty)
+              Text(
+                meta,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
           ],
         ),
-        if (release.publishedAt case final date?)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(gitPulseDateTime(context, date.toLocal())),
-          ),
-        const SizedBox(height: 12),
+        // A rule separates that header from the notes, so a changelog's own
+        // first heading cannot read as a continuation of the release name.
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Divider(height: 1),
+        ),
         if (release.body.isEmpty)
           Text(l10n.releaseNoNotes)
         else
@@ -95,12 +89,37 @@ class ReleaseDetailsView extends StatelessWidget {
             ),
             onTapUrl: onTapUrl,
           ),
-        const Divider(height: 32),
-        Text(
-          l10n.timelineAssetCount(release.assets.length),
-          style: theme.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
+        if (release.assets.isNotEmpty)
+          _ReleaseAssets(release: release, onOpenExternal: onOpenExternal),
+      ],
+    );
+  }
+}
+
+/// The release's assets collapsed into one row, so a release with dozens of
+/// them does not bury the end of the notes. Expansion reveals the downloads and
+/// the note that asset information is only current for this request.
+class _ReleaseAssets extends StatelessWidget {
+  const _ReleaseAssets({required this.release, required this.onOpenExternal});
+
+  final ReleaseDetail release;
+  final Future<bool> Function(String) onOpenExternal;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return ExpansionTile(
+      key: const Key('release-assets'),
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: EdgeInsets.zero,
+      shape: const Border(),
+      collapsedShape: const Border(),
+      title: Text(
+        l10n.timelineAssetCount(release.assets.length),
+        style: theme.textTheme.titleSmall,
+      ),
+      children: [
         for (final asset in release.assets)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -127,14 +146,6 @@ class ReleaseDetailsView extends StatelessWidget {
                   ),
           ),
         Text(l10n.releaseAssetsOnline, style: theme.textTheme.bodySmall),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => onOpenExternal(release.dto.htmlUrl),
-            icon: const Icon(Icons.open_in_new),
-            label: Text(l10n.releaseOpenOnGitHub),
-          ),
-        ),
       ],
     );
   }

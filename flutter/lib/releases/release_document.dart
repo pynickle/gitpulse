@@ -5,10 +5,72 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:fwfh_svg/fwfh_svg.dart';
+import 'package:html/dom.dart' as dom;
 
 import '../l10n/generated/app_localizations.dart';
 import 'document_content.dart';
 import 'native_code_block.dart';
+
+/// The notes document's deliberate type scale. Body text is 15sp on a 24px
+/// line, headings take three tiers (20, 17, 15) with tight space below them so
+/// they group with the text they introduce, and indents are sized for a 360dp
+/// phone instead of a browser default ladder. Applied through the renderer's
+/// custom styles hook so block rendering, code blocks and tables stay the
+/// renderer's own.
+const _notesBodySize = 15.0;
+const _notesBodyLineHeight = 24.0;
+const _notesHeadingLineHeight = 1.35;
+
+String _px(double value) => '${value}px';
+
+Map<String, String>? _notesStyles(
+  dom.Element element, {
+  required Color quoteBarColor,
+}) {
+  switch (element.localName) {
+    case 'p':
+      return {'margin': '0 0 12px'};
+    case 'h1':
+      return {
+        'font-size': _px(20),
+        'line-height': '$_notesHeadingLineHeight',
+        'margin': '0 0 10px',
+      };
+    case 'h2':
+      return {
+        'font-size': _px(17),
+        'line-height': '$_notesHeadingLineHeight',
+        'margin': '0 0 8px',
+      };
+    // Fourth through sixth level collapse onto the third tier: no heading is
+    // smaller than body text.
+    case 'h3':
+    case 'h4':
+    case 'h5':
+    case 'h6':
+      return {
+        'font-size': _px(_notesBodySize),
+        'line-height': '$_notesHeadingLineHeight',
+        'margin': '0 0 6px',
+      };
+    case 'ul':
+    case 'ol':
+      return {'padding-inline-start': _px(20)};
+    case 'blockquote':
+      return {
+        'margin': '0 0 12px',
+        'padding-inline-start': _px(12),
+        'border-inline-start': '3px solid ${_cssColor(quoteBarColor)}',
+      };
+    case 'hr':
+      return {'margin': '20px 0'};
+  }
+
+  return null;
+}
+
+String _cssColor(Color color) =>
+    '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
 class ReleaseDocument extends StatelessWidget {
   const ReleaseDocument({
@@ -24,6 +86,7 @@ class ReleaseDocument extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final baseUrl = Uri(
       scheme: 'https',
       host: 'github.com',
@@ -36,7 +99,7 @@ class ReleaseDocument extends StatelessWidget {
       ],
     );
     return DefaultSvgTheme(
-      theme: SvgTheme(currentColor: Theme.of(context).colorScheme.onSurface),
+      theme: SvgTheme(currentColor: theme.colorScheme.onSurface),
       child: SelectionArea(
         child: HtmlWidget(
           prepareDocument(
@@ -46,6 +109,10 @@ class ReleaseDocument extends StatelessWidget {
           ),
           baseUrl: baseUrl,
           factoryBuilder: _DocumentWidgetFactory.new,
+          customStylesBuilder: (element) => _notesStyles(
+            element,
+            quoteBarColor: theme.colorScheme.outlineVariant,
+          ),
           customWidgetBuilder: (element) {
             if (element.localName != 'pre') return null;
             final code = element.querySelector('code');
@@ -67,7 +134,10 @@ class ReleaseDocument extends StatelessWidget {
             }
             return onTapUrl(url);
           },
-          textStyle: Theme.of(context).textTheme.bodyMedium,
+          textStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: _notesBodySize,
+            height: _notesBodyLineHeight / _notesBodySize,
+          ),
           // Core NetworkImage is deliberately independent of the authenticated Dio
           // client. No session cookies/CSRF headers reach document resources.
           onErrorBuilder: (context, element, error) => Text(

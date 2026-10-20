@@ -378,7 +378,9 @@ class _TimelineListState extends State<_TimelineList> {
       center: _centerKey,
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: releaseTimelineHorizontalPadding,
+          ),
           sliver: SliverList.builder(
             itemCount: before.length,
             findChildIndexCallback: (key) => beforeIndices[key],
@@ -387,7 +389,12 @@ class _TimelineListState extends State<_TimelineList> {
         ),
         SliverPadding(
           key: _centerKey,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          padding: const EdgeInsets.fromLTRB(
+            releaseTimelineHorizontalPadding,
+            0,
+            releaseTimelineHorizontalPadding,
+            24,
+          ),
           sliver: SliverList.builder(
             itemCount: after.length + 1,
             findChildIndexCallback: (key) => afterIndices[key],
@@ -492,7 +499,7 @@ class _CardsRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var column = 0; column < columns; column++) ...[
-              if (column > 0) const SizedBox(width: 12),
+              if (column > 0) const SizedBox(width: releaseTimelineColumnGap),
               Expanded(
                 child: column < items.length
                     ? ReleaseTimelineCard(

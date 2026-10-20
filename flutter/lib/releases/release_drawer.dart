@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +23,19 @@ Future<void> showReleaseDrawer(BuildContext context, ReleaseTarget entry) {
         ReleaseDrawer(entry: entry),
   );
 }
+
+/// One action in the chrome line's icon slots.
+Widget _chromeAction({
+  required String tooltip,
+  required IconData icon,
+  required VoidCallback onPressed,
+  bool autofocus = false,
+}) => IconButton(
+  tooltip: tooltip,
+  autofocus: autofocus,
+  onPressed: onPressed,
+  icon: Icon(icon),
+);
 
 class ReleaseDrawer extends ConsumerStatefulWidget {
   const ReleaseDrawer({super.key, required this.entry});
@@ -108,6 +119,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
         );
       }
     }
+    final loadedRelease = result.value?.release;
     // Keep every visited list alive for this opening, including while reading
     // another repository's release. Closing the drawer releases all of them.
     final listStates = {
@@ -116,157 +128,255 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     };
     final listState = listStates[_listScope];
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+
+    // The Entry Release is identified by the release it resolved to, not by the
+    // address it was opened with: a link that names the tag and a list row that
+    // names the numeric id can both be the same release, and that release has
+    // nothing to step back to.
+    bool showingOtherRelease() {
+      if (_target == _entry) return false;
+      final entry = _entryIdentity;
+      if (entry == null || loadedRelease == null) return true;
+      return loadedRelease.id != entry.id ||
+          loadedRelease.owner.toLowerCase() != entry.owner.toLowerCase() ||
+          loadedRelease.repository.toLowerCase() !=
+              entry.repository.toLowerCase();
+    }
+
+    Widget entryButton() => _chromeAction(
+      tooltip: l10n.releaseEntry,
+      icon: Icons.arrow_back,
+      onPressed: () => setState(() {
+        _target = _entry;
+        _showList = false;
+      }),
+    );
 
     Widget panel({
       ScrollController? controller,
       bool sheet = false,
       double availableHeight = 1,
-    }) => Material(
-      key: const Key('release-drawer'),
-      color: Theme.of(context).colorScheme.surface,
-      borderRadius: sheet
-          ? const BorderRadius.vertical(top: Radius.circular(20))
-          : null,
-      clipBehavior: Clip.antiAlias,
-      child: SafeArea(
-        child: Column(
-          children: [
-            if (sheet)
-              Semantics(
-                button: true,
-                label: l10n.releaseResizeSheet,
-                child: GestureDetector(
-                  key: const Key('release-sheet-handle'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _snapSheet(_sheetController.size < .85 ? 1 : .7),
-                  onVerticalDragUpdate: (details) {
-                    if (_sheetController.isAttached) {
-                      _sheetController.jumpTo(
-                        (_sheetController.size -
-                                details.delta.dy / availableHeight)
-                            .clamp(.4, 1),
-                      );
-                    }
-                  },
-                  onVerticalDragEnd: (_) {
-                    if (_sheetController.isAttached) {
-                      _snapSheet(_sheetController.size > .85 ? 1 : .7);
-                    }
-                  },
-                  child: const SizedBox(
-                    height: 28,
-                    width: double.infinity,
-                    child: Center(
-                      child: SizedBox(width: 40, child: Divider(thickness: 4)),
+    }) {
+      // The chrome line names what is being read and targets that repository.
+      // Another repository's release replaces it while it is open, and the
+      // Repository Release List names the repository it lists.
+      final release = _showList ? null : loadedRelease;
+      final listScope = _showList ? _listScope : null;
+      final owner = listScope?.owner ?? release?.owner ?? _target.owner;
+      final repository =
+          listScope?.repository ?? release?.repository ?? _target.repository;
+      final tag = listScope == null ? release?.tag ?? _target.tag : null;
+      // The repository's release list has its own GitHub page, so the chrome
+      // action never has to disappear when the list takes the body.
+      final githubUrl = listScope == null
+          ? release?.dto.htmlUrl
+          : Uri.https('github.com', '/$owner/$repository/releases').toString();
+
+      return Material(
+        key: const Key('release-drawer'),
+        color: theme.colorScheme.surface,
+        borderRadius: sheet
+            ? const BorderRadius.vertical(top: Radius.circular(20))
+            : null,
+        clipBehavior: Clip.antiAlias,
+        // The sheet's top edge sits in the middle of the screen, so the status
+        // bar inset above it is screen the notes could be using. The wide
+        // panel does run to the top edge, so it keeps that inset.
+        child: SafeArea(
+          top: !sheet,
+          child: Column(
+            children: [
+              if (sheet)
+                Semantics(
+                  button: true,
+                  label: l10n.releaseResizeSheet,
+                  child: GestureDetector(
+                    key: const Key('release-sheet-handle'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () =>
+                        _snapSheet(_sheetController.size < .85 ? 1 : .7),
+                    onVerticalDragUpdate: (details) {
+                      if (_sheetController.isAttached) {
+                        _sheetController.jumpTo(
+                          (_sheetController.size -
+                                  details.delta.dy / availableHeight)
+                              .clamp(.4, 1),
+                        );
+                      }
+                    },
+                    onVerticalDragEnd: (_) {
+                      if (_sheetController.isAttached) {
+                        _snapSheet(_sheetController.size > .85 ? 1 : .7);
+                      }
+                    },
+                    child: const SizedBox(
+                      height: 28,
+                      width: double.infinity,
+                      child: Center(
+                        child: SizedBox(
+                          width: 40,
+                          child: Divider(thickness: 4),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            Row(
-              children: [
-                if (_showList || _target != _entry)
-                  IconButton(
-                    tooltip: l10n.releaseEntry,
-                    onPressed: () => setState(() {
-                      _target = _entry;
-                      _showList = false;
-                    }),
-                    icon: const Icon(Icons.arrow_back),
-                  ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    _showList
-                        ? l10n.repositoryReleasesTitle
-                        : l10n.releaseDetails,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  autofocus: true,
-                  tooltip: l10n.releaseClose,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: SingleChildScrollView(
-                key: ValueKey(_showList ? _listScope : _target),
-                controller: controller,
-                padding: const EdgeInsets.all(20),
-                child: _showList && listState != null
-                    ? RepositoryReleasesView(
-                        repository:
-                            '${_listScope!.owner}/${_listScope!.repository}',
-                        state: listState,
-                        onPage: (page) => ref
-                            .read(
-                              repositoryReleasesControllerProvider(_listScope!)
-                                  .notifier,
-                            )
-                            .loadPage(page),
-                        onFilter: (filter) => ref
-                            .read(
-                              repositoryReleasesControllerProvider(_listScope!)
-                                  .notifier,
-                            )
-                            .setFilter(filter),
-                        isEntry: (item) =>
-                            _entryIdentity?.owner.toLowerCase() ==
-                                _listScope!.owner.toLowerCase() &&
-                            _entryIdentity?.repository.toLowerCase() ==
-                                _listScope!.repository.toLowerCase() &&
-                            _entryIdentity?.id == item.id,
-                        onRelease: (item) => setState(() {
-                          _target = (
-                            owner: _listScope!.owner,
-                            repository: _listScope!.repository,
-                            id: item.id,
-                            tag: null,
-                          );
-                          _showList = false;
-                        }),
-                      )
-                    : result.when(
-                        skipLoadingOnRefresh: false,
-                        loading: () =>
-                            GitPulseLoadingView(label: l10n.releaseLoading),
-                        error: (error, stack) => _ReleaseFailure(
-                          failure: ReleaseDetailFailure.server,
-                          onRetry: () =>
-                              ref.invalidate(releaseDetailProvider(_target)),
+              SizedBox(
+                height: 48,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _openLink(
+                          Uri.https(
+                            'github.com',
+                            '/$owner/$repository',
+                          ).toString(),
                         ),
-                        data: (data) => data.release == null
-                            ? _ReleaseFailure(
-                                failure: data.failure!,
-                                onRetry: () => ref.invalidate(
-                                  releaseDetailProvider(_target),
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 16, right: 8),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) => Row(
+                              children: [
+                                if (tag != null) ...[
+                                  ConstrainedBox(
+                                    // The repository name keeps most of the
+                                    // line; a long tag ellipsizes instead.
+                                    constraints: BoxConstraints(
+                                      maxWidth: constraints.maxWidth * .4,
+                                    ),
+                                    child: Text(
+                                      tag,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleSmall,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    '$owner/$repository',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
                                 ),
-                              )
-                            : ReleaseDetailsView(
-                                release: data.release!,
-                                onOpenReleases: () => setState(() {
-                                  _listScope = (
-                                    owner: data.release!.owner,
-                                    repository: data.release!.repository,
-                                    opening: _opening,
-                                  );
-                                  _visitedLists.add(_listScope!);
-                                  _showList = true;
-                                }),
-                                onTapUrl: _openLink,
-                                onOpenExternal: (url) =>
-                                    _openLink(url, external: true),
-                              ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
+                    ),
+                    if (!_showList && showingOtherRelease()) entryButton(),
+                    if (_showList)
+                      entryButton()
+                    else if (release != null)
+                      _chromeAction(
+                        tooltip: l10n.repositoryReleasesTitle,
+                        icon: Icons.list_alt,
+                        onPressed: () => setState(() {
+                          _listScope = (
+                            owner: release.owner,
+                            repository: release.repository,
+                            opening: _opening,
+                          );
+                          _visitedLists.add(_listScope!);
+                          _showList = true;
+                        }),
+                      ),
+                    // Leaving for GitHub keeps one slot whether a release or
+                    // that repository's release list is open, so it is never
+                    // reached by scrolling past the notes.
+                    if (githubUrl != null)
+                      _chromeAction(
+                        tooltip: l10n.releaseOpenOnGitHub,
+                        icon: Icons.open_in_new,
+                        onPressed: () => _openLink(githubUrl, external: true),
+                      ),
+                    _chromeAction(
+                      tooltip: l10n.releaseClose,
+                      icon: Icons.close,
+                      autofocus: true,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const Divider(height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  key: ValueKey(_showList ? _listScope : _target),
+                  controller: controller,
+                  padding: const EdgeInsets.all(20),
+                  child: _showList && listState != null
+                      ? RepositoryReleasesView(
+                          repository:
+                              '${_listScope!.owner}/${_listScope!.repository}',
+                          state: listState,
+                          onPage: (page) => ref
+                              .read(
+                                repositoryReleasesControllerProvider(
+                                  _listScope!,
+                                ).notifier,
+                              )
+                              .loadPage(page),
+                          onFilter: (filter) => ref
+                              .read(
+                                repositoryReleasesControllerProvider(
+                                  _listScope!,
+                                ).notifier,
+                              )
+                              .setFilter(filter),
+                          isEntry: (item) =>
+                              _entryIdentity?.owner.toLowerCase() ==
+                                  _listScope!.owner.toLowerCase() &&
+                              _entryIdentity?.repository.toLowerCase() ==
+                                  _listScope!.repository.toLowerCase() &&
+                              _entryIdentity?.id == item.id,
+                          onRelease: (item) => setState(() {
+                            _target = (
+                              owner: _listScope!.owner,
+                              repository: _listScope!.repository,
+                              id: item.id,
+                              tag: null,
+                            );
+                            _showList = false;
+                          }),
+                        )
+                      : result.when(
+                          skipLoadingOnRefresh: false,
+                          loading: () =>
+                              GitPulseLoadingView(label: l10n.releaseLoading),
+                          error: (error, stack) => _ReleaseFailure(
+                            failure: ReleaseDetailFailure.server,
+                            onRetry: () =>
+                                ref.invalidate(releaseDetailProvider(_target)),
+                          ),
+                          data: (data) => data.release == null
+                              ? _ReleaseFailure(
+                                  failure: data.failure!,
+                                  onRetry: () => ref.invalidate(
+                                    releaseDetailProvider(_target),
+                                  ),
+                                )
+                              : ReleaseDetailsView(
+                                  release: data.release!,
+                                  onTapUrl: _openLink,
+                                  onOpenExternal: (url) =>
+                                      _openLink(url, external: true),
+                                ),
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     return Shortcuts(
       shortcuts: const {
@@ -287,7 +397,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
               return Align(
                 alignment: Alignment.centerRight,
                 child: SizedBox(
-                  width: math.min(680, constraints.maxWidth * .7),
+                  width: releaseDrawerPanelWidth(constraints.maxWidth),
                   height: constraints.maxHeight,
                   child: panel(),
                 ),

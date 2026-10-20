@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'timeline_models.dart';
 
 /// Phone layout ceiling for the Release Timeline, matching the web timeline.
@@ -6,11 +8,37 @@ const releaseTimelinePhoneMaxWidth = 700.0;
 /// Tablet layout ceiling: above it the timeline uses three columns.
 const releaseTimelineTabletMaxWidth = 1100.0;
 
+/// Horizontal padding on each side of the Release Timeline's columns. The wide
+/// Release Drawer sizes itself from it, so both must come from here.
+const releaseTimelineHorizontalPadding = 16.0;
+
+/// Gap between adjacent Release Timeline columns, shared with the wide Release
+/// Drawer's panel width for the same reason.
+const releaseTimelineColumnGap = 12.0;
+
+/// The narrowest wide-layout panel that still reads as a document column.
+const releaseDrawerMinimumPanelWidth = 320.0;
+
 /// One to three date-grouped columns, matching the web timeline's breakpoints.
 int resolveTimelineColumnCount(double width) {
   if (width <= releaseTimelinePhoneMaxWidth) return 1;
   if (width <= releaseTimelineTabletMaxWidth) return 2;
   return 3;
+}
+
+/// The wide Release Drawer's panel width: the right-most Release Timeline
+/// column plus the trail padding, so the columns beside it stay readable and
+/// the two layouts cannot drift apart. Clamped to the viewport and to a
+/// readable minimum.
+double releaseDrawerPanelWidth(double width) {
+  final columns = resolveTimelineColumnCount(width);
+  final columnWidth =
+      (width -
+          releaseTimelineHorizontalPadding * 2 -
+          releaseTimelineColumnGap * (columns - 1)) /
+      columns;
+  final panel = columnWidth + releaseTimelineHorizontalPadding;
+  return math.min(width, math.max(releaseDrawerMinimumPanelWidth, panel));
 }
 
 sealed class TimelineRow {

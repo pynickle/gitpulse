@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
+import 'package:gitpulse/timeline/timeline_layout.dart';
 
 import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
@@ -34,6 +35,20 @@ Map<String, FutureOr<BackendResult> Function()> browsingHandlers() => {
   ),
 };
 
+/// The Repository Release List lives in the chrome line's icon slot, not in
+/// the release body.
+Future<void> openRepositoryReleases(
+  WidgetTester tester, {
+  bool settle = true,
+}) async {
+  await tester.tap(find.byTooltip('Repository releases'));
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+}
+
 void main() {
   testWidgets(
     'a phone list retries the requested page and can advance past an empty page',
@@ -55,8 +70,7 @@ void main() {
       );
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Repository releases'));
-      await tester.pump();
+      await openRepositoryReleases(tester, settle: false);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       pending.complete(
         BackendResult(
@@ -134,8 +148,7 @@ void main() {
       );
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Repository releases'));
-      await tester.pump();
+      await openRepositoryReleases(tester, settle: false);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -148,8 +161,7 @@ void main() {
           );
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Repository releases'));
-      await tester.pumpAndSettle();
+      await openRepositoryReleases(tester);
       expect(find.text('Fresh opening'), findsOneWidget);
       pending.complete(
         BackendResult(
@@ -169,8 +181,7 @@ void main() {
           () => oldAccountPage.future;
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Repository releases'));
-      await tester.pump();
+      await openRepositoryReleases(tester, settle: false);
       mounted.session.emit(
         SessionState(
           phase: SessionPhase.signedIn,
@@ -194,9 +205,14 @@ void main() {
   testWidgets(
     'repository browsing preserves page and filter until close and always returns to the Entry Release',
     (tester) async {
+      final launched = <Uri>[];
       final mounted = await pumpTimelineScreen(
         tester,
         size: const Size(1200, 1000),
+        launchBrowser: (uri) async {
+          launched.add(uri);
+          return true;
+        },
         handlers: {
           'GET api/settings': () => BackendResult(
             statusCode: 200,
@@ -258,14 +274,28 @@ void main() {
       );
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Repository releases'));
-      await tester.pumpAndSettle();
+      // The chrome line names the Entry Release and offers no step that leads
+      // back to where the reader already is.
+      expect(find.text('v2/rc'), findsOneWidget);
+      expect(find.text('canonical/project'), findsOneWidget);
+      expect(find.byTooltip('Return to Entry Release'), findsNothing);
+      await openRepositoryReleases(tester);
       expect(find.text('Entry Release'), findsOneWidget);
       expect(
         find.text(
           'Filters apply to this page only. Draft visibility depends on repository permissions.',
         ),
         findsOneWidget,
+      );
+      // The list slot holds the one way back while the list is open.
+      expect(find.byTooltip('Return to Entry Release'), findsOneWidget);
+      expect(find.byTooltip('Repository releases'), findsNothing);
+      // The list keeps the way out to GitHub, aimed at the list's own page.
+      await tester.tap(find.byTooltip('Open on GitHub'));
+      await tester.pumpAndSettle();
+      expect(
+        launched.single.toString(),
+        'https://github.com/canonical/project/releases',
       );
       await tester.tap(find.widgetWithText(ChoiceChip, 'Draft'));
       await tester.pumpAndSettle();
@@ -281,6 +311,10 @@ void main() {
       await tester.tap(find.text('older-stable'));
       await tester.pumpAndSettle();
       expect(find.text('Other notes'), findsOneWidget);
+      // Another release in the same repository keeps the one step back and the
+      // Repository Release List beside it.
+      expect(find.byTooltip('Return to Entry Release'), findsOneWidget);
+      expect(find.byTooltip('Repository releases'), findsOneWidget);
       await tester.tapAt(
         tester.getTopLeft(
               find.textContaining('Another repository', findRichText: true),
@@ -289,15 +323,16 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Another repository notes'), findsOneWidget);
-      await tester.tap(find.text('Repository releases'));
-      await tester.pumpAndSettle();
+      // Following a link into another repository updates the chrome line.
+      expect(find.text('other/tool'), findsOneWidget);
+      expect(find.text('v1'), findsOneWidget);
+      await openRepositoryReleases(tester);
       expect(find.text('another-repo-release'), findsOneWidget);
       expect(find.text('Entry Release'), findsNothing);
       await tester.tap(find.byTooltip('Return to Entry Release'));
       await tester.pumpAndSettle();
       expect(find.text('Entry notes'), findsOneWidget);
-      await tester.tap(find.text('Repository releases'));
-      await tester.pumpAndSettle();
+      await openRepositoryReleases(tester);
       expect(find.text('Page 2'), findsOneWidget);
       expect(find.text('older-preview'), findsNothing);
       await tester.tap(find.byTooltip('Return to Entry Release'));
@@ -308,8 +343,7 @@ void main() {
       expect(find.byKey(const Key('release-drawer')), findsNothing);
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Repository releases'));
-      await tester.pumpAndSettle();
+      await openRepositoryReleases(tester);
       expect(find.text('Page 1'), findsOneWidget);
       expect(find.text('draft-v4'), findsOneWidget);
       expect(find.text('Entry Release'), findsOneWidget);
@@ -323,6 +357,42 @@ void main() {
             .length,
         2,
       );
+    },
+  );
+
+  testWidgets(
+    'reaching the Entry Release again through the list offers no step back',
+    (tester) async {
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(1200, 1000),
+        handlers: {
+          ...browsingHandlers(),
+          'GET api/releases/canonical/project?page=1&per_page=20': () =>
+              BackendResult(
+                statusCode: 200,
+                data: releaseListJson([
+                  listReleaseJson(42, 'v2/rc', prerelease: true),
+                ]),
+              ),
+          // The same release, addressed by id this time instead of by tag.
+          'GET api/releases/canonical/project/42': () => BackendResult(
+            statusCode: 200,
+            data: {...releaseDetailJson(), 'name': 'Entry notes'},
+          ),
+        },
+      );
+      await tester.tap(find.byType(ReleaseTimelineCard));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Return to Entry Release'), findsNothing);
+      await openRepositoryReleases(tester);
+      await tester.tap(find.text('v2/rc'));
+      await tester.pumpAndSettle();
+      expect(find.text('Entry notes'), findsOneWidget);
+      // Same release, different address: the drawer is still on the Entry
+      // Release, so a back arrow would point at where the reader already is.
+      expect(find.byTooltip('Return to Entry Release'), findsNothing);
+      expect(find.byTooltip('Repository releases'), findsOneWidget);
     },
   );
 
@@ -388,7 +458,29 @@ void main() {
   );
 
   testWidgets(
-    'a phone sheet reads embedded HTML, returns to the Entry Release and sends downloads to the browser',
+    'a phone sheet spends none of its height on the status bar inset',
+    (tester) async {
+      tester.view.padding = const FakeViewPadding(top: 40);
+      addTearDown(tester.view.resetPadding);
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(390, 800),
+        handlers: browsingHandlers(),
+      );
+      await tester.tap(find.byType(ReleaseTimelineCard));
+      await tester.pumpAndSettle();
+      final drawer = tester.getRect(find.byKey(const Key('release-drawer')));
+      // The sheet's top edge is nowhere near the status bar, so the drag handle
+      // starts at it instead of below a reserved strip.
+      expect(
+        tester.getTopLeft(find.byKey(const Key('release-sheet-handle'))).dy,
+        drawer.top,
+      );
+    },
+  );
+
+  testWidgets(
+    'a phone sheet spends its first screen on the notes and folds the rest away',
     (tester) async {
       final launched = <Uri>[];
       await pumpTimelineScreen(
@@ -418,6 +510,8 @@ void main() {
             data: {
               ...releaseDetailJson(),
               'name': 'Entry notes',
+              'published_at': '2026-10-17T12:00:00Z',
+              'author': {'login': 'octocat'},
               'body': '''
 <details open><summary>Expanded</summary><p>Visible HTML</p>
 <details><summary>Nested</summary><p>Hidden HTML</p></details></details>
@@ -440,22 +534,40 @@ void main() {
       );
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      final bounds = tester.getRect(find.byKey(const Key('release-drawer')));
-      expect(bounds.bottom, 1000);
-      expect(bounds.width, 500);
-      expect(bounds.height, closeTo(700, 1));
-      await tester.drag(
-        find.byKey(const Key('release-sheet-handle')),
-        const Offset(0, -300),
-      );
-      await tester.pumpAndSettle();
+      final drawer = tester.getRect(find.byKey(const Key('release-drawer')));
+      expect(drawer.bottom, 1000);
+      expect(drawer.width, 500);
+      // One line at the top says what is being read.
+      expect(find.text('v2/rc'), findsOneWidget);
+      expect(find.text('canonical/project'), findsOneWidget);
+      // Author, publish time and release state share one quiet line, and no
+      // chip competes with the notes.
+      final meta = find.textContaining('octocat');
+      expect(meta, findsOneWidget);
+      expect(tester.widget<Text>(meta).data, contains('Prerelease'));
+      expect(find.byType(Chip), findsNothing);
+      // Reading starts near the top of the sheet rather than below a second
+      // header, so the notes get the screen even at the default height.
+      final notes = find.textContaining('Visible HTML', findRichText: true);
+      expect(notes, findsOneWidget);
+      expect(tester.getTopLeft(notes).dy - drawer.top, lessThan(220));
+      expect(notes.hitTestable(), findsOneWidget);
+      // The release name and its meta line are one block, and the author's
+      // notes start after a separation: a changelog heading cannot read as a
+      // continuation of the release name.
+      final title = find.text('Entry notes');
+      final nameToMeta =
+          tester.getRect(meta).top - tester.getBottomLeft(title).dy;
+      final metaToNotes =
+          tester.getTopLeft(notes).dy - tester.getRect(meta).bottom;
+      expect(nameToMeta, lessThan(8));
+      expect(metaToNotes, greaterThan(24));
+      // Leaving for GitHub is one tap away without scrolling the notes.
+      final github = find.byTooltip('Open on GitHub');
+      expect(github, findsOneWidget);
       expect(
-        tester.getSize(find.byKey(const Key('release-drawer'))).height,
-        closeTo(1000, 1),
-      );
-      expect(
-        find.textContaining('Visible HTML', findRichText: true),
-        findsOneWidget,
+        tester.getRect(github).bottom,
+        lessThanOrEqualTo(tester.getTopLeft(notes).dy),
       );
       expect(
         find.textContaining('Hidden HTML', findRichText: true).hitTestable(),
@@ -471,6 +583,20 @@ void main() {
         find.textContaining('Wide cell', findRichText: true),
         findsOneWidget,
       );
+      // Assets wait below the notes, folded into one row.
+      expect(find.text('1 asset'), findsOneWidget);
+      expect(find.text('app.zip'), findsNothing);
+      await tester.ensureVisible(find.text('1 asset'));
+      await tester.tap(find.text('1 asset'));
+      await tester.pumpAndSettle();
+      expect(find.text('app.zip'), findsOneWidget);
+      await tester.ensureVisible(find.byTooltip('Download in browser'));
+      await tester.tap(find.byTooltip('Download in browser'));
+      await tester.pumpAndSettle();
+      expect(
+        launched.single.toString(),
+        'https://github.com/canonical/project/releases/download/v2/app.zip',
+      );
       await tester.tapAt(
         tester.getTopLeft(
               find.textContaining('Next release', findRichText: true),
@@ -479,24 +605,26 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Next notes'), findsOneWidget);
-      expect(launched, isEmpty);
+      expect(find.text('Next body', findRichText: true), findsOneWidget);
+      expect(launched, hasLength(1));
       await tester.tap(find.byTooltip('Return to Entry Release'));
       await tester.pumpAndSettle();
       expect(find.text('Entry notes'), findsOneWidget);
-      await tester.ensureVisible(find.byTooltip('Download in browser'));
-      await tester.tap(find.byTooltip('Download in browser'));
-      await tester.pumpAndSettle();
-      expect(
-        launched.single.toString(),
-        'https://github.com/canonical/project/releases/download/v2/app.zip',
-      );
-      await tester.ensureVisible(find.text('Open on GitHub'));
-      await tester.tap(find.text('Open on GitHub'));
+      // The chrome action leaves for the release on GitHub, not for the
+      // release currently loaded.
+      await tester.tap(find.byTooltip('Open on GitHub'));
       await tester.pumpAndSettle();
       expect(
         launched.last.toString(),
         'https://github.com/canonical/project/releases/tag/v2/rc',
       );
+      // Dragging the sheet to the full screen keeps working.
+      await tester.drag(
+        find.byKey(const Key('release-sheet-handle')),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byKey(const Key('release-drawer'))).top, 0);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('release-drawer')), findsNothing);
@@ -539,6 +667,8 @@ void main() {
       );
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
+      final cards = find.byType(ReleaseTimelineCard);
+      final row = [for (var i = 0; i < 3; i++) tester.getRect(cards.at(i))];
       final card = find.byType(ReleaseTimelineCard).hitTestable().first;
       final item = tester.widget<ReleaseTimelineCard>(card).item;
       final location = tester.getTopLeft(card);
@@ -574,7 +704,12 @@ void main() {
       final bounds = tester.getRect(find.byKey(const Key('release-drawer')));
       expect(bounds.right, 1400);
       expect(bounds.top, 0);
-      expect(bounds.width, lessThan(1000));
+      // The panel covers exactly the right-most timeline column plus the trail
+      // padding, measured from the timeline it sits beside.
+      final trailPadding = 1400 - row[2].right;
+      expect(trailPadding, releaseTimelineHorizontalPadding);
+      expect(row[1].left - row[0].right, releaseTimelineColumnGap);
+      expect(bounds.width, closeTo(row[2].width + trailPadding, 1));
       expect(FocusManager.instance.primaryFocus?.context?.widget, isNotNull);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
