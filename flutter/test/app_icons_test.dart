@@ -287,6 +287,8 @@ void main() {
         final size = frame.width;
         sizes.add(size);
         expect(frame.height, size);
+        expect(frame.getPixel(0, 0).a, 0);
+        expect(frame.getPixel(size ~/ 2, size ~/ 8).a, 255);
         final normal = img.copyResize(
           source,
           width: size,
@@ -307,7 +309,11 @@ void main() {
           for (final pixel in frame) {
             final reference = normal.getPixel(pixel.x, pixel.y);
             for (var c = 0; c < 3; c++) {
-              error += (pixel[c] - reference[c]).abs();
+              error +=
+                  (pixel[c] * pixel.a / 255 +
+                          255 * (1 - pixel.a / 255) -
+                          reference[c])
+                      .abs();
             }
           }
           expect(

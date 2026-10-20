@@ -35,6 +35,7 @@ without changing either. All client copies in `generated/` are derived:
   tinted appearance retains contrast.
 - `monochrome.png` is a black silhouette with the recovered mark's alpha.
 - `macos.png` composites the mark onto `macos-shell.png`.
+- `windows.png` places the mark on a white circle with transparent corners.
 
 The immutable `macos-shell.png` preserves the repository's original Flutter
 template shell and shadow. Its central rectangle `(200, 200)–(824, 824)` was
@@ -59,8 +60,9 @@ command; do not edit the derived sources or individual platform files.
   settings even though `AppIcon` is already configured.
 - **macOS:** the native shell at 16/32/64/128/256/512/1024px and all ten catalog
   slots. Only the 16px artwork is strengthened.
-- **Windows:** 16/24/32/48/64/96/128/192/256px PNG frames in one ICO. The delegated
-  generator supplies 256px; the owned step adds the remaining frames directly
+- **Windows:** 16/24/32/48/64/96/128/192/256px PNG frames in one ICO,
+  with a white circular background and transparent corners. The owned step
+  renders every frame with alpha-aware resizing directly
   from the 1024px source. It never enlarges a small intermediate icon.
 
 At 24px and below, the original ~27px stroke would be less than a pixel.

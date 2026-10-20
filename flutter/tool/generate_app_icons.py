@@ -12,7 +12,7 @@ import shutil
 import struct
 import subprocess
 
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "tool/icons/generated"
@@ -21,6 +21,14 @@ WHITE = (255, 255, 255, 255)
 
 def save(image, name):
     image.save(SOURCES / name, compress_level=9)
+
+
+def windows_artwork(mark):
+    background = Image.new("RGBA", mark.size)
+    ImageDraw.Draw(background).ellipse(
+        (0, 0, mark.width - 1, mark.height - 1), fill=WHITE
+    )
+    return Image.alpha_composite(background, mark)
 
 
 def recover_mark(original):
@@ -63,6 +71,7 @@ def derive_sources():
         raise ValueError("Expected the 1024px web brand source")
     mark = recover_mark(original)
     save(mark, "mark.png")
+    save(windows_artwork(mark), "windows.png")
     square = Image.alpha_composite(Image.new("RGBA", mark.size, WHITE), mark)
     save(square.convert("RGB"), "square.png")
     monochrome = Image.new("RGBA", mark.size, (0, 0, 0, 0))
@@ -109,23 +118,13 @@ def patch_small_icons(mark):
 
 
 def complete_windows_ico(mark):
-    # flutter_launcher_icons emits one 256px entry. Keep it, and add each
-    # smaller entry directly from 1024px (never upscale a delegated small icon).
+    # Render every circular frame directly from 1024px with alpha-aware resizing.
     path = ROOT / "windows/runner/resources/app_icon.ico"
-    with Image.open(path) as generated:
-        largest = generated.convert("RGBA")
-    if largest.size != (256, 256):
-        raise ValueError("Expected the delegated Windows icon at 256px")
     sizes = (16, 24, 32, 48, 64, 96, 128, 192, 256)
     entries = []
     for size in sizes:
         artwork = small_mark(mark, size) if size <= 24 else mark
-        square = Image.alpha_composite(Image.new("RGBA", mark.size, WHITE), artwork)
-        frame = (
-            largest
-            if size == 256
-            else square.resize((size, size), Image.Resampling.LANCZOS)
-        )
+        frame = windows_artwork(artwork).resize((size, size), Image.Resampling.LANCZOS)
         data = BytesIO()
         frame.save(data, format="PNG", compress_level=9)
         entries.append((size, data.getvalue()))

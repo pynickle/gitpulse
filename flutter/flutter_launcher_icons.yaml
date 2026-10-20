@@ -17,5 +17,5 @@ flutter_launcher_icons:
     image_path: tool/icons/generated/macos.png
   windows:
     generate: true
-    image_path: tool/icons/generated/square.png
+    image_path: tool/icons/generated/windows.png
     icon_size: 256
