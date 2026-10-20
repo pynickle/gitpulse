@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_formatting.dart';
 import '../releases/release_drawer.dart';
-import 'timeline_date_labels.dart';
 import 'timeline_models.dart';
 
 /// One release card in a date group of the Release Timeline.
@@ -57,7 +57,7 @@ class ReleaseTimelineCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    timelineTimeLabel(context, item.publishedAt.toLocal()),
+                    gitPulseInstant(context, item.publishedAt.toLocal()),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),

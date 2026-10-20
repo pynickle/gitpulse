@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
-import 'timeline_date_labels.dart';
+import '../presentation/gitpulse_formatting.dart';
 import 'timeline_filters.dart';
 import 'timeline_state.dart';
 
@@ -185,9 +185,7 @@ class _TimelineStatus extends StatelessWidget {
           if (state.offline) Text(l10n.timelineOffline),
           if (state.savedAt case final savedAt?)
             Text(
-              l10n.timelineSavedAt(
-                timelineTimeLabel(context, savedAt.toLocal()),
-              ),
+              l10n.timelineSavedAt(gitPulseInstant(context, savedAt.toLocal())),
             ),
           if (state.previousBaseline case final baseline?)
             ConstrainedBox(
@@ -225,7 +223,7 @@ class _BaselineChip extends StatelessWidget {
     final parsed = DateTime.tryParse(baseline);
     final label = parsed == null
         ? ''
-        : timelineTimeLabel(context, parsed.toLocal());
+        : gitPulseInstant(context, parsed.toLocal());
 
     return Tooltip(
       message: l10n.timelinePreviousRefresh(

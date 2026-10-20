@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_state_views.dart';
 import 'repository_releases_controller.dart';
 import 'repository_releases_dto.dart';
 import 'repository_releases_service.dart';
@@ -56,10 +57,7 @@ class RepositoryReleasesView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (state.loading)
-          Semantics(
-            label: l10n.repositoryReleasesLoading,
-            child: const Center(child: CircularProgressIndicator()),
-          )
+          GitPulseLoadingView(label: l10n.repositoryReleasesLoading)
         else if (state.failure case final failure?) ...[
           Text(switch (failure) {
             RepositoryReleasesFailure.permission =>
@@ -103,11 +101,7 @@ class RepositoryReleasesView extends StatelessWidget {
                   else if (item.prerelease)
                     Text(l10n.timelinePrerelease),
                   if (item.publishedAt case final published?)
-                    Text(
-                      DateFormat.yMMMd(
-                        Localizations.localeOf(context).toLanguageTag(),
-                      ).format(published.toLocal()),
-                    ),
+                    Text(gitPulseDay(context, published.toLocal())),
                   Text(l10n.timelineAssetCount(item.assetsCount)),
                   if (isEntry?.call(item) == true)
                     Text(l10n.repositoryReleasesEntry),

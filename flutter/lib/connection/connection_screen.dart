@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_state_views.dart';
+import '../presentation/presentation_settings.dart';
 import 'backend_service.dart';
 import 'connection_controller.dart';
 
@@ -23,15 +25,28 @@ class ConnectionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final connection = ref.watch(connectionControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('GitPulse')),
+      appBar: AppBar(
+        title: const Text('GitPulse'),
+        actions: [
+          IconButton(
+            tooltip: l10n.presentationSettings,
+            onPressed: () => showPresentationSettingsDialog(context),
+            icon: const Icon(Icons.tune),
+          ),
+        ],
+      ),
       body: connection.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: TextButton(
+        loading: () => GitPulseLoadingView(label: l10n.connecting),
+        error: (error, stack) => GitPulseMessageView(
+          icon: Icons.error_outline,
+          tone: GitPulseMessageTone.error,
+          title: l10n.unreachable,
+          action: TextButton(
             onPressed: () => ref.invalidate(connectionControllerProvider),
-            child: Text(AppLocalizations.of(context).connect),
+            child: Text(l10n.connect),
           ),
         ),
         data: (state) => _ConnectionForm(

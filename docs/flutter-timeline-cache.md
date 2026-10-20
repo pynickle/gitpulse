@@ -28,7 +28,8 @@ older online browsing stays readable for the current session.
 The Settings clear-cache action goes through the timeline facade. It invalidates
 in-flight rounds and removes local release content, saved membership, and pagination
 provenance without fetching or advancing the shared baseline. It preserves login,
-Release Follows, account preferences, and the last locally synchronized retention
+Release Follows, account preferences, the installation's language/appearance
+choices (a separate device-local file), and the last locally synchronized retention
 value for offline startup. Refresh explicitly to repopulate the cleared history.
 
 Startup restores eligible exposed membership and attempts a fresh round. A wholly

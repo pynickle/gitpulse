@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_formatting.dart';
 import 'document_content.dart';
 import 'release_detail_service.dart';
 import 'release_document.dart';
@@ -41,9 +41,7 @@ class ReleaseDetailsView extends StatelessWidget {
                 if (release.savedAt case final savedAt?)
                   Text(
                     l10n.timelineSavedAt(
-                      DateFormat.yMMMd(
-                        Localizations.localeOf(context).toLanguageTag(),
-                      ).add_jm().format(savedAt.toLocal()),
+                      gitPulseDateTime(context, savedAt.toLocal()),
                     ),
                   ),
               ],
@@ -82,11 +80,7 @@ class ReleaseDetailsView extends StatelessWidget {
         if (release.publishedAt case final date?)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              DateFormat.yMMMd(Localizations.localeOf(context).toLanguageTag())
-                  .add_jm()
-                  .format(date.toLocal()),
-            ),
+            child: Text(gitPulseDateTime(context, date.toLocal())),
           ),
         const SizedBox(height: 12),
         if (release.body.isEmpty)
@@ -120,9 +114,7 @@ class ReleaseDetailsView extends StatelessWidget {
                 l10n.releaseAssetMetadata(asset.size, asset.downloadCount),
                 if (asset.contentType?.isNotEmpty == true) asset.contentType!,
                 if (asset.updatedAt case final date?)
-                  DateFormat.yMMMd(
-                    Localizations.localeOf(context).toLanguageTag(),
-                  ).format(date.toLocal()),
+                  gitPulseDay(context, date.toLocal()),
               ].join(' · '),
             ),
             trailing:

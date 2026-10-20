@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_state_views.dart';
 import '../releases/document_content.dart';
 import '../releases/release_document.dart';
 import '../session/session_controller.dart';
@@ -49,7 +50,7 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
                     : result.when(
                         skipLoadingOnRefresh: false,
                         loading: () =>
-                            const Center(child: CircularProgressIndicator()),
+                            GitPulseLoadingView(label: l10n.repositoryLoading),
                         error: (_, _) => RepositoryFailureView(
                           failure: RepositoryFailure.server,
                           onRetry: () =>
@@ -99,8 +100,8 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
           children: [
             Chip(label: Text(l10n.repositoryStars(repository.stargazersCount))),
             Chip(label: Text(l10n.repositoryForks(repository.forksCount))),
-            if (repository.subscribersCount case final count?)
-              Chip(label: Text(l10n.repositoryWatchers(count))),
+            if (repository.subscribersCount case final subscribers?)
+              Chip(label: Text(l10n.repositoryWatchers(subscribers))),
             if (repository.language case final language?)
               Chip(label: Text(language)),
           ],
@@ -119,7 +120,8 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
         const SizedBox(height: 12),
         readme.when(
           skipLoadingOnRefresh: false,
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () =>
+              GitPulseLoadingView(label: l10n.repositoryReadmeLoading),
           error: (_, _) => RepositoryFailureView(
             failure: RepositoryFailure.server,
             onRetry: () =>
@@ -165,18 +167,22 @@ class RepositoryFailureView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      children: [
-        Text(switch (failure) {
-          RepositoryFailure.unavailable => l10n.repositoryUnavailable,
-          RepositoryFailure.permission => l10n.repositoryPermission,
-          RepositoryFailure.network => l10n.timelineErrorNetwork,
-          RepositoryFailure.rateLimited => l10n.timelineErrorRateLimited,
-          RepositoryFailure.session => l10n.sessionExpired,
-          _ => l10n.repositoryFailed,
-        }),
-        OutlinedButton(onPressed: onRetry, child: Text(l10n.timelineRetry)),
-      ],
+    return GitPulseMessageView(
+      inline: true,
+      icon: Icons.error_outline,
+      tone: GitPulseMessageTone.error,
+      title: switch (failure) {
+        RepositoryFailure.unavailable => l10n.repositoryUnavailable,
+        RepositoryFailure.permission => l10n.repositoryPermission,
+        RepositoryFailure.network => l10n.timelineErrorNetwork,
+        RepositoryFailure.rateLimited => l10n.timelineErrorRateLimited,
+        RepositoryFailure.session => l10n.sessionExpired,
+        _ => l10n.repositoryFailed,
+      },
+      action: OutlinedButton(
+        onPressed: onRetry,
+        child: Text(l10n.timelineRetry),
+      ),
     );
   }
 }

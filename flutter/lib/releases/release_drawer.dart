@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_state_views.dart';
 import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
 import '../timeline/timeline_layout.dart';
@@ -230,12 +231,8 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                       )
                     : result.when(
                         skipLoadingOnRefresh: false,
-                        loading: () => Semantics(
-                          label: l10n.releaseLoading,
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
+                        loading: () =>
+                            GitPulseLoadingView(label: l10n.releaseLoading),
                         error: (error, stack) => _ReleaseFailure(
                           failure: ReleaseDetailFailure.server,
                           onRetry: () =>

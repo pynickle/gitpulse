@@ -62,6 +62,15 @@ this tree — verify with the Flutter toolchain.
   changes, and keep `applyFilters` request-free.
 - Follow edits send only `followedRepositories` to `PUT /api/settings`
   (100 available / 150 stored limits) so unrelated preferences survive.
+- Language and appearance are **device-local presentation preferences**
+  (`lib/presentation/`), stored in `presentation_preferences.json` beside — never
+  inside — the timeline database. They apply through `MaterialApp` (`locale`,
+  `themeMode`) before connection or sign-in, must survive clear-cache, and have
+  controls in Settings and the connection screen. Add new page copy to both ARB
+  files; use `gitPulseTheme` for app chrome and `GitPulseLoadingView` /
+  `GitPulseMessageView` for page-level loading, empty, and error states instead
+  of a second look. Format dates through `gitpulse_formatting.dart`; give count
+  placeholders `"format": "decimalPattern"` in the ARB so intl localizes them.
 
 ## Verification bar
 

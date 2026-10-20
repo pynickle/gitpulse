@@ -182,6 +182,7 @@
   "repositoryReleasesNext": "下一页",
   "repositoryReleasesPage": "第 {page} 页",
   "repositoryTitle": "仓库",
+  "repositoryLoading": "正在加载仓库",
   "repositoryStars": "星标：{count}",
   "repositoryForks": "复刻：{count}",
   "repositoryWatchers": "关注者：{count}",
@@ -190,24 +191,40 @@
   "repositoryPermission": "当前账号无权读取此仓库内容。",
   "repositoryFailed": "无法加载仓库内容，请重试。",
   "navigationHome": "主页",
+  "presentationSettings": "语言与外观",
+  "presentationLanguage": "语言",
+  "presentationLanguageDescription": "使用本机的系统语言，或为当前安装选择简体中文或英文。",
+  "presentationLanguageSystem": "跟随系统",
+  "presentationLanguageEnglish": "English",
+  "presentationLanguageChinese": "简体中文",
+  "presentationAppearance": "外观",
+  "presentationAppearanceDescription": "跟随系统外观，或始终使用 GitPulse 浅色或深色主题。",
+  "presentationAppearanceSystem": "跟随系统",
+  "presentationAppearanceLight": "浅色",
+  "presentationAppearanceDark": "深色",
+  "presentationRememberFailed": "已应用，但此设备无法记住该选择。",
+  "repositoryReadmeLoading": "正在加载 README",
   "@repositoryStars": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
   "@repositoryForks": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
   "@repositoryWatchers": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   }

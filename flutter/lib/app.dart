@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'connection/connection_controller.dart';
 import 'connection/connection_screen.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'presentation/gitpulse_theme.dart';
+import 'presentation/presentation_preferences_controller.dart';
+import 'presentation/presentation_settings.dart';
 import 'session/session_controller.dart';
 import 'session/sign_in_panel.dart';
 import 'timeline/timeline_screen.dart';
@@ -13,6 +16,11 @@ import 'follows/release_follows_screen.dart';
 import 'releases/repository_releases_screen.dart';
 import 'repositories/repository_screen.dart';
 import 'settings/timeline_cache_settings.dart';
+
+/// The shell destinations, in navigation-rail and bottom-bar order.
+const _destinationPaths = ['/timeline', '/follows', '/settings'];
+const _timelineDestination = 0;
+const _settingsDestination = 2;
 
 final _routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
@@ -39,11 +47,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
           repository: state.pathParameters['repository']!,
         ),
       ),
-      for (final (index, path) in [
-        '/timeline',
-        '/follows',
-        '/settings',
-      ].indexed)
+      for (final (index, path) in _destinationPaths.indexed)
         GoRoute(
           path: path,
           builder: (context, state) => _AppShell(index: index),
@@ -69,49 +73,25 @@ class GitPulseApp extends ConsumerWidget {
     // and backend changes finish after the shell route is gone.
     ref.listen(sessionControllerProvider, (_, _) {});
     ref.watch(timelineCacheLifecycleProvider);
+    // Language and appearance are device-local: they apply to every surface,
+    // including the connection screen, before any backend or session exists.
+    final presentation = ref.watch(presentationPreferencesStateProvider);
     return MaterialApp.router(
       title: 'GitPulse',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff238636)),
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xff238636),
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: gitPulseTheme(Brightness.light),
+      darkTheme: gitPulseTheme(Brightness.dark),
+      themeMode: presentation.preferences.themeMode,
+      locale: presentation.preferences.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
-        final theme = Theme.of(context);
-        final chinese = Localizations.localeOf(context).languageCode == 'zh';
-        // Choose desktop system fonts after the app locale has resolved so
-        // headings, body text and buttons share the same Chinese typeface.
-        final (fontFamily, fallbacks) = switch (theme.platform) {
-          TargetPlatform.windows => (
-            chinese ? 'Microsoft YaHei UI' : 'Segoe UI',
-            const ['Microsoft YaHei UI', 'Microsoft JhengHei UI'],
-          ),
-          TargetPlatform.linux => (
-            chinese ? 'Noto Sans CJK SC' : 'Noto Sans',
-            const ['Noto Sans CJK SC', 'Noto Sans CJK TC'],
-          ),
-          _ => (null, const <String>[]),
-        };
-        if (fontFamily == null) return child!;
+        // Typography follows the resolved app language, so an explicit
+        // language choice also chooses the Chinese or Latin typeface.
         return Theme(
-          data: theme.copyWith(
-            textTheme: theme.textTheme.apply(
-              fontFamily: fontFamily,
-              fontFamilyFallback: fallbacks,
-            ),
-            primaryTextTheme: theme.primaryTextTheme.apply(
-              fontFamily: fontFamily,
-              fontFamilyFallback: fallbacks,
-            ),
+          data: gitPulseTypography(
+            Theme.of(context),
+            locale: Localizations.localeOf(context),
           ),
           child: child!,
         );
@@ -158,14 +138,16 @@ class _AppShell extends ConsumerWidget {
       Icons.bookmarks_outlined,
       Icons.settings_outlined,
     ];
-    void navigate(int index) =>
-        context.go(['/timeline', '/follows', '/settings'][index]);
+    void navigate(int index) => context.go(_destinationPaths[index]);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 720;
         return Scaffold(
-          appBar: wide || (index == 0 && session.phase == SessionPhase.signedIn)
+          appBar:
+              wide ||
+                  (index == _timelineDestination &&
+                      session.phase == SessionPhase.signedIn)
               ? null
               : AppBar(title: Text(labels[index])),
           body: SafeArea(
@@ -192,69 +174,78 @@ class _AppShell extends ConsumerWidget {
                               ? TimelineScreen(showTitle: !wide)
                               : const ReleaseFollowsScreen(),
                         )
-                      : ListView(
+                      : SingleChildScrollView(
                           padding: const EdgeInsets.all(24),
-                          children: [
-                            Text(
-                              l10n.compatibleBackend,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            SelectableText(backend.address.toString()),
-                            if (connection?.problem case final problem?)
-                              Text(connectionProblemLabel(l10n, problem)),
-                            const SizedBox(height: 24),
-                            Text(
-                              l10n.availableProviders,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: [
-                                if (providers.personalMode)
-                                  Chip(label: Text(l10n.personalPassword)),
-                                if (providers.patEnabled)
-                                  Chip(label: Text(l10n.personalAccessToken)),
-                                if (backend.capabilities.supportsNativeLogin)
-                                  Chip(label: Text(l10n.githubOAuth)),
-                              ],
-                            ),
-                            const SignInPanel(),
-                            const SizedBox(height: 24),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: OutlinedButton(
-                                onPressed: session.busy
-                                    ? null
-                                    : () async {
-                                        final address =
-                                            await showBackendAddressEditor(
-                                              context,
-                                              backend.address.toString(),
-                                            );
-                                        if (address == null ||
-                                            !context.mounted ||
-                                            Uri.parse(address) ==
-                                                backend.address) {
-                                          return;
-                                        }
-                                        await ref
-                                            .read(
-                                              sessionControllerProvider
-                                                  .notifier,
-                                            )
-                                            .leaveBackend(address: address);
-                                      },
-                                child: Text(l10n.changeBackend),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                l10n.compatibleBackend,
+                                style: Theme.of(context).textTheme.titleLarge,
                               ),
-                            ),
-                            if (session.phase == SessionPhase.signedIn) ...[
+                              SelectableText(backend.address.toString()),
+                              if (connection?.problem case final problem?)
+                                Text(connectionProblemLabel(l10n, problem)),
                               const SizedBox(height: 24),
-                              TimelineCacheSettingsPanel(
-                                key: ValueKey(session.identity),
+                              Text(
+                                l10n.availableProviders,
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                children: [
+                                  if (providers.personalMode)
+                                    Chip(label: Text(l10n.personalPassword)),
+                                  if (providers.patEnabled)
+                                    Chip(label: Text(l10n.personalAccessToken)),
+                                  if (backend.capabilities.supportsNativeLogin)
+                                    Chip(label: Text(l10n.githubOAuth)),
+                                ],
+                              ),
+                              const SignInPanel(),
+                              const SizedBox(height: 24),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: OutlinedButton(
+                                  onPressed: session.busy
+                                      ? null
+                                      : () async {
+                                          final address =
+                                              await showBackendAddressEditor(
+                                                context,
+                                                backend.address.toString(),
+                                              );
+                                          if (address == null ||
+                                              !context.mounted ||
+                                              Uri.parse(address) ==
+                                                  backend.address) {
+                                            return;
+                                          }
+                                          await ref
+                                              .read(
+                                                sessionControllerProvider
+                                                    .notifier,
+                                              )
+                                              .leaveBackend(address: address);
+                                        },
+                                  child: Text(l10n.changeBackend),
+                                ),
+                              ),
+                              // Presentation choices follow the account section
+                              // in Settings and stay available while signed out.
+                              if (index == _settingsDestination) ...[
+                                const Divider(height: 32),
+                                const PresentationSettingsPanel(),
+                              ],
+                              if (session.phase == SessionPhase.signedIn) ...[
+                                const SizedBox(height: 24),
+                                TimelineCacheSettingsPanel(
+                                  key: ValueKey(session.identity),
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                 ),
               ],

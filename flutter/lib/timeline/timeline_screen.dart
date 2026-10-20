@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_state_views.dart';
 import 'release_timeline_card.dart';
-import 'timeline_date_labels.dart';
 import 'timeline_filter_panel.dart';
 import 'timeline_layout.dart';
 import 'timeline_models.dart';
@@ -93,7 +94,7 @@ class _Body extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     if (state.loading && !state.hasExposedReleases) {
-      return const _LoadingState();
+      return GitPulseLoadingView(label: l10n.timelineLoading);
     }
     // A failure outranks the no-follows state: a Followed Repository read that
     // failed has not established that the account follows nothing.
@@ -101,7 +102,7 @@ class _Body extends StatelessWidget {
       return _FailureState(state: state, onRetry: onRetry);
     }
     if (!state.hasFollows) {
-      return _EmptyState(
+      return GitPulseMessageView(
         icon: Icons.rocket_launch_outlined,
         title: l10n.timelineEmptyTitle,
         description: l10n.timelineEmptyDescription,
@@ -123,12 +124,12 @@ class _Body extends StatelessWidget {
       children: [
         Expanded(
           child: state.filteredEmpty
-              ? _EmptyState(
+              ? GitPulseMessageView(
                   icon: Icons.filter_alt_off_outlined,
                   title: l10n.timelineFilteredEmptyTitle,
                   description: l10n.timelineFilteredEmptyDescription,
                 )
-              : _EmptyState(
+              : GitPulseMessageView(
                   icon: Icons.inbox_outlined,
                   title: l10n.timelineEmptyReleasesTitle,
                   description: l10n.timelineEmptyReleasesDescription,
@@ -148,72 +149,6 @@ class _Body extends StatelessWidget {
   }
 }
 
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Semantics(
-        label: l10n.timelineLoading,
-        liveRegion: true,
-        child: const CircularProgressIndicator(),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.icon,
-    required this.title,
-    required this.description,
-    this.hint,
-  });
-
-  final IconData icon;
-  final String title;
-  final String description;
-  final String? hint;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 32, color: theme.colorScheme.primary),
-            const SizedBox(height: 12),
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (hint case final hint?) ...[
-              const SizedBox(height: 6),
-              Text(
-                hint,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _FailureState extends StatelessWidget {
   const _FailureState({required this.state, required this.onRetry});
 
@@ -223,7 +158,6 @@ class _FailureState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final failure = state.failure;
     final message = switch (failure?.kind) {
       TimelineFailureKind.network => l10n.timelineErrorNetwork,
@@ -232,36 +166,18 @@ class _FailureState extends StatelessWidget {
       _ => l10n.timelineErrorServer,
     };
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 32, color: theme.colorScheme.error),
-            const SizedBox(height: 12),
-            Text(l10n.timelineError, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            if (failure == null || failure.retryable) ...[
-              const SizedBox(height: 12),
-              FilledButton.tonal(
-                onPressed: state.loading ? null : () => onRetry(),
-                child: Text(l10n.timelineRetry),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return GitPulseMessageView(
+      icon: Icons.error_outline,
+      tone: GitPulseMessageTone.error,
+      title: l10n.timelineError,
+      description: message,
+      liveRegion: true,
+      action: failure == null || failure.retryable
+          ? FilledButton.tonal(
+              onPressed: state.loading ? null : () => onRetry(),
+              child: Text(l10n.timelineRetry),
+            )
+          : null,
     );
   }
 }
@@ -500,7 +416,7 @@ class _DateHeader extends StatelessWidget {
     return _RuleRow(
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
       child: Text(
-        timelineDateLabel(context, date),
+        gitPulseDate(context, date),
         style: Theme.of(context).textTheme.titleSmall,
       ),
     );
@@ -516,11 +432,11 @@ class _BaselineDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final time = gitPulseInstant(context, timestamp.toLocal());
     return _RuleRow(
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
       child: Text(
-        '${l10n.timelinePreviousRefreshMark} · '
-        '${timelineTimeLabel(context, timestamp.toLocal())}',
+        '${l10n.timelinePreviousRefreshMark} · $time',
         style: theme.textTheme.labelSmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),

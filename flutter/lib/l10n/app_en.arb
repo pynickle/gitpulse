@@ -82,7 +82,7 @@
   "timelineTitle": "Release Timeline",
   "timelineReload": "Reload",
   "timelineLoadedNew": "{count, plural, =1 {1 loaded new release} other {{count} loaded new releases}}",
-  "@timelineLoadedNew": {"placeholders": {"count": {"type": "int"}}},
+  "@timelineLoadedNew": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
   "timelinePreviousRefresh": "Previous refresh: {time}",
   "@timelinePreviousRefresh": {
     "placeholders": {"time": {"type": "String"}}
@@ -136,13 +136,13 @@
   "timelineFilteredEmptyTitle": "No releases match",
   "timelineFilteredEmptyDescription": "Nothing in the currently loaded window matches these search and filter conditions. Load older releases to search further back.",
   "timelineAssetCount": "{count, plural, =0 {No assets} =1 {1 asset} other {{count} assets}}",
-  "@timelineAssetCount": {"placeholders": {"count": {"type": "int"}}},
+  "@timelineAssetCount": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
   "followsTitle": "Release Follows",
   "followsDescription": "Follow releases independently of GitHub Watch and Star. Changes are shared with this account in the web app.",
   "followsSearchLabel": "Repository name or GitHub URL",
   "followsSearch": "Search",
   "followsCurrent": "Followed Repositories ({count})",
-  "@followsCurrent": {"placeholders": {"count": {"type": "int"}}},
+  "@followsCurrent": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
   "followsReload": "Reload follows",
   "followsEmpty": "No Release Follows yet. Search for a repository to get started.",
   "followsFollow": "Follow releases",
@@ -178,7 +178,7 @@
   "releaseOpenOnGitHub": "Open on GitHub",
   "releaseAssetsOnline": "Asset information is current for this request. Downloads open in your browser and may require GitHub sign-in.",
   "releaseAssetMetadata": "{bytes} bytes · {downloads} downloads",
-  "@releaseAssetMetadata": {"placeholders": {"bytes": {"type": "int"}, "downloads": {"type": "int"}}},
+  "@releaseAssetMetadata": {"placeholders": {"bytes": {"type": "int", "format": "decimalPattern"}, "downloads": {"type": "int", "format": "decimalPattern"}}},
   "contentCopyCode": "Copy code",
   "contentPlainText": "Plain text",
   "releaseResourceUnavailable": "Image unavailable",
@@ -199,6 +199,7 @@
   "repositoryReleasesPage": "Page {page}",
   "@repositoryReleasesPage": {"placeholders":{"page":{"type":"int"}}},
   "repositoryTitle": "Repository",
+  "repositoryLoading": "Loading repository",
   "repositoryStars": "Stars: {count}",
   "repositoryForks": "Forks: {count}",
   "repositoryWatchers": "Watchers: {count}",
@@ -207,24 +208,40 @@
   "repositoryPermission": "This account does not have permission to read this repository content.",
   "repositoryFailed": "Could not load repository content. Try again.",
   "navigationHome": "Home",
+  "presentationSettings": "Language and appearance",
+  "presentationLanguage": "Language",
+  "presentationLanguageDescription": "Use this device’s system language, or choose Simplified Chinese or English for this installation.",
+  "presentationLanguageSystem": "System language",
+  "presentationLanguageEnglish": "English",
+  "presentationLanguageChinese": "Simplified Chinese",
+  "presentationAppearance": "Appearance",
+  "presentationAppearanceDescription": "Follow the system appearance, or always use the light or dark GitPulse theme.",
+  "presentationAppearanceSystem": "System appearance",
+  "presentationAppearanceLight": "Light",
+  "presentationAppearanceDark": "Dark",
+  "presentationRememberFailed": "Applied, but this device could not remember the choice.",
+  "repositoryReadmeLoading": "Loading README",
   "@repositoryStars": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
   "@repositoryForks": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
   "@repositoryWatchers": {
     "placeholders": {
       "count": {
-        "type": "int"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   }
