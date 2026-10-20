@@ -1,0 +1,21 @@
+# Regenerate through tool/generate_app_icons.py, which also patches small icons.
+flutter_launcher_icons:
+  image_path: tool/icons/generated/square.png
+  android: true
+  min_sdk_android: 24
+  adaptive_icon_background: '#ffffff'
+  adaptive_icon_foreground: tool/icons/generated/mark.png
+  adaptive_icon_foreground_inset: 8
+  adaptive_icon_monochrome: tool/icons/generated/monochrome.png
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: '#ffffff'
+  image_path_ios_dark_transparent: tool/icons/generated/dark.png
+  image_path_ios_tinted_grayscale: tool/icons/generated/tinted.png
+  macos:
+    generate: true
+    image_path: tool/icons/generated/macos.png
+  windows:
+    generate: true
+    image_path: tool/icons/generated/square.png
+    icon_size: 256

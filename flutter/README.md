@@ -18,3 +18,7 @@ The HTTP contract tests also need Bun and the root backend dependencies. Read
 before building or installing. Windows distribution includes the entire runtime
 directory. Formal Android builds require the existing release signing identity;
 debug APKs are development artifacts. Release tags are independent `flutter-vX.Y.Z`.
+
+Native app icons are committed generated assets. See [icon regeneration and
+verification](tool/icons/README.md) for the single `uv run` command, source
+ownership, platform requirements and owner acceptance.
