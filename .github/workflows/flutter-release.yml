@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate:
     name: Validate Flutter release version
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       version: ${{ steps.version.outputs.version }}
       build_number: ${{ steps.version.outputs.build_number }}
@@ -90,7 +90,7 @@ jobs:
   android:
     name: Android release identity APK
     needs: [validate, checks]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     defaults:
       run:
         working-directory: flutter
