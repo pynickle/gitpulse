@@ -1,2 +1,3 @@
-# Keep the companion browser extension outside Nuxt source scanning.
+# Keep the independent client packages outside Nuxt source scanning.
 extension/
+flutter/

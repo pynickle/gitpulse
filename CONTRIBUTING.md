@@ -64,8 +64,9 @@ bun run lint:fix
 Review the diff after automatic fixes. `lint:fix` may not resolve every issue;
 re-run `bun run lint` and handle remaining diagnostics manually.
 
-The root lint script ignores `extension/`. Use the extension-specific commands
-when working on the browser extension.
+The root lint script ignores `extension/` and `flutter/`. Use each package's
+own checks when working on the browser extension or native client. Root formatting
+also excludes `flutter/`, which uses Dart formatting.
 
 ## Before Opening a Pull Request
 

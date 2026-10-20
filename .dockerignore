@@ -22,6 +22,7 @@ extension/node_modules
 extension/.output
 extension/.wxt
 extension
+flutter
 
 logs
 *.log
@@ -40,3 +41,6 @@ skills-lock.json
 opencode.jsonc
 .mcp.json
 reasonix.toml
+
+# Local generated release notes are not part of the web app.
+release-notes
