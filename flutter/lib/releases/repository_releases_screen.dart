@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../l10n/generated/app_localizations.dart';
 import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
 import '../session/sign_in_panel.dart';
@@ -42,7 +41,8 @@ class _RepositoryReleasesScreenState
     );
     return Scaffold(
       appBar: RepositoryPageAppBar(
-        title: AppLocalizations.of(context).repositoryReleasesTitle,
+        // The host owns the repository name; the list never repeats it.
+        title: '${widget.owner}/${widget.repository}',
       ),
       body: SafeArea(
         child: Column(
@@ -54,20 +54,18 @@ class _RepositoryReleasesScreenState
                       padding: EdgeInsets.all(20),
                       child: SignInPanel(),
                     )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: RepositoryReleasesView(
-                        repository: '${widget.owner}/${widget.repository}',
-                        state: state,
-                        onPage: controller.loadPage,
-                        onFilter: controller.setFilter,
-                        onRelease: (release) => showReleaseDrawer(context, (
-                          owner: widget.owner,
-                          repository: widget.repository,
-                          id: release.id,
-                          tag: null,
-                        )),
-                      ),
+                  // The list owns its own bands and scrolls inside itself; the
+                  // host supplies only the chrome and the safe area.
+                  : RepositoryReleasesView(
+                      state: state,
+                      onPage: controller.loadPage,
+                      onFilter: controller.setFilter,
+                      onRelease: (release) => showReleaseDrawer(context, (
+                        owner: widget.owner,
+                        repository: widget.repository,
+                        id: release.id,
+                        tag: null,
+                      )),
                     ),
             ),
           ],

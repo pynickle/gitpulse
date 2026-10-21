@@ -62,4 +62,11 @@ class RepositoryReleaseDto {
   final bool prerelease;
   final int assetsCount;
   final int downloadCount;
+
+  /// The release's own title: its name when it has one after trimming, and its
+  /// tag otherwise, so a release without a name still reads as itself.
+  String get title {
+    final trimmed = name?.trim();
+    return trimmed == null || trimmed.isEmpty ? tagName : trimmed;
+  }
 }

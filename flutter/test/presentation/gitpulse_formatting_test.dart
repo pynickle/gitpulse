@@ -40,6 +40,64 @@ void main() {
     });
   });
 
+  group('gitPulse month-and-day presentation', () {
+    test('a release from the current year leaves the year out', () {
+      expect(
+        formatGitPulseMonthDay('en', DateTime(2026, 10, 20), currentYear: 2026),
+        'Oct 20',
+      );
+      expect(
+        formatGitPulseMonthDay('zh', DateTime(2026, 10, 20), currentYear: 2026),
+        '10月20日',
+      );
+    });
+
+    test('a release from another year keeps the year', () {
+      expect(
+        formatGitPulseMonthDay('en', DateTime(2025, 10, 20), currentYear: 2026),
+        'Oct 20, 2025',
+      );
+      expect(
+        formatGitPulseMonthDay('zh', DateTime(2025, 10, 20), currentYear: 2026),
+        '2025年10月20日',
+      );
+      expect(
+        formatGitPulseMonthDay('en', DateTime(2027, 1, 2), currentYear: 2026),
+        'Jan 2, 2027',
+      );
+    });
+  });
+
+  group('gitPulse compact count presentation', () {
+    test('a count below a thousand keeps its own digits', () {
+      expect(formatGitPulseCompactCount('en', 0), '0');
+      expect(formatGitPulseCompactCount('en', 7), '7');
+      expect(formatGitPulseCompactCount('en', 999), '999');
+    });
+
+    test('thousands carry one decimal below ten and whole numbers above', () {
+      expect(formatGitPulseCompactCount('en', 1000), '1k');
+      expect(formatGitPulseCompactCount('en', 1200), '1.2k');
+      expect(formatGitPulseCompactCount('en', 12345), '12k');
+      expect(formatGitPulseCompactCount('en', 123456), '123k');
+    });
+
+    test('a count that rounds to the next magnitude rolls over', () {
+      // 999,999 downloads must read as one million, not as `1,000k`.
+      expect(formatGitPulseCompactCount('en', 999999), '1m');
+    });
+
+    test('millions are compacted the same way', () {
+      expect(formatGitPulseCompactCount('en', 1200000), '1.2m');
+      expect(formatGitPulseCompactCount('en', 12000000), '12m');
+    });
+
+    test('the number follows the selected language', () {
+      expect(formatGitPulseCompactCount('de', 1200), '1,2k');
+      expect(formatGitPulseCompactCount('de', 999), '999');
+    });
+  });
+
   group('gitPulse download size presentation', () {
     test('kilobytes round to whole numbers', () {
       expect(formatGitPulseByteSize('en', 2048, unitSymbol: enUnit), '2 KB');

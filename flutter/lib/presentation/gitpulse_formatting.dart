@@ -33,9 +33,62 @@ String formatGitPulseDateTime(String localeName, DateTime instant) =>
 String formatGitPulseInstant(String localeName, DateTime instant) =>
     DateFormat.yMMMd(localeName).add_Hm().format(instant);
 
+/// A publication day for a Repository Release List row: the month and day, plus
+/// the year only when [instant] falls outside [currentYear], so a row stays
+/// short without becoming ambiguous across years.
+///
+/// [currentYear] is passed in rather than read from the clock, so a test can
+/// stand on either side of the year boundary without depending on its own date.
+String formatGitPulseMonthDay(
+  String localeName,
+  DateTime instant, {
+  required int currentYear,
+}) =>
+    (instant.year == currentYear
+            ? DateFormat.MMMd(localeName)
+            : DateFormat.yMMMd(localeName))
+        .format(instant);
+
+/// A download count compacted for a Repository Release List row, e.g. `999`,
+/// `1.2k` or `12k`, so a six-digit count cannot push the rest of the meta line
+/// out of the row.
+///
+/// Below ten the value carries one decimal, from ten up a whole number of
+/// thousands. Rounding can reach the next magnitude — 999,999 counts as one
+/// million — so the rollover happens after rounding, exactly as it does for
+/// download sizes.
+String formatGitPulseCompactCount(String localeName, int count) {
+  if (count.abs() < 1000) {
+    return NumberFormat.decimalPattern(localeName).format(count);
+  }
+  if (_compactValue(count / 1000) >= 1000) {
+    return _compactCount(localeName, count / 1000000, 'm');
+  }
+  return _compactCount(localeName, count / 1000, 'k');
+}
+
+double _compactValue(double value) =>
+    value >= 10 ? value.roundToDouble() : (value * 10).round() / 10;
+
+String _compactCount(String localeName, double value, String suffix) =>
+    '${NumberFormat.decimalPattern(localeName).format(_compactValue(value))}$suffix';
+
 /// A calendar day in the language of [context].
 String gitPulseDay(BuildContext context, DateTime instant) =>
     formatGitPulseDay(gitPulseLocaleName(context), instant);
+
+/// A Repository Release List row's publication day in the language of
+/// [context], with the year left out of the current year.
+String gitPulseMonthDay(BuildContext context, DateTime instant) =>
+    formatGitPulseMonthDay(
+      gitPulseLocaleName(context),
+      instant,
+      currentYear: DateTime.now().year,
+    );
+
+/// A download count in the language of [context], compacted for a row.
+String gitPulseCompactCount(BuildContext context, int count) =>
+    formatGitPulseCompactCount(gitPulseLocaleName(context), count);
 
 /// A Timeline calendar date in the language of [context].
 String gitPulseDate(BuildContext context, String date) =>

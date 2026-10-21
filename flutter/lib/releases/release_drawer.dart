@@ -73,6 +73,11 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     );
   }
 
+  /// The controller behind the Repository Release List currently on screen, so
+  /// its pager and filters share one lookup just as the fullscreen host does.
+  RepositoryReleasesController _listController(RepositoryReleasesScope scope) =>
+      ref.read(repositoryReleasesControllerProvider(scope).notifier);
+
   Future<bool> _openLink(String value, {bool external = false}) async {
     final uri = safeContentUri(value);
     if (uri == null) return true;
@@ -330,46 +335,40 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
               ),
               const Divider(height: 1),
               Expanded(
-                child: SingleChildScrollView(
-                  key: ValueKey(_showList ? _listScope : _target),
-                  controller: controller,
-                  padding: const EdgeInsets.all(20),
-                  child: _showList && listState != null
-                      ? RepositoryReleasesView(
-                          repository:
-                              '${_listScope!.owner}/${_listScope!.repository}',
-                          state: listState,
-                          onPage: (page) => ref
-                              .read(
-                                repositoryReleasesControllerProvider(
-                                  _listScope!,
-                                ).notifier,
-                              )
-                              .loadPage(page),
-                          onFilter: (filter) => ref
-                              .read(
-                                repositoryReleasesControllerProvider(
-                                  _listScope!,
-                                ).notifier,
-                              )
-                              .setFilter(filter),
-                          isEntry: (item) =>
-                              _entryIdentity?.owner.toLowerCase() ==
-                                  _listScope!.owner.toLowerCase() &&
-                              _entryIdentity?.repository.toLowerCase() ==
-                                  _listScope!.repository.toLowerCase() &&
-                              _entryIdentity?.id == item.id,
-                          onRelease: (item) => setState(() {
-                            _target = (
-                              owner: _listScope!.owner,
-                              repository: _listScope!.repository,
-                              id: item.id,
-                              tag: null,
-                            );
-                            _showList = false;
-                          }),
-                        )
-                      : result.when(
+                // The Repository Release List owns its own bands and scrolls
+                // inside itself, so the filter bar and pager stay put; the
+                // sheet's controller still reaches it, so a drag on the rows
+                // moves the sheet exactly as a drag on the notes does.
+                child: _showList && listState != null
+                    ? RepositoryReleasesView(
+                        key: ValueKey(_listScope),
+                        state: listState,
+                        scrollController: controller,
+                        onPage: (page) =>
+                            _listController(_listScope!).loadPage(page),
+                        onFilter: (filter) =>
+                            _listController(_listScope!).setFilter(filter),
+                        isEntry: (item) =>
+                            _entryIdentity?.owner.toLowerCase() ==
+                                _listScope!.owner.toLowerCase() &&
+                            _entryIdentity?.repository.toLowerCase() ==
+                                _listScope!.repository.toLowerCase() &&
+                            _entryIdentity?.id == item.id,
+                        onRelease: (item) => setState(() {
+                          _target = (
+                            owner: _listScope!.owner,
+                            repository: _listScope!.repository,
+                            id: item.id,
+                            tag: null,
+                          );
+                          _showList = false;
+                        }),
+                      )
+                    : SingleChildScrollView(
+                        key: ValueKey(_target),
+                        controller: controller,
+                        padding: const EdgeInsets.all(20),
+                        child: result.when(
                           skipLoadingOnRefresh: false,
                           loading: () =>
                               GitPulseLoadingView(label: l10n.releaseLoading),
@@ -392,7 +391,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                                       _openLink(url, external: true),
                                 ),
                         ),
-                ),
+                      ),
               ),
             ],
           ),

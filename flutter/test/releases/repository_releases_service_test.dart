@@ -9,19 +9,23 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 Map<String, Object?> listReleaseJson(
   int id,
   String tag, {
+  String? name,
+  String? publishedAt,
   bool draft = false,
   bool prerelease = false,
+  int assetsCount = 2,
+  int downloadCount = 7,
 }) => {
   'id': id,
   'tag_name': tag,
-  'name': null,
-  'published_at': null,
+  'name': name,
+  'published_at': publishedAt,
   'created_at': '2026-10-17T12:00:00Z',
   'draft': draft,
   'prerelease': prerelease,
   'author': null,
-  'assets_count': 2,
-  'download_count': 7,
+  'assets_count': assetsCount,
+  'download_count': downloadCount,
 };
 
 Map<String, Object?> releaseListJson(

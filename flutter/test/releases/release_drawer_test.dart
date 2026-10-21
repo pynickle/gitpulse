@@ -82,7 +82,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Prerelease'));
+      await tester.tap(find.text('Prerelease'));
       await tester.pumpAndSettle();
       expect(find.text('entry-preview'), findsOneWidget);
       expect(find.text('draft-preview'), findsNothing);
@@ -280,12 +280,13 @@ void main() {
       expect(find.text('canonical/project'), findsOneWidget);
       expect(find.byTooltip('Return to Entry Release'), findsNothing);
       await openRepositoryReleases(tester);
-      expect(find.text('Entry Release'), findsOneWidget);
+      // The chrome line owns the repository name and the list never repeats it.
+      expect(find.text('canonical/project'), findsOneWidget);
+      // The Entry Release marker is a leading accent, not a third meta line.
+      expect(find.text('Entry Release'), findsNothing);
       expect(
-        find.text(
-          'Filters apply to this page only. Draft visibility depends on repository permissions.',
-        ),
-        findsOneWidget,
+        tester.getSemantics(find.text('v2/rc')).label,
+        contains('Entry Release'),
       );
       // The list slot holds the one way back while the list is open.
       expect(find.byTooltip('Return to Entry Release'), findsOneWidget);
@@ -297,11 +298,15 @@ void main() {
         launched.single.toString(),
         'https://github.com/canonical/project/releases',
       );
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Draft'));
+      await tester.ensureVisible(find.text('Draft'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Draft'));
       await tester.pumpAndSettle();
       expect(find.text('draft-v4'), findsOneWidget);
       expect(find.text('v2/rc'), findsNothing);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Stable'));
+      await tester.ensureVisible(find.text('Stable'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stable'));
       await tester.pumpAndSettle();
       expect(find.text('No releases match on this page.'), findsOneWidget);
       await tester.tap(find.byTooltip('Next page'));
@@ -329,6 +334,10 @@ void main() {
       await openRepositoryReleases(tester);
       expect(find.text('another-repo-release'), findsOneWidget);
       expect(find.text('Entry Release'), findsNothing);
+      expect(
+        tester.getSemantics(find.text('another-repo-release')).label,
+        isNot(contains('Entry Release')),
+      );
       await tester.tap(find.byTooltip('Return to Entry Release'));
       await tester.pump();
       expect(find.text('Entry notes'), findsOneWidget);
@@ -384,7 +393,10 @@ void main() {
       await openRepositoryReleases(tester);
       expect(find.text('Page 1'), findsOneWidget);
       expect(find.text('draft-v4'), findsOneWidget);
-      expect(find.text('Entry Release'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.text('v2/rc')).label,
+        contains('Entry Release'),
+      );
       expect(
         mounted.session.requests
             .where(
@@ -769,6 +781,129 @@ void main() {
       expect(find.byKey(const Key('release-drawer')), findsNothing);
       expect(tester.getTopLeft(card), location);
       expect(FocusManager.instance.primaryFocus, openerFocus);
+    },
+  );
+
+  testWidgets(
+    'a phone sheet still resizes from the list band while a page loads',
+    (tester) async {
+      final pending = Completer<BackendResult>();
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(390, 844),
+        handlers: {
+          ...browsingHandlers(),
+          'GET api/releases/canonical/project?page=1&per_page=20': () =>
+              pending.future,
+        },
+      );
+      await tester.tap(find.byType(ReleaseTimelineCard));
+      await tester.pumpAndSettle();
+      await openRepositoryReleases(tester, settle: false);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // The filter row is already in place while the page loads.
+      expect(find.text('All').hitTestable(), findsOneWidget);
+      final before = tester
+          .getRect(find.byKey(const Key('release-drawer')))
+          .top;
+      await tester.drag(
+        find.byType(CircularProgressIndicator),
+        const Offset(0, -300),
+      );
+      await tester.pump();
+      // A state that replaced the rows still drags the sheet, exactly as the
+      // rows themselves do.
+      expect(
+        tester.getRect(find.byKey(const Key('release-drawer'))).top,
+        lessThan(before),
+      );
+      pending.complete(
+        BackendResult(
+          statusCode: 200,
+          data: releaseListJson([
+            listReleaseJson(42, 'v2/rc', prerelease: true),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('v2/rc'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the list gathers its filter bar and pager around rows that start near the top',
+    (tester) async {
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(390, 844),
+        handlers: {
+          ...browsingHandlers(),
+          'GET api/releases/canonical/project?page=1&per_page=20': () =>
+              BackendResult(
+                statusCode: 200,
+                data: releaseListJson([
+                  listReleaseJson(42, 'v2/rc', prerelease: true),
+                  for (var id = 50; id < 62; id++)
+                    listReleaseJson(id, 'release-$id'),
+                ], hasNext: true),
+              ),
+        },
+      );
+      await tester.tap(find.byType(ReleaseTimelineCard));
+      await tester.pumpAndSettle();
+      await openRepositoryReleases(tester);
+      final drawer = tester.getRect(find.byKey(const Key('release-drawer')));
+      // The first release is where the reader's eye lands, not below a repeated
+      // repository heading, a wrapped chip row and a permanent caveat.
+      expect(
+        tester.getTopLeft(find.text('v2/rc')).dy - drawer.top,
+        lessThan(160),
+      );
+      // Across the whole sheet the repository is named exactly once.
+      expect(find.text('canonical/project'), findsOneWidget);
+      // The Entry Release is a marker with a label, never a third meta line.
+      expect(find.text('Entry Release'), findsNothing);
+      final entry = tester.getSemantics(find.text('v2/rc'));
+      expect(entry.label, contains('Entry Release'));
+      expect(entry, isSemantics(hasTapAction: true));
+      // Changing page is one tap from anywhere in the list.
+      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+      expect(find.text('Page 1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the filter row stays put and the pager stays in reach while the rows scroll',
+    (tester) async {
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(1200, 1000),
+        handlers: {
+          ...browsingHandlers(),
+          'GET api/releases/canonical/project?page=1&per_page=20': () =>
+              BackendResult(
+                statusCode: 200,
+                data: releaseListJson([
+                  listReleaseJson(42, 'v2/rc', prerelease: true),
+                  for (var id = 50; id < 70; id++)
+                    listReleaseJson(id, 'release-$id'),
+                ], hasNext: true),
+              ),
+        },
+      );
+      await tester.tap(find.byType(ReleaseTimelineCard));
+      await tester.pumpAndSettle();
+      await openRepositoryReleases(tester);
+      final filters = tester.getTopLeft(find.text('All'));
+      final pager = tester.getBottomLeft(find.byTooltip('Next page'));
+      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+      await tester.drag(find.text('release-50'), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      // The rows moved; the filter bar and the pager did not.
+      expect(find.text('release-50').hitTestable(), findsNothing);
+      expect(tester.getTopLeft(find.text('All')), filters);
+      expect(tester.getBottomLeft(find.byTooltip('Next page')), pager);
+      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
     },
   );
 }
