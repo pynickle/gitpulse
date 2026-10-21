@@ -235,45 +235,59 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: InkWell(
-                        onTap: () => _openLink(
-                          Uri.https(
-                            'github.com',
-                            '/$owner/$repository',
-                          ).toString(),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 16, right: 8),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) => Row(
-                              children: [
-                                if (tag != null) ...[
-                                  ConstrainedBox(
-                                    // The repository name keeps most of the
-                                    // line; a long tag ellipsizes instead.
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * .4,
+                      // The row targets the repository page, and the permanent
+                      // underline on the repository name is what says so without
+                      // relying on colour. Its ink is clipped to a rounded shape
+                      // and inset a little, so a press is a tonal shift inside
+                      // the row rather than a rectangle across the panel.
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => _openLink(
+                            Uri.https(
+                              'github.com',
+                              '/$owner/$repository',
+                            ).toString(),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 12, right: 4),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) => Row(
+                                children: [
+                                  if (tag != null) ...[
+                                    ConstrainedBox(
+                                      // The repository name keeps most of the
+                                      // line; a long tag ellipsizes instead.
+                                      constraints: BoxConstraints(
+                                        maxWidth: constraints.maxWidth * .4,
+                                      ),
+                                      child: Text(
+                                        tag,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleSmall,
+                                      ),
                                     ),
+                                    const SizedBox(width: 6),
+                                  ],
+                                  Expanded(
                                     child: Text(
-                                      tag,
+                                      '$owner/$repository',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.titleSmall,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
                                 ],
-                                Expanded(
-                                  child: Text(
-                                    '$owner/$repository',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),

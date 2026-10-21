@@ -31,77 +31,85 @@ class ReleaseTimelineCard extends StatelessWidget {
           id: item.id,
           tag: null,
         )),
-        child: Container(
-          padding: const EdgeInsets.all(14),
+        // The surface is painted as ink rather than as a child container: a
+        // container's own colour would cover the press and hover tint, and a
+        // card that answers a press with nothing reads as unresponsive.
+        child: Ink(
           decoration: BoxDecoration(
             border: Border.all(color: theme.dividerColor),
             borderRadius: BorderRadius.circular(12),
             color: scheme.surfaceContainerLow,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.repository.fullName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: scheme.primary,
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.repository.fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      gitPulseInstant(context, item.publishedAt.toLocal()),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      item.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                    if (item.isPrerelease)
+                      _PrereleaseBadge(label: l10n.timelinePrerelease),
+                  ],
+                ),
+                if (item.changelog.isNotEmpty) ...[
+                  const SizedBox(height: 6),
                   Text(
-                    gitPulseInstant(context, item.publishedAt.toLocal()),
-                    style: theme.textTheme.labelSmall?.copyWith(
+                    item.changelog,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  Text(
-                    item.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      l10n.timelineAssetCount(item.assetCount),
+                      style: muted,
                     ),
-                  ),
-                  if (item.isPrerelease)
-                    _PrereleaseBadge(label: l10n.timelinePrerelease),
-                ],
-              ),
-              if (item.changelog.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  item.changelog,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                    if (item.isOldestShown)
+                      Text(l10n.timelineOldestShown, style: muted),
+                  ],
                 ),
               ],
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 12,
-                runSpacing: 4,
-                children: [
-                  Text(l10n.timelineAssetCount(item.assetCount), style: muted),
-                  if (item.isOldestShown)
-                    Text(l10n.timelineOldestShown, style: muted),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -123,7 +131,9 @@ class _PrereleaseBadge extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(color: scheme.outlineVariant, width: 0.5),
         borderRadius: BorderRadius.circular(6),
-        color: scheme.surfaceContainerHighest,
+        // One container step below the press tint, so a pressed card cannot
+        // dissolve the badge it holds into its own tone.
+        color: scheme.surfaceContainerHigh,
       ),
       child: Text(
         label,

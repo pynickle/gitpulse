@@ -632,15 +632,19 @@ void main() {
         find.textContaining('Wide cell', findRichText: true),
         findsOneWidget,
       );
-      // Assets wait below the notes, folded into one row.
-      expect(find.text('1 asset'), findsOneWidget);
+      // Release Assets wait below the notes, folded into one labelled row that
+      // states how many there are and their total size.
+      expect(find.text('1 asset · 2 KB'), findsOneWidget);
       expect(find.text('app.zip'), findsNothing);
-      await tester.ensureVisible(find.text('1 asset'));
-      await tester.tap(find.text('1 asset'));
+      await tester.ensureVisible(find.byKey(const Key('release-assets')));
+      await tester.tap(find.byKey(const Key('release-assets')));
       await tester.pumpAndSettle();
       expect(find.text('app.zip'), findsOneWidget);
-      await tester.ensureVisible(find.byTooltip('Download in browser'));
-      await tester.tap(find.byTooltip('Download in browser'));
+      // No trailing button offers the download any more: the row is the only
+      // affordance, right to the edge that button used to occupy.
+      expect(find.byTooltip('Download in browser'), findsNothing);
+      final assetRow = tester.getRect(find.text('app.zip'));
+      await tester.tapAt(Offset(drawer.right - 24, assetRow.center.dy));
       await tester.pumpAndSettle();
       expect(
         launched.single.toString(),

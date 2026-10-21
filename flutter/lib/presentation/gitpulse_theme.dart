@@ -6,14 +6,36 @@ abstract final class GitPulseColors {
   static const brand = Color(0xff238636);
 }
 
+/// The tone a pressed ink response shifts a surface to.
+///
+/// Feedback is a tonal move, not a scrim: the tint is the highest surface
+/// container in the scheme, so light mode moves one step along the surface ramp
+/// instead of darkening toward black, and dark mode brightens instead of greying
+/// out. Every Material surface inherits it from the theme, which is why no
+/// surface sets its own overlay colour; a surface that wants rounded feedback
+/// clips the ink response to its own shape instead.
+Color gitPulsePressTint(ColorScheme scheme) => scheme.surfaceContainerHighest;
+
+/// The softer half of the same move, for hovering and keyboard focus: the same
+/// surface tone, laid on lightly so a passing pointer never flips a whole row.
+Color gitPulseHoverTint(ColorScheme scheme) =>
+    scheme.surfaceContainerHighest.withValues(alpha: 0.5);
+
 /// The GitPulse Material 3 theme for [brightness].
-ThemeData gitPulseTheme(Brightness brightness) => ThemeData(
-  useMaterial3: true,
-  colorScheme: ColorScheme.fromSeed(
+ThemeData gitPulseTheme(Brightness brightness) {
+  final scheme = ColorScheme.fromSeed(
     seedColor: GitPulseColors.brand,
     brightness: brightness,
-  ),
-);
+  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    highlightColor: gitPulsePressTint(scheme),
+    splashColor: gitPulsePressTint(scheme),
+    focusColor: gitPulseHoverTint(scheme),
+    hoverColor: gitPulseHoverTint(scheme),
+  );
+}
 
 /// Applies the desktop system typeface for [locale] to [theme], so headings,
 /// body text, and buttons all share one Chinese or Latin family.

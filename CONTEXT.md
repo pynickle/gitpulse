@@ -249,6 +249,10 @@ _Avoid_: current release, latest release, the repository's first release
 The overlay on the Release Timeline that shows one release, or that repository's Repository Release List, without changing page layout or URL. A right drawer on desktop, a bottom sheet on mobile.
 _Avoid_: Detail Overlay when referring to this surface
 
+**Release Asset**:
+A downloadable file attached to a Release. GitHub's automatically generated source archives are not Release Assets: the API does not return them and no client shows them. The Flutter client calls them 附件 and the web client calls the same files 资源; that wording difference is unresolved and does not name a different concept.
+_Avoid_: attachment, download, source archive
+
 **Release Timeline Filter**:
 The client-side display filter on the Release Timeline that narrows visible releases by Followed Repository, published date range, and prerelease status.
 _Avoid_: timeline search, filter bar, dashboard filters when referring to this surface

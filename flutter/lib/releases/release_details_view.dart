@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import 'document_content.dart';
+import 'release_detail_dto.dart';
 import 'release_detail_service.dart';
 import 'release_document.dart';
 
 /// The reading body of the Release Drawer: offline notice, the release's name,
-/// one quiet meta line, the notes, and the assets. The drawer's chrome line
-/// owns the release identity and every action that leaves the notes — the
+/// one quiet meta line, the notes, and the Release Assets. The drawer's chrome
+/// line owns the release identity and every action that leaves the notes — the
 /// repository page, the Repository Release List, GitHub and close — so nothing
 /// here competes with the notes for the top of the surface.
 class ReleaseDetailsView extends StatelessWidget {
@@ -90,63 +91,227 @@ class ReleaseDetailsView extends StatelessWidget {
             onTapUrl: onTapUrl,
           ),
         if (release.assets.isNotEmpty)
-          _ReleaseAssets(release: release, onOpenExternal: onOpenExternal),
+          _ReleaseAssets(
+            assets: release.assets,
+            onOpenExternal: onOpenExternal,
+          ),
       ],
     );
   }
 }
 
-/// The release's assets collapsed into one row, so a release with dozens of
-/// them does not bury the end of the notes. Expansion reveals the downloads and
-/// the note that asset information is only current for this request.
-class _ReleaseAssets extends StatelessWidget {
-  const _ReleaseAssets({required this.release, required this.onOpenExternal});
+/// The Release Assets as their own module below the notes: a ruled boundary, one
+/// fold row in the section-label type language, and — once the reader opens it —
+/// one row per asset.
+///
+/// It is deliberately not wrapped in a tonal card: the drawer is already a
+/// surface, and nesting a second container inside its padding fights both.
+class _ReleaseAssets extends StatefulWidget {
+  const _ReleaseAssets({required this.assets, required this.onOpenExternal});
 
-  final ReleaseDetail release;
+  final List<ReleaseAssetDto> assets;
+  final Future<bool> Function(String) onOpenExternal;
+
+  @override
+  State<_ReleaseAssets> createState() => _ReleaseAssetsState();
+}
+
+class _ReleaseAssetsState extends State<_ReleaseAssets> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final assets = widget.assets;
+    // An unknown size is reported as zero and contributes nothing to the total,
+    // and a total of nothing leaves the fold row its count alone.
+    final totalSize = gitPulseByteSize(
+      context,
+      assets.fold<int>(0, (total, asset) => total + asset.size),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // A boundary, not a container: 24 of room says the notes have ended, a
+        // hairline draws the line, and 16 more keeps the fold row off it.
+        const Padding(
+          padding: EdgeInsets.only(top: 24, bottom: 16),
+          child: Divider(height: 1),
+        ),
+        // The fold row reads as a section label rather than one more sentence of
+        // the changelog, and the whole row is the toggle.
+        MergeSemantics(
+          child: Semantics(
+            button: true,
+            expanded: _expanded,
+            child: InkWell(
+              key: const Key('release-assets'),
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.attach_file,
+                      size: 16,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        totalSize == null
+                            ? l10n.releaseAssetCount(assets.length)
+                            : l10n.releaseAssetSummary(
+                                assets.length,
+                                totalSize,
+                              ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _expanded ? .5 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Icon(
+                        Icons.expand_more,
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Rows are separated by breathing room, never by rules: 31 hairlines in
+        // a phone-width sheet read as a spreadsheet.
+        if (_expanded)
+          for (final asset in assets)
+            _ReleaseAssetRow(
+              asset: asset,
+              onOpenExternal: widget.onOpenExternal,
+            ),
+      ],
+    );
+  }
+}
+
+/// One Release Asset. The whole row is the download affordance, so nothing
+/// occupies the trailing edge and the filename gets every pixel of its width.
+class _ReleaseAssetRow extends StatelessWidget {
+  const _ReleaseAssetRow({required this.asset, required this.onOpenExternal});
+
+  final ReleaseAssetDto asset;
   final Future<bool> Function(String) onOpenExternal;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    return ExpansionTile(
-      key: const Key('release-assets'),
-      tilePadding: EdgeInsets.zero,
-      childrenPadding: EdgeInsets.zero,
-      shape: const Border(),
-      collapsedShape: const Border(),
-      title: Text(
-        l10n.timelineAssetCount(release.assets.length),
-        style: theme.textTheme.titleSmall,
-      ),
-      children: [
-        for (final asset in release.assets)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              asset.label?.isNotEmpty == true
-                  ? '${asset.label} (${asset.name})'
-                  : asset.name,
-            ),
-            subtitle: Text(
-              [
-                l10n.releaseAssetMetadata(asset.size, asset.downloadCount),
-                if (asset.contentType?.isNotEmpty == true) asset.contentType!,
-                if (asset.updatedAt case final date?)
-                  gitPulseDay(context, date.toLocal()),
-              ].join(' · '),
-            ),
-            trailing:
-                safeContentUri(asset.browserDownloadUrl, image: true) == null
-                ? null
-                : IconButton(
-                    tooltip: l10n.releaseDownload,
-                    onPressed: () => onOpenExternal(asset.browserDownloadUrl),
-                    icon: const Icon(Icons.open_in_new),
+    final scheme = theme.colorScheme;
+    final size = gitPulseByteSize(context, asset.size);
+    // A row whose download address is not safe keeps its text but offers no
+    // action, so it never announces a download it cannot start.
+    final downloadUrl =
+        safeContentUri(asset.browserDownloadUrl, image: true) == null
+        ? null
+        : asset.browserDownloadUrl;
+    return MergeSemantics(
+      child: Semantics(
+        button: downloadUrl != null,
+        hint: downloadUrl == null ? null : l10n.releaseDownload,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: downloadUrl == null ? null : () => onOpenExternal(downloadUrl),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Icon(
+                    _releaseAssetGlyph(asset.name),
+                    size: 16,
+                    color: scheme.onSurfaceVariant,
                   ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // The filename is the only name shown and it is never
+                      // ellipsised: `x86_64` against `arm64`, `.zip` against
+                      // `.zip.minisig`, is exactly what the reader is looking
+                      // for. Do not add a line limit or an overflow here.
+                      Text(
+                        asset.name,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          ?size,
+                          l10n.releaseAssetDownloads(asset.downloadCount),
+                        ].join(' · '),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        Text(l10n.releaseAssetsOnline, style: theme.textTheme.bodySmall),
-      ],
+        ),
+      ),
     );
   }
+}
+
+/// The glyph naming what kind of file a Release Asset is, read from its name.
+///
+/// A closed set plus one fallback: a reader only needs to tell an installer from
+/// a checksum before tapping, and a glyph per extension would be noise.
+IconData _releaseAssetGlyph(String name) {
+  final parts = name.split('.');
+  final extension = parts.length > 1 ? parts.last.toLowerCase() : '';
+  return switch (extension) {
+    'zip' ||
+    'tar' ||
+    'gz' ||
+    'tgz' ||
+    'bz2' ||
+    'xz' ||
+    '7z' ||
+    'rar' => Icons.folder_zip_outlined,
+    'exe' ||
+    'msi' ||
+    'dmg' ||
+    'pkg' ||
+    'deb' ||
+    'rpm' ||
+    'apk' ||
+    'appimage' => Icons.install_desktop_outlined,
+    'sig' ||
+    'minisig' ||
+    'asc' ||
+    'md5' ||
+    'sha1' ||
+    'sha256' ||
+    'sha512' => Icons.verified_user_outlined,
+    _ => Icons.description_outlined,
+  };
 }
