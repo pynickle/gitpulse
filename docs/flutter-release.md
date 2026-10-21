@@ -98,9 +98,9 @@ of a public release is a separate owner-authorized action after acceptance.
 
 ### Windows x64
 
-Use Visual Studio 2022 Build Tools with **Desktop development with C++**, the
+Use Visual Studio 2022 or 2026 Build Tools with **Desktop development with C++**, the
 Windows SDK, MSVC x64/x86 tools, CMake, and **C++ ATL** (required by secure storage).
-CI uses `windows-2022`. `flutter doctor -v` should recognize the toolchain.
+CI uses `windows-2025`. `flutter doctor -v` should recognize the toolchain.
 
 ```powershell
 cd flutter
