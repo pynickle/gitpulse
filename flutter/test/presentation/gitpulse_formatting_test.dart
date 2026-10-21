@@ -68,6 +68,15 @@ void main() {
     });
   });
 
+  group('gitPulse exact count presentation', () {
+    test('a count keeps its digits and the locale grouping', () {
+      expect(formatGitPulseCount('en', 31), '31');
+      expect(formatGitPulseCount('en', 1234), '1,234');
+      // German groups thousands with a dot, so the row reads natively there.
+      expect(formatGitPulseCount('de', 1234), '1.234');
+    });
+  });
+
   group('gitPulse compact count presentation', () {
     test('a count below a thousand keeps its own digits', () {
       expect(formatGitPulseCompactCount('en', 0), '0');

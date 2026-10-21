@@ -259,37 +259,32 @@ class _ReleaseRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final title = item.title;
-    // Counts and dates line up on the digits rather than on the glyph widths,
-    // so two rows scrolled past each other compare their numbers directly.
+    // The tag is only worth printing when the title does not already say it,
+    // and it is the only fact that has to give up width to stay on one line.
     final metaStyle = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
-    // The tag is only worth printing when the title does not already say it.
-    final meta = <InlineSpan>[];
-    void addSegment(String text, {TextStyle? style}) {
-      if (meta.isNotEmpty) {
-        meta.add(TextSpan(text: ' · ', style: metaStyle));
-      }
-      meta.add(TextSpan(text: text, style: style));
-    }
-
-    if (item.tagName != title) {
-      addSegment(
-        item.tagName,
-        style: metaStyle?.copyWith(fontFamily: 'monospace'),
-      );
-    }
-    if (item.publishedAt case final published?) {
-      addSegment(gitPulseMonthDay(context, published.toLocal()));
-    }
-    addSegment(l10n.timelineAssetCount(item.assetsCount));
-    addSegment(
-      l10n.repositoryReleasesDownloads(
-        item.downloadCount,
-        gitPulseCompactCount(context, item.downloadCount),
+    final downloads = gitPulseCompactCount(context, item.downloadCount);
+    // The facts are glyph-led: a calendar, a paper clip and a download arrow
+    // stand where "assets" and "downloads" used to be repeated on every row.
+    final facts = <Widget>[
+      if (item.publishedAt case final published?)
+        _MetaFact(
+          icon: Icons.calendar_today_outlined,
+          value: gitPulseMonthDay(context, published.toLocal()),
+        ),
+      _MetaFact(
+        icon: Icons.attach_file,
+        value: gitPulseCount(context, item.assetsCount),
+        label: l10n.timelineAssetCount(item.assetsCount),
       ),
-    );
+      _MetaFact(
+        icon: Icons.download_outlined,
+        value: downloads,
+        label: l10n.repositoryReleasesDownloads(item.downloadCount, downloads),
+      ),
+    ];
     return MergeSemantics(
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -329,11 +324,32 @@ class _ReleaseRow extends StatelessWidget {
                           style: theme.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 2),
-                        Text.rich(
-                          TextSpan(children: meta),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: metaStyle,
+                        LayoutBuilder(
+                          builder: (context, constraints) => Wrap(
+                            spacing: 10,
+                            runSpacing: 2,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (item.tagName != title)
+                                ConstrainedBox(
+                                  // The tag is the only fact that can give up
+                                  // width; it ellipsises rather than pushing
+                                  // the glyphs onto another line.
+                                  constraints: BoxConstraints(
+                                    maxWidth: constraints.maxWidth * .45,
+                                  ),
+                                  child: Text(
+                                    item.tagName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: metaStyle?.copyWith(
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ),
+                              ...facts,
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -344,6 +360,53 @@ class _ReleaseRow extends StatelessWidget {
                     color: scheme.onSurfaceVariant,
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One fact in a row's meta line: a glyph that says what the value is, and the
+/// value itself.
+///
+/// The glyph replaces a repeated noun — "assets", "downloads" — on every row,
+/// so the words a reader would otherwise read again and again move into the
+/// fact's semantics label, where only a screen reader hears them.
+class _MetaFact extends StatelessWidget {
+  const _MetaFact({required this.icon, required this.value, this.label});
+
+  final IconData icon;
+  final String value;
+
+  /// The spoken form of the fact, with its unit; defaults to [value] when the
+  /// value already says what it is, as a date does.
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Semantics(
+      label: label ?? value,
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: scheme.onSurfaceVariant),
+            const SizedBox(width: 3),
+            // A fact keeps its whole value: at a large text scale it takes the
+            // width it is given and wraps inside the fact rather than painting
+            // outside the row or losing the unit that makes it readable.
+            Flexible(
+              child: Text(
+                value,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ],

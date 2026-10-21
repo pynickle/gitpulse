@@ -49,6 +49,11 @@ String formatGitPulseMonthDay(
             : DateFormat.yMMMd(localeName))
         .format(instant);
 
+/// An exact count rendered for [localeName] with the locale's own grouping,
+/// e.g. `1,234`, for a value a row shows in full instead of compacting.
+String formatGitPulseCount(String localeName, int count) =>
+    NumberFormat.decimalPattern(localeName).format(count);
+
 /// A download count compacted for a Repository Release List row, e.g. `999`,
 /// `1.2k` or `12k`, so a six-digit count cannot push the rest of the meta line
 /// out of the row.
@@ -89,6 +94,10 @@ String gitPulseMonthDay(BuildContext context, DateTime instant) =>
 /// A download count in the language of [context], compacted for a row.
 String gitPulseCompactCount(BuildContext context, int count) =>
     formatGitPulseCompactCount(gitPulseLocaleName(context), count);
+
+/// An exact count in the language of [context], grouped for its locale.
+String gitPulseCount(BuildContext context, int count) =>
+    formatGitPulseCount(gitPulseLocaleName(context), count);
 
 /// A Timeline calendar date in the language of [context].
 String gitPulseDate(BuildContext context, String date) =>

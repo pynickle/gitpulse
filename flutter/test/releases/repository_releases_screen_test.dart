@@ -143,26 +143,39 @@ void main() {
 
       final day = DateFormat.MMMd('en').format(thisYear);
       expect(find.text('First stable'), findsOneWidget);
+      // Each fact is spelled by a glyph and its value, not by a repeated noun.
+      // The tag is the only prose left on the meta line.
+      expect(find.text('v1.0.0'), findsOneWidget);
+      expect(find.text(day), findsOneWidget);
       expect(
-        find.text(
-          'v1.0.0 · $day · 31 assets · 1.2k downloads',
-          findRichText: true,
+        find.descendant(
+          of: find.byKey(const ValueKey(1)),
+          matching: find.text('31'),
         ),
         findsOneWidget,
       );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey(1)),
+          matching: find.text('1.2k'),
+        ),
+        findsOneWidget,
+      );
+      // The words the glyphs replace are visible nowhere on the page.
+      expect(find.textContaining('assets'), findsNothing);
+      expect(find.textContaining('downloads'), findsNothing);
       // A tag that already is the title is not printed a second time.
       final older = DateFormat.yMMMd('en').format(lastYear);
       expect(find.text('v0.9.0'), findsOneWidget);
-      expect(
-        find.text('$older · 2 assets · 7 downloads', findRichText: true),
-        findsOneWidget,
-      );
-      // One download is not "1 downloads": the localisation owns the agreement
-      // while the compact formatter owns the number.
-      expect(
-        find.text('2 assets · 1 download', findRichText: true),
-        findsOneWidget,
-      );
+      expect(find.text(older), findsOneWidget);
+      // The units still reach a screen reader, and one download is not
+      // "1 downloads": the localisation owns the agreement.
+      final stable = tester.getSemantics(find.text('First stable')).label;
+      expect(stable, contains('31 assets'));
+      expect(stable, contains('1.2k downloads'));
+      final single = tester.getSemantics(find.text('v0.1.0')).label;
+      expect(single, contains('1 download'));
+      expect(single, isNot(contains('1 downloads')));
       // The loaded page is the only page, so it is not worth a pager.
       expect(find.text('Page 1'), findsNothing);
       expect(find.byTooltip('Next page'), findsNothing);
@@ -283,6 +296,50 @@ void main() {
             )
             .onPressed,
         isNull,
+      );
+    },
+  );
+
+  testWidgets(
+    'a large text scale wraps the meta facts instead of clipping them',
+    (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await pumpReleasesPage(
+        tester,
+        size: const Size(360, 800),
+        handlers: {
+          'GET api/releases/octo/app?page=1&per_page=20': () => BackendResult(
+            statusCode: 200,
+            data: releaseListJson([
+              listReleaseJson(
+                1,
+                'v1.2.3-preview.4-with-a-long-suffix',
+                name: 'A release with a long tag and long name',
+                publishedAt: DateTime(
+                  2025,
+                  12,
+                  31,
+                  12,
+                ).toUtc().toIso8601String(),
+                assetsCount: 1234,
+                downloadCount: 1234567,
+              ),
+            ]),
+          ),
+        },
+      );
+      // Nothing is lost and nothing overflows: the facts take a second meta
+      // line rather than painting outside the row.
+      expect(tester.takeException(), isNull);
+      expect(find.text('1,234'), findsOneWidget);
+      expect(find.text('1.2m'), findsOneWidget);
+      expect(find.text('Dec 31, 2025'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.text('A release with a long tag and long name'))
+            .label,
+        allOf(contains('1,234 assets'), contains('1.2m downloads')),
       );
     },
   );
