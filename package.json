@@ -31,7 +31,7 @@
     "@primer/css": "^22.3.2",
     "@upstash/redis": "^1.39.0",
     "bulma": "^1.0.4",
-    "comark": "^0.7.0",
+    "comark": "^0.8.0",
     "dayjs": "^1.11.23",
     "htmlparser2": "12.0.0",
     "markdown-exit": "1.1.0-beta.2",
