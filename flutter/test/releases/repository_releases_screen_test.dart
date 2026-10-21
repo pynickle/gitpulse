@@ -161,6 +161,26 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The tag prints beside the name, not on the fact line, so it cannot push
+      // the aligned facts out of their columns.
+      expect(
+        tester.getCenter(find.text('v1.0.0')).dy,
+        closeTo(tester.getCenter(find.text('First stable')).dy, 1),
+      );
+      // The paper clips and download arrows sit at one x per column, even
+      // though the dates beside them differ in width and one row has no date.
+      final clips = find.byIcon(Icons.attach_file);
+      expect(clips, findsNWidgets(3));
+      expect({
+        for (var index = 0; index < 3; index++)
+          tester.getTopLeft(clips.at(index)).dx,
+      }, hasLength(1));
+      final arrows = find.byIcon(Icons.download_outlined);
+      expect(arrows, findsNWidgets(3));
+      expect({
+        for (var index = 0; index < 3; index++)
+          tester.getTopLeft(arrows.at(index)).dx,
+      }, hasLength(1));
       // The words the glyphs replace are visible nowhere on the page.
       expect(find.textContaining('assets'), findsNothing);
       expect(find.textContaining('downloads'), findsNothing);

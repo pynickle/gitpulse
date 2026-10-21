@@ -34,6 +34,9 @@ class RepositoryReleasesView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final items = state.visibleItems;
     final pagination = state.data?.pagination;
+    // One set of column widths for the whole page, measured before the rows are
+    // built, so every row's glyphs land in the same column.
+    final columns = _MetaColumns.measure(context, items);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -61,7 +64,7 @@ class RepositoryReleasesView extends StatelessWidget {
             ],
           ),
         ),
-        Expanded(child: _band(context, items)),
+        Expanded(child: _band(context, items, columns)),
         // The pager belongs to the surface, not to the end of the list: one
         // page is no pager at all, and a loading or failed band hides it rather
         // than letting it shift around a state it cannot move. A page that a
@@ -82,7 +85,11 @@ class RepositoryReleasesView extends StatelessWidget {
 
   /// Loading, failure and empty states take the list band, never the whole
   /// surface: the filter bar above them never moves and the pager stays hidden.
-  Widget _band(BuildContext context, List<RepositoryReleaseDto> items) {
+  Widget _band(
+    BuildContext context,
+    List<RepositoryReleaseDto> items,
+    _MetaColumns columns,
+  ) {
     final l10n = AppLocalizations.of(context);
     if (state.loading) {
       return _scrollableBand(
@@ -133,6 +140,7 @@ class RepositoryReleasesView extends StatelessWidget {
         return _ReleaseRow(
           key: ValueKey(item.id),
           item: item,
+          columns: columns,
           entry: isEntry?.call(item) == true,
           onTap: () => onRelease(item),
         );
@@ -245,11 +253,13 @@ class _ReleaseRow extends StatelessWidget {
   const _ReleaseRow({
     super.key,
     required this.item,
+    required this.columns,
     required this.entry,
     required this.onTap,
   });
 
   final RepositoryReleaseDto item;
+  final _MetaColumns columns;
   final bool entry;
   final VoidCallback onTap;
 
@@ -259,32 +269,10 @@ class _ReleaseRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final title = item.title;
-    // The tag is only worth printing when the title does not already say it,
-    // and it is the only fact that has to give up width to stay on one line.
-    final metaStyle = theme.textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
+    // The tag is printed beside the title, not on the fact line: a tag of any
+    // width would otherwise push the aligned facts out of their columns.
+    final metaStyle = _metaTextStyle(theme);
     final downloads = gitPulseCompactCount(context, item.downloadCount);
-    // The facts are glyph-led: a calendar, a paper clip and a download arrow
-    // stand where "assets" and "downloads" used to be repeated on every row.
-    final facts = <Widget>[
-      if (item.publishedAt case final published?)
-        _MetaFact(
-          icon: Icons.calendar_today_outlined,
-          value: gitPulseMonthDay(context, published.toLocal()),
-        ),
-      _MetaFact(
-        icon: Icons.attach_file,
-        value: gitPulseCount(context, item.assetsCount),
-        label: l10n.timelineAssetCount(item.assetsCount),
-      ),
-      _MetaFact(
-        icon: Icons.download_outlined,
-        value: downloads,
-        label: l10n.repositoryReleasesDownloads(item.downloadCount, downloads),
-      ),
-    ];
     return MergeSemantics(
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -317,26 +305,24 @@ class _ReleaseRow extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 2),
                         LayoutBuilder(
-                          builder: (context, constraints) => Wrap(
-                            spacing: 10,
-                            runSpacing: 2,
-                            crossAxisAlignment: WrapCrossAlignment.center,
+                          builder: (context, constraints) => Row(
                             children: [
-                              if (item.tagName != title)
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                              ),
+                              if (item.tagName != title) ...[
+                                const SizedBox(width: 8),
                                 ConstrainedBox(
-                                  // The tag is the only fact that can give up
-                                  // width; it ellipsises rather than pushing
-                                  // the glyphs onto another line.
+                                  // The tag keeps its own width, up to the half
+                                  // of the line the name leaves it.
                                   constraints: BoxConstraints(
-                                    maxWidth: constraints.maxWidth * .45,
+                                    maxWidth: constraints.maxWidth * .5,
                                   ),
                                   child: Text(
                                     item.tagName,
@@ -347,7 +333,67 @@ class _ReleaseRow extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                              ...facts,
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        LayoutBuilder(
+                          builder: (context, constraints) => Row(
+                            children: [
+                              // A date-less release keeps the date column empty
+                              // so its counts still line up with the rows above
+                              // and below it.
+                              if (columns.date > 0) ...[
+                                SizedBox(
+                                  width: _columnWidth(
+                                    columns.date,
+                                    constraints.maxWidth,
+                                  ),
+                                  child: switch (item.publishedAt) {
+                                    final published? => _MetaFact(
+                                      icon: Icons.calendar_today_outlined,
+                                      value: gitPulseMonthDay(
+                                        context,
+                                        published.toLocal(),
+                                      ),
+                                    ),
+                                    null => null,
+                                  },
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              SizedBox(
+                                width: _columnWidth(
+                                  columns.assets,
+                                  constraints.maxWidth,
+                                ),
+                                child: _MetaFact(
+                                  icon: Icons.attach_file,
+                                  value: gitPulseCount(
+                                    context,
+                                    item.assetsCount,
+                                  ),
+                                  label: l10n.timelineAssetCount(
+                                    item.assetsCount,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              SizedBox(
+                                width: _columnWidth(
+                                  columns.downloads,
+                                  constraints.maxWidth,
+                                ),
+                                child: _MetaFact(
+                                  icon: Icons.download_outlined,
+                                  value: downloads,
+                                  label: l10n.repositoryReleasesDownloads(
+                                    item.downloadCount,
+                                    downloads,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -366,6 +412,14 @@ class _ReleaseRow extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// One column never takes more than a third of the fact line, so a large text
+  /// scale wraps the value inside its column instead of pushing a column off the
+  /// row.
+  static double _columnWidth(double measured, double available) {
+    final third = (available - 24) / 3;
+    return measured < third ? measured : third;
   }
 }
 
@@ -388,30 +442,103 @@ class _MetaFact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return Semantics(
       label: label ?? value,
       child: ExcludeSemantics(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: scheme.onSurfaceVariant),
-            const SizedBox(width: 3),
+            Icon(
+              icon,
+              size: _metaFactIconExtent,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: _metaFactIconGap),
             // A fact keeps its whole value: at a large text scale it takes the
             // width it is given and wraps inside the fact rather than painting
             // outside the row or losing the unit that makes it readable.
-            Flexible(
-              child: Text(
-                value,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
+            Flexible(child: Text(value, style: _metaTextStyle(theme))),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The glyph's size in a fact, and the space between it and the value. Both
+/// belong to the column width a row reserves for the fact.
+const _metaFactIconExtent = 14.0;
+const _metaFactIconGap = 3.0;
+
+/// The muted, tabular style both the fact values and the title's tag share, so
+/// numbers compare down the list and the tag reads as an identifier.
+TextStyle? _metaTextStyle(ThemeData theme) =>
+    theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+/// The widths the three facts share across every row on the page.
+///
+/// They are measured from the values about to be drawn rather than fixed in
+/// pixels, so the calendar, paper-clip and download glyphs line up down the
+/// list in every language and at every text scale, and a page whose dates are
+/// all short does not reserve room for a year it never shows.
+class _MetaColumns {
+  const _MetaColumns({
+    required this.date,
+    required this.assets,
+    required this.downloads,
+  });
+
+  final double date;
+  final double assets;
+  final double downloads;
+
+  static _MetaColumns measure(
+    BuildContext context,
+    Iterable<RepositoryReleaseDto> items,
+  ) {
+    final style = _metaTextStyle(Theme.of(context));
+    final textScaler = MediaQuery.textScalerOf(context);
+    final textDirection = Directionality.of(context);
+    double widest(Iterable<String> values) {
+      var width = 0.0;
+      for (final value in values) {
+        final painter = TextPainter(
+          text: TextSpan(text: value, style: style),
+          textDirection: textDirection,
+          textScaler: textScaler,
+          maxLines: 1,
+        )..layout();
+        if (painter.width > width) width = painter.width;
+        painter.dispose();
+      }
+      return width;
+    }
+
+    final days = <String>[
+      for (final item in items)
+        if (item.publishedAt case final published?)
+          gitPulseMonthDay(context, published.toLocal()),
+    ];
+    return _MetaColumns(
+      date: days.isEmpty
+          ? 0
+          : widest(days) + _metaFactIconExtent + _metaFactIconGap,
+      assets:
+          widest([
+            for (final item in items) gitPulseCount(context, item.assetsCount),
+          ]) +
+          _metaFactIconExtent +
+          _metaFactIconGap,
+      downloads:
+          widest([
+            for (final item in items)
+              gitPulseCompactCount(context, item.downloadCount),
+          ]) +
+          _metaFactIconExtent +
+          _metaFactIconGap,
     );
   }
 }

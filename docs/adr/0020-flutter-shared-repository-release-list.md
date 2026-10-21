@@ -15,16 +15,22 @@ names the repository being read, and the fullscreen page names it in its app bar
 generic "Repository releases" title. A list that repeats the name is one line the reader pays for
 twice; a future reader should not add it back as a heading, not even "for the fullscreen page only".
 
-A row is two lines: the release's name (or its tag when the name is empty after trimming), then one
-muted meta line. That line is glyph-led rather than prose: the tag — only when it differs from the
-name — then a calendar glyph with the day, a paper clip with the asset count, and a download arrow
-with the compact download count. The nouns the glyphs replace ("assets", "downloads") move onto each
+A row is two lines: the release's name, with its tag beside it in monospace when the tag differs from
+the name, then one muted meta line. That line is glyph-led rather than prose: a calendar glyph with
+the day, a paper clip with the asset count, and a download arrow with the compact download count. The
+tag sits on the title line rather than the fact line, because a tag of any width would otherwise push
+the facts out of their columns. The nouns the glyphs replace ("assets", "downloads") move onto each
 fact's semantics label, so the visible line carries no repeated wording while a screen reader still
 hears the units. An Entry Release is marked by a 4dp accent bar on the leading edge carrying a
-semantics label, never by a third line of text. The tag ellipsises when the line is tight; the glyph
-facts keep their width, and a reader with a large text scale gets the facts wrapped onto a second meta
-line rather than clipped or dropped. The draft or prerelease state of a release is left to the filter
-bar, which is where a reader selects for it anyway.
+semantics label, never by a third line of text. The draft or prerelease state of a release is left to
+the filter bar, which is where a reader selects for it anyway.
+
+The three facts are columns, not a flowing sentence. Their widths are measured from the values about to
+be drawn — once per page, before any row is built — so the calendar, paper-clip and download glyphs
+land on the same x down the whole list even when the dates differ in width, and a date-less row leaves
+its column empty rather than shifting its neighbours. Measuring rather than hard-coding keeps the
+columns right in every language and at every text scale; each column is capped at a third of the line,
+so a large text scale wraps a value inside its column instead of pushing a column off the row.
 
 Typography stays on Material's semantic text roles — `titleMedium` for the name and `bodySmall` for
 the meta line — with exactly two attribute-level overrides: the tag in a monospace family, so it is
@@ -72,6 +78,7 @@ compact string; the raw count only selects the singular, so one download does no
   involved.
 - Compact counts trade exactness for a short row: a reader who needs the precise number opens the
   release, and counts under a thousand keep their own digits.
-- The meta line is one line by default. Adding another fact still pushes the download count out of a
-  360dp row, so new meta content means deciding what leaves; a long tag ellipsises, and only a large
-  text scale is allowed to wrap the facts.
+- The meta line is one line by default and its facts share measured columns, so the row is a small
+  table rather than a sentence. Adding another fact still pushes the download count out of a 360dp
+  row, so new meta content means deciding what leaves; only a large text scale wraps a value inside
+  its column.
