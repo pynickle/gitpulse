@@ -203,7 +203,7 @@ void main() {
   );
 
   testWidgets(
-    'repository browsing preserves page and filter until close and always returns to the Entry Release',
+    'repository browsing retains visited details, page and filter until close',
     (tester) async {
       final launched = <Uri>[];
       final mounted = await pumpTimelineScreen(
@@ -330,19 +330,57 @@ void main() {
       expect(find.text('another-repo-release'), findsOneWidget);
       expect(find.text('Entry Release'), findsNothing);
       await tester.tap(find.byTooltip('Return to Entry Release'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(find.text('Entry notes'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(
+        mounted.session.requests.where(
+          (path) => path == 'GET api/releases/octo/app/42',
+        ),
+        hasLength(1),
+      );
       await openRepositoryReleases(tester);
       expect(find.text('Page 2'), findsOneWidget);
       expect(find.text('older-preview'), findsNothing);
+      await tester.tap(find.text('older-stable'));
+      await tester.pump();
+      expect(find.text('Other notes'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(
+        mounted.session.requests.where(
+          (path) => path == 'GET api/releases/canonical/project/45',
+        ),
+        hasLength(1),
+      );
+      await tester.tapAt(
+        tester.getTopLeft(
+              find.textContaining('Another repository', findRichText: true),
+            ) +
+            const Offset(30, 8),
+      );
+      await tester.pump();
+      expect(find.text('Another repository notes'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(
+        mounted.session.requests.where(
+          (path) => path == 'GET api/releases/other/tool/by-tag?tag=v1',
+        ),
+        hasLength(1),
+      );
       await tester.tap(find.byTooltip('Return to Entry Release'));
-      await tester.pumpAndSettle();
+      await tester.pump();
       expect(find.text('Entry notes'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('release-drawer')), findsNothing);
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
+      expect(
+        mounted.session.requests.where(
+          (path) => path == 'GET api/releases/octo/app/42',
+        ),
+        hasLength(2),
+      );
       await openRepositoryReleases(tester);
       expect(find.text('Page 1'), findsOneWidget);
       expect(find.text('draft-v4'), findsOneWidget);
@@ -356,6 +394,17 @@ void main() {
             )
             .length,
         2,
+      );
+      await tester.tap(find.byTooltip('Next page'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('older-stable'));
+      await tester.pumpAndSettle();
+      expect(find.text('Other notes'), findsOneWidget);
+      expect(
+        mounted.session.requests.where(
+          (path) => path == 'GET api/releases/canonical/project/45',
+        ),
+        hasLength(2),
       );
     },
   );

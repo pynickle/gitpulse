@@ -50,6 +50,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   late ReleaseTarget _target = widget.entry;
   late final ReleaseTarget _entry = widget.entry;
   final _opening = Object();
+  final _visitedReleases = <ReleaseTarget>{};
   final _visitedLists = <RepositoryReleasesScope>{};
   RepositoryReleasesScope? _listScope;
   bool _showList = false;
@@ -108,7 +109,14 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
         session.identity?.login != _identity?.login) {
       return const SizedBox.shrink();
     }
-    final result = ref.watch(releaseDetailProvider(_target));
+    // Retain visited details for this opening, just like the repository lists.
+    // Closing the drawer releases these subscriptions and their cached results.
+    _visitedReleases.add(_target);
+    final details = {
+      for (final target in _visitedReleases)
+        target: ref.watch(releaseDetailProvider(target)),
+    };
+    final result = details[_target]!;
     if (_target == _entry) {
       if (result.value?.release case final release?) {
         _entryIdentity = (
