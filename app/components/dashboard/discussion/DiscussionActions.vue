@@ -70,7 +70,7 @@
 
     <div v-if="sourceNotification" class="sidebar-card mb-4">
       <div class="sidebar-card__content">
-        <button class="sidebar-action-btn" @click="handleToggleTodo">
+        <button type="button" class="sidebar-action-btn" @click="handleToggleTodo">
           <ListPlusIcon v-if="!isTodo" :size="14" />
           <ListMinusIcon v-else :size="14" />
           <span>{{ todoLabel }}</span>

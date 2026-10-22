@@ -653,6 +653,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             <h1 class="title is-3 repo-detail-header__title">{{ repository.name }}</h1>
             <div class="repo-detail-header__actions">
               <button
+                type="button"
                 class="repo-action-btn"
                 :class="{ 'repo-action-btn--active': isStarred }"
                 :disabled="loadingStar"
@@ -665,6 +666,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
               <div class="watch-dropdown-wrapper">
                 <button
+                  type="button"
                   class="repo-action-btn"
                   :class="{ 'repo-action-btn--active': watchState === 'all' }"
                   :disabled="loadingWatch"
@@ -676,6 +678,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 </button>
                 <div v-if="showWatchDropdown" class="watch-dropdown">
                   <button
+                    type="button"
                     class="watch-dropdown__item"
                     :class="{ 'watch-dropdown__item--active': watchState === 'all' }"
                     @click="setWatchState('all')"
@@ -689,6 +692,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     </div>
                   </button>
                   <button
+                    type="button"
                     class="watch-dropdown__item"
                     :class="{ 'watch-dropdown__item--active': watchState === 'default' }"
                     @click="setWatchState('default')"
@@ -702,6 +706,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                     </div>
                   </button>
                   <button
+                    type="button"
                     class="watch-dropdown__item"
                     :class="{ 'watch-dropdown__item--active': watchState === 'ignore' }"
                     @click="setWatchState('ignore')"

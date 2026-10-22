@@ -6,6 +6,7 @@
     aria-label="pagination"
   >
     <button
+      type="button"
       class="pagination-previous pagination-control"
       :aria-label="t('dashboard.pagination.previous')"
       :disabled="!canGoPrev"
@@ -16,6 +17,7 @@
     </button>
 
     <button
+      type="button"
       class="pagination-next pagination-control"
       :aria-label="t('dashboard.pagination.next')"
       :disabled="!canGoNext"
@@ -29,6 +31,7 @@
       <li v-for="item in pageItems" :key="item.key">
         <span v-if="item.type === 'ellipsis'" class="pagination-ellipsis">&hellip;</span>
         <button
+          type="button"
           v-else
           :class="['pagination-link', { 'is-current': item.page === pagination.page }]"
           :aria-current="item.page === pagination.page ? 'page' : undefined"

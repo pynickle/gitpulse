@@ -333,6 +333,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
           </h1>
 
           <button
+            type="button"
             v-if="repoTarget"
             class="wiki-page__repo button is-ghost is-small"
             :title="t('wikiPage.openRepo')"
@@ -362,7 +363,11 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
 
         <div v-else-if="pagesError" class="notification is-danger is-light wiki-page__error">
           <p class="mb-2">{{ t('wikiPage.error') }}</p>
-          <button class="button is-small is-danger is-outlined" @click="handleRetryPages">
+          <button
+            type="button"
+            class="button is-small is-danger is-outlined"
+            @click="handleRetryPages"
+          >
             {{ t('wikiPage.retry') }}
           </button>
         </div>
@@ -406,7 +411,11 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
           <section ref="contentRef" class="wiki-page__content">
             <div v-if="pageError" class="notification is-danger is-light wiki-page__error">
               <p class="mb-2">{{ t('wikiPage.pageError') }}</p>
-              <button class="button is-small is-danger is-outlined" @click="handleRetryPage">
+              <button
+                type="button"
+                class="button is-small is-danger is-outlined"
+                @click="handleRetryPage"
+              >
                 {{ t('wikiPage.retry') }}
               </button>
             </div>

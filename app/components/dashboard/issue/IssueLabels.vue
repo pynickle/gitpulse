@@ -6,6 +6,7 @@
         <span class="sidebar-card__title">{{ t('detailLabels.title') }}</span>
       </div>
       <button
+        type="button"
         @click="toggleLabelEditor"
         class="sidebar-card__action"
         :class="{ 'sidebar-card__action--hidden': !canEditLabels }"
@@ -45,6 +46,7 @@
             <div class="label-editor-header">
               <h3 class="label-editor-title">{{ t('detailLabels.edit') }}</h3>
               <button
+                type="button"
                 class="label-editor-close"
                 @click="toggleLabelEditor"
                 :disabled="savingLabels"
@@ -57,7 +59,7 @@
               <div v-if="labelError" class="label-editor-error">
                 <AlertCircleIcon :size="14" />
                 <span>{{ labelError }}</span>
-                <button class="label-editor-error-dismiss" @click="clearLabelError">
+                <button type="button" class="label-editor-error-dismiss" @click="clearLabelError">
                   <XIcon :size="12" />
                 </button>
               </div>
@@ -103,10 +105,16 @@
             </ScrollArea>
 
             <div class="label-editor-footer">
-              <button class="label-btn-cancel" @click="toggleLabelEditor" :disabled="savingLabels">
+              <button
+                type="button"
+                class="label-btn-cancel"
+                @click="toggleLabelEditor"
+                :disabled="savingLabels"
+              >
                 {{ t('detailLabels.cancel') }}
               </button>
               <button
+                type="button"
                 class="label-btn-save"
                 @click="saveLabels"
                 :disabled="loadingLabels || savingLabels"

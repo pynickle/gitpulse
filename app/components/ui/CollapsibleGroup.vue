@@ -1,6 +1,7 @@
 <template>
   <div class="collapsible-group">
     <button
+      type="button"
       class="collapsible-group-header"
       :aria-expanded="!isCollapsed"
       :aria-controls="contentId"

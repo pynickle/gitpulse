@@ -5,6 +5,7 @@
       <header class="modal-card-head">
         <p class="modal-card-title">{{ t('issueDetail.lockIssueReason') }}</p>
         <button
+          type="button"
           class="delete"
           @click="$emit('close')"
           aria-label="close"
@@ -47,10 +48,11 @@
         </div>
       </section>
       <footer class="modal-card-foot">
-        <button class="button is-light" @click="$emit('close')" :disabled="loading">
+        <button type="button" class="button is-light" @click="$emit('close')" :disabled="loading">
           {{ t('issueDetail.cancel') }}
         </button>
         <button
+          type="button"
           class="button is-primary ml-4"
           @click="confirmLock"
           :disabled="!selectedReason || loading"

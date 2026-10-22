@@ -165,7 +165,7 @@ watch(requestedUser, () => {
       <div class="starred-page__body">
         <div v-if="error" class="notification is-danger is-light starred-page__error">
           <p class="mb-2">{{ t('starred.error') }}</p>
-          <button class="button is-small is-danger is-outlined" @click="handleRetry">
+          <button type="button" class="button is-small is-danger is-outlined" @click="handleRetry">
             {{ t('starred.retry') }}
           </button>
         </div>

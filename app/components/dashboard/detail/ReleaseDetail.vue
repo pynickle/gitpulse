@@ -104,7 +104,11 @@ usePageMeta(
           <h1 class="title is-3 release-header__title">{{ releaseTitle }}</h1>
 
           <div class="release-header__meta">
-            <button class="release-header__repo button is-ghost is-small" @click="handleRepoClick">
+            <button
+              type="button"
+              class="release-header__repo button is-ghost is-small"
+              @click="handleRepoClick"
+            >
               <GitHubIcon :size="15" />
               <span>{{ repoOwner }}/{{ repoName }}</span>
             </button>

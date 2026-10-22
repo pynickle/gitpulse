@@ -194,6 +194,7 @@ const {
           </div>
           <div class="preview-pagination">
             <button
+              type="button"
               class="preview-page-btn"
               :disabled="previewPage <= 1"
               :aria-label="t('dashboard.pagination.previous')"
@@ -210,6 +211,7 @@ const {
               }}
             </span>
             <button
+              type="button"
               class="preview-page-btn"
               :disabled="previewPage >= previewTotalPages"
               :aria-label="t('dashboard.pagination.next')"

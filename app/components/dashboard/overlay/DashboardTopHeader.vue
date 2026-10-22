@@ -2,11 +2,16 @@
   <div :class="['dashboard-top-header', { 'is-not-sticky': nonSticky }]">
     <div class="card-header-title dashboard-top-header__toolbar">
       <div class="buttons dashboard-top-header__nav">
-        <button class="button is-light is-small" @click="$emit('back')">
+        <button type="button" class="button is-light is-small" @click="$emit('back')">
           <ArrowLeftIcon :size="18" class="mr-1" />
           {{ backLabel }}
         </button>
-        <button v-if="showHomeButton" class="button is-light is-small" @click="$emit('home')">
+        <button
+          type="button"
+          v-if="showHomeButton"
+          class="button is-light is-small"
+          @click="$emit('home')"
+        >
           <HomeIcon :size="18" class="mr-1" />
           {{ homeLabel }}
         </button>

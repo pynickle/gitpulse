@@ -6,6 +6,7 @@
         <span class="sidebar-card__title">{{ t('detailIssueType.title') }}</span>
       </div>
       <button
+        type="button"
         class="sidebar-card__action"
         :class="{ 'sidebar-card__action--hidden': !canEditIssueType }"
         :title="t('detailIssueType.edit')"
@@ -34,6 +35,7 @@
             <div class="label-editor-header">
               <h3 class="label-editor-title">{{ t('detailIssueType.edit') }}</h3>
               <button
+                type="button"
                 class="label-editor-close"
                 :disabled="savingIssueType"
                 @click="toggleIssueTypeEditor"
@@ -46,7 +48,11 @@
               <div v-if="issueTypeError" class="label-editor-error">
                 <AlertCircleIcon :size="14" />
                 <span>{{ issueTypeError }}</span>
-                <button class="label-editor-error-dismiss" @click="clearIssueTypeError">
+                <button
+                  type="button"
+                  class="label-editor-error-dismiss"
+                  @click="clearIssueTypeError"
+                >
                   <XIcon :size="12" />
                 </button>
               </div>
@@ -115,6 +121,7 @@
 
             <div class="label-editor-footer">
               <button
+                type="button"
                 class="label-btn-cancel"
                 :disabled="savingIssueType"
                 @click="toggleIssueTypeEditor"
@@ -122,6 +129,7 @@
                 {{ t('detailIssueType.cancel') }}
               </button>
               <button
+                type="button"
                 class="label-btn-save"
                 :disabled="loadingIssueTypes || savingIssueType"
                 @click="saveIssueType"

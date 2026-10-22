@@ -196,6 +196,7 @@ watch(repoFullName, () => {
           </h1>
 
           <button
+            type="button"
             v-if="repoTarget"
             class="contributors-page__repo button is-ghost is-small"
             :title="t('contributorsPage.openRepo')"
@@ -238,7 +239,7 @@ watch(repoFullName, () => {
 
         <div v-else-if="pageError" class="notification is-danger is-light contributors-page__error">
           <p class="mb-2">{{ t('contributorsPage.error') }}</p>
-          <button class="button is-small is-danger is-outlined" @click="handleRetry">
+          <button type="button" class="button is-small is-danger is-outlined" @click="handleRetry">
             {{ t('contributorsPage.retry') }}
           </button>
         </div>

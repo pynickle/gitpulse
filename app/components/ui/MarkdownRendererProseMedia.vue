@@ -132,7 +132,7 @@ const renderedImageAttrs = computed(() => {
 </script>
 
 <template>
-  <img v-if="tag === 'img'" ref="imageElement" v-bind="renderedImageAttrs" />
+  <img v-if="tag === 'img'" ref="imageElement" v-bind="renderedImageAttrs" :alt="props.alt ?? ''" />
   <component v-else :is="tag" v-bind="resolvedAttrs">
     <slot />
   </component>

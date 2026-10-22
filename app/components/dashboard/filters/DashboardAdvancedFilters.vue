@@ -139,6 +139,7 @@ const toggleCollapsed = () => {
 <template>
   <div v-if="hasAdvancedFilterControls" class="sidebar-card">
     <button
+      type="button"
       class="sidebar-card__header sidebar-card__header--collapsible"
       :aria-expanded="!isCollapsed"
       @click="toggleCollapsed"
