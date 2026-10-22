@@ -52,10 +52,10 @@ export async function createNativeLoginTestHandler(baseURL = '/') {
       const { loadNativeLoginBrowserPage } =
         await import('../../server/utils/native-login-browser-page');
       const page = await loadNativeLoginBrowserPage(event, getQuery(event));
-      // The real approval screen is the Nuxt page. This fixture only exposes
-      // the confirmation code and the page headers to HTTP clients.
+      // The real approval screen is the Nuxt page. Expose its public model so
+      // HTTP tests can check whether the browser is offered sign-in or approval.
       setHeader(event, 'content-type', 'text/plain; charset=utf-8');
-      return page.confirmationCode;
+      return JSON.stringify(page);
     })
   );
   router.get(
@@ -69,16 +69,25 @@ export async function createNativeLoginTestHandler(baseURL = '/') {
       return session.user ? { user: session.user } : {};
     })
   );
+  for (const provider of ['github', 'pat'] as const) {
+    router.get(
+      route(provider === 'github' ? '/test/oauth-success' : '/test/pat-success'),
+      defineEventHandler(async (event) => {
+        const { establishGitHubSession } = await import('../../server/utils/auth-session-utils');
+        await establishGitHubSession(event, provider, 'github-token-never-in-urls', {
+          login: 'octocat',
+          name: 'The Octocat',
+          avatar_url: 'https://github.test/avatar',
+        });
+        return { ok: true };
+      })
+    );
+  }
   router.get(
-    route('/test/oauth-success'),
+    route('/test/session'),
     defineEventHandler(async (event) => {
-      const { establishGitHubSession } = await import('../../server/utils/auth-session-utils');
-      await establishGitHubSession(event, 'github', 'github-token-never-in-urls', {
-        login: 'octocat',
-        name: 'The Octocat',
-        avatar_url: 'https://github.test/avatar',
-      });
-      return { ok: true };
+      const session = await getUserSession(event);
+      return { user: session.user, auth_provider: session.auth_provider };
     })
   );
   const app = createApp();

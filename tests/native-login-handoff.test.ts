@@ -45,7 +45,7 @@ beforeEach(async () => {
   globalThis.useRuntimeConfig = (() => ({
     app: { baseURL: '/' },
     session: { password },
-    gitPulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: false },
+    gitPulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: true },
   })) as typeof useRuntimeConfig;
   globalThis.getUserSession = (async (event) => {
     const session = await useSession(event, { password });
@@ -103,52 +103,76 @@ async function createAttempt() {
   return response.json();
 }
 
-test('browser approval lets only the initiating app redeem its own sealed session', async () => {
-  const attempt = await createAttempt();
-  const url = new URL(attempt.browserUrl);
-  expect(url.origin).toBe(origin);
-  expect(url.pathname).toBe('/native-login');
-  expect(attempt.browserUrl).not.toContain(verifier);
-  expect(attempt.browserUrl).not.toContain('github-token');
-  const proof = { id: attempt.id, verifier, origin };
-  const statusPath = `/auth/native/status?id=${attempt.id}`;
-  const proofHeaders = { 'x-native-verifier': verifier, 'x-native-origin': origin };
-  const pending = await request(statusPath, undefined, undefined, proofHeaders);
-  expect(await pending.json()).toMatchObject({ status: 'pending' });
-  expect(pending.headers.getSetCookie().join()).not.toContain('h3=');
-  expect((await request('/auth/native/redeem', proof)).status).toBe(409);
+test.each(['github', 'pat'] as const)(
+  'browser approval preserves the %s login in the app session',
+  async (provider) => {
+    const attempt = await createAttempt();
+    const url = new URL(attempt.browserUrl);
+    expect(url.origin).toBe(origin);
+    expect(url.pathname).toBe('/native-login');
+    expect(attempt.browserUrl).not.toContain(verifier);
+    expect(attempt.browserUrl).not.toContain('github-token');
+    const proof = { id: attempt.id, verifier, origin };
+    const statusPath = `/auth/native/status?id=${attempt.id}`;
+    const proofHeaders = { 'x-native-verifier': verifier, 'x-native-origin': origin };
+    const pending = await request(statusPath, undefined, undefined, proofHeaders);
+    expect(await pending.json()).toMatchObject({ status: 'pending' });
+    expect(pending.headers.getSetCookie().join()).not.toContain('h3=');
+    expect((await request('/auth/native/redeem', proof)).status).toBe(409);
 
-  const browserSignIn = await request('/test/oauth-success');
-  const browserCookie = browserSignIn.headers
-    .getSetCookie()
-    .map((value) => value.split(';')[0])
-    .join('; ');
-  const browserPage = await request(`${url.pathname}${url.search}`, undefined, browserCookie);
-  expect(browserPage.status).toBe(200);
-  expect(await browserPage.text()).toContain(attempt.confirmationCode);
-  const approved = await request(
-    '/auth/native/approve',
-    {
-      id: attempt.id,
-      browserToken: url.searchParams.get('browserToken'),
-    },
-    `${browserCookie}; gitpulse_csrf=test-csrf`
-  );
-  expect(approved.status).toBe(200);
-  expect(approved.headers.getSetCookie().join()).not.toContain('h3=');
-  const status = await request(statusPath, undefined, undefined, proofHeaders);
-  expect(await status.json()).toMatchObject({ status: 'approved' });
-  expect(status.headers.getSetCookie()).toEqual([]);
+    const browserSignIn = await request(
+      provider === 'github' ? '/test/oauth-success' : '/test/pat-success'
+    );
+    const browserCookie = browserSignIn.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    const browserPage = await request(`${url.pathname}${url.search}`, undefined, browserCookie);
+    expect(browserPage.status).toBe(200);
+    const page = await browserPage.json();
+    expect(page).toMatchObject({
+      confirmationCode: attempt.confirmationCode,
+      signedIn: true,
+      login: 'octocat',
+    });
+    expect(JSON.stringify(page)).not.toContain('github-token-never-in-urls');
+    expect(await (await request('/api/_auth/session')).json()).toEqual({});
+    const approved = await request(
+      '/auth/native/approve',
+      {
+        id: attempt.id,
+        browserToken: url.searchParams.get('browserToken'),
+      },
+      `${browserCookie}; gitpulse_csrf=test-csrf`
+    );
+    expect(approved.status).toBe(200);
+    expect(approved.headers.getSetCookie().join()).not.toContain('h3=');
+    const status = await request(statusPath, undefined, undefined, proofHeaders);
+    expect(await status.json()).toMatchObject({ status: 'approved' });
+    expect(status.headers.getSetCookie()).toEqual([]);
 
-  const redeemed = await request('/auth/native/redeem', proof);
-  expect(redeemed.status).toBe(200);
-  expect(await redeemed.json()).toMatchObject({ user: { login: 'octocat' } });
-  const appCookie = redeemed.headers.getSetCookie().join();
-  expect(appCookie).toContain('HttpOnly');
-  expect(appCookie).not.toContain(browserCookie.split(';')[0]!);
-  expect(appCookie).not.toContain('github-token');
-  expect((await request('/auth/native/redeem', proof)).status).toBe(409);
-});
+    const redeemed = await request('/auth/native/redeem', proof);
+    expect(redeemed.status).toBe(200);
+    expect(await redeemed.json()).toMatchObject({ user: { login: 'octocat' } });
+    const appCookie = redeemed.headers.getSetCookie().join();
+    expect(appCookie).toContain('HttpOnly');
+    expect(appCookie).not.toContain(browserCookie.split(';')[0]!);
+    expect(appCookie).not.toContain('github-token');
+    const appSession = await request(
+      '/test/session',
+      undefined,
+      redeemed.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ')
+    );
+    expect(await appSession.json()).toMatchObject({
+      user: { login: 'octocat' },
+      auth_provider: provider,
+    });
+    expect((await request('/auth/native/redeem', proof)).status).toBe(409);
+  }
+);
 
 async function approveAttempt(attempt: Awaited<ReturnType<typeof createAttempt>>) {
   const browser = await request('/test/oauth-success');
@@ -166,6 +190,37 @@ async function approveAttempt(attempt: Awaited<ReturnType<typeof createAttempt>>
   );
   expect(response.status).toBe(200);
 }
+
+test.each([
+  { label: 'signed out', session: {} },
+  { label: 'missing token', session: { auth_provider: 'pat', user: { login: 'octocat' } } },
+  {
+    label: 'missing user',
+    session: { auth_provider: 'pat', secure: { access_token: 'fixture-token' } },
+  },
+  {
+    label: 'unknown provider',
+    session: {
+      auth_provider: 'unknown',
+      user: { login: 'octocat' },
+      secure: { access_token: 'fixture-token' },
+    },
+  },
+])('browser approval rejects an unusable session: $label', async ({ session }) => {
+  const attempt = await createAttempt();
+  const url = new URL(attempt.browserUrl);
+  globalThis.getUserSession = (async () => session) as typeof getUserSession;
+  const page = await request(`${url.pathname}${url.search}`);
+  expect(await page.json()).toMatchObject({ signedIn: false, login: '' });
+  const approved = await request('/auth/native/approve', {
+    id: attempt.id,
+    browserToken: url.searchParams.get('browserToken'),
+  });
+  expect(approved.status).toBe(401);
+  expect((await request('/auth/native/redeem', { id: attempt.id, verifier, origin })).status).toBe(
+    409
+  );
+});
 
 test('rejects wrong verifier, wrong backend origin and forged browser approval without consuming the attempt', async () => {
   const attempt = await createAttempt();
@@ -277,36 +332,41 @@ test('all mutations require CSRF and browser approval requires its own GitHub se
   expect(await status.json()).toEqual({ status: 'pending' });
 });
 
-test('the browser can explicitly approve using a CSRF-protected form and return to the result page', async () => {
-  const attempt = await createAttempt();
-  const browser = await request('/test/oauth-success');
-  const cookie = browser.headers
-    .getSetCookie()
-    .map((value) => value.split(';')[0])
-    .join('; ');
-  const form = new URLSearchParams({
-    id: attempt.id,
-    browserToken: new URL(attempt.browserUrl).searchParams.get('browserToken')!,
-    csrfToken: 'test-csrf',
-  });
-  const response = await handle(
-    new Request(`${origin}/auth/native/approve`, {
-      method: 'POST',
-      headers: {
-        host: 'gitpulse.test',
-        'x-forwarded-proto': 'https',
-        'content-type': 'application/x-www-form-urlencoded',
-        cookie: `${cookie}; gitpulse_csrf=test-csrf`,
-        origin,
-      },
-      body: form,
-    })
-  );
-  expect(response.status).toBe(303);
-  expect(response.headers.get('location')).toBe(
-    new URL(attempt.browserUrl).pathname + new URL(attempt.browserUrl).search
-  );
-});
+test.each(['github', 'pat'] as const)(
+  'the %s browser session can approve using a CSRF-protected form and return to the result page',
+  async (provider) => {
+    const attempt = await createAttempt();
+    const browser = await request(
+      provider === 'github' ? '/test/oauth-success' : '/test/pat-success'
+    );
+    const cookie = browser.headers
+      .getSetCookie()
+      .map((value) => value.split(';')[0])
+      .join('; ');
+    const form = new URLSearchParams({
+      id: attempt.id,
+      browserToken: new URL(attempt.browserUrl).searchParams.get('browserToken')!,
+      csrfToken: 'test-csrf',
+    });
+    const response = await handle(
+      new Request(`${origin}/auth/native/approve`, {
+        method: 'POST',
+        headers: {
+          host: 'gitpulse.test',
+          'x-forwarded-proto': 'https',
+          'content-type': 'application/x-www-form-urlencoded',
+          cookie: `${cookie}; gitpulse_csrf=test-csrf`,
+          origin,
+        },
+        body: form,
+      })
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe(
+      new URL(attempt.browserUrl).pathname + new URL(attempt.browserUrl).search
+    );
+  }
+);
 
 test('the approval page keeps a real Origin on its form POST instead of no-referrer', async () => {
   const attempt = await createAttempt();

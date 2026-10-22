@@ -25,9 +25,11 @@ slash or deployment path. No redirects are followed by the native HTTP client.
    (epoch milliseconds), and `interval` (seconds).
 2. Open `browserUrl` in the external system browser. `/native-login` displays
    the matching confirmation code and uses the existing `/auth/github` flow with
-   a same-origin return target. An already authenticated GitHub browser session
-   can also approve. The user explicitly approves a CSRF-protected form; approval
-   is a mutation, never a side effect of a GET or OAuth return.
+   a same-origin return target when signed out. An existing GitPulse browser
+   session established through GitHub OAuth or manual PAT sign-in goes directly
+   to approval without another GitHub login. The user explicitly approves a
+   CSRF-protected form; approval is a mutation, never a side effect of a GET or
+   OAuth return.
 3. While foregrounded, GET `/auth/native/status?id=...` with headers
    `x-native-verifier` and `x-native-origin`. Repeated reads expose transaction
    status only and never establish an authenticated app session. Polling pauses
@@ -35,7 +37,8 @@ slash or deployment path. No redirects are followed by the native HTTP client.
 4. For `approved`, POST `/auth/native/redeem` with `{ id, verifier, origin }`.
    The server atomically consumes the result before writing the app's session.
    The response contains public user data and the app's own HttpOnly session
-   cookie, handled by its secure Cookie jar.
+   cookie, handled by its secure Cookie jar. The app session preserves the
+   browser session's `github` or `pat` authentication provider.
 5. POST `/auth/native/cancel` with the same proof to cancel a pending or approved
    attempt. Cancellation is idempotent. Cancelled, expired, and redeemed attempts
    cannot mint a session. A lost redemption response requires a new attempt.

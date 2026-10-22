@@ -35,6 +35,8 @@ const proofSchema = idSchema.extend({
 const browserSchema = idSchema.extend({ browserToken: secretSchema });
 type Status = 'pending' | 'approved' | 'cancelled' | 'expired' | 'redeemed';
 type Grant = {
+  // Grants approved before provider preservation was added contain only OAuth credentials.
+  authProvider?: 'github' | 'pat';
   accessToken: string;
   user: { id?: number; login: string; name: string; avatar_url: string };
 };
@@ -233,16 +235,32 @@ export async function readNativeLoginBrowser(event: H3Event, input: unknown) {
   });
 }
 
+export async function getNativeLoginSession(event: H3Event) {
+  const session = await getUserSession(event);
+  if (
+    (session.auth_provider !== 'github' && session.auth_provider !== 'pat') ||
+    !session.user ||
+    !session.secure?.access_token
+  ) {
+    return null;
+  }
+  return {
+    authProvider: session.auth_provider,
+    accessToken: session.secure.access_token,
+    user: session.user,
+  };
+}
+
 export async function approveNativeLoginHandoff(event: H3Event, body: unknown) {
   const browser = await readNativeLoginBrowser(event, body);
-  const session = await getUserSession(event);
-  if (session.auth_provider !== 'github' || !session.user || !session.secure?.access_token) {
+  const session = await getNativeLoginSession(event);
+  if (!session) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'Sign in with GitHub in this browser first',
+      statusMessage: 'Sign in to GitPulse in this browser first',
     });
   }
-  const grant = seal({ accessToken: session.secure.access_token, user: session.user }, event);
+  const grant = seal(session, event);
   return update(browser.id, (transaction) => {
     assertTransactionStatus(transaction, 'pending');
     transaction.status = 'approved';
