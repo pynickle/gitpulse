@@ -36,7 +36,7 @@ export interface PageMetaOptions {
 /**
  * Unified composable for page title + SEO metadata.
  *
- * Uses the global `titleTemplate` from nuxt.config.ts.
+ * Uses the global `titleTemplate` from app.vue.
  * Supports reactive titles for dynamic content (issue/PR titles, etc.).
  *
  * @param title - Page title (string, Ref, or computed). Pass `undefined` to use the global default.
@@ -65,11 +65,8 @@ export function usePageMeta(title?: MaybeRef<string | undefined>, meta?: PageMet
     return val && val.length > 0 ? val : undefined;
   });
 
-  useHead({
-    title: resolvedTitle,
-  });
-
   useSeoMeta({
+    title: resolvedTitle,
     description: () => unref(meta?.description),
     ogTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
     ogDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),

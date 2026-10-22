@@ -9,7 +9,7 @@ const isDev = import.meta.dev;
 const primerColorMode = computed(() => (colorMode.value === 'dark' ? 'dark' : 'light'));
 
 // Fix homepage title duplication: use function to prevent "GitPulse - GitPulse"
-useHead({
+useSeoMeta({
   titleTemplate: (titleChunk) => {
     return titleChunk && titleChunk !== 'GitPulse' ? `${titleChunk} - GitPulse` : 'GitPulse';
   },
