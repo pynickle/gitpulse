@@ -169,7 +169,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
 }>();
 
-const uid = Math.random().toString(36).slice(2, 8);
+const uid = useId();
 const searchQuery = shallowRef('');
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const panelRef = ref<HTMLElement | null>(null);

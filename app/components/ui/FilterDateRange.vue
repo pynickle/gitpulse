@@ -27,13 +27,14 @@ const modelValue = defineModel<DateRange>({ required: true });
 
 const { t, locale } = useI18n();
 
-const todayKey = toLocalDateKey(new Date());
-const todayMonth = todayKey.slice(0, 7);
+const initialToday = useState('filter-date-range-today', () => toLocalDateKey(new Date()));
+const todayKey = ref(initialToday.value);
+const todayMonth = computed(() => todayKey.value.slice(0, 7));
 
 const visibleMonth = ref(
   clampCalendarMonth(
-    (modelValue.value.to ?? modelValue.value.from ?? todayKey).slice(0, 7),
-    todayKey
+    (modelValue.value.to ?? modelValue.value.from ?? todayKey.value).slice(0, 7),
+    todayKey.value
   )
 );
 
@@ -41,15 +42,31 @@ const weeks = computed(() => buildCalendarMonthGrid(visibleMonth.value));
 const monthLabel = computed(() => formatMonthKeyLabel(visibleMonth.value, locale.value));
 const weekdayLabels = computed(() => formatWeekdayLabels(locale.value));
 
-const canGoNextMonth = computed(() => shiftCalendarMonth(visibleMonth.value, 1) <= todayMonth);
-const canGoNextYear = computed(() => shiftCalendarMonth(visibleMonth.value, 12) <= todayMonth);
+// Hydrate with the server's date, then use the reader's local calendar day.
+onMounted(() => {
+  todayKey.value = toLocalDateKey(new Date());
+  visibleMonth.value = clampCalendarMonth(
+    (modelValue.value.to ?? modelValue.value.from ?? todayKey.value).slice(0, 7),
+    todayKey.value
+  );
+});
+
+const canGoNextMonth = computed(
+  () => shiftCalendarMonth(visibleMonth.value, 1) <= todayMonth.value
+);
+const canGoNextYear = computed(
+  () => shiftCalendarMonth(visibleMonth.value, 12) <= todayMonth.value
+);
 
 const shiftMonth = (months: number) => {
-  visibleMonth.value = clampCalendarMonth(shiftCalendarMonth(visibleMonth.value, months), todayKey);
+  visibleMonth.value = clampCalendarMonth(
+    shiftCalendarMonth(visibleMonth.value, months),
+    todayKey.value
+  );
 };
 
 const selectDay = (key: string) => {
-  if (key > todayKey) return;
+  if (key > todayKey.value) return;
   modelValue.value = applyDateRangeClick(modelValue.value, key);
 };
 
