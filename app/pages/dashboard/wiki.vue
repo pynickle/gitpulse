@@ -80,16 +80,28 @@ const pageHtmlUrl = computed(() => page.value?.htmlUrl || wikiHtmlUrl.value);
  * GitHub-rendered fallback body, split into mermaid diagrams (rendered by
  * MermaidBlock) and HTML chunks (sanitized before hitting `v-html`).
  */
-const htmlSegments = computed<WikiHtmlSegment[]>(() => {
+const htmlSegments = computed<Array<WikiHtmlSegment & { key: string }>>(() => {
   if (page.value?.format !== 'html' || !page.value.content) return [];
 
+  const occurrences = new Map<string, number>();
   return splitWikiHtmlSegments(page.value.content)
     .map((segment) =>
       segment.type === 'html'
         ? { type: 'html' as const, html: sanitizeWikiHtml(segment.html) }
         : segment
     )
-    .filter((segment) => segment.type === 'mermaid' || segment.html.trim().length > 0);
+    .filter((segment) => segment.type === 'mermaid' || segment.html.trim().length > 0)
+    .map((segment) => {
+      const identity = JSON.stringify([
+        repoFullName.value,
+        activeSlug.value,
+        segment.type,
+        segment.type === 'mermaid' ? segment.code : segment.html,
+      ]);
+      const occurrence = occurrences.get(identity) ?? 0;
+      occurrences.set(identity, occurrence + 1);
+      return { ...segment, key: `${identity}:${occurrence}` };
+    });
 });
 
 const initialLoading = computed(
@@ -439,12 +451,13 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
                 class="wiki-page__html"
                 @click="handleWikiHtmlClick"
               >
-                <template v-for="(segment, index) in htmlSegments" :key="index">
+                <template v-for="segment in htmlSegments" :key="segment.key">
                   <AsyncMermaidBlock
                     v-if="segment.type === 'mermaid'"
                     :code="segment.code"
                     class="wiki-page__mermaid"
                   />
+                  <!-- doctor-disable-next-line vue/security/restrict-v-html -- HTML segments pass through sanitizeWikiHtml's document xss allowlist. -->
                   <div v-else class="wiki-page__html-chunk" v-html="segment.html" />
                 </template>
               </div>
