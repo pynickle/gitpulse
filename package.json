@@ -23,7 +23,7 @@
     "fmt:check": "bunx oxfmt --check ./"
   },
   "dependencies": {
-    "@comark/nuxt": "^0.7.0",
+    "@comark/nuxt": "^0.8.1",
     "@lucide/vue": "^1.61.0",
     "@nuxt/fonts": "^1.0.1",
     "@nuxt/image": "^2.2.0",
@@ -33,7 +33,7 @@
     "@primer/css": "^22.3.2",
     "@upstash/redis": "^1.39.0",
     "bulma": "^1.0.4",
-    "comark": "^0.7.0",
+    "comark": "^0.8.1",
     "dayjs": "^1.11.23",
     "htmlparser2": "12.0.0",
     "markdown-exit": "1.1.0-beta.2",
