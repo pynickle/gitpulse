@@ -177,6 +177,12 @@ void main() {
       tester.getCenter(find.text(l10n.timelineSearchPlaceholder)).dy,
       closeTo(fieldRect.center.dy, 1),
     );
+
+    await tester.enterText(find.byType(TextField), 'v1');
+    await tester.pump();
+    expect(find.byTooltip(l10n.timelineSearchClear), findsOneWidget);
+    expect(tester.getSize(find.byType(TextField)).height, fieldRect.height);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a query can be cleared and notes keep their selection', (

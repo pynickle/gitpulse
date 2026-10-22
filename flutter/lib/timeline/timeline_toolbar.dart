@@ -107,6 +107,11 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                         ? null
                         : IconButton(
                             tooltip: l10n.timelineSearchClear,
+                            // A padded 48dp target is taller than this dense
+                            // field and stretches it once the button appears.
+                            style: IconButton.styleFrom(
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                             onPressed: () {
                               _query.clear();
                               setState(() {});
