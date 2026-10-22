@@ -5,6 +5,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
 import 'release_timeline_card.dart';
+import 'timeline_cache.dart';
 import 'timeline_filter_panel.dart';
 import 'timeline_layout.dart';
 import 'timeline_models.dart';
@@ -16,13 +17,13 @@ import 'timeline_toolbar.dart';
 /// Repositories, grouped by display date, with the shared Timeline Refresh
 /// Baseline and its loaded-new count.
 class TimelineScreen extends ConsumerWidget {
-  const TimelineScreen({super.key, this.showTitle = true});
-
-  final bool showTitle;
+  const TimelineScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(releaseTimelineSessionProvider);
+    final now = ref.watch(timelineClockProvider)();
+    final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
     Future<void> refresh() =>
         ref.read(releaseTimelineSessionProvider.notifier).refresh();
     Future<void> retry() =>
@@ -38,7 +39,6 @@ class TimelineScreen extends ConsumerWidget {
           TimelineToolbar(
             state: state,
             onRefresh: refresh,
-            showTitle: showTitle,
             onFiltersChanged: (filters) => ref
                 .read(releaseTimelineSessionProvider.notifier)
                 .applyFilters(filters),
@@ -63,6 +63,8 @@ class TimelineScreen extends ConsumerWidget {
             child: _Body(
               state: state,
               columns: resolveTimelineColumnCount(constraints.maxWidth),
+              now: now,
+              localDateKey: localDateKey,
               onRetry: retry,
               onLoadOlder: loadOlder,
               onRefresh: refresh,
@@ -78,6 +80,8 @@ class _Body extends StatelessWidget {
   const _Body({
     required this.state,
     required this.columns,
+    required this.now,
+    required this.localDateKey,
     required this.onRefresh,
     required this.onRetry,
     required this.onLoadOlder,
@@ -85,6 +89,8 @@ class _Body extends StatelessWidget {
 
   final TimelineViewState state;
   final int columns;
+  final DateTime now;
+  final String Function(DateTime instant) localDateKey;
   final Future<void> Function() onRefresh;
   final Future<void> Function() onRetry;
   final Future<void> Function() onLoadOlder;
@@ -113,6 +119,8 @@ class _Body extends StatelessWidget {
       return _TimelineList(
         state: state,
         columns: columns,
+        now: now,
+        localDateKey: localDateKey,
         onRefresh: onRefresh,
         onRetry: onRetry,
         onLoadOlder: onLoadOlder,
@@ -249,6 +257,8 @@ class _TimelineList extends StatefulWidget {
   const _TimelineList({
     required this.state,
     required this.columns,
+    required this.now,
+    required this.localDateKey,
     required this.onRefresh,
     required this.onRetry,
     required this.onLoadOlder,
@@ -256,6 +266,8 @@ class _TimelineList extends StatefulWidget {
 
   final TimelineViewState state;
   final int columns;
+  final DateTime now;
+  final String Function(DateTime instant) localDateKey;
   final Future<void> Function() onRefresh;
   final Future<void> Function() onRetry;
   final Future<void> Function() onLoadOlder;
@@ -344,9 +356,13 @@ class _TimelineListState extends State<_TimelineList> {
         columns: widget.columns,
         cardKey: (key) => _cardKeys.putIfAbsent(key, () => GlobalKey()),
       ),
-      TimelineBaselineRow(:final timestamp) => _BaselineDivider(
-        timestamp: timestamp,
-      ),
+      TimelineBaselineRow(:final timestamp, :final includeDate) =>
+        _PreviousRefreshMark(
+          timestamp: timestamp,
+          includeDate: includeDate,
+          now: widget.now,
+          localDateKey: widget.localDateKey,
+        ),
     },
   );
 
@@ -356,6 +372,7 @@ class _TimelineListState extends State<_TimelineList> {
       widget.state.visibleGroups,
       widget.columns,
       widget.state.baselineExposed ? widget.state.previousBaseline : null,
+      localDateKey: widget.localDateKey,
     );
     final found = rows.indexWhere(
       (row) =>
@@ -430,21 +447,35 @@ class _DateHeader extends StatelessWidget {
   }
 }
 
-class _BaselineDivider extends StatelessWidget {
-  const _BaselineDivider({required this.timestamp});
+class _PreviousRefreshMark extends StatelessWidget {
+  const _PreviousRefreshMark({
+    required this.timestamp,
+    required this.includeDate,
+    required this.now,
+    required this.localDateKey,
+  });
 
   final DateTime timestamp;
+  final bool includeDate;
+  final DateTime now;
+  final String Function(DateTime instant) localDateKey;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final time = gitPulseInstant(context, timestamp.toLocal());
-    return _RuleRow(
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
+    final label = gitPulseBaselineLabel(
+      l10n,
+      timestamp,
+      now: now,
+      localDateKey: localDateKey,
+      includeDate: includeDate,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
       child: Text(
-        '${l10n.timelinePreviousRefreshMark} · $time',
-        style: theme.textTheme.labelSmall?.copyWith(
+        label,
+        style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
@@ -452,8 +483,8 @@ class _BaselineDivider extends StatelessWidget {
   }
 }
 
-/// A label between two full-width rules: a date header, or the Previous Refresh
-/// marker at its publication-time position.
+/// A day header: its label sits between two full-width rules. The Previous
+/// Refresh marker does not use this, so the two rows do not look alike.
 class _RuleRow extends StatelessWidget {
   const _RuleRow({required this.child, required this.padding});
 

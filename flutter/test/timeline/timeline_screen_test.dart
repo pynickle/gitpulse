@@ -8,6 +8,7 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
+import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -29,6 +30,9 @@ Future<MountedTimeline> pumpTimelineScreen(
   required Map<String, FutureOr<BackendResult> Function()> handlers,
   Size? size,
   Future<bool> Function(Uri)? launchBrowser,
+  DateTime Function()? now,
+  String Function(DateTime instant)? localDateKey,
+  Locale? locale,
 }) async {
   if (size != null) {
     tester.view.physicalSize = size;
@@ -52,10 +56,12 @@ Future<MountedTimeline> pumpTimelineScreen(
           return session;
         }),
         timelineEnvironmentProvider.overrideWithValue(
-          TimelineEnvironment(localDateKey: utcPlusEight),
+          TimelineEnvironment(localDateKey: localDateKey ?? utcPlusEight),
         ),
+        if (now != null) timelineClockProvider.overrideWithValue(now),
       ],
       child: MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(body: TimelineScreen()),
@@ -165,6 +171,102 @@ void main() {
       expect(find.textContaining('Previous refresh'), findsWidgets);
       expect(find.text(english.format(DateTime(2026, 10, 4))), findsOneWidget);
       expect(find.text(english.format(DateTime(2026, 10, 3))), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the previous refresh marker inside today is only a time and has no rules',
+    (tester) async {
+      final clock = DateTime(2026, 10, 22, 16);
+      String iso(DateTime instant) => instant.toUtc().toIso8601String();
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(500, 1200),
+        now: () => clock,
+        localDateKey: systemLocalDateKey,
+        handlers: {
+          'GET api/settings': () => BackendResult(
+            statusCode: 200,
+            data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+          ),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson('octo', 'alpha', [
+                  releaseJson(12, 'v1.2', iso(DateTime(2026, 10, 22, 18))),
+                  releaseJson(11, 'v1.1', iso(DateTime(2026, 10, 22, 10))),
+                  releaseJson(10, 'v1.0', iso(DateTime(2026, 10, 21, 10))),
+                ]),
+              },
+              refresh: baselineRefresh(iso(DateTime(2026, 10, 22, 14, 43))),
+            ),
+          ),
+        },
+      );
+
+      expect(find.text('Previous refresh · 14:43'), findsNWidgets(2));
+      expect(find.textContaining('Oct 22, 2026'), findsOneWidget);
+      expect(find.byType(Divider), findsNWidgets(4));
+    },
+  );
+
+  testWidgets(
+    'the previous refresh marker after the loaded window names its date',
+    (tester) async {
+      final clock = DateTime(2026, 10, 22, 16);
+      String iso(DateTime instant) => instant.toUtc().toIso8601String();
+      await pumpTimelineScreen(
+        tester,
+        size: const Size(500, 1200),
+        now: () => clock,
+        localDateKey: systemLocalDateKey,
+        handlers: {
+          'GET api/settings': () => BackendResult(
+            statusCode: 200,
+            data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+          ),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson(
+                  'octo',
+                  'alpha',
+                  [
+                    releaseJson(
+                      12,
+                      'v-new',
+                      iso(DateTime(2026, 10, 22, 18)),
+                      name: 'Visible',
+                    ),
+                    releaseJson(
+                      10,
+                      'v-old',
+                      iso(DateTime(2024, 6, 1, 8)),
+                      name: 'Hidden anchor',
+                    ),
+                  ],
+                  hasOlderReleases: true,
+                ),
+              },
+              refresh: baselineRefresh(iso(DateTime(2024, 6, 15, 9, 5))),
+            ),
+          ),
+        },
+      );
+
+      // The older release is what keeps the baseline inside the loaded window.
+      // Hiding it leaves the marker after every release still on screen.
+      await tester.enterText(find.byType(TextField), 'Visible');
+      await tester.pump();
+
+      expect(find.text('Hidden anchor'), findsNothing);
+      expect(
+        find.text('Previous refresh · Jun 15, 2024 09:05'),
+        findsNWidgets(2),
+      );
+      expect(find.byType(Divider), findsNWidgets(2));
     },
   );
 

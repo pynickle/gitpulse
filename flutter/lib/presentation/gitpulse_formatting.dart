@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -112,6 +114,222 @@ String gitPulseDateTime(BuildContext context, DateTime instant) =>
 /// 24-hour clock the Release Timeline shares between dates and its marker.
 String gitPulseInstant(BuildContext context, DateTime instant) =>
     formatGitPulseInstant(gitPulseLocaleName(context), instant);
+
+/// A Timeline Refresh Baseline on the timeline's 24-hour clock.
+///
+/// [includeDate] is false when the calendar day is already on screen: the
+/// toolbar when the baseline is today, and the in-list marker inside that
+/// day's group. Otherwise the month and day are included, and the year only
+/// when [instant] falls outside [now]'s year in [localDateKey]'s calendar,
+/// the same calendar the day headers use.
+String formatGitPulseBaselineInstant(
+  String localeName,
+  DateTime instant, {
+  required DateTime now,
+  required String Function(DateTime instant) localDateKey,
+  required bool includeDate,
+}) {
+  final local = instant.toLocal();
+  if (!includeDate) return DateFormat.Hm(localeName).format(local);
+  final sameYear =
+      localDateKey(instant).substring(0, 4) ==
+      localDateKey(now).substring(0, 4);
+  final date = sameYear
+      ? DateFormat.MMMd(localeName)
+      : DateFormat.yMMMd(localeName);
+  return date.add_Hm().format(local);
+}
+
+/// The Previous Refresh label: the existing words, a middle dot, and the
+/// baseline instant from [formatGitPulseBaselineInstant].
+String gitPulseBaselineLabel(
+  AppLocalizations l10n,
+  DateTime instant, {
+  required DateTime now,
+  required String Function(DateTime instant) localDateKey,
+  required bool includeDate,
+}) {
+  final time = formatGitPulseBaselineInstant(
+    l10n.localeName,
+    instant,
+    now: now,
+    localDateKey: localDateKey,
+    includeDate: includeDate,
+  );
+  return '${l10n.timelinePreviousRefreshMark} · $time';
+}
+
+/// How long ago [instant] was, in the language of [context].
+///
+/// The buckets are dayjs `fromNow`'s defaults. A rounded unit that does not
+/// exceed its limit selects that phrase, and a count of one uses the previous
+/// bucket's singular phrase. Months follow dayjs's calendar difference rather
+/// than a fixed length. [now] defaults to the device clock.
+String gitPulseRelativeTime(
+  BuildContext context,
+  DateTime instant, {
+  DateTime? now,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final phrase = _relativePhrase(instant, now ?? DateTime.now());
+  final count = phrase.count;
+  return switch (phrase.unit) {
+    _RelativeBucket.fewSeconds =>
+      phrase.future
+          ? l10n.timelineRelativeSecondsIn
+          : l10n.timelineRelativeSecondsAgo,
+    _RelativeBucket.minute =>
+      phrase.future
+          ? l10n.timelineRelativeMinuteIn
+          : l10n.timelineRelativeMinuteAgo,
+    _RelativeBucket.minutes =>
+      phrase.future
+          ? l10n.timelineRelativeMinutesIn(count)
+          : l10n.timelineRelativeMinutesAgo(count),
+    _RelativeBucket.hour =>
+      phrase.future
+          ? l10n.timelineRelativeHourIn
+          : l10n.timelineRelativeHourAgo,
+    _RelativeBucket.hours =>
+      phrase.future
+          ? l10n.timelineRelativeHoursIn(count)
+          : l10n.timelineRelativeHoursAgo(count),
+    _RelativeBucket.day =>
+      phrase.future ? l10n.timelineRelativeDayIn : l10n.timelineRelativeDayAgo,
+    _RelativeBucket.days =>
+      phrase.future
+          ? l10n.timelineRelativeDaysIn(count)
+          : l10n.timelineRelativeDaysAgo(count),
+    _RelativeBucket.month =>
+      phrase.future
+          ? l10n.timelineRelativeMonthIn
+          : l10n.timelineRelativeMonthAgo,
+    _RelativeBucket.months =>
+      phrase.future
+          ? l10n.timelineRelativeMonthsIn(count)
+          : l10n.timelineRelativeMonthsAgo(count),
+    _RelativeBucket.year =>
+      phrase.future
+          ? l10n.timelineRelativeYearIn
+          : l10n.timelineRelativeYearAgo,
+    _RelativeBucket.years =>
+      phrase.future
+          ? l10n.timelineRelativeYearsIn(count)
+          : l10n.timelineRelativeYearsAgo(count),
+  };
+}
+
+enum _RelativeBucket {
+  fewSeconds,
+  minute,
+  minutes,
+  hour,
+  hours,
+  day,
+  days,
+  month,
+  months,
+  year,
+  years,
+}
+
+class _RelativePhrase {
+  const _RelativePhrase(this.unit, {required this.future, this.count = 0});
+
+  final _RelativeBucket unit;
+  final bool future;
+  final int count;
+}
+
+/// dayjs relativeTime's default limits. A null unit keeps the previous
+/// difference; a null limit is the final bucket.
+const _relativeThresholds =
+    <({_RelativeBucket bucket, int? limit, String? unit})>[
+      (bucket: _RelativeBucket.fewSeconds, limit: 44, unit: 'second'),
+      (bucket: _RelativeBucket.minute, limit: 89, unit: null),
+      (bucket: _RelativeBucket.minutes, limit: 44, unit: 'minute'),
+      (bucket: _RelativeBucket.hour, limit: 89, unit: null),
+      (bucket: _RelativeBucket.hours, limit: 21, unit: 'hour'),
+      (bucket: _RelativeBucket.day, limit: 35, unit: null),
+      (bucket: _RelativeBucket.days, limit: 25, unit: 'day'),
+      (bucket: _RelativeBucket.month, limit: 45, unit: null),
+      (bucket: _RelativeBucket.months, limit: 10, unit: 'month'),
+      (bucket: _RelativeBucket.year, limit: 17, unit: null),
+      (bucket: _RelativeBucket.years, limit: null, unit: 'year'),
+    ];
+
+_RelativePhrase _relativePhrase(DateTime instant, DateTime now) {
+  final from = instant.toLocal();
+  final to = now.toLocal();
+  double? result;
+  for (var index = 0; index < _relativeThresholds.length; index++) {
+    final threshold = _relativeThresholds[index];
+    final unit = threshold.unit;
+    if (unit != null) result = _diffIn(from, to, unit);
+    final value = result!;
+    final magnitude = value.abs().round();
+    final limit = threshold.limit;
+    if (limit != null && magnitude > limit) continue;
+    final bucket = magnitude <= 1 && index > 0
+        ? _relativeThresholds[index - 1].bucket
+        : threshold.bucket;
+    return _RelativePhrase(bucket, future: value > 0, count: magnitude);
+  }
+  return const _RelativePhrase(_RelativeBucket.years, future: false);
+}
+
+double _diffIn(DateTime from, DateTime to, String unit) {
+  final milliseconds = from.difference(to).inMicroseconds / 1000;
+  final zoneDelta =
+      (to.timeZoneOffset - from.timeZoneOffset).inMicroseconds / 1000;
+  return switch (unit) {
+    'second' => milliseconds / 1000,
+    'minute' => milliseconds / 60000,
+    'hour' => milliseconds / 3600000,
+    'day' => (milliseconds - zoneDelta) / 86400000,
+    'month' => _monthDiff(from, to),
+    'year' => _monthDiff(from, to) / 12,
+    _ => milliseconds,
+  };
+}
+
+/// dayjs's month difference, including the fractional month moment.js uses.
+double _monthDiff(DateTime from, DateTime to) {
+  if (from.day < to.day) return -_monthDiff(to, from);
+  final whole = (to.year - from.year) * 12 + (to.month - from.month);
+  final anchor = _addMonths(from, whole);
+  final pastAnchor = to.difference(anchor).inMicroseconds;
+  final beforeAnchor = pastAnchor < 0;
+  final neighbor = _addMonths(from, whole + (beforeAnchor ? -1 : 1));
+  final span = beforeAnchor
+      ? anchor.difference(neighbor).inMicroseconds
+      : neighbor.difference(anchor).inMicroseconds;
+  final fraction = span == 0 ? 0.0 : pastAnchor / span;
+  return -(whole + fraction);
+}
+
+DateTime _addMonths(DateTime date, int months) {
+  final index = date.year * 12 + (date.month - 1) + months;
+  final year = _floorDiv(index, 12);
+  final month = index - year * 12;
+  final lastDay = DateTime(year, month + 2, 0).day;
+  return DateTime(
+    year,
+    month + 1,
+    math.min(date.day, lastDay),
+    date.hour,
+    date.minute,
+    date.second,
+    date.millisecond,
+    date.microsecond,
+  );
+}
+
+int _floorDiv(int value, int divisor) {
+  final quotient = value ~/ divisor;
+  if (value % divisor < 0) return quotient - 1;
+  return quotient;
+}
 
 /// The magnitude a humanised download size names.
 enum GitPulseByteUnit { byte, kilobyte, megabyte, gigabyte }

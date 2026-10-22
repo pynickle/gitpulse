@@ -58,9 +58,14 @@ class TimelineCardsRow extends TimelineRow {
 }
 
 class TimelineBaselineRow extends TimelineRow {
-  const TimelineBaselineRow(this.timestamp);
+  const TimelineBaselineRow(this.timestamp, {required this.includeDate});
 
   final DateTime timestamp;
+
+  /// False when the marker sits inside the baseline's own day group, whose
+  /// header already names that day. True after the loaded window, and when
+  /// the marker falls in some other day's group.
+  final bool includeDate;
 }
 
 /// Date headers, card rows, and the Previous Refresh marker in publication
@@ -69,11 +74,13 @@ class TimelineBaselineRow extends TimelineRow {
 List<TimelineRow> buildTimelineRows(
   List<TimelineGroup> groups,
   int columnCount,
-  String? exposedBaseline,
-) {
+  String? exposedBaseline, {
+  String Function(DateTime instant) localDateKey = systemLocalDateKey,
+}) {
   final baseline = exposedBaseline == null
       ? null
       : DateTime.tryParse(exposedBaseline);
+  final baselineDay = baseline == null ? null : localDateKey(baseline);
   final rows = <TimelineRow>[];
   var inserted = false;
 
@@ -91,7 +98,9 @@ List<TimelineRow> buildTimelineRows(
           !inserted &&
           !item.publishedAt.isAfter(baseline)) {
         flush();
-        rows.add(TimelineBaselineRow(baseline));
+        rows.add(
+          TimelineBaselineRow(baseline, includeDate: group.date != baselineDay),
+        );
         inserted = true;
       }
       items.add(item);
@@ -101,7 +110,7 @@ List<TimelineRow> buildTimelineRows(
   }
 
   if (baseline != null && !inserted) {
-    rows.add(TimelineBaselineRow(baseline));
+    rows.add(TimelineBaselineRow(baseline, includeDate: true));
   }
 
   return rows;

@@ -19,7 +19,6 @@ import 'settings/timeline_cache_settings.dart';
 
 /// The shell destinations, in navigation-rail and bottom-bar order.
 const _destinationPaths = ['/timeline', '/follows', '/settings'];
-const _timelineDestination = 0;
 const _settingsDestination = 2;
 
 final _routerProvider = Provider<GoRouter>((ref) {
@@ -144,12 +143,6 @@ class _AppShell extends ConsumerWidget {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 720;
         return Scaffold(
-          appBar:
-              wide ||
-                  (index == _timelineDestination &&
-                      session.phase == SessionPhase.signedIn)
-              ? null
-              : AppBar(title: Text(labels[index])),
           body: SafeArea(
             bottom: false,
             child: Row(
@@ -171,7 +164,7 @@ class _AppShell extends ConsumerWidget {
                   child: index < 2 && session.phase == SessionPhase.signedIn
                       ? _SignedInTab(
                           child: index == 0
-                              ? TimelineScreen(showTitle: !wide)
+                              ? const TimelineScreen()
                               : const ReleaseFollowsScreen(),
                         )
                       : SingleChildScrollView(

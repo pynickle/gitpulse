@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import 'timeline_cache.dart';
 import 'timeline_filters.dart';
+import 'timeline_session.dart';
 import 'timeline_state.dart';
 
-class TimelineToolbar extends StatefulWidget {
+class TimelineToolbar extends ConsumerStatefulWidget {
   const TimelineToolbar({
     super.key,
     required this.state,
     required this.onRefresh,
-    required this.showTitle,
     this.onFiltersChanged,
     this.onOpenFilters,
     this.onRetryCache,
@@ -19,17 +21,16 @@ class TimelineToolbar extends StatefulWidget {
 
   final TimelineViewState state;
   final Future<void> Function() onRefresh;
-  final bool showTitle;
   final ValueChanged<TimelineFilterState>? onFiltersChanged;
   final VoidCallback? onOpenFilters;
   final Future<void> Function()? onRetryCache;
   final Future<void> Function()? onRebuildCache;
 
   @override
-  State<TimelineToolbar> createState() => _TimelineToolbarState();
+  ConsumerState<TimelineToolbar> createState() => _TimelineToolbarState();
 }
 
-class _TimelineToolbarState extends State<TimelineToolbar> {
+class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
   late final TextEditingController _query;
 
   @override
@@ -63,8 +64,21 @@ class _TimelineToolbarState extends State<TimelineToolbar> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final state = widget.state;
     final filters = state.filters;
+    final now = ref.watch(timelineClockProvider)();
+    final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
+    final scheme = theme.colorScheme;
+    final secondary = theme.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
+    final baseline = _baselineLabel(l10n, now, localDateKey);
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide.none,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -73,14 +87,65 @@ class _TimelineToolbarState extends State<TimelineToolbar> {
           Row(
             children: [
               Expanded(
-                child: widget.showTitle
-                    ? Text(
-                        l10n.timeline,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      )
-                    : _TimelineStatus(state: state),
+                child: TextField(
+                  controller: _query,
+                  maxLines: 1,
+                  textAlignVertical: TextAlignVertical.center,
+                  style: theme.textTheme.bodyMedium,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    filled: true,
+                    fillColor: scheme.surfaceContainerHigh,
+                    hintText: l10n.timelineSearchPlaceholder,
+                    hintMaxLines: 1,
+                    prefixIcon: const Icon(Icons.search, size: 18),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 40,
+                    ),
+                    suffixIcon: _query.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: l10n.timelineSearchClear,
+                            onPressed: () {
+                              _query.clear();
+                              setState(() {});
+                              _change((filters) => filters.copyWith(query: ''));
+                            },
+                            icon: const Icon(Icons.close, size: 18),
+                          ),
+                    suffixIconConstraints: const BoxConstraints(
+                      minWidth: 36,
+                      minHeight: 40,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
+                    ),
+                    constraints: const BoxConstraints(minHeight: 40),
+                    border: border,
+                    enabledBorder: border,
+                    focusedBorder: border.copyWith(
+                      borderSide: BorderSide(color: scheme.primary),
+                    ),
+                  ),
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) {
+                    setState(() {});
+                    _change((filters) => filters.copyWith(query: value));
+                  },
+                ),
+              ),
+              IconButton(
+                tooltip: l10n.timelineIncludeNotes,
+                isSelected: filters.includeReleaseNotes,
+                onPressed: () => _change(
+                  (filters) => filters.copyWith(
+                    includeReleaseNotes: !filters.includeReleaseNotes,
+                  ),
+                ),
+                icon: const Icon(Icons.article_outlined),
+                selectedIcon: const Icon(Icons.article),
               ),
               IconButton(
                 tooltip: l10n.timelineReload,
@@ -98,38 +163,14 @@ class _TimelineToolbarState extends State<TimelineToolbar> {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _query,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: l10n.timelineSearchPlaceholder,
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _query.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: l10n.timelineSearchClear,
-                            onPressed: () {
-                              _query.clear();
-                              _change((filters) => filters.copyWith(query: ''));
-                            },
-                            icon: const Icon(Icons.close, size: 18),
-                          ),
-                  ),
-                  textInputAction: TextInputAction.search,
-                  onChanged: (value) =>
-                      _change((filters) => filters.copyWith(query: value)),
-                ),
-              ),
-              IconButton(
-                tooltip: l10n.timelineIncludeNotes,
-                isSelected: filters.includeReleaseNotes,
-                onPressed: () => _change(
-                  (filters) => filters.copyWith(
-                    includeReleaseNotes: !filters.includeReleaseNotes,
-                  ),
-                ),
-                icon: const Icon(Icons.article_outlined),
-                selectedIcon: const Icon(Icons.article),
+                child: baseline == null
+                    ? const SizedBox(height: 40)
+                    : Text(
+                        baseline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: secondary,
+                      ),
               ),
               IconButton(
                 tooltip: l10n.timelineFilters,
@@ -139,7 +180,17 @@ class _TimelineToolbarState extends State<TimelineToolbar> {
               ),
             ],
           ),
-          if (widget.showTitle) _TimelineStatus(state: state),
+          if (state.offline) Text(l10n.timelineOffline),
+          if (state.loadedNewCount > 0)
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                l10n.timelineLoadedNew(state.loadedNewCount),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall,
+              ),
+            ),
           if (state.cacheFailed)
             Text(
               state.cacheCorrupted
@@ -166,95 +217,22 @@ class _TimelineToolbarState extends State<TimelineToolbar> {
       ),
     );
   }
-}
 
-class _TimelineStatus extends StatelessWidget {
-  const _TimelineStatus({required this.state});
-
-  final TimelineViewState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return LayoutBuilder(
-      builder: (context, constraints) => Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          if (state.offline) Text(l10n.timelineOffline),
-          if (state.savedAt case final savedAt?)
-            Text(
-              l10n.timelineSavedAt(gitPulseInstant(context, savedAt.toLocal())),
-            ),
-          if (state.previousBaseline case final baseline?)
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-              child: _BaselineChip(baseline: baseline),
-            ),
-          if (state.loadedNewCount > 0)
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  l10n.timelineLoadedNew(state.loadedNewCount),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BaselineChip extends StatelessWidget {
-  const _BaselineChip({required this.baseline});
-
-  final String baseline;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final parsed = DateTime.tryParse(baseline);
-    final label = parsed == null
-        ? ''
-        : gitPulseInstant(context, parsed.toLocal());
-
-    return Tooltip(
-      message: l10n.timelinePreviousRefresh(
-        parsed == null ? baseline : parsed.toLocal().toString(),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.dividerColor),
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.history,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall,
-              ),
-            ),
-          ],
-        ),
-      ),
+  String? _baselineLabel(
+    AppLocalizations l10n,
+    DateTime now,
+    String Function(DateTime instant) localDateKey,
+  ) {
+    final raw = widget.state.previousBaseline;
+    if (raw == null) return null;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return gitPulseBaselineLabel(
+      l10n,
+      parsed,
+      now: now,
+      localDateKey: localDateKey,
+      includeDate: localDateKey(parsed) != localDateKey(now),
     );
   }
 }

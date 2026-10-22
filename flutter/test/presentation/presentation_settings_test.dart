@@ -210,13 +210,15 @@ void main() {
 
       // Signed out, connected: the system language is in use and Settings is
       // reachable before any sign-in.
-      expect(find.text('Timeline'), findsWidgets);
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.text('Timeline'), findsOneWidget);
       await openSettings(tester, 'Settings');
       expect(find.text('Language'), findsOneWidget);
 
       await tapChoice(tester, 'Simplified Chinese');
       expect(find.text('语言'), findsOneWidget);
-      expect(find.text('设置'), findsWidgets);
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.text('设置'), findsOneWidget);
 
       await tapChoice(tester, '深色');
       expect(
@@ -230,7 +232,8 @@ void main() {
       );
 
       await restart(tester, harness);
-      expect(find.text('时间线'), findsWidgets);
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.text('时间线'), findsOneWidget);
       expect(scaffoldBrightness(tester), Brightness.dark);
     },
   );
@@ -247,7 +250,8 @@ void main() {
     await tester.runAsync(harness.open);
     await pumpApp(tester, harness);
 
-    expect(find.text('时间线'), findsWidgets);
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.text('时间线'), findsOneWidget);
     expect(scaffoldBrightness(tester), Brightness.dark);
 
     await openSettings(tester, '设置');
@@ -354,9 +358,69 @@ void main() {
       expect(find.text('语言'), findsOneWidget);
 
       await restart(tester, harness);
-      expect(find.text('时间线'), findsWidgets);
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.text('时间线'), findsOneWidget);
     },
   );
+
+  testWidgets('phone destinations do not repeat their navigation label', (
+    tester,
+  ) async {
+    useNarrowWindow(tester);
+    tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+    addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+    final harness = harnessFor(
+      tester,
+      session: SessionState(
+        phase: SessionPhase.signedIn,
+        identity: signedInIdentity(),
+      ),
+      handlers: {
+        'GET api/settings': () =>
+            BackendResult(statusCode: 200, data: settingsJson(const [])),
+        'POST api/release-timeline/refresh': () => BackendResult(
+          statusCode: 200,
+          data: roundJson(
+            refresh: const {
+              'previousBaseline': '2026-10-01T00:00:00.000Z',
+              'startedAt': '2026-10-05T00:00:00.000Z',
+            },
+          ),
+        ),
+      },
+    );
+    await tester.runAsync(harness.open);
+    await pumpApp(tester, harness);
+
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('Timeline'), findsOneWidget);
+
+    await tester.tap(find.text('Follows'));
+    await settleUi(tester);
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.text('Release Follows'), findsOneWidget);
+    expect(
+      find.textContaining('Follow releases independently'),
+      findsOneWidget,
+    );
+    expect(find.text('Follows'), findsOneWidget);
+    expect(find.text('Timeline'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+
+    await openSettings(tester, 'Settings');
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('Timeline cache'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1200, 900);
+    await pumpFrames(tester);
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.text('Settings'), findsOneWidget);
+  });
 
   testWidgets('timeline dates and counts follow the chosen language', (
     tester,

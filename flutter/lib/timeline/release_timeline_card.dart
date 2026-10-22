@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../releases/release_drawer.dart';
+import 'timeline_cache.dart';
 import 'timeline_models.dart';
 
 /// One release card in a date group of the Release Timeline.
 ///
-class ReleaseTimelineCard extends StatelessWidget {
+class ReleaseTimelineCard extends ConsumerWidget {
   const ReleaseTimelineCard({super.key, required this.item});
 
   final TimelineRelease item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final now = ref.watch(timelineClockProvider)();
     final muted = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurfaceVariant,
     );
@@ -60,10 +63,21 @@ class ReleaseTimelineCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      gitPulseInstant(context, item.publishedAt.toLocal()),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                    Tooltip(
+                      message: gitPulseDateTime(
+                        context,
+                        item.publishedAt.toLocal(),
+                      ),
+                      triggerMode: TooltipTriggerMode.longPress,
+                      child: Text(
+                        gitPulseRelativeTime(
+                          context,
+                          item.publishedAt,
+                          now: now,
+                        ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ],
@@ -99,10 +113,24 @@ class ReleaseTimelineCard extends StatelessWidget {
                 Wrap(
                   spacing: 12,
                   runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(
-                      l10n.timelineAssetCount(item.assetCount),
-                      style: muted,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ExcludeSemantics(
+                          child: Icon(
+                            Icons.attach_file,
+                            size: 16,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          l10n.timelineAssetCount(item.assetCount),
+                          style: muted,
+                        ),
+                      ],
                     ),
                     if (item.isOldestShown)
                       Text(l10n.timelineOldestShown, style: muted),

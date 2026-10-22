@@ -281,6 +281,38 @@ void main() {
     expect(launched, isEmpty);
   });
 
+  testWidgets('an offline copy still says when it was saved', (tester) async {
+    final savedAt = DateTime(2026, 10, 19, 12, 30);
+    final publishedAt = DateTime(2026, 10, 18, 14, 43);
+    await pumpDetails(
+      tester,
+      ReleaseDetail(
+        ReleaseDetailDto(
+          id: 1,
+          tagName: 'v2.0.0',
+          name: 'The big one',
+          htmlUrl: 'https://github.com/octo/app/releases/tag/v2.0.0',
+          body: 'Release notes body',
+          assets: const [],
+          draft: false,
+          prerelease: false,
+          publishedAt: publishedAt,
+        ),
+        'octo',
+        'app',
+        offline: true,
+        savedAt: savedAt,
+      ),
+    );
+
+    expect(
+      find.textContaining('Offline · saved release notes'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Saved'), findsOneWidget);
+    expect(find.textContaining('Oct 18, 2026'), findsWidgets);
+  });
+
   testWidgets('tapping anywhere on an asset row opens its download', (
     tester,
   ) async {
