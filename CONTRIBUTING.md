@@ -93,6 +93,27 @@ the checks above can all pass while the app fails to build.
 Do not bypass `prek` unless there is an exceptional reason. If you must bypass a
 hook locally, run the same checks manually before pushing.
 
+## Nuxt Doctor and Agent Guidance
+
+Run the full framework audit or check only changed lines:
+
+```bash
+bun run doctor
+bun run doctor:changed
+```
+
+These commands prepare Nuxt's Doctor manifest before invoking `vite-doctor`
+directly, so module configuration and extensions are loaded and failures retain
+their exit status. `bunx nuxt doctor` is also available for interactive use. Do
+not use `npm doctor` or `pnpm doctor`, which run package-manager health checks.
+Doctor findings need review: GitPulse's authentication, sanitization, and browser
+resource helpers may provide guarantees that heuristic rules cannot follow.
+
+`nuxt-skill-hub` regenerates project-specific guidance during `nuxt prepare`.
+Keep the small `nuxt-gitpulse` wrapper skills in version control; the generated
+`.nuxt/skill-hub/` tree stays local. See the [Skill Hub documentation](https://github.com/onmax/nuxt-skill-hub)
+and [Doctor documentation](https://github.com/onmax/vite-doctor).
+
 ## Flutter Client
 
 The native client is an independent package in `flutter/`. Use its pinned stable

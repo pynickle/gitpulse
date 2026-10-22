@@ -5,6 +5,8 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "doctor": "nuxt prepare && vite-doctor . --host-extensions --format agent",
+    "doctor:changed": "bun run doctor --changed",
     "extension:build": "bun run --cwd extension build",
     "extension:build:firefox": "bun run --cwd extension build:firefox",
     "extension:zip": "bun run --cwd extension zip",
@@ -40,6 +42,7 @@
     "nuxt-auth-utils": "^0.5.32",
     "nuxt-seo-utils": "^9.0.1",
     "nuxt-site-config": "^5.0.3",
+    "nuxt-skill-hub": "0.2.0",
     "redis": "^6.3.0",
     "shiki": "^4.5.0",
     "simplebar-vue": "^2.4.2",
@@ -61,6 +64,7 @@
     "oxlint-tsgolint": "^7.0.2004",
     "sass-embedded": "1.100.0",
     "typescript": "^6.0.3",
+    "vite-doctor": "^0.1.0",
     "vue-tsc": "^3.3.13",
     "vue3-simple-icons": "^16.10.0"
   },
