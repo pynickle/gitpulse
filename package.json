@@ -62,7 +62,7 @@
     "oxfmt": "^0.74.0",
     "oxlint": "^1.89.0",
     "oxlint-tsgolint": "^7.0.2004",
-    "sass-embedded": "1.100.0",
+    "sass-embedded": "1.106.1",
     "typescript": "^6.0.3",
     "vite-doctor": "^0.1.0",
     "vue-tsc": "^3.3.13",
