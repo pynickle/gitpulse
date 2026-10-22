@@ -213,6 +213,7 @@ export default defineNuxtConfig({
     '/**/open': { appLayout: 'landing' },
     '/native-login': {
       appLayout: 'native-login',
+      prerender: false,
       headers: {
         'Referrer-Policy': 'same-origin',
         'Cache-Control': 'no-store',
@@ -229,6 +230,8 @@ export default defineNuxtConfig({
         'Content-Security-Policy': "frame-ancestors 'none'",
       },
     },
+    // Nitro's prerender matcher needs a single-segment wildcard for locale prefixes.
+    '/*/native-login': { prerender: false },
     '/**/dashboard': { appLayout: 'dashboard' },
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },
