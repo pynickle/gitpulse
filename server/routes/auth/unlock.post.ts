@@ -1,3 +1,5 @@
+import type { H3Event } from 'h3';
+
 import { parsePersonalUnlockBody } from '../../utils/auth-request-validation-utils';
 import { establishGitHubSession } from '../../utils/auth-session-utils';
 import { assertCsrfToken } from '../../utils/csrf-utils';
@@ -9,8 +11,8 @@ import {
   verifyRememberDeviceCookie,
 } from '../../utils/personal-mode-utils';
 
-function getGithubTokenFromRuntimeConfig(): string {
-  const runtimeConfig = useRuntimeConfig() as {
+function getGithubTokenFromRuntimeConfig(event: H3Event): string {
+  const runtimeConfig = useRuntimeConfig(event) as {
     gitPulseAuth?: {
       githubToken?: string;
     };
@@ -37,7 +39,7 @@ export default defineEventHandler(async (event) => {
   assertCsrfToken(event, '/auth/unlock');
 
   const body = parsePersonalUnlockBody(await readBody(event));
-  const githubToken = getGithubTokenFromRuntimeConfig();
+  const githubToken = getGithubTokenFromRuntimeConfig(event);
   const identity = getPersonalModeIdentity();
 
   if (!githubToken || !identity) {
@@ -66,7 +68,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!verifyPersonalPassword(body.password)) {
+  if (!verifyPersonalPassword(body.password, event)) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Invalid password',

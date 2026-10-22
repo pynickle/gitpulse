@@ -15,7 +15,7 @@ import {
 const RETURN_TO_COOKIE = 'gitpulse_auth_return_to';
 
 export default defineEventHandler(async (event) => {
-  const baseUrl = useRuntimeConfig().app.baseURL;
+  const baseUrl = useRuntimeConfig(event).app.baseURL;
   const query = getQuery(event);
   const isCallback = Boolean(query.code || query.error);
   const returnTo =
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     return sendRedirect(event, withAppBase(returnTo, baseUrl));
   };
 
-  const providerState = resolveAuthProviderState();
+  const providerState = resolveAuthProviderState(event);
 
   if (providerState.personalMode) {
     throw createError({

@@ -18,7 +18,7 @@ export async function loadNativeLoginBrowserPage(
   const signedIn = Boolean(
     session.auth_provider === 'github' && user && session.secure?.access_token
   );
-  const base = useRuntimeConfig().app.baseURL;
+  const base = useRuntimeConfig(event).app.baseURL;
   const returnTo = `/native-login?${new URLSearchParams({
     id: browser.id,
     browserToken: browser.browserToken,

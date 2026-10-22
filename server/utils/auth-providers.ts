@@ -1,3 +1,5 @@
+import type { H3Event } from 'h3';
+
 import type { AuthProviderMode, AuthProviderState } from '#shared/types/auth-provider';
 
 const ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
@@ -35,8 +37,8 @@ function resolveMode(
   return 'pat-only';
 }
 
-export function resolveAuthProviderState(): AuthProviderState {
-  const runtimeConfig = useRuntimeConfig() as {
+export function resolveAuthProviderState(event?: H3Event): AuthProviderState {
+  const runtimeConfig = useRuntimeConfig(event) as {
     gitPulseAuth?: {
       personalModeEnabled?: string | boolean;
       tokenEnabled?: string | boolean;
@@ -82,8 +84,8 @@ export function resolveAuthProviderState(): AuthProviderState {
   };
 }
 
-export function assertAuthProviderState(): AuthProviderState {
-  const providerState = resolveAuthProviderState();
+export function assertAuthProviderState(event?: H3Event): AuthProviderState {
+  const providerState = resolveAuthProviderState(event);
 
   if (providerState.personalMode) {
     return providerState;

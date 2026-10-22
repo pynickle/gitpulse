@@ -47,8 +47,8 @@ interface Transaction {
   grant?: string;
 }
 
-function sessionPassword() {
-  const config = useRuntimeConfig();
+function sessionPassword(event: H3Event) {
+  const config = useRuntimeConfig(event);
   return (
     process.env[`${config.nitro?.envPrefix || 'NUXT_'}SESSION_PASSWORD`] ||
     config.session?.password ||
@@ -56,16 +56,17 @@ function sessionPassword() {
   );
 }
 
-export function nativeLoginHandoffAvailable() {
-  const providers = resolveAuthProviderState();
+export function nativeLoginHandoffAvailable(event: H3Event) {
+  const providers = resolveAuthProviderState(event);
+  const password = sessionPassword(event);
   return (
     !providers.personalMode &&
     providers.oauthEnabled &&
     ['fs', 'redis', 'upstash'].includes(
       normalizeUserSettingsStorageDriver(process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER)
     ) &&
-    typeof sessionPassword() === 'string' &&
-    sessionPassword().length >= 32
+    typeof password === 'string' &&
+    password.length >= 32
   );
 }
 
@@ -76,7 +77,7 @@ export function assertNativeLoginHandoffAvailable(event: H3Event) {
   // keeps the app sign-in identifiers out of cross-origin referrers (the OAuth
   // link to GitHub sends none) while still sending a real Origin here.
   setHeader(event, 'Referrer-Policy', 'same-origin');
-  if (!nativeLoginHandoffAvailable()) {
+  if (!nativeLoginHandoffAvailable(event)) {
     throw createError({ statusCode: 503, statusMessage: 'Native browser sign-in is unavailable' });
   }
 }
@@ -91,17 +92,21 @@ function matches(left: string, right: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function seal(grant: Grant) {
+function seal(grant: Grant, event: H3Event) {
   const iv = randomBytes(12);
-  const key = createHash('sha256').update(`gitpulse-native-handoff:${sessionPassword()}`).digest();
+  const key = createHash('sha256')
+    .update(`gitpulse-native-handoff:${sessionPassword(event)}`)
+    .digest();
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(grant), 'utf8'), cipher.final()]);
   return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64url');
 }
 
-function unseal(value: string): Grant {
+function unseal(value: string, event: H3Event): Grant {
   const bytes = Buffer.from(value, 'base64url');
-  const key = createHash('sha256').update(`gitpulse-native-handoff:${sessionPassword()}`).digest();
+  const key = createHash('sha256')
+    .update(`gitpulse-native-handoff:${sessionPassword(event)}`)
+    .digest();
   const decipher = createDecipheriv('aes-256-gcm', key, bytes.subarray(0, 12));
   decipher.setAuthTag(bytes.subarray(12, 28));
   return JSON.parse(
@@ -194,7 +199,7 @@ export async function createNativeLoginHandoff(event: H3Event, body: unknown) {
     status: 'pending',
   });
   const browserUrl = new URL(
-    withAppBase('/native-login', useRuntimeConfig().app.baseURL),
+    withAppBase('/native-login', useRuntimeConfig(event).app.baseURL),
     input.origin
   );
   browserUrl.search = new URLSearchParams({ id, browserToken }).toString();
@@ -237,7 +242,7 @@ export async function approveNativeLoginHandoff(event: H3Event, body: unknown) {
       statusMessage: 'Sign in with GitHub in this browser first',
     });
   }
-  const grant = seal({ accessToken: session.secure.access_token, user: session.user });
+  const grant = seal({ accessToken: session.secure.access_token, user: session.user }, event);
   return update(browser.id, (transaction) => {
     assertTransactionStatus(transaction, 'pending');
     transaction.status = 'approved';
@@ -273,7 +278,7 @@ export async function useNativeLoginHandoff(
       return { status: 'cancelled' };
     }
     assertTransactionStatus(transaction, 'approved');
-    const grant = unseal(transaction.grant!);
+    const grant = unseal(transaction.grant!, event);
     transaction.status = 'redeemed';
     delete transaction.grant;
     return grant;

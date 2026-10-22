@@ -14,7 +14,7 @@ function isGitHubUnauthorizedError(error: unknown): boolean {
 export default defineEventHandler(async (event) => {
   assertCsrfToken(event, '/auth/pat');
 
-  const providerState = resolveAuthProviderState();
+  const providerState = resolveAuthProviderState(event);
 
   if (providerState.personalMode) {
     throw createError({

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
 
-import { createApp, toWebHandler } from 'h3';
+import { createApp, getHeader, toWebHandler, type H3Event } from 'h3';
 
 import * as authReturn from '../shared/utils/auth-return-route';
 import * as env from '../shared/utils/user-settings-storage-env';
@@ -39,6 +39,32 @@ async function getPublicResponse(path: 'native/capabilities' | 'auth/providers')
 }
 
 describe('public native connection contract', () => {
+  test('provider discovery uses the current request runtime config', async () => {
+    globalThis.useRuntimeConfig = ((event?: H3Event) => ({
+      gitPulseAuth: {
+        personalModeEnabled: false,
+        tokenEnabled: getHeader(event!, 'x-test-provider') === 'pat',
+        githubOAuthEnabled: getHeader(event!, 'x-test-provider') === 'oauth',
+      },
+      session: { password: 'request-scoped-session-password-32-characters' },
+    })) as typeof useRuntimeConfig;
+    const handler = (await import('../server/api/native/capabilities.get')).default;
+    const app = createApp().use('/api/native/capabilities', handler);
+    const request = toWebHandler(app);
+
+    for (const provider of ['pat', 'oauth']) {
+      const response = await request(
+        new Request('https://gitpulse.test/api/native/capabilities', {
+          headers: { 'x-test-provider': provider },
+        })
+      );
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.providers.mode).toBe(`${provider}-only`);
+      expect(result.capabilities.includes('native-login-handoff')).toBe(provider === 'oauth');
+    }
+  });
+
   test('personal mode advertises only password unlock, discovery, and timeline reading', async () => {
     configureProviders(true);
     expect(await getPublicResponse('native/capabilities')).toEqual({

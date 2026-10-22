@@ -28,8 +28,8 @@ function normalizeSecret(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function getPersonalAuthConfig() {
-  const runtimeConfig = useRuntimeConfig() as {
+function getPersonalAuthConfig(event?: H3Event) {
+  const runtimeConfig = useRuntimeConfig(event) as {
     gitPulseAuth?: {
       personalPassword?: string;
       personalCookieSecret?: string;
@@ -156,8 +156,8 @@ export function getPersonalModeIdentity(): PersonalIdentity | null {
   return personalIdentityCache;
 }
 
-export function verifyPersonalPassword(input: string): boolean {
-  const { personalPassword } = getPersonalAuthConfig();
+export function verifyPersonalPassword(input: string, event?: H3Event): boolean {
+  const { personalPassword } = getPersonalAuthConfig(event);
   const normalizedInput = typeof input === 'string' ? input : '';
 
   if (!personalPassword || !normalizedInput) {
@@ -168,7 +168,7 @@ export function verifyPersonalPassword(input: string): boolean {
 }
 
 export function createRememberDeviceCookie(event: H3Event): void {
-  const { personalPassword, personalCookieSecret } = getPersonalAuthConfig();
+  const { personalPassword, personalCookieSecret } = getPersonalAuthConfig(event);
 
   if (!personalPassword || !personalCookieSecret) {
     return;
@@ -199,7 +199,7 @@ export function clearRememberDeviceCookie(event: H3Event): void {
 
 export function verifyRememberDeviceCookie(event: H3Event): boolean {
   const cookieValue = getCookie(event, PERSONAL_REMEMBER_COOKIE);
-  const { personalPassword, personalCookieSecret } = getPersonalAuthConfig();
+  const { personalPassword, personalCookieSecret } = getPersonalAuthConfig(event);
 
   if (!cookieValue || !personalPassword || !personalCookieSecret) {
     if (cookieValue) {

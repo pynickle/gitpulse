@@ -5,7 +5,7 @@ import { clearRememberDeviceCookie } from '../../utils/personal-mode-utils';
 export default defineEventHandler(async (event) => {
   assertCsrfToken(event, '/auth/logout');
 
-  const providerState = resolveAuthProviderState();
+  const providerState = resolveAuthProviderState(event);
 
   if (providerState.personalMode) {
     clearRememberDeviceCookie(event);

@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   const query = new URLSearchParams({ id: input.id, browserToken: input.browserToken });
   return sendRedirect(
     event,
-    `${withAppBase('/native-login', useRuntimeConfig().app.baseURL)}?${query}`,
+    `${withAppBase('/native-login', useRuntimeConfig(event).app.baseURL)}?${query}`,
     303
   );
 });
