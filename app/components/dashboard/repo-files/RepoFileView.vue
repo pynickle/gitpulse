@@ -1177,6 +1177,7 @@ onActivated(() => {
             <div v-if="highlightLoading" class="repo-file-view__highlight-loading">
               <Loader2Icon :size="16" class="spin-animation" />
             </div>
+            <!-- doctor-disable-next-line vue/security/restrict-v-html -- Shiki codeToHtml escapes source text and generates the markup. -->
             <div
               v-else-if="highlightedHtml"
               class="repo-file-view__code"

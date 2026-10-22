@@ -106,7 +106,7 @@ watch(
             <span>{{ t('markdown.mermaid.openViewer') }}</span>
           </button>
 
-          <!-- eslint-disable-next-line vue/no-v-html -->
+          <!-- doctor-disable-next-line vue/security/restrict-v-html -- SVG comes from Mermaid with securityLevel: 'strict'. -->
           <ScrollArea class="mermaid-output" axis="both"><div v-html="state.svg" /></ScrollArea>
         </template>
       </div>

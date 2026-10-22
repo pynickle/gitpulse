@@ -27,6 +27,7 @@
           </span>
         </div>
 
+        <!-- doctor-disable-next-line vue/security/restrict-v-html -- Computed headline passes through sanitizeHtml's xss allowlist. -->
         <span
           v-if="sanitizedCommitMessageHeadlineHtml"
           class="is-size-6 has-text-weight-medium commit-message"

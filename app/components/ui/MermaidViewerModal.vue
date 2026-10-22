@@ -372,7 +372,7 @@ onBeforeUnmount(() => {
           @click.stop
         >
           <div v-if="renderState.kind === 'loading'" class="mermaid-viewer-modal__skeleton" />
-          <!-- eslint-disable-next-line vue/no-v-html -->
+          <!-- doctor-disable-next-line vue/security/restrict-v-html -- SVG comes from Mermaid with securityLevel: 'strict'. -->
           <div
             v-else-if="renderState.kind === 'success'"
             ref="diagram"
