@@ -23,7 +23,7 @@
     "fmt:check": "bunx oxfmt --check ./"
   },
   "dependencies": {
-    "@comark/nuxt": "^0.7.0",
+    "@comark/nuxt": "^0.8.0",
     "@lucide/vue": "^1.61.0",
     "@nuxt/fonts": "^1.0.1",
     "@nuxt/image": "^2.2.0",
