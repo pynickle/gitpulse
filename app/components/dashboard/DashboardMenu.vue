@@ -10,7 +10,7 @@ import {
   UserIcon,
 } from '@lucide/vue';
 import type { Component } from 'vue';
-import { nextTick, onBeforeUnmount, useTemplateRef, watch } from 'vue';
+import { nextTick, useTemplateRef, watch } from 'vue';
 
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 
@@ -90,28 +90,30 @@ const handleDocumentKeydown = (event: KeyboardEvent) => {
 
 watch(
   () => props.open,
-  async (open) => {
+  async (open, _previous, onCleanup) => {
     if (!import.meta.client) return;
 
-    if (!open) {
+    let active = true;
+    onCleanup(() => {
+      active = false;
       document.removeEventListener('keydown', handleDocumentKeydown);
+    });
+
+    if (!open) {
       await nextTick();
-      focusTrap.restorePreviousFocus();
+      if (active) focusTrap.restorePreviousFocus();
       return;
     }
 
     document.addEventListener('keydown', handleDocumentKeydown);
     focusTrap.capturePreviousFocus();
     await nextTick();
-    if (panelElement.value) {
+    if (active && panelElement.value) {
       focusTrap.focusInitialElement(panelElement.value);
     }
-  }
+  },
+  { immediate: true }
 );
-
-onBeforeUnmount(() => {
-  document.removeEventListener('keydown', handleDocumentKeydown);
-});
 </script>
 
 <template>

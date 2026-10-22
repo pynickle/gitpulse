@@ -305,18 +305,17 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (repositionFrame !== null) cancelAnimationFrame(repositionFrame);
-  document.removeEventListener('mousedown', handleClickOutside);
   window.removeEventListener('resize', handleViewportChange);
   window.removeEventListener('scroll', handleViewportChange, true);
 });
 
-watch(isOpen, (openPanel) => {
-  if (openPanel) {
-    updatePanelPosition();
-    document.addEventListener('mousedown', handleClickOutside);
-  } else {
+watch(isOpen, (openPanel, _previous, onCleanup) => {
+  if (!openPanel) return;
+  updatePanelPosition();
+  document.addEventListener('mousedown', handleClickOutside);
+  onCleanup(() => {
     document.removeEventListener('mousedown', handleClickOutside);
-  }
+  });
 });
 
 watch(visibleSuggestions, (suggestions) => {

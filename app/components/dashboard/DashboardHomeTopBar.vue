@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FilterIcon, MenuIcon, RefreshCwIcon, UserIcon } from '@lucide/vue';
-import { onBeforeUnmount, useTemplateRef, watch } from 'vue';
+import { useTemplateRef, watch } from 'vue';
 
 import DashboardAccountMenu from '~/components/dashboard/DashboardAccountMenu.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -46,19 +46,15 @@ const handleAccountPointerDown = (event: PointerEvent) => {
 
 watch(
   () => props.accountMenuOpen,
-  (open) => {
-    if (!import.meta.client) return;
-    if (open) {
-      document.addEventListener('pointerdown', handleAccountPointerDown);
-      return;
-    }
-    document.removeEventListener('pointerdown', handleAccountPointerDown);
-  }
+  (open, _previous, onCleanup) => {
+    if (!import.meta.client || !open) return;
+    document.addEventListener('pointerdown', handleAccountPointerDown);
+    onCleanup(() => {
+      document.removeEventListener('pointerdown', handleAccountPointerDown);
+    });
+  },
+  { immediate: true }
 );
-
-onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleAccountPointerDown);
-});
 </script>
 
 <template>

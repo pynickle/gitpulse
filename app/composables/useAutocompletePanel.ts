@@ -1,4 +1,4 @@
-import { onBeforeUnmount, shallowRef, toValue, watch } from 'vue';
+import { onMounted, shallowRef, toValue, watch } from 'vue';
 import type { MaybeRefOrGetter } from 'vue';
 
 export interface InlineAnchorPosition {
@@ -182,25 +182,23 @@ export function useAutocompletePanel(options: UseAutocompletePanelOptions) {
     window.removeEventListener('scroll', handleViewportChange, true);
   };
 
-  watch(
-    () => toValue(options.isOpen),
-    (open) => {
-      if (!open) {
-        removeListeners();
-        cancelRepositionFrame();
-        return;
-      }
+  onMounted(() => {
+    watch(
+      () => toValue(options.isOpen),
+      (open, _previous, onCleanup) => {
+        if (!open) return;
 
-      updatePanelPosition();
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('resize', handleViewportChange);
-      window.addEventListener('scroll', handleViewportChange, true);
-    }
-  );
-
-  onBeforeUnmount(() => {
-    removeListeners();
-    cancelRepositionFrame();
+        updatePanelPosition();
+        document.addEventListener('mousedown', handleClickOutside);
+        window.addEventListener('resize', handleViewportChange);
+        window.addEventListener('scroll', handleViewportChange, true);
+        onCleanup(() => {
+          removeListeners();
+          cancelRepositionFrame();
+        });
+      },
+      { immediate: true, flush: 'post' }
+    );
   });
 
   return {
