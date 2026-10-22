@@ -47,15 +47,12 @@
             </a>
           </p>
 
-          <div
-            class="auth-gateway__gh-auth-tip"
-            v-html="
-              t('auth.tokenTipGhAuth').replace(
-                /`([^`]+)`/g,
-                '<code class=&quot;auth-gateway__code&quot;>$1</code>'
-              )
-            "
-          />
+          <div class="auth-gateway__gh-auth-tip">
+            <template v-for="(part, index) in tokenTipParts" :key="index">
+              <code v-if="index % 2" class="auth-gateway__code">{{ part }}</code>
+              <template v-else>{{ part }}</template>
+            </template>
+          </div>
         </div>
 
         <div v-if="tokenError" class="notification is-danger is-light auth-gateway__error">
@@ -91,6 +88,7 @@ const { continueToReturnTarget, oauthHref } = useAuthReturnNavigation();
 const token = ref('');
 const tokenError = ref('');
 const submitting = ref(false);
+const tokenTipParts = computed(() => t('auth.tokenTipGhAuth').split(/`([^`]+)`/g));
 
 const getTokenLoginErrorMessage = (error: unknown) => {
   if (typeof error !== 'object' || error === null) {

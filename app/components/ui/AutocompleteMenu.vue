@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SearchIcon } from '@lucide/vue';
-import { nextTick, shallowRef, watch } from 'vue';
+import { computed, nextTick, shallowRef, watch } from 'vue';
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
@@ -37,20 +37,16 @@ const listRef = shallowRef<HTMLElement | null>(null);
 const getDisplayLabel = (suggestion: AutocompleteSuggestion) =>
   suggestion.label ?? suggestion.value;
 
-const escapeHtml = (text: string) =>
-  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const highlightMatch = (text: string) => {
+const highlightedSuggestions = computed(() => {
   const query = props.query.trim();
-  if (!query) return escapeHtml(text);
-
-  const escaped = escapeHtml(text);
-  const escapedQuery = escapeHtml(query);
-  const regex = new RegExp(`(${escapeRegex(escapedQuery)})`, 'gi');
-  return escaped.replace(regex, '<mark class="fa-highlight">$1</mark>');
-};
+  const pattern = query ? new RegExp(`(${escapeRegex(query)})`, 'gi') : null;
+  return props.suggestions.map((suggestion) => {
+    const label = getDisplayLabel(suggestion);
+    return { suggestion, parts: pattern ? label.split(pattern) : [label] };
+  });
+});
 
 const scrollActiveOptionIntoView = async () => {
   await nextTick();
@@ -87,7 +83,7 @@ watch(() => props.activeIndex, scrollActiveOptionIntoView);
 
         <template v-else-if="suggestions.length > 0">
           <button
-            v-for="(suggestion, index) in suggestions"
+            v-for="({ suggestion, parts }, index) in highlightedSuggestions"
             :key="suggestion.value"
             :id="`${optionIdPrefix}-opt-${index}`"
             type="button"
@@ -109,7 +105,12 @@ watch(() => props.activeIndex, scrollActiveOptionIntoView);
               aria-hidden="true"
             />
             <span class="fa-option-copy">
-              <span class="fa-option-label" v-html="highlightMatch(getDisplayLabel(suggestion))" />
+              <span class="fa-option-label">
+                <template v-for="(part, partIndex) in parts" :key="partIndex">
+                  <mark v-if="partIndex % 2" class="fa-highlight">{{ part }}</mark>
+                  <template v-else>{{ part }}</template>
+                </template>
+              </span>
               <span v-if="suggestion.description" class="fa-option-description">
                 {{ suggestion.description }}
               </span>
