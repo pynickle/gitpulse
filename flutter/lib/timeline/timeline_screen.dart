@@ -447,6 +447,13 @@ class _DateHeader extends StatelessWidget {
   }
 }
 
+/// The in-list Previous Refresh marker.
+///
+/// It must not read as a day group, so it deliberately shares nothing visual
+/// with [_DateHeader]: the title is a small, letter-spaced, accent-coloured
+/// label flush with the left edge of the cards, the instant is an unemphasized
+/// caption, and the single hairline runs to the right of the text only. A day
+/// header instead centers a larger on-surface label between two plain rules.
 class _PreviousRefreshMark extends StatelessWidget {
   const _PreviousRefreshMark({
     required this.timestamp,
@@ -464,19 +471,50 @@ class _PreviousRefreshMark extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final label = gitPulseBaselineLabel(
-      l10n,
+    final scheme = theme.colorScheme;
+    final title = l10n.timelinePreviousRefreshMark;
+    final instant = gitPulseBaselineInstantLabel(
+      context,
       timestamp,
       now: now,
       localDateKey: localDateKey,
       includeDate: includeDate,
     );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-      child: Text(
-        label,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+    return Semantics(
+      container: true,
+      label: '$title $instant',
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 14, 0, 12),
+          child: Row(
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                instant,
+                maxLines: 1,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // A plain rule rather than a [Divider]: the day headers own that
+              // widget, and the marker must not be mistakable for one.
+              Expanded(
+                child: Container(height: 1, color: scheme.outlineVariant),
+              ),
+            ],
+          ),
         ),
       ),
     );

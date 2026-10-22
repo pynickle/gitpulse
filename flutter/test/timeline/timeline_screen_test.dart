@@ -168,7 +168,7 @@ void main() {
 
       final english = DateFormat.yMMMd('en');
       expect(find.text('2 loaded new releases'), findsOneWidget);
-      expect(find.textContaining('Previous refresh'), findsWidgets);
+      expect(find.text('Previous refresh'), findsWidgets);
       expect(find.text(english.format(DateTime(2026, 10, 4))), findsOneWidget);
       expect(find.text(english.format(DateTime(2026, 10, 3))), findsOneWidget);
     },
@@ -205,9 +205,16 @@ void main() {
         },
       );
 
-      expect(find.text('Previous refresh · 14:43'), findsNWidgets(2));
+      // The toolbar keeps its own `Previous refresh · 14:43` caption; the
+      // in-list marker splits title and instant so only one of each is left.
+      expect(find.text('Previous refresh'), findsOneWidget);
+      expect(find.text('14:43'), findsOneWidget);
+      expect(find.text('Previous refresh · 14:43'), findsOneWidget);
       expect(find.textContaining('Oct 22, 2026'), findsOneWidget);
-      expect(find.byType(Divider), findsNWidgets(4));
+      // The marker draws its hairline as a Container rule, never as a
+      // [Divider], so every [Divider] on screen is still a day header's.
+      final rules = tester.widgetList<Divider>(find.byType(Divider));
+      expect(rules.length.isEven, isTrue, reason: 'day rules come in pairs');
     },
   );
 
@@ -230,25 +237,20 @@ void main() {
             statusCode: 200,
             data: roundJson(
               pages: {
-                'R_alpha': pageJson(
-                  'octo',
-                  'alpha',
-                  [
-                    releaseJson(
-                      12,
-                      'v-new',
-                      iso(DateTime(2026, 10, 22, 18)),
-                      name: 'Visible',
-                    ),
-                    releaseJson(
-                      10,
-                      'v-old',
-                      iso(DateTime(2024, 6, 1, 8)),
-                      name: 'Hidden anchor',
-                    ),
-                  ],
-                  hasOlderReleases: true,
-                ),
+                'R_alpha': pageJson('octo', 'alpha', [
+                  releaseJson(
+                    12,
+                    'v-new',
+                    iso(DateTime(2026, 10, 22, 18)),
+                    name: 'Visible',
+                  ),
+                  releaseJson(
+                    10,
+                    'v-old',
+                    iso(DateTime(2024, 6, 1, 8)),
+                    name: 'Hidden anchor',
+                  ),
+                ], hasOlderReleases: true),
               },
               refresh: baselineRefresh(iso(DateTime(2024, 6, 15, 9, 5))),
             ),
@@ -262,11 +264,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('Hidden anchor'), findsNothing);
+      expect(find.text('Previous refresh'), findsOneWidget);
+      expect(find.text('Jun 15, 2024 09:05'), findsOneWidget);
       expect(
         find.text('Previous refresh · Jun 15, 2024 09:05'),
-        findsNWidgets(2),
+        findsOneWidget,
       );
-      expect(find.byType(Divider), findsNWidgets(2));
     },
   );
 

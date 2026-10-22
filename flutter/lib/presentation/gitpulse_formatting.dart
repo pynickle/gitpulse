@@ -140,8 +140,28 @@ String formatGitPulseBaselineInstant(
   return date.add_Hm().format(local);
 }
 
-/// The Previous Refresh label: the existing words, a middle dot, and the
-/// baseline instant from [formatGitPulseBaselineInstant].
+/// The Previous Refresh instant shown beside its title: the timeline's 24-hour
+/// clock, with the month and day only when [includeDate] says the screen does
+/// not already name that day.
+///
+/// The title and this instant are separate Text widgets, so a surface that
+/// emphasizes the title never has to split a formatted string apart.
+String gitPulseBaselineInstantLabel(
+  BuildContext context,
+  DateTime instant, {
+  required DateTime now,
+  required String Function(DateTime instant) localDateKey,
+  required bool includeDate,
+}) => formatGitPulseBaselineInstant(
+  gitPulseLocaleName(context),
+  instant,
+  now: now,
+  localDateKey: localDateKey,
+  includeDate: includeDate,
+);
+
+/// The Previous Refresh toolbar label: the existing words, a middle dot, and
+/// the baseline instant from [formatGitPulseBaselineInstant].
 String gitPulseBaselineLabel(
   AppLocalizations l10n,
   DateTime instant, {
