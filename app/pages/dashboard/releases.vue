@@ -8,12 +8,12 @@ import {
   TagIcon,
 } from '@lucide/vue';
 import { computed, onMounted, ref, watch, type Component } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { ReleaseListItem } from '#shared/types/releases';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import ReleaseListItemCard from '~/components/dashboard/releases/ReleaseListItemCard.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import { serializeReleaseQuery } from '~/utils/dashboardUrlNavigationUtils';
 
 type ReleaseTypeFilter = 'all' | 'stable' | 'prerelease' | 'draft';

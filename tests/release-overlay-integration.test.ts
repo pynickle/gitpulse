@@ -135,7 +135,7 @@ const Markdown = defineComponent({
 });
 const Body = await compileVue('app/components/dashboard/release-timeline/ReleaseDrawerBody.vue', {
   '@lucide/vue': icons,
-  'vue3-simple-icons': { GitHubIcon: empty },
+  '~/components/ui/GitHubIcon.vue': { default: empty },
   '~/components/dashboard/release-timeline/ReleaseTimelineReactionBar.vue': { default: Reactions },
   '~/components/dashboard/releases/ReleaseAssetsList.vue': { default: Assets },
   '~/components/ui/GitHubAvatar.vue': { default: empty },

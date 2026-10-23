@@ -9,10 +9,10 @@ import {
   shallowRef,
   watch,
 } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import { splitWikiHtmlSegments, type WikiHtmlSegment } from '#shared/utils/github-wiki';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 

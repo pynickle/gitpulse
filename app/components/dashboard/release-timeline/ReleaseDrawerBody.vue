@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { CalendarIcon, PackageIcon, TagIcon } from '@lucide/vue';
 import { computed } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { FollowedRepository, TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import ReleaseTimelineReactionBar from '~/components/dashboard/release-timeline/ReleaseTimelineReactionBar.vue';
 import ReleaseAssetsList from '~/components/dashboard/releases/ReleaseAssetsList.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const props = defineProps<{

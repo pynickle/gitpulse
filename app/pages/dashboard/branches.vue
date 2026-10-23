@@ -10,11 +10,11 @@ import {
   UnlockIcon,
 } from '@lucide/vue';
 import { computed, onMounted, ref, watch, type Component } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { RepoBranchAssociatedPull, RepoBranchDetail } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import { serializeDashboardDetailTarget } from '~/utils/dashboardUrlNavigationUtils';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 

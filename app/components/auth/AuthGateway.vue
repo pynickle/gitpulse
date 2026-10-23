@@ -72,9 +72,9 @@
 <script setup lang="ts">
 import { KeyRoundIcon } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import Button from '~/components/ui/Button.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 
 const props = defineProps<{

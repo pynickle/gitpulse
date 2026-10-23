@@ -9,11 +9,11 @@ import {
   TerminalIcon,
 } from '@lucide/vue';
 import { computed, type Component } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { PackageVersionFilter, PackageVersionSummary } from '#shared/types/packages';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import {
   packageTypeHasVersionTags,

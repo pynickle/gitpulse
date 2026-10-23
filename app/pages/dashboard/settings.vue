@@ -10,7 +10,6 @@ import {
 } from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, onMounted, shallowRef } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import {
   COMPOSER_LAYOUT_IDS,
@@ -32,6 +31,7 @@ import SettingsCategoryNav from '~/components/dashboard/settings/SettingsCategor
 import FilterDropdown from '~/components/ui/FilterDropdown.vue';
 import type { FilterOption } from '~/components/ui/FilterDropdown.vue';
 import FontPickerModal from '~/components/ui/FontPickerModal.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import {
   builtinAppFontOptions,

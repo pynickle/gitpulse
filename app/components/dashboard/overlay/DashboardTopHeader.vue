@@ -112,10 +112,10 @@ import {
 } from '@lucide/vue';
 import { type Component, computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 

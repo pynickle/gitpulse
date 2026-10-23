@@ -24,7 +24,6 @@ import {
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
@@ -37,6 +36,7 @@ import LinkedPullRequestPickerModal from '~/components/dashboard/LinkedPullReque
 import CheckListModal from '~/components/dashboard/pr/CheckListModal.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { useRepoDetailSession, type RepoDetailPanel } from '~/composables/useRepoDetailSession';

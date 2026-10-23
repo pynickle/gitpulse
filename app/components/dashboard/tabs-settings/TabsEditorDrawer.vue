@@ -10,11 +10,11 @@ import {
   SearchIcon,
   XIcon,
 } from '@lucide/vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import SearchResultPreview from '~/components/dashboard/SearchResultPreview.vue';
 import GitHubSearchAstPanel from '~/components/dashboard/tabs-settings/GitHubSearchAstPanel.vue';
 import GitHubSearchSyntaxEditor from '~/components/dashboard/tabs-settings/GitHubSearchSyntaxEditor.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
 

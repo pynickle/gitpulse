@@ -11,10 +11,10 @@ import {
   UsersIcon,
 } from '@lucide/vue';
 import { computed } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { UserOrganizationSummary, UserProfilePayload } from '#shared/types/users';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 
 type ProfileConnectionTab = 'followers' | 'following';
 

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { GitCommitHorizontalIcon, Loader2Icon, SearchIcon, UsersIcon } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { RepoContributorWeek } from '#shared/types/repos';
 import ContributorCommitSparkline from '~/components/dashboard/contributors/ContributorCommitSparkline.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import { useRepoContributors } from '~/composables/useRepoContributors';
 import { useRepoContributorStats } from '~/composables/useRepoContributorStats';
 

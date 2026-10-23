@@ -259,10 +259,10 @@ import {
 } from '@lucide/vue';
 import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import type {
   PRReviewerStatus,
   PRReviewerSummaryItem,

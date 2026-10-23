@@ -65,8 +65,7 @@
     "sass-embedded": "1.100.0",
     "typescript": "^6.0.3",
     "vite-doctor": "^0.1.0",
-    "vue-tsc": "^3.3.13",
-    "vue3-simple-icons": "^16.10.0"
+    "vue-tsc": "^3.3.13"
   },
   "overrides": {
     "vue": "3.5.43"

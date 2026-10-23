@@ -136,9 +136,9 @@ import {
 } from '@lucide/vue';
 import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { DashboardNotification } from '#shared/types/notifications';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
 

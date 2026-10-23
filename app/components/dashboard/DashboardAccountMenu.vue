@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { LogOutIcon, SettingsIcon, StarIcon, UserIcon } from '@lucide/vue';
 import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 
 const emit = defineEmits<{
   close: [];

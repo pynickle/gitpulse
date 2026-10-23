@@ -11,9 +11,8 @@
 </template>
 
 <script setup lang="ts">
-import { GitHubIcon } from 'vue3-simple-icons';
-
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
 </script>
 

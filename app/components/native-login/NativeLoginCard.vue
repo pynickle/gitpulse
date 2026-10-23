@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ShieldCheckIcon } from '@lucide/vue';
 import { computed } from 'vue';
-import { GitHubIcon } from 'vue3-simple-icons';
 
 import type { NativeLoginBrowserPage } from '#shared/types/native-login-browser';
 import Button from '~/components/ui/Button.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
 const props = defineProps<{
