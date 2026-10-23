@@ -2,9 +2,30 @@
   <NuxtPage v-if="isDashboardChildRoute" />
 
   <div v-else-if="showFileBrowsingView && fileBrowsingRepo" class="dashboard-file-browser">
-    <KeepAlive>
-      <RepoFileView :owner="fileBrowsingRepo.owner" :repo="fileBrowsingRepo.repo" />
-    </KeepAlive>
+    <Suspense>
+      <KeepAlive>
+        <RepoFileView :owner="fileBrowsingRepo.owner" :repo="fileBrowsingRepo.repo" />
+      </KeepAlive>
+      <template #fallback>
+        <div class="dashboard-file-loading">
+          <DashboardTopHeader
+            :back-label="t('detailOverlay.back')"
+            :home-label="t('detailOverlay.home')"
+            :show-home-button="shouldShowHomeButton"
+            @back="goBackToPreviousPage"
+            @home="goToDashboardHome"
+          />
+          <div
+            class="dashboard-empty-state is-flex-grow-1"
+            role="status"
+            :aria-label="t('detailOverlay.loading.repository')"
+            aria-busy="true"
+          >
+            <LoadingIcon :size="32" />
+          </div>
+        </div>
+      </template>
+    </Suspense>
   </div>
 
   <div
@@ -422,16 +443,19 @@ import DashboardLayout from '~/components/dashboard/DashboardLayout.vue';
 import DashboardLoadingList from '~/components/dashboard/DashboardLoadingList.vue';
 import DashboardMenu from '~/components/dashboard/DashboardMenu.vue';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
+import DetailOverlayHost from '~/components/dashboard/detail/DetailOverlayHost.vue';
 import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAdvancedFilters.vue';
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import NotificationSubjectEnrichmentNotice from '~/components/dashboard/NotificationSubjectEnrichmentNotice.vue';
+import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
 import ReleaseTimelineBaselineChip from '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue';
 import ReleaseTimelineView from '~/components/dashboard/release-timeline/ReleaseTimelineView.vue';
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
 import Button from '~/components/ui/Button.vue';
+import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOptions';
 import {
@@ -453,7 +477,6 @@ import {
   parseDashboardTab,
 } from '~/composables/useDashboardRouteState';
 import { RELEASE_TIMELINE_TAB, type DashboardTab } from '~/composables/useDashboardTabs';
-import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 import { buildDashboardTabSwitchQuery } from '~/utils/dashboardUrlNavigationUtils';
 import getQueryParamValue from '~/utils/getQueryParamValue';
 import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
@@ -468,15 +491,11 @@ const AsyncGenericSearchItem = defineAsyncComponent(
   () => import('~/components/dashboard/GenericSearchItem.vue')
 );
 const AsyncRepoItem = defineAsyncComponent(() => import('~/components/dashboard/RepoItem.vue'));
-const loadDetailOverlayHost = () => import('~/components/dashboard/detail/DetailOverlayHost.vue');
 const loadFilterModal = () => import('~/components/dashboard/filters/FilterModal.vue');
 const loadLinkedPullRequestPickerModal = () =>
   import('~/components/dashboard/LinkedPullRequestPickerModal.vue');
 const loadCheckListModal = () => import('~/components/dashboard/pr/CheckListModal.vue');
 const loadRepoFileView = () => import('~/components/dashboard/repo-files/RepoFileView.vue');
-const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
-  createDashboardDetailPaneLoaders();
-const DetailOverlayHost = defineAsyncComponent(loadDetailOverlayHost);
 const FilterModal = defineAsyncComponent(loadFilterModal);
 const LinkedPullRequestPickerModal = defineAsyncComponent(loadLinkedPullRequestPickerModal);
 const CheckListModal = defineAsyncComponent(loadCheckListModal);
@@ -488,6 +507,7 @@ const localePath = useLocalePath();
 const route = useRoute();
 const router = useRouter();
 const apiFetch = useGitPulseApiFetch();
+const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 
 const isDashboardChildRoute = computed(() => {
   return !route.path.replace(/\/$/, '').endsWith('/dashboard');
@@ -539,7 +559,6 @@ const { filters: dashboardFilters, updateFilters, clearSourceFilters } = useDash
 const isFilterDrawerOpen = shallowRef(false);
 const hasOpenedDetailOverlay = shallowRef(false);
 const hasOpenedFilterDrawer = shallowRef(false);
-const hasPrefetchedDashboardInteractionChunks = shallowRef(false);
 const showErrorDetails = shallowRef(false);
 const userLogin = computed(() => user.value?.login);
 const filterSourceStates = computed(() => ({
@@ -559,50 +578,6 @@ watch(isFilterDrawerOpen, (open) => {
     hasOpenedFilterDrawer.value = true;
   }
 });
-
-const shouldSkipInteractionChunkPrefetch = () => {
-  const connection = (
-    navigator as Navigator & {
-      connection?: { effectiveType?: string; saveData?: boolean };
-    }
-  ).connection;
-
-  return Boolean(connection?.saveData || connection?.effectiveType?.includes('2g'));
-};
-
-const prefetchDashboardInteractionChunks = () => {
-  void Promise.allSettled([
-    loadDetailOverlayHost(),
-    loadFilterModal(),
-    loadLinkedPullRequestPickerModal(),
-    loadCheckListModal(),
-    loadRepoFileView(),
-    loadDiscussionDetail(),
-    loadIssueDetail(),
-    loadPrDetail(),
-    loadReleaseDetail(),
-    loadRepoDetail(),
-  ]);
-};
-
-const scheduleDashboardInteractionChunkPrefetch = () => {
-  if (
-    !import.meta.client ||
-    hasPrefetchedDashboardInteractionChunks.value ||
-    shouldSkipInteractionChunkPrefetch()
-  ) {
-    return;
-  }
-
-  hasPrefetchedDashboardInteractionChunks.value = true;
-
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(prefetchDashboardInteractionChunks, { timeout: 5000 });
-    return;
-  }
-
-  window.setTimeout(prefetchDashboardInteractionChunks, 2000);
-};
 
 const issuePrFetchOptions = computed(() => {
   const issuePrQuery = filterSourceStates.value.issues.issuePrQuery;
@@ -1098,6 +1073,19 @@ const {
   refreshCurrentDetail,
 } = useDashboardDetails(currentRouteTabId);
 
+// File navigation is a likely next action only after opening a repository.
+watch(
+  isRepoDetailVisible,
+  (visible) => {
+    if (import.meta.client && visible) {
+      void loadRepoFileView().catch(() => {
+        // The async view reports a chunk failure if the user opens it.
+      });
+    }
+  },
+  { immediate: true }
+);
+
 watch(
   hasVisibleDetail,
   (visible) => {
@@ -1139,12 +1127,6 @@ const {
   getNotificationDetails,
   openNotification,
   markNotificationAsRead,
-});
-
-watch([hasCompletedInitialDashboardLoad, hasVisibleDetail], ([loaded, detailVisible]) => {
-  if (loaded && !detailVisible) {
-    scheduleDashboardInteractionChunkPrefetch();
-  }
 });
 
 const openSearchResult = async (item: DashboardEntity) => {
@@ -1579,6 +1561,12 @@ watch(
   min-height: 0;
   overflow: hidden;
   background: var(--gitpulse-page-bg);
+}
+
+.dashboard-file-loading {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
 }
 
 .dashboard-main-card {

@@ -60,19 +60,4 @@ describe('detail assignee integration', () => {
     expect(reviewerModalStyles).toContain('color: var(--bulma-primary-invert, #fff)');
     expect(reviewerModalStyles).toContain('animation: spin 1s linear infinite');
   });
-
-  test('keeps detail pane loaders out of the component directory', () => {
-    const dashboard = readFileSync('app/pages/dashboard.vue', 'utf8');
-    const detailOverlayHost = readFileSync(
-      'app/components/dashboard/detail/DetailOverlayHost.vue',
-      'utf8'
-    );
-    const paneLoaders = readFileSync('app/utils/createDashboardDetailPaneLoaders.ts', 'utf8');
-
-    expect(dashboard).toContain('createDashboardDetailPaneLoaders');
-    expect(detailOverlayHost).toContain('createDashboardDetailPaneLoaders');
-    expect(dashboard).not.toContain('components/dashboard/detail/detail-pane-loaders');
-    expect(detailOverlayHost).not.toContain('./detail-pane-loaders');
-    expect(paneLoaders).toContain('export default function createDashboardDetailPaneLoaders');
-  });
 });

@@ -2,11 +2,13 @@ import { afterEach, beforeEach, expect, test } from 'bun:test';
 
 import {
   computed,
+  defineAsyncComponent,
   defineComponent,
   h,
   nextTick,
   ref,
   shallowRef,
+  type Component,
   type PropType,
   type Ref,
 } from 'vue';
@@ -145,6 +147,65 @@ const Drawer = await compileVue('app/components/dashboard/release-timeline/Relea
   '@lucide/vue': icons,
   '~/components/dashboard/release-timeline/ReleaseDrawerBody.vue': { default: Body },
   '~/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue': { default: DrawerList },
+});
+
+test('the drawer stays visible and can close while release body code is loading', async () => {
+  let resolveBody!: (component: Component) => void;
+  const body = new Promise<Component>((resolve) => {
+    resolveBody = resolve;
+  });
+  const DeferredDrawer = await compileVue(
+    'app/components/dashboard/release-timeline/ReleaseDrawer.vue',
+    {
+      '@lucide/vue': icons,
+      '~/components/dashboard/release-timeline/ReleaseDrawerBody.vue': {
+        default: defineAsyncComponent(() => body),
+      },
+      '~/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue': {
+        default: DrawerList,
+      },
+    }
+  );
+  const open = shallowRef(true);
+  dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(DeferredDrawer, {
+          open: open.value,
+          item,
+          detail: { id: 1, tag_name: 'v1' },
+          loading: false,
+          error: null,
+          showingList: false,
+          listOpened: false,
+          selectedRelease: null,
+          isEntryRelease: true,
+          timelineItem: item,
+          onClose: () => {
+            open.value = false;
+          },
+        }),
+    })
+  );
+  try {
+    await Bun.sleep(0);
+    await nextTick();
+    expect(dom.document.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(dom.document.querySelector('[role="status"]')).not.toBeNull();
+    await click('.release-drawer__close');
+    expect(dom.document.querySelector('[role="dialog"]')).toBeNull();
+
+    resolveBody(defineComponent({ setup: () => () => h('article', 'Release body ready') }));
+    await Bun.sleep(0);
+    expect(dom.document.querySelector('[role="dialog"]')).toBeNull();
+    open.value = true;
+    await Bun.sleep(0);
+    await nextTick();
+    expect(dom.document.querySelector('[role="status"]')).toBeNull();
+    expect(dom.document.body.textContent).toContain('Release body ready');
+  } finally {
+    resolveBody(empty);
+  }
 });
 const ToggleSwitch = await compileVue('app/components/ui/ToggleSwitch.vue');
 const FilterPanel = await compileVue(
@@ -632,7 +693,8 @@ const showList = () => click('[aria-label^="releaseTimeline.openRepositoryReleas
 const rows = () =>
   Array.from(dom.document.querySelectorAll<HTMLButtonElement>('.release-drawer-list__row'));
 const settle = async () => {
-  await nextTick();
+  // Flush chunk promises as well as Vue's render queue.
+  await Bun.sleep(0);
   await nextTick();
 };
 const releaseDetail = (id: number) => ({

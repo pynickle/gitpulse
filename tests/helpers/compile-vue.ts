@@ -22,6 +22,11 @@ export async function compileVue(path: string, modules: Record<string, unknown> 
           : `const ${binding} = ${source}.default;`;
       }
     )
+    .replace(
+      /import\(['"]([^'"]+)['"]\)/g,
+      (_, name: string) =>
+        `Promise.resolve(modules[${JSON.stringify(name)}]).then(module => ({ __esModule: true, ...module }))`
+    )
     .replaceAll('import.meta.client', 'true')
     .replaceAll('import.meta.server', 'false');
   return new Function('modules', `${executable}\nreturn __component;`)({

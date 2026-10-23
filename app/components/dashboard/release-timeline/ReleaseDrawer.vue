@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, ListIcon, Loader2Icon, XIcon } from '@lucide/vue';
-import { computed, useId, useTemplateRef, watch } from 'vue';
+import { computed, defineAsyncComponent, useId, useTemplateRef, watch } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
 import type { ReleaseDetailPayload, ReleaseListItem } from '#shared/types/releases';
-import ReleaseDrawerBody from '~/components/dashboard/release-timeline/ReleaseDrawerBody.vue';
 import ReleaseDrawerReleaseList from '~/components/dashboard/release-timeline/ReleaseDrawerReleaseList.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { DrawerRelease } from '~/composables/useReleaseDrawer';
+
+const loadReleaseDrawerBody = () =>
+  import('~/components/dashboard/release-timeline/ReleaseDrawerBody.vue');
+const ReleaseDrawerBody = defineAsyncComponent(loadReleaseDrawerBody);
 
 const props = defineProps<{
   open: boolean;
@@ -64,6 +67,19 @@ const openRepoLabel = computed(() =>
 );
 const returnLabel = computed(() =>
   t('releaseTimeline.returnToEntryRelease', { tag: props.item?.tagName || '' })
+);
+
+// Keep the drawer controls ready; fetch its body alongside the release data.
+watch(
+  () => props.open,
+  (open) => {
+    if (import.meta.client && open) {
+      void loadReleaseDrawerBody().catch(() => {
+        // The async component reports a chunk failure when it is rendered.
+      });
+    }
+  },
+  { immediate: true }
 );
 
 watch(
@@ -199,14 +215,25 @@ const handleOpenReleasePage = async () => {
             </button>
           </div>
 
-          <ReleaseDrawerBody
-            v-else-if="detail"
-            :item="timelineItem"
-            :repository="item.repository"
-            :detail="detail"
-            @open-release="handleOpenReleasePage"
-            @navigate="emit('close')"
-          />
+          <Suspense v-else-if="detail">
+            <ReleaseDrawerBody
+              :item="timelineItem"
+              :repository="item.repository"
+              :detail="detail"
+              @open-release="handleOpenReleasePage"
+              @navigate="emit('close')"
+            />
+            <template #fallback>
+              <div
+                class="release-drawer__status"
+                role="status"
+                :aria-label="t('releaseDetail.loading')"
+                aria-busy="true"
+              >
+                <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+              </div>
+            </template>
+          </Suspense>
         </ScrollArea>
       </aside>
     </div>

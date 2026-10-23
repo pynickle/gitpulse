@@ -12,7 +12,6 @@ import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { COMPOSER_BLEED_LAYER_ID } from '~/composables/useComposerBleedPosition';
-import createDashboardDetailPaneLoaders from '~/utils/createDashboardDetailPaneLoaders';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 
 type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
@@ -168,6 +167,27 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
 });
 
 const activeDetailKey = computed(() => activeDetailPane.value?.key ?? 'empty');
+const isPanePending = shallowRef(false);
+const paneLoaders = {
+  issue: loadIssueDetail,
+  'pull-request': loadPrDetail,
+  discussion: loadDiscussionDetail,
+  release: loadReleaseDetail,
+  repository: loadRepoDetail,
+};
+
+// Fetch only the selected pane's code while its data request is in flight.
+watch(
+  () => activeDetailPane.value?.type,
+  (type) => {
+    if (import.meta.client && type) {
+      void paneLoaders[type]().catch(() => {
+        // The async component reports a chunk failure when it is rendered.
+      });
+    }
+  },
+  { immediate: true }
+);
 
 const isOverlayVisible = computed(() => Boolean(activeDetailPane.value));
 
@@ -225,7 +245,7 @@ const isContentLoading = computed(() => {
 });
 
 const isFeedbackVisible = computed(
-  () => isContentLoading.value || Boolean(activeDetailPane.value?.error)
+  () => isContentLoading.value || isPanePending.value || Boolean(activeDetailPane.value?.error)
 );
 const isRepositoryContentVisible = computed(
   () => activeDetailPane.value?.type === 'repository' && !isFeedbackVisible.value
@@ -307,6 +327,7 @@ const handleSwitchDiscussion = (owner: string, repo: string, discussionNumber: n
 };
 
 watch(activeDetailKey, () => {
+  isPanePending.value = false;
   isIssueHeaderNonSticky.value = false;
   isPullRequestReviewActive.value = false;
   isCompactHeaderVisible.value = false;
@@ -411,59 +432,71 @@ onUnmounted(() => syncDetailSidebarPane(null));
               </div>
             </div>
 
-            <IssueDetail
-              v-else-if="activeDetailPane?.type === 'issue' && issue"
-              :issue="issue"
-              :detail-sidebar-hidden="isDetailSidebarHidden"
-              :source-notification="sourceNotification"
-              @update:non-sticky-header="isIssueHeaderNonSticky = $event"
-              @update:compact-header-visible="isCompactHeaderVisible = $event"
-              @switch-issue="handleSwitchIssue"
-              @switch-pull-request="handleSwitchPullRequest"
-            />
+            <Suspense v-else @pending="isPanePending = true" @resolve="isPanePending = false">
+              <IssueDetail
+                v-if="activeDetailPane?.type === 'issue' && issue"
+                :issue="issue"
+                :detail-sidebar-hidden="isDetailSidebarHidden"
+                :source-notification="sourceNotification"
+                @update:non-sticky-header="isIssueHeaderNonSticky = $event"
+                @update:compact-header-visible="isCompactHeaderVisible = $event"
+                @switch-issue="handleSwitchIssue"
+                @switch-pull-request="handleSwitchPullRequest"
+              />
 
-            <PrDetail
-              v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
-              :pull-request="pullRequest"
-              :review-active="isPullRequestReviewRoute"
-              :detail-sidebar-hidden="isDetailSidebarHidden"
-              :source-notification="sourceNotification"
-              @update:review-active="isPullRequestReviewActive = $event"
-              @update:compact-header-visible="isCompactHeaderVisible = $event"
-              @update:compact-header-summary="pullRequestCompactSummary = $event"
-              @open-review="emit('open-pull-request-review')"
-              @close-review="emit('close-pull-request-review')"
-              @switch-issue="handleSwitchIssue"
-              @switch-pull-request="handleSwitchPullRequest"
-            />
+              <PrDetail
+                v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
+                :pull-request="pullRequest"
+                :review-active="isPullRequestReviewRoute"
+                :detail-sidebar-hidden="isDetailSidebarHidden"
+                :source-notification="sourceNotification"
+                @update:review-active="isPullRequestReviewActive = $event"
+                @update:compact-header-visible="isCompactHeaderVisible = $event"
+                @update:compact-header-summary="pullRequestCompactSummary = $event"
+                @open-review="emit('open-pull-request-review')"
+                @close-review="emit('close-pull-request-review')"
+                @switch-issue="handleSwitchIssue"
+                @switch-pull-request="handleSwitchPullRequest"
+              />
 
-            <DiscussionDetail
-              v-else-if="activeDetailPane?.type === 'discussion' && discussion"
-              :discussion="discussion"
-              :detail-sidebar-hidden="isDetailSidebarHidden"
-              :source-notification="sourceNotification"
-              @update:compact-header-visible="isCompactHeaderVisible = $event"
-              @switch-issue="handleSwitchIssue"
-              @switch-pull-request="handleSwitchPullRequest"
-              @switch-discussion="handleSwitchDiscussion"
-            />
+              <DiscussionDetail
+                v-else-if="activeDetailPane?.type === 'discussion' && discussion"
+                :discussion="discussion"
+                :detail-sidebar-hidden="isDetailSidebarHidden"
+                :source-notification="sourceNotification"
+                @update:compact-header-visible="isCompactHeaderVisible = $event"
+                @switch-issue="handleSwitchIssue"
+                @switch-pull-request="handleSwitchPullRequest"
+                @switch-discussion="handleSwitchDiscussion"
+              />
 
-            <ReleaseDetail
-              v-else-if="activeDetailPane?.type === 'release' && release"
-              :release="release"
-              :detail-sidebar-hidden="isDetailSidebarHidden"
-            />
+              <ReleaseDetail
+                v-else-if="activeDetailPane?.type === 'release' && release"
+                :release="release"
+                :detail-sidebar-hidden="isDetailSidebarHidden"
+              />
 
-            <RepoDetail
-              v-else-if="activeDetailPane?.type === 'repository' && repository"
-              :repository="repository"
-              :owner="repositoryOwner"
-              :repo="repositoryName"
-              :detail-sidebar-hidden="isDetailSidebarHidden"
-              @open-issue="emit('open-issue', $event)"
-              @open-pull-request="emit('open-pull-request', $event)"
-              @switch-pull-request="handleSwitchPullRequest"
-            />
+              <RepoDetail
+                v-else-if="activeDetailPane?.type === 'repository' && repository"
+                :repository="repository"
+                :owner="repositoryOwner"
+                :repo="repositoryName"
+                :detail-sidebar-hidden="isDetailSidebarHidden"
+                @open-issue="emit('open-issue', $event)"
+                @open-pull-request="emit('open-pull-request', $event)"
+                @switch-pull-request="handleSwitchPullRequest"
+              />
+              <template #fallback>
+                <div
+                  class="detail-loading-pane is-flex is-justify-content-center is-align-items-center"
+                  role="status"
+                  :aria-label="activeDetailPane?.loadingTitle"
+                  aria-busy="true"
+                >
+                  <Loader2Icon class="spin-animation" :size="40" aria-hidden="true" />
+                </div>
+              </template>
+            </Suspense>
           </ScrollArea>
         </Transition>
         <Transition name="detail-sidebar-sheet-fade">
