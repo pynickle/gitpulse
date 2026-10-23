@@ -76,6 +76,10 @@ class _TimelineFilterOverlay extends StatelessWidget {
                 ),
               );
             }
+            // The panel never reflows for the keyboard. Its search field is at
+            // the top of the sheet, so the keyboard overlays the date and
+            // prerelease controls rather than pushing them up the screen — the
+            // controls a reader learned the position of stay where they were.
             return Align(
               alignment: Alignment.bottomCenter,
               child: ConstrainedBox(
@@ -94,16 +98,51 @@ class _TimelineFilterOverlay extends StatelessWidget {
   }
 }
 
+/// The share of the window the panel occupies.
+///
+/// The panel takes that share whether or not its content needs it. Its height
+/// is a place a reader learns — the search field, the list, and the conditions
+/// under it stay put — and a surface that grows with an account's Followed
+/// Repositories and shrinks again when the list is searched is a surface that
+/// jumps under the hand.
+const _panelHeightFactor = .85;
+
+/// Below this many Followed Repositories the whole list is on screen anyway, so
+/// a search field would name a list that needs no narrowing.
+const _repositorySearchThreshold = 8;
+
 /// The Release Timeline Filter Panel controls: repository, published-date,
 /// and prerelease conditions for the current Shared Timeline Window.
 ///
 /// It reads and writes the session's Active Timeline Filter directly, so a
 /// change takes effect immediately without another timeline request.
-class TimelineFilterPanel extends ConsumerWidget {
+///
+/// The repository dimension follows the Follows page's shape rather than a
+/// cloud of chips: the selected repositories are one non-wrapping line at the
+/// top, and the rest of the list is a scrolling table under it. Selection is
+/// therefore readable at a glance however long the list is, and adding one more
+/// repository never costs the panel another row of controls.
+class TimelineFilterPanel extends ConsumerStatefulWidget {
   const TimelineFilterPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimelineFilterPanel> createState() =>
+      _TimelineFilterPanelState();
+}
+
+class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
+  /// The panel's own narrowing of the repository list. It never leaves the
+  /// panel: the Release Timeline Filter itself is [TimelineFilterState].
+  final _query = TextEditingController();
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(releaseTimelineSessionProvider);
     final facade = ref.read(releaseTimelineSessionProvider.notifier);
@@ -112,6 +151,46 @@ class TimelineFilterPanel extends ConsumerWidget {
 
     void update(TimelineFilterState next) => facade.applyFilters(next);
     final repositories = _sortedRepositories(facade.followedRepositories);
+    final selected = _selectedRepositories(repositories, filters.repositoryIds);
+    final query = normalizeTimelineSearchText(_query.text);
+    final listed = query.isEmpty
+        ? repositories
+        : [
+            for (final repository in repositories)
+              if (normalizeTimelineSearchText(repository.fullName)
+                  .contains(query))
+                repository,
+          ];
+    // A field that is already narrowing something keeps its place; otherwise it
+    // is only worth its line once the list is longer than the panel shows.
+    final searching =
+        _query.text.trim().isNotEmpty ||
+        repositories.length > _repositorySearchThreshold;
+
+    void toggle(TimelineRepository repository) {
+      final wasSelected = filters.repositoryIds.contains(repository.id);
+      update(
+        filters.copyWith(
+          repositoryIds: [
+            for (final id in filters.repositoryIds)
+              if (id != repository.id) id,
+            if (!wasSelected) repository.id,
+          ],
+        ),
+      );
+    }
+
+    void clearAll() {
+      _query.clear();
+      setState(() {});
+      update(
+        filters.copyWith(
+          repositoryIds: const [],
+          dateRange: const TimelineDateRange(),
+          hidePrereleases: false,
+        ),
+      );
+    }
 
     Future<void> pick({required bool from}) async {
       // Date conditions are independent of loaded cards; only the matching
@@ -150,19 +229,41 @@ class TimelineFilterPanel extends ConsumerWidget {
       final date = key == null ? null : parseTimelineDateKey(key);
       return date == null
           ? l10n.timelineFilterAnyDate
-          : MaterialLocalizations.of(context).formatMediumDate(date);
+          : MaterialLocalizations.of(context).formatShortMonthDay(date);
     }
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: height * 0.85),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+    // The panel's one text gutter. A row's rounded ink is inset by [panelInset]
+    // from the panel edge, as the Release Drawer's repository line is, so a
+    // press reads as a patch inside the row instead of a rectangle across the
+    // panel; every band that has no ink of its own carries the difference, so
+    // all of the panel's text lands on the same gutter.
+    const gutter = 16.0;
+    const panelInset = 4.0;
+    Widget band(Widget child) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: gutter - panelInset),
+      child: child,
+    );
+
+    // The sheet's own bottom inset is the physical one, not `MediaQuery.padding`:
+    // that padding drops to zero the moment the keyboard covers the navigation
+    // bar, which would shorten the sheet and drop its top edge a notch on the
+    // first keypress. `viewPadding` is what the platform reserves whether or not
+    // a keyboard is up, so the sheet keeps its height and position while typing.
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
+    return SizedBox(
+      height: height * _panelHeightFactor,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          panelInset,
+          12,
+          panelInset,
+          16 + bottomInset,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            band(
               Row(
                 children: [
                   Expanded(
@@ -173,112 +274,98 @@ class TimelineFilterPanel extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: filters.hasActiveTimelineFilter
-                        ? () => update(
-                            filters.copyWith(
-                              repositoryIds: const [],
-                              dateRange: const TimelineDateRange(),
-                              hidePrereleases: false,
-                            ),
-                          )
+                        ? clearAll
                         : null,
                     child: Text(l10n.timelineFilterClearAll),
                   ),
                 ],
               ),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.timelineFilterRepositories,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      if (repositories.isEmpty)
-                        Text(
-                          l10n.timelineFilterNoRepositories,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        )
-                      else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            for (final repository in repositories)
-                              FilterChip(
-                                label: Text(repository.fullName),
-                                selected: filters.repositoryIds.contains(
-                                  repository.id,
-                                ),
-                                onSelected: (selected) {
-                                  update(
-                                    filters.copyWith(
-                                      repositoryIds: [
-                                        for (final id in filters.repositoryIds)
-                                          if (id != repository.id) id,
-                                        if (selected) repository.id,
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                          ],
-                        ),
-                      const SizedBox(height: 20),
-                      Text(
-                        l10n.timelineFilterDateRange,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: () => pick(from: true),
-                            icon: const Icon(Icons.event, size: 18),
-                            label: Text(
-                              l10n.timelineFilterFrom(
-                                dateLabel(filters.dateRange.from),
-                              ),
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () => pick(from: false),
-                            icon: const Icon(Icons.event, size: 18),
-                            label: Text(
-                              l10n.timelineFilterTo(
-                                dateLabel(filters.dateRange.to),
-                              ),
-                            ),
-                          ),
-                          if (!filters.dateRange.isEmpty)
-                            TextButton(
-                              onPressed: () => update(
-                                filters.copyWith(
-                                  dateRange: const TimelineDateRange(),
-                                ),
-                              ),
-                              child: Text(l10n.timelineFilterClearDates),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.timelineFilterHidePrereleases),
-                        value: filters.hidePrereleases,
-                        onChanged: (value) =>
-                            update(filters.copyWith(hidePrereleases: value)),
-                      ),
-                    ],
-                  ),
-                ),
+            ),
+            if (selected.isNotEmpty) ...[
+              band(
+                _SelectedRepositories(repositories: selected, onRemove: toggle),
               ),
               const SizedBox(height: 8),
+            ],
+            if (searching) ...[
+              band(
+                _RepositorySearch(
+                  controller: _query,
+                  onChanged: () => setState(() {}),
+                  onClear: () {
+                    _query.clear();
+                    setState(() {});
+                  },
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+            // The one band that gives way. It keeps its place and its height
+            // whether the list is long, short, searched, or empty, so nothing
+            // under it moves as the reader narrows the repository list.
+            Expanded(
+              child: repositories.isEmpty
+                  ? Align(
+                      alignment: AlignmentDirectional.topStart,
+                      child: band(
+                        _Note(text: l10n.timelineFilterNoRepositories),
+                      ),
+                    )
+                  : listed.isEmpty
+                  ? Align(
+                      alignment: AlignmentDirectional.topStart,
+                      child: band(_Note(text: l10n.timelineFilterNoMatches)),
+                    )
+                  : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: listed.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        thickness: 1,
+                        indent: gutter - panelInset,
+                        endIndent: gutter - panelInset,
+                        color: Theme.of(context).dividerColor,
+                      ),
+                      itemBuilder: (context, index) {
+                        final repository = listed[index];
+                        return _RepositoryRow(
+                          key: ValueKey('filter-repository-${repository.id}'),
+                          repository: repository,
+                          selected: filters.repositoryIds.contains(
+                            repository.id,
+                          ),
+                          onTap: () => toggle(repository),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 8),
+            band(
+              _DateRange(
+                from: dateLabel(filters.dateRange.from),
+                to: dateLabel(filters.dateRange.to),
+                fromTooltip: l10n.timelineFilterFrom(
+                  dateLabel(filters.dateRange.from),
+                ),
+                toTooltip: l10n.timelineFilterTo(
+                  dateLabel(filters.dateRange.to),
+                ),
+                clearable: !filters.dateRange.isEmpty,
+                onFrom: () => pick(from: true),
+                onTo: () => pick(from: false),
+                onClear: () => update(
+                  filters.copyWith(dateRange: const TimelineDateRange()),
+                ),
+              ),
+            ),
+            _PrereleaseSwitch(
+              label: l10n.timelineFilterHidePrereleases,
+              value: filters.hidePrereleases,
+              onChanged: (value) =>
+                  update(filters.copyWith(hidePrereleases: value)),
+            ),
+            const SizedBox(height: 4),
+            band(
               Align(
                 alignment: AlignmentDirectional.centerEnd,
                 child: FilledButton.tonal(
@@ -286,8 +373,425 @@ class TimelineFilterPanel extends ConsumerWidget {
                   child: Text(l10n.timelineFilterDone),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The repositories the Active Timeline Filter selects, as one horizontal line
+/// of removable chips.
+///
+/// The line never wraps and is the only place a selection stays visible while
+/// the list below is scrolled elsewhere or narrowed by the search field, so a
+/// hundred selected repositories cost the panel one line rather than a screen.
+class _SelectedRepositories extends StatelessWidget {
+  const _SelectedRepositories({
+    required this.repositories,
+    required this.onRemove,
+  });
+
+  final List<TimelineRepository> repositories;
+  final ValueChanged<TimelineRepository> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var index = 0; index < repositories.length; index++) ...[
+            if (index > 0) const SizedBox(width: 6),
+            InputChip(
+              key: ValueKey('filter-selected-${repositories[index].id}'),
+              label: Text(repositories[index].fullName),
+              // The whole chip removes the repository: a reader who came to
+              // undo a selection should not have to find the small mark on it.
+              onPressed: () => onRemove(repositories[index]),
+              onDeleted: () => onRemove(repositories[index]),
+              backgroundColor: scheme.secondaryContainer,
+              side: BorderSide.none,
+              labelStyle: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSecondaryContainer,
+              ),
+              deleteIconColor: scheme.onSecondaryContainer,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The Timeline toolbar's dense filled search field, narrowed to repository
+/// names, so the panel's search reads as the same control as the page's.
+class _RepositorySearch extends StatelessWidget {
+  const _RepositorySearch({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide.none,
+    );
+    return TextField(
+      key: const ValueKey('filter-search-repositories'),
+      controller: controller,
+      maxLines: 1,
+      style: theme.textTheme.bodyMedium,
+      textInputAction: TextInputAction.search,
+      onChanged: (_) => onChanged(),
+      decoration: InputDecoration(
+        isDense: true,
+        filled: true,
+        fillColor: scheme.surfaceContainerHigh,
+        hintText: l10n.timelineFilterSearchRepositories,
+        hintMaxLines: 1,
+        prefixIcon: const Icon(Icons.search, size: 18),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 32,
+          minHeight: 40,
+        ),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: l10n.timelineSearchClear,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: onClear,
+                icon: const Icon(Icons.close, size: 18),
+              ),
+        suffixIconConstraints: const BoxConstraints(
+          minWidth: 32,
+          minHeight: 40,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        constraints: const BoxConstraints(minHeight: 40),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border.copyWith(
+          borderSide: BorderSide(color: scheme.primary),
+        ),
+      ),
+    );
+  }
+}
+
+/// One Followed Repository in the panel's list: its name, and a check mark when
+/// the Active Timeline Filter selects it. The whole row toggles the selection.
+class _RepositoryRow extends StatelessWidget {
+  const _RepositoryRow({
+    super.key,
+    required this.repository,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TimelineRepository repository;
+  final bool selected;
+  final VoidCallback onTap;
+
+  /// The mark's own slot, kept whether or not the mark is showing, so a name
+  /// never reflows sideways the moment it is selected.
+  static const _markSlot = 26.0;
+  static const _mark = Duration(milliseconds: 180);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        child: _Pressable(
+          onTap: onTap,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  repository.fullName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              SizedBox(
+                width: _markSlot,
+                child: Center(
+                  child: ExcludeSemantics(
+                    // The mark grows into place and shrinks away rather than
+                    // appearing: a selection is a small event, and a fade of
+                    // one frame reads as a flicker.
+                    child: AnimatedScale(
+                      scale: selected ? 1 : 0.4,
+                      duration: _mark,
+                      curve: Curves.easeOutCubic,
+                      child: AnimatedOpacity(
+                        opacity: selected ? 1 : 0,
+                        duration: _mark,
+                        curve: Curves.easeOut,
+                        child: Icon(
+                          Icons.check_circle,
+                          size: 18,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row that answers a press with a short tonal fade inside its own rounded
+/// shape.
+///
+/// Material's press wash is deliberately not used here: it is a rectangle (or
+/// a ripple) that spreads across whatever the row happens to measure, and in
+/// this panel that reads as a dark block behind the text. The row instead fades
+/// in the same container tone the app presses with everywhere else, on a
+/// rounded shape inset from the panel edge — light enough to read as the row
+/// being held rather than as a surface changing colour. Hovering shows half of
+/// that tone, so a pointer finds the row before it is clicked.
+class _Pressable extends StatefulWidget {
+  const _Pressable({
+    required this.onTap,
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(12, 9, 8, 9),
+  });
+
+  final VoidCallback onTap;
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  static const _radius = BorderRadius.all(Radius.circular(8));
+  static const _fade = Duration(milliseconds: 130);
+
+  bool _held = false;
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tone = scheme.surfaceContainerHighest;
+    final tint = _held
+        ? tone
+        : _hovered
+        ? tone.withValues(alpha: .5)
+        : Colors.transparent;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: _radius,
+        onTap: widget.onTap,
+        // The tint below is the whole response; no ripple, and none of the
+        // theme's own wash on top of it.
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        focusColor: Colors.transparent,
+        onHighlightChanged: (held) => setState(() => _held = held),
+        onHover: (hovered) => setState(() => _hovered = hovered),
+        child: AnimatedContainer(
+          duration: _fade,
+          curve: Curves.easeOut,
+          padding: widget.padding,
+          decoration: BoxDecoration(color: tint, borderRadius: _radius),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// The published-date condition as one line: the calendar glyph, the two
+/// bounds either side of a dash, and the way to clear them.
+///
+/// The bounds read as one range instead of two labelled buttons, so the line
+/// fits a phone's panel width and never wraps the clear action onto a second
+/// row. Each bound keeps its spoken name — "Published from …" — in its tooltip,
+/// where the words are available without being printed twice.
+class _DateRange extends StatelessWidget {
+  const _DateRange({
+    required this.from,
+    required this.to,
+    required this.fromTooltip,
+    required this.toTooltip,
+    required this.clearable,
+    required this.onFrom,
+    required this.onTo,
+    required this.onClear,
+  });
+
+  final String from;
+  final String to;
+  final String fromTooltip;
+  final String toTooltip;
+  final bool clearable;
+  final VoidCallback onFrom;
+  final VoidCallback onTo;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Row(
+      children: [
+        ExcludeSemantics(
+          child: Icon(
+            Icons.event_outlined,
+            size: 16,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          child: _DateBound(label: from, tooltip: fromTooltip, onTap: onFrom),
+        ),
+        ExcludeSemantics(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '–',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+        Flexible(
+          child: _DateBound(label: to, tooltip: toTooltip, onTap: onTo),
+        ),
+        if (clearable)
+          IconButton(
+            tooltip: l10n.timelineFilterClearDates,
+            onPressed: onClear,
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            icon: const Icon(Icons.event_busy_outlined),
+          )
+        else
+          const SizedBox(width: 4),
+      ],
+    );
+  }
+}
+
+/// One bound of the published-date condition: a compact outlined pill whose
+/// label is the date itself.
+class _DateBound extends StatelessWidget {
+  const _DateBound({
+    required this.label,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final String label;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 32),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          foregroundColor: scheme.onSurface,
+          side: BorderSide(color: scheme.outlineVariant),
+          textStyle: theme.textTheme.bodyMedium,
+        ),
+        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
+    );
+  }
+}
+
+/// The prerelease condition as a row that answers a press exactly as the
+/// repository list above it does, so the panel reads as one list of conditions
+/// rather than a list and a full-width switch tile.
+class _PrereleaseSwitch extends StatelessWidget {
+  const _PrereleaseSwitch({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _Pressable(
+      onTap: () => onChanged(!value),
+      padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}
+
+/// A short muted line in place of the repository list: nothing to filter by, or
+/// nothing matching what the search field holds.
+class _Note extends StatelessWidget {
+  const _Note({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        text,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -303,4 +807,21 @@ List<TimelineRepository> _sortedRepositories(
         left.fullName.toLowerCase().compareTo(right.fullName.toLowerCase()),
   );
   return sorted;
+}
+
+/// The selected repositories in the order they were selected, which is the one
+/// order a reader can predict: the chip line shows what the filter holds, not
+/// what the list happens to sort to.
+List<TimelineRepository> _selectedRepositories(
+  List<TimelineRepository> repositories,
+  List<String> ids,
+) {
+  final byId = {
+    for (final repository in repositories) repository.id: repository,
+  };
+  return [
+    // A repository that is no longer followed has no chip, even while the
+    // filter still names its id.
+    for (final id in ids) ?byId[id],
+  ];
 }

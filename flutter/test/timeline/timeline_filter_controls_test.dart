@@ -8,6 +8,7 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
+import 'package:gitpulse/timeline/timeline_filter_panel.dart';
 import 'package:gitpulse/timeline/timeline_filters.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
@@ -205,7 +206,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(l10n.timelineFilterPanelTitle), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilterChip, 'octo/alpha'));
+      await tester.tap(find.byKey(const ValueKey('filter-repository-R_alpha')));
       await tester.pump();
       expect(filters().repositoryIds, ['R_alpha']);
       expect(
@@ -215,7 +216,8 @@ void main() {
       expect(find.text('Alpha newest'), findsOneWidget);
       expect(find.text('Beta stable'), findsNothing);
 
-      await tester.tap(find.widgetWithText(FilterChip, 'octo/alpha'));
+      // The selection's own chip is the way back out of it.
+      await tester.tap(find.byKey(const ValueKey('filter-selected-R_alpha')));
       await tester.pump();
       expect(filters().repositoryIds, isEmpty);
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(3));
@@ -231,10 +233,7 @@ void main() {
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(2));
 
       await tester.tap(
-        find.widgetWithText(
-          OutlinedButton,
-          l10n.timelineFilterTo(l10n.timelineFilterAnyDate),
-        ),
+        find.byTooltip(l10n.timelineFilterTo(l10n.timelineFilterAnyDate)),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('10'));
@@ -246,10 +245,7 @@ void main() {
 
       // A lower bound after the upper bound drops the inverted upper bound.
       await tester.tap(
-        find.widgetWithText(
-          OutlinedButton,
-          l10n.timelineFilterFrom(l10n.timelineFilterAnyDate),
-        ),
+        find.byTooltip(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate)),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('12'));
@@ -270,6 +266,103 @@ void main() {
       await tester.pump();
       expect(filters().hasActiveTimelineFilter, isFalse);
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(3));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'a long Followed Repository list scrolls inside one band and can be searched',
+    (tester) async {
+      final mounted = await pumpTimeline(
+        tester,
+        handlers: {
+          'GET api/settings': () => BackendResult(
+            statusCode: 200,
+            data: settingsJson([
+              for (var index = 0; index < 9; index++)
+                followJson('R_$index', 'octo', 'repo$index'),
+            ]),
+          ),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                for (var index = 0; index < 9; index++)
+                  'R_$index': pageJson('octo', 'repo$index', [
+                    releaseJson(
+                      200 + index,
+                      'v1.0.$index',
+                      '2026-10-12T10:00:00Z',
+                      name: 'Release $index',
+                    ),
+                  ]),
+              },
+              refresh: baselineRefresh('2026-10-10T00:00:00.000Z'),
+            ),
+          ),
+        },
+      );
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(TimelineScreen)),
+      );
+      TimelineFilterState filters() =>
+          mounted.container.read(releaseTimelineSessionProvider).filters;
+
+      await tester.tap(find.byTooltip(l10n.timelineFilters));
+      await tester.pumpAndSettle();
+
+      // The Timeline cards behind the overlay print the same repository names,
+      // so every list assertion names the panel's own copy.
+      final panel = find.byType(TimelineFilterPanel);
+      Finder inPanel(String text) =>
+          find.descendant(of: panel, matching: find.text(text));
+
+      // Repositories are a table that scrolls, not a chip cloud that grows the
+      // panel by a row for every repository followed.
+      expect(
+        find.descendant(of: panel, matching: find.byType(FilterChip)),
+        findsNothing,
+      );
+      final list = find.descendant(of: panel, matching: find.byType(ListView));
+      // The panel's height belongs to the panel, not to the number of rows in
+      // its list, so narrowing the list cannot make the panel jump.
+      final panelHeight = tester
+          .getSize(find.byType(TimelineFilterPanel))
+          .height;
+      final band = tester.getSize(list).height;
+
+      final search = find.byKey(const ValueKey('filter-search-repositories'));
+      expect(search, findsOneWidget);
+      await tester.enterText(search, 'repo3');
+      await tester.pump();
+      expect(inPanel('octo/repo3'), findsOneWidget);
+      expect(inPanel('octo/repo4'), findsNothing);
+      expect(tester.getSize(list).height, band);
+      expect(
+        tester.getSize(find.byType(TimelineFilterPanel)).height,
+        panelHeight,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('filter-repository-R_3')));
+      await tester.pump();
+      expect(filters().repositoryIds, ['R_3']);
+      // The chip line takes its room from the band, not from the panel.
+      expect(
+        tester.getSize(find.byType(TimelineFilterPanel)).height,
+        panelHeight,
+      );
+
+      // The selection survives narrowing the list back to every repository.
+      await tester.tap(find.byTooltip(l10n.timelineSearchClear));
+      await tester.pump();
+      expect(inPanel('octo/repo4'), findsOneWidget);
+      expect(find.byKey(const ValueKey('filter-selected-R_3')), findsOneWidget);
+      expect(filters().repositoryIds, ['R_3']);
+
+      await tester.tap(find.text(l10n.timelineFilterDone));
+      await tester.pumpAndSettle();
+      expect(find.text('Release 3'), findsOneWidget);
+      expect(find.text('Release 4'), findsNothing);
       expect(tester.takeException(), isNull);
     },
   );
@@ -346,7 +439,7 @@ void main() {
       }
 
       Future<void> openDate(String label) async {
-        await tester.tap(find.widgetWithText(OutlinedButton, label));
+        await tester.tap(find.byTooltip(label));
         await tester.pumpAndSettle();
         final material = MaterialLocalizations.of(
           tester.element(find.byType(DatePickerDialog)),
