@@ -162,7 +162,7 @@ void main() {
       server.offline = false;
       await tester.tap(find.text('Connect'));
       await tester.pumpAndSettle();
-      expect(find.text('Compatible backend'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Change backend'));
@@ -192,7 +192,7 @@ void main() {
             .toString(),
         'https://first.example/',
       );
-      expect(find.text('Compatible backend'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
     },
   );
 
@@ -321,12 +321,14 @@ void main() {
         server.requests.last.toString(),
         'http://127.0.0.1:3000/gitpulse/api/native/capabilities',
       );
-      expect(find.text('Personal password'), findsNothing);
+      // The gate offers exactly the credentials this backend reports: one field
+      // per enabled method, and nothing for a method it does not have.
+      expect(find.text('Password'), findsNothing);
+      expect(find.text('GitHub token'), pat ? findsOneWidget : findsNothing);
       expect(
-        find.text('Personal access token'),
-        pat ? findsOneWidget : findsNothing,
+        find.text('Continue with GitHub'),
+        oauth ? findsOneWidget : findsNothing,
       );
-      expect(find.text('GitHub OAuth'), oauth ? findsOneWidget : findsNothing);
     });
   }
 
@@ -441,9 +443,9 @@ void main() {
         server.requests.last.toString(),
         'https://self-hosted.example/gitpulse/api/native/capabilities',
       );
-      expect(find.text('Personal password'), findsOneWidget);
-      expect(find.text('GitHub OAuth'), findsNothing);
-      expect(find.text('Personal access token'), findsNothing);
+      expect(find.text('Password'), findsOneWidget);
+      expect(find.text('Continue with GitHub'), findsNothing);
+      expect(find.text('GitHub token'), findsNothing);
       expect(find.text('Timeline'), findsWidgets);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -454,7 +456,7 @@ void main() {
         'https://self-hosted.example/gitpulse/api/native/capabilities',
       );
       expect(find.text('Connect to GitPulse'), findsNothing);
-      expect(find.text('Personal password'), findsOneWidget);
+      expect(find.text('Password'), findsOneWidget);
     },
   );
 }

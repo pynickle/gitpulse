@@ -20,15 +20,18 @@ the current session but disappear after reopening. An increased preference canno
 recover evicted content. A failed preference synchronization uses the installation's
 last valid account value; without a valid value, fresh results remain session-only.
 
-Settings exposes the synchronized retention value and a whole-day editor. Only a
-successful online settings patch applies a new policy; failed synchronization and
-failed saves are shown separately. Shrinking prunes content and its provenance;
-older online browsing stays readable for the current session.
+Settings shows the synchronized retention value in its whole-day editor, offers the
+save action only once the field holds a different value, and states the policy that
+is still in force under a pending or rejected change. Only a successful online
+settings patch applies a new policy; failed synchronization and failed saves are
+shown separately. Shrinking prunes content and its provenance; older online browsing
+stays readable for the current session.
 
 The Settings clear-cache action goes through the timeline facade. It invalidates
 in-flight rounds and removes local release content, saved membership, and pagination
-provenance without fetching or advancing the shared baseline. It preserves login,
-Release Follows, account preferences, the installation's language/appearance
+provenance without fetching or advancing the shared baseline. It stays available
+while a round is loading, because a stuck round is the reason to clear. It preserves
+login, Release Follows, account preferences, the installation's language/appearance
 choices (a separate device-local file), and the last locally synchronized retention
 value for offline startup. Refresh explicitly to repopulate the cleared history.
 

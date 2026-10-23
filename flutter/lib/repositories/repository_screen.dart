@@ -6,7 +6,8 @@ import '../presentation/gitpulse_state_views.dart';
 import '../releases/document_content.dart';
 import '../releases/release_document.dart';
 import '../session/session_controller.dart';
-import '../session/sign_in_panel.dart';
+import '../session/session_notice.dart';
+import '../settings/account_panel.dart';
 import 'repository_dto.dart';
 import 'repository_navigation.dart';
 import 'repository_service.dart';
@@ -41,12 +42,14 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SessionNotice(),
+            // Signed out, the account panel below states the session's trouble;
+            // drawing it here as well would print the same line twice.
+            if (session.phase == SessionPhase.signedIn) const SessionNotice(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: session.phase != SessionPhase.signedIn
-                    ? const SignInPanel()
+                    ? const AccountPanel()
                     : result.when(
                         skipLoadingOnRefresh: false,
                         loading: () =>

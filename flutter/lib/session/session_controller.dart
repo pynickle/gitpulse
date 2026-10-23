@@ -318,12 +318,13 @@ class SessionController extends Notifier<SessionState> {
 
   /// Clears the signed-in identity before logout finishes so in-flight work
   /// cannot commit against the previous account.
+  ///
+  /// Signing in again afterwards is how another account is chosen: the same
+  /// clearing boundary applies, so a separate entry point would only rename this
+  /// one.
   Future<void> signOut() async {
     await _clearIdentity(IdentityClearReason.signOut);
   }
-
-  Future<void> switchAccount() =>
-      _clearIdentity(IdentityClearReason.accountSwitch);
 
   /// Backend changes drop the previous identity before the connection screen
   /// returns, including when the server cannot be reached.

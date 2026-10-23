@@ -15,8 +15,10 @@ import 'package:gitpulse/presentation/presentation_preferences_store.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
+import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
+import '../support/settling.dart';
 import '../timeline/timeline_test_support.dart';
 
 const _capabilities = NativeCapabilities(
@@ -141,16 +143,6 @@ PresentationHarness harnessFor(
 Future<void> pumpFrames(WidgetTester tester, {int frames = 8}) async {
   for (var i = 0; i < frames; i++) {
     await tester.pump(const Duration(milliseconds: 50));
-  }
-}
-
-/// Waits for real file and HTTP work while the widget clock advances.
-Future<void> settleUi(WidgetTester tester) async {
-  for (var i = 0; i < 30; i++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 5)),
-    );
-    await tester.pump(const Duration(milliseconds: 20));
   }
 }
 
@@ -334,11 +326,18 @@ void main() {
       await openSettings(tester, 'Settings');
       await tapChoice(tester, 'Simplified Chinese');
 
-      final clear = find.text('清除本机时间线缓存');
+      final clear = find.widgetWithText(OutlinedButton, '清除');
       await tester.ensureVisible(clear);
       await pumpFrames(tester);
       await tester.tap(clear);
       await settleUi(tester);
+      expect(
+        harness.container
+            .read(releaseTimelineSessionProvider)
+            .cacheSettings
+            .cleared,
+        isTrue,
+      );
 
       expect(
         harness.container
@@ -411,7 +410,7 @@ void main() {
     await openSettings(tester, 'Settings');
     expect(find.byType(AppBar), findsNothing);
     expect(find.text('Language'), findsOneWidget);
-    expect(find.text('Timeline cache'), findsOneWidget);
+    expect(find.text('Keep releases for'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
 
     tester.view.physicalSize = const Size(1200, 900);

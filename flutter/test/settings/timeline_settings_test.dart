@@ -16,6 +16,8 @@ import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
+import '../support/settling.dart';
+
 import '../release_timeline_http_test.dart';
 
 class SettingsInstallation {
@@ -70,15 +72,14 @@ class SettingsInstallation {
       .toList();
 }
 
-Future<void> settleUi(WidgetTester tester) async {
-  // Real HTTP and SQLite need the host event loop, outside the widget clock.
-  for (var i = 0; i < 40; i++) {
-    await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 10)),
-    );
-    await tester.pump(const Duration(milliseconds: 50));
-  }
-}
+/// Real HTTP and SQLite need the host event loop, outside the widget clock, and
+/// a settings round takes longer than the shared default budget.
+Future<void> settle(WidgetTester tester) => settleUi(
+  tester,
+  frames: 40,
+  step: const Duration(milliseconds: 50),
+  realStep: const Duration(milliseconds: 10),
+);
 
 Future<SettingsInstallation> startInstallation(WidgetTester tester) async {
   final original = HttpOverrides.current;
@@ -125,6 +126,17 @@ Future<SettingsInstallation> startInstallation(WidgetTester tester) async {
   }))!;
 }
 
+/// The retention editor: the field the account's synchronized policy is shown
+/// in, and the only text field Settings carries for a signed-in account.
+final retentionField = find.byKey(const ValueKey('retention-days'));
+
+/// Asserts the retention editor paints [value]: what the reader sees, not only
+/// what the controller behind it holds.
+void expectRetentionShown(WidgetTester tester, String value) => expect(
+  find.descendant(of: retentionField, matching: find.text(value)),
+  findsOneWidget,
+);
+
 Future<void> mountSettings(
   WidgetTester tester,
   SettingsInstallation app,
@@ -146,18 +158,20 @@ Future<void> mountSettings(
       child: const GitPulseApp(),
     ),
   );
-  await settleUi(tester);
+  await settle(tester);
   await tester.tap(find.text('Settings').last);
-  await settleUi(tester);
-  await tester.ensureVisible(find.byType(TextFormField));
+  await settle(tester);
+  await tester.ensureVisible(retentionField);
   await tester.pumpAndSettle();
 }
 
 Future<void> saveDays(WidgetTester tester, String days) async {
-  await tester.enterText(find.byType(TextFormField), days);
-  await tester.ensureVisible(find.text('Save retention'));
-  await tester.runAsync(() => tester.tap(find.text('Save retention')));
-  await settleUi(tester);
+  await tester.enterText(retentionField, days);
+  await tester.pump();
+  final save = find.byTooltip('Save retention');
+  await tester.ensureVisible(save);
+  await tester.runAsync(() => tester.tap(save));
+  await settle(tester);
 }
 
 void failRequests(
@@ -222,7 +236,7 @@ void main() {
         });
         await locked.future;
       });
-      final clear = find.text('Clear local timeline cache');
+      final clear = find.widgetWithText(OutlinedButton, 'Clear');
       await tester.ensureVisible(clear);
       await tester.runAsync(() => tester.tap(clear));
       await tester.pump();
@@ -241,7 +255,7 @@ void main() {
         await storageLock;
         await follows;
       });
-      await settleUi(tester);
+      await settle(tester);
       expect(
         app.container
             .read(releaseTimelineSessionProvider)
@@ -250,7 +264,7 @@ void main() {
         isFalse,
       );
       await saveDays(tester, '1');
-      expect(find.text('Last synchronized retention: 1 days'), findsOneWidget);
+      expectRetentionShown(tester, '1');
       await tester.runAsync(() async {
         // Reverse ordering must also leave clear completion current.
         final facade = app.container.read(
@@ -295,8 +309,20 @@ void main() {
             ),
           );
       await saveDays(tester, '1');
-      expect(find.text('Saving retention…'), findsOneWidget);
-      expect(find.text('Last synchronized retention: 30 days'), findsOneWidget);
+      // The save is in flight: the editor says so, and the account is still on
+      // the policy it last synchronized.
+      expect(
+        app.container.read(releaseTimelineSessionProvider).cacheSettings.saving,
+        isTrue,
+      );
+      expect(find.byTooltip('Save retention'), findsNothing);
+      expect(
+        app.container
+            .read(releaseTimelineSessionProvider)
+            .cacheSettings
+            .retentionDays,
+        30,
+      );
       await tester.runAsync(() async {
         final follows = app.container
             .read(releaseTimelineSessionProvider.notifier)
@@ -304,8 +330,8 @@ void main() {
         confirmation.next(pending);
         await follows;
       });
-      await settleUi(tester);
-      expect(find.text('Last synchronized retention: 1 days'), findsOneWidget);
+      await settle(tester);
+      expectRetentionShown(tester, '1');
       await reopenOffline(tester, app);
       expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -409,12 +435,12 @@ void main() {
     expect(app.releases, ['R_alpha:3', 'R_alpha:2', 'R_alpha:1']);
     await reopenOffline(tester, app);
     expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
-    expect(find.text('Last synchronized retention: 1 days'), findsOneWidget);
+    expectRetentionShown(tester, '1');
     await saveDays(tester, '90');
     expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
     await reopenOffline(tester, app);
     expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
-    expect(find.text('Last synchronized retention: 90 days'), findsOneWidget);
+    expectRetentionShown(tester, '90');
     await tester.runAsync(() async {
       app.container.read(connectionDioProvider).interceptors.removeLast();
       await app.container
@@ -443,10 +469,55 @@ void main() {
       );
       await saveDays(tester, '1');
       expect(find.textContaining('Could not save retention.'), findsOneWidget);
+      // The rejected edit stays in the editor to be retried, and the policy that
+      // is still in force is stated beside it.
+      expectRetentionShown(tester, '1');
       expect(find.text('Last synchronized retention: 30 days'), findsOneWidget);
       await reopenOffline(tester, app);
       expect(app.releases, ['R_alpha:3', 'R_alpha:2', 'R_alpha:1']);
       expect(find.textContaining('Using the last valid value'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'the editor offers a save, and Enter sends, only for an unsaved value',
+    (tester) async {
+      final app = await startInstallation(tester);
+      await mountSettings(tester, app);
+      var writes = 0;
+      app.container
+          .read(connectionDioProvider)
+          .interceptors
+          .add(
+            InterceptorsWrapper(
+              onRequest: (options, handler) {
+                if (options.method == 'PUT') writes++;
+                handler.next(options);
+              },
+            ),
+          );
+
+      expectRetentionShown(tester, '30');
+      // The field holds the policy the account already has: there is nothing to
+      // offer, and Enter cannot put that policy back on the wire.
+      expect(find.byTooltip('Save retention'), findsNothing);
+      await tester.enterText(retentionField, '30');
+      await tester.pump();
+      expect(find.byTooltip('Save retention'), findsNothing);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await settle(tester);
+      expect(writes, 0);
+
+      // A different value is the only thing a save is for.
+      await tester.enterText(retentionField, '31');
+      await tester.pump();
+      expect(find.byTooltip('Save retention'), findsOneWidget);
+      await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
+      await settle(tester);
+      expect(writes, 1);
+      expectRetentionShown(tester, '31');
+      expect(find.byTooltip('Save retention'), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -515,10 +586,10 @@ void main() {
         await held.future.timeout(const Duration(seconds: 5));
       });
       await tester.pump();
-      final clear = find.text('Clear local timeline cache');
+      final clear = find.widgetWithText(OutlinedButton, 'Clear');
       await tester.ensureVisible(clear);
       await tester.runAsync(() => tester.tap(clear));
-      await settleUi(tester);
+      await settle(tester);
       expect(app.releases, isEmpty);
       expect(
         app.container.read(releaseTimelineSessionProvider).canLoadOlder,
@@ -561,7 +632,7 @@ void main() {
       expect(app.releases, isEmpty);
       await reopenOffline(tester, app);
       expect(app.releases, isEmpty);
-      expect(find.text('Last synchronized retention: 30 days'), findsOneWidget);
+      expectRetentionShown(tester, '30');
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
@@ -584,7 +655,7 @@ void main() {
         );
       });
       await mountSettings(tester, app);
-      expect(find.widgetWithText(TextFormField, '30'), findsOneWidget);
+      expectRetentionShown(tester, '30');
       await saveDays(tester, '1');
       await tester.runAsync(() async {
         final settings =

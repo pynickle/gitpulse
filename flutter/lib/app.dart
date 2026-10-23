@@ -7,15 +7,15 @@ import 'connection/connection_screen.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'presentation/gitpulse_theme.dart';
 import 'presentation/presentation_preferences_controller.dart';
-import 'presentation/presentation_settings.dart';
 import 'session/session_controller.dart';
-import 'session/sign_in_panel.dart';
+import 'session/session_notice.dart';
+import 'settings/account_panel.dart';
+import 'settings/settings_screen.dart';
 import 'timeline/timeline_screen.dart';
 import 'timeline/timeline_cache_lifecycle.dart';
 import 'follows/release_follows_screen.dart';
 import 'releases/repository_releases_screen.dart';
 import 'repositories/repository_screen.dart';
-import 'settings/timeline_cache_settings.dart';
 
 /// The shell destinations, in navigation-rail and bottom-bar order.
 const _destinationPaths = ['/timeline', '/follows', '/settings'];
@@ -118,6 +118,44 @@ class _SignedInTab extends StatelessWidget {
   }
 }
 
+/// What Timeline and Follows show while nobody is signed in: the account this
+/// installation is pointing at and the way into it.
+///
+/// It is the same panel Settings carries, because a reader who has not signed in
+/// yet should not have to learn a second surface for it. A phone gets the panel
+/// where a keyboard leaves it alone; a wide window keeps it a panel rather than a
+/// form stretched across the screen.
+class _SignInGate extends StatelessWidget {
+  const _SignInGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: const AccountPanel(),
+        ),
+      ),
+    );
+  }
+}
+
+/// What one destination shows: Settings always, and either the signed-in page or
+/// the account gate on the two destinations that need a session.
+Widget _destination(int index, {required bool signedIn}) => switch (index) {
+  _settingsDestination => const SettingsScreen(),
+  0 =>
+    signedIn
+        ? const _SignedInTab(child: TimelineScreen())
+        : const _SignInGate(),
+  _ =>
+    signedIn
+        ? const _SignedInTab(child: ReleaseFollowsScreen())
+        : const _SignInGate(),
+};
+
 class _AppShell extends ConsumerWidget {
   const _AppShell({required this.index});
 
@@ -126,11 +164,9 @@ class _AppShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final connection = ref.watch(connectionControllerProvider).value;
+    final backend = ref.watch(connectionControllerProvider).value?.backend;
     final session = ref.watch(sessionControllerProvider);
-    final backend = connection?.backend;
     if (backend == null) return const SizedBox.shrink();
-    final providers = backend.capabilities.providers;
     final labels = [l10n.timeline, l10n.follows, l10n.settings];
     const icons = [
       Icons.view_timeline_outlined,
@@ -142,6 +178,10 @@ class _AppShell extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 720;
+        final destination = _destination(
+          index,
+          signedIn: session.phase == SessionPhase.signedIn,
+        );
         return Scaffold(
           body: SafeArea(
             bottom: false,
@@ -160,87 +200,7 @@ class _AppShell extends ConsumerWidget {
                         ),
                     ],
                   ),
-                Expanded(
-                  child: index < 2 && session.phase == SessionPhase.signedIn
-                      ? _SignedInTab(
-                          child: index == 0
-                              ? const TimelineScreen()
-                              : const ReleaseFollowsScreen(),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                l10n.compatibleBackend,
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              SelectableText(backend.address.toString()),
-                              if (connection?.problem case final problem?)
-                                Text(connectionProblemLabel(l10n, problem)),
-                              const SizedBox(height: 24),
-                              Text(
-                                l10n.availableProviders,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                children: [
-                                  if (providers.personalMode)
-                                    Chip(label: Text(l10n.personalPassword)),
-                                  if (providers.patEnabled)
-                                    Chip(label: Text(l10n.personalAccessToken)),
-                                  if (backend.capabilities.supportsNativeLogin)
-                                    Chip(label: Text(l10n.githubOAuth)),
-                                ],
-                              ),
-                              const SignInPanel(),
-                              const SizedBox(height: 24),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: OutlinedButton(
-                                  onPressed: session.busy
-                                      ? null
-                                      : () async {
-                                          final address =
-                                              await showBackendAddressEditor(
-                                                context,
-                                                backend.address.toString(),
-                                              );
-                                          if (address == null ||
-                                              !context.mounted ||
-                                              Uri.parse(address) ==
-                                                  backend.address) {
-                                            return;
-                                          }
-                                          await ref
-                                              .read(
-                                                sessionControllerProvider
-                                                    .notifier,
-                                              )
-                                              .leaveBackend(address: address);
-                                        },
-                                  child: Text(l10n.changeBackend),
-                                ),
-                              ),
-                              // Presentation choices follow the account section
-                              // in Settings and stay available while signed out.
-                              if (index == _settingsDestination) ...[
-                                const Divider(height: 32),
-                                const PresentationSettingsPanel(),
-                              ],
-                              if (session.phase == SessionPhase.signedIn) ...[
-                                const SizedBox(height: 24),
-                                TimelineCacheSettingsPanel(
-                                  key: ValueKey(session.identity),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                ),
+                Expanded(child: destination),
               ],
             ),
           ),

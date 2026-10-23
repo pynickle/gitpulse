@@ -74,13 +74,21 @@ this tree — verify with the Flutter toolchain.
   placeholders `"format": "decimalPattern"` in the ARB so intl localizes them.
   Star counts on Release Follows use `formatGitPulseLocaleCompactCount` (locale
   `K` / `万`). Download counts stay on `formatGitPulseCompactCount`.
+- Settings (`lib/settings/`) is a table, not a document: rows come from
+  `presentation/gitpulse_setting_rows.dart` — one label column, one control
+  column, a hairline between rows — and the account/backend surface is
+  `settings/account_panel.dart`, shared with the signed-out Timeline/Follows
+  gate and the repository pages. A setting's copy is its label and its control;
+  a description line under either one is a review defect. Account actions are
+  tooltip-named icon buttons, so tests address them with `find.byTooltip`.
 - Widget tests run on a fake clock. An awaited `File` or `Directory` call in the
   test body, or the first `build()` of an async notifier, never resumes, so
   `PresentationPreferencesController.selectLanguage` waits forever on
   `state.value == null` and the Settings chip looks dead. Create the temp
   preferences file with `createTempSync`, pass it as `mountApp`'s
-  `presentationFile`, and advance the read with the bounded `runAsync` + `pump`
-  loop named `settleUi` in `test/presentation/presentation_settings_test.dart`.
+  `presentationFile`, and advance the read with the shared bounded
+  `runAsync` + `pump` loop `settleUi` (`test/support/settling.dart`); a
+  suite whose real work is slower passes it a wider frame budget.
   A test that prints nothing after its name is this wait. Pass
   `flutter test --timeout 30s` so the hang fails on a line.
 - A menu that must stay inside the window uses `showMenu`. `MenuAnchor`'s

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -459,7 +458,7 @@ void main() {
         isEmpty,
       );
       expect(await const FlutterSecureStorage().readAll(), storage);
-      expect(find.text('Signed in as octocat'), findsOneWidget);
+      expect(find.text('octocat'), findsOneWidget);
     },
   );
 
@@ -480,8 +479,8 @@ void main() {
         value: 'correct-horse',
         action: 'Unlock',
       );
-      expect(find.text('Signed in as octocat'), findsNothing);
-      expect(find.text('Sign out'), findsNothing);
+      expect(find.text('octocat'), findsNothing);
+      expect(find.byTooltip('Sign out'), findsNothing);
       expect(find.text('Release Timeline'), findsNothing);
       expect(find.textContaining('GitPulse ·'), findsNothing);
       final refresh = find.byTooltip('Reload');
@@ -491,12 +490,12 @@ void main() {
       expect(tester.getCenter(refresh).dx, greaterThan(width - 80));
       await tester.tap(find.text('Follows').last);
       await tester.pumpAndSettle();
-      expect(find.text('Signed in as octocat'), findsNothing);
-      expect(find.text('Sign out'), findsNothing);
+      expect(find.text('octocat'), findsNothing);
+      expect(find.byTooltip('Sign out'), findsNothing);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      expect(find.text('Signed in as octocat'), findsOneWidget);
-      expect(find.text('Sign out'), findsOneWidget);
+      expect(find.text('octocat'), findsOneWidget);
+      expect(find.byTooltip('Sign out'), findsOneWidget);
       expect(find.text('Change backend'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -723,7 +722,7 @@ void main() {
         SignInFailure.storage,
       );
       expect(container.read(sessionControllerProvider).busy, isFalse);
-      expect(find.textContaining('Signed in as'), findsNothing);
+      expect(find.byTooltip('Sign out'), findsNothing);
       storage.failWrite = null;
       await submitField(
         tester,
@@ -989,7 +988,7 @@ void main() {
   }
 
   testWidgets(
-    'choosing another account clears identity and cancels work before a new PAT',
+    'signing out in Settings clears identity and cancels work before another PAT',
     (tester) async {
       final server = AuthServer(
         providers: {
@@ -1020,11 +1019,11 @@ void main() {
       expect(server.holding, isTrue);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Use a different account'));
+      await tester.tap(find.byTooltip('Sign out'));
       expect(container.read(sessionControllerProvider).identity, isNull);
       expect(
         notifier.transitionLog.whereType<IdentityCleared>().single.reason,
-        IdentityClearReason.accountSwitch,
+        IdentityClearReason.signOut,
       );
       expect((await pumped(tester, pending)).cancelled, isTrue);
       await tester.pumpAndSettle();
@@ -1097,7 +1096,7 @@ void main() {
       );
       expect(fieldLabeled('GitHub token'), findsNothing);
       expect(find.textContaining('OAuth'), findsNothing);
-      expect(find.text('Signed in as octocat'), findsNothing);
+      expect(find.text('octocat'), findsNothing);
       final stored = await const FlutterSecureStorage().readAll();
       expect(stored.values.join('\n').contains('nope'), isFalse);
     },
@@ -1195,7 +1194,7 @@ void main() {
       find.text('This sign-in method is not enabled on the server.'),
       findsOneWidget,
     );
-    expect(find.textContaining('Signed in as'), findsNothing);
+    expect(find.byTooltip('Sign out'), findsNothing);
   });
 
   testWidgets(
@@ -1389,7 +1388,7 @@ void main() {
         container.read(sessionControllerProvider).phase,
         SessionPhase.signedOut,
       );
-      expect(find.text('Signed in as octocat'), findsNothing);
+      expect(find.text('octocat'), findsNothing);
       expect(fieldLabeled('Password'), findsOneWidget);
       final logout = server.requests
           .where((request) => request.uri.path.endsWith('/auth/logout'))
@@ -1521,7 +1520,7 @@ void main() {
       });
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Use a different account'));
+      await tester.tap(find.byTooltip('Sign out'));
       await tester.pumpAndSettle();
       await submitField(
         tester,
@@ -1535,7 +1534,7 @@ void main() {
       expectIdentity(tester, 'hubot');
       expect(
         notifier.transitionLog.whereType<IdentityCleared>().single.reason,
-        IdentityClearReason.accountSwitch,
+        IdentityClearReason.signOut,
       );
     },
   );
@@ -1624,7 +1623,7 @@ void main() {
       find.text('Could not reach the server. Your session was not changed.'),
       findsOneWidget,
     );
-    expect(find.textContaining('Signed in as'), findsNothing);
+    expect(find.byTooltip('Sign out'), findsNothing);
 
     server.offline = false;
     server.signInStatus = 429;
@@ -1641,7 +1640,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.textContaining('Signed in as'), findsNothing);
+    expect(find.byTooltip('Sign out'), findsNothing);
   });
 
   testWidgets(
