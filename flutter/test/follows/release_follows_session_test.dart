@@ -13,6 +13,134 @@ import '../timeline/timeline_test_support.dart';
 
 void main() {
   testWidgets(
+    'starred discovery paginates and resets the page when ordering changes',
+    (tester) async {
+      final server = FollowsServer()
+        ..starredRepositories = [repositoryJson()]
+        ..starredHasMore = true;
+      final container = await auth.mountApp(tester, server);
+      await auth.connectTo(tester, 'https://gitpulse.example/pulse');
+      await auth.submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      final facade = container.read(releaseFollowsSessionProvider.notifier);
+      await auth.pumped(tester, facade.loadStarred());
+      final first = server.featureRequests.singleWhere(
+        (request) => request.uri.path.endsWith('/api/starred'),
+      );
+      expect(first.uri.path, '/pulse/api/starred');
+      expect(first.uri.queryParameters, {
+        'page': '1',
+        'per_page': '30',
+        'sort': 'created',
+        'direction': 'desc',
+      });
+      server.starredRepositories = [
+        repositoryJson(),
+        repositoryJson(id: 'R_beta', name: 'beta'),
+      ];
+      server.starredHasMore = false;
+      await auth.pumped(tester, facade.loadStarred(more: true));
+      var starred = container.read(releaseFollowsSessionProvider).starred;
+      expect(starred.items.map((item) => item.repository.id), [
+        'R_alpha',
+        'R_beta',
+      ]);
+      expect(starred.page, 2);
+      expect(starred.hasMore, isFalse);
+      server.starredRepositories = [
+        repositoryJson(id: 'R_gamma', name: 'gamma'),
+      ];
+      server.starredHasMore = true;
+      await auth.pumped(
+        tester,
+        facade.loadStarred(
+          sort: StarredRepositorySort.updated,
+          ascending: true,
+        ),
+      );
+      starred = container.read(releaseFollowsSessionProvider).starred;
+      expect(starred.items.single.repository.id, 'R_gamma');
+      expect(starred.page, 1);
+      expect(server.featureRequests.last.uri.queryParameters, {
+        'page': '1',
+        'per_page': '30',
+        'sort': 'updated',
+        'direction': 'asc',
+      });
+      server.starredStatus = 500;
+      await auth.pumped(tester, facade.loadStarred(more: true));
+      starred = container.read(releaseFollowsSessionProvider).starred;
+      expect(starred.items.single.repository.id, 'R_gamma');
+      expect(starred.page, 1);
+      expect(starred.problem, FollowProblem.server);
+      server.starredStatus = 200;
+      await auth.pumped(tester, facade.loadStarred(more: true));
+      expect(server.featureRequests.last.uri.queryParameters['page'], '2');
+      expect(
+        container.read(releaseFollowsSessionProvider).starred.problem,
+        isNull,
+      );
+    },
+  );
+
+  testWidgets(
+    'obsolete starred responses cannot overwrite a new sort or a signed-out account',
+    (tester) async {
+      final server = FollowsServer()..starredRepositories = [repositoryJson()];
+      final container = await auth.mountApp(tester, server);
+      await auth.connectTo(tester, 'https://gitpulse.example');
+      await auth.submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      final facade = container.read(releaseFollowsSessionProvider.notifier);
+      final hold = Completer<void>();
+      server.holdStarred = hold.future;
+      final obsolete = facade.loadStarred();
+      await tester.pump(const Duration(milliseconds: 100));
+      server.holdStarred = null;
+      server.starredRepositories = [repositoryJson(id: 'R_beta', name: 'beta')];
+      await auth.pumped(
+        tester,
+        facade.loadStarred(sort: StarredRepositorySort.updated),
+      );
+      hold.complete();
+      await auth.pumped(tester, obsolete);
+      expect(
+        container
+            .read(releaseFollowsSessionProvider)
+            .starred
+            .items
+            .single
+            .repository
+            .id,
+        'R_beta',
+      );
+      final logoutHold = Completer<void>();
+      server.holdStarred = logoutHold.future;
+      final accountRequest = facade.loadStarred();
+      await tester.pump(const Duration(milliseconds: 100));
+      await auth.pumped(
+        tester,
+        container.read(sessionControllerProvider.notifier).signOut(),
+      );
+      logoutHold.complete();
+      await auth.pumped(tester, accountRequest);
+      expect(
+        container.read(releaseFollowsSessionProvider).starred.items,
+        isEmpty,
+      );
+      expect(container.read(releaseFollowsSessionProvider).active, isFalse);
+    },
+  );
+
+  testWidgets(
     'search and follow use the same account settings and preserve unrelated preferences',
     (tester) async {
       final server = FollowsServer();

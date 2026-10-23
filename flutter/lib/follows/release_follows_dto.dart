@@ -54,6 +54,8 @@ class RepositoryCandidateDto {
     required this.owner,
     required this.name,
     this.description,
+    this.language,
+    this.stargazersCount = 0,
   });
 
   factory RepositoryCandidateDto.fromJson(Map<String, dynamic> json) =>
@@ -64,6 +66,9 @@ class RepositoryCandidateDto {
   final RepositoryOwnerDto owner;
   final String name;
   final String? description;
+  final String? language;
+  @JsonKey(name: 'stargazers_count')
+  final int stargazersCount;
 
   TimelineRepository get repository =>
       TimelineRepository(id: nodeId, owner: owner.login, name: name);

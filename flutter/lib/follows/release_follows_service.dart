@@ -133,6 +133,24 @@ class ReleaseFollowsService {
       RepositorySearchDto.fromJson,
     );
   }
+
+  Future<RepositorySearchDto> starred(
+    int page, {
+    required StarredRepositorySort sort,
+    required bool ascending,
+  }) => _read(
+    'GET',
+    Uri(
+      path: 'api/starred',
+      queryParameters: {
+        'page': '$page',
+        'per_page': '30',
+        'sort': sort.name,
+        'direction': ascending ? 'asc' : 'desc',
+      },
+    ).toString(),
+    RepositorySearchDto.fromJson,
+  );
 }
 
 bool validRepositoryName(String owner, String name) =>

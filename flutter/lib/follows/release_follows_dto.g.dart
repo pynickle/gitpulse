@@ -75,18 +75,31 @@ RepositorySearchPaginationDto _$RepositorySearchPaginationDtoFromJson(
 
 RepositoryCandidateDto _$RepositoryCandidateDtoFromJson(
   Map<String, dynamic> json,
-) => $checkedCreate('RepositoryCandidateDto', json, ($checkedConvert) {
-  final val = RepositoryCandidateDto(
-    nodeId: $checkedConvert('node_id', (v) => v as String),
-    owner: $checkedConvert(
-      'owner',
-      (v) => RepositoryOwnerDto.fromJson(v as Map<String, dynamic>),
-    ),
-    name: $checkedConvert('name', (v) => v as String),
-    description: $checkedConvert('description', (v) => v as String?),
-  );
-  return val;
-}, fieldKeyMap: const {'nodeId': 'node_id'});
+) => $checkedCreate(
+  'RepositoryCandidateDto',
+  json,
+  ($checkedConvert) {
+    final val = RepositoryCandidateDto(
+      nodeId: $checkedConvert('node_id', (v) => v as String),
+      owner: $checkedConvert(
+        'owner',
+        (v) => RepositoryOwnerDto.fromJson(v as Map<String, dynamic>),
+      ),
+      name: $checkedConvert('name', (v) => v as String),
+      description: $checkedConvert('description', (v) => v as String?),
+      language: $checkedConvert('language', (v) => v as String?),
+      stargazersCount: $checkedConvert(
+        'stargazers_count',
+        (v) => (v as num?)?.toInt() ?? 0,
+      ),
+    );
+    return val;
+  },
+  fieldKeyMap: const {
+    'nodeId': 'node_id',
+    'stargazersCount': 'stargazers_count',
+  },
+);
 
 RepositoryOwnerDto _$RepositoryOwnerDtoFromJson(Map<String, dynamic> json) =>
     $checkedCreate('RepositoryOwnerDto', json, ($checkedConvert) {

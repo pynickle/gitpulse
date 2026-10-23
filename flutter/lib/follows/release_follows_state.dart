@@ -14,6 +14,47 @@ enum FollowProblem {
   storedLimit,
 }
 
+enum StarredRepositorySort { created, updated }
+
+class StarredRepositoriesState {
+  const StarredRepositoriesState({
+    this.items = const [],
+    this.loading = false,
+    this.page = 0,
+    this.hasMore = false,
+    this.sort = StarredRepositorySort.created,
+    this.ascending = false,
+    this.problem,
+  });
+
+  final List<RepositoryCandidateDto> items;
+  final bool loading;
+  final int page;
+  final bool hasMore;
+  final StarredRepositorySort sort;
+  final bool ascending;
+  final FollowProblem? problem;
+
+  StarredRepositoriesState copyWith({
+    List<RepositoryCandidateDto>? items,
+    bool? loading,
+    int? page,
+    bool? hasMore,
+    StarredRepositorySort? sort,
+    bool? ascending,
+    FollowProblem? problem,
+    bool clearProblem = false,
+  }) => StarredRepositoriesState(
+    items: items ?? this.items,
+    loading: loading ?? this.loading,
+    page: page ?? this.page,
+    hasMore: hasMore ?? this.hasMore,
+    sort: sort ?? this.sort,
+    ascending: ascending ?? this.ascending,
+    problem: clearProblem ? null : problem ?? this.problem,
+  );
+}
+
 class ReleaseFollowsState {
   const ReleaseFollowsState({
     this.active = false,
@@ -32,6 +73,7 @@ class ReleaseFollowsState {
     this.metadataProblem,
     this.problem,
     this.searchProblem,
+    this.starred = const StarredRepositoriesState(),
   });
 
   final bool active;
@@ -50,6 +92,7 @@ class ReleaseFollowsState {
   final FollowProblem? metadataProblem;
   final FollowProblem? problem;
   final FollowProblem? searchProblem;
+  final StarredRepositoriesState starred;
 
   ReleaseFollowsState copyWith({
     bool? loaded,
@@ -70,6 +113,7 @@ class ReleaseFollowsState {
     FollowProblem? searchProblem,
     bool clearProblem = false,
     bool clearSearchProblem = false,
+    StarredRepositoriesState? starred,
   }) => ReleaseFollowsState(
     active: active,
     loaded: loaded ?? this.loaded,
@@ -91,5 +135,6 @@ class ReleaseFollowsState {
     searchProblem: clearSearchProblem
         ? null
         : searchProblem ?? this.searchProblem,
+    starred: starred ?? this.starred,
   );
 }

@@ -399,11 +399,11 @@ void main() {
     await tester.tap(find.text('Follows'));
     await settleUi(tester);
     expect(find.byType(AppBar), findsNothing);
-    expect(find.text('Release Follows'), findsOneWidget);
-    expect(
-      find.textContaining('Follow releases independently'),
-      findsOneWidget,
-    );
+    expect(find.text('Release Follows'), findsNothing);
+    expect(find.textContaining('Follow releases independently'), findsNothing);
+    expect(find.text('Starred'), findsOneWidget);
+    expect(find.text('Search'), findsOneWidget);
+    expect(find.byKey(const ValueKey('manage-follows')), findsOneWidget);
     expect(find.text('Follows'), findsOneWidget);
     expect(find.text('Timeline'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);

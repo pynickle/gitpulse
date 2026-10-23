@@ -18,6 +18,7 @@ final releaseFollowsSessionProvider =
 class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   int _generation = 0;
   int _searchGeneration = 0;
+  int _starredGeneration = 0;
   String? _context;
 
   ReleaseFollowsService get _service => ReleaseFollowsService(({
@@ -40,6 +41,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     ref.onDispose(() {
       _generation++;
       _searchGeneration++;
+      _starredGeneration++;
     });
     ref.listen(sessionControllerProvider, (_, next) {
       final context = _sessionContext();
@@ -47,6 +49,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       _context = context;
       _generation++;
       _searchGeneration++;
+      _starredGeneration++;
       state = ReleaseFollowsState(active: context != null);
       if (context != null) unawaited(reload());
     });
@@ -145,6 +148,63 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       searchPage: 0,
       clearSearchProblem: true,
     );
+  }
+
+  /// Loads starred repositories using the same ordering as the web app.
+  Future<void> loadStarred({
+    bool more = false,
+    StarredRepositorySort? sort,
+    bool? ascending,
+  }) async {
+    if (!state.active) return;
+    final starred = state.starred;
+    if (more && (starred.loading || !starred.hasMore)) return;
+    final ticket = ++_starredGeneration;
+    final context = _context;
+    final page = more ? starred.page + 1 : 1;
+    final nextSort = sort ?? starred.sort;
+    final nextAscending = ascending ?? starred.ascending;
+    state = state.copyWith(
+      starred: starred.copyWith(
+        loading: true,
+        items: more ? null : const [],
+        hasMore: more ? null : false,
+        sort: nextSort,
+        ascending: nextAscending,
+        clearProblem: true,
+      ),
+    );
+    try {
+      final result = await _service.starred(
+        page,
+        sort: nextSort,
+        ascending: nextAscending,
+      );
+      if (!ref.mounted || context != _context || ticket != _starredGeneration) {
+        return;
+      }
+      final byId = {
+        for (final item in [if (more) ...starred.items, ...result.items])
+          item.repository.id: item,
+      };
+      state = state.copyWith(
+        starred: state.starred.copyWith(
+          items: List.unmodifiable(byId.values),
+          loading: false,
+          page: page,
+          hasMore: result.pagination?.hasNext ?? false,
+        ),
+      );
+    } on FollowRequestFailure catch (error) {
+      if (ref.mounted && context == _context && ticket == _starredGeneration) {
+        state = state.copyWith(
+          starred: state.starred.copyWith(
+            loading: false,
+            problem: error.problem,
+          ),
+        );
+      }
+    }
   }
 
   /// Adds a Release Follow after checking the latest shared list and limits.

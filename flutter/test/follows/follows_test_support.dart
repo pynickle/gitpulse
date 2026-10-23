@@ -16,14 +16,18 @@ class FollowsServer extends AuthServer {
   };
   final featureRequests = <RecordedRequest>[];
   List<Map<String, Object?>> repositories = [repositoryJson()];
+  List<Map<String, Object?>> starredRepositories = [];
   Map<String, Object?> metadata = {};
   Map<String, Object?> pages = {};
   int saveStatus = 200;
   bool malformedSave = false;
   int searchStatus = 200;
+  int starredStatus = 200;
   int metadataStatus = 200;
   bool searchHasMore = false;
+  bool starredHasMore = false;
   Future<void>? holdSearch;
+  Future<void>? holdStarred;
   Future<void>? holdSave;
   Future<void>? holdRound;
 
@@ -35,6 +39,7 @@ class FollowsServer extends AuthServer {
   ) async {
     final path = options.uri.path;
     if (!path.endsWith('/api/settings') &&
+        !path.endsWith('/api/starred') &&
         !path.contains('/api/search/') &&
         !path.contains('/api/repos/') &&
         !path.contains('/api/release-follows/') &&
@@ -73,6 +78,14 @@ class FollowsServer extends AuthServer {
       return json(searchStatus, {
         'items': result,
         'pagination': {'hasNext': searchHasMore},
+      });
+    }
+    if (path.endsWith('/api/starred')) {
+      final result = List.of(starredRepositories);
+      if (holdStarred != null) await holdStarred;
+      return json(starredStatus, {
+        'items': result,
+        'pagination': {'hasNext': starredHasMore},
       });
     }
     if (path.contains('/api/repos/')) {
@@ -119,5 +132,7 @@ Map<String, Object?> repositoryJson({
   'owner': {'login': owner},
   'name': name,
   'description': 'A project for release followers',
+  'default_branch': 'main',
+  'forks_count': 7,
   'stargazers_count': 42,
 };
