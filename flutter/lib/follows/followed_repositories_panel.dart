@@ -25,13 +25,16 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          padding: const EdgeInsets.fromLTRB(releaseFollowsPadding, 4, 4, 4),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   l10n.followsCurrent(state.repositories.length),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               IconButton(
@@ -77,7 +80,9 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                       ),
                       if (!state.saveFailed)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: releaseFollowsPadding,
+                          ),
                           child: TextButton(
                             onPressed: disabled ? null : facade.reload,
                             child: Text(l10n.timelineRetry),
@@ -104,25 +109,28 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                   ),
                 )
               else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  sliver: SliverList.builder(
-                    itemCount: state.repositories.length,
-                    itemBuilder: (context, index) {
-                      final repo = state.repositories[index];
-                      return FollowedRepositoryCard(
-                        key: ValueKey('followed-${repo.id}'),
-                        repository: repo,
-                        detailed: detailed,
-                        status: state.statuses[repo.id],
-                        details: state.details[repo.id],
-                        enabled: !disabled,
-                        onUnfollow: () => facade.unfollow(repo.id),
-                        onRetry: () =>
-                            facade.loadMetadata(repositoryId: repo.id),
-                      );
-                    },
-                  ),
+                SliverList.builder(
+                  itemCount: state.repositories.length,
+                  itemBuilder: (context, index) {
+                    final repo = state.repositories[index];
+                    return Column(
+                      children: [
+                        FollowedRepositoryCard(
+                          key: ValueKey('followed-${repo.id}'),
+                          repository: repo,
+                          detailed: detailed,
+                          status: state.statuses[repo.id],
+                          details: state.details[repo.id],
+                          enabled: !disabled,
+                          onUnfollow: () => facade.unfollow(repo.id),
+                          onRetry: () =>
+                              facade.loadMetadata(repositoryId: repo.id),
+                        ),
+                        if (index < state.repositories.length - 1)
+                          const FollowRowDivider(),
+                      ],
+                    );
+                  },
                 ),
             ],
           ),

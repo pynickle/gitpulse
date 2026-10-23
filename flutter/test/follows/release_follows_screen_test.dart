@@ -614,6 +614,41 @@ void main() {
     },
   );
 
+  testWidgets('every row starts its star count at the same column', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final server = FollowsServer()
+      ..starredRepositories = [
+        repositoryJson(
+          id: 'R_rust',
+          name: 'short',
+          language: 'Rust',
+          stars: 42,
+        ),
+        repositoryJson(
+          id: 'R_ts',
+          name: 'long',
+          language: 'TypeScript',
+          stars: 12345,
+        ),
+        repositoryJson(id: 'R_none', name: 'none', language: null, stars: 7),
+      ];
+    await _openFollows(tester, server);
+    final stars = find.byIcon(Icons.star_border);
+    expect(stars, findsNWidgets(3));
+    final lefts = [
+      for (var index = 0; index < 3; index++)
+        tester.getRect(stars.at(index)).left,
+    ];
+    expect(lefts.toSet(), hasLength(1), reason: 'star column: $lefts');
+    expect(find.text('42'), findsOneWidget);
+    expect(find.text('12.3K'), findsOneWidget);
+  });
+
   testWidgets('star counts follow the active locale', (tester) async {
     tester.view.physicalSize = const Size(800, 900);
     tester.view.devicePixelRatio = 1;

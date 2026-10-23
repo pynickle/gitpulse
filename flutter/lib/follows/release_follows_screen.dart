@@ -13,6 +13,12 @@ import 'release_follows_widgets.dart';
 
 enum _RepositorySource { starred, search }
 
+/// The search field's shape: the soft radius the Timeline toolbar already uses,
+/// so the two search surfaces read as the same control.
+const _searchBorder = OutlineInputBorder(
+  borderRadius: BorderRadius.all(Radius.circular(8)),
+);
+
 class ReleaseFollowsScreen extends ConsumerStatefulWidget {
   const ReleaseFollowsScreen({super.key});
 
@@ -101,6 +107,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
     final state = ref.watch(releaseFollowsSessionProvider);
     final facade = ref.read(releaseFollowsSessionProvider.notifier);
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final search = _source == _RepositorySource.search;
     final loading = search ? state.searching : state.starred.loading;
     final hasMore = search ? state.hasMore : state.starred.hasMore;
@@ -123,96 +130,162 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(
+                          releaseFollowsPadding,
+                          8,
+                          releaseFollowsPadding,
+                          8,
+                        ),
+                        // The mode switch keeps its own width and shares its
+                        // line with the sort controls whenever both fit. A
+                        // full-width strip above a second row of controls spent
+                        // the top of the page on two bands with one button each.
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            SegmentedButton<_RepositorySource>(
-                              showSelectedIcon: false,
-                              expandedInsets: EdgeInsets.zero,
-                              segments: [
-                                ButtonSegment(
-                                  value: _RepositorySource.starred,
-                                  label: Text(l10n.followsStarred),
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                SegmentedButton<_RepositorySource>(
+                                  showSelectedIcon: false,
+                                  segments: [
+                                    ButtonSegment(
+                                      value: _RepositorySource.starred,
+                                      label: Text(l10n.followsStarred),
+                                    ),
+                                    ButtonSegment(
+                                      value: _RepositorySource.search,
+                                      label: Text(l10n.followsSearch),
+                                    ),
+                                  ],
+                                  selected: {_source},
+                                  onSelectionChanged: (values) {
+                                    _debounce?.cancel();
+                                    FocusScope.of(context).unfocus();
+                                    _scrollToTop();
+                                    setState(() => _source = values.single);
+                                    if (_source == _RepositorySource.search &&
+                                        state.query.isNotEmpty &&
+                                        state.searchPage == 0 &&
+                                        !state.searching) {
+                                      _search();
+                                    }
+                                  },
                                 ),
-                                ButtonSegment(
-                                  value: _RepositorySource.search,
-                                  label: Text(l10n.followsSearch),
-                                ),
-                              ],
-                              selected: {_source},
-                              onSelectionChanged: (values) {
-                                _debounce?.cancel();
-                                FocusScope.of(context).unfocus();
-                                _scrollToTop();
-                                setState(() => _source = values.single);
-                                if (_source == _RepositorySource.search &&
-                                    state.query.isNotEmpty &&
-                                    state.searchPage == 0 &&
-                                    !state.searching) {
-                                  _search();
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            if (search)
-                              TextField(
-                                controller: _query,
-                                textInputAction: TextInputAction.search,
-                                onSubmitted: (_) => _search(submit: true),
-                                onChanged: _changeQuery,
-                                decoration: InputDecoration(
-                                  labelText: l10n.followsSearchLabel,
-                                  border: const OutlineInputBorder(),
-                                  suffixIcon: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (_query.text.isNotEmpty)
-                                        IconButton(
-                                          tooltip: l10n.followsClearSearch,
-                                          onPressed: () {
-                                            _query.clear();
-                                            _changeQuery('');
-                                          },
-                                          icon: const Icon(Icons.close),
+                                if (!search)
+                                  _SortControls(
+                                    label:
+                                        state.starred.sort ==
+                                            StarredRepositorySort.created
+                                        ? l10n.followsSortStarred
+                                        : l10n.followsSortUpdated,
+                                    starredLabel: l10n.followsSortStarred,
+                                    updatedLabel: l10n.followsSortUpdated,
+                                    ascending: state.starred.ascending,
+                                    ascendingLabel: l10n.followsAscending,
+                                    descendingLabel: l10n.followsDescending,
+                                    enabled: !loading,
+                                    onSort: (sort) {
+                                      _scrollToTop();
+                                      unawaited(facade.loadStarred(sort: sort));
+                                    },
+                                    onToggleDirection: () {
+                                      _scrollToTop();
+                                      unawaited(
+                                        facade.loadStarred(
+                                          ascending: !state.starred.ascending,
                                         ),
-                                      IconButton(
-                                        tooltip: l10n.followsSearch,
-                                        onPressed: _query.text.trim().isEmpty
-                                            ? null
-                                            : () => _search(submit: true),
-                                        icon: const Icon(Icons.search),
+                                      );
+                                    },
+                                  ),
+                              ],
+                            ),
+                            if (search) ...[
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: AlignmentDirectional.centerStart,
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 520,
+                                  ),
+                                  child: TextField(
+                                    controller: _query,
+                                    textInputAction: TextInputAction.search,
+                                    onSubmitted: (_) => _search(submit: true),
+                                    onChanged: _changeQuery,
+                                    style: theme.textTheme.bodyMedium,
+                                    decoration: InputDecoration(
+                                      labelText: l10n.followsSearchLabel,
+                                      isDense: true,
+                                      // The label is a label, not a heading: the
+                                      // field keeps body-sized type whether the
+                                      // label rests inside it or floats.
+                                      labelStyle: theme.textTheme.bodyMedium,
+                                      floatingLabelStyle:
+                                          theme.textTheme.bodySmall,
+                                      border: _searchBorder,
+                                      enabledBorder: _searchBorder,
+                                      focusedBorder: _searchBorder.copyWith(
+                                        borderSide: BorderSide(
+                                          color: theme.colorScheme.primary,
+                                        ),
                                       ),
-                                    ],
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                      suffixIcon: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (_query.text.isNotEmpty)
+                                            IconButton(
+                                              tooltip: l10n.followsClearSearch,
+                                              style: IconButton.styleFrom(
+                                                tapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                              ),
+                                              onPressed: () {
+                                                _query.clear();
+                                                _changeQuery('');
+                                              },
+                                              icon: const Icon(
+                                                Icons.close,
+                                                size: 20,
+                                              ),
+                                            ),
+                                          IconButton(
+                                            tooltip: l10n.followsSearch,
+                                            style: IconButton.styleFrom(
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            onPressed:
+                                                _query.text.trim().isEmpty
+                                                ? null
+                                                : () => _search(submit: true),
+                                            icon: const Icon(
+                                              Icons.search,
+                                              size: 20,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      suffixIconConstraints:
+                                          const BoxConstraints(
+                                            minWidth: 44,
+                                            minHeight: 44,
+                                          ),
+                                    ),
                                   ),
                                 ),
-                              )
-                            else
-                              _SortControls(
-                                label:
-                                    state.starred.sort ==
-                                        StarredRepositorySort.created
-                                    ? l10n.followsSortStarred
-                                    : l10n.followsSortUpdated,
-                                starredLabel: l10n.followsSortStarred,
-                                updatedLabel: l10n.followsSortUpdated,
-                                ascending: state.starred.ascending,
-                                ascendingLabel: l10n.followsAscending,
-                                descendingLabel: l10n.followsDescending,
-                                enabled: !loading,
-                                onSort: (sort) {
-                                  _scrollToTop();
-                                  unawaited(facade.loadStarred(sort: sort));
-                                },
-                                onToggleDirection: () {
-                                  _scrollToTop();
-                                  unawaited(
-                                    facade.loadStarred(
-                                      ascending: !state.starred.ascending,
-                                    ),
-                                  );
-                                },
                               ),
+                            ],
                           ],
                         ),
                       ),
@@ -225,7 +298,12 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                       if (!keyboardVisible &&
                           (hasMore || !wide || problem != null))
                         Padding(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.fromLTRB(
+                            releaseFollowsPadding,
+                            8,
+                            releaseFollowsPadding,
+                            12,
+                          ),
                           child: Row(
                             children: [
                               if (hasMore || problem != null)
@@ -351,27 +429,29 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
         if (empty != null)
           SliverFillRemaining(hasScrollBody: false, child: empty)
         else
-          SliverPadding(
-            padding: const EdgeInsets.all(12),
-            sliver: SliverList.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                final followed = ids.contains(item.repository.id);
-                return FollowRepositoryCard(
-                  key: ValueKey(
-                    '${search ? 'search' : 'starred'}-${item.repository.id}',
+          SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final followed = ids.contains(item.repository.id);
+              return Column(
+                children: [
+                  FollowRepositoryCard(
+                    key: ValueKey(
+                      '${search ? 'search' : 'starred'}-${item.repository.id}',
+                    ),
+                    candidate: item,
+                    followed: followed,
+                    onToggle: state.loading || state.saving
+                        ? null
+                        : () => followed
+                              ? facade.unfollow(item.repository.id)
+                              : facade.follow(item.repository),
                   ),
-                  candidate: item,
-                  followed: followed,
-                  onToggle: state.loading || state.saving
-                      ? null
-                      : () => followed
-                            ? facade.unfollow(item.repository.id)
-                            : facade.follow(item.repository),
-                );
-              },
-            ),
+                  if (index < items.length - 1) const FollowRowDivider(),
+                ],
+              );
+            },
           ),
       ],
     );
@@ -403,7 +483,11 @@ class _SortControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // This cluster shares a [Wrap] run with the mode switch, so its label has
+    // to be able to give way: a run that cannot fit its children would overflow
+    // instead of moving the cluster to the next line.
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
           child: _SortMenuButton(
@@ -414,10 +498,11 @@ class _SortControls extends StatelessWidget {
             onSort: onSort,
           ),
         ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
+        IconButton(
           tooltip: ascending ? ascendingLabel : descendingLabel,
           onPressed: enabled ? onToggleDirection : null,
+          visualDensity: VisualDensity.compact,
+          iconSize: 20,
           icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
         ),
       ],
