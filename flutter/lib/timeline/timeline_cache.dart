@@ -75,7 +75,18 @@ class TimelineCache extends _$TimelineCache {
   TimelineCache(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await customStatement(
+          'ALTER TABLE cache_account ADD COLUMN pending_follows TEXT',
+        );
+      }
+    },
+  );
 
   Future<void> _pending = Future.value();
   int _revision = 0;
@@ -96,6 +107,7 @@ class TimelineCache extends _$TimelineCache {
         await transaction(_deleteHistory);
         _historyClearRequired = false;
       }
+      await transaction(_finishPendingFollows);
       return action();
     });
     _pending = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
@@ -283,16 +295,77 @@ class TimelineCache extends _$TimelineCache {
     required List<TimelineRepository> repositories,
     required DateTime now,
     required bool Function() isCurrent,
-  }) => _writeCurrent(isCurrent, () async {
-    await _claim(scope);
-    if (retentionDays != null) {
-      await customStatement(
-        'UPDATE cache_account SET retention_days = ? WHERE scope = ?',
-        [retentionDays, scope],
-      );
+  }) {
+    final revision = _revision;
+    void check() {
+      if (revision != _revision || !isCurrent()) throw const _ObsoleteWrite();
     }
+
+    return _queue(() async {
+      // Commit the confirmed follow set before attempting destructive cleanup.
+      // A failed cleanup or process exit leaves a replayable restore barrier.
+      await transaction(() async {
+        check();
+        await _claim(scope);
+        final old = await _repositories();
+        if (old.length != repositories.length ||
+            repositories.any(
+              (repo) => !old.any(
+                (previous) =>
+                    previous.id == repo.id &&
+                    previous.fullName == repo.fullName,
+              ),
+            )) {
+          await customStatement(
+            'UPDATE cache_account SET pending_follows = ? WHERE scope = ?',
+            [
+              jsonEncode([
+                for (final repo in repositories)
+                  {'id': repo.id, 'owner': repo.owner, 'name': repo.name},
+              ]),
+              scope,
+            ],
+          );
+        }
+        if (retentionDays != null) {
+          await customStatement(
+            'UPDATE cache_account SET retention_days = ? WHERE scope = ?',
+            [retentionDays, scope],
+          );
+        }
+        check();
+      });
+      await transaction(() async {
+        check();
+        await _finishPendingFollows();
+        final account = await customSelect(
+          'SELECT retention_days FROM cache_account WHERE scope = ?',
+          variables: [Variable(scope)],
+        ).getSingle();
+        final days = account.readNullable<int>('retention_days');
+        if (days != null) await _prune(now, days);
+        check();
+      });
+    });
+  }
+
+  Future<void> _finishPendingFollows() async {
+    final account = await customSelect(
+      'SELECT pending_follows FROM cache_account',
+    ).getSingleOrNull();
+    final pending = account?.readNullable<String>('pending_follows');
+    if (pending == null) return;
+    final repositories = (jsonDecode(pending) as List<dynamic>)
+        .map(
+          (json) =>
+              FollowedRepositoryDto.fromJson(json as Map<String, dynamic>)
+                  .toDomain(),
+        )
+        .toList();
     final old = await _repositories();
     final ids = repositories.map((item) => item.id).toSet();
+    final oldIds = old.map((item) => item.id).toSet();
+    if (ids.difference(oldIds).isNotEmpty) await _deleteHistory();
     for (final removed in old.where((item) => !ids.contains(item.id))) {
       for (final table in [
         'cache_visible',
@@ -314,13 +387,8 @@ class TimelineCache extends _$TimelineCache {
         [repository.id, repository.owner, repository.name],
       );
     }
-    final account = await customSelect(
-      'SELECT retention_days FROM cache_account WHERE scope = ?',
-      variables: [Variable(scope)],
-    ).getSingle();
-    final days = account.readNullable<int>('retention_days');
-    if (days != null) await _prune(now, days);
-  });
+    await customStatement('UPDATE cache_account SET pending_follows = NULL');
+  }
 
   Future<RetainedTimelineHistory> readHistory({
     required String scope,
@@ -403,6 +471,13 @@ class TimelineCache extends _$TimelineCache {
     final days = account?.readNullable<int>('retention_days');
     if (days == null) return;
     final cutoff = now.toUtc().subtract(Duration(days: days));
+    final authoritativeMembers = {
+      for (final id in obsoleteRepositories)
+        id: {
+          for (final item in cycle.pages[id]?.releases ?? const <ReleaseItem>[])
+            item.id,
+        },
+    };
     for (final id in obsoleteRepositories) {
       await customStatement(
         '''DELETE FROM cache_page_members WHERE segment_id IN
@@ -413,10 +488,7 @@ class TimelineCache extends _$TimelineCache {
         'DELETE FROM cache_segments WHERE repository_id = ? AND cycle != ?',
         [id, cycleId],
       );
-      final currentIds = {
-        for (final item in cycle.pages[id]?.releases ?? const <ReleaseItem>[])
-          item.id,
-      };
+      final currentIds = authoritativeMembers[id]!;
       final stored = await customSelect(
         'SELECT id FROM cache_releases WHERE repository_id = ?',
         variables: [Variable(id)],
@@ -456,6 +528,8 @@ class TimelineCache extends _$TimelineCache {
         'SELECT last_insert_rowid() AS id',
       ).getSingle()).read<int>('id');
       for (final item in page.releases) {
+        final authoritative = authoritativeMembers[entry.repositoryId];
+        if (authoritative != null && !authoritative.contains(item.id)) continue;
         if (!item.isPublished || item.publishedAt!.isBefore(cutoff)) {
           // A latest response can unpublish or move a formerly retained item.
           await customStatement(
@@ -518,7 +592,68 @@ class TimelineCache extends _$TimelineCache {
       ],
     );
     await _prune(now, days);
+    await _compactProvenance(
+      pages.map((page) => page.repositoryId).toSet(),
+      cycleId,
+    );
   });
+
+  Future<void> _compactProvenance(
+    Set<String> repositoryIds,
+    String currentCycle,
+  ) async {
+    for (final repositoryId in repositoryIds) {
+      final rows = await customSelect(
+        '''SELECT s.*, m.release_id FROM cache_segments s
+        LEFT JOIN cache_page_members m ON m.segment_id = s.id
+        WHERE s.repository_id = ? ORDER BY s.id, m.release_id''',
+        variables: [Variable(repositoryId)],
+      ).get();
+      final segments = <int, ({String cycle, List<Object?> shape})>{};
+      for (final row in rows) {
+        final segment = segments.putIfAbsent(
+          row.read<int>('id'),
+          () => (
+            cycle: row.read<String>('cycle'),
+            shape: <Object?>[
+              row.readNullable<String>('request_cursor'),
+              row.readNullable<String>('end_cursor'),
+              row.read<int>('has_older'),
+              row.read<int>('incomplete'),
+            ],
+          ),
+        );
+        final member = row.readNullable<int>('release_id');
+        if (member != null) segment.shape.add(member);
+      }
+      final cycles = <String, List<String>>{};
+      for (final segment in segments.values) {
+        cycles
+            .putIfAbsent(segment.cycle, () => [])
+            .add(jsonEncode(segment.shape));
+      }
+      final seen = <String>{};
+      // Compare complete per-repository graphs, including empty pages and cursor
+      // edges. Equal individual pages can have different reachable suffixes.
+      // Keep the live cycle so subsequent fetched pages extend the retained graph.
+      for (final cycle in [
+        if (cycles.containsKey(currentCycle)) currentCycle,
+        ...cycles.keys.where((cycle) => cycle != currentCycle),
+      ]) {
+        final shape = cycles[cycle]!..sort();
+        if (seen.add(jsonEncode(shape))) continue;
+        await customStatement(
+          '''DELETE FROM cache_page_members WHERE segment_id IN
+          (SELECT id FROM cache_segments WHERE repository_id = ? AND cycle = ?)''',
+          [repositoryId, cycle],
+        );
+        await customStatement(
+          'DELETE FROM cache_segments WHERE repository_id = ? AND cycle = ?',
+          [repositoryId, cycle],
+        );
+      }
+    }
+  }
 
   @override
   Future<void> close() {

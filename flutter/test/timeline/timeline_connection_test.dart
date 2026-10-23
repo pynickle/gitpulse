@@ -384,7 +384,9 @@ void main() {
     await facade.loadOlder();
     expect(readState(h.container).waitingRepositories, isEmpty);
     expect(readState(h.container).canLoadOlder, isFalse);
-    expect(keys(h.container), ['R_a:12', 'R_a:11']);
+    // The successful retry replaced the incomplete page with an empty page.
+    // Exhaustion now removes its no-longer-present release as well as old cache.
+    expect(keys(h.container), ['R_a:12']);
     await disk.close();
     h = disk.open();
     h.session.handlers['GET api/settings'] = () =>
@@ -392,7 +394,7 @@ void main() {
     h.session.handlers['POST api/release-timeline/refresh'] = () =>
         const BackendResult(problem: BackendProblem.network);
     await settle(h.container);
-    expect(keys(h.container), ['R_a:12', 'R_a:11']);
+    expect(keys(h.container), ['R_a:12']);
     await disk.close();
     h = disk.open();
     configure(h, releases: []);

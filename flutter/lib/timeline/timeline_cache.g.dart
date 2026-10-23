@@ -62,6 +62,17 @@ class CacheAccount extends Table
     requiredDuringInsert: false,
     $customConstraints: '',
   );
+  static const VerificationMeta _pendingFollowsMeta = const VerificationMeta(
+    'pendingFollows',
+  );
+  late final GeneratedColumn<String> pendingFollows = GeneratedColumn<String>(
+    'pending_follows',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   static const VerificationMeta _partialMeta = const VerificationMeta(
     'partial',
   );
@@ -81,6 +92,7 @@ class CacheAccount extends Table
     savedAt,
     lowerBound,
     baseline,
+    pendingFollows,
     partial,
   ];
   @override
@@ -130,6 +142,15 @@ class CacheAccount extends Table
         baseline.isAcceptableOrUnknown(data['baseline']!, _baselineMeta),
       );
     }
+    if (data.containsKey('pending_follows')) {
+      context.handle(
+        _pendingFollowsMeta,
+        pendingFollows.isAcceptableOrUnknown(
+          data['pending_follows']!,
+          _pendingFollowsMeta,
+        ),
+      );
+    }
     if (data.containsKey('partial')) {
       context.handle(
         _partialMeta,
@@ -165,6 +186,10 @@ class CacheAccount extends Table
         DriftSqlType.string,
         data['${effectivePrefix}baseline'],
       ),
+      pendingFollows: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pending_follows'],
+      ),
       partial: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}partial'],
@@ -188,6 +213,7 @@ class CacheAccountData extends DataClass
   final int? savedAt;
   final int? lowerBound;
   final String? baseline;
+  final String? pendingFollows;
   final int partial;
   const CacheAccountData({
     required this.scope,
@@ -195,6 +221,7 @@ class CacheAccountData extends DataClass
     this.savedAt,
     this.lowerBound,
     this.baseline,
+    this.pendingFollows,
     required this.partial,
   });
   @override
@@ -212,6 +239,9 @@ class CacheAccountData extends DataClass
     }
     if (!nullToAbsent || baseline != null) {
       map['baseline'] = Variable<String>(baseline);
+    }
+    if (!nullToAbsent || pendingFollows != null) {
+      map['pending_follows'] = Variable<String>(pendingFollows);
     }
     map['partial'] = Variable<int>(partial);
     return map;
@@ -232,6 +262,9 @@ class CacheAccountData extends DataClass
       baseline: baseline == null && nullToAbsent
           ? const Value.absent()
           : Value(baseline),
+      pendingFollows: pendingFollows == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingFollows),
       partial: Value(partial),
     );
   }
@@ -247,6 +280,7 @@ class CacheAccountData extends DataClass
       savedAt: serializer.fromJson<int?>(json['saved_at']),
       lowerBound: serializer.fromJson<int?>(json['lower_bound']),
       baseline: serializer.fromJson<String?>(json['baseline']),
+      pendingFollows: serializer.fromJson<String?>(json['pending_follows']),
       partial: serializer.fromJson<int>(json['partial']),
     );
   }
@@ -259,6 +293,7 @@ class CacheAccountData extends DataClass
       'saved_at': serializer.toJson<int?>(savedAt),
       'lower_bound': serializer.toJson<int?>(lowerBound),
       'baseline': serializer.toJson<String?>(baseline),
+      'pending_follows': serializer.toJson<String?>(pendingFollows),
       'partial': serializer.toJson<int>(partial),
     };
   }
@@ -269,6 +304,7 @@ class CacheAccountData extends DataClass
     Value<int?> savedAt = const Value.absent(),
     Value<int?> lowerBound = const Value.absent(),
     Value<String?> baseline = const Value.absent(),
+    Value<String?> pendingFollows = const Value.absent(),
     int? partial,
   }) => CacheAccountData(
     scope: scope ?? this.scope,
@@ -278,6 +314,9 @@ class CacheAccountData extends DataClass
     savedAt: savedAt.present ? savedAt.value : this.savedAt,
     lowerBound: lowerBound.present ? lowerBound.value : this.lowerBound,
     baseline: baseline.present ? baseline.value : this.baseline,
+    pendingFollows: pendingFollows.present
+        ? pendingFollows.value
+        : this.pendingFollows,
     partial: partial ?? this.partial,
   );
   CacheAccountData copyWithCompanion(CacheAccountCompanion data) {
@@ -291,6 +330,9 @@ class CacheAccountData extends DataClass
           ? data.lowerBound.value
           : this.lowerBound,
       baseline: data.baseline.present ? data.baseline.value : this.baseline,
+      pendingFollows: data.pendingFollows.present
+          ? data.pendingFollows.value
+          : this.pendingFollows,
       partial: data.partial.present ? data.partial.value : this.partial,
     );
   }
@@ -303,14 +345,22 @@ class CacheAccountData extends DataClass
           ..write('savedAt: $savedAt, ')
           ..write('lowerBound: $lowerBound, ')
           ..write('baseline: $baseline, ')
+          ..write('pendingFollows: $pendingFollows, ')
           ..write('partial: $partial')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(scope, retentionDays, savedAt, lowerBound, baseline, partial);
+  int get hashCode => Object.hash(
+    scope,
+    retentionDays,
+    savedAt,
+    lowerBound,
+    baseline,
+    pendingFollows,
+    partial,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -320,6 +370,7 @@ class CacheAccountData extends DataClass
           other.savedAt == this.savedAt &&
           other.lowerBound == this.lowerBound &&
           other.baseline == this.baseline &&
+          other.pendingFollows == this.pendingFollows &&
           other.partial == this.partial);
 }
 
@@ -329,6 +380,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
   final Value<int?> savedAt;
   final Value<int?> lowerBound;
   final Value<String?> baseline;
+  final Value<String?> pendingFollows;
   final Value<int> partial;
   final Value<int> rowid;
   const CacheAccountCompanion({
@@ -337,6 +389,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
     this.savedAt = const Value.absent(),
     this.lowerBound = const Value.absent(),
     this.baseline = const Value.absent(),
+    this.pendingFollows = const Value.absent(),
     this.partial = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -346,6 +399,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
     this.savedAt = const Value.absent(),
     this.lowerBound = const Value.absent(),
     this.baseline = const Value.absent(),
+    this.pendingFollows = const Value.absent(),
     this.partial = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : scope = Value(scope);
@@ -355,6 +409,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
     Expression<int>? savedAt,
     Expression<int>? lowerBound,
     Expression<String>? baseline,
+    Expression<String>? pendingFollows,
     Expression<int>? partial,
     Expression<int>? rowid,
   }) {
@@ -364,6 +419,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
       if (savedAt != null) 'saved_at': savedAt,
       if (lowerBound != null) 'lower_bound': lowerBound,
       if (baseline != null) 'baseline': baseline,
+      if (pendingFollows != null) 'pending_follows': pendingFollows,
       if (partial != null) 'partial': partial,
       if (rowid != null) 'rowid': rowid,
     });
@@ -375,6 +431,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
     Value<int?>? savedAt,
     Value<int?>? lowerBound,
     Value<String?>? baseline,
+    Value<String?>? pendingFollows,
     Value<int>? partial,
     Value<int>? rowid,
   }) {
@@ -384,6 +441,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
       savedAt: savedAt ?? this.savedAt,
       lowerBound: lowerBound ?? this.lowerBound,
       baseline: baseline ?? this.baseline,
+      pendingFollows: pendingFollows ?? this.pendingFollows,
       partial: partial ?? this.partial,
       rowid: rowid ?? this.rowid,
     );
@@ -407,6 +465,9 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
     if (baseline.present) {
       map['baseline'] = Variable<String>(baseline.value);
     }
+    if (pendingFollows.present) {
+      map['pending_follows'] = Variable<String>(pendingFollows.value);
+    }
     if (partial.present) {
       map['partial'] = Variable<int>(partial.value);
     }
@@ -424,6 +485,7 @@ class CacheAccountCompanion extends UpdateCompanion<CacheAccountData> {
           ..write('savedAt: $savedAt, ')
           ..write('lowerBound: $lowerBound, ')
           ..write('baseline: $baseline, ')
+          ..write('pendingFollows: $pendingFollows, ')
           ..write('partial: $partial, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2086,6 +2148,7 @@ typedef $CacheAccountCreateCompanionBuilder = CacheAccountCompanion Function({
   Value<int?> savedAt,
   Value<int?> lowerBound,
   Value<String?> baseline,
+  Value<String?> pendingFollows,
   Value<int> partial,
   Value<int> rowid,
 });
@@ -2095,6 +2158,7 @@ typedef $CacheAccountUpdateCompanionBuilder = CacheAccountCompanion Function({
   Value<int?> savedAt,
   Value<int?> lowerBound,
   Value<String?> baseline,
+  Value<String?> pendingFollows,
   Value<int> partial,
   Value<int> rowid,
 });
@@ -2130,6 +2194,11 @@ class $CacheAccountFilterComposer
 
   ColumnFilters<String> get baseline => $composableBuilder(
     column: $table.baseline,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pendingFollows => $composableBuilder(
+    column: $table.pendingFollows,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2173,6 +2242,11 @@ class $CacheAccountOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get pendingFollows => $composableBuilder(
+    column: $table.pendingFollows,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get partial => $composableBuilder(
     column: $table.partial,
     builder: (column) => ColumnOrderings(column),
@@ -2206,6 +2280,11 @@ class $CacheAccountAnnotationComposer
 
   GeneratedColumn<String> get baseline =>
       $composableBuilder(column: $table.baseline, builder: (column) => column);
+
+  GeneratedColumn<String> get pendingFollows => $composableBuilder(
+    column: $table.pendingFollows,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get partial =>
       $composableBuilder(column: $table.partial, builder: (column) => column);
@@ -2247,6 +2326,7 @@ class $CacheAccountTableManager
                 Value<int?> savedAt = const Value.absent(),
                 Value<int?> lowerBound = const Value.absent(),
                 Value<String?> baseline = const Value.absent(),
+                Value<String?> pendingFollows = const Value.absent(),
                 Value<int> partial = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CacheAccountCompanion(
@@ -2255,6 +2335,7 @@ class $CacheAccountTableManager
                 savedAt: savedAt,
                 lowerBound: lowerBound,
                 baseline: baseline,
+                pendingFollows: pendingFollows,
                 partial: partial,
                 rowid: rowid,
               ),
@@ -2265,6 +2346,7 @@ class $CacheAccountTableManager
                 Value<int?> savedAt = const Value.absent(),
                 Value<int?> lowerBound = const Value.absent(),
                 Value<String?> baseline = const Value.absent(),
+                Value<String?> pendingFollows = const Value.absent(),
                 Value<int> partial = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CacheAccountCompanion.insert(
@@ -2273,6 +2355,7 @@ class $CacheAccountTableManager
                 savedAt: savedAt,
                 lowerBound: lowerBound,
                 baseline: baseline,
+                pendingFollows: pendingFollows,
                 partial: partial,
                 rowid: rowid,
               ),

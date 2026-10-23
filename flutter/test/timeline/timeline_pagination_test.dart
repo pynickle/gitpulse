@@ -265,7 +265,9 @@ void main() {
     await session.retryFailed();
     expect(readState(harness.container).canRetry, isFalse);
     expect(readState(harness.container).canLoadOlder, isFalse);
-    expect(releaseKeys(harness.container), ['A:5']);
+    // Successful exhaustion is authoritative: the retried page no longer
+    // contains the release previously supplied by its incomplete response.
+    expect(releaseKeys(harness.container), isEmpty);
     expect(
       harness.session.requests.skip(2),
       List.filled(3, pageRequest({'A': 'a1'})),

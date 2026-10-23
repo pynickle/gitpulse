@@ -32,6 +32,23 @@ Release Follows, account preferences, the installation's language/appearance
 choices (a separate device-local file), and the last locally synchronized retention
 value for offline startup. Refresh explicitly to repopulate the cleared history.
 
+Confirmed follow changes are compared by stable repository ID. Removing follows
+deletes only those repositories' content, provenance and saved membership. The
+remaining live cursors, refresh baseline and cached connection checks survive;
+the facade recomputes the shared window without requesting releases. Renames and
+reordering update metadata without refreshing. Any addition, including a mixed
+add/remove change discovered on another installation, invalidates all local
+timeline content, saved membership and pagination provenance before loading first
+pages. A failed first round after an addition cannot restore the previous window.
+These changes preserve login, retention preferences and the server-owned baseline.
+
+Schema version 2 adds a pending-follow record, committed before destructive
+cleanup. Every subsequent cache operation must finish that cleanup before reading
+or writing history. A cleanup failure therefore remains a restore barrier across
+process restarts; Retry saving can complete it offline. The version 1 migration
+preserves existing content and settings. As with other local persistence, a
+failure to write the pending record itself is reported as a cache error.
+
 Startup restores eligible exposed membership and attempts a fresh round. A wholly
 failed round preserves the committed view. Fresh usable results replace that view.
 Retained page membership and same-cycle continuation cursors determine which
@@ -47,8 +64,16 @@ window calculation. Unavailable repositories remain visible blockers. Incomplete
 pages cannot connect or prove exhaustion; empty complete pages can continue using
 their returned cursor. Explicit load-older and retry actions each perform one round,
 keeping live cursors rather than treating a cursor from an old cycle as a fresh
-connection. Successful exhaustion without an anchor removes only that repository's
-obsolete history, retaining records fetched in the current cycle.
+connection. Successful exhaustion replaces that repository's retained membership
+with the records actually fetched in the current cycle, even when a cache anchor
+survives. This removes deleted or unpublished releases previously supplied by a
+cached tail. Successful retries replace the membership of the retried page;
+incomplete pages and failures cannot establish exhaustion. Updating retention
+replays the current fetched pages so it cannot lose the live chain's provenance.
+
+Repeated refreshes with identical per-repository page graphs share one retained
+graph. Compaction compares all page members, cursors, completion flags and empty
+continuations together; equal first pages with different suffixes remain separate.
 
 The facade exposes waiting repositories and a connection state alongside partial
 coverage and retry actions. Connected cache uses the same publication ordering,
@@ -96,6 +121,12 @@ rebuild actions, an invalid-cursor retry, failed-clear recovery, rejected-sessio
 pruning, and delayed cache connections overtaken by refresh, unfollow, clear,
 logout, backend changes, or account changes. Assertions include offline reopen
 through the public facade, using temporary on-disk SQLite databases.
+
+`flutter test test/timeline/timeline_follow_cache_test.dart` covers additions,
+removals, rename/reorder, delayed requests, failed cleanup and offline retry,
+authoritative exhaustion and version 1 migration. The companion
+`timeline_cache_compaction_test.dart` verifies bounded duplicate provenance and
+continuation after compaction and reopening.
 
 `flutter test test/settings/timeline_settings_test.dart` drives Settings through
 the real session and Nitro settings handlers with independent account sessions and

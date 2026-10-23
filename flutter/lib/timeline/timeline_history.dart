@@ -39,14 +39,14 @@ class RetainedTimelinePage {
 
 /// Connects only retained page suffixes reachable from the live fetched chain.
 class TimelineHistoryConnection {
-  TimelineHistoryConnection(this.history) {
-    for (final entry in history.repositories.entries) {
+  TimelineHistoryConnection(this._history) {
+    for (final entry in _history.repositories.entries) {
       _eligible[entry.key] = entry.value.releases.keys.toSet();
       _graphs[entry.key] = _RetainedPageGraph(entry.value.pages);
     }
   }
 
-  final RetainedTimelineHistory history;
+  RetainedTimelineHistory _history;
   final _reached = <String, Set<int>>{};
   final obsoleteRepositories = <String>{};
   final _unavailable = <String>{};
@@ -54,11 +54,30 @@ class TimelineHistoryConnection {
   final _graphs = <String, _RetainedPageGraph>{};
   final _anchors = <String, Set<int>>{};
   final _fetched = <String, Map<int, ReleaseItem>>{};
+  final _fetchedPages = <String, Map<String?, RepositoryPage>>{};
   final _exhausted = <String>{};
+
+  void retainRepositories(Set<String> ids) {
+    _history = RetainedTimelineHistory(
+      repositories: {
+        for (final entry in _history.repositories.entries)
+          if (ids.contains(entry.key)) entry.key: entry.value,
+      },
+    );
+    for (final map in [_reached, _eligible, _anchors]) {
+      map.removeWhere((id, _) => !ids.contains(id));
+    }
+    _graphs.removeWhere((id, _) => !ids.contains(id));
+    _fetched.removeWhere((id, _) => !ids.contains(id));
+    _fetchedPages.removeWhere((id, _) => !ids.contains(id));
+    for (final idsToKeep in [obsoleteRepositories, _unavailable, _exhausted]) {
+      idsToKeep.retainAll(ids);
+    }
+  }
 
   Set<String> get waitingRepositories => {
     ..._unavailable,
-    for (final entry in history.repositories.entries)
+    for (final entry in _history.repositories.entries)
       if (_eligible[entry.key]!.isNotEmpty &&
           !obsoleteRepositories.contains(entry.key) &&
           (_reached[entry.key]?.isEmpty ?? true))
@@ -67,11 +86,15 @@ class TimelineHistoryConnection {
 
   bool get connected => waitingRepositories.isEmpty;
 
-  bool get hasRetainedHistory => history.repositories.keys.any(
+  bool get hasRetainedHistory => _history.repositories.keys.any(
     (id) => _eligible[id]!.isNotEmpty && !obsoleteRepositories.contains(id),
   );
 
-  void accept(Map<String, RepositoryPage> pages, {required DateTime cutoff}) {
+  void accept(
+    Map<String, RepositoryPage> pages, {
+    required DateTime cutoff,
+    Map<String, String?> cursors = const {},
+  }) {
     for (final entry in pages.entries) {
       final page = entry.value;
       if (page.status == RepositoryPageStatus.unavailable) {
@@ -79,20 +102,29 @@ class TimelineHistoryConnection {
       } else if (page.isAvailable && !page.incomplete) {
         _unavailable.remove(entry.key);
       }
-      if (!history.repositories.containsKey(entry.key) || !page.isAvailable) {
-        continue;
+      if (!page.isAvailable) continue;
+      final fetchedPages = _fetchedPages.putIfAbsent(entry.key, () => {});
+      // A retry replaces that page's membership; insertion order preserves the
+      // latest fetched content if a release occurs on more than one page.
+      fetchedPages.remove(cursors[entry.key]);
+      fetchedPages[cursors[entry.key]] = page;
+      _fetched[entry.key] = {
+        for (final fetchedPage in fetchedPages.values)
+          for (final item in fetchedPage.releases) item.id: item,
+      };
+      _anchors[entry.key] = {
+        for (final fetchedPage in fetchedPages.values)
+          if (!fetchedPage.incomplete)
+            for (final item in fetchedPage.releases) item.id,
+      };
+      if (fetchedPages.values.any(
+        (page) => !page.incomplete && !page.hasOlderReleases,
+      )) {
+        _exhausted.add(entry.key);
+        obsoleteRepositories.add(entry.key);
       }
-      final fetched = _fetched.putIfAbsent(entry.key, () => {});
-      for (final item in page.releases) {
-        fetched[item.id] = item;
-      }
-      if (page.incomplete) continue;
-      _anchors
-          .putIfAbsent(entry.key, () => {})
-          .addAll(page.releases.map((item) => item.id));
-      if (!page.hasOlderReleases) _exhausted.add(entry.key);
     }
-    for (final entry in history.repositories.entries) {
+    for (final entry in _history.repositories.entries) {
       final fetched = _fetched[entry.key] ?? const <int, ReleaseItem>{};
       final eligible = _eligible[entry.key] = {
         for (final item in entry.value.releases.values)
@@ -104,13 +136,10 @@ class TimelineHistoryConnection {
       };
       // Only actual fetched records seed the graph. Cached extension records in
       // the displayed cycle must never certify their own reachability.
-      final reached = _reached[entry.key] = _graphs[entry.key]!.reach(
+      _reached[entry.key] = _graphs[entry.key]!.reach(
         (_anchors[entry.key] ?? const <int>{}).intersection(eligible),
         eligible,
       );
-      if (reached.isEmpty && _exhausted.contains(entry.key)) {
-        obsoleteRepositories.add(entry.key);
-      }
     }
   }
 
@@ -119,19 +148,20 @@ class TimelineHistoryConnection {
     required DateTime now,
     required int retentionDays,
   }) {
-    if (!connected) return const {};
     final cutoff = now.toUtc().subtract(Duration(days: retentionDays));
     final result = <String, RepositoryPage>{};
-    for (final entry in history.repositories.entries) {
-      if (obsoleteRepositories.contains(entry.key)) continue;
-      final live = cycle.pages[entry.key];
+    for (final id in {..._history.repositories.keys, ..._exhausted}) {
+      final retained = _history.repositories[id];
+      final live = cycle.pages[id];
       if (live == null) continue;
-      final reached = _reached[entry.key] ?? const <int>{};
+      final exhausted = obsoleteRepositories.contains(id);
+      if (!exhausted && !connected) continue;
+      final reached = _reached[id] ?? const <int>{};
       final members = {
-        for (final page in entry.value.pages)
+        for (final page in retained?.pages ?? const <RetainedTimelinePage>[])
           if (reached.contains(page.id)) ...page.members,
       };
-      result[entry.key] = RepositoryPage(
+      result[id] = RepositoryPage(
         status: live.status,
         owner: live.owner,
         name: live.name,
@@ -140,13 +170,18 @@ class TimelineHistoryConnection {
         hasOlderReleases: live.hasOlderReleases,
         endCursor: live.endCursor,
         incomplete: live.incomplete,
-        releases: {
-          for (final item in entry.value.releases.values)
-            if (members.contains(item.id) &&
-                !item.publishedAt!.isBefore(cutoff))
-              item.id: item,
-          for (final item in live.releases) item.id: item,
-        }.values.toList(),
+        // Exhaustion is authoritative even if another repository is waiting.
+        // Use fetched records, excluding cached tails merged earlier this cycle.
+        releases: exhausted
+            ? (_fetched[id]?.values.toList() ?? const [])
+            : {
+                for (final item
+                    in retained?.releases.values ?? const <ReleaseItem>[])
+                  if (members.contains(item.id) &&
+                      !item.publishedAt!.isBefore(cutoff))
+                    item.id: item,
+                for (final item in live.releases) item.id: item,
+              }.values.toList(),
       );
     }
     return result;

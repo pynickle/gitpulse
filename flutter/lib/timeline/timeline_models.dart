@@ -125,6 +125,22 @@ class TimelineRelease {
 
   String get key => '${repository.id}:$id';
 
+  TimelineRelease withRepository(TimelineRepository repository) =>
+      TimelineRelease(
+        repository: repository,
+        id: id,
+        tagName: tagName,
+        title: title,
+        publishedAt: publishedAt,
+        notes: notes,
+        changelog: changelog,
+        changelogTruncated: changelogTruncated,
+        assetCount: assetCount,
+        isPrerelease: isPrerelease,
+        isOldestShown: isOldestShown,
+        htmlUrl: htmlUrl,
+      );
+
   @override
   String toString() => 'TimelineRelease($key, $publishedAt)';
 }
@@ -171,6 +187,17 @@ class RepositoryPage {
   bool get isUsable => isAvailable && (!incomplete || hasPublishedReleases);
 
   bool get hasPublishedReleases => releases.any((item) => item.isPublished);
+
+  RepositoryPage withRepository(TimelineRepository repository) =>
+      RepositoryPage(
+        status: status,
+        owner: repository.owner,
+        name: repository.name,
+        hasOlderReleases: hasOlderReleases,
+        endCursor: endCursor,
+        incomplete: incomplete,
+        releases: releases,
+      );
 }
 
 /// The continuation state of the cycle currently being read.

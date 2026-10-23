@@ -4,6 +4,7 @@ CREATE TABLE cache_account (
   saved_at INTEGER,
   lower_bound INTEGER,
   baseline TEXT,
+  pending_follows TEXT,
   partial INTEGER NOT NULL DEFAULT 0
 );
 
