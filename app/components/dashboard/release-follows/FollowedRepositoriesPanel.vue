@@ -155,7 +155,11 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
 
 .followed-sheet {
   width: 100%;
-  max-height: 80vh;
+  // A max-height alone leaves the nested flex panes indefinite, so SimpleBar's
+  // percentage-height wrapper can overflow and create a second scrollport.
+  height: 80vh;
+  height: 80dvh;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 1rem 1.25rem 1.5rem;
