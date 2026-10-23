@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cookie_jar/cookie_jar.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:gitpulse/presentation/presentation_preferences_store.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
@@ -345,11 +347,16 @@ Future<ProviderContainer> mountApp(
   UnreadableCookieJar? jar,
   Future<bool> Function(Uri)? launchBrowser,
   DateTime Function()? clock,
+  File? presentationFile,
 }) async {
   if (resetStorage) FlutterSecureStorage.setMockInitialValues({});
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        if (presentationFile != null)
+          presentationPreferencesFileProvider.overrideWithValue(
+            () async => presentationFile,
+          ),
         if (storage != null) secureStorageProvider.overrideWithValue(storage),
         if (jar != null) cookieJarProvider.overrideWithValue(jar),
         if (launchBrowser != null)

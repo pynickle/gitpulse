@@ -179,6 +179,13 @@
   "followsLookupFailed": "无法检查仓库可用性。请重新加载关注以重试；这些仓库未被标记为缺失。",
   "followsNetwork": "无法连接后端。请检查网络后重试；尚未确认关注更改。",
   "followsUnavailable": "GitHub 上不可用。请重试或取消关注此仓库。",
+  "followsUnavailableLabel": "不可用",
+  "followsViewCompact": "紧凑",
+  "followsViewDetailed": "详细",
+  "followsRetryMetadata": "重试加载 {repo} 的详情",
+  "@followsRetryMetadata": {
+    "placeholders": {"repo": {"type": "String"}}
+  },
   "followsTransient": "暂时无法加载。请在网络恢复后重试。",
   "followsRenamed": "原名：{name}",
   "changeBackend": "更换后端",

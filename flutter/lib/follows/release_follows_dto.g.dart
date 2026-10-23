@@ -30,6 +30,12 @@ FollowMetadataDto _$FollowMetadataDtoFromJson(Map<String, dynamic> json) =>
         ),
         owner: $checkedConvert('owner', (v) => v as String?),
         name: $checkedConvert('name', (v) => v as String?),
+        description: $checkedConvert('description', (v) => v as String?),
+        primaryLanguage: $checkedConvert(
+          'primaryLanguage',
+          (v) => v as String?,
+        ),
+        starCount: $checkedConvert('starCount', (v) => (v as num?)?.toInt()),
       );
       return val;
     });

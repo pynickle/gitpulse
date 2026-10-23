@@ -16,6 +16,19 @@ enum FollowProblem {
 
 enum StarredRepositorySort { created, updated }
 
+/// Recognition details for one Followed Repository after a metadata read.
+class FollowedRepositoryDetails {
+  const FollowedRepositoryDetails({
+    this.description,
+    this.language,
+    this.starCount,
+  });
+
+  final String? description;
+  final String? language;
+  final int? starCount;
+}
+
 class StarredRepositoriesState {
   const StarredRepositoriesState({
     this.items = const [],
@@ -70,6 +83,7 @@ class ReleaseFollowsState {
     this.hasMore = false,
     this.statuses = const {},
     this.previousNames = const {},
+    this.details = const {},
     this.metadataProblem,
     this.problem,
     this.searchProblem,
@@ -89,6 +103,7 @@ class ReleaseFollowsState {
   final bool hasMore;
   final Map<String, RepositoryPageStatus> statuses;
   final Map<String, String> previousNames;
+  final Map<String, FollowedRepositoryDetails> details;
   final FollowProblem? metadataProblem;
   final FollowProblem? problem;
   final FollowProblem? searchProblem;
@@ -107,6 +122,7 @@ class ReleaseFollowsState {
     bool? hasMore,
     Map<String, RepositoryPageStatus>? statuses,
     Map<String, String>? previousNames,
+    Map<String, FollowedRepositoryDetails>? details,
     FollowProblem? metadataProblem,
     bool clearMetadataProblem = false,
     FollowProblem? problem,
@@ -128,6 +144,7 @@ class ReleaseFollowsState {
     hasMore: hasMore ?? this.hasMore,
     statuses: statuses ?? this.statuses,
     previousNames: previousNames ?? this.previousNames,
+    details: details ?? this.details,
     metadataProblem: clearMetadataProblem
         ? null
         : metadataProblem ?? this.metadataProblem,

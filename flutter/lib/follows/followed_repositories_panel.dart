@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
-import '../repositories/repository_navigation.dart';
-import '../timeline/timeline_models.dart';
+import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
 import 'release_follows_widgets.dart';
 
@@ -15,9 +16,11 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(releaseFollowsSessionProvider);
+    final view = ref.watch(followedRepositoryViewProvider);
     final facade = ref.read(releaseFollowsSessionProvider.notifier);
     final l10n = AppLocalizations.of(context);
     final disabled = state.loading || state.saving;
+    final detailed = view == FollowedRepositoryView.detailed;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -30,6 +33,15 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                   l10n.followsCurrent(state.repositories.length),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+              ),
+              IconButton(
+                tooltip: detailed
+                    ? l10n.followsViewDetailed
+                    : l10n.followsViewCompact,
+                onPressed: () => unawaited(
+                  ref.read(followedRepositoryViewProvider.notifier).toggle(),
+                ),
+                icon: _FollowedViewIcon(detailed: detailed),
               ),
               IconButton(
                 tooltip: l10n.followsReload,
@@ -93,49 +105,21 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   sliver: SliverList.builder(
                     itemCount: state.repositories.length,
                     itemBuilder: (context, index) {
                       final repo = state.repositories[index];
-                      final previous = state.previousNames[repo.id];
-                      final status = state.statuses[repo.id];
-                      final description = switch (status) {
-                        RepositoryPageStatus.unavailable =>
-                          l10n.followsUnavailable,
-                        RepositoryPageStatus.transient => l10n.followsTransient,
-                        _ =>
-                          previous == null
-                              ? null
-                              : l10n.followsRenamed(previous),
-                      };
-                      return Card.outlined(
+                      return FollowedRepositoryCard(
                         key: ValueKey('followed-${repo.id}'),
-                        clipBehavior: Clip.antiAlias,
-                        child: ListTile(
-                          title: Text(
-                            repo.fullName,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: description == null
-                              ? null
-                              : Text(description),
-                          onTap: status == RepositoryPageStatus.unavailable
-                              ? null
-                              : () => openRepositoryPage(context, (
-                                  owner: repo.owner,
-                                  repository: repo.name,
-                                  releases: false,
-                                )),
-                          trailing: IconButton(
-                            tooltip: l10n.followsUnfollow,
-                            onPressed: disabled
-                                ? null
-                                : () => facade.unfollow(repo.id),
-                            icon: const Icon(Icons.bookmark_remove_outlined),
-                          ),
-                        ),
+                        repository: repo,
+                        detailed: detailed,
+                        status: state.statuses[repo.id],
+                        details: state.details[repo.id],
+                        enabled: !disabled,
+                        onUnfollow: () => facade.unfollow(repo.id),
+                        onRetry: () =>
+                            facade.loadMetadata(repositoryId: repo.id),
                       );
                     },
                   ),
@@ -146,4 +130,57 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Three short lines for Compact View, or those lines plus a paragraph for
+/// Detailed View. The button's tooltip names the view; the words are not text.
+class _FollowedViewIcon extends StatelessWidget {
+  const _FollowedViewIcon({required this.detailed});
+
+  final bool detailed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurface;
+    return CustomPaint(
+      size: const Size(24, 24),
+      painter: _FollowedViewIconPainter(color: color, detailed: detailed),
+    );
+  }
+}
+
+class _FollowedViewIconPainter extends CustomPainter {
+  const _FollowedViewIconPainter({required this.color, required this.detailed});
+
+  final Color color;
+  final bool detailed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.6;
+    if (!detailed) {
+      for (var index = 0; index < 3; index++) {
+        final y = 6.0 + index * 6;
+        canvas.drawLine(Offset(4, y), Offset(20, y), paint);
+      }
+      return;
+    }
+    canvas.drawLine(const Offset(4, 5), const Offset(14, 5), paint);
+    canvas.drawLine(const Offset(4, 10), const Offset(14, 10), paint);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(4, 14, 16, 6),
+        const Radius.circular(1),
+      ),
+      Paint()..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FollowedViewIconPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.detailed != detailed;
 }

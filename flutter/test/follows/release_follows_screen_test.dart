@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
@@ -5,6 +7,86 @@ import 'package:gitpulse/repositories/repository_screen.dart';
 import '../session_flow_test.dart' as auth;
 import '../timeline/timeline_test_support.dart';
 import 'follows_test_support.dart';
+
+int _metadataRequestCount(FollowsServer server) => server.featureRequests
+    .where((request) => request.uri.path.contains('release-follows/metadata'))
+    .length;
+
+/// A temporary device store for the language choice.
+///
+/// Created synchronously: a widget test body runs on a fake clock, so awaiting
+/// real file I/O there never resumes.
+File _preferencesFile() {
+  final directory = Directory.systemTemp.createTempSync('gitpulse-follows-');
+  addTearDown(() {
+    try {
+      directory.deleteSync(recursive: true);
+    } on FileSystemException {
+      // A leftover temporary directory must not fail a finished test.
+    }
+  });
+  return File('${directory.path}/presentation_preferences.json');
+}
+
+/// Advances a fixed number of frames, so an indeterminate progress indicator
+/// somewhere on the page can never stall the test.
+Future<void> _pumpFrames(WidgetTester tester, {int frames = 8}) async {
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// Waits for real device-file and HTTP work while the widget clock advances.
+Future<void> _settleUi(WidgetTester tester) async {
+  for (var i = 0; i < 30; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 5)),
+    );
+    await tester.pump(const Duration(milliseconds: 20));
+  }
+}
+
+Future<void> _openFollows(
+  WidgetTester tester,
+  FollowsServer server, {
+  File? presentationFile,
+}) async {
+  await auth.mountApp(tester, server, presentationFile: presentationFile);
+  await auth.connectTo(tester, 'https://gitpulse.example');
+  await auth.submitField(
+    tester,
+    label: 'Password',
+    value: 'correct-horse',
+    action: 'Unlock',
+  );
+  await tester.tap(find.text('Follows'));
+  await tester.pumpAndSettle();
+}
+
+/// Switches this installation to Simplified Chinese through the Settings
+/// language chips, exactly as the presentation settings tests do.
+///
+/// The page can carry an indeterminate progress indicator, so this waits in
+/// bounded frames instead of [WidgetTester.pumpAndSettle].
+Future<void> _chooseSimplifiedChinese(WidgetTester tester) async {
+  await tester.tap(find.text('Settings').last);
+  await _settleUi(tester);
+  final chinese = find.text('Simplified Chinese');
+  await tester.ensureVisible(chinese);
+  await _pumpFrames(tester);
+  await tester.tap(chinese);
+  await _settleUi(tester);
+  expect(find.text('简体中文'), findsWidgets);
+}
+
+void _expectInsideView(WidgetTester tester, Finder finder) {
+  final rect = tester.getRect(finder);
+  final size = tester.view.physicalSize / tester.view.devicePixelRatio;
+  expect(rect.left, greaterThanOrEqualTo(0));
+  expect(rect.top, greaterThanOrEqualTo(0));
+  expect(rect.right, lessThanOrEqualTo(size.width));
+  expect(rect.bottom, lessThanOrEqualTo(size.height));
+}
 
 void main() {
   testWidgets('discovery sorting, pagination and repository navigation work', (
@@ -169,9 +251,9 @@ void main() {
           await tester.pumpAndSettle();
           if (size.width == 320) {
             server.saveStatus = 500;
-            await tester.ensureVisible(find.text('Follow releases').first);
+            await tester.ensureVisible(find.byTooltip('Follow releases').first);
             await tester.pumpAndSettle();
-            await tester.tap(find.text('Follow releases').first);
+            await tester.tap(find.byTooltip('Follow releases').first);
             await tester.pumpAndSettle();
             await tester.tap(find.text('Search'));
             await tester.pumpAndSettle();
@@ -221,9 +303,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('octo/star').hitTestable(), findsOneWidget);
       expect(find.text('42'), findsOneWidget);
-      await tester.tap(find.text('Follow releases'));
+      expect(find.text('Follow releases'), findsNothing);
+      await tester.tap(find.byTooltip('Follow releases'));
       await tester.pumpAndSettle();
-      expect(find.text('Followed'), findsOneWidget);
+      expect(find.byTooltip('Unfollow'), findsOneWidget);
+      expect(find.text('Followed'), findsNothing);
       expect(
         (server.settings['followedRepositories'] as List).single,
         followJson('R_star', 'octo', 'star'),
@@ -301,8 +385,14 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('manage-follows')));
       await tester.pumpAndSettle();
+      expect(find.text('old/project'), findsOneWidget);
+      expect(find.text('new/project'), findsNothing);
+      expect(find.textContaining('Renamed from'), findsNothing);
+      await tester.tap(find.byTooltip('Compact'));
+      await tester.pumpAndSettle();
       expect(find.text('new/project'), findsOneWidget);
-      expect(find.text('Renamed from old/project'), findsOneWidget);
+      expect(find.text('old/project'), findsNothing);
+      expect(find.textContaining('Renamed from'), findsNothing);
       await tester.tap(find.byTooltip('Close followed repositories'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Search'));
@@ -313,9 +403,9 @@ void main() {
       );
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Follow releases'));
+      await tester.ensureVisible(find.byTooltip('Follow releases'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Follow releases'));
+      await tester.tap(find.byTooltip('Follow releases'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('manage-follows')));
       await tester.pumpAndSettle();
@@ -347,10 +437,14 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Reload follows'));
       await tester.pumpAndSettle();
+      expect(find.text('Unavailable'), findsOneWidget);
       expect(
         find.text('Unavailable on GitHub. Retry or unfollow this repository.'),
-        findsOneWidget,
+        findsNothing,
       );
+      await tester.tap(find.text('new/project'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RepositoryScreen), findsNothing);
       server.metadata['R_old'] = {'status': 'transient'};
       await tester.tap(find.byTooltip('Reload follows'));
       await tester.pumpAndSettle();
@@ -358,9 +452,292 @@ void main() {
         find.text(
           'Temporarily unavailable. Retry when your connection recovers.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
+      final retry = find.byTooltip('Retry details for new/project');
+      expect(retry, findsOneWidget);
+      final metadataBefore = _metadataRequestCount(server);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(_metadataRequestCount(server), metadataBefore + 1);
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('the sort menu stays inside a narrow window', (tester) async {
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final server = FollowsServer()..starredRepositories = [repositoryJson()];
+    final preferences = _preferencesFile();
+    await _openFollows(tester, server, presentationFile: preferences);
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.8;
+    await tester.pumpAndSettle();
+    expect(find.text('Starred date'), findsOneWidget);
+    expect(find.text('Sort by'), findsNothing);
+    await tester.tap(find.text('Starred date'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    _expectInsideView(tester, find.text('Last updated'));
+    await tester.tap(find.text('Last updated').last);
+    await tester.pumpAndSettle();
+    expect(server.featureRequests.last.uri.queryParameters['sort'], 'updated');
+    expect(server.featureRequests.last.uri.queryParameters['page'], '1');
+    await tester.tap(find.byTooltip('Descending'));
+    await tester.pumpAndSettle();
+    expect(server.featureRequests.last.uri.queryParameters['direction'], 'asc');
+
+    tester.view.physicalSize = const Size(800, 800);
+    tester.platformDispatcher.textScaleFactorTestValue = 1;
+    await tester.pumpAndSettle();
+    await _chooseSimplifiedChinese(tester);
+    tester.view.physicalSize = const Size(320, 640);
+    tester.platformDispatcher.textScaleFactorTestValue = 1.8;
+    await tester.tap(find.text('关注'));
+    await tester.pumpAndSettle();
+    expect(find.text('排序'), findsNothing);
+    await tester.tap(find.text('更新时间'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    _expectInsideView(tester, find.text('加星时间'));
+    expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
+  });
+
+  testWidgets(
+    'a discovery card names the repository and follows without opening it',
+    (tester) async {
+      const description =
+          'Keeps release notes close for people who follow a repository from a phone and still want the second line.';
+      final server = FollowsServer()
+        ..starredRepositories = [
+          repositoryJson(
+            id: 'R_py',
+            name: 'py',
+            description: description,
+            language: 'python',
+            stars: 5600,
+          ),
+          repositoryJson(
+            id: 'R_blank',
+            name: 'blank',
+            description: '   ',
+            language: null,
+            stars: 12,
+          ),
+          repositoryJson(
+            id: 'R_unknown',
+            name: 'unknown',
+            description: null,
+            language: 'NotALanguage',
+            stars: 3,
+          ),
+        ];
+      await _openFollows(tester, server);
+      expect(find.text('octo/py'), findsOneWidget);
+      expect(find.text('Follow releases'), findsNothing);
+      expect(find.text('Followed'), findsNothing);
+      expect(find.byIcon(Icons.book_outlined), findsNothing);
+      expect(find.text('5.6K'), findsOneWidget);
+      expect(find.text('python'), findsOneWidget);
+      final descriptionText = tester.widget<Text>(find.text(description));
+      expect(descriptionText.maxLines, 2);
+      final pythonSwatch = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_py')),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      expect(
+        (pythonSwatch.decoration as BoxDecoration).color,
+        const Color(0xFF3572A5),
+      );
+      expect(find.text('   '), findsNothing);
+      expect(find.text('12'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_blank')),
+          matching: find.byType(DecoratedBox),
+        ),
+        findsNothing,
+      );
+      final fallbackSwatch = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_unknown')),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      expect(
+        (fallbackSwatch.decoration as BoxDecoration).color,
+        const Color(0xFFCCCCCC),
+      );
+
+      await tester.tap(find.text('octo/py'));
+      await tester.pumpAndSettle();
+      expect(find.byType(RepositoryScreen), findsOneWidget);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_py')),
+          matching: find.byTooltip('Follow releases'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(RepositoryScreen), findsNothing);
+      expect(
+        (server.settings['followedRepositories'] as List).single,
+        followJson('R_py', 'octo', 'py'),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_py')),
+          matching: find.byTooltip('Unfollow'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        auth.fieldLabeled('Repository name or GitHub URL'),
+        'alpha',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(find.text('octo/alpha'), findsOneWidget);
+      expect(find.text('A project for release followers'), findsOneWidget);
+      expect(find.text('Follow releases'), findsNothing);
+      expect(find.byIcon(Icons.book_outlined), findsNothing);
+    },
+  );
+
+  testWidgets('star counts follow the active locale', (tester) async {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final server = FollowsServer()
+      ..starredRepositories = [
+        repositoryJson(id: 'R_k', name: 'kilo', stars: 5600),
+        repositoryJson(id: 'R_w', name: 'wan', stars: 12345),
+      ];
+    final preferences = _preferencesFile();
+    await _openFollows(tester, server, presentationFile: preferences);
+    expect(find.text('5.6K'), findsOneWidget);
+    expect(find.text('12.3K'), findsOneWidget);
+
+    await _chooseSimplifiedChinese(tester);
+    await tester.tap(find.text('关注'));
+    await _settleUi(tester);
+    expect(find.text('5600'), findsOneWidget);
+    expect(find.text('1.2万'), findsOneWidget);
+    expect(find.text('5.6K'), findsNothing);
+    expect(find.text('12.3K'), findsNothing);
+  });
+
+  testWidgets(
+    'Followed Repositories remember Detailed View on this device only',
+    (tester) async {
+      tester.view.physicalSize = const Size(1500, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      server.metadata['R_kept'] = {
+        'status': 'available',
+        'owner': 'octo',
+        'name': 'kept',
+        'description': 'Notes for followers',
+        'primaryLanguage': 'Python',
+        'starCount': 5600,
+      };
+      await _openFollows(tester, server);
+      expect(find.byTooltip('Compact'), findsOneWidget);
+      expect(find.text('Compact'), findsNothing);
+      expect(find.text('Detailed'), findsNothing);
+      expect(find.text('Notes for followers'), findsNothing);
+      expect(_metadataRequestCount(server), 0);
+
+      await tester.tap(find.byTooltip('Compact'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Detailed'), findsOneWidget);
+      expect(find.text('Detailed'), findsNothing);
+      expect(find.text('Notes for followers'), findsOneWidget);
+      expect(find.text('Python'), findsOneWidget);
+      expect(find.text('5.6K'), findsOneWidget);
+      expect(_metadataRequestCount(server), greaterThan(0));
+      final swatch = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byKey(const ValueKey('followed-R_kept')),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      expect(
+        (swatch.decoration as BoxDecoration).color,
+        const Color(0xFF3572A5),
+      );
+      expect(server.settings['releaseFollows'], isNull);
+      expect(
+        server.featureRequests.any(
+          (request) => request.method == 'PUT' && request.body.contains('view'),
+        ),
+        isFalse,
+      );
+
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Follows'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Detailed'), findsOneWidget);
+      expect(find.text('Notes for followers'), findsOneWidget);
+      expect(server.settings['releaseFollows'], isNull);
+    },
+  );
+
+  testWidgets('a failed follow is told inside Followed Repositories', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    const saveFailed =
+        'Could not save Release Follows. Retry the action; your last confirmed list is still shown.';
+    final server = FollowsServer()
+      ..starredRepositories = [repositoryJson(id: 'R_new', name: 'new')]
+      ..saveStatus = 500;
+    await _openFollows(tester, server);
+    await tester.tap(find.byTooltip('Follow releases'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Follow releases'), findsOneWidget);
+    expect(find.text(saveFailed), findsNothing);
+    expect((server.settings['followedRepositories'] as List), isEmpty);
+    final manage = find.byKey(const ValueKey('manage-follows'));
+    final icon = tester.widget<Icon>(
+      find.descendant(
+        of: manage,
+        matching: find.byIcon(Icons.bookmarks_outlined),
+      ),
+    );
+    expect(icon.color, Theme.of(tester.element(manage)).colorScheme.error);
+    expect(find.text('0 followed'), findsOneWidget);
+
+    await tester.tap(manage);
+    await tester.pumpAndSettle();
+    expect(find.text(saveFailed), findsOneWidget);
+    await tester.tap(find.byTooltip('Close followed repositories'));
+    await tester.pumpAndSettle();
+    expect(find.text(saveFailed), findsNothing);
+
+    tester.view.physicalSize = const Size(1500, 900);
+    await tester.pumpAndSettle();
+    expect(find.text(saveFailed), findsOneWidget);
+    expect(manage, findsNothing);
+  });
 }

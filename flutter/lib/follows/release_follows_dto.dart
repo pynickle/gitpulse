@@ -16,7 +16,14 @@ class FollowMetadataResponseDto {
 
 @JsonSerializable(checked: true, createToJson: false)
 class FollowMetadataDto {
-  const FollowMetadataDto({required this.status, this.owner, this.name});
+  const FollowMetadataDto({
+    required this.status,
+    this.owner,
+    this.name,
+    this.description,
+    this.primaryLanguage,
+    this.starCount,
+  });
 
   factory FollowMetadataDto.fromJson(Map<String, dynamic> json) =>
       _$FollowMetadataDtoFromJson(json);
@@ -24,6 +31,9 @@ class FollowMetadataDto {
   final RepositoryPageStatus status;
   final String? owner;
   final String? name;
+  final String? description;
+  final String? primaryLanguage;
+  final int? starCount;
 }
 
 @JsonSerializable(checked: true, createToJson: false)

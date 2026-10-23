@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
 import 'followed_repositories_panel.dart';
+import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
 import 'release_follows_state.dart';
 import 'release_follows_widgets.dart';
@@ -25,7 +26,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
   final _scroll = ScrollController();
   Timer? _debounce;
   late _RepositorySource _source;
-  bool _followedOpen = false;
 
   @override
   void initState() {
@@ -76,7 +76,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
 
   Future<void> _showFollowed() async {
     FocusScope.of(context).unfocus();
-    setState(() => _followedOpen = true);
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -89,11 +88,16 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
         ),
       ),
     );
-    if (mounted) setState(() => _followedOpen = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(followedRepositoryViewProvider, (previous, next) {
+      if (next != FollowedRepositoryView.detailed) return;
+      unawaited(
+        ref.read(releaseFollowsSessionProvider.notifier).loadMetadata(),
+      );
+    });
     final state = ref.watch(releaseFollowsSessionProvider);
     final facade = ref.read(releaseFollowsSessionProvider.notifier);
     final l10n = AppLocalizations.of(context);
@@ -184,70 +188,30 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                                 ),
                               )
                             else
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child:
-                                        DropdownButtonFormField<
-                                          StarredRepositorySort
-                                        >(
-                                          initialValue: state.starred.sort,
-                                          isExpanded: true,
-                                          decoration: InputDecoration(
-                                            labelText: l10n.followsSortLabel,
-                                            border: const OutlineInputBorder(),
-                                          ),
-                                          items: [
-                                            DropdownMenuItem(
-                                              value:
-                                                  StarredRepositorySort.created,
-                                              child: Text(
-                                                l10n.followsSortStarred,
-                                              ),
-                                            ),
-                                            DropdownMenuItem(
-                                              value:
-                                                  StarredRepositorySort.updated,
-                                              child: Text(
-                                                l10n.followsSortUpdated,
-                                              ),
-                                            ),
-                                          ],
-                                          onChanged: loading
-                                              ? null
-                                              : (sort) {
-                                                  _scrollToTop();
-                                                  unawaited(
-                                                    facade.loadStarred(
-                                                      sort: sort,
-                                                    ),
-                                                  );
-                                                },
-                                        ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton.filledTonal(
-                                    tooltip: state.starred.ascending
-                                        ? l10n.followsAscending
-                                        : l10n.followsDescending,
-                                    onPressed: loading
-                                        ? null
-                                        : () {
-                                            _scrollToTop();
-                                            unawaited(
-                                              facade.loadStarred(
-                                                ascending:
-                                                    !state.starred.ascending,
-                                              ),
-                                            );
-                                          },
-                                    icon: Icon(
-                                      state.starred.ascending
-                                          ? Icons.arrow_upward
-                                          : Icons.arrow_downward,
+                              _SortControls(
+                                label:
+                                    state.starred.sort ==
+                                        StarredRepositorySort.created
+                                    ? l10n.followsSortStarred
+                                    : l10n.followsSortUpdated,
+                                starredLabel: l10n.followsSortStarred,
+                                updatedLabel: l10n.followsSortUpdated,
+                                ascending: state.starred.ascending,
+                                ascendingLabel: l10n.followsAscending,
+                                descendingLabel: l10n.followsDescending,
+                                enabled: !loading,
+                                onSort: (sort) {
+                                  _scrollToTop();
+                                  unawaited(facade.loadStarred(sort: sort));
+                                },
+                                onToggleDirection: () {
+                                  _scrollToTop();
+                                  unawaited(
+                                    facade.loadStarred(
+                                      ascending: !state.starred.ascending,
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
                           ],
                         ),
@@ -256,13 +220,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                         const LinearProgressIndicator(),
                       const Divider(height: 1),
                       Expanded(
-                        child: _discovery(
-                          state,
-                          search,
-                          loading,
-                          problem,
-                          showFollowProblem: !wide && !_followedOpen,
-                        ),
+                        child: _discovery(state, search, loading, problem),
                       ),
                       if (!keyboardVisible &&
                           (hasMore || !wide || problem != null))
@@ -310,7 +268,12 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                                   child: FilledButton.tonalIcon(
                                     key: const ValueKey('manage-follows'),
                                     onPressed: _showFollowed,
-                                    icon: const Icon(Icons.bookmarks_outlined),
+                                    icon: Icon(
+                                      Icons.bookmarks_outlined,
+                                      color: state.problem == null
+                                          ? null
+                                          : Theme.of(context).colorScheme.error,
+                                    ),
                                     label: Text(
                                       l10n.followsManage(
                                         state.repositories.length,
@@ -344,9 +307,8 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
     ReleaseFollowsState state,
     bool search,
     bool loading,
-    FollowProblem? problem, {
-    required bool showFollowProblem,
-  }) {
+    FollowProblem? problem,
+  ) {
     final l10n = AppLocalizations.of(context);
     final items = search ? state.results : state.starred.items;
     final Widget? empty;
@@ -380,16 +342,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
       controller: _scroll,
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
-        if (showFollowProblem && state.problem != null)
-          SliverToBoxAdapter(
-            child: FollowProblemNotice(
-              text: followProblemLabel(
-                l10n,
-                state.problem,
-                save: state.saveFailed,
-              ),
-            ),
-          ),
         if (loading && items.isNotEmpty)
           const SliverToBoxAdapter(child: LinearProgressIndicator()),
         if (problem != null && items.isNotEmpty)
@@ -422,6 +374,110 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _SortControls extends StatelessWidget {
+  const _SortControls({
+    required this.label,
+    required this.starredLabel,
+    required this.updatedLabel,
+    required this.ascending,
+    required this.ascendingLabel,
+    required this.descendingLabel,
+    required this.enabled,
+    required this.onSort,
+    required this.onToggleDirection,
+  });
+
+  final String label;
+  final String starredLabel;
+  final String updatedLabel;
+  final bool ascending;
+  final String ascendingLabel;
+  final String descendingLabel;
+  final bool enabled;
+  final ValueChanged<StarredRepositorySort> onSort;
+  final VoidCallback onToggleDirection;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Flexible(
+          child: _SortMenuButton(
+            label: label,
+            starredLabel: starredLabel,
+            updatedLabel: updatedLabel,
+            enabled: enabled,
+            onSort: onSort,
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          tooltip: ascending ? ascendingLabel : descendingLabel,
+          onPressed: enabled ? onToggleDirection : null,
+          icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
+        ),
+      ],
+    );
+  }
+}
+
+/// The current order is the button label. The menu is shifted to stay inside
+/// the window, including when a long label is scaled up on a phone.
+class _SortMenuButton extends StatelessWidget {
+  const _SortMenuButton({
+    required this.label,
+    required this.starredLabel,
+    required this.updatedLabel,
+    required this.enabled,
+    required this.onSort,
+  });
+
+  final String label;
+  final String starredLabel;
+  final String updatedLabel;
+  final bool enabled;
+  final ValueChanged<StarredRepositorySort> onSort;
+
+  Future<void> _open(BuildContext context) async {
+    final box = context.findRenderObject()! as RenderBox;
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
+    final button = origin & box.size;
+    final selected = await showMenu<StarredRepositorySort>(
+      context: context,
+      position: RelativeRect.fromRect(button, Offset.zero & overlay.size),
+      items: [
+        PopupMenuItem(
+          value: StarredRepositorySort.created,
+          child: Text(
+            starredLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        PopupMenuItem(
+          value: StarredRepositorySort.updated,
+          child: Text(
+            updatedLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+    if (selected != null) onSort(selected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: enabled ? () => _open(context) : null,
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
 }

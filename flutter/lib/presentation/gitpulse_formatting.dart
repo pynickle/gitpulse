@@ -80,6 +80,46 @@ double _compactValue(double value) =>
 String _compactCount(String localeName, double value, String suffix) =>
     '${NumberFormat.decimalPattern(localeName).format(_compactValue(value))}$suffix';
 
+/// A star count in locale compact notation with one fractional digit.
+///
+/// English uses `K` and `M` (`5.6K`, `12.3K`, `1M`, `1.2M`). Chinese uses `万`
+/// (`1.2万`, `100万`) and leaves values below 10,000 exact (`5600`). Values
+/// below 1,000 stay exact in every locale. Download counts keep
+/// [formatGitPulseCompactCount], which appends `k` or `m` in every language.
+String formatGitPulseLocaleCompactCount(String localeName, int count) {
+  if (localeName.toLowerCase().startsWith('zh')) {
+    if (count < 10000) return '$count';
+    return _localeCompact(count, const [100000000, 10000], const ['亿', '万']);
+  }
+  if (count < 1000) return '$count';
+  return _localeCompact(
+    count,
+    const [1000000000, 1000000, 1000],
+    const ['B', 'M', 'K'],
+  );
+}
+
+String _localeCompact(int count, List<int> divisors, List<String> suffixes) {
+  for (var index = 0; index < divisors.length; index++) {
+    final divisor = divisors[index];
+    final last = index == divisors.length - 1;
+    if (!last && count < divisor) continue;
+    final rounded = _roundOneDecimal(count / divisor);
+    if (index > 0 && rounded * divisor >= divisors[index - 1]) {
+      return _compactDigits(_roundOneDecimal(count / divisors[index - 1])) +
+          suffixes[index - 1];
+    }
+    return _compactDigits(rounded) + suffixes[index];
+  }
+  return '$count';
+}
+
+double _roundOneDecimal(double value) => (value * 10).round() / 10;
+
+String _compactDigits(double value) => value == value.truncateToDouble()
+    ? value.toInt().toString()
+    : value.toStringAsFixed(1);
+
 /// A calendar day in the language of [context].
 String gitPulseDay(BuildContext context, DateTime instant) =>
     formatGitPulseDay(gitPulseLocaleName(context), instant);
@@ -96,6 +136,10 @@ String gitPulseMonthDay(BuildContext context, DateTime instant) =>
 /// A download count in the language of [context], compacted for a row.
 String gitPulseCompactCount(BuildContext context, int count) =>
     formatGitPulseCompactCount(gitPulseLocaleName(context), count);
+
+/// A star count in the language of [context], in locale compact notation.
+String gitPulseLocaleCompactCount(BuildContext context, int count) =>
+    formatGitPulseLocaleCompactCount(gitPulseLocaleName(context), count);
 
 /// An exact count in the language of [context], grouped for its locale.
 String gitPulseCount(BuildContext context, int count) =>

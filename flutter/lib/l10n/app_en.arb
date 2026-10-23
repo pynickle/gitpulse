@@ -204,6 +204,13 @@
   "followsLookupFailed": "Could not check repository availability. Reload follows to retry; these repositories have not been marked as missing.",
   "followsNetwork": "Could not reach the backend. Check your connection and retry; no follow change has been confirmed.",
   "followsUnavailable": "Unavailable on GitHub. Retry or unfollow this repository.",
+  "followsUnavailableLabel": "Unavailable",
+  "followsViewCompact": "Compact",
+  "followsViewDetailed": "Detailed",
+  "followsRetryMetadata": "Retry details for {repo}",
+  "@followsRetryMetadata": {
+    "placeholders": {"repo": {"type": "String"}}
+  },
   "followsTransient": "Temporarily unavailable. Retry when your connection recovers.",
   "followsRenamed": "Renamed from {name}",
   "@followsRenamed": {"placeholders": {"name": {"type": "String"}}},

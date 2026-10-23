@@ -72,6 +72,21 @@ this tree — verify with the Flutter toolchain.
   `GitPulseMessageView` for page-level loading, empty, and error states instead
   of a second look. Format dates through `gitpulse_formatting.dart`; give count
   placeholders `"format": "decimalPattern"` in the ARB so intl localizes them.
+  Star counts on Release Follows use `formatGitPulseLocaleCompactCount` (locale
+  `K` / `万`). Download counts stay on `formatGitPulseCompactCount`.
+- Widget tests run on a fake clock. An awaited `File` or `Directory` call in the
+  test body, or the first `build()` of an async notifier, never resumes, so
+  `PresentationPreferencesController.selectLanguage` waits forever on
+  `state.value == null` and the Settings chip looks dead. Create the temp
+  preferences file with `createTempSync`, pass it as `mountApp`'s
+  `presentationFile`, and advance the read with the bounded `runAsync` + `pump`
+  loop named `settleUi` in `test/presentation/presentation_settings_test.dart`.
+  A test that prints nothing after its name is this wait. Pass
+  `flutter test --timeout 30s` so the hang fails on a line.
+- A menu that must stay inside the window uses `showMenu`. `MenuAnchor`'s
+  `maximumSize` caps the panel's children; the overlay still anchors that panel,
+  so a label at text scale 1.8 paints past the view edge. Assert the menu
+  item's global rectangle, not the child's max width.
 
 ## Verification bar
 

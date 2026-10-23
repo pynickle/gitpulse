@@ -94,18 +94,44 @@ class FollowsServer extends AuthServer {
           : json(searchStatus, repositories.first);
     }
     if (path.contains('/api/release-follows/')) {
+      if (metadataStatus != 200) {
+        return json(metadataStatus, {'statusMessage': 'metadata failed'});
+      }
+      final follows = [
+        for (final follow in settings['followedRepositories']! as List)
+          Map<String, Object?>.from(follow as Map),
+      ];
+      final repositories = <String, Object?>{};
+      final updated = <Map<String, Object?>>[];
+      var renamed = false;
+      for (final follow in follows) {
+        final id = follow['id']! as String;
+        final stored = metadata[id];
+        final meta = stored is Map
+            ? Map<String, Object?>.from(stored)
+            : {
+                'status': 'available',
+                'owner': follow['owner'],
+                'name': follow['name'],
+              };
+        repositories[id] = meta;
+        final owner = meta['owner'];
+        final name = meta['name'];
+        if (meta['status'] == 'available' &&
+            owner is String &&
+            name is String) {
+          if (owner != follow['owner'] || name != follow['name']) {
+            renamed = true;
+          }
+          updated.add({'id': id, 'owner': owner, 'name': name});
+        } else {
+          updated.add(follow);
+        }
+      }
+      if (renamed) settings['followedRepositories'] = updated;
       return json(metadataStatus, {
-        'repositories': {
-          for (final follow in settings['followedRepositories'] as List)
-            (follow as Map)['id']:
-                metadata[follow['id']] ??
-                {
-                  'status': 'available',
-                  'owner': follow['owner'],
-                  'name': follow['name'],
-                },
-        },
-        'renamed': false,
+        'repositories': repositories,
+        'renamed': renamed,
       });
     }
     final result = roundJson(pages: Map.of(pages));
@@ -126,13 +152,17 @@ Map<String, Object?> repositoryJson({
   String id = 'R_alpha',
   String owner = 'octo',
   String name = 'alpha',
+  String? description = 'A project for release followers',
+  String? language = 'Python',
+  int stars = 42,
 }) => {
   'id': 123,
   'node_id': id,
   'owner': {'login': owner},
   'name': name,
-  'description': 'A project for release followers',
+  'description': ?description,
+  'language': ?language,
   'default_branch': 'main',
   'forks_count': 7,
-  'stargazers_count': 42,
+  'stargazers_count': stars,
 };
