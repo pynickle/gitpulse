@@ -8,6 +8,10 @@
 
 This outranks taste, existing screens, and helpfulness. Web and Flutter. A control, icon, count, color, or position already names itself. A caption, helper line, or button label that repeats that meaning is a defect. Write the primary text only. If deleting the caption would make the control ambiguous, the layout is wrong: change the layout. A screen that explains itself with captions fails review.
 
+## Tests (Non-Negotiable)
+
+**A test executes the code and asserts on behavior.** Call the function, mount the component, hit the route, then assert returned values, rendered output, request payloads, or public contracts. Source text is not behavior: a test that reads a `.vue` / `.ts` file and matches its characters proves nothing, and fails on every rename.
+
 ## Commands
 
 Full command reference and pre-PR checks: `CONTRIBUTING.md`.
@@ -78,7 +82,6 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 - Root: `bun test` (`tests/`). Extension: `bun run extension:test` (`extension/tests/`); extension typecheck: `bun run extension:typecheck`.
 - Timeline/detail response shapes and launch GitHub URL mappings are the highest-risk surfaces; re-verify against real GitHub payloads after changes, and cover new launch mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
-- Tests exercise behavior, outputs, or public contracts — never source files read as plain text.
 - Verify UI and layout changes with `bun test`, `bun run lint`, and `bunx nuxi typecheck`.
 - Drive a real browser — Chrome DevTools, browser-use, or clicking through `bun run dev` — only when the user explicitly asks for browser testing; do not start the dev server on your own initiative.
 
@@ -92,6 +95,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Do not manually import auto-imported `app/utils/` defaults or `app/composables/`.
 - Do not write session shape inline in auth routes; keep `shared/types/auth.d.ts` + `establishGitHubSession` in sync.
 - Do not treat `.nuxt/` or `.output/` as source of truth — read `nuxt.config.ts` and the app source.
+- Do not test source text (`readFileSync` + `toContain`) — see **Tests (Non-Negotiable)**.
 - Extension releases (`extension-v*`), Flutter distributions (`flutter-vX.Y.Z`) and main app releases (`vX.Y.Z`) are independent. Their release workflows do not trigger each other.
 
 ## Design options

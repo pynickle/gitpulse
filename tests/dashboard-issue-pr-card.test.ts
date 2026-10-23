@@ -1,5 +1,4 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { readFileSync } from 'node:fs';
 
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
@@ -277,29 +276,6 @@ describe('dashboard issue/PR notification-style cards', () => {
         comments: Number.NaN,
       }).comments
     ).toBe(null);
-  });
-
-  test('keeps issue and PR card UI aligned with notification item structure', () => {
-    const issuePrCardSource = readFileSync(
-      'app/components/dashboard/IssuePrNotificationItem.vue',
-      'utf8'
-    );
-    const dashboardSource = readFileSync('app/pages/dashboard.vue', 'utf8');
-
-    expect(issuePrCardSource).toContain('<GitHubAvatar');
-    expect(issuePrCardSource).toContain('class="notification-type-badge"');
-    expect(issuePrCardSource).toContain('notification-card__comments');
-    expect(issuePrCardSource).toContain('MessageSquareIcon');
-    expect(issuePrCardSource).not.toContain('notification-card__actions');
-    expect(issuePrCardSource).not.toContain('notification-card__reason-slot');
-    expect(dashboardSource).not.toContain('AsyncSearchItem');
-    expect(dashboardSource).not.toContain("import('~/components/dashboard/SearchItem.vue')");
-    expect(dashboardSource).toContain('<AsyncGenericSearchItem');
-    expect(dashboardSource).toMatch(
-      /<AsyncIssuePrNotificationItem\s+v-if="[\s\S]*selectedCustomTab\.query\.endpoint === 'issues'/
-    );
-    expect(dashboardSource).toMatch(/<AsyncIssuePrNotificationItem[\s\S]*:item="issue"/);
-    expect(dashboardSource).toContain('<AsyncIssuePrNotificationItem :item="pull" />');
   });
 
   test('resolves GitHub issue type colors and safely falls back to gray', () => {
