@@ -2,7 +2,8 @@
 
 GitPulse's native client lives in `flutter/`, uses application identity
 `ink.euphony.gitpulse`, and has its own `flutter-vX.Y.Z` tags. Its release workflow
-prepares a Windows x64 runtime ZIP and a signed universal Android APK. Pushing
+prepares a Windows x64 portable ZIP, a per-user Windows setup, and three signed
+Android ABI APKs. There is no universal APK. Pushing
 the matching `flutter-vX.Y.Z` tag creates a draft GitHub Release titled
 `GitPulse Flutter vX.Y.Z` and attaches those files. It does not deploy Nitro or
 publish the extension. Main app `vX.Y.Z` and extension `extension-vX.Y.Z`
@@ -75,10 +76,10 @@ their existing credential-management process:
 The workflow writes a temporary, permission-restricted keystore and
 `android/key.properties`, then removes both even after failure. `flutter build`
 does not forward the step environment into Gradle, so the release build reads
-that properties file. It verifies the actual APK with Android SDK `apksigner`,
+that properties file. It verifies each split APK with Android SDK `apksigner`,
 rejects the Android Debug certificate, compares the signer with the pinned
-certificate fingerprint, and checks the package ID, version name and version
-code before uploading an APK.
+certificate fingerprint, and checks the package ID, version name, ABI-specific
+version code, and that the APK contains only its own ABI.
 Changing the keystore alone therefore cannot silently change the update identity.
 
 The signing key, passwords and trusted fingerprint are pending owner inputs;
@@ -88,9 +89,13 @@ Android job rather than uploading an unsigned or debug-signed formal artifact.
 ## Build and install
 
 Increment `flutter/pubspec.yaml`'s `version: X.Y.Z+N` for a release. `X.Y.Z` must
-match `flutter-vX.Y.Z`; `N` is a positive, monotonically increasing Android
-`versionCode` (at most 2100000000). Never reuse or decrease an installed version
-code. The same pubspec supplies the Windows executable version. Commit the
+match `flutter-vX.Y.Z`; `N` is a positive, monotonically increasing build
+number. Split APKs do not use `N` itself as `versionCode`. Flutter 3.47 adds an
+ABI prefix: armeabi-v7a is `1000 + N`, arm64-v8a is `2000 + N`, and x86_64 is
+`4000 + N` (`3000 + N` stayed reserved after Flutter removed x86). `N` must stay
+at or below 2099996000 so the x86_64 code still fits Android's 2100000000 limit.
+Never reuse or decrease `N`. The same pubspec supplies the Windows executable
+version. Commit the
 version/lockfile before tagging. The owner can run **Flutter Release** manually
 on a branch for candidate artifacts or push its matching Flutter tag when ready.
 Neither action is performed as part of this implementation.
@@ -99,8 +104,10 @@ Both platform jobs wait for the shared Flutter checks. Windows can finish even
 if signing inputs are unavailable for Android; a failed Android job means that
 run has not delivered both formal artifacts, and the draft Release is not
 created. A manual **Flutter Release** run uploads Actions artifacts only. A tag
-push attaches the ZIP, APK, and `.sha256` files to the draft Release. Publish
-that draft after acceptance. Verify the checksums before installation.
+push attaches the portable ZIP, setup EXE, three ABI APKs, and their `.sha256`
+files to the draft Release. The draft body keeps the generated notes and adds a
+download table for those files. Publish that draft after acceptance. Verify the
+checksums before installation.
 
 ### Windows x64
 
@@ -113,21 +120,31 @@ cd flutter
 flutter pub get --enforce-lockfile
 flutter build windows --release --no-pub
 ./tool/package_windows.ps1
+./tool/package_windows_setup.ps1
 ```
 
-The packager requires a release AOT image, Flutter data/assets, plugin DLLs, the
-MSVC runtime DLLs and an executable matching the pubspec version. CMake installs
-the redistributable runtime beside the executable. The ZIP contains **every
-file in `build/windows/x64/runner/Release/`**, including SQLite and other native
-assets; distributing only `gitpulse.exe` is insufficient. Outputs:
+`package_windows_setup.ps1` also refreshes the portable ZIP. It needs NSIS 3.13
+(`makensis.exe`). The release job downloads that compiler. The packager requires
+a release AOT image, Flutter data/assets, plugin DLLs, the MSVC runtime DLLs and
+an executable matching the pubspec version. CMake installs the redistributable
+runtime beside the executable. Both packages contain **every file in
+`build/windows/x64/runner/Release/`**, including SQLite and other native assets;
+distributing only `gitpulse.exe` is insufficient. Outputs:
 
-- `build/distributions/GitPulse-flutter-vX.Y.Z-windows-x64.zip`
-- The adjacent `.zip.sha256` checksum.
+- `build/distributions/GitPulse-flutter-vX.Y.Z-windows-x64.zip` (portable)
+- `build/distributions/GitPulse-flutter-vX.Y.Z-windows-x64-setup.exe`
+- The adjacent `.sha256` checksums.
 
-Extract the ZIP to a writable local application folder and run `gitpulse.exe`.
-For an update, close the app and extract the new complete ZIP into a **new**
-folder; do not mix old and new DLLs. The account credentials and local data are
-in the user's OS storage, not the ZIP. Preserve the product identity and test
+NSIS 3.13 builds that setup. The wizard offers English and Simplified Chinese.
+The setup is a per-user install into `%LOCALAPPDATA%\GitPulse`. It does not
+request administrator rights, and it is not Authenticode-signed, so SmartScreen
+can warn on first launch. Uninstall removes the program files and leaves
+credentials and app data in place. The portable package is the ZIP: extract it
+to a writable folder and run `gitpulse.exe`. For a portable update, close the
+app and extract the new complete ZIP into a **new** folder; do not mix old and
+new DLLs. Setup and portable builds share the Windows user profile, so do not
+run both at the same time. The account credentials and local data are in the
+user's OS storage, not in either package. Preserve the product identity and test
 that an update from the previous formal version retains session/settings/cache.
 
 ### Android
@@ -141,17 +158,26 @@ cache and checkout paths on different drives otherwise break plugin compilation.
 With the intended signing configuration available:
 
 ```sh
-flutter build apk --release --no-pub
+flutter build apk --release --split-per-abi --no-pub
 ```
 
-The local APK is `build/app/outputs/flutter-apk/app-release.apk`. The Actions
-artifact is `GitPulse-flutter-vX.Y.Z-android.apk` with an adjacent `.apk.sha256`.
-A tag push attaches the same files to the draft GitHub Release. It is a
-universal APK, not an AAB or a store upload. Use the SDK build-tools
+This produces three APKs and no universal APK:
+
+- `build/app/outputs/flutter-apk/app-arm64-v8a-release.apk`
+- `build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk`
+- `build/app/outputs/flutter-apk/app-x86_64-release.apk`
+
+Phones use arm64-v8a. armeabi-v7a is 32-bit ARM. x86_64 is for emulators and
+x86 devices. The release script copies them to
+`GitPulse-flutter-vX.Y.Z-android-<abi>.apk` with an adjacent `.apk.sha256`.
+A tag push attaches those files to the draft GitHub Release. This is not an
+AAB or a store upload. Use the SDK build-tools
 `apksigner verify --verbose --print-certs <apk>` to compare its SHA-256 signer
 against the privately recorded identity before sideloading. Allow installation
 from the selected source on the test device, then use the package installer or
-`adb install -r <apk>`. Verify that the version code increased and that an
+`adb install -r <apk>`. A device that installed an older universal APK whose
+version code was `N` can update to the matching split: arm64 becomes `2000 + N`,
+which is greater than `N`. Verify that the version code increased and that an
 in-place update with the same certificate preserves the existing session/data.
 `INSTALL_FAILED_UPDATE_INCOMPATIBLE` requires checking the installed certificate;
 it is not permission to replace the release identity.
@@ -164,7 +190,7 @@ and is never uploaded by the release workflow.
 
 | Platform | Configuration and prerequisites                                                                                                                                                                                                                                                                                                                                          | Verification boundary                                                                                                                                  |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Windows  | `windows/CMakeLists.txt` bundles the complete runtime and MSVC DLLs; secure storage uses encrypted support files plus Windows Credential Manager. Keep the Windows user profile and Credential Manager available. ATL is a build prerequisite.                                                                                                                           | Windows x64 build/ZIP checks; actual credential-store and update behavior require the owner checklist below.                                           |
+| Windows  | `windows/CMakeLists.txt` bundles the complete runtime and MSVC DLLs; secure storage uses encrypted support files plus Windows Credential Manager. Keep the Windows user profile and Credential Manager available. ATL is a build prerequisite.                                                                                                                           | Windows x64 build, portable ZIP, and per-user setup checks; actual credential-store and update behavior require the owner checklist below.             |
 | Android  | ID/namespace `ink.euphony.gitpulse`; minSdk 24; `INTERNET`; `allowBackup=false` prevents restoring encrypted credentials without their Keystore key. Default secure-storage ciphers use Android Keystore without a biometric-permission requirement.                                                                                                                     | Debug compilation and fail-closed release-signing checks can run without a release key; formal signature/install/update require that key and a device. |
 | Linux    | GTK application ID `ink.euphony.gitpulse`; GTK 3, Clang, CMake, Ninja, pkg-config and GTK development headers. Install `libsecret-1-dev` to build, `libsecret-1-0` to run, plus an unlocked Secret Service provider on the user's D-Bus session (for example GNOME Keyring or compatible KWallet). A headless shell without that service cannot establish durable login. | **Code-level support only.** No Linux build, keyring or runtime verification claimed.                                                                  |
 | macOS    | Bundle ID `ink.euphony.gitpulse`; deployment target 12.0; Xcode/macOS SDK and plugin tooling. Both DebugProfile and Release entitlements enable sandbox/network client and the prefixed Keychain group; debug additionally permits JIT/network server. A signing team and provisioning matching `$(AppIdentifierPrefix)ink.euphony.gitpulse` must be configured.         | **Code-level support only.** No Mac, Keychain, signing, notarization or runtime verification claimed.                                                  |
@@ -205,19 +231,19 @@ path, configured providers, previous installed version/certificate, fixture IDs,
 expected result, actual result and any failure evidence. Never record tokens,
 passwords or session cookies. Run every row on both Windows and Android:
 
-| Case                                | Action and expected result                                                                                                                                                                                                                                                                                                                                  |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First connection and custom backend | Launch a fresh install; the default address connects automatically. Edit a test server with a base path, connect successfully and restart; the saved address reconnects. Capability failure offers retry/address editing and preserves the last successful address. Merely opening the editor keeps the current session.                                    |
-| Personal password                   | On a personal-mode test instance, unlock using the test password. Only usable providers appear. Restart and verify secure session restoration without password entry. Wrong password does not establish a session.                                                                                                                                          |
-| PAT                                 | On a PAT-enabled non-personal instance, sign in using a test PAT. Restart and verify the session restores without persisting the PAT. Switch accounts and verify the previous identity's releases disappear.                                                                                                                                                |
-| GitHub OAuth                        | Start sign-in, compare the browser/app approval code, approve in the system browser, return to the app and complete the same attempt. Check cancel/expiry and retry. The app restores its own session after restart; browser cookies are not an app session.                                                                                                |
-| Follow sharing                      | Follow both controlled repositories; verify the same follows in the web client/second installation after reload. Unfollow one; its local cards/cache disappear. Follow it again; fetching starts from page one.                                                                                                                                             |
-| Timeline and details                | Scroll a long date-grouped timeline, open/close details, browse its Repository Release List and return to the Entry Release. Confirm scroll position survives. Exercise desktop Escape/Android Back, narrow sheet/wide drawer, repository overview/README, relative links, SVG, wide tables, details/summary, code selection/copy and external asset links. |
-| Offline restart                     | Fetch and expose known releases, record the saved update time, quit, disable the device network and restart. The Saved Visible Timeline/bodies restore with offline state/time. Unfetched README/images are not promised offline. Network failure preserves credentials/cache; a rejected session hides cached data until reauthentication.                 |
-| Gap reconnection                    | Retain A:8/7/6 and B's old segment. Return fresh A:12/11/10 without the intervening page; old records stay hidden. Restart/refetch the latest segment; they remain hidden. Explicitly load A:9/8; B still blocks the shared extension until its own connection succeeds. Test B failure/retry and unavailable-versus-transient status.                      |
-| Synchronized retention and baseline | Start with 30 days; change to 1, then 90, and synchronize the second installation/web. Shortening prunes old durable data; expanding requires refetch. Verify UTC publication cutoff, time-zone independence, and older online-only results disappearing on restart. A usable refresh updates the shared baseline; pagination/retry/clear-cache do not.     |
-| Clear/logout/identity               | Clear cache; login, Release Follows, retention and baseline remain. Restart offline; cleared history stays absent. Logout removes the local session/history. Backend/account changes invalidate in-flight results; the former identity never reappears. Theme/language remain device preferences.                                                           |
-| Install/update                      | Install the extracted complete Windows ZIP or formally signed Android APK. Upgrade from the previous formal version without deleting user storage. Verify stable ID/certificate, increasing version code, secure login restore, cached history and preferences. Separately document migration from any debug install.                                       |
+| Case                                | Action and expected result                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First connection and custom backend | Launch a fresh install; the default address connects automatically. Edit a test server with a base path, connect successfully and restart; the saved address reconnects. Capability failure offers retry/address editing and preserves the last successful address. Merely opening the editor keeps the current session.                                              |
+| Personal password                   | On a personal-mode test instance, unlock using the test password. Only usable providers appear. Restart and verify secure session restoration without password entry. Wrong password does not establish a session.                                                                                                                                                    |
+| PAT                                 | On a PAT-enabled non-personal instance, sign in using a test PAT. Restart and verify the session restores without persisting the PAT. Switch accounts and verify the previous identity's releases disappear.                                                                                                                                                          |
+| GitHub OAuth                        | Start sign-in, compare the browser/app approval code, approve in the system browser, return to the app and complete the same attempt. Check cancel/expiry and retry. The app restores its own session after restart; browser cookies are not an app session.                                                                                                          |
+| Follow sharing                      | Follow both controlled repositories; verify the same follows in the web client/second installation after reload. Unfollow one; its local cards/cache disappear. Follow it again; fetching starts from page one.                                                                                                                                                       |
+| Timeline and details                | Scroll a long date-grouped timeline, open/close details, browse its Repository Release List and return to the Entry Release. Confirm scroll position survives. Exercise desktop Escape/Android Back, narrow sheet/wide drawer, repository overview/README, relative links, SVG, wide tables, details/summary, code selection/copy and external asset links.           |
+| Offline restart                     | Fetch and expose known releases, record the saved update time, quit, disable the device network and restart. The Saved Visible Timeline/bodies restore with offline state/time. Unfetched README/images are not promised offline. Network failure preserves credentials/cache; a rejected session hides cached data until reauthentication.                           |
+| Gap reconnection                    | Retain A:8/7/6 and B's old segment. Return fresh A:12/11/10 without the intervening page; old records stay hidden. Restart/refetch the latest segment; they remain hidden. Explicitly load A:9/8; B still blocks the shared extension until its own connection succeeds. Test B failure/retry and unavailable-versus-transient status.                                |
+| Synchronized retention and baseline | Start with 30 days; change to 1, then 90, and synchronize the second installation/web. Shortening prunes old durable data; expanding requires refetch. Verify UTC publication cutoff, time-zone independence, and older online-only results disappearing on restart. A usable refresh updates the shared baseline; pagination/retry/clear-cache do not.               |
+| Clear/logout/identity               | Clear cache; login, Release Follows, retention and baseline remain. Restart offline; cleared history stays absent. Logout removes the local session/history. Backend/account changes invalidate in-flight results; the former identity never reappears. Theme/language remain device preferences.                                                                     |
+| Install/update                      | Install the per-user Windows setup or the extracted portable ZIP, and the signed Android APK whose ABI matches the device. Upgrade from the previous formal version without deleting user storage. Verify stable ID/certificate, increasing version code, secure login restore, cached history and preferences. Separately document migration from any debug install. |
 
 The existing automated coverage is mapped below so missing feature regressions
 are fixed in their owning slice rather than deferred to device acceptance:

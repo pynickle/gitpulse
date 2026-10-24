@@ -26,24 +26,7 @@ jobs:
 
       - name: Validate version and independent tag
         id: version
-        shell: python
-        run: |
-          import os
-          import pathlib
-          import re
-
-          pubspec = pathlib.Path('flutter/pubspec.yaml').read_text()
-          match = re.search(r'^version: (\d+\.\d+\.\d+)\+([1-9]\d*)\s*$', pubspec, re.M)
-          if not match:
-              raise SystemExit('Expected Flutter version X.Y.Z+N with a positive build number.')
-          version, build_number = match.groups()
-          if int(build_number) > 2100000000:
-              raise SystemExit('The Android version code exceeds its supported limit.')
-          if os.environ['GITHUB_REF_TYPE'] == 'tag':
-              if os.environ['GITHUB_REF_NAME'] != f'flutter-v{version}':
-                  raise SystemExit('The tag must be flutter-vX.Y.Z and match flutter/pubspec.yaml.')
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'version={version}\nbuild_number={build_number}\n')
+        run: python3 flutter/tool/package_android.py validate-version
 
   checks:
     name: Feature and regression checks
@@ -51,7 +34,7 @@ jobs:
     uses: ./.github/workflows/flutter-ci.yml
 
   windows:
-    name: Windows x64 runtime ZIP
+    name: Windows x64 setup and portable ZIP
     needs: [validate, checks]
     runs-on: windows-2025
     defaults:
@@ -75,8 +58,24 @@ jobs:
       - name: Build the complete Windows runtime
         run: flutter build windows --release --no-pub
 
-      - name: Package the complete runtime and checksum
-        run: ./tool/package_windows.ps1
+      - name: Install NSIS 3.13
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'nsis-3.13.zip'
+          curl.exe -L --fail --retry 3 -A 'GitPulse' -o $zip 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip'
+          if ($LASTEXITCODE -ne 0) {
+            throw "NSIS download failed."
+          }
+          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash
+          $expected = 'BA63DFFC4410EE89193E1CB5A41989991BD77C61068DA17E3156D136B7B0B3D8'
+          if ($actual -ne $expected) {
+            throw "NSIS zip hash is $actual."
+          }
+          $extract = Join-Path $env:RUNNER_TEMP 'nsis'
+          Expand-Archive -LiteralPath $zip -DestinationPath $extract
+          Add-Content -Path $env:GITHUB_ENV -Value "MAKENSIS=$extract\nsis-3.13\bin\makensis.exe" -Encoding utf8NoBOM
+
+      - name: Package the portable ZIP and per-user setup
+        run: ./tool/package_windows_setup.ps1
 
       - name: Upload Windows distribution
         uses: actions/upload-artifact@v7
@@ -84,11 +83,12 @@ jobs:
           name: gitpulse-flutter-v${{ needs.validate.outputs.version }}-windows-x64
           path: |
             flutter/build/distributions/*.zip
+            flutter/build/distributions/*.exe
             flutter/build/distributions/*.sha256
           if-no-files-found: error
 
   android:
-    name: Android release identity APK
+    name: Android release APKs
     needs: [validate, checks]
     runs-on: ubuntu-26.04
     defaults:
@@ -125,90 +125,18 @@ jobs:
           EXPECTED_CERT_SHA256: ${{ vars.FLUTTER_ANDROID_CERT_SHA256 }}
         run: |
           set -euo pipefail
-          for required in KEYSTORE_BASE64 GITPULSE_ANDROID_STORE_PASSWORD GITPULSE_ANDROID_KEY_ALIAS GITPULSE_ANDROID_KEY_PASSWORD EXPECTED_CERT_SHA256; do
-            if [ -z "${!required}" ]; then
-              echo "Missing release signing input: ${required}. See docs/flutter-release.md." >&2
-              exit 1
-            fi
-          done
           umask 077
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$GITPULSE_ANDROID_KEYSTORE_PATH"
           # flutter build replaces the Gradle environment with JAVA_HOME and PATH,
-          # so the GITPULSE_ANDROID_* variables above never reach the signing config.
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
+          # so the GITPULSE_ANDROID_* variables never reach the signing config.
+          python3 tool/package_android.py write-signing
+          flutter build apk --release --split-per-abi --no-pub
 
-          def prop(value: str) -> str:
-              return (
-                  value.replace("\\", "\\\\")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("=", "\\=")
-                  .replace(":", "\\:")
-              )
-
-          lines = [
-              f"storeFile={prop(os.environ['GITPULSE_ANDROID_KEYSTORE_PATH'])}",
-              f"storePassword={prop(os.environ['GITPULSE_ANDROID_STORE_PASSWORD'])}",
-              f"keyAlias={prop(os.environ['GITPULSE_ANDROID_KEY_ALIAS'])}",
-              f"keyPassword={prop(os.environ['GITPULSE_ANDROID_KEY_PASSWORD'])}",
-          ]
-          Path("android/key.properties").write_text("\n".join(lines) + "\n", encoding="utf-8")
-          PY
-          flutter build apk --release --no-pub
-
-      - name: Verify the APK signer, application ID and version
-        shell: python
+      - name: Verify each split APK
         env:
           EXPECTED_CERT_SHA256: ${{ vars.FLUTTER_ANDROID_CERT_SHA256 }}
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
           RELEASE_BUILD_NUMBER: ${{ needs.validate.outputs.build_number }}
-        run: |
-          import hashlib
-          import os
-          import pathlib
-          import re
-          import shutil
-          import subprocess
-
-          tools_root = pathlib.Path(os.environ['ANDROID_HOME']) / 'build-tools'
-          tools = max(
-              (p for p in tools_root.iterdir() if re.fullmatch(r'\d+\.\d+\.\d+', p.name)),
-              key=lambda p: tuple(map(int, p.name.split('.'))),
-          )
-          apk = pathlib.Path('build/app/outputs/flutter-apk/app-release.apk')
-          signer = subprocess.run(
-              [str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)],
-              check=True, capture_output=True, text=True,
-          ).stdout
-          expected = re.sub(r'[^0-9a-fA-F]', '', os.environ['EXPECTED_CERT_SHA256']).lower()
-          digests = {
-              re.sub(r'[^0-9a-fA-F]', '', digest).lower()
-              for digest in re.findall(r'certificate SHA-256 digest:\s*([0-9a-fA-F:]+)', signer)
-          }
-          if not re.fullmatch(r'[0-9a-f]{64}', expected) or digests != {expected}:
-              print(signer)
-              raise SystemExit('APK signer does not match the pinned release certificate.')
-          if re.search(r'certificate DN: .*CN\s*=\s*Android Debug', signer, re.I):
-              raise SystemExit('A debug certificate is not a release identity.')
-          badging = subprocess.run(
-              [str(tools / 'aapt2'), 'dump', 'badging', str(apk)],
-              check=True, capture_output=True, text=True,
-          ).stdout.splitlines()[0]
-          package = dict(re.findall(r"(\w+)='([^']*)'", badging))
-          if (package.get('name'), package.get('versionName'), package.get('versionCode')) != (
-              'ink.euphony.gitpulse', os.environ['RELEASE_VERSION'], os.environ['RELEASE_BUILD_NUMBER'],
-          ):
-              raise SystemExit('Unexpected APK application ID or version.')
-          directory = pathlib.Path('build/distributions')
-          directory.mkdir(parents=True, exist_ok=True)
-          artifact = directory / f"GitPulse-flutter-v{os.environ['RELEASE_VERSION']}-android.apk"
-          shutil.copyfile(apk, artifact)
-          with artifact.open('rb') as source:
-              digest = hashlib.file_digest(source, 'sha256').hexdigest()
-          artifact.with_suffix('.apk.sha256').write_text(f'{digest}  {artifact.name}\n')
-          print(f'Verified ink.euphony.gitpulse; release certificate SHA-256: {expected}')
+        run: python3 tool/package_android.py verify-splits
 
       - name: Remove the temporary signing key
         if: always()
@@ -235,6 +163,9 @@ jobs:
       actions: read
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Download distributions
         uses: actions/download-artifact@v8
         with:
@@ -249,15 +180,24 @@ jobs:
           VERSION: ${{ needs.validate.outputs.version }}
         run: |
           set -euo pipefail
+          notes="$(mktemp)"
+          body="$(mktemp)"
+          gh api --method POST -H "Accept: application/vnd.github+json" \
+            "/repos/${GH_REPO}/releases/generate-notes" \
+            -f tag_name="${GITHUB_REF_NAME}" \
+            --jq .body > "$notes"
+          python3 flutter/tool/package_android.py assert-assets \
+            --dir distributions \
+            --version "$VERSION"
+          python3 flutter/tool/flutter_release_notes.py \
+            --version "$VERSION" \
+            --notes "$notes" \
+            --output "$body"
           shopt -s nullglob
           files=(distributions/*)
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "No distribution files to publish." >&2
-            exit 1
-          fi
           gh release create "${GITHUB_REF_NAME}" \
             --draft \
             --title "GitPulse Flutter v${VERSION}" \
-            --generate-notes \
+            --notes-file "$body" \
             --verify-tag \
             "${files[@]}"
