@@ -5,11 +5,18 @@ FROM base AS deps
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --ignore-scripts
 
-FROM deps AS build
+# The build must run on Node, not Bun. Nuxt loads its config and modules through
+# jiti, which wraps Error.prepareStackTrace, and the legacy CustomError classes
+# Vite bundles are not real Error instances. Bun's native prepareStackTrace
+# rejects that pairing with "First argument must be an Error object"
+# (https://github.com/oven-sh/bun/issues/46393) while Node/V8 accepts it.
+FROM node:24-slim AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
 ENV NITRO_PRESET=bun
-RUN bun run build
+RUN node node_modules/nuxt/bin/nuxt.mjs build
 
 FROM base AS runtime
 WORKDIR /app
