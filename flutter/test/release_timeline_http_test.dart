@@ -1,5 +1,3 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,105 +9,8 @@ import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
-/// Runs the real Nitro timeline routes behind a fixture that supplies only the
-/// GitHub reads, so the app exercises the server's own contracts.
-class TimelineHttpServer {
-  TimelineHttpServer._(this.address);
-
-  final Uri address;
-
-  static Future<TimelineHttpServer> start() async {
-    final directory = await Directory.systemTemp.createTemp(
-      'gitpulse-timeline-http-',
-    );
-    // The fixture's `#shared/*` and `#server/*` imports resolve through the
-    // generated Nuxt tsconfig, which a plain `bun script.ts` run does not read.
-    final process = await Process.start('bun', [
-      '--tsconfig-override',
-      File('../.nuxt/tsconfig.json').absolute.path,
-      '../tests/fixtures/release-timeline-server.ts',
-      directory.path,
-    ]);
-    final output = StringBuffer();
-    final address = Completer<String>();
-    void collect(String line) {
-      output.write('$line\n');
-      if (!address.isCompleted && line.startsWith('http')) {
-        address.complete(line);
-      }
-    }
-
-    process.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(collect);
-    process.stderr
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(collect);
-    addTearDown(() async {
-      process.kill();
-      await process.exitCode.timeout(const Duration(seconds: 10));
-      await directory.delete(recursive: true);
-    });
-    final ready =
-        await Future.any<String>([
-          address.future,
-          process.exitCode.then(
-            (code) => throw StateError('Fixture exited with $code: $output'),
-          ),
-        ]).timeout(
-          const Duration(seconds: 20),
-          onTimeout: () => throw StateError('Fixture did not start: $output'),
-        );
-    return TimelineHttpServer._(Uri.parse(ready));
-  }
-}
-
-Future<void> waitForSession(
-  ProviderContainer container,
-  bool Function(SessionState) matches,
-) async {
-  final deadline = DateTime.now().add(const Duration(seconds: 15));
-  while (!matches(container.read(sessionControllerProvider))) {
-    if (DateTime.now().isAfter(deadline)) {
-      throw StateError('Timed out waiting for the session');
-    }
-    await Future<void>.delayed(const Duration(milliseconds: 25));
-  }
-}
-
-Map<String, Object?> fixtureRelease(
-  int id,
-  String tag,
-  String publishedAt, {
-  String? description,
-}) => {
-  'id': id,
-  'tagName': tag,
-  'name': null,
-  'description': description,
-  'publishedAt': publishedAt,
-  'isDraft': false,
-  'isPrerelease': false,
-  'assetCount': 0,
-  'htmlUrl': 'https://github.test/octo/alpha/releases/tag/$tag',
-  'reactions': const <Object?>[],
-};
-
-Map<String, Object?> fixturePage(
-  String owner,
-  String name,
-  List<Map<String, Object?>> releases,
-) => {
-  'status': 'available',
-  'owner': owner,
-  'name': name,
-  'hasOlderReleases': false,
-  'endCursor': null,
-  'incomplete': false,
-  'releases': releases,
-};
+import 'support/release_timeline_server.dart';
+import 'support/provider_wait.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,6 +21,7 @@ void main() {
     HttpOverrides.global = null;
     addTearDown(() => HttpOverrides.global = overrides);
     final server = await TimelineHttpServer.start();
+    addTearDown(server.close);
     final backend = server.address;
     await const FlutterSecureStorage().write(
       key: 'last_successful_backend',
@@ -310,6 +212,7 @@ void main() {
     HttpOverrides.global = null;
     addTearDown(() => HttpOverrides.global = overrides);
     final server = await TimelineHttpServer.start();
+    addTearDown(server.close);
     final backend = server.address;
     await const FlutterSecureStorage().write(
       key: 'last_successful_backend',

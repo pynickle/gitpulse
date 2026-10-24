@@ -15,6 +15,19 @@ class FollowsServer extends AuthServer {
     'releaseTimeline': {'showReactions': false},
   };
   final featureRequests = <RecordedRequest>[];
+  final _requestEvents = StreamController<RecordedRequest>.broadcast();
+
+  /// Arm before starting an operation; the signal arrives after its request body
+  /// has been read. Held responses snapshot their payload before waiting, so a
+  /// later fixture edit cannot accidentally turn an old response into a new one.
+  Future<RecordedRequest> nextRequest(String method, String path) =>
+      _requestEvents.stream
+          .firstWhere(
+            (request) =>
+                request.method == method && request.uri.path.endsWith(path),
+          )
+          .timeout(const Duration(seconds: 5));
+
   List<Map<String, Object?>> repositories = [repositoryJson()];
   List<Map<String, Object?>> starredRepositories = [];
   Map<String, Object?> metadata = {};
@@ -63,6 +76,7 @@ class FollowsServer extends AuthServer {
         body: body,
       ),
     );
+    _requestEvents.add(featureRequests.last);
     if (options.method != 'GET' && options.headers['x-csrf-token'] != csrf) {
       return json(403, {'statusMessage': 'csrf_mismatch'});
     }

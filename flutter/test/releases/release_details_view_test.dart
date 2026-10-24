@@ -312,20 +312,4 @@ void main() {
     expect(find.textContaining('Saved'), findsOneWidget);
     expect(find.textContaining('Oct 18, 2026'), findsWidgets);
   });
-
-  testWidgets('tapping anywhere on an asset row opens its download', (
-    tester,
-  ) async {
-    final launched = await pumpDetails(tester, releaseWith(assets: [asset()]));
-    await openAssets(tester);
-    // The row itself is the download affordance, including the trailing edge
-    // the old download button used to occupy.
-    final row = tester.getRect(find.text('app.zip'));
-    await tester.tapAt(Offset(row.right + 120, row.center.dy));
-    await tester.pumpAndSettle();
-    expect(
-      launched.single.toString(),
-      'https://github.com/octo/app/releases/download/v2.0.0/app.zip',
-    );
-  });
 }

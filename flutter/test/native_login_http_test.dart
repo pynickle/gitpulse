@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -12,21 +11,7 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
 
-Future<void> waitForSession(
-  ProviderContainer container,
-  bool Function(SessionState) matches,
-) async {
-  if (matches(container.read(sessionControllerProvider))) return;
-  final done = Completer<void>();
-  final subscription = container.listen(sessionControllerProvider, (_, next) {
-    if (matches(next) && !done.isCompleted) done.complete();
-  });
-  try {
-    await done.future.timeout(const Duration(seconds: 15));
-  } finally {
-    subscription.close();
-  }
-}
+import 'support/provider_wait.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

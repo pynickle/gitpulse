@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:gitpulse/presentation/presentation_preferences_controller.dart';
+import 'package:gitpulse/presentation/presentation_preferences_store.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -16,14 +18,18 @@ import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
+import '../support/release_timeline_server.dart';
+import '../support/provider_wait.dart';
 import '../support/settling.dart';
 
-import '../release_timeline_http_test.dart';
+late TimelineHttpServer settingsServer;
+int installationId = 0;
 
 class SettingsInstallation {
-  SettingsInstallation(this.directory, this.server);
+  SettingsInstallation(this.directory, this.server, {required this.login});
 
   final Directory directory;
+  final String login;
   final TimelineHttpServer server;
   final now = DateTime.utc(2026, 10, 19, 12);
   late TimelineCache cache;
@@ -38,6 +44,9 @@ class SettingsInstallation {
     container = ProviderContainer(
       overrides: [
         timelineCacheProvider.overrideWithValue(cache),
+        presentationPreferencesFileProvider.overrideWithValue(
+          () async => File(p.join(directory.path, 'presentation.json')),
+        ),
         timelineClockProvider.overrideWithValue(() => now),
       ],
     );
@@ -46,7 +55,7 @@ class SettingsInstallation {
     final dio = container.read(connectionDioProvider);
     await dio.post<Object?>(
       '${server.address}test/sign-in',
-      data: {'githubId': 1},
+      data: {'githubId': 1, 'login': login},
     );
     await container
         .read(connectionControllerProvider.notifier)
@@ -72,14 +81,17 @@ class SettingsInstallation {
       .toList();
 }
 
-/// Real HTTP and SQLite need the host event loop, outside the widget clock, and
-/// a settings round takes longer than the shared default budget.
-Future<void> settle(WidgetTester tester) => settleUi(
-  tester,
-  frames: 40,
-  step: const Duration(milliseconds: 50),
-  realStep: const Duration(milliseconds: 10),
-);
+/// Wait for the operation being driven, then finish its UI transitions.
+Future<void> settle(WidgetTester tester, SettingsInstallation app) async {
+  await tester.runAsync(
+    () => waitForProvider(
+      app.container,
+      releaseTimelineSessionProvider,
+      (state) => !state.cacheSettings.saving && !state.cacheSettings.clearing,
+    ),
+  );
+  await tester.pumpAndSettle();
+}
 
 Future<SettingsInstallation> startInstallation(WidgetTester tester) async {
   final original = HttpOverrides.current;
@@ -87,11 +99,17 @@ Future<SettingsInstallation> startInstallation(WidgetTester tester) async {
   addTearDown(() => HttpOverrides.global = original);
   FlutterSecureStorage.setMockInitialValues({});
   return (await tester.runAsync(() async {
-    final server = await TimelineHttpServer.start();
+    final server = settingsServer;
     final directory = await Directory.systemTemp.createTemp(
       'gitpulse-settings-',
     );
-    final app = SettingsInstallation(directory, server);
+    // Reuse the process, while settings and baselines stay isolated by login.
+    // Each installation also gets its own SQLite and presentation files.
+    final app = SettingsInstallation(
+      directory,
+      server,
+      login: 'settings-${++installationId}',
+    );
     addTearDown(() async {
       await app.close();
       await directory.delete(recursive: true);
@@ -142,15 +160,12 @@ Future<void> mountSettings(
   SettingsInstallation app,
 ) async {
   await tester.runAsync(() async {
-    app.container.read(releaseTimelineSessionProvider);
-    final deadline = DateTime.now().add(const Duration(seconds: 10));
-    while (!app.container.read(releaseTimelineSessionProvider).active ||
-        app.container.read(releaseTimelineSessionProvider).loading) {
-      if (DateTime.now().isAfter(deadline)) {
-        throw StateError('Timeline did not settle');
-      }
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
+    await app.container.read(presentationPreferencesProvider.future);
+    await waitForProvider(
+      app.container,
+      releaseTimelineSessionProvider,
+      (state) => state.active && !state.loading,
+    );
   });
   await tester.pumpWidget(
     UncontrolledProviderScope(
@@ -158,20 +173,29 @@ Future<void> mountSettings(
       child: const GitPulseApp(),
     ),
   );
-  await settle(tester);
+  await settle(tester, app);
   await tester.tap(find.text('Settings').last);
-  await settle(tester);
+  await settle(tester, app);
   await tester.ensureVisible(retentionField);
   await tester.pumpAndSettle();
 }
 
-Future<void> saveDays(WidgetTester tester, String days) async {
+Future<void> saveDays(
+  WidgetTester tester,
+  SettingsInstallation app,
+  String days, {
+  bool pending = false,
+}) async {
   await tester.enterText(retentionField, days);
   await tester.pump();
   final save = find.byTooltip('Save retention');
   await tester.ensureVisible(save);
   await tester.runAsync(() => tester.tap(save));
-  await settle(tester);
+  if (pending) {
+    await tester.pump();
+  } else {
+    await settle(tester, app);
+  }
 }
 
 void failRequests(
@@ -218,6 +242,9 @@ Future<void> reopenOffline(
 }
 
 void main() {
+  setUpAll(() async => settingsServer = await TimelineHttpServer.start());
+  tearDownAll(() => settingsServer.close());
+
   testWidgets(
     'a follow reload waits for a blocked SQLite clear and leaves actions usable',
     (tester) async {
@@ -255,7 +282,7 @@ void main() {
         await storageLock;
         await follows;
       });
-      await settle(tester);
+      await settle(tester, app);
       expect(
         app.container
             .read(releaseTimelineSessionProvider)
@@ -263,7 +290,7 @@ void main() {
             .clearing,
         isFalse,
       );
-      await saveDays(tester, '1');
+      await saveDays(tester, app, '1');
       expectRetentionShown(tester, '1');
       await tester.runAsync(() async {
         // Reverse ordering must also leave clear completion current.
@@ -293,6 +320,7 @@ void main() {
       await mountSettings(tester, app);
       late RequestOptions pending;
       late RequestInterceptorHandler confirmation;
+      final saveStarted = Completer<void>();
       app.container
           .read(connectionDioProvider)
           .interceptors
@@ -302,13 +330,19 @@ void main() {
                 if (options.method == 'PUT') {
                   pending = options;
                   confirmation = handler;
+                  saveStarted.complete();
                 } else {
                   handler.next(options);
                 }
               },
             ),
           );
-      await saveDays(tester, '1');
+      await saveDays(tester, app, '1', pending: true);
+      await pumpUntil(
+        tester,
+        () => saveStarted.isCompleted,
+        reason: 'the retention save reached the held PUT request',
+      );
       // The save is in flight: the editor says so, and the account is still on
       // the policy it last synchronized.
       expect(
@@ -330,7 +364,7 @@ void main() {
         confirmation.next(pending);
         await follows;
       });
-      await settle(tester);
+      await settle(tester, app);
       expectRetentionShown(tester, '1');
       await reopenOffline(tester, app);
       expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
@@ -343,14 +377,14 @@ void main() {
     (tester) async {
       final app = await startInstallation(tester);
       await mountSettings(tester, app);
-      await saveDays(tester, '1');
+      await saveDays(tester, app, '1');
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.runAsync(() async {
         await app.close();
         final web = createGitPulseDio(CookieJar())
           ..options.baseUrl = app.server.address.toString();
         addTearDown(() => web.close(force: true));
-        await web.post<Object?>('test/sign-in');
+        await web.post<Object?>('test/sign-in', data: {'login': app.login});
         expect(
           (await web.get<Map<String, dynamic>>('api/settings'))
               .data!['releaseTimeline']['retentionDays'],
@@ -369,14 +403,18 @@ void main() {
         final directory = await Directory.systemTemp.createTemp(
           'gitpulse-second-installation-',
         );
-        final other = SettingsInstallation(directory, app.server);
+        final other = SettingsInstallation(
+          directory,
+          app.server,
+          login: app.login,
+        );
         try {
           await other.open();
-          other.container.read(releaseTimelineSessionProvider);
-          while (!other.container.read(releaseTimelineSessionProvider).active ||
-              other.container.read(releaseTimelineSessionProvider).loading) {
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-          }
+          await waitForProvider(
+            other.container,
+            releaseTimelineSessionProvider,
+            (state) => state.active && !state.loading,
+          );
           expect(
             other.container
                 .read(releaseTimelineSessionProvider)
@@ -430,13 +468,13 @@ void main() {
     final app = await startInstallation(tester);
     await mountSettings(tester, app);
     expect(app.releases, ['R_alpha:3', 'R_alpha:2', 'R_alpha:1']);
-    await saveDays(tester, '1');
+    await saveDays(tester, app, '1');
     // The online browsing window remains readable, including old publications.
     expect(app.releases, ['R_alpha:3', 'R_alpha:2', 'R_alpha:1']);
     await reopenOffline(tester, app);
     expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
     expectRetentionShown(tester, '1');
-    await saveDays(tester, '90');
+    await saveDays(tester, app, '90');
     expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
     await reopenOffline(tester, app);
     expect(app.releases, ['R_alpha:3', 'R_alpha:2']);
@@ -459,7 +497,7 @@ void main() {
       final app = await startInstallation(tester);
       await mountSettings(tester, app);
       for (final value in ['0', '91', '1.5', '']) {
-        await saveDays(tester, value);
+        await saveDays(tester, app, value);
         expect(find.text('Enter a whole number from 1 to 90.'), findsOneWidget);
       }
       failRequests(
@@ -467,7 +505,7 @@ void main() {
         (options) =>
             options.method == 'PUT' && options.path.endsWith('api/settings'),
       );
-      await saveDays(tester, '1');
+      await saveDays(tester, app, '1');
       expect(find.textContaining('Could not save retention.'), findsOneWidget);
       // The rejected edit stays in the editor to be retried, and the policy that
       // is still in force is stated beside it.
@@ -506,7 +544,7 @@ void main() {
       await tester.pump();
       expect(find.byTooltip('Save retention'), findsNothing);
       await tester.testTextInput.receiveAction(TextInputAction.done);
-      await settle(tester);
+      await settle(tester, app);
       expect(writes, 0);
 
       // A different value is the only thing a save is for.
@@ -514,7 +552,7 @@ void main() {
       await tester.pump();
       expect(find.byTooltip('Save retention'), findsOneWidget);
       await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
-      await settle(tester);
+      await settle(tester, app);
       expect(writes, 1);
       expectRetentionShown(tester, '31');
       expect(find.byTooltip('Save retention'), findsNothing);
@@ -589,7 +627,7 @@ void main() {
       final clear = find.widgetWithText(OutlinedButton, 'Clear');
       await tester.ensureVisible(clear);
       await tester.runAsync(() => tester.tap(clear));
-      await settle(tester);
+      await settle(tester, app);
       expect(app.releases, isEmpty);
       expect(
         app.container.read(releaseTimelineSessionProvider).canLoadOlder,
@@ -645,7 +683,7 @@ void main() {
         final web = createGitPulseDio(CookieJar())
           ..options.baseUrl = app.server.address.toString();
         addTearDown(() => web.close(force: true));
-        await web.post<Object?>('test/sign-in');
+        await web.post<Object?>('test/sign-in', data: {'login': app.login});
         await web.put<Object?>(
           'api/settings',
           data: {
@@ -656,7 +694,7 @@ void main() {
       });
       await mountSettings(tester, app);
       expectRetentionShown(tester, '30');
-      await saveDays(tester, '1');
+      await saveDays(tester, app, '1');
       await tester.runAsync(() async {
         final settings =
             (await app.container

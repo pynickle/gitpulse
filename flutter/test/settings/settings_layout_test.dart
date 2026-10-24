@@ -1,94 +1,45 @@
-import 'dart:io';
-
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
-import 'package:gitpulse/connection/backend_service.dart';
-import 'package:gitpulse/connection/connection_controller.dart';
-import 'package:gitpulse/connection/native_capabilities.dart';
-import 'package:gitpulse/presentation/presentation_preferences_store.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/timeline_cache.dart';
-import 'package:path/path.dart' as p;
 
-import '../support/settling.dart';
+import '../support/presentation_harness.dart';
 import '../timeline/timeline_test_support.dart';
 
-const _capabilities = NativeCapabilities(
-  protocolVersion: 1,
-  capabilities: ['timeline-retention'],
-  providers: SignInProviders(
-    personalMode: false,
-    patEnabled: true,
-    oauthEnabled: false,
-    mode: 'pat',
-  ),
-);
-
-class _TestConnectionController extends ConnectionController {
-  @override
-  Future<BackendConnectionState> build() async => BackendConnectionState(
-    rememberedAddress: 'https://gitpulse.example/',
-    backend: ConnectedBackend(
-      Uri.parse('https://gitpulse.example/'),
-      _capabilities,
+/// A signed-in Settings page using the same installation setup as presentation tests.
+Future<void> _openSettings(WidgetTester tester) async {
+  final harness = harnessFor(
+    tester,
+    session: SessionState(
+      phase: SessionPhase.signedIn,
+      identity: signedInIdentity(),
+    ),
+    handlers: {
+      'GET api/settings': () =>
+          BackendResult(statusCode: 200, data: settingsJson(const [])),
+      'POST api/release-timeline/refresh': () => BackendResult(
+        statusCode: 200,
+        data: roundJson(
+          refresh: const {
+            'previousBaseline': '2026-10-01T00:00:00.000Z',
+            'startedAt': '2026-10-05T00:00:00.000Z',
+          },
+        ),
+      ),
+    },
+  );
+  await tester.runAsync(harness.open);
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: harness.container,
+      child: const GitPulseApp(),
     ),
   );
-}
-
-/// A signed-in Settings page on a local timeline cache, as a launch would have
-/// it: the settings rows are the whole page, so they must hold their shape at
-/// every window width and text scale a reader can bring.
-Future<ProviderContainer> _openSettings(WidgetTester tester) async {
-  final cache = TimelineCache(NativeDatabase.memory());
-  final preferences = Directory.systemTemp.createTempSync(
-    'gitpulse-settings-layout-',
-  );
-  final container = ProviderContainer(
-    overrides: [
-      presentationPreferencesFileProvider.overrideWithValue(
-        () async => File(p.join(preferences.path, 'presentation.json')),
-      ),
-      timelineCacheProvider.overrideWithValue(cache),
-      connectionControllerProvider.overrideWith(_TestConnectionController.new),
-      sessionControllerProvider.overrideWith(() {
-        return FakeSessionController(
-            SessionState(
-              phase: SessionPhase.signedIn,
-              identity: signedInIdentity(),
-            ),
-          )
-          ..handlers.addAll({
-            'GET api/settings': () =>
-                BackendResult(statusCode: 200, data: settingsJson(const [])),
-            'POST api/release-timeline/refresh': () => BackendResult(
-              statusCode: 200,
-              data: roundJson(
-                refresh: const {
-                  'previousBaseline': '2026-10-01T00:00:00.000Z',
-                  'startedAt': '2026-10-05T00:00:00.000Z',
-                },
-              ),
-            ),
-          });
-      }),
-    ],
-  );
-  addTearDown(() {
-    container.dispose();
-    cache.close();
-    preferences.deleteSync(recursive: true);
-  });
-  await tester.pumpWidget(
-    UncontrolledProviderScope(container: container, child: const GitPulseApp()),
-  );
-  await settleUi(tester);
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Settings').last);
-  await settleUi(tester);
-  return container;
+  await tester.pumpAndSettle();
 }
 
 void _useWindow(WidgetTester tester, Size size, {double textScale = 1}) {

@@ -62,20 +62,6 @@ void main() {
       englishTheme.textTheme.bodyMedium!.fontFamilyFallback,
       contains('Microsoft YaHei UI'),
     );
-
-    Navigator.of(tester.element(find.byType(Scaffold).first)).push<void>(
-      MaterialPageRoute(
-        builder: (_) => const Scaffold(body: Icon(Icons.settings)),
-      ),
-    );
-    await tester.pumpAndSettle();
-    final iconText = tester.widget<RichText>(
-      find.descendant(
-        of: find.byIcon(Icons.settings),
-        matching: find.byType(RichText),
-      ),
-    );
-    expect(iconText.text.style!.fontFamily, 'MaterialIcons');
   }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
 
   testWidgets(

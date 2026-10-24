@@ -10,7 +10,8 @@ import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 
-import '../release_timeline_http_test.dart';
+import '../support/release_timeline_server.dart';
+import '../support/provider_wait.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,7 @@ void main() {
     HttpOverrides.global = null;
     addTearDown(() => HttpOverrides.global = overrides);
     final server = await TimelineHttpServer.start();
+    addTearDown(server.close);
     await const FlutterSecureStorage().write(
       key: 'last_successful_backend',
       value: server.address.toString(),

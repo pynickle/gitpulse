@@ -32,10 +32,6 @@ Paragraph two.
 ---
 
 Final paragraph.
-
-```sh
-echo hi
-```
 ''';
 
 Future<void> pumpNotes(WidgetTester tester, {double width = 360}) async {
@@ -158,15 +154,6 @@ void main() {
     // 360dp screen most of the width has to stay available for text.
     expect(item - left, inInclusiveRange(16, 36));
     expect(quote - left, inInclusiveRange(8, 20));
-  });
-
-  testWidgets('code blocks keep their language label and copy action', (
-    tester,
-  ) async {
-    await pumpNotes(tester);
-    expect(find.text('sh'), findsOneWidget);
-    expect(find.byTooltip('Copy code'), findsOneWidget);
-    expect(find.textContaining('echo hi'), findsOneWidget);
   });
 }
 

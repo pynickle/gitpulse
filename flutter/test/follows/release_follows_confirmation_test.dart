@@ -15,81 +15,81 @@ import '../session_flow_test.dart' as auth;
 import '../timeline/timeline_test_support.dart';
 import 'follows_test_support.dart';
 import '../support/settling.dart';
+import '../support/follows_session_harness.dart';
+import '../support/provider_wait.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   for (final edit in ['follow', 'unfollow']) {
-    testWidgets('a held $edit response preserves names accepted while saving', (
-      tester,
-    ) async {
-      final server = FollowsServer();
-      server.settings['followedRepositories'] = [
-        followJson('R_alpha', 'octo', 'alpha'),
-        if (edit == 'unfollow') followJson('R_beta', 'octo', 'beta'),
-      ];
-      final container = await auth.mountApp(tester, server);
-      await auth.connectTo(tester, 'https://gitpulse.example');
-      await auth.submitField(
-        tester,
-        label: 'Password',
-        value: 'correct-horse',
-        action: 'Unlock',
-      );
-      final follows = container.read(releaseFollowsSessionProvider.notifier);
-      final saveHold = Completer<void>();
-      server.holdSave = saveHold.future;
-      final saving = edit == 'follow'
-          ? follows.follow(
-              const TimelineRepository(
-                id: 'R_beta',
-                owner: 'octo',
-                name: 'beta',
-              ),
-            )
-          : follows.unfollow('R_beta');
-      for (var frame = 0; frame < 20; frame++) {
-        await tester.pump(const Duration(milliseconds: 50));
-      }
-      expect(
-        server.featureRequests.any((request) => request.method == 'PUT'),
-        isTrue,
-      );
-      server.metadata['R_alpha'] = {
-        'status': 'available',
-        'owner': 'new-owner',
-        'name': 'renamed',
-      };
-      await auth.pumped(tester, follows.loadMetadata());
-      expect(
-        container
-            .read(releaseFollowsSessionProvider)
-            .repositories
-            .firstWhere((repo) => repo.id == 'R_alpha')
-            .fullName,
-        'new-owner/renamed',
-      );
-      final metadataHold = Completer<void>();
-      server.holdMetadata = metadataHold.future;
-      saveHold.complete();
-      await auth.pumped(tester, saving);
-      expect(
-        container
-            .read(releaseFollowsSessionProvider)
-            .repositories
-            .firstWhere((repo) => repo.id == 'R_alpha')
-            .fullName,
-        'new-owner/renamed',
-      );
-      expect(
-        container
-            .read(releaseTimelineSessionProvider.notifier)
-            .followedRepositories
-            .firstWhere((repo) => repo.id == 'R_alpha')
-            .fullName,
-        'new-owner/renamed',
-      );
-      metadataHold.complete();
-      await tester.pumpAndSettle();
-    });
+    test(
+      'a held $edit response preserves names accepted while saving',
+      () async {
+        final server = FollowsServer();
+        server.settings['followedRepositories'] = [
+          followJson('R_alpha', 'octo', 'alpha'),
+          if (edit == 'unfollow') followJson('R_beta', 'octo', 'beta'),
+        ];
+        final container = await openFollowsSession(server);
+        final follows = container.read(releaseFollowsSessionProvider.notifier);
+        final saveHold = Completer<void>();
+        server.holdSave = saveHold.future;
+        final saveStarted = server.nextRequest('PUT', '/api/settings');
+        final saving = edit == 'follow'
+            ? follows.follow(
+                const TimelineRepository(
+                  id: 'R_beta',
+                  owner: 'octo',
+                  name: 'beta',
+                ),
+              )
+            : follows.unfollow('R_beta');
+        await saveStarted;
+        expect(
+          server.featureRequests.any((request) => request.method == 'PUT'),
+          isTrue,
+        );
+        server.metadata['R_alpha'] = {
+          'status': 'available',
+          'owner': 'new-owner',
+          'name': 'renamed',
+        };
+        await follows.loadMetadata();
+        expect(
+          container
+              .read(releaseFollowsSessionProvider)
+              .repositories
+              .firstWhere((repo) => repo.id == 'R_alpha')
+              .fullName,
+          'new-owner/renamed',
+        );
+        final metadataHold = Completer<void>();
+        server.holdMetadata = metadataHold.future;
+        saveHold.complete();
+        await saving;
+        expect(
+          container
+              .read(releaseFollowsSessionProvider)
+              .repositories
+              .firstWhere((repo) => repo.id == 'R_alpha')
+              .fullName,
+          'new-owner/renamed',
+        );
+        expect(
+          container
+              .read(releaseTimelineSessionProvider.notifier)
+              .followedRepositories
+              .firstWhere((repo) => repo.id == 'R_alpha')
+              .fullName,
+          'new-owner/renamed',
+        );
+        metadataHold.complete();
+        await waitForProvider(
+          container,
+          releaseTimelineSessionProvider,
+          (state) => !state.loading,
+        );
+      },
+    );
   }
 
   testWidgets(
@@ -268,21 +268,14 @@ void main() {
     },
   );
 
-  testWidgets(
+  test(
     'a successful edit rejects older metadata names for surviving members',
-    (tester) async {
+    () async {
       final server = FollowsServer();
       server.settings['followedRepositories'] = [
         followJson('R_alpha', 'octo', 'alpha'),
       ];
-      final container = await auth.mountApp(tester, server);
-      await auth.connectTo(tester, 'https://gitpulse.example');
-      await auth.submitField(
-        tester,
-        label: 'Password',
-        value: 'correct-horse',
-        action: 'Unlock',
-      );
+      final container = await openFollowsSession(server);
       final follows = container.read(releaseFollowsSessionProvider.notifier);
       final hold = Completer<void>();
       server.metadata['R_alpha'] = {
@@ -291,22 +284,23 @@ void main() {
         'name': 'obsolete',
       };
       server.holdMetadata = hold.future;
+      final metadataStarted = server.nextRequest(
+        'POST',
+        '/api/release-follows/metadata',
+      );
       final metadata = follows.loadMetadata();
-      await tester.pump(const Duration(milliseconds: 100));
+      await metadataStarted;
       server.holdMetadata = null;
       server.metadata['R_alpha'] = {
         'status': 'available',
         'owner': 'octo',
         'name': 'alpha',
       };
-      await auth.pumped(
-        tester,
-        follows.follow(
-          const TimelineRepository(id: 'R_beta', owner: 'octo', name: 'beta'),
-        ),
+      await follows.follow(
+        const TimelineRepository(id: 'R_beta', owner: 'octo', name: 'beta'),
       );
       hold.complete();
-      await auth.pumped(tester, metadata);
+      await metadata;
       expect(
         container
             .read(releaseFollowsSessionProvider)
@@ -378,8 +372,12 @@ void main() {
         'owner': 'old-owner',
         'name': 'obsolete',
       };
+      final metadataStarted = server.nextRequest(
+        'POST',
+        '/api/release-follows/metadata',
+      );
       final metadata = follows.loadMetadata();
-      await tester.pump(const Duration(milliseconds: 100));
+      await auth.pumped(tester, metadataStarted);
       await auth.pumped(tester, follows.unfollow('R_alpha'));
       await settleUi(tester);
       hold.complete();
@@ -451,24 +449,17 @@ void main() {
     },
   );
 
-  testWidgets(
+  test(
     'failed refresh and detail retry retain the same confirmed membership',
-    (tester) async {
+    () async {
       final server = FollowsServer();
       server.settings['followedRepositories'] = [
         followJson('R_alpha', 'octo', 'alpha'),
       ];
-      final container = await auth.mountApp(tester, server);
-      await auth.connectTo(tester, 'https://gitpulse.example');
-      await auth.submitField(
-        tester,
-        label: 'Password',
-        value: 'correct-horse',
-        action: 'Unlock',
-      );
+      final container = await openFollowsSession(server);
       final follows = container.read(releaseFollowsSessionProvider.notifier);
       server.settingsStatus = 500;
-      await auth.pumped(tester, follows.reload());
+      await follows.reload();
       expect(container.read(releaseFollowsSessionProvider).loaded, isTrue);
       expect(
         container.read(releaseFollowsSessionProvider).repositories.single.id,
@@ -477,7 +468,7 @@ void main() {
       expect(container.read(releaseFollowsSessionProvider).problem, isNotNull);
       server.settingsStatus = 200;
       server.metadataStatus = 500;
-      await auth.pumped(tester, follows.loadMetadata());
+      await follows.loadMetadata();
       expect(
         container.read(releaseFollowsSessionProvider).metadataProblem,
         isNotNull,
@@ -488,7 +479,7 @@ void main() {
       );
       server.metadataStatus = 200;
       server.metadata['R_alpha'] = {'status': 'unavailable'};
-      await auth.pumped(tester, follows.loadMetadata(repositoryId: 'R_alpha'));
+      await follows.loadMetadata(repositoryId: 'R_alpha');
       expect(
         container.read(releaseFollowsSessionProvider).repositories.single.id,
         'R_alpha',
@@ -499,7 +490,7 @@ void main() {
         'name': 'alpha',
         'description': 'Recovered details',
       };
-      await auth.pumped(tester, follows.loadMetadata(repositoryId: 'R_alpha'));
+      await follows.loadMetadata(repositoryId: 'R_alpha');
       expect(
         container
             .read(releaseFollowsSessionProvider)
@@ -515,21 +506,14 @@ void main() {
   );
 
   for (final transition in ['sign-out', 'account', 'backend']) {
-    testWidgets(
+    test(
       '$transition rejects delayed collection, metadata and save responses',
-      (tester) async {
+      () async {
         final server = FollowsServer();
         server.settings['followedRepositories'] = [
           followJson('R_alpha', 'octo', 'alpha'),
         ];
-        final container = await auth.mountApp(tester, server);
-        await auth.connectTo(tester, 'https://gitpulse.example');
-        await auth.submitField(
-          tester,
-          label: 'Password',
-          value: 'correct-horse',
-          action: 'Unlock',
-        );
+        final container = await openFollowsSession(server);
         final follows = container.read(releaseFollowsSessionProvider.notifier);
         final settingsHold = Completer<void>();
         final metadataHold = Completer<void>();
@@ -541,22 +525,26 @@ void main() {
           'owner': 'old-account',
           'name': 'obsolete',
         };
+        final settingsStarted = server.nextRequest('GET', '/api/settings');
         final settings = follows.reload();
+        final metadataStarted = server.nextRequest(
+          'POST',
+          '/api/release-follows/metadata',
+        );
         final metadata = follows.loadMetadata();
-        await tester.pump(const Duration(milliseconds: 100));
+        await Future.wait([settingsStarted, metadataStarted]);
         server.holdSettings = null;
         server.holdSave = saveHold.future;
+        final saveStarted = server.nextRequest('PUT', '/api/settings');
         final save = follows.unfollow('R_alpha');
-        await tester.pump(const Duration(milliseconds: 100));
+        await saveStarted;
         final session = container.read(sessionControllerProvider.notifier);
         if (transition == 'backend') {
-          await auth.pumped(
-            tester,
-            session.leaveBackend(address: 'https://other.example'),
-          );
+          await session.leaveBackend(address: 'https://other.example');
         } else {
-          await auth.pumped(tester, session.signOut());
+          await session.signOut();
         }
+        await waitForSession(container, (state) => !state.busy);
         expect(
           container.read(releaseFollowsSessionProvider).repositories,
           isEmpty,
@@ -566,13 +554,14 @@ void main() {
             followJson('R_second', 'second', 'project'),
           ];
           server.holdMetadata = null;
-          await auth.pumped(
-            tester,
-            transition == 'account'
-                ? session.signInWithToken('ghp_hubot')
-                : session.unlock('correct-horse'),
+          await (transition == 'account'
+              ? session.signInWithToken('ghp_hubot')
+              : session.unlock('correct-horse'));
+          await waitForProvider(
+            container,
+            releaseTimelineSessionProvider,
+            (state) => !state.loading,
           );
-          await tester.pumpAndSettle();
           expect(
             container.read(sessionControllerProvider).identity?.login,
             'hubot',
@@ -589,8 +578,12 @@ void main() {
         settingsHold.complete();
         metadataHold.complete();
         saveHold.complete();
-        await auth.pumped(tester, Future.wait([settings, metadata, save]));
-        await tester.pumpAndSettle();
+        await Future.wait([settings, metadata, save]);
+        await waitForProvider(
+          container,
+          releaseTimelineSessionProvider,
+          (state) => !state.loading,
+        );
         expect(
           container
               .read(releaseFollowsSessionProvider)
@@ -609,21 +602,14 @@ void main() {
     );
   }
 
-  testWidgets(
+  test(
     'old metadata cannot cross a removal and refollow of the same identity',
-    (tester) async {
+    () async {
       final server = FollowsServer();
       server.settings['followedRepositories'] = [
         followJson('R_alpha', 'octo', 'alpha'),
       ];
-      final container = await auth.mountApp(tester, server);
-      await auth.connectTo(tester, 'https://gitpulse.example');
-      await auth.submitField(
-        tester,
-        label: 'Password',
-        value: 'correct-horse',
-        action: 'Unlock',
-      );
+      final container = await openFollowsSession(server);
       final follows = container.read(releaseFollowsSessionProvider.notifier);
       server.metadata['R_alpha'] = {
         'status': 'available',
@@ -632,27 +618,28 @@ void main() {
       };
       final hold = Completer<void>();
       server.holdMetadata = hold.future;
+      final metadataStarted = server.nextRequest(
+        'POST',
+        '/api/release-follows/metadata',
+      );
       final metadata = follows.loadMetadata();
-      await tester.pump(const Duration(milliseconds: 100));
-      await auth.pumped(tester, follows.unfollow('R_alpha'));
+      await metadataStarted;
+      await follows.unfollow('R_alpha');
       server.holdMetadata = null;
       server.metadata['R_alpha'] = {
         'status': 'available',
         'owner': 'new-owner',
         'name': 'current',
       };
-      await auth.pumped(
-        tester,
-        follows.follow(
-          const TimelineRepository(
-            id: 'R_alpha',
-            owner: 'new-owner',
-            name: 'current',
-          ),
+      await follows.follow(
+        const TimelineRepository(
+          id: 'R_alpha',
+          owner: 'new-owner',
+          name: 'current',
         ),
       );
       hold.complete();
-      await auth.pumped(tester, metadata);
+      await metadata;
       expect(
         container
             .read(releaseFollowsSessionProvider)
@@ -672,88 +659,80 @@ void main() {
     },
   );
 
-  testWidgets('a metadata rename does not cancel an in-flight release round', (
-    tester,
-  ) async {
-    final server = FollowsServer();
-    server.settings['followedRepositories'] = [
-      followJson('R_alpha', 'octo', 'alpha'),
-    ];
-    final container = await auth.mountApp(tester, server);
-    await auth.connectTo(tester, 'https://gitpulse.example');
-    await auth.submitField(
-      tester,
-      label: 'Password',
-      value: 'correct-horse',
-      action: 'Unlock',
-    );
-    final hold = Completer<void>();
-    server.holdRound = hold.future;
-    server.pages = {
-      'R_alpha': pageJson('octo', 'alpha', [
-        releaseJson(2, 'fresh', '2026-10-21T00:00:00Z'),
-      ]),
-    };
-    final refresh = container
-        .read(releaseTimelineSessionProvider.notifier)
-        .refresh();
-    await tester.pump(const Duration(milliseconds: 100));
-    server.metadata['R_alpha'] = {
-      'status': 'available',
-      'owner': 'new-owner',
-      'name': 'renamed',
-    };
-    await auth.pumped(
-      tester,
-      container.read(releaseFollowsSessionProvider.notifier).loadMetadata(),
-    );
-    final requests = server.featureRequests
-        .where((r) => r.uri.path.contains('release-timeline'))
-        .length;
-    hold.complete();
-    await auth.pumped(tester, refresh);
-    expect(
-      container
-          .read(releaseTimelineSessionProvider)
-          .groups
-          .expand((g) => g.items)
-          .map((r) => r.key),
-      ['R_alpha:2'],
-    );
-    expect(
-      server.featureRequests
-          .where((r) => r.uri.path.contains('release-timeline'))
-          .length,
-      requests,
-    );
-  });
-
-  testWidgets(
-    'an older settings response cannot roll back a newly accepted name',
-    (tester) async {
+  test(
+    'a metadata rename does not cancel an in-flight release round',
+    () async {
       final server = FollowsServer();
       server.settings['followedRepositories'] = [
         followJson('R_alpha', 'octo', 'alpha'),
       ];
-      final container = await auth.mountApp(tester, server);
-      await auth.connectTo(tester, 'https://gitpulse.example');
-      await auth.submitField(
-        tester,
-        label: 'Password',
-        value: 'correct-horse',
-        action: 'Unlock',
-      );
-      final follows = container.read(releaseFollowsSessionProvider.notifier);
+      final container = await openFollowsSession(server);
       final hold = Completer<void>();
-      server.holdSettings = hold.future;
-      final refresh = follows.reload();
-      await tester.pump(const Duration(milliseconds: 100));
+      server.holdRound = hold.future;
+      server.pages = {
+        'R_alpha': pageJson('octo', 'alpha', [
+          releaseJson(2, 'fresh', '2026-10-21T00:00:00Z'),
+        ]),
+      };
+
+      final roundStarted = server.nextRequest(
+        'POST',
+        '/api/release-timeline/refresh',
+      );
+      final refresh = container
+          .read(releaseTimelineSessionProvider.notifier)
+          .refresh();
+      await roundStarted;
       server.metadata['R_alpha'] = {
         'status': 'available',
         'owner': 'new-owner',
         'name': 'renamed',
       };
-      await auth.pumped(tester, follows.loadMetadata());
+      await container
+          .read(releaseFollowsSessionProvider.notifier)
+          .loadMetadata();
+      final requests = server.featureRequests
+          .where((r) => r.uri.path.contains('release-timeline'))
+          .length;
+      hold.complete();
+      await refresh;
+      expect(
+        container
+            .read(releaseTimelineSessionProvider)
+            .groups
+            .expand((g) => g.items)
+            .map((r) => r.key),
+        ['R_alpha:2'],
+      );
+      expect(
+        server.featureRequests
+            .where((r) => r.uri.path.contains('release-timeline'))
+            .length,
+        requests,
+      );
+    },
+  );
+
+  test(
+    'an older settings response cannot roll back a newly accepted name',
+    () async {
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_alpha', 'octo', 'alpha'),
+      ];
+      final container = await openFollowsSession(server);
+      final follows = container.read(releaseFollowsSessionProvider.notifier);
+      final hold = Completer<void>();
+      server.holdSettings = hold.future;
+      final settingsStarted = server.nextRequest('GET', '/api/settings');
+      final refresh = follows.reload();
+      await settingsStarted;
+      server.metadata['R_alpha'] = {
+        'status': 'available',
+        'owner': 'new-owner',
+        'name': 'renamed',
+      };
+      await follows.loadMetadata();
       expect(
         container
             .read(releaseFollowsSessionProvider)
@@ -765,7 +744,7 @@ void main() {
       // Prevent the refresh's later detail request from masking a stale-name rollback.
       server.holdMetadata = Completer<void>().future;
       hold.complete();
-      await auth.pumped(tester, refresh);
+      await refresh;
       expect(
         container
             .read(releaseFollowsSessionProvider)
@@ -778,42 +757,33 @@ void main() {
   );
 
   for (final initiallyFollowed in [false, true]) {
-    testWidgets(
+    test(
       'an old ${initiallyFollowed ? 'nonempty' : 'empty'} settings read cannot undo a saved edit',
-      (tester) async {
+      () async {
         final server = FollowsServer();
         server.settings['followedRepositories'] = [
           if (initiallyFollowed) followJson('R_alpha', 'octo', 'alpha'),
         ];
-        final container = await auth.mountApp(tester, server);
-        await auth.connectTo(tester, 'https://gitpulse.example');
-        await auth.submitField(
-          tester,
-          label: 'Password',
-          value: 'correct-horse',
-          action: 'Unlock',
-        );
+        final container = await openFollowsSession(server);
         final follows = container.read(releaseFollowsSessionProvider.notifier);
-        await auth.pumped(tester, follows.reload());
+        await follows.reload();
         final hold = Completer<void>();
         server.holdSettings = hold.future;
+        final settingsStarted = server.nextRequest('GET', '/api/settings');
         final refresh = container
             .read(releaseTimelineSessionProvider.notifier)
             .refresh();
-        await tester.pump(const Duration(milliseconds: 100));
+        await settingsStarted;
         server.holdSettings = null;
-        await auth.pumped(
-          tester,
-          initiallyFollowed
-              ? follows.unfollow('R_alpha')
-              : follows.follow(
-                  const TimelineRepository(
-                    id: 'R_alpha',
-                    owner: 'octo',
-                    name: 'alpha',
-                  ),
+        await (initiallyFollowed
+            ? follows.unfollow('R_alpha')
+            : follows.follow(
+                const TimelineRepository(
+                  id: 'R_alpha',
+                  owner: 'octo',
+                  name: 'alpha',
                 ),
-        );
+              ));
         final expected = initiallyFollowed ? <String>[] : ['R_alpha'];
         expect(
           container
@@ -823,7 +793,7 @@ void main() {
           expected,
         );
         hold.complete();
-        await auth.pumped(tester, refresh);
+        await refresh;
         expect(
           container
               .read(releaseFollowsSessionProvider)
@@ -841,7 +811,7 @@ void main() {
         server.settings['followedRepositories'] = [
           followJson('R_remote', 'octo', 'remote'),
         ];
-        await auth.pumped(tester, follows.reload());
+        await follows.reload();
         expect(
           container.read(releaseFollowsSessionProvider).repositories.single.id,
           'R_remote',
@@ -875,13 +845,14 @@ void main() {
       expect(reads(), 1);
       final hold = Completer<void>();
       server.holdSettings = hold.future;
+      final settingsStarted = server.nextRequest('GET', '/api/settings');
       final follows = container
           .read(releaseFollowsSessionProvider.notifier)
           .reload();
       final timeline = container
           .read(releaseTimelineSessionProvider.notifier)
           .refresh();
-      await tester.pump(const Duration(milliseconds: 100));
+      await auth.pumped(tester, settingsStarted);
       expect(reads(), 2);
       hold.complete();
       await auth.pumped(tester, Future.wait([follows, timeline]));
@@ -927,28 +898,18 @@ void main() {
     },
   );
 
-  testWidgets(
+  test(
     'Timeline confirms remote follows even when release loading fails',
-    (tester) async {
+    () async {
       final server = FollowsServer();
-      final container = await auth.mountApp(tester, server);
-      await auth.connectTo(tester, 'https://gitpulse.example');
-      await auth.submitField(
-        tester,
-        label: 'Password',
-        value: 'correct-horse',
-        action: 'Unlock',
-      );
+      final container = await openFollowsSession(server);
       final follows = container.read(releaseFollowsSessionProvider.notifier);
-      await auth.pumped(tester, follows.reload());
+      await follows.reload();
       server.settings['followedRepositories'] = [
         followJson('R_beta', 'octo', 'beta'),
       ];
       server.roundStatus = 500;
-      await auth.pumped(
-        tester,
-        container.read(releaseTimelineSessionProvider.notifier).refresh(),
-      );
+      await container.read(releaseTimelineSessionProvider.notifier).refresh();
       expect(
         container
             .read(releaseFollowsSessionProvider)
@@ -966,58 +927,66 @@ void main() {
     },
   );
 
-  testWidgets('delayed metadata cannot restore a successfully removed follow', (
-    tester,
-  ) async {
-    final server = FollowsServer();
-    server.settings['followedRepositories'] = [
-      followJson('R_alpha', 'octo', 'alpha'),
-    ];
-    server.pages = {
-      'R_alpha': pageJson('octo', 'alpha', [
-        releaseJson(1, 'alpha', '2026-10-20T00:00:00Z'),
-      ]),
-    };
-    final container = await auth.mountApp(tester, server);
-    await auth.connectTo(tester, 'https://gitpulse.example');
-    await auth.submitField(
-      tester,
-      label: 'Password',
-      value: 'correct-horse',
-      action: 'Unlock',
-    );
-    final follows = container.read(releaseFollowsSessionProvider.notifier);
-    await auth.pumped(tester, follows.reload());
-    server.metadata['R_alpha'] = {
-      'status': 'available',
-      'owner': 'renamed',
-      'name': 'alpha',
-    };
-    final hold = Completer<void>();
-    server.holdMetadata = hold.future;
-    final metadata = follows.loadMetadata();
-    await tester.pump(const Duration(milliseconds: 100));
-    await auth.pumped(tester, follows.unfollow('R_alpha'));
-    expect(container.read(releaseFollowsSessionProvider).repositories, isEmpty);
-    final rounds = server.featureRequests
-        .where((request) => request.uri.path.contains('release-timeline'))
-        .length;
-    hold.complete();
-    await auth.pumped(tester, metadata);
-    await tester.pumpAndSettle();
-    expect(container.read(releaseFollowsSessionProvider).repositories, isEmpty);
-    expect(
-      container
-          .read(releaseTimelineSessionProvider.notifier)
-          .followedRepositories,
-      isEmpty,
-    );
-    expect(container.read(releaseTimelineSessionProvider).groups, isEmpty);
-    expect(
-      server.featureRequests
+  test(
+    'delayed metadata cannot restore a successfully removed follow',
+    () async {
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_alpha', 'octo', 'alpha'),
+      ];
+      server.pages = {
+        'R_alpha': pageJson('octo', 'alpha', [
+          releaseJson(1, 'alpha', '2026-10-20T00:00:00Z'),
+        ]),
+      };
+      final container = await openFollowsSession(server);
+      final follows = container.read(releaseFollowsSessionProvider.notifier);
+      await follows.reload();
+      server.metadata['R_alpha'] = {
+        'status': 'available',
+        'owner': 'renamed',
+        'name': 'alpha',
+      };
+      final hold = Completer<void>();
+      server.holdMetadata = hold.future;
+      final metadataStarted = server.nextRequest(
+        'POST',
+        '/api/release-follows/metadata',
+      );
+      final metadata = follows.loadMetadata();
+      await metadataStarted;
+      await follows.unfollow('R_alpha');
+      expect(
+        container.read(releaseFollowsSessionProvider).repositories,
+        isEmpty,
+      );
+      final rounds = server.featureRequests
           .where((request) => request.uri.path.contains('release-timeline'))
-          .length,
-      rounds,
-    );
-  });
+          .length;
+      hold.complete();
+      await metadata;
+      await waitForProvider(
+        container,
+        releaseTimelineSessionProvider,
+        (state) => !state.loading,
+      );
+      expect(
+        container.read(releaseFollowsSessionProvider).repositories,
+        isEmpty,
+      );
+      expect(
+        container
+            .read(releaseTimelineSessionProvider.notifier)
+            .followedRepositories,
+        isEmpty,
+      );
+      expect(container.read(releaseTimelineSessionProvider).groups, isEmpty);
+      expect(
+        server.featureRequests
+            .where((request) => request.uri.path.contains('release-timeline'))
+            .length,
+        rounds,
+      );
+    },
+  );
 }

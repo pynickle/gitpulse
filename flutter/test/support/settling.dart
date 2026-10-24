@@ -1,5 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 
+/// Pumps only until the requested UI or request boundary is observable.
+Future<void> pumpUntil(
+  WidgetTester tester,
+  bool Function() ready, {
+  required String reason,
+  int maxPumps = 200,
+}) async {
+  for (var i = 0; i < maxPumps; i++) {
+    if (ready()) return;
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 5)),
+    );
+    await tester.pump(const Duration(milliseconds: 20));
+  }
+  expect(ready(), isTrue, reason: reason);
+}
+
 /// Advances the widget clock while real cache and HTTP work runs.
 ///
 /// Widget tests run on a fake clock, so a real `File`, SQLite, or socket call
