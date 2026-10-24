@@ -16,9 +16,9 @@ This outranks taste, existing screens, and helpfulness. Web and Flutter. A contr
 
 Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
-- **Pre-commit verification** (matches CI intent): `bun run fmt:check && bun run lint && bunx nuxi typecheck`.
+- **Pre-commit verification** (matches CI intent): `bun run fmt:check && bun run lint && bunx nuxi typecheck && bun test --parallel`.
 - `bun run build` is **intentionally reserved for CI** — do not invoke locally unless asked. `bun run generate` is the static export, not a build.
-- **Root CI has no web test job** (format, lint, typecheck, extension-typecheck, build only); the separate Flutter CI runs Flutter tests. Run `bun test --parallel` and `bun run extension:test` locally before pushing. `--parallel` isolates each file, so a test must install its own `mock.module` aliases before importing the module under test.
+- Root CI runs format, lint, typecheck, `bun test --parallel`, extension typecheck, and build. Run `bun run extension:test` for the extension package. Flutter CI runs Flutter tests. `--parallel` isolates each file, so a test must install its own `mock.module` aliases before importing the module under test.
 - The extension is a separate WXT package; root `extension:*` scripts are wrappers. After a clean checkout, `cd extension && bun install` may be needed for WXT/editor state.
 
 ## Layout & Wiring
