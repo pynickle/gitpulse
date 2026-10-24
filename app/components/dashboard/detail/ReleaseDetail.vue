@@ -46,6 +46,12 @@ const body = computed(() => props.release.body?.trim() || '');
 
 const assets = computed<ReleaseAsset[]>(() => props.release.assets ?? []);
 
+// The header above already names the tag, so asset names can shed the prefix
+// they all repeat and leave the part that actually tells them apart.
+const assetNamePrefix = computed(() =>
+  getReleaseAssetNamePrefix(repoName.value, props.release.tag_name)
+);
+
 const archiveLinks = computed(() =>
   [
     {
@@ -178,7 +184,7 @@ usePageMeta(
               class="sidebar-card__content sidebar-card__content--scrollable sidebar-scroll"
               media="(min-width: 1025px)"
             >
-              <ReleaseAssetsList :assets="assets" />
+              <ReleaseAssetsList :assets="assets" :name-prefix="assetNamePrefix" />
             </ScrollArea>
           </section>
 

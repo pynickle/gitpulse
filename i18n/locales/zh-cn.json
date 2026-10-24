@@ -202,6 +202,7 @@
     "assetCount": "{count} 个资源",
     "downloadCount": "{count} 次下载",
     "noAssets": "暂无发布资源",
+    "assetSidecars": "签名与校验",
     "sourceCode": "源代码",
     "sourceZip": "源代码 (zip)",
     "sourceTar": "源代码 (tar.gz)",

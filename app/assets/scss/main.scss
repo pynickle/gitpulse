@@ -83,6 +83,13 @@ textarea,
   --gitpulse-info-solid: #0969da;
   --gitpulse-info-solid-hover: #0857b3;
   --gitpulse-info-soft: rgba(9, 105, 218, 0.1);
+  /* Release asset glyphs: one hue per file family, so colour reinforces shape. */
+  --gitpulse-file-installer: #4f46e5;
+  --gitpulse-file-archive: #b45309;
+  --gitpulse-file-document: #1d4ed8;
+  --gitpulse-file-code: #15803d;
+  --gitpulse-file-media: #be185d;
+  --gitpulse-file-check: #0f766e;
   --gitpulse-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
   --gitpulse-shadow-card-hover:
     0 0.45rem 1rem -0.35rem rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(79, 70, 229, 0.2);
@@ -214,6 +221,12 @@ html.dark {
   --gitpulse-info-solid: #0969da;
   --gitpulse-info-solid-hover: #0857b3;
   --gitpulse-info-soft: rgba(121, 192, 255, 0.14);
+  --gitpulse-file-installer: #a5b4fc;
+  --gitpulse-file-archive: #fbbf24;
+  --gitpulse-file-document: #93c5fd;
+  --gitpulse-file-code: #86efac;
+  --gitpulse-file-media: #f9a8d4;
+  --gitpulse-file-check: #5eead4;
   --gitpulse-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.34);
   --gitpulse-shadow-card-hover:
     0 0.65rem 1.2rem -0.45rem rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(165, 180, 252, 0.24);

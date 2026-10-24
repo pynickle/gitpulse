@@ -18,7 +18,7 @@ import type {
   RepositoryReleaseLookup,
   TimelineRelease,
 } from '#shared/types/release-follows';
-import type { ReleaseListItem } from '#shared/types/releases';
+import type { ReleaseAsset, ReleaseListItem } from '#shared/types/releases';
 
 import { useModalLifecycle } from '../app/composables/useModalLifecycle';
 import { useModalState } from '../app/composables/useModalState';
@@ -31,6 +31,7 @@ import formatCompactNumber from '../app/utils/formatCompactNumber';
 import formatDurationFromNow from '../app/utils/formatDurationFromNow';
 import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
 import getFetchErrorMessage from '../app/utils/getFetchErrorMessage';
+import getReleaseAssetNamePrefix from '../app/utils/getReleaseAssetNamePrefix';
 import handleRovingTablistKeydown from '../app/utils/handleRovingTablistKeydown';
 import withPendingPaginationPage from '../app/utils/withPendingPaginationPage';
 import english from '../i18n/locales/en.json';
@@ -352,6 +353,12 @@ beforeEach(() => {
     formatDurationFromNow,
     formatCompactNumber,
     formatReleaseAssetSize,
+    getReleaseAssetVisual: () => ({ icon: empty, tone: 'unknown' }),
+    getReleaseAssetNamePrefix,
+    groupReleaseAssets: (assets: readonly ReleaseAsset[]) => ({
+      primary: [...assets],
+      sidecars: [],
+    }),
     getFetchErrorMessage,
     handleRovingTablistKeydown,
     useRelativeTimeNow: () => shallowRef(Date.parse('2026-10-16T00:00:00Z')),

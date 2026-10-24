@@ -41,6 +41,9 @@ const releasedAtLabel = computed(() =>
 );
 const body = computed(() => props.detail.body?.trim() || '');
 const assets = computed(() => props.detail.assets ?? []);
+// Most releases name every asset after the repo and the tag; the header above
+// already says which release this is, so the list can drop that repeated prefix.
+const assetNamePrefix = computed(() => getReleaseAssetNamePrefix(repoName.value, tagName.value));
 const githubUrl = computed(() => props.detail.html_url || props.item?.htmlUrl || '');
 const author = computed(() => props.detail.author ?? null);
 
@@ -138,7 +141,7 @@ const handleBodyNavigation = (event: MouseEvent) => {
         </span>
       </div>
 
-      <ReleaseAssetsList :assets="assets" />
+      <ReleaseAssetsList :assets="assets" :name-prefix="assetNamePrefix" />
     </section>
   </div>
 </template>
