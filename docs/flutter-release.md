@@ -50,7 +50,9 @@ again. Do not solve a signature mismatch by changing the formal release key.
 For local builds, copy `flutter/android/key.properties.example` to the ignored
 `flutter/android/key.properties` and fill in the owner's existing values. Use an
 absolute keystore path with forward slashes on Windows. Keep the key outside the
-checkout and back it up privately. Environment variables override local properties:
+checkout and back it up privately. Environment variables override `key.properties`
+when Gradle is started directly. `flutter build apk` does not pass them into
+Gradle and reads `key.properties` instead. The mapping is:
 
 | Gradle property | Environment variable              |
 | --------------- | --------------------------------- |
@@ -70,11 +72,13 @@ their existing credential-management process:
 | `FLUTTER_ANDROID_KEY_PASSWORD`    | Secret   | Key password                                                                 |
 | `FLUTTER_ANDROID_CERT_SHA256`     | Variable | Independently recorded release certificate SHA-256, hex with optional colons |
 
-The workflow writes only a temporary, permission-restricted keystore, passes
-passwords through the environment, and removes the key even after failure. It
-verifies the actual APK with Android SDK `apksigner`, rejects the Android Debug
-certificate, compares the signer with the pinned certificate fingerprint, and
-checks the package ID, version name and version code before uploading an APK.
+The workflow writes a temporary, permission-restricted keystore and
+`android/key.properties`, then removes both even after failure. `flutter build`
+does not forward the step environment into Gradle, so the release build reads
+that properties file. It verifies the actual APK with Android SDK `apksigner`,
+rejects the Android Debug certificate, compares the signer with the pinned
+certificate fingerprint, and checks the package ID, version name and version
+code before uploading an APK.
 Changing the keystore alone therefore cannot silently change the update identity.
 
 The signing key, passwords and trusted fingerprint are pending owner inputs;

@@ -133,6 +133,29 @@ jobs:
           done
           umask 077
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$GITPULSE_ANDROID_KEYSTORE_PATH"
+          # flutter build replaces the Gradle environment with JAVA_HOME and PATH,
+          # so the GITPULSE_ANDROID_* variables above never reach the signing config.
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          def prop(value: str) -> str:
+              return (
+                  value.replace("\\", "\\\\")
+                  .replace("\n", "\\n")
+                  .replace("\r", "\\r")
+                  .replace("=", "\\=")
+                  .replace(":", "\\:")
+              )
+
+          lines = [
+              f"storeFile={prop(os.environ['GITPULSE_ANDROID_KEYSTORE_PATH'])}",
+              f"storePassword={prop(os.environ['GITPULSE_ANDROID_STORE_PASSWORD'])}",
+              f"keyAlias={prop(os.environ['GITPULSE_ANDROID_KEY_ALIAS'])}",
+              f"keyPassword={prop(os.environ['GITPULSE_ANDROID_KEY_PASSWORD'])}",
+          ]
+          Path("android/key.properties").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
           flutter build apk --release --no-pub
 
       - name: Verify the APK signer, application ID and version
@@ -159,9 +182,13 @@ jobs:
               [str(tools / 'apksigner'), 'verify', '--verbose', '--print-certs', str(apk)],
               check=True, capture_output=True, text=True,
           ).stdout
-          expected = os.environ['EXPECTED_CERT_SHA256'].replace(':', '').strip().lower()
-          digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)$', signer, re.M)
-          if not re.fullmatch(r'[0-9a-f]{64}', expected) or [d.lower() for d in digests] != [expected]:
+          expected = re.sub(r'[^0-9a-fA-F]', '', os.environ['EXPECTED_CERT_SHA256']).lower()
+          digests = {
+              re.sub(r'[^0-9a-fA-F]', '', digest).lower()
+              for digest in re.findall(r'certificate SHA-256 digest:\s*([0-9a-fA-F:]+)', signer)
+          }
+          if not re.fullmatch(r'[0-9a-f]{64}', expected) or digests != {expected}:
+              print(signer)
               raise SystemExit('APK signer does not match the pinned release certificate.')
           if re.search(r'certificate DN: .*CN\s*=\s*Android Debug', signer, re.I):
               raise SystemExit('A debug certificate is not a release identity.')
@@ -188,7 +215,7 @@ jobs:
         shell: bash
         env:
           GITPULSE_ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/gitpulse-release.jks
-        run: rm -f -- "$GITPULSE_ANDROID_KEYSTORE_PATH"
+        run: rm -f -- "$GITPULSE_ANDROID_KEYSTORE_PATH" android/key.properties
 
       - name: Upload verified Android distribution
         uses: actions/upload-artifact@v7

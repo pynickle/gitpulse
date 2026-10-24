@@ -6,8 +6,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Local builds can use the ignored key.properties; CI supplies the same values
-// through environment variables so passwords never need to be written to disk.
+// Direct Gradle runs can use GITPULSE_ANDROID_*. `flutter build` replaces the
+// Gradle environment with JAVA_HOME and PATH, so it reads android/key.properties.
 val releaseProperties = Properties().apply {
     val propertiesFile = rootProject.file("key.properties")
     if (propertiesFile.isFile) {
