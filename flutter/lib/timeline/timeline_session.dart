@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/widgets.dart';
 
+import '../follows/release_follows_session.dart';
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import 'timeline_dto.dart';
@@ -14,17 +15,12 @@ import 'timeline_cache.dart';
 import 'timeline_cache_lifecycle.dart';
 import 'timeline_history.dart';
 
+export 'timeline_service.dart'
+    show timelineTransportProvider, releaseTimelineServiceProvider;
+
 /// The device clock and display time zone. Tests replace this seam.
 final timelineEnvironmentProvider = Provider<TimelineEnvironment>(
   (ref) => TimelineEnvironment.system(),
-);
-
-final timelineTransportProvider = Provider<TimelineTransport>(
-  (ref) => SessionTimelineTransport(ref),
-);
-
-final releaseTimelineServiceProvider = Provider<ReleaseTimelineService>(
-  (ref) => ReleaseTimelineService(ref.watch(timelineTransportProvider)),
 );
 
 /// The app-facing Release Timeline session.
@@ -57,6 +53,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   String? _context;
   int _generation = 0;
   bool _followsKnown = false;
+  int? _synchronizingFollows;
   bool _awaitingFreshWindow = true;
   String _cycleId = '';
   Future<void>? _cacheAction;
@@ -96,6 +93,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     ref.listen(sessionControllerProvider, (previous, next) {
       _onSessionChanged();
     });
+    ref.listen(releaseFollowsSessionProvider, (previous, next) {
+      if (!next.active ||
+          !next.loaded ||
+          identical(previous?.repositories, next.repositories)) {
+        return;
+      }
+      // The cycle awaiting this read applies its result itself. A local edit
+      // still takes effect immediately and supersedes that pending cycle.
+      if (_synchronizingFollows == _generation && previous?.saving != true) {
+        return;
+      }
+      unawaited(applyFollows(next.repositories));
+    });
     final transitions = ref
         .read(sessionControllerProvider.notifier)
         .transitions
@@ -114,6 +124,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (context != null) {
       _context = context;
       final ticket = ++_generation;
+      _synchronizingFollows = ticket;
       Future<void>.microtask(() => _restoreAndStart(ticket));
     }
     return const TimelineViewState.inactive();
@@ -177,8 +188,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
               _followedRepositories.any((old) => old.id == repository.id),
         )) {
       await _applyFollowsLocally(
-        ++_generation,
+        repositories.length == _followedRepositories.length
+            ? _generation
+            : ++_generation,
         List.unmodifiable(repositories),
+        preserveLoading: repositories.length == _followedRepositories.length,
       );
       return;
     }
@@ -270,8 +284,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> _applyFollowsLocally(
     int ticket,
-    List<TimelineRepository> repositories,
-  ) async {
+    List<TimelineRepository> repositories, {
+    bool preserveLoading = false,
+  }) async {
     _setFollowedRepositories(repositories);
     if (_cycle.pages.isNotEmpty) {
       final result = mergeTimelineRound(
@@ -291,7 +306,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       state = _withGroups(state, result.groups, state.previousBaseline);
     }
     state = state.copyWith(
-      loading: true,
+      loading: preserveLoading ? null : true,
       hasFollows: repositories.isNotEmpty,
       partial: _cycle.pages.isNotEmpty
           ? _cycle.partial
@@ -325,7 +340,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     } catch (error) {
       if (_isCurrent(ticket)) _cacheFailure(error);
     }
-    if (_isCurrent(ticket)) state = state.copyWith(loading: false);
+    if (_isCurrent(ticket) && !preserveLoading) {
+      state = state.copyWith(loading: false);
+    }
   }
 
   /// Applies the Active Timeline Filter and Release Timeline Search to the
@@ -405,7 +422,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         !state.canRetry) {
       return;
     }
-    if (!_followsKnown || _followedRepositories.isEmpty) {
+    if (!_followsKnown ||
+        _followedRepositories.isEmpty ||
+        ref
+            .read(releaseFollowsSessionProvider.notifier)
+            .synchronizationFailed) {
       await refresh();
       return;
     }
@@ -466,7 +487,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _resetFilters();
     state = const TimelineViewState.activeLoading();
     _retentionDays = null;
-    unawaited(_restoreAndStart(++_generation));
+    final ticket = ++_generation;
+    _synchronizingFollows = ticket;
+    unawaited(_restoreAndStart(ticket));
   }
 
   /// Display conditions belong to one identity's session, so another account
@@ -484,7 +507,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final identity = session.identity;
     if (identity == null) return null;
     return TimelineCache.scopeOf(identity) ??
-        '${identity.backend}|${identity.login.toLowerCase()}';
+        '${identity.backend}|${identity.githubId ?? identity.login.toLowerCase()}';
   }
 
   Future<void> _restoreAndStart(int ticket) async {
@@ -493,7 +516,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
     if (!_isCurrent(ticket)) return;
     await _restoreCachedWindow(ticket);
-    if (_isCurrent(ticket)) await _startCycle(ticket);
+    if (_isCurrent(ticket)) await _startCycle(ticket, synchronize: false);
   }
 
   Future<void> _restoreCachedWindow(int ticket) async {
@@ -846,13 +869,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   Future<void> _startCycle(
     int ticket, {
     List<TimelineRepository>? confirmedFollows,
+    bool synchronize = true,
   }) async {
     if (!_isCurrent(ticket)) return;
-    _followsKnown = false;
-    _failures.clear();
-    _firstPageRetries.clear();
-    _awaitingFreshWindow = true;
-    _history = TimelineHistoryConnection(const RetainedTimelineHistory());
     state = state.copyWith(
       active: true,
       loading: true,
@@ -865,10 +884,23 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       persistenceFailed: false,
     );
 
-    final settings = confirmedFollows == null
-        ? await ref.read(releaseTimelineServiceProvider).readSettings()
-        : null;
+    TimelineResult<UserSettingsDto>? settings;
+    if (confirmedFollows == null) {
+      _synchronizingFollows = ticket;
+      try {
+        settings = await ref
+            .read(releaseFollowsSessionProvider.notifier)
+            .synchronize(refresh: synchronize);
+      } finally {
+        if (_synchronizingFollows == ticket) _synchronizingFollows = null;
+      }
+    }
     if (!_isCurrent(ticket)) return;
+
+    _failures.clear();
+    _firstPageRetries.clear();
+    _awaitingFreshWindow = true;
+    _history = TimelineHistoryConnection(const RetainedTimelineHistory());
 
     if (confirmedFollows == null && settings?.data == null) {
       state = state.copyWith(
@@ -877,7 +909,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           saving: false,
         ),
       );
-      _followsKnown = false;
+      _followsKnown = ref.read(releaseFollowsSessionProvider).loaded;
       if (settings?.failure?.kind != TimelineFailureKind.session) {
         await _loadHistory(ticket);
         if (!_isCurrent(ticket)) return;
@@ -890,7 +922,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
 
     final follows =
-        confirmedFollows ?? mapFollowedRepositories(settings!.data!);
+        confirmedFollows ??
+        ref.read(releaseFollowsSessionProvider).repositories;
     _setFollowedRepositories(follows);
     _retentionDays =
         settings?.data?.releaseTimeline?.retentionDays ?? _retentionDays;
@@ -935,7 +968,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       return;
     }
 
-    _followedRepositories = follows;
     await _runRound(ticket);
   }
 

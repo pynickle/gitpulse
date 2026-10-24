@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/presentation/presentation_preferences_store.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
+import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/lifetime_cookie_jar.dart';
@@ -19,6 +20,8 @@ import 'package:gitpulse/session/secure_cookie_storage.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/session/secure_storage.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
+
+import 'support/settling.dart';
 
 class FaultyStorage extends FlutterSecureStorage {
   String? failWrite;
@@ -103,6 +106,7 @@ class AuthServer implements HttpClientAdapter {
   String sessionValue = 'sealed-session-value';
   String sessionAttributes = 'Path=/; HttpOnly; SameSite=Lax';
   bool expireSessionImmediately = false;
+  bool includeGithubId = false;
   final requests = <RecordedRequest>[];
   Future<void>? hold;
   bool holding = false;
@@ -246,6 +250,9 @@ class AuthServer implements HttpClientAdapter {
       return _json(200, {'id': 'empty'});
     }
     final status = featureStatus;
+    if (path.endsWith('/api/settings') && status == 200) {
+      return _json(200, {'followedRepositories': <Object?>[]});
+    }
     return _json(status, {
       'statusCode': status,
       'statusMessage': featureMessage,
@@ -308,7 +315,8 @@ class AuthServer implements HttpClientAdapter {
     );
   }
 
-  Map<String, String> _user(String login) => {
+  Map<String, Object> _user(String login) => {
+    if (includeGithubId) 'id': login == 'hubot' ? 2 : 1,
     'login': login,
     'name': login == 'hubot' ? 'Hubot' : 'Octocat',
     'avatar_url': '',
@@ -347,11 +355,17 @@ Future<ProviderContainer> mountApp(
   Future<bool> Function(Uri)? launchBrowser,
   DateTime Function()? clock,
   File? presentationFile,
+  TimelineCache? timelineCache,
+  DateTime Function()? timelineNow,
 }) async {
   if (resetStorage) FlutterSecureStorage.setMockInitialValues({});
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        if (timelineCache != null)
+          timelineCacheProvider.overrideWithValue(timelineCache),
+        if (timelineNow != null)
+          timelineClockProvider.overrideWithValue(timelineNow),
         if (presentationFile != null)
           presentationPreferencesFileProvider.overrideWithValue(
             () async => presentationFile,
@@ -371,7 +385,11 @@ Future<ProviderContainer> mountApp(
       child: const GitPulseApp(),
     ),
   );
-  await tester.pumpAndSettle();
+  if (timelineCache != null) {
+    await settleUi(tester);
+  } else {
+    await tester.pumpAndSettle();
+  }
   return ProviderScope.containerOf(tester.element(find.byType(GitPulseApp)));
 }
 

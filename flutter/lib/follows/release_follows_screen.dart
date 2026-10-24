@@ -44,7 +44,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
     Future<void>.microtask(() {
       if (!mounted) return;
       final facade = ref.read(releaseFollowsSessionProvider.notifier);
-      if (state.loaded) unawaited(facade.reload());
       unawaited(facade.loadStarred());
       if (state.query.isNotEmpty) _search();
     });
@@ -442,7 +441,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                     ),
                     candidate: item,
                     followed: followed,
-                    onToggle: state.loading || state.saving
+                    onToggle: state.saving || (!state.loaded && state.loading)
                         ? null
                         : () => followed
                               ? facade.unfollow(item.repository.id)

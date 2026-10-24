@@ -8,6 +8,14 @@ import 'timeline_dto.dart';
 import 'timeline_models.dart';
 import 'timeline_state.dart';
 
+final timelineTransportProvider = Provider<TimelineTransport>(
+  (ref) => SessionTimelineTransport(ref),
+);
+
+final releaseTimelineServiceProvider = Provider<ReleaseTimelineService>(
+  (ref) => ReleaseTimelineService(ref.watch(timelineTransportProvider)),
+);
+
 /// The HTTP seam the Release Timeline reads through.
 ///
 /// The app implements it with the signed-in session, so an explicit session

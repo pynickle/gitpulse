@@ -24,12 +24,16 @@ class FollowsServer extends AuthServer {
   int searchStatus = 200;
   int starredStatus = 200;
   int metadataStatus = 200;
+  int settingsStatus = 200;
+  int roundStatus = 200;
   bool searchHasMore = false;
   bool starredHasMore = false;
   Future<void>? holdSearch;
   Future<void>? holdStarred;
   Future<void>? holdSave;
   Future<void>? holdRound;
+  Future<void>? holdSettings;
+  Future<void>? holdMetadata;
 
   @override
   Future<ResponseBody> fetch(
@@ -38,6 +42,7 @@ class FollowsServer extends AuthServer {
     Future<void>? cancelFuture,
   ) async {
     final path = options.uri.path;
+    if (offline) return super.fetch(options, requestStream, cancelFuture);
     if (!path.endsWith('/api/settings') &&
         !path.endsWith('/api/starred') &&
         !path.contains('/api/search/') &&
@@ -69,6 +74,10 @@ class FollowsServer extends AuthServer {
           return json(saveStatus, {'statusMessage': 'Save failed'});
         }
         settings.addAll(jsonDecode(body) as Map<String, dynamic>);
+      } else {
+        final result = json(settingsStatus, {...settings});
+        if (holdSettings != null) await holdSettings;
+        return result;
       }
       return json(200, {...settings});
     }
@@ -129,14 +138,16 @@ class FollowsServer extends AuthServer {
         }
       }
       if (renamed) settings['followedRepositories'] = updated;
-      return json(metadataStatus, {
+      final result = json(metadataStatus, {
         'repositories': repositories,
         'renamed': renamed,
       });
+      if (holdMetadata != null) await holdMetadata;
+      return result;
     }
     final result = roundJson(pages: Map.of(pages));
     if (holdRound != null) await holdRound;
-    return json(200, result);
+    return json(roundStatus, result);
   }
 
   ResponseBody json(int status, Object? payload) => ResponseBody.fromString(

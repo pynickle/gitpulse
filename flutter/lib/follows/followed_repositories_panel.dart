@@ -19,7 +19,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
     final view = ref.watch(followedRepositoryViewProvider);
     final facade = ref.read(releaseFollowsSessionProvider.notifier);
     final l10n = AppLocalizations.of(context);
-    final disabled = state.loading || state.saving;
+    final disabled = state.saving || (!state.loaded && state.loading);
     final detailed = view == FollowedRepositoryView.detailed;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,7 +60,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
             ],
           ),
         ),
-        if (disabled) const LinearProgressIndicator(),
+        if (state.loading || state.saving) const LinearProgressIndicator(),
         const Divider(height: 1),
         Expanded(
           child: CustomScrollView(

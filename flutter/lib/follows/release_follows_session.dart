@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import '../timeline/timeline_models.dart';
-import '../timeline/timeline_session.dart';
+import '../timeline/timeline_dto.dart';
+import '../timeline/timeline_service.dart';
+import '../timeline/timeline_state.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_service.dart';
+import 'release_follows_dto.dart';
 import 'release_follows_state.dart';
 
 final releaseFollowsSessionProvider =
@@ -22,6 +25,14 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   int _searchGeneration = 0;
   int _starredGeneration = 0;
   String? _context;
+  Future<TimelineResult<UserSettingsDto>>? _settingsRead;
+  UserSettingsDto? _settings;
+  TimelineFailure? _readFailure;
+  Completer<void>? _edit;
+  final Map<String, Object> _members = {};
+  final Map<String, Object> _metadataRequests = {};
+  final Map<String, int> _nameVersions = {};
+  int _nameVersion = 0;
 
   ReleaseFollowsService get _service => ReleaseFollowsService(({
     required method,
@@ -54,6 +65,13 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       _metadataTicket++;
       _searchGeneration++;
       _starredGeneration++;
+      _settingsRead = null;
+      _settings = null;
+      _readFailure = null;
+      _members.clear();
+      _metadataRequests.clear();
+      _nameVersions.clear();
+      _edit = null;
       state = ReleaseFollowsState(active: context != null);
       if (context != null) unawaited(reload());
     });
@@ -71,37 +89,106 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     final session = ref.read(sessionControllerProvider);
     final identity = session.identity;
     return session.phase == SessionPhase.signedIn && identity != null
-        ? '${identity.backend}|${identity.login}'
+        ? '${identity.backend}|${identity.githubId ?? identity.login.toLowerCase()}'
         : null;
   }
 
   bool _current(int ticket) => ref.mounted && ticket == _generation;
 
-  /// Reloads shared settings and checks stable repository identities.
+  /// Explicitly synchronizes the account's collection, independently of details.
   Future<void> reload() async {
-    if (!state.active || state.saving) return;
-    final ticket = ++_generation;
+    await synchronize(refresh: true);
+  }
+
+  /// Shares compatible collection reads with Timeline. Ordinary navigation reuses
+  /// the last confirmation; edits invalidate reads begun before their save.
+  Future<TimelineResult<UserSettingsDto>> synchronize({
+    bool refresh = false,
+  }) async {
+    final context = _context;
+    if (!state.active) {
+      return const TimelineResult.failed(
+        TimelineFailure(TimelineFailureKind.cancelled),
+      );
+    }
+    final edit = _edit;
+    if (edit != null) {
+      await edit.future;
+      if (!ref.mounted || context != _context) {
+        return const TimelineResult.failed(
+          TimelineFailure(TimelineFailureKind.cancelled),
+        );
+      }
+      return synchronize(refresh: refresh);
+    }
+    if (_settingsRead != null) return _settingsRead!;
+    if (!refresh && state.loaded) {
+      return TimelineResult.data(_confirmedSettings);
+    }
+    if (!refresh && _readFailure != null) {
+      return TimelineResult.failed(_readFailure!);
+    }
+    final ticket = _generation;
     state = state.copyWith(
       loading: true,
       saveFailed: false,
       clearProblem: true,
     );
+    final request = _readSettings(ticket);
+    _settingsRead = request;
     try {
-      var repositories = await _service.readFollows();
-      if (!_current(ticket)) return;
-      if (_detailed) {
-        repositories = await _updateMetadata(
-          repositories,
-          current: () => _current(ticket),
-        );
-        if (!_current(ticket)) return;
-      }
-      _publishConfirmed(repositories);
-    } on FollowRequestFailure catch (error) {
-      if (_current(ticket)) {
-        state = state.copyWith(loading: false, problem: error.problem);
-      }
+      return await request;
+    } finally {
+      if (identical(_settingsRead, request)) _settingsRead = null;
     }
+  }
+
+  UserSettingsDto get _confirmedSettings => UserSettingsDto(
+    followedRepositories: [
+      for (final repo in state.repositories)
+        FollowedRepositoryDto(id: repo.id, owner: repo.owner, name: repo.name),
+    ],
+    releaseTimeline: _settings?.releaseTimeline,
+  );
+
+  Future<TimelineResult<UserSettingsDto>> _readSettings(int ticket) async {
+    final context = _context;
+    final names = Map.of(_nameVersions);
+    final response = await ref
+        .read(releaseTimelineServiceProvider)
+        .readSettings();
+    if (!_current(ticket)) {
+      if (ref.mounted && context == _context && state.active && state.loaded) {
+        return TimelineResult.data(_confirmedSettings);
+      }
+      return const TimelineResult.failed(
+        TimelineFailure(TimelineFailureKind.cancelled),
+      );
+    }
+    final settings = response.data;
+    if (settings == null || settings.followedRepositories == null) {
+      final failure =
+          response.failure ??
+          const TimelineFailure(TimelineFailureKind.invalidResponse);
+      _readFailure = failure;
+      state = state.copyWith(
+        loading: false,
+        problem: switch (failure.kind) {
+          TimelineFailureKind.network => FollowProblem.network,
+          TimelineFailureKind.rateLimited => FollowProblem.rateLimited,
+          TimelineFailureKind.invalidResponse => FollowProblem.invalidResponse,
+          TimelineFailureKind.cancelled => FollowProblem.cancelled,
+          _ => FollowProblem.server,
+        },
+      );
+      return TimelineResult.failed(failure);
+    }
+    _settings = settings;
+    _publishConfirmed(
+      _preserveNewerNames(mapFollowedRepositories(settings), names),
+    );
+    if (_detailed) unawaited(loadMetadata());
+    return TimelineResult.data(_confirmedSettings);
   }
 
   /// Searches repositories or resolves a pasted GitHub repository URL.
@@ -218,66 +305,87 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
 
   /// Adds a Release Follow after checking the latest shared list and limits.
   Future<void> follow(TimelineRepository repository) async {
-    if (!state.active || state.saving || state.loading) return;
+    if (!state.active || state.saving || (!state.loaded && state.loading)) {
+      return;
+    }
     if (repository.id.trim().isEmpty ||
         repository.id.length > 240 ||
         !validRepositoryName(repository.owner, repository.name)) {
       state = state.copyWith(problem: FollowProblem.invalidRepository);
       return;
     }
-    final ticket = ++_generation;
-    state = state.copyWith(saving: true, saveFailed: false, clearProblem: true);
-    try {
+    return _saveEdit((ticket, names) async {
       var repositories = await _service.readFollows();
-      if (!_current(ticket)) return;
+      if (!_current(ticket)) return null;
       if (repositories.any((repo) => repo.id == repository.id)) {
         throw const FollowRequestFailure(FollowProblem.duplicate);
       }
       if (repositories.length >= 150) {
         throw const FollowRequestFailure(FollowProblem.storedLimit);
       }
-      repositories = await _updateMetadata(
-        repositories,
-        current: () => _current(ticket),
-      );
-      if (!_current(ticket)) return;
+      FollowMetadataResponseDto? metadata;
+      try {
+        if (repositories.isNotEmpty) {
+          metadata = await _service.readMetadata(repositories);
+        }
+      } on FollowRequestFailure {
+        // Transient failures still count toward the available-repository limit.
+      }
+      if (!_current(ticket)) return null;
       if (repositories
               .where(
                 (repo) =>
-                    state.statuses[repo.id] != RepositoryPageStatus.unavailable,
+                    metadata?.repositories[repo.id]?.status !=
+                    RepositoryPageStatus.unavailable,
               )
               .length >=
           100) {
         throw const FollowRequestFailure(FollowProblem.validLimit);
       }
-      final saved = await _service.saveFollows([repository, ...repositories]);
-      if (!_current(ticket)) return;
-      _publishConfirmed(saved);
-    } on FollowRequestFailure catch (error) {
-      if (_current(ticket)) {
-        state = state.copyWith(
-          saving: false,
-          saveFailed: true,
-          problem: error.problem,
-        );
-      }
-    }
+      repositories = [
+        for (final repo in repositories)
+          _renamed(repo, metadata?.repositories[repo.id]),
+      ];
+      repositories = _preserveNewerNames(repositories, names);
+      return _service.saveFollows([repository, ...repositories]);
+    });
   }
 
   /// Removes a Release Follow after the backend confirms the change.
-  Future<void> unfollow(String repositoryId) async {
-    if (!state.active || state.saving || state.loading) return;
+  Future<void> unfollow(String repositoryId) => _saveEdit((ticket, _) async {
+    final repositories = await _service.readFollows();
+    if (!_current(ticket)) return null;
+    return _service.saveFollows([
+      for (final repo in repositories)
+        if (repo.id != repositoryId) repo,
+    ]);
+  });
+
+  Future<void> _saveEdit(
+    Future<List<TimelineRepository>?> Function(
+      int ticket,
+      Map<String, int> names,
+    )
+    save,
+  ) async {
+    if (!state.active || state.saving || (!state.loaded && state.loading)) {
+      return;
+    }
     final ticket = ++_generation;
-    state = state.copyWith(saving: true, saveFailed: false, clearProblem: true);
+    final names = Map.of(_nameVersions);
+    _settingsRead = null;
+    final edit = _edit = Completer<void>();
+    state = state.copyWith(
+      saving: true,
+      loading: false,
+      saveFailed: false,
+      clearProblem: true,
+    );
     try {
-      final repositories = await _service.readFollows();
-      if (!_current(ticket)) return;
-      final saved = await _service.saveFollows([
-        for (final repo in repositories)
-          if (repo.id != repositoryId) repo,
-      ]);
-      if (!_current(ticket)) return;
-      _publishConfirmed(saved);
+      final saved = await save(ticket, names);
+      if (!_current(ticket) || saved == null) return;
+      _publishConfirmed(_preserveNewerNames(saved, names));
+      if (_detailed) unawaited(loadMetadata());
     } on FollowRequestFailure catch (error) {
       if (_current(ticket)) {
         state = state.copyWith(
@@ -286,20 +394,58 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
           problem: error.problem,
         );
       }
+    } finally {
+      if (identical(_edit, edit)) _edit = null;
+      edit.complete();
     }
   }
 
+  List<TimelineRepository> _preserveNewerNames(
+    List<TimelineRepository> repositories,
+    Map<String, int> versions,
+  ) {
+    final current = {for (final repo in state.repositories) repo.id: repo};
+    return [
+      for (final repo in repositories)
+        if (current.containsKey(repo.id) &&
+            _nameVersions[repo.id] != versions[repo.id])
+          current[repo.id]!
+        else
+          repo,
+    ];
+  }
+
   void _publishConfirmed(List<TimelineRepository> repositories) {
+    _readFailure = null;
+    _metadataRequests.clear();
+    final previous = {for (final repo in state.repositories) repo.id: repo};
+    final ids = repositories.map((repo) => repo.id).toSet();
+    _members.removeWhere((id, _) => !ids.contains(id));
+    _nameVersions.removeWhere((id, _) => !ids.contains(id));
+    for (final repo in repositories) {
+      if (!_members.containsKey(repo.id) ||
+          previous[repo.id]?.fullName != repo.fullName) {
+        _members[repo.id] = Object();
+        _metadataRequests.remove(repo.id);
+        _nameVersions[repo.id] = ++_nameVersion;
+      }
+    }
     state = state.copyWith(
+      statuses: Map.unmodifiable(
+        Map.of(state.statuses)..removeWhere((id, _) => !ids.contains(id)),
+      ),
+      details: Map.unmodifiable(
+        Map.of(state.details)..removeWhere((id, _) => !ids.contains(id)),
+      ),
+      previousNames: Map.unmodifiable(
+        Map.of(state.previousNames)..removeWhere((id, _) => !ids.contains(id)),
+      ),
+      clearProblem: true,
+      clearMetadataProblem: repositories.isEmpty,
       repositories: List.unmodifiable(repositories),
       loaded: true,
       loading: false,
       saving: false,
-    );
-    unawaited(
-      ref
-          .read(releaseTimelineSessionProvider.notifier)
-          .applyFollows(repositories),
     );
   }
 
@@ -307,129 +453,98 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       ref.read(followedRepositoryViewProvider) ==
       FollowedRepositoryView.detailed;
 
-  /// Loads Followed Repository metadata for Detailed View, or for one retry.
-  Future<void> loadMetadata({String? repositoryId}) async {
-    if (!state.active || state.repositories.isEmpty) return;
-    final ticket = ++_metadataTicket;
-    final context = _context;
-    final current = List<TimelineRepository>.of(state.repositories);
-    final updated = await _updateMetadata(
-      current,
-      current: () =>
-          ref.mounted && ticket == _metadataTicket && context == _context,
-      onlyIds: repositoryId == null ? null : {repositoryId},
-    );
-    if (!ref.mounted || ticket != _metadataTicket || context != _context) {
-      return;
+  bool get synchronizationFailed => _readFailure != null;
+
+  TimelineRepository _renamed(
+    TimelineRepository repo,
+    FollowMetadataDto? lookup,
+  ) {
+    if (lookup?.status != RepositoryPageStatus.available ||
+        lookup?.owner == null ||
+        lookup?.name == null ||
+        !validRepositoryName(lookup!.owner!, lookup.name!)) {
+      return repo;
     }
-    var renamed = updated.length != current.length;
-    if (!renamed) {
-      for (var index = 0; index < updated.length; index++) {
-        if (updated[index].fullName != current[index].fullName) {
-          renamed = true;
-          break;
-        }
-      }
-    }
-    if (!renamed) return;
-    state = state.copyWith(repositories: List.unmodifiable(updated));
-    unawaited(
-      ref.read(releaseTimelineSessionProvider.notifier).applyFollows(updated),
+    return TimelineRepository(
+      id: repo.id,
+      owner: lookup.owner!,
+      name: lookup.name!,
     );
   }
 
-  Future<List<TimelineRepository>> _updateMetadata(
-    List<TimelineRepository> repositories, {
-    required bool Function() current,
-    Set<String>? onlyIds,
-  }) async {
-    if (onlyIds != null && onlyIds.isEmpty) return repositories;
-    if (repositories.isEmpty) {
-      if (onlyIds != null || !current()) return repositories;
-      state = state.copyWith(
-        statuses: const {},
-        previousNames: const {},
-        details: const {},
-        clearMetadataProblem: true,
-      );
-      return repositories;
-    }
+  /// Enriches current members only. Per-member tokens also reject results from
+  /// before a removal/refollow, a newer name, or a newer metadata request.
+  Future<void> loadMetadata({String? repositoryId}) async {
+    if (!state.active || state.repositories.isEmpty) return;
+    final context = _context;
+    final epoch = _metadataTicket;
+    final request = Object();
     final targets = [
-      for (final repo in repositories)
-        if (onlyIds == null || onlyIds.contains(repo.id)) repo,
+      for (final repo in state.repositories)
+        if (repositoryId == null || repo.id == repositoryId) repo,
     ];
-    if (targets.isEmpty) return repositories;
+    if (targets.isEmpty) return;
+    final members = {for (final repo in targets) repo.id: _members[repo.id]};
+    for (final repo in targets) {
+      _metadataRequests[repo.id] = request;
+    }
+    bool eligible(String id) =>
+        members.containsKey(id) &&
+        members[id] == _members[id] &&
+        _metadataRequests[id] == request;
+    FollowMetadataResponseDto? response;
+    FollowProblem? problem;
     try {
-      final response = await _service.readMetadata(targets);
-      if (!current()) return repositories;
-      final previousNames = onlyIds == null
-          ? <String, String>{}
-          : Map<String, String>.of(state.previousNames);
-      final details = onlyIds == null
-          ? <String, FollowedRepositoryDetails>{}
-          : Map<String, FollowedRepositoryDetails>.of(state.details);
-      final statuses = onlyIds == null
-          ? <String, RepositoryPageStatus>{}
-          : Map<String, RepositoryPageStatus>.of(state.statuses);
-
-      TimelineRepository apply(TimelineRepository repo) {
-        if (onlyIds != null && !onlyIds.contains(repo.id)) return repo;
-        final lookup = response.repositories[repo.id];
-        statuses[repo.id] = lookup?.status ?? RepositoryPageStatus.transient;
-        if (lookup?.status != RepositoryPageStatus.available ||
-            lookup?.owner == null ||
-            lookup?.name == null ||
-            !validRepositoryName(lookup!.owner!, lookup.name!)) {
-          details.remove(repo.id);
-          previousNames.remove(repo.id);
-          return repo;
-        }
+      response = await _service.readMetadata(targets);
+    } on FollowRequestFailure catch (error) {
+      problem = error.problem;
+    }
+    if (!ref.mounted || context != _context || epoch != _metadataTicket) return;
+    if (!state.repositories.any((repo) => eligible(repo.id))) return;
+    final statuses = Map.of(state.statuses);
+    final details = Map.of(state.details);
+    final previousNames = Map.of(state.previousNames);
+    var renamed = false;
+    final repositories = <TimelineRepository>[];
+    for (final repo in state.repositories) {
+      if (!eligible(repo.id)) {
+        repositories.add(repo);
+        continue;
+      }
+      _metadataRequests.remove(repo.id);
+      final lookup = response?.repositories[repo.id];
+      statuses[repo.id] = lookup?.status ?? RepositoryPageStatus.transient;
+      final updated = _renamed(repo, lookup);
+      if (lookup?.status == RepositoryPageStatus.available &&
+          lookup?.owner != null &&
+          lookup?.name != null &&
+          validRepositoryName(lookup!.owner!, lookup.name!)) {
         details[repo.id] = FollowedRepositoryDetails(
           description: lookup.description,
           language: lookup.primaryLanguage,
           starCount: lookup.starCount,
         );
-        final identity = TimelineRepository(
-          id: repo.id,
-          owner: lookup.owner!,
-          name: lookup.name!,
-        );
-        if (repo.fullName == identity.fullName) {
-          previousNames.remove(repo.id);
-        } else {
+        if (updated.fullName != repo.fullName) {
+          renamed = true;
           previousNames[repo.id] = repo.fullName;
+          _members[repo.id] = Object();
+          _nameVersions[repo.id] = ++_nameVersion;
+        } else {
+          previousNames.remove(repo.id);
         }
-        return identity;
-      }
-
-      final renamed = [for (final repo in repositories) apply(repo)];
-      state = state.copyWith(
-        statuses: Map.unmodifiable(statuses),
-        previousNames: Map.unmodifiable(previousNames),
-        details: Map.unmodifiable(details),
-        clearMetadataProblem: onlyIds == null,
-      );
-      return renamed;
-    } on FollowRequestFailure catch (error) {
-      if (!current()) return repositories;
-      if (onlyIds == null) {
-        state = state.copyWith(
-          statuses: Map.unmodifiable({
-            for (final repo in repositories)
-              repo.id: RepositoryPageStatus.transient,
-          }),
-          previousNames: const {},
-          details: const {},
-          metadataProblem: error.problem,
-        );
       } else {
-        final statuses = Map<String, RepositoryPageStatus>.of(state.statuses);
-        for (final id in onlyIds) {
-          statuses[id] = RepositoryPageStatus.transient;
-        }
-        state = state.copyWith(statuses: Map.unmodifiable(statuses));
+        details.remove(repo.id);
+        previousNames.remove(repo.id);
       }
-      return repositories;
+      repositories.add(updated);
     }
+    state = state.copyWith(
+      repositories: renamed ? List.unmodifiable(repositories) : null,
+      statuses: Map.unmodifiable(statuses),
+      details: Map.unmodifiable(details),
+      previousNames: Map.unmodifiable(previousNames),
+      metadataProblem: problem,
+      clearMetadataProblem: problem == null,
+    );
   }
 }
