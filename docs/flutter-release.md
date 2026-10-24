@@ -2,10 +2,11 @@
 
 GitPulse's native client lives in `flutter/`, uses application identity
 `ink.euphony.gitpulse`, and has its own `flutter-vX.Y.Z` tags. Its release workflow
-prepares a Windows x64 runtime ZIP and a signed universal Android APK as Actions
-artifacts. It does not publish a public GitHub Release, deploy Nitro, or publish
-the extension. Main app `vX.Y.Z` and extension `extension-vX.Y.Z` workflows retain
-their separate triggers.
+prepares a Windows x64 runtime ZIP and a signed universal Android APK. Pushing
+the matching `flutter-vX.Y.Z` tag creates a draft GitHub Release titled
+`GitPulse Flutter vX.Y.Z` and attaches those files. It does not deploy Nitro or
+publish the extension. Main app `vX.Y.Z` and extension `extension-vX.Y.Z`
+workflows retain their separate triggers.
 
 ## Reproducible toolchain
 
@@ -92,9 +93,10 @@ Neither action is performed as part of this implementation.
 
 Both platform jobs wait for the shared Flutter checks. Windows can finish even
 if signing inputs are unavailable for Android; a failed Android job means that
-run has not delivered both formal artifacts. Download the distributions from
-the Actions run and verify their `.sha256` files before installation. Publication
-of a public release is a separate owner-authorized action after acceptance.
+run has not delivered both formal artifacts, and the draft Release is not
+created. A manual **Flutter Release** run uploads Actions artifacts only. A tag
+push attaches the ZIP, APK, and `.sha256` files to the draft Release. Publish
+that draft after acceptance. Verify the checksums before installation.
 
 ### Windows x64
 
@@ -140,7 +142,8 @@ flutter build apk --release --no-pub
 
 The local APK is `build/app/outputs/flutter-apk/app-release.apk`. The Actions
 artifact is `GitPulse-flutter-vX.Y.Z-android.apk` with an adjacent `.apk.sha256`.
-It is a universal APK, not an AAB or a store upload. Use the SDK build-tools
+A tag push attaches the same files to the draft GitHub Release. It is a
+universal APK, not an AAB or a store upload. Use the SDK build-tools
 `apksigner verify --verbose --print-certs <apk>` to compare its SHA-256 signer
 against the privately recorded identity before sideloading. Allow installation
 from the selected source on the test device, then use the package installer or

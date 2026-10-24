@@ -198,3 +198,39 @@ jobs:
             flutter/build/distributions/*.apk
             flutter/build/distributions/*.sha256
           if-no-files-found: error
+
+  release:
+    name: Create draft GitHub Release
+    needs: [validate, windows, android]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          pattern: gitpulse-flutter-v${{ needs.validate.outputs.version }}-*
+          merge-multiple: true
+          path: distributions
+
+      - name: Create GitHub Release (draft)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(distributions/*)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No distribution files to publish." >&2
+            exit 1
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            --draft \
+            --title "GitPulse Flutter v${VERSION}" \
+            --generate-notes \
+            --verify-tag \
+            "${files[@]}"
