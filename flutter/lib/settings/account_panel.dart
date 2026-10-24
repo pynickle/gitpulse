@@ -301,3 +301,25 @@ class _CredentialForm extends StatelessWidget {
     );
   }
 }
+
+/// The account panel as a page shows it while nobody is signed in: centred, and
+/// held to a panel's width so a desktop window does not stretch a sign-in form
+/// across the whole screen.
+///
+/// The shell's Timeline and Follows destinations and the repository pages all
+/// put this in front of a signed-out reader, so the app has one sign-in surface
+/// rather than one per page.
+class AccountGate extends StatelessWidget {
+  const AccountGate({super.key});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: const AccountPanel(),
+      ),
+    ),
+  );
+}

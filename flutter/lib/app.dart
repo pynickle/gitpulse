@@ -118,30 +118,6 @@ class _SignedInTab extends StatelessWidget {
   }
 }
 
-/// What Timeline and Follows show while nobody is signed in: the account this
-/// installation is pointing at and the way into it.
-///
-/// It is the same panel Settings carries, because a reader who has not signed in
-/// yet should not have to learn a second surface for it. A phone gets the panel
-/// where a keyboard leaves it alone; a wide window keeps it a panel rather than a
-/// form stretched across the screen.
-class _SignInGate extends StatelessWidget {
-  const _SignInGate();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: const AccountPanel(),
-        ),
-      ),
-    );
-  }
-}
-
 /// What one destination shows: Settings always, and either the signed-in page or
 /// the account gate on the two destinations that need a session.
 Widget _destination(int index, {required bool signedIn}) => switch (index) {
@@ -149,11 +125,11 @@ Widget _destination(int index, {required bool signedIn}) => switch (index) {
   0 =>
     signedIn
         ? const _SignedInTab(child: TimelineScreen())
-        : const _SignInGate(),
+        : const AccountGate(),
   _ =>
     signedIn
         ? const _SignedInTab(child: ReleaseFollowsScreen())
-        : const _SignInGate(),
+        : const AccountGate(),
 };
 
 class _AppShell extends ConsumerWidget {

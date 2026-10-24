@@ -213,11 +213,11 @@
   "repositoryReleasesNext": "下一页",
   "repositoryReleasesPage": "第 {page} 页",
   "repositoryReleasesDownloads": "{count, plural, other {{downloads} 次下载}}",
-  "repositoryTitle": "仓库",
   "repositoryLoading": "正在加载仓库",
   "repositoryStars": "星标：{count}",
   "repositoryForks": "复刻：{count}",
   "repositoryWatchers": "关注者：{count}",
+  "repositoryDefaultBranch": "默认分支：{branch}",
   "repositoryNoReadme": "此仓库暂无 README 内容。",
   "repositoryUnavailable": "此仓库不可用，或当前账号无权访问。",
   "repositoryPermission": "当前账号无权读取此仓库内容。",
@@ -255,6 +255,13 @@
       "count": {
         "type": "int",
         "format": "decimalPattern"
+      }
+    }
+  },
+  "@repositoryDefaultBranch": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
       }
     }
   }

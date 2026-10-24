@@ -85,6 +85,15 @@ this tree — verify with the Flutter toolchain.
   gate and the repository pages. A setting's copy is its label and its control;
   a description line under either one is a review defect. Account actions are
   tooltip-named icon buttons, so tests address them with `find.byTooltip`.
+- The Repository detail page (`lib/repositories/repository_screen.dart`) is bands
+  on that same 16 gutter, capped at 960 so a README keeps a reading measure: the
+  identity, a full-width rule, then the README under the revision and path it was
+  read from (`main · docs/README.md`). Its app bar passes no title — the band
+  below names the page — and its data line puts a glyph
+  (`presentation/gitpulse_language_colors.dart`'s `LanguageSwatch`, a star, a
+  fork, an eye) where the noun would go, keeping the noun in that fact's
+  `Semantics` label. A README failure stays inside its band; only a repository
+  failure replaces the page.
 - Widget tests run on a fake clock. An awaited `File` or `Directory` call in the
   test body, or the first `build()` of an async notifier, never resumes, so
   `PresentationPreferencesController.selectLanguage` waits forever on

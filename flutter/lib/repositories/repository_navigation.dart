@@ -96,16 +96,22 @@ Future<bool> openNativeContentLink(
   return true;
 }
 
+/// The navigation bar every Repository page shares: Back to whatever opened the
+/// page, and Home to the Timeline.
+///
+/// [title] stays optional because a page whose own content already names itself
+/// — the repository detail, which opens with the repository's identity — must
+/// not print that name a second time a few pixels above it.
 class RepositoryPageAppBar extends StatelessWidget
     implements PreferredSizeWidget {
-  const RepositoryPageAppBar({super.key, required this.title});
-  final String title;
+  const RepositoryPageAppBar({super.key, this.title});
+  final String? title;
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) => AppBar(
-    title: Text(title),
+    title: title == null ? null : Text(title!),
     leading: BackButton(
       onPressed: () {
         if (Navigator.of(context).canPop()) {

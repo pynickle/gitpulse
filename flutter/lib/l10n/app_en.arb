@@ -244,11 +244,11 @@
   "@repositoryReleasesPage": {"placeholders":{"page":{"type":"int"}}},
   "repositoryReleasesDownloads": "{count, plural, =1 {{downloads} download} other {{downloads} downloads}}",
   "@repositoryReleasesDownloads": {"description":"Download count on a Repository Release List row. downloads is already compacted, for example 1.2k; count only chooses the singular.","placeholders":{"count":{"type":"int"},"downloads":{"type":"String"}}},
-  "repositoryTitle": "Repository",
   "repositoryLoading": "Loading repository",
   "repositoryStars": "Stars: {count}",
   "repositoryForks": "Forks: {count}",
   "repositoryWatchers": "Watchers: {count}",
+  "repositoryDefaultBranch": "Default branch: {branch}",
   "repositoryNoReadme": "This repository has no README content.",
   "repositoryUnavailable": "This repository is unavailable or is not accessible to this account.",
   "repositoryPermission": "This account does not have permission to read this repository content.",
@@ -286,6 +286,13 @@
       "count": {
         "type": "int",
         "format": "decimalPattern"
+      }
+    }
+  },
+  "@repositoryDefaultBranch": {
+    "placeholders": {
+      "branch": {
+        "type": "String"
       }
     }
   }

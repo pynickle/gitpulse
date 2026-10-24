@@ -1,4 +1,4 @@
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
 
 /// GitHub language colors shared with the web palette in
 /// `app/utils/languageColors.ts`, including that palette's fallback.
@@ -149,3 +149,29 @@ Color languageColor(String? language) {
 
 Color _color(String hex) =>
     Color(0xFF000000 | int.parse(hex.substring(1), radix: 16));
+
+/// The one language mark the app draws: a disc of the palette color above.
+///
+/// It is silent to assistive technology, because the language's own name is
+/// always beside it in every surface that shows it.
+class LanguageSwatch extends StatelessWidget {
+  const LanguageSwatch({super.key, required this.language});
+
+  final String language;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: 9,
+        height: 9,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: languageColor(language),
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}

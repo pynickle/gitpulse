@@ -36,7 +36,12 @@ Future<FakeSessionController> pumpRepository(
   WidgetTester tester, {
   Map<String, FutureOr<BackendResult> Function()> handlers = const {},
   Future<bool> Function(Uri)? launchBrowser,
+  Size size = const Size(800, 600),
+  TextScaler textScaler = TextScaler.noScaling,
 }) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   final session =
       FakeSessionController(
           SessionState(
@@ -67,6 +72,10 @@ Future<FakeSessionController> pumpRepository(
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
         home: const RepositoryScreen(owner: 'octo', repository: 'app'),
       ),
     ),
@@ -320,22 +329,81 @@ void main() {
       );
     },
   );
-  testWidgets('repository API renders canonical identity, metrics and README', (
+  testWidgets(
+    'repository API renders the identity band, the data line and the README',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpRepository(tester);
+      // The identity is one selectable name: the owner muted, the repository's
+      // own name carrying the weight.
+      expect(
+        find.textContaining('canonical/project', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text('A useful project'), findsOneWidget);
+      // The data line shows values under glyphs; the nouns a reader would
+      // otherwise read five times survive only where a screen reader hears them.
+      expect(find.text('Dart'), findsOneWidget);
+      expect(find.text('125'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Stars: 125')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Forks: 7')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Watchers: 4')), findsOneWidget);
+      // The README band names the revision and the file, then renders it.
+      expect(find.text('main · docs/README.md'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp('Default branch: main')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Welcome to this project.', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text('Repository releases'), findsOneWidget);
+      semantics.dispose();
+    },
+  );
+
+  testWidgets(
+    'the bar above the identity carries navigation and no page title',
+    (tester) async {
+      await pumpRepository(tester);
+      // The band below already names the page, so the bar renders no title.
+      expect(tester.widget<AppBar>(find.byType(AppBar)).title, isNull);
+      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byTooltip('Home'), findsOneWidget);
+    },
+  );
+
+  testWidgets('the identity band wraps inside a phone at a large text scale', (
     tester,
   ) async {
-    await pumpRepository(tester);
-    expect(find.text('canonical/project'), findsOneWidget);
-    expect(find.text('A useful project'), findsOneWidget);
-    expect(find.text('Stars: 125'), findsOneWidget);
-    expect(find.text('Forks: 7'), findsOneWidget);
-    expect(find.text('Watchers: 4'), findsOneWidget);
-    expect(find.text('Dart'), findsOneWidget);
-    expect(
-      find.textContaining('Welcome to this project.', findRichText: true),
-      findsOneWidget,
+    await pumpRepository(
+      tester,
+      size: const Size(360, 740),
+      textScaler: const TextScaler.linear(1.8),
     );
+    expect(tester.takeException(), isNull);
+    expect(find.text('A useful project'), findsOneWidget);
     expect(find.text('Repository releases'), findsOneWidget);
   });
+
+  for (final (size, left) in [
+    // A 1440 window centres the 960-wide page, which pads its own 16 inside.
+    (const Size(1440, 900), 240.0 + 16),
+    // A phone has nowhere to centre: the page starts at the shared gutter.
+    (const Size(360, 740), 16.0),
+  ]) {
+    testWidgets('the page holds one reading measure at ${size.width}', (
+      tester,
+    ) async {
+      await pumpRepository(tester, size: size);
+      final header = tester.getRect(find.text('main · docs/README.md'));
+      expect(header.left, closeTo(left, 1));
+      expect(header.right, closeTo(size.width - left, 1));
+    });
+  }
 
   testWidgets(
     'repository and its releases return to the original release and timeline',

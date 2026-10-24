@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_language_colors.dart';
 import '../repositories/repository_navigation.dart';
 import '../timeline/timeline_models.dart';
-import 'language_colors.dart';
 import 'release_follows_dto.dart';
 import 'release_follows_state.dart';
 
@@ -407,28 +407,6 @@ class FollowRowDivider extends StatelessWidget {
     endIndent: releaseFollowsPadding,
     color: Theme.of(context).dividerColor,
   );
-}
-
-class LanguageSwatch extends StatelessWidget {
-  const LanguageSwatch({super.key, required this.language});
-
-  final String language;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExcludeSemantics(
-      child: SizedBox(
-        width: 9,
-        height: 9,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: languageColor(language),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class FollowProblemNotice extends StatelessWidget {
