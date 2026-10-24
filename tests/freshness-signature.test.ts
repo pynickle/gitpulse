@@ -6,26 +6,21 @@ import {
 } from '../shared/utils/freshness';
 
 describe('freshness signatures', () => {
-  test('normalizes object key order', () => {
-    expect(createFreshnessSignature({ b: 2, a: 1 })).toBe(createFreshnessSignature({ a: 1, b: 2 }));
+  test('sorts object keys', () => {
+    expect(createFreshnessSignature({ b: 2, a: 1 })).toBe('{"a":1,"b":2}');
   });
 
-  test('builds collection signatures from stable item markers', () => {
-    const first = createCollectionFreshnessSignature(
-      [
-        { id: 1, title: 'ignored', updated_at: '2026-06-15T10:00:00Z' },
-        { id: 2, body: 'ignored', updated_at: '2026-06-15T09:00:00Z' },
-      ],
-      { totalCount: 2 }
+  test('marks a collection by item identity and update time', () => {
+    expect(
+      createCollectionFreshnessSignature(
+        [
+          { id: 1, title: 'ignored', updated_at: '2026-06-15T10:00:00Z' },
+          { id: 2, body: 'ignored', updatedAt: '2026-06-15T09:00:00Z' },
+        ],
+        { totalCount: 2 }
+      )
+    ).toBe(
+      '{"items":[{"id":1,"sha":null,"state":null,"updated":"2026-06-15T10:00:00Z"},{"id":2,"sha":null,"state":null,"updated":"2026-06-15T09:00:00Z"}],"totalCount":2}'
     );
-    const second = createCollectionFreshnessSignature(
-      [
-        { id: 1, title: 'changed but ignored', updated_at: '2026-06-15T10:00:00Z' },
-        { id: 2, body: 'changed but ignored', updated_at: '2026-06-15T09:00:00Z' },
-      ],
-      { totalCount: 2 }
-    );
-
-    expect(first).toBe(second);
   });
 });

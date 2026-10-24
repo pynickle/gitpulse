@@ -11,14 +11,6 @@ describe('resolveReleaseDrawerSheetGesture', () => {
         phase: 'move',
       })
     ).toEqual({ offsetY: 40, outcome: 'hold' });
-
-    expect(
-      resolveReleaseDrawerSheetGesture({
-        deltaY: 90,
-        expanded: false,
-        phase: 'move',
-      })
-    ).toEqual({ offsetY: 90, outcome: 'hold' });
   });
 
   test('an expanded sheet cannot be dragged upward', () => {

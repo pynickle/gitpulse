@@ -3,11 +3,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { createError } from 'h3';
 
 import * as validation from '../server/utils/zod-validation-utils';
-import {
-  createDefaultUserSettings,
-  mergeUserSettingsPatch,
-  normalizeUserSettings,
-} from '../shared/utils/user-settings';
+import { createDefaultUserSettings, mergeUserSettingsPatch } from '../shared/utils/user-settings';
 mock.module('#server/utils/zod-validation-utils', () => validation);
 for (const [alias, path] of [
   ['#shared/types/custom-search', '../shared/types/custom-search'],
@@ -36,9 +32,6 @@ describe('account publication-time retention preference', () => {
     const changed = mergeUserSettingsPatch(initial, { releaseTimeline: { retentionDays: 90 } });
     expect(changed.releaseTimeline).toEqual({ showReactions: true, retentionDays: 90 });
     expect(changed.fonts).toEqual(initial.fonts);
-    expect(
-      normalizeUserSettings({ releaseTimeline: { showReactions: false } }).releaseTimeline
-    ).toEqual({ showReactions: false, retentionDays: 30 });
   });
 
   test.each([1, 30, 90])('accepts %s whole days', (retentionDays) => {

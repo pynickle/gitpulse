@@ -18,7 +18,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 - **Pre-commit verification** (matches CI intent): `bun run fmt:check && bun run lint && bunx nuxi typecheck`.
 - `bun run build` is **intentionally reserved for CI** — do not invoke locally unless asked. `bun run generate` is the static export, not a build.
-- **Root CI has no web test job** (format, lint, typecheck, extension-typecheck, build only); the separate Flutter CI runs Flutter tests. Run `bun test` and `bun run extension:test` locally before pushing.
+- **Root CI has no web test job** (format, lint, typecheck, extension-typecheck, build only); the separate Flutter CI runs Flutter tests. Run `bun test --parallel` and `bun run extension:test` locally before pushing. `--parallel` isolates each file, so a test must install its own `mock.module` aliases before importing the module under test.
 - The extension is a separate WXT package; root `extension:*` scripts are wrappers. After a clean checkout, `cd extension && bun install` may be needed for WXT/editor state.
 
 ## Layout & Wiring
@@ -80,9 +80,9 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Testing
 
-- Root: `bun test` (`tests/`). Extension: `bun run extension:test` (`extension/tests/`); extension typecheck: `bun run extension:typecheck`.
+- Root: `bun test --parallel` (`tests/`). Extension: `bun run extension:test` (`extension/tests/`); extension typecheck: `bun run extension:typecheck`.
 - Timeline/detail response shapes and launch GitHub URL mappings are the highest-risk surfaces; re-verify against real GitHub payloads after changes, and cover new launch mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
-- Verify UI and layout changes with `bun test`, `bun run lint`, and `bunx nuxi typecheck`.
+- Verify UI and layout changes with `bun test --parallel`, `bun run lint`, and `bunx nuxi typecheck`.
 - Drive a real browser — Chrome DevTools, browser-use, or clicking through `bun run dev` — only when the user explicitly asks for browser testing; do not start the dev server on your own initiative.
 
 ## Anti-Patterns (High-Miss)

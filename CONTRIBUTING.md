@@ -76,7 +76,7 @@ Run the core quality checks from the repository root:
 bun run fmt:check
 bun run lint
 bunx nuxi typecheck
-bun test
+bun test --parallel
 ```
 
 If you changed the browser extension, also run:

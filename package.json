@@ -15,6 +15,7 @@
     "extension:typecheck": "bun run --cwd extension typecheck",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "test": "bun test --parallel",
     "postinstall": "nuxt prepare",
     "prepare": "prek install",
     "lint": "bunx oxlint ./ --type-aware --ignore-pattern extension/ --ignore-pattern flutter/",

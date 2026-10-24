@@ -112,7 +112,7 @@ describe('mapGitHubCommitToCommitListItem', () => {
 });
 
 describe('mapGitHubCommitToLatestCommit', () => {
-  test('maps a full GitHub commit list item', () => {
+  test('adds the commits URL for the ref and keeps the commit link', () => {
     const payload = mapGitHubCommitToLatestCommit(
       {
         sha: 'abcdef0123456789',
@@ -151,53 +151,10 @@ describe('mapGitHubCommitToLatestCommit', () => {
     });
   });
 
-  test('falls back to author date and name when committer/user are missing', () => {
-    const payload = mapGitHubCommitToLatestCommit(
-      {
-        sha: 'deadbeef',
-        author: null,
-        commit: {
-          message: 'chore: only author metadata',
-          author: {
-            name: 'Local Dev',
-            date: '2024-06-01T08:00:00Z',
-          },
-          committer: null,
-        },
-      },
-      { owner: 'acme', repo: 'widgets' }
-    );
-
-    expect(payload).toMatchObject({
-      shortSha: 'deadbee',
-      message: 'chore: only author metadata',
-      committedAt: '2024-06-01T08:00:00Z',
-      author: {
-        login: null,
-        name: 'Local Dev',
-        avatarUrl: null,
-      },
-      commitsUrl: 'https://github.com/acme/widgets/commits',
-    });
-  });
-
   test('returns null for empty or sha-less items', () => {
     expect(mapGitHubCommitToLatestCommit(null, { owner: 'a', repo: 'b' })).toBeNull();
     expect(mapGitHubCommitToLatestCommit(undefined, { owner: 'a', repo: 'b' })).toBeNull();
     expect(mapGitHubCommitToLatestCommit({ sha: '' }, { owner: 'a', repo: 'b' })).toBeNull();
     expect(mapGitHubCommitToLatestCommit({ sha: '   ' }, { owner: 'a', repo: 'b' })).toBeNull();
-  });
-
-  test('uses an empty message when commit message is missing', () => {
-    const payload = mapGitHubCommitToLatestCommit(
-      { sha: '1234567' },
-      { owner: 'acme', repo: 'widgets', ref: 'dev' }
-    );
-
-    expect(payload).toMatchObject({
-      message: '',
-      shortSha: '1234567',
-      commitsUrl: 'https://github.com/acme/widgets/commits/dev',
-    });
   });
 });

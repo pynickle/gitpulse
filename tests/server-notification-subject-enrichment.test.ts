@@ -1,9 +1,11 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import * as githubGraphqlUtils from '../server/utils/github-graphql-utils';
 import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
 
+mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#shared/types/linked-pull-requests', () => linkedPullRequestTypes);
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/pr-checks', () => prChecks);
@@ -11,7 +13,6 @@ mock.module('#shared/utils/pr-checks', () => prChecks);
 const validationUtils = await import('../server/utils/notification-subject-state-validation-utils');
 const linkedPullRequestGraphql = await import('../server/utils/linked-pull-request-graphql-utils');
 const checkRollupGraphql = await import('../server/utils/pr-check-rollup-graphql-utils');
-const githubGraphqlUtils = await import('../server/utils/github-graphql-utils');
 
 let requestBody: unknown;
 let graphQLRequest: (query: string, variables: Record<string, unknown>) => Promise<unknown>;
@@ -38,7 +39,6 @@ let routedError: unknown;
 mock.module('#server/utils/notification-subject-state-validation-utils', () => validationUtils);
 mock.module('#server/utils/linked-pull-request-graphql-utils', () => linkedPullRequestGraphql);
 mock.module('#server/utils/pr-check-rollup-graphql-utils', () => checkRollupGraphql);
-mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#server/utils/github-auth-utils', () => ({
   throwGitHubRouteError: (error: unknown) => {
     routedError = error;
