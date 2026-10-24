@@ -63,11 +63,15 @@ this tree — verify with the Flutter toolchain.
   changes, and keep `applyFilters` request-free.
 - Follow edits send only `followedRepositories` to `PUT /api/settings`
   (100 available / 150 stored limits) so unrelated preferences survive.
-- Language and appearance are **device-local presentation preferences**
+- Language, appearance, and Followed Repository View are **device-local presentation preferences**
   (`lib/presentation/`), stored in `presentation_preferences.json` beside — never
-  inside — the timeline database. They apply through `MaterialApp` (`locale`,
-  `themeMode`) before connection or sign-in, must survive clear-cache, and have
-  controls in Settings and the connection screen. Add new page copy to both ARB
+  inside — the timeline database. All three survive clear-cache. Language and
+  appearance apply through `MaterialApp` (`locale`, `themeMode`) before
+  connection or sign-in, with controls in Settings and the connection screen; the view
+  control stays in Followed Repositories. All three share the presentation
+  controller's save queue; the followed-view provider is read-only. View save
+  failures stay silent, and the old view text file is unused (ADR 0022).
+  Add new page copy to both ARB
   files; use `gitPulseTheme` for app chrome and `GitPulseLoadingView` /
   `GitPulseMessageView` for page-level loading, empty, and error states instead
   of a second look. Format dates through `gitpulse_formatting.dart`; give count

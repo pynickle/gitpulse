@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/follows/followed_repository_view.dart'
+    show followedRepositoryViewProvider;
 import 'package:gitpulse/presentation/presentation_preferences.dart';
 import 'package:gitpulse/presentation/presentation_preferences_controller.dart';
 import 'package:gitpulse/presentation/presentation_preferences_store.dart';
@@ -44,6 +46,7 @@ void main() {
         PresentationPreferences.fromJson(const {
           'language': 'fr',
           'appearance': 3,
+          'followedRepositoryView': 'grid',
         }),
         const PresentationPreferences(),
       );
@@ -54,6 +57,13 @@ void main() {
       expect(
         PresentationPreferences.fromJson('not a preferences map'),
         const PresentationPreferences(),
+      );
+      expect(
+        PresentationPreferences.fromJson(const {
+          'language': 'en',
+          'followedRepositoryView': false,
+        }),
+        const PresentationPreferences(language: AppLanguage.english),
       );
     });
 
@@ -66,6 +76,35 @@ void main() {
       expect(
         PresentationPreferences.fromJson(preferences.toJson()),
         preferences,
+      );
+    });
+
+    test('stores the followed view alongside language and appearance', () {
+      final preferences = PresentationPreferences.fromJson(const {
+        'language': 'zh',
+        'appearance': 'dark',
+        'followedRepositoryView': 'detailed',
+      });
+
+      expect(preferences.language, AppLanguage.simplifiedChinese);
+      expect(preferences.appearance, AppAppearance.dark);
+      expect(
+        preferences.followedRepositoryView,
+        FollowedRepositoryView.detailed,
+      );
+      expect(preferences.toJson(), {
+        'language': 'zh',
+        'appearance': 'dark',
+        'followedRepositoryView': 'detailed',
+      });
+      expect(
+        preferences.copyWith(
+          followedRepositoryView: FollowedRepositoryView.compact,
+        ),
+        const PresentationPreferences(
+          language: AppLanguage.simplifiedChinese,
+          appearance: AppAppearance.dark,
+        ),
       );
     });
   });
@@ -127,11 +166,206 @@ void main() {
         ),
       );
     });
+
+    test(
+      'ignores the legacy view file when the shared field is absent',
+      () async {
+        final legacy = File(
+          p.join(directory.path, 'followed_repository_view.txt'),
+        );
+        await legacy.writeAsString('detailed');
+        await file.writeAsString('{"language":"en","appearance":"dark"}');
+
+        final preferences = await store.read();
+
+        expect(preferences.language, AppLanguage.english);
+        expect(preferences.appearance, AppAppearance.dark);
+        expect(
+          preferences.followedRepositoryView,
+          FollowedRepositoryView.compact,
+        );
+      },
+    );
   });
 
   group('PresentationPreferencesController', () {
+    test('silent view failures preserve existing appearance feedback until a save succeeds', () async {
+      final store = _ControlledStore(
+        readResult: () async => const PresentationPreferences(),
+        writeError: const FileSystemException('read-only device'),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          presentationPreferencesStoreProvider.overrideWithValue(store),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(presentationPreferencesProvider.future);
+      final controller = container.read(
+        presentationPreferencesProvider.notifier,
+      );
+
+      await controller.selectAppearance(AppAppearance.dark);
+      expect(
+        container.read(presentationPreferencesStateProvider).rememberFailed,
+        isTrue,
+      );
+      await controller.selectFollowedRepositoryView(
+        FollowedRepositoryView.detailed,
+      );
+      expect(
+        container.read(presentationPreferencesStateProvider).rememberFailed,
+        isTrue,
+      );
+
+      store.writeError = null;
+      await controller.selectFollowedRepositoryView(
+        FollowedRepositoryView.detailed,
+      );
+      expect(store.written, isEmpty);
+      expect(
+        container.read(presentationPreferencesStateProvider).rememberFailed,
+        isTrue,
+      );
+
+      await controller.selectFollowedRepositoryView(
+        FollowedRepositoryView.compact,
+      );
+      expect(store.written.last.appearance, AppAppearance.dark);
+      expect(
+        container.read(presentationPreferencesStateProvider).rememberFailed,
+        isFalse,
+      );
+    });
+
+    test(
+      'a slow earlier save cannot overwrite later choices after reopening',
+      () async {
+        final directory = await Directory.systemTemp.createTemp(
+          'gitpulse-preferences-queue-',
+        );
+        addTearDown(() => directory.delete(recursive: true));
+        final file = File(
+          p.join(directory.path, 'presentation_preferences.json'),
+        );
+        final store = _DelayedWriteStore(file);
+        addTearDown(() {
+          if (!store.release.isCompleted) store.release.complete();
+        });
+        final container = ProviderContainer(
+          overrides: [
+            presentationPreferencesStoreProvider.overrideWithValue(store),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(presentationPreferencesProvider.future);
+        final controller = container.read(
+          presentationPreferencesProvider.notifier,
+        );
+
+        final view = controller.selectFollowedRepositoryView(
+          FollowedRepositoryView.detailed,
+        );
+        await store.entered.future;
+        final language = controller.selectLanguage(
+          AppLanguage.simplifiedChinese,
+        );
+        final appearance = controller.selectAppearance(AppAppearance.dark);
+        store.release.complete();
+        await Future.wait([view, language, appearance]);
+
+        final reopened = PresentationPreferencesStore(() async => file);
+        expect(
+          await reopened.read(),
+          const PresentationPreferences(
+            language: AppLanguage.simplifiedChinese,
+            appearance: AppAppearance.dark,
+            followedRepositoryView: FollowedRepositoryView.detailed,
+          ),
+        );
+      },
+    );
+
+    test(
+      'the followed view reflects the shared restored and current choices',
+      () async {
+        final store = _ControlledStore(
+          readResult: () async => const PresentationPreferences(
+            followedRepositoryView: FollowedRepositoryView.detailed,
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            presentationPreferencesStoreProvider.overrideWithValue(store),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(presentationPreferencesProvider.future);
+
+        expect(
+          container.read(followedRepositoryViewProvider),
+          FollowedRepositoryView.detailed,
+        );
+
+        await container
+            .read(presentationPreferencesProvider.notifier)
+            .selectFollowedRepositoryView(FollowedRepositoryView.compact);
+
+        expect(
+          container.read(followedRepositoryViewProvider),
+          FollowedRepositoryView.compact,
+        );
+      },
+    );
+
+    test(
+      'a view save failure stays silent and a later change remembers it',
+      () async {
+        final store = _ControlledStore(
+          readResult: () async => const PresentationPreferences(),
+          writeError: const FileSystemException('read-only device'),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            presentationPreferencesStoreProvider.overrideWithValue(store),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(presentationPreferencesProvider.future);
+        final controller = container.read(
+          presentationPreferencesProvider.notifier,
+        );
+
+        await controller.selectFollowedRepositoryView(
+          FollowedRepositoryView.detailed,
+        );
+
+        final failed = container.read(presentationPreferencesStateProvider);
+        expect(
+          failed.preferences.followedRepositoryView,
+          FollowedRepositoryView.detailed,
+        );
+        expect(failed.rememberFailed, isFalse);
+
+        store.writeError = null;
+        await controller.selectLanguage(AppLanguage.english);
+
+        expect(
+          store.written.last,
+          const PresentationPreferences(
+            language: AppLanguage.english,
+            followedRepositoryView: FollowedRepositoryView.detailed,
+          ),
+        );
+        expect(
+          container.read(presentationPreferencesStateProvider).rememberFailed,
+          isFalse,
+        );
+      },
+    );
+
     for (final languageFirst in [true, false]) {
-      test('startup choices preserve both fields and reopen '
+      test('startup choices preserve all three fields and reopen '
           '(${languageFirst ? 'language' : 'appearance'} first)', () async {
         final directory = await Directory.systemTemp.createTemp(
           'gitpulse-presentation-startup-',
@@ -163,10 +397,16 @@ void main() {
         final selections = languageFirst
             ? [
                 controller.selectLanguage(AppLanguage.simplifiedChinese),
+                controller.selectFollowedRepositoryView(
+                  FollowedRepositoryView.detailed,
+                ),
                 controller.selectAppearance(AppAppearance.dark),
               ]
             : [
                 controller.selectAppearance(AppAppearance.dark),
+                controller.selectFollowedRepositoryView(
+                  FollowedRepositoryView.detailed,
+                ),
                 controller.selectLanguage(AppLanguage.simplifiedChinese),
               ];
 
@@ -176,6 +416,7 @@ void main() {
         const expected = PresentationPreferences(
           language: AppLanguage.simplifiedChinese,
           appearance: AppAppearance.dark,
+          followedRepositoryView: FollowedRepositoryView.detailed,
         );
         final applied = container
             .read(presentationPreferencesProvider)
@@ -183,6 +424,7 @@ void main() {
             .preferences;
         expect(applied.language, expected.language);
         expect(applied.appearance, expected.appearance);
+        expect(applied.followedRepositoryView, FollowedRepositoryView.detailed);
         final reopened = PresentationPreferencesStore(() async => file);
         expect(await reopened.read(), expected);
       });
@@ -264,6 +506,22 @@ class _DelayedReadStore extends PresentationPreferencesStore {
   Future<PresentationPreferences> read() async {
     await loaded;
     return super.read();
+  }
+}
+
+class _DelayedWriteStore extends PresentationPreferencesStore {
+  _DelayedWriteStore(File file) : super(() async => file);
+
+  final entered = Completer<void>();
+  final release = Completer<void>();
+
+  @override
+  Future<void> write(PresentationPreferences preferences) async {
+    if (!entered.isCompleted) {
+      entered.complete();
+      await release.future;
+    }
+    await super.write(preferences);
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/followed_repository_view.dart';
+import 'package:gitpulse/presentation/presentation_preferences_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -130,8 +131,8 @@ void main() {
       await auth.connectTo(tester, 'https://gitpulse.example');
       await tester.runAsync(
         () => container
-            .read(followedRepositoryViewProvider.notifier)
-            .select(FollowedRepositoryView.detailed),
+            .read(presentationPreferencesProvider.notifier)
+            .selectFollowedRepositoryView(FollowedRepositoryView.detailed),
       );
       final cacheEntered = Completer<void>();
       Future<void>? transaction;

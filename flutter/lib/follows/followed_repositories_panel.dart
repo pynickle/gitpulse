@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/presentation_preferences_controller.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
 import 'release_follows_widgets.dart';
@@ -42,7 +43,13 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                     ? l10n.followsViewDetailed
                     : l10n.followsViewCompact,
                 onPressed: () => unawaited(
-                  ref.read(followedRepositoryViewProvider.notifier).toggle(),
+                  ref
+                      .read(presentationPreferencesProvider.notifier)
+                      .selectFollowedRepositoryView(
+                        detailed
+                            ? FollowedRepositoryView.compact
+                            : FollowedRepositoryView.detailed,
+                      ),
                 ),
                 icon: _FollowedViewIcon(detailed: detailed),
               ),

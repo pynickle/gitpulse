@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'presentation_preferences.dart';
 import 'presentation_preferences_store.dart';
 
-/// The remembered presentation choices, plus whether the last change could not
-/// be written to this device.
+/// The current presentation choices and language or appearance save feedback.
 class PresentationPreferencesState {
   const PresentationPreferencesState({
     this.preferences = const PresentationPreferences(),
@@ -23,10 +22,10 @@ class PresentationPreferencesState {
   );
 }
 
-/// Applies language and appearance immediately, then remembers them locally.
+/// The shared owner of this installation's presentation choices.
 ///
-/// A failed local write never blocks the app: the choice stays applied for this
-/// run and the failure is reported instead of silently reverting.
+/// A failed local write preserves the choice for this run. Language and
+/// appearance report failures; Followed Repository View failures stay silent.
 final presentationPreferencesProvider =
     AsyncNotifierProvider<
       PresentationPreferencesController,
@@ -69,9 +68,16 @@ class PresentationPreferencesController
   Future<void> selectAppearance(AppAppearance appearance) =>
       _select((preferences) => preferences.copyWith(appearance: appearance));
 
+  Future<void> selectFollowedRepositoryView(FollowedRepositoryView view) =>
+      _select(
+        (preferences) => preferences.copyWith(followedRepositoryView: view),
+        reportFailure: false,
+      );
+
   Future<void> _select(
-    PresentationPreferences Function(PresentationPreferences) update,
-  ) async {
+    PresentationPreferences Function(PresentationPreferences) update, {
+    bool reportFailure = true,
+  }) async {
     // Wait for the saved preferences, then read the latest state: another
     // choice waiting on the same read may already have updated it.
     if (state.value == null) await future;
@@ -79,12 +85,20 @@ class PresentationPreferencesController
     final current = state.requireValue;
     final preferences = update(current.preferences);
     if (preferences == current.preferences) return;
-    state = AsyncData(PresentationPreferencesState(preferences: preferences));
-    await _save(preferences);
+    state = AsyncData(
+      current.copyWith(
+        preferences: preferences,
+        rememberFailed: reportFailure ? false : current.rememberFailed,
+      ),
+    );
+    await _save(preferences, reportFailure: reportFailure);
   }
 
   /// Saves in order, so a slow earlier write cannot resurrect an older choice.
-  Future<void> _save(PresentationPreferences preferences) {
+  Future<void> _save(
+    PresentationPreferences preferences, {
+    required bool reportFailure,
+  }) {
     final save = _pending.then((_) async {
       try {
         await ref.read(presentationPreferencesStoreProvider).write(preferences);
@@ -94,7 +108,7 @@ class PresentationPreferencesController
         }
       } catch (_) {
         final current = state.value;
-        if (ref.mounted && current != null) {
+        if (reportFailure && ref.mounted && current != null) {
           state = AsyncData(current.copyWith(rememberFailed: true));
         }
       }

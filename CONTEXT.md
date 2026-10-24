@@ -2,6 +2,12 @@
 
 GitPulse presents GitHub activity for focused review and follow-up in one dashboard.
 
+## Flutter Presentation
+
+**Device Presentation Preferences**:
+The language, appearance, and Followed Repository View chosen for one Flutter app installation, shared across its accounts and backends. These choices survive sign-out and account or backend changes, and are independent of another installation's choices.
+_Avoid_: account settings when referring to these Flutter presentation choices
+
 ## Integration
 
 **Browser Launch Link**:

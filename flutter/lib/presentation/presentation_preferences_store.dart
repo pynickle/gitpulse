@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'presentation_preferences.dart';
 
-/// Where this installation remembers its language and appearance.
+/// The file containing this installation's device presentation preferences.
 ///
 /// A small independent file: it lives beside, but never inside, the disposable
 /// release timeline database, so clearing that cache cannot erase it.

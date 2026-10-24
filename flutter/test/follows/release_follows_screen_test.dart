@@ -373,7 +373,7 @@ void main() {
         'owner': 'new',
         'name': 'project',
       };
-      await auth.mountApp(tester, server);
+      await auth.mountApp(tester, server, presentationFile: _preferencesFile());
       await auth.connectTo(tester, 'https://gitpulse.example');
       await auth.submitField(
         tester,
@@ -389,7 +389,7 @@ void main() {
       expect(find.text('new/project'), findsNothing);
       expect(find.textContaining('Renamed from'), findsNothing);
       await tester.tap(find.byTooltip('Compact'));
-      await tester.pumpAndSettle();
+      await _settleUi(tester);
       expect(find.text('new/project'), findsOneWidget);
       expect(find.text('old/project'), findsNothing);
       expect(find.textContaining('Renamed from'), findsNothing);
@@ -692,7 +692,9 @@ void main() {
         'primaryLanguage': 'Python',
         'starCount': 5600,
       };
-      await _openFollows(tester, server);
+      final preferences = _preferencesFile();
+      await _openFollows(tester, server, presentationFile: preferences);
+      await _settleUi(tester);
       expect(find.byTooltip('Compact'), findsOneWidget);
       expect(find.text('Compact'), findsNothing);
       expect(find.text('Detailed'), findsNothing);
@@ -700,7 +702,7 @@ void main() {
       expect(_metadataRequestCount(server), 0);
 
       await tester.tap(find.byTooltip('Compact'));
-      await tester.pumpAndSettle();
+      await _settleUi(tester);
       expect(find.byTooltip('Detailed'), findsOneWidget);
       expect(find.text('Detailed'), findsNothing);
       expect(find.text('Notes for followers'), findsOneWidget);
@@ -732,6 +734,13 @@ void main() {
       expect(find.byTooltip('Detailed'), findsOneWidget);
       expect(find.text('Notes for followers'), findsOneWidget);
       expect(server.settings['releaseFollows'], isNull);
+
+      await _settleUi(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _openFollows(tester, server, presentationFile: preferences);
+      await _settleUi(tester);
+      expect(find.byTooltip('Detailed'), findsOneWidget);
+      expect(find.text('Notes for followers'), findsOneWidget);
     },
   );
 
