@@ -26,6 +26,22 @@ this tree — verify with the Flutter toolchain.
    Nitro handlers with separate browser/app cookie jars; only external GitHub
    success is simulated.
 
+## UI — read the design system first
+
+Before changing any widget, layout, color, type, spacing or interaction state,
+read `design-system/gitpulse/MASTER.md` and the matching batch in
+`design-system/gitpulse/PROGRESS.md` (paths relative to this package).
+
+- MASTER owns typography roles, color roles, spacing/radius/stroke/icon tokens,
+  component density, interaction states, and the scenario exceptions. Do not
+  invent a value it does not name; do not read `theme.dividerColor` for an
+  internal rule.
+- A page-level override, if one exists at `design-system/gitpulse/pages/<page>.md`,
+  wins over MASTER for that page.
+- MASTER §12 lists choices that look inconsistent on purpose. Do not "fix" them;
+  a new exception enters that table before the code, and one that contradicts a
+  rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scope.md`).
+
 ## Server contracts — change both sides together
 
 - `server/api/native/capabilities.get.ts` mirrors provider availability from

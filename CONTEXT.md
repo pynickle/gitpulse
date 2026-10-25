@@ -8,6 +8,26 @@ GitPulse presents GitHub activity for focused review and follow-up in one dashbo
 The language, appearance, and Followed Repository View chosen for one Flutter app installation, shared across its accounts and backends. These choices survive sign-out and account or backend changes, and are independent of another installation's choices.
 _Avoid_: account settings when referring to these Flutter presentation choices
 
+**Band**:
+One full-width horizontal section of a page, owning a single job and ending where a rule or a change of surface says it ends.
+_Avoid_: section, block, card row
+
+**Gutter**:
+The one left and right inset that every band, table row and card list on a page shares, so surfaces on different pages line up with each other.
+_Avoid_: padding, margin
+
+**Dense Chrome**:
+The presentation regime of a surface that is operated rather than read — tables, toolbars, cards and lists — where rows and controls are packed for scanning.
+_Avoid_: compact mode, tight layout
+
+**Reading Surface**:
+A surface whose job is to be read, laid out at a line length and rhythm of its own rather than at the density of the chrome around it.
+_Avoid_: document view, article view
+
+**Reading Measure**:
+The maximum line width a Reading Surface allows before it stops growing, so a long line never outruns the eye.
+_Avoid_: max width, content width
+
 ## Integration
 
 **Browser Launch Link**:
