@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_tokens.dart';
+
 /// A page that has nothing to show yet: one progress indicator announced to
 /// assistive technology with the page's own action label.
 class GitPulseLoadingView extends StatelessWidget {
@@ -66,7 +68,7 @@ class GitPulseMessageView extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 32,
+          size: GitPulseIconSize.page,
           color: tone == GitPulseMessageTone.error
               ? theme.colorScheme.error
               : theme.colorScheme.primary,

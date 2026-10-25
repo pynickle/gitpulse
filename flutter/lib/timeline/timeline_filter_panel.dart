@@ -469,10 +469,10 @@ class _RepositorySearch extends StatelessWidget {
         fillColor: scheme.surfaceContainerHigh,
         hintText: l10n.timelineFilterSearchRepositories,
         hintMaxLines: 1,
-        prefixIcon: const Icon(Icons.search, size: 18),
+        prefixIcon: const Icon(Icons.search, size: GitPulseIconSize.inControl),
         prefixIconConstraints: const BoxConstraints(
           minWidth: 32,
-          minHeight: 40,
+          minHeight: GitPulseHeight.compact,
         ),
         suffixIcon: controller.text.isEmpty
             ? null
@@ -482,14 +482,15 @@ class _RepositorySearch extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: onClear,
-                icon: const Icon(Icons.close, size: 18),
+                iconSize: GitPulseIconSize.inControl,
+                icon: const Icon(Icons.close),
               ),
         suffixIconConstraints: const BoxConstraints(
           minWidth: 32,
-          minHeight: 40,
+          minHeight: GitPulseHeight.compact,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        constraints: const BoxConstraints(minHeight: 40),
+        constraints: const BoxConstraints(minHeight: GitPulseHeight.compact),
         border: border,
         enabledBorder: border,
         focusedBorder: border.copyWith(
@@ -556,7 +557,7 @@ class _RepositoryRow extends StatelessWidget {
                         curve: Curves.easeOut,
                         child: Icon(
                           Icons.check_circle,
-                          size: 18,
+                          size: GitPulseIconSize.inControl,
                           color: scheme.primary,
                         ),
                       ),
@@ -641,7 +642,7 @@ class _DateRange extends StatelessWidget {
         ExcludeSemantics(
           child: Icon(
             Icons.event_outlined,
-            size: 16,
+            size: GitPulseIconSize.inline,
             color: scheme.onSurfaceVariant,
           ),
         ),
@@ -667,9 +668,12 @@ class _DateRange extends StatelessWidget {
           IconButton(
             tooltip: l10n.timelineFilterClearDates,
             onPressed: onClear,
-            iconSize: 18,
+            iconSize: GitPulseIconSize.inControl,
             visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            constraints: const BoxConstraints(
+              minWidth: 40,
+              minHeight: GitPulseHeight.compact,
+            ),
             icon: const Icon(Icons.event_busy_outlined),
           )
         else

@@ -23,7 +23,7 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 - [x] `../docs/adr/0023-flutter-press-feedback-scope.md`
 - [x] `../CONTEXT.md` 补 5 个视觉领域词
 
-**下一轮从这里开始：批 3。**
+**下一轮从这里开始：批 4。**
 
 ---
 
@@ -357,8 +357,94 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 **人眼复核**：只有"行内图标按钮"从 18 变 20（或反之）这类 1–2 逻辑像素的差别；若某处明显变大，
 说明语义判错（`inControl` 被当成了 `action`）。
 
-- [ ] 批 3 完成
-- [ ] 实跑命令记录：<!-- 粘贴 -->
+- [x] 批 3 完成（代码与自动验证；**人眼复核待设备端**，见下）
+- [x] 实跑命令记录：
+
+  ```
+  $ flutter analyze
+  Analyzing flutter...
+  No issues found! (ran in 11.2s)
+
+  $ dart format --output=none --set-exit-if-changed lib test
+  Formatted 126 files (0 changed) in 1.35 seconds.   # exit 0
+
+  $ flutter test test/settings test/releases test/timeline/timeline_toolbar_test.dart \
+      test/timeline/timeline_filter_controls_test.dart test/follows --timeout 30s
+  00:36 +132: All tests passed!
+
+  $ flutter test --timeout 30s
+  01:05 +394: All tests passed!
+  ```
+
+  （批 2 之后 393 个测试，本批新增 1 个，共 394。点名的 `follows/*`、`settings/*`、
+  `timeline_toolbar_test.dart`、`timeline_filter_controls_test.dart` 均在该全量跑内并通过。）
+
+  **有视觉变化的两处**——都不是表格之外的额外决定，而是规则本身的要求：
+
+  1. `release_follows_screen.dart` 搜索框内的清除/搜索图标 20 → 18。它们是**控件内的图形**，与工具栏
+     里独立的图标按钮（`action` = 20）不同职责，这正是本批要立的规则。两处从 `Icon(size: 20)` 改为
+     `IconButton(iconSize: …)`：尺寸本来就是按钮的属性，图标不该自带一个。同一形状在
+     `timeline_toolbar.dart`、`timeline_filter_panel.dart`、`native_code_block.dart` 三处清除/复制
+     按钮上一并对齐（字形不变，按钮内槽位 24 → 18）。
+  2. `settings/timeline_cache_settings.dart` 保留天数的输入框 36 → 40。§9 规则 1 说任何可点控件不得
+     低于 40，而本批正在改这一行的图标；把一个已知的规则违反留在原地再宣称"完成"说不过去，故在本批
+     收口。这是**第二个可见变化**（该控件高 4 像素）。
+
+  **表格之外多接的令牌（全部同值，零视觉变化）**，理由与批 0 相同：字面值与令牌成对存在会让
+  一次改动变成多处编辑。
+
+  | 位置 | 接上 |
+  | --- | --- |
+  | `timeline_toolbar.dart`、`timeline_filter_panel.dart` 的 4 条 `minHeight: 40`，以及工具栏第二条行在没有基线文字时的占位 `SizedBox(height: 40)` | `GitPulseHeight.compact` |
+  | `timeline_filter_panel.dart` 日期清除按钮的 `BoxConstraints(40/40)`、`follows/release_follows_widgets.dart` 关注动作按钮的同款约束 | `minHeight: GitPulseHeight.compact`（宽度仍写字面值：§5/§9 没有给控件宽度定义角色，编一个就是新角色） |
+  | `release_drawer.dart` chrome 行 `height: 48` | `GitPulseHeight.standard`（§12 E10 点名 48 的那一行，本批才第一次用上这个令牌） |
+  | `repository_releases_view.dart` 的 `_metaFactIconExtent = 14.0` | `GitPulseIconSize.fact`（与仓库页 `_factIconExtent` 同一职责：图形替代名词，E7） |
+  | `repository_releases_view.dart` 行尾 chevron `size: 20` | `GitPulseIconSize.action`（§15 的 18/20 分界是"输入框内 18、其余 20"，它不是输入框内） |
+
+  `GitPulseIconSize.page` 与 `GitPulseHeight.standard` 在本批之前都没有使用点；接上之后 §16.2
+  要求的"每个新角色至少一个使用点"才成立。接完的结果：`Icon` 的字面 `size` 只剩
+  `follows/release_follows_widgets.dart` 的 `_starGlyph = 12`（登记 3），控件高度不再有字面值
+  （`release_drawer.dart` 抓取把手的 `width: 40` 是 E4 的 affordance 几何，不是控件高；各输入框还留着
+  `minWidth`，因为 §5/§9 没有给控件宽度定义角色，编一个就是新角色）。
+
+  新增测试 `test/follows/release_follows_screen_test.dart` 的一条用例（与批 2 同一手法：挂载真实
+  页面后读**渲染出来的盒子**，不是读源码文本）：搜索框内的清除与搜索图形必须是
+  `GitPulseIconSize.inControl`（18×18），工具栏里独立的排序按钮必须是 `action`（20×20）。
+  开工时先红（`Expected: Size(18,18) / Actual: Size(20,20)`），改完再绿。它是本批唯一可见变化的
+  守卫：谁把输入框内的图形改回 `action`，它就红。
+
+  **人眼复核：未做，留给设备端**（与批 1、批 2 同一处理）。复核点：
+  (1) Follows 搜索框里的两个图标小 2 像素后仍与输入文字平衡；
+  (2) 工具栏里独立的图标按钮没有跟着变小；
+  (3) 设置页保留天数的输入框高了 4 像素后，那一行仍读得出"标签 + 控件"，没有变胖。
+  `AGENTS.md` 规定只在用户明确要求时才驱动真机/浏览器，本轮未启动。
+  回滚点：上面 12 个 `lib/` 文件 + `test/follows/release_follows_screen_test.dart` + 本文。
+
+  **需要先改 MASTER、或属于下一批的四项（登记，不顺手改）**：
+
+  1. **图标按钮的默认尺寸是 24，不是 20。** `IconButton` 的 `effectiveIconSize = iconSize ??
+     IconTheme.of(context).size ?? 24.0`（SDK `icon_button.dart`），而
+     `gitPulseTheme.iconButtonTheme` 不设 `iconSize`。全库只有 5 处写死了 20（本批接完的那几个），
+     其余十几处（`connection_screen.dart`、`followed_repositories_panel.dart`、
+     `repository_releases_view.dart` 的表头、`timeline_toolbar.dart` 的文章/筛选/刷新、
+     `repository_navigation.dart` 的返回键…）都画 24。§8 的 `iconAction = 20` 因此描述的是"已经写死的
+     那些"，不是全应用现状。统一到 20 是**全应用可见**的缩小（24→20），该进一次带人眼复核的批次，
+     做法是在 `gitPulseTheme` 给 `IconButtonThemeData` 的 `ButtonStyle.iconSize` 设一次，而不是改
+     十几处调用点。（评审曾建议给 §8 加一条"本表只描述调用点声明过的尺寸"的规则——没有采纳：
+     §16 只允许改值、加角色、写 ADR 三种动法，给表加一个自我限定不属于任何一种。）
+  2. **§12 E15 的光学 `3` 其实有三处**：`repository_screen.dart` 的 `_factIconGap`、
+     `repository_releases_view.dart` 的 `_metaFactIconGap`、`follows/release_follows_widgets.dart`
+     的 `_starGap`。三处都留在局部命名常量里没动（本批只把 14 接上令牌）；E15 的措辞可以补一句
+     "同类还有两处"，免得下一位评审把其中一处当漏改。
+  3. **`follows/release_follows_widgets.dart` 的 `_starGlyph = 12.0`**：星形代替"stars"这个名词，
+     职责与 `iconFact` 相同，值却小 2，§8 的五个角色里没有它。改 12 → 14 会让 Follows 行的语言列宽
+     （`44 * scale + _starGlyph + _starGap`）一起变，是可见变化，需要 MASTER 先决定"这一行用不用
+     `fact`"，故本批只接 14 那一处。
+  4. **§15 的"同一职责图标 18 vs 20 … 零视觉变化"一行，现在要读作"当时的结论"**：本批把 Follows
+     输入框内的那对 20 明确判给 `inControl`（18），所以那一行不再是对本批之后的描述。§15 是"本轮
+     结论"的快照，§16 没有给"修正一条审计结论"的动法，故只在这里登记，不改 §15。
+     （行尾 chevron 取 `action` 而非 `inControl` 的理由见上面表格最后一行：它是整行的下钻图形，
+     不在输入框内，值也不变；若评审认为应与抽屉里的 chevron 同判，改一个词即可。）
 
 ---
 

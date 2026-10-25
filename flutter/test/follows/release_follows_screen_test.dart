@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 
 import '../session_flow_test.dart' as auth;
@@ -611,6 +612,40 @@ void main() {
       expect(find.text('A project for release followers'), findsOneWidget);
       expect(find.text('Follow releases'), findsNothing);
       expect(find.byIcon(Icons.book_outlined), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a glyph inside the search field is smaller than a standalone one',
+    (tester) async {
+      final server = FollowsServer()..starredRepositories = [repositoryJson()];
+      await _openFollows(tester, server);
+      // The sort direction stands on its own in the toolbar, so it takes the
+      // action size; every glyph the search field carries is a mark inside a
+      // control and takes the smaller one. Read from the rendered box, not from
+      // the argument that asked for it (MASTER §8).
+      expect(
+        tester.getSize(find.byIcon(Icons.arrow_downward)),
+        const Size.square(GitPulseIconSize.action),
+      );
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        auth.fieldLabeled('Repository name or GitHub URL'),
+        'alpha',
+      );
+      await tester.pumpAndSettle();
+      final field = find.byType(TextField);
+      for (final glyph in [Icons.close, Icons.search]) {
+        expect(
+          tester.getSize(
+            find.descendant(of: field, matching: find.byIcon(glyph)),
+          ),
+          const Size.square(GitPulseIconSize.inControl),
+          reason: '$glyph',
+        );
+      }
     },
   );
 

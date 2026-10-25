@@ -99,10 +99,13 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                     fillColor: scheme.surfaceContainerHigh,
                     hintText: l10n.timelineSearchPlaceholder,
                     hintMaxLines: 1,
-                    prefixIcon: const Icon(Icons.search, size: 18),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: GitPulseIconSize.inControl,
+                    ),
                     prefixIconConstraints: const BoxConstraints(
                       minWidth: 36,
-                      minHeight: 40,
+                      minHeight: GitPulseHeight.compact,
                     ),
                     suffixIcon: _query.text.isEmpty
                         ? null
@@ -118,17 +121,20 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                               setState(() {});
                               _change((filters) => filters.copyWith(query: ''));
                             },
-                            icon: const Icon(Icons.close, size: 18),
+                            iconSize: GitPulseIconSize.inControl,
+                            icon: const Icon(Icons.close),
                           ),
                     suffixIconConstraints: const BoxConstraints(
                       minWidth: 36,
-                      minHeight: 40,
+                      minHeight: GitPulseHeight.compact,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 8,
                       vertical: 10,
                     ),
-                    constraints: const BoxConstraints(minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minHeight: GitPulseHeight.compact,
+                    ),
                     border: border,
                     enabledBorder: border,
                     focusedBorder: border.copyWith(
@@ -170,7 +176,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
             children: [
               Expanded(
                 child: baseline == null
-                    ? const SizedBox(height: 40)
+                    ? const SizedBox(height: GitPulseHeight.compact)
                     : Text(
                         baseline,
                         maxLines: 1,

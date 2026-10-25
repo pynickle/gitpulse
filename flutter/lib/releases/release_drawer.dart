@@ -251,7 +251,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                   ),
                 ),
               SizedBox(
-                height: 48,
+                height: GitPulseHeight.standard,
                 child: Row(
                   children: [
                     Expanded(

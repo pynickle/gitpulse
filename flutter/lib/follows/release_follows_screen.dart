@@ -253,10 +253,9 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                                                 _query.clear();
                                                 _changeQuery('');
                                               },
-                                              icon: const Icon(
-                                                Icons.close,
-                                                size: 20,
-                                              ),
+                                              iconSize:
+                                                  GitPulseIconSize.inControl,
+                                              icon: const Icon(Icons.close),
                                             ),
                                           IconButton(
                                             tooltip: l10n.followsSearch,
@@ -269,17 +268,16 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                                                 _query.text.trim().isEmpty
                                                 ? null
                                                 : () => _search(submit: true),
-                                            icon: const Icon(
-                                              Icons.search,
-                                              size: 20,
-                                            ),
+                                            iconSize:
+                                                GitPulseIconSize.inControl,
+                                            icon: const Icon(Icons.search),
                                           ),
                                         ],
                                       ),
                                       suffixIconConstraints:
                                           const BoxConstraints(
                                             minWidth: 44,
-                                            minHeight: 44,
+                                            minHeight: GitPulseHeight.rowMin,
                                           ),
                                     ),
                                   ),
@@ -510,7 +508,7 @@ class _SortControls extends StatelessWidget {
           tooltip: ascending ? ascendingLabel : descendingLabel,
           onPressed: enabled ? onToggleDirection : null,
           visualDensity: VisualDensity.compact,
-          iconSize: 20,
+          iconSize: GitPulseIconSize.action,
           icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
         ),
       ],

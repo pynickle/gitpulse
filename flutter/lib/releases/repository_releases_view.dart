@@ -404,7 +404,7 @@ class _ReleaseRow extends StatelessWidget {
                   ),
                   Icon(
                     Icons.chevron_right,
-                    size: 20,
+                    size: GitPulseIconSize.action,
                     color: scheme.onSurfaceVariant,
                   ),
                 ],
@@ -469,7 +469,7 @@ class _MetaFact extends StatelessWidget {
 
 /// The glyph's size in a fact, and the space between it and the value. Both
 /// belong to the column width a row reserves for the fact.
-const _metaFactIconExtent = 14.0;
+const _metaFactIconExtent = GitPulseIconSize.fact;
 const _metaFactIconGap = 3.0;
 
 /// The muted, tabular style both the fact values and the title's tag share, so

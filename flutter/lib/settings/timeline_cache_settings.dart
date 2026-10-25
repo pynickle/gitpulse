@@ -116,7 +116,9 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                       horizontal: 8,
                       vertical: 9,
                     ),
-                    constraints: const BoxConstraints(minHeight: 36),
+                    constraints: const BoxConstraints(
+                      minHeight: GitPulseHeight.compact,
+                    ),
                     border: border,
                     enabledBorder: border,
                     focusedBorder: border.copyWith(
@@ -163,7 +165,7 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                   child: IconButton.filledTonal(
                     tooltip: l10n.retentionSave,
                     onPressed: policyLocked ? null : _save,
-                    iconSize: 18,
+                    iconSize: GitPulseIconSize.inControl,
                     // A coloured surface answers a press, so this one keeps
                     // Material's wash of its own tone instead of the theme's
                     // shared overlay — which cannot tell the four IconButton
@@ -236,7 +238,10 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                     side: BorderSide(color: scheme.outlineVariant),
                     textStyle: theme.textTheme.bodyMedium,
                   ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
-                  icon: const Icon(Icons.delete_outline, size: 18),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: GitPulseIconSize.inControl,
+                  ),
                   label: Text(l10n.settingsClear),
                 ),
           notes: [

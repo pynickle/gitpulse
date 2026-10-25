@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'native_code_highlighter.dart';
 
 class NativeCodeBlock extends ConsumerWidget {
@@ -105,7 +106,8 @@ class _CodeViewState extends State<_CodeView> {
                       ),
                       IconButton(
                         tooltip: strings.contentCopyCode,
-                        icon: const Icon(Icons.copy, size: 18),
+                        iconSize: GitPulseIconSize.inControl,
+                        icon: const Icon(Icons.copy),
                         onPressed: () => Clipboard.setData(
                           ClipboardData(text: widget.source),
                         ),

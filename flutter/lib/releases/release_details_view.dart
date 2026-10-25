@@ -165,7 +165,7 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
                   children: [
                     Icon(
                       Icons.attach_file,
-                      size: 16,
+                      size: GitPulseIconSize.inline,
                       color: scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
@@ -189,7 +189,7 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
                       duration: const Duration(milliseconds: 180),
                       child: Icon(
                         Icons.expand_more,
-                        size: 18,
+                        size: GitPulseIconSize.inControl,
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
@@ -248,7 +248,7 @@ class _ReleaseAssetRow extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 1),
                   child: Icon(
                     _releaseAssetGlyph(asset.name),
-                    size: 16,
+                    size: GitPulseIconSize.inline,
                     color: scheme.onSurfaceVariant,
                   ),
                 ),

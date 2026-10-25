@@ -127,7 +127,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
                         ExcludeSemantics(
                           child: Icon(
                             Icons.attach_file,
-                            size: 16,
+                            size: GitPulseIconSize.inline,
                             color: scheme.onSurfaceVariant,
                           ),
                         ),

@@ -6,6 +6,7 @@ import '../connection/connection_screen.dart'
     show connectionProblemLabel, showBackendAddressEditor;
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_setting_rows.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
 
@@ -253,7 +254,7 @@ class _AccountAction extends StatelessWidget {
       onPressed: onPressed,
       // A header action, sized as the Followed Repositories panel's header
       // actions are: a 20dp mark inside Material's full touch target.
-      iconSize: 20,
+      iconSize: GitPulseIconSize.action,
       color: Theme.of(context).colorScheme.onSurfaceVariant,
       icon: Icon(icon),
     );

@@ -139,7 +139,8 @@ abstract final class GitPulseHeight {
   /// strip — and the floor for anything clickable (MASTER §9 rule 1).
   static const compact = 40.0;
 
-  /// The smallest a clickable list row may be (MASTER §9).
+  /// The smallest a clickable list row may be, and the floor §9 rule 2 puts
+  /// under any clickable target drawn smaller than that.
   static const rowMin = 44.0;
 
   /// A default Material icon button's padded touch target, and a drawer's

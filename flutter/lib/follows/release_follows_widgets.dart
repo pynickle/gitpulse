@@ -116,7 +116,7 @@ class _RepositoryRow extends StatelessWidget {
                           ExcludeSemantics(
                             child: Icon(
                               Icons.error_outline,
-                              size: 14,
+                              size: GitPulseIconSize.fact,
                               color: scheme.error,
                             ),
                           ),
@@ -385,10 +385,13 @@ class _FollowAction extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
-      iconSize: 20,
+      iconSize: GitPulseIconSize.action,
       visualDensity: VisualDensity.compact,
       padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+      constraints: const BoxConstraints(
+        minWidth: 40,
+        minHeight: GitPulseHeight.compact,
+      ),
       color: emphasized ? scheme.primary : scheme.onSurfaceVariant,
       icon: Icon(icon),
     );
