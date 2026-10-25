@@ -49,6 +49,18 @@ Future<void> openRepositoryReleases(
   }
 }
 
+/// Opens one Timeline card at [size] and hands back the drawer's own `Material`,
+/// which is where its corners, colour and clipping are declared.
+Future<Material> openReleaseDrawer(
+  WidgetTester tester, {
+  required Size size,
+}) async {
+  await pumpTimelineScreen(tester, size: size, handlers: browsingHandlers());
+  await tester.tap(find.byType(ReleaseTimelineCard).hitTestable().first);
+  await tester.pumpAndSettle();
+  return tester.widget<Material>(find.byKey(const Key('release-drawer')));
+}
+
 void main() {
   testWidgets(
     'a phone list retries the requested page and can advance past an empty page',
@@ -539,6 +551,26 @@ void main() {
       );
     },
   );
+
+  testWidgets('a phone sheet rounds its top corners at the registered radius', (
+    tester,
+  ) async {
+    final sheet = await openReleaseDrawer(tester, size: const Size(390, 800));
+    // 20 is what MASTER §6 registers for the sheet's top corners, written here
+    // as a number so a radius token edited without the spec goes red. The rest
+    // of this sheet's geometry belongs to ADR 0010.
+    expect(
+      sheet.borderRadius,
+      const BorderRadius.vertical(top: Radius.circular(20)),
+    );
+  });
+
+  testWidgets('a wide release panel squares its corners', (tester) async {
+    final panel = await openReleaseDrawer(tester, size: const Size(1400, 900));
+    // The top radius belongs to the sheet: a panel that runs to the top edge has
+    // no corner to round (MASTER §6).
+    expect(panel.borderRadius, isNull);
+  });
 
   testWidgets(
     'a phone sheet spends its first screen on the notes and folds the rest away',

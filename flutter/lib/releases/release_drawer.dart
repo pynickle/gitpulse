@@ -198,7 +198,9 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
         key: const Key('release-drawer'),
         color: theme.colorScheme.surface,
         borderRadius: sheet
-            ? const BorderRadius.vertical(top: Radius.circular(20))
+            ? const BorderRadius.vertical(
+                top: Radius.circular(GitPulseRadius.sheetTop),
+              )
             : null,
         clipBehavior: Clip.antiAlias,
         // The sheet's top edge sits in the middle of the screen, so the status

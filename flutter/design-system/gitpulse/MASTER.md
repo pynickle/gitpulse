@@ -47,9 +47,10 @@
 一个页面可以**同时**包含两档（Release 抽屉 = Dense Chrome 的 chrome 行 + Reading Surface 的 notes；
 仓库页 = Dense 身份带 + Reading README），但**同一个 surface 内部不许跨档**。
 
-Reading 档是既有事实，不是本文发明：`lib/releases/release_document.dart` 的 `_notesBodySize = 15.0` /
-`_notesBodyLineHeight = 24.0`，且被 `test/releases/release_document_typography_test.dart` 钉死。
-本文的作用是给它名字和边界。
+Reading 档是既有事实，不是本文发明：`GitPulseType.readingBodySize = 15` /
+`GitPulseType.readingBodyLineHeight = 24`（`lib/presentation/gitpulse_tokens.dart`），
+经 `gitPulseTypeReadingBody` 落到 `lib/releases/release_document.dart`，
+并由 `test/releases/release_document_typography_test.dart` 钉死。本文的作用是给它名字和边界。
 
 ---
 
@@ -87,7 +88,7 @@ Previous Refresh 标记从 w700 归一到 w600，全库现无 w700），`w300` �
 | `readingHeading1` | 20 / 1.35 | w600 | |
 | `readingHeading2` | 17 / 1.35 | w600 | |
 | `readingHeading3` | 15 / 1.35 | w600 | 与正文同号，靠字重区分；四级及以下折叠到本档 |
-| 列表缩进 | 20 | — | 引用缩进 12 |
+| `readingListIndent` / `readingQuoteIndent` | **20** / **12** | — | 列表缩进 / 引用缩进 |
 | 规则线留白 | 上下各 ≥30 的视觉间距 | — | 由 `lib/releases/release_document.dart` 现有 block 间距提供 |
 | 标题下间距 | **< 16** | — | 标题必须紧贴它所引导的正文 |
 
@@ -386,5 +387,8 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 
 1. 只改**值**：直接改本文 + `lib/presentation/gitpulse_tokens.dart`，两处必须同一批。
 2. 加**新角色**：先在本文登记名字、值、职责和至少一个使用点，再写代码。
-3. 要**违反**本文：先写 ADR（三条门槛：难以回退、外人会问为什么、真实取舍），合入前登进 §12。
-4. 任何有视觉变化的批次，必须在 `PROGRESS.md` 里留下"验收命令 + 人眼复核点"。
+3. 修正一条**指向**：本文或代码引用了已经改名、删除或换了实现的符号时，只改那处指向（名字、所在文件、
+   函数名），**不改任何数值、不新增角色**。批 3 与批 4 都留下过这类债——"文档指着一处代码已经不再做的事"，
+   而当时本节只有改值、加角色、写 ADR 三条动法，于是只能登记不改。这类修正要在 `PROGRESS.md` 的当批记录里点名。
+4. 要**违反**本文：先写 ADR（三条门槛：难以回退、外人会问为什么、真实取舍），合入前登进 §12。
+5. 任何有视觉变化的批次，必须在 `PROGRESS.md` 里留下"验收命令 + 人眼复核点"。

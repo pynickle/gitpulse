@@ -23,7 +23,8 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 - [x] `../docs/adr/0023-flutter-press-feedback-scope.md`
 - [x] `../CONTEXT.md` 补 5 个视觉领域词
 
-**下一轮从这里开始：批 5（收尾与长期维持）。**
+**批 0–5 均已落地。** 剩下的是批 5 末尾登记的 4 项"需要新角色或新批次"的活（`controlEdge` 控件描边、
+§2.1 的 7 个排版角色接线、§15 的旧结论、320 的面板下限），以及**连续 5 批未做的人眼复核**。
 
 ---
 
@@ -550,28 +551,120 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 
 ## 批 5 — 文档收尾与长期维持
 
+**目标**：把前四批欠下的两类债收口——"文档指向已经不在的代码"和"令牌/角色函数没有使用点"。
+**本批零视觉变化**：两处常量/函数指向、三处文档修正（`../AGENTS.md`、§1、§2.2）、一条 §16 动法、一份重审登记。
+
 - [x] 仓库根 `../AGENTS.md` 加入口
 - [x] `AGENTS.md`（包根）加操作性要求
 - [x] `../docs/adr/0023-flutter-press-feedback-scope.md`
 - [x] `../CONTEXT.md` 的 `Flutter Presentation` 补 **Band / Gutter / Dense Chrome / Reading Surface / Reading Measure**
-- [ ] 可选修正：仓库根 `../AGENTS.md` 说 `../CONTEXT.md` 与 `../docs/adr/` "may be git-ignored"，实测两者**都被跟踪**
-      （22 个 ADR 在版本库）。建议把该句改成"这些文件是源码的一部分，不要在 fff 里当作不存在"。
-- [ ] 可选：把本文两处数字（`700/1100`、`1120/1040`）在后续引入新断点时重审；当前它们分属不同职责（E11）。
-- [ ] 可选（批 2 评审留下）：`OutlinedButton` 的描边色调无处可依。`settings/timeline_cache_settings.dart`
-      与 `timeline/timeline_filter_panel.dart` 两处用 `scheme.outlineVariant`，而 §3.2 把"面的边界"
-      给 `edge`、§7 又没给"控件描边"分配色调。需要先在 MASTER 给角色（`controlEdge`？），
-      再一次性改这两处——改完是可见的加深，得进一次有复核点的批次。
-- [ ] 可选（批 2 评审留下）：`GitPulseRadius.sheetTop` 至今没有使用点（`release_drawer.dart:193`
-      仍是字面 `20`，E4 点名"保持不动"）。谁拥有 E4 的 sheet 几何，谁把它接上。
-- [ ] 可选（批 4 评审留下）：`gitPulseTypeReadingBody` 仍无调用点（`release_document.dart` 的
-      `textStyle` 自己算 `24/15`，与那个函数同一个式子）。收口动作是"转调该函数 + 删
-      `_notesBodySize`/`_notesBodyLineHeight` + MASTER §1 第 50–51 行改引用"，三处同批。
-- [ ] 可选（批 2 评审留下）：§2.1 的字体角色函数里，只有 `gitPulseTypeRowLabel`（经
-      `gitPulseSettingLabelStyle`）在真实使用；阅读档用的是同一套**数值**令牌，`gitPulseTypeReadingBody`
-      本身仍无调用点（见上一条）；`pageTitle` / `surfaceTitle` / `brandName` /
-      `sectionLabel` / `meta` / `metaTight` / `description` 仍无调用点（卡片、抽屉、仓库页各自
-      copyWith）。这需要一个"排版角色接线"批次，且 Previous Refresh 标记的 `primary` 与
-      `sectionLabel` 的 `onSurfaceVariant` 谁对，得先定（§3.2 只把 `primary` 登记给 `brandLink`）。
+- [x] 仓库根 `../AGENTS.md` 的 git-ignored 错句（实测两者**都被跟踪**）
+- [x] `GitPulseRadius.sheetTop` 接上使用点（批 2 遗留）
+- [x] `gitPulseTypeReadingBody` 接上使用点并删掉两个同义常量（批 4 遗留）
+- [x] `700/1100` / `1120/1040` 重审：值不改，改成登记两处仍未接令牌的字面量
+- [x] 批 5 完成（代码与自动验证；**人眼复核待设备端**，见下）
+- [x] 实跑命令记录：
+
+  ```
+  $ flutter analyze
+  Analyzing flutter...
+  No issues found! (ran in 8.6s)
+
+  $ dart format --output=none --set-exit-if-changed lib test
+  Formatted 126 files (0 changed) in 1.28 seconds.   # exit 0
+
+  $ flutter test --timeout 30s
+  00:45 +398: All tests passed!
+  ```
+
+  （批 4 之后 396 个测试，本批新增 2 个，共 398。评审后按同一组命令复跑，三项结果不变。）
+
+**本批改了什么**
+
+| 位置 | 改动 | 依据 |
+| --- | --- | --- |
+| `../AGENTS.md`（Domain docs 段） | 把"`CONTEXT.md` 与 `docs/adr/` 可能被 git 忽略"改成"两者是受跟踪的源码" | `git ls-files --error-unmatch CONTEXT.md docs/adr/0023-…` 两处都成功；`git ls-files docs/adr` 数出 **23** 个 ADR（原条目自己写的 22 也不准）。`git check-ignore -v` 退出码 1 = 没有任何规则命中 |
+| `lib/releases/release_drawer.dart:202` | sheet 顶角 `Radius.circular(20)` → `GitPulseRadius.sheetTop` | E4 只把几何判给 ADR 0010，圆角归 §6；`sheetTop` 至此有了使用点 |
+| `lib/releases/release_document.dart` | `textStyle` 转调 `gitPulseTypeReadingBody(context)`，删 `_notesBodySize`/`_notesBodyLineHeight` | 同一角色曾有两个定义（批 0 就是用"改为转调"消掉过一次另一处）。零像素的理由：那个函数返回 `bodyMedium.copyWith(fontSize 15, w400, height 24/15)`，而原写法返回 `bodyMedium.copyWith(fontSize 15, height 24/15)`；`gitPulseTheme` 不覆写 `textTheme` 的字重，M3 的 `bodyMedium` 本来就是 w400，故显式再写一次 w400 不改变任何字形 |
+| `MASTER.md` §1 | 旧引用 `_notesBodySize = 15.0` / `_notesBodyLineHeight = 24.0` 改为指向 `GitPulseType.readingBodySize/LineHeight` | 上一条删了那两个常量，这句引用会指向不存在的代码（这正是批 4 登记第 2 项留下的债） |
+| `MASTER.md` §2.2 | 缩进行补上代码名：`readingListIndent` 20 / `readingQuoteIndent` 12 | 批 4 登记第 3 项：§16.2 要求角色有名字，而这两个名字此前只存在于令牌文件 |
+| `MASTER.md` §16 | 新增第 3 条动法"**修正一条指向**：只改指向、不改数值、不新增角色" | 上一行与再上一行都是"文档指着一处代码已经不再做的事"。批 3 与批 4 都遇到过同一类债，当时 §16 只有改值 / 加角色 / 写 ADR 三条，所以只能登记不改。**本批要动 §1 与 §2.2，就必须先把这条动法补进去**——否则本批自己就越过了 §16，评审在这一点上判得对 |
+
+**新增 2 条守卫**（`test/releases/release_drawer_test.dart`；共用一个 `openReleaseDrawer` 帮手，挂载真实页面、
+点开一张卡片后读抽屉交给框架的那个 `Material`）：
+
+1. 手机 sheet 的顶角必须是 `BorderRadius.vertical(top: Radius.circular(20))`——**20 直接写成数字**，
+   因为 MASTER §6 登记的就是数值。写成令牌会变成镜像断言（实现与测试一起漂移，谁都不红）。
+2. 宽面板的 `borderRadius` 必须是 `null`：20 是 sheet 的几何，跑到顶边上的面板没有角可圆。
+   缺这一条，把 20 套到宽面板上也不会有测试变红。
+
+**变红验证**：把 `GitPulseRadius.sheetTop` 临时改成 `24`，`flutter test --plain-name "rounds its top corners"`
+立即红（`+0 -1`）；还原后恢复绿。所以第 1 条确实在守"令牌与 §6 那个 20 一致"，不是一句同义反复。
+
+它们是**守卫，不是本批的证据**：本批前后这两处的值完全相同，所以改之前也绿。本批"零视觉变化"的证据
+是 `git diff -- flutter/lib` 里没有任何数值改动，加上点名套件（`release_document_typography_test.dart`
+的 4 条原有排版用例逐字未改）原样通过。
+
+**评审后修正**（code-review 两轴，Standards 与 Spec 各一个子代理，均只看本批 diff）：
+
+1. **§16 缺一条动法**（两轴同时指出）：本批改 §1 与 §2.2 属于"文档指着一处代码已经不再做的事"，
+   而 §16 原来只有改值 / 加角色 / 写 ADR 三条——批 4 正是因此把这件活登记为"不改"。已补 §16 第 3 条
+   "修正一条指向"，本批两处文档修正从此有据。
+2. **§1 措辞仍不准**（Spec 轴）：初稿写"由 `release_document.dart` 应用"，而该文件现在只调用
+   `gitPulseTypeReadingBody`、不再读那两个数值。改为"经 `gitPulseTypeReadingBody` 落到 …"。
+3. **§2.2 行形状与全表不一致**（Standards 轴）：初稿把角色名塞进"字号/行高"列。改成角色列
+   `readingListIndent` / `readingQuoteIndent`、字号列 `20` / `12`，与其它行同形。
+4. **守卫里有同义反复**（Standards 轴）：初稿既断言控件等于令牌、又断言令牌等于 20，且第一条是镜像断言
+   （实现与测试一起漂移）。改为直接断言控件等于 20（MASTER §6 登记的数），并补了上面那条变红验证；
+   两条新用例共用一个 `openReleaseDrawer` 帮手，免得与相邻用例各抄一遍挂载流程。
+5. **摘要与行号**（Spec 轴）：摘要行漏数了一处文档修正、`release_drawer.dart` 行号写作 201（实为 202）、
+   重审段落的"五个数字"与它自己的六行表格矛盾——均已改正。
+
+**重审结论（`700/1100`、`1120/1040`）——值不改，只登记**
+
+| 数字 | 归属 | 回答的问题 |
+| --- | --- | --- |
+| 700 / 1100 | `GitPulseWidth.timelinePhone/Tablet` → `resolveTimelineColumnCount` | 时间线在 1 列 / 2 列 / 3 列之间破位 |
+| 960 | `GitPulseWidth.readingMeasure` | README 的阅读量尺 |
+| 1120 | `GitPulseWidth.settingsTable` | 设置表格的扫描上限 |
+| **1040** | `lib/settings/settings_screen.dart:30` 的 `_wideMinimumWidth`，**仍是字面值** | 账户从滚动区挪到独立尾列的那一刻；只在 1040–1120 之间可达（页面本身封顶 1120） |
+| **360** | `settings_screen.dart:33` 的 `_accountColumnWidth` 与 `follows/release_follows_screen.dart:378` 的 `width: 360`，**两处同值字面量** | 尾列宽度。`settings_screen.dart` 的注释明说它"matching the Followed Repositories panel"，所以一次改动要改两处 |
+
+表里六个数字的来历：`700/1100` 与 `1120/1040` 是原条目点名的两组；`960`（阅读量尺）与 `360`（尾列宽度）
+是同一个问题的另外两面——E11 本来就把 1120 与 960 并排登记，而 360 只有在那条 1040 破位成立之后才有意义。
+不列全，就等于把"这个数是谁的"继续留给下一位评审。
+
+结论：四个已登记令牌各回答一个问题（1/2/3 列破位、阅读量尺、表格上限），1040 回答"账户列何时独立"，
+360 是那条列自己的宽度。**本批不改任何值，也不新增角色**：新增角色是 §16.2 的动作（先在 MASTER 登记名字、
+值、职责与至少一个使用点，再改代码），而 1040 与 360 目前都只有单一使用点、都已经是带注释的局部命名常量，
+还没有出现"一次改动要改多处"的重复；360 虽然两处同值，但第二处（`follows/release_follows_screen.dart:378`）
+是"另一页的同一块面板"，登记它得先决定两页是否共用同一条宽度角色。**下一次有人动 Settings 或 Follows 的列宽时，
+动作就是给 1040 与 360 各登记一个角色，并把这张表里的字面值换掉。**
+
+**登记、本批不动**（这些是批 2/3/4 各自记过的同一批债，此处只做"当前状态"的合并摘要，不重复论证；
+逐条理由见各批记录）：
+
+1. `OutlinedButton` 的描边色调仍无处可依：`settings/timeline_cache_settings.dart:238` 与
+   `timeline/timeline_filter_panel.dart:713` 用 `scheme.outlineVariant`（`toneRule` 的色调），而 §3.2 把
+   面的边界给 `edge`、§7 没有"控件描边"这个角色。改完是**可见的加深**，需要先在 MASTER 登记角色
+   （`controlEdge`？）再进一次带人眼复核点的批次。
+2. §2.1 的 7 个字体角色函数（`pageTitle` / `surfaceTitle` / `brandName` / `sectionLabel` / `meta` /
+   `metaTight` / `description`）仍无调用点，卡片、抽屉、仓库页各自 `copyWith`。这是一次"排版角色接线"批次，
+   且 Previous Refresh 标记该用 `primary` 还是 `onSurfaceVariant` 得先定（§3.2 只把 `primary` 登记给
+   `brandLink`）。
+3. §15 里"同一职责图标 18 vs 20 …零视觉变化"一行是**当时的结论**，批 3 已把 Follows 输入框内那对判给
+   `inControl`（可见小 2 像素）。§15 是"本轮结论"的快照，不是指向（§16 新第 3 条只管指向），
+   本批仍不改它，与批 3 的处置一致。
+4. `lib/timeline/timeline_layout.dart:21` 的 `releaseDrawerMinimumPanelWidth = 320.0` 是唯一没有 MASTER
+   角色的面板下限。它是局部命名常量、单次使用，按 §5 规则 2 的"光学值留局部"处理，未接令牌。
+
+**人眼复核：本批显式跳过。** `git diff -- flutter/lib` 里没有数值改动，没有可渲染的差值（批 0 同一理由）。
+但**批 1–5 的复核点累计 5 批全部未做**——这是本项目的最大欠账，下一次设备端检查必须一次性覆盖
+批 1（按下无底色、hover 仍有浅色、Tab 焦点可见、Retry 仍有 M3 反馈）、批 2（线变浅/变粗、卡片边框没跟着变浅）、
+批 3（输入框内图形小 2 像素后仍平衡、控件高 4 像素）、批 4（notes 外观无变化）与批 5（无变化即通过）的全部点。
+
+回滚点：`../AGENTS.md`、`MASTER.md` §1/§2.2、`lib/releases/release_document.dart`、
+`lib/releases/release_drawer.dart`、`test/releases/release_drawer_test.dart` 末尾两条、本文。
 
 ---
 

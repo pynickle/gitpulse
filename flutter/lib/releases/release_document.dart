@@ -22,8 +22,6 @@ import 'native_code_block.dart';
 /// The numbers are the reading scale `GitPulseType` registers (MASTER §2.2),
 /// read from there rather than restated: this file owns how the scale is
 /// applied, the token file owns what it is.
-const _notesBodySize = GitPulseType.readingBodySize;
-const _notesBodyLineHeight = GitPulseType.readingBodyLineHeight;
 const _notesHeadingLineHeight = GitPulseType.readingHeadingLineHeight;
 
 String _px(double value) => '${value}px';
@@ -139,10 +137,7 @@ class ReleaseDocument extends StatelessWidget {
             }
             return onTapUrl(url);
           },
-          textStyle: theme.textTheme.bodyMedium?.copyWith(
-            fontSize: _notesBodySize,
-            height: _notesBodyLineHeight / _notesBodySize,
-          ),
+          textStyle: gitPulseTypeReadingBody(context),
           // Core NetworkImage is deliberately independent of the authenticated Dio
           // client. No session cookies/CSRF headers reach document resources.
           onErrorBuilder: (context, element, error) => Text(

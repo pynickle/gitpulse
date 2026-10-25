@@ -133,8 +133,9 @@ Use the five canonical triage labels without overrides. See `docs/agents/triage-
 ### Domain docs
 
 Use the single-context domain layout. See `docs/agents/domain.md`.
-Domain files such as `CONTEXT.md` and `docs/adr/` may be git-ignored. Because fff cannot see
-ignored files, inspect these paths through the filesystem before treating them as absent.
+Domain files such as `CONTEXT.md` and `docs/adr/` are tracked source, not ignored files — read them
+directly. If one is absent from the index, inspect that path through the filesystem instead of
+concluding the file does not exist.
 
 <!-- nuxt-skill-hub:start -->
 
