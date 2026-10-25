@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../presentation/gitpulse_setting_rows.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../presentation/presentation_settings.dart';
 import '../session/session_controller.dart';
 import 'account_panel.dart';
@@ -22,7 +23,7 @@ class SettingsScreen extends ConsumerWidget {
 
   /// The width the settings rows are allowed before the page stops growing: a
   /// row wider than this asks the eye to travel from name to control and back.
-  static const _maximumContentWidth = 1120.0;
+  static const _maximumContentWidth = GitPulseWidth.settingsTable;
 
   /// The width at which the account moves out of the scroll and into a column
   /// of its own, leaving the settings rows one readable column.

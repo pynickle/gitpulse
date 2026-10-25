@@ -6,6 +6,7 @@ import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../releases/document_content.dart';
 import '../releases/release_document.dart';
 import '../session/session_controller.dart';
@@ -24,16 +25,19 @@ const _gutter = gitPulseSettingsGutter;
 /// A repository page is read, not scanned: its README is prose, and a measure
 /// much longer than this one is a measure the eye loses its place in. Documents
 /// that need width — tables, code — still fit inside it.
-const _maximumContentWidth = 960.0;
+const _maximumContentWidth = GitPulseWidth.readingMeasure;
 
 /// The space between two facts on the identity band's data line.
 ///
-/// The mark and gap inside one fact — a 14 px glyph and 3 px of air — are the
-/// ones the Repository Release List rows already draw, so a fact looks the same
-/// on both pages; the 20 px between facts is the gap a Follows row's metadata
-/// line uses.
-const _factGap = 20.0;
-const _factIconExtent = 14.0;
+/// The mark and gap inside one fact — a fact glyph and a few pixels of air —
+/// are the ones the Repository Release List rows already draw, so a fact looks
+/// the same on both pages; the gap between facts is the one a Follows row's
+/// metadata line uses.
+const _factGap = GitPulseSpace.factGap;
+const _factIconExtent = GitPulseIconSize.fact;
+
+/// The air between a fact's glyph and its number: an optical nudge that only
+/// this line needs, so it stays a named local rather than a shared role.
 const _factIconGap = 3.0;
 
 /// The Repository detail page: who the repository is, the one line of numbers

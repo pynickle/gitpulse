@@ -23,7 +23,7 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 - [x] `../docs/adr/0023-flutter-press-feedback-scope.md`
 - [x] `../CONTEXT.md` 补 5 个视觉领域词
 
-**下一轮从这里开始：批 0。**
+**下一轮从这里开始：批 1。**
 
 ---
 
@@ -52,8 +52,50 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 
 **人眼复核**：截图对比 `git stash` 前后任意三页（时间线、设置、Release 抽屉），应无法分辨。
 
-- [ ] 批 0 完成
-- [ ] 实跑命令记录：<!-- 粘贴 --> 
+- [x] 批 0 完成
+- [x] 实跑命令记录：
+
+  ```
+  $ flutter analyze
+  Analyzing flutter...
+  No issues found! (ran in 118.5s)
+
+  $ dart format --output=none --set-exit-if-changed lib test
+  Formatted 125 files (0 changed) in 1.34 seconds.   # exit 0（首跑格式化新文件后重跑）
+
+  $ flutter test --timeout 30s
+  00:58 +385: All tests passed!
+  ```
+
+  （评审后的最终改动重跑：`flutter analyze` → No issues found!；`dart format` → 125 files,
+  0 changed；`flutter test` → +385 All tests passed!）
+
+  **零数值变化证据**：`git status --short` 里只有新文件
+  `lib/presentation/gitpulse_tokens.dart`（未跟踪，`git diff` 看不到它）与五个被改文件；
+  `git diff -- lib` 的每一处都是常量指向，无一处数值改动。共 9 个常量接上令牌：
+
+  | 位置 | 改为 |
+  | --- | --- |
+  | `presentation/gitpulse_setting_rows.dart` | `gitPulseSettingsGutter = GitPulseSpace.gutter` |
+  | `timeline/timeline_layout.dart` | `releaseTimelineHorizontalPadding = GitPulseSpace.gutter`、`releaseTimelineColumnGap = GitPulseSpace.columnGap` |
+  | `timeline/timeline_layout.dart` | `releaseTimelinePhoneMaxWidth = GitPulseWidth.timelinePhone`、`releaseTimelineTabletMaxWidth = GitPulseWidth.timelineTablet` |
+  | `repositories/repository_screen.dart` | `_factGap = GitPulseSpace.factGap`、`_factIconExtent = GitPulseIconSize.fact`、`_maximumContentWidth = GitPulseWidth.readingMeasure` |
+  | `settings/settings_screen.dart` | `_maximumContentWidth = GitPulseWidth.settingsTable` |
+
+  批 0 文本只点名前三处；`GitPulseWidth` 的四处一并接上，理由是 MASTER §16.2 要求新角色
+  有"至少一个使用点"，且四个字面值与令牌成对存在会让一次断点改动变成四处编辑。值完全相同，
+  验收不变。
+
+  另外两处为消除文档/代码分叉：`gitPulseSettingLabelStyle` 改为转调
+  `gitPulseTypeRowLabel`（同一角色两个定义）；`MASTER.md` 补三条登记——
+  §5 的 `columnGap` 行、§2.1 关于 `controlLabel` 不设函数的说明、§12 的 E15（仓库页
+  fact 图形间距 3）与 E11 指向 `GitPulseWidth` 四令牌。
+
+  `GitPulseType`（阅读档数值 15/24/1.35、20/17/15、缩进 20/12）在本批落地：
+  它属于令牌文件，而令牌文件只在本批新建；批 4 只做"改为引用"，数值一字不改。
+
+  **人眼复核：本批显式跳过。** 三页截图对比的前提是"有东西可能变"；`git diff` 里没有任何
+  数值改动，没有可渲染的差值，故未启动应用。若评审仍要求，回滚点即 `git stash`。
 
 ---
 

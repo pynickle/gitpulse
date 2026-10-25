@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_tokens.dart';
+
 /// The one gutter every Settings surface shares: a setting's label, its
 /// control, and the hairline between two settings all start here.
-const gitPulseSettingsGutter = 16.0;
+const gitPulseSettingsGutter = GitPulseSpace.gutter;
 
 /// The width at which a setting's label earns a column of its own.
 ///
@@ -18,11 +20,11 @@ const _labelColumnMinimumWidth = 520.0;
 double gitPulseSettingLabelWidth(BuildContext context) =>
     MediaQuery.textScalerOf(context).scale(140);
 
-/// The weight and size a setting's name is written in, matching a Follows row's
-/// repository name so the two pages read as the same kind of table.
+/// The weight and size a setting's name is written in: the app's row-label
+/// role, so a setting and a Follows row's repository name read as the same kind
+/// of table.
 TextStyle? gitPulseSettingLabelStyle(BuildContext context) =>
-    Theme.of(context).textTheme.titleSmall
-        ?.copyWith(fontWeight: FontWeight.w600);
+    gitPulseTypeRowLabel(context);
 
 /// How far a label is nudged down to sit on the line of a control beside it: a
 /// chip row is shorter than a text field, so this centres against neither

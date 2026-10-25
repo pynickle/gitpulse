@@ -1,20 +1,21 @@
 import 'dart:math' as math;
 
+import '../presentation/gitpulse_tokens.dart';
 import 'timeline_models.dart';
 
 /// Phone layout ceiling for the Release Timeline, matching the web timeline.
-const releaseTimelinePhoneMaxWidth = 700.0;
+const releaseTimelinePhoneMaxWidth = GitPulseWidth.timelinePhone;
 
 /// Tablet layout ceiling: above it the timeline uses three columns.
-const releaseTimelineTabletMaxWidth = 1100.0;
+const releaseTimelineTabletMaxWidth = GitPulseWidth.timelineTablet;
 
 /// Horizontal padding on each side of the Release Timeline's columns. The wide
 /// Release Drawer sizes itself from it, so both must come from here.
-const releaseTimelineHorizontalPadding = 16.0;
+const releaseTimelineHorizontalPadding = GitPulseSpace.gutter;
 
 /// Gap between adjacent Release Timeline columns, shared with the wide Release
 /// Drawer's panel width for the same reason.
-const releaseTimelineColumnGap = 12.0;
+const releaseTimelineColumnGap = GitPulseSpace.columnGap;
 
 /// The narrowest wide-layout panel that still reads as a document column.
 const releaseDrawerMinimumPanelWidth = 320.0;

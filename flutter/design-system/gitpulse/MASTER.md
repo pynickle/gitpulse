@@ -75,6 +75,10 @@ Reading 档是既有事实，不是本文发明：`lib/releases/release_document
 **字重只有三档**：`w400` 正文、`w500` M3 控件默认、`w600` 强调。**w700 禁用**（唯一现存的
 `lib/timeline/timeline_screen.dart:496` 归一到 w600），`w300` 及以下禁用。
 
+除 `controlLabel` 外，本表每个角色在 `lib/presentation/gitpulse_tokens.dart` 有一个
+`gitPulseType*` 函数。`controlLabel` 不设函数：它就是控件自己的 `labelLarge`，字号字重取 M3
+默认，颜色由那个控件（芯片、分段控件）决定——包一层函数只会把"由控件决定"变成一句谎。
+
 ### 2.2 Reading Surface 角色表
 
 | 角色 | 字号/行高 | 字重 | 备注 |
@@ -158,6 +162,7 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | `inline` | 8 | 同一行内的并列元素（芯片、图标组、堆叠布局里标签与控件） |
 | `meta` | 10 | 卡片正文与 meta 块之间 |
 | `rowInsetV` | 12 | 表格行上下内距、设置行 |
+| `columnGap` | 12 | 时间线相邻列之间；Release Drawer 的面板宽度由它派生（ADR 0018） |
 | `surfaceInset` | 14 | 卡片/横幅内距（四面） |
 | `gutter` | **16** | 页面左右 gutter。所有 band、所有页面共用同一个 |
 | `factGap` | 20 | 仓库页数据行的项间距 |
@@ -169,7 +174,9 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 1. `gutter = 16` 是**全应用唯一 gutter**。页面、band、表格行、卡片列表的左右边都对齐它。
    新增页面若用了别的 gutter 值，即缺陷。
 2. 出现新数值 → 先问"这是哪个职责"，能归入上表就复用，归不进就开 ADR，**不许直接写数字**。
-3. 例外：`_labelBaselineNudge = 6`（设置行标签与控件基线的光学修正）已登记为 §12 例外。
+3. 例外：`_labelBaselineNudge = 6`（设置行标签与控件基线的光学修正）、
+   仓库页 `_factIconGap = 3`（fact 图形与数字之间）都已登记为 §12 例外（E12 / E15），
+   不进本表。
 
 ---
 
@@ -286,10 +293,11 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | E8 | `radiusBar = 2` 与图形内部圆角 | Entry Release 强调条、Followed View 图标 | 装饰条与图形几何，不是面圆角 |
 | E9 | `FilledButton*` / `ElevatedButton` 保留 M3 自带 overlay | ADR 0023 | 彩色底 + 主操作反馈需要 |
 | E10 | 抽屉 chrome 行固定 48 高 | ADR 0018 | 它是"一行 chrome 换回一整屏阅读空间"的那一行 |
-| E11 | 设置表格上限 1120 vs 阅读量尺 960 vs 时间线 700/1100 | 各自文件 | 三者职责不同：**扫描宽度**、**阅读量尺**、**列数分档**，不是同一件事的三个值 |
+| E11 | 设置表格上限 1120 vs 阅读量尺 960 vs 时间线 700/1100 | `GitPulseWidth` 的四个令牌 | 四者职责不同：**扫描宽度**、**阅读量尺**、**列数分档**（700 一列 / 1100 两列以上），不是同一件事的四个值；所以是四个令牌而不是一个"内容宽度" |
 | E12 | 设置行标签与控件基线的 `6` 光学修正 | `lib/presentation/gitpulse_setting_rows.dart` | 芯片行比输入框矮，居中会同时"不像对齐" |
 | E13 | `errorWash` 的 0.35 合成 alpha | `lib/timeline/timeline_screen.dart:213` | 全库唯一的合成底色；错误横幅需要"在卡片之上、在 surface 之下"的档位 |
 | E14 | 禁止 0.5px 线（原徽章描边改为 1px） | — | 0.5 在高 DPI 下渲染不一致，且它是错的层级信号 |
+| E15 | 仓库页 fact 图形与其数字之间的 `3` | `lib/repositories/repository_screen.dart` | 单次使用的光学值：14px 图形旁 2 太紧、4 太松；只有这一行需要，故留在局部命名常量而不进 §5 角色表 |
 
 ---
 
