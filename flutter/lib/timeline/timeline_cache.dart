@@ -255,11 +255,13 @@ class TimelineCache extends _$TimelineCache {
         '''SELECT r.*, v.oldest_shown FROM cache_visible v
       JOIN cache_releases r ON r.repository_id = v.repository_id AND r.id = v.release_id''',
       ).get();
+      final rowsByRepository = <String, List<QueryRow>>{};
+      for (final row in rows) {
+        (rowsByRepository[row.read<String>('repository_id')] ??= []).add(row);
+      }
       final pages = <String, RepositoryPage>{};
       for (final repository in repositories) {
-        final records = rows.where(
-          (row) => row.read<String>('repository_id') == repository.id,
-        );
+        final records = rowsByRepository[repository.id] ?? const <QueryRow>[];
         pages[repository.id] = RepositoryPage(
           status: RepositoryPageStatus.available,
           owner: repository.owner,
