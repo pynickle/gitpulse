@@ -6,20 +6,42 @@ abstract final class GitPulseColors {
   static const brand = Color(0xff238636);
 }
 
-/// The tone a pressed ink response shifts a surface to.
+/// The only interactive tint the app paints: the highest surface container in
+/// the scheme, laid on lightly for hover and keyboard focus.
 ///
-/// Feedback is a tonal move, not a scrim: the tint is the highest surface
-/// container in the scheme, so light mode moves one step along the surface ramp
-/// instead of darkening toward black, and dark mode brightens instead of greying
-/// out. Every Material surface inherits it from the theme, which is why no
-/// surface sets its own overlay colour; a surface that wants rounded feedback
-/// clips the ink response to its own shape instead.
-Color gitPulsePressTint(ColorScheme scheme) => scheme.surfaceContainerHighest;
-
-/// The softer half of the same move, for hovering and keyboard focus: the same
-/// surface tone, laid on lightly so a passing pointer never flips a whole row.
+/// It is a tonal move, not a scrim — light mode moves one step along the
+/// surface ramp instead of darkening toward black, and dark mode brightens
+/// instead of greying out. A press paints nothing at all (ADR 0023), so this
+/// tone is the whole of the app's ink feedback and no surface sets its own
+/// overlay colour.
 Color gitPulseHoverTint(ColorScheme scheme) =>
     scheme.surfaceContainerHighest.withValues(alpha: 0.5);
+
+/// The ink any pressable control paints, state by state: nothing at all while
+/// it is pressed, and [gitPulseHoverTint] while it is hovered or focused.
+///
+/// `pressed` resolving to nothing is the app-wide rule (ADR 0023): the click
+/// itself is the feedback, and Material's own component default — a 10% wash of
+/// the control's foreground colour — is exactly the dark tinge this removes.
+/// Hover and keyboard focus keep the tint because they answer a different
+/// question: whether a surface is clickable, and where the focus sits.
+///
+/// [gitPulseTheme] installs this on the `IconButton`, `TextButton` and
+/// `OutlinedButton` families. It is public only because `ButtonStyle.styleFrom`
+/// with an explicit `foregroundColor` builds Material's pressed wash at the call
+/// site, where a theme cannot reach it; such a control passes this through
+/// `copyWith(overlayColor: …)` instead of setting an overlay of its own.
+WidgetStateProperty<Color?> gitPulseInkOverlay(ColorScheme scheme) {
+  final tint = gitPulseHoverTint(scheme);
+  return WidgetStateProperty.resolveWith(
+    (states) => switch (states) {
+      _ when states.contains(WidgetState.pressed) => Colors.transparent,
+      _ when states.contains(WidgetState.hovered) => tint,
+      _ when states.contains(WidgetState.focused) => tint,
+      _ => null,
+    },
+  );
+}
 
 /// The GitPulse Material 3 theme for [brightness].
 ThemeData gitPulseTheme(Brightness brightness) {
@@ -27,13 +49,29 @@ ThemeData gitPulseTheme(Brightness brightness) {
     seedColor: GitPulseColors.brand,
     brightness: brightness,
   );
+  final overlay = gitPulseInkOverlay(scheme);
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    highlightColor: gitPulsePressTint(scheme),
-    splashColor: gitPulsePressTint(scheme),
+    // The plain ink response — list rows, chips, the timeline card — reads
+    // these four, and `ListTileThemeData` has no overlay field to override
+    // with, so the transparent press has to be the theme-wide default.
+    highlightColor: Colors.transparent,
+    splashColor: Colors.transparent,
     focusColor: gitPulseHoverTint(scheme),
     hoverColor: gitPulseHoverTint(scheme),
+    // The button families resolve their own overlay and would otherwise keep
+    // Material's darker default; filled and elevated buttons are left alone so a
+    // primary action still answers a press (MASTER §3.3, E9).
+    iconButtonTheme: IconButtonThemeData(
+      style: ButtonStyle(overlayColor: overlay),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(overlayColor: overlay),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(overlayColor: overlay),
+    ),
   );
 }
 

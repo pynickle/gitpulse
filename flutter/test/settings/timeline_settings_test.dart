@@ -551,6 +551,21 @@ void main() {
       await tester.enterText(retentionField, '31');
       await tester.pump();
       expect(find.byTooltip('Save retention'), findsOneWidget);
+      // The save is a filled action on a coloured surface, so it keeps a press
+      // wash even though the theme's shared overlay paints nothing (MASTER §3.3
+      // E9): a transparent press here would read as a dead primary action.
+      final saveStyle = tester
+          .widget<IconButton>(
+            find.ancestor(
+              of: find.byTooltip('Save retention'),
+              matching: find.byType(IconButton),
+            ),
+          )
+          .style;
+      expect(
+        saveStyle?.overlayColor?.resolve({WidgetState.pressed})?.a,
+        greaterThan(0),
+      );
       await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
       await settle(tester, app);
       expect(writes, 1);

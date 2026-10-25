@@ -132,10 +132,18 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | `selected` | `secondaryContainer` / `onSecondaryContainer`（芯片、分段控件） |
 
 **例外**：`FilledButton`、`FilledButton.tonal`、`ElevatedButton` 保留 M3 自带 overlay——
-它们的底色本身就是彩色，浅色罩不会显脏，且主操作需要反馈（Q17）。
+它们的底色本身就是彩色，浅色罩不会显脏，且主操作需要反馈（Q17）。同一条理由覆盖
+`IconButton.filled` / `.filledTonal` / `.outlined`：`IconButtonThemeData` 无法区分四个变体
+（`_IconButtonM3.themeStyleOf` 对四者返回同一个 theme style），所以这类按钮在**调用点**用
+`IconButton.styleFrom(overlayColor: …)` 取回自己的色调（见 §12 E16）。
 
 **禁令**：不得新增字面 `Color(0x…)`；不得新增 `.withValues(alpha:)`；不得为单个 surface
 自设 overlay 色（继承 ADR 0019）。
+
+**陷阱**：`IconButton` / `TextButton` / `OutlinedButton` 的 `styleFrom` 一旦收到
+`foregroundColor`，会在**调用点**用该色重建 Material 的按压底色，widget 级 style 压过主题，
+`gitPulseTheme` 够不着。这类控件改用 `copyWith(overlayColor: gitPulseInkOverlay(scheme))`，
+共用主题那一个 resolver，不要自己写 overlay。
 
 ---
 
@@ -298,6 +306,7 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | E13 | `errorWash` 的 0.35 合成 alpha | `lib/timeline/timeline_screen.dart:213` | 全库唯一的合成底色；错误横幅需要"在卡片之上、在 surface 之下"的档位 |
 | E14 | 禁止 0.5px 线（原徽章描边改为 1px） | — | 0.5 在高 DPI 下渲染不一致，且它是错的层级信号 |
 | E15 | 仓库页 fact 图形与其数字之间的 `3` | `lib/repositories/repository_screen.dart` | 单次使用的光学值：14px 图形旁 2 太紧、4 太松；只有这一行需要，故留在局部命名常量而不进 §5 角色表 |
+| E16 | `Switch` 的 radial reaction 保留 M3 自带色；`SegmentedButton` 的分段保留自己的 overlay | `lib/timeline/timeline_filter_panel.dart`（唯一一处 Switch）、`lib/follows/release_follows_screen.dart`（分段控件） | 两者都不是"面底色"：Switch 的按压反馈是绕 thumb 的放射光环，`SwitchThemeData.overlayColor` 也读不到 `ThemeData.highlightColor`，清零只会连 hover/focus 唯一的指针提示一起删掉；分段控件由内层 `TextButtonTheme` 自带 overlay 覆盖应用级主题，其彩色段属于 §3.3 的 E9 理由 |
 
 ---
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_setting_rows.dart';
+import '../presentation/gitpulse_theme.dart';
 import '../timeline/timeline_session.dart';
 
 /// This account's release-retention policy and this installation's copy of it,
@@ -162,6 +163,13 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                     tooltip: l10n.retentionSave,
                     onPressed: policyLocked ? null : _save,
                     iconSize: 18,
+                    // A coloured surface answers a press, so this one keeps
+                    // Material's wash of its own tone instead of the theme's
+                    // shared overlay — which cannot tell the four IconButton
+                    // variants apart (MASTER §3.3 E9).
+                    style: IconButton.styleFrom(
+                      overlayColor: scheme.onSecondaryContainer,
+                    ),
                     icon: const Icon(Icons.check),
                   ),
                 ),
@@ -226,7 +234,7 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                     foregroundColor: scheme.onSurface,
                     side: BorderSide(color: scheme.outlineVariant),
                     textStyle: theme.textTheme.bodyMedium,
-                  ),
+                  ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
                   icon: const Icon(Icons.delete_outline, size: 18),
                   label: Text(l10n.settingsClear),
                 ),

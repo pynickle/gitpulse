@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_theme.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'timeline_cache.dart';
 import 'timeline_filters.dart';
 import 'timeline_layout.dart';
@@ -523,7 +525,7 @@ class _RepositoryRow extends StatelessWidget {
       child: Semantics(
         button: true,
         selected: selected,
-        child: _Pressable(
+        child: _TappableRow(
           onTap: onTap,
           child: Row(
             children: [
@@ -568,70 +570,35 @@ class _RepositoryRow extends StatelessWidget {
   }
 }
 
-/// A row that answers a press with a short tonal fade inside its own rounded
-/// shape.
+/// A row the whole width of which is tappable, answered with the app's one tint.
 ///
-/// Material's press wash is deliberately not used here: it is a rectangle (or
-/// a ripple) that spreads across whatever the row happens to measure, and in
-/// this panel that reads as a dark block behind the text. The row instead fades
-/// in the same container tone the app presses with everywhere else, on a
-/// rounded shape inset from the panel edge — light enough to read as the row
-/// being held rather than as a surface changing colour. Hovering shows half of
-/// that tone, so a pointer finds the row before it is clicked.
-class _Pressable extends StatefulWidget {
-  const _Pressable({
+/// The ink is clipped to the row's own rounded shape, so it stays inside the
+/// panel rather than spreading across whatever the row happens to measure. The
+/// row paints no colour of its own: the tint it shows while hovered or focused
+/// is the theme's (ADR 0023), and a press paints nothing at all — a per-surface
+/// overlay would be a second answer to a question the theme already answers.
+class _TappableRow extends StatelessWidget {
+  const _TappableRow({
     required this.onTap,
     required this.child,
     this.padding = const EdgeInsets.fromLTRB(12, 9, 8, 9),
   });
+
+  static const _radius = BorderRadius.all(Radius.circular(GitPulseRadius.row));
 
   final VoidCallback onTap;
   final Widget child;
   final EdgeInsetsGeometry padding;
 
   @override
-  State<_Pressable> createState() => _PressableState();
-}
-
-class _PressableState extends State<_Pressable> {
-  static const _radius = BorderRadius.all(Radius.circular(8));
-  static const _fade = Duration(milliseconds: 130);
-
-  bool _held = false;
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tone = scheme.surfaceContainerHighest;
-    final tint = _held
-        ? tone
-        : _hovered
-        ? tone.withValues(alpha: .5)
-        : Colors.transparent;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: _radius,
-        onTap: widget.onTap,
-        // The tint below is the whole response; no ripple, and none of the
-        // theme's own wash on top of it.
-        splashFactory: NoSplash.splashFactory,
-        highlightColor: Colors.transparent,
-        hoverColor: Colors.transparent,
-        focusColor: Colors.transparent,
-        onHighlightChanged: (held) => setState(() => _held = held),
-        onHover: (hovered) => setState(() => _hovered = hovered),
-        child: AnimatedContainer(
-          duration: _fade,
-          curve: Curves.easeOut,
-          padding: widget.padding,
-          decoration: BoxDecoration(color: tint, borderRadius: _radius),
-          child: widget.child,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: _radius,
+      onTap: onTap,
+      child: Padding(padding: padding, child: child),
+    ),
+  );
 }
 
 /// The published-date condition as one line: the calendar glyph, the two
@@ -739,7 +706,7 @@ class _DateBound extends StatelessWidget {
           foregroundColor: scheme.onSurface,
           side: BorderSide(color: scheme.outlineVariant),
           textStyle: theme.textTheme.bodyMedium,
-        ),
+        ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
         child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
     );
@@ -763,7 +730,7 @@ class _PrereleaseSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return _Pressable(
+    return _TappableRow(
       onTap: () => onChanged(!value),
       padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
       child: Row(

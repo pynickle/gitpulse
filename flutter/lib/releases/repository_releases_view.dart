@@ -226,7 +226,8 @@ class _FilterPill extends StatelessWidget {
           shape: const StadiumBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            // No ink radius: the Material above already clips to a StadiumBorder
+            // and no press paints a tint, so a second radius decides nothing.
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

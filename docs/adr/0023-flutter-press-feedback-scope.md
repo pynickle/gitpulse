@@ -45,6 +45,14 @@ per-surface rule where this one deliberately adds none.
 - Keyboard focus stays visible. Killing `focusColor` along with the press tint would have removed the
   only focus indicator on custom ink surfaces, which is an accessibility failure rather than a
   stylistic choice; the shared resolver therefore keeps `focused` and `hovered` on the old tone.
+- The rule reaches further than the theme's own settings. `IconButtonThemeData` returns one style
+  for all four `IconButton` variants, so the shared overlay lands on `IconButton.filled`,
+  `.filledTonal` and `.outlined` too; the filled-varying ones sit on a coloured surface, which is
+  E9's case, so a filled or tonal icon button takes Material's wash of its own tone back at its
+  call site with `IconButton.styleFrom(overlayColor: …)`. `Switch` keeps Material's radial
+  reaction, which is a halo around the thumb rather than a surface tint, and `SegmentedButton`
+  segments keep theirs because the widget wraps them in their own `TextButtonTheme`. Both are
+  recorded as MASTER §12 E16 rather than left to be rediscovered.
 - The Release Timeline card's prerelease badge stays at `surfaceContainerHigh`, but no longer because
   of press-contrast. ADR 0019 moved it down a step so a pressed card would not dissolve it; with no
   pressed tone to collide with, the badge keeps that step for hierarchy alone.
