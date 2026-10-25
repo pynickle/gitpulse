@@ -83,7 +83,10 @@ coverage and retry actions. Connected cache uses the same publication ordering,
 buffering, latest-content deduplication, fixed baseline and saved visible membership
 as online results. Search and counts consume only that exposed window.
 Foreground return prunes expired records without refreshing
-the currently read timeline. Stored buffers and disconnected history never become
+the currently read timeline. Online windows use queued, account-scoped cleanup
+without reading or decoding saved releases; a displayed restored window is still
+restored after pruning so expired publications disappear from offline reading.
+Stored buffers and disconnected history never become
 visible merely because they are present in SQLite.
 
 The last verified backend capabilities are retained for offline startup at that
@@ -130,6 +133,10 @@ removals, rename/reorder, delayed requests, failed cleanup and offline retry,
 authoritative exhaustion and version 1 migration. The companion
 `timeline_cache_compaction_test.dart` verifies bounded duplicate provenance and
 continuation after compaction and reopening.
+
+`flutter test test/timeline/timeline_pruning_test.dart` checks foreground cleanup
+without saved-window reads or decoding, offline window expiry, account switches,
+generation rollback, and retrying failed clear/follow cleanup barriers.
 
 `flutter test test/settings/timeline_settings_test.dart` drives Settings through
 the real session and Nitro settings handlers with independent account sessions and

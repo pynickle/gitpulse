@@ -222,6 +222,20 @@ class TimelineCache extends _$TimelineCache {
     );
   }
 
+  /// Expires retained history without loading the saved visible window.
+  Future<void> prune({
+    required String scope,
+    required DateTime now,
+    required bool Function() isCurrent,
+  }) => _writeCurrent(isCurrent, () async {
+    final account = await customSelect(
+      'SELECT retention_days FROM cache_account WHERE scope = ?',
+      variables: [Variable(scope)],
+    ).getSingleOrNull();
+    final days = account?.readNullable<int>('retention_days');
+    if (days != null) await _prune(now, days);
+  });
+
   Future<SavedTimeline?> restore({
     required String scope,
     required DateTime now,

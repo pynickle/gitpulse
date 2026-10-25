@@ -587,6 +587,16 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (scope == null) return;
     final ticket = _generation;
     try {
+      if (!state.restored || !_cacheSynchronized) {
+        await ref
+            .read(timelineCacheProvider)
+            .prune(
+              scope: scope,
+              now: ref.read(timelineClockProvider)(),
+              isCurrent: () => _isCurrent(ticket),
+            );
+        return;
+      }
       final saved = await ref
           .read(timelineCacheProvider)
           .restore(
