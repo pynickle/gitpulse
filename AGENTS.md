@@ -6,11 +6,13 @@
 
 **Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.**
 
-This outranks taste, existing screens, and helpfulness. Web and Flutter. A control, icon, count, color, or position already names itself. A caption, helper line, or button label that repeats that meaning is a defect. Write the primary text only. If deleting the caption would make the control ambiguous, the layout is wrong: change the layout. A screen that explains itself with captions fails review.
-
 ## Tests (Non-Negotiable)
 
 **A test executes the code and asserts on behavior.** Call the function, mount the component, hit the route, then assert returned values, rendered output, request payloads, or public contracts. Source text is not behavior: a test that reads a `.vue` / `.ts` file and matches its characters proves nothing, and fails on every rename.
+
+## Scope
+
+Before adding complexity for a speculative or vanishingly unlikely race or security edge case, explain the concrete failure mode, likelihood, and complexity cost to the user and get their buy-in. Do not silently expand scope for theoretical robustness.
 
 ## Commands
 

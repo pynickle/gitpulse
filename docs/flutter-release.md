@@ -150,7 +150,7 @@ that an update from the previous formal version retains session/settings/cache.
 ### Android
 
 Use Android SDK platform 36, build-tools 36.0.0, NDK 28.2.13676358 and Java 25
-with the committed Gradle wrapper (9.8.1), AGP 9.1.0 and Kotlin 2.4.21.
+with the committed Gradle wrapper (9.8.2), AGP 9.1.0 and Kotlin 2.4.21.
 Flutter's pinned SDK supplies minSdk 24 and target/compile SDK 36. Accept the
 SDK licenses on the build host. Keep `kotlin.incremental=false`; Windows Pub
 cache and checkout paths on different drives otherwise break plugin compilation.
