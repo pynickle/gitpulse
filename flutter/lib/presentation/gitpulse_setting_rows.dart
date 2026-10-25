@@ -150,10 +150,13 @@ class GitPulseSettingsDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Divider(
-    height: 1,
-    thickness: 1,
+    height: GitPulseStroke.hairline,
+    thickness: GitPulseStroke.hairline,
     indent: indent,
     endIndent: indent,
-    color: Theme.of(context).dividerColor,
+    // A row's separator is a line inside the Settings surface, not its
+    // boundary: it takes the rule tone, which is lighter than a card's edge
+    // (MASTER §7 rules 1 and 3).
+    color: toneRule(Theme.of(context).colorScheme),
   );
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_formatting.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -38,6 +39,7 @@ Future<void> _pumpCard(
   TimelineRelease item, {
   Locale locale = const Locale('en'),
   bool signedIn = false,
+  Brightness brightness = Brightness.light,
 }) {
   return tester.pumpWidget(
     ProviderScope(
@@ -55,6 +57,7 @@ Future<void> _pumpCard(
       ],
       child: MaterialApp(
         locale: locale,
+        theme: gitPulseTheme(brightness),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ReleaseTimelineCard(item: item)),
@@ -142,4 +145,53 @@ void main() {
     expect(find.text('Prerelease'), findsOneWidget);
     expect(find.text('Earlier releases are not shown.'), findsOneWidget);
   });
+
+  // A card's border is the boundary of a surface and its badge's border is a
+  // line inside one, so the two take the scheme's two registered tones — never
+  // one tone for both (MASTER §7 rules 2 and 3). The badge is also a whole
+  // hairline: Material's half-pixel default renders inconsistently on high-DPI
+  // displays (MASTER §12 E14).
+  for (final brightness in Brightness.values) {
+    testWidgets('a card edges with one tone and its badge rules with another '
+        '(${brightness.name})', (tester) async {
+      await _pumpCard(
+        tester,
+        _release(
+          publishedAt: _clock.subtract(const Duration(days: 3)),
+          prerelease: true,
+        ),
+        brightness: brightness,
+      );
+      final scheme = Theme.of(tester.element(find.byType(ReleaseTimelineCard)))
+          .colorScheme;
+
+      final surface =
+          tester
+                  .widget<Ink>(
+                    find.ancestor(
+                      of: find.text('One'),
+                      matching: find.byType(Ink),
+                    ),
+                  )
+                  .decoration!
+              as BoxDecoration;
+      final edge = (surface.border! as Border).top;
+      expect(edge.color, scheme.outline);
+      expect(edge.width, 1);
+
+      final badge = tester
+          .widgetList<Container>(
+            find.ancestor(
+              of: find.text('Prerelease'),
+              matching: find.byType(Container),
+            ),
+          )
+          .map((container) => container.decoration)
+          .whereType<BoxDecoration>()
+          .single;
+      final rule = (badge.border! as Border).top;
+      expect(rule.color, scheme.outlineVariant);
+      expect(rule.width, 1);
+    });
+  }
 }

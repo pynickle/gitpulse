@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_language_colors.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../repositories/repository_navigation.dart';
 import '../timeline/timeline_models.dart';
 import 'release_follows_dto.dart';
@@ -401,11 +402,11 @@ class FollowRowDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Divider(
-    height: 1,
-    thickness: 1,
+    height: GitPulseStroke.hairline,
+    thickness: GitPulseStroke.hairline,
     indent: releaseFollowsPadding,
     endIndent: releaseFollowsPadding,
-    color: Theme.of(context).dividerColor,
+    color: toneRule(Theme.of(context).colorScheme),
   );
 }
 

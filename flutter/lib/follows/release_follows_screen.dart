@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'followed_repositories_panel.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
@@ -16,7 +17,7 @@ enum _RepositorySource { starred, search }
 /// The search field's shape: the soft radius the Timeline toolbar already uses,
 /// so the two search surfaces read as the same control.
 const _searchBorder = OutlineInputBorder(
-  borderRadius: BorderRadius.all(Radius.circular(8)),
+  borderRadius: BorderRadius.all(Radius.circular(GitPulseRadius.row)),
 );
 
 class ReleaseFollowsScreen extends ConsumerStatefulWidget {
@@ -290,7 +291,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                       ),
                       if (state.loading || state.saving)
                         const LinearProgressIndicator(),
-                      const Divider(height: 1),
+                      Divider(
+                        height: GitPulseStroke.hairline,
+                        thickness: GitPulseStroke.hairline,
+                        color: toneRule(Theme.of(context).colorScheme),
+                      ),
                       Expanded(
                         child: _discovery(state, search, loading, problem),
                       ),
@@ -366,7 +371,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                   ),
                 ),
                 if (wide) ...[
-                  const VerticalDivider(width: 1),
+                  VerticalDivider(
+                    width: GitPulseStroke.hairline,
+                    thickness: GitPulseStroke.hairline,
+                    color: toneRule(Theme.of(context).colorScheme),
+                  ),
                   const SizedBox(
                     width: 360,
                     child: FollowedRepositoriesPanel(),

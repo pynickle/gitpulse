@@ -71,12 +71,13 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: scroll),
-                // A column boundary, not a row boundary: the same hairline,
-                // turned on its side.
+                // The table and the account column are two bands of one
+                // surface, so the line between them is a rule rather than an
+                // edge — the same hairline, turned on its side.
                 VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                  color: Theme.of(context).dividerColor,
+                  width: GitPulseStroke.hairline,
+                  thickness: GitPulseStroke.hairline,
+                  color: toneRule(Theme.of(context).colorScheme),
                 ),
                 SizedBox(
                   width: _accountColumnWidth,

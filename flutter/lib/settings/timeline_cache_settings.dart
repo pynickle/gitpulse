@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_theme.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../timeline/timeline_session.dart';
 
 /// This account's release-retention policy and this installation's copy of it,
@@ -81,7 +82,7 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
     final unit = typed ?? days;
 
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
     );
 

@@ -87,7 +87,9 @@ class _TimelineFilterOverlay extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: constraints.maxHeight),
                 child: const Material(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(GitPulseRadius.surface),
+                  ),
                   clipBehavior: Clip.antiAlias,
                   child: TimelineFilterPanel(),
                 ),
@@ -322,11 +324,11 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
                       padding: EdgeInsets.zero,
                       itemCount: listed.length,
                       separatorBuilder: (context, index) => Divider(
-                        height: 1,
-                        thickness: 1,
+                        height: GitPulseStroke.hairline,
+                        thickness: GitPulseStroke.hairline,
                         indent: gutter - panelInset,
                         endIndent: gutter - panelInset,
-                        color: Theme.of(context).dividerColor,
+                        color: toneRule(Theme.of(context).colorScheme),
                       ),
                       itemBuilder: (context, index) {
                         final repository = listed[index];
@@ -451,7 +453,7 @@ class _RepositorySearch extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
     );
     return TextField(

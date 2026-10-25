@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../releases/release_drawer.dart';
 import 'timeline_cache.dart';
 import 'timeline_models.dart';
@@ -27,7 +28,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(GitPulseRadius.surface),
         onTap: () => showReleaseDrawer(context, (
           owner: item.repository.owner,
           repository: item.repository.name,
@@ -39,8 +40,13 @@ class ReleaseTimelineCard extends ConsumerWidget {
         // card that answers a press with nothing reads as unresponsive.
         child: Ink(
           decoration: BoxDecoration(
-            border: Border.all(color: theme.dividerColor),
-            borderRadius: BorderRadius.circular(12),
+            // The card's own boundary, so it takes the edge tone rather than
+            // the rule tone its contents use (MASTER §7 rule 3).
+            border: Border.all(
+              color: toneEdge(scheme),
+              width: GitPulseStroke.hairline,
+            ),
+            borderRadius: BorderRadius.circular(GitPulseRadius.surface),
             color: scheme.surfaceContainerLow,
           ),
           child: Container(
@@ -157,8 +163,13 @@ class _PrereleaseBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        border: Border.all(color: scheme.outlineVariant, width: 0.5),
-        borderRadius: BorderRadius.circular(6),
+        // A line inside the card, so it takes the rule tone at the one width
+        // the app draws (MASTER §7, §12 E14).
+        border: Border.all(
+          color: toneRule(scheme),
+          width: GitPulseStroke.hairline,
+        ),
+        borderRadius: BorderRadius.circular(GitPulseRadius.row),
         // One container step below the press tint, so a pressed card cannot
         // dissolve the badge it holds into its own tone.
         color: scheme.surfaceContainerHigh,

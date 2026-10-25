@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'timeline_cache.dart';
 import 'timeline_filters.dart';
 import 'timeline_session.dart';
@@ -75,7 +76,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
     );
     final baseline = _baselineLabel(l10n, now, localDateKey);
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
     );
 

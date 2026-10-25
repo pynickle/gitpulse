@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'repository_releases_controller.dart';
 import 'repository_releases_dto.dart';
 import 'repository_releases_service.dart';
@@ -276,7 +277,7 @@ class _ReleaseRow extends StatelessWidget {
     final downloads = gitPulseCompactCount(context, item.downloadCount);
     return MergeSemantics(
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(GitPulseRadius.row),
         onTap: onTap,
         child: Stack(
           children: [
@@ -291,7 +292,7 @@ class _ReleaseRow extends StatelessWidget {
                     width: 4,
                     decoration: BoxDecoration(
                       color: scheme.primary,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(GitPulseRadius.bar),
                     ),
                   ),
                 ),

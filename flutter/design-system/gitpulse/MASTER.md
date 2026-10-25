@@ -72,8 +72,8 @@ Reading 档是既有事实，不是本文发明：`lib/releases/release_document
 | `description` | `bodyLarge` | 16 / 1.50 | w400 | `onSurfaceVariant` | 仓库描述 |
 | `controlLabel` | `labelLarge` | 14 / 1.43 | w500（M3 默认） | 由控件决定 | 芯片/分段控件标签 |
 
-**字重只有三档**：`w400` 正文、`w500` M3 控件默认、`w600` 强调。**w700 禁用**（唯一现存的
-`lib/timeline/timeline_screen.dart:496` 归一到 w600），`w300` 及以下禁用。
+**字重只有三档**：`w400` 正文、`w500` M3 控件默认、`w600` 强调。**w700 禁用**（批 2 已把
+Previous Refresh 标记从 w700 归一到 w600，全库现无 w700），`w300` 及以下禁用。
 
 除 `controlLabel` 外，本表每个角色在 `lib/presentation/gitpulse_tokens.dart` 有一个
 `gitPulseType*` 函数。`controlLabel` 不设函数：它就是控件自己的 `labelLarge`，字号字重取 M3
@@ -217,8 +217,13 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 1. **禁止直接读 `theme.dividerColor`**。M3 下它等于 `colorScheme.outline`（Flutter 源码
    `theme_data.dart` 已确认），直接用它会让"内部线"和"面的边"混为一谈——这正是现状不一致的根源。
    改用 `toneEdge` / `toneRule`。
-2. `Divider` 一律 `height: 1, thickness: 1`；`GitPulseSettingsDivider` 是页面级 hairline 的
-   唯一实现，`indent: 0` 表示"贯通整个 surface"的边界线。
+2. 规则线一律 `height: GitPulseStroke.hairline, thickness: GitPulseStroke.hairline`
+   （`height` 是它自己占的盒高，`thickness` 才是线；两者都取同一个令牌，页面节奏由外层 padding
+   决定）。`GitPulseSettingsDivider` 是**设置表格行分隔**的唯一实现，`indent: 0` 表示"贯通整个
+   surface"的边界线；别的 surface 内部的规则线直接写一条同参数的 `Divider`（或像 Previous
+   Refresh 尾线那样用同高同宽的 `Container`，因为该处刻意不用 `Divider`，见 §12 E5）。
+   唯一不是规则线的 `Divider` 是 Release 抽屉的抓取把手（`release_drawer.dart` 里
+   `thickness: 4` 的那条），它是 affordance，归 §12 E4，但取色仍是 `toneRule`。
 3. 一个 surface 内部**只用 `toneRule`**；一个 surface 的**外轮廓**只用 `toneEdge`。
 4. 例外：抽屉里的资产行之间**不画线**，用留白分隔（ADR 0019：31 条 hairline 会读成电子表格）。
 
@@ -293,9 +298,9 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | --- | --- | --- | --- |
 | E1 | Notes/README 用独立字阶，不套 Dense 档 | `lib/releases/release_document.dart` | ADR 0018：`the notes document gets its own type scale`；浏览器默认阶梯曾把一级标题推到 65px 下方 |
 | E2 | Release 抽屉宽面板宽度**派生自时间线列宽**，不是固定令牌 | ADR 0018 | `should not "fix" the panel back to a fixed pixel width` |
-| E3 | 资产文件名不截断、必须换行 | `lib/releases/release_details_view.dart:255` | ADR 0019：`x86_64` vs `arm64` 正是读者要比对的部分 |
-| E4 | 移动端 sheet：70% 开合、40% 最小、0.7 吸附、顶角 20 | ADR 0010 / 0018 | 手势几何归 ADR 0010，视觉只借用圆角 |
-| E5 | Previous Refresh 标记与日期分组头**刻意不同形** | `lib/timeline/timeline_screen.dart:450-456` | 标记若长得像日期头，读者会误读为一天的分组 |
+| E3 | 资产文件名不截断、必须换行 | `lib/releases/release_details_view.dart` 的 `_ReleaseAssetRow` | ADR 0019：`x86_64` vs `arm64` 正是读者要比对的部分 |
+| E4 | 移动端 sheet：70% 开合、40% 最小、0.7 吸附、顶角 20、抓取把手 4 厚 | ADR 0010 / 0018；把手厚度写在 `release_drawer.dart` 的 `_sheetGrabThickness` | 手势几何归 ADR 0010，视觉只借用圆角；把手是 affordance、不是规则线，但它取 `toneRule`（§7 规则 2） |
+| E5 | Previous Refresh 标记与日期分组头**刻意不同形** | `lib/timeline/timeline_screen.dart` 的 `_PreviousRefreshMark` 与 `_DateHeader` | 标记若长得像日期头，读者会误读为一天的分组 |
 | E6 | 抽屉资产行之间**不画线**，用留白分隔 | ADR 0019 | 31 条 hairline 在手机宽度会读成电子表格 |
 | E7 | 14px 图标出现在"名词位"（替代星/叉/眼/语言圆点） | `lib/repositories/repository_screen.dart`、`lib/presentation/gitpulse_language_colors.dart` | 图形替代名词、名词留在 `Semantics` 里，是该页的信息设计 |
 | E8 | `radiusBar = 2` 与图形内部圆角 | Entry Release 强调条、Followed View 图标 | 装饰条与图形几何，不是面圆角 |
@@ -303,7 +308,7 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | E10 | 抽屉 chrome 行固定 48 高 | ADR 0018 | 它是"一行 chrome 换回一整屏阅读空间"的那一行 |
 | E11 | 设置表格上限 1120 vs 阅读量尺 960 vs 时间线 700/1100 | `GitPulseWidth` 的四个令牌 | 四者职责不同：**扫描宽度**、**阅读量尺**、**列数分档**（700 一列 / 1100 两列以上），不是同一件事的四个值；所以是四个令牌而不是一个"内容宽度" |
 | E12 | 设置行标签与控件基线的 `6` 光学修正 | `lib/presentation/gitpulse_setting_rows.dart` | 芯片行比输入框矮，居中会同时"不像对齐" |
-| E13 | `errorWash` 的 0.35 合成 alpha | `lib/timeline/timeline_screen.dart:213` | 全库唯一的合成底色；错误横幅需要"在卡片之上、在 surface 之下"的档位 |
+| E13 | `errorWash` 的 0.35 合成 alpha | `lib/timeline/timeline_screen.dart` 的 `_LookupFailureBanner` | 全库唯一的合成底色；错误横幅需要"在卡片之上、在 surface 之下"的档位。它的外轮廓因此是 `errorContainer` 而不是 `toneEdge`——横幅的边界要说出"这是错误"，§7 规则 3 在此让位给本例外 |
 | E14 | 禁止 0.5px 线（原徽章描边改为 1px） | — | 0.5 在高 DPI 下渲染不一致，且它是错的层级信号 |
 | E15 | 仓库页 fact 图形与其数字之间的 `3` | `lib/repositories/repository_screen.dart` | 单次使用的光学值：14px 图形旁 2 太紧、4 太松；只有这一行需要，故留在局部命名常量而不进 §5 角色表 |
 | E16 | `Switch` 的 radial reaction 保留 M3 自带色；`SegmentedButton` 的分段保留自己的 overlay | `lib/timeline/timeline_filter_panel.dart`（唯一一处 Switch）、`lib/follows/release_follows_screen.dart`（分段控件） | 两者都不是"面底色"：Switch 的按压反馈是绕 thumb 的放射光环，`SwitchThemeData.overlayColor` 也读不到 `ThemeData.highlightColor`，清零只会连 hover/focus 唯一的指针提示一起删掉；分段控件由内层 `TextButtonTheme` 自带 overlay 覆盖应用级主题，其彩色段属于 §3.3 的 E9 理由 |

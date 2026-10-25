@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'release_timeline_card.dart';
 import 'timeline_cache.dart';
 import 'timeline_filter_panel.dart';
@@ -209,7 +210,7 @@ class _LookupFailureBanner extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: theme.colorScheme.errorContainer),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(GitPulseRadius.surface),
         color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
       ),
       child: Column(
@@ -493,7 +494,7 @@ class _PreviousRefreshMark extends StatelessWidget {
                 maxLines: 1,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: scheme.primary,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -511,7 +512,10 @@ class _PreviousRefreshMark extends StatelessWidget {
               // A plain rule rather than a [Divider]: the day headers own that
               // widget, and the marker must not be mistakable for one.
               Expanded(
-                child: Container(height: 1, color: scheme.outlineVariant),
+                child: Container(
+                  height: GitPulseStroke.hairline,
+                  color: toneRule(scheme),
+                ),
               ),
             ],
           ),
@@ -531,17 +535,22 @@ class _RuleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final rule = Divider(
+      height: GitPulseStroke.hairline,
+      thickness: GitPulseStroke.hairline,
+      color: toneRule(scheme),
+    );
     return Padding(
       padding: padding,
       child: Row(
         children: [
-          Expanded(child: Divider(color: theme.dividerColor)),
+          Expanded(child: rule),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: child,
           ),
-          Expanded(child: Divider(color: theme.dividerColor)),
+          Expanded(child: rule),
         ],
       ),
     );

@@ -23,7 +23,7 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 - [x] `../docs/adr/0023-flutter-press-feedback-scope.md`
 - [x] `../CONTEXT.md` 补 5 个视觉领域词
 
-**下一轮从这里开始：批 2。**
+**下一轮从这里开始：批 3。**
 
 ---
 
@@ -244,9 +244,91 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 1. 设置页表格的横线变浅、但每行仍可分辨；大字号（1.5×/2×）下仍不溢出。
 2. 时间线日期头两侧线变浅，分组仍清晰。
 3. 卡片边框**没有**变浅（若变浅，说明误把 `edge` 写成了 `rule`）。
+4. **高 DPI 设备上线的粗细**（dpr ≥ 2，即 Android/真机）：本批之前这些规则线的
+   `thickness` 是缺省的 `0`，Flutter 画成**一个设备像素**（dpr 2 上等于 0.5 逻辑像素）；
+   现在一律一个逻辑像素。日期头、notes 上下边界、资产模块边界、Follows 行、抽屉 chrome
+   下分隔在这些设备上会**变粗约一倍**。这是 §12 E14 要求的方向，但它是本批第二处可见变化，
+   必须看一眼"是否读成加粗而不是错位"。
+5. Follows 页头分隔、Follows 宽布局竖分隔、抽屉 chrome 下分隔（表格外补的三处 `toneRule`）：
+   与设置页横线同步变浅，两栏之间仍读得出一条分区。
+6. 抽屉底部 sheet 的抓取把手：仍是一根 40×4 的短棒，只是颜色从 `outline` 降到 `outlineVariant`
+   （表格外补的取色，见下）。
 
-- [ ] 批 2 完成
-- [ ] 实跑命令记录：<!-- 粘贴 -->
+- [x] 批 2 完成（代码与自动验证；**人眼复核待设备端**，见下）
+- [x] 实跑命令记录：
+
+  ```
+  $ flutter analyze
+  Analyzing flutter...
+  No issues found! (ran in 8.8s)
+
+  $ dart format --output=none --set-exit-if-changed lib test
+  Formatted 126 files (0 changed) in 1.16 seconds.   # exit 0
+
+  $ flutter test --timeout 30s
+  00:43 +393: All tests passed!
+  ```
+
+  （批 1 之后 391 个测试，本批新增 2 个 = 1 个用例 × 亮/暗，共 393。点名的
+  `timeline/release_timeline_card_test.dart`、`settings/settings_layout_test.dart`、
+  `releases/release_details_view_test.dart`、`timeline/timeline_screen_test.dart`、
+  `timeline/timeline_toolbar_test.dart` 均在该全量跑内并通过。）
+
+  **表格之外多改的 8 处，每处都由代码证据判定**（表格只点名"该改什么"，没点全"同类还有谁"）：
+
+  1. 仍读 `theme.dividerColor` 的另外三处内部线（表格外的遗漏，不是例外）：
+     `follows/release_follows_widgets.dart`（`FollowRowDivider`）、
+     `timeline/timeline_filter_panel.dart`（仓库列表分隔）、`follows/release_follows_screen.dart`
+     的竖向分隔。表格已把设置页的竖向分隔判为 `toneRule`（"列边界是内部线"），Follows 页
+     那条同构，必须同判；另两条与 `GitPulseSettingsDivider` 同构。改完后全库 **0 处**
+     读 `theme.dividerColor`（`gitpulse_tokens.dart` 的 doc 注释除外），§7 规则 1 才成立。
+  2. 四处缺 `thickness` 的规则线：`follows/followed_repositories_panel.dart`、
+     `follows/release_follows_screen.dart`（两处，含一条 `VerticalDivider`）、
+     `releases/release_drawer.dart` 的 chrome 下分隔。缺省 `thickness` 是 `0`，Flutter 把它画成
+     一个设备像素——在 dpr ≥ 2 上正是 §12 E14 禁掉的 0.5px 线。四处补 `GitPulseStroke.hairline`。
+     本批点名的两条 notes 边界（`Divider(height: 1)`）同理；日头两侧的 `Divider` 把 `height`
+     也从缺省 16 写成 1（那一行的高度由日期文字决定、文字远高于 16，故零视觉差）。
+     至此**每条规则线**的 `height`/`thickness` 都是 `GitPulseStroke.hairline`，
+     `GitPulseSettingsDivider` 与 `FollowRowDivider` 里原来的字面 `1` 也一并接上。
+  3. 抽屉抓取把手（`release_drawer.dart` 里唯一一条 `Divider`，厚度收进局部命名常量
+     `_sheetGrabThickness`）补 `toneRule`：它原来继承 `theme.dividerColor`（= `outline`，
+     面边界的色调），是全库最后一处"内部图形用了 edge 色调"。厚度 4 不变（它是 affordance，
+     §7 规则 2 与 §12 E4 已写明）。
+  4. 五处半径接线（值不变，与批 0 同一理由：字面值与令牌成对存在会让一次改动变成多处编辑）：
+     时间线卡片 12（ink + 描边，本来就在本批要改的卡片上）；错误横幅 12 → `surface`
+     （§6 已登记"横幅 = 12"）；`release_details_view.dart` 两处资产行 ink 8 → `row`。
+
+  **按表格明确留下的两处未动**：`followed_repositories_panel.dart` 的 `Radius.circular(1)`
+  （E8 图形几何）与 `release_drawer.dart:193` 的 sheet 顶 `20`（E4 已点名"保持不动"）。
+  后者的字面值因此仍是 `20`，`GitPulseRadius.sheetTop` 目前**没有使用点**——不是遗漏，
+  是谁拥有 E4 几何谁再改它；见"批 5"的可选项。
+
+  新增测试 `test/timeline/release_timeline_card_test.dart` 的一条用例（`_pumpCard` 加
+  `brightness` 参数，亮/暗各跑一次）：`tester.widget<Ink>` 读卡片交给框架的 `BoxDecoration`，
+  断言描边是**当场所用 ColorScheme 的 `outline`**、宽 1；徽章的 `BoxDecoration` 描边是
+  `outlineVariant`、宽 1。开工时先红（徽章宽 `0.5 ≠ 1`，卡片那半当时已绿——M3 下
+  `dividerColor` 本就等于 `outline`），改完再绿。卡片那半是防回归的守卫：谁把卡片改成
+  `toneRule`，它就红。
+
+  **人眼复核：未做，留给设备端**（与批 1 同一处理）。上面 6 个复核点都要真机或 Marionette；
+  `AGENTS.md` 规定只在用户明确要求时才驱动真机/浏览器，本轮未启动。§16.4 要求的
+  "验收命令 + 人眼复核点"已经落在本文（命令与 6 个点都在），但**点还没人看过**——
+  "批 2 完成"按批 1 的先例读作"代码与自动验证完成"，感官确认是唯一未闭合项。
+  自动验证能给出的替代证据是上面那条 `edge`/`rule` 断言，它不能替代对"变浅/变粗多少"的判断。
+  回滚点：`lib/presentation/gitpulse_setting_rows.dart`、`lib/timeline/release_timeline_card.dart`、
+  `lib/timeline/timeline_screen.dart`、`lib/timeline/timeline_filter_panel.dart`、
+  `lib/timeline/timeline_toolbar.dart`、`lib/releases/release_details_view.dart`、
+  `lib/releases/release_drawer.dart`、`lib/releases/repository_releases_view.dart`、
+  `lib/settings/settings_screen.dart`、`lib/settings/timeline_cache_settings.dart`、
+  `lib/follows/release_follows_screen.dart`、`lib/follows/release_follows_widgets.dart`、
+  `lib/follows/followed_repositories_panel.dart`，以及
+  `test/timeline/release_timeline_card_test.dart` 与本文。
+
+  **同类但本批不碰的两处（登记，不顺手改）**：`settings/timeline_cache_settings.dart` 与
+  `timeline/timeline_filter_panel.dart` 的 `OutlinedButton.styleFrom(side: BorderSide(color:
+  scheme.outlineVariant))`。§3.2 把"面的边界"给 `edge`，这两个控件的描边却在 rule 色调上；
+  但它们既不是面边界（`OutlinedButton` 没有面）也不是内部线，MASTER 目前没给"控件描边"分配
+  色调。改它会让两个按钮变深——属于观感变化，需要 MASTER 先给角色，故留给下一轮。
 
 ---
 
@@ -308,6 +390,17 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 - [ ] 可选修正：仓库根 `../AGENTS.md` 说 `../CONTEXT.md` 与 `../docs/adr/` "may be git-ignored"，实测两者**都被跟踪**
       （22 个 ADR 在版本库）。建议把该句改成"这些文件是源码的一部分，不要在 fff 里当作不存在"。
 - [ ] 可选：把本文两处数字（`700/1100`、`1120/1040`）在后续引入新断点时重审；当前它们分属不同职责（E11）。
+- [ ] 可选（批 2 评审留下）：`OutlinedButton` 的描边色调无处可依。`settings/timeline_cache_settings.dart`
+      与 `timeline/timeline_filter_panel.dart` 两处用 `scheme.outlineVariant`，而 §3.2 把"面的边界"
+      给 `edge`、§7 又没给"控件描边"分配色调。需要先在 MASTER 给角色（`controlEdge`？），
+      再一次性改这两处——改完是可见的加深，得进一次有复核点的批次。
+- [ ] 可选（批 2 评审留下）：`GitPulseRadius.sheetTop` 至今没有使用点（`release_drawer.dart:193`
+      仍是字面 `20`，E4 点名"保持不动"）。谁拥有 E4 的 sheet 几何，谁把它接上。
+- [ ] 可选（批 2 评审留下）：§2.1 的字体角色函数里，只有 `gitPulseTypeRowLabel`（经
+      `gitPulseSettingLabelStyle`）和阅读档在真实使用；`pageTitle` / `surfaceTitle` / `brandName` /
+      `sectionLabel` / `meta` / `metaTight` / `description` 仍无调用点（卡片、抽屉、仓库页各自
+      copyWith）。这需要一个"排版角色接线"批次，且 Previous Refresh 标记的 `primary` 与
+      `sectionLabel` 的 `onSurfaceVariant` 谁对，得先定（§3.2 只把 `primary` 登记给 `brandLink`）。
 
 ---
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../presentation/presentation_preferences_controller.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
@@ -68,7 +69,11 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
           ),
         ),
         if (state.loading || state.saving) const LinearProgressIndicator(),
-        const Divider(height: 1),
+        Divider(
+          height: GitPulseStroke.hairline,
+          thickness: GitPulseStroke.hairline,
+          color: toneRule(Theme.of(context).colorScheme),
+        ),
         Expanded(
           child: CustomScrollView(
             primary: false,

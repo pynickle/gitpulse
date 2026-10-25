@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'document_content.dart';
 import 'release_detail_dto.dart';
 import 'release_detail_service.dart';
@@ -74,9 +75,13 @@ class ReleaseDetailsView extends StatelessWidget {
         ),
         // A rule separates that header from the notes, so a changelog's own
         // first heading cannot read as a continuation of the release name.
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Divider(
+            height: GitPulseStroke.hairline,
+            thickness: GitPulseStroke.hairline,
+            color: toneRule(theme.colorScheme),
+          ),
         ),
         if (release.body.isEmpty)
           Text(l10n.releaseNoNotes)
@@ -136,9 +141,13 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
       children: [
         // A boundary, not a container: 24 of room says the notes have ended, a
         // hairline draws the line, and 16 more keeps the fold row off it.
-        const Padding(
-          padding: EdgeInsets.only(top: 24, bottom: 16),
-          child: Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.only(top: 24, bottom: 16),
+          child: Divider(
+            height: GitPulseStroke.hairline,
+            thickness: GitPulseStroke.hairline,
+            color: toneRule(scheme),
+          ),
         ),
         // The fold row reads as a section label rather than one more sentence of
         // the changelog, and the whole row is the toggle.
@@ -148,7 +157,7 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
             expanded: _expanded,
             child: InkWell(
               key: const Key('release-assets'),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(GitPulseRadius.row),
               onTap: () => setState(() => _expanded = !_expanded),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -228,7 +237,7 @@ class _ReleaseAssetRow extends StatelessWidget {
         button: downloadUrl != null,
         hint: downloadUrl == null ? null : l10n.releaseDownload,
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(GitPulseRadius.row),
           onTap: downloadUrl == null ? null : () => onOpenExternal(downloadUrl),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),

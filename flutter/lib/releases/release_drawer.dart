@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
 import '../timeline/timeline_layout.dart';
@@ -36,6 +37,13 @@ Widget _chromeAction({
   onPressed: onPressed,
   icon: Icon(icon),
 );
+
+/// How thick the phone sheet's grab handle is drawn.
+///
+/// Not a rule line and not a stroke width: it is the affordance that says the
+/// sheet can be dragged, so its size answers to the finger rather than to the
+/// ink hierarchy (MASTER §12 E4).
+const _sheetGrabThickness = 4.0;
 
 class ReleaseDrawer extends ConsumerStatefulWidget {
   const ReleaseDrawer({super.key, required this.entry});
@@ -223,13 +231,20 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                         _snapSheet(_sheetController.size > .85 ? 1 : .7);
                       }
                     },
-                    child: const SizedBox(
+                    child: SizedBox(
                       height: 28,
                       width: double.infinity,
                       child: Center(
                         child: SizedBox(
                           width: 40,
-                          child: Divider(thickness: 4),
+                          // The sheet's grab affordance rather than a rule: it
+                          // is toned as a line inside the sheet so it is the
+                          // app's one tone and not a theme default
+                          // (MASTER §7, §12 E4).
+                          child: Divider(
+                            thickness: _sheetGrabThickness,
+                            color: toneRule(theme.colorScheme),
+                          ),
                         ),
                       ),
                     ),
@@ -248,7 +263,9 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(
+                            GitPulseRadius.row,
+                          ),
                           onTap: () => _openLink(
                             Uri.https(
                               'github.com',
@@ -333,7 +350,11 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                   ],
                 ),
               ),
-              const Divider(height: 1),
+              Divider(
+                height: GitPulseStroke.hairline,
+                thickness: GitPulseStroke.hairline,
+                color: toneRule(theme.colorScheme),
+              ),
               Expanded(
                 // The Repository Release List owns its own bands and scrolls
                 // inside itself, so the filter bar and pager stay put; the
