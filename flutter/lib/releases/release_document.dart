@@ -8,6 +8,7 @@ import 'package:fwfh_svg/fwfh_svg.dart';
 import 'package:html/dom.dart' as dom;
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_tokens.dart';
 import 'document_content.dart';
 import 'native_code_block.dart';
 
@@ -17,9 +18,13 @@ import 'native_code_block.dart';
 /// phone instead of a browser default ladder. Applied through the renderer's
 /// custom styles hook so block rendering, code blocks and tables stay the
 /// renderer's own.
-const _notesBodySize = 15.0;
-const _notesBodyLineHeight = 24.0;
-const _notesHeadingLineHeight = 1.35;
+///
+/// The numbers are the reading scale `GitPulseType` registers (MASTER §2.2),
+/// read from there rather than restated: this file owns how the scale is
+/// applied, the token file owns what it is.
+const _notesBodySize = GitPulseType.readingBodySize;
+const _notesBodyLineHeight = GitPulseType.readingBodyLineHeight;
+const _notesHeadingLineHeight = GitPulseType.readingHeadingLineHeight;
 
 String _px(double value) => '${value}px';
 
@@ -32,13 +37,13 @@ Map<String, String>? _notesStyles(
       return {'margin': '0 0 12px'};
     case 'h1':
       return {
-        'font-size': _px(20),
+        'font-size': _px(GitPulseType.readingHeading1Size),
         'line-height': '$_notesHeadingLineHeight',
         'margin': '0 0 10px',
       };
     case 'h2':
       return {
-        'font-size': _px(17),
+        'font-size': _px(GitPulseType.readingHeading2Size),
         'line-height': '$_notesHeadingLineHeight',
         'margin': '0 0 8px',
       };
@@ -49,17 +54,17 @@ Map<String, String>? _notesStyles(
     case 'h5':
     case 'h6':
       return {
-        'font-size': _px(_notesBodySize),
+        'font-size': _px(GitPulseType.readingHeading3Size),
         'line-height': '$_notesHeadingLineHeight',
         'margin': '0 0 6px',
       };
     case 'ul':
     case 'ol':
-      return {'padding-inline-start': _px(20)};
+      return {'padding-inline-start': _px(GitPulseType.readingListIndent)};
     case 'blockquote':
       return {
         'margin': '0 0 12px',
-        'padding-inline-start': _px(12),
+        'padding-inline-start': _px(GitPulseType.readingQuoteIndent),
         'border-inline-start': '3px solid ${_cssColor(quoteBarColor)}',
       };
     case 'hr':

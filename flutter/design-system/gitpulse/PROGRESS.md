@@ -23,7 +23,7 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 - [x] `../docs/adr/0023-flutter-press-feedback-scope.md`
 - [x] `../CONTEXT.md` 补 5 个视觉领域词
 
-**下一轮从这里开始：批 4。**
+**下一轮从这里开始：批 5（收尾与长期维持）。**
 
 ---
 
@@ -462,8 +462,89 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 
 **人眼复核**：Release 抽屉的 notes 外观不得有任何变化；若有，本批失败，回滚。
 
-- [ ] 批 4 完成
-- [ ] 实跑命令记录：<!-- 粘贴 -->
+- [x] 批 4 完成（代码与自动验证；**人眼复核待设备端**，见下）
+- [x] 实跑命令记录：
+
+  ```
+  $ flutter analyze
+  Analyzing flutter...
+  No issues found! (ran in 11.0s)
+
+  $ dart format --output=none --set-exit-if-changed lib test
+  Formatted 126 files (0 changed) in 1.24 seconds.   # exit 0
+
+  $ flutter test --timeout 30s
+  00:56 +396: All tests passed!
+  ```
+
+  （批 3 之后 394 个测试，本批新增 2 个，共 396。点名的
+  `test/releases/release_document_typography_test.dart` **原有 4 条用例一条未改**，在该全量跑内
+  通过——那 4 条（正文 15sp、正文行高 24px、标题单调递减、标题下间距 <16、列表 16–36 /
+  引用 8–20 缩进）就是"零回归"的证据。本批在该文件**末尾追加** 2 条，理由见下。）
+
+  **表格之外多接的三组令牌（全部同值，零视觉变化）**，理由与批 0/批 3 相同：字面值与令牌成对
+  存在会让一次改动变成多处编辑。
+
+  | 位置 | 接上 | 依据 |
+  | --- | --- | --- |
+  | `_notesStyles` 的 `h3`–`h6` | `GitPulseType.readingHeading3Size` | 表格写"20 / 17 / 15 引用 `readingHeading1/2/3`"，第三个档就是这一支；原来它写的是 `_notesBodySize`（同值 15），接上角色名后 h3 不再借用正文的名字 |
+  | `ul` / `ol` 的 `padding-inline-start` | `GitPulseType.readingListIndent` | §2.2 登记的"列表缩进 20"，本批之前**没有使用点**；§16.2 要求每个角色至少一个使用点，接上才成立 |
+  | `blockquote` 的 `padding-inline-start` | `GitPulseType.readingQuoteIndent` | 同上（引用缩进 12） |
+
+  接完的结果：`GitPulseType` 的阅读档数值令牌**全部**有使用点，`release_document.dart` 里
+  不再有字号、行高、缩进的字面数值。标题直接写令牌、正文经 `_notesBodySize` 之类的别名，
+  两种写法并存不是随手混用：表格第一行要求"常量保留名称"，第二行要求"标题引用令牌"。
+
+  **刻意留作字面值的块间距（6 处声明，不是 4 处）**——它们的值逐个等于 §5 的某个距离令牌，
+  但那全是数值巧合，职责不同：
+
+  | 元素 | 字面值 | §5 里数值相同的那一行 | 职责差别 |
+  | --- | --- | --- | --- |
+  | `p` / `blockquote` 的 `margin` | 12 | `rowInsetV` | 表格行的上下内距 vs. 段落之间的块间距 |
+  | `h1` 的 `margin` | 10 | `meta` | 卡片正文与 meta 之间 vs. 标题与它所引导的正文之间（§2.2 要求 <16） |
+  | `h2` 的 `margin` | 8 | `inline` | 同一行内并列元素 vs. 阅读档块间距 |
+  | `h3`–`h6` 的 `margin` | 6 | `tight` | 同一块内相邻行 vs. 阅读档块间距 |
+  | `hr` 的 `margin` | 20 | `factGap` | 仓库页数据行项间距 vs. 规则线上下的留白（§2.2 要 ≥30，由 hr 的 20 加段落 12 提供） |
+
+  接到 §5 上去等于宣称"段落下间距就是表格行内距"，是给两个职责制造假等式，所以不接。
+  这条说明**只写在这里、不写进 MASTER**：批 3 已判定"给表补一句自我限定不属于 §16 的三种动法"
+  （见批 3 登记第 1 项），本批评审把同一条判给了 MASTER §2.2 的一稿补写，已撤回。
+
+  **新增守卫（追加在 typography 套件末尾的 2 条用例）**：挂载真实 `ReleaseDocument` 后读
+  **渲染出来的** `RichText` 样式——每个标题档、正文、标题 line box 比例、列表缩进、引用缩进，
+  每一项都同时断言"等于文档读的令牌"和"等于 MASTER §2.2 登记的数字"。两种断言各管一头：
+  前者防"某档改回字面值"（原 4 条只断言单调递减，`h1` 改成 22 也通过），后者防"令牌和文档
+  一起滑到一个 MASTER 没登记过的尺度"。缩进是量 `RenderParagraph` 的位置得到的真实值
+  （列表 20、引用 12 + 引用条 3），不是读源码文本。
+
+  它是**守卫，不是本批的证据**：改之前这些值全等，所以本批前后都绿。本批"零回归"的证据只有
+  两条——`git diff -- lib` 里没有一处数值改动，以及上面那 4 条原有用例原样通过。把它写进同一个
+  文件而不是新开一个：新文件会与 typography 套件重复一份 `_source` 与三个测量 helper（本批评审
+  指出的重复），而原文件的 4 条用例保持逐字不变，"零回归"的证据因此不受影响。
+
+  **登记、不顺手改的三项**：
+
+  1. `gitPulseTypeReadingBody`（`readingBody` 的角色函数）至今**没有调用点**——`ReleaseDocument`
+     的 `textStyle` 自己算 `24/15`，与那个函数同一个式子（"同一角色两个定义"，批 0 曾用"改为转调"
+     消掉过一次）。本批不改，因为表格要求两个常量"保留名称"，而改为转调会让它们失去使用者被删。
+     收口动作是"转调该函数 + 删两常量 + MASTER 改引用"，三处同批。
+  2. **MASTER §1 第 50–51 行现在是一句旧引用**：它仍写 `_notesBodySize = 15.0` /
+     `_notesBodyLineHeight = 24.0`，而这两个常量现在赋的是令牌（值仍是 15/24）。§16 只给了改值、
+     加角色、写 ADR 三种动法，没有"改写一条引用"这一种，故**只登记、不改**——与批 3 处理 §15
+     那句"当时的结论"同一手法。
+  3. **§2.2 的缩进两行没有英文令牌名**：表里写"列表缩进 20 / 引用缩进 12"（值 + 职责），
+     `readingListIndent` / `readingQuoteIndent` 这两个名字是批 0 在令牌文件里起的。§16.2 的原文是
+     "先登记**名字**、值、职责和至少一个使用点"，若"名字"必须落在 §2.2 的行里，动作是给那两行补
+     一个代码名；本批按上一项同样的理由没有动 MASTER，代码侧已接令牌、值未变。
+
+  **人眼复核：未做，留给设备端**（与批 1–3 同一处理）。本批的点是"notes 外观不得有任何变化，
+  有变化即失败、回滚"，而它恰恰最难用眼睛证明"没变"：`git diff -- lib` 里只有常量指向，
+  没有可渲染的差值，按批 0 的先例不启动应用。**这是连续第 4 批把感官确认留给设备端**；
+  建议下一次真机/设备端检查一次性覆盖批 1–4 各自末尾的复核点，否则这条债务只会继续累积。
+
+  回滚点：`lib/releases/release_document.dart`、
+  `test/releases/release_document_typography_test.dart`（只看末尾追加的两条）与本文。
+  **`MASTER.md` 本批零改动**——评审撤回了最初那稿 §2.2 补写。
 
 ---
 
@@ -482,8 +563,12 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
       再一次性改这两处——改完是可见的加深，得进一次有复核点的批次。
 - [ ] 可选（批 2 评审留下）：`GitPulseRadius.sheetTop` 至今没有使用点（`release_drawer.dart:193`
       仍是字面 `20`，E4 点名"保持不动"）。谁拥有 E4 的 sheet 几何，谁把它接上。
+- [ ] 可选（批 4 评审留下）：`gitPulseTypeReadingBody` 仍无调用点（`release_document.dart` 的
+      `textStyle` 自己算 `24/15`，与那个函数同一个式子）。收口动作是"转调该函数 + 删
+      `_notesBodySize`/`_notesBodyLineHeight` + MASTER §1 第 50–51 行改引用"，三处同批。
 - [ ] 可选（批 2 评审留下）：§2.1 的字体角色函数里，只有 `gitPulseTypeRowLabel`（经
-      `gitPulseSettingLabelStyle`）和阅读档在真实使用；`pageTitle` / `surfaceTitle` / `brandName` /
+      `gitPulseSettingLabelStyle`）在真实使用；阅读档用的是同一套**数值**令牌，`gitPulseTypeReadingBody`
+      本身仍无调用点（见上一条）；`pageTitle` / `surfaceTitle` / `brandName` /
       `sectionLabel` / `meta` / `metaTight` / `description` 仍无调用点（卡片、抽屉、仓库页各自
       copyWith）。这需要一个"排版角色接线"批次，且 Previous Refresh 标记的 `primary` 与
       `sectionLabel` 的 `onSurfaceVariant` 谁对，得先定（§3.2 只把 `primary` 登记给 `brandLink`）。

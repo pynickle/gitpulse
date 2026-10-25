@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/document_content.dart';
 import 'package:gitpulse/releases/release_document.dart';
 
@@ -154,6 +155,65 @@ void main() {
     // 360dp screen most of the width has to stay available for text.
     expect(item - left, inInclusiveRange(16, 36));
     expect(quote - left, inInclusiveRange(8, 20));
+  });
+
+  // The renderer's custom styles hook is the notes scale's only owner (ADR
+  // 0018) and `GitPulseType` is the only place the app states a font size
+  // (MASTER §2.2). These two cases hold one to the other: each measured value
+  // is checked against the token the document reads *and* against the number
+  // MASTER registers, so a tier edited back into a literal, and a token edited
+  // without the page it renders, both surface as a change a reader would see.
+  testWidgets('each tier renders the size the reading scale registers', (
+    tester,
+  ) async {
+    await pumpNotes(tester);
+
+    for (final (tier, token, registered) in [
+      ('Paragraph one.', GitPulseType.readingBodySize, 15.0),
+      ('First level', GitPulseType.readingHeading1Size, 20.0),
+      ('Second level', GitPulseType.readingHeading2Size, 17.0),
+      ('Third level', GitPulseType.readingHeading3Size, 15.0),
+      ('Fourth level', GitPulseType.readingHeading3Size, 15.0),
+      ('Fifth level', GitPulseType.readingHeading3Size, 15.0),
+      ('Sixth level', GitPulseType.readingHeading3Size, 15.0),
+    ]) {
+      expect(fontSizeOf(tester, tier), token, reason: '$tier token');
+      expect(fontSizeOf(tester, tier), registered, reason: '$tier registered');
+    }
+  });
+
+  testWidgets('line boxes and indents come from that same scale', (
+    tester,
+  ) async {
+    await pumpNotes(tester);
+
+    final body = styleOf(tester, 'Paragraph one.');
+    expect(
+      body.fontSize! * body.height!,
+      closeTo(GitPulseType.readingBodyLineHeight, .01),
+    );
+    for (final heading in ['First level', 'Second level', 'Third level']) {
+      expect(
+        styleOf(tester, heading).height,
+        closeTo(GitPulseType.readingHeadingLineHeight, .01),
+        reason: heading,
+      );
+    }
+
+    // Measured from the text, so this is where a list item and a quote
+    // actually start rather than what the renderer was told. The quote's own
+    // 3dp bar is drawn outside its indent, which is why its text sits one bar
+    // plus one token in.
+    const quoteBarWidth = 3.0;
+    final left = tester.getTopLeft(paragraphFinder('Paragraph one.')).dx;
+    expect(
+      tester.getTopLeft(paragraphFinder('first item')).dx - left,
+      GitPulseType.readingListIndent,
+    );
+    expect(
+      tester.getTopLeft(paragraphFinder('quoted text')).dx - left,
+      GitPulseType.readingQuoteIndent + quoteBarWidth,
+    );
   });
 }
 
