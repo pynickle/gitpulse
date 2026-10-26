@@ -644,6 +644,26 @@ void main() {
       expect(_returnToTop.hitTestable(), findsNothing);
     });
 
+    testWidgets('floats inside the card column, not on its edges', (
+      tester,
+    ) async {
+      await _openTimeline(tester);
+      await _scrollBy(tester, -_listHeight(tester) * 2);
+
+      final button = tester.getRect(_returnToTop);
+      final card = tester.getRect(find.byType(ReleaseTimelineCard).first);
+      expect(
+        button.right,
+        lessThan(card.right),
+        reason: 'the circle clears the cards’ right edge',
+      );
+      expect(
+        tester.getRect(find.byIcon(Icons.arrow_upward)).right,
+        lessThan(card.right - GitPulseSpace.surfaceInset),
+        reason: 'and its glyph stays clear of the cards’ text edge',
+      );
+    });
+
     testWidgets('returns over a short move a scroll of the reader can stop', (
       tester,
     ) async {
@@ -697,7 +717,7 @@ void main() {
         final material = tester.widget<Material>(
           find
               .ancestor(
-                of: find.byIcon(Icons.vertical_align_top),
+                of: find.byIcon(Icons.arrow_upward),
                 matching: find.byType(Material),
               )
               .first,
@@ -712,7 +732,7 @@ void main() {
           const Size.square(GitPulseHeight.standard),
         );
         expect(
-          tester.getSize(find.byIcon(Icons.vertical_align_top)),
+          tester.getSize(find.byIcon(Icons.arrow_upward)),
           const Size.square(GitPulseIconSize.action),
         );
         expect(tester.takeException(), isNull);
@@ -725,8 +745,7 @@ void main() {
       await _openTimeline(tester);
       await _scrollBy(tester, -_listHeight(tester) * 2);
 
-      Focus.of(tester.element(find.byIcon(Icons.vertical_align_top)))
-          .requestFocus();
+      Focus.of(tester.element(find.byIcon(Icons.arrow_upward))).requestFocus();
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();

@@ -25,10 +25,19 @@ const _returnToTopFade = Duration(milliseconds: 120);
 /// button or from a refresh that lands while the reader is further down.
 const _returnToTopMove = Duration(milliseconds: 240);
 
+/// How far the floating return-to-top button sits from the edges it floats
+/// over, on both axes.
+///
+/// The page's band spacing rather than the card gutter: at the gutter, the
+/// circle's outline lands exactly on the cards' right edge and its glyph
+/// exactly on their text edge, so the control reads as the last thing in the
+/// column instead of something laid over it (MASTER §5).
+const _floatingInset = GitPulseSpace.bandGap;
+
 /// Space the list keeps clear below its last row, so the final release and Load
-/// older can both scroll fully above the floating button: the button's gutter,
-/// its standard height, and the gutter again as breathing room (MASTER §5, §9).
-const _listEndInset = GitPulseSpace.gutter * 2 + GitPulseHeight.standard;
+/// older can both scroll fully above the floating button: its inset, its
+/// standard height, and the inset again as breathing room (MASTER §5, §9).
+const _listEndInset = _floatingInset * 2 + GitPulseHeight.standard;
 
 // Kept in memory across destination widgets, independently of cached releases.
 final _readingPositionProvider = Provider((ref) {
@@ -714,11 +723,11 @@ class _TimelineListState extends State<_TimelineList> {
           ),
         ),
         Positioned(
-          right: GitPulseSpace.gutter,
+          right: _floatingInset,
           // Above the app's bottom bar, which the shell already reserves, and
           // above the system's own inset where no bar stands on it: the shell
           // removes the body's bottom padding only when it shows that bar.
-          bottom: GitPulseSpace.gutter + MediaQuery.paddingOf(context).bottom,
+          bottom: _floatingInset + MediaQuery.paddingOf(context).bottom,
           child: _ReturnToTop(visible: _returnToTop, onPressed: _scrollToTop),
         ),
       ],
@@ -754,7 +763,10 @@ class _ReturnToTop extends StatelessWidget {
               tooltip: l10n.timelineBackToTop,
               onPressed: onPressed,
               iconSize: GitPulseIconSize.action,
-              icon: const Icon(Icons.vertical_align_top),
+              // A plain up arrow, not `vertical_align_top`: that glyph is a
+              // text-alignment mark — a bar under an arrow — and reads as
+              // "align text" rather than "go back up the list" (MASTER §8).
+              icon: const Icon(Icons.arrow_upward),
               style:
                   IconButton.styleFrom(
                     foregroundColor: scheme.onSurface,
