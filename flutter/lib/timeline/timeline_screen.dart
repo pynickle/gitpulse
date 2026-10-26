@@ -5,28 +5,74 @@ import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
+import '../session/session_controller.dart';
 import 'release_timeline_card.dart';
 import 'timeline_cache.dart';
 import 'timeline_filter_panel.dart';
+import 'timeline_filters.dart';
 import 'timeline_layout.dart';
 import 'timeline_models.dart';
 import 'timeline_session.dart';
 import 'timeline_state.dart';
 import 'timeline_toolbar.dart';
 
+// Kept in memory across destination widgets, independently of cached releases.
+final _readingPositionProvider = Provider((ref) {
+  ref.watch(
+    sessionControllerProvider.select(
+      (state) => (
+        state.phase,
+        state.identity?.backend,
+        state.identity?.githubId ?? state.identity?.login,
+      ),
+    ),
+  );
+  return _TimelineReadingPosition();
+});
+
+class _TimelineReadingPosition {
+  ({String releaseKey, double offset})? anchor;
+  TimelineFilterState filters = const TimelineFilterState();
+  bool refreshing = false;
+}
+
 /// The Release Timeline: published releases of the account's Followed
 /// Repositories, grouped by display date, with the shared Timeline Refresh
 /// Baseline and its loaded-new count.
-class TimelineScreen extends ConsumerWidget {
+class TimelineScreen extends ConsumerStatefulWidget {
   const TimelineScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimelineScreen> createState() => _TimelineScreenState();
+}
+
+class _TimelineScreenState extends ConsumerState<TimelineScreen> {
+  Key _bodyKey = UniqueKey();
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(releaseTimelineSessionProvider);
+    final readingPosition = ref.watch(_readingPositionProvider);
+    if (readingPosition.refreshing && !state.loading) {
+      readingPosition.anchor = null;
+      readingPosition.refreshing = false;
+      _bodyKey = UniqueKey();
+    }
+    if (readingPosition.filters != state.filters) {
+      readingPosition.anchor = null;
+      readingPosition.filters = state.filters;
+    }
     final now = ref.watch(timelineClockProvider)();
     final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
-    Future<void> refresh() =>
-        ref.read(releaseTimelineSessionProvider.notifier).refresh();
+    Future<void> refresh() {
+      setState(() {
+        readingPosition.anchor = null;
+        readingPosition.refreshing = true;
+        _bodyKey = UniqueKey();
+      });
+      return ref.read(releaseTimelineSessionProvider.notifier).refresh();
+    }
+
     Future<void> retry() =>
         ref.read(releaseTimelineSessionProvider.notifier).retryFailed();
     Future<void> loadOlder() =>
@@ -62,7 +108,9 @@ class TimelineScreen extends ConsumerWidget {
             ),
           Expanded(
             child: _Body(
+              key: ValueKey((_bodyKey, state.filters)),
               state: state,
+              readingPosition: readingPosition,
               columns: resolveTimelineColumnCount(constraints.maxWidth),
               now: now,
               localDateKey: localDateKey,
@@ -79,7 +127,9 @@ class TimelineScreen extends ConsumerWidget {
 
 class _Body extends StatelessWidget {
   const _Body({
+    super.key,
     required this.state,
+    required this.readingPosition,
     required this.columns,
     required this.now,
     required this.localDateKey,
@@ -89,6 +139,7 @@ class _Body extends StatelessWidget {
   });
 
   final TimelineViewState state;
+  final _TimelineReadingPosition readingPosition;
   final int columns;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
@@ -119,6 +170,7 @@ class _Body extends StatelessWidget {
     if (state.hasReleases) {
       return _TimelineList(
         state: state,
+        readingPosition: readingPosition,
         columns: columns,
         now: now,
         localDateKey: localDateKey,
@@ -257,6 +309,7 @@ class _LookupFailureBanner extends StatelessWidget {
 class _TimelineList extends StatefulWidget {
   const _TimelineList({
     required this.state,
+    required this.readingPosition,
     required this.columns,
     required this.now,
     required this.localDateKey,
@@ -266,6 +319,7 @@ class _TimelineList extends StatefulWidget {
   });
 
   final TimelineViewState state;
+  final _TimelineReadingPosition readingPosition;
   final int columns;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
@@ -280,8 +334,61 @@ class _TimelineList extends StatefulWidget {
 class _TimelineListState extends State<_TimelineList> {
   final _centerKey = GlobalKey();
   final _cardKeys = <String, GlobalKey>{};
-  ScrollController _controller = ScrollController(keepScrollOffset: false);
+  late ScrollController _controller;
   String? _anchor;
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = widget.readingPosition.anchor;
+    final exists = widget.state.visibleGroups.any(
+      (group) => group.items.any((item) => item.key == saved?.releaseKey),
+    );
+    _anchor = exists ? saved?.releaseKey : null;
+    _controller = ScrollController(keepScrollOffset: false);
+    if (!exists || saved == null) {
+      widget.readingPosition.anchor = null;
+      return;
+    }
+    // Lay out the anchor row first: its card may have become shorter while
+    // another tab was open, so the old inset can no longer be assumed to fit.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients) return;
+      final box =
+          _cardKeys[saved.releaseKey]?.currentContext?.findRenderObject()
+              as RenderBox?;
+      if (box == null || !box.attached || !box.hasSize) return;
+      _controller.jumpTo(saved.offset < box.size.height ? saved.offset : 0);
+    });
+  }
+
+  void _rememberReadingPosition() {
+    final visible = _visibleReadingPosition();
+    widget.readingPosition.anchor = visible == null
+        ? null
+        : (releaseKey: visible.releaseKey, offset: visible.offset);
+  }
+
+  ({String releaseKey, double offset, double top})? _visibleReadingPosition({
+    Set<String>? remaining,
+  }) {
+    final viewport = context.findRenderObject() as RenderBox?;
+    if (viewport == null || !viewport.hasSize) return null;
+    final top = viewport.localToGlobal(Offset.zero).dy;
+    final bottom = top + viewport.size.height;
+    ({String releaseKey, double offset, double top})? anchor;
+    for (final entry in _cardKeys.entries) {
+      if (remaining != null && !remaining.contains(entry.key)) continue;
+      final box = entry.value.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.attached || !box.hasSize) continue;
+      final y = box.localToGlobal(Offset.zero).dy;
+      if (y + box.size.height <= top || y >= bottom) continue;
+      if (anchor == null || top - y > anchor.offset) {
+        anchor = (releaseKey: entry.key, offset: top - y, top: y);
+      }
+    }
+    return anchor;
+  }
 
   @override
   void dispose() {
@@ -295,38 +402,23 @@ class _TimelineListState extends State<_TimelineList> {
     if (identical(oldWidget.state.visibleGroups, widget.state.visibleGroups)) {
       return;
     }
-    final viewport = context.findRenderObject() as RenderBox?;
-    if (viewport == null || !viewport.hasSize) return;
-    final top = viewport.localToGlobal(Offset.zero).dy;
-    final bottom = top + viewport.size.height;
-    String? anchor;
-    double? anchorTop;
     final remaining = {
       for (final group in widget.state.visibleGroups)
         for (final item in group.items) item.key,
     };
-    for (final entry in _cardKeys.entries) {
-      if (!remaining.contains(entry.key)) continue;
-      final box = entry.value.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null || !box.attached || !box.hasSize) continue;
-      final y = box.localToGlobal(Offset.zero).dy;
-      if (y + box.size.height <= top || y >= bottom) continue;
-      if (anchorTop == null || y < anchorTop) {
-        anchor = entry.key;
-        anchorTop = y;
-      }
-    }
-    if (anchor == null || anchorTop == null) return;
+    final visible = _visibleReadingPosition(remaining: remaining);
+    if (visible == null) return;
+    final anchor = visible.releaseKey;
     // Put the row containing the visible release at the scroll view's center.
     // Rows inserted above it then grow upwards, including unbuilt, variable
     // height rows. This needs no estimate of their combined height.
     _anchor = anchor;
     final previous = _controller;
     _controller = ScrollController(
-      initialScrollOffset: top - anchorTop,
+      initialScrollOffset: visible.offset,
       keepScrollOffset: false,
     );
-    final savedTop = anchorTop;
+    final savedTop = visible.top;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       previous.dispose();
       if (!mounted || !_controller.hasClients) return;
@@ -390,43 +482,53 @@ class _TimelineListState extends State<_TimelineList> {
       for (var i = 0; i < after.length; i++) _rowKey(after[i]): i,
     };
 
-    return CustomScrollView(
-      key: ObjectKey(_controller),
-      controller: _controller,
-      center: _centerKey,
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: releaseTimelineHorizontalPadding,
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.depth == 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _rememberReadingPosition();
+          });
+        }
+        return false;
+      },
+      child: CustomScrollView(
+        key: ObjectKey(_controller),
+        controller: _controller,
+        center: _centerKey,
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: releaseTimelineHorizontalPadding,
+            ),
+            sliver: SliverList.builder(
+              itemCount: before.length,
+              findChildIndexCallback: (key) => beforeIndices[key],
+              itemBuilder: (context, index) => _row(before[index]),
+            ),
           ),
-          sliver: SliverList.builder(
-            itemCount: before.length,
-            findChildIndexCallback: (key) => beforeIndices[key],
-            itemBuilder: (context, index) => _row(before[index]),
+          SliverPadding(
+            key: _centerKey,
+            padding: const EdgeInsets.fromLTRB(
+              releaseTimelineHorizontalPadding,
+              0,
+              releaseTimelineHorizontalPadding,
+              24,
+            ),
+            sliver: SliverList.builder(
+              itemCount: after.length + 1,
+              findChildIndexCallback: (key) => afterIndices[key],
+              itemBuilder: (context, index) => index < after.length
+                  ? _row(after[index])
+                  : _StatusFooter(
+                      state: widget.state,
+                      onRefresh: widget.onRefresh,
+                      onRetry: widget.onRetry,
+                      onLoadOlder: widget.onLoadOlder,
+                    ),
+            ),
           ),
-        ),
-        SliverPadding(
-          key: _centerKey,
-          padding: const EdgeInsets.fromLTRB(
-            releaseTimelineHorizontalPadding,
-            0,
-            releaseTimelineHorizontalPadding,
-            24,
-          ),
-          sliver: SliverList.builder(
-            itemCount: after.length + 1,
-            findChildIndexCallback: (key) => afterIndices[key],
-            itemBuilder: (context, index) => index < after.length
-                ? _row(after[index])
-                : _StatusFooter(
-                    state: widget.state,
-                    onRefresh: widget.onRefresh,
-                    onRetry: widget.onRetry,
-                    onLoadOlder: widget.onLoadOlder,
-                  ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

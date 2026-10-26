@@ -247,6 +247,10 @@ _Avoid_: all cached history, per-request snapshot
 The time of the account's previous Release Timeline refresh that returned usable results, including partial results, shared by web and app clients. It distinguishes new releases from earlier ones and does not represent reading progress.
 _Avoid_: last read time, reading position
 
+**Timeline Reading Position**:
+The release a user was reading on the Release Timeline and the place within that release where they stopped.
+_Avoid_: Timeline Refresh Baseline, last refresh time
+
 **Recovered Release**:
 A previously missing release discovered after the Release Timeline had already shown its publication interval.
 _Avoid_: new release when referring to discovery of an earlier omission
