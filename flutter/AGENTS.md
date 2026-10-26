@@ -19,7 +19,11 @@ verify with the Flutter toolchain.
 3. `flutter gen-l10n` — required after every `lib/l10n/*.arb` edit.
 4. `flutter analyze` && `dart format --output=none --set-exit-if-changed lib test`
 5. `flutter test` — needs **Bun** on the host: the contract tests run real local Nitro handlers
-   with separate browser/app cookie jars; only external GitHub success is simulated.
+   with separate browser/app cookie jars; only external GitHub success is simulated. Run one
+   `flutter test` at a time. A leftover `flutter_tester` from an interrupted run holds
+   `sqlite3.dll`, and the next run fails with `Flutter failed to delete file … sqlite3.dll`.
+   Stop it with `Get-Process flutter_tester | Stop-Process -Force`, then run again.
+   `--reporter expanded` prints each test as it starts; a plain run prints nothing until it exits.
 
 ## UI — read the design system first
 
@@ -115,14 +119,22 @@ MASTER §0 defers these to this file.
 
 ### Testing
 
-- Widget tests run on a fake clock. An awaited `File` or `Directory` call in the test body, or the
-  first `build()` of an async notifier, never resumes — so
-  `DevicePreferencesController.selectLanguage` waits forever on `state.value == null` and the
-  Settings chip looks dead. Create the temp preferences file with `createTempSync`, pass it as
-  `mountApp`'s `presentationFile`, and advance the read with the shared bounded `runAsync` + `pump`
-  loop `settleUi` (`test/support/settling.dart`); a suite whose real work is slower passes a wider
-  frame budget. A test that prints nothing after its name is this wait. Pass
-  `flutter test --timeout 30s` so the hang fails on a line.
+- Widget tests run on a fake clock. An unmocked platform channel (`path_provider` and the others),
+  an awaited `File` or `Directory`, or a `Future.delayed` the test awaits without pumping, never
+  completes. Anything that awaits it waits too: another provider, a startup gate, `pumpAndSettle`.
+  With `--reporter expanded`, a test that prints nothing after its name is this wait.
+- A provider the mount awaits for device, preference, or cache I/O comes from
+  `gitPulseHarnessOverrides` (`test/support/app_overrides.dart`). The list always replaces the
+  device store. Pass `timelineCache` when the mount already holds one, and add a new provider of
+  this kind to the function. The test body waits for that I/O with `tester.runAsync`, or with
+  `settleUi` and `pumpUntil` (`test/support/settling.dart`). A suite whose real work is slower
+  passes a wider frame budget. `DevicePreferencesController.selectLanguage` is the example: pass
+  a `createTempSync` file as `preferencesFile` (`mountApp` still calls that argument
+  `presentationFile`) and advance the read with `settleUi`. Pass `flutter test --timeout 30s` so
+  a hang fails on a line.
+- When the suite fails and one file passes, suspect the shared startup path.
+  `test/shell_startup_guard_test.dart` mounts the real shell with no device-store override: it
+  must settle, and it must not write the support directory.
 - A menu that must stay inside the window uses `showMenu`. `MenuAnchor`'s `maximumSize` caps the
   panel's children; the overlay still anchors that panel, so a label at text scale 1.8 paints past
   the view edge. Assert the menu item's global rectangle, not the child's max width.

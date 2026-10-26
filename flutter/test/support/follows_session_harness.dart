@@ -10,6 +10,7 @@ import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import '../follows/follows_test_support.dart';
+import 'app_overrides.dart';
 import 'provider_wait.dart';
 
 /// The real session, Dio transport, and shared Follows/Timeline providers,
@@ -23,7 +24,7 @@ Future<ProviderContainer> openFollowsSession(
   addTearDown(cache.close);
   final container = ProviderContainer(
     overrides: [
-      timelineCacheProvider.overrideWithValue(cache),
+      ...gitPulseHarnessOverrides(timelineCache: cache),
       connectionDioProvider.overrideWith((ref) {
         final dio = createGitPulseDio(ref.watch(cookieJarProvider));
         dio.httpClientAdapter = server;

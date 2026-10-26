@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
-import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -13,6 +12,7 @@ import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:gitpulse/timeline/timeline_state.dart';
 
+import '../support/app_overrides.dart';
 import '../support/device_preferences_support.dart';
 
 /// A session whose HTTP boundary answers from the test's own handlers, so the
@@ -169,7 +169,7 @@ TimelineHarness createHarness({
   if (cache == null && history != null) addTearDown(history.close);
   final container = ProviderContainer(
     overrides: [
-      devicePreferencesStoreProvider.overrideWithValue(deviceStore),
+      ...gitPulseHarnessOverrides(deviceStore: deviceStore),
       if (cacheFile == null)
         timelineCacheProvider.overrideWithValue(history!)
       else ...[

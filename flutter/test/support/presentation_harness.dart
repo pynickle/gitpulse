@@ -16,6 +16,7 @@ import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
 import '../timeline/timeline_test_support.dart';
+import 'app_overrides.dart';
 import 'provider_wait.dart';
 
 const _capabilities = NativeCapabilities(
@@ -76,13 +77,11 @@ class PresentationHarness {
     cache = TimelineCache(NativeDatabase.memory());
     container = ProviderContainer(
       overrides: [
-        if (deviceStore case final store?)
-          devicePreferencesStoreProvider.overrideWithValue(store)
-        else
-          devicePreferencesFileProvider.overrideWithValue(
-            () async => preferencesFile,
-          ),
-        timelineCacheProvider.overrideWithValue(cache),
+        ...gitPulseHarnessOverrides(
+          deviceStore: deviceStore,
+          preferencesFile: () async => preferencesFile,
+          timelineCache: cache,
+        ),
         connectionControllerProvider.overrideWith(
           () => _TestConnectionController(connection),
         ),

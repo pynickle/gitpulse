@@ -9,6 +9,7 @@ import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
+import 'support/app_overrides.dart';
 import 'support/release_timeline_server.dart';
 import 'support/provider_wait.dart';
 
@@ -30,7 +31,7 @@ void main() {
     final cache = TimelineCache(NativeDatabase.memory());
     addTearDown(cache.close);
     final container = ProviderContainer(
-      overrides: [timelineCacheProvider.overrideWithValue(cache)],
+      overrides: [...gitPulseHarnessOverrides(timelineCache: cache)],
     );
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});
@@ -221,7 +222,7 @@ void main() {
     final cache = TimelineCache(NativeDatabase.memory());
     addTearDown(cache.close);
     final container = ProviderContainer(
-      overrides: [timelineCacheProvider.overrideWithValue(cache)],
+      overrides: [...gitPulseHarnessOverrides(timelineCache: cache)],
     );
     addTearDown(container.dispose);
     container.listen(sessionControllerProvider, (_, _) {});

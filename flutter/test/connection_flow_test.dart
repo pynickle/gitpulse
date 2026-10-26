@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 
+import 'support/app_overrides.dart';
+
 class CapabilityServer implements HttpClientAdapter {
   bool offline = false;
   int statusCode = 200;
@@ -54,6 +56,7 @@ Future<void> mountApp(WidgetTester tester, CapabilityServer server) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        ...gitPulseHarnessOverrides(),
         connectionDioProvider.overrideWithValue(
           Dio()..httpClientAdapter = server,
         ),
@@ -349,6 +352,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...gitPulseHarnessOverrides(),
             connectionDioProvider.overrideWithValue(
               Dio()..httpClientAdapter = server,
             ),
@@ -378,7 +382,10 @@ void main() {
       Future<void> mount() async {
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [connectionDioProvider.overrideWithValue(dio)],
+            overrides: [
+              ...gitPulseHarnessOverrides(),
+              connectionDioProvider.overrideWithValue(dio),
+            ],
             child: const GitPulseApp(),
           ),
         );
@@ -413,7 +420,10 @@ void main() {
       Future<void> mount() async {
         await tester.pumpWidget(
           ProviderScope(
-            overrides: [connectionDioProvider.overrideWithValue(dio)],
+            overrides: [
+              ...gitPulseHarnessOverrides(),
+              connectionDioProvider.overrideWithValue(dio),
+            ],
             child: const GitPulseApp(),
           ),
         );

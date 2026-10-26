@@ -10,12 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/device/device_preferences_controller.dart';
-import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
+import '../support/app_overrides.dart';
 import '../support/provider_wait.dart';
 import '../support/release_timeline_server.dart';
 
@@ -44,9 +44,11 @@ class SettingsInstallation {
     );
     container = ProviderContainer(
       overrides: [
-        timelineCacheProvider.overrideWithValue(cache),
-        devicePreferencesFileProvider.overrideWithValue(() async => deviceFile),
-        timelineClockProvider.overrideWithValue(() => now),
+        ...gitPulseHarnessOverrides(
+          preferencesFile: () async => deviceFile,
+          timelineCache: cache,
+          timelineNow: () => now,
+        ),
       ],
     );
     container.listen(sessionControllerProvider, (_, _) {});

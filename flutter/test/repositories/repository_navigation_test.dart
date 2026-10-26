@@ -11,6 +11,7 @@ import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:go_router/go_router.dart';
 
 import '../connection_flow_test.dart' show CapabilityServer;
+import '../support/app_overrides.dart';
 import '../releases/release_detail_service_test.dart' show releaseDetailJson;
 import '../releases/repository_releases_service_test.dart' show releaseListJson;
 import '../timeline/timeline_test_support.dart';
@@ -62,6 +63,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              ...gitPulseHarnessOverrides(),
               connectionDioProvider.overrideWithValue(
                 Dio()..httpClientAdapter = CapabilityServer(),
               ),

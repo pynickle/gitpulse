@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 
 import 'connection_flow_test.dart' show CapabilityServer;
+import 'support/app_overrides.dart';
 
 void main() {
   setUp(() {
@@ -24,6 +25,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...gitPulseHarnessOverrides(),
           connectionDioProvider.overrideWithValue(
             Dio()..httpClientAdapter = CapabilityServer(),
           ),

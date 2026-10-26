@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
-import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -15,7 +14,7 @@ import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:intl/intl.dart';
 
-import '../support/device_preferences_support.dart';
+import '../support/app_overrides.dart';
 import 'timeline_test_support.dart';
 
 class MountedTimeline {
@@ -46,11 +45,7 @@ Future<MountedTimeline> pumpTimelineScreen(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        // The device's own choices are Dart-only here: reading them must not need
-        // a platform channel the widget test cannot answer.
-        devicePreferencesStoreProvider.overrideWithValue(
-          InMemoryDevicePreferencesStore(),
-        ),
+        ...gitPulseHarnessOverrides(),
         if (launchBrowser != null)
           browserLauncherProvider.overrideWithValue(launchBrowser),
         sessionControllerProvider.overrideWith(() {

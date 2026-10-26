@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
-import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
@@ -21,6 +20,7 @@ import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/session/secure_storage.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 
+import 'support/app_overrides.dart';
 import 'support/settling.dart';
 
 class FaultyStorage extends FlutterSecureStorage {
@@ -362,14 +362,13 @@ Future<ProviderContainer> mountApp(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        if (timelineCache != null)
-          timelineCacheProvider.overrideWithValue(timelineCache),
-        if (timelineNow != null)
-          timelineClockProvider.overrideWithValue(timelineNow),
-        if (presentationFile != null)
-          devicePreferencesFileProvider.overrideWithValue(
-            () async => presentationFile,
-          ),
+        ...gitPulseHarnessOverrides(
+          preferencesFile: presentationFile == null
+              ? null
+              : () async => presentationFile,
+          timelineCache: timelineCache,
+          timelineNow: timelineNow,
+        ),
         if (storage != null) secureStorageProvider.overrideWithValue(storage),
         if (jar != null) cookieJarProvider.overrideWithValue(jar),
         if (launchBrowser != null)
