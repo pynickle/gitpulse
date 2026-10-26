@@ -127,10 +127,14 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       return TimelineResult.failed(_readFailure!);
     }
     final ticket = _generation;
+    // A failed collection read owns the followed list until this read finishes.
+    // Clearing it here would put that list back for the whole retry. A save
+    // failure is not that page: the confirmed list stays up, so its notice
+    // leaves as soon as another read starts.
     state = state.copyWith(
       loading: true,
       saveFailed: false,
-      clearProblem: true,
+      clearProblem: state.saveFailed,
     );
     final request = _readSettings(ticket);
     _settingsRead = request;

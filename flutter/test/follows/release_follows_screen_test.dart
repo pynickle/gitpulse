@@ -2,6 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/follows/followed_repositories_panel.dart';
+import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 
@@ -462,6 +465,69 @@ void main() {
       await tester.pumpAndSettle();
       expect(_metadataRequestCount(server), metadataBefore + 1);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'a failed follows reload replaces the list with the full-screen offline page',
+    (tester) async {
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_alpha', 'octo', 'alpha'),
+      ];
+      final container = await auth.mountApp(tester, server);
+      await auth.connectTo(tester, 'https://gitpulse.example');
+      await auth.submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      await tester.tap(find.text('Follows'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('followed-R_alpha')), findsOneWidget);
+
+      server.offline = true;
+      await tester.tap(find.byTooltip('Reload follows'));
+      await tester.pumpAndSettle();
+
+      final panel = find.byType(FollowedRepositoriesPanel);
+      expect(find.byKey(const ValueKey('followed-R_alpha')), findsNothing);
+      expect(
+        find.descendant(of: panel, matching: find.byType(GitPulseMessageView)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.textContaining('Could not reach the backend'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: panel, matching: find.byType(TextButton)),
+        findsNothing,
+      );
+      expect(
+        container.read(releaseFollowsSessionProvider).repositories.single.id,
+        'R_alpha',
+      );
+
+      server.offline = false;
+      await tester.tap(
+        find.descendant(
+          of: panel,
+          matching: find.widgetWithText(FilledButton, 'Retry'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('followed-R_alpha')), findsOneWidget);
+      expect(
+        find.descendant(of: panel, matching: find.byType(GitPulseMessageView)),
+        findsNothing,
+      );
     },
   );
 

@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:gitpulse/follows/followed_repositories_panel.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/followed_repository_view.dart';
+import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
@@ -430,6 +432,20 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('manage-follows')));
       await settleUi(tester);
       expect(find.text('Retry'), findsWidgets);
+      expect(
+        find.descendant(
+          of: find.byType(FollowedRepositoriesPanel),
+          matching: find.byType(GitPulseMessageView),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(FollowedRepositoriesPanel),
+          matching: find.byType(TextButton),
+        ),
+        findsNothing,
+      );
       expect(find.text('No followed repositories'), findsNothing);
       expect(find.byKey(const ValueKey('followed-R_alpha')), findsNothing);
       expect(find.text('removed-release'), findsNothing);

@@ -9,6 +9,7 @@ import '../device/device_preferences_controller.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
+import 'release_follows_state.dart';
 import 'release_follows_widgets.dart';
 
 class FollowedRepositoriesPanel extends ConsumerWidget {
@@ -75,79 +76,95 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
           color: toneRule(Theme.of(context).colorScheme),
         ),
         Expanded(
-          child: CustomScrollView(
-            primary: false,
-            slivers: [
-              if (state.problem != null)
-                SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FollowProblemNotice(
-                        text: followProblemLabel(
-                          l10n,
-                          state.problem,
-                          save: state.saveFailed,
+          child: !state.loaded && state.loading
+              ? GitPulseLoadingView(label: l10n.followsLoading)
+              : state.problem != null && !state.saveFailed
+              ? _FollowedLoadFailure(
+                  problem: state.problem!,
+                  onRetry: disabled ? null : facade.reload,
+                )
+              : CustomScrollView(
+                  primary: false,
+                  slivers: [
+                    if (state.saveFailed && state.problem != null)
+                      SliverToBoxAdapter(
+                        child: FollowProblemNotice(
+                          text: followProblemLabel(
+                            l10n,
+                            state.problem,
+                            save: true,
+                          ),
                         ),
                       ),
-                      if (!state.saveFailed)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: releaseFollowsPadding,
-                          ),
-                          child: TextButton(
-                            onPressed: disabled ? null : facade.reload,
-                            child: Text(l10n.timelineRetry),
-                          ),
+                    if (state.metadataProblem != null)
+                      SliverToBoxAdapter(
+                        child: FollowProblemNotice(
+                          text: l10n.followsLookupFailed,
                         ),
-                    ],
-                  ),
-                ),
-              if (state.metadataProblem != null)
-                SliverToBoxAdapter(
-                  child: FollowProblemNotice(text: l10n.followsLookupFailed),
-                ),
-              if (!state.loaded && state.loading)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: GitPulseLoadingView(label: l10n.followsLoading),
-                )
-              else if (state.loaded && state.repositories.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: GitPulseMessageView(
-                    icon: Icons.bookmarks_outlined,
-                    title: l10n.followsEmpty,
-                  ),
-                )
-              else
-                SliverList.builder(
-                  itemCount: state.repositories.length,
-                  itemBuilder: (context, index) {
-                    final repo = state.repositories[index];
-                    return Column(
-                      children: [
-                        FollowedRepositoryCard(
-                          key: ValueKey('followed-${repo.id}'),
-                          repository: repo,
-                          detailed: detailed,
-                          status: state.statuses[repo.id],
-                          details: state.details[repo.id],
-                          enabled: !disabled,
-                          onUnfollow: () => facade.unfollow(repo.id),
-                          onRetry: () =>
-                              facade.loadMetadata(repositoryId: repo.id),
+                      ),
+                    if (state.loaded && state.repositories.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: GitPulseMessageView(
+                          icon: Icons.bookmarks_outlined,
+                          title: l10n.followsEmpty,
                         ),
-                        if (index < state.repositories.length - 1)
-                          const FollowRowDivider(),
-                      ],
-                    );
-                  },
+                      )
+                    else
+                      SliverList.builder(
+                        itemCount: state.repositories.length,
+                        itemBuilder: (context, index) {
+                          final repo = state.repositories[index];
+                          return Column(
+                            children: [
+                              FollowedRepositoryCard(
+                                key: ValueKey('followed-${repo.id}'),
+                                repository: repo,
+                                detailed: detailed,
+                                status: state.statuses[repo.id],
+                                details: state.details[repo.id],
+                                enabled: !disabled,
+                                onUnfollow: () => facade.unfollow(repo.id),
+                                onRetry: () =>
+                                    facade.loadMetadata(repositoryId: repo.id),
+                              ),
+                              if (index < state.repositories.length - 1)
+                                const FollowRowDivider(),
+                            ],
+                          );
+                        },
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
+    );
+  }
+}
+
+/// The collection could not be read. It fills the space under the header the
+/// way every other page states a failed load: one icon, the reason, and one
+/// retry. The confirmed list stays in the session, so Timeline does not treat a
+/// failed refresh as an empty account, and it is not drawn here.
+class _FollowedLoadFailure extends StatelessWidget {
+  const _FollowedLoadFailure({required this.problem, required this.onRetry});
+
+  final FollowProblem problem;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final network = problem == FollowProblem.network;
+    return GitPulseMessageView(
+      icon: network ? Icons.cloud_off_outlined : Icons.error_outline,
+      tone: followProblemTone(problem),
+      title: followProblemLabel(l10n, problem),
+      liveRegion: true,
+      action: FilledButton.tonal(
+        onPressed: onRetry,
+        child: Text(l10n.timelineRetry),
+      ),
     );
   }
 }

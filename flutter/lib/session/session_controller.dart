@@ -424,8 +424,16 @@ class SessionController extends Notifier<SessionState> {
     } else if (result.problem == BackendProblem.network &&
         state.phase == SessionPhase.signedIn) {
       state = state.copyWith(offline: true);
-    } else if (result.problem == null && state.offline) {
-      state = state.copyWith(offline: false);
+    } else if (result.problem == null && state.phase == SessionPhase.signedIn) {
+      // Coming back does not leave the sign-in sentence behind. A signed-in
+      // reader who lost the network was never a failed sign-in.
+      final staleNetworkFailure = state.failure == SignInFailure.network;
+      if (state.offline || staleNetworkFailure) {
+        state = state.copyWith(
+          offline: false,
+          clearFailure: staleNetworkFailure,
+        );
+      }
     }
     return result;
   }
@@ -557,13 +565,15 @@ class SessionController extends Notifier<SessionState> {
         result.problem == BackendProblem.authenticationRejected ||
         (result.problem == null && result.statusCode == 200);
     if (!rejected) {
+      final signedIn = retained != null;
+      final network = result.problem == BackendProblem.network;
       state = SessionState(
-        phase: retained == null
-            ? SessionPhase.signedOut
-            : SessionPhase.signedIn,
+        phase: signedIn ? SessionPhase.signedIn : SessionPhase.signedOut,
         identity: retained,
-        offline: result.problem == BackendProblem.network,
-        failure: _failureFor(result.problem),
+        offline: network,
+        // Already signed in and unreachable is offline reading, not a sign-in
+        // that failed. The sign-in sentence stays on the sign-in form.
+        failure: network && signedIn ? null : _failureFor(result.problem),
       );
       return;
     }

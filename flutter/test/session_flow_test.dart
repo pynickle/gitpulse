@@ -1283,8 +1283,42 @@ void main() {
       );
       expectIdentity(tester, 'octocat');
       expect(restored.read(sessionControllerProvider).offline, isTrue);
+      expect(restored.read(sessionControllerProvider).failure, isNull);
       expect(find.byType(TimelineScreen), findsOneWidget);
       expect(fieldLabeled('Password'), findsNothing);
+      expect(
+        find.text('Could not reach the server. Your session was not changed.'),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Follows'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Could not reach the server. Your session was not changed.'),
+        findsNothing,
+      );
+      await tester.tap(find.text('Settings').last);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Could not reach the server. Your session was not changed.'),
+        findsNothing,
+      );
+
+      server.offline = false;
+      final recovered = await pumped(
+        tester,
+        restored
+            .read(sessionControllerProvider.notifier)
+            .request(method: 'GET', path: 'api/settings'),
+      );
+      await tester.pumpAndSettle();
+      expect(recovered.problem, isNull);
+      expect(restored.read(sessionControllerProvider).offline, isFalse);
+      expect(restored.read(sessionControllerProvider).failure, isNull);
+      expect(
+        find.text('Could not reach the server. Your session was not changed.'),
+        findsNothing,
+      );
     },
   );
 

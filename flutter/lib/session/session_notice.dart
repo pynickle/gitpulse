@@ -12,8 +12,9 @@ import 'session_controller.dart';
 /// Every surface that carries a session draws it through this one widget, so the
 /// account panel on the Settings destination and the account gate on Timeline and
 /// Follows cannot state the same trouble twice in two different ways. Losing the
-/// network is not stated here: it is a reading condition, and the Timeline says
-/// it once, where the saved history it affects is shown.
+/// network while already signed in is not stated here: Settings is local, and
+/// the Timeline says the reading condition once, where the saved history it
+/// affects is shown. A sign-in that did not finish still says so on the form.
 class SessionNotice extends ConsumerWidget {
   const SessionNotice({
     super.key,
@@ -39,7 +40,11 @@ class SessionNotice extends ConsumerWidget {
         ?.capabilities
         .providers;
     final failure = session.failure;
-    if (failure == null) return const SizedBox.shrink();
+    if (failure == null ||
+        (failure == SignInFailure.network &&
+            session.phase == SessionPhase.signedIn)) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: padding,
       child: Column(
