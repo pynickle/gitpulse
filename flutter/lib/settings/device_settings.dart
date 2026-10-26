@@ -199,8 +199,8 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
                 filled: true,
                 fillColor: scheme.surfaceContainerHigh,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 9,
+                  horizontal: GitPulseSpace.inline,
+                  vertical: GitPulseSpace.meta,
                 ),
                 constraints: const BoxConstraints(
                   minHeight: GitPulseHeight.compact,
