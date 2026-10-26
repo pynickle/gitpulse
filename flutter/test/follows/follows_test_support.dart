@@ -32,6 +32,10 @@ class FollowsServer extends AuthServer {
   List<Map<String, Object?>> starredRepositories = [];
   Map<String, Object?> metadata = {};
   Map<String, Object?> pages = {};
+
+  /// The round's refresh bookmark, which carries the account's shared Timeline
+  /// Refresh Baseline into the client.
+  Map<String, Object?>? refresh;
   int saveStatus = 200;
   bool malformedSave = false;
   int searchStatus = 200;
@@ -159,7 +163,7 @@ class FollowsServer extends AuthServer {
       if (holdMetadata != null) await holdMetadata;
       return result;
     }
-    final result = roundJson(pages: Map.of(pages));
+    final result = roundJson(pages: Map.of(pages), refresh: refresh);
     if (holdRound != null) await holdRound;
     return json(roundStatus, result);
   }

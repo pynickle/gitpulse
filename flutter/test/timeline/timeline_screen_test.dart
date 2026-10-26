@@ -167,7 +167,7 @@ void main() {
       );
 
       final english = DateFormat.yMMMd('en');
-      expect(find.text('2 loaded new releases'), findsOneWidget);
+      expect(find.text('2 new releases'), findsOneWidget);
       expect(find.text('Previous refresh'), findsWidgets);
       expect(find.text(english.format(DateTime(2026, 10, 4))), findsOneWidget);
       expect(find.text(english.format(DateTime(2026, 10, 3))), findsOneWidget);

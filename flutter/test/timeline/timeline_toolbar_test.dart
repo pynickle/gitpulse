@@ -82,7 +82,20 @@ void main() {
           find.textContaining(locale.languageCode == 'zh' ? '保存于' : 'Saved'),
           findsNothing,
         );
-        expect(find.text(l10n.timelineLoadedNew(12345)), findsOneWidget);
+        // The count shares the refresh row and is never shortened to fit: a
+        // narrow screen wraps the line rather than dropping part of it.
+        final count = find.text(l10n.timelineNewReleases(12345));
+        expect(count, findsOneWidget);
+        expect(
+          tester
+              .widgetList<Text>(
+                find.textContaining(l10n.timelinePreviousRefreshMark),
+              )
+              .every((text) => text.maxLines == null),
+          isTrue,
+        );
+        expect(tester.widget<Text>(count).maxLines, isNull);
+        expect(tester.getRect(count).right, lessThanOrEqualTo(width));
         expect(find.text(l10n.timelineOffline), findsOneWidget);
         expect(find.text(l10n.timelineCacheFailed), findsOneWidget);
         expect(find.text(l10n.timelineRetrySaving), findsOneWidget);
@@ -161,6 +174,56 @@ void main() {
       expect(find.byTooltip(l10n.timelineFilters), findsOneWidget);
     });
   }
+
+  testWidgets('the refresh instant and the loaded-new count share one row', (
+    tester,
+  ) async {
+    await _pumpToolbar(
+      tester,
+      now: () => DateTime(2026, 10, 22, 16),
+      state: TimelineViewState(
+        previousBaseline: DateTime.utc(2026, 10, 22, 14, 43).toIso8601String(),
+        loadedNewCount: 7,
+      ),
+    );
+    final l10n = _l10n(tester);
+    final instant = tester.getRect(
+      find.textContaining(l10n.timelinePreviousRefreshMark),
+    );
+    final count = find.text(l10n.timelineNewReleases(7));
+    final countRect = tester.getRect(count);
+    final filter = tester.getRect(find.byTooltip(l10n.timelineFilters));
+
+    expect(_overlapsVertically(instant, countRect), isTrue);
+    expect(countRect.left, greaterThan(instant.right));
+    // The count sits inside the row the filter entry already sets, so it can
+    // never add a row of its own below it.
+    expect(countRect.top, greaterThanOrEqualTo(filter.top));
+    expect(countRect.bottom, lessThanOrEqualTo(filter.bottom));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a refresh the pull started shows no progress in the button', (
+    tester,
+  ) async {
+    await _pumpToolbar(tester, state: const TimelineViewState(loading: true));
+    final l10n = _l10n(tester);
+    final button = find.ancestor(
+      of: find.byTooltip(l10n.timelineReload),
+      matching: find.byType(IconButton),
+    );
+    expect(tester.widget<IconButton>(button).onPressed, isNull);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await _pumpToolbar(
+      tester,
+      state: const TimelineViewState(loading: true),
+      pullRefreshing: true,
+    );
+    expect(tester.widget<IconButton>(button).onPressed, isNull);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
+  });
 
   testWidgets('search stays a short filled field with a centered hint', (
     tester,
@@ -256,6 +319,7 @@ Future<void> _pumpToolbar(
   Locale locale = const Locale('en'),
   TimelineViewState state = const TimelineViewState(),
   DateTime Function()? now,
+  bool pullRefreshing = false,
   ValueChanged<TimelineFilterState>? onFiltersChanged,
   VoidCallback? onOpenFilters,
 }) {
@@ -276,6 +340,7 @@ Future<void> _pumpToolbar(
           body: TimelineToolbar(
             state: state,
             onRefresh: () async {},
+            pullRefreshing: pullRefreshing,
             onFiltersChanged: onFiltersChanged,
             onOpenFilters: onOpenFilters,
           ),

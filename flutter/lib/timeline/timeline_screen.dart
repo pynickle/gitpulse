@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../session/session_controller.dart';
 import 'release_timeline_card.dart';
@@ -15,6 +16,19 @@ import 'timeline_models.dart';
 import 'timeline_session.dart';
 import 'timeline_state.dart';
 import 'timeline_toolbar.dart';
+
+/// How long the return-to-top button takes to appear or disappear
+/// (MASTER §10 allows 120/180/240).
+const _returnToTopFade = Duration(milliseconds: 120);
+
+/// How long a return to the top of the results takes, whether it comes from the
+/// button or from a refresh that lands while the reader is further down.
+const _returnToTopMove = Duration(milliseconds: 240);
+
+/// Space the list keeps clear below its last row, so the final release and Load
+/// older can both scroll fully above the floating button: the button's gutter,
+/// its standard height, and the gutter again as breathing room (MASTER §5, §9).
+const _listEndInset = GitPulseSpace.gutter * 2 + GitPulseHeight.standard;
 
 // Kept in memory across destination widgets, independently of cached releases.
 final _readingPositionProvider = Provider((ref) {
@@ -33,7 +47,43 @@ final _readingPositionProvider = Provider((ref) {
 class _TimelineReadingPosition {
   ({String releaseKey, double offset})? anchor;
   TimelineFilterState filters = const TimelineFilterState();
+
+  /// Whether a refresh started from this screen is still being read, and
+  /// whether the pull gesture is what started it.
+  ///
+  /// Both outlive the destination widget: leaving the Timeline during a round
+  /// and coming back must finish the same way as staying on it.
   bool refreshing = false;
+  bool pullRefreshing = false;
+
+  /// How many refreshes have returned usable results. The list reads it to know
+  /// that the release being read must give way to the newest ones.
+  int landedRefreshes = 0;
+
+  /// Ends a refresh that has stopped loading.
+  ///
+  /// Usable results replace the window from the top of the current search and
+  /// filters. A round that completely failed keeps the release being read, and
+  /// the position it was read at, so a slow or failed request never costs the
+  /// reader their place.
+  void settleRefresh({required bool failed}) {
+    refreshing = false;
+    pullRefreshing = false;
+    if (failed) return;
+    anchor = null;
+    landedRefreshes++;
+  }
+}
+
+/// Which entry asked for a round, and so where its progress belongs.
+enum _RefreshOrigin {
+  /// The toolbar's refresh button, and the footer's reload: the button itself
+  /// says the round is being read.
+  button,
+
+  /// The pull gesture: the indicator at the top of the list says it instead,
+  /// and the button keeps its glyph while staying disabled.
+  pull,
 }
 
 /// The Release Timeline: published releases of the account's Followed
@@ -47,16 +97,12 @@ class TimelineScreen extends ConsumerStatefulWidget {
 }
 
 class _TimelineScreenState extends ConsumerState<TimelineScreen> {
-  Key _bodyKey = UniqueKey();
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(releaseTimelineSessionProvider);
     final readingPosition = ref.watch(_readingPositionProvider);
     if (readingPosition.refreshing && !state.loading) {
-      readingPosition.anchor = null;
-      readingPosition.refreshing = false;
-      _bodyKey = UniqueKey();
+      readingPosition.settleRefresh(failed: state.failure != null);
     }
     if (readingPosition.filters != state.filters) {
       readingPosition.anchor = null;
@@ -64,13 +110,23 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
     }
     final now = ref.watch(timelineClockProvider)();
     final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
-    Future<void> refresh() {
-      setState(() {
-        readingPosition.anchor = null;
-        readingPosition.refreshing = true;
-        _bodyKey = UniqueKey();
-      });
-      return ref.read(releaseTimelineSessionProvider.notifier).refresh();
+
+    /// Reads one shared round, from the refresh button or from the pull.
+    ///
+    /// One round at a time: a second entry is rejected while the first is still
+    /// reading, so repeating a gesture or a click never restarts it.
+    Future<void> refresh({_RefreshOrigin origin = _RefreshOrigin.button}) {
+      if (ref.read(releaseTimelineSessionProvider).loading) {
+        return Future<void>.value();
+      }
+      final round = ref.read(releaseTimelineSessionProvider.notifier).refresh();
+      // The session marks itself loading before its first await, so a round
+      // that never started has nothing to settle.
+      if (!ref.read(releaseTimelineSessionProvider).loading) return round;
+      final current = ref.read(_readingPositionProvider);
+      current.refreshing = true;
+      current.pullRefreshing = origin == _RefreshOrigin.pull;
+      return round;
     }
 
     Future<void> retry() =>
@@ -86,6 +142,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
           TimelineToolbar(
             state: state,
             onRefresh: refresh,
+            pullRefreshing: readingPosition.pullRefreshing,
             onFiltersChanged: (filters) => ref
                 .read(releaseTimelineSessionProvider.notifier)
                 .applyFilters(filters),
@@ -97,7 +154,11 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                 .read(releaseTimelineSessionProvider.notifier)
                 .rebuildCache,
           ),
-          if (state.hasLookupFailures)
+          // A round that failed as a whole is reported by its own error, near
+          // the releases it kept. Naming repositories here as well would put a
+          // second error above the list, and appearing there would move the
+          // release the reader is halfway through.
+          if (state.hasLookupFailures && state.failure == null)
             ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: constraints.maxHeight * 0.35,
@@ -108,7 +169,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
             ),
           Expanded(
             child: _Body(
-              key: ValueKey((_bodyKey, state.filters)),
+              key: ValueKey(state.filters),
               state: state,
               readingPosition: readingPosition,
               columns: resolveTimelineColumnCount(constraints.maxWidth),
@@ -116,7 +177,8 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
               localDateKey: localDateKey,
               onRetry: retry,
               onLoadOlder: loadOlder,
-              onRefresh: refresh,
+              onRefresh: () => refresh(),
+              onPullRefresh: () => refresh(origin: _RefreshOrigin.pull),
             ),
           ),
         ],
@@ -134,6 +196,7 @@ class _Body extends StatelessWidget {
     required this.now,
     required this.localDateKey,
     required this.onRefresh,
+    required this.onPullRefresh,
     required this.onRetry,
     required this.onLoadOlder,
   });
@@ -144,6 +207,7 @@ class _Body extends StatelessWidget {
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onPullRefresh;
   final Future<void> Function() onRetry;
   final Future<void> Function() onLoadOlder;
 
@@ -174,38 +238,78 @@ class _Body extends StatelessWidget {
         columns: columns,
         now: now,
         localDateKey: localDateKey,
+        landedRefreshes: readingPosition.landedRefreshes,
         onRefresh: onRefresh,
+        onPullRefresh: onPullRefresh,
         onRetry: onRetry,
         onLoadOlder: onLoadOlder,
       );
     }
     // No visible releases, but the footer stays so an Active Timeline Filter
-    // can never prevent explicitly loading more history.
-    return Column(
-      children: [
-        Expanded(
-          child: state.filteredEmpty
-              ? GitPulseMessageView(
-                  icon: Icons.filter_alt_off_outlined,
-                  title: l10n.timelineFilteredEmptyTitle,
-                  description: l10n.timelineFilteredEmptyDescription,
-                )
-              : GitPulseMessageView(
-                  icon: Icons.inbox_outlined,
-                  title: l10n.timelineEmptyReleasesTitle,
-                  description: l10n.timelineEmptyReleasesDescription,
+    // can never prevent explicitly loading more history. The empty result is
+    // still refreshable: a filter that hides everything today can match the
+    // releases a new round brings.
+    return _PullToRefresh(
+      onRefresh: onPullRefresh,
+      child: LayoutBuilder(
+        builder: (context, viewport) => SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: viewport.maxHeight,
+            child: Column(
+              children: [
+                Expanded(
+                  child: state.filteredEmpty
+                      ? GitPulseMessageView(
+                          icon: Icons.filter_alt_off_outlined,
+                          title: l10n.timelineFilteredEmptyTitle,
+                          description: l10n.timelineFilteredEmptyDescription,
+                        )
+                      : GitPulseMessageView(
+                          icon: Icons.inbox_outlined,
+                          title: l10n.timelineEmptyReleasesTitle,
+                          description: l10n.timelineEmptyReleasesDescription,
+                        ),
                 ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: _StatusFooter(
-            state: state,
-            onRetry: onRetry,
-            onLoadOlder: onLoadOlder,
-            onRefresh: onRefresh,
+                Padding(
+                  padding: const EdgeInsets.all(GitPulseSpace.gutter),
+                  child: _StatusFooter(
+                    state: state,
+                    onRetry: onRetry,
+                    onLoadOlder: onLoadOlder,
+                    onRefresh: onRefresh,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+/// The Timeline's one pull-to-refresh surface.
+///
+/// It is the standard Material gesture: the search and refresh information keep
+/// their place, only the list area moves, and the indicator it draws at the top
+/// edge is the single progress shown while a pull is reading.
+class _PullToRefresh extends StatelessWidget {
+  const _PullToRefresh({required this.onRefresh, required this.child});
+
+  final Future<void> Function() onRefresh;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: scheme.primary,
+      // A tonal surface step, never a shadow (MASTER §3, §14).
+      backgroundColor: scheme.surfaceContainerHigh,
+      elevation: 0,
+      child: child,
     );
   }
 }
@@ -313,7 +417,9 @@ class _TimelineList extends StatefulWidget {
     required this.columns,
     required this.now,
     required this.localDateKey,
+    required this.landedRefreshes,
     required this.onRefresh,
+    required this.onPullRefresh,
     required this.onRetry,
     required this.onLoadOlder,
   });
@@ -323,7 +429,12 @@ class _TimelineList extends StatefulWidget {
   final int columns;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
+
+  /// How many refreshes have returned usable results, so the newest ones can be
+  /// presented from the top instead of the release being read.
+  final int landedRefreshes;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onPullRefresh;
   final Future<void> Function() onRetry;
   final Future<void> Function() onLoadOlder;
 
@@ -336,6 +447,7 @@ class _TimelineListState extends State<_TimelineList> {
   final _cardKeys = <String, GlobalKey>{};
   late ScrollController _controller;
   String? _anchor;
+  bool _returnToTop = false;
 
   @override
   void initState() {
@@ -345,9 +457,10 @@ class _TimelineListState extends State<_TimelineList> {
       (group) => group.items.any((item) => item.key == saved?.releaseKey),
     );
     _anchor = exists ? saved?.releaseKey : null;
-    _controller = ScrollController(keepScrollOffset: false);
+    _controller = _newController();
     if (!exists || saved == null) {
       widget.readingPosition.anchor = null;
+      _scheduleReturnToTopSync();
       return;
     }
     // Lay out the anchor row first: its card may have become shorter while
@@ -359,6 +472,58 @@ class _TimelineListState extends State<_TimelineList> {
               as RenderBox?;
       if (box == null || !box.attached || !box.hasSize) return;
       _controller.jumpTo(saved.offset < box.size.height ? saved.offset : 0);
+      _syncReturnToTop();
+    });
+    _scheduleReturnToTopSync();
+  }
+
+  ScrollController _newController({double initialScrollOffset = 0}) {
+    return ScrollController(
+      initialScrollOffset: initialScrollOffset,
+      keepScrollOffset: false,
+    )..addListener(_syncReturnToTop);
+  }
+
+  /// Shows the floating button while the reader is more than one list height
+  /// below the true top, and hides it once they are within one.
+  ///
+  /// The true top is the minimum scroll extent, not offset zero: rows restored
+  /// above the reading anchor live in the scroll view's negative range, so zero
+  /// can sit well inside the list. Direction and pauses never take part, so the
+  /// button cannot flicker while the reader moves.
+  void _syncReturnToTop() {
+    if (!mounted || !_controller.hasClients) return;
+    final position = _controller.position;
+    final distance = position.pixels - position.minScrollExtent;
+    final visible = distance > position.viewportDimension;
+    if (visible == _returnToTop) return;
+    setState(() => _returnToTop = visible);
+  }
+
+  void _scheduleReturnToTopSync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncReturnToTop());
+  }
+
+  /// Moves the list to the newest date group and its first release.
+  ///
+  /// Nothing is requested and no search or filter changes; the movement is
+  /// interruptible by any manual scroll, and a reader who asked for reduced
+  /// motion is positioned there directly.
+  void _scrollToTop() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_controller.hasClients) return;
+      final target = _controller.position.minScrollExtent;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _controller.jumpTo(target);
+        _syncReturnToTop();
+        return;
+      }
+      if ((_controller.offset - target).abs() < 1) return;
+      _controller.animateTo(
+        target,
+        duration: _returnToTopMove,
+        curve: Curves.decelerate,
+      );
     });
   }
 
@@ -399,7 +564,14 @@ class _TimelineListState extends State<_TimelineList> {
   @override
   void didUpdateWidget(_TimelineList oldWidget) {
     super.didUpdateWidget(oldWidget);
+    final expectsTop = widget.landedRefreshes != oldWidget.landedRefreshes;
+    void settle() {
+      _scheduleReturnToTopSync();
+      if (expectsTop) _scrollToTop();
+    }
+
     if (identical(oldWidget.state.visibleGroups, widget.state.visibleGroups)) {
+      settle();
       return;
     }
     final remaining = {
@@ -407,17 +579,17 @@ class _TimelineListState extends State<_TimelineList> {
         for (final item in group.items) item.key,
     };
     final visible = _visibleReadingPosition(remaining: remaining);
-    if (visible == null) return;
+    if (visible == null) {
+      settle();
+      return;
+    }
     final anchor = visible.releaseKey;
     // Put the row containing the visible release at the scroll view's center.
     // Rows inserted above it then grow upwards, including unbuilt, variable
     // height rows. This needs no estimate of their combined height.
     _anchor = anchor;
     final previous = _controller;
-    _controller = ScrollController(
-      initialScrollOffset: visible.offset,
-      keepScrollOffset: false,
-    );
+    _controller = _newController(initialScrollOffset: visible.offset);
     final savedTop = visible.top;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       previous.dispose();
@@ -431,7 +603,9 @@ class _TimelineListState extends State<_TimelineList> {
         _controller.jumpTo(_controller.offset + delta);
       }
       _cardKeys.removeWhere((key, _) => !remaining.contains(key));
+      _syncReturnToTop();
     });
+    settle();
   }
 
   Key _rowKey(TimelineRow row) => ValueKey(switch (row) {
@@ -482,52 +656,124 @@ class _TimelineListState extends State<_TimelineList> {
       for (var i = 0; i < after.length; i++) _rowKey(after[i]): i,
     };
 
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification.depth == 0) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _rememberReadingPosition();
-          });
-        }
-        return false;
-      },
-      child: CustomScrollView(
-        key: ObjectKey(_controller),
-        controller: _controller,
-        center: _centerKey,
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: releaseTimelineHorizontalPadding,
-            ),
-            sliver: SliverList.builder(
-              itemCount: before.length,
-              findChildIndexCallback: (key) => beforeIndices[key],
-              itemBuilder: (context, index) => _row(before[index]),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification.depth == 0) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) _rememberReadingPosition();
+              });
+            }
+            return false;
+          },
+          child: _PullToRefresh(
+            onRefresh: widget.onPullRefresh,
+            child: CustomScrollView(
+              key: ObjectKey(_controller),
+              controller: _controller,
+              center: _centerKey,
+              // A short list still answers the pull: the gesture is about
+              // asking for new releases, not about having enough to scroll.
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: releaseTimelineHorizontalPadding,
+                  ),
+                  sliver: SliverList.builder(
+                    itemCount: before.length,
+                    findChildIndexCallback: (key) => beforeIndices[key],
+                    itemBuilder: (context, index) => _row(before[index]),
+                  ),
+                ),
+                SliverPadding(
+                  key: _centerKey,
+                  padding: const EdgeInsets.fromLTRB(
+                    releaseTimelineHorizontalPadding,
+                    0,
+                    releaseTimelineHorizontalPadding,
+                    _listEndInset,
+                  ),
+                  sliver: SliverList.builder(
+                    itemCount: after.length + 1,
+                    findChildIndexCallback: (key) => afterIndices[key],
+                    itemBuilder: (context, index) => index < after.length
+                        ? _row(after[index])
+                        : _StatusFooter(
+                            state: widget.state,
+                            onRefresh: widget.onRefresh,
+                            onRetry: widget.onRetry,
+                            onLoadOlder: widget.onLoadOlder,
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
-          SliverPadding(
-            key: _centerKey,
-            padding: const EdgeInsets.fromLTRB(
-              releaseTimelineHorizontalPadding,
-              0,
-              releaseTimelineHorizontalPadding,
-              24,
-            ),
-            sliver: SliverList.builder(
-              itemCount: after.length + 1,
-              findChildIndexCallback: (key) => afterIndices[key],
-              itemBuilder: (context, index) => index < after.length
-                  ? _row(after[index])
-                  : _StatusFooter(
-                      state: widget.state,
-                      onRefresh: widget.onRefresh,
-                      onRetry: widget.onRetry,
-                      onLoadOlder: widget.onLoadOlder,
+        ),
+        Positioned(
+          right: GitPulseSpace.gutter,
+          // Above the app's bottom bar, which the shell already reserves, and
+          // above the system's own inset where no bar stands on it: the shell
+          // removes the body's bottom padding only when it shows that bar.
+          bottom: GitPulseSpace.gutter + MediaQuery.paddingOf(context).bottom,
+          child: _ReturnToTop(visible: _returnToTop, onPressed: _scrollToTop),
+        ),
+      ],
+    );
+  }
+}
+
+/// The floating control that carries the reader back to the newest releases.
+///
+/// It only changes where the reader is; the releases, the search, the filters
+/// and the Timeline Refresh Baseline are all left alone.
+class _ReturnToTop extends StatelessWidget {
+  const _ReturnToTop({required this.visible, required this.onPressed});
+
+  final bool visible;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return AnimatedOpacity(
+      opacity: visible ? 1 : 0,
+      duration: reduceMotion ? Duration.zero : _returnToTopFade,
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: ExcludeFocus(
+          excluding: !visible,
+          child: ExcludeSemantics(
+            excluding: !visible,
+            child: IconButton(
+              tooltip: l10n.timelineBackToTop,
+              onPressed: onPressed,
+              iconSize: GitPulseIconSize.action,
+              icon: const Icon(Icons.vertical_align_top),
+              style:
+                  IconButton.styleFrom(
+                    foregroundColor: scheme.onSurface,
+                    backgroundColor: scheme.surfaceContainerHigh,
+                    minimumSize: const Size.square(GitPulseHeight.standard),
+                    padding: EdgeInsets.zero,
+                    shape: const CircleBorder(),
+                    side: BorderSide(
+                      color: toneEdge(scheme),
+                      width: GitPulseStroke.hairline,
                     ),
+                  ).copyWith(
+                    // The app's own press and focus ink, shared with the theme,
+                    // rather than the wash a foreground colour would rebuild here.
+                    overlayColor: gitPulseInkOverlay(scheme),
+                  ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

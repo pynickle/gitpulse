@@ -69,6 +69,8 @@
   "settings": "设置",
   "timelineReload": "重新加载",
   "timelineLoadedNew": "已加载 {count} 个新版本",
+  "timelineNewReleases": "新版本 {count}",
+  "timelineBackToTop": "回到顶部",
   "timelinePreviousRefresh": "上次刷新：{time}",
   "timelinePreviousRefreshMark": "上次刷新",
   "timelineRelativeSecondsAgo": "几秒前",

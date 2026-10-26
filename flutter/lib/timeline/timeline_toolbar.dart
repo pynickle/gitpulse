@@ -14,6 +14,7 @@ class TimelineToolbar extends ConsumerStatefulWidget {
     super.key,
     required this.state,
     required this.onRefresh,
+    this.pullRefreshing = false,
     this.onFiltersChanged,
     this.onOpenFilters,
     this.onRetryCache,
@@ -22,6 +23,11 @@ class TimelineToolbar extends ConsumerStatefulWidget {
 
   final TimelineViewState state;
   final Future<void> Function() onRefresh;
+
+  /// Whether the round in flight was started by the pull gesture, which shows
+  /// its own progress at the top of the list. The refresh button stays disabled
+  /// and keeps its glyph, so only one indicator is ever shown.
+  final bool pullRefreshing;
   final ValueChanged<TimelineFilterState>? onFiltersChanged;
   final VoidCallback? onOpenFilters;
   final Future<void> Function()? onRetryCache;
@@ -71,10 +77,8 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
     final now = ref.watch(timelineClockProvider)();
     final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
     final scheme = theme.colorScheme;
-    final secondary = theme.textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
     final baseline = _baselineLabel(l10n, now, localDateKey);
+    final refreshProgress = state.loading && !widget.pullRefreshing;
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
@@ -162,7 +166,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
               IconButton(
                 tooltip: l10n.timelineReload,
                 onPressed: state.loading ? null : () => widget.onRefresh(),
-                icon: state.loading
+                icon: refreshProgress
                     ? const SizedBox(
                         width: 18,
                         height: 18,
@@ -175,14 +179,10 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
           Row(
             children: [
               Expanded(
-                child: baseline == null
-                    ? const SizedBox(height: GitPulseHeight.compact)
-                    : Text(
-                        baseline,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: secondary,
-                      ),
+                child: _RefreshInfo(
+                  baseline: baseline,
+                  loadedNewCount: state.loadedNewCount,
+                ),
               ),
               IconButton(
                 tooltip: l10n.timelineFilters,
@@ -193,16 +193,6 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
             ],
           ),
           if (state.offline) Text(l10n.timelineOffline),
-          if (state.loadedNewCount > 0)
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                l10n.timelineLoadedNew(state.loadedNewCount),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall,
-              ),
-            ),
           if (state.cacheFailed)
             Text(
               state.cacheCorrupted
@@ -245,6 +235,60 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
       now: now,
       localDateKey: localDateKey,
       includeDate: localDateKey(parsed) != localDateKey(now),
+    );
+  }
+}
+
+/// The Previous Refresh instants and the loaded-new count on one line of meta
+/// text, beside the filter entry.
+///
+/// The count used to hold a row of its own. It belongs to the same sentence as
+/// the refresh it follows, so it shares that row and its role: a [Wrap] keeps
+/// the wording complete and lets it break only when large text or a narrow
+/// screen leaves no room, instead of truncating the instant the reader needs.
+class _RefreshInfo extends StatelessWidget {
+  const _RefreshInfo({required this.baseline, required this.loadedNewCount});
+
+  final String? baseline;
+  final int loadedNewCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final baseline = this.baseline;
+    if (baseline == null) {
+      // Nothing to report: keep the row the filter entry sets, so the search
+      // row above it never shifts.
+      return const SizedBox(height: GitPulseHeight.compact);
+    }
+    final meta = gitPulseTypeMeta(context);
+    // A zero count is no news, so it stays hidden. The visible copy is the
+    // short form that keeps its place at a phone's width; a changed count is
+    // announced with the full meaning it stands for.
+    final count = loadedNewCount > 0
+        ? Semantics(
+            liveRegion: true,
+            excludeSemantics: true,
+            label: l10n.timelineLoadedNew(loadedNewCount),
+            child: Text(l10n.timelineNewReleases(loadedNewCount), style: meta),
+          )
+        : null;
+    return Wrap(
+      alignment: WrapAlignment.start,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(baseline, style: meta),
+        if (count != null)
+          Padding(
+            // Two items of one row, so this is `inline`, not `tight`
+            // (MASTER §5).
+            padding: const EdgeInsets.symmetric(
+              horizontal: GitPulseSpace.inline,
+            ),
+            child: ExcludeSemantics(child: Text('·', style: meta)),
+          ),
+        ?count,
+      ],
     );
   }
 }

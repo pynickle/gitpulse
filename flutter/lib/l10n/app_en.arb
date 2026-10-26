@@ -70,6 +70,9 @@
   "timelineReload": "Reload",
   "timelineLoadedNew": "{count, plural, =1 {1 loaded new release} other {{count} loaded new releases}}",
   "@timelineLoadedNew": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
+  "timelineNewReleases": "{count, plural, =1 {1 new release} other {{count} new releases}}",
+  "@timelineNewReleases": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
+  "timelineBackToTop": "Back to top",
   "timelinePreviousRefresh": "Previous refresh: {time}",
   "@timelinePreviousRefresh": {
     "placeholders": {"time": {"type": "String"}}

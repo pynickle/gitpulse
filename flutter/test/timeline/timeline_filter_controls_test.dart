@@ -119,7 +119,7 @@ void main() {
       await tester.pump();
       expect(find.text('Context bar default'), findsOneWidget);
       expect(find.text('Unrelated release'), findsNothing);
-      expect(find.text(l10n.timelineLoadedNew(1)), findsOneWidget);
+      expect(find.text(l10n.timelineNewReleases(1)), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), 'zebra');
       await tester.pump();
@@ -133,7 +133,7 @@ void main() {
       await tester.pump();
       expect(find.text('Unrelated release'), findsOneWidget);
       expect(find.text('Context bar default'), findsNothing);
-      expect(find.text(l10n.timelineLoadedNew(1)), findsOneWidget);
+      expect(find.text(l10n.timelineNewReleases(1)), findsOneWidget);
       expect(mounted.session.requests, requests);
 
       await tester.tap(find.byTooltip(l10n.timelineSearchClear));

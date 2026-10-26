@@ -338,7 +338,7 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 | 4/8 间距网格 | 采纳为节奏基线，但保留 6/10/14 三个有归属的光学步（§5） |
 | 点击目标 44/48 | 分成 40 紧凑控件 / 44 行最小 / 48 标准动作三层（§9） |
 | 动效 150–300ms | **不采纳统一时长**。只用 120/180/240 三档，按压与悬停瞬时；页面转场交给平台 |
-| `prefers-reduced-motion` | 转成 `MediaQuery.disableAnimations`，只作用于 `AnimatedRotation` |
+| `prefers-reduced-motion` | 转成 `MediaQuery.disableAnimations`，作用于 `AnimatedRotation` 与 §10 允许的新增动效（时间线回顶部的移动、回顶部按钮的显隐） |
 | 单一 SVG 图标家族、禁 emoji | 采纳：Material Icons 单一家族、单一填充风格（§8） |
 | 语义色 token、禁字面 hex | 采纳：`ColorScheme` + §3.2 角色表，禁新增字面色与 alpha |
 | 暗色版用降饱和 tonal 变体 | 已由 `ColorScheme.fromSeed` 提供；只需保证两套分别验对比度 |
