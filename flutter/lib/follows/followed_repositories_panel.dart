@@ -24,6 +24,13 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final disabled = state.saving || (!state.loaded && state.loading);
     final detailed = view == FollowedRepositoryView.detailed;
+    // A collection read that failed replaces the list. An edit that never
+    // started, such as a name the client rejects, is still a notice on the
+    // list that is already there.
+    final collectionFailed =
+        state.problem != null &&
+        !state.saveFailed &&
+        state.problem != FollowProblem.invalidRepository;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -78,7 +85,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
         Expanded(
           child: !state.loaded && state.loading
               ? GitPulseLoadingView(label: l10n.followsLoading)
-              : state.problem != null && !state.saveFailed
+              : collectionFailed
               ? _FollowedLoadFailure(
                   problem: state.problem!,
                   onRetry: disabled ? null : facade.reload,
@@ -86,14 +93,29 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
               : CustomScrollView(
                   primary: false,
                   slivers: [
-                    if (state.saveFailed && state.problem != null)
+                    if (state.problem != null)
                       SliverToBoxAdapter(
-                        child: FollowProblemNotice(
-                          text: followProblemLabel(
-                            l10n,
-                            state.problem,
-                            save: true,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            FollowProblemNotice(
+                              text: followProblemLabel(
+                                l10n,
+                                state.problem,
+                                save: state.saveFailed,
+                              ),
+                            ),
+                            if (!state.saveFailed)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: releaseFollowsPadding,
+                                ),
+                                child: TextButton(
+                                  onPressed: disabled ? null : facade.reload,
+                                  child: Text(l10n.timelineRetry),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     if (state.metadataProblem != null)

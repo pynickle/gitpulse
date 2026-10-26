@@ -157,6 +157,13 @@ void main() {
       (request) => request.uri.path.contains('/search/'),
     );
     expect(search.uri.queryParameters['q'], 'alpha');
+    await facade.follow(
+      const TimelineRepository(id: '', owner: 'octo', name: 'alpha'),
+    );
+    state = container.read(releaseFollowsSessionProvider);
+    expect(state.problem, FollowProblem.invalidRepository);
+    expect(state.saveFailed, isFalse);
+    expect(state.repositories.map((repo) => repo.id), ['R_alpha']);
   });
 
   test('pasted GitHub repository URLs resolve canonical node IDs and reject invalid targets', () async {
