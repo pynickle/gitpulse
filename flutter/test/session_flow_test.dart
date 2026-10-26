@@ -357,6 +357,7 @@ Future<ProviderContainer> mountApp(
   File? presentationFile,
   TimelineCache? timelineCache,
   DateTime Function()? timelineNow,
+  bool settle = true,
 }) async {
   if (resetStorage) FlutterSecureStorage.setMockInitialValues({});
   await tester.pumpWidget(
@@ -385,6 +386,9 @@ Future<ProviderContainer> mountApp(
       child: const GitPulseApp(),
     ),
   );
+  if (!settle) {
+    return ProviderScope.containerOf(tester.element(find.byType(GitPulseApp)));
+  }
   if (timelineCache != null) {
     await settleUi(tester);
   } else {

@@ -12,7 +12,7 @@ import 'secure_storage.dart';
 
 const _identityKey = 'authenticated_identity';
 
-enum SessionPhase { signedOut, signedIn, rejected }
+enum SessionPhase { restoring, signedOut, signedIn, rejected }
 
 enum SignInFailure {
   invalidCredentials,
@@ -105,6 +105,7 @@ class SessionController extends Notifier<SessionState> {
   int _restoreSerial = 0;
   bool _clearing = false;
   Future<void> _identityTask = Future.value();
+  Future<void>? _restoration;
   NativeLoginAttempt? _browserAttempt;
   NativeLoginAttempt? _pollingAttempt;
   Timer? _pollTimer;
@@ -136,13 +137,13 @@ class SessionController extends Notifier<SessionState> {
       final backend = next.value?.backend;
       if (backend == null) return;
       if (previous?.value?.backend?.address == backend.address) return;
-      _restore(backend.address);
+      _startRestore(backend.address);
     });
     final backend = ref.read(connectionControllerProvider).value?.backend;
     if (backend != null) {
-      Future<void>.microtask(() => _restore(backend.address));
+      Future<void>.microtask(() => _startRestore(backend.address));
     }
-    return const SessionState();
+    return const SessionState(phase: SessionPhase.restoring, busy: true);
   }
 
   Future<void> unlock(String password) {
@@ -381,6 +382,16 @@ class SessionController extends Notifier<SessionState> {
     required String path,
     Object? body,
   }) async {
+    // Saved content can be read immediately. Requests wait for the restored
+    // cookie's account to be checked before fetching or changing account data.
+    final generation = _scope.generation;
+    await _restoration;
+    if (!ref.mounted || generation != _scope.generation) {
+      return const BackendResult(
+        cancelled: true,
+        problem: BackendProblem.cancelled,
+      );
+    }
     if (state.phase != SessionPhase.signedIn) {
       return const BackendResult(
         problem: BackendProblem.authenticationRejected,
@@ -468,6 +479,16 @@ class SessionController extends Notifier<SessionState> {
     );
   }
 
+  void _startRestore(Uri backend) {
+    final restoration = _restore(backend);
+    _restoration = restoration;
+    unawaited(
+      restoration.whenComplete(() {
+        if (identical(_restoration, restoration)) _restoration = null;
+      }),
+    );
+  }
+
   Future<void> _restore(Uri backend) async {
     if (_clearing || !ref.mounted) return;
     final serial = ++_restoreSerial;
@@ -477,7 +498,7 @@ class SessionController extends Notifier<SessionState> {
         serial != _restoreSerial ||
         generation != _scope.generation;
 
-    state = state.copyWith(busy: true, clearFailure: true);
+    state = const SessionState(phase: SessionPhase.restoring, busy: true);
 
     AuthenticatedIdentity? saved;
     bool hasSession = false;
@@ -504,6 +525,10 @@ class SessionController extends Notifier<SessionState> {
         state = const SessionState();
       }
       return;
+    }
+
+    if (retained != null) {
+      state = SessionState(phase: SessionPhase.signedIn, identity: retained);
     }
 
     final result = await _send(

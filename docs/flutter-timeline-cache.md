@@ -89,8 +89,12 @@ restored after pruning so expired publications disappear from offline reading.
 Stored buffers and disconnected history never become
 visible merely because they are present in SQLite.
 
-The last verified backend capabilities are retained for offline startup at that
-same address. Secure session restoration still controls access. Explicit rejection
+The last verified backend capabilities are reused immediately at that same
+address while discovery refreshes in the background. A matching securely stored
+identity and usable session cookie allow the Saved Visible Timeline to appear
+before the server's session check finishes. Account API requests wait for that
+check; local restoration uses a single loading surface rather than the sign-in
+form. See [startup behavior](flutter-startup-spec.md). Explicit rejection
 hides the timeline; same-account reauthentication may restore it. Explicit logout
 and backend/account changes clear local timeline data and invalidate outstanding
 writes. Database writes and exposed membership updates commit transactionally;

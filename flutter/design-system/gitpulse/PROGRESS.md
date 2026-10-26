@@ -668,6 +668,25 @@ flutter test --timeout 30s      # 渲染/布局套件挂住时会带行号失败
 
 ---
 
+## 启动恢复体验（2026-10-26）
+
+- [x] 连接与本地会话恢复共用主题背景和 `GitPulseLoadingView`；恢复中不显示登录表单，也不设最短停留时间。
+- [x] 本地身份与有效 cookie 恢复后先展示 Saved Visible Timeline，后台更新 capabilities 与校验会话。
+- [x] 校验明确拒绝时隐藏缓存，离线仍可阅读；退出或切换服务器后不被迟到的启动响应带回。
+- [x] `flutter test test/startup_flow_test.dart --timeout 30s`：覆盖延迟恢复、缓存展示、离线、拒绝以及退出和切换服务器。
+- [x] 最终检查：`flutter analyze` 无问题；Dart 格式检查 129 个文件、0 改动；`flutter test --timeout 30s` 414 条全部通过。
+- [x] 根目录检查：`bun run fmt:check`、`bun run lint`、`bunx nuxi typecheck` 通过；`bun test --parallel` 985 条全部通过。
+- [x] code-review 两轴审查：Standards 0 项、Spec 0 项发现。
+
+沿用 MASTER §10 的页面级加载组件，无新颜色、尺寸或动效令牌。
+行为约定见仓库根 `docs/flutter-startup-spec.md`。
+
+**人眼复核待设备端**：Windows / Android 分别在亮暗主题冷启动；检查恢复期间没有登录表单闪现、
+慢网络下旧内容可读、会话失效后出现登录入口，且从后台返回时不替换当前阅读页面。
+本次未运行真实 App 或设备测试。
+
+---
+
 ## 评审门槛（每个 PR 自查）
 
 1. 新数值有没有进 `MASTER.md`？进了令牌文件吗？两处同批吗？

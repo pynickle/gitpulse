@@ -6,6 +6,7 @@ import 'connection/connection_controller.dart';
 import 'connection/connection_screen.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'presentation/gitpulse_theme.dart';
+import 'presentation/gitpulse_state_views.dart';
 import 'presentation/presentation_preferences_controller.dart';
 import 'session/session_controller.dart';
 import 'session/session_notice.dart';
@@ -70,7 +71,12 @@ class GitPulseApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Keep the session lifecycle alive across the connection screen so logout
     // and backend changes finish after the shell route is gone.
-    ref.listen(sessionControllerProvider, (_, _) {});
+    final session = ref.watch(sessionControllerProvider);
+    final connection = ref.watch(connectionControllerProvider);
+    final restoring =
+        connection.isLoading ||
+        (connection.value?.backend != null &&
+            session.phase == SessionPhase.restoring);
     ref.watch(timelineCacheLifecycleProvider);
     // Language and appearance are device-local: they apply to every surface,
     // including the connection screen, before any backend or session exists.
@@ -92,7 +98,15 @@ class GitPulseApp extends ConsumerWidget {
             Theme.of(context),
             locale: Localizations.localeOf(context),
           ),
-          child: child!,
+          child: restoring
+              ? Scaffold(
+                  body: SafeArea(
+                    child: GitPulseLoadingView(
+                      label: AppLocalizations.of(context).connecting,
+                    ),
+                  ),
+                )
+              : child!,
         );
       },
       routerConfig: ref.watch(_routerProvider),

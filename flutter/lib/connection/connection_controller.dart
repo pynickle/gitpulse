@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -44,8 +46,11 @@ class BackendConnectionState {
 }
 
 class ConnectionController extends AsyncNotifier<BackendConnectionState> {
+  int _generation = 0;
+
   @override
   Future<BackendConnectionState> build() async {
+    final generation = ++_generation;
     final store = ref.watch(backendAddressStoreProvider);
     String? address;
     try {
@@ -57,15 +62,41 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
       );
     }
     if (!ref.mounted) return const BackendConnectionState();
+    if (address != null) {
+      try {
+        final saved = await store.readOfflineBackend(address);
+        if (!ref.mounted) return const BackendConnectionState();
+        if (saved != null) {
+          unawaited(_refreshRememberedBackend(address, generation));
+          return BackendConnectionState(
+            rememberedAddress: address,
+            backend: saved,
+          );
+        }
+      } catch (_) {
+        // Missing or damaged hints fall back to ordinary provider discovery.
+      }
+    }
     return _connect(
       address ?? defaultBackendAddress,
       allowOffline: address != null,
+      generation: generation,
     );
+  }
+
+  Future<void> _refreshRememberedBackend(String address, int generation) async {
+    final result = await _connect(
+      address,
+      allowOffline: true,
+      generation: generation,
+    );
+    if (ref.mounted && generation == _generation) state = AsyncData(result);
   }
 
   Future<void> connect(String address) async {
     final previous = state.value;
     if (previous == null || previous.connecting) return;
+    final generation = ++_generation;
     state = AsyncData(
       BackendConnectionState(
         rememberedAddress: previous.rememberedAddress,
@@ -76,12 +107,14 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
     final result = await _connect(
       address,
       rememberedAddress: previous.rememberedAddress,
+      generation: generation,
     );
-    if (ref.mounted) state = AsyncData(result);
+    if (ref.mounted && generation == _generation) state = AsyncData(result);
   }
 
   Future<BackendConnectionState> _connect(
     String address, {
+    required int generation,
     String? rememberedAddress,
     bool allowOffline = false,
   }) async {
@@ -89,10 +122,15 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
     final store = ref.read(backendAddressStoreProvider);
     try {
       final backend = await service.connect(address);
-      if (!ref.mounted) return const BackendConnectionState();
+      if (!ref.mounted || generation != _generation) {
+        return const BackendConnectionState();
+      }
       ConnectionProblem? storageProblem;
       try {
         await store.remember(backend.address);
+        if (!ref.mounted || generation != _generation) {
+          return const BackendConnectionState();
+        }
         await store.rememberCapabilities(backend);
       } catch (_) {
         storageProblem = ConnectionProblem.storageWrite;
@@ -127,6 +165,7 @@ class ConnectionController extends AsyncNotifier<BackendConnectionState> {
   }
 
   void changeBackend() {
+    _generation++;
     state = AsyncData(
       BackendConnectionState(
         rememberedAddress: state.value?.rememberedAddress ?? '',
