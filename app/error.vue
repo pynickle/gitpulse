@@ -124,9 +124,9 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
 <template>
   <div class="error-page">
     <LandingNavbar />
-    <section class="hero is-fullheight-with-navbar">
-      <div class="hero-body">
-        <div class="container has-text-centered">
+    <section class="hero is-fullheight-with-navbar error-page__hero">
+      <div class="hero-body error-page__body">
+        <div class="container has-text-centered error-page__container">
           <div class="error-card" data-testid="error-card">
             <div
               class="error-card__icon"
@@ -217,5 +217,80 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
 .error-card__actions :deep(.button) {
   width: 100%;
   max-width: 280px;
+}
+
+// Phone: a narrow column on the page, under the navbar and above the vertical center.
+// Wider screens keep the raised card.
+@media (max-width: 640px) {
+  .error-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+  }
+
+  .error-page__hero.is-fullheight-with-navbar {
+    flex: 1 0 auto;
+    min-height: auto;
+  }
+
+  .error-page__hero.is-fullheight-with-navbar .error-page__body {
+    align-items: flex-start;
+    justify-content: center;
+    padding: clamp(2.75rem, 12vh, 5.5rem) max(1.25rem, env(safe-area-inset-right, 0px))
+      max(2rem, env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
+  }
+
+  .error-page__hero.is-fullheight-with-navbar .error-page__body > .error-page__container {
+    flex-grow: 0;
+    flex-shrink: 0;
+    width: min(100%, 17.5rem);
+  }
+
+  .error-card {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .error-card__icon {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .error-card__icon :deep(svg) {
+    width: 28px;
+    height: 28px;
+  }
+
+  .error-card__code {
+    font-size: 3.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-card__title {
+    font-size: 1.375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-card__description {
+    margin-bottom: 1.5rem;
+  }
+
+  .error-card__actions :deep(.button) {
+    width: 100%;
+    max-width: none;
+  }
+
+  // The light button fill matches the page background, so it needs its own edge.
+  .error-card__actions :deep(.button.is-light) {
+    background-color: var(--gitpulse-surface);
+    border: 1px solid var(--gitpulse-border);
+  }
 }
 </style>
