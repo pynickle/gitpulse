@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_language_colors.dart';
+import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../repositories/repository_navigation.dart';
 import '../timeline/timeline_models.dart';
@@ -413,28 +414,52 @@ class FollowRowDivider extends StatelessWidget {
   );
 }
 
+/// What stopped a discovery page from loading, on the band above the rows it
+/// kept.
+///
+/// Losing the network is a condition, not a fault: it is stated in the muted
+/// tone, while a permission, rate-limit, session or repository problem keeps the
+/// error tone, so a real fault is never softened into ordinary weather.
 class FollowProblemNotice extends StatelessWidget {
-  const FollowProblemNotice({super.key, required this.text});
+  const FollowProblemNotice({
+    super.key,
+    required this.text,
+    this.tone = GitPulseMessageTone.error,
+  });
   final String text;
+  final GitPulseMessageTone tone;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    liveRegion: true,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(
-        releaseFollowsPadding,
-        8,
-        releaseFollowsPadding,
-        8,
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          releaseFollowsPadding,
+          8,
+          releaseFollowsPadding,
+          8,
+        ),
+        child: Text(
+          text,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: tone == GitPulseMessageTone.error
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall
-            ?.copyWith(color: Theme.of(context).colorScheme.error),
-      ),
-    ),
-  );
+    );
+  }
 }
+
+/// The tone a discovery problem is stated in: nothing at all and a lost network
+/// are ordinary, and only a real fault is stated as an error.
+GitPulseMessageTone followProblemTone(FollowProblem? problem) =>
+    problem == null || problem == FollowProblem.network
+    ? GitPulseMessageTone.neutral
+    : GitPulseMessageTone.error;
 
 String followProblemLabel(
   AppLocalizations l10n,

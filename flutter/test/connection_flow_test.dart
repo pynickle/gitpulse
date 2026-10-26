@@ -14,11 +14,7 @@ class CapabilityServer implements HttpClientAdapter {
   int statusCode = 200;
   Object? payload = {
     'protocolVersion': 1,
-    'capabilities': [
-      'provider-discovery',
-      'release-timeline',
-      'timeline-retention',
-    ],
+    'capabilities': ['provider-discovery', 'release-timeline'],
     'providers': {
       'personalMode': true,
       'patEnabled': false,
@@ -128,11 +124,7 @@ void main() {
       final server = CapabilityServer()
         ..payload = {
           'protocolVersion': 1,
-          'capabilities': [
-            'provider-discovery',
-            'release-timeline',
-            'timeline-retention',
-          ],
+          'capabilities': ['provider-discovery', 'release-timeline'],
           'providers': {
             'personalMode': false,
             'patEnabled': false,
@@ -232,11 +224,7 @@ void main() {
       'OAuth-only server without app handoff',
       {
         'protocolVersion': 1,
-        'capabilities': [
-          'provider-discovery',
-          'release-timeline',
-          'timeline-retention',
-        ],
+        'capabilities': ['provider-discovery', 'release-timeline'],
         'providers': {
           'personalMode': false,
           'patEnabled': false,
@@ -250,11 +238,7 @@ void main() {
       'conflicting personal providers',
       {
         'protocolVersion': 1,
-        'capabilities': [
-          'provider-discovery',
-          'release-timeline',
-          'timeline-retention',
-        ],
+        'capabilities': ['provider-discovery', 'release-timeline'],
         'providers': {
           'personalMode': true,
           'patEnabled': true,
@@ -304,7 +288,6 @@ void main() {
           'capabilities': [
             'provider-discovery',
             'release-timeline',
-            'timeline-retention',
             if (oauth) 'native-login-handoff',
             'future-additive-capability',
           ],

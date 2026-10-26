@@ -6,6 +6,11 @@
 
 **Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.**
 
+Labels and controls carry their own meaning: a settings row, a toolbar state, or a button
+needs no description line beneath it, and a state that the layout already shows is not also
+announced in words. A page-level empty or error surface is the one place a single description
+line belongs, because it is the whole content the reader has.
+
 ## Tests (Non-Negotiable)
 
 **A test executes the code and asserts on behavior.** Call the function, mount the component, hit the route, then assert returned values, rendered output, request payloads, or public contracts. Source text is not behavior: a test that reads a `.vue` / `.ts` file and matches its characters proves nothing, and fails on every rename.

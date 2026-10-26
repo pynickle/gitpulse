@@ -179,9 +179,13 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
           Row(
             children: [
               Expanded(
-                child: _RefreshInfo(
+                child: _MetaLine(
+                  offline: state.offline,
+                  savedAt: state.savedAt,
                   baseline: baseline,
                   loadedNewCount: state.loadedNewCount,
+                  now: now,
+                  localDateKey: localDateKey,
                 ),
               ),
               IconButton(
@@ -192,7 +196,6 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
               ),
             ],
           ),
-          if (state.offline) Text(l10n.timelineOffline),
           if (state.cacheFailed)
             Text(
               state.cacheCorrupted
@@ -203,7 +206,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: TextButton(
-                onPressed: state.loading || state.cacheSettings.clearing
+                onPressed: state.loading || state.cacheActions.clearing
                     ? null
                     : state.cacheCorrupted
                     ? widget.onRebuildCache
@@ -239,21 +242,78 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
   }
 }
 
-/// The Previous Refresh instants and the loaded-new count on one line of meta
-/// text, beside the filter entry.
+/// The toolbar's meta line, beside the filter entry: the refresh facts while
+/// reading live, or the one statement of an offline window.
+///
+/// The Previous Refresh instants and the loaded-new count are both facts about a
+/// refresh. Offline there was none, so the line states the saved window and the
+/// instant it was saved instead, and neither the baseline nor a count appears:
+/// two instants side by side would read as one fact told twice, and a count that
+/// can only be zero is no news.
 ///
 /// The count used to hold a row of its own. It belongs to the same sentence as
 /// the refresh it follows, so it shares that row and its role: a [Wrap] keeps
 /// the wording complete and lets it break only when large text or a narrow
 /// screen leaves no room, instead of truncating the instant the reader needs.
-class _RefreshInfo extends StatelessWidget {
-  const _RefreshInfo({required this.baseline, required this.loadedNewCount});
+class _MetaLine extends StatelessWidget {
+  const _MetaLine({
+    required this.offline,
+    required this.savedAt,
+    required this.baseline,
+    required this.loadedNewCount,
+    required this.now,
+    required this.localDateKey,
+  });
 
+  final bool offline;
+  final DateTime? savedAt;
   final String? baseline;
   final int loadedNewCount;
+  final DateTime now;
+  final String Function(DateTime instant) localDateKey;
 
   @override
   Widget build(BuildContext context) {
+    final meta = gitPulseTypeMeta(context);
+    if (offline) {
+      final saved = savedAt;
+      final instant = saved == null
+          ? null
+          : gitPulseBaselineInstantLabel(
+              context,
+              saved,
+              now: now,
+              localDateKey: localDateKey,
+              includeDate: localDateKey(saved) != localDateKey(now),
+            );
+      return Wrap(
+        alignment: WrapAlignment.start,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Icon(
+            Icons.cloud_off,
+            size: GitPulseIconSize.inline,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          // The glyph and the word it stands for read as one unit, so this is
+          // `glyphGap` rather than the gap between two facts (MASTER §5).
+          const SizedBox(width: GitPulseSpace.glyphGap),
+          Text(AppLocalizations.of(context).timelineOffline, style: meta),
+          if (instant != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: GitPulseSpace.inline,
+              ),
+              child: ExcludeSemantics(child: Text('·', style: meta)),
+            ),
+            Text(
+              AppLocalizations.of(context).timelineSavedAt(instant),
+              style: meta,
+            ),
+          ],
+        ],
+      );
+    }
     final l10n = AppLocalizations.of(context);
     final baseline = this.baseline;
     if (baseline == null) {
@@ -261,7 +321,6 @@ class _RefreshInfo extends StatelessWidget {
       // row above it never shifts.
       return const SizedBox(height: GitPulseHeight.compact);
     }
-    final meta = gitPulseTypeMeta(context);
     // A zero count is no news, so it stays hidden. The visible copy is the
     // short form that keeps its place at a phone's width; a changed count is
     // announced with the full meaning it stands for.

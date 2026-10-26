@@ -1,9 +1,11 @@
 # Flutter timeline retention and offline reading
 
-The native client requires the `timeline-retention` backend capability. Account
-settings expose `releaseTimeline.retentionDays`, defaulting to 30, with integer
-values from 1 through 90. Settings patches preserve unrelated preferences and use
-the existing filesystem, Redis, or Upstash settings driver.
+The native client requires the `provider-discovery` and `release-timeline` backend
+capabilities. How much history it keeps is not an account setting and needs no
+backend capability: the window is one of the installation's own device preferences
+(language, appearance, Followed Repository View, and the window), kept in a local
+JSON file beside the cache database. It defaults to 30 whole days and accepts 1
+through 90.
 
 The installation's `release_timeline` Drift/SQLite database stores current release
 content once per stable repository/release identity. Separate tables record page
@@ -14,26 +16,32 @@ sessions issued before this capability was introduced need a new sign-in before
 durable caching is available. Passwords and PATs are never written to this cache.
 
 Eligibility uses publication time at or after the current UTC instant minus the
-synchronized number of 24-hour days, including the exact cutoff. Local date
+installation's window in 24-hour days, including the exact cutoff. Local date
 grouping does not affect eligibility. Older online releases remain readable in
-the current session but disappear after reopening. An increased preference cannot
-recover evicted content. A failed preference synchronization uses the installation's
-last valid account value; without a valid value, fresh results remain session-only.
+the current session but disappear after reopening. An increased window cannot
+recover evicted content.
 
-Settings shows the synchronized retention value in its whole-day editor, offers the
-save action only once the field holds a different value, and states the policy that
-is still in force under a pending or rejected change. Only a successful online
-settings patch applies a new policy; failed synchronization and failed saves are
-shown separately. Shrinking prunes content and its provenance; older online browsing
-stays readable for the current session.
+The window is read before anything is pruned or saved, so a launch never applies a
+guessed value: an installation that has no window yet is seeded once from the value
+its cache ledger last wrote, and otherwise starts at 30. The seed is then kept as a
+device choice, so the next launch needs no seed. A store that cannot be read falls
+back to 30 before any write.
+
+Settings shows the window in its whole-day editor, offers the confirm action only
+once the field holds a different value, refuses anything outside 1 to 90, and
+applies a confirmed change at once: the pages already fetched are replayed under
+the new window and the records outside it are pruned, without a request, so the
+change works offline. The cache ledger keeps the window it last wrote, which seeds
+a first choice and restores after a restart. Older online browsing stays readable
+for the current session.
 
 The Settings clear-cache action goes through the timeline facade. It invalidates
 in-flight rounds and removes local release content, saved membership, and pagination
 provenance without fetching or advancing the shared baseline. It stays available
 while a round is loading, because a stuck round is the reason to clear. It preserves
-login, Release Follows, account preferences, the installation's language/appearance
-choices (a separate device-local file), and the last locally synchronized retention
-value for offline startup. Refresh explicitly to repopulate the cleared history.
+login, Release Follows, account preferences, and the installation's device choices,
+including its window (a separate device-local file). Refresh explicitly to repopulate
+the cleared history.
 
 Confirmed follow changes are compared by stable repository ID. Removing follows
 deletes only those repositories' content, provenance and saved membership. The
@@ -43,7 +51,7 @@ reordering update metadata without refreshing. Any addition, including a mixed
 add/remove change discovered on another installation, invalidates all local
 timeline content, saved membership and pagination provenance before loading first
 pages. A failed first round after an addition cannot restore the previous window.
-These changes preserve login, retention preferences and the server-owned baseline.
+These changes preserve login, the installation's window, and the server-owned baseline.
 
 Schema version 2 adds a pending-follow record, committed before destructive
 cleanup. Every subsequent cache operation must finish that cleanup before reading
@@ -71,7 +79,7 @@ connection. Successful exhaustion replaces that repository's retained membership
 with the records actually fetched in the current cycle, even when a cache anchor
 survives. This removes deleted or unpublished releases previously supplied by a
 cached tail. Successful retries replace the membership of the retried page;
-incomplete pages and failures cannot establish exhaustion. Updating retention
+incomplete pages and failures cannot establish exhaustion. Changing the window
 replays the current fetched pages so it cannot lose the live chain's provenance.
 
 Repeated refreshes with identical per-repository page graphs share one retained
@@ -111,7 +119,7 @@ Damaged SQLite files and malformed cached content show a separate **Rebuild
 cache** action. Rebuilding closes the old database, removes only the timeline
 file and its SQLite journals, and opens a new database. It preserves the secure
 session and server-owned follows/preferences/baseline. Fresh pages from the
-current cycle are saved again under the synchronized retention policy; discarded
+current cycle are saved again under the installation's window; discarded
 cached extensions are not treated as fetched pages. A failed rebuild remains
 retryable. The old database's queued writes cannot enter its replacement.
 
@@ -142,7 +150,17 @@ continuation after compaction and reopening.
 without saved-window reads or decoding, offline window expiry, account switches,
 generation rollback, and retrying failed clear/follow cleanup barriers.
 
-`flutter test test/settings/timeline_settings_test.dart` drives Settings through
-the real session and Nitro settings handlers with independent account sessions and
-temporary SQLite files, including failed/pending saves, cross-installation policy
-sync, shrink/expand, and clear-cache during pagination followed by offline reopen.
+`flutter test test/settings/timeline_cache_settings_test.dart` drives the cache band
+through the real session and Nitro handlers with temporary SQLite and device files,
+including a clear that waits for a blocked transaction, and clearing during
+pagination followed by an offline reopen.
+
+`flutter test test/settings/device_settings_test.dart` covers this installation's
+own choices through the whole app: the window's default, a confirmed change pruning
+saved history at once, a window outside 1 to 90 refused, and a device that cannot
+remember a choice saying so while keeping it for the run.
+
+`flutter test test/timeline/timeline_retention_test.dart` covers the startup gate:
+nothing is pruned or saved before this installation's window is known, a round
+started during that wait saves nothing, a window chosen offline prunes without a
+request, and a window changed after the session ended leaves saved history alone.

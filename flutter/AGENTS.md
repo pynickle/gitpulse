@@ -99,21 +99,25 @@ MASTER §0 defers these to this file.
 - Follow edits send only `followedRepositories` to `PUT /api/settings` (100 available / 150 stored
   limits) so unrelated preferences survive.
 
-### Presentation & preferences
+### Device preferences
 
-- Language, appearance, and Followed Repository View are **device-local presentation preferences**
-  (`lib/presentation/`), stored in `presentation_preferences.json` beside — never inside — the
-  timeline database; all three survive clear-cache. Language and appearance apply through
-  `MaterialApp` (`locale`, `themeMode`) before connection or sign-in, with controls in Settings and
-  the connection screen; the view control stays in Followed Repositories. All three share the
-  presentation controller's save queue; the followed-view provider is read-only. View save failures
-  stay silent, and the old view text file is unused (ADR 0022).
+- Language, appearance, Followed Repository View, and the **Timeline Cache Retention Window** are
+  **device preferences** (`lib/device/`), stored in a local JSON document beside — never inside —
+  the timeline database; all four survive clear-cache, sign-out, and account changes. Language and
+  appearance apply through `MaterialApp` (`locale`, `themeMode`) before connection or sign-in, with
+  controls in Settings and the connection screen; the view control stays in Followed Repositories;
+  the window is edited with the other device rows and applies to saved history at once, offline.
+  All four share the device controller's save queue; the followed-view provider is read-only. View
+  save failures stay silent; the other three report them. The file keeps its historical name
+  `presentation_preferences.json` (ADR 0024), and the old view text file is unused (ADR 0022).
+- The window is resolved before anything is pruned or saved; an installation without one is seeded
+  once from the window its cache ledger last wrote. Never prune or save against an unresolved window.
 
 ### Testing
 
 - Widget tests run on a fake clock. An awaited `File` or `Directory` call in the test body, or the
   first `build()` of an async notifier, never resumes — so
-  `PresentationPreferencesController.selectLanguage` waits forever on `state.value == null` and the
+  `DevicePreferencesController.selectLanguage` waits forever on `state.value == null` and the
   Settings chip looks dead. Create the temp preferences file with `createTempSync`, pass it as
   `mountApp`'s `presentationFile`, and advance the read with the shared bounded `runAsync` + `pump`
   loop `settleUi` (`test/support/settling.dart`); a suite whose real work is slower passes a wider

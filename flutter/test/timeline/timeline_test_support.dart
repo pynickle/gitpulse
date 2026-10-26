@@ -5,12 +5,15 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
+import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:gitpulse/timeline/timeline_state.dart';
+
+import '../support/device_preferences_support.dart';
 
 /// A session whose HTTP boundary answers from the test's own handlers, so the
 /// Timeline is driven through real requests without a network.
@@ -139,7 +142,15 @@ Map<String, Object?> roundJson({
 String pageRequest(Map<String, String?> cursors) =>
     'GET ${Uri(path: 'api/release-timeline', queryParameters: {'cursors': jsonEncode(cursors)})}';
 
-({ProviderContainer container, FakeSessionController session}) createHarness({
+/// One running installation: the container under test, the fake session behind
+/// its HTTP boundary, and this installation's own device choices.
+typedef TimelineHarness = ({
+  ProviderContainer container,
+  FakeSessionController session,
+  InMemoryDevicePreferencesStore device,
+});
+
+TimelineHarness createHarness({
   String login = 'octocat',
   AuthenticatedIdentity? identity,
   TimelineCache? cache,
@@ -147,7 +158,9 @@ String pageRequest(Map<String, String?> cursors) =>
   Future<File> Function()? cacheFileLookup,
   DateTime Function()? now,
   String Function(DateTime)? localDateKey,
+  InMemoryDevicePreferencesStore? device,
 }) {
+  final deviceStore = device ?? InMemoryDevicePreferencesStore();
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeSessionController session;
   final history =
@@ -156,6 +169,7 @@ String pageRequest(Map<String, String?> cursors) =>
   if (cache == null && history != null) addTearDown(history.close);
   final container = ProviderContainer(
     overrides: [
+      devicePreferencesStoreProvider.overrideWithValue(deviceStore),
       if (cacheFile == null)
         timelineCacheProvider.overrideWithValue(history!)
       else ...[
@@ -194,7 +208,7 @@ String pageRequest(Map<String, String?> cursors) =>
   // Mounting the session starts the first cycle, as the app does on sign-in;
   // the listener keeps it alive, as the mounted Timeline destination does.
   container.listen(releaseTimelineSessionProvider, (_, _) {});
-  return (container: container, session: session);
+  return (container: container, session: session, device: deviceStore);
 }
 
 TimelineViewState readState(ProviderContainer container) =>

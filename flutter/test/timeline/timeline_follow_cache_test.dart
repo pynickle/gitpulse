@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
@@ -27,7 +28,6 @@ void configureTwo(Harness h) {
         followJson('R_a', 'octo', 'alpha'),
         followJson('R_b', 'octo', 'beta'),
       ]),
-      'releaseTimeline': {'retentionDays': 30},
     },
   );
   h.session.handlers['POST api/release-timeline/refresh'] = () => BackendResult(
@@ -245,15 +245,12 @@ void main() {
         );
     final timeline = h.container.read(releaseTimelineSessionProvider.notifier);
     await timeline.refresh();
-    h.session.handlers['PUT api/settings'] = () => BackendResult(
-      statusCode: 200,
-      data: {
-        ...settingsJson([followJson('R_a', 'octo', 'alpha')]),
-        'releaseTimeline': {'retentionDays': 20},
-      },
-    );
-    await timeline.saveRetention(20);
-    expect(readState(h.container).cacheSettings.retentionDays, 20);
+    // The reader shortens the window in Settings: a device choice, applied to
+    // saved history at once and without a request.
+    await h.container
+        .read(devicePreferencesProvider.notifier)
+        .selectRetentionDays(20);
+    await waitForSavedRetention(h.container, 20);
     h.session.handlers[pageRequest({'R_a': 'next'})] = () => BackendResult(
       statusCode: 200,
       data: roundJson(
@@ -303,12 +300,8 @@ void main() {
     'upgrading a version one database keeps its saved window and retention',
     () async {
       final disk = await DiskTimeline.create();
-      var h = disk.open();
-      configure(
-        h,
-        days: 7,
-        releases: [releaseJson(8, 'saved', '2026-10-18T00:00:00Z')],
-      );
+      var h = disk.open(retentionDays: 7);
+      configure(h, releases: [releaseJson(8, 'saved', '2026-10-18T00:00:00Z')]);
       await settle(h.container);
       // Recreate the previous on-disk schema before opening the new client.
       await disk.cache!.customStatement(
@@ -316,11 +309,13 @@ void main() {
       );
       await disk.cache!.customStatement('PRAGMA user_version = 1');
       await disk.close();
-      h = disk.open();
+      // This device has not chosen a window yet, so the one its saved history
+      // was written under is the seed.
+      h = disk.open(retentionDays: null, freshDeviceChoice: true);
       goOffline(h);
       await settle(h.container);
       expect(keys(h.container), ['R_a:8']);
-      expect(readState(h.container).cacheSettings.retentionDays, 7);
+      expect(h.device.value.retentionDays, 7);
       expect(readState(h.container).cacheFailed, isFalse);
     },
   );
@@ -402,7 +397,6 @@ void main() {
                 followJson('R_a', 'octo', 'alpha'),
                 followJson('R_c', 'octo', 'gamma'),
               ]),
-              'releaseTimeline': {'retentionDays': 30},
             },
           );
           await timeline.refresh();
@@ -517,7 +511,6 @@ void main() {
         .applyFollows([alpha, beta]);
     expect(keys(h.container), isEmpty);
     expect(readState(h.container).previousBaseline, isNull);
-    expect(readState(h.container).cacheSettings.retentionDays, 30);
     await disk.close();
     h = disk.open();
     goOffline(h);

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
-import '../presentation/presentation_settings.dart';
+import '../settings/device_settings.dart';
 import 'backend_service.dart';
 import 'connection_controller.dart';
 
@@ -33,7 +33,7 @@ class ConnectionScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: l10n.presentationSettings,
-            onPressed: () => showPresentationSettingsDialog(context),
+            onPressed: () => showDeviceSettingsDialog(context),
             icon: const Icon(Icons.tune),
           ),
         ],

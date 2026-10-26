@@ -5,13 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import 'presentation_preferences.dart';
+import 'device_preferences.dart';
 
-/// The file containing this installation's device presentation preferences.
+/// The file containing this installation's device preferences.
 ///
 /// A small independent file: it lives beside, but never inside, the disposable
-/// release timeline database, so clearing that cache cannot erase it.
-final presentationPreferencesFileProvider = Provider<Future<File> Function()>(
+/// release timeline database, so clearing that cache cannot erase it. It keeps
+/// the name it had when it only held presentation choices, so an installation
+/// that already has one keeps its choices without a migration.
+final devicePreferencesFileProvider = Provider<Future<File> Function()>(
   (ref) =>
       () async => File(
         p.join(
@@ -21,33 +23,31 @@ final presentationPreferencesFileProvider = Provider<Future<File> Function()>(
       ),
 );
 
-final presentationPreferencesStoreProvider = Provider(
-  (ref) => PresentationPreferencesStore(
-    ref.watch(presentationPreferencesFileProvider),
-  ),
+final devicePreferencesStoreProvider = Provider(
+  (ref) => DevicePreferencesStore(ref.watch(devicePreferencesFileProvider)),
 );
 
-/// Reads and writes [PresentationPreferences] as one local JSON document.
+/// Reads and writes [DevicePreferences] as one local JSON document.
 ///
 /// Unreadable content is treated as "nothing chosen yet"; only real device
 /// storage failures reach the caller.
-class PresentationPreferencesStore {
-  const PresentationPreferencesStore(this._file);
+class DevicePreferencesStore {
+  const DevicePreferencesStore(this._file);
 
   final Future<File> Function() _file;
 
-  Future<PresentationPreferences> read() async {
+  Future<DevicePreferences> read() async {
     final file = await _file();
-    if (!await file.exists()) return const PresentationPreferences();
+    if (!await file.exists()) return const DevicePreferences();
     final raw = await file.readAsString();
     try {
-      return PresentationPreferences.fromJson(jsonDecode(raw));
+      return DevicePreferences.fromJson(jsonDecode(raw));
     } on FormatException {
-      return const PresentationPreferences();
+      return const DevicePreferences();
     }
   }
 
-  Future<void> write(PresentationPreferences preferences) async {
+  Future<void> write(DevicePreferences preferences) async {
     final file = await _file();
     await file.parent.create(recursive: true);
     // Write beside the target, then replace it in one step so an interrupted

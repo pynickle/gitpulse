@@ -223,23 +223,45 @@ class TimelineCache extends _$TimelineCache {
   }
 
   /// Expires retained history without loading the saved visible window.
+  ///
+  /// [retentionDays] is the window the caller is keeping; the ledger's own value
+  /// is only the fallback, so a window this device has since changed cannot be
+  /// overruled by the one its last write recorded.
   Future<void> prune({
     required String scope,
     required DateTime now,
     required bool Function() isCurrent,
+    int? retentionDays,
   }) => _writeCurrent(isCurrent, () async {
     final account = await customSelect(
       'SELECT retention_days FROM cache_account WHERE scope = ?',
       variables: [Variable(scope)],
     ).getSingleOrNull();
-    final days = account?.readNullable<int>('retention_days');
+    final days = retentionDays ?? account?.readNullable<int>('retention_days');
     if (days != null) await _prune(now, days);
   });
+
+  /// The retention window this installation last wrote for [scope].
+  ///
+  /// It is only a snapshot of the device policy that produced the saved history.
+  /// An installation that has not chosen a window of its own is seeded from it,
+  /// so upgrading keeps the records the account already saved.
+  Future<int?> lastSavedRetentionDays({required String scope}) => _queue(
+    () => transaction(() async {
+      await _claim(scope);
+      final account = await customSelect(
+        'SELECT retention_days FROM cache_account WHERE scope = ?',
+        variables: [Variable(scope)],
+      ).getSingleOrNull();
+      return account?.readNullable<int>('retention_days');
+    }),
+  );
 
   Future<SavedTimeline?> restore({
     required String scope,
     required DateTime now,
     required TimelineEnvironment environment,
+    int? retentionDays,
   }) => _queue(
     () => transaction(() async {
       await _claim(scope);
@@ -247,7 +269,7 @@ class TimelineCache extends _$TimelineCache {
         'SELECT * FROM cache_account WHERE scope = ?',
         variables: [Variable(scope)],
       ).getSingle();
-      final days = account.readNullable<int>('retention_days');
+      final days = retentionDays ?? account.readNullable<int>('retention_days');
       if (days == null) return null;
       await _prune(now, days);
       final repositories = await _repositories();

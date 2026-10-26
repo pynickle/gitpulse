@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/device/device_preferences.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -11,6 +12,7 @@ import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import 'timeline_cache_test_support.dart';
+import '../support/device_preferences_support.dart';
 import 'timeline_test_support.dart';
 
 void main() {
@@ -21,10 +23,16 @@ void main() {
     final cache = TimelineCache(NativeDatabase.memory().interceptWith(queries));
     addTearDown(cache.close);
     var now = DateTime.utc(2026, 10, 19, 12);
-    final h = createHarness(cache: cache, now: () => now);
+    // A one-day window, so the instant exactly one day old is the boundary.
+    final h = createHarness(
+      cache: cache,
+      now: () => now,
+      device: InMemoryDevicePreferencesStore(
+        const DevicePreferences(retentionDays: 1),
+      ),
+    );
     configure(
       h,
-      days: 1,
       releases: [
         releaseJson(2, 'retained', '2026-10-19T12:00:00Z'),
         releaseJson(1, 'boundary', '2026-10-18T12:00:00Z'),
@@ -72,10 +80,9 @@ void main() {
     'offline pruning updates the restored window without fetching',
     () async {
       final disk = await DiskTimeline.create();
-      var h = disk.open();
+      var h = disk.open(retentionDays: 1);
       configure(
         h,
-        days: 1,
         releases: [
           releaseJson(2, 'retained', '2026-10-19T12:00:00Z'),
           releaseJson(1, 'boundary', '2026-10-18T12:00:00Z'),

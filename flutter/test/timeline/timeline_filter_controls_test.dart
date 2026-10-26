@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
@@ -14,6 +15,7 @@ import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
+import '../support/device_preferences_support.dart';
 import 'timeline_test_support.dart';
 
 typedef MountedTimeline = ({
@@ -34,6 +36,11 @@ Future<MountedTimeline> pumpTimeline(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        // The device's own choices are Dart-only here: reading them must not need
+        // a platform channel the widget test cannot answer.
+        devicePreferencesStoreProvider.overrideWithValue(
+          InMemoryDevicePreferencesStore(),
+        ),
         sessionControllerProvider.overrideWith(() {
           session = FakeSessionController(
             SessionState(
@@ -62,7 +69,10 @@ Future<MountedTimeline> pumpTimeline(
   );
   for (var attempt = 0; attempt < 40; attempt++) {
     await tester.pump(const Duration(milliseconds: 20));
-    if (!container.read(releaseTimelineSessionProvider).loading) break;
+    // The first cycle starts after the device's window is resolved, so a state
+    // that has never loaded is not yet settled.
+    final state = container.read(releaseTimelineSessionProvider);
+    if (state.active && !state.loading) break;
   }
   return (session: session, container: container);
 }

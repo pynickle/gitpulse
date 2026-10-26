@@ -414,9 +414,10 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                   ? l10n.followsSearchPrompt
                   : l10n.followsNoResults
             : l10n.followsStarredEmpty,
-        tone: problem == null
-            ? GitPulseMessageTone.neutral
-            : GitPulseMessageTone.error,
+        // Losing the network is ordinary, so it is stated in the neutral tone;
+        // permission, rate-limit, session and unavailable-repository problems
+        // keep the error tone so a real fault still reads as one.
+        tone: followProblemTone(problem),
         liveRegion: problem != null,
       );
     }
@@ -430,7 +431,10 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
           const SliverToBoxAdapter(child: LinearProgressIndicator()),
         if (problem != null && items.isNotEmpty)
           SliverToBoxAdapter(
-            child: FollowProblemNotice(text: followProblemLabel(l10n, problem)),
+            child: FollowProblemNotice(
+              text: followProblemLabel(l10n, problem),
+              tone: followProblemTone(problem),
+            ),
           ),
         if (empty != null)
           SliverFillRemaining(hasScrollBody: false, child: empty)

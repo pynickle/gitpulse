@@ -6,12 +6,14 @@ import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import 'session_controller.dart';
 
-/// The session's own trouble, stated beside whatever the reader is looking at: a
-/// lost connection, or the reason the last sign-in did not complete.
+/// The session's own trouble, stated beside whatever the reader is looking at:
+/// the reason the last sign-in did not complete.
 ///
 /// Every surface that carries a session draws it through this one widget, so the
 /// account panel on the Settings destination and the account gate on Timeline and
-/// Follows cannot state the same trouble twice in two different ways.
+/// Follows cannot state the same trouble twice in two different ways. Losing the
+/// network is not stated here: it is a reading condition, and the Timeline says
+/// it once, where the saved history it affects is shown.
 class SessionNotice extends ConsumerWidget {
   const SessionNotice({
     super.key,
@@ -36,26 +38,18 @@ class SessionNotice extends ConsumerWidget {
         ?.backend
         ?.capabilities
         .providers;
-    if (!session.offline && session.failure == null) {
-      return const SizedBox.shrink();
-    }
+    final failure = session.failure;
+    if (failure == null) return const SizedBox.shrink();
     return Padding(
       padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (session.offline)
-            GitPulseSettingNote(l10n.offlineSession, liveRegion: true),
-          if (session.failure case final failure?)
-            GitPulseSettingNote(
-              signInFailureLabel(
-                l10n,
-                failure,
-                providers?.personalMode ?? false,
-              ),
-              tone: GitPulseSettingNoteTone.error,
-              liveRegion: true,
-            ),
+          GitPulseSettingNote(
+            signInFailureLabel(l10n, failure, providers?.personalMode ?? false),
+            tone: GitPulseSettingNoteTone.error,
+            liveRegion: true,
+          ),
         ],
       ),
     );

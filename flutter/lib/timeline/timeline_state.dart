@@ -24,42 +24,27 @@ class TimelineFailure {
 
 enum TimelineCacheConnection { none, waiting, connected }
 
-/// Account policy and installation-local cache actions exposed to Settings.
-class TimelineCacheSettings {
-  const TimelineCacheSettings({
-    this.retentionDays,
-    this.syncFailed = false,
-    this.saving = false,
-    this.saveFailed = false,
+/// This installation's local cache actions, exposed to Settings.
+///
+/// The retention window is not here: it belongs to the installation's device
+/// preferences, which the Timeline Session reads and applies, so a Settings row
+/// can hold it without a round trip.
+class TimelineCacheActions {
+  const TimelineCacheActions({
     this.clearing = false,
     this.clearFailed = false,
     this.cleared = false,
   });
 
-  final int? retentionDays;
-  final bool syncFailed;
-  final bool saving;
-  final bool saveFailed;
   final bool clearing;
   final bool clearFailed;
   final bool cleared;
 
-  TimelineCacheSettings copyWith({
-    int? retentionDays,
-    bool clearRetentionDays = false,
-    bool? syncFailed,
-    bool? saving,
-    bool? saveFailed,
+  TimelineCacheActions copyWith({
     bool? clearing,
     bool? clearFailed,
     bool? cleared,
-  }) => TimelineCacheSettings(
-    retentionDays: clearRetentionDays
-        ? null
-        : retentionDays ?? this.retentionDays,
-    syncFailed: syncFailed ?? this.syncFailed,
-    saving: saving ?? this.saving,
-    saveFailed: saveFailed ?? this.saveFailed,
+  }) => TimelineCacheActions(
     clearing: clearing ?? this.clearing,
     clearFailed: clearFailed ?? this.clearFailed,
     cleared: cleared ?? this.cleared,
@@ -92,7 +77,7 @@ class TimelineViewState {
     this.savedAt,
     this.cacheConnection = TimelineCacheConnection.none,
     this.waitingRepositories = const [],
-    this.cacheSettings = const TimelineCacheSettings(),
+    this.cacheActions = const TimelineCacheActions(),
   });
 
   /// Nobody is signed in with a connected backend yet.
@@ -155,7 +140,7 @@ class TimelineViewState {
   final DateTime? savedAt;
   final TimelineCacheConnection cacheConnection;
   final List<TimelineRepository> waitingRepositories;
-  final TimelineCacheSettings cacheSettings;
+  final TimelineCacheActions cacheActions;
 
   bool get hasReleases => visibleGroups.isNotEmpty;
 
@@ -197,7 +182,7 @@ class TimelineViewState {
     bool clearSavedAt = false,
     TimelineCacheConnection? cacheConnection,
     List<TimelineRepository>? waitingRepositories,
-    TimelineCacheSettings? cacheSettings,
+    TimelineCacheActions? cacheActions,
   }) {
     return TimelineViewState(
       active: active ?? this.active,
@@ -227,7 +212,7 @@ class TimelineViewState {
       savedAt: clearSavedAt ? null : savedAt ?? this.savedAt,
       cacheConnection: cacheConnection ?? this.cacheConnection,
       waitingRepositories: waitingRepositories ?? this.waitingRepositories,
-      cacheSettings: cacheSettings ?? this.cacheSettings,
+      cacheActions: cacheActions ?? this.cacheActions,
     );
   }
 }

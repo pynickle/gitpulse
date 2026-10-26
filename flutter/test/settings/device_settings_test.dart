@@ -1,17 +1,22 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/backend_service.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
-import 'package:gitpulse/presentation/presentation_preferences.dart';
-import 'package:gitpulse/presentation/presentation_preferences_controller.dart';
+import 'package:gitpulse/device/device_preferences.dart';
+import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
+import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
+import '../support/device_preferences_support.dart';
 import '../support/settling.dart';
 import '../support/presentation_harness.dart';
+import '../timeline/timeline_cache_test_support.dart';
 import '../timeline/timeline_test_support.dart';
 
 /// Advances a fixed number of frames, bounded so an indeterminate progress
@@ -57,6 +62,44 @@ Future<void> tapChoice(WidgetTester tester, String label) async {
 
 Brightness scaffoldBrightness(WidgetTester tester) =>
     Theme.of(tester.element(find.byType(Scaffold).first)).brightness;
+
+/// The retention editor: the field the window in force is shown in.
+final retentionField = find.byKey(const ValueKey('retention-days'));
+
+/// The saved window this device would read back, in timeline order.
+///
+/// Shortening the window prunes what is kept, while releases already on screen
+/// stay readable: the history is what a later launch reads.
+Future<List<String>> savedHistory(PresentationHarness harness) async {
+  final identity = harness.container.read(sessionControllerProvider).identity!;
+  final saved = await harness.cache.restore(
+    scope: TimelineCache.scopeOf(identity)!,
+    now: DateTime.now().toUtc(),
+    environment: harness.container.read(timelineEnvironmentProvider),
+  );
+  return saved == null
+      ? const []
+      : saved.groups
+            .expand((group) => group.items)
+            .map((item) => item.key)
+            .toList();
+}
+
+/// What the device remembered, read from its own file.
+///
+/// The write is real IO, so the caller stands outside the fake clock.
+Future<int?> rememberedWindow(PresentationHarness harness) async {
+  for (var i = 0; i < 100; i++) {
+    if (await harness.preferencesFile.exists()) {
+      final saved = jsonDecode(
+        await harness.preferencesFile.readAsString(),
+      ) as Map<String, dynamic>;
+      if (saved['retentionDays'] case final int days) return days;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+  return null;
+}
 
 void main() {
   void useNarrowWindow(WidgetTester tester) {
@@ -180,7 +223,7 @@ void main() {
         tester,
         session: SessionState(
           phase: SessionPhase.signedIn,
-          identity: signedInIdentity(),
+          identity: signedInIdentity(githubId: '1'),
         ),
         handlers: {
           'GET api/settings': () =>
@@ -210,14 +253,14 @@ void main() {
       expect(
         harness.container
             .read(releaseTimelineSessionProvider)
-            .cacheSettings
+            .cacheActions
             .cleared,
         isTrue,
       );
 
       expect(
         harness.container
-            .read(presentationPreferencesProvider)
+            .read(devicePreferencesProvider)
             .value!
             .preferences
             .language,
@@ -248,7 +291,7 @@ void main() {
       tester,
       session: SessionState(
         phase: SessionPhase.signedIn,
-        identity: signedInIdentity(),
+        identity: signedInIdentity(githubId: '1'),
       ),
       handlers: {
         'GET api/settings': () =>
@@ -307,7 +350,7 @@ void main() {
       tester,
       session: SessionState(
         phase: SessionPhase.signedIn,
-        identity: signedInIdentity(),
+        identity: signedInIdentity(githubId: '1'),
       ),
       handlers: {
         'GET api/settings': () => BackendResult(
@@ -348,5 +391,184 @@ void main() {
 
     expect(find.text('2026年10月4日'), findsOneWidget);
     expect(find.text('1,234 个附件'), findsOneWidget);
+  });
+
+  testWidgets(
+    'the retention window applies at once, offline, and the device keeps it',
+    (tester) async {
+      useNarrowWindow(tester);
+      tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+      addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+      final now = DateTime.now().toUtc();
+      final harness = harnessFor(
+        tester,
+        session: SessionState(
+          phase: SessionPhase.signedIn,
+          identity: signedInIdentity(githubId: '1'),
+        ),
+        handlers: {
+          'GET api/settings': () => BackendResult(
+            statusCode: 200,
+            data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+          ),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson('octo', 'alpha', [
+                  releaseJson(
+                    2,
+                    'recent',
+                    now.subtract(const Duration(hours: 2)).toIso8601String(),
+                  ),
+                  releaseJson(
+                    1,
+                    'fortnight',
+                    now.subtract(const Duration(days: 14)).toIso8601String(),
+                  ),
+                ]),
+              },
+            ),
+          ),
+        },
+      );
+      await tester.runAsync(harness.open);
+      await pumpApp(tester, harness);
+      expect(keys(harness.container), ['R_alpha:2', 'R_alpha:1']);
+
+      await openSettings(tester, 'Settings');
+      await tester.ensureVisible(retentionField);
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: retentionField, matching: find.text('30')),
+        findsOneWidget,
+      );
+
+      // The reader shortens the window: one day, so only the newest release
+      // stays. Nothing is asked of the backend for it.
+      await tester.enterText(retentionField, '1');
+      await tester.pump();
+      await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
+      await settleUi(tester);
+
+      expect(
+        harness.container
+            .read(devicePreferencesProvider)
+            .value!
+            .preferences
+            .retentionDays,
+        1,
+      );
+      expect(await tester.runAsync(() => savedHistory(harness)), ['R_alpha:2']);
+      expect(await tester.runAsync(() => rememberedWindow(harness)), 1);
+    },
+  );
+
+  testWidgets('a window outside one to ninety days is refused', (tester) async {
+    useNarrowWindow(tester);
+    tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+    addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+    final harness = harnessFor(
+      tester,
+      session: SessionState(
+        phase: SessionPhase.signedIn,
+        identity: signedInIdentity(githubId: '1'),
+      ),
+      handlers: {
+        'GET api/settings': () =>
+            BackendResult(statusCode: 200, data: settingsJson(const [])),
+        'POST api/release-timeline/refresh': () => BackendResult(
+          statusCode: 200,
+          data: roundJson(
+            refresh: const {
+              'previousBaseline': '2026-10-01T00:00:00.000Z',
+              'startedAt': '2026-10-05T00:00:00.000Z',
+            },
+          ),
+        ),
+      },
+    );
+    await tester.runAsync(harness.open);
+    await pumpApp(tester, harness);
+    await openSettings(tester, 'Settings');
+    await tester.ensureVisible(retentionField);
+    await tester.pumpAndSettle();
+
+    final before = harness.container
+        .read(devicePreferencesProvider)
+        .value!
+        .preferences;
+    for (final value in ['0', '91', '1.5', '']) {
+      await tester.enterText(retentionField, value);
+      await tester.pump();
+      await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
+      await settleUi(tester);
+      expect(find.text('Enter a whole number from 1 to 90.'), findsOneWidget);
+    }
+    // A refused window leaves this installation's choice exactly as it was.
+    expect(
+      harness.container.read(devicePreferencesProvider).value!.preferences,
+      before,
+    );
+  });
+
+  testWidgets('a device that cannot remember the window says so', (
+    tester,
+  ) async {
+    useNarrowWindow(tester);
+    tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+    addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+    final now = DateTime.now().toUtc();
+    final harness = harnessFor(
+      tester,
+      session: SessionState(
+        phase: SessionPhase.signedIn,
+        identity: signedInIdentity(githubId: '1'),
+      ),
+      // A device whose storage refuses every write.
+      deviceStore: InMemoryDevicePreferencesStore()..failWrites = true,
+      handlers: {
+        'GET api/settings': () => BackendResult(
+          statusCode: 200,
+          data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+        ),
+        'POST api/release-timeline/refresh': () => BackendResult(
+          statusCode: 200,
+          data: roundJson(
+            pages: {
+              'R_alpha': pageJson('octo', 'alpha', [
+                releaseJson(
+                  2,
+                  'recent',
+                  now.subtract(const Duration(hours: 2)).toIso8601String(),
+                ),
+                releaseJson(
+                  1,
+                  'fortnight',
+                  now.subtract(const Duration(days: 14)).toIso8601String(),
+                ),
+              ]),
+            },
+          ),
+        ),
+      },
+    );
+    await tester.runAsync(harness.open);
+    await pumpApp(tester, harness);
+    await openSettings(tester, 'Settings');
+    await tester.ensureVisible(retentionField);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(retentionField, '1');
+    await tester.pump();
+    await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
+    await settleUi(tester);
+
+    expect(
+      find.text('Applied, but this device could not remember the choice.'),
+      findsOneWidget,
+    );
+    // The choice still applies to this run: the history it keeps is pruned.
+    expect(await tester.runAsync(() => savedHistory(harness)), ['R_alpha:2']);
   });
 }

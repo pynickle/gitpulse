@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_tokens.dart';
-import '../presentation/presentation_settings.dart';
+import 'device_settings.dart';
 import '../session/session_controller.dart';
 import 'account_panel.dart';
 import 'timeline_cache_settings.dart';
@@ -56,7 +56,7 @@ class SettingsScreen extends ConsumerWidget {
                     child: GitPulseSettingsDivider(indent: 0),
                   ),
                 ],
-                const SliverToBoxAdapter(child: PresentationSettings()),
+                const SliverToBoxAdapter(child: DeviceSettings()),
                 if (signedIn) ...[
                   const SliverToBoxAdapter(child: GitPulseSettingsDivider()),
                   SliverToBoxAdapter(

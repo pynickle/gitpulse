@@ -63,10 +63,11 @@ class BackendService {
       throw const ConnectionException(ConnectionProblem.serverUpgrade);
     }
 
+    // Core reading is what the app cannot do without. How much history it keeps
+    // is its own choice now, so no backend capability has to grant it.
     if (capabilities.protocolVersion != 1 ||
         !capabilities.capabilities.contains('provider-discovery') ||
-        !capabilities.capabilities.contains('release-timeline') ||
-        !capabilities.capabilities.contains('timeline-retention')) {
+        !capabilities.capabilities.contains('release-timeline')) {
       throw const ConnectionException(ConnectionProblem.serverUpgrade);
     }
     final providers = capabilities.providers;

@@ -74,21 +74,6 @@ class ReleaseTimelineService {
   Future<TimelineResult<UserSettingsDto>> readSettings() =>
       _read('GET', settingsPath, UserSettingsDto.fromJson);
 
-  Future<TimelineResult<UserSettingsDto>> saveRetention(int days) => _read(
-    'PUT',
-    settingsPath,
-    (json) {
-      final settings = UserSettingsDto.fromJson(json);
-      if (settings.releaseTimeline?.retentionDays != days) {
-        throw const FormatException('Retention was not confirmed');
-      }
-      return settings;
-    },
-    body: {
-      'releaseTimeline': {'retentionDays': days},
-    },
-  );
-
   Future<TimelineResult<List<TimelineRepository>>>
   readFollowedRepositories() async {
     final response = await _read('GET', settingsPath, UserSettingsDto.fromJson);

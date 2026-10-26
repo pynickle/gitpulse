@@ -36,7 +36,6 @@ void main() {
                     state: TimelineViewState(
                       previousBaseline: '2026-10-18T14:43:00.000Z',
                       loadedNewCount: 12345,
-                      offline: true,
                       cacheFailed: true,
                       savedAt: DateTime.utc(2026, 10, 19, 12),
                       loading: loading,
@@ -96,13 +95,8 @@ void main() {
         );
         expect(tester.widget<Text>(count).maxLines, isNull);
         expect(tester.getRect(count).right, lessThanOrEqualTo(width));
-        expect(find.text(l10n.timelineOffline), findsOneWidget);
         expect(find.text(l10n.timelineCacheFailed), findsOneWidget);
         expect(find.text(l10n.timelineRetrySaving), findsOneWidget);
-        expect(
-          tester.getTopLeft(find.text(l10n.timelineOffline)).dy,
-          greaterThan(filter.top),
-        );
 
         await tester.tap(find.byTooltip(l10n.timelineReload));
         expect(refreshes, 1);
@@ -175,6 +169,56 @@ void main() {
     });
   }
 
+  testWidgets(
+    'offline states the saved instant once and drops the refresh facts',
+    (tester) async {
+      await _pumpToolbar(
+        tester,
+        now: () => DateTime(2026, 10, 19, 21),
+        state: TimelineViewState(
+          offline: true,
+          previousBaseline: DateTime.utc(
+            2026,
+            10,
+            18,
+            14,
+            43,
+          ).toIso8601String(),
+          loadedNewCount: 7,
+          // A local instant, so the toolbar renders the clock its own calendar
+          // reads and the assertion holds in any display zone.
+          savedAt: DateTime(2026, 10, 19, 12),
+        ),
+      );
+      final l10n = _l10n(tester);
+
+      // One instant, and it is the saved one: two instants side by side would read
+      // as the same fact told twice.
+      expect(find.text(l10n.timelineOffline), findsOneWidget);
+      expect(find.text(l10n.timelineSavedAt('12:00')), findsOneWidget);
+      expect(
+        find.textContaining(l10n.timelinePreviousRefreshMark),
+        findsNothing,
+      );
+      // A count of loaded-new releases is a refresh fact, and offline nothing was
+      // refreshed.
+      expect(find.text(l10n.timelineNewReleases(7)), findsNothing);
+      expect(find.byIcon(Icons.cloud_off), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('offline without a saved instant states offline alone', (
+    tester,
+  ) async {
+    await _pumpToolbar(tester, state: const TimelineViewState(offline: true));
+    final l10n = _l10n(tester);
+
+    expect(find.text(l10n.timelineOffline), findsOneWidget);
+    expect(find.textContaining(l10n.timelineSavedAt('')), findsNothing);
+    expect(find.byTooltip(l10n.timelineReload), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('the refresh instant and the loaded-new count share one row', (
     tester,
   ) async {

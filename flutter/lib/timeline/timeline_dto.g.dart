@@ -18,27 +18,9 @@ UserSettingsDto _$UserSettingsDtoFromJson(Map<String, dynamic> json) =>
               )
               .toList(),
         ),
-        releaseTimeline: $checkedConvert(
-          'releaseTimeline',
-          (v) => v == null
-              ? null
-              : TimelinePreferencesDto.fromJson(v as Map<String, dynamic>),
-        ),
       );
       return val;
     });
-
-TimelinePreferencesDto _$TimelinePreferencesDtoFromJson(
-  Map<String, dynamic> json,
-) => $checkedCreate('TimelinePreferencesDto', json, ($checkedConvert) {
-  final val = TimelinePreferencesDto(
-    retentionDays: $checkedConvert(
-      'retentionDays',
-      (v) => validatedRetentionDays(v),
-    ),
-  );
-  return val;
-});
 
 FollowedRepositoryDto _$FollowedRepositoryDtoFromJson(
   Map<String, dynamic> json,

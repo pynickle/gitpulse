@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import 'connection/connection_controller.dart';
 import 'connection/connection_screen.dart';
+import 'device/device_preferences_controller.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'presentation/gitpulse_theme.dart';
 import 'presentation/gitpulse_state_views.dart';
-import 'presentation/presentation_preferences_controller.dart';
 import 'session/session_controller.dart';
 import 'session/session_notice.dart';
 import 'settings/account_panel.dart';
@@ -78,16 +78,17 @@ class GitPulseApp extends ConsumerWidget {
         (connection.value?.backend != null &&
             session.phase == SessionPhase.restoring);
     ref.watch(timelineCacheLifecycleProvider);
-    // Language and appearance are device-local: they apply to every surface,
-    // including the connection screen, before any backend or session exists.
-    final presentation = ref.watch(presentationPreferencesStateProvider);
+    // Language, appearance and the retention window are device-local: they
+    // apply to every surface, including the connection screen, before any
+    // backend or session exists.
+    final device = ref.watch(devicePreferencesStateProvider);
     return MaterialApp.router(
       title: 'GitPulse',
       debugShowCheckedModeBanner: false,
       theme: gitPulseTheme(Brightness.light),
       darkTheme: gitPulseTheme(Brightness.dark),
-      themeMode: presentation.preferences.themeMode,
-      locale: presentation.preferences.locale,
+      themeMode: device.preferences.themeMode,
+      locale: device.preferences.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {

@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -9,9 +8,7 @@ import 'package:gitpulse/timeline/timeline_state.dart';
 import 'timeline_cache_test_support.dart';
 import 'timeline_test_support.dart';
 
-List<String> visibleKeys(
-  ({ProviderContainer container, FakeSessionController session}) harness,
-) =>
+List<String> visibleKeys(Harness harness) =>
     readState(harness.container).visibleGroups
         .expand((group) => group.items)
         .map((release) => release.key)
@@ -20,7 +17,7 @@ List<String> visibleKeys(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late ({ProviderContainer container, FakeSessionController session}) harness;
+  late Harness harness;
 
   setUp(() async {
     harness = createHarness(now: () => DateTime.utc(2026, 10, 20, 12));
@@ -309,7 +306,6 @@ void main() {
         statusCode: 200,
         data: {
           ...settingsJson([followJson('R_a', 'octo', 'alpha')]),
-          'releaseTimeline': {'retentionDays': 30},
         },
       );
       h.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -385,7 +381,6 @@ void main() {
       statusCode: 200,
       data: {
         ...settingsJson([followJson('R_a', 'octo', 'alpha')]),
-        'releaseTimeline': {'retentionDays': 30},
       },
     );
     online.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -451,7 +446,6 @@ void main() {
         statusCode: 200,
         data: {
           ...settingsJson([followJson('R_a', 'octo', 'alpha')]),
-          'releaseTimeline': {'retentionDays': 30},
         },
       );
       BackendResult cycle(List<Map<String, Object?>> releases) => BackendResult(

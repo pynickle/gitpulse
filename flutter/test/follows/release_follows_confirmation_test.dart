@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/followed_repository_view.dart';
-import 'package:gitpulse/presentation/presentation_preferences_controller.dart';
+import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -111,7 +111,6 @@ void main() {
       server.settings['followedRepositories'] = [
         followJson('R_alpha', 'octo', 'alpha'),
       ];
-      server.settings['releaseTimeline'] = {'retentionDays': 30};
       server.metadata['R_alpha'] = {
         'status': 'available',
         'owner': 'new-owner',
@@ -131,7 +130,7 @@ void main() {
       await auth.connectTo(tester, 'https://gitpulse.example');
       await tester.runAsync(
         () => container
-            .read(presentationPreferencesProvider.notifier)
+            .read(devicePreferencesProvider.notifier)
             .selectFollowedRepositoryView(FollowedRepositoryView.detailed),
       );
       final cacheEntered = Completer<void>();
@@ -201,7 +200,6 @@ void main() {
       server.settings['followedRepositories'] = [
         followJson('R_alpha', 'octo', 'alpha'),
       ];
-      server.settings['releaseTimeline'] = {'retentionDays': 30};
       server.pages = {
         'R_alpha': pageJson('octo', 'alpha', [
           releaseJson(1, 'saved', '2026-10-20T00:00:00Z'),
@@ -331,7 +329,6 @@ void main() {
         followJson('R_alpha', 'octo', 'alpha'),
         followJson('R_beta', 'octo', 'beta'),
       ];
-      server.settings['releaseTimeline'] = {'retentionDays': 30};
       server.pages = {
         'R_alpha': pageJson('octo', 'alpha', [
           releaseJson(1, 'removed-release', '2026-10-20T00:00:00Z'),

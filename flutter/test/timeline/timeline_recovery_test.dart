@@ -29,7 +29,7 @@ void main() {
     await timeline.refresh();
     expect(readState(h.container).cacheCorrupted, isTrue);
     await timeline.clearCache();
-    expect(readState(h.container).cacheSettings.cleared, isTrue);
+    expect(readState(h.container).cacheActions.cleared, isTrue);
     expect(readState(h.container).cacheCorrupted, isFalse);
     configure(
       h,
@@ -292,10 +292,9 @@ void main() {
   test('rejected sessions hide and prune expired history while transient failures preserve it', () async {
     final disk = await DiskTimeline.create();
     var now = disk.now;
-    final h = disk.open(now: () => now);
+    final h = disk.open(retentionDays: 1, now: () => now);
     configure(
       h,
-      days: 1,
       releases: [releaseJson(1, 'boundary', '2026-10-18T12:00:00Z')],
     );
     await settle(h.container);
@@ -345,7 +344,7 @@ void main() {
         releaseTimelineSessionProvider.notifier,
       );
       await timeline.clearCache();
-      expect(readState(h.container).cacheSettings.clearFailed, isTrue);
+      expect(readState(h.container).cacheActions.clearFailed, isTrue);
       expect(keys(h.container), isEmpty);
       // Same-account reauthentication must not restore history whose clearing
       // failed, even while both server reads are unavailable.
@@ -364,7 +363,7 @@ void main() {
       expect(keys(h.container), isEmpty);
       await disk.cache!.customStatement('DROP TRIGGER fail_clear');
       await timeline.clearCache();
-      expect(readState(h.container).cacheSettings.cleared, isTrue);
+      expect(readState(h.container).cacheActions.cleared, isTrue);
       await disk.close();
       final reopened = disk.open();
       reopened.session.handlers['GET api/settings'] = () =>
@@ -381,10 +380,9 @@ void main() {
       final h = (await tester.runAsync(() async {
         await File(p.join(disk.directory.path, 'timeline.sqlite'))
             .writeAsString('damaged SQLite file');
-        final h = disk.open();
+        final h = disk.open(retentionDays: 7);
         configure(
           h,
-          days: 7,
           releases: [releaseJson(4, 'fresh', '2026-10-19T00:00:00Z')],
         );
         await settle(h.container);
@@ -424,16 +422,18 @@ void main() {
       expect(h.session.state.phase, SessionPhase.signedIn);
       expect(h.session.state.identity, identity);
       expect(h.session.requests, requests);
-      expect(readState(h.container).cacheSettings.retentionDays, 7);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.runAsync(() async {
         await disk.close();
-        final reopened = disk.open();
+        final reopened = disk.open(
+          retentionDays: null,
+          freshDeviceChoice: true,
+        );
         reopened.session.handlers['GET api/settings'] = () =>
             const BackendResult(problem: BackendProblem.network);
         await settle(reopened.container);
         expect(keys(reopened.container), ['R_a:4']);
-        expect(readState(reopened.container).cacheSettings.retentionDays, 7);
+        expect(reopened.device.value.retentionDays, 7);
       });
     },
   );

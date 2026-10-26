@@ -6,30 +6,18 @@ part 'timeline_dto.g.dart';
 
 /// The typed view of the account settings the Timeline needs. Unrelated
 /// preferences stay untouched and unread.
+///
+/// How much history this installation keeps is not an account setting: it is a
+/// device choice, so nothing here asks the server for it.
 @JsonSerializable(checked: true, createToJson: false)
 class UserSettingsDto {
-  const UserSettingsDto({this.followedRepositories, this.releaseTimeline});
+  const UserSettingsDto({this.followedRepositories});
 
   factory UserSettingsDto.fromJson(Map<String, dynamic> json) =>
       _$UserSettingsDtoFromJson(json);
 
   final List<FollowedRepositoryDto>? followedRepositories;
-  final TimelinePreferencesDto? releaseTimeline;
 }
-
-@JsonSerializable(checked: true, createToJson: false)
-class TimelinePreferencesDto {
-  const TimelinePreferencesDto({this.retentionDays});
-
-  factory TimelinePreferencesDto.fromJson(Map<String, dynamic> json) =>
-      _$TimelinePreferencesDtoFromJson(json);
-
-  @JsonKey(fromJson: validatedRetentionDays)
-  final int? retentionDays;
-}
-
-int? validatedRetentionDays(Object? value) =>
-    value is int && value >= 1 && value <= 90 ? value : null;
 
 /// A Followed Repository as the account stores it.
 @JsonSerializable(checked: true, createToJson: false)

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -34,7 +35,6 @@ void main() {
           followJson('R_a', 'octo', 'alpha'),
           followJson('R_b', 'octo', 'beta'),
         ]),
-        'releaseTimeline': {'retentionDays': 30},
       },
     );
     first.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -103,10 +103,9 @@ void main() {
       () async {
         final disk = await DiskTimeline.create();
         final cutoff = disk.now.subtract(Duration(days: days));
-        final first = disk.open();
+        final first = disk.open(retentionDays: days);
         configure(
           first,
-          days: days,
           releases: [
             releaseJson(2, 'boundary', cutoff.toIso8601String()),
             releaseJson(
@@ -218,23 +217,25 @@ void main() {
     expect(readState(h.container).savedAt, disk.now);
   });
 
-  test('a new identity without a synchronized preference can read online but cannot retain it', () async {
-    final disk = await DiskTimeline.create();
-    var h = disk.open();
-    configure(
-      h,
-      days: null,
-      releases: [releaseJson(3, 'v3', '2026-10-18T00:00:00Z')],
-    );
-    await settle(h.container);
-    expect(keys(h.container), ['R_a:3']);
-    await disk.close();
-    h = disk.open();
-    h.session.handlers['GET api/settings'] = () =>
-        const BackendResult(problem: BackendProblem.network);
-    await settle(h.container);
-    expect(keys(h.container), isEmpty);
-  });
+  test(
+    'a failed settings read can read online but cannot retain what it read',
+    () async {
+      final disk = await DiskTimeline.create();
+      var h = disk.open();
+      configure(h, releases: [releaseJson(3, 'v3', '2026-10-18T00:00:00Z')]);
+      h.session.handlers.remove('GET api/settings');
+      h.session.handlers['GET api/settings'] = () =>
+          const BackendResult(problem: BackendProblem.network);
+      await settle(h.container);
+      expect(keys(h.container), ['R_a:3']);
+      await disk.close();
+      h = disk.open();
+      h.session.handlers['GET api/settings'] = () =>
+          const BackendResult(problem: BackendProblem.network);
+      await settle(h.container);
+      expect(keys(h.container), isEmpty);
+    },
+  );
 
   test('rejection hides history and same-account reauthentication restores it; logout deletes it', () async {
     final disk = await DiskTimeline.create();
@@ -294,15 +295,17 @@ void main() {
         ],
       );
       await settle(h.container);
-      configure(
-        h,
-        days: 1,
-        releases: [releaseJson(3, 'v3', '2026-10-18T12:00:00Z')],
-      );
+      // The reader shortens the window to one day, then widens it again: what
+      // one day evicted cannot come back without fetching it anew.
+      await h.container
+          .read(devicePreferencesProvider.notifier)
+          .selectRetentionDays(1);
+      await waitForSavedRetention(h.container, 1);
+      configure(h, releases: [releaseJson(3, 'v3', '2026-10-18T12:00:00Z')]);
       await h.container.read(releaseTimelineSessionProvider.notifier).refresh();
       await disk.close();
-      h = disk.open();
-      configure(h, days: 90, releases: []);
+      h = disk.open(retentionDays: 90);
+      configure(h, releases: []);
       h.session.handlers['POST api/release-timeline/refresh'] = () =>
           const BackendResult(problem: BackendProblem.network);
       await settle(h.container);
@@ -340,12 +343,8 @@ void main() {
 
   test('foreground pruning expires saved publications without refreshing the timeline', () async {
     final disk = await DiskTimeline.create();
-    var h = disk.open();
-    configure(
-      h,
-      days: 1,
-      releases: [releaseJson(3, 'v3', '2026-10-18T12:00:00Z')],
-    );
+    var h = disk.open(retentionDays: 1);
+    configure(h, releases: [releaseJson(3, 'v3', '2026-10-18T12:00:00Z')]);
     await settle(h.container);
     await disk.close();
     var currentTime = disk.now;
@@ -450,7 +449,7 @@ void main() {
     await settle(h.container);
     expect(keys(h.container), isEmpty);
   });
-  test('a failed policy write cannot persist fresh content using the previous longer window', () async {
+  test('a window whose ledger write failed still applies on the next launch', () async {
     final disk = await DiskTimeline.create();
     var h = disk.open();
     configure(h, releases: [releaseJson(3, 'v3', '2026-10-18T00:00:00Z')]);
@@ -458,11 +457,12 @@ void main() {
     await disk.cache!.customStatement(
       "CREATE TEMP TRIGGER fail_policy BEFORE UPDATE OF retention_days ON cache_account WHEN NEW.retention_days = 1 BEGIN SELECT RAISE(ABORT, 'disk full'); END",
     );
-    configure(
-      h,
-      days: 1,
-      releases: [releaseJson(4, 'v4', '2026-10-19T00:00:00Z')],
-    );
+    // The reader's shorter window cannot be written to the saved history, so
+    // the round that follows must not persist under either window.
+    await h.container
+        .read(devicePreferencesProvider.notifier)
+        .selectRetentionDays(1);
+    configure(h, releases: [releaseJson(4, 'v4', '2026-10-19T00:00:00Z')]);
     await h.container.read(releaseTimelineSessionProvider.notifier).refresh();
     expect(keys(h.container), ['R_a:4']);
     expect(readState(h.container).cacheFailed, isTrue);
@@ -473,6 +473,8 @@ void main() {
     h.session.handlers['POST api/release-timeline/refresh'] = () =>
         const BackendResult(problem: BackendProblem.network);
     await settle(h.container);
-    expect(keys(h.container), ['R_a:3']);
+    // The ledger could not record the new window, so the history it kept under
+    // the old one is not read back: the device's own choice decides.
+    expect(keys(h.container), isEmpty);
   });
 }

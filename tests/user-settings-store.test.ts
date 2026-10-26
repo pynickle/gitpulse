@@ -356,12 +356,10 @@ describe('user settings store', () => {
     expect(createDefaultUserSettings().version).toBe(1);
     expect(createDefaultUserSettings().releaseTimeline).toEqual({
       showReactions: true,
-      retentionDays: 30,
     });
 
     expect(normalizeUserSettings({}).releaseTimeline).toEqual({
       showReactions: true,
-      retentionDays: 30,
     });
     expect(normalizeUserSettings({ releaseTimeline: undefined }).version).toBe(1);
     expect(
@@ -370,7 +368,6 @@ describe('user settings store', () => {
       }).releaseTimeline
     ).toEqual({
       showReactions: false,
-      retentionDays: 30,
     });
     expect(
       normalizeUserSettings({
@@ -378,7 +375,6 @@ describe('user settings store', () => {
       }).releaseTimeline
     ).toEqual({
       showReactions: true,
-      retentionDays: 30,
     });
 
     const patchedOff = mergeUserSettingsPatch(createDefaultUserSettings(), {
@@ -386,7 +382,6 @@ describe('user settings store', () => {
     });
     expect(patchedOff.releaseTimeline).toEqual({
       showReactions: false,
-      retentionDays: 30,
     });
 
     const patchedOn = mergeUserSettingsPatch(patchedOff, {
@@ -394,7 +389,6 @@ describe('user settings store', () => {
     });
     expect(patchedOn.releaseTimeline).toEqual({
       showReactions: true,
-      retentionDays: 30,
     });
     expect(patchedOn.version).toBe(1);
   });
@@ -615,7 +609,6 @@ describe('user settings store', () => {
 
     expect(harness.settings.value.releaseTimeline).toEqual({
       showReactions: false,
-      retentionDays: 30,
     });
     expect(harness.saveRequests).toHaveLength(1);
     expect(harness.saveRequests[0]?.patch).toEqual({

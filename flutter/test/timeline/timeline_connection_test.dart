@@ -20,7 +20,6 @@ void main() {
           followJson('R_a', 'octo', 'alpha'),
           followJson('R_b', 'octo', 'beta'),
         ]),
-        'releaseTimeline': {'retentionDays': 30},
       },
     );
     h.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -110,7 +109,6 @@ void main() {
           followJson('R_a', 'octo', 'alpha'),
           followJson('R_b', 'octo', 'beta'),
         ]),
-        'releaseTimeline': {'retentionDays': 30},
       },
     );
     h.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -186,7 +184,6 @@ void main() {
           followJson('R_a', 'octo', 'alpha'),
           followJson('R_b', 'octo', 'beta'),
         ]),
-        'releaseTimeline': {'retentionDays': 30},
       },
     );
     h.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -576,7 +573,6 @@ void main() {
           followJson('R_a', 'octo', 'alpha'),
           followJson('R_b', 'octo', 'beta'),
         ]),
-        'releaseTimeline': {'retentionDays': 30},
       },
     );
     h.session.handlers['POST api/release-timeline/refresh'] = () =>

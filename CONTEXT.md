@@ -2,11 +2,11 @@
 
 GitPulse presents GitHub activity for focused review and follow-up in one dashboard.
 
-## Flutter Presentation
+## Flutter Installation
 
-**Device Presentation Preferences**:
-The language, appearance, and Followed Repository View chosen for one Flutter app installation, shared across its accounts and backends. These choices survive sign-out and account or backend changes, and are independent of another installation's choices.
-_Avoid_: account settings when referring to these Flutter presentation choices
+**Device Preferences**:
+The language, appearance, Followed Repository View, and Timeline Cache Retention Window chosen for one Flutter app installation, shared across its accounts and backends. These choices survive sign-out, cache clearing, and account or backend changes, apply before the backend can be reached, and are independent of another installation's choices.
+_Avoid_: account settings, presentation preferences when referring to these installation choices
 
 **Band**:
 One full-width horizontal section of a page, owning a single job and ending where a rule or a change of surface says it ends.
@@ -232,8 +232,8 @@ A Shared Timeline Window displayed while one or more Followed Repositories could
 _Avoid_: full repository coverage when a repository could not be loaded
 
 **Timeline Cache Retention Window**:
-The rolling publication-time interval for which the Flutter application retains Release Timeline history for later reuse. Its duration is shared by an account's app installations; it expresses eligibility for retention, not completeness of the retained history.
-_Avoid_: request age, cached-at window when referring to this publication-time interval
+The rolling publication-time interval for which a Flutter installation retains Release Timeline history for later reuse. It is held by the installation, alongside its language and appearance, so it applies to every account the installation signs in to and can be changed offline; it expresses eligibility for retention, not completeness of the retained history.
+_Avoid_: request age, account setting, cached-at window when referring to this publication-time interval
 
 **Connected Cached History**:
 A repository's retained release history that the current refresh has reached by loading successive release pages back into previously retained records. This connection permits history reuse without establishing complete publication-time coverage.
@@ -242,6 +242,10 @@ _Avoid_: complete history, date overlap when referring to a verified connection
 **Saved Visible Timeline**:
 The most recently saved Release Timeline window exposed by the Flutter application before user display filters, available for offline reading. It excludes retained history disconnected from that window.
 _Avoid_: all cached history, per-request snapshot
+
+**Saved Timeline Timestamp**:
+The moment a Flutter installation last wrote its Saved Visible Timeline. It states how old the history an offline reader is looking at is, and is separate from the account's Timeline Refresh Baseline, which is when the account last refreshed.
+_Avoid_: last refresh time, Timeline Refresh Baseline when referring to the saved copy
 
 **Timeline Refresh Baseline**:
 The time of the account's previous Release Timeline refresh that returned usable results, including partial results, shared by web and app clients. It distinguishes new releases from earlier ones and does not represent reading progress.

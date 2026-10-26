@@ -980,17 +980,18 @@ class _StatusFooter extends StatelessWidget {
         spacing: 12,
         runSpacing: 8,
         children: [
-          if (state.cacheConnection != TimelineCacheConnection.none)
+          // Saved history that is not connected explains why the window is
+          // incomplete, so it stays. That it *is* connected states nothing the
+          // reader can act on, so it is not reported at all.
+          if (state.cacheConnection == TimelineCacheConnection.waiting)
             Semantics(
               liveRegion: true,
               child: Text(
-                state.cacheConnection == TimelineCacheConnection.waiting
-                    ? l10n.timelineCacheWaiting(
-                        state.waitingRepositories
-                            .map((repository) => repository.fullName)
-                            .join(', '),
-                      )
-                    : l10n.timelineCacheConnected,
+                l10n.timelineCacheWaiting(
+                  state.waitingRepositories
+                      .map((repository) => repository.fullName)
+                      .join(', '),
+                ),
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -1014,7 +1015,12 @@ class _StatusFooter extends StatelessWidget {
               onPressed: state.loading ? null : () => onLoadOlder(),
               child: Text(l10n.timelineLoadOlder),
             ),
-          if (state.failure != null)
+          // A failed round with saved releases still on screen keeps only the
+          // action: the reader can see what they came for, so the reason is
+          // worth stating beside the releases lost, not here. Without a
+          // readable window there is nothing to read, and the failure is the
+          // only explanation the page can give.
+          if (state.failure != null && !state.hasExposedReleases)
             Text(switch (state.failure!.kind) {
               TimelineFailureKind.network => l10n.timelineErrorNetwork,
               TimelineFailureKind.rateLimited => l10n.timelineErrorRateLimited,

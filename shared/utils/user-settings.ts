@@ -136,7 +136,6 @@ export const DEFAULT_USER_COMPOSER_SETTINGS: UserComposerSettings = {
 
 export const DEFAULT_USER_RELEASE_TIMELINE_SETTINGS: UserReleaseTimelineSettings = {
   showReactions: true,
-  retentionDays: 30,
 };
 
 export const DEFAULT_USER_RELEASE_FOLLOW_SETTINGS: UserReleaseFollowSettings = {
@@ -850,13 +849,6 @@ export function normalizeUserReleaseTimelineSettings(
       typeof candidate.showReactions === 'boolean'
         ? candidate.showReactions
         : fallback.showReactions,
-    retentionDays:
-      typeof candidate.retentionDays === 'number' &&
-      Number.isInteger(candidate.retentionDays) &&
-      candidate.retentionDays >= 1 &&
-      candidate.retentionDays <= 90
-        ? candidate.retentionDays
-        : fallback.retentionDays,
   };
 }
 

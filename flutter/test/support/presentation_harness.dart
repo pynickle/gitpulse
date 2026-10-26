@@ -7,8 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/connection/backend_service.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/connection/native_capabilities.dart';
-import 'package:gitpulse/presentation/presentation_preferences_controller.dart';
-import 'package:gitpulse/presentation/presentation_preferences_store.dart';
+import 'package:gitpulse/device/device_preferences_controller.dart';
+import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -20,7 +20,7 @@ import 'provider_wait.dart';
 
 const _capabilities = NativeCapabilities(
   protocolVersion: 1,
-  capabilities: ['timeline-retention'],
+  capabilities: ['provider-discovery', 'release-timeline'],
   providers: SignInProviders(
     personalMode: false,
     patEnabled: true,
@@ -55,10 +55,15 @@ class PresentationHarness {
     this.connection = connectedConnection,
     this.session,
     this.handlers = const {},
+    this.deviceStore,
   });
 
   final Directory directory;
   final File preferencesFile;
+
+  /// A device store that replaces the real file, for a device whose storage
+  /// cannot be written at all.
+  final DevicePreferencesStore? deviceStore;
   final BackendConnectionState Function() connection;
   final SessionState? session;
   final Map<String, FutureOr<BackendResult> Function()> handlers;
@@ -71,9 +76,12 @@ class PresentationHarness {
     cache = TimelineCache(NativeDatabase.memory());
     container = ProviderContainer(
       overrides: [
-        presentationPreferencesFileProvider.overrideWithValue(
-          () async => preferencesFile,
-        ),
+        if (deviceStore case final store?)
+          devicePreferencesStoreProvider.overrideWithValue(store)
+        else
+          devicePreferencesFileProvider.overrideWithValue(
+            () async => preferencesFile,
+          ),
         timelineCacheProvider.overrideWithValue(cache),
         connectionControllerProvider.overrideWith(
           () => _TestConnectionController(connection),
@@ -86,7 +94,7 @@ class PresentationHarness {
       ],
     );
     container.listen(sessionControllerProvider, (_, _) {});
-    await container.read(presentationPreferencesProvider.future);
+    await container.read(devicePreferencesProvider.future);
     await container.read(connectionControllerProvider.future);
     if (session?.phase == SessionPhase.signedIn) {
       await waitForProvider(
@@ -110,6 +118,7 @@ PresentationHarness harnessFor(
   BackendConnectionState Function() connection = connectedConnection,
   SessionState? session,
   Map<String, FutureOr<BackendResult> Function()> handlers = const {},
+  DevicePreferencesStore? deviceStore,
 }) {
   final directory = Directory.systemTemp.createTempSync(
     'gitpulse-presentation-',
@@ -122,6 +131,7 @@ PresentationHarness harnessFor(
     connection: connection,
     session: session,
     handlers: handlers,
+    deviceStore: deviceStore,
   );
   addTearDown(() async {
     await tester.runAsync(harness.close);

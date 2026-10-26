@@ -69,7 +69,7 @@ describe('public native connection contract', () => {
     configureProviders(true);
     expect(await getPublicResponse('native/capabilities')).toEqual({
       protocolVersion: 1,
-      capabilities: ['provider-discovery', 'release-timeline', 'timeline-retention'],
+      capabilities: ['provider-discovery', 'release-timeline'],
       providers: { personalMode: true, patEnabled: false, oauthEnabled: false, mode: 'personal' },
     });
     const providers = await getPublicResponse('auth/providers');
@@ -96,7 +96,6 @@ describe('public native connection contract', () => {
       expect(result.capabilities).toEqual([
         'provider-discovery',
         'release-timeline',
-        'timeline-retention',
         ...(oauth ? ['native-login-handoff'] : []),
       ]);
       expect(await getPublicResponse('auth/providers')).toMatchObject(result.providers);

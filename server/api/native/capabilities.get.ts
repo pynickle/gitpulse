@@ -14,7 +14,6 @@ export default defineEventHandler((event): NativeCapabilities => {
       'provider-discovery',
       // Core release reading: the app requires these routes instead of degrading.
       'release-timeline',
-      'timeline-retention',
       ...(nativeLoginHandoffAvailable(event) ? ['native-login-handoff'] : []),
     ],
     providers: { personalMode, patEnabled, oauthEnabled, mode },

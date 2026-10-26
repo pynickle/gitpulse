@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
-import 'package:gitpulse/presentation/presentation_preferences_store.dart';
+import 'package:gitpulse/device/device_preferences_store.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
@@ -165,7 +165,6 @@ class AuthServer implements HttpClientAdapter {
           'capabilities': [
             'provider-discovery',
             'release-timeline',
-            'timeline-retention',
             if (handoffEnabled) 'native-login-handoff',
           ],
           'providers': providers,
@@ -368,7 +367,7 @@ Future<ProviderContainer> mountApp(
         if (timelineNow != null)
           timelineClockProvider.overrideWithValue(timelineNow),
         if (presentationFile != null)
-          presentationPreferencesFileProvider.overrideWithValue(
+          devicePreferencesFileProvider.overrideWithValue(
             () async => presentationFile,
           ),
         if (storage != null) secureStorageProvider.overrideWithValue(storage),
@@ -1470,7 +1469,10 @@ void main() {
         notifier.transitionLog.whereType<IdentityCleared>().single.reason,
         IdentityClearReason.backendChange,
       );
-      expect(find.byType(TextField), findsOneWidget);
+      // The account gate is back to its own credential field. The device's own
+      // rows are not account state and stay on the Settings page.
+      expect(fieldLabeled('Password'), findsOneWidget);
+      expect(find.byType(TimelineScreen), findsNothing);
       final stored = await const FlutterSecureStorage().readAll();
       expect(stored.values.join('\n').contains(server.sessionValue), isFalse);
 
@@ -1582,7 +1584,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(offline.problem, BackendProblem.network);
-      expect(find.textContaining('You are offline'), findsOneWidget);
+      // Losing the network is stated once, on the Timeline it affects, and the
+      // session itself stays signed in without a notice of its own.
+      expect(find.textContaining('You are offline'), findsNothing);
       expectIdentity(tester, 'octocat');
       expect(find.byType(TimelineScreen), findsOneWidget);
 

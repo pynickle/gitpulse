@@ -26,7 +26,6 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   int _starredGeneration = 0;
   String? _context;
   Future<TimelineResult<UserSettingsDto>>? _settingsRead;
-  UserSettingsDto? _settings;
   TimelineFailure? _readFailure;
   Completer<void>? _edit;
   final Map<String, Object> _members = {};
@@ -66,7 +65,6 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       _searchGeneration++;
       _starredGeneration++;
       _settingsRead = null;
-      _settings = null;
       _readFailure = null;
       _members.clear();
       _metadataRequests.clear();
@@ -148,7 +146,6 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       for (final repo in state.repositories)
         FollowedRepositoryDto(id: repo.id, owner: repo.owner, name: repo.name),
     ],
-    releaseTimeline: _settings?.releaseTimeline,
   );
 
   Future<TimelineResult<UserSettingsDto>> _readSettings(int ticket) async {
@@ -183,7 +180,6 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       );
       return TimelineResult.failed(failure);
     }
-    _settings = settings;
     _publishConfirmed(
       _preserveNewerNames(mapFollowedRepositories(settings), names),
     );

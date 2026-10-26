@@ -33,8 +33,10 @@ class BackendAddressStore {
     final capabilities = NativeCapabilities.fromJson(
       saved['capabilities'] as Map<String, dynamic>,
     );
+    // The saved capabilities are only trusted for a backend that can still be
+    // read offline: any server that served this app's timeline carries these.
     if (capabilities.protocolVersion != 1 ||
-        !capabilities.capabilities.contains('timeline-retention')) {
+        !capabilities.capabilities.contains('release-timeline')) {
       return null;
     }
     return ConnectedBackend(base, capabilities);

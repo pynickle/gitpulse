@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/widgets.dart';
 
+import '../device/device_preferences.dart';
+import '../device/device_preferences_controller.dart';
 import '../follows/release_follows_session.dart';
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
@@ -63,15 +65,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   TimelineFilterState _filters = const TimelineFilterState();
   List<TimelineGroup>? _preparedForGroups;
   PreparedTimelineSearch? _preparedSearch;
-  int? get _retentionDays => state.cacheSettings.retentionDays;
-  set _retentionDays(int? days) {
-    state = state.copyWith(
-      cacheSettings: state.cacheSettings.copyWith(
-        retentionDays: days,
-        clearRetentionDays: days == null,
-      ),
-    );
-  }
+
+  /// How many days of published releases this installation keeps.
+  ///
+  /// Null until the device's own window is known. Nothing is pruned or saved
+  /// before that: a guessed window would delete saved records the real one
+  /// keeps, and a deleted record cannot be recovered.
+  int? _retentionWindow;
 
   TimelineHistoryConnection _history = TimelineHistoryConnection(
     const RetainedTimelineHistory(),
@@ -106,6 +106,22 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       }
       unawaited(applyFollows(next.repositories));
     });
+    // The retention window belongs to the installation, so a change made in
+    // Settings arrives here as a choice already in force: applying it prunes
+    // saved history at once, without a request.
+    //
+    // Before this session has resolved a window there is nothing to change:
+    // startup owns that first resolution, and applying the same value here
+    // would prune against a follow set the restore has not supplied yet.
+    ref.listen(devicePreferencesProvider, (previous, next) {
+      final days = next.value?.preferences.retentionDays;
+      if (days == null ||
+          _retentionWindow == null ||
+          days == _retentionWindow) {
+        return;
+      }
+      unawaited(applyRetentionWindow(days));
+    });
     final transitions = ref
         .read(sessionControllerProvider.notifier)
         .transitions
@@ -132,7 +148,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   /// Reads one coordinated round for every Followed Repository.
   Future<void> refresh() async {
-    if (state.cacheSettings.saving || state.cacheSettings.clearing) return;
+    if (state.cacheActions.clearing) return;
     final context = _sessionContext();
     if (context == null) return;
     // A new account, or a first cycle that never reached the Followed
@@ -234,7 +250,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         loading: true,
         hasFollows: true,
         filters: _filters,
-        cacheSettings: state.cacheSettings,
+        cacheActions: state.cacheActions,
         cacheFailed: state.cacheFailed,
         cacheCorrupted: state.cacheCorrupted,
       );
@@ -297,7 +313,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         retainedPages: _history.extensionPages(
           _cycle,
           now: ref.read(timelineClockProvider)(),
-          retentionDays: _retentionDays ?? 1,
+          retentionDays: _retentionWindow ?? 1,
         ),
         refresh: false,
         environment: ref.read(timelineEnvironmentProvider),
@@ -398,8 +414,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// Advances successful, non-exhausted repositories by one coordinated round.
   Future<void> loadOlder() async {
     if (state.loading ||
-        state.cacheSettings.saving ||
-        state.cacheSettings.clearing ||
+        state.cacheActions.clearing ||
         !state.active ||
         !state.canLoadOlder) {
       return;
@@ -416,8 +431,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// restricts the action to one failed repository.
   Future<void> retryFailed({String? repositoryId}) async {
     if (state.loading ||
-        state.cacheSettings.saving ||
-        state.cacheSettings.clearing ||
+        state.cacheActions.clearing ||
         !state.active ||
         !state.canRetry) {
       return;
@@ -486,7 +500,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _cacheSynchronized = false;
     _resetFilters();
     state = const TimelineViewState.activeLoading();
-    _retentionDays = null;
+    _retentionWindow = null;
     final ticket = ++_generation;
     _synchronizingFollows = ticket;
     unawaited(_restoreAndStart(ticket));
@@ -515,8 +529,57 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       await _cacheAction;
     }
     if (!_isCurrent(ticket)) return;
+    // The device's own window is resolved before anything is pruned or saved,
+    // so a restored window is always read and rewritten under the real policy.
+    await _resolveRetentionWindow();
+    if (!_isCurrent(ticket)) return;
     await _restoreCachedWindow(ticket);
     if (_isCurrent(ticket)) await _startCycle(ticket, synchronize: false);
+  }
+
+  /// Resolves how much history this installation keeps, before any local write.
+  ///
+  /// The device's own choice wins. An installation that has never chosen one is
+  /// seeded once from the window its Timeline Cache last wrote, so upgrading
+  /// keeps the history the account already saved, and otherwise keeps the
+  /// default. The seed becomes the device's choice, so the next launch has one
+  /// without reading the cache first.
+  Future<void> _resolveRetentionWindow() async {
+    if (_retentionWindow != null) return;
+    final scope = _scopeOfSession();
+    // Without a cache scope this installation saves nothing at all, so there is
+    // no window to resolve and no local file to read.
+    if (scope == null) return;
+    final preferences = await ref.read(devicePreferencesProvider.future);
+    // The read may outlive an account change: a window resolved for another
+    // account is not this session's to apply.
+    if (!ref.mounted || _scopeOfSession() != scope) return;
+    final chosen = preferences.preferences.retentionDays;
+    if (chosen != null) {
+      _retentionWindow = chosen;
+      return;
+    }
+    if (preferences.readFailed) {
+      // A device whose choices could not be read keeps the default and does not
+      // look for a seed: the document may have held a longer window.
+      _retentionWindow = DevicePreferences.defaultRetentionDays;
+      return;
+    }
+    var seeded = DevicePreferences.defaultRetentionDays;
+    try {
+      final saved = await ref
+          .read(timelineCacheProvider)
+          .lastSavedRetentionDays(scope: scope);
+      if (!ref.mounted || _scopeOfSession() != scope) return;
+      seeded = saved ?? seeded;
+    } catch (error) {
+      if (!ref.mounted) return;
+      _cacheFailure(error);
+    }
+    _retentionWindow = seeded;
+    await ref
+        .read(devicePreferencesProvider.notifier)
+        .rememberSeededRetentionDays(seeded);
   }
 
   Future<void> _restoreCachedWindow(int ticket) async {
@@ -530,17 +593,17 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
               scope: scope,
               now: ref.read(timelineClockProvider)(),
               environment: ref.read(timelineEnvironmentProvider),
+              retentionDays: _retentionWindow,
             );
         if (!_isCurrent(ticket)) return;
         if (saved != null) {
           _cacheSynchronized = true;
-          _retentionDays = saved.retentionDays;
           _followedRepositories = saved.repositories;
           final view = _visibleIn(saved.groups, saved.baseline);
           state = TimelineViewState(
             active: true,
             loading: true,
-            cacheSettings: state.cacheSettings,
+            cacheActions: state.cacheActions,
             hasFollows: saved.repositories.isNotEmpty,
             groups: saved.groups,
             visibleGroups: view.groups,
@@ -594,6 +657,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
               scope: scope,
               now: ref.read(timelineClockProvider)(),
               isCurrent: () => _isCurrent(ticket),
+              retentionDays: _retentionWindow,
             );
         return;
       }
@@ -603,6 +667,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             scope: scope,
             now: ref.read(timelineClockProvider)(),
             environment: ref.read(timelineEnvironmentProvider),
+            retentionDays: _retentionWindow,
           );
       if (_isCurrent(ticket) &&
           state.restored &&
@@ -615,9 +680,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
   }
 
-  /// Applies an account preference only after the server confirms persistence.
-  Future<void> saveRetention(int days) =>
-      _runCacheAction(() => _saveRetention(days));
+  /// Applies this installation's retention window to its saved history now.
+  ///
+  /// The window is the device's own choice, so it needs no server confirmation
+  /// and no request: the pages already read are replayed under it and the
+  /// records that fall outside it are pruned while the reader is still offline.
+  ///
+  /// A choice made while another cache action is running waits for it instead of
+  /// being dropped: the reader has already been told the new window is in force.
+  Future<void> applyRetentionWindow(int days) async {
+    while (_cacheAction != null) {
+      await _cacheAction;
+    }
+    if (!ref.mounted) return;
+    await _runCacheAction(() => _applyRetentionWindow(days));
+  }
 
   Future<void> _runCacheAction(Future<void> Function() action) async {
     if (_cacheAction != null) return;
@@ -631,61 +708,25 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
   }
 
-  Future<void> _saveRetention(int days) async {
-    if (_sessionContext() == null ||
-        state.loading ||
-        state.cacheSettings.saving ||
-        state.cacheSettings.clearing) {
-      return;
-    }
-    if (validatedRetentionDays(days) == null) {
-      state = state.copyWith(
-        cacheSettings: state.cacheSettings.copyWith(saveFailed: true),
-      );
-      return;
-    }
-    final ticket = _generation;
-    state = state.copyWith(
-      cacheSettings: state.cacheSettings.copyWith(
-        saving: true,
-        saveFailed: false,
-      ),
-    );
-    final result = await ref
-        .read(releaseTimelineServiceProvider)
-        .saveRetention(days);
-    if (!_isCurrent(ticket)) return;
-    if (result.data == null) {
-      state = state.copyWith(
-        cacheSettings: state.cacheSettings.copyWith(
-          saving: false,
-          saveFailed: true,
-        ),
-      );
-      return;
-    }
-    _retentionDays = days;
-    state = state.copyWith(
-      cacheSettings: state.cacheSettings.copyWith(syncFailed: false),
-    );
+  Future<void> _applyRetentionWindow(int days) async {
+    if (_retentionWindow == null || days == _retentionWindow) return;
+    // A window is only a filter over history this session owns: without a
+    // signed-in account and its confirmed follows there is no history to keep.
+    if (_sessionContext() == null || !_followsKnown) return;
+    _retentionWindow = days;
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
-    if (scope != null) {
-      try {
-        await _synchronizeCache(scope, ticket);
-        if (!_isCurrent(ticket)) return;
-        await _loadHistory(ticket, replayCurrentPages: true);
-        if (!_isCurrent(ticket)) return;
-        await pruneRetainedHistory();
-      } catch (error) {
-        if (!_isCurrent(ticket)) return;
-        _cacheFailure(error);
-      }
-    }
-    if (_isCurrent(ticket)) {
-      state = state.copyWith(
-        cacheSettings: state.cacheSettings.copyWith(saving: false),
-      );
+    if (scope == null) return;
+    final ticket = _generation;
+    try {
+      await _synchronizeCache(scope, ticket);
+      if (!_isCurrent(ticket)) return;
+      await _loadHistory(ticket, replayCurrentPages: true);
+      if (!_isCurrent(ticket)) return;
+      await pruneRetainedHistory();
+    } catch (error) {
+      if (!_isCurrent(ticket)) return;
+      _cacheFailure(error);
     }
   }
 
@@ -703,7 +744,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       if (_isCurrent(ticket)) state = state.copyWith(loading: false);
       return;
     }
-    if (_retentionDays == null) {
+    if (_retentionWindow == null) {
       await refresh();
       return;
     }
@@ -739,7 +780,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final ticket = ++_generation;
     state = state.copyWith(
       loading: true,
-      cacheSettings: state.cacheSettings.copyWith(clearing: true),
+      cacheActions: state.cacheActions.copyWith(clearing: true),
     );
     _cacheSynchronized = false;
     try {
@@ -801,19 +842,31 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       if (_isCurrent(ticket)) {
         state = state.copyWith(
           loading: false,
-          cacheSettings: state.cacheSettings.copyWith(clearing: false),
+          cacheActions: state.cacheActions.copyWith(clearing: false),
         );
       }
     }
   });
 
   Future<void> _synchronizeCache(String scope, int ticket) async {
+    // Nothing may be written before this installation's window is known: a
+    // follow set that is not restored yet would delete the saved history it does
+    // not name, and nothing may be pruned on a guessed policy. A round that
+    // started while the device was still being read waits for it here.
+    if (_retentionWindow == null) {
+      await _resolveRetentionWindow();
+      if (!_isCurrent(ticket)) return;
+    }
+    if (_retentionWindow == null) return;
+    // Nor before this session has a confirmed follow set: a history keyed to
+    // repositories nobody confirmed would be written, and its neighbours deleted.
+    if (!_followsKnown) return;
     _cacheSynchronized = false;
     await ref
         .read(timelineCacheProvider)
         .synchronize(
           scope: scope,
-          retentionDays: _retentionDays,
+          retentionDays: _retentionWindow,
           repositories: _followedRepositories,
           now: ref.read(timelineClockProvider)(),
           isCurrent: () => _isCurrent(ticket),
@@ -829,9 +882,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   }
 
   Future<void> _clearCache() async {
-    if (_sessionContext() == null ||
-        state.cacheSettings.clearing ||
-        state.cacheSettings.saving) {
+    if (_sessionContext() == null || state.cacheActions.clearing) {
       return;
     }
     final ticket = ++_generation;
@@ -848,7 +899,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       hasFollows: _followedRepositories.isNotEmpty,
       filters: _filters,
       cacheCorrupted: state.cacheCorrupted,
-      cacheSettings: state.cacheSettings.copyWith(
+      cacheActions: state.cacheActions.copyWith(
         clearing: true,
         clearFailed: false,
         cleared: false,
@@ -859,7 +910,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       if (!_isCurrent(ticket)) return;
       state = state.copyWith(
         cacheCorrupted: false,
-        cacheSettings: state.cacheSettings.copyWith(
+        cacheActions: state.cacheActions.copyWith(
           clearing: false,
           cleared: true,
         ),
@@ -868,7 +919,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       if (!_isCurrent(ticket)) return;
       _cacheFailure(error);
       state = state.copyWith(
-        cacheSettings: state.cacheSettings.copyWith(
+        cacheActions: state.cacheActions.copyWith(
           clearing: false,
           clearFailed: true,
         ),
@@ -913,12 +964,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _history = TimelineHistoryConnection(const RetainedTimelineHistory());
 
     if (confirmedFollows == null && settings?.data == null) {
-      state = state.copyWith(
-        cacheSettings: state.cacheSettings.copyWith(
-          syncFailed: true,
-          saving: false,
-        ),
-      );
       _followsKnown = ref.read(releaseFollowsSessionProvider).loaded;
       if (settings?.failure?.kind != TimelineFailureKind.session) {
         await _loadHistory(ticket);
@@ -935,16 +980,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         confirmedFollows ??
         ref.read(releaseFollowsSessionProvider).repositories;
     _setFollowedRepositories(follows);
-    _retentionDays =
-        settings?.data?.releaseTimeline?.retentionDays ?? _retentionDays;
-    state = state.copyWith(
-      cacheSettings: state.cacheSettings.copyWith(
-        syncFailed:
-            confirmedFollows == null &&
-            settings?.data?.releaseTimeline?.retentionDays == null,
-        saving: false,
-      ),
-    );
     _followsKnown = true;
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
@@ -971,7 +1006,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         active: true,
         hasFollows: false,
         filters: _filters,
-        cacheSettings: state.cacheSettings,
+        cacheActions: state.cacheActions,
         cacheFailed: state.cacheFailed,
         cacheCorrupted: state.cacheCorrupted,
       );
@@ -988,7 +1023,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
     if (scope == null ||
-        _retentionDays == null ||
+        _retentionWindow == null ||
         !_cacheSynchronized ||
         state.cacheCorrupted) {
       return;
@@ -1003,7 +1038,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         final cutoff = ref
             .read(timelineClockProvider)()
             .toUtc()
-            .subtract(Duration(days: _retentionDays!));
+            .subtract(Duration(days: _retentionWindow!));
         for (final entry in _cyclePages) {
           _history.accept(
             {entry.repositoryId: entry.page},
@@ -1087,7 +1122,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       cutoff: ref
           .read(timelineClockProvider)()
           .toUtc()
-          .subtract(Duration(days: _retentionDays ?? 1)),
+          .subtract(Duration(days: _retentionWindow ?? 1)),
     );
     if (round == null || !pages.values.any((page) => page.isUsable)) {
       if (refresh) {
@@ -1135,7 +1170,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final extension = _history.extensionPages(
       _cycle,
       now: ref.read(timelineClockProvider)(),
-      retentionDays: _retentionDays ?? 1,
+      retentionDays: _retentionWindow ?? 1,
     );
     if (extension.isNotEmpty) {
       result = mergeTimelineRound(
@@ -1158,7 +1193,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     state = TimelineViewState(
       active: true,
       loading: true,
-      cacheSettings: state.cacheSettings,
+      cacheActions: state.cacheActions,
       hasFollows: true,
       groups: result.groups,
       visibleGroups: view.groups,
@@ -1197,8 +1232,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   Future<void> _persistCurrent(int ticket) async {
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    // Durable history also needs a confirmed follow set: without one the cache
+    // does not know which repositories this account keeps.
     if (scope != null &&
-        _retentionDays != null &&
+        _retentionWindow != null &&
+        _followsKnown &&
         _cacheSynchronized &&
         !state.cacheCorrupted) {
       final now = ref.read(timelineClockProvider)();
@@ -1229,6 +1267,12 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     (entry) =>
         !_cycle.failedIds.contains(entry.key) && entry.value.hasOlderReleases,
   );
+
+  /// The cache scope of the signed-in session, or null when there is none.
+  String? _scopeOfSession() {
+    final identity = ref.read(sessionControllerProvider).identity;
+    return identity == null ? null : TimelineCache.scopeOf(identity);
+  }
 
   TimelineCacheConnection get _cacheConnection => !_history.hasRetainedHistory
       ? TimelineCacheConnection.none

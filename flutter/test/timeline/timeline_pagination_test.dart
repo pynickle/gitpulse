@@ -13,8 +13,7 @@ List<String> releaseKeys(ProviderContainer container) => [
     for (final item in group.items) item.key,
 ];
 
-Future<({ProviderContainer container, FakeSessionController session})>
-startTimeline(Map<String, Object?> pages) async {
+Future<TimelineHarness> startTimeline(Map<String, Object?> pages) async {
   final harness = createHarness();
   harness.session.handlers['GET api/settings'] = () => BackendResult(
     statusCode: 200,

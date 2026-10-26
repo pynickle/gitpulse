@@ -443,12 +443,14 @@ void main() {
       expect(tester.widget<IconButton>(_refreshButton).onPressed, isNotNull);
 
       await _scrollBy(tester, -_listHeight(tester) * 12);
+      // The reader still has the releases they came for, so the footer offers
+      // the retry without repeating what failed; only an empty page explains it.
       expect(
         find.text(
           'The GitPulse backend could not return the timeline. '
           'Try again.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       expect(find.widgetWithText(OutlinedButton, 'Retry'), findsOneWidget);
     });
