@@ -26,6 +26,7 @@ logs
 .grok/
 .zcode/
 .opencode/
+.stepcode/
 
 # === Code intelligence ===
 .codegraph/

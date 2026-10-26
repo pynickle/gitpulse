@@ -1,7 +1,6 @@
 # GitPulse Flutter — 视觉规范 Master
 
-> **地位**：`flutter/` 原生客户端界面的**唯一视觉规范**。任何 UI 改动前先读本文；改完在
-> `PROGRESS.md` 的对应批次勾掉。
+> **地位**：`flutter/` 原生客户端界面的**唯一视觉规范**。任何 UI 改动前先读本文。
 > **范围**：只约束 Flutter APP。Nuxt 网页不进本文（见 §13），网页只作为参考来源。
 > **位置与检索**：本文件在 `flutter/design-system/gitpulse/`，即 ui-ux-pro-max 规定的
 > `design-system/<project-slug>/MASTER.md`，此处子项目根是 `flutter/`（等价于 `--output-dir flutter`）。
@@ -18,14 +17,14 @@
 
 ## 0. 本文不拥有什么
 
-避免重复说明是项目硬要求。以下规则**不在本文**，去看原处：
+单一来源，不在此重复。以下规则**不在本文**，去看原处：
 
 | 规则 | 归属 |
 | --- | --- |
 | 界面文案精简、不写解释性副标签 | 仓库根 `../AGENTS.md` §Interface copy |
-| 设置页是表格不是文档；一行描述即 review defect | `AGENTS.md`（包根，Settings 段） |
-| 账户动作用 tooltip 命名的图标按钮 | `AGENTS.md`（包根，Settings 段） |
-| 空/错/加载只用 `GitPulseLoadingView` / `GitPulseMessageView` | `AGENTS.md`（包根） |
+| 设置页是表格不是文档；一行描述即 review defect | `AGENTS.md`（包根，UI conventions 段） |
+| 账户动作用 tooltip 命名的图标按钮 | `AGENTS.md`（包根，UI conventions 段） |
+| 空/错/加载只用 `GitPulseLoadingView` / `GitPulseMessageView` | `AGENTS.md`（包根，UI conventions 段） |
 | 主题只有 `gitPulseTheme` 一个来源；字体族与中文回退策略 | `AGENTS.md` + `lib/presentation/gitpulse_theme.dart` |
 | 日期/数字的本地化与紧凑计数 | `AGENTS.md` + `lib/presentation/gitpulse_formatting.dart` |
 | 导航返回/Home 契约 | 仓库根 `../AGENTS.md` §Layout & Wiring |
@@ -73,8 +72,7 @@ Reading 档是既有事实，不是本文发明：`GitPulseType.readingBodySize 
 | `description` | `bodyLarge` | 16 / 1.50 | w400 | `onSurfaceVariant` | 仓库描述 |
 | `controlLabel` | `labelLarge` | 14 / 1.43 | w500（M3 默认） | 由控件决定 | 芯片/分段控件标签 |
 
-**字重只有三档**：`w400` 正文、`w500` M3 控件默认、`w600` 强调。**w700 禁用**（批 2 已把
-Previous Refresh 标记从 w700 归一到 w600，全库现无 w700），`w300` 及以下禁用。
+**字重只有三档**：`w400` 正文、`w500` M3 控件默认、`w600` 强调。**w700 禁用**（Previous Refresh 标记已从 w700 归一到 w600，全库现无 w700），`w300` 及以下禁用。
 
 除 `controlLabel` 外，本表每个角色在 `lib/presentation/gitpulse_tokens.dart` 有一个
 `gitPulseType*` 函数。`controlLabel` 不设函数：它就是控件自己的 `labelLarge`，字号字重取 M3
@@ -293,7 +291,7 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 
 ## 12. 场景例外（Scenario Exceptions）
 
-以下**不是**不一致，是刻意的决定。迁移时**不许"顺手修掉"**。新增例外必须先进本表。
+以下**不是**不一致，是刻意的决定。改动时**不许"顺手修掉"**。新增例外必须先进本表。
 
 | # | 例外 | 位置 | 理由 |
 | --- | --- | --- | --- |
@@ -348,11 +346,11 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 
 ---
 
-## 15. 现状审计（本轮结论）
+## 15. 现状审计（规则来源）
 
 ### 已经合理，必须保留
 
-1. **零硬编码字号**：全库只用 M3 角色，唯一数值例外是被测试锁定的阅读档。这是本次能"只命名、不改像素"的前提。
+1. **零硬编码字号**：全库只用 M3 角色，唯一数值例外是被测试锁定的阅读档。这是能"只命名、不改像素"的前提。
 2. **唯一 gutter 16** 已被 3 个页面共用，且 `GitPulseSettingsDivider` 已跨页复用（设置、仓库页）。
 3. **按压/悬停色调集中在主题层**，没有 surface 自设 overlay（ADR 0019 已把这条变成规则）。
 4. **阅读档与设置表格都被测试钉住**（字号/行高/标题阶梯/标签列 140/折行阈值 520/大字号不溢出）。
@@ -385,10 +383,10 @@ Dense 档行高**全部用 M3 自带值**（1.33–1.50），不手写 `height:`
 
 ## 16. 怎么改这套规范
 
-1. 只改**值**：直接改本文 + `lib/presentation/gitpulse_tokens.dart`，两处必须同一批。
+1. 只改**值**：直接改本文 + `lib/presentation/gitpulse_tokens.dart`，两处必须同一次改动里落地。
 2. 加**新角色**：先在本文登记名字、值、职责和至少一个使用点，再写代码。
 3. 修正一条**指向**：本文或代码引用了已经改名、删除或换了实现的符号时，只改那处指向（名字、所在文件、
-   函数名），**不改任何数值、不新增角色**。批 3 与批 4 都留下过这类债——"文档指着一处代码已经不再做的事"，
-   而当时本节只有改值、加角色、写 ADR 三条动法，于是只能登记不改。这类修正要在 `PROGRESS.md` 的当批记录里点名。
+   函数名），**不改任何数值、不新增角色**。过去几轮留下过这类债——"文档指着一处代码已经不再做的事"，
+   而当时本节只有改值、加角色、写 ADR 三条动法，于是只能登记不改。这类修正要在当次改动的提交说明里点名。
 4. 要**违反**本文：先写 ADR（三条门槛：难以回退、外人会问为什么、真实取舍），合入前登进 §12。
-5. 任何有视觉变化的批次，必须在 `PROGRESS.md` 里留下"验收命令 + 人眼复核点"。
+5. 任何有视觉变化的改动，必须在提交说明（或 ADR）里留下"验收命令 + 人眼复核点"。

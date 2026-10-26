@@ -115,9 +115,8 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Self-hosting / env matrix: `docs/self-hosted.md`
 - Extension details: `extension/README.md`
 - Conventional commits skill: `.agents/skills/conventional-commit/SKILL.md`
-- Flutter UI rules — read before changing any Flutter interface: `flutter/design-system/gitpulse/MASTER.md`
-  (migration batches and their verification: `flutter/design-system/gitpulse/PROGRESS.md`). These are the
-  only visual rules for `flutter/`; the web app is not governed by them.
+- Flutter UI rules — read before changing any Flutter interface: `flutter/design-system/gitpulse/MASTER.md`.
+  This is the only visual ruleset for `flutter/`; the web app is not governed by them.
 
 ## Agent skills
 
