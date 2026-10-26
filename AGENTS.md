@@ -97,6 +97,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Do not manually import auto-imported `app/utils/` defaults or `app/composables/`.
 - Do not write session shape inline in auth routes; keep `shared/types/auth.d.ts` + `establishGitHubSession` in sync.
 - Do not treat `.nuxt/` or `.output/` as source of truth — read `nuxt.config.ts` and the app source.
+- When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.
 - Do not test source text (`readFileSync` + `toContain`) — see **Tests (Non-Negotiable)**.
 - Extension releases (`extension-v*`), Flutter distributions (`flutter-vX.Y.Z`) and main app releases (`vX.Y.Z`) are independent. Their release workflows do not trigger each other.
 
