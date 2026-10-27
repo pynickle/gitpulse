@@ -342,6 +342,8 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
         if (identity != null) ...[
           Row(
             children: [
+              _AccountAvatar(url: identity.avatarUrl),
+              const SizedBox(width: GitPulseSpace.inline),
               Expanded(
                 child: Text(
                   identity.login,
@@ -368,6 +370,40 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
         ],
         GitPulseSettingSurface(child: panel),
       ],
+    );
+  }
+}
+
+class _AccountAvatar extends StatelessWidget {
+  const _AccountAvatar({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fallback = ColoredBox(
+      color: scheme.surfaceContainerHighest,
+      child: Icon(
+        Icons.person_outline,
+        size: GitPulseIconSize.action,
+        color: scheme.onSurfaceVariant,
+      ),
+    );
+
+    return ExcludeSemantics(
+      child: SizedBox.square(
+        dimension: GitPulseAvatarSize.account,
+        child: ClipOval(
+          child: url.isEmpty
+              ? fallback
+              : Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => fallback,
+                ),
+        ),
+      ),
     );
   }
 }

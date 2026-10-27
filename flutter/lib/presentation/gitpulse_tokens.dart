@@ -127,6 +127,12 @@ abstract final class GitPulseIconSize {
   static const page = 32.0;
 }
 
+/// Avatar diameters by the identity they introduce.
+abstract final class GitPulseAvatarSize {
+  /// The signed-in account beside its name in Settings.
+  static const account = 32.0;
+}
+
 /// How tall a control stands.
 abstract final class GitPulseHeight {
   /// A toolbar control, a search field, a filter chip, a dropdown in a tool
