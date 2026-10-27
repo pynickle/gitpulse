@@ -76,7 +76,6 @@ const _allowedElements = {
   'b',
   'blockquote',
   'br',
-  'center',
   'caption',
   'code',
   'dd',
@@ -140,27 +139,6 @@ const _discardElements = {
   'base',
 };
 
-/// Block elements whose `align` attribute GitHub renders and the native
-/// renderer can honour.
-const _alignableElements = {
-  'p',
-  'div',
-  'center',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'table',
-  'blockquote',
-  'figure',
-  'figcaption',
-};
-
-/// The alignment values a document may ask for.
-const _supportedAlignments = {'left', 'center', 'right', 'justify'};
-
 String prepareDocument(
   String source,
   RepositoryDocumentContext context, {
@@ -190,26 +168,14 @@ String prepareDocument(
         (name, _) => !{
           'id',
           'title',
-          // Authors centre headings and paragraphs with the HTML attribute,
-          // which the renderer understands; only its four documented values
-          // survive so no arbitrary CSS reaches the renderer.
-          if (_alignableElements.contains(tag)) 'align',
           if (tag == 'a') 'href',
-          if (tag == 'img') ...['src', 'alt', 'width', 'height', 'align'],
+          if (tag == 'img') ...['src', 'alt', 'width', 'height'],
           if (tag == 'details') 'open',
-          if (tag == 'td' || tag == 'th') ...['colspan', 'rowspan', 'align'],
+          if (tag == 'td' || tag == 'th') ...['colspan', 'rowspan'],
           if (tag == 'ol') 'start',
           if (tag == 'code' || tag == 'pre') 'class',
         }.contains(name),
       );
-      final align = element.attributes['align']?.toLowerCase().trim();
-      if (align != null) {
-        if (_supportedAlignments.contains(align)) {
-          element.attributes['align'] = align;
-        } else {
-          element.attributes.remove('align');
-        }
-      }
       if (tag == 'code' || tag == 'pre') {
         final languages = element.classes
             .where(

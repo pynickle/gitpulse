@@ -34,10 +34,6 @@ migrate_working_dir/
 /coverage/
 /lib/l10n/generated/
 
-# Rust build output from the native asset hook (native/document_svg)
-native/**/target/
-/target/
-
 # Symbolication related
 app.*.symbols
 
