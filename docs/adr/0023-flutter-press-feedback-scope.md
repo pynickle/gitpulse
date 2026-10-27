@@ -6,10 +6,11 @@ status: accepted
 
 The Flutter client answers a press with **no background change at all**. `gitPulseTheme` sets the
 Material ink response's highlight and splash colour to transparent, and the `IconButton`,
-`TextButton` and `OutlinedButton` families resolve `pressed` to transparent through one shared
-`WidgetStateProperty`. Hover and focus keep the half-strength surface-container tone that ADR 0019
-introduced, because they carry a different job: on a desktop pointer they are the affordance that
-says a surface is clickable, and on a keyboard they are the only evidence of where focus sits.
+`TextButton`, `OutlinedButton` and `Checkbox` families resolve `pressed` to transparent through one
+shared `WidgetStateProperty`. Hover and focus keep the half-strength surface-container tone that
+ADR 0019 introduced, because they carry a different job: on a desktop pointer they are the
+affordance that says a surface is clickable, and on a keyboard they are the only evidence of where
+focus sits.
 `FilledButton`, `FilledButton.tonal` and `ElevatedButton` keep Material 3's own overlay — their
 surfaces are already coloured, so the tint reads as depth rather than as grime, and a primary action
 is the one place a press genuinely needs an answer.
@@ -55,6 +56,10 @@ needs its own ADR, because it adds a per-surface rule where this one deliberatel
 - The Release Timeline card's prerelease badge stays at `surfaceContainerHigh`, but no longer because
   of press-contrast. ADR 0019 moved it down a step so a pressed card would not dissolve it; with no
   pressed tone to collide with, the badge keeps that step for hierarchy alone.
+- `Checkbox` paints its press reaction itself rather than inking through an `InkWell`, so it takes
+  the shared resolver through `CheckboxThemeData.overlayColor` instead of the theme's splash. Its
+  box and check stay Material 3's own scheme colours — the checked fill is the scheme's primary —
+  because the tint answering a press says nothing about how a selected control is drawn.
 - `lib/releases/repository_releases_view.dart` loses a `borderRadius: BorderRadius.circular(16)` on an
   ink response that already sat inside a `StadiumBorder`. It was a second declaration of a shape the
   widget had already decided, and with no splash left to clip it painted nothing.

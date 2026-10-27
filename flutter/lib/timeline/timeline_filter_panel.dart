@@ -121,11 +121,10 @@ const _repositorySearchThreshold = 8;
 /// It reads and writes the session's Active Timeline Filter directly, so a
 /// change takes effect immediately without another timeline request.
 ///
-/// The repository dimension follows the Follows page's shape rather than a
-/// cloud of chips: the selected repositories are one non-wrapping line at the
-/// top, and the rest of the list is a scrolling table under it. Selection is
-/// therefore readable at a glance however long the list is, and adding one more
-/// repository never costs the panel another row of controls.
+/// The repository dimension is one scrolling list: each row is a Followed
+/// Repository and the box at its end that says whether the filter selects it.
+/// A selection is therefore written where the repository is named, and neither
+/// the panel nor its list changes height as the selection changes.
 class TimelineFilterPanel extends ConsumerStatefulWidget {
   const TimelineFilterPanel({super.key});
 
@@ -155,7 +154,6 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
 
     void update(TimelineFilterState next) => facade.applyFilters(next);
     final repositories = _sortedRepositories(facade.followedRepositories);
-    final selected = _selectedRepositories(repositories, filters.repositoryIds);
     final query = normalizeTimelineSearchText(_query.text);
     final listed = query.isEmpty
         ? repositories
@@ -285,12 +283,6 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
                 ],
               ),
             ),
-            if (selected.isNotEmpty) ...[
-              band(
-                _SelectedRepositories(repositories: selected, onRemove: toggle),
-              ),
-              const SizedBox(height: 8),
-            ],
             if (searching) ...[
               band(
                 _RepositorySearch(
@@ -385,55 +377,6 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
   }
 }
 
-/// The repositories the Active Timeline Filter selects, as one horizontal line
-/// of removable chips.
-///
-/// The line never wraps and is the only place a selection stays visible while
-/// the list below is scrolled elsewhere or narrowed by the search field, so a
-/// hundred selected repositories cost the panel one line rather than a screen.
-class _SelectedRepositories extends StatelessWidget {
-  const _SelectedRepositories({
-    required this.repositories,
-    required this.onRemove,
-  });
-
-  final List<TimelineRepository> repositories;
-  final ValueChanged<TimelineRepository> onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (var index = 0; index < repositories.length; index++) ...[
-            if (index > 0) const SizedBox(width: 6),
-            InputChip(
-              key: ValueKey('filter-selected-${repositories[index].id}'),
-              label: Text(repositories[index].fullName),
-              // The whole chip removes the repository: a reader who came to
-              // undo a selection should not have to find the small mark on it.
-              onPressed: () => onRemove(repositories[index]),
-              onDeleted: () => onRemove(repositories[index]),
-              backgroundColor: scheme.secondaryContainer,
-              side: BorderSide.none,
-              labelStyle: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSecondaryContainer,
-              ),
-              deleteIconColor: scheme.onSecondaryContainer,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 /// The Timeline toolbar's dense filled search field, narrowed to repository
 /// names, so the panel's search reads as the same control as the page's.
 class _RepositorySearch extends StatelessWidget {
@@ -501,8 +444,12 @@ class _RepositorySearch extends StatelessWidget {
   }
 }
 
-/// One Followed Repository in the panel's list: its name, and a check mark when
-/// the Active Timeline Filter selects it. The whole row toggles the selection.
+/// One Followed Repository in the panel's list: its name, and the box at the
+/// row's end that says whether the Active Timeline Filter selects it.
+///
+/// The box is drawn on every row, selected or not, so an unselected repository
+/// shows where a selection would go instead of growing a mark once the reader
+/// has found the tap. The whole row toggles, as the box does.
 class _RepositoryRow extends StatelessWidget {
   const _RepositoryRow({
     super.key,
@@ -515,58 +462,42 @@ class _RepositoryRow extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// The mark's own slot, kept whether or not the mark is showing, so a name
-  /// never reflows sideways the moment it is selected.
-  static const _markSlot = 26.0;
-  static const _mark = Duration(milliseconds: 180);
+  /// The box carries the row's height, so the vertical inset is only the
+  /// difference to the smallest a clickable row may stand: 6 + 32 + 6 is
+  /// [GitPulseHeight.rowMin]. The name lands on the same gutter as the rest of
+  /// the panel's text, and the box takes the space a trailing control takes.
+  static const _padding = EdgeInsets.fromLTRB(12, 6, 4, 6);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return MergeSemantics(
-      child: Semantics(
-        button: true,
-        selected: selected,
-        child: _TappableRow(
-          onTap: onTap,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  repository.fullName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium,
-                ),
+      child: _TappableRow(
+        onTap: onTap,
+        padding: _padding,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                repository.fullName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium,
               ),
-              SizedBox(
-                width: _markSlot,
-                child: Center(
-                  child: ExcludeSemantics(
-                    // The mark grows into place and shrinks away rather than
-                    // appearing: a selection is a small event, and a fade of
-                    // one frame reads as a flicker.
-                    child: AnimatedScale(
-                      scale: selected ? 1 : 0.4,
-                      duration: _mark,
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedOpacity(
-                        opacity: selected ? 1 : 0,
-                        duration: _mark,
-                        curve: Curves.easeOut,
-                        child: Icon(
-                          Icons.check_circle,
-                          size: GitPulseIconSize.inControl,
-                          color: scheme.primary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+            ),
+            // The row is the focus stop, not the box: one Tab lands on the
+            // repository, and the box is the state that row reports.
+            ExcludeFocus(
+              child: Checkbox(
+                value: selected,
+                onChanged: (_) => onTap(),
+                // Shrunk to the row's own target, so the box does not claim a
+                // 48dp square of its own beside every name.
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -780,21 +711,4 @@ List<TimelineRepository> _sortedRepositories(
         left.fullName.toLowerCase().compareTo(right.fullName.toLowerCase()),
   );
   return sorted;
-}
-
-/// The selected repositories in the order they were selected, which is the one
-/// order a reader can predict: the chip line shows what the filter holds, not
-/// what the list happens to sort to.
-List<TimelineRepository> _selectedRepositories(
-  List<TimelineRepository> repositories,
-  List<String> ids,
-) {
-  final byId = {
-    for (final repository in repositories) repository.id: repository,
-  };
-  return [
-    // A repository that is no longer followed has no chip, even while the
-    // filter still names its id.
-    for (final id in ids) ?byId[id],
-  ];
 }

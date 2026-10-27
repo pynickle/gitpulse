@@ -26,11 +26,12 @@ Color gitPulseHoverTint(ColorScheme scheme) =>
 /// Hover and keyboard focus keep the tint because they answer a different
 /// question: whether a surface is clickable, and where the focus sits.
 ///
-/// [gitPulseTheme] installs this on the `IconButton`, `TextButton` and
-/// `OutlinedButton` families. It is public only because `ButtonStyle.styleFrom`
-/// with an explicit `foregroundColor` builds Material's pressed wash at the call
-/// site, where a theme cannot reach it; such a control passes this through
-/// `copyWith(overlayColor: …)` instead of setting an overlay of its own.
+/// [gitPulseTheme] installs this on the `IconButton`, `TextButton`,
+/// `OutlinedButton` and `Checkbox` families. It is public only because
+/// `ButtonStyle.styleFrom` with an explicit `foregroundColor` builds Material's
+/// pressed wash at the call site, where a theme cannot reach it; such a control
+/// passes this through `copyWith(overlayColor: …)` instead of setting an overlay
+/// of its own.
 WidgetStateProperty<Color?> gitPulseInkOverlay(ColorScheme scheme) {
   final tint = gitPulseHoverTint(scheme);
   return WidgetStateProperty.resolveWith(
@@ -72,6 +73,11 @@ ThemeData gitPulseTheme(Brightness brightness) {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: ButtonStyle(overlayColor: overlay),
     ),
+    // A Checkbox paints its own press reaction rather than reading the theme's
+    // splash, so it takes the same answer here: nothing while pressed, the app's
+    // tint while hovered or focused. Its box and check stay Material's own
+    // scheme colours — the primary fill is the theme's.
+    checkboxTheme: CheckboxThemeData(overlayColor: overlay),
   );
 }
 

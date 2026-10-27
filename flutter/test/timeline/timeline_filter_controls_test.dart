@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
@@ -26,6 +28,8 @@ Future<MountedTimeline> pumpTimeline(
   WidgetTester tester, {
   required Map<String, FutureOr<BackendResult> Function()> handlers,
   Size size = const Size(1400, 1200),
+  Brightness brightness = Brightness.light,
+  Locale? locale,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -53,6 +57,10 @@ Future<MountedTimeline> pumpTimeline(
         ),
       ],
       child: MaterialApp(
+        // The app's own theme, so the panel is judged under the colours and
+        // ink rules it ships with rather than Material's stock scheme.
+        theme: gitPulseTheme(brightness),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(body: TimelineScreen()),
@@ -76,6 +84,16 @@ Map<String, Object?> baselineRefresh(String baseline) => {
   'previousBaseline': baseline,
   'startedAt': '2026-10-20T00:00:00.000Z',
 };
+
+/// The box at one repository row's end: the panel's own statement of selection.
+Finder rowCheckbox(String repositoryId) => find.descendant(
+  of: find.byKey(ValueKey('filter-repository-$repositoryId')),
+  matching: find.byType(Checkbox),
+);
+
+/// Whether one repository row reads as selected.
+bool? rowChecked(WidgetTester tester, String repositoryId) =>
+    tester.widget<Checkbox>(rowCheckbox(repositoryId)).value;
 
 void main() {
   testWidgets(
@@ -206,14 +224,22 @@ void main() {
       );
       TimelineFilterState filters() =>
           mounted.container.read(releaseTimelineSessionProvider).filters;
+      final requests = List.of(mounted.session.requests);
 
       await tester.tap(find.byTooltip(l10n.timelineFilters));
       await tester.pumpAndSettle();
       expect(find.text(l10n.timelineFilterPanelTitle), findsOneWidget);
 
+      // Every row states whether it is selected before anyone touches it.
+      expect(rowChecked(tester, 'R_alpha'), isFalse);
+      expect(rowChecked(tester, 'R_beta'), isFalse);
+
+      // The whole row selects.
       await tester.tap(find.byKey(const ValueKey('filter-repository-R_alpha')));
       await tester.pump();
       expect(filters().repositoryIds, ['R_alpha']);
+      expect(rowChecked(tester, 'R_alpha'), isTrue);
+      expect(rowChecked(tester, 'R_beta'), isFalse);
       expect(
         mounted.container.read(releaseTimelineSessionProvider).loadedNewCount,
         1,
@@ -221,11 +247,28 @@ void main() {
       expect(find.text('Alpha newest'), findsOneWidget);
       expect(find.text('Beta stable'), findsNothing);
 
-      // The selection's own chip is the way back out of it.
-      await tester.tap(find.byKey(const ValueKey('filter-selected-R_alpha')));
+      // The panel keeps no line of selected chips: the box is the state, and
+      // the box at a selected row's end is the way back out of it.
+      expect(
+        find.descendant(
+          of: find.byType(TimelineFilterPanel),
+          matching: find.byType(InputChip),
+        ),
+        findsNothing,
+      );
+      await tester.tap(rowCheckbox('R_alpha'));
       await tester.pump();
       expect(filters().repositoryIds, isEmpty);
+      expect(rowChecked(tester, 'R_alpha'), isFalse);
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(3));
+
+      // The box selects as the row does.
+      await tester.tap(rowCheckbox('R_beta'));
+      await tester.pump();
+      expect(filters().repositoryIds, ['R_beta']);
+      await tester.tap(find.byKey(const ValueKey('filter-repository-R_beta')));
+      await tester.pump();
+      expect(filters().repositoryIds, isEmpty);
 
       await tester.tap(find.text(l10n.timelineFilterHidePrereleases));
       await tester.pump();
@@ -261,6 +304,11 @@ void main() {
       expect(find.text('Alpha newest'), findsOneWidget);
       expect(find.text('Beta stable'), findsNothing);
 
+      // A repository joins the conditions, so clearing has one of each to drop.
+      await tester.tap(rowCheckbox('R_alpha'));
+      await tester.pump();
+      expect(filters().repositoryIds, ['R_alpha']);
+
       await tester.tap(find.text(l10n.timelineFilterDone));
       await tester.pumpAndSettle();
       expect(find.text(l10n.timelineFilterPanelTitle), findsNothing);
@@ -270,7 +318,15 @@ void main() {
       await tester.tap(find.text(l10n.timelineFilterClearAll));
       await tester.pump();
       expect(filters().hasActiveTimelineFilter, isFalse);
+      // Every row reads as clear again, and the list is still the way in.
+      expect(rowChecked(tester, 'R_alpha'), isFalse);
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(3));
+      await tester.tap(rowCheckbox('R_alpha'));
+      await tester.pump();
+      expect(filters().repositoryIds, ['R_alpha']);
+      expect(rowChecked(tester, 'R_alpha'), isTrue);
+      // Narrowing and clearing are local display work: not one request more.
+      expect(mounted.session.requests, requests);
       expect(tester.takeException(), isNull);
     },
   );
@@ -328,6 +384,20 @@ void main() {
         find.descendant(of: panel, matching: find.byType(FilterChip)),
         findsNothing,
       );
+      // Every row carries its box, unselected ones included, so the list says
+      // how a repository is chosen instead of growing a mark once it is.
+      expect(
+        find.descendant(of: panel, matching: find.byType(Checkbox)),
+        findsNWidgets(9),
+      );
+      expect(rowChecked(tester, 'R_3'), isFalse);
+      // A row still clears the smallest a clickable row may stand.
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('filter-repository-R_3')))
+            .height,
+        greaterThanOrEqualTo(GitPulseHeight.rowMin),
+      );
       final list = find.descendant(of: panel, matching: find.byType(ListView));
       // The panel's height belongs to the panel, not to the number of rows in
       // its list, so narrowing the list cannot make the panel jump.
@@ -351,7 +421,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('filter-repository-R_3')));
       await tester.pump();
       expect(filters().repositoryIds, ['R_3']);
-      // The chip line takes its room from the band, not from the panel.
+      expect(rowChecked(tester, 'R_3'), isTrue);
+      // A selection costs the panel no line of its own, so the band keeps the
+      // height it had and the panel keeps its place.
+      expect(tester.getSize(list).height, band);
       expect(
         tester.getSize(find.byType(TimelineFilterPanel)).height,
         panelHeight,
@@ -361,8 +434,20 @@ void main() {
       await tester.tap(find.byTooltip(l10n.timelineSearchClear));
       await tester.pump();
       expect(inPanel('octo/repo4'), findsOneWidget);
-      expect(find.byKey(const ValueKey('filter-selected-R_3')), findsOneWidget);
+      expect(rowChecked(tester, 'R_3'), isTrue);
+      expect(rowChecked(tester, 'R_4'), isFalse);
       expect(filters().repositoryIds, ['R_3']);
+
+      // A screen reader is told the row's state, and the row itself can be
+      // acted on — not only the box at its end.
+      final semantics = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(
+          find.byKey(const ValueKey('filter-repository-R_3')),
+        ),
+        isSemantics(isChecked: true, hasCheckedState: true, hasTapAction: true),
+      );
+      semantics.dispose();
 
       await tester.tap(find.text(l10n.timelineFilterDone));
       await tester.pumpAndSettle();
@@ -371,6 +456,81 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  // The phone sheet is the narrowest place the row has to hold, and the two
+  // runs put it on either surface ramp with the longer language, so the box
+  // and the name beside it are judged in both of the app's own appearances.
+  for (final (brightness, locale) in [
+    (Brightness.light, const Locale('en')),
+    (Brightness.dark, const Locale('zh')),
+  ]) {
+    testWidgets(
+      'the ${brightness.name} ${locale.languageCode} phone sheet carries the '
+      'same boxes and narrows the same way',
+      (tester) async {
+        final mounted = await pumpTimeline(
+          tester,
+          size: const Size(390, 844),
+          brightness: brightness,
+          locale: locale,
+          handlers: {
+            'GET api/settings': () => BackendResult(
+              statusCode: 200,
+              data: settingsJson([
+                followJson('R_alpha', 'octo', 'alpha'),
+                followJson('R_beta', 'octo', 'beta'),
+              ]),
+            ),
+            'POST api/release-timeline/refresh': () => BackendResult(
+              statusCode: 200,
+              data: roundJson(
+                pages: {
+                  'R_alpha': pageJson('octo', 'alpha', [
+                    releaseJson(
+                      10,
+                      'v1.0.0',
+                      '2026-10-12T10:00:00Z',
+                      name: 'Alpha newest',
+                    ),
+                  ]),
+                  'R_beta': pageJson('octo', 'beta', [
+                    releaseJson(
+                      21,
+                      'v1.9.0',
+                      '2026-10-10T10:00:00Z',
+                      name: 'Beta stable',
+                    ),
+                  ]),
+                },
+                refresh: baselineRefresh('2026-10-09T00:00:00.000Z'),
+              ),
+            ),
+          },
+        );
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(TimelineScreen)),
+        );
+        TimelineFilterState filters() =>
+            mounted.container.read(releaseTimelineSessionProvider).filters;
+
+        await tester.tap(find.byTooltip(l10n.timelineFilters));
+        await tester.pumpAndSettle();
+        expect(find.text(l10n.timelineFilterPanelTitle), findsOneWidget);
+        expect(rowChecked(tester, 'R_alpha'), isFalse);
+        expect(rowChecked(tester, 'R_beta'), isFalse);
+
+        await tester.tap(rowCheckbox('R_beta'));
+        await tester.pump();
+        expect(filters().repositoryIds, ['R_beta']);
+        expect(rowChecked(tester, 'R_beta'), isTrue);
+        expect(find.text('Beta stable'), findsOneWidget);
+        expect(find.text('Alpha newest'), findsNothing);
+
+        // A name and its box, with nothing spilling out of either.
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets(
     'date bounds outside the exposed window apply without fetching until older loading',

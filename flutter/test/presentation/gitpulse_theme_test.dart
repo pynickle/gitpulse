@@ -127,5 +127,35 @@ void main() {
       expect(theme.hoverColor.a, greaterThan(0));
       expect(theme.focusColor, theme.hoverColor);
     });
+
+    testWidgets('${brightness.name}: a checkbox presses with no background', (
+      tester,
+    ) async {
+      final theme = await pumpThemed(
+        tester,
+        Checkbox(value: true, onChanged: (_) {}),
+        brightness: brightness,
+      );
+
+      // A checkbox paints its press reaction itself instead of inking through
+      // an InkWell, so the overlay it resolves is where its states are judged:
+      // the same nothing on press and the same one tint on hover and focus.
+      final overlay = CheckboxTheme.of(tester.element(find.byType(Checkbox)))
+          .overlayColor!;
+
+      // A checked box resolves its states with `selected` alongside them.
+      expect(
+        overlay.resolve({WidgetState.selected, WidgetState.pressed}),
+        Colors.transparent,
+      );
+      expect(
+        overlay.resolve({WidgetState.selected, WidgetState.hovered}),
+        theme.hoverColor,
+      );
+      expect(
+        overlay.resolve({WidgetState.selected, WidgetState.focused}),
+        theme.hoverColor,
+      );
+    });
   }
 }
