@@ -23,9 +23,8 @@ survives and now feeds `hoverColor` and `focusColor` alike.
 
 The reader should not reintroduce a pressed tint, and should not read "no press feedback" as a bug to
 be fixed by adding one back. The replacement, if a review ever judges the result dead, is the
-sanctioned non-fill remedy recorded in `design-system/gitpulse/MASTER.md` §10: a pressed surface
-moves its hairline toward the primary tone. That remedy needs its own ADR, because it adds a
-per-surface rule where this one deliberately adds none.
+sanctioned non-fill remedy: a pressed surface moves its hairline toward the primary tone. That remedy
+needs its own ADR, because it adds a per-surface rule where this one deliberately adds none.
 
 ## Consequences
 
@@ -52,13 +51,13 @@ per-surface rule where this one deliberately adds none.
   call site with `IconButton.styleFrom(overlayColor: …)`. `Switch` keeps Material's radial
   reaction, which is a halo around the thumb rather than a surface tint, and `SegmentedButton`
   segments keep theirs because the widget wraps them in their own `TextButtonTheme`. Both are
-  recorded as MASTER §12 E16 rather than left to be rediscovered.
+  recorded as deliberate exceptions rather than left to be rediscovered.
 - The Release Timeline card's prerelease badge stays at `surfaceContainerHigh`, but no longer because
   of press-contrast. ADR 0019 moved it down a step so a pressed card would not dissolve it; with no
   pressed tone to collide with, the badge keeps that step for hierarchy alone.
 - `lib/releases/repository_releases_view.dart` loses a `borderRadius: BorderRadius.circular(16)` on an
   ink response that already sat inside a `StadiumBorder`. It was a second declaration of a shape the
   widget had already decided, and with no splash left to clip it painted nothing.
-- The rule is enforced by the design system, not by memory:
-  `flutter/design-system/gitpulse/MASTER.md` §3.3 owns the state colours and §16 owns how to change
-  them, and any pull request that adds a pressed tint or a per-surface overlay is out of spec.
+- The rule is enforced by the theme's shared resolver and by this record, not by memory:
+  `gitPulseInkOverlay` resolves the hover and focus tone for every surface, and any pull request
+  that adds a pressed tint or a per-surface overlay is out of spec.

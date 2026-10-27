@@ -41,7 +41,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
         child: Ink(
           decoration: BoxDecoration(
             // The card's own boundary, so it takes the edge tone rather than
-            // the rule tone its contents use (MASTER §7 rule 3).
+            // the rule tone its contents use.
             border: Border.all(
               color: toneEdge(scheme),
               width: GitPulseStroke.hairline,
@@ -164,7 +164,7 @@ class _PrereleaseBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         // A line inside the card, so it takes the rule tone at the one width
-        // the app draws (MASTER §7, §12 E14).
+        // the app draws.
         border: Border.all(
           color: toneRule(scheme),
           width: GitPulseStroke.hairline,

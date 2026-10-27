@@ -148,9 +148,8 @@ void main() {
 
   // A card's border is the boundary of a surface and its badge's border is a
   // line inside one, so the two take the scheme's two registered tones — never
-  // one tone for both (MASTER §7 rules 2 and 3). The badge is also a whole
-  // hairline: Material's half-pixel default renders inconsistently on high-DPI
-  // displays (MASTER §12 E14).
+  // one tone for both. The badge is also a whole hairline: Material's
+  // half-pixel default renders inconsistently on high-DPI displays.
   for (final brightness in Brightness.values) {
     testWidgets('a card edges with one tone and its badge rules with another '
         '(${brightness.name})', (tester) async {

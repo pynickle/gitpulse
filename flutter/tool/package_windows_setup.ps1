@@ -26,7 +26,7 @@ function Find-MakeNsis {
             return $candidate
         }
     }
-    throw 'makensis.exe was not found. The release job installs NSIS 3.13. See docs/flutter-release.md.'
+    throw 'makensis.exe was not found. The release job installs NSIS 3.13. See ../docs/flutter-release.md.'
 }
 
 $clientRoot = Split-Path -Parent $PSScriptRoot

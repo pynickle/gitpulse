@@ -19,9 +19,9 @@ import 'native_code_block.dart';
 /// custom styles hook so block rendering, code blocks and tables stay the
 /// renderer's own.
 ///
-/// The numbers are the reading scale `GitPulseType` registers (MASTER §2.2),
-/// read from there rather than restated: this file owns how the scale is
-/// applied, the token file owns what it is.
+/// The numbers are the reading scale `GitPulseType` registers, read from there
+/// rather than restated: this file owns how the scale is applied, the token file
+/// owns what it is.
 const _notesHeadingLineHeight = GitPulseType.readingHeadingLineHeight;
 
 String _px(double value) => '${value}px';

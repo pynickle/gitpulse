@@ -17,8 +17,7 @@ import 'timeline_session.dart';
 import 'timeline_state.dart';
 import 'timeline_toolbar.dart';
 
-/// How long the return-to-top button takes to appear or disappear
-/// (MASTER §10 allows 120/180/240).
+/// How long the return-to-top button takes to appear or disappear.
 const _returnToTopFade = Duration(milliseconds: 120);
 
 /// How long a return to the top of the results takes, whether it comes from the
@@ -31,12 +30,12 @@ const _returnToTopMove = Duration(milliseconds: 240);
 /// The page's band spacing rather than the card gutter: at the gutter, the
 /// circle's outline lands exactly on the cards' right edge and its glyph
 /// exactly on their text edge, so the control reads as the last thing in the
-/// column instead of something laid over it (MASTER §5).
+/// column instead of something laid over it.
 const _floatingInset = GitPulseSpace.bandGap;
 
 /// Space the list keeps clear below its last row, so the final release and Load
 /// older can both scroll fully above the floating button: its inset, its
-/// standard height, and the inset again as breathing room (MASTER §5, §9).
+/// standard height, and the inset again as breathing room.
 const _listEndInset = _floatingInset * 2 + GitPulseHeight.standard;
 
 // Kept in memory across destination widgets, independently of cached releases.
@@ -315,7 +314,7 @@ class _PullToRefresh extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: scheme.primary,
-      // A tonal surface step, never a shadow (MASTER §3, §14).
+      // A tonal surface step, never a shadow.
       backgroundColor: scheme.surfaceContainerHigh,
       elevation: 0,
       child: child,
@@ -765,7 +764,7 @@ class _ReturnToTop extends StatelessWidget {
               iconSize: GitPulseIconSize.action,
               // A plain up arrow, not `vertical_align_top`: that glyph is a
               // text-alignment mark — a bar under an arrow — and reads as
-              // "align text" rather than "go back up the list" (MASTER §8).
+              // "align text" rather than "go back up the list".
               icon: const Icon(Icons.arrow_upward),
               style:
                   IconButton.styleFrom(

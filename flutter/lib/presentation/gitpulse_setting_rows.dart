@@ -155,8 +155,7 @@ class GitPulseSettingsDivider extends StatelessWidget {
     indent: indent,
     endIndent: indent,
     // A row's separator is a line inside the Settings surface, not its
-    // boundary: it takes the rule tone, which is lighter than a card's edge
-    // (MASTER §7 rules 1 and 3).
+    // boundary: it takes the rule tone, which is lighter than a card's edge.
     color: toneRule(Theme.of(context).colorScheme),
   );
 }

@@ -133,7 +133,7 @@ def _require_env(names: list[str]) -> dict[str, str]:
         raise SystemExit(
             "Missing release signing input: "
             + ", ".join(missing)
-            + ". See docs/flutter-release.md."
+            + ". See ../docs/flutter-release.md."
         )
     return values
 

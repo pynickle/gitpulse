@@ -42,7 +42,7 @@ Widget _chromeAction({
 ///
 /// Not a rule line and not a stroke width: it is the affordance that says the
 /// sheet can be dragged, so its size answers to the finger rather than to the
-/// ink hierarchy (MASTER §12 E4).
+/// ink hierarchy.
 const _sheetGrabThickness = 4.0;
 
 class ReleaseDrawer extends ConsumerStatefulWidget {
@@ -241,8 +241,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                           width: 40,
                           // The sheet's grab affordance rather than a rule: it
                           // is toned as a line inside the sheet so it is the
-                          // app's one tone and not a theme default
-                          // (MASTER §7, §12 E4).
+                          // app's one tone and not a theme default.
                           child: Divider(
                             thickness: _sheetGrabThickness,
                             color: toneRule(theme.colorScheme),

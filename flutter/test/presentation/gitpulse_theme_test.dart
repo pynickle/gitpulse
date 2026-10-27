@@ -102,9 +102,9 @@ void main() {
           FilledButton,
         ).overlayColor!.resolve({WidgetState.pressed});
 
-        // MASTER §3.3 E9: a coloured surface still answers a press, so the
-        // resolved ink has to be a colour that paints — not nothing, and not a
-        // null that would silently fall back to an equally invisible default.
+        // A coloured surface still answers a press, so the resolved ink has to
+        // be a colour that paints — not nothing, and not a null that would
+        // silently fall back to an equally invisible default.
         expect(pressed, isNotNull);
         expect(pressed!.a, greaterThan(0));
       },

@@ -296,7 +296,7 @@ class _MetaLine extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           // The glyph and the word it stands for read as one unit, so this is
-          // `glyphGap` rather than the gap between two facts (MASTER §5).
+          // `glyphGap` rather than the gap between two facts.
           const SizedBox(width: GitPulseSpace.glyphGap),
           Text(AppLocalizations.of(context).timelineOffline, style: meta),
           if (instant != null) ...[
@@ -339,8 +339,7 @@ class _MetaLine extends StatelessWidget {
         Text(baseline, style: meta),
         if (count != null)
           Padding(
-            // Two items of one row, so this is `inline`, not `tight`
-            // (MASTER §5).
+            // Two items of one row, so this is `inline`, not `tight`.
             padding: const EdgeInsets.symmetric(
               horizontal: GitPulseSpace.inline,
             ),

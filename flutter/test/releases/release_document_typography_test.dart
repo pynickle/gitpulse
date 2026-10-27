@@ -158,11 +158,11 @@ void main() {
   });
 
   // The renderer's custom styles hook is the notes scale's only owner (ADR
-  // 0018) and `GitPulseType` is the only place the app states a font size
-  // (MASTER §2.2). These two cases hold one to the other: each measured value
-  // is checked against the token the document reads *and* against the number
-  // MASTER registers, so a tier edited back into a literal, and a token edited
-  // without the page it renders, both surface as a change a reader would see.
+  // 0018) and `GitPulseType` is the only place the app states a font size.
+  // These two cases hold one to the other: each measured value is checked
+  // against the token the document reads *and* against the number that token
+  // registers, so a tier edited back into a literal, and a token edited without
+  // the page it renders, both surface as a change a reader would see.
   testWidgets('each tier renders the size the reading scale registers', (
     tester,
   ) async {

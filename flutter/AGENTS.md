@@ -4,8 +4,8 @@
 > rendered natively, no WebView anywhere. Independently released package. Connects to any
 > GitPulse backend: discovers providers via `GET /api/native/capabilities`, then signs in with
 > personal password, PAT, or GitHub OAuth through the system browser. Deep contract (timeline
-> window semantics, platform matrix, dependency rationale): `docs/flutter-release-timeline-spec.md`
-> and `docs/flutter-release-timeline-plan.md`. Server handoff protocol: `../docs/native-login-handoff.md`.
+> window semantics, platform matrix, dependency rationale): `../docs/flutter-release-timeline-spec.md`
+> and `../docs/flutter-release-timeline-plan.md`. Server handoff protocol: `../docs/native-login-handoff.md`.
 
 ## Commands
 
@@ -25,23 +25,15 @@ verify with the Flutter toolchain.
    Stop it with `Get-Process flutter_tester | Stop-Process -Force`, then run again.
    `--reporter expanded` prints each test as it starts; a plain run prints nothing until it exits.
 
-## UI — read the design system first
+## UI — tokens first
 
-Before changing any widget, layout, color, type, spacing or interaction state, read
-`design-system/gitpulse/MASTER.md`.
+Before changing any widget, layout, color, type, spacing or interaction state, read the tokens in
+`lib/presentation/gitpulse_tokens.dart`; `gitPulseTheme` is the single theme source. Do not invent
+a value the token file does not name, and do not read `theme.dividerColor` for an internal rule —
+a surface's edge and its internal rule are two registered tones. A visual choice that contradicts
+an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scope.md`).
 
-- MASTER owns typography/color/spacing/radius/stroke/icon tokens, component density, interaction
-  states, and the scenario exceptions. Do not invent a value it does not name; do not read
-  `theme.dividerColor` for an internal rule.
-- A page override at `design-system/gitpulse/pages/<page>.md`, if it exists, wins over MASTER for
-  that page.
-- MASTER §12 lists choices that look inconsistent on purpose — do not "fix" them. A new exception
-  enters that table before the code; one that contradicts a rule needs an ADR (see
-  `../docs/adr/0023-flutter-press-feedback-scope.md`).
-
-## UI conventions (beyond MASTER)
-
-MASTER §0 defers these to this file.
+## UI conventions
 
 - **Settings is a table, not a document** (`lib/settings/`): rows come from
   `presentation/gitpulse_setting_rows.dart` — one label column, one control column, a hairline
@@ -56,7 +48,7 @@ MASTER §0 defers these to this file.
   intl localizes them. Star counts on Release Follows use `formatGitPulseLocaleCompactCount`
   (locale `K` / `万`); download counts stay on `formatGitPulseCompactCount`.
 - **Repository detail page** (`lib/repositories/repository_screen.dart`): bands on the shared
-  gutter, capped at the reading measure (MASTER §5 / E11) so a README keeps its line length —
+  gutter, capped at the reading measure so a README keeps its line length —
   identity, a full-width rule, then the README under the revision and path it was read from
   (`main · docs/README.md`). The app bar passes no title — the band below names the page. The data
   line puts a glyph (`LanguageSwatch`, a star, a fork, an eye from
@@ -96,7 +88,7 @@ MASTER §0 defers these to this file.
   storing a record does not authorize exposing it.
 - The timeline assembles its Shared Timeline Window from per-repository pages — never treat the
   refresh response's groups as a ready-made window, and neither pagination nor retry advances the
-  shared refresh baseline (window semantics: `docs/flutter-release-timeline-spec.md`).
+  shared refresh baseline (window semantics: `../docs/flutter-release-timeline-spec.md`).
 - `TimelineViewState.groups` is the exposed window (what is saved, and what offline release bodies
   resolve against); `visibleGroups` is what the filter and search display. Recompute both plus
   `loadedNewCount` whenever `groups` changes, and keep `applyFilters` request-free.

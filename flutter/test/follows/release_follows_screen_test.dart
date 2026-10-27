@@ -689,7 +689,7 @@ void main() {
       // The sort direction stands on its own in the toolbar, so it takes the
       // action size; every glyph the search field carries is a mark inside a
       // control and takes the smaller one. Read from the rendered box, not from
-      // the argument that asked for it (MASTER §8).
+      // the argument that asked for it.
       expect(
         tester.getSize(find.byIcon(Icons.arrow_downward)),
         const Size.square(GitPulseIconSize.action),

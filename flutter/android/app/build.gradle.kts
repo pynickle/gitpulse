@@ -28,7 +28,7 @@ val validateReleaseSigning = tasks.register("validateReleaseSigning") {
         check(releaseSigning.values.all { !it.isNullOrBlank() }) {
             "Release signing requires storeFile, storePassword, keyAlias, and keyPassword " +
                 "in android/key.properties or the GITPULSE_ANDROID_* environment variables. " +
-                "See docs/flutter-release.md. Debug signing is not a release fallback."
+                "See ../docs/flutter-release.md. Debug signing is not a release fallback."
         }
         check(!releaseSigning["keyAlias"].equals("androiddebugkey", ignoreCase = true)) {
             "The Android debug key cannot be used for a formal release."

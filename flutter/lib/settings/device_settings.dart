@@ -239,8 +239,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
                 iconSize: GitPulseIconSize.inControl,
                 // A coloured surface answers a press, so this one keeps
                 // Material's wash of its own tone instead of the theme's shared
-                // overlay — which cannot tell the four IconButton variants apart
-                // (MASTER §3.3 E9).
+                // overlay — which cannot tell the four IconButton variants apart.
                 style: IconButton.styleFrom(
                   overlayColor: scheme.onSecondaryContainer,
                 ),

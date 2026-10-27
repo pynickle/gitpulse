@@ -62,7 +62,7 @@ ThemeData gitPulseTheme(Brightness brightness) {
     hoverColor: gitPulseHoverTint(scheme),
     // The button families resolve their own overlay and would otherwise keep
     // Material's darker default; filled and elevated buttons are left alone so a
-    // primary action still answers a press (MASTER §3.3, E9).
+    // primary action still answers a press.
     iconButtonTheme: IconButtonThemeData(
       style: ButtonStyle(overlayColor: overlay),
     ),

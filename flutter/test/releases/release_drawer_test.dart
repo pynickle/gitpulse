@@ -556,9 +556,9 @@ void main() {
     tester,
   ) async {
     final sheet = await openReleaseDrawer(tester, size: const Size(390, 800));
-    // 20 is what MASTER §6 registers for the sheet's top corners, written here
-    // as a number so a radius token edited without the spec goes red. The rest
-    // of this sheet's geometry belongs to ADR 0010.
+    // 20 is the radius the token registers for the sheet's top corners, written
+    // here as a number so a radius token edited without the spec goes red. The
+    // rest of this sheet's geometry belongs to ADR 0010.
     expect(
       sheet.borderRadius,
       const BorderRadius.vertical(top: Radius.circular(20)),
@@ -568,7 +568,7 @@ void main() {
   testWidgets('a wide release panel squares its corners', (tester) async {
     final panel = await openReleaseDrawer(tester, size: const Size(1400, 900));
     // The top radius belongs to the sheet: a panel that runs to the top edge has
-    // no corner to round (MASTER §6).
+    // no corner to round.
     expect(panel.borderRadius, isNull);
   });
 
