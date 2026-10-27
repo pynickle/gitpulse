@@ -142,15 +142,18 @@ abstract final class GitPulseHeight {
   static const standard = 48.0;
 }
 
-/// The four widths the layouts break at, registered so a breakpoint is changed
+/// The shared layout and editor widths, registered so a width is changed
 /// in one place instead of in each page that happens to need it.
 ///
-/// They stay four tokens rather than one "content width" because they answer
+/// The layout limits stay separate rather than sharing one "content width" because they answer
 /// four different questions — how wide a line of prose may get, how wide a
 /// column of Settings cards may get, and where a Timeline goes from one column to two
 /// and from two to three. One shared maximum would make three of the four
 /// answers wrong.
 abstract final class GitPulseWidth {
+  /// A persistent integer editor, shared by retention and page navigation.
+  static const integerField = 72.0;
+
   /// The reading measure: the width at which a Repository page's README stays a
   /// line the eye does not lose its place in.
   static const readingMeasure = 960.0;

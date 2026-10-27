@@ -155,6 +155,7 @@
   "followsNoResults": "未找到仓库。",
   "followsPreviousPage": "上一页",
   "followsNextPage": "下一页",
+  "followsPage": "页码",
   "followsInvalid": "请输入有效的 GitHub 仓库 URL，例如 https://github.com/owner/repo。",
   "followsNotFound": "未找到此仓库，或当前账号无权访问。请检查 URL 后重试。",
   "followsDuplicate": "此仓库已关注 Release。请重新加载关注列表查看。",

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'followed_repositories_panel.dart';
 import 'followed_repository_view.dart';
@@ -29,11 +30,14 @@ class ReleaseFollowsScreen extends ConsumerStatefulWidget {
       _ReleaseFollowsScreenState();
 }
 
-class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
+class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
+    with SingleTickerProviderStateMixin {
   late final TextEditingController _query;
+  late final TabController _sourceTabs;
   final _scroll = ScrollController();
   Timer? _debounce;
   late _RepositorySource _source;
+  bool _footerFocused = false;
 
   @override
   void initState() {
@@ -43,6 +47,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
     _source = state.query.isEmpty
         ? _RepositorySource.starred
         : _RepositorySource.search;
+    _sourceTabs = TabController(
+      length: _RepositorySource.values.length,
+      initialIndex: _source.index,
+      vsync: this,
+    );
     Future<void>.microtask(() {
       if (!mounted) return;
       final facade = ref.read(releaseFollowsSessionProvider.notifier);
@@ -54,6 +63,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _sourceTabs.dispose();
     _query.dispose();
     _scroll.dispose();
     super.dispose();
@@ -158,25 +168,38 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                SegmentedButton<_RepositorySource>(
-                                  expandedInsets: EdgeInsets.zero,
-                                  showSelectedIcon: false,
-                                  segments: [
-                                    ButtonSegment(
-                                      value: _RepositorySource.starred,
-                                      label: Text(l10n.followsStarred),
+                                TabBar(
+                                  controller: _sourceTabs,
+                                  indicatorSize: TabBarIndicatorSize.tab,
+                                  indicator: UnderlineTabIndicator(
+                                    borderSide: BorderSide(
+                                      color: theme.colorScheme.primary,
+                                      width: GitPulseStroke.hairline,
                                     ),
-                                    ButtonSegment(
-                                      value: _RepositorySource.search,
-                                      label: Text(l10n.followsSearch),
+                                  ),
+                                  dividerColor: toneRule(theme.colorScheme),
+                                  dividerHeight: GitPulseStroke.hairline,
+                                  overlayColor: gitPulseInkOverlay(
+                                    theme.colorScheme,
+                                  ),
+                                  tabs: [
+                                    Tab(
+                                      text: l10n.followsStarred,
+                                      height: GitPulseHeight.standard,
+                                    ),
+                                    Tab(
+                                      text: l10n.followsSearch,
+                                      height: GitPulseHeight.standard,
                                     ),
                                   ],
-                                  selected: {_source},
-                                  onSelectionChanged: (values) {
+                                  onTap: (index) {
                                     _debounce?.cancel();
                                     FocusScope.of(context).unfocus();
                                     _scrollToTop();
-                                    setState(() => _source = values.single);
+                                    setState(
+                                      () => _source =
+                                          _RepositorySource.values[index],
+                                    );
                                     if (_source == _RepositorySource.search &&
                                         state.query.isNotEmpty &&
                                         state.searchPage == 0 &&
@@ -284,104 +307,111 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                       Expanded(
                         child: _discovery(state, search, loading, problem),
                       ),
-                      if (!keyboardVisible)
+                      if (!keyboardVisible || _footerFocused)
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: GitPulseSpace.gutter,
                             vertical: GitPulseSpace.inline,
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    if (pagination != null)
-                                      RepositoryPagination(
-                                        pagination: pagination,
-                                        loading: loading,
-                                        onPage: (page) {
-                                          _debounce?.cancel();
-                                          if (search) {
-                                            unawaited(
-                                              facade.search(
-                                                state.query,
-                                                page: page,
-                                              ),
-                                            );
-                                          } else {
-                                            unawaited(
-                                              facade.loadStarred(page: page),
-                                            );
-                                          }
-                                        },
+                          child: Focus(
+                            onFocusChange: (focused) {
+                              if (mounted) {
+                                setState(() => _footerFocused = focused);
+                              }
+                            },
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      if (pagination != null)
+                                        RepositoryPagination(
+                                          pagination: pagination,
+                                          loading: loading,
+                                          onPage: (page) {
+                                            _debounce?.cancel();
+                                            if (search) {
+                                              unawaited(
+                                                facade.search(
+                                                  state.query,
+                                                  page: page,
+                                                ),
+                                              );
+                                            } else {
+                                              unawaited(
+                                                facade.loadStarred(page: page),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      if (problem != null)
+                                        OutlinedButton.icon(
+                                          onPressed: loading
+                                              ? null
+                                              : () {
+                                                  if (search) {
+                                                    unawaited(
+                                                      facade.search(
+                                                        state.query,
+                                                        page: state
+                                                            .searchRequestedPage,
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    unawaited(
+                                                      facade.loadStarred(
+                                                        page: state
+                                                            .starred
+                                                            .requestedPage,
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                          icon: const Icon(Icons.refresh),
+                                          label: Text(l10n.timelineRetry),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                if (!wide) ...[
+                                  const SizedBox(width: GitPulseSpace.inline),
+                                  Tooltip(
+                                    message: l10n.followsManage(
+                                      state.repositories.length,
+                                    ),
+                                    child: FilledButton.tonalIcon(
+                                      key: const ValueKey('manage-follows'),
+                                      onPressed: _showFollowed,
+                                      style: FilledButton.styleFrom(
+                                        minimumSize: const Size(
+                                          0,
+                                          GitPulseHeight.compact,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: GitPulseSpace.inline,
+                                        ),
                                       ),
-                                    if (problem != null)
-                                      OutlinedButton.icon(
-                                        onPressed: loading
+                                      icon: Icon(
+                                        Icons.bookmarks_outlined,
+                                        size: GitPulseIconSize.inControl,
+                                        color: state.problem == null
                                             ? null
-                                            : () {
-                                                if (search) {
-                                                  unawaited(
-                                                    facade.search(
-                                                      state.query,
-                                                      page: state
-                                                          .searchRequestedPage,
-                                                    ),
-                                                  );
-                                                } else {
-                                                  unawaited(
-                                                    facade.loadStarred(
-                                                      page: state
-                                                          .starred
-                                                          .requestedPage,
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                        icon: const Icon(Icons.refresh),
-                                        label: Text(l10n.timelineRetry),
+                                            : theme.colorScheme.error,
                                       ),
-                                  ],
-                                ),
-                              ),
-                              if (!wide) ...[
-                                const SizedBox(width: GitPulseSpace.inline),
-                                Tooltip(
-                                  message: l10n.followsManage(
-                                    state.repositories.length,
-                                  ),
-                                  child: FilledButton.tonalIcon(
-                                    key: const ValueKey('manage-follows'),
-                                    onPressed: _showFollowed,
-                                    style: FilledButton.styleFrom(
-                                      minimumSize: const Size(
-                                        0,
-                                        GitPulseHeight.compact,
+                                      label: Text(
+                                        MaterialLocalizations.of(context)
+                                            .formatDecimal(
+                                              state.repositories.length,
+                                            ),
                                       ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: GitPulseSpace.inline,
-                                      ),
-                                    ),
-                                    icon: Icon(
-                                      Icons.bookmarks_outlined,
-                                      size: GitPulseIconSize.inControl,
-                                      color: state.problem == null
-                                          ? null
-                                          : theme.colorScheme.error,
-                                    ),
-                                    label: Text(
-                                      MaterialLocalizations.of(context)
-                                          .formatDecimal(
-                                            state.repositories.length,
-                                          ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                     ],

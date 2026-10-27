@@ -258,7 +258,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
             delta: -1,
           ),
           SizedBox(
-            width: 72,
+            width: GitPulseWidth.integerField,
             child: TextField(
               key: const ValueKey('retention-days'),
               controller: _days,
