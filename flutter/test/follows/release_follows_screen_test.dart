@@ -183,9 +183,10 @@ void main() {
       await tester.enterText(field, '10');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await _pumpFrames(tester);
-      // The field names the page being read until the backend confirms a jump.
+      // A page that is on its way is already the page being read, so the field
+      // names it as soon as the jump starts.
       expect(
-        find.descendant(of: field, matching: find.text('1')),
+        find.descendant(of: field, matching: find.text('10')),
         findsOneWidget,
       );
       expect(find.byKey(const ValueKey('starred-R_0')), findsNothing);
@@ -227,7 +228,7 @@ void main() {
         find.descendant(of: field, matching: find.text('10')),
         findsOneWidget,
       );
-      expect(find.text('/ 10'), findsOneWidget);
+      expect(find.text('10 pages'), findsOneWidget);
       // A page that finally arrives is read from its top.
       expect(
         tester
@@ -322,7 +323,7 @@ void main() {
         ..starredHasMore = true;
       await _openFollows(tester, server);
       expect(find.byKey(const ValueKey('repository-page')), findsOneWidget);
-      expect(find.text('/ 1'), findsNothing);
+      expect(find.textContaining('page'), findsNothing);
       expect(find.text('…'), findsNothing);
       await tester.tap(find.byTooltip('Next page'));
       await tester.pumpAndSettle();
@@ -579,7 +580,7 @@ void main() {
           // The number, both steps and the total are one pill, and the pill is
           // one cell high until the reader's type outgrows that cell.
           final pill = tester.getRect(find.byType(GitPulsePill));
-          expect(pill.height, greaterThanOrEqualTo(GitPulseHeight.compact));
+          expect(pill.height, greaterThanOrEqualTo(GitPulseHeight.pill));
           expect(pill.contains(pageField.center), isTrue);
           expect(
             tester.getRect(find.byTooltip('Previous page')).center.dy,

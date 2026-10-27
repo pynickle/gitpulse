@@ -1,16 +1,40 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'gitpulse_tokens.dart';
 
+/// The type a pill's number is set in, and the one line height the pill is built
+/// around: the body role, with tabular figures so the number does not shift as
+/// its digits change.
+TextStyle? gitPulsePillNumberStyle(BuildContext context) =>
+    Theme.of(context).textTheme.bodyMedium
+        ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
+
+/// One line of the number's type at this reader's text scale.
+///
+/// Measured rather than assumed: it is what the number cell needs, and it is the
+/// only thing that can make the pill taller than its own cell. The field's own
+/// decoration reports a Material tap-target intrinsic that a borderless,
+/// collapsed field never draws, so the pill cannot ask it.
+double _numberLineHeight(BuildContext context) {
+  final painter = TextPainter(
+    text: TextSpan(text: '0', style: gitPulsePillNumberStyle(context)),
+    textDirection: TextDirection.ltr,
+    textScaler: MediaQuery.textScalerOf(context),
+  )..layout();
+  final height = painter.height;
+  painter.dispose();
+  return height;
+}
+
 /// A pill: one hairline surface whose cells are separated by rules, read as a
 /// single control rather than as a row of buttons.
 ///
-/// Page navigation and the retention window are both one number stepped by two
-/// neighbouring actions, so they share this frame, this cell and this number
-/// instead of each painting the same three boxes. A cell stands one
-/// [GitPulseHeight.compact] high — the same height as the search field above a
-/// page pill, and Material's floor for anything clickable — and the pill grows
-/// past it when the number's type needs more room.
+/// The page pill is the one user: a page number stepped by two neighbouring
+/// arrows. Its height is one [GitPulseHeight.pill] cell — flatter than a toolbar
+/// control, and wider than it is tall (ADR 0026) — until the reader's type needs
+/// more room than that cell, and then exactly the number's own line.
 ///
 /// [focused] is the whole of the focus feedback: the edge turns to the accent,
 /// and nothing about the pill's shape, size or cells moves when its number takes
@@ -21,6 +45,11 @@ class GitPulsePill extends StatelessWidget {
   final List<Widget> cells;
   final bool focused;
 
+  /// The pill's height for this reader: its cell, or one line of the number's
+  /// type when that is taller.
+  static double heightFor(BuildContext context) =>
+      math.max(GitPulseHeight.pill, _numberLineHeight(context));
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -29,15 +58,16 @@ class GitPulsePill extends StatelessWidget {
       thickness: GitPulseStroke.hairline,
       color: toneRule(scheme),
     );
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(GitPulseRadius.row),
-        border: Border.all(
-          color: focused ? scheme.primary : toneEdge(scheme),
-          width: GitPulseStroke.hairline,
+    return SizedBox(
+      height: heightFor(context),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(GitPulseRadius.row),
+          border: Border.all(
+            color: focused ? scheme.primary : toneEdge(scheme),
+            width: GitPulseStroke.hairline,
+          ),
         ),
-      ),
-      child: IntrinsicHeight(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -52,8 +82,8 @@ class GitPulsePill extends StatelessWidget {
   }
 }
 
-/// One step of a pill: a cell of its own, held to the pill's cell height and
-/// width so the two actions and the number between them share one rhythm.
+/// One step of a pill: a cell of its own, wider than it is tall so the two
+/// arrows and the number between them share one rhythm.
 class GitPulsePillStep extends StatelessWidget {
   const GitPulsePillStep({
     super.key,
@@ -66,6 +96,13 @@ class GitPulsePillStep extends StatelessWidget {
   final String tooltip;
   final VoidCallback? onPressed;
 
+  /// The cell's size: the pill's height, and a full 40dp across so an arrow
+  /// keeps a comfortable target even though the pill is flat (ADR 0026).
+  static const size = Size(
+    GitPulseHeight.pill + GitPulseSpace.inline,
+    GitPulseHeight.pill,
+  );
+
   @override
   Widget build(BuildContext context) => IconButton(
     tooltip: tooltip,
@@ -75,7 +112,7 @@ class GitPulsePillStep extends StatelessWidget {
     style: IconButton.styleFrom(
       padding: EdgeInsets.zero,
       minimumSize: Size.zero,
-      fixedSize: const Size.square(GitPulseHeight.compact),
+      fixedSize: size,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     ),
     icon: Icon(icon),
@@ -115,39 +152,34 @@ class GitPulsePillNumber extends StatelessWidget {
       10;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: GitPulseSpace.inline),
-      child: SizedBox(
-        width: widthFor(context),
-        child: Semantics(
-          label: label,
-          child: TextField(
-            controller: controller,
-            focusNode: focusNode,
-            enabled: enabled,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-            onSubmitted: (_) {
-              onCommit?.call();
-              focusNode.unfocus();
-            },
-            onTapOutside: (_) => focusNode.unfocus(),
-            // The pill is the control: a second box drawn inside it is the
-            // shape that made the number look like a different control.
-            decoration: const InputDecoration(
-              isCollapsed: true,
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
-            ),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: GitPulseSpace.inline),
+    child: SizedBox(
+      width: widthFor(context),
+      child: Semantics(
+        label: label,
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          enabled: enabled,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          textAlign: TextAlign.center,
+          style: gitPulsePillNumberStyle(context),
+          onSubmitted: (_) {
+            onCommit?.call();
+            focusNode.unfocus();
+          },
+          onTapOutside: (_) => focusNode.unfocus(),
+          // The pill is the control: a second box drawn inside it is the shape
+          // that made the number look like a different control.
+          decoration: const InputDecoration(
+            isCollapsed: true,
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

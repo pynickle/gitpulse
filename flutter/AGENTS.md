@@ -47,12 +47,14 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
   hint beside the title that then disappears. The window defaults to 30. The account name and sign-out
   sit on the backend card's header, one `GitPulseSpace.inline` above it. Timeline cache keeps its
   clear action on the title's line.
-- **A number stepped by two actions is one pill** (`presentation/gitpulse_pill.dart`): page
-  navigation and the retention window are a single hairline `GitPulsePill` whose cells are the two
-  steps and an always-editable `GitPulsePillNumber`; a cell is `GitPulseHeight.compact` tall and the
-  number cell is `GitPulseWidth.pillNumber` wide before the text scale. Taking the focus turns the
-  pill's edge to the accent and moves nothing — no second box, no floating label, no size change
-  (that is the whole of the focus feedback).
+- **The page pill is flat** (`presentation/gitpulse_pill.dart`): page navigation is one hairline
+  `GitPulsePill` whose cells are the two step arrows and an always-editable `GitPulsePillNumber`.
+  A cell is `GitPulseHeight.pill` (32dp, flatter than a toolbar control — ADR 0026) and the number
+  cell is `GitPulseWidth.pillNumber` wide before the text scale; the pill grows only when the
+  number's own line needs more room. How many pages there are is stated beside the pill, not inside
+  it. Taking the focus turns the pill's edge to the accent and moves nothing — no second box, no
+  floating label, no size change (that is the whole of the focus feedback). The number names the
+  page the reader asked for as soon as the request starts, not the page it replaced.
 - **Follows discovery reads** (`lib/follows/release_follows_screen.dart`): a first read or a page
   turn replaces the list with `GitPulseLoadingView`; the page already on screen is re-read by
   `GitPulsePullToRefresh` (the Timeline's own surface), which is the only progress a same-page read

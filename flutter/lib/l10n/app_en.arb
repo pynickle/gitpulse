@@ -182,6 +182,8 @@
   "followsPreviousPage": "Previous page",
   "followsNextPage": "Next page",
   "followsPage": "Page",
+  "followsTotalPages": "{count, plural, =1 {1 page} other {{count} pages}}",
+  "@followsTotalPages": {"placeholders": {"count": {"type": "int", "format": "decimalPattern"}}},
   "followsInvalid": "Enter a valid GitHub repository URL, such as https://github.com/owner/repo.",
   "followsNotFound": "This repository could not be found or is not accessible to this account. Check the URL and retry.",
   "followsDuplicate": "This repository already has a Release Follow. Reload follows to see the current list.",

@@ -344,6 +344,13 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                                       : RepositoryPagination(
                                           pagination: pagination,
                                           loading: loading,
+                                          // A page that is on its way is
+                                          // already the page being read: the
+                                          // number changes as the request
+                                          // starts, not when it lands.
+                                          page: search
+                                              ? state.searchRequestedPage
+                                              : state.starred.requestedPage,
                                           onPage: (page) {
                                             _debounce?.cancel();
                                             if (search) {

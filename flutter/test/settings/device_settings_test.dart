@@ -8,8 +8,6 @@ import 'package:gitpulse/connection/backend_service.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/device/device_preferences.dart';
 import 'package:gitpulse/device/device_preferences_controller.dart';
-import 'package:gitpulse/presentation/gitpulse_pill.dart';
-import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -703,73 +701,6 @@ void main() {
       );
     },
   );
-
-  testWidgets('the window is one pill that keeps its cells when typed into', (
-    tester,
-  ) async {
-    useNarrowWindow(tester);
-    tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
-    addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
-    final harness = harnessFor(
-      tester,
-      session: SessionState(
-        phase: SessionPhase.signedIn,
-        identity: signedInIdentity(githubId: '1'),
-      ),
-      handlers: {
-        'GET api/settings': () =>
-            BackendResult(statusCode: 200, data: settingsJson(const [])),
-        'POST api/release-timeline/refresh': () => BackendResult(
-          statusCode: 200,
-          data: roundJson(
-            refresh: const {
-              'previousBaseline': '2026-10-01T00:00:00.000Z',
-              'startedAt': '2026-10-05T00:00:00.000Z',
-            },
-          ),
-        ),
-      },
-    );
-    await tester.runAsync(harness.open);
-    await pumpApp(tester, harness);
-    await openSettings(tester, 'Settings');
-    await showRetention(tester);
-
-    // Both steps and the number are cells of one pill, not a field with two
-    // loose buttons around it.
-    final pill = find.byType(GitPulsePill);
-    expect(pill, findsOneWidget);
-    for (final part in [
-      retentionField,
-      find.byTooltip('Decrease retention'),
-      find.byTooltip('Increase retention'),
-    ]) {
-      expect(find.descendant(of: pill, matching: part), findsOneWidget);
-    }
-
-    final pillSize = tester.getSize(pill);
-    final fieldSize = tester.getSize(retentionField);
-    expect(pillSize.height, greaterThanOrEqualTo(GitPulseHeight.compact));
-
-    // Taking the focus changes the pill's edge and nothing else: the control
-    // the reader tapped is the control that stays there.
-    await tester.tap(retentionField);
-    await pumpFrames(tester);
-    expect(tester.getSize(pill), pillSize);
-    expect(tester.getSize(retentionField), fieldSize);
-
-    await tester.enterText(retentionField, '7');
-    tester.binding.focusManager.primaryFocus?.unfocus();
-    await settleUi(tester);
-    expect(
-      harness.container
-          .read(devicePreferencesProvider)
-          .value!
-          .preferences
-          .retentionDays,
-      7,
-    );
-  });
 
   testWidgets('an offline session shows the backend as offline', (
     tester,
