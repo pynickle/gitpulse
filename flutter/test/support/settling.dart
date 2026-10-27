@@ -1,4 +1,34 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+
+/// Completes real I/O while also advancing any widget-clock continuations it
+/// depends on. Awaiting only [WidgetTester.runAsync] can strand those tasks.
+Future<void> pumpOperation(
+  WidgetTester tester,
+  Future<void> Function() operation, {
+  required String reason,
+}) async {
+  var completed = false;
+  Object? failure;
+  StackTrace? failureStack;
+  await tester.runAsync(() async {
+    unawaited(
+      Future<void>.sync(operation).then<void>(
+        (_) {
+          completed = true;
+        },
+        onError: (Object error, StackTrace stack) {
+          failure = error;
+          failureStack = stack;
+          completed = true;
+        },
+      ),
+    );
+  });
+  await pumpUntil(tester, () => completed, reason: reason);
+  if (failure != null) Error.throwWithStackTrace(failure!, failureStack!);
+}
 
 /// Pumps only until the requested UI or request boundary is observable.
 Future<void> pumpUntil(

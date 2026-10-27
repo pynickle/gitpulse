@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/followed_repositories_panel.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/follows/repository_pagination.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
@@ -400,6 +401,37 @@ void main() {
         if (size.width < 1100) {
           final manage = find.byKey(const ValueKey('manage-follows'));
           expect(manage.hitTestable(), findsOneWidget);
+          final source = tester.getRect(
+            find.ancestor(
+              of: find.text('Starred'),
+              matching: find.byWidgetPredicate(
+                (widget) => widget is SegmentedButton<dynamic>,
+              ),
+            ),
+          );
+          final sort = tester.getRect(
+            find.ancestor(
+              of: find.text('Starred date'),
+              matching: find.byWidgetPredicate(
+                (widget) => widget is SegmentedButton<dynamic>,
+              ),
+            ),
+          );
+          expect(source.left, GitPulseSpace.gutter);
+          expect(source.right, size.width - GitPulseSpace.gutter);
+          expect(sort.left, source.left);
+          final direction = tester.getRect(
+            find.ancestor(
+              of: find.byTooltip('Descending'),
+              matching: find.byType(IconButton),
+            ),
+          );
+          expect(direction.right, source.right);
+          final pages = tester.getRect(find.byType(RepositoryPagination));
+          final followed = tester.getRect(manage);
+          expect(followed.left, greaterThanOrEqualTo(pages.right));
+          expect(followed.center.dy, closeTo(pages.center.dy, 1));
+          expect(followed.width, lessThan(size.width / 2));
           expect(
             tester.getBottomLeft(find.text('Starred')).dy,
             lessThan(tester.getTopLeft(find.text('Starred date')).dy),
@@ -1047,7 +1079,11 @@ void main() {
       ),
     );
     expect(icon.color, Theme.of(tester.element(manage)).colorScheme.error);
-    expect(find.text('0 followed'), findsOneWidget);
+    expect(find.byTooltip('0 followed'), findsOneWidget);
+    expect(
+      find.descendant(of: manage, matching: find.text('0')),
+      findsOneWidget,
+    );
 
     await tester.tap(manage);
     await tester.pumpAndSettle();

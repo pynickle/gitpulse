@@ -17,6 +17,7 @@ import 'package:path/path.dart' as p;
 
 import '../support/app_overrides.dart';
 import '../support/provider_wait.dart';
+import '../support/settling.dart';
 import '../support/release_timeline_server.dart';
 
 late TimelineHttpServer settingsServer;
@@ -84,12 +85,15 @@ class SettingsInstallation {
 
 /// Wait for the operation being driven, then finish its UI transitions.
 Future<void> settle(WidgetTester tester, SettingsInstallation app) async {
-  await tester.runAsync(
-    () => waitForProvider(
-      app.container,
-      releaseTimelineSessionProvider,
-      (state) => !state.cacheActions.clearing,
-    ),
+  // Dispatch dialog completion before observing whether its clear has finished.
+  await tester.pump();
+  await pumpUntil(
+    tester,
+    () => !app.container
+        .read(releaseTimelineSessionProvider)
+        .cacheActions
+        .clearing,
+    reason: 'finish clearing the timeline cache',
   );
   await tester.pumpAndSettle();
 }
@@ -112,8 +116,9 @@ Future<SettingsInstallation> startInstallation(WidgetTester tester) async {
       login: 'settings-${++installationId}',
     );
     addTearDown(() async {
-      await app.close();
-      await directory.delete(recursive: true);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpOperation(tester, app.close, reason: 'close settings cache');
+      await tester.runAsync(() => directory.delete(recursive: true));
     });
     await const FlutterSecureStorage().write(
       key: 'last_successful_backend',
@@ -235,6 +240,14 @@ void main() {
         });
         await locked.future;
       });
+      addTearDown(() async {
+        if (!releaseStorage.isCompleted) releaseStorage.complete();
+        await pumpOperation(
+          tester,
+          () => storageLock,
+          reason: 'release the SQLite transaction',
+        );
+      });
       final clear = find.widgetWithText(OutlinedButton, 'Clear');
       await tester.ensureVisible(clear);
       await tester.tap(clear);
@@ -250,14 +263,14 @@ void main() {
             .clearing,
         isTrue,
       );
-      await tester.runAsync(() async {
+      await pumpOperation(tester, () async {
         final follows = app.container
             .read(releaseTimelineSessionProvider.notifier)
             .reloadFollows();
         releaseStorage.complete();
         await storageLock;
         await follows;
-      });
+      }, reason: 'reload follows after clearing the cache');
       await settle(tester, app);
       expect(
         app.container
@@ -266,7 +279,7 @@ void main() {
             .clearing,
         isFalse,
       );
-      await tester.runAsync(() async {
+      await pumpOperation(tester, () async {
         // Reverse ordering must also leave clear completion current.
         final facade = app.container.read(
           releaseTimelineSessionProvider.notifier,
@@ -274,7 +287,7 @@ void main() {
         final reload = facade.reloadFollows();
         final clear = facade.clearCache();
         await Future.wait([reload, clear]);
-      });
+      }, reason: 'finish overlapping reload and cache clear');
       expect(
         app.container
             .read(releaseTimelineSessionProvider)

@@ -81,7 +81,6 @@ void _expectSettingCards(WidgetTester tester) {
   _expectCard(tester, 'Language', Icons.language);
   _expectCard(tester, 'Appearance', Icons.palette_outlined);
   _expectCard(tester, 'Keep releases for', Icons.history);
-  _expectCard(tester, 'Timeline cache', Icons.storage_outlined);
   final languageCard = find.ancestor(
     of: find.text('Language'),
     matching: find.byWidgetPredicate(_isSettingCard),
@@ -133,6 +132,7 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
+    _expectCard(tester, 'Timeline cache', Icons.storage_outlined);
     final cacheTitle = tester.getRect(find.text('Timeline cache'));
     final clear = tester.getRect(find.widgetWithText(OutlinedButton, 'Clear'));
     expect(clear.left, greaterThan(cacheTitle.right));
@@ -146,6 +146,7 @@ void main() {
     _useWindow(tester, const Size(1280, 900));
     await _openSettings(tester);
     _expectSettingCards(tester);
+    _expectCard(tester, 'Timeline cache', Icons.storage_outlined);
 
     final languageChoice = tester.getRect(
       find.widgetWithText(ChoiceChip, 'System language'),
@@ -204,7 +205,7 @@ void main() {
     expect(copied, 'https://gitpulse.example/');
     expect(find.byIcon(Icons.check), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 900));
-    await tester.pump(const Duration(milliseconds: 180));
+    await tester.pumpAndSettle();
     expect(find.byIcon(Icons.check), findsNothing);
     expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
     expect(tester.takeException(), isNull);

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/connection/backend_service.dart';
@@ -18,6 +19,7 @@ import 'package:path/path.dart' as p;
 import '../timeline/timeline_test_support.dart';
 import 'app_overrides.dart';
 import 'provider_wait.dart';
+import 'settling.dart';
 
 const _capabilities = NativeCapabilities(
   protocolVersion: 1,
@@ -133,7 +135,12 @@ PresentationHarness harnessFor(
     deviceStore: deviceStore,
   );
   addTearDown(() async {
-    await tester.runAsync(harness.close);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pumpOperation(
+      tester,
+      harness.close,
+      reason: 'close presentation cache',
+    );
     directory.deleteSync(recursive: true);
   });
   return harness;

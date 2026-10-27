@@ -136,10 +136,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= GitPulseWidth.timelineTablet;
-            final stackControls =
-                constraints.maxWidth - (wide ? 360 : 0) <
-                GitPulseWidth.timelinePhone *
-                    MediaQuery.textScalerOf(context).scale(1);
             // Scaffold removes the keyboard inset from the body's MediaQuery.
             final keyboardVisible = View.of(context).viewInsets.bottom > 0;
             return Row(
@@ -159,13 +155,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Flex(
-                              direction: stackControls
-                                  ? Axis.vertical
-                                  : Axis.horizontal,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 SegmentedButton<_RepositorySource>(
+                                  expandedInsets: EdgeInsets.zero,
                                   showSelectedIcon: false,
                                   segments: [
                                     ButtonSegment(
@@ -193,10 +187,8 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                                 ),
                                 if (!search)
                                   Padding(
-                                    padding: EdgeInsets.only(
-                                      top: stackControls
-                                          ? GitPulseSpace.inline
-                                          : 0,
+                                    padding: const EdgeInsets.only(
+                                      top: GitPulseSpace.inline,
                                     ),
                                     child: _SortControls(
                                       sort: state.starred.sort,
@@ -216,81 +208,65 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                             ),
                             if (search) ...[
                               const SizedBox(height: 8),
-                              Align(
-                                alignment: AlignmentDirectional.centerStart,
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 520,
-                                  ),
-                                  child: TextField(
-                                    controller: _query,
-                                    textInputAction: TextInputAction.search,
-                                    onSubmitted: (_) => _search(submit: true),
-                                    onChanged: _changeQuery,
-                                    style: theme.textTheme.bodyMedium,
-                                    decoration: InputDecoration(
-                                      labelText: l10n.followsSearchLabel,
-                                      isDense: true,
-                                      // The label is a label, not a heading: the
-                                      // field keeps body-sized type whether the
-                                      // label rests inside it or floats.
-                                      labelStyle: theme.textTheme.bodyMedium,
-                                      floatingLabelStyle:
-                                          theme.textTheme.bodySmall,
-                                      border: _searchBorder,
-                                      enabledBorder: _searchBorder,
-                                      focusedBorder: _searchBorder.copyWith(
-                                        borderSide: BorderSide(
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 10,
-                                          ),
-                                      suffixIcon: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (_query.text.isNotEmpty)
-                                            IconButton(
-                                              tooltip: l10n.followsClearSearch,
-                                              style: IconButton.styleFrom(
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                              ),
-                                              onPressed: () {
-                                                _query.clear();
-                                                _changeQuery('');
-                                              },
-                                              iconSize:
-                                                  GitPulseIconSize.inControl,
-                                              icon: const Icon(Icons.close),
-                                            ),
-                                          IconButton(
-                                            tooltip: l10n.followsSearch,
-                                            style: IconButton.styleFrom(
-                                              tapTargetSize:
-                                                  MaterialTapTargetSize
-                                                      .shrinkWrap,
-                                            ),
-                                            onPressed:
-                                                _query.text.trim().isEmpty
-                                                ? null
-                                                : () => _search(submit: true),
-                                            iconSize:
-                                                GitPulseIconSize.inControl,
-                                            icon: const Icon(Icons.search),
-                                          ),
-                                        ],
-                                      ),
-                                      suffixIconConstraints:
-                                          const BoxConstraints(
-                                            minWidth: 44,
-                                            minHeight: GitPulseHeight.rowMin,
-                                          ),
+                              TextField(
+                                controller: _query,
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: (_) => _search(submit: true),
+                                onChanged: _changeQuery,
+                                style: theme.textTheme.bodyMedium,
+                                decoration: InputDecoration(
+                                  labelText: l10n.followsSearchLabel,
+                                  isDense: true,
+                                  // The label is a label, not a heading: the
+                                  // field keeps body-sized type whether the
+                                  // label rests inside it or floats.
+                                  labelStyle: theme.textTheme.bodyMedium,
+                                  floatingLabelStyle: theme.textTheme.bodySmall,
+                                  border: _searchBorder,
+                                  enabledBorder: _searchBorder,
+                                  focusedBorder: _searchBorder.copyWith(
+                                    borderSide: BorderSide(
+                                      color: theme.colorScheme.primary,
                                     ),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  suffixIcon: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_query.text.isNotEmpty)
+                                        IconButton(
+                                          tooltip: l10n.followsClearSearch,
+                                          style: IconButton.styleFrom(
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          onPressed: () {
+                                            _query.clear();
+                                            _changeQuery('');
+                                          },
+                                          iconSize: GitPulseIconSize.inControl,
+                                          icon: const Icon(Icons.close),
+                                        ),
+                                      IconButton(
+                                        tooltip: l10n.followsSearch,
+                                        style: IconButton.styleFrom(
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        onPressed: _query.text.trim().isEmpty
+                                            ? null
+                                            : () => _search(submit: true),
+                                        iconSize: GitPulseIconSize.inControl,
+                                        icon: const Icon(Icons.search),
+                                      ),
+                                    ],
+                                  ),
+                                  suffixIconConstraints: const BoxConstraints(
+                                    minWidth: 44,
+                                    minHeight: GitPulseHeight.rowMin,
                                   ),
                                 ),
                               ),
@@ -314,64 +290,97 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                             horizontal: GitPulseSpace.gutter,
                             vertical: GitPulseSpace.inline,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                          child: Row(
                             children: [
-                              if (pagination != null)
-                                RepositoryPagination(
-                                  pagination: pagination,
-                                  loading: loading,
-                                  onPage: (page) {
-                                    _debounce?.cancel();
-                                    if (search) {
-                                      unawaited(
-                                        facade.search(state.query, page: page),
-                                      );
-                                    } else {
-                                      unawaited(facade.loadStarred(page: page));
-                                    }
-                                  },
-                                ),
-                              if (problem != null)
-                                OutlinedButton.icon(
-                                  onPressed: loading
-                                      ? null
-                                      : () {
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (pagination != null)
+                                      RepositoryPagination(
+                                        pagination: pagination,
+                                        loading: loading,
+                                        onPage: (page) {
+                                          _debounce?.cancel();
                                           if (search) {
                                             unawaited(
                                               facade.search(
                                                 state.query,
-                                                page: state.searchRequestedPage,
+                                                page: page,
                                               ),
                                             );
                                           } else {
                                             unawaited(
-                                              facade.loadStarred(
-                                                page:
-                                                    state.starred.requestedPage,
-                                              ),
+                                              facade.loadStarred(page: page),
                                             );
                                           }
                                         },
-                                  icon: const Icon(Icons.refresh),
-                                  label: Text(l10n.timelineRetry),
+                                      ),
+                                    if (problem != null)
+                                      OutlinedButton.icon(
+                                        onPressed: loading
+                                            ? null
+                                            : () {
+                                                if (search) {
+                                                  unawaited(
+                                                    facade.search(
+                                                      state.query,
+                                                      page: state
+                                                          .searchRequestedPage,
+                                                    ),
+                                                  );
+                                                } else {
+                                                  unawaited(
+                                                    facade.loadStarred(
+                                                      page: state
+                                                          .starred
+                                                          .requestedPage,
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                        icon: const Icon(Icons.refresh),
+                                        label: Text(l10n.timelineRetry),
+                                      ),
+                                  ],
                                 ),
-                              if (!wide)
-                                FilledButton.tonalIcon(
-                                  key: const ValueKey('manage-follows'),
-                                  onPressed: _showFollowed,
-                                  icon: Icon(
-                                    Icons.bookmarks_outlined,
-                                    color: state.problem == null
-                                        ? null
-                                        : theme.colorScheme.error,
+                              ),
+                              if (!wide) ...[
+                                const SizedBox(width: GitPulseSpace.inline),
+                                Tooltip(
+                                  message: l10n.followsManage(
+                                    state.repositories.length,
                                   ),
-                                  label: Text(
-                                    l10n.followsManage(
-                                      state.repositories.length,
+                                  child: FilledButton.tonalIcon(
+                                    key: const ValueKey('manage-follows'),
+                                    onPressed: _showFollowed,
+                                    style: FilledButton.styleFrom(
+                                      minimumSize: const Size(
+                                        0,
+                                        GitPulseHeight.compact,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: GitPulseSpace.inline,
+                                      ),
+                                    ),
+                                    icon: Icon(
+                                      Icons.bookmarks_outlined,
+                                      size: GitPulseIconSize.inControl,
+                                      color: state.problem == null
+                                          ? null
+                                          : theme.colorScheme.error,
+                                    ),
+                                    label: Text(
+                                      MaterialLocalizations.of(context)
+                                          .formatDecimal(
+                                            state.repositories.length,
+                                          ),
                                     ),
                                   ),
                                 ),
+                              ],
                             ],
                           ),
                         ),
@@ -497,10 +506,10 @@ class _SortControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Flexible(
+        Expanded(
           child: SegmentedButton<StarredRepositorySort>(
+            expandedInsets: EdgeInsets.zero,
             showSelectedIcon: false,
             segments: [
               ButtonSegment(
