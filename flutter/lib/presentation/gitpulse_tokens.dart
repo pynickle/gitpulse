@@ -147,7 +147,7 @@ abstract final class GitPulseHeight {
 ///
 /// They stay four tokens rather than one "content width" because they answer
 /// four different questions — how wide a line of prose may get, how wide a
-/// table of settings may get, and where a Timeline goes from one column to two
+/// column of Settings cards may get, and where a Timeline goes from one column to two
 /// and from two to three. One shared maximum would make three of the four
 /// answers wrong.
 abstract final class GitPulseWidth {
@@ -155,8 +155,8 @@ abstract final class GitPulseWidth {
   /// line the eye does not lose its place in.
   static const readingMeasure = 960.0;
 
-  /// The scanning ceiling of the Settings table, which is read as a table
-  /// rather than as prose.
+  /// The scanning ceiling of the Settings cards. Past this width the eye has
+  /// to travel too far from a card's title to its control.
   static const settingsTable = 1120.0;
 
   /// The Release Timeline's phone ceiling: at or below it, one column.

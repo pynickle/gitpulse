@@ -63,8 +63,35 @@ Future<void> tapChoice(WidgetTester tester, String label) async {
 Brightness scaffoldBrightness(WidgetTester tester) =>
     Theme.of(tester.element(find.byType(Scaffold).first)).brightness;
 
-/// The retention editor: the field the window in force is shown in.
+/// The retention value the reader sees, and the field once they choose to type.
 final retentionField = find.byKey(const ValueKey('retention-days'));
+
+/// Brings the retention field on screen without waiting out a cursor blink.
+Future<void> showRetention(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    retentionField,
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await pumpFrames(tester);
+}
+
+/// Types a window and leaves the field, which is what saves it.
+Future<void> confirmRetention(WidgetTester tester, String value) async {
+  await showRetention(tester);
+  await tester.enterText(retentionField, value);
+  await tester.pump();
+  tester.binding.focusManager.primaryFocus?.unfocus();
+  await settleUi(tester);
+}
+
+IconButton retentionStep(WidgetTester tester, String tooltip) =>
+    tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip(tooltip),
+        matching: find.byType(IconButton),
+      ),
+    );
 
 /// The saved window this device would read back, in timeline order.
 ///
@@ -249,6 +276,20 @@ void main() {
       await tester.ensureVisible(clear);
       await pumpFrames(tester);
       await tester.tap(clear);
+      await tester.pump();
+      await tester.tap(find.text('取消'));
+      await tester.pump();
+      expect(
+        harness.container
+            .read(releaseTimelineSessionProvider)
+            .cacheActions
+            .cleared,
+        isFalse,
+      );
+
+      await tester.tap(clear);
+      await tester.pump();
+      await tester.tap(find.widgetWithText(TextButton, '清除'));
       await settleUi(tester);
       expect(
         harness.container
@@ -257,6 +298,7 @@ void main() {
             .cleared,
         isTrue,
       );
+      expect(find.byIcon(Icons.check), findsOneWidget);
 
       expect(
         harness.container
@@ -444,12 +486,9 @@ void main() {
         findsOneWidget,
       );
 
-      // The reader shortens the window: one day, so only the newest release
-      // stays. Nothing is asked of the backend for it.
-      await tester.enterText(retentionField, '1');
-      await tester.pump();
-      await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
-      await settleUi(tester);
+      // The reader types a one-day window, so only the newest release stays.
+      // Nothing is asked of the backend for it.
+      await confirmRetention(tester, '1');
 
       expect(
         harness.container
@@ -491,20 +530,21 @@ void main() {
     await tester.runAsync(harness.open);
     await pumpApp(tester, harness);
     await openSettings(tester, 'Settings');
-    await tester.ensureVisible(retentionField);
-    await tester.pumpAndSettle();
 
     final before = harness.container
         .read(devicePreferencesProvider)
         .value!
         .preferences;
     for (final value in ['0', '91', '1.5', '']) {
-      await tester.enterText(retentionField, value);
-      await tester.pump();
-      await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
-      await settleUi(tester);
-      expect(find.text('Enter a whole number from 1 to 90.'), findsOneWidget);
+      await confirmRetention(tester, value);
+      expect(find.text('Use 1–90'), findsOneWidget);
+      expect(
+        find.descendant(of: retentionField, matching: find.text('30')),
+        findsOneWidget,
+      );
     }
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('Use 1–90'), findsNothing);
     // A refused window leaves this installation's choice exactly as it was.
     expect(
       harness.container.read(devicePreferencesProvider).value!.preferences,
@@ -556,13 +596,8 @@ void main() {
     await tester.runAsync(harness.open);
     await pumpApp(tester, harness);
     await openSettings(tester, 'Settings');
-    await tester.ensureVisible(retentionField);
-    await tester.pumpAndSettle();
 
-    await tester.enterText(retentionField, '1');
-    await tester.pump();
-    await tester.runAsync(() => tester.tap(find.byTooltip('Save retention')));
-    await settleUi(tester);
+    await confirmRetention(tester, '1');
 
     expect(
       find.text('Applied, but this device could not remember the choice.'),
@@ -570,5 +605,133 @@ void main() {
     );
     // The choice still applies to this run: the history it keeps is pruned.
     expect(await tester.runAsync(() => savedHistory(harness)), ['R_alpha:2']);
+  });
+
+  testWidgets(
+    'retention steps one day at once and refuses a step past either end',
+    (tester) async {
+      useNarrowWindow(tester);
+      tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+      addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+      final harness = harnessFor(
+        tester,
+        session: SessionState(
+          phase: SessionPhase.signedIn,
+          identity: signedInIdentity(githubId: '1'),
+        ),
+        handlers: {
+          'GET api/settings': () =>
+              BackendResult(statusCode: 200, data: settingsJson(const [])),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              refresh: const {
+                'previousBaseline': '2026-10-01T00:00:00.000Z',
+                'startedAt': '2026-10-05T00:00:00.000Z',
+              },
+            ),
+          ),
+        },
+      );
+      await tester.runAsync(harness.open);
+      await pumpApp(tester, harness);
+      await openSettings(tester, 'Settings');
+      await showRetention(tester);
+
+      final decrease = find.byTooltip('Decrease retention');
+      expect(retentionStep(tester, 'Decrease retention').onPressed, isNotNull);
+      expect(retentionStep(tester, 'Increase retention').onPressed, isNotNull);
+
+      await tester.tap(decrease);
+      await settleUi(tester);
+      expect(
+        find.descendant(of: retentionField, matching: find.text('29')),
+        findsOneWidget,
+      );
+      expect(
+        harness.container
+            .read(devicePreferencesProvider)
+            .value!
+            .preferences
+            .retentionDays,
+        29,
+      );
+
+      await confirmRetention(tester, '1');
+      expect(retentionStep(tester, 'Decrease retention').onPressed, isNull);
+      expect(retentionStep(tester, 'Increase retention').onPressed, isNotNull);
+      expect(
+        harness.container
+            .read(devicePreferencesProvider)
+            .value!
+            .preferences
+            .retentionDays,
+        1,
+      );
+
+      await confirmRetention(tester, '90');
+      expect(retentionStep(tester, 'Increase retention').onPressed, isNull);
+      expect(
+        harness.container
+            .read(devicePreferencesProvider)
+            .value!
+            .preferences
+            .retentionDays,
+        90,
+      );
+
+      await tester.scrollUntilVisible(
+        decrease,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(decrease);
+      await settleUi(tester);
+      expect(
+        find.descendant(of: retentionField, matching: find.text('89')),
+        findsOneWidget,
+      );
+      expect(
+        harness.container
+            .read(devicePreferencesProvider)
+            .value!
+            .preferences
+            .retentionDays,
+        89,
+      );
+    },
+  );
+
+  testWidgets('an offline session shows the backend as offline', (
+    tester,
+  ) async {
+    useNarrowWindow(tester);
+    tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+    addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+    final harness = harnessFor(
+      tester,
+      session: SessionState(
+        phase: SessionPhase.signedIn,
+        identity: signedInIdentity(githubId: '1'),
+        offline: true,
+      ),
+      handlers: {
+        'GET api/settings': () =>
+            BackendResult(statusCode: 200, data: settingsJson(const [])),
+        'POST api/release-timeline/refresh': () => BackendResult(
+          statusCode: 200,
+          data: roundJson(
+            refresh: const {
+              'previousBaseline': '2026-10-01T00:00:00.000Z',
+              'startedAt': '2026-10-05T00:00:00.000Z',
+            },
+          ),
+        ),
+      },
+    );
+    await tester.runAsync(harness.open);
+    await pumpApp(tester, harness);
+    await openSettings(tester, 'Settings');
+    expect(find.text('Offline'), findsOneWidget);
   });
 }

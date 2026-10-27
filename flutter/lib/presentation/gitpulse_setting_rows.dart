@@ -3,95 +3,121 @@ import 'package:flutter/material.dart';
 import 'gitpulse_tokens.dart';
 
 /// The one gutter every Settings surface shares: a setting's label, its
-/// control, and the hairline between two settings all start here.
+/// control, and the space around a card all start here.
 const gitPulseSettingsGutter = GitPulseSpace.gutter;
-
-/// The width at which a setting's label earns a column of its own.
-///
-/// Below it the label sits above its control instead: a column wide enough to
-/// hold a label unbroken would leave a phone's control too little room to be
-/// read, and a column narrow enough to fit would break every long label in two.
-const _labelColumnMinimumWidth = 520.0;
-
-/// The label column's width at the reader's text scale.
-///
-/// One width for every row on the page, so each control starts at the same x
-/// down the list however long its own label is.
-double gitPulseSettingLabelWidth(BuildContext context) =>
-    MediaQuery.textScalerOf(context).scale(140);
 
 /// The weight and size a setting's name is written in: the app's row-label
 /// role, so a setting and a Follows row's repository name read as the same kind
-/// of table.
+/// of name.
 TextStyle? gitPulseSettingLabelStyle(BuildContext context) =>
     gitPulseTypeRowLabel(context);
 
-/// How far a label is nudged down to sit on the line of a control beside it: a
-/// chip row is shorter than a text field, so this centres against neither
-/// exactly, which is why it is small enough to read as aligned either way.
-const _labelBaselineNudge = 6.0;
-
-/// One setting: its name, the control that holds its value, and any state that
-/// control reports.
+/// The rounded surface every Settings card shares.
 ///
-/// The name and the control share one line whenever the window offers room for
-/// both, and the name keeps a fixed column so the controls down the page line
-/// up. A control reports its own failures and confirmations through [notes],
-/// which sit under it rather than beside it: the value stays where the reader
-/// left it, and the explanation arrives where they are looking.
+/// The fill, the corner, and the edge are the same roles a Timeline card uses,
+/// so a settings card cannot grow a private palette. The card is not itself a
+/// button: the control inside it is what answers a press.
+class GitPulseSettingSurface extends StatelessWidget {
+  const GitPulseSettingSurface({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(GitPulseRadius.surface),
+        border: Border.all(
+          color: toneEdge(scheme),
+          width: GitPulseStroke.hairline,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(GitPulseSpace.surfaceInset),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// One setting card: a leading icon, its name, the control that holds its
+/// value, and any state that control reports.
+///
+/// The icon and the name share a line. The control sits under that line, using
+/// the card's width, unless [inlineControl] keeps a short action on the name's
+/// line. [aside] is a transient note beside the name, never a description of
+/// what the card is for. Failures and confirmations in [notes] sit under the
+/// control.
 class GitPulseSettingRow extends StatelessWidget {
   const GitPulseSettingRow({
     super.key,
+    required this.icon,
     required this.label,
     required this.control,
+    this.aside,
+    this.inlineControl = false,
     this.notes = const [],
   });
 
+  final IconData icon;
   final String label;
   final Widget control;
+  final Widget? aside;
+
+  /// Puts [control] on the name's line, at the trailing edge.
+  final bool inlineControl;
+
   final List<Widget> notes;
 
   @override
   Widget build(BuildContext context) {
-    final name = Text(label, style: gitPulseSettingLabelStyle(context));
-    final controls = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        control,
-        for (final note in notes) ...[const SizedBox(height: 6), note],
-      ],
+    final scheme = Theme.of(context).colorScheme;
+    final name = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: gitPulseSettingLabelStyle(context),
     );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        gitPulseSettingsGutter,
-        12,
-        gitPulseSettingsGutter,
-        12,
+    final mark = ExcludeSemantics(
+      child: Icon(
+        icon,
+        size: GitPulseIconSize.inline,
+        color: scheme.onSurfaceVariant,
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < _labelColumnMinimumWidth) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [name, const SizedBox(height: 8), controls],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    );
+    return GitPulseSettingSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              SizedBox(
-                width: gitPulseSettingLabelWidth(context),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: _labelBaselineNudge),
-                  child: name,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(child: controls),
+              mark,
+              const SizedBox(width: GitPulseSpace.inline),
+              if (inlineControl)
+                Expanded(child: name)
+              else
+                Flexible(child: name),
+              if (aside != null) ...[
+                const SizedBox(width: GitPulseSpace.inline),
+                aside!,
+              ],
+              if (inlineControl) ...[
+                const SizedBox(width: GitPulseSpace.inline),
+                control,
+              ],
             ],
-          );
-        },
+          ),
+          if (!inlineControl) ...[
+            const SizedBox(height: GitPulseSpace.inline),
+            control,
+          ],
+          for (final note in notes) ...[
+            const SizedBox(height: GitPulseSpace.tight),
+            note,
+          ],
+        ],
       ),
     );
   }
@@ -134,12 +160,10 @@ class GitPulseSettingNote extends StatelessWidget {
   }
 }
 
-/// The hairline that separates one band of a Settings surface from the next.
+/// The hairline that separates one band of an account gate from the next.
 ///
-/// Inset to the gutter the rows share, so a page of settings reads as one table
-/// instead of a stack of bands. A band that spans its surface edge to edge — the
-/// account's own header — passes `indent: 0`, so the rule it draws is the only
-/// one on the page that touches both edges.
+/// Inset to the gutter the gate shares. A band that spans its surface edge to
+/// edge passes `indent: 0`.
 class GitPulseSettingsDivider extends StatelessWidget {
   const GitPulseSettingsDivider({
     super.key,
@@ -154,8 +178,8 @@ class GitPulseSettingsDivider extends StatelessWidget {
     thickness: GitPulseStroke.hairline,
     indent: indent,
     endIndent: indent,
-    // A row's separator is a line inside the Settings surface, not its
-    // boundary: it takes the rule tone, which is lighter than a card's edge.
+    // A separator inside a surface takes the rule tone, which is lighter than
+    // a card's edge.
     color: toneRule(Theme.of(context).colorScheme),
   );
 }

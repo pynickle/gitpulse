@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,13 +10,13 @@ import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../timeline/timeline_session.dart';
 
-/// This installation's own choices, as settings rows: language, appearance, and
-/// how much release history it keeps.
+/// This installation's own choices, as settings cards: language, appearance,
+/// and how much release history it keeps.
 ///
 /// They work before a backend is reachable, before sign-in, and offline: a
 /// choice applies immediately and is remembered in local device storage. Each
-/// row's control names its own choices, so no line has to explain what the row
-/// is for.
+/// card's control names its own choices, so no line has to explain what the
+/// card is for.
 class DeviceSettings extends ConsumerWidget {
   const DeviceSettings({super.key});
 
@@ -29,23 +31,17 @@ class DeviceSettings extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _LanguageRow(),
-        const GitPulseSettingsDivider(),
+        const SizedBox(height: GitPulseSpace.bandGap),
         const _AppearanceRow(),
-        const GitPulseSettingsDivider(),
+        const SizedBox(height: GitPulseSpace.bandGap),
         const _RetentionRow(),
-        if (rememberFailed)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              gitPulseSettingsGutter,
-              0,
-              gitPulseSettingsGutter,
-              10,
-            ),
-            child: GitPulseSettingNote(
-              l10n.presentationRememberFailed,
-              liveRegion: true,
-            ),
+        if (rememberFailed) ...[
+          const SizedBox(height: GitPulseSpace.tight),
+          GitPulseSettingNote(
+            l10n.presentationRememberFailed,
+            liveRegion: true,
           ),
+        ],
       ],
     );
   }
@@ -61,6 +57,7 @@ class _LanguageRow extends ConsumerWidget {
       devicePreferencesStateProvider.select((state) => state.preferences),
     );
     return GitPulseSettingRow(
+      icon: Icons.language,
       label: l10n.presentationLanguage,
       control: _Choices<AppLanguage>(
         options: [
@@ -87,6 +84,7 @@ class _AppearanceRow extends ConsumerWidget {
       devicePreferencesStateProvider.select((state) => state.preferences),
     );
     return GitPulseSettingRow(
+      icon: Icons.palette_outlined,
       label: l10n.presentationAppearance,
       control: _Choices<AppAppearance>(
         options: [
@@ -103,12 +101,11 @@ class _AppearanceRow extends ConsumerWidget {
   }
 }
 
-/// The retention window's editor: whole days, applied when the reader confirms.
+/// The retention window's editor.
 ///
-/// The window is this installation's own, so the editor never waits for a round
-/// trip and never claims to be synchronizing: the field holds the window in
-/// force, and the confirm action appears only once the reader has typed
-/// something else. A window changed here is applied to saved history at once.
+/// Stepping one day applies immediately. The number is always a field: leaving
+/// it saves a whole day from 1 to 90, and anything else snaps back to the value
+/// in force. A rejected entry names itself beside the title, then leaves.
 class _RetentionRow extends ConsumerStatefulWidget {
   const _RetentionRow();
 
@@ -117,31 +114,84 @@ class _RetentionRow extends ConsumerStatefulWidget {
 }
 
 class _RetentionRowState extends ConsumerState<_RetentionRow> {
+  static const _hintDuration = Duration(seconds: 3);
+
   final _days = TextEditingController();
+  final _focus = FocusNode();
   int? _shownDays;
-  bool _invalid = false;
+  bool _applyingStep = false;
+  bool _rejected = false;
+  Timer? _hintTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocus);
+  }
 
   @override
   void dispose() {
+    _hintTimer?.cancel();
+    _focus
+      ..removeListener(_onFocus)
+      ..dispose();
     _days.dispose();
     super.dispose();
   }
 
-  /// Applies what the field holds, as long as it is a window this device can
-  /// keep. Both the confirm action and the Enter key land here.
-  void _apply() {
-    final chosen = ref
-        .read(devicePreferencesStateProvider)
-        .preferences
-        .retentionDays;
+  int get _resolved => ref
+      .read(devicePreferencesStateProvider)
+      .preferences
+      .resolvedRetentionDays;
+
+  void _onFocus() {
+    if (_focus.hasFocus || _applyingStep || !mounted) return;
+    _commit();
+  }
+
+  /// Applies one step to the window in force. The ends of the range have no
+  /// step, so those buttons stay disabled.
+  void _step(int delta) {
+    final next = validRetentionDays(_resolved + delta);
+    if (next == null) return;
+    _applyingStep = true;
+    _days.text = '$next';
+    _shownDays = next;
+    _focus.unfocus();
+    _applyingStep = false;
+    _clearHint();
+    ref.read(devicePreferencesProvider.notifier).selectRetentionDays(next);
+  }
+
+  /// Saves the field when the reader leaves it. An illegal entry never replaces
+  /// the window: the field returns to the value in force.
+  void _commit() {
+    final resolved = _resolved;
     final parsed = int.tryParse(_days.text.trim());
-    // Validity comes first: an installation that has not chosen a window yet has
-    // no value to compare against, and an invalid entry is still refused.
-    final invalid = validRetentionDays(parsed) == null;
-    setState(() => _invalid = invalid);
-    if (invalid) return;
-    if (parsed == chosen) return;
+    if (validRetentionDays(parsed) == null) {
+      _days.text = '$resolved';
+      _showHint();
+      return;
+    }
+    _days.text = '$parsed';
+    _clearHint();
+    if (parsed == resolved) return;
     ref.read(devicePreferencesProvider.notifier).selectRetentionDays(parsed!);
+  }
+
+  void _showHint() {
+    _hintTimer?.cancel();
+    setState(() => _rejected = true);
+    _hintTimer = Timer(_hintDuration, () {
+      if (!mounted) return;
+      setState(() => _rejected = false);
+    });
+  }
+
+  void _clearHint() {
+    _hintTimer?.cancel();
+    if (!_rejected) return;
+    setState(() => _rejected = false);
   }
 
   @override
@@ -162,29 +212,57 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
       ),
     );
 
-    if (days != _shownDays) {
+    if (!_focus.hasFocus && days != _shownDays) {
       _shownDays = days;
-      _days.text = days.toString();
-      _invalid = false;
+      _days.text = '$days';
     }
-    final typed = int.tryParse(_days.text.trim());
-    final edited = typed != days;
 
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
     );
+    Widget stepButton({
+      required String tooltip,
+      required IconData icon,
+      required bool enabled,
+      required int delta,
+    }) => IconButton(
+      tooltip: tooltip,
+      onPressed: !locked && enabled ? () => _step(delta) : null,
+      iconSize: GitPulseIconSize.inControl,
+      color: scheme.onSurfaceVariant,
+      icon: Icon(icon),
+    );
 
     return GitPulseSettingRow(
+      icon: Icons.history,
       label: l10n.settingsKeepReleases,
-      control: Row(
-        mainAxisSize: MainAxisSize.min,
+      aside: _rejected
+          ? Semantics(
+              liveRegion: true,
+              child: Text(
+                l10n.retentionRejected,
+                style: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
+              ),
+            )
+          : null,
+      control: Wrap(
+        spacing: GitPulseSpace.inline,
+        runSpacing: GitPulseSpace.inline,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
+          stepButton(
+            tooltip: l10n.decreaseRetention,
+            icon: Icons.remove,
+            enabled: days > DevicePreferences.minimumRetentionDays,
+            delta: -1,
+          ),
           SizedBox(
             width: 72,
             child: TextField(
               key: const ValueKey('retention-days'),
               controller: _days,
+              focusNode: _focus,
               enabled: !locked,
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.done,
@@ -192,8 +270,8 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
-              onChanged: (_) => setState(() => _invalid = false),
-              onSubmitted: (_) => _apply(),
+              onSubmitted: (_) => _focus.unfocus(),
+              onTapOutside: (_) => _focus.unfocus(),
               decoration: InputDecoration(
                 isDense: true,
                 filled: true,
@@ -213,49 +291,22 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          // The unit restates the number the field already shows, so it follows
-          // what the reader typed rather than the saved window. English and
-          // Chinese each have one singular form, so the ARB carries the two
-          // words instead of a count-bearing plural that would print the number
-          // twice.
+          stepButton(
+            tooltip: l10n.increaseRetention,
+            icon: Icons.add,
+            enabled: days < DevicePreferences.maximumRetentionDays,
+            delta: 1,
+          ),
+          // English and Chinese each have one singular form, so the ARB carries
+          // the two words instead of a plural that would print the number twice.
           Text(
-            (typed ?? days) == 1 ? l10n.settingsUnitDay : l10n.settingsUnitDays,
+            days == 1 ? l10n.settingsUnitDay : l10n.settingsUnitDays,
             style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
           ),
-          // The confirm action appears where the reader's eye already is: at
-          // the end of the value they just changed, and nowhere while the field
-          // still holds the window in force.
-          if (edited)
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              // Material's own padding around an 18dp glyph keeps the painted
-              // mark small and the touch target a thumb wide.
-              child: IconButton.filledTonal(
-                tooltip: l10n.retentionSave,
-                onPressed: locked ? null : _apply,
-                iconSize: GitPulseIconSize.inControl,
-                // A coloured surface answers a press, so this one keeps
-                // Material's wash of its own tone instead of the theme's shared
-                // overlay — which cannot tell the four IconButton variants apart.
-                style: IconButton.styleFrom(
-                  overlayColor: scheme.onSecondaryContainer,
-                ),
-                icon: const Icon(Icons.check),
-              ),
-            ),
         ],
       ),
-      notes: [
-        if (_invalid)
-          GitPulseSettingNote(
-            l10n.retentionInvalid,
-            tone: GitPulseSettingNoteTone.error,
-            liveRegion: true,
-          ),
-      ],
     );
   }
 }
@@ -321,18 +372,17 @@ class _DeviceSettingsDialog extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const _LanguageRow(),
-              const GitPulseSettingsDivider(),
+              const SizedBox(height: GitPulseSpace.bandGap),
               const _AppearanceRow(),
               // A choice that could not be remembered is reported here too: the
               // reader made it in this dialog.
-              if (rememberFailed)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: GitPulseSettingNote(
-                    l10n.presentationRememberFailed,
-                    liveRegion: true,
-                  ),
+              if (rememberFailed) ...[
+                const SizedBox(height: GitPulseSpace.tight),
+                GitPulseSettingNote(
+                  l10n.presentationRememberFailed,
+                  liveRegion: true,
                 ),
+              ],
             ],
           ),
         ),

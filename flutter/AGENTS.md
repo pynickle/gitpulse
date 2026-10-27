@@ -35,12 +35,17 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
 
 ## UI conventions
 
-- **Settings is a table, not a document** (`lib/settings/`): rows come from
-  `presentation/gitpulse_setting_rows.dart` — one label column, one control column, a hairline
-  between rows. The account/backend surface is `settings/account_panel.dart`, shared with the
-  signed-out Timeline/Follows gate and the repository pages. A setting's copy is its label and its
-  control; a description line under either one is a review defect. Account actions are
-  tooltip-named icon buttons, so tests address them with `find.byTooltip`.
+- **Settings is a column of cards, not a table or a document** (`lib/settings/`): each card is a
+  leading icon, one label, and the control that holds its value, framed by `GitPulseSettingSurface`
+  in `presentation/gitpulse_setting_rows.dart`. A card has no description under the label; failure
+  and status feedback stays, because it reports what last happened. The backend card is
+  `settings/account_panel.dart` with `card: true` on Settings only. The signed-out Timeline/Follows
+  gate and the repository pages keep that panel without the frame. Account actions are
+  tooltip-named icon buttons, so tests address them with `find.byTooltip`. The retention card steps
+  one whole day at a time and applies immediately. Its number is always a field; leaving the field
+  saves a whole day from 1 to 90, and an illegal entry snaps back to the value in force with a short
+  hint beside the title that then disappears. The window defaults to 30. The account name and sign-out
+  stay above the backend card. Timeline cache keeps its clear action on the title's line.
 - **Chrome & states**: `gitPulseTheme` is the single theme source; use `GitPulseLoadingView` /
   `GitPulseMessageView` for page-level loading, empty, and error states — not a second look.
 - **i18n & formatting**: add new page copy to both ARB files. Format dates through
@@ -102,7 +107,7 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
   the timeline database; all four survive clear-cache, sign-out, and account changes. Language and
   appearance apply through `MaterialApp` (`locale`, `themeMode`) before connection or sign-in, with
   controls in Settings and the connection screen; the view control stays in Followed Repositories;
-  the window is edited with the other device rows and applies to saved history at once, offline.
+  the window is edited on the retention card and applies to saved history at once, offline.
   All four share the device controller's save queue; the followed-view provider is read-only. View
   save failures stay silent; the other three report them. The file keeps its historical name
   `presentation_preferences.json` (ADR 0024), and the old view text file is unused (ADR 0022).

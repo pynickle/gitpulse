@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 
@@ -52,12 +54,56 @@ void _useWindow(WidgetTester tester, Size size, {double textScale = 1}) {
   addTearDown(tester.platformDispatcher.clearAllTestValues);
 }
 
+bool _isSettingCard(Widget widget) {
+  if (widget is! DecoratedBox) return false;
+  final decoration = widget.decoration;
+  if (decoration is! BoxDecoration) return false;
+  return decoration.borderRadius ==
+          BorderRadius.circular(GitPulseRadius.surface) &&
+      decoration.border != null;
+}
+
+/// The card that contains [label], and the leading icon that card shows.
+void _expectCard(WidgetTester tester, String label, IconData icon) {
+  final card = find.ancestor(
+    of: find.text(label),
+    matching: find.byWidgetPredicate(_isSettingCard),
+  );
+  expect(card, findsOneWidget);
+  expect(
+    find.descendant(of: card, matching: find.byIcon(icon)),
+    findsOneWidget,
+  );
+}
+
+void _expectSettingCards(WidgetTester tester) {
+  _expectCard(tester, 'Backend', Icons.dns_outlined);
+  _expectCard(tester, 'Language', Icons.language);
+  _expectCard(tester, 'Appearance', Icons.palette_outlined);
+  _expectCard(tester, 'Keep releases for', Icons.history);
+  _expectCard(tester, 'Timeline cache', Icons.storage_outlined);
+  final languageCard = find.ancestor(
+    of: find.text('Language'),
+    matching: find.byWidgetPredicate(_isSettingCard),
+  );
+  expect(
+    tester
+        .widgetList<Text>(
+          find.descendant(of: languageCard, matching: find.byType(Text)),
+        )
+        .map((text) => text.data)
+        .toList(),
+    ['Language', 'System language', 'English', 'Simplified Chinese'],
+  );
+}
+
 void main() {
   testWidgets('a phone stacks each label over its control and keeps both fits', (
     tester,
   ) async {
     _useWindow(tester, const Size(390, 844));
     await _openSettings(tester);
+    _expectSettingCards(tester);
 
     final languageLabel = tester.getRect(find.text('Language'));
     final languageChoice = tester.getRect(
@@ -68,16 +114,29 @@ void main() {
       find.widgetWithText(ChoiceChip, 'System appearance'),
     );
 
-    // The label sits above its own control, and both begin at the page gutter.
+    // The title sits above its control. The control uses the card's width, and
+    // the title follows the leading icon, so it starts to the right of that.
     expect(languageChoice.top, greaterThan(languageLabel.bottom));
     expect(appearanceChoice.top, greaterThan(appearanceLabel.bottom));
-    expect(languageLabel.left, languageChoice.left);
-    expect(appearanceLabel.left, appearanceChoice.left);
-    // The account is the page's first band, so the settings open under it.
-    expect(
-      tester.getRect(find.text('octocat')).bottom,
-      lessThan(languageLabel.top),
+    expect(languageChoice.left, lessThan(languageLabel.left));
+    expect(appearanceChoice.left, lessThan(appearanceLabel.left));
+    expect(appearanceChoice.left, languageChoice.left);
+    final name = tester.getRect(find.text('octocat'));
+    final signOut = tester.getRect(find.byTooltip('Sign out'));
+    // The name and sign-out stay above the backend card, on one line.
+    expect(name.bottom, lessThan(tester.getRect(find.text('Backend')).top));
+    expect(name.bottom, lessThan(languageLabel.top));
+    expect(signOut.left, greaterThan(name.right));
+    expect((signOut.center.dy - name.center.dy).abs(), lessThan(24));
+    await tester.scrollUntilVisible(
+      find.text('Timeline cache'),
+      300,
+      scrollable: find.byType(Scrollable).first,
     );
+    final cacheTitle = tester.getRect(find.text('Timeline cache'));
+    final clear = tester.getRect(find.widgetWithText(OutlinedButton, 'Clear'));
+    expect(clear.left, greaterThan(cacheTitle.right));
+    expect((clear.center.dy - cacheTitle.center.dy).abs(), lessThan(24));
     expect(tester.takeException(), isNull);
   });
 
@@ -86,6 +145,7 @@ void main() {
   ) async {
     _useWindow(tester, const Size(1280, 900));
     await _openSettings(tester);
+    _expectSettingCards(tester);
 
     final languageChoice = tester.getRect(
       find.widgetWithText(ChoiceChip, 'System language'),
@@ -94,13 +154,11 @@ void main() {
       find.widgetWithText(ChoiceChip, 'System appearance'),
     );
     expect(appearanceChoice.left, languageChoice.left);
-    // The labels sit on their own controls' lines, on the column beside them.
     final languageLabel = tester.getRect(find.text('Language'));
     final appearanceLabel = tester.getRect(find.text('Appearance'));
-    expect(languageLabel.right, lessThan(languageChoice.left));
-    expect(appearanceLabel.right, lessThan(appearanceChoice.left));
-    expect(languageLabel.top, greaterThanOrEqualTo(languageChoice.top));
-    expect(languageLabel.bottom, lessThanOrEqualTo(languageChoice.bottom));
+    expect(languageChoice.top, greaterThan(languageLabel.bottom));
+    expect(appearanceChoice.top, greaterThan(appearanceLabel.bottom));
+    expect(languageChoice.left, lessThan(languageLabel.left));
 
     // The account keeps the trailing column the Follows page uses, so the
     // settings themselves are not pushed aside by it.
@@ -118,6 +176,37 @@ void main() {
 
     expect(find.text('Language'), findsOneWidget);
     expect(find.text('System appearance'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the backend card shows its status and copies the address', (
+    tester,
+  ) async {
+    _useWindow(tester, const Size(390, 844));
+    await _openSettings(tester);
+    expect(find.text('Connected'), findsOneWidget);
+    expect(find.text('https://gitpulse.example/'), findsOneWidget);
+
+    String? copied;
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String?;
+      }
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await tester.tap(find.byTooltip('Copy backend address'));
+    await tester.pump();
+    expect(copied, 'https://gitpulse.example/');
+    expect(find.byIcon(Icons.check), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 180));
+    expect(find.byIcon(Icons.check), findsNothing);
+    expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

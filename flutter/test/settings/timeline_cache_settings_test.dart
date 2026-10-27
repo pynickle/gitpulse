@@ -237,7 +237,11 @@ void main() {
       });
       final clear = find.widgetWithText(OutlinedButton, 'Clear');
       await tester.ensureVisible(clear);
-      await tester.runAsync(() => tester.tap(clear));
+      await tester.tap(clear);
+      await tester.pump();
+      await tester.runAsync(
+        () => tester.tap(find.widgetWithText(TextButton, 'Clear')),
+      );
       await tester.pump();
       expect(
         app.container
@@ -330,7 +334,11 @@ void main() {
       await tester.pump();
       final clear = find.widgetWithText(OutlinedButton, 'Clear');
       await tester.ensureVisible(clear);
-      await tester.runAsync(() => tester.tap(clear));
+      await tester.tap(clear);
+      await tester.pump();
+      await tester.runAsync(
+        () => tester.tap(find.widgetWithText(TextButton, 'Clear')),
+      );
       await settle(tester, app);
       expect(app.releases, isEmpty);
       expect(

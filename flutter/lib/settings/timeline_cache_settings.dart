@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,11 +15,58 @@ import '../timeline/timeline_session.dart';
 /// history a device keeps is a device choice, and is edited with the other
 /// device choices. Clearing destroys nothing but saved history, so it carries
 /// its own row.
-class TimelineCacheSettings extends ConsumerWidget {
+class TimelineCacheSettings extends ConsumerStatefulWidget {
   const TimelineCacheSettings({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimelineCacheSettings> createState() =>
+      _TimelineCacheSettingsState();
+}
+
+class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
+  bool _cleared = false;
+  Timer? _clearedTimer;
+
+  @override
+  void dispose() {
+    _clearedTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _askToClear() async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.settingsClearCacheTitle),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.settingsClear),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final before = ref.read(releaseTimelineSessionProvider);
+    await ref.read(releaseTimelineSessionProvider.notifier).clearCache();
+    if (!mounted) return;
+    final after = ref.read(releaseTimelineSessionProvider);
+    if (identical(before, after) || !after.cacheActions.cleared) return;
+    _clearedTimer?.cancel();
+    setState(() => _cleared = true);
+    _clearedTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted) return;
+      setState(() => _cleared = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -27,7 +76,9 @@ class TimelineCacheSettings extends ConsumerWidget {
     final locked = actions.clearing;
 
     return GitPulseSettingRow(
+      icon: Icons.storage_outlined,
       label: l10n.settingsTimelineCache,
+      inlineControl: true,
       control: actions.clearing
           ? Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -42,18 +93,26 @@ class TimelineCacheSettings extends ConsumerWidget {
               ),
             )
           : OutlinedButton.icon(
-              onPressed: locked ? null : facade.clearCache,
+              onPressed: locked ? null : _askToClear,
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(0, 40),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 visualDensity: VisualDensity.compact,
-                foregroundColor: scheme.onSurface,
+                foregroundColor: _cleared ? scheme.primary : scheme.onSurface,
                 side: BorderSide(color: scheme.outlineVariant),
                 textStyle: theme.textTheme.bodyMedium,
               ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
-              icon: const Icon(
-                Icons.delete_outline,
-                size: GitPulseIconSize.inControl,
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) =>
+                    ScaleTransition(scale: animation, child: child),
+                child: Icon(
+                  _cleared ? Icons.check : Icons.delete_outline,
+                  key: ValueKey(_cleared),
+                  size: GitPulseIconSize.inControl,
+                ),
               ),
               label: Text(l10n.settingsClear),
             ),
@@ -64,8 +123,6 @@ class TimelineCacheSettings extends ConsumerWidget {
             tone: GitPulseSettingNoteTone.error,
             liveRegion: true,
           ),
-        if (actions.cleared)
-          GitPulseSettingNote(l10n.timelineCacheCleared, liveRegion: true),
         if (timeline.cacheFailed) ...[
           GitPulseSettingNote(
             timeline.cacheCorrupted

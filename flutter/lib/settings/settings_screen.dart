@@ -1,35 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_tokens.dart';
-import 'device_settings.dart';
 import '../session/session_controller.dart';
 import 'account_panel.dart';
+import 'device_settings.dart';
 import 'timeline_cache_settings.dart';
 
 /// The Settings destination: this installation's own choices, and the account
 /// those choices are made for.
 ///
-/// The page is a table of settings rather than a document about them. Each row
-/// is a name, the control that holds its value, and whatever that control last
-/// reported, laid out on the one gutter the Timeline and Follows pages share —
-/// so a reader who has learned to scan those two pages already knows where to
-/// look here. A wide window gives the account its own column at the trailing
-/// edge, as the Follows page gives Followed Repositories one; a phone stacks it
-/// above the settings, because there is nowhere else to put it.
+/// Each choice is its own card. A wide window gives the backend card a column
+/// at the trailing edge, as the Follows page gives Followed Repositories one;
+/// a phone stacks that card above the others, because there is nowhere else to
+/// put it.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  /// The width the settings rows are allowed before the page stops growing: a
-  /// row wider than this asks the eye to travel from name to control and back.
+  /// The width the cards are allowed before the page stops growing: a card
+  /// wider than this asks the eye to travel from the title to the control.
   static const _maximumContentWidth = GitPulseWidth.settingsTable;
 
-  /// The width at which the account moves out of the scroll and into a column
-  /// of its own, leaving the settings rows one readable column.
+  /// The width at which the backend card moves out of the scroll and into a
+  /// column of its own.
   static const _wideMinimumWidth = 1040.0;
 
-  /// The account column's width, matching the Followed Repositories panel.
+  /// The backend column's width, matching the Followed Repositories panel.
   static const _accountColumnWidth = 360.0;
 
   @override
@@ -47,23 +43,27 @@ class SettingsScreen extends ConsumerWidget {
             final wide = constraints.maxWidth >= _wideMinimumWidth;
             final scroll = CustomScrollView(
               slivers: [
-                if (!wide) ...[
-                  const SliverToBoxAdapter(child: AccountPanel()),
-                  // The account's band meets the settings table with a rule
-                  // that touches both edges, so the two do not read as rows of
-                  // one table.
-                  const SliverToBoxAdapter(
-                    child: GitPulseSettingsDivider(indent: 0),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    GitPulseSpace.gutter,
+                    GitPulseSpace.gutter,
+                    GitPulseSpace.gutter,
+                    GitPulseSpace.bandGap,
                   ),
-                ],
-                const SliverToBoxAdapter(child: DeviceSettings()),
-                if (signedIn) ...[
-                  const SliverToBoxAdapter(child: GitPulseSettingsDivider()),
-                  SliverToBoxAdapter(
-                    child: TimelineCacheSettings(key: ValueKey(identity)),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      if (!wide) ...[
+                        const AccountPanel(card: true),
+                        const SizedBox(height: GitPulseSpace.bandGap),
+                      ],
+                      const DeviceSettings(),
+                      if (signedIn) ...[
+                        const SizedBox(height: GitPulseSpace.bandGap),
+                        TimelineCacheSettings(key: ValueKey(identity)),
+                      ],
+                    ]),
                   ),
-                ],
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                ),
               ],
             );
             if (!wide) return scroll;
@@ -71,19 +71,16 @@ class SettingsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: scroll),
-                // The table and the account column are two bands of one
-                // surface, so the line between them is a rule rather than an
-                // edge — the same hairline, turned on its side.
-                VerticalDivider(
-                  width: GitPulseStroke.hairline,
-                  thickness: GitPulseStroke.hairline,
-                  color: toneRule(Theme.of(context).colorScheme),
-                ),
                 SizedBox(
                   width: _accountColumnWidth,
                   child: const SingleChildScrollView(
-                    padding: EdgeInsets.only(bottom: 24),
-                    child: AccountPanel(),
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      GitPulseSpace.gutter,
+                      GitPulseSpace.gutter,
+                      GitPulseSpace.bandGap,
+                    ),
+                    child: AccountPanel(card: true),
                   ),
                 ),
               ],
