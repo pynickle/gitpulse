@@ -511,7 +511,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                     ),
                     candidate: item,
                     followed: followed,
-                    onToggle: state.saving || (!state.loaded && state.loading)
+                    onToggle: state.editBlocked
                         ? null
                         : () => followed
                               ? facade.unfollow(item.repository.id)

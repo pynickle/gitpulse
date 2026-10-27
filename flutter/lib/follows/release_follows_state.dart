@@ -118,6 +118,12 @@ class ReleaseFollowsState {
   final FollowProblem? searchProblem;
   final StarredRepositoriesState starred;
 
+  /// Whether an edit cannot start yet: one is already in flight, or the first
+  /// read of the confirmed list has not finished. Every surface that offers the
+  /// action asks this, so a button, a row, and the session's own guard agree on
+  /// when the action is unavailable.
+  bool get editBlocked => saving || (!loaded && loading);
+
   ReleaseFollowsState copyWith({
     bool? loaded,
     bool? loading,

@@ -13,6 +13,7 @@ RepositoryDto _$RepositoryDtoFromJson(Map<String, dynamic> json) =>
       ($checkedConvert) {
         final val = RepositoryDto(
           name: $checkedConvert('name', (v) => v as String),
+          nodeId: $checkedConvert('node_id', (v) => v as String),
           owner: $checkedConvert(
             'owner',
             (v) => RepositoryOwnerDto.fromJson(v as Map<String, dynamic>),
@@ -33,6 +34,7 @@ RepositoryDto _$RepositoryDtoFromJson(Map<String, dynamic> json) =>
         return val;
       },
       fieldKeyMap: const {
+        'nodeId': 'node_id',
         'defaultBranch': 'default_branch',
         'stargazersCount': 'stargazers_count',
         'forksCount': 'forks_count',
@@ -44,9 +46,10 @@ RepositoryOwnerDto _$RepositoryOwnerDtoFromJson(Map<String, dynamic> json) =>
     $checkedCreate('RepositoryOwnerDto', json, ($checkedConvert) {
       final val = RepositoryOwnerDto(
         login: $checkedConvert('login', (v) => v as String),
+        avatarUrl: $checkedConvert('avatar_url', (v) => v as String?),
       );
       return val;
-    });
+    }, fieldKeyMap: const {'avatarUrl': 'avatar_url'});
 
 RepositoryReadmeDto _$RepositoryReadmeDtoFromJson(Map<String, dynamic> json) =>
     $checkedCreate('RepositoryReadmeDto', json, ($checkedConvert) {

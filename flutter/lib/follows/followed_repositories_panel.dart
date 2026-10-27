@@ -22,7 +22,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
     final view = ref.watch(followedRepositoryViewProvider);
     final facade = ref.read(releaseFollowsSessionProvider.notifier);
     final l10n = AppLocalizations.of(context);
-    final disabled = state.saving || (!state.loaded && state.loading);
+    final disabled = state.editBlocked;
     final detailed = view == FollowedRepositoryView.detailed;
     // A collection read that failed replaces the list. An edit that never
     // started, such as a name the client rejects, is still a notice on the

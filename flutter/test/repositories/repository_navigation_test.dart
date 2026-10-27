@@ -92,7 +92,7 @@ void main() {
         await tester.tap(find.text('canonical/project'));
         await tester.pumpAndSettle();
         expect(find.text('A useful project'), findsOneWidget);
-        await tester.tap(find.text('Repository releases'));
+        await tester.tap(find.text('Releases'));
         await tester.pumpAndSettle();
         await tester.tap(find.byTooltip('Home'));
         await tester.pumpAndSettle();

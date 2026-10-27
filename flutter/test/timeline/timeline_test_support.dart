@@ -24,6 +24,10 @@ class FakeSessionController extends SessionController {
   final requests = <String>[];
   final handlers = <String, FutureOr<BackendResult> Function()>{};
 
+  /// The last body sent on each request, so a test can read what a write asked
+  /// the backend to store rather than only that it was sent.
+  final bodies = <String, Object?>{};
+
   @override
   SessionState build() => _initial;
 
@@ -35,6 +39,7 @@ class FakeSessionController extends SessionController {
   }) async {
     final key = '$method $path';
     requests.add(key);
+    bodies[key] = body;
     final handler = handlers[key];
     if (handler == null) {
       return const BackendResult(

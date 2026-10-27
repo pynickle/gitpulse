@@ -1,11 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_avatar.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
+import 'package:gitpulse/repositories/repository_share.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -18,11 +24,13 @@ import '../releases/repository_releases_service_test.dart'
 import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
 
+const _ownerAvatar = 'https://avatars.githubusercontent.com/u/583231?v=4';
+
 Map<String, Object?> repositoryJson() => {
   'id': 123,
   'node_id': 'R_project',
   'name': 'project',
-  'owner': {'login': 'canonical'},
+  'owner': {'login': 'canonical', 'avatar_url': _ownerAvatar},
   'description': 'A useful project',
   'default_branch': 'main',
   'stargazers_count': 125,
@@ -32,46 +40,88 @@ Map<String, Object?> repositoryJson() => {
   'language': 'Dart',
 };
 
+const _releasesKey = ValueKey('repository-releases');
+const _followKey = ValueKey('repository-follow');
+const _shareKey = ValueKey('repository-share');
+const _ownerKey = ValueKey('repository-owner');
+const _nameKey = ValueKey('repository-name');
+const _descriptionKey = ValueKey('repository-description');
+
+/// Records what the app hands the clipboard, so a share that falls back to
+/// copying can be read back the way a reader would paste it.
+List<String> captureClipboard(WidgetTester tester) {
+  final copied = <String>[];
+  final messenger = tester.binding.defaultBinaryMessenger;
+  messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+    if (call.method == 'Clipboard.setData') {
+      copied.add((call.arguments as Map)['text']! as String);
+    }
+    return null;
+  });
+  addTearDown(
+    () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+  );
+  return copied;
+}
+
 Future<FakeSessionController> pumpRepository(
   WidgetTester tester, {
   Map<String, FutureOr<BackendResult> Function()> handlers = const {},
+  Map<String, Object?>? repository,
+  List<Map<String, Object?>> follows = const [],
   Future<bool> Function(Uri)? launchBrowser,
+  RepositorySharer? share,
+  ThemeData? theme,
+  Locale? locale,
   Size size = const Size(800, 600),
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  final session =
-      FakeSessionController(
-          SessionState(
-            phase: SessionPhase.signedIn,
-            identity: signedInIdentity(),
-          ),
-        )
-        ..handlers.addAll({
-          'GET api/repos/octo/app': () =>
-              BackendResult(statusCode: 200, data: repositoryJson()),
-          'GET api/repos/canonical/project/readme?ref=main': () =>
-              const BackendResult(
-                statusCode: 200,
-                data: {
-                  'content': '# Project guide\n\nWelcome to this project.',
-                  'path': 'docs/README.md',
-                },
-              ),
-          ...handlers,
-        });
+  final session = FakeSessionController(
+    SessionState(phase: SessionPhase.signedIn, identity: signedInIdentity()),
+  );
+  final payload = {...repositoryJson(), ...?repository};
+  session.handlers.addAll({
+    // The Release Follows the account has already confirmed: the repository
+    // page reads the shared session rather than a follow state of its own.
+    'GET api/settings': () =>
+        BackendResult(statusCode: 200, data: settingsJson(follows)),
+    'PUT api/settings': () => BackendResult(
+      statusCode: 200,
+      data: {
+        'followedRepositories':
+            (session.bodies['PUT api/settings']
+                as Map?)?['followedRepositories'] ??
+            const <Object?>[],
+      },
+    ),
+    'GET api/repos/octo/app': () =>
+        BackendResult(statusCode: 200, data: payload),
+    'GET api/repos/canonical/project/readme?ref=main': () =>
+        const BackendResult(
+          statusCode: 200,
+          data: {
+            'content': '# Project guide\n\nWelcome to this project.',
+            'path': 'docs/README.md',
+          },
+        ),
+    ...handlers,
+  });
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         sessionControllerProvider.overrideWith(() => session),
         if (launchBrowser != null)
           browserLauncherProvider.overrideWithValue(launchBrowser),
+        if (share != null) repositorySharerProvider.overrideWithValue(share),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        locale: locale,
+        theme: theme,
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),
           child: child!,
@@ -83,6 +133,10 @@ Future<FakeSessionController> pumpRepository(
   await tester.pumpAndSettle();
   return session;
 }
+
+ReleaseFollowsSession readFollows(WidgetTester tester) =>
+    ProviderScope.containerOf(tester.element(find.byType(RepositoryScreen)))
+        .read(releaseFollowsSessionProvider.notifier);
 
 void main() {
   testWidgets(
@@ -161,8 +215,9 @@ void main() {
             statusCode: 200,
             data: {
               ...repositoryJson(),
+              'node_id': 'R_tool',
               'name': 'tool',
-              'owner': {'login': 'other'},
+              'owner': {'login': 'other', 'avatar_url': _ownerAvatar},
               'description': 'Another project',
             },
           ),
@@ -238,6 +293,12 @@ void main() {
     ),
     (
       const BackendResult(statusCode: 200, data: {'name': 'broken'}),
+      'Could not load repository content. Try again.',
+    ),
+    (
+      // Without GitHub's own identifier there is no identity to write a Release
+      // Follow against, so the page reports the payload instead of guessing one.
+      const BackendResult(statusCode: 200, data: {'name': 'project'}),
       'Could not load repository content. Try again.',
     ),
   ]) {
@@ -334,11 +395,13 @@ void main() {
     (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpRepository(tester);
-      // The identity is one selectable name: the owner muted, the repository's
-      // own name carrying the weight.
+      // The identity is the owner above the repository's own name, each on its
+      // own line, with the owner's picture beside them.
+      expect(find.text('canonical'), findsOneWidget);
+      expect(find.text('project'), findsOneWidget);
       expect(
-        find.textContaining('canonical/project', findRichText: true),
-        findsOneWidget,
+        tester.widget<GitPulseAvatar>(find.byType(GitPulseAvatar)).url,
+        _ownerAvatar,
       );
       expect(find.text('A useful project'), findsOneWidget);
       // The data line shows values under glyphs; the nouns a reader would
@@ -360,10 +423,246 @@ void main() {
         find.textContaining('Welcome to this project.', findRichText: true),
         findsOneWidget,
       );
-      expect(find.text('Repository releases'), findsOneWidget);
+      expect(find.text('Releases'), findsOneWidget);
       semantics.dispose();
     },
   );
+
+  testWidgets(
+    'the owner line, the repository name and the description are set apart',
+    (tester) async {
+      await pumpRepository(tester, size: const Size(390, 844));
+      final owner = tester.getRect(find.byKey(_ownerKey));
+      final name = tester.getRect(find.byKey(_nameKey));
+      final description = tester.getRect(find.byKey(_descriptionKey));
+      // Two identity lines, the owner first, the repository under it — not one
+      // name with the owner's slash through it.
+      expect(owner.bottom, lessThanOrEqualTo(name.top));
+      expect(name.left, closeTo(owner.left, 0.5));
+      expect(description.top, greaterThanOrEqualTo(name.bottom));
+      // 14 for who owns it, 22 half-bold for which repository, 14 for what it is.
+      expect(tester.widget<Text>(find.byKey(_ownerKey)).style?.fontSize, 14);
+      final title = tester.widget<SelectableText>(find.byKey(_nameKey));
+      expect(title.style?.fontSize, GitPulseType.pageTitleSize);
+      expect(title.style?.fontSize, 22);
+      expect(title.style?.fontWeight, FontWeight.w600);
+      expect(
+        tester.widget<Text>(find.byKey(_descriptionKey)).style?.fontSize,
+        14,
+      );
+    },
+  );
+
+  testWidgets('a long repository name wraps in full instead of shrinking away', (
+    tester,
+  ) async {
+    const longName = 'gitzilla-release-notification-and-changelog-service';
+    await pumpRepository(
+      tester,
+      size: const Size(360, 740),
+      repository: {'name': longName},
+    );
+    expect(find.text(longName), findsOneWidget);
+    final title = tester.widget<SelectableText>(find.byKey(_nameKey));
+    // Nothing is dropped and nothing is scaled down to fit: the name takes the
+    // lines it needs.
+    expect(title.maxLines, isNull);
+    expect(title.style?.fontSize, GitPulseType.pageTitleSize);
+    expect(
+      tester.getSize(find.byKey(_nameKey)).height,
+      greaterThan(GitPulseType.pageTitleSize * 1.5),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final size in [const Size(360, 740), const Size(1440, 900)]) {
+    testWidgets('releases, follow and share hold one row at ${size.width}', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpRepository(tester, size: size);
+      final releases = tester.getRect(find.byKey(_releasesKey));
+      final follow = tester.getRect(find.byKey(_followKey));
+      final share = tester.getRect(find.byKey(_shareKey));
+      expect(follow.center.dy, closeTo(releases.center.dy, 1));
+      expect(share.center.dy, closeTo(releases.center.dy, 1));
+      // The release list is the primary action: it takes the row's spare width.
+      expect(releases.width, greaterThan(follow.width));
+      // Every action stays inside the window and can be pressed.
+      expect(share.right, lessThanOrEqualTo(size.width));
+      for (final key in [_releasesKey, _followKey, _shareKey]) {
+        expect(find.byKey(key).hitTestable(), findsOneWidget);
+      }
+      expect(find.byTooltip('Follow releases'), findsOneWidget);
+      expect(find.byTooltip('Share'), findsOneWidget);
+      // The shortcut on the row keeps the destination's whole name for a screen
+      // reader, so shortening it costs nothing but ink.
+      expect(find.bySemanticsLabel('Repository releases'), findsOneWidget);
+      expect(
+        tester
+            .renderObject<RenderParagraph>(find.text('Releases'))
+            .didExceedMaxLines,
+        isFalse,
+      );
+      semantics.dispose();
+    });
+  }
+
+  testWidgets(
+    'following from the page writes the shared follow set and shows the bookmark',
+    (tester) async {
+      final session = await pumpRepository(tester);
+      expect(find.byTooltip('Follow releases'), findsOneWidget);
+      await tester.tap(find.byKey(_followKey));
+      await tester.pumpAndSettle();
+      expect(session.bodies['PUT api/settings'], {
+        'followedRepositories': [
+          {'id': 'R_project', 'owner': 'canonical', 'name': 'project'},
+        ],
+      });
+      // One follow set: the session the Follows page renders now holds it too.
+      expect(readFollows(tester).state.repositories.single.id, 'R_project');
+      expect(find.byTooltip('Unfollow'), findsOneWidget);
+      expect(find.byTooltip('Follow releases'), findsNothing);
+      // The Release Follow is a bookmark of this app, never a GitHub star or
+      // watch: nothing under the repository was written on GitHub.
+      expect(session.requests.where((request) => request.startsWith('PUT')), [
+        'PUT api/settings',
+      ]);
+    },
+  );
+
+  testWidgets('an already followed repository is unfollowed from the page', (
+    tester,
+  ) async {
+    final session = await pumpRepository(
+      tester,
+      follows: [
+        {'id': 'R_project', 'owner': 'canonical', 'name': 'project'},
+      ],
+    );
+    expect(find.byTooltip('Unfollow'), findsOneWidget);
+    await tester.tap(find.byKey(_followKey));
+    await tester.pumpAndSettle();
+    expect(session.bodies['PUT api/settings'], {
+      'followedRepositories': <Object?>[],
+    });
+    expect(readFollows(tester).state.repositories, isEmpty);
+    expect(find.byTooltip('Follow releases'), findsOneWidget);
+  });
+
+  testWidgets(
+    'a follow the backend refuses keeps the confirmed follow and reports it',
+    (tester) async {
+      final session = await pumpRepository(
+        tester,
+        follows: [
+          {'id': 'R_project', 'owner': 'canonical', 'name': 'project'},
+        ],
+      );
+      session.handlers['PUT api/settings'] = () =>
+          const BackendResult(statusCode: 500);
+      await tester.tap(find.byKey(_followKey));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Could not save Release Follows. Retry the action; your last confirmed list is still shown.',
+        ),
+        findsOneWidget,
+      );
+      // The confirmed list is unchanged, so the page still shows the repository
+      // as followed.
+      expect(readFollows(tester).state.repositories.single.id, 'R_project');
+      expect(find.byTooltip('Unfollow'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a follow list that could not be read is reported instead of read as unfollowed',
+    (tester) async {
+      await pumpRepository(
+        tester,
+        handlers: {
+          'GET api/settings': () => const BackendResult(statusCode: 500),
+        },
+      );
+      // The bookmark cannot say "not followed" about a list nobody could read,
+      // so the page says what it could not read.
+      expect(readFollows(tester).state.loaded, isFalse);
+      expect(
+        find.text(
+          'Could not load repositories. Retry the search or reload follows.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('share hands the canonical GitHub link to the platform', (
+    tester,
+  ) async {
+    final copied = captureClipboard(tester);
+    final shared = <String>[];
+    await pumpRepository(
+      tester,
+      share: (url) async {
+        shared.add(url);
+        return true;
+      },
+    );
+    await tester.tap(find.byKey(_shareKey));
+    await tester.pumpAndSettle();
+    expect(shared, ['https://github.com/canonical/project']);
+    expect(copied, isEmpty);
+    expect(find.text('Link copied'), findsNothing);
+  });
+
+  testWidgets('a platform without a share sheet is given the link to copy', (
+    tester,
+  ) async {
+    final copied = captureClipboard(tester);
+    await pumpRepository(tester, share: (url) async => false);
+    await tester.tap(find.byKey(_shareKey));
+    await tester.pumpAndSettle();
+    expect(copied, ['https://github.com/canonical/project']);
+    expect(find.text('Link copied'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final (brightness, locale) in [
+    (Brightness.light, const Locale('en')),
+    (Brightness.dark, const Locale('zh')),
+  ]) {
+    testWidgets(
+      'the identity and its one action row hold in ${locale.languageCode} ${brightness.name}',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await pumpRepository(
+          tester,
+          size: const Size(390, 844),
+          theme: gitPulseTheme(brightness),
+          locale: locale,
+        );
+        final chinese = locale.languageCode == 'zh';
+        expect(tester.takeException(), isNull);
+        expect(find.text('canonical'), findsOneWidget);
+        expect(find.text('project'), findsOneWidget);
+        expect(find.text(chinese ? '发布' : 'Releases'), findsOneWidget);
+        // The actions keep one row and their names whatever the language.
+        final releases = tester.getRect(find.byKey(_releasesKey));
+        final follow = tester.getRect(find.byKey(_followKey));
+        final share = tester.getRect(find.byKey(_shareKey));
+        expect(follow.center.dy, closeTo(releases.center.dy, 1));
+        expect(share.center.dy, closeTo(releases.center.dy, 1));
+        expect(
+          find.byTooltip(chinese ? '关注 Release' : 'Follow releases'),
+          findsOneWidget,
+        );
+        expect(find.byTooltip(chinese ? '分享' : 'Share'), findsOneWidget);
+        semantics.dispose();
+      },
+    );
+  }
 
   testWidgets(
     'the bar above the identity carries navigation and no page title',
@@ -386,7 +685,16 @@ void main() {
     );
     expect(tester.takeException(), isNull);
     expect(find.text('A useful project'), findsOneWidget);
-    expect(find.text('Repository releases'), findsOneWidget);
+    expect(find.text('Releases'), findsOneWidget);
+    // The three actions stay on the one row the reader was promised, at the
+    // largest type this app expects to meet, and the primary action keeps its
+    // name: what gives way is the row, never the destination.
+    final releases = tester.getRect(find.byKey(_releasesKey));
+    final follow = tester.getRect(find.byKey(_followKey));
+    final share = tester.getRect(find.byKey(_shareKey));
+    expect(follow.center.dy, closeTo(releases.center.dy, 1));
+    expect(share.center.dy, closeTo(releases.center.dy, 1));
+    expect(share.right, lessThanOrEqualTo(360));
   });
 
   for (final (size, left) in [
@@ -439,7 +747,7 @@ void main() {
         find.text('This repository has no README content.'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Repository releases'));
+      await tester.tap(find.byKey(_releasesKey));
       await tester.pumpAndSettle();
       expect(find.text('v2/rc'), findsOneWidget);
       await tester.tap(find.byType(BackButton));

@@ -122,6 +122,7 @@ class RepositoryService {
     return _get('api/repos/$owner/$name', (json) {
       final dto = RepositoryDto.fromJson(json);
       if (!validRepositoryIdentity(dto.owner.login, dto.name) ||
+          dto.nodeId.trim().isEmpty ||
           dto.defaultBranch.trim().isEmpty ||
           dto.stargazersCount < 0 ||
           dto.forksCount < 0 ||

@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../follows/release_follows_session.dart';
+import '../follows/release_follows_widgets.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_avatar.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_icon_action.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_state_views.dart';
@@ -12,9 +18,11 @@ import '../releases/release_document.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
 import '../settings/account_panel.dart';
+import '../timeline/timeline_models.dart';
 import 'repository_dto.dart';
 import 'repository_navigation.dart';
 import 'repository_service.dart';
+import 'repository_share.dart';
 
 /// The page gutter: the 16 that a Timeline, Follows, and Settings row all start
 /// at, so this page's bands line up with the rest of the app.
@@ -41,7 +49,7 @@ const _factIconExtent = GitPulseIconSize.fact;
 const _factIconGap = 3.0;
 
 /// The Repository detail page: who the repository is, the one line of numbers
-/// that describes it, the way into its releases, and its README.
+/// that describes it, the three things a reader does about it, and its README.
 ///
 /// The page is a column of bands on the gutter the Timeline, Follows, and
 /// Settings pages share, capped at a reading width instead of stretching across
@@ -145,13 +153,11 @@ class _RepositoryBands extends StatelessWidget {
   }
 }
 
-/// Who the repository is.
+/// Who the repository is, and the three things a reader does about it.
 ///
-/// The owner is written in the muted tone and the repository's own name in the
-/// foreground of the same size, so the identity reads as one name with the part
-/// that distinguishes it carrying the weight. Below it a data line puts a glyph
-/// where a noun would go: language, stars, forks, and watchers. Last comes the
-/// one action the page has.
+/// The owner's picture and name say who, the repository's own name says which
+/// one, and the description says what. Below them a data line puts a glyph where
+/// a noun would go, and last come the page's actions, on one row at every width.
 class _Identity extends StatelessWidget {
   const _Identity({required this.repository});
 
@@ -160,57 +166,63 @@ class _Identity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final name = theme.textTheme.headlineSmall?.copyWith(
-      fontWeight: FontWeight.w600,
-    );
     final description = repository.description?.trim();
     return Padding(
       padding: const EdgeInsets.fromLTRB(_gutter, 16, _gutter, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SelectableText.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: '${repository.owner.login}/',
-                  style: name?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w400,
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GitPulseAvatar(
+                url: repository.owner.avatarUrl,
+                size: GitPulseAvatarSize.owner,
+              ),
+              const SizedBox(width: GitPulseSpace.inline),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Two lines, not one name with a slash through it: the owner
+                    // is the page's address and the repository is its title, and
+                    // a title too long for the window takes another line rather
+                    // than an ellipsis or a smaller size.
+                    Text(
+                      repository.owner.login,
+                      key: const ValueKey('repository-owner'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: gitPulseTypePageOwner(context),
+                    ),
+                    const SizedBox(height: GitPulseSpace.nudge),
+                    SelectableText(
+                      repository.name,
+                      key: const ValueKey('repository-name'),
+                      style: gitPulseTypePageTitle(context),
+                    ),
+                  ],
                 ),
-                TextSpan(text: repository.name, style: name),
-              ],
-            ),
+              ),
+            ],
           ),
           if (description != null && description.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            SelectableText(
+            const SizedBox(height: GitPulseSpace.meta),
+            Text(
               description,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              key: const ValueKey('repository-description'),
+              style: gitPulseTypeDescription(context),
             ),
           ],
-          const SizedBox(height: 14),
+          const SizedBox(height: GitPulseSpace.rowInsetV),
           Wrap(
             spacing: _factGap,
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: _facts(context, l10n),
           ),
-          const SizedBox(height: 16),
-          FilledButton.tonalIcon(
-            onPressed: () => openRepositoryPage(context, (
-              owner: repository.owner.login,
-              repository: repository.name,
-              releases: true,
-            )),
-            icon: const Icon(Icons.list_alt),
-            label: Text(l10n.repositoryReleasesTitle),
-          ),
+          const SizedBox(height: GitPulseSpace.gutter),
+          _Actions(repository: repository),
         ],
       ),
     );
@@ -256,6 +268,141 @@ class _Identity extends StatelessWidget {
           l10n.repositoryWatchers(subscribers),
         ),
     ];
+  }
+}
+
+/// The repository's three actions, held on one row at every width.
+///
+/// The list of releases is what the page is for, so it takes the row's spare
+/// width; the Release Follow and the share sit beside it at compact targets. A
+/// phone is where the row is tightest, and it is exactly where splitting the row
+/// would cost the reader the comparison: the release list yields its own label
+/// before the row is allowed to wrap.
+class _Actions extends ConsumerWidget {
+  const _Actions({required this.repository});
+
+  final RepositoryDto repository;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final follows = ref.watch(releaseFollowsSessionProvider);
+    final identity = TimelineRepository(
+      id: repository.nodeId,
+      owner: repository.owner.login,
+      name: repository.name,
+    );
+    // The shared Release Follows session is the only source of follow state: the
+    // page reads what the Follows surface confirmed, so the two never disagree.
+    final followed = follows.repositories.any((repo) => repo.id == identity.id);
+    // Whatever the shared session could not read or save is stated here rather
+    // than left to the bookmark: an unread list is not an unfollowed one, and a
+    // refused save leaves the confirmed list exactly as it was.
+    final problem = follows.problem;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: _RepositoryReleasesButton(repository: repository)),
+            const SizedBox(width: GitPulseSpace.inline),
+            GitPulseIconAction(
+              key: const ValueKey('repository-follow'),
+              tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
+              icon: followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+              emphasized: followed,
+              onPressed: follows.editBlocked
+                  ? null
+                  : () {
+                      final session = ref.read(
+                        releaseFollowsSessionProvider.notifier,
+                      );
+                      unawaited(
+                        followed
+                            ? session.unfollow(identity.id)
+                            : session.follow(identity),
+                      );
+                    },
+            ),
+            const SizedBox(width: GitPulseSpace.tight),
+            GitPulseIconAction(
+              key: const ValueKey('repository-share'),
+              tooltip: l10n.repositoryShare,
+              icon: Icons.ios_share,
+              onPressed: () => unawaited(
+                shareRepositoryLink(
+                  context,
+                  ref,
+                  repositoryWebUrl(repository.owner.login, repository.name),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (problem != null) ...[
+          const SizedBox(height: GitPulseSpace.tight),
+          GitPulseSettingNote(
+            followProblemLabel(l10n, problem, save: follows.saveFailed),
+            // A lost network is ordinary weather, as it is on the Follows
+            // surfaces; only a real fault is stated in the error tone.
+            tone: followProblemTone(problem) == GitPulseMessageTone.error
+                ? GitPulseSettingNoteTone.error
+                : GitPulseSettingNoteTone.muted,
+            liveRegion: true,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// The way into the repository's own release list: the page's primary action,
+/// and the only one of the three that carries its name beside its glyph.
+class _RepositoryReleasesButton extends StatelessWidget {
+  const _RepositoryReleasesButton({required this.repository});
+
+  final RepositoryDto repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return FilledButton.tonal(
+      key: const ValueKey('repository-releases'),
+      onPressed: () => openRepositoryPage(context, (
+        owner: repository.owner.login,
+        repository: repository.name,
+        releases: true,
+      )),
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, GitPulseHeight.compact),
+        padding: const EdgeInsets.symmetric(
+          horizontal: GitPulseSpace.surfaceInset,
+        ),
+      ),
+      // The row's spare width, whatever the text scale: the label is the short
+      // name of the destination, and it still gives way a letter at a time
+      // before the row would be allowed to wrap. [Semantics] keeps the whole
+      // name for a screen reader, so the shortening stays a matter of ink.
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.list_alt, size: GitPulseIconSize.inControl),
+          const SizedBox(width: GitPulseSpace.inline),
+          Flexible(
+            child: Semantics(
+              label: l10n.repositoryReleasesTitle,
+              child: ExcludeSemantics(
+                child: Text(
+                  l10n.repositoryReleasesAction,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

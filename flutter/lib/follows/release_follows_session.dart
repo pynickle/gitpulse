@@ -315,7 +315,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
 
   /// Adds a Release Follow after checking the latest shared list and limits.
   Future<void> follow(TimelineRepository repository) async {
-    if (!state.active || state.saving || (!state.loaded && state.loading)) {
+    if (!state.active || state.editBlocked) {
       return;
     }
     if (repository.id.trim().isEmpty ||
@@ -378,7 +378,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     )
     save,
   ) async {
-    if (!state.active || state.saving || (!state.loaded && state.loading)) {
+    if (!state.active || state.editBlocked) {
       return;
     }
     final ticket = ++_generation;

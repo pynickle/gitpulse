@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_icon_action.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -381,22 +382,12 @@ class _FollowAction extends StatelessWidget {
   final bool emphasized;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      iconSize: GitPulseIconSize.action,
-      visualDensity: VisualDensity.compact,
-      padding: const EdgeInsets.all(8),
-      constraints: const BoxConstraints(
-        minWidth: 40,
-        minHeight: GitPulseHeight.compact,
-      ),
-      color: emphasized ? scheme.primary : scheme.onSurfaceVariant,
-      icon: Icon(icon),
-    );
-  }
+  Widget build(BuildContext context) => GitPulseIconAction(
+    tooltip: tooltip,
+    icon: icon,
+    onPressed: onPressed,
+    emphasized: emphasized,
+  );
 }
 
 /// The hairline between two repositories, inset to the text gutter so the list

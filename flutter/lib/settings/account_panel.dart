@@ -8,6 +8,7 @@ import '../connection/connection_controller.dart';
 import '../connection/connection_screen.dart'
     show connectionProblemLabel, showBackendAddressEditor;
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_avatar.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -342,7 +343,10 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
         if (identity != null) ...[
           Row(
             children: [
-              _AccountAvatar(url: identity.avatarUrl),
+              GitPulseAvatar(
+                url: identity.avatarUrl,
+                size: GitPulseAvatarSize.account,
+              ),
               const SizedBox(width: GitPulseSpace.inline),
               Expanded(
                 child: Text(
@@ -370,40 +374,6 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
         ],
         GitPulseSettingSurface(child: panel),
       ],
-    );
-  }
-}
-
-class _AccountAvatar extends StatelessWidget {
-  const _AccountAvatar({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final fallback = ColoredBox(
-      color: scheme.surfaceContainerHighest,
-      child: Icon(
-        Icons.person_outline,
-        size: GitPulseIconSize.action,
-        color: scheme.onSurfaceVariant,
-      ),
-    );
-
-    return ExcludeSemantics(
-      child: SizedBox.square(
-        dimension: GitPulseAvatarSize.account,
-        child: ClipOval(
-          child: url.isEmpty
-              ? fallback
-              : Image.network(
-                  url,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => fallback,
-                ),
-        ),
-      ),
     );
   }
 }

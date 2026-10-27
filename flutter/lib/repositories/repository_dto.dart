@@ -10,6 +10,7 @@ part 'repository_dto.g.dart';
 class RepositoryDto {
   const RepositoryDto({
     required this.name,
+    required this.nodeId,
     required this.owner,
     required this.defaultBranch,
     required this.stargazersCount,
@@ -23,6 +24,13 @@ class RepositoryDto {
       _$RepositoryDtoFromJson(json);
 
   final String name;
+
+  /// GitHub's own identifier for this repository.
+  ///
+  /// It is what a Release Follow stores, so the page can tell whether this
+  /// repository is already followed without a second identity of its own.
+  final String nodeId;
+
   final RepositoryOwnerDto owner;
   final String defaultBranch;
   final int stargazersCount;
@@ -33,12 +41,19 @@ class RepositoryDto {
   String get fullName => '${owner.login}/$name';
 }
 
-@JsonSerializable(checked: true, createToJson: false)
+@JsonSerializable(
+  checked: true,
+  createToJson: false,
+  fieldRename: FieldRename.snake,
+)
 class RepositoryOwnerDto {
-  const RepositoryOwnerDto({required this.login});
+  const RepositoryOwnerDto({required this.login, this.avatarUrl});
   factory RepositoryOwnerDto.fromJson(Map<String, dynamic> json) =>
       _$RepositoryOwnerDtoFromJson(json);
   final String login;
+
+  /// The owner's GitHub avatar, when the payload carries one.
+  final String? avatarUrl;
 }
 
 @JsonSerializable(checked: true, createToJson: false)

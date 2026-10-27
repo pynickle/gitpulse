@@ -131,6 +131,12 @@ abstract final class GitPulseIconSize {
 abstract final class GitPulseAvatarSize {
   /// The signed-in account beside its name in Settings.
   static const account = 32.0;
+
+  /// A repository's owner, introducing the page that is about that repository.
+  ///
+  /// Larger than [account] because it stands beside the page's own name rather
+  /// than inside a Settings row: it is the identity the page opens with.
+  static const owner = 40.0;
 }
 
 /// How tall a control stands.
@@ -195,6 +201,13 @@ abstract final class GitPulseWidth {
 /// heading 65px down the page and made a fifth-level heading smaller than the
 /// body text.
 abstract final class GitPulseType {
+  /// A page's own name: the repository at the head of its page.
+  ///
+  /// A repository page is read as well as scanned, so its title sits below a
+  /// Material heading's 24 and above its body: large enough to be the page's,
+  /// small enough to leave the README beneath it the room to be read.
+  static const pageTitleSize = 22.0;
+
   /// The reading body's size.
   static const readingBodySize = 15.0;
 
@@ -225,15 +238,25 @@ abstract final class GitPulseType {
 
 /// A page's own name: a Repository page's identity, at the emphasis of a
 /// heading rather than of a paragraph.
-///
-/// The owner segment beside the repository name is the page's exception, set
-/// lighter and muted, so the repository reads as the name and the owner as the
-/// address.
 TextStyle? gitPulseTypePageTitle(BuildContext context) {
   final theme = Theme.of(context);
   return theme.textTheme.headlineSmall?.copyWith(
+    fontSize: GitPulseType.pageTitleSize,
     fontWeight: FontWeight.w600,
     color: theme.colorScheme.onSurface,
+  );
+}
+
+/// The owner named above the repository's own name.
+///
+/// The page says who owns the repository before it says which one it is, and
+/// the two are separate lines: this one only carries the address, so it keeps
+/// the body size, the lighter weight, and the muted tone.
+TextStyle? gitPulseTypePageOwner(BuildContext context) {
+  final theme = Theme.of(context);
+  return theme.textTheme.titleSmall?.copyWith(
+    fontWeight: FontWeight.w400,
+    color: theme.colorScheme.onSurfaceVariant,
   );
 }
 
@@ -312,9 +335,13 @@ TextStyle? gitPulseTypeMetaTight(BuildContext context) {
 }
 
 /// A repository's description: prose, but still part of a page that is scanned.
+///
+/// It sits at the body size rather than at the 16 of a passage read on its own,
+/// because the title above it carries the page and the description only says
+/// what the repository is for.
 TextStyle? gitPulseTypeDescription(BuildContext context) {
   final theme = Theme.of(context);
-  return theme.textTheme.bodyLarge?.copyWith(
+  return theme.textTheme.bodyMedium?.copyWith(
     fontWeight: FontWeight.w400,
     color: theme.colorScheme.onSurfaceVariant,
   );

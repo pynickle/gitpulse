@@ -71,11 +71,27 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
 - **Repository detail page** (`lib/repositories/repository_screen.dart`): bands on the shared
   gutter, capped at the reading measure so a README keeps its line length —
   identity, a full-width rule, then the README under the revision and path it was read from
-  (`main · docs/README.md`). The app bar passes no title — the band below names the page. The data
-  line puts a glyph (`LanguageSwatch`, a star, a fork, an eye from
+  (`main · docs/README.md`). The app bar passes no title — the band below names the page.
+  The identity is the owner's real avatar (`GitPulseAvatar`, from the payload's `avatar_url`)
+  beside two lines: the owner at 14 muted, the repository at 22 half-bold
+  (`GitPulseType.pageTitleSize`) wrapping in full rather than truncating, then its 14sp
+  description. The data line puts a glyph (`LanguageSwatch`, a star, a fork, an eye from
   `presentation/gitpulse_language_colors.dart`) where the noun would go, keeping the noun in that
-  fact's `Semantics` label. A README failure stays inside its band; only a repository failure
-  replaces the page.
+  fact's `Semantics` label. Below it, Release List, Release Follow and Share stay on **one row at
+  every width** (the user rejected the two-row fallback): the list is the primary action on the
+  row's spare width under the short `repositoryReleasesAction` name (the full
+  `repositoryReleasesTitle` stays in its `Semantics` label and in the Release Drawer's tooltip),
+  the other two are `presentation/gitpulse_icon_action.dart` compact targets named by tooltip. A
+  README failure stays inside its band; only a repository failure replaces the page.
+- **Release Follow from the detail page** reads and writes the shared
+  `releaseFollowsSessionProvider` — the `node_id` the page maps is the same identity a follow
+  stores, so there is no second follow state. The action is a bookmark (never a GitHub star or
+  watch), is disabled by `ReleaseFollowsState.editBlocked` (the one predicate every surface and the
+  session's own guard uses), and whatever the shared session could not read or save is stated under
+  the row with `GitPulseSettingNote`, so an unread list never reads as an unfollowed one. Share goes
+  through `repository_share.dart`: `repositorySharerProvider` (share_plus) gets the canonical
+  `https://github.com/owner/name`, and a platform that answers false gets the link on the
+  clipboard with `repositoryLinkCopied`. Tests override the provider instead of opening a sheet.
 
 ## Server contracts — change both sides together
 

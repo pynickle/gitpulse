@@ -50,14 +50,15 @@ Versions below are observed stable versions, not a frozen manifest. At implement
 
 Supporting direct dependencies proposed for the final profile:
 
-| Package / observed version                         | Purpose                                                                                  |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| url_launcher 6.3.3                                 | System browser OAuth and external links                                                  |
-| path_provider 2.1.6 and path 1.9.1                 | Application-support paths and portable filesystem operations                             |
-| html 0.15.7                                        | Parse/normalize HTML and resource URLs; application policy still defines allowed content |
-| crypto 3.0.7                                       | SHA-256 for the app-bound authorization challenge; base64url uses dart:convert           |
-| drift_dev, build_runner                            | Required generation tools, selected as a compatible set                                  |
-| SDK flutter_test and standard Flutter lint tooling | Behavioral/widget tests and static analysis                                              |
+| Package / observed version                         | Purpose                                                                                                              |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| url_launcher 6.3.3                                 | System browser OAuth and external links                                                                              |
+| share_plus 13.3.1                                  | The platform share sheet for a repository link; a platform without one is answered false and the app copies the link |
+| path_provider 2.1.6 and path 1.9.1                 | Application-support paths and portable filesystem operations                                                         |
+| html 0.15.7                                        | Parse/normalize HTML and resource URLs; application policy still defines allowed content                             |
+| crypto 3.0.7                                       | SHA-256 for the app-bound authorization challenge; base64url uses dart:convert                                       |
+| drift_dev, build_runner                            | Required generation tools, selected as a compatible set                                                              |
+| SDK flutter_test and standard Flutter lint tooling | Behavioral/widget tests and static analysis                                                                          |
 
 Use Drift's native opener with an application-support path; drift_flutter is a viable optional helper but unnecessary for the proposed path/lifecycle ownership. Do not add Freezed, riverpod_generator, get_it/Provider, experimental Riverpod persistence, a WebView, an editor, a persistent image-cache library, or native Shiki engines as part of this agreed profile.
 
