@@ -242,6 +242,20 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     );
   }
 
+  /// Re-reads the starred page on screen. A pull asks for the page the reader is
+  /// on, not for the first one, and an account that has not read a page yet
+  /// starts at the first.
+  Future<void> refreshStarredPage() =>
+      loadStarred(page: state.starred.page < 1 ? 1 : state.starred.page);
+
+  /// Repeats the search on the page it is showing, and does nothing before there
+  /// is a query to repeat.
+  Future<void> refreshSearchPage() {
+    final query = state.query;
+    if (query.isEmpty) return Future<void>.value();
+    return search(query, page: state.searchPage < 1 ? 1 : state.searchPage);
+  }
+
   /// Loads starred repositories using the same ordering as the web app.
   Future<void> loadStarred({
     int page = 1,

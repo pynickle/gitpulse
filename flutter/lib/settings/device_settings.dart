@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../device/device_preferences.dart';
 import '../device/device_preferences_controller.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_pill.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../timeline/timeline_session.dart';
@@ -103,9 +104,11 @@ class _AppearanceRow extends ConsumerWidget {
 
 /// The retention window's editor.
 ///
-/// Stepping one day applies immediately. The number is always a field: leaving
-/// it saves a whole day from 1 to 90, and anything else snaps back to the value
-/// in force. A rejected entry names itself beside the title, then leaves.
+/// One pill holds the whole control — a day down, the number, a day up — so the
+/// card reads as one thing rather than as a box with two loose buttons around
+/// it. Stepping applies immediately. The number is always a field: leaving it
+/// saves a whole day from 1 to 90, and anything else snaps back to the value in
+/// force. A rejected entry names itself beside the title, then leaves.
 class _RetentionRow extends ConsumerStatefulWidget {
   const _RetentionRow();
 
@@ -145,7 +148,11 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
       .resolvedRetentionDays;
 
   void _onFocus() {
-    if (_focus.hasFocus || _applyingStep || !mounted) return;
+    if (!mounted) return;
+    // The pill's edge is the whole of the focus feedback; the cell itself keeps
+    // its shape and its size, so entering the number never reshapes the card.
+    setState(() {});
+    if (_focus.hasFocus || _applyingStep) return;
     _commit();
   }
 
@@ -217,23 +224,6 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
       _days.text = '$days';
     }
 
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(GitPulseRadius.row),
-      borderSide: BorderSide.none,
-    );
-    Widget stepButton({
-      required String tooltip,
-      required IconData icon,
-      required bool enabled,
-      required int delta,
-    }) => IconButton(
-      tooltip: tooltip,
-      onPressed: !locked && enabled ? () => _step(delta) : null,
-      iconSize: GitPulseIconSize.inControl,
-      color: scheme.onSurfaceVariant,
-      icon: Icon(icon),
-    );
-
     return GitPulseSettingRow(
       icon: Icons.history,
       label: l10n.settingsKeepReleases,
@@ -246,57 +236,38 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
               ),
             )
           : null,
-      control: Wrap(
-        spacing: GitPulseSpace.inline,
-        runSpacing: GitPulseSpace.inline,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      control: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          stepButton(
-            tooltip: l10n.decreaseRetention,
-            icon: Icons.remove,
-            enabled: days > DevicePreferences.minimumRetentionDays,
-            delta: -1,
-          ),
-          SizedBox(
-            width: GitPulseWidth.integerField,
-            child: TextField(
-              key: const ValueKey('retention-days'),
-              controller: _days,
-              focusNode: _focus,
-              enabled: !locked,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
+          GitPulsePill(
+            focused: _focus.hasFocus,
+            cells: [
+              GitPulsePillStep(
+                tooltip: l10n.decreaseRetention,
+                icon: Icons.remove,
+                onPressed:
+                    !locked && days > DevicePreferences.minimumRetentionDays
+                    ? () => _step(-1)
+                    : null,
               ),
-              onSubmitted: (_) => _focus.unfocus(),
-              onTapOutside: (_) => _focus.unfocus(),
-              decoration: InputDecoration(
-                isDense: true,
-                filled: true,
-                fillColor: scheme.surfaceContainerHigh,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: GitPulseSpace.inline,
-                  vertical: GitPulseSpace.meta,
-                ),
-                constraints: const BoxConstraints(
-                  minHeight: GitPulseHeight.compact,
-                ),
-                border: border,
-                enabledBorder: border,
-                focusedBorder: border.copyWith(
-                  borderSide: BorderSide(color: scheme.primary),
-                ),
+              GitPulsePillNumber(
+                key: const ValueKey('retention-days'),
+                controller: _days,
+                focusNode: _focus,
+                label: l10n.settingsKeepReleases,
+                enabled: !locked,
               ),
-            ),
+              GitPulsePillStep(
+                tooltip: l10n.increaseRetention,
+                icon: Icons.add,
+                onPressed:
+                    !locked && days < DevicePreferences.maximumRetentionDays
+                    ? () => _step(1)
+                    : null,
+              ),
+            ],
           ),
-          stepButton(
-            tooltip: l10n.increaseRetention,
-            icon: Icons.add,
-            enabled: days < DevicePreferences.maximumRetentionDays,
-            delta: 1,
-          ),
+          const SizedBox(width: GitPulseSpace.inline),
           // English and Chinese each have one singular form, so the ARB carries
           // the two words instead of a plural that would print the number twice.
           Text(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_pull_to_refresh.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -104,6 +105,15 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
         ),
       ),
     );
+  }
+
+  /// Re-reads the page on screen: a pull is about this page, not about the
+  /// first one of either source.
+  Future<void> _refreshCurrentPage() {
+    final facade = ref.read(releaseFollowsSessionProvider.notifier);
+    return _source == _RepositorySource.search
+        ? facade.refreshSearchPage()
+        : facade.refreshStarredPage();
   }
 
   @override
@@ -297,8 +307,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                           ],
                         ),
                       ),
-                      if (state.loading || state.saving)
-                        const LinearProgressIndicator(),
+                      // Only an edit is reported here. A read reports itself
+                      // where it can be undone: a page turn fills the list's
+                      // place, and the page already on screen is re-read by the
+                      // pull that asked for it.
+                      if (state.saving) const LinearProgressIndicator(),
                       Divider(
                         height: GitPulseStroke.hairline,
                         thickness: GitPulseStroke.hairline,
@@ -322,13 +335,13 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      if (pagination != null)
-                                        RepositoryPagination(
+                                  // A page that failed has no page to name:
+                                  // the error states the one thing left to do
+                                  // with it, and the footer keeps the way into
+                                  // Followed Repositories.
+                                  child: pagination == null || problem != null
+                                      ? const SizedBox.shrink()
+                                      : RepositoryPagination(
                                           pagination: pagination,
                                           loading: loading,
                                           onPage: (page) {
@@ -347,34 +360,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                                             }
                                           },
                                         ),
-                                      if (problem != null)
-                                        OutlinedButton.icon(
-                                          onPressed: loading
-                                              ? null
-                                              : () {
-                                                  if (search) {
-                                                    unawaited(
-                                                      facade.search(
-                                                        state.query,
-                                                        page: state
-                                                            .searchRequestedPage,
-                                                      ),
-                                                    );
-                                                  } else {
-                                                    unawaited(
-                                                      facade.loadStarred(
-                                                        page: state
-                                                            .starred
-                                                            .requestedPage,
-                                                      ),
-                                                    );
-                                                  }
-                                                },
-                                          icon: const Icon(Icons.refresh),
-                                          label: Text(l10n.timelineRetry),
-                                        ),
-                                    ],
-                                  ),
                                 ),
                                 if (!wide) ...[
                                   const SizedBox(width: GitPulseSpace.inline),
@@ -443,50 +428,68 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
     FollowProblem? problem,
   ) {
     final l10n = AppLocalizations.of(context);
+    final facade = ref.read(releaseFollowsSessionProvider.notifier);
     final items = search ? state.results : state.starred.items;
-    final Widget? empty;
-    if (items.isNotEmpty) {
-      empty = null;
-    } else if (loading) {
-      empty = GitPulseLoadingView(label: l10n.followsLoading);
-    } else {
-      empty = GitPulseMessageView(
-        icon: problem != null
+    final shownPage = search ? state.searchPage : state.starred.page;
+    final requestedPage = search
+        ? state.searchRequestedPage
+        : state.starred.requestedPage;
+    void retry() {
+      if (search) {
+        unawaited(facade.search(state.query, page: requestedPage));
+      } else {
+        unawaited(facade.loadStarred(page: requestedPage));
+      }
+    }
+
+    // A first read and a page being turned both replace the list's place: the
+    // rows on screen belong to a page the reader has left. Asking for the page
+    // already shown keeps it, and the pull that asks for it draws the progress.
+    if (loading && requestedPage != shownPage) {
+      return GitPulseLoadingView(label: l10n.followsLoading);
+    }
+    // A read that failed replaces what it could not load, with the one action
+    // that asks for it again. Nothing is kept behind it: a page that failed to
+    // arrive leaves no list the reader is standing on.
+    if (problem != null) {
+      return GitPulseMessageView(
+        icon: problem == FollowProblem.network
             ? Icons.cloud_off_outlined
-            : search
-            ? Icons.search
-            : Icons.star_border,
-        title: problem != null
-            ? followProblemLabel(l10n, problem)
-            : search
-            ? state.searchPage == 0
-                  ? l10n.followsSearchPrompt
-                  : l10n.followsNoResults
-            : l10n.followsStarredEmpty,
+            : Icons.error_outline,
+        title: followProblemLabel(l10n, problem),
         // Losing the network is ordinary, so it is stated in the neutral tone;
         // permission, rate-limit, session and unavailable-repository problems
         // keep the error tone so a real fault still reads as one.
         tone: followProblemTone(problem),
-        liveRegion: problem != null,
+        liveRegion: true,
+        action: FilledButton.tonal(
+          onPressed: loading ? null : retry,
+          child: Text(l10n.timelineRetry),
+        ),
+      );
+    }
+    if (search && state.query.isEmpty) {
+      return GitPulseMessageView(
+        icon: Icons.search,
+        title: l10n.followsSearchPrompt,
       );
     }
     final ids = state.repositories.map((repo) => repo.id).toSet();
-    final facade = ref.read(releaseFollowsSessionProvider.notifier);
-    return CustomScrollView(
+    final list = CustomScrollView(
       controller: _scroll,
+      // A page shorter than the window is still pullable: the gesture is how
+      // the page on screen is asked for again without leaving it.
+      physics: const AlwaysScrollableScrollPhysics(),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
-        if (loading && items.isNotEmpty)
-          const SliverToBoxAdapter(child: LinearProgressIndicator()),
-        if (problem != null && items.isNotEmpty)
-          SliverToBoxAdapter(
-            child: FollowProblemNotice(
-              text: followProblemLabel(l10n, problem),
-              tone: followProblemTone(problem),
+        if (items.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: GitPulseMessageView(
+              icon: search ? Icons.search : Icons.star_border,
+              title: search ? l10n.followsNoResults : l10n.followsStarredEmpty,
             ),
-          ),
-        if (empty != null)
-          SliverFillRemaining(hasScrollBody: false, child: empty)
+          )
         else
           SliverList.builder(
             itemCount: items.length,
@@ -514,6 +517,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
           ),
       ],
     );
+    return GitPulsePullToRefresh(onRefresh: _refreshCurrentPage, child: list);
   }
 }
 

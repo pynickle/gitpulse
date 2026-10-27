@@ -45,7 +45,21 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
   one whole day at a time and applies immediately. Its number is always a field; leaving the field
   saves a whole day from 1 to 90, and an illegal entry snaps back to the value in force with a short
   hint beside the title that then disappears. The window defaults to 30. The account name and sign-out
-  stay above the backend card. Timeline cache keeps its clear action on the title's line.
+  sit on the backend card's header, one `GitPulseSpace.inline` above it. Timeline cache keeps its
+  clear action on the title's line.
+- **A number stepped by two actions is one pill** (`presentation/gitpulse_pill.dart`): page
+  navigation and the retention window are a single hairline `GitPulsePill` whose cells are the two
+  steps and an always-editable `GitPulsePillNumber`; a cell is `GitPulseHeight.compact` tall and the
+  number cell is `GitPulseWidth.pillNumber` wide before the text scale. Taking the focus turns the
+  pill's edge to the accent and moves nothing — no second box, no floating label, no size change
+  (that is the whole of the focus feedback).
+- **Follows discovery reads** (`lib/follows/release_follows_screen.dart`): a first read or a page
+  turn replaces the list with `GitPulseLoadingView`; the page already on screen is re-read by
+  `GitPulsePullToRefresh` (the Timeline's own surface), which is the only progress a same-page read
+  shows; a read that failed replaces the list with the page-level `GitPulseMessageView` and its one
+  Retry, never keeping the rows it could not load. The footer holds the manage button alone while a
+  read has failed and the page pill plus the manage button otherwise — no progress bar and no retry
+  line (only an edit in flight still reports through `LinearProgressIndicator`).
 - **Chrome & states**: `gitPulseTheme` is the single theme source; use `GitPulseLoadingView` /
   `GitPulseMessageView` for page-level loading, empty, and error states — not a second look.
 - **i18n & formatting**: add new page copy to both ARB files. Format dates through

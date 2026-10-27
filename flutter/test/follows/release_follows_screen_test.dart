@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/followed_repositories_panel.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/repository_pagination.dart';
+import 'package:gitpulse/presentation/gitpulse_pill.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
@@ -148,7 +149,7 @@ void main() {
   );
 
   testWidgets(
-    'failed page jumps retain content, current input and scroll until retry succeeds',
+    'a failed page turn replaces the list and retries the page it asked for',
     (tester) async {
       final server = FollowsServer()
         ..starredHasMore = true
@@ -164,43 +165,56 @@ void main() {
         find.descendant(of: field, matching: find.text('1')),
         findsOneWidget,
       );
+      // Read partway down a page, so a jump has somewhere to come back from and
+      // the fixed bars have something to stay level with.
       final results = find.byType(CustomScrollView).first;
       await tester.drag(results, const Offset(0, -900));
       await tester.pumpAndSettle();
-      final sourcePosition = tester.getTopLeft(find.text('Starred'));
-      final footerPosition = tester.getTopLeft(
-        find.byType(RepositoryPagination),
-      );
       final scroll = tester.widget<CustomScrollView>(results).controller!;
-      final offset = scroll.offset;
-      expect(offset, greaterThan(0));
+      expect(scroll.offset, greaterThan(0));
+      final source = tester.getTopLeft(find.text('Starred'));
+      final manage = tester.getTopLeft(
+        find.byKey(const ValueKey('manage-follows')),
+      );
+
       server.starredStatus = 500;
       final hold = Completer<void>();
       server.holdStarred = hold.future;
       await tester.enterText(field, '10');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await _pumpFrames(tester);
+      // The field names the page being read until the backend confirms a jump.
       expect(
         find.descendant(of: field, matching: find.text('1')),
         findsOneWidget,
       );
-
-      expect(scroll.offset, offset);
+      expect(find.byKey(const ValueKey('starred-R_0')), findsNothing);
+      // The page that has not arrived fills the list's place on its own: no
+      // progress bar is drawn beside it.
+      expect(find.byType(GitPulseLoadingView), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
       hold.complete();
       server.holdStarred = null;
       await tester.pumpAndSettle();
+      // The read failed, so the page it could not load is what the list says,
+      // with the one action that asks for it again. The bars stay where they
+      // were, and no page number is left naming a list that is not there.
+      expect(find.byType(GitPulseLoadingView), findsNothing);
+      expect(find.byKey(const ValueKey('starred-R_0')), findsNothing);
       expect(
-        find.descendant(of: field, matching: find.text('1')),
+        find.text(
+          'Could not load repositories. Retry the search or reload follows.',
+        ),
         findsOneWidget,
       );
-      expect(scroll.offset, offset);
-      expect(
-        find.byKey(const ValueKey('starred-R_0')),
-        findsNothing,
-        reason: 'the long original page stays scrolled',
-      );
       expect(find.text('Retry').hitTestable(), findsOneWidget);
-      expect(tester.getTopLeft(find.text('Starred')), sourcePosition);
+      expect(find.byType(RepositoryPagination), findsNothing);
+      expect(tester.getTopLeft(find.text('Starred')), source);
+      expect(
+        tester.getTopLeft(find.byKey(const ValueKey('manage-follows'))),
+        manage,
+      );
+
       server.starredStatus = 200;
       server.starredHasMore = false;
       server.starredRepositories = [repositoryJson(id: 'R_last', name: 'last')];
@@ -213,15 +227,92 @@ void main() {
         find.descendant(of: field, matching: find.text('10')),
         findsOneWidget,
       );
-      expect(scroll.offset, 0);
-      expect(
-        tester.getTopLeft(find.byType(RepositoryPagination)),
-        footerPosition,
-      );
       expect(find.text('/ 10'), findsOneWidget);
+      // A page that finally arrives is read from its top.
+      expect(
+        tester
+            .widget<CustomScrollView>(find.byType(CustomScrollView).first)
+            .controller!
+            .offset,
+        0,
+      );
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('a pull re-reads the page on screen and keeps it while it does', (
+    tester,
+  ) async {
+    final server = FollowsServer()
+      ..starredRepositories = [repositoryJson()]
+      ..starredHasMore = true
+      ..starredTotalPages = 10;
+    await _openFollows(tester, server);
+    await tester.tap(find.byTooltip('Next page'));
+    await tester.pumpAndSettle();
+    expect(server.featureRequests.last.uri.queryParameters['page'], '2');
+    final requests = server.featureRequests.length;
+
+    final hold = Completer<void>();
+    server.holdStarred = hold.future;
+    // The response snapshots its payload once the request arrives, so the
+    // page it will return is decided before the gesture starts.
+    server.starredRepositories = [repositoryJson(id: 'R_new', name: 'new')];
+    await tester.fling(
+      find.byType(CustomScrollView),
+      const Offset(0, 300),
+      1000,
+    );
+    await _pumpFrames(tester);
+    expect(server.featureRequests.length, requests + 1);
+    expect(server.featureRequests.last.uri.queryParameters['page'], '2');
+    // The page being read stays where it is: the gesture draws the progress.
+    expect(find.text('octo/alpha'), findsOneWidget);
+    expect(find.byType(GitPulseLoadingView), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+
+    hold.complete();
+    server.holdStarred = null;
+    await tester.pumpAndSettle();
+    expect(find.text('octo/new'), findsOneWidget);
+    expect(find.text('octo/alpha'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a pull repeats the search on the page on screen', (
+    tester,
+  ) async {
+    final server = FollowsServer()..searchHasMore = true;
+    await _openFollows(tester, server);
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      auth.fieldLabeled('Repository name or GitHub URL'),
+      'alpha',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Next page'));
+    await tester.pumpAndSettle();
+    final requests = server.featureRequests.length;
+
+    server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
+    await tester.fling(
+      find.byType(CustomScrollView),
+      const Offset(0, 300),
+      1000,
+    );
+    await tester.pumpAndSettle();
+    expect(server.featureRequests.length, requests + 1);
+    expect(server.featureRequests.last.uri.queryParameters, {
+      'q': 'alpha',
+      'page': '2',
+      'per_page': '30',
+    });
+    expect(find.text('octo/beta'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'sources preserve independent pages and unknown totals never invent a last page',
@@ -250,7 +341,9 @@ void main() {
       server.searchStatus = 500;
       await tester.tap(find.byTooltip('Next page'));
       await tester.pumpAndSettle();
-      expect(find.text('octo/alpha'), findsOneWidget);
+      // The page that failed replaces the results it could not load.
+      expect(find.text('octo/alpha'), findsNothing);
+      expect(find.text('Retry').hitTestable(), findsOneWidget);
       server.searchStatus = 200;
       server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
       await tester.tap(find.text('Retry'));
@@ -483,10 +576,11 @@ void main() {
           final pageField = tester.getRect(
             find.byKey(const ValueKey('repository-page')),
           );
-          expect(
-            pages.height,
-            lessThanOrEqualTo(pageField.height + GitPulseSpace.inline),
-          );
+          // The number, both steps and the total are one pill, and the pill is
+          // one cell high until the reader's type outgrows that cell.
+          final pill = tester.getRect(find.byType(GitPulsePill));
+          expect(pill.height, greaterThanOrEqualTo(GitPulseHeight.compact));
+          expect(pill.contains(pageField.center), isTrue);
           expect(
             tester.getRect(find.byTooltip('Previous page')).center.dy,
             closeTo(pageField.center.dy, 1),

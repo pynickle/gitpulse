@@ -151,8 +151,9 @@ abstract final class GitPulseHeight {
 /// and from two to three. One shared maximum would make three of the four
 /// answers wrong.
 abstract final class GitPulseWidth {
-  /// A persistent integer editor, shared by retention and page navigation.
-  static const integerField = 72.0;
+  /// The number cell of a pill — page navigation, the retention window — before
+  /// the reader's text scale: four tabular digits at the body size.
+  static const pillNumber = 32.0;
 
   /// The reading measure: the width at which a Repository page's README stays a
   /// line the eye does not lose its place in.

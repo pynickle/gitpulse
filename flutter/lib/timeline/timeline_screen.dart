@@ -5,6 +5,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_theme.dart';
+import '../presentation/gitpulse_pull_to_refresh.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../session/session_controller.dart';
 import 'release_timeline_card.dart';
@@ -257,7 +258,7 @@ class _Body extends StatelessWidget {
     // can never prevent explicitly loading more history. The empty result is
     // still refreshable: a filter that hides everything today can match the
     // releases a new round brings.
-    return _PullToRefresh(
+    return GitPulsePullToRefresh(
       onRefresh: onPullRefresh,
       child: LayoutBuilder(
         builder: (context, viewport) => SingleChildScrollView(
@@ -293,31 +294,6 @@ class _Body extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// The Timeline's one pull-to-refresh surface.
-///
-/// It is the standard Material gesture: the search and refresh information keep
-/// their place, only the list area moves, and the indicator it draws at the top
-/// edge is the single progress shown while a pull is reading.
-class _PullToRefresh extends StatelessWidget {
-  const _PullToRefresh({required this.onRefresh, required this.child});
-
-  final Future<void> Function() onRefresh;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      color: scheme.primary,
-      // A tonal surface step, never a shadow.
-      backgroundColor: scheme.surfaceContainerHigh,
-      elevation: 0,
-      child: child,
     );
   }
 }
@@ -676,7 +652,7 @@ class _TimelineListState extends State<_TimelineList> {
             }
             return false;
           },
-          child: _PullToRefresh(
+          child: GitPulsePullToRefresh(
             onRefresh: widget.onPullRefresh,
             child: CustomScrollView(
               key: ObjectKey(_controller),

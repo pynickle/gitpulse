@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_pill.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'release_follows_dto.dart';
 
 /// Page navigation over the last successful response, including unknown totals.
+///
+/// Back, the page being read, the last page and forward are one pill, so a page
+/// number reads as a single control rather than a filled box with two loose
+/// arrows beside it. The number is always a field: tapping it moves nothing, and
+/// the only mark focus makes is the pill's edge turning to the accent.
 class RepositoryPagination extends StatefulWidget {
   const RepositoryPagination({
     super.key,
@@ -54,6 +60,10 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
   void _restore() => _page.text = '${widget.pagination.page}';
 
   void _onFocus() {
+    if (!mounted) return;
+    // The edge is the whole of the focus feedback, so the pill has to repaint;
+    // nothing about its shape or its size changes with the focus.
+    setState(() {});
     if (!_focus.hasFocus) _commit();
   }
 
@@ -85,91 +95,62 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final total = meta.totalPages;
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(GitPulseRadius.row),
-      borderSide: BorderSide.none,
-    );
-    final arrowStyle = IconButton.styleFrom(
-      minimumSize: Size.zero,
-      fixedSize: const Size(GitPulseHeight.compact, GitPulseHeight.rowMin),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: EdgeInsets.zero,
-    );
     return TextFieldTapRegion(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconButton(
-            tooltip: l10n.followsPreviousPage,
-            style: arrowStyle,
-            onPressed: !widget.loading && meta.hasPrev
-                ? () => _navigate(meta.page - 1)
-                : null,
-            iconSize: GitPulseIconSize.action,
-            icon: const Icon(Icons.chevron_left),
-          ),
-          SizedBox(
-            width: GitPulseWidth.integerField,
-            child: TextField(
-              key: const ValueKey('repository-page'),
-              controller: _page,
-              focusNode: _focus,
-              enabled: !widget.loading,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-              onSubmitted: (_) {
-                _commit();
-                _focus.unfocus();
-              },
-              onTapOutside: (_) => _focus.unfocus(),
-              decoration: InputDecoration(
-                labelText: l10n.followsPage,
-                floatingLabelBehavior: FloatingLabelBehavior.never,
-                isDense: true,
-                filled: true,
-                fillColor: scheme.surfaceContainerHigh,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: GitPulseSpace.inline,
-                  vertical: GitPulseSpace.meta,
+          Flexible(
+            child: GitPulsePill(
+              focused: _focus.hasFocus,
+              cells: [
+                GitPulsePillStep(
+                  icon: Icons.chevron_left,
+                  tooltip: l10n.followsPreviousPage,
+                  onPressed: !widget.loading && meta.hasPrev
+                      ? () => _navigate(meta.page - 1)
+                      : null,
                 ),
-                constraints: const BoxConstraints(
-                  minHeight: GitPulseHeight.compact,
+                Flexible(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GitPulsePillNumber(
+                        key: const ValueKey('repository-page'),
+                        controller: _page,
+                        focusNode: _focus,
+                        label: l10n.followsPage,
+                        enabled: !widget.loading,
+                        onCommit: _commit,
+                      ),
+                      // The last page gives way when the window is too narrow
+                      // for the whole pill; the page being read never is.
+                      if (total != null)
+                        Flexible(
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(
+                              end: GitPulseSpace.inline,
+                            ),
+                            child: Text(
+                              '/ ${NumberFormat.decimalPattern(l10n.localeName).format(total)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: gitPulseTypeMeta(context),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                border: border,
-                enabledBorder: border,
-                focusedBorder: border.copyWith(
-                  borderSide: BorderSide(color: scheme.primary),
+                GitPulsePillStep(
+                  icon: Icons.chevron_right,
+                  tooltip: l10n.followsNextPage,
+                  onPressed: !widget.loading && meta.hasNext
+                      ? () => _navigate(meta.page + 1)
+                      : null,
                 ),
-              ),
+              ],
             ),
-          ),
-          if (total != null)
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.only(left: GitPulseSpace.glyphGap),
-                child: Text(
-                  '/ ${NumberFormat.decimalPattern(l10n.localeName).format(total)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: gitPulseTypeMeta(context),
-                ),
-              ),
-            ),
-          IconButton(
-            tooltip: l10n.followsNextPage,
-            style: arrowStyle,
-            onPressed: !widget.loading && meta.hasNext
-                ? () => _navigate(meta.page + 1)
-                : null,
-            iconSize: GitPulseIconSize.action,
-            icon: const Icon(Icons.chevron_right),
           ),
         ],
       ),

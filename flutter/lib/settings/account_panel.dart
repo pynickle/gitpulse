@@ -361,7 +361,10 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
               ),
             ],
           ),
-          const SizedBox(height: GitPulseSpace.bandGap),
+          // The name and the way out sit above the backend card as its header,
+          // not as a band of their own: the action's own padding already keeps
+          // them off it.
+          const SizedBox(height: GitPulseSpace.inline),
         ],
         GitPulseSettingSurface(child: panel),
       ],
