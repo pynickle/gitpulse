@@ -1,0 +1,11 @@
+[toolchain]
+# A version, never a channel name: the build hook pins reproducibility.
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+targets = [
+  "x86_64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-linux-android",
+  "armv7-linux-androideabi",
+  "x86_64-linux-android",
+]
