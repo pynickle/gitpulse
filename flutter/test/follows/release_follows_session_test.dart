@@ -20,6 +20,7 @@ void main() {
     () async {
       final server = FollowsServer()
         ..starredRepositories = [repositoryJson()]
+        ..starredTotalPages = 10
         ..starredHasMore = true;
       final container = await openFollowsSession(
         server,
@@ -37,17 +38,21 @@ void main() {
         'sort': 'created',
         'direction': 'desc',
       });
-      server.starredRepositories = [
-        repositoryJson(),
-        repositoryJson(id: 'R_beta', name: 'beta'),
-      ];
+      final pagination = container
+          .read(releaseFollowsSessionProvider)
+          .starred
+          .pagination!;
+      expect(pagination.page, 1);
+      expect(pagination.perPage, 30);
+      expect(pagination.hasPrev, isFalse);
+      expect(pagination.hasNext, isTrue);
+      expect(pagination.totalCount, 300);
+      expect(pagination.totalPages, 10);
+      server.starredRepositories = [repositoryJson(id: 'R_beta', name: 'beta')];
       server.starredHasMore = false;
-      await facade.loadStarred(more: true);
+      await facade.loadStarred(page: 2);
       var starred = container.read(releaseFollowsSessionProvider).starred;
-      expect(starred.items.map((item) => item.repository.id), [
-        'R_alpha',
-        'R_beta',
-      ]);
+      expect(starred.items.map((item) => item.repository.id), ['R_beta']);
       expect(starred.page, 2);
       expect(starred.hasMore, isFalse);
       server.starredRepositories = [
@@ -68,13 +73,13 @@ void main() {
         'direction': 'asc',
       });
       server.starredStatus = 500;
-      await facade.loadStarred(more: true);
+      await facade.loadStarred(page: 2);
       starred = container.read(releaseFollowsSessionProvider).starred;
       expect(starred.items.single.repository.id, 'R_gamma');
       expect(starred.page, 1);
       expect(starred.problem, FollowProblem.server);
       server.starredStatus = 200;
-      await facade.loadStarred(more: true);
+      await facade.loadStarred(page: 2);
       expect(server.featureRequests.last.uri.queryParameters['page'], '2');
       expect(
         container.read(releaseFollowsSessionProvider).starred.problem,
@@ -426,13 +431,13 @@ void main() {
     expect(container.read(releaseFollowsSessionProvider).hasMore, isTrue);
     server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
     server.searchHasMore = false;
-    await facade.search('release', more: true);
+    await facade.search('release', page: 2);
     expect(
       container
           .read(releaseFollowsSessionProvider)
           .results
           .map((item) => item.repository.id),
-      ['R_alpha', 'R_beta'],
+      ['R_beta'],
     );
     expect(server.featureRequests.last.uri.queryParameters['page'], '2');
     expect(container.read(releaseFollowsSessionProvider).hasMore, isFalse);

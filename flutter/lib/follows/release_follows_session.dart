@@ -192,22 +192,20 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   }
 
   /// Searches repositories or resolves a pasted GitHub repository URL.
-  Future<void> search(String input, {bool more = false}) async {
+  Future<void> search(String input, {int page = 1}) async {
     if (!state.active) return;
-    if (more &&
-        (state.searching || !state.hasMore || input.trim() != state.query)) {
-      return;
-    }
     final query = input.trim();
     final ticket = ++_searchGeneration;
     final context = _context;
-    final page = more ? state.searchPage + 1 : 1;
+    final changed = query != state.query;
+    if (changed) page = 1;
     state = state.copyWith(
       query: query,
       searching: query.isNotEmpty,
-      results: more ? null : [],
-      searchPage: more ? null : 0,
-      hasMore: more ? null : false,
+      results: changed || query.isEmpty ? const [] : null,
+      searchPage: changed || query.isEmpty ? 0 : null,
+      clearSearchPagination: changed || query.isEmpty,
+      searchRequestedPage: page,
       clearSearchProblem: true,
     );
     if (query.isEmpty) return;
@@ -216,15 +214,12 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       if (!ref.mounted || context != _context || ticket != _searchGeneration) {
         return;
       }
-      final byId = {
-        for (final item in [if (more) ...state.results, ...result.items])
-          item.repository.id: item,
-      };
       state = state.copyWith(
-        results: List.unmodifiable(byId.values),
+        results: List.unmodifiable(result.items),
         searching: false,
-        searchPage: page,
-        hasMore: result.pagination?.hasNext ?? false,
+        searchPage: result.pagination?.page ?? page,
+        searchPagination: result.pagination,
+        clearSearchPagination: result.pagination == null,
       );
     } on FollowRequestFailure catch (error) {
       if (ref.mounted && context == _context && ticket == _searchGeneration) {
@@ -240,7 +235,8 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       query: input.trim(),
       searching: false,
       results: const [],
-      hasMore: false,
+      clearSearchPagination: true,
+      searchRequestedPage: 1,
       searchPage: 0,
       clearSearchProblem: true,
     );
@@ -248,23 +244,26 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
 
   /// Loads starred repositories using the same ordering as the web app.
   Future<void> loadStarred({
-    bool more = false,
+    int page = 1,
     StarredRepositorySort? sort,
     bool? ascending,
   }) async {
     if (!state.active) return;
     final starred = state.starred;
-    if (more && (starred.loading || !starred.hasMore)) return;
     final ticket = ++_starredGeneration;
     final context = _context;
-    final page = more ? starred.page + 1 : 1;
     final nextSort = sort ?? starred.sort;
     final nextAscending = ascending ?? starred.ascending;
+    final changed =
+        nextSort != starred.sort || nextAscending != starred.ascending;
+    if (changed) page = 1;
     state = state.copyWith(
       starred: starred.copyWith(
         loading: true,
-        items: more ? null : const [],
-        hasMore: more ? null : false,
+        items: changed ? const [] : null,
+        page: changed ? 0 : null,
+        clearPagination: changed,
+        requestedPage: page,
         sort: nextSort,
         ascending: nextAscending,
         clearProblem: true,
@@ -279,16 +278,13 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       if (!ref.mounted || context != _context || ticket != _starredGeneration) {
         return;
       }
-      final byId = {
-        for (final item in [if (more) ...starred.items, ...result.items])
-          item.repository.id: item,
-      };
       state = state.copyWith(
         starred: state.starred.copyWith(
-          items: List.unmodifiable(byId.values),
+          items: List.unmodifiable(result.items),
           loading: false,
-          page: page,
-          hasMore: result.pagination?.hasNext ?? false,
+          page: result.pagination?.page ?? page,
+          pagination: result.pagination,
+          clearPagination: result.pagination == null,
         ),
       );
     } on FollowRequestFailure catch (error) {

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
@@ -6,15 +7,103 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/follows/release_follows_service.dart';
+import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 
 import '../support/release_timeline_server.dart';
 import '../support/provider_wait.dart';
+import 'follows_test_support.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('discovery HTTP requests retain the existing pagination contract and URL lookup stays unpaginated', () async {
+    final overrides = HttpOverrides.current;
+    HttpOverrides.global = null;
+    addTearDown(() => HttpOverrides.global = overrides);
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+    final requests = <Uri>[];
+    server.listen((request) async {
+      requests.add(request.uri);
+      final query = request.uri.queryParameters;
+      final page = int.parse(query['page'] ?? '1');
+      final unknown = query['q'] == 'unknown';
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(
+        jsonEncode(
+          request.uri.path.contains('/repos/')
+              ? repositoryJson()
+              : {
+                  'items': [repositoryJson()],
+                  'pagination': {
+                    'page': page,
+                    'perPage': 30,
+                    'hasPrev': page > 1,
+                    'hasNext': unknown || page < 12,
+                    'totalCount': unknown ? null : 360,
+                    'totalPages': unknown ? null : 12,
+                  },
+                },
+        ),
+      );
+      await request.response.close();
+    });
+    final http = createGitPulseDio(CookieJar())
+      ..options.baseUrl = 'http://127.0.0.1:${server.port}/pulse/';
+    addTearDown(() => http.close(force: true));
+    final service = ReleaseFollowsService(({
+      required method,
+      required path,
+      body,
+    }) async {
+      expect(method, 'GET');
+      final response = await http.get<Map<String, dynamic>>(path);
+      return BackendResult(
+        statusCode: response.statusCode,
+        data: response.data,
+      );
+    });
+    final starred = await service.starred(
+      7,
+      sort: StarredRepositorySort.updated,
+      ascending: true,
+    );
+    expect(requests.last.path, '/pulse/api/starred');
+    expect(requests.last.queryParameters, {
+      'page': '7',
+      'per_page': '30',
+      'sort': 'updated',
+      'direction': 'asc',
+    });
+    final pagination = starred.pagination!;
+    expect(pagination.page, 7);
+    expect(pagination.perPage, 30);
+    expect(pagination.hasPrev, isTrue);
+    expect(pagination.hasNext, isTrue);
+    expect(pagination.totalCount, 360);
+    expect(pagination.totalPages, 12);
+    final search = await service.search('flutter & dart', 4);
+    expect(requests.last.path, '/pulse/api/search/repositories');
+    expect(requests.last.queryParameters, {
+      'q': 'flutter & dart',
+      'page': '4',
+      'per_page': '30',
+    });
+    expect(search.pagination!.page, 4);
+    final unknown = await service.search('unknown', 2);
+    expect(unknown.pagination!.totalPages, isNull);
+    expect(unknown.pagination!.totalCount, isNull);
+    expect(unknown.pagination!.hasNext, isTrue);
+    final repository = await service.search('https://github.com/octo/alpha', 1);
+    expect(requests.last.path, '/pulse/api/repos/octo/alpha');
+    expect(requests.last.hasQuery, isFalse);
+    expect(repository.pagination, isNull);
+    expect(repository.items.single.repository.fullName, 'octo/alpha');
+  });
 
   test('native follow edits and independent web sessions share the real settings authority and keep accounts isolated', () async {
     FlutterSecureStorage.setMockInitialValues({});

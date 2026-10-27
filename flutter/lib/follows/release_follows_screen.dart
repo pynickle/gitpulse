@@ -9,6 +9,7 @@ import '../presentation/gitpulse_tokens.dart';
 import 'followed_repositories_panel.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_session.dart';
+import 'repository_pagination.dart';
 import 'release_follows_state.dart';
 import 'release_follows_widgets.dart';
 
@@ -65,7 +66,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
   void _search({bool submit = false}) {
     _debounce?.cancel();
     if (submit) FocusScope.of(context).unfocus();
-    _scrollToTop();
     unawaited(
       ref.read(releaseFollowsSessionProvider.notifier).search(_query.text),
     );
@@ -98,6 +98,20 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(releaseFollowsSessionProvider, (previous, next) {
+      final success = _source == _RepositorySource.search
+          ? previous?.searching == true &&
+                !next.searching &&
+                next.searchProblem == null
+          : previous?.starred.loading == true &&
+                !next.starred.loading &&
+                next.starred.problem == null;
+      if (success) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollToTop();
+        });
+      }
+    });
     ref.listen(followedRepositoryViewProvider, (previous, next) {
       if (next != FollowedRepositoryView.detailed) return;
       unawaited(
@@ -110,7 +124,9 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
     final theme = Theme.of(context);
     final search = _source == _RepositorySource.search;
     final loading = search ? state.searching : state.starred.loading;
-    final hasMore = search ? state.hasMore : state.starred.hasMore;
+    final pagination = search
+        ? state.searchPagination
+        : state.starred.pagination;
     final problem = search ? state.searchProblem : state.starred.problem;
 
     return Align(
@@ -119,7 +135,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
         constraints: const BoxConstraints(maxWidth: 1440),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 1100;
+            final wide = constraints.maxWidth >= GitPulseWidth.timelineTablet;
+            final stackControls =
+                constraints.maxWidth - (wide ? 360 : 0) <
+                GitPulseWidth.timelinePhone *
+                    MediaQuery.textScalerOf(context).scale(1);
             // Scaffold removes the keyboard inset from the body's MediaQuery.
             final keyboardVisible = View.of(context).viewInsets.bottom > 0;
             return Row(
@@ -136,18 +156,14 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                           releaseFollowsPadding,
                           8,
                         ),
-                        // The mode switch keeps its own width and shares its
-                        // line with the sort controls whenever both fit. A
-                        // full-width strip above a second row of controls spent
-                        // the top of the page on two bands with one button each.
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 8,
-                              runSpacing: 8,
+                            Flex(
+                              direction: stackControls
+                                  ? Axis.vertical
+                                  : Axis.horizontal,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 SegmentedButton<_RepositorySource>(
                                   showSelectedIcon: false,
@@ -176,30 +192,25 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                                   },
                                 ),
                                 if (!search)
-                                  _SortControls(
-                                    label:
-                                        state.starred.sort ==
-                                            StarredRepositorySort.created
-                                        ? l10n.followsSortStarred
-                                        : l10n.followsSortUpdated,
-                                    starredLabel: l10n.followsSortStarred,
-                                    updatedLabel: l10n.followsSortUpdated,
-                                    ascending: state.starred.ascending,
-                                    ascendingLabel: l10n.followsAscending,
-                                    descendingLabel: l10n.followsDescending,
-                                    enabled: !loading,
-                                    onSort: (sort) {
-                                      _scrollToTop();
-                                      unawaited(facade.loadStarred(sort: sort));
-                                    },
-                                    onToggleDirection: () {
-                                      _scrollToTop();
-                                      unawaited(
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: stackControls
+                                          ? GitPulseSpace.inline
+                                          : 0,
+                                    ),
+                                    child: _SortControls(
+                                      sort: state.starred.sort,
+                                      ascending: state.starred.ascending,
+                                      enabled: !loading,
+                                      onSort: (sort) => unawaited(
+                                        facade.loadStarred(sort: sort),
+                                      ),
+                                      onToggleDirection: () => unawaited(
                                         facade.loadStarred(
                                           ascending: !state.starred.ascending,
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    ),
                                   ),
                               ],
                             ),
@@ -297,71 +308,70 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
                       Expanded(
                         child: _discovery(state, search, loading, problem),
                       ),
-                      if (!keyboardVisible &&
-                          (hasMore || !wide || problem != null))
+                      if (!keyboardVisible)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            releaseFollowsPadding,
-                            8,
-                            releaseFollowsPadding,
-                            12,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: GitPulseSpace.gutter,
+                            vertical: GitPulseSpace.inline,
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              if (hasMore || problem != null)
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: loading
+                              if (pagination != null)
+                                RepositoryPagination(
+                                  pagination: pagination,
+                                  loading: loading,
+                                  onPage: (page) {
+                                    _debounce?.cancel();
+                                    if (search) {
+                                      unawaited(
+                                        facade.search(state.query, page: page),
+                                      );
+                                    } else {
+                                      unawaited(facade.loadStarred(page: page));
+                                    }
+                                  },
+                                ),
+                              if (problem != null)
+                                OutlinedButton.icon(
+                                  onPressed: loading
+                                      ? null
+                                      : () {
+                                          if (search) {
+                                            unawaited(
+                                              facade.search(
+                                                state.query,
+                                                page: state.searchRequestedPage,
+                                              ),
+                                            );
+                                          } else {
+                                            unawaited(
+                                              facade.loadStarred(
+                                                page:
+                                                    state.starred.requestedPage,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                  icon: const Icon(Icons.refresh),
+                                  label: Text(l10n.timelineRetry),
+                                ),
+                              if (!wide)
+                                FilledButton.tonalIcon(
+                                  key: const ValueKey('manage-follows'),
+                                  onPressed: _showFollowed,
+                                  icon: Icon(
+                                    Icons.bookmarks_outlined,
+                                    color: state.problem == null
                                         ? null
-                                        : () {
-                                            if (search) {
-                                              unawaited(
-                                                facade.search(
-                                                  state.query,
-                                                  more: hasMore,
-                                                ),
-                                              );
-                                            } else {
-                                              unawaited(
-                                                facade.loadStarred(
-                                                  more: hasMore,
-                                                ),
-                                              );
-                                            }
-                                          },
-                                    icon: Icon(
-                                      problem == null
-                                          ? Icons.expand_more
-                                          : Icons.refresh,
-                                    ),
-                                    label: Text(
-                                      problem == null
-                                          ? l10n.followsMore
-                                          : l10n.timelineRetry,
+                                        : theme.colorScheme.error,
+                                  ),
+                                  label: Text(
+                                    l10n.followsManage(
+                                      state.repositories.length,
                                     ),
                                   ),
                                 ),
-                              if (!wide) ...[
-                                if (hasMore || problem != null)
-                                  const SizedBox(width: 8),
-                                Expanded(
-                                  child: FilledButton.tonalIcon(
-                                    key: const ValueKey('manage-follows'),
-                                    onPressed: _showFollowed,
-                                    icon: Icon(
-                                      Icons.bookmarks_outlined,
-                                      color: state.problem == null
-                                          ? null
-                                          : Theme.of(context).colorScheme.error,
-                                    ),
-                                    label: Text(
-                                      l10n.followsManage(
-                                        state.repositories.length,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -470,109 +480,51 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen> {
 
 class _SortControls extends StatelessWidget {
   const _SortControls({
-    required this.label,
-    required this.starredLabel,
-    required this.updatedLabel,
+    required this.sort,
     required this.ascending,
-    required this.ascendingLabel,
-    required this.descendingLabel,
     required this.enabled,
     required this.onSort,
     required this.onToggleDirection,
   });
 
-  final String label;
-  final String starredLabel;
-  final String updatedLabel;
+  final StarredRepositorySort sort;
   final bool ascending;
-  final String ascendingLabel;
-  final String descendingLabel;
   final bool enabled;
   final ValueChanged<StarredRepositorySort> onSort;
   final VoidCallback onToggleDirection;
 
   @override
   Widget build(BuildContext context) {
-    // This cluster shares a [Wrap] run with the mode switch, so its label has
-    // to be able to give way: a run that cannot fit its children would overflow
-    // instead of moving the cluster to the next line.
+    final l10n = AppLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
-          child: _SortMenuButton(
-            label: label,
-            starredLabel: starredLabel,
-            updatedLabel: updatedLabel,
-            enabled: enabled,
-            onSort: onSort,
+          child: SegmentedButton<StarredRepositorySort>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(
+                value: StarredRepositorySort.created,
+                label: Text(l10n.followsSortStarred),
+              ),
+              ButtonSegment(
+                value: StarredRepositorySort.updated,
+                label: Text(l10n.followsSortUpdated),
+              ),
+            ],
+            selected: {sort},
+            onSelectionChanged: enabled
+                ? (values) => onSort(values.single)
+                : null,
           ),
         ),
         IconButton(
-          tooltip: ascending ? ascendingLabel : descendingLabel,
+          tooltip: ascending ? l10n.followsAscending : l10n.followsDescending,
           onPressed: enabled ? onToggleDirection : null,
-          visualDensity: VisualDensity.compact,
           iconSize: GitPulseIconSize.action,
           icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
         ),
       ],
-    );
-  }
-}
-
-/// The current order is the button label. The menu is shifted to stay inside
-/// the window, including when a long label is scaled up on a phone.
-class _SortMenuButton extends StatelessWidget {
-  const _SortMenuButton({
-    required this.label,
-    required this.starredLabel,
-    required this.updatedLabel,
-    required this.enabled,
-    required this.onSort,
-  });
-
-  final String label;
-  final String starredLabel;
-  final String updatedLabel;
-  final bool enabled;
-  final ValueChanged<StarredRepositorySort> onSort;
-
-  Future<void> _open(BuildContext context) async {
-    final box = context.findRenderObject()! as RenderBox;
-    final overlay =
-        Overlay.of(context).context.findRenderObject()! as RenderBox;
-    final origin = box.localToGlobal(Offset.zero, ancestor: overlay);
-    final button = origin & box.size;
-    final selected = await showMenu<StarredRepositorySort>(
-      context: context,
-      position: RelativeRect.fromRect(button, Offset.zero & overlay.size),
-      items: [
-        PopupMenuItem(
-          value: StarredRepositorySort.created,
-          child: Text(
-            starredLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        PopupMenuItem(
-          value: StarredRepositorySort.updated,
-          child: Text(
-            updatedLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-    if (selected != null) onSort(selected);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: enabled ? () => _open(context) : null,
-      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
 }

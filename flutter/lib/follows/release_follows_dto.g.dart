@@ -74,7 +74,12 @@ RepositorySearchPaginationDto _$RepositorySearchPaginationDtoFromJson(
   Map<String, dynamic> json,
 ) => $checkedCreate('RepositorySearchPaginationDto', json, ($checkedConvert) {
   final val = RepositorySearchPaginationDto(
+    page: $checkedConvert('page', (v) => (v as num?)?.toInt() ?? 1),
+    perPage: $checkedConvert('perPage', (v) => (v as num?)?.toInt() ?? 30),
+    hasPrev: $checkedConvert('hasPrev', (v) => v as bool? ?? false),
     hasNext: $checkedConvert('hasNext', (v) => v as bool? ?? false),
+    totalCount: $checkedConvert('totalCount', (v) => (v as num?)?.toInt()),
+    totalPages: $checkedConvert('totalPages', (v) => (v as num?)?.toInt()),
   );
   return val;
 });

@@ -49,12 +49,24 @@ class RepositorySearchDto {
 
 @JsonSerializable(checked: true, createToJson: false)
 class RepositorySearchPaginationDto {
-  const RepositorySearchPaginationDto({this.hasNext = false});
+  const RepositorySearchPaginationDto({
+    this.page = 1,
+    this.perPage = 30,
+    this.hasPrev = false,
+    this.hasNext = false,
+    this.totalCount,
+    this.totalPages,
+  });
 
   factory RepositorySearchPaginationDto.fromJson(Map<String, dynamic> json) =>
       _$RepositorySearchPaginationDtoFromJson(json);
 
+  final int page;
+  final int perPage;
+  final bool hasPrev;
   final bool hasNext;
+  final int? totalCount;
+  final int? totalPages;
 }
 
 @JsonSerializable(checked: true, createToJson: false)

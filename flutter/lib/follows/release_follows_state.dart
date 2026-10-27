@@ -34,7 +34,8 @@ class StarredRepositoriesState {
     this.items = const [],
     this.loading = false,
     this.page = 0,
-    this.hasMore = false,
+    this.pagination,
+    this.requestedPage = 1,
     this.sort = StarredRepositorySort.created,
     this.ascending = false,
     this.problem,
@@ -43,7 +44,9 @@ class StarredRepositoriesState {
   final List<RepositoryCandidateDto> items;
   final bool loading;
   final int page;
-  final bool hasMore;
+  final RepositorySearchPaginationDto? pagination;
+  final int requestedPage;
+  bool get hasMore => pagination?.hasNext ?? false;
   final StarredRepositorySort sort;
   final bool ascending;
   final FollowProblem? problem;
@@ -52,7 +55,9 @@ class StarredRepositoriesState {
     List<RepositoryCandidateDto>? items,
     bool? loading,
     int? page,
-    bool? hasMore,
+    RepositorySearchPaginationDto? pagination,
+    bool clearPagination = false,
+    int? requestedPage,
     StarredRepositorySort? sort,
     bool? ascending,
     FollowProblem? problem,
@@ -61,7 +66,8 @@ class StarredRepositoriesState {
     items: items ?? this.items,
     loading: loading ?? this.loading,
     page: page ?? this.page,
-    hasMore: hasMore ?? this.hasMore,
+    pagination: clearPagination ? null : pagination ?? this.pagination,
+    requestedPage: requestedPage ?? this.requestedPage,
     sort: sort ?? this.sort,
     ascending: ascending ?? this.ascending,
     problem: clearProblem ? null : problem ?? this.problem,
@@ -80,7 +86,8 @@ class ReleaseFollowsState {
     this.results = const [],
     this.query = '',
     this.searchPage = 0,
-    this.hasMore = false,
+    this.searchPagination,
+    this.searchRequestedPage = 1,
     this.statuses = const {},
     this.previousNames = const {},
     this.details = const {},
@@ -100,7 +107,9 @@ class ReleaseFollowsState {
   final List<RepositoryCandidateDto> results;
   final String query;
   final int searchPage;
-  final bool hasMore;
+  final RepositorySearchPaginationDto? searchPagination;
+  final int searchRequestedPage;
+  bool get hasMore => searchPagination?.hasNext ?? false;
   final Map<String, RepositoryPageStatus> statuses;
   final Map<String, String> previousNames;
   final Map<String, FollowedRepositoryDetails> details;
@@ -119,7 +128,9 @@ class ReleaseFollowsState {
     List<RepositoryCandidateDto>? results,
     String? query,
     int? searchPage,
-    bool? hasMore,
+    RepositorySearchPaginationDto? searchPagination,
+    bool clearSearchPagination = false,
+    int? searchRequestedPage,
     Map<String, RepositoryPageStatus>? statuses,
     Map<String, String>? previousNames,
     Map<String, FollowedRepositoryDetails>? details,
@@ -141,7 +152,10 @@ class ReleaseFollowsState {
     results: results ?? this.results,
     query: query ?? this.query,
     searchPage: searchPage ?? this.searchPage,
-    hasMore: hasMore ?? this.hasMore,
+    searchPagination: clearSearchPagination
+        ? null
+        : searchPagination ?? this.searchPagination,
+    searchRequestedPage: searchRequestedPage ?? this.searchRequestedPage,
     statuses: statuses ?? this.statuses,
     previousNames: previousNames ?? this.previousNames,
     details: details ?? this.details,

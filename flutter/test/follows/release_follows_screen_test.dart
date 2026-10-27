@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -93,6 +95,166 @@ void _expectInsideView(WidgetTester tester, Finder finder) {
 }
 
 void main() {
+  testWidgets(
+    'failed page jumps retain content, selection and scroll until retry succeeds',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        final server = FollowsServer()
+          ..starredHasMore = true
+          ..starredTotalPages = 10
+          ..starredRepositories = [
+            for (var i = 0; i < 30; i++)
+              repositoryJson(id: 'R_$i', name: 'project-$i'),
+          ];
+        await _openFollows(tester, server);
+        final firstPage = find.byKey(const ValueKey('repository-page-1'));
+        final lastPage = find.byKey(const ValueKey('repository-page-10'));
+        expect(firstPage.hitTestable(), findsOneWidget);
+        expect(lastPage.hitTestable(), findsOneWidget);
+        expect(find.text('…'), findsOneWidget);
+        final results = find.byType(CustomScrollView).first;
+        await tester.drag(results, const Offset(0, -900));
+        await tester.pumpAndSettle();
+        final sourcePosition = tester.getTopLeft(find.text('Starred'));
+        final footerPosition = tester.getTopLeft(lastPage);
+        final scroll = tester.widget<CustomScrollView>(results).controller!;
+        final offset = scroll.offset;
+        expect(offset, greaterThan(0));
+        server.starredStatus = 500;
+        final hold = Completer<void>();
+        server.holdStarred = hold.future;
+        await tester.tap(lastPage);
+        await _pumpFrames(tester);
+        expect(
+          tester.getSemantics(firstPage).flagsCollection.isSelected,
+          Tristate.isTrue,
+        );
+        expect(
+          tester.getSemantics(lastPage).flagsCollection.isSelected,
+          Tristate.isFalse,
+        );
+        expect(scroll.offset, offset);
+        hold.complete();
+        server.holdStarred = null;
+        await tester.pumpAndSettle();
+        expect(
+          tester.getSemantics(firstPage).flagsCollection.isSelected,
+          Tristate.isTrue,
+        );
+        expect(scroll.offset, offset);
+        expect(
+          find.byKey(const ValueKey('starred-R_0')),
+          findsNothing,
+          reason: 'the long original page stays scrolled',
+        );
+        expect(find.text('Retry').hitTestable(), findsOneWidget);
+        expect(tester.getTopLeft(find.text('Starred')), sourcePosition);
+        server.starredStatus = 200;
+        server.starredHasMore = false;
+        server.starredRepositories = [
+          repositoryJson(id: 'R_last', name: 'last'),
+        ];
+        await tester.tap(find.text('Retry'));
+        await tester.pumpAndSettle();
+        expect(server.featureRequests.last.uri.queryParameters['page'], '10');
+        expect(find.text('octo/last').hitTestable(), findsOneWidget);
+        expect(find.textContaining('octo/project-'), findsNothing);
+        expect(
+          tester.getSemantics(lastPage).flagsCollection.isSelected,
+          Tristate.isTrue,
+        );
+        expect(scroll.offset, 0);
+        expect(tester.getTopLeft(lastPage), footerPosition);
+        expect(find.byKey(const ValueKey('repository-page-9')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'sources preserve independent pages and unknown totals never invent a last page',
+    (tester) async {
+      final server = FollowsServer()
+        ..starredRepositories = [repositoryJson(id: 'R_star', name: 'star')]
+        ..starredHasMore = true;
+      await _openFollows(tester, server);
+      expect(find.byKey(const ValueKey('repository-page-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('repository-page-2')), findsOneWidget);
+      expect(find.byKey(const ValueKey('repository-page-3')), findsNothing);
+      expect(find.text('…'), findsNothing);
+      await tester.tap(find.byTooltip('Next page'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      expect(find.text('Starred date'), findsNothing);
+      expect(find.byTooltip('Descending'), findsNothing);
+      expect(find.byTooltip('Next page'), findsNothing);
+      await tester.enterText(
+        auth.fieldLabeled('Repository name or GitHub URL'),
+        'alpha',
+      );
+      server.searchHasMore = true;
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      server.searchStatus = 500;
+      await tester.tap(find.byTooltip('Next page'));
+      await tester.pumpAndSettle();
+      expect(find.text('octo/alpha'), findsOneWidget);
+      server.searchStatus = 200;
+      server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(server.featureRequests.last.uri.queryParameters, {
+        'q': 'alpha',
+        'page': '2',
+        'per_page': '30',
+      });
+      expect(find.text('octo/alpha'), findsNothing);
+      expect(find.text('octo/beta'), findsOneWidget);
+      final requests = server.featureRequests.length;
+      await tester.tap(find.text('Starred'));
+      await tester.pumpAndSettle();
+      expect(find.text('octo/star'), findsOneWidget);
+      expect(find.byKey(const ValueKey('repository-page-3')), findsOneWidget);
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      expect(find.text('octo/beta'), findsOneWidget);
+      expect(server.featureRequests.length, requests);
+      await tester.enterText(
+        auth.fieldLabeled('Repository name or GitHub URL'),
+        'changed',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      expect(server.featureRequests.last.uri.queryParameters['page'], '1');
+    },
+  );
+
+  testWidgets('single pages and repository URL lookups omit pagination', (
+    tester,
+  ) async {
+    final server = FollowsServer()..starredRepositories = [repositoryJson()];
+    await _openFollows(tester, server);
+    expect(find.byTooltip('Previous page'), findsNothing);
+    expect(find.byTooltip('Next page'), findsNothing);
+    expect(find.byKey(const ValueKey('repository-page-1')), findsNothing);
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      auth.fieldLabeled('Repository name or GitHub URL'),
+      'https://github.com/octo/alpha',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(find.text('octo/alpha'), findsOneWidget);
+    expect(server.featureRequests.last.uri.path, '/api/repos/octo/alpha');
+    expect(find.byKey(const ValueKey('repository-page-1')), findsNothing);
+    expect(find.byTooltip('Next page'), findsNothing);
+  });
+
   testWidgets('discovery sorting, pagination and repository navigation work', (
     tester,
   ) async {
@@ -111,14 +273,12 @@ void main() {
     await tester.pumpAndSettle();
     server.starredRepositories = [repositoryJson(id: 'R_beta', name: 'beta')];
     server.starredHasMore = false;
-    await tester.tap(find.text('Load more'));
+    await tester.tap(find.byTooltip('Next page'));
     await tester.pumpAndSettle();
-    expect(find.text('octo/alpha'), findsOneWidget);
+    expect(find.text('octo/alpha'), findsNothing);
     expect(find.text('octo/beta'), findsOneWidget);
     expect(server.featureRequests.last.uri.queryParameters['page'], '2');
-    await tester.tap(find.text('Starred date'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Last updated').last);
+    await tester.tap(find.text('Last updated'));
     await tester.pumpAndSettle();
     expect(server.featureRequests.last.uri.queryParameters['sort'], 'updated');
     expect(server.featureRequests.last.uri.queryParameters['page'], '1');
@@ -180,7 +340,7 @@ void main() {
       );
       server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
       server.searchHasMore = false;
-      await tester.tap(find.text('Load more'));
+      await tester.tap(find.byTooltip('Next page'));
       await tester.pumpAndSettle();
       expect(find.text('octo/beta'), findsOneWidget);
       expect(server.featureRequests.last.uri.queryParameters['page'], '2');
@@ -204,6 +364,8 @@ void main() {
       addTearDown(tester.view.resetViewInsets);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final server = FollowsServer()
+        ..starredHasMore = true
+        ..starredTotalPages = 10
         ..starredRepositories = [
           for (var i = 0; i < 30; i++)
             repositoryJson(id: 'R_$i', name: 'project-$i'),
@@ -238,12 +400,18 @@ void main() {
         if (size.width < 1100) {
           final manage = find.byKey(const ValueKey('manage-follows'));
           expect(manage.hitTestable(), findsOneWidget);
+          expect(
+            tester.getBottomLeft(find.text('Starred')).dy,
+            lessThan(tester.getTopLeft(find.text('Starred date')).dy),
+          );
+          expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
           await tester.drag(
             find.byType(CustomScrollView).first,
             const Offset(0, -1200),
           );
           await tester.pumpAndSettle();
           expect(find.text('Search').hitTestable(), findsOneWidget);
+          expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
           expect(manage.hitTestable(), findsOneWidget);
           await tester.tap(manage);
           await tester.pumpAndSettle();
@@ -531,11 +699,14 @@ void main() {
     },
   );
 
-  testWidgets('the sort menu stays inside a narrow window', (tester) async {
+  testWidgets('sort segments stay inside a narrow window', (tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final server = FollowsServer()..starredRepositories = [repositoryJson()];
+    final server = FollowsServer()
+      ..starredRepositories = [repositoryJson()]
+      ..starredHasMore = true
+      ..starredTotalPages = 10;
     final preferences = _preferencesFile();
     await _openFollows(tester, server, presentationFile: preferences);
     tester.view.physicalSize = const Size(320, 640);
@@ -544,8 +715,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Starred date'), findsOneWidget);
     expect(find.text('Sort by'), findsNothing);
-    await tester.tap(find.text('Starred date'));
-    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     _expectInsideView(tester, find.text('Last updated'));
     await tester.tap(find.text('Last updated').last);
@@ -564,9 +733,16 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 1.8;
     await tester.tap(find.text('关注'));
     await tester.pumpAndSettle();
-    expect(find.text('排序'), findsNothing);
-    await tester.tap(find.text('更新时间'));
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
     await tester.pumpAndSettle();
+    expect(
+      Theme.of(tester.element(find.text('加星时间'))).brightness,
+      Brightness.dark,
+    );
+    expect(find.byTooltip('下一页').hitTestable(), findsOneWidget);
+    _expectInsideView(tester, find.byTooltip('下一页'));
+    expect(find.text('排序'), findsNothing);
     expect(tester.takeException(), isNull);
     _expectInsideView(tester, find.text('加星时间'));
     expect(find.byIcon(Icons.arrow_upward), findsOneWidget);

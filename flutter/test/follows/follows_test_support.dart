@@ -43,6 +43,8 @@ class FollowsServer extends AuthServer {
   int metadataStatus = 200;
   int settingsStatus = 200;
   int roundStatus = 200;
+  int? searchTotalPages;
+  int? starredTotalPages;
   bool searchHasMore = false;
   bool starredHasMore = false;
   Future<void>? holdSearch;
@@ -104,7 +106,17 @@ class FollowsServer extends AuthServer {
       if (holdSearch != null) await holdSearch;
       return json(searchStatus, {
         'items': result,
-        'pagination': {'hasNext': searchHasMore},
+        'pagination': {
+          'page': int.parse(options.uri.queryParameters['page'] ?? '1'),
+          'perPage': 30,
+          'hasPrev':
+              (int.parse(options.uri.queryParameters['page'] ?? '1')) > 1,
+          'hasNext': searchHasMore,
+          'totalCount': searchTotalPages == null
+              ? null
+              : searchTotalPages! * 30,
+          'totalPages': searchTotalPages,
+        },
       });
     }
     if (path.endsWith('/api/starred')) {
@@ -112,7 +124,17 @@ class FollowsServer extends AuthServer {
       if (holdStarred != null) await holdStarred;
       return json(starredStatus, {
         'items': result,
-        'pagination': {'hasNext': starredHasMore},
+        'pagination': {
+          'page': int.parse(options.uri.queryParameters['page'] ?? '1'),
+          'perPage': 30,
+          'hasPrev':
+              (int.parse(options.uri.queryParameters['page'] ?? '1')) > 1,
+          'hasNext': starredHasMore,
+          'totalCount': starredTotalPages == null
+              ? null
+              : starredTotalPages! * 30,
+          'totalPages': starredTotalPages,
+        },
       });
     }
     if (path.contains('/api/repos/')) {
