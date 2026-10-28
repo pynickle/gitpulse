@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -500,6 +501,64 @@ void main() {
       );
       expect(await tester.runAsync(() => savedHistory(harness)), ['R_alpha:2']);
       expect(await tester.runAsync(() => rememberedWindow(harness)), 1);
+    },
+  );
+
+  testWidgets(
+    'retention editor stays locked until local application completes',
+    (tester) async {
+      useNarrowWindow(tester);
+      tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+      addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+      final harness = harnessFor(
+        tester,
+        session: SessionState(
+          phase: SessionPhase.signedIn,
+          identity: signedInIdentity(githubId: '1'),
+        ),
+        handlers: {
+          'GET api/settings': () =>
+              BackendResult(statusCode: 200, data: settingsJson(const [])),
+        },
+      );
+      await tester.runAsync(harness.open);
+      await pumpApp(tester, harness);
+      await openSettings(tester, 'Settings');
+      await showRetention(tester);
+      final started = Completer<void>();
+      final release = Completer<void>();
+      late Future<void> blocker;
+      await tester.runAsync(() async {
+        blocker = harness.cache.transaction(() async {
+          started.complete();
+          await release.future;
+        });
+      });
+      await pumpUntil(
+        tester,
+        () => started.isCompleted,
+        reason: 'cache transaction begins',
+      );
+      await tester.tap(find.byTooltip('Decrease retention'));
+      await settleUi(tester);
+      expect(tester.widget<TextField>(retentionField).enabled, isFalse);
+      expect(retentionStep(tester, 'Decrease retention').onPressed, isNull);
+      expect(retentionStep(tester, 'Increase retention').onPressed, isNull);
+      expect(
+        harness.container
+            .read(devicePreferencesStateProvider)
+            .preferences
+            .retentionDays,
+        29,
+      );
+      await pumpOperation(tester, () async {
+        release.complete();
+        await blocker;
+      }, reason: 'release blocked cache transaction');
+      await settleUi(tester);
+      expect(tester.widget<TextField>(retentionField).enabled, isTrue);
+      expect(retentionStep(tester, 'Decrease retention').onPressed, isNotNull);
+      expect(retentionStep(tester, 'Increase retention').onPressed, isNotNull);
     },
   );
 

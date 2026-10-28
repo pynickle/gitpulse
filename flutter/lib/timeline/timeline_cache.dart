@@ -94,6 +94,10 @@ class TimelineCache extends _$TimelineCache {
   bool _historyClearRequired = false;
   Future<void>? _closing;
 
+  // Content writes invalidate loaded visible content; expiry and membership
+  // changes are detected separately without reading release bodies.
+  int _contentRevision = 0;
+
   // One queue orders account changes, pruning and writes even when different
   // presentation controllers initiate operations concurrently.
   Future<T> _queue<T>(Future<T> Function() action) {
@@ -262,8 +266,11 @@ class TimelineCache extends _$TimelineCache {
     required DateTime now,
     required TimelineEnvironment environment,
     int? retentionDays,
+    SavedTimeline? previous,
+    bool Function()? isCurrent,
   }) => _queue(
     () => transaction(() async {
+      if (isCurrent != null && !isCurrent()) throw const _ObsoleteWrite();
       await _claim(scope);
       final account = await customSelect(
         'SELECT * FROM cache_account WHERE scope = ?',
@@ -273,38 +280,63 @@ class TimelineCache extends _$TimelineCache {
       if (days == null) return null;
       await _prune(now, days);
       final repositories = await _repositories();
-      final rows = await customSelect(
-        '''SELECT r.*, v.oldest_shown FROM cache_visible v
-      JOIN cache_releases r ON r.repository_id = v.repository_id AND r.id = v.release_id''',
+      // Membership and repository metadata are enough to detect expiry or follow
+      // cleanup. Content writes invalidate reuse without reading release bodies.
+      final members = await customSelect(
+        'SELECT repository_id, release_id, oldest_shown FROM cache_visible ORDER BY repository_id, release_id',
       ).get();
-      final rowsByRepository = <String, List<QueryRow>>{};
-      for (final row in rows) {
-        (rowsByRepository[row.read<String>('repository_id')] ??= []).add(row);
-      }
-      final pages = <String, RepositoryPage>{};
-      for (final repository in repositories) {
-        final records = rowsByRepository[repository.id] ?? const <QueryRow>[];
-        pages[repository.id] = RepositoryPage(
-          status: RepositoryPageStatus.available,
-          owner: repository.owner,
-          name: repository.name,
-          hasOlderReleases: records.any(
-            (row) => row.read<int>('oldest_shown') == 1,
-          ),
-          releases: records
-              .map(
-                (row) => ReleaseItemDto.fromJson(
-                  jsonDecode(row.read<String>('content'))
-                      as Map<String, dynamic>,
-                ).toDomain(),
-              )
-              .toList(),
-        );
+      final fingerprint = jsonEncode([
+        scope,
+        _contentRevision,
+        account.readNullable<int>('saved_at'),
+        account.readNullable<int>('lower_bound'),
+        account.readNullable<String>('baseline'),
+        account.read<int>('partial'),
+        for (final repository in repositories)
+          [repository.id, repository.owner, repository.name],
+        for (final member in members) member.data,
+      ]);
+      if (isCurrent != null && !isCurrent()) throw const _ObsoleteWrite();
+      final List<TimelineGroup> groups;
+      if (previous?.visibleFingerprint == fingerprint) {
+        groups = previous!.groups;
+      } else {
+        final rows = await customSelect(
+          '''SELECT r.*, v.oldest_shown FROM cache_visible v
+      JOIN cache_releases r ON r.repository_id = v.repository_id AND r.id = v.release_id''',
+        ).get();
+        final rowsByRepository = <String, List<QueryRow>>{};
+        for (final row in rows) {
+          (rowsByRepository[row.read<String>('repository_id')] ??= []).add(row);
+        }
+        final pages = <String, RepositoryPage>{};
+        for (final repository in repositories) {
+          final records = rowsByRepository[repository.id] ?? const <QueryRow>[];
+          pages[repository.id] = RepositoryPage(
+            status: RepositoryPageStatus.available,
+            owner: repository.owner,
+            name: repository.name,
+            hasOlderReleases: records.any(
+              (row) => row.read<int>('oldest_shown') == 1,
+            ),
+            releases: records
+                .map(
+                  (row) => ReleaseItemDto.fromJson(
+                    jsonDecode(row.read<String>('content'))
+                        as Map<String, dynamic>,
+                  ).toDomain(),
+                )
+                .toList(),
+          );
+        }
+        groups = assembleTimelineGroups(repositories, pages, environment);
       }
       final timestamp = account.readNullable<int>('saved_at');
+      if (isCurrent != null && !isCurrent()) throw const _ObsoleteWrite();
       return SavedTimeline(
+        visibleFingerprint: fingerprint,
         repositories: repositories,
-        groups: assembleTimelineGroups(repositories, pages, environment),
+        groups: groups,
         retentionDays: days,
         savedAt: timestamp == null
             ? null
@@ -502,6 +534,7 @@ class TimelineCache extends _$TimelineCache {
     required bool Function() isCurrent,
     Set<String> obsoleteRepositories = const {},
   }) => _writeCurrent(isCurrent, () async {
+    _contentRevision++;
     final account = await customSelect(
       'SELECT retention_days FROM cache_account WHERE scope = ?',
       variables: [Variable(scope)],
@@ -706,6 +739,7 @@ class TimelineCacheCorruption implements Exception {
 
 class SavedTimeline {
   const SavedTimeline({
+    this.visibleFingerprint,
     required this.repositories,
     required this.groups,
     required this.retentionDays,
@@ -715,6 +749,7 @@ class SavedTimeline {
     required this.partial,
   });
 
+  final String? visibleFingerprint;
   final List<TimelineRepository> repositories;
   final List<TimelineGroup> groups;
   final int retentionDays;

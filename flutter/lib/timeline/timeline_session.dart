@@ -49,6 +49,27 @@ class TimelineFollowRemoval {
   final Set<String> repositoryIds;
 }
 
+enum RetentionApplication { applied, failed, notApplied }
+
+enum RetentionNotAppliedReason {
+  noSession,
+  followsUnconfirmed,
+  unavailableCacheScope,
+  sessionInvalidated,
+}
+
+class RetentionChoiceResult {
+  const RetentionChoiceResult({
+    required this.remembered,
+    required this.application,
+    this.reason,
+  });
+
+  final bool remembered;
+  final RetentionApplication application;
+  final RetentionNotAppliedReason? reason;
+}
+
 class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   List<TimelineRepository> _followedRepositories = const [];
   TimelineCycle _cycle = TimelineCycle.empty;
@@ -59,8 +80,12 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   bool _awaitingFreshWindow = true;
   String _cycleId = '';
   Future<void>? _cacheAction;
+  Future<void> _retentionChoices = Future.value();
+  bool _retentionIncomplete = false;
+  SavedTimeline? _loadedVisible;
   final List<TimelineCachePage> _cyclePages = [];
   int _persistedPageCount = 0;
+  bool _currentSaveIncomplete = false;
   bool _cacheSynchronized = false;
   TimelineFilterState _filters = const TimelineFilterState();
   List<TimelineGroup>? _preparedForGroups;
@@ -105,22 +130,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         return;
       }
       unawaited(applyFollows(next.repositories));
-    });
-    // The retention window belongs to the installation, so a change made in
-    // Settings arrives here as a choice already in force: applying it prunes
-    // saved history at once, without a request.
-    //
-    // Before this session has resolved a window there is nothing to change:
-    // startup owns that first resolution, and applying the same value here
-    // would prune against a follow set the restore has not supplied yet.
-    ref.listen(devicePreferencesProvider, (previous, next) {
-      final days = next.value?.preferences.retentionDays;
-      if (days == null ||
-          _retentionWindow == null ||
-          days == _retentionWindow) {
-        return;
-      }
-      unawaited(applyRetentionWindow(days));
     });
     final transitions = ref
         .read(sessionControllerProvider.notifier)
@@ -239,6 +248,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
     if (byId.keys.any((id) => !previousIds.contains(id))) {
       _cyclePages.clear();
+      _currentSaveIncomplete = false;
       _persistedPageCount = 0;
       _cycle = TimelineCycle.empty;
       _awaitingFreshWindow = true;
@@ -473,9 +483,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   void _onSessionChanged() {
     final context = _sessionContext();
+    if (context != null && context == _context) return;
+    _retentionIncomplete = false;
+    _loadedVisible = null;
     if (context == null) {
       _generation += 1;
       _cyclePages.clear();
+      _currentSaveIncomplete = false;
       _persistedPageCount = 0;
       _context = null;
       _followedRepositories = const [];
@@ -488,8 +502,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       state = const TimelineViewState.inactive();
       return;
     }
-    if (context == _context) return;
     _cyclePages.clear();
+    _currentSaveIncomplete = false;
     _persistedPageCount = 0;
     _context = context;
     _followedRepositories = const [];
@@ -545,7 +559,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// default. The seed becomes the device's choice, so the next launch has one
   /// without reading the cache first.
   Future<void> _resolveRetentionWindow() async {
-    if (_retentionWindow != null) return;
     final scope = _scopeOfSession();
     // Without a cache scope this installation saves nothing at all, so there is
     // no window to resolve and no local file to read.
@@ -554,7 +567,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     // The read may outlive an account change: a window resolved for another
     // account is not this session's to apply.
     if (!ref.mounted || _scopeOfSession() != scope) return;
-    final chosen = preferences.preferences.retentionDays;
+    final chosen = ref
+        .read(devicePreferencesStateProvider)
+        .preferences
+        .retentionDays;
     if (chosen != null) {
       _retentionWindow = chosen;
       return;
@@ -594,9 +610,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
               now: ref.read(timelineClockProvider)(),
               environment: ref.read(timelineEnvironmentProvider),
               retentionDays: _retentionWindow,
+              isCurrent: () => _isCurrent(ticket),
             );
         if (!_isCurrent(ticket)) return;
         if (saved != null) {
+          _loadedVisible = saved;
           _cacheSynchronized = true;
           _followedRepositories = saved.repositories;
           final view = _visibleIn(saved.groups, saved.baseline);
@@ -650,50 +668,113 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (scope == null) return;
     final ticket = _generation;
     try {
-      if (!state.restored || !_cacheSynchronized) {
-        await ref
-            .read(timelineCacheProvider)
-            .prune(
-              scope: scope,
-              now: ref.read(timelineClockProvider)(),
-              isCurrent: () => _isCurrent(ticket),
-              retentionDays: _retentionWindow,
-            );
-        return;
-      }
-      final saved = await ref
-          .read(timelineCacheProvider)
-          .restore(
-            scope: scope,
-            now: ref.read(timelineClockProvider)(),
-            environment: ref.read(timelineEnvironmentProvider),
-            retentionDays: _retentionWindow,
-          );
-      if (_isCurrent(ticket) &&
-          state.restored &&
-          saved != null &&
-          _cacheSynchronized) {
-        state = _withGroups(state, saved.groups, saved.baseline);
-      }
+      await _pruneRetainedHistory(ticket);
     } catch (error) {
       if (_isCurrent(ticket)) _cacheFailure(error);
     }
   }
 
-  /// Applies this installation's retention window to its saved history now.
-  ///
-  /// The window is the device's own choice, so it needs no server confirmation
-  /// and no request: the pages already read are replayed under it and the
-  /// records that fall outside it are pruned while the reader is still offline.
-  ///
-  /// A choice made while another cache action is running waits for it instead of
-  /// being dropped: the reader has already been told the new window is in force.
-  Future<void> applyRetentionWindow(int days) async {
-    while (_cacheAction != null) {
-      await _cacheAction;
+  Future<void> _pruneRetainedHistory(int ticket) async {
+    final scope = _scopeOfSession();
+    if (scope == null) return;
+    if (!state.restored || !_cacheSynchronized) {
+      await ref
+          .read(timelineCacheProvider)
+          .prune(
+            scope: scope,
+            now: ref.read(timelineClockProvider)(),
+            isCurrent: () => _isCurrent(ticket),
+            retentionDays: _retentionWindow,
+          );
+      return;
     }
-    if (!ref.mounted) return;
-    await _runCacheAction(() => _applyRetentionWindow(days));
+    final saved = await ref
+        .read(timelineCacheProvider)
+        .restore(
+          scope: scope,
+          now: ref.read(timelineClockProvider)(),
+          environment: ref.read(timelineEnvironmentProvider),
+          retentionDays: _retentionWindow,
+          previous: _loadedVisible,
+          isCurrent: () => _isCurrent(ticket),
+        );
+    if (_isCurrent(ticket) &&
+        state.restored &&
+        saved != null &&
+        _cacheSynchronized) {
+      _loadedVisible = saved;
+      if (!identical(state.groups, saved.groups)) {
+        state = _withGroups(state, saved.groups, saved.baseline);
+      }
+    }
+  }
+
+  /// Remembers and locally applies one choice, in submission order.
+  /// Completion includes history replay, pruning and any restored-window update.
+  Future<RetentionChoiceResult> chooseRetentionWindow(int days) {
+    if (validRetentionDays(days) == null) {
+      throw ArgumentError.value(
+        days,
+        'days',
+        'Expected 1 through 90 whole days',
+      );
+    }
+    final ticket = _generation;
+    final preferences = ref.read(devicePreferencesProvider.notifier);
+    final operation = _retentionChoices.then((_) async {
+      final remembered = await preferences.selectRetentionDays(days);
+      RetentionNotAppliedReason? reason;
+      if (!_isCurrent(ticket)) {
+        reason = RetentionNotAppliedReason.sessionInvalidated;
+      } else if (_sessionContext() == null) {
+        reason = RetentionNotAppliedReason.noSession;
+      } else {
+        _retentionWindow = days;
+        _retentionIncomplete = true;
+        if (!_followsKnown) {
+          reason = RetentionNotAppliedReason.followsUnconfirmed;
+        } else if (_scopeOfSession() == null) {
+          reason = RetentionNotAppliedReason.unavailableCacheScope;
+        }
+      }
+      if (reason != null) {
+        return RetentionChoiceResult(
+          remembered: remembered,
+          application: RetentionApplication.notApplied,
+          reason: reason,
+        );
+      }
+      while (_cacheAction != null) {
+        await _cacheAction;
+      }
+      if (!_isCurrent(ticket)) {
+        return RetentionChoiceResult(
+          remembered: remembered,
+          application: RetentionApplication.notApplied,
+          reason: RetentionNotAppliedReason.sessionInvalidated,
+        );
+      }
+      var applied = false;
+      await _runCacheAction(() async {
+        applied = await _applyRetentionWindow(days, ticket);
+      });
+      return RetentionChoiceResult(
+        remembered: remembered,
+        application: !_isCurrent(ticket)
+            ? RetentionApplication.notApplied
+            : applied
+            ? RetentionApplication.applied
+            : RetentionApplication.failed,
+        reason: !_isCurrent(ticket)
+            ? RetentionNotAppliedReason.sessionInvalidated
+            : null,
+      );
+    });
+    _retentionChoices = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
   }
 
   Future<void> _runCacheAction(Future<void> Function() action) async {
@@ -708,25 +789,35 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
   }
 
-  Future<void> _applyRetentionWindow(int days) async {
-    if (_retentionWindow == null || days == _retentionWindow) return;
-    // A window is only a filter over history this session owns: without a
-    // signed-in account and its confirmed follows there is no history to keep.
-    if (_sessionContext() == null || !_followsKnown) return;
+  Future<bool> _applyRetentionWindow(int days, int ticket) async {
+    if (!_isCurrent(ticket) || _sessionContext() == null || !_followsKnown) {
+      return false;
+    }
     _retentionWindow = days;
-    final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
-    if (scope == null) return;
-    final ticket = _generation;
+    _retentionIncomplete = true;
+    final scope = _scopeOfSession();
+    if (scope == null) return false;
     try {
       await _synchronizeCache(scope, ticket);
-      if (!_isCurrent(ticket)) return;
-      await _loadHistory(ticket, replayCurrentPages: true);
-      if (!_isCurrent(ticket)) return;
-      await pruneRetainedHistory();
+      if (!_isCurrent(ticket)) return false;
+      if (_currentSaveIncomplete || _persistedPageCount < _cyclePages.length) {
+        await _persistCurrent(ticket, propagateFailure: true);
+        if (!_isCurrent(ticket)) return false;
+      }
+      await _loadHistory(
+        ticket,
+        replayCurrentPages: true,
+        propagateFailure: true,
+      );
+      if (!_isCurrent(ticket)) return false;
+      await _pruneRetainedHistory(ticket);
+      if (!_isCurrent(ticket)) return false;
+      _retentionIncomplete = false;
+      state = state.copyWith(cacheFailed: false);
+      return true;
     } catch (error) {
-      if (!_isCurrent(ticket)) return;
-      _cacheFailure(error);
+      if (_isCurrent(ticket)) _cacheFailure(error);
+      return false;
     }
   }
 
@@ -738,6 +829,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       return;
     }
     final ticket = _generation;
+    if (_retentionIncomplete && _retentionWindow != null) {
+      await _applyRetentionWindow(_retentionWindow!, ticket);
+      return;
+    }
     if (_cyclePages.isEmpty && state.cacheFailed && !_followsKnown) {
       state = state.copyWith(loading: true);
       await _restoreCachedWindow(ticket);
@@ -853,11 +948,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     // follow set that is not restored yet would delete the saved history it does
     // not name, and nothing may be pruned on a guessed policy. A round that
     // started while the device was still being read waits for it here.
-    if (_retentionWindow == null) {
-      await _resolveRetentionWindow();
-      if (!_isCurrent(ticket)) return;
-    }
-    if (_retentionWindow == null) return;
+    await _resolveRetentionWindow();
+    if (!_isCurrent(ticket) || _retentionWindow == null) return;
     // Nor before this session has a confirmed follow set: a history keyed to
     // repositories nobody confirmed would be written, and its neighbours deleted.
     if (!_followsKnown) return;
@@ -887,6 +979,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
     final ticket = ++_generation;
     _cyclePages.clear();
+    _currentSaveIncomplete = false;
     _persistedPageCount = 0;
     _cycle = TimelineCycle.empty;
     _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
@@ -1019,6 +1112,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   Future<void> _loadHistory(
     int ticket, {
     bool replayCurrentPages = false,
+    bool propagateFailure = false,
   }) async {
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
@@ -1026,6 +1120,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         _retentionWindow == null ||
         !_cacheSynchronized ||
         state.cacheCorrupted) {
+      if (propagateFailure) throw StateError('History is not available');
       return;
     }
     try {
@@ -1048,6 +1143,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         }
       }
     } catch (error) {
+      if (propagateFailure) rethrow;
       if (_isCurrent(ticket)) _cacheFailure(error);
     }
   }
@@ -1149,6 +1245,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final startsWindow = refresh || _awaitingFreshWindow;
     if (startsWindow) {
       _cyclePages.clear();
+      _currentSaveIncomplete = false;
       _persistedPageCount = 0;
       _cycleId = '${DateTime.now().microsecondsSinceEpoch}:$_generation';
     }
@@ -1229,7 +1326,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (_isCurrent(ticket)) state = state.copyWith(loading: false);
   }
 
-  Future<void> _persistCurrent(int ticket) async {
+  Future<void> _persistCurrent(
+    int ticket, {
+    bool propagateFailure = false,
+  }) async {
     final identity = ref.read(sessionControllerProvider).identity;
     final scope = identity == null ? null : TimelineCache.scopeOf(identity);
     // Durable history also needs a confirmed follow set: without one the cache
@@ -1255,10 +1355,15 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             );
         if (_isCurrent(ticket)) {
           _persistedPageCount = _cyclePages.length;
+          _currentSaveIncomplete = false;
           state = state.copyWith(savedAt: now, cacheFailed: false);
         }
       } catch (error) {
-        if (_isCurrent(ticket)) _cacheFailure(error);
+        if (_isCurrent(ticket)) {
+          _currentSaveIncomplete = true;
+          _cacheFailure(error);
+        }
+        if (propagateFailure) rethrow;
       }
     }
   }

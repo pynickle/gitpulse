@@ -27,13 +27,26 @@ its cache ledger last wrote, and otherwise starts at 30. The seed is then kept a
 device choice, so the next launch needs no seed. A store that cannot be read falls
 back to 30 before any write.
 
-Settings shows the window in its whole-day editor, offers the confirm action only
-once the field holds a different value, refuses anything outside 1 to 90, and
-applies a confirmed change at once: the pages already fetched are replayed under
-the new window and the records outside it are pruned, without a request, so the
-change works offline. The cache ledger keeps the window it last wrote, which seeds
-a first choice and restores after a restart. Older online browsing stays readable
-for the current session.
+Settings shows the window in its whole-day editor and refuses anything outside
+1 to 90. Step buttons submit immediately; typed input submits on focus loss. The
+editor is disabled until its choose-and-apply operation finishes. That operation
+reports separately whether the device remembered the choice and whether local
+cache application completed, failed, or could not run (for example, without a
+valid session or confirmed follows). Accepted choices run serially. A preference
+write failure keeps the choice for the current run and still attempts local
+application. A cache failure keeps the choice and still-readable content; Retry
+saving retries unfinished synchronization, history replay, pruning and restored
+window updates locally, without fetching or advancing the refresh baseline.
+Normal startup or follow confirmation adopts the latest device choice after a
+deferred application. Pruning already committed is not rolled back, and a later
+increase cannot recover deleted history.
+
+The cache ledger records the window last written. Startup restores visible
+membership separately from loading retained pagination history. Later local
+cleanup compares visible membership and metadata and reuses loaded visible content
+when they have not changed, avoiding another release-body read and decode. Expiry
+still removes out-of-policy publications from a restored offline window. Older
+releases already exposed online remain readable for the current session.
 
 The Settings clear-cache action goes through the timeline facade. It invalidates
 in-flight rounds and removes local release content, saved membership, and pagination
@@ -156,7 +169,7 @@ including a clear that waits for a blocked transaction, and clearing during
 pagination followed by an offline reopen.
 
 `flutter test test/settings/device_settings_test.dart` covers this installation's
-own choices through the whole app: the window's default, a confirmed change pruning
+own choices through the whole app: the window's default, a submitted change pruning
 saved history at once, a window outside 1 to 90 refused, and a device that cannot
 remember a choice saying so while keeping it for the run.
 
@@ -164,3 +177,8 @@ remember a choice saying so while keeping it for the run.
 nothing is pruned or saved before this installation's window is known, a round
 started during that wait saves nothing, a window chosen offline prunes without a
 request, and a window changed after the session ended leaves saved history alone.
+
+`flutter test test/timeline/timeline_retention_application_test.dart` exercises the
+same awaitable choose-and-apply command Settings uses, with delayed and failed
+SQLite stages, independent preference failures, queued choices, session changes,
+unchanged-window query observations, and a close/offline-reopen check.

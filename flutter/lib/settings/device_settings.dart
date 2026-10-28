@@ -120,6 +120,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
   final _focus = FocusNode();
   int? _shownDays;
   bool _applyingStep = false;
+  bool _pending = false;
   bool _rejected = false;
   Timer? _hintTimer;
 
@@ -152,6 +153,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
   /// Applies one step to the window in force. The ends of the range have no
   /// step, so those buttons stay disabled.
   void _step(int delta) {
+    if (_pending) return;
     final next = validRetentionDays(_resolved + delta);
     if (next == null) return;
     _applyingStep = true;
@@ -160,12 +162,13 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
     _focus.unfocus();
     _applyingStep = false;
     _clearHint();
-    ref.read(devicePreferencesProvider.notifier).selectRetentionDays(next);
+    unawaited(_choose(next));
   }
 
   /// Saves the field when the reader leaves it. An illegal entry never replaces
   /// the window: the field returns to the value in force.
   void _commit() {
+    if (_pending) return;
     final resolved = _resolved;
     final parsed = int.tryParse(_days.text.trim());
     if (validRetentionDays(parsed) == null) {
@@ -176,7 +179,18 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
     _days.text = '$parsed';
     _clearHint();
     if (parsed == resolved) return;
-    ref.read(devicePreferencesProvider.notifier).selectRetentionDays(parsed!);
+    unawaited(_choose(parsed!));
+  }
+
+  Future<void> _choose(int days) async {
+    setState(() => _pending = true);
+    try {
+      await ref
+          .read(releaseTimelineSessionProvider.notifier)
+          .chooseRetentionWindow(days);
+    } finally {
+      if (mounted) setState(() => _pending = false);
+    }
   }
 
   void _showHint() {
@@ -206,11 +220,12 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
     );
     // A round being read owns the window it is saving under, and a clear is
     // rewriting the same history: a new window waits for either to finish.
-    final locked = ref.watch(
+    final sessionLocked = ref.watch(
       releaseTimelineSessionProvider.select(
         (state) => state.loading || state.cacheActions.clearing,
       ),
     );
+    final locked = _pending || sessionLocked;
 
     if (!_focus.hasFocus && days != _shownDays) {
       _shownDays = days;

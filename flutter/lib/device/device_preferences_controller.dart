@@ -53,11 +53,13 @@ final devicePreferencesStateProvider = Provider<DevicePreferencesState>(
 class DevicePreferencesController
     extends AsyncNotifier<DevicePreferencesState> {
   Future<void> _pending = Future.value();
+  DevicePreferences? _savedPreferences;
 
   @override
   Future<DevicePreferencesState> build() async {
     try {
       final preferences = await ref.read(devicePreferencesStoreProvider).read();
+      _savedPreferences = preferences;
       return DevicePreferencesState(preferences: preferences);
     } catch (_) {
       // An unreadable device store cannot stop the app from starting on the
@@ -80,9 +82,11 @@ class DevicePreferencesController
         reportFailure: false,
       );
 
-  /// Remembers a retention window the reader chose, applied immediately.
-  Future<void> selectRetentionDays(int days) =>
-      _select((preferences) => preferences.copyWith(retentionDays: days));
+  /// Keeps the choice for this run and reports whether its day value is durable.
+  Future<bool> selectRetentionDays(int days) async {
+    await _select((preferences) => preferences.copyWith(retentionDays: days));
+    return _savedPreferences?.retentionDays == days;
+  }
 
   /// Records the window seeded from this installation's saved history.
   ///
@@ -123,6 +127,7 @@ class DevicePreferencesController
     final save = _pending.then((_) async {
       try {
         await ref.read(devicePreferencesStoreProvider).write(preferences);
+        _savedPreferences = preferences;
         final current = state.value;
         if (ref.mounted && current != null && current.rememberFailed) {
           state = AsyncData(current.copyWith(rememberFailed: false));

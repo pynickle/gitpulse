@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
@@ -248,9 +247,8 @@ void main() {
     // The reader shortens the window in Settings: a device choice, applied to
     // saved history at once and without a request.
     await h.container
-        .read(devicePreferencesProvider.notifier)
-        .selectRetentionDays(20);
-    await waitForSavedRetention(h.container, 20);
+        .read(releaseTimelineSessionProvider.notifier)
+        .chooseRetentionWindow(20);
     h.session.handlers[pageRequest({'R_a': 'next'})] = () => BackendResult(
       statusCode: 200,
       data: roundJson(

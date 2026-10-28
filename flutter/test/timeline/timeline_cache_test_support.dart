@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/device/device_preferences.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
-import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:path/path.dart' as p;
 
@@ -99,28 +98,6 @@ Future<void> settle(ProviderContainer container) async {
     if (!readState(container).loading && readState(container).active) return;
   }
   fail('timeline did not settle');
-}
-
-/// Waits until the window this installation keeps is [days], as the saved
-/// history's own snapshot records it.
-///
-/// A retention change needs no request and sets no view-state flag, so the
-/// ledger is where the applied window becomes observable.
-Future<void> waitForSavedRetention(
-  ProviderContainer container,
-  int days,
-) async {
-  final identity = container.read(sessionControllerProvider).identity;
-  final scope = identity == null ? null : TimelineCache.scopeOf(identity);
-  if (scope == null) fail('no saved scope to read a window from');
-  for (var i = 0; i < 200; i++) {
-    final saved = await container
-        .read(timelineCacheProvider)
-        .lastSavedRetentionDays(scope: scope);
-    if (saved == days) return;
-    await Future<void>.delayed(const Duration(milliseconds: 5));
-  }
-  fail('retention did not reach $days days');
 }
 
 List<String> keys(ProviderContainer container) =>

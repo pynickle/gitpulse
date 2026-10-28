@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/device/device_preferences.dart';
-import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -91,10 +90,12 @@ void main() {
       final requests = h.session.requests.length;
 
       await h.container
-          .read(devicePreferencesProvider.notifier)
-          .selectRetentionDays(1);
-      await waitForSavedRetention(h.container, 1);
-      await settle(h.container);
+          .read(releaseTimelineSessionProvider.notifier)
+          .chooseRetentionWindow(1)
+          .then((result) {
+            expect(result.remembered, isTrue);
+            expect(result.application, RetentionApplication.applied);
+          });
 
       // Offline, the shortened window still applies: the record it excludes is
       // gone from what this installation keeps, and nothing went on the wire.
@@ -175,8 +176,8 @@ void main() {
       ),
     );
     await h.container
-        .read(devicePreferencesProvider.notifier)
-        .selectRetentionDays(1);
+        .read(releaseTimelineSessionProvider.notifier)
+        .chooseRetentionWindow(1);
     await Future<void>.delayed(const Duration(milliseconds: 50));
 
     expect(await disk.cache!.lastSavedRetentionDays(scope: scope), 30);

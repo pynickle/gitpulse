@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -298,9 +297,8 @@ void main() {
       // The reader shortens the window to one day, then widens it again: what
       // one day evicted cannot come back without fetching it anew.
       await h.container
-          .read(devicePreferencesProvider.notifier)
-          .selectRetentionDays(1);
-      await waitForSavedRetention(h.container, 1);
+          .read(releaseTimelineSessionProvider.notifier)
+          .chooseRetentionWindow(1);
       configure(h, releases: [releaseJson(3, 'v3', '2026-10-18T12:00:00Z')]);
       await h.container.read(releaseTimelineSessionProvider.notifier).refresh();
       await disk.close();
@@ -460,8 +458,8 @@ void main() {
     // The reader's shorter window cannot be written to the saved history, so
     // the round that follows must not persist under either window.
     await h.container
-        .read(devicePreferencesProvider.notifier)
-        .selectRetentionDays(1);
+        .read(releaseTimelineSessionProvider.notifier)
+        .chooseRetentionWindow(1);
     configure(h, releases: [releaseJson(4, 'v4', '2026-10-19T00:00:00Z')]);
     await h.container.read(releaseTimelineSessionProvider.notifier).refresh();
     expect(keys(h.container), ['R_a:4']);
