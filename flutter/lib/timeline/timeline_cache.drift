@@ -22,6 +22,8 @@ CREATE TABLE cache_releases (
   PRIMARY KEY (repository_id, id)
 );
 
+CREATE INDEX cache_releases_published_at ON cache_releases(published_at);
+
 CREATE TABLE cache_segments (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   repository_id TEXT NOT NULL,
@@ -31,6 +33,9 @@ CREATE TABLE cache_segments (
   has_older INTEGER NOT NULL,
   incomplete INTEGER NOT NULL
 );
+
+CREATE INDEX cache_segments_repository_cycle_cursor
+  ON cache_segments(repository_id, cycle, request_cursor);
 
 CREATE TABLE cache_page_members (
   segment_id INTEGER NOT NULL,

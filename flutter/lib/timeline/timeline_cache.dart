@@ -75,7 +75,7 @@ class TimelineCache extends _$TimelineCache {
   TimelineCache(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -84,6 +84,10 @@ class TimelineCache extends _$TimelineCache {
         await customStatement(
           'ALTER TABLE cache_account ADD COLUMN pending_follows TEXT',
         );
+      }
+      if (from < 3) {
+        await migrator.createIndex(cacheReleasesPublishedAt);
+        await migrator.createIndex(cacheSegmentsRepositoryCycleCursor);
       }
     },
   );
@@ -584,72 +588,94 @@ class TimelineCache extends _$TimelineCache {
         );
       }
       // A page stores provenance and stable membership, never a response copy.
-      await customStatement(
+      final segment = await customInsert(
         'INSERT INTO cache_segments(repository_id, cycle, request_cursor, end_cursor, has_older, incomplete) VALUES (?, ?, ?, ?, ?, ?)',
-        [
-          entry.repositoryId,
-          cycleId,
-          entry.cursor,
-          page.endCursor,
-          page.hasOlderReleases ? 1 : 0,
-          page.incomplete ? 1 : 0,
+        variables: [
+          Variable(entry.repositoryId),
+          Variable(cycleId),
+          Variable(entry.cursor),
+          Variable(page.endCursor),
+          Variable(page.hasOlderReleases ? 1 : 0),
+          Variable(page.incomplete ? 1 : 0),
         ],
       );
-      final segment = (await customSelect(
-        'SELECT last_insert_rowid() AS id',
-      ).getSingle()).read<int>('id');
-      for (final item in page.releases) {
-        final authoritative = authoritativeMembers[entry.repositoryId];
-        if (authoritative != null && !authoritative.contains(item.id)) continue;
-        if (!item.isPublished || item.publishedAt!.isBefore(cutoff)) {
-          // A latest response can unpublish or move a formerly retained item.
-          await customStatement(
-            'DELETE FROM cache_releases WHERE repository_id = ? AND id = ?',
-            [entry.repositoryId, item.id],
+      // Drift reuses SQL templates and sends one ordered batch per page. Row
+      // statements still execute individually, including interleaved deletions.
+      await batch((batch) {
+        for (final item in page.releases) {
+          final authoritative = authoritativeMembers[entry.repositoryId];
+          if (authoritative != null && !authoritative.contains(item.id)) {
+            continue;
+          }
+          if (!item.isPublished || item.publishedAt!.isBefore(cutoff)) {
+            // A latest response can unpublish or move a formerly retained item.
+            batch.customStatement(
+              'DELETE FROM cache_releases WHERE repository_id = ? AND id = ?',
+              [entry.repositoryId, item.id],
+            );
+            continue;
+          }
+          batch.customStatement(
+            'INSERT OR REPLACE INTO cache_releases(repository_id, id, published_at, content) VALUES (?, ?, ?, ?)',
+            [
+              entry.repositoryId,
+              item.id,
+              item.publishedAt!.microsecondsSinceEpoch,
+              jsonEncode({
+                'id': item.id,
+                'tagName': item.tagName,
+                'name': item.name,
+                'description': item.description,
+                'publishedAt': item.publishedAt!.toUtc().toIso8601String(),
+                'isDraft': item.isDraft,
+                'isPrerelease': item.isPrerelease,
+                'assetCount': item.assetCount,
+                'htmlUrl': item.htmlUrl,
+              }),
+            ],
           );
-          continue;
+          batch.customStatement(
+            'INSERT OR IGNORE INTO cache_page_members(segment_id, repository_id, release_id) VALUES (?, ?, ?)',
+            [segment, entry.repositoryId, item.id],
+          );
         }
-        await customStatement(
-          'INSERT OR REPLACE INTO cache_releases(repository_id, id, published_at, content) VALUES (?, ?, ?, ?)',
-          [
-            entry.repositoryId,
-            item.id,
-            item.publishedAt!.microsecondsSinceEpoch,
-            jsonEncode({
-              'id': item.id,
-              'tagName': item.tagName,
-              'name': item.name,
-              'description': item.description,
-              'publishedAt': item.publishedAt!.toUtc().toIso8601String(),
-              'isDraft': item.isDraft,
-              'isPrerelease': item.isPrerelease,
-              'assetCount': item.assetCount,
-              'htmlUrl': item.htmlUrl,
-            }),
-          ],
-        );
-        await customStatement(
-          'INSERT OR IGNORE INTO cache_page_members(segment_id, repository_id, release_id) VALUES (?, ?, ?)',
-          [segment, entry.repositoryId, item.id],
-        );
-      }
-      // Repeating a page within a cycle updates its provenance in place.
-      await customStatement(
-        '''DELETE FROM cache_page_members WHERE segment_id IN
+        // Repeating a page within a cycle updates its provenance in place.
+        batch.customStatement(
+          '''DELETE FROM cache_page_members WHERE segment_id IN
           (SELECT id FROM cache_segments WHERE repository_id = ? AND cycle = ? AND request_cursor IS ? AND id != ?)''',
-        [entry.repositoryId, cycleId, entry.cursor, segment],
-      );
-      await customStatement(
-        'DELETE FROM cache_segments WHERE repository_id = ? AND cycle = ? AND request_cursor IS ? AND id != ?',
-        [entry.repositoryId, cycleId, entry.cursor, segment],
-      );
+          [entry.repositoryId, cycleId, entry.cursor, segment],
+        );
+        batch.customStatement(
+          'DELETE FROM cache_segments WHERE repository_id = ? AND cycle = ? AND request_cursor IS ? AND id != ?',
+          [entry.repositoryId, cycleId, entry.cursor, segment],
+        );
+      });
     }
     await customStatement('DELETE FROM cache_visible');
-    for (final item in groups.expand((group) => group.items)) {
+    // Three parameters per row, below even SQLite's older 999-variable limit.
+    // Only the current chunk's SQL and arguments are materialized.
+    const chunkSize = 300;
+    final members = groups.expand((group) => group.items).iterator;
+    while (true) {
+      final arguments = <Object?>[];
+      var count = 0;
+      while (count < chunkSize && members.moveNext()) {
+        final item = members.current;
+        arguments.addAll([
+          item.repository.id,
+          item.id,
+          item.isOldestShown ? 1 : 0,
+        ]);
+        count++;
+      }
+      if (count == 0) break;
+      final values = List.filled(count, '(?, ?, ?)').join(',');
       await customStatement(
-        '''INSERT INTO cache_visible(repository_id, release_id, oldest_shown)
-          SELECT repository_id, id, ? FROM cache_releases WHERE repository_id = ? AND id = ?''',
-        [item.isOldestShown ? 1 : 0, item.repository.id, item.id],
+        '''WITH visible(repository_id, release_id, oldest_shown) AS (VALUES $values)
+          INSERT INTO cache_visible(repository_id, release_id, oldest_shown)
+          SELECT r.repository_id, r.id, v.oldest_shown FROM visible v
+          JOIN cache_releases r ON r.repository_id = v.repository_id AND r.id = v.release_id''',
+        arguments,
       );
     }
     await customStatement(

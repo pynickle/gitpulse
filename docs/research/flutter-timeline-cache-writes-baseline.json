@@ -1,0 +1,662 @@
+{
+  "os": "\"Windows 11 家庭版 中文版\" 10.0 (Build 26200)",
+  "dart": "3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"windows_x64\"",
+  "results": [
+    {
+      "diagnostics": {
+        "sqlite": "3.54.1",
+        "journal": {
+          "journal_mode": "delete"
+        },
+        "plans": {
+          "DELETE FROM cache_releases WHERE published_at < 1": [
+            {
+              "id": 3,
+              "parent": 0,
+              "notused": 216,
+              "detail": "SCAN cache_releases"
+            }
+          ],
+          "SELECT id FROM cache_segments WHERE repository_id = 'R_a' AND cycle = 'seed'": [
+            {
+              "id": 2,
+              "parent": 0,
+              "notused": 216,
+              "detail": "SCAN cache_segments"
+            }
+          ],
+          "SELECT id FROM cache_segments WHERE repository_id = 'R_a' AND cycle = 'seed' AND request_cursor IS NULL AND id != 1": [
+            {
+              "id": 2,
+              "parent": 0,
+              "notused": 216,
+              "detail": "SCAN cache_segments"
+            }
+          ],
+          "DELETE FROM cache_segments WHERE NOT EXISTS (\n      SELECT 1 FROM cache_page_members m JOIN cache_segments s ON s.id = m.segment_id\n      WHERE s.repository_id = cache_segments.repository_id AND s.cycle = cache_segments.cycle)": [
+            {
+              "id": 3,
+              "parent": 0,
+              "notused": 216,
+              "detail": "SCAN cache_segments"
+            },
+            {
+              "id": 6,
+              "parent": 0,
+              "notused": 0,
+              "detail": "CORRELATED SCALAR SUBQUERY 1"
+            },
+            {
+              "id": 11,
+              "parent": 6,
+              "notused": 216,
+              "detail": "SCAN s"
+            },
+            {
+              "id": 19,
+              "parent": 6,
+              "notused": 56,
+              "detail": "SEARCH m USING COVERING INDEX sqlite_autoindex_cache_page_members_1 (segment_id=?)"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "size": 100,
+      "expiredPercent": 0,
+      "operation": "initial",
+      "medianUs": 69216,
+      "p95Us": 88488,
+      "samplesUs": [58561, 60962, 62086, 68156, 68788, 69216, 70178, 71051, 77654, 84896, 88488],
+      "executions": 314,
+      "executorCalls": 314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 0,
+      "operation": "repeat",
+      "medianUs": 55198,
+      "p95Us": 64555,
+      "samplesUs": [51938, 52500, 52577, 53494, 54277, 55198, 55611, 56008, 56324, 64237, 64555],
+      "executions": 316,
+      "executorCalls": 316,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 0,
+      "operation": "continue",
+      "medianUs": 62055,
+      "p95Us": 64067,
+      "samplesUs": [59390, 60341, 60837, 61087, 62026, 62055, 62105, 62250, 62684, 63594, 64067],
+      "executions": 414,
+      "executorCalls": 414,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 0,
+      "operation": "prune",
+      "medianUs": 2988,
+      "p95Us": 3882,
+      "samplesUs": [2714, 2774, 2878, 2880, 2942, 2988, 3021, 3063, 3424, 3584, 3882],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 50,
+      "operation": "initial",
+      "medianUs": 48358,
+      "p95Us": 53484,
+      "samplesUs": [46621, 46945, 47139, 47531, 47565, 48358, 48838, 49013, 49054, 49638, 53484],
+      "executions": 314,
+      "executorCalls": 314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 50,
+      "operation": "repeat",
+      "medianUs": 52995,
+      "p95Us": 60475,
+      "samplesUs": [50358, 50547, 50740, 51331, 52604, 52995, 53817, 54347, 57551, 59604, 60475],
+      "executions": 316,
+      "executorCalls": 316,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 50,
+      "operation": "continue",
+      "medianUs": 60779,
+      "p95Us": 68049,
+      "samplesUs": [59014, 59061, 60065, 60278, 60376, 60779, 61640, 61663, 62007, 63142, 68049],
+      "executions": 414,
+      "executorCalls": 414,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 50,
+      "operation": "prune",
+      "medianUs": 12601,
+      "p95Us": 13650,
+      "samplesUs": [12011, 12377, 12494, 12529, 12559, 12601, 12738, 13065, 13413, 13474, 13650],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 90,
+      "operation": "initial",
+      "medianUs": 52106,
+      "p95Us": 55328,
+      "samplesUs": [46822, 47378, 50689, 51930, 51954, 52106, 52418, 52429, 53542, 53924, 55328],
+      "executions": 314,
+      "executorCalls": 314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 90,
+      "operation": "repeat",
+      "medianUs": 57430,
+      "p95Us": 62113,
+      "samplesUs": [52536, 53689, 54247, 54796, 56725, 57430, 59797, 60679, 60777, 61361, 62113],
+      "executions": 316,
+      "executorCalls": 316,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 90,
+      "operation": "continue",
+      "medianUs": 66462,
+      "p95Us": 76374,
+      "samplesUs": [63351, 64498, 65217, 66263, 66338, 66462, 67362, 70344, 71458, 74526, 76374],
+      "executions": 414,
+      "executorCalls": 414,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 90,
+      "operation": "prune",
+      "medianUs": 16884,
+      "p95Us": 17995,
+      "samplesUs": [13320, 13973, 15460, 15939, 16101, 16884, 16925, 17275, 17312, 17574, 17995],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 0,
+      "operation": "initial",
+      "medianUs": 344879,
+      "p95Us": 415471,
+      "samplesUs": [
+        328015, 333344, 335635, 336056, 337239, 344879, 352923, 357081, 411340, 414289, 415471
+      ],
+      "executions": 3059,
+      "executorCalls": 3059,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 0,
+      "operation": "repeat",
+      "medianUs": 340238,
+      "p95Us": 348829,
+      "samplesUs": [
+        332640, 333544, 336034, 337528, 339268, 340238, 341788, 343815, 343976, 346387, 348829
+      ],
+      "executions": 3061,
+      "executorCalls": 3061,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 0,
+      "operation": "continue",
+      "medianUs": 133202,
+      "p95Us": 137252,
+      "samplesUs": [
+        131236, 131289, 131894, 132028, 132052, 133202, 133242, 134778, 135343, 137066, 137252
+      ],
+      "executions": 1314,
+      "executorCalls": 1314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 0,
+      "operation": "prune",
+      "medianUs": 3463,
+      "p95Us": 3767,
+      "samplesUs": [2995, 3165, 3351, 3365, 3388, 3463, 3576, 3579, 3732, 3755, 3767],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 50,
+      "operation": "initial",
+      "medianUs": 342467,
+      "p95Us": 390782,
+      "samplesUs": [
+        315260, 325259, 330437, 336137, 340441, 342467, 353445, 359982, 370348, 384640, 390782
+      ],
+      "executions": 3059,
+      "executorCalls": 3059,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 50,
+      "operation": "repeat",
+      "medianUs": 375166,
+      "p95Us": 413668,
+      "samplesUs": [
+        353938, 354548, 356395, 374145, 374149, 375166, 376184, 376487, 381935, 386085, 413668
+      ],
+      "executions": 3061,
+      "executorCalls": 3061,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 50,
+      "operation": "continue",
+      "medianUs": 146847,
+      "p95Us": 169739,
+      "samplesUs": [
+        144494, 144983, 146280, 146402, 146622, 146847, 147215, 147481, 149903, 163878, 169739
+      ],
+      "executions": 1314,
+      "executorCalls": 1314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 50,
+      "operation": "prune",
+      "medianUs": 23331,
+      "p95Us": 25081,
+      "samplesUs": [22208, 22661, 22810, 22817, 23291, 23331, 23403, 23659, 23715, 23919, 25081],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 90,
+      "operation": "initial",
+      "medianUs": 317730,
+      "p95Us": 335754,
+      "samplesUs": [
+        312525, 312865, 313049, 313059, 315908, 317730, 318874, 319059, 321815, 322273, 335754
+      ],
+      "executions": 3059,
+      "executorCalls": 3059,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 90,
+      "operation": "repeat",
+      "medianUs": 355449,
+      "p95Us": 360368,
+      "samplesUs": [
+        343145, 350476, 352235, 352394, 354069, 355449, 355456, 355459, 359120, 360271, 360368
+      ],
+      "executions": 3061,
+      "executorCalls": 3061,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 90,
+      "operation": "continue",
+      "medianUs": 139045,
+      "p95Us": 143286,
+      "samplesUs": [
+        135909, 135936, 137164, 138529, 138827, 139045, 139249, 139604, 140405, 140609, 143286
+      ],
+      "executions": 1314,
+      "executorCalls": 1314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 90,
+      "operation": "prune",
+      "medianUs": 28004,
+      "p95Us": 29128,
+      "samplesUs": [26537, 26966, 27461, 27603, 27924, 28004, 28282, 28446, 28756, 28958, 29128],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 0,
+      "operation": "initial",
+      "medianUs": 977687,
+      "p95Us": 1099745,
+      "samplesUs": [
+        912797, 926636, 953538, 972998, 976006, 977687, 981106, 1017962, 1028922, 1040970, 1099745
+      ],
+      "executions": 9159,
+      "executorCalls": 9159,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 0,
+      "operation": "repeat",
+      "medianUs": 1096702,
+      "p95Us": 1201709,
+      "samplesUs": [
+        1026240, 1035604, 1039406, 1054892, 1063657, 1096702, 1109753, 1132614, 1155793, 1164316,
+        1201709
+      ],
+      "executions": 9161,
+      "executorCalls": 9161,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 0,
+      "operation": "continue",
+      "medianUs": 408975,
+      "p95Us": 650022,
+      "samplesUs": [
+        330183, 334878, 337312, 348191, 402318, 408975, 413655, 488698, 519533, 609282, 650022
+      ],
+      "executions": 3314,
+      "executorCalls": 3314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 0,
+      "operation": "prune",
+      "medianUs": 13712,
+      "p95Us": 15781,
+      "samplesUs": [10352, 11718, 12005, 13428, 13570, 13712, 14052, 14348, 14595, 14784, 15781],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 50,
+      "operation": "initial",
+      "medianUs": 1294031,
+      "p95Us": 1429633,
+      "samplesUs": [
+        1191113, 1206025, 1212503, 1223962, 1261329, 1294031, 1320035, 1356102, 1394154, 1417635,
+        1429633
+      ],
+      "executions": 9159,
+      "executorCalls": 9159,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 50,
+      "operation": "repeat",
+      "medianUs": 1371187,
+      "p95Us": 1752478,
+      "samplesUs": [
+        1276856, 1321977, 1337843, 1344418, 1350928, 1371187, 1429024, 1474573, 1623602, 1643957,
+        1752478
+      ],
+      "executions": 9161,
+      "executorCalls": 9161,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 50,
+      "operation": "continue",
+      "medianUs": 470094,
+      "p95Us": 534531,
+      "samplesUs": [
+        345105, 415015, 422000, 450555, 459269, 470094, 493271, 495505, 498475, 516154, 534531
+      ],
+      "executions": 3314,
+      "executorCalls": 3314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 50,
+      "operation": "prune",
+      "medianUs": 57750,
+      "p95Us": 63513,
+      "samplesUs": [55201, 55434, 55555, 56936, 57037, 57750, 57887, 58038, 58895, 59692, 63513],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 90,
+      "operation": "initial",
+      "medianUs": 1247675,
+      "p95Us": 1381281,
+      "samplesUs": [
+        1144677, 1163171, 1194743, 1206046, 1209103, 1247675, 1260404, 1280122, 1299503, 1338669,
+        1381281
+      ],
+      "executions": 9159,
+      "executorCalls": 9159,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 90,
+      "operation": "repeat",
+      "medianUs": 1044449,
+      "p95Us": 1446057,
+      "samplesUs": [
+        1021837, 1029809, 1033048, 1038628, 1040772, 1044449, 1056526, 1097721, 1121578, 1281808,
+        1446057
+      ],
+      "executions": 9161,
+      "executorCalls": 9161,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 90,
+      "operation": "continue",
+      "medianUs": 331423,
+      "p95Us": 367588,
+      "samplesUs": [
+        325041, 326182, 327315, 327794, 329327, 331423, 335080, 337001, 339289, 356772, 367588
+      ],
+      "executions": 3314,
+      "executorCalls": 3314,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 90,
+      "operation": "prune",
+      "medianUs": 68209,
+      "p95Us": 71444,
+      "samplesUs": [65198, 65412, 66490, 66898, 67247, 68209, 68223, 69036, 69096, 70059, 71444],
+      "executions": 6,
+      "executorCalls": 6,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 0,
+      "operation": "expire-save",
+      "medianUs": 63246,
+      "p95Us": 82146,
+      "samplesUs": [57478, 57583, 57992, 59940, 62827, 63246, 66589, 68698, 71105, 80020, 82146],
+      "executions": 316,
+      "executorCalls": 316,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 50,
+      "operation": "expire-save",
+      "medianUs": 43647,
+      "p95Us": 55569,
+      "samplesUs": [40225, 41975, 42640, 42815, 42815, 43647, 45074, 45336, 46153, 53596, 55569],
+      "executions": 266,
+      "executorCalls": 266,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 100,
+      "expiredPercent": 90,
+      "operation": "expire-save",
+      "medianUs": 36797,
+      "p95Us": 46726,
+      "samplesUs": [33214, 34250, 35155, 35590, 36428, 36797, 37695, 38198, 39109, 41229, 46726],
+      "executions": 226,
+      "executorCalls": 226,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 0,
+      "operation": "expire-save",
+      "medianUs": 451612,
+      "p95Us": 492493,
+      "samplesUs": [
+        331152, 335826, 339711, 370466, 449482, 451612, 460453, 469912, 478937, 481307, 492493
+      ],
+      "executions": 3061,
+      "executorCalls": 3061,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 50,
+      "operation": "expire-save",
+      "medianUs": 362016,
+      "p95Us": 450964,
+      "samplesUs": [
+        338252, 343667, 351829, 353300, 354064, 362016, 362703, 382013, 395518, 428935, 450964
+      ],
+      "executions": 2561,
+      "executorCalls": 2561,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 1000,
+      "expiredPercent": 90,
+      "operation": "expire-save",
+      "medianUs": 328046,
+      "p95Us": 363260,
+      "samplesUs": [
+        258040, 289408, 314437, 318293, 320841, 328046, 333655, 336056, 339878, 346910, 363260
+      ],
+      "executions": 2161,
+      "executorCalls": 2161,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 0,
+      "operation": "expire-save",
+      "medianUs": 1040086,
+      "p95Us": 1341645,
+      "samplesUs": [
+        1007618, 1015473, 1024447, 1025348, 1037829, 1040086, 1040147, 1222587, 1224926, 1261496,
+        1341645
+      ],
+      "executions": 9161,
+      "executorCalls": 9161,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 50,
+      "operation": "expire-save",
+      "medianUs": 828194,
+      "p95Us": 856766,
+      "samplesUs": [
+        806077, 812749, 819373, 821093, 821140, 828194, 830505, 830929, 833331, 851217, 856766
+      ],
+      "executions": 7661,
+      "executorCalls": 7661,
+      "batches": 0,
+      "batchTemplates": 0
+    },
+    {
+      "size": 3000,
+      "expiredPercent": 90,
+      "operation": "expire-save",
+      "medianUs": 653813,
+      "p95Us": 670700,
+      "samplesUs": [
+        638060, 642835, 647284, 647304, 647463, 653813, 659760, 662221, 664236, 665415, 670700
+      ],
+      "executions": 6461,
+      "executorCalls": 6461,
+      "batches": 0,
+      "batchTemplates": 0
+    }
+  ],
+  "baselineRevision": "9411d51c5a5e75b62a95ce19918aff9df485985f",
+  "variant": "baseline"
+}

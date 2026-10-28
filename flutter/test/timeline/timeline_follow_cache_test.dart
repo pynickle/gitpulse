@@ -294,29 +294,42 @@ void main() {
     );
   });
 
-  test(
-    'upgrading a version one database keeps its saved window and retention',
-    () async {
-      final disk = await DiskTimeline.create();
-      var h = disk.open(retentionDays: 7);
-      configure(h, releases: [releaseJson(8, 'saved', '2026-10-18T00:00:00Z')]);
-      await settle(h.container);
-      // Recreate the previous on-disk schema before opening the new client.
-      await disk.cache!.customStatement(
-        'ALTER TABLE cache_account DROP COLUMN pending_follows',
-      );
-      await disk.cache!.customStatement('PRAGMA user_version = 1');
-      await disk.close();
-      // This device has not chosen a window yet, so the one its saved history
-      // was written under is the seed.
-      h = disk.open(retentionDays: null, freshDeviceChoice: true);
-      goOffline(h);
-      await settle(h.container);
-      expect(keys(h.container), ['R_a:8']);
-      expect(h.device.value.retentionDays, 7);
-      expect(readState(h.container).cacheFailed, isFalse);
-    },
-  );
+  for (final version in [1, 2]) {
+    test(
+      'upgrading a version $version database keeps its saved window and retention',
+      () async {
+        final disk = await DiskTimeline.create();
+        var h = disk.open(retentionDays: 7);
+        configure(
+          h,
+          releases: [releaseJson(8, 'saved', '2026-10-18T00:00:00Z')],
+        );
+        await settle(h.container);
+        // Recreate the previous on-disk schema before opening the new client.
+        if (version == 1) {
+          await disk.cache!.customStatement(
+            'ALTER TABLE cache_account DROP COLUMN pending_follows',
+          );
+        }
+        await disk.cache!.customStatement(
+          'DROP INDEX cache_releases_published_at',
+        );
+        await disk.cache!.customStatement(
+          'DROP INDEX cache_segments_repository_cycle_cursor',
+        );
+        await disk.cache!.customStatement('PRAGMA user_version = $version');
+        await disk.close();
+        // This device has not chosen a window yet, so the one its saved history
+        // was written under is the seed.
+        h = disk.open(retentionDays: null, freshDeviceChoice: true);
+        goOffline(h);
+        await settle(h.container);
+        expect(keys(h.container), ['R_a:8']);
+        expect(h.device.value.retentionDays, 7);
+        expect(readState(h.container).cacheFailed, isFalse);
+      },
+    );
+  }
 
   test('a follow addition discards an older page already in flight', () async {
     final disk = await DiskTimeline.create();

@@ -2125,7 +2125,15 @@ abstract class _$TimelineCache extends GeneratedDatabase {
   late final CacheAccount cacheAccount = CacheAccount(this);
   late final CacheRepositories cacheRepositories = CacheRepositories(this);
   late final CacheReleases cacheReleases = CacheReleases(this);
+  late final Index cacheReleasesPublishedAt = Index(
+    'cache_releases_published_at',
+    'CREATE INDEX cache_releases_published_at ON cache_releases (published_at)',
+  );
   late final CacheSegments cacheSegments = CacheSegments(this);
+  late final Index cacheSegmentsRepositoryCycleCursor = Index(
+    'cache_segments_repository_cycle_cursor',
+    'CREATE INDEX cache_segments_repository_cycle_cursor ON cache_segments (repository_id, cycle, request_cursor)',
+  );
   late final CachePageMembers cachePageMembers = CachePageMembers(this);
   late final CacheVisible cacheVisible = CacheVisible(this);
   @override
@@ -2136,7 +2144,9 @@ abstract class _$TimelineCache extends GeneratedDatabase {
     cacheAccount,
     cacheRepositories,
     cacheReleases,
+    cacheReleasesPublishedAt,
     cacheSegments,
+    cacheSegmentsRepositoryCycleCursor,
     cachePageMembers,
     cacheVisible,
   ];
