@@ -16,7 +16,12 @@ dependencies:
   drift_flutter: ^0.3.1
   flutter:
     sdk: flutter
-  flutter_inappwebview: ^6.1.5
+  # Pinned, not floated: 6.1.5 is the last stable release and its Android
+  # package still calls getDefaultProguardFile('proguard-android.txt'), which
+  # AGP 9 rejects at configuration time. 6.2.0-beta.3 is the release that
+  # switched to proguard-android-optimize.txt and compileSdk from Flutter.
+  # See docs/research/flutter-document-webview.md.
+  flutter_inappwebview: 6.2.0-beta.3
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^3.4.3

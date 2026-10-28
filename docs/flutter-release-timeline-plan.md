@@ -41,7 +41,7 @@ Versions below are observed stable versions, not a frozen manifest. At implement
 | Cookie handling                | cookie_jar 4.0.9, dio_cookie_manager 3.5.0                                                |
 | Remembered credentials         | flutter_secure_storage 11.2.0                                                             |
 | Navigation                     | go_router 18.1.0                                                                          |
-| Document rendering             | flutter_inappwebview 6.1.5; the page runs the app's own renderer (ADR 0028)               |
+| Document rendering             | flutter_inappwebview 6.2.0-beta.3 (AGP 9 needs the 6.2 line); the page runs the renderer  |
 | Markdown, sanitizing, code     | markdown-it 15.0.3, DOMPurify 3.4.17, highlight.js 11.12.0; built by tool/document_viewer |
 | Timeline filters               | markdown 7.3.1                                                                            |
 | JSON DTO mapping               | json_annotation 4.12.0, json_serializable 6.14.1                                          |

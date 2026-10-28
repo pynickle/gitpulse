@@ -207,8 +207,8 @@ The selected native plugins are `flutter_secure_storage` 11.2.0 (Windows 4.2.2,
 Linux 3.0.3, Darwin 0.4.3), `url_launcher` 6.3.3, `path_provider` 2.1.6, and
 Drift/SQLite 2.35.2 / 3.7.1. SQLite is bundled via native assets rather than a
 separately installed database. Repository documents are drawn by
-`flutter_inappwebview` 6.1.5 in the platform browser engine — WebView2 on Windows, so the
-WebView2 runtime must be present and the plugin ships with the portable package — running the
+`flutter_inappwebview` 6.2.0-beta.3 in the platform browser engine — WebView2 on Windows, so the
+WebView2 runtime must be present, the build machine needs nuget.exe on PATH, and the plugin ships with the portable package — running the
 renderer committed under `flutter/assets/document_viewer` (ADR 0028). Its transitive native
 assets still belong in the runtime bundle. Plugin platform
 metadata establishes configuration compatibility, not verified operation on all

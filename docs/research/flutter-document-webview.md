@@ -31,20 +31,30 @@ and SVG text was re-implemented outside the engine that already renders it.
 
 The app ships **Android and Windows**. The plugin therefore has to render a document on both.
 
-| Package                  | Latest | Platforms the plugin declares         | Dart/Flutter floor     | Verdict                                                              |
-| ------------------------ | ------ | ------------------------------------- | ---------------------- | -------------------------------------------------------------------- |
-| `flutter_inappwebview`   | 6.1.5  | android, ios, macos, web, **windows** | `^3.5.0` / `>=3.24.0`  | **Selected** — one API over Android WebView and Windows WebView2     |
-| `webview_flutter`        | 4.14.1 | android, ios, macos                   | `^3.10.0` / `>=3.38.0` | Rejected: no Windows implementation, so it cannot be the only engine |
-| `webview_windows`        | 0.4.0  | windows                               | `>=2.13.0 <3.0.0`      | Rejected: its SDK constraint excludes Dart 3; Windows-only anyway    |
-| `desktop_webview_window` | 0.4.0  | macos, windows, linux                 | `>=3.5.0 <4.0.0`       | Rejected: desktop only; no Android                                   |
-| `webview_cef`            | 0.6.2  | macos, windows, linux, elinux         | `>=3.6.0 <4.0.0`       | Rejected: desktop only, and ships its own Chromium                   |
+| Package                  | Latest       | Platforms the plugin declares                | Dart/Flutter floor     | Verdict                                                              |
+| ------------------------ | ------------ | -------------------------------------------- | ---------------------- | -------------------------------------------------------------------- |
+| `flutter_inappwebview`   | 6.2.0-beta.3 | android, ios, macos, web, **windows**, linux | `^3.8.0` / `>=3.32.0`  | **Selected** — one API over Android WebView and Windows WebView2     |
+| `webview_flutter`        | 4.14.1       | android, ios, macos                          | `^3.10.0` / `>=3.38.0` | Rejected: no Windows implementation, so it cannot be the only engine |
+| `webview_windows`        | 0.4.0        | windows                                      | `>=2.13.0 <3.0.0`      | Rejected: its SDK constraint excludes Dart 3; Windows-only anyway    |
+| `desktop_webview_window` | 0.4.0        | macos, windows, linux                        | `>=3.5.0 <4.0.0`       | Rejected: desktop only; no Android                                   |
+| `webview_cef`            | 0.6.2        | macos, windows, linux, elinux                | `>=3.6.0 <4.0.0`       | Rejected: desktop only, and ships its own Chromium                   |
 
-`flutter_inappwebview` 6.1.5 is therefore not merely the most convenient choice: it is the only
-candidate whose declared platform set covers both shipping targets at a version that resolves
-against Dart 3.13 / Flutter 3.47. Its Windows implementation requires the WebView2 runtime on
-the machine, which is a deployment note (see ADR 0028), not a rendering one.
+`flutter_inappwebview` is therefore not merely the most convenient choice: it is the only candidate
+whose declared platform set covers both shipping targets at a version that resolves against Dart
+3.13 / Flutter 3.47. Its Windows implementation requires the WebView2 runtime on the machine and
+NuGet at build time, which are deployment and toolchain notes (see ADR 0028), not rendering ones.
 
-Feature boundary confirmed in the 6.1.5 sources before implementing:
+**The stable release does not build here.** 6.1.5 is the newest stable, but its Android package
+(1.1.3) still declares `proguardFiles getDefaultProguardFile('proguard-android.txt')`, and this
+project's AGP 9.1 rejects that string at configuration time: `flutter build apk` fails while
+evaluating the plugin's Gradle script, before any Dart runs. The 6.2.0 line replaced it with
+`proguard-android-optimize.txt` and `compileSdk = flutter.compileSdkVersion`, so
+**6.2.0-beta.3** is the newest release this toolchain can build, and it is pinned exactly in
+`flutter/pubspec.yaml` rather than floated. Verified by building a debug APK with AGP 9.1.0 /
+Gradle 9.8.2, and by `flutter build windows --debug` compiling the plugin's C++ (link needs the app
+closed). A stable release that ships the same fix should replace it as soon as one exists.
+
+Feature boundary confirmed in the 6.2.0-beta.3 sources before implementing:
 
 - `InAppWebViewInitialData` (in-memory page + base URL) — no local file access needed.
 - `addJavaScriptHandler` + the page's `callHandler` promise bridge.
@@ -99,6 +109,8 @@ secure-context API under the page's origin.
 
 ## What this costs
 
+- Windows builds need `nuget.exe` on `PATH`: the plugin fetches CppWinRT, WIL and WebView2 at
+  build time, and the app needs the WebView2 runtime at run time.
 - Two new build surfaces: the WebView plugin per platform, and a committed renderer bundle built
   by `flutter/tool/document_viewer` (`bun run build`) and verified by `bun run verify`.
 - A platform view cannot share Flutter's scroll: the document owns its own scroll, so the drawer
