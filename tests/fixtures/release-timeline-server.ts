@@ -177,7 +177,7 @@ if (import.meta.main) {
     useRuntimeConfig: () => ({
       app: { baseURL: '/pulse/' },
       session: { password },
-      gitPulseAuth: {
+      gitpulseAuth: {
         personalModeEnabled: true,
         tokenEnabled: false,
         githubOAuthEnabled: false,

@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3';
 
+import { getGitpulseAuthConfig } from '../../utils/auth-providers';
 import { parsePersonalUnlockBody } from '../../utils/auth-request-validation-utils';
 import { establishGitHubSession } from '../../utils/auth-session-utils';
 import { assertCsrfToken } from '../../utils/csrf-utils';
@@ -12,15 +13,9 @@ import {
 } from '../../utils/personal-mode-utils';
 
 function getGithubTokenFromRuntimeConfig(event: H3Event): string {
-  const runtimeConfig = useRuntimeConfig(event) as {
-    gitPulseAuth?: {
-      githubToken?: string;
-    };
-  };
+  const githubToken = getGitpulseAuthConfig(event).githubToken;
 
-  return typeof runtimeConfig.gitPulseAuth?.githubToken === 'string'
-    ? runtimeConfig.gitPulseAuth.githubToken.trim()
-    : '';
+  return typeof githubToken === 'string' ? githubToken.trim() : '';
 }
 
 function getSessionUserResponse(user: {

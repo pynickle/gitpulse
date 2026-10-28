@@ -45,7 +45,7 @@ beforeEach(async () => {
   globalThis.useRuntimeConfig = (() => ({
     app: { baseURL: '/' },
     session: { password },
-    gitPulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: true },
+    gitpulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: true },
   })) as typeof useRuntimeConfig;
   globalThis.getUserSession = (async (event) => {
     const session = await useSession(event, { password });

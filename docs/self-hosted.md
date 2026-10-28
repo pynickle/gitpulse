@@ -29,8 +29,9 @@ Users sign in by pasting a GitHub token or via GitHub OAuth. Suitable for teams 
 | Environment Variable              | Required | Default | Description                            |
 | --------------------------------- | -------- | ------- | -------------------------------------- |
 | `NUXT_SESSION_PASSWORD`           | **Yes**  | —       | 32-byte hex key for session encryption |
+| `NUXT_AUTH_PERSONAL_MODE_ENABLED` | **Yes**  | `true`  | Set `false` for multi-user mode        |
 | `NUXT_AUTH_PAT_ENABLED`           | No       | `true`  | Allow token-based login                |
-| `NUXT_AUTH_GITHUB_OAUTH_ENABLED`  | No       | —       | Allow OAuth login                      |
+| `NUXT_AUTH_GITHUB_OAUTH_ENABLED`  | No       | `true`  | Allow OAuth login                      |
 | `NUXT_OAUTH_GITHUB_CLIENT_ID`     | If OAuth | —       | GitHub OAuth app client ID             |
 | `NUXT_OAUTH_GITHUB_CLIENT_SECRET` | If OAuth | —       | GitHub OAuth app secret                |
 
@@ -38,12 +39,14 @@ Users sign in by pasting a GitHub token or via GitHub OAuth. Suitable for teams 
 
 A password-gated vault with a pre-configured token. On each new browser you see a lock screen; optionally tick "Remember this device" to stay logged in.
 
-| Environment Variable              | Required | Default | Description                              |
-| --------------------------------- | -------- | ------- | ---------------------------------------- |
-| `NUXT_AUTH_PERSONAL_MODE_ENABLED` | **Yes**  | —       | Enable personal mode                     |
-| `NUXT_PERSONAL_TOKEN`             | **Yes**  | —       | GitHub token baked into the server       |
-| `NUXT_PERSONAL_MODE_PASSWORD`     | **Yes**  | —       | Lock-screen password                     |
-| `NUXT_PERSONAL_COOKIE_SECRET`     | **Yes**  | —       | Secret for signing "remember me" cookies |
+| Environment Variable                        | Required | Default | Description                              |
+| ------------------------------------------- | -------- | ------- | ---------------------------------------- |
+| `NUXT_AUTH_PERSONAL_MODE_ENABLED`           | No       | `true`  | On unless set to `false`                 |
+| `NUXT_GITPULSE_AUTH_GITHUB_TOKEN`           | **Yes**  | —       | GitHub token baked into the server       |
+| `NUXT_GITPULSE_AUTH_PERSONAL_PASSWORD`      | **Yes**  | —       | Lock-screen password                     |
+| `NUXT_GITPULSE_AUTH_PERSONAL_COOKIE_SECRET` | **Yes**  | —       | Secret for signing "remember me" cookies |
+
+`NUXT_GIT_PULSE_AUTH_GITHUB_TOKEN`, `NUXT_GIT_PULSE_AUTH_PERSONAL_PASSWORD`, and `NUXT_GIT_PULSE_AUTH_PERSONAL_COOKIE_SECRET` still apply when the matching `NUXT_GITPULSE_AUTH_*` value is empty.
 
 ### User Settings Storage
 

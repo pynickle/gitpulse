@@ -14,7 +14,7 @@ afterEach(() => {
 
 function configureProviders(personal: boolean, pat = true, oauth = true) {
   globalThis.useRuntimeConfig = (() => ({
-    gitPulseAuth: {
+    gitpulseAuth: {
       personalModeEnabled: personal,
       tokenEnabled: pat,
       githubOAuthEnabled: oauth,
@@ -41,7 +41,7 @@ async function getPublicResponse(path: 'native/capabilities' | 'auth/providers')
 describe('public native connection contract', () => {
   test('provider discovery uses the current request runtime config', async () => {
     globalThis.useRuntimeConfig = ((event?: H3Event) => ({
-      gitPulseAuth: {
+      gitpulseAuth: {
         personalModeEnabled: false,
         tokenEnabled: getHeader(event!, 'x-test-provider') === 'pat',
         githubOAuthEnabled: getHeader(event!, 'x-test-provider') === 'oauth',

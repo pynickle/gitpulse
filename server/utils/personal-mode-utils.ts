@@ -3,6 +3,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { H3Event } from 'h3';
 import { deleteCookie, getCookie, setCookie } from 'h3';
 
+import { getGitpulseAuthConfig } from './auth-providers';
+
 export interface PersonalIdentity {
   id?: number;
   login: string;
@@ -29,16 +31,11 @@ function normalizeSecret(value: unknown): string {
 }
 
 function getPersonalAuthConfig(event?: H3Event) {
-  const runtimeConfig = useRuntimeConfig(event) as {
-    gitPulseAuth?: {
-      personalPassword?: string;
-      personalCookieSecret?: string;
-    };
-  };
+  const gitpulseAuth = getGitpulseAuthConfig(event);
 
   return {
-    personalPassword: normalizeSecret(runtimeConfig.gitPulseAuth?.personalPassword),
-    personalCookieSecret: normalizeSecret(runtimeConfig.gitPulseAuth?.personalCookieSecret),
+    personalPassword: normalizeSecret(gitpulseAuth.personalPassword),
+    personalCookieSecret: normalizeSecret(gitpulseAuth.personalCookieSecret),
   };
 }
 
@@ -84,7 +81,7 @@ export function assertPersonalCookieSecretStrength(): void {
     return;
   }
 
-  const message = `[auth] NUXT_GIT_PULSE_AUTH_PERSONAL_COOKIE_SECRET (formerly AUTH_PERSONAL_COOKIE_SECRET) must be at least ${MIN_COOKIE_SECRET_BYTES} bytes (got ${byteLength}).`;
+  const message = `[auth] NUXT_GITPULSE_AUTH_PERSONAL_COOKIE_SECRET (formerly AUTH_PERSONAL_COOKIE_SECRET) must be at least ${MIN_COOKIE_SECRET_BYTES} bytes (got ${byteLength}).`;
 
   if (process.env.NODE_ENV === 'production') {
     throw new Error(message);

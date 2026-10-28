@@ -117,7 +117,7 @@ if (import.meta.main) {
     useRuntimeConfig: () => ({
       app: { baseURL: '/pulse/' },
       session: { password },
-      gitPulseAuth: { personalModeEnabled: false, tokenEnabled: false, githubOAuthEnabled: true },
+      gitpulseAuth: { personalModeEnabled: false, tokenEnabled: false, githubOAuthEnabled: true },
     }),
     getUserSession: async (event: Parameters<typeof useSession>[0]) => {
       const session = await useSession(event, {

@@ -172,7 +172,9 @@ export default defineNuxtConfig({
         secure: process.env.NODE_ENV === 'production',
       },
     },
-    gitPulseAuth: {
+    // `gitpulseAuth` keeps the env names on NUXT_GITPULSE_AUTH_*.
+    // NUXT_GIT_PULSE_AUTH_* is applied later, only when that value is blank.
+    gitpulseAuth: {
       personalModeEnabled: String(personalModeEnabled),
       tokenEnabled: String(personalModeEnabled ? false : tokenEnabled),
       githubOAuthEnabled: String(personalModeEnabled ? false : effectiveOAuthEnabled),

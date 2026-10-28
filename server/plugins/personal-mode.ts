@@ -1,4 +1,4 @@
-import { resolveAuthProviderState } from '../utils/auth-providers';
+import { getGitpulseAuthConfig, resolveAuthProviderState } from '../utils/auth-providers';
 import { createGitHubClient } from '../utils/github-auth-utils';
 import { cachePersonalModeIdentity } from '../utils/personal-mode-utils';
 
@@ -12,7 +12,7 @@ interface PersonalModeIdentity {
 const PERSONAL_MODE_STORAGE_BASE = 'personal-mode';
 const PERSONAL_MODE_IDENTITY_KEY = 'identity';
 const PERSONAL_MODE_STARTUP_FAILURE =
-  'GitPulse personal mode failed to start: NUXT_GIT_PULSE_AUTH_GITHUB_TOKEN (formerly AUTH_PERSONAL_TOKEN) could not be validated against GitHub. Confirm the token is current and allowed to access GitHub user identity.';
+  'GitPulse personal mode failed to start: NUXT_GITPULSE_AUTH_GITHUB_TOKEN (formerly AUTH_PERSONAL_TOKEN) could not be validated against GitHub. Confirm the token is current and allowed to access GitHub user identity.';
 
 function createPersonalModeStartupError(): Error {
   return createError({
@@ -41,16 +41,11 @@ export default defineNitroPlugin(async (_nitroApp) => {
     return;
   }
 
-  const runtimeConfig = useRuntimeConfig() as {
-    gitPulseAuth?: {
-      githubToken?: string;
-    };
-  };
-  const personalPat = runtimeConfig.gitPulseAuth?.githubToken?.trim() ?? '';
+  const personalPat = getGitpulseAuthConfig().githubToken?.trim() ?? '';
 
   if (!personalPat) {
     console.error(
-      '[auth] Personal mode startup validation failed: NUXT_GIT_PULSE_AUTH_GITHUB_TOKEN is missing.'
+      '[auth] Personal mode startup validation failed: NUXT_GITPULSE_AUTH_GITHUB_TOKEN is missing.'
     );
     throw createPersonalModeStartupError();
   }
