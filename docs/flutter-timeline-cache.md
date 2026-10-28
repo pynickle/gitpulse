@@ -145,7 +145,7 @@ from `flutter/`. It closes and reopens actual temporary SQLite files and covers
 retention boundaries, isolation, deduplication, saved membership, full notes,
 transaction rollback, and lifecycle invalidation. `flutter test` includes the
 HTTP/session and mounted offline-startup checks. Native device/plugin behavior
-still requires the owner's Windows and Android checks.
+still requires the owner's Android check.
 
 `flutter test test/timeline/timeline_recovery_test.dart` covers mounted save and
 rebuild actions, an invalid-cursor retry, failed-clear recovery, rejected-session

@@ -30,6 +30,15 @@ across cards sharing a row, and a single card has nothing to compare against. Th
 system-typeface switch (`gitPulseTypography`) is removed with the platforms that needed it: on
 Android and iOS the platform's own typeface already carries the chosen language.
 
+**One sheet presentation.** Both overlays are now the same surface, so the presentation itself became
+a module: `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`) owns the route, its barrier,
+the slide-and-fade entry, the rounded sheet surface and the Escape key, and a sheet body decides only
+its content and height. Two copies of that scaffold could disagree — the drawers' copy had no entry
+animation and the filter panel's copy re-declared the surface — and the deletion test settles the
+shape: removing the module puts five decisions back into every overlay. As one surface, the filter
+sheet takes `GitPulseRadius.sheetTop` like the release sheet, where ADR 0019 had named 12dp for a
+panel that also opened at the window's right edge.
+
 **What this does not change.** Auth, cache, retention, documents, follow semantics and the sheet
 geometry ADR 0010 and ADR 0018 fix are untouched. A page-level _ceiling_ is not a wide-screen branch
 and stays where a page has one: the reading measure on a repository page, the scanning ceiling on
@@ -52,8 +61,8 @@ ultra-wide window shows the same layout with the same line lengths instead of a 
 
 ## Consequences
 
-- `Escape` still dismisses the release sheet and the filter sheet, because a hardware keyboard is a
-  normal Android input device; it is no longer described as a desktop behaviour.
+- `Escape` still dismisses a sheet, because a hardware keyboard is a normal Android input device; it
+  is no longer described as a desktop behaviour, and one module now answers it for every sheet.
 - A wide window shows the phone layout, with the content centered by the page's own ceiling. The
   `test/` suites assert one column at 320, 500, 900 and 1400dp rather than an adaptive count.
 - Reintroducing a desktop target is a new decision: it needs a new ADR, a platform directory, a

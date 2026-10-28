@@ -120,10 +120,6 @@ String _compactDigits(double value) => value == value.truncateToDouble()
     ? value.toInt().toString()
     : value.toStringAsFixed(1);
 
-/// A calendar day in the language of [context].
-String gitPulseDay(BuildContext context, DateTime instant) =>
-    formatGitPulseDay(gitPulseLocaleName(context), instant);
-
 /// A Repository Release List row's publication day in the language of
 /// [context], with the year left out of the current year.
 String gitPulseMonthDay(BuildContext context, DateTime instant) =>
@@ -153,11 +149,6 @@ String gitPulseDate(BuildContext context, String date) =>
 /// 12- or 24-hour clock.
 String gitPulseDateTime(BuildContext context, DateTime instant) =>
     formatGitPulseDateTime(gitPulseLocaleName(context), instant);
-
-/// A compact publication instant in the language of [context], on the one
-/// 24-hour clock the Release Timeline shares between dates and its marker.
-String gitPulseInstant(BuildContext context, DateTime instant) =>
-    formatGitPulseInstant(gitPulseLocaleName(context), instant);
 
 /// A Timeline Refresh Baseline on the timeline's 24-hour clock.
 ///

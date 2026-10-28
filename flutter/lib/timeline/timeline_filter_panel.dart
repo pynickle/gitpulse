@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_sheet.dart';
 import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'timeline_cache.dart';
@@ -10,72 +10,17 @@ import 'timeline_filters.dart';
 import 'timeline_models.dart';
 import 'timeline_session.dart';
 
-/// Shows the Release Timeline Filter Panel as one bottom sheet, the way the
-/// Release Drawer opens.
-Future<void> showTimelineFilterPanel(BuildContext context) {
-  return showGeneralDialog<void>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: AppLocalizations.of(context).timelineFilters,
-    requestFocus: true,
-    transitionDuration: const Duration(milliseconds: 180),
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        const _TimelineFilterOverlay(),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      );
-      return FadeTransition(
-        opacity: curved,
-        child: SlideTransition(
-          position: Tween(
-            begin: const Offset(0, .08),
-            end: Offset.zero,
-          ).animate(curved),
-          child: child,
-        ),
-      );
-    },
-  );
-}
-
-class _TimelineFilterOverlay extends StatelessWidget {
-  const _TimelineFilterOverlay();
-
-  @override
-  Widget build(BuildContext context) {
-    return Shortcuts(
-      shortcuts: const {
-        SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
-      },
-      child: Actions(
-        actions: {
-          DismissIntent: CallbackAction<DismissIntent>(
-            onInvoke: (_) {
-              Navigator.of(context).pop();
-              return null;
-            },
-          ),
-        },
-        // The panel never reflows for the keyboard. Its search field is at
-        // the top of the sheet, so the keyboard overlays the date and
-        // prerelease controls rather than pushing them up the screen — the
-        // controls a reader learned the position of stay where they were.
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Material(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(GitPulseRadius.surface),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: const TimelineFilterPanel(),
-          ),
-        ),
-      ),
-    );
-  }
-}
+/// Shows the Release Timeline Filter Panel as the app's bottom sheet.
+///
+/// The panel never reflows for the keyboard. Its search field is at the top of
+/// the sheet, so the keyboard overlays the date and prerelease controls rather
+/// than pushing them up the screen — the controls a reader learned the position
+/// of stay where they were.
+Future<void> showTimelineFilterPanel(BuildContext context) => showGitPulseSheet(
+  context,
+  barrierLabel: AppLocalizations.of(context).timelineFilters,
+  builder: (context) => const TimelineFilterPanel(),
+);
 
 /// The share of the window the panel occupies.
 ///

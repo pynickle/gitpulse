@@ -35,6 +35,10 @@ one too (`../docs/adr/`).
   spare width goes to the list, at a short action name.
 - Star counts use `gitPulseLocaleCompactCount` (locale `K` / `万`); download counts use
   `gitPulseCompactCount`, which appends `k` / `m` in every language.
+- **Sheets** — the Release Drawer and the Release Timeline Filter Panel — open only through
+  `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`), which owns the route, entry, rounded
+  surface and Escape dismissal (ADR 0029). Do not open a second `showGeneralDialog` sheet; pass a
+  body that decides its own content and height.
 - **Documents** — a release's notes and a repository README — render only through
   `tool/document_viewer` (ADR 0028). Fix a rendering gap there; a second Markdown-to-widget path is
   never the answer.

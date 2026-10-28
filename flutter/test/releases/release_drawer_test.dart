@@ -49,8 +49,8 @@ Future<void> openRepositoryReleases(
   }
 }
 
-/// Opens one Timeline card at [size] and hands back the drawer's own `Material`,
-/// which is where its corners, colour and clipping are declared.
+/// Opens one Timeline card at [size] and hands back the sheet surface the drawer
+/// is drawn on — the place its corners, colour and clipping are declared.
 Future<Material> openReleaseDrawer(
   WidgetTester tester, {
   required Size size,
@@ -58,7 +58,14 @@ Future<Material> openReleaseDrawer(
   await pumpTimelineScreen(tester, size: size, handlers: browsingHandlers());
   await tester.tap(find.byType(ReleaseTimelineCard).hitTestable().first);
   await tester.pumpAndSettle();
-  return tester.widget<Material>(find.byKey(const Key('release-drawer')));
+  return tester.widget<Material>(
+    find
+        .ancestor(
+          of: find.byKey(const Key('release-drawer')),
+          matching: find.byType(Material),
+        )
+        .first,
+  );
 }
 
 void main() {
