@@ -142,6 +142,13 @@ class _InAppWebViewDocumentState extends State<_InAppWebViewDocument> {
           _controller = controller;
           _bind(controller);
         },
+        // The page is rendered here rather than by a script inside it: the
+        // bridge handlers are only registered once the view exists, and a page
+        // that asks them anything before that gets nothing back. `onLoadStop` is
+        // the first moment both are true.
+        onLoadStop: (controller, url) {
+          controller.evaluateJavascript(source: request.page.renderScript);
+        },
         shouldOverrideUrlLoading: (controller, action) async {
           final url = action.request.url;
           if (url == null) return NavigationActionPolicy.CANCEL;
@@ -165,7 +172,7 @@ class _InAppWebViewDocumentState extends State<_InAppWebViewDocument> {
     final bridge = widget.request.bridge;
     controller.addJavaScriptHandler(
       handlerName: 'resolveDocumentUrls',
-      callback: (args) {
+      callback: (List<dynamic> args) {
         final raw = args.isEmpty ? null : args.first;
         final targets = <DocumentResourceTarget>[
           if (raw is List)
@@ -181,7 +188,7 @@ class _InAppWebViewDocumentState extends State<_InAppWebViewDocument> {
     );
     controller.addJavaScriptHandler(
       handlerName: 'openDocumentUrl',
-      callback: (args) {
+      callback: (List<dynamic> args) {
         final url = args.isEmpty ? null : args.first;
         // The handler answers the page at once; the app's own navigation — a
         // pushed route, a release drawer, the system browser — runs after it.
@@ -191,7 +198,7 @@ class _InAppWebViewDocumentState extends State<_InAppWebViewDocument> {
     );
     controller.addJavaScriptHandler(
       handlerName: 'copyDocumentCode',
-      callback: (args) {
+      callback: (List<dynamic> args) {
         final text = args.isEmpty ? null : args.first;
         if (text is String) bridge.copy(text);
         return null;
@@ -199,7 +206,7 @@ class _InAppWebViewDocumentState extends State<_InAppWebViewDocument> {
     );
     controller.addJavaScriptHandler(
       handlerName: 'documentFailed',
-      callback: (args) {
+      callback: (List<dynamic> args) {
         final message = args.isEmpty ? null : args.first;
         bridge.failed(message is String ? message : '');
         return null;

@@ -228,13 +228,26 @@ function fallbackResolve(value, base) {
   }
 }
 
+const fallbackResolveAll = (values, base) =>
+  values.map((value) => fallbackResolve(value, base));
+
 const bridge = {
   resolve(values, base) {
     const pending = callBridge('resolveDocumentUrls', values);
     if (pending && typeof pending.then === 'function') {
-      return pending.catch(() => values.map((value) => fallbackResolve(value, base)));
+      // The host answers with one address per target, in order. Anything else —
+      // a handler that was not ready yet, a failed call — falls back to this
+      // page's own resolver rather than dropping the address: a document must
+      // never lose its links and images because a bridge call went wrong.
+      return pending
+        .then((answer) =>
+          Array.isArray(answer) && answer.length === values.length
+            ? answer
+            : fallbackResolveAll(values, base)
+        )
+        .catch(() => fallbackResolveAll(values, base));
     }
-    return Promise.resolve(values.map((value) => fallbackResolve(value, base)));
+    return Promise.resolve(fallbackResolveAll(values, base));
   },
   open(href) {
     if (!callBridge('openDocumentUrl', href)) window.location.href = href;
@@ -279,26 +292,26 @@ async function resolveResources(root, base) {
   const targets = resourceTargets(root);
   if (!targets.length) return;
   const flat = targets.flatMap((target) => (Array.isArray(target.value) ? target.value : [target.value]));
-  const resolved = await bridge.resolve(flat, base);
+  const answers = await bridge.resolve(flat, base);
   let cursor = 0;
   for (const target of targets) {
     const values = Array.isArray(target.value) ? target.value : [target.value];
-    const next = values
+    const resolved = values
       .map((original, index) => {
-        const answer = Array.isArray(resolved) ? resolved[cursor + index] : null;
+        const answer = answers[cursor + index];
         return answer ? [answer, original] : null;
       })
       .filter(Boolean);
     cursor += values.length;
-    if (!next.length) {
+    if (!resolved.length) {
       target.element.removeAttribute(target.name);
       continue;
     }
     target.element.setAttribute(
       target.name,
       Array.isArray(target.value)
-        ? next.map(([answer, original]) => original.replace(original.split(/\s+/)[0], answer)).join(', ')
-        : next[0][0]
+        ? resolved.map(([answer, original]) => original.replace(original.split(/\s+/)[0], answer)).join(', ')
+        : resolved[0][0]
     );
   }
 }

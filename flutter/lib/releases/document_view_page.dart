@@ -103,6 +103,9 @@ class DocumentViewerStyle {
         '--gp-code-font-size:${px(textScale.scale(13))};'
         '--gp-radius:${px(GitPulseRadius.row)};'
         '--gp-bottom-inset:${px(textScale.scale(bottomInset))};'
+        // Half of `tight`: two wrapped rows of inline images end up one `tight`
+        // apart, which is the smallest step the app's spacing scale has.
+        '--gp-image-gap:${px(textScale.scale(GitPulseSpace.tight / 2))};'
         '}';
   }
 }
@@ -176,13 +179,14 @@ DocumentViewPage buildDocumentViewPage({
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="$_contentSecurityPolicy">
-<style>${style.cssVariables}</style>
+<!-- The stylesheet first, the app's variables second: its own `:root` block is
+     the fallback for a standalone preview, and must not shadow the app. -->
 <style>${assets.stylesheet}</style>
+<style>${style.cssVariables}</style>
 </head>
 <body>
 <article id="document" class="markdown-body" aria-busy="true"></article>
 <script>${assets.script}</script>
-<script>$renderScript</script>
 </body>
 </html>
 ''';

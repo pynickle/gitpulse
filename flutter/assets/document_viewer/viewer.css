@@ -215,6 +215,11 @@ body {
 .markdown-body img {
   border-style: none;
   vertical-align: middle;
+  /* Lines are boxes of text, images are not: without room above and below, two
+     badge rows that wrap on a phone touch and read as one badge. A paragraph
+     holds a single image often enough that the same room makes it sit off the
+     text around it, which is what it wants too. */
+  margin-block: var(--gp-image-gap, 3px);
 }
 
 /* An author's `align` is the one layout attribute the document keeps. */

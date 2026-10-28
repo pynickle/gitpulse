@@ -197,6 +197,49 @@ check('routes a link tap through the host bridge instead of navigating', () => {
   );
 });
 
+// A bridge that has not registered its handlers yet answers `undefined`. The
+// document must keep its addresses in that case — an empty answer would be a
+// page that can be read but has no pictures and no links.
+async function acheck(name, run) {
+  try {
+    await run();
+    checks.push(`ok   ${name}`);
+  } catch (error) {
+    checks.push(`FAIL ${name}: ${error.message}`);
+    process.exitCode = 1;
+  }
+}
+
+await acheck('keeps its addresses when the host bridge answers nothing', async () => {
+  const realHandler = window.flutter_inappwebview.callHandler;
+  window.flutter_inappwebview.callHandler = (name) =>
+    name === 'resolveDocumentUrls' ? Promise.resolve(undefined) : Promise.resolve(true);
+  try {
+    await window.gitpulseDocument.render({
+      source: '[Absolute](https://example.com/a) ![Shot](https://example.com/b.png) [Relative](../rel.md)',
+      base: BASE,
+      strings: { copyCode: 'Copy', copied: 'Copied', plainText: 'Text' },
+    });
+  } finally {
+    window.flutter_inappwebview.callHandler = realHandler;
+  }
+  const root = window.document.getElementById('document');
+  assert.equal(
+    root.querySelector('a[href="https://example.com/a"]')?.textContent,
+    'Absolute',
+    'an absolute link was dropped',
+  );
+  assert.equal(
+    root.querySelector('img')?.getAttribute('src'),
+    'https://example.com/b.png',
+    'an absolute image was dropped',
+  );
+  assert.equal(
+    root.querySelectorAll('a')[1]?.getAttribute('href')?.startsWith('https://github.com/owner/repo/blob/'),
+    true,
+    'a relative link lost its resolved address',
+  );
+});
 console.log(checks.join('\n'));
 if (process.exitCode) {
   console.error(`\n${checks.filter((line) => line.startsWith('FAIL')).length} check(s) failed`);

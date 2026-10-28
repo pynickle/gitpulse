@@ -6,7 +6,7 @@ import 'package:gitpulse/releases/document_viewer_assets.dart';
 
 const _assets = DocumentViewerAssets(
   script: 'RENDERER();',
-  stylesheet: '.markdown-body{}',
+  stylesheet: '.markdown-body{}:root{--gp-bg:#ffffff}',
 );
 
 const _strings = DocumentViewerStrings(
@@ -104,20 +104,46 @@ void main() {
     expect(dark.html, contains('data-appearance="dark"'));
   });
 
+  test("the app's colours win over the stylesheet's own defaults", () {
+    final html = _page().html;
+    final stylesheet = html.indexOf('--gp-bg:#ffffff');
+    final appVariables = html.indexOf('--gp-bg:#fafafa');
+    expect(
+      stylesheet,
+      greaterThan(-1),
+      reason: 'the stylesheet carries fallbacks',
+    );
+    expect(appVariables, greaterThan(-1), reason: 'the app passes its surface');
+    // Same specificity, so the later block wins: the app's surface is what a
+    // reader sees, and the stylesheet's white is only the standalone fallback.
+    expect(
+      appVariables,
+      greaterThan(stylesheet),
+      reason: "the app's variables must come after the stylesheet's defaults",
+    );
+  });
+
+  test('the page never renders itself, so the app can hand it a ready bridge', () {
+    final page = _page();
+    // The page is loaded first and rendered from `onLoadStop`: a script inside
+    // the page ran before the bridge existed and stripped every address.
+    expect(page.html, isNot(contains('window.gitpulseDocument.render(')));
+    expect(page.renderScript, contains('window.gitpulseDocument.render('));
+  });
+
   test('the document travels as data and never as markup', () {
     final page = _page(source: '# Title\n\n<script>alert(1)</script>\n\nDone.');
-    // The page owns exactly two script elements: the renderer and the one
-    // statement that renders this document.
-    expect(RegExp('</script>').allMatches(page.html).length, 2);
-    expect(page.html, contains(r'<\/script>'));
+    // The page owns one script element — the renderer. This document's own
+    // statement is run by the app after the page has loaded.
+    expect(RegExp('</script>').allMatches(page.html).length, 1);
     expect(page.renderScript, startsWith('window.gitpulseDocument.render('));
+    expect(page.renderScript, contains(r'<\/script>'));
     expect(page.renderScript, contains(r'"source":"# Title'));
     expect(
       page.renderScript,
       contains('"base":"https://github.com/octo/app/blob/v2/README.md"'),
       reason: 'the payload carries the address, not markup',
     );
-    expect(page.html, contains(page.renderScript));
   });
 
   test('a document may load images and media and nothing else', () {
@@ -160,6 +186,19 @@ void main() {
     );
   });
 
+  test('a row of inline images gets room between its wrapped lines', () {
+    // Two badges that do not fit on one line must not touch: the gap is half of
+    // `tight` on each side, so the wrapped rows end up one `tight` apart.
+    expect(
+      _cssPx(_page(), 'gp-image-gap'),
+      closeTo(GitPulseSpace.tight / 2, .01),
+    );
+    expect(
+      _cssPx(_page(style: _style(scale: 2)), 'gp-image-gap'),
+      closeTo(GitPulseSpace.tight, .01),
+      reason: 'the room grows with the reading scale',
+    );
+  });
   test('room under the last line belongs inside the document scroll', () {
     expect(
       _cssPx(_page(style: _style(bottomInset: 32)), 'gp-bottom-inset'),
