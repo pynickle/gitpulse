@@ -101,7 +101,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Prerelease'));
+      await tester.tap(find.byKey(const ValueKey('prerelease')));
       await tester.pumpAndSettle();
       expect(find.text('entry-preview'), findsOneWidget);
       expect(find.text('draft-preview'), findsNothing);
@@ -317,15 +317,15 @@ void main() {
         launched.single.toString(),
         'https://github.com/canonical/project/releases',
       );
-      await tester.ensureVisible(find.text('Draft'));
+      await tester.ensureVisible(find.byKey(const ValueKey('draft')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Draft'));
+      await tester.tap(find.byKey(const ValueKey('draft')));
       await tester.pumpAndSettle();
       expect(find.text('draft-v4'), findsOneWidget);
       expect(find.text('v2/rc'), findsNothing);
-      await tester.ensureVisible(find.text('Stable'));
+      await tester.ensureVisible(find.byKey(const ValueKey('stable')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Stable'));
+      await tester.tap(find.byKey(const ValueKey('stable')));
       await tester.pumpAndSettle();
       expect(find.text('No releases match on this page.'), findsOneWidget);
       await tester.tap(find.byTooltip('Next page'));

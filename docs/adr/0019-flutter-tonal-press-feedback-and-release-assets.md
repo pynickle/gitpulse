@@ -52,6 +52,8 @@ for a size of zero — the value GitHub reports when the size is unknown.
   tint, already clipped to a round shape), and `ChipThemeData` exposes no overlay hook at all, so
   making those tonal is a separate decision rather than part of this one.
 - Because the press tint is exactly the highest surface container tone, content that paints itself in
-  that same tone loses contrast for the duration of a press. The Release Timeline card's prerelease
-  badge therefore moved one container step down (`surfaceContainerHigh`); new tints, chips and badges
-  on a tappable surface should pick a different step than the press tone.
+  that same tone loses contrast for the duration of a press; new tints, chips and badges on a tappable
+  surface should pick a different step than the press tone. The one instance this ADR produced — the
+  Release Timeline card's prerelease badge at `surfaceContainerHigh` — is gone: the badge is now the
+  shared outlined `GitPulseStatusBadge`, which paints no fill at all (ADR 0020). The rule survives the
+  instance, because the next badge that does fill itself still needs it.

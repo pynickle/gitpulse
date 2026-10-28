@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_status_badge.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'repository_releases_controller.dart';
 import 'repository_releases_dto.dart';
@@ -50,6 +51,10 @@ class RepositoryReleasesView extends StatelessWidget {
                 if (filter != RepositoryReleaseFilter.values.first)
                   const SizedBox(width: 8),
                 _FilterPill(
+                  // A filter's label can also be a row's own state word —
+                  // `Prerelease`, `Draft` — so the control is addressed by key
+                  // and never told apart from a label by its characters.
+                  key: ValueKey(filter.name),
                   label: switch (filter) {
                     RepositoryReleaseFilter.all => l10n.repositoryReleasesAll,
                     RepositoryReleaseFilter.stable =>
@@ -188,7 +193,10 @@ class _RepositoryReleasesPager extends StatelessWidget {
             onPressed: pagination.hasPrev ? () => onPage(page - 1) : null,
             icon: const Icon(Icons.chevron_left),
           ),
-          Text(l10n.repositoryReleasesPage(page)),
+          Text(
+            l10n.repositoryReleasesPage(page),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           IconButton(
             tooltip: l10n.repositoryReleasesNext,
             onPressed: pagination.hasNext ? () => onPage(page + 1) : null,
@@ -205,6 +213,7 @@ class _RepositoryReleasesPager extends StatelessWidget {
 /// a permanent explanation above the list.
 class _FilterPill extends StatelessWidget {
   const _FilterPill({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -231,10 +240,16 @@ class _FilterPill extends StatelessWidget {
             // and no press paints a tint, so a second radius decides nothing.
             onTap: onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              // The label lost a step but the pill keeps its height: a filter
+              // chip stays a 36dp target, and the room the smaller word gave
+              // back goes into the padding rather than into the touch area.
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: GitPulseSpace.meta,
+              ),
               child: Text(
                 label,
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: theme.textTheme.labelMedium?.copyWith(
                   color: selected
                       ? scheme.onSecondaryContainer
                       : scheme.onSurfaceVariant,
@@ -248,9 +263,10 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
-/// One Repository Release List row: the release's name, one muted meta line, and
-/// a leading accent bar when the row is the Entry Release. The whole row opens
-/// the release.
+/// One Repository Release List row: the release's name, one muted meta line, a
+/// leading accent bar when the row is the Entry Release, and a Release State
+/// badge beside the name when the release is a draft or a prerelease. The whole
+/// row opens the release.
 class _ReleaseRow extends StatelessWidget {
   const _ReleaseRow({
     super.key,
@@ -271,9 +287,15 @@ class _ReleaseRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final title = item.title;
-    // The tag is printed beside the title, not on the fact line: a tag of any
-    // width would otherwise push the aligned facts out of their columns.
-    final metaStyle = _metaTextStyle(theme);
+    // The release's state is one badge beside the name, never a second line:
+    // it is the one thing about a release that neither its title nor its facts
+    // can say. A draft wins over a prerelease, because the list's own filter
+    // never files a draft under prereleases.
+    final state = item.draft
+        ? (icon: Icons.visibility_off_outlined, label: l10n.releaseDraft)
+        : item.prerelease
+        ? (icon: Icons.science_outlined, label: l10n.timelinePrerelease)
+        : null;
     final downloads = gitPulseCompactCount(context, item.downloadCount);
     return MergeSemantics(
       child: InkWell(
@@ -299,47 +321,45 @@ class _ReleaseRow extends StatelessWidget {
               ),
             Padding(
               // The leading inset is reserved on every row, so titles line up
-              // whether or not the Entry Release marker is beside them.
-              padding: const EdgeInsets.fromLTRB(12, 10, 0, 10),
+              // whether or not the Entry Release marker is beside them. The
+              // vertical inset follows the smaller type: the two lines are
+              // shorter now, and a row that kept its old padding would read as
+              // small text floating in empty space.
+              padding: const EdgeInsets.fromLTRB(
+                12,
+                GitPulseSpace.inline,
+                0,
+                GitPulseSpace.inline,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) => Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleMedium,
-                                ),
+                        // The badge shares the name's line rather than the
+                        // row's, so it takes width from the name alone and
+                        // never from the aligned meta columns below it.
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall,
                               ),
-                              if (item.tagName != title) ...[
-                                const SizedBox(width: 8),
-                                ConstrainedBox(
-                                  // The tag keeps its own width, up to the half
-                                  // of the line the name leaves it.
-                                  constraints: BoxConstraints(
-                                    maxWidth: constraints.maxWidth * .5,
-                                  ),
-                                  child: Text(
-                                    item.tagName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: metaStyle?.copyWith(
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            ),
+                            if (state case final state?) ...[
+                              const SizedBox(width: GitPulseSpace.inline),
+                              GitPulseStatusBadge(
+                                icon: state.icon,
+                                label: state.label,
+                              ),
                             ],
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: GitPulseSpace.nudge),
                         LayoutBuilder(
                           builder: (context, constraints) => Row(
                             children: [
@@ -402,6 +422,12 @@ class _ReleaseRow extends StatelessWidget {
                       ],
                     ),
                   ),
+                  // One gap between the badge and the way into the release,
+                  // when there is a badge to separate. The badge keeps its own
+                  // width and the name yields to it, so a row at any text scale
+                  // loses characters of the name rather than its state.
+                  if (state != null)
+                    const SizedBox(width: GitPulseSpace.inline),
                   Icon(
                     Icons.chevron_right,
                     size: GitPulseIconSize.action,
@@ -472,10 +498,10 @@ class _MetaFact extends StatelessWidget {
 const _metaFactIconExtent = GitPulseIconSize.fact;
 const _metaFactIconGap = 3.0;
 
-/// The muted, tabular style both the fact values and the title's tag share, so
-/// numbers compare down the list and the tag reads as an identifier.
+/// The muted, tabular style the fact values share, so numbers compare down the
+/// list.
 TextStyle? _metaTextStyle(ThemeData theme) =>
-    theme.textTheme.bodySmall?.copyWith(
+    theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       fontFeatures: const [FontFeature.tabularFigures()],
     );

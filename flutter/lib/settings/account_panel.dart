@@ -10,6 +10,7 @@ import '../connection/connection_screen.dart'
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_avatar.dart';
 import '../presentation/gitpulse_setting_rows.dart';
+import '../presentation/gitpulse_status_badge.dart';
 import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../session/session_controller.dart';
@@ -141,8 +142,11 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
                 ),
               ),
               if (problem == null)
-                _BackendStatus(
-                  session.offline
+                GitPulseStatusBadge(
+                  icon: session.offline
+                      ? Icons.cloud_off_outlined
+                      : Icons.cloud_done_outlined,
+                  label: session.offline
                       ? l10n.timelineOffline
                       : l10n.backendConnected,
                 ),
@@ -374,39 +378,6 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
         ],
         GitPulseSettingSurface(child: panel),
       ],
-    );
-  }
-}
-
-/// The short reachability of the backend, as a quiet pill on the card's title
-/// line. The words carry the status; the pill does not add a second color.
-class _BackendStatus extends StatelessWidget {
-  const _BackendStatus(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(GitPulseRadius.surface),
-        border: Border.all(
-          color: toneEdge(scheme),
-          width: GitPulseStroke.hairline,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: GitPulseSpace.inline,
-          vertical: GitPulseSpace.glyphGap,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall
-              ?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-      ),
     );
   }
 }

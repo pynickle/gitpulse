@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_formatting.dart';
+import 'package:gitpulse/presentation/gitpulse_status_badge.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
@@ -146,13 +147,13 @@ void main() {
     expect(find.text('Earlier releases are not shown.'), findsOneWidget);
   });
 
-  // A card's border is the boundary of a surface and its badge's border is a
-  // line inside one, so the two take the scheme's two registered tones — never
-  // one tone for both. The badge is also a whole hairline: Material's
-  // half-pixel default renders inconsistently on high-DPI displays.
+  // A card's boundary is one hairline and the badge inside it is another, so
+  // the badge reads as a state rather than as a second surface. It paints no
+  // fill, which is what keeps it legible when the card under it takes the
+  // hover or focus tint.
   for (final brightness in Brightness.values) {
-    testWidgets('a card edges with one tone and its badge rules with another '
-        '(${brightness.name})', (tester) async {
+    testWidgets('a card edges with one hairline and its state badge with '
+        'another (${brightness.name})', (tester) async {
       await _pumpCard(
         tester,
         _release(
@@ -178,19 +179,25 @@ void main() {
       expect(edge.color, scheme.outline);
       expect(edge.width, 1);
 
-      final badge = tester
-          .widgetList<Container>(
-            find.ancestor(
-              of: find.text('Prerelease'),
-              matching: find.byType(Container),
-            ),
-          )
-          .map((container) => container.decoration)
-          .whereType<BoxDecoration>()
-          .single;
+      final badge =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: find.byType(GitPulseStatusBadge),
+                          matching: find.byType(DecoratedBox),
+                          matchRoot: true,
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
       final rule = (badge.border! as Border).top;
-      expect(rule.color, scheme.outlineVariant);
+      expect(rule.color, scheme.outline);
       expect(rule.width, 1);
+      // Nothing is painted behind the word, so the card's own tone — or the
+      // tint a press or a hover puts over it — shows through untouched.
+      expect(badge.color, isNull);
     });
   }
 }

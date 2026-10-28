@@ -53,9 +53,10 @@ needs its own ADR, because it adds a per-surface rule where this one deliberatel
   reaction, which is a halo around the thumb rather than a surface tint, and `SegmentedButton`
   segments keep theirs because the widget wraps them in their own `TextButtonTheme`. Both are
   recorded as deliberate exceptions rather than left to be rediscovered.
-- The Release Timeline card's prerelease badge stays at `surfaceContainerHigh`, but no longer because
-  of press-contrast. ADR 0019 moved it down a step so a pressed card would not dissolve it; with no
-  pressed tone to collide with, the badge keeps that step for hierarchy alone.
+- The Release Timeline card's prerelease badge no longer holds a container step at all: it is the
+  shared outlined `GitPulseStatusBadge` with no fill (ADR 0020), so the question this ADR answered
+  about it — whether a filled badge keeps its step for press-contrast or for hierarchy — has no
+  instance left. A badge that does fill itself still keeps that step for hierarchy alone.
 - `Checkbox` paints its press reaction itself rather than inking through an `InkWell`, so it takes
   the shared resolver through `CheckboxThemeData.overlayColor` instead of the theme's splash. Its
   box and check stay Material 3's own scheme colours — the checked fill is the scheme's primary —

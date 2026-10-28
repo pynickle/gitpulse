@@ -275,6 +275,10 @@ _Avoid_: dead repo, invalid star, failed fetch when the identity still exists
 The releases that belong to one repository, including drafts and prereleases.
 _Avoid_: Release Timeline
 
+**Release State**:
+Which of Draft, Prerelease, or Stable a release is. Draft takes precedence: a release that is both a draft and a prerelease is a Draft, matching the Repository Release List filter, which never files a draft under prereleases. A Draft is unpublished — it has no publication time, and GitHub shows it to nobody but its author.
+_Avoid_: filter, Backend Status when referring to this state
+
 **Entry Release**:
 The release open in the Release Drawer when that drawer was opened from the Release Timeline. It stays fixed until the drawer closes; the list marks its row when that row is visible, and one step from the list or another release returns to it.
 _Avoid_: current release, latest release, the repository's first release

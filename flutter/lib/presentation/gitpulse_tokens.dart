@@ -51,11 +51,12 @@ abstract final class GitPulseSpace {
 
 /// The corner radii a surface may take, plus the strip a decoration draws.
 abstract final class GitPulseRadius {
-  /// A row's ink shape, an asset row, a drawer's chrome row, an input or a
-  /// search field (ADR 0019 named 8dp).
+  /// A row's ink shape, an asset row, a drawer's chrome row, an input, a search
+  /// field, and every pill that answers a press (ADR 0019 named 8dp).
   ///
-  /// A badge shares it: 6 and 8 are indistinguishable on a 17dp box, and one
-  /// fewer token is one fewer argument.
+  /// A status badge does not: it takes [surface], so the one pill in the app
+  /// that answers no press is told apart from the controls by its corner alone
+  /// (ADR 0020).
   static const row = 8.0;
 
   /// A card, a banner, the top of the filter panel (ADR 0019 named 12dp for

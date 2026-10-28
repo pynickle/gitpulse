@@ -194,6 +194,8 @@ void main() {
     _useWindow(tester, const Size(390, 844));
     await _openSettings(tester);
     expect(find.text('Connected'), findsOneWidget);
+    // The state is a glyph and a word, not a word alone.
+    expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
     expect(find.text('https://gitpulse.example/'), findsOneWidget);
 
     String? copied;

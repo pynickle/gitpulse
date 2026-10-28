@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_status_badge.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../releases/release_drawer.dart';
 import 'timeline_cache.dart';
@@ -101,7 +102,10 @@ class ReleaseTimelineCard extends ConsumerWidget {
                       ),
                     ),
                     if (item.isPrerelease)
-                      _PrereleaseBadge(label: l10n.timelinePrerelease),
+                      GitPulseStatusBadge(
+                        icon: Icons.science_outlined,
+                        label: l10n.timelinePrerelease,
+                      ),
                   ],
                 ),
                 if (item.changelog.isNotEmpty) ...[
@@ -145,39 +149,6 @@ class ReleaseTimelineCard extends ConsumerWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrereleaseBadge extends StatelessWidget {
-  const _PrereleaseBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        // A line inside the card, so it takes the rule tone at the one width
-        // the app draws.
-        border: Border.all(
-          color: toneRule(scheme),
-          width: GitPulseStroke.hairline,
-        ),
-        borderRadius: BorderRadius.circular(GitPulseRadius.row),
-        // One container step below the press tint, so a pressed card cannot
-        // dissolve the badge it holds into its own tone.
-        color: scheme.surfaceContainerHigh,
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: scheme.onSurfaceVariant,
         ),
       ),
     );
