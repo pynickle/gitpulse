@@ -176,7 +176,10 @@ class _Identity extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // The avatar stands beside both lines, not above the second one:
+            // centred on the owner-and-name block, it reads as the identity the
+            // two lines describe rather than as a picture attached to the owner.
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               GitPulseAvatar(
                 url: repository.owner.avatarUrl,
