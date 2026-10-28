@@ -10,7 +10,7 @@ RUN bun install --frozen-lockfile --ignore-scripts
 # Vite bundles are not real Error instances. Bun's native prepareStackTrace
 # rejects that pairing with "First argument must be an Error object"
 # (https://github.com/oven-sh/bun/issues/46393) while Node/V8 accepts it.
-FROM node:24-slim AS build
+FROM node:26-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
