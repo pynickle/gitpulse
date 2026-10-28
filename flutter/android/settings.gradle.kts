@@ -19,7 +19,8 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "9.1.0" apply false
+    id("com.android.application") version "9.4.1" apply false
+    // Pin the compiler used by built-in Kotlin for Flutter and JVM 25; do not apply KGP.
     id("org.jetbrains.kotlin.android") version "2.4.21" apply false
 }
 

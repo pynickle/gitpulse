@@ -16,6 +16,15 @@ Run Flutter commands from `flutter/`. The exact stable Flutter SDK is recorded i
 Dart SDK and commit `pubspec.lock`. Flutter does not participate in the Bun
 workspace or Nuxt discovery. The root web checks still run independently.
 
+Android uses AGP 9.4.1, Gradle 9.8.2, and built-in Kotlin. The Kotlin compiler
+stays pinned to 2.4.21 to satisfy Flutter's minimum version and the JVM 25 target;
+the Kotlin Android plugin is declared with `apply false` and is not applied.
+Flutter 3.47 still needs `android.newDsl=false`, so warnings about the legacy
+AGP DSL and variant API are expected. Keep `android.builtInKotlin=true` explicit
+so Flutter's migrator does not restore the Kotlin opt-out. The Gradle Wrapper
+scripts and JAR are tracked; update them with the `wrapper` task when upgrading
+Gradle, rather than changing only the distribution URL.
+
 The 2026-10-20 audit resolved Flutter 3.47.7 / Dart 3.13.5. All selected runtime
 dependencies resolve to their current compatible stable releases. The compatible
 generator update is included in the lockfile. `build_runner` remains at 2.16.2:
