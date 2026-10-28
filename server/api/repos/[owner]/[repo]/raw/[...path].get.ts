@@ -10,6 +10,11 @@ type RawRepoContentResponse = {
   encoding?: string;
 };
 
+// An SVG response is a document on this origin. Sandbox blocks its scripts and
+// gives the document an opaque origin, so it cannot use the reader's session.
+const SVG_DOCUMENT_CONTENT_SECURITY_POLICY =
+  "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+
 function getContentType(path: string) {
   const extension = path.split('.').pop()?.toLowerCase();
 
@@ -92,9 +97,13 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    setHeader(event, 'content-type', getContentType(contentPath));
+    const contentType = getContentType(contentPath);
+    setHeader(event, 'content-type', contentType);
     setHeader(event, 'cache-control', 'private, max-age=300');
     setHeader(event, 'x-content-type-options', 'nosniff');
+    if (contentType === 'image/svg+xml') {
+      setHeader(event, 'content-security-policy', SVG_DOCUMENT_CONTENT_SECURITY_POLICY);
+    }
 
     return Buffer.from(fileContent.content || '', 'base64');
   } catch (error: unknown) {
