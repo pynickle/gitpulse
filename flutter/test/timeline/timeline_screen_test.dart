@@ -9,6 +9,7 @@ import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
+import 'package:gitpulse/timeline/timeline_layout.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -91,61 +92,69 @@ Map<String, Object?> baselineRefresh(String baseline) => {
 };
 
 void main() {
-  testWidgets(
-    'a wide window shows three columns, a tablet two, and a phone one',
-    (tester) async {
-      final releases = [
-        releaseJson(12, 'v1.2', '2026-10-04T12:00:00Z'),
-        releaseJson(11, 'v1.1', '2026-10-04T11:00:00Z'),
-        releaseJson(10, 'v1.0', '2026-10-04T10:00:00Z'),
-        releaseJson(9, 'v0.9', '2026-10-04T09:00:00Z'),
-        releaseJson(8, 'v0.8', '2026-10-04T08:00:00Z'),
-        releaseJson(7, 'v0.7', '2026-10-04T07:00:00Z'),
-      ];
+  testWidgets('every window width still gets one column of cards', (
+    tester,
+  ) async {
+    final releases = [
+      releaseJson(12, 'v1.2', '2026-10-04T12:00:00Z'),
+      releaseJson(11, 'v1.1', '2026-10-04T11:00:00Z'),
+      releaseJson(10, 'v1.0', '2026-10-04T10:00:00Z'),
+      releaseJson(9, 'v0.9', '2026-10-04T09:00:00Z'),
+      releaseJson(8, 'v0.8', '2026-10-04T08:00:00Z'),
+      releaseJson(7, 'v0.7', '2026-10-04T07:00:00Z'),
+    ];
 
-      for (final (size, expectedColumns) in [
-        (const Size(1400, 1200), 3),
-        (const Size(900, 1200), 2),
-        (const Size(500, 1200), 1),
-      ]) {
-        await pumpTimelineScreen(
-          tester,
-          size: size,
-          handlers: {
-            'GET api/settings': () => BackendResult(
-              statusCode: 200,
-              data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+    for (final size in const [
+      Size(320, 1200),
+      Size(500, 1200),
+      Size(900, 1200),
+      Size(1400, 1200),
+    ]) {
+      await pumpTimelineScreen(
+        tester,
+        size: size,
+        handlers: {
+          'GET api/settings': () => BackendResult(
+            statusCode: 200,
+            data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+          ),
+          'POST api/release-timeline/refresh': () => BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {'R_alpha': pageJson('octo', 'alpha', releases)},
+              refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
             ),
-            'POST api/release-timeline/refresh': () => BackendResult(
-              statusCode: 200,
-              data: roundJson(
-                pages: {'R_alpha': pageJson('octo', 'alpha', releases)},
-                refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
-              ),
-            ),
-          },
-        );
+          ),
+        },
+      );
 
-        final cards = find.byType(ReleaseTimelineCard);
-        expect(cards, findsWidgets, reason: 'cards for $size');
-        final firstTop = tester.getTopLeft(cards.first).dy;
-        var columnsInFirstRow = 0;
-        for (final element in cards.evaluate()) {
-          if ((element.renderObject! as RenderBox)
-                  .localToGlobal(Offset.zero)
-                  .dy !=
-              firstTop) {
-            break;
-          }
-          columnsInFirstRow++;
+      final cards = find.byType(ReleaseTimelineCard);
+      expect(cards, findsWidgets, reason: 'cards for $size');
+      final firstTop = tester.getTopLeft(cards.first).dy;
+      var cardsInFirstRow = 0;
+      for (final element in cards.evaluate()) {
+        if ((element.renderObject! as RenderBox)
+                .localToGlobal(Offset.zero)
+                .dy !=
+            firstTop) {
+          break;
         }
-        expect(columnsInFirstRow, expectedColumns, reason: 'columns at $size');
-
-        await tester.pumpWidget(const SizedBox.shrink());
+        cardsInFirstRow++;
       }
-    },
-  );
+      // One card per row at every width, and it owns the page's whole gutter
+      // rather than sharing it with a neighbour.
+      expect(cardsInFirstRow, 1, reason: 'cards in the first row at $size');
+      final card = tester.getRect(cards.first);
+      expect(card.left, releaseTimelineHorizontalPadding, reason: 'at $size');
+      expect(
+        card.right,
+        size.width - releaseTimelineHorizontalPadding,
+        reason: 'at $size',
+      );
 
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
   testWidgets(
     'date groups, the previous refresh marker, and the loaded-new count come from the shared baseline',
     (tester) async {

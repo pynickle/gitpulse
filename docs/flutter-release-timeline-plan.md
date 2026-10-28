@@ -1,5 +1,7 @@
 # Flutter Release Timeline implementation plan
 
+> Partly superseded: [ADR 0029](adr/0029-flutter-phone-only-client.md) removed every desktop target and all wide-screen layout. This document records the original brief.
+
 Status: synthesized into the published implementation specification, [GitHub issue #95](https://github.com/pynickle/gitpulse/issues/95), labelled ready-for-agent. The product and major library choices below are accepted; explicitly proposed engineering defaults/supporting dependencies retain their recommendation status in the published specification. This specification task has not started application implementation or production deployment.
 
 Decision history: [interview specification](flutter-release-timeline-spec.md). Architecture decisions: [client boundary](adr/0015-flutter-release-timeline-client-boundary.md), [cache reconnection](adr/0016-flutter-timeline-cache-reconnection.md), [native authentication](adr/0017-flutter-cookie-session-browser-handoff.md).

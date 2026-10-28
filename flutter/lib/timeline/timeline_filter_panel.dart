@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,12 +7,11 @@ import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'timeline_cache.dart';
 import 'timeline_filters.dart';
-import 'timeline_layout.dart';
 import 'timeline_models.dart';
 import 'timeline_session.dart';
 
-/// Shows the Release Timeline Filter Panel: a right-side panel on a wide
-/// window and a bottom sheet on a phone, following the Release Drawer.
+/// Shows the Release Timeline Filter Panel as one bottom sheet, the way the
+/// Release Drawer opens.
 Future<void> showTimelineFilterPanel(BuildContext context) {
   return showGeneralDialog<void>(
     context: context,
@@ -25,8 +22,6 @@ Future<void> showTimelineFilterPanel(BuildContext context) {
     pageBuilder: (context, animation, secondaryAnimation) =>
         const _TimelineFilterOverlay(),
     transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final wide =
-          MediaQuery.sizeOf(context).width > releaseTimelinePhoneMaxWidth;
       final curved = CurvedAnimation(
         parent: animation,
         curve: Curves.easeOutCubic,
@@ -35,7 +30,7 @@ Future<void> showTimelineFilterPanel(BuildContext context) {
         opacity: curved,
         child: SlideTransition(
           position: Tween(
-            begin: wide ? const Offset(.08, 0) : const Offset(0, .08),
+            begin: const Offset(0, .08),
             end: Offset.zero,
           ).animate(curved),
           child: child,
@@ -63,39 +58,19 @@ class _TimelineFilterOverlay extends StatelessWidget {
             },
           ),
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth > releaseTimelinePhoneMaxWidth;
-            if (wide) {
-              return Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: math.min(420, constraints.maxWidth * .9),
-                  child: const Material(
-                    elevation: 12,
-                    child: TimelineFilterPanel(),
-                  ),
-                ),
-              );
-            }
-            // The panel never reflows for the keyboard. Its search field is at
-            // the top of the sheet, so the keyboard overlays the date and
-            // prerelease controls rather than pushing them up the screen — the
-            // controls a reader learned the position of stay where they were.
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-                child: const Material(
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(GitPulseRadius.surface),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: TimelineFilterPanel(),
-                ),
-              ),
-            );
-          },
+        // The panel never reflows for the keyboard. Its search field is at
+        // the top of the sheet, so the keyboard overlays the date and
+        // prerelease controls rather than pushing them up the screen — the
+        // controls a reader learned the position of stay where they were.
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: Material(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(GitPulseRadius.surface),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: const TimelineFilterPanel(),
+          ),
         ),
       ),
     );

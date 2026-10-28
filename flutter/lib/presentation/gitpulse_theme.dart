@@ -80,34 +80,3 @@ ThemeData gitPulseTheme(Brightness brightness) {
     checkboxTheme: CheckboxThemeData(overlayColor: overlay),
   );
 }
-
-/// Applies the desktop system typeface for [locale] to [theme], so headings,
-/// body text, and buttons all share one Chinese or Latin family.
-///
-/// Applied after the app language resolves: the chosen language, not the
-/// operating system, decides whether a Chinese typeface is needed.
-ThemeData gitPulseTypography(ThemeData theme, {required Locale locale}) {
-  final chinese = locale.languageCode == 'zh';
-  final (fontFamily, fallbacks) = switch (theme.platform) {
-    TargetPlatform.windows => (
-      chinese ? 'Microsoft YaHei UI' : 'Segoe UI',
-      const ['Microsoft YaHei UI', 'Microsoft JhengHei UI'],
-    ),
-    TargetPlatform.linux => (
-      chinese ? 'Noto Sans CJK SC' : 'Noto Sans',
-      const ['Noto Sans CJK SC', 'Noto Sans CJK TC'],
-    ),
-    _ => (null, const <String>[]),
-  };
-  if (fontFamily == null) return theme;
-  return theme.copyWith(
-    textTheme: theme.textTheme.apply(
-      fontFamily: fontFamily,
-      fontFamilyFallback: fallbacks,
-    ),
-    primaryTextTheme: theme.primaryTextTheme.apply(
-      fontFamily: fontFamily,
-      fontFamilyFallback: fallbacks,
-    ),
-  );
-}

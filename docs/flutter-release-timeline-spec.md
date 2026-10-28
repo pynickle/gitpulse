@@ -1,5 +1,7 @@
 # Flutter Release Timeline App
 
+> Partly superseded: [ADR 0029](adr/0029-flutter-phone-only-client.md) removed every desktop target and all wide-screen layout. This document records the original brief.
+
 Status: interview synthesized and published as [GitHub issue #95](https://github.com/pynickle/gitpulse/issues/95), labelled ready-for-agent. The [published-spec local copy](flutter-release-timeline-issue-spec.md) is self-contained. The [implementation plan](flutter-release-timeline-plan.md) retains design rationale and explicitly proposed engineering defaults. No application implementation has started during specification publication.
 
 ## Explicit requirements

@@ -140,7 +140,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a wide window lines every control up in one column', (
+  testWidgets('a wide window keeps the same one column of cards', (
     tester,
   ) async {
     _useWindow(tester, const Size(1280, 900));
@@ -161,14 +161,22 @@ void main() {
     expect(appearanceChoice.top, greaterThan(appearanceLabel.bottom));
     expect(languageChoice.left, lessThan(languageLabel.left));
 
-    // The account keeps the trailing column the Follows page uses, so the
-    // settings themselves are not pushed aside by it.
+    // The account still opens the one column instead of taking a trailing
+    // column of its own, and the cards keep the scanning ceiling rather than
+    // stretching across the window.
     final account = tester.getRect(find.text('octocat'));
-    expect(account.left, greaterThan(languageChoice.right));
-    expect(account.left, greaterThan(1280 * 0.6));
+    expect(account.bottom, lessThan(languageLabel.top));
+    final card = tester.getRect(
+      find.ancestor(
+        of: find.text('Language'),
+        matching: find.byWidgetPredicate(_isSettingCard),
+      ),
+    );
+    final pageLeft = 1280 / 2 - GitPulseWidth.settingsTable / 2;
+    expect(card.left, closeTo(pageLeft + GitPulseSpace.gutter, 1));
+    expect(card.right, closeTo(1280 - pageLeft - GitPulseSpace.gutter, 1));
     expect(tester.takeException(), isNull);
   });
-
   testWidgets('large text neither clips nor overflows the row controls', (
     tester,
   ) async {

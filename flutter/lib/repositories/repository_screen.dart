@@ -53,7 +53,7 @@ const _factIconGap = 3.0;
 ///
 /// The page is a column of bands on the gutter the Timeline, Follows, and
 /// Settings pages share, capped at a reading width instead of stretching across
-/// a desktop window. It leads with the repository's identity rather than with a
+/// the whole window. It leads with the repository's identity rather than with a
 /// bar naming the page, and its data line carries a glyph per number, so the
 /// page never says "Repository" or "Stars" out loud to a reader who can see
 /// them. The words a screen reader needs live in the semantics of each fact.

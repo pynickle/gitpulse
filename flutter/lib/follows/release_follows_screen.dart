@@ -23,6 +23,12 @@ const _searchBorder = OutlineInputBorder(
   borderRadius: BorderRadius.all(Radius.circular(GitPulseRadius.row)),
 );
 
+/// The width the discovery list stops growing at: a list wider than this spreads
+/// a repository's name and its star count too far apart to read as one row. It is
+/// the width the list kept beside the Followed Repositories sidebar the page no
+/// longer has, so the rows read the same on a wide window as they always did.
+const _maximumContentWidth = 1080.0;
+
 class ReleaseFollowsScreen extends ConsumerStatefulWidget {
   const ReleaseFollowsScreen({super.key});
 
@@ -149,280 +155,227 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
         : state.starred.pagination;
     final problem = search ? state.searchProblem : state.starred.problem;
 
+    // Scaffold removes the keyboard inset from the body's MediaQuery.
+    final keyboardVisible = View.of(context).viewInsets.bottom > 0;
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1440),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= GitPulseWidth.timelineTablet;
-            // Scaffold removes the keyboard inset from the body's MediaQuery.
-            final keyboardVisible = View.of(context).viewInsets.bottom > 0;
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          releaseFollowsPadding,
-                          8,
-                          releaseFollowsPadding,
-                          8,
+        constraints: const BoxConstraints(maxWidth: _maximumContentWidth),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                releaseFollowsPadding,
+                8,
+                releaseFollowsPadding,
+                8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TabBar(
+                    controller: _sourceTabs,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: UnderlineTabIndicator(
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: GitPulseStroke.hairline,
+                      ),
+                    ),
+                    dividerColor: toneRule(theme.colorScheme),
+                    dividerHeight: GitPulseStroke.hairline,
+                    overlayColor: gitPulseInkOverlay(theme.colorScheme),
+                    tabs: [
+                      Tab(
+                        text: l10n.followsStarred,
+                        height: GitPulseHeight.standard,
+                      ),
+                      Tab(
+                        text: l10n.followsSearch,
+                        height: GitPulseHeight.standard,
+                      ),
+                    ],
+                    onTap: (index) {
+                      _debounce?.cancel();
+                      FocusScope.of(context).unfocus();
+                      _scrollToTop();
+                      setState(() => _source = _RepositorySource.values[index]);
+                      if (_source == _RepositorySource.search &&
+                          state.query.isNotEmpty &&
+                          state.searchPage == 0 &&
+                          !state.searching) {
+                        _search();
+                      }
+                    },
+                  ),
+                  if (!search)
+                    Padding(
+                      padding: const EdgeInsets.only(top: GitPulseSpace.inline),
+                      child: _SortControls(
+                        sort: state.starred.sort,
+                        ascending: state.starred.ascending,
+                        enabled: !loading,
+                        onSort: (sort) =>
+                            unawaited(facade.loadStarred(sort: sort)),
+                        onToggleDirection: () => unawaited(
+                          facade.loadStarred(
+                            ascending: !state.starred.ascending,
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                      ),
+                    ),
+                  if (search) ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _query,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _search(submit: true),
+                      onChanged: _changeQuery,
+                      style: theme.textTheme.bodyMedium,
+                      decoration: InputDecoration(
+                        labelText: l10n.followsSearchLabel,
+                        isDense: true,
+                        // The label is a label, not a heading: the
+                        // field keeps body-sized type whether the
+                        // label rests inside it or floats.
+                        labelStyle: theme.textTheme.bodyMedium,
+                        floatingLabelStyle: theme.textTheme.bodySmall,
+                        border: _searchBorder,
+                        enabledBorder: _searchBorder,
+                        focusedBorder: _searchBorder.copyWith(
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                TabBar(
-                                  controller: _sourceTabs,
-                                  indicatorSize: TabBarIndicatorSize.tab,
-                                  indicator: UnderlineTabIndicator(
-                                    borderSide: BorderSide(
-                                      color: theme.colorScheme.primary,
-                                      width: GitPulseStroke.hairline,
-                                    ),
-                                  ),
-                                  dividerColor: toneRule(theme.colorScheme),
-                                  dividerHeight: GitPulseStroke.hairline,
-                                  overlayColor: gitPulseInkOverlay(
-                                    theme.colorScheme,
-                                  ),
-                                  tabs: [
-                                    Tab(
-                                      text: l10n.followsStarred,
-                                      height: GitPulseHeight.standard,
-                                    ),
-                                    Tab(
-                                      text: l10n.followsSearch,
-                                      height: GitPulseHeight.standard,
-                                    ),
-                                  ],
-                                  onTap: (index) {
-                                    _debounce?.cancel();
-                                    FocusScope.of(context).unfocus();
-                                    _scrollToTop();
-                                    setState(
-                                      () => _source =
-                                          _RepositorySource.values[index],
-                                    );
-                                    if (_source == _RepositorySource.search &&
-                                        state.query.isNotEmpty &&
-                                        state.searchPage == 0 &&
-                                        !state.searching) {
-                                      _search();
-                                    }
-                                  },
+                            if (_query.text.isNotEmpty)
+                              IconButton(
+                                tooltip: l10n.followsClearSearch,
+                                style: IconButton.styleFrom(
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                if (!search)
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                      top: GitPulseSpace.inline,
-                                    ),
-                                    child: _SortControls(
-                                      sort: state.starred.sort,
-                                      ascending: state.starred.ascending,
-                                      enabled: !loading,
-                                      onSort: (sort) => unawaited(
-                                        facade.loadStarred(sort: sort),
-                                      ),
-                                      onToggleDirection: () => unawaited(
-                                        facade.loadStarred(
-                                          ascending: !state.starred.ascending,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            if (search) ...[
-                              const SizedBox(height: 8),
-                              TextField(
-                                controller: _query,
-                                textInputAction: TextInputAction.search,
-                                onSubmitted: (_) => _search(submit: true),
-                                onChanged: _changeQuery,
-                                style: theme.textTheme.bodyMedium,
-                                decoration: InputDecoration(
-                                  labelText: l10n.followsSearchLabel,
-                                  isDense: true,
-                                  // The label is a label, not a heading: the
-                                  // field keeps body-sized type whether the
-                                  // label rests inside it or floats.
-                                  labelStyle: theme.textTheme.bodyMedium,
-                                  floatingLabelStyle: theme.textTheme.bodySmall,
-                                  border: _searchBorder,
-                                  enabledBorder: _searchBorder,
-                                  focusedBorder: _searchBorder.copyWith(
-                                    borderSide: BorderSide(
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  suffixIcon: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (_query.text.isNotEmpty)
-                                        IconButton(
-                                          tooltip: l10n.followsClearSearch,
-                                          style: IconButton.styleFrom(
-                                            tapTargetSize: MaterialTapTargetSize
-                                                .shrinkWrap,
-                                          ),
-                                          onPressed: () {
-                                            _query.clear();
-                                            _changeQuery('');
-                                          },
-                                          iconSize: GitPulseIconSize.inControl,
-                                          icon: const Icon(Icons.close),
-                                        ),
-                                      IconButton(
-                                        tooltip: l10n.followsSearch,
-                                        style: IconButton.styleFrom(
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: _query.text.trim().isEmpty
-                                            ? null
-                                            : () => _search(submit: true),
-                                        iconSize: GitPulseIconSize.inControl,
-                                        icon: const Icon(Icons.search),
-                                      ),
-                                    ],
-                                  ),
-                                  suffixIconConstraints: const BoxConstraints(
-                                    minWidth: 44,
-                                    minHeight: GitPulseHeight.rowMin,
-                                  ),
-                                ),
+                                onPressed: () {
+                                  _query.clear();
+                                  _changeQuery('');
+                                },
+                                iconSize: GitPulseIconSize.inControl,
+                                icon: const Icon(Icons.close),
                               ),
-                            ],
+                            IconButton(
+                              tooltip: l10n.followsSearch,
+                              style: IconButton.styleFrom(
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: _query.text.trim().isEmpty
+                                  ? null
+                                  : () => _search(submit: true),
+                              iconSize: GitPulseIconSize.inControl,
+                              icon: const Icon(Icons.search),
+                            ),
                           ],
                         ),
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: GitPulseHeight.rowMin,
+                        ),
                       ),
-                      // Only an edit is reported here. A read reports itself
-                      // where it can be undone: a page turn fills the list's
-                      // place, and the page already on screen is re-read by the
-                      // pull that asked for it.
-                      if (state.saving) const LinearProgressIndicator(),
-                      Divider(
-                        height: GitPulseStroke.hairline,
-                        thickness: GitPulseStroke.hairline,
-                        color: toneRule(Theme.of(context).colorScheme),
-                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            // Only an edit is reported here. A read reports itself
+            // where it can be undone: a page turn fills the list's
+            // place, and the page already on screen is re-read by the
+            // pull that asked for it.
+            if (state.saving) const LinearProgressIndicator(),
+            Divider(
+              height: GitPulseStroke.hairline,
+              thickness: GitPulseStroke.hairline,
+              color: toneRule(Theme.of(context).colorScheme),
+            ),
+            Expanded(child: _discovery(state, search, loading, problem)),
+            if (!keyboardVisible || _footerFocused)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: GitPulseSpace.gutter,
+                  vertical: GitPulseSpace.inline,
+                ),
+                child: Focus(
+                  onFocusChange: (focused) {
+                    if (mounted) {
+                      setState(() => _footerFocused = focused);
+                    }
+                  },
+                  child: Row(
+                    children: [
                       Expanded(
-                        child: _discovery(state, search, loading, problem),
+                        // A page that failed has no page to name:
+                        // the error states the one thing left to do
+                        // with it, and the footer keeps the way into
+                        // Followed Repositories.
+                        child: pagination == null || problem != null
+                            ? const SizedBox.shrink()
+                            : RepositoryPagination(
+                                pagination: pagination,
+                                loading: loading,
+                                // A page that is on its way is
+                                // already the page being read: the
+                                // number changes as the request
+                                // starts, not when it lands.
+                                page: search
+                                    ? state.searchRequestedPage
+                                    : state.starred.requestedPage,
+                                onPage: (page) {
+                                  _debounce?.cancel();
+                                  if (search) {
+                                    unawaited(
+                                      facade.search(state.query, page: page),
+                                    );
+                                  } else {
+                                    unawaited(facade.loadStarred(page: page));
+                                  }
+                                },
+                              ),
                       ),
-                      if (!keyboardVisible || _footerFocused)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: GitPulseSpace.gutter,
-                            vertical: GitPulseSpace.inline,
-                          ),
-                          child: Focus(
-                            onFocusChange: (focused) {
-                              if (mounted) {
-                                setState(() => _footerFocused = focused);
-                              }
-                            },
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  // A page that failed has no page to name:
-                                  // the error states the one thing left to do
-                                  // with it, and the footer keeps the way into
-                                  // Followed Repositories.
-                                  child: pagination == null || problem != null
-                                      ? const SizedBox.shrink()
-                                      : RepositoryPagination(
-                                          pagination: pagination,
-                                          loading: loading,
-                                          // A page that is on its way is
-                                          // already the page being read: the
-                                          // number changes as the request
-                                          // starts, not when it lands.
-                                          page: search
-                                              ? state.searchRequestedPage
-                                              : state.starred.requestedPage,
-                                          onPage: (page) {
-                                            _debounce?.cancel();
-                                            if (search) {
-                                              unawaited(
-                                                facade.search(
-                                                  state.query,
-                                                  page: page,
-                                                ),
-                                              );
-                                            } else {
-                                              unawaited(
-                                                facade.loadStarred(page: page),
-                                              );
-                                            }
-                                          },
-                                        ),
-                                ),
-                                if (!wide) ...[
-                                  const SizedBox(width: GitPulseSpace.inline),
-                                  Tooltip(
-                                    message: l10n.followsManage(
-                                      state.repositories.length,
-                                    ),
-                                    child: FilledButton.tonalIcon(
-                                      key: const ValueKey('manage-follows'),
-                                      onPressed: _showFollowed,
-                                      style: FilledButton.styleFrom(
-                                        minimumSize: const Size(
-                                          0,
-                                          GitPulseHeight.compact,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: GitPulseSpace.inline,
-                                        ),
-                                      ),
-                                      icon: Icon(
-                                        Icons.bookmarks_outlined,
-                                        size: GitPulseIconSize.inControl,
-                                        color: state.problem == null
-                                            ? null
-                                            : theme.colorScheme.error,
-                                      ),
-                                      label: Text(
-                                        MaterialLocalizations.of(context)
-                                            .formatDecimal(
-                                              state.repositories.length,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
+                      const SizedBox(width: GitPulseSpace.inline),
+                      Tooltip(
+                        message: l10n.followsManage(state.repositories.length),
+                        child: FilledButton.tonalIcon(
+                          key: const ValueKey('manage-follows'),
+                          onPressed: _showFollowed,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, GitPulseHeight.compact),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: GitPulseSpace.inline,
                             ),
                           ),
+                          icon: Icon(
+                            Icons.bookmarks_outlined,
+                            size: GitPulseIconSize.inControl,
+                            color: state.problem == null
+                                ? null
+                                : theme.colorScheme.error,
+                          ),
+                          label: Text(
+                            MaterialLocalizations.of(context)
+                                .formatDecimal(state.repositories.length),
+                          ),
                         ),
+                      ),
                     ],
                   ),
                 ),
-                if (wide) ...[
-                  VerticalDivider(
-                    width: GitPulseStroke.hairline,
-                    thickness: GitPulseStroke.hairline,
-                    color: toneRule(Theme.of(context).colorScheme),
-                  ),
-                  const SizedBox(
-                    width: 360,
-                    child: FollowedRepositoriesPanel(),
-                  ),
-                ],
-              ],
-            );
-          },
+              ),
+          ],
         ),
       ),
     );

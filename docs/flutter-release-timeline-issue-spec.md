@@ -1,3 +1,5 @@
+> Partly superseded: [ADR 0029](adr/0029-flutter-phone-only-client.md) removed every desktop target and all wide-screen layout. This document is the published copy of the original brief.
+
 ## Problem Statement
 
 GitPulse's Release Timeline is currently part of a broader web dashboard. Users who primarily follow software releases need a focused native desktop/mobile application that reuses their GitPulse backend, keeps the familiar information layout, and makes recently fetched release history available across app restarts and network interruptions.

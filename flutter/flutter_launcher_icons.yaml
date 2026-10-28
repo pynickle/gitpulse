@@ -12,10 +12,3 @@ flutter_launcher_icons:
   background_color_ios: '#ffffff'
   image_path_ios_dark_transparent: tool/icons/generated/dark.png
   image_path_ios_tinted_grayscale: tool/icons/generated/tinted.png
-  macos:
-    generate: true
-    image_path: tool/icons/generated/macos.png
-  windows:
-    generate: true
-    image_path: tool/icons/generated/windows.png
-    icon_size: 256

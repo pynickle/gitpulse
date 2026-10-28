@@ -85,13 +85,8 @@ def android_apk_names(version: str) -> list[str]:
     return [f"GitPulse-flutter-v{version}-android-{abi}.apk" for abi in SPLIT_ABIS]
 
 
-def windows_distribution_names(version: str) -> list[str]:
-    prefix = f"GitPulse-flutter-v{version}-windows-x64"
-    return [f"{prefix}-setup.exe", f"{prefix}.zip"]
-
-
 def release_binary_names(version: str) -> list[str]:
-    return android_apk_names(version) + windows_distribution_names(version)
+    return android_apk_names(version)
 
 
 def checksum_name(binary_name: str) -> str:
@@ -272,8 +267,8 @@ def assert_release_assets(directory: Path, version: str) -> None:
     found = sorted(path.name for path in directory.iterdir() if path.is_file())
     if found != sorted(expected):
         raise SystemExit(
-            "Release directory does not contain exactly the split Android APKs, "
-            "Windows setup, portable ZIP, and their checksums.\n"
+            "Release directory does not contain exactly the split Android APKs "
+            "and their checksums.\n"
             f"Expected: {sorted(expected)}\nFound: {found}"
         )
 

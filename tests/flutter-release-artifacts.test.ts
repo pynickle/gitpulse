@@ -115,7 +115,7 @@ describe('Android signing properties', () => {
 });
 
 describe('Flutter release assets', () => {
-  test('requires the three APKs, setup, portable ZIP, and matching checksums', () => {
+  test('requires the three split APKs and their matching checksums', () => {
     const root = mkdtempSync(join(tmpdir(), 'gitpulse-release-assets-'));
     const directory = join(root, 'distributions');
     const created = runPython(
@@ -188,7 +188,7 @@ describe('Flutter release assets', () => {
 });
 
 describe('Flutter release download table', () => {
-  test('links the shipped Android and Windows files and omits a universal APK', () => {
+  test('links the shipped Android APKs and omits a universal APK', () => {
     const root = mkdtempSync(join(tmpdir(), 'gitpulse-release-notes-'));
     const notes = join(root, 'notes.md');
     const body = join(root, 'body.md');
@@ -208,23 +208,21 @@ describe('Flutter release download table', () => {
     expect(result.status).toBe(0);
     const rendered = readFileSync(body, 'utf8');
     expect(rendered).toContain('## Changes');
-    expect(rendered).toContain('Download based on your OS:');
+    expect(rendered).toContain('Download for Android, by device ABI:');
     for (const filename of [
       'GitPulse-flutter-v1.2.3-android-arm64-v8a.apk',
       'GitPulse-flutter-v1.2.3-android-armeabi-v7a.apk',
       'GitPulse-flutter-v1.2.3-android-x86_64.apk',
-      'GitPulse-flutter-v1.2.3-windows-x64-setup.exe',
-      'GitPulse-flutter-v1.2.3-windows-x64.zip',
     ]) {
       expect(rendered).toContain(
         `https://github.com/pynickle/gitpulse/releases/download/flutter-v1.2.3/${filename}`
       );
     }
     expect(rendered).toContain('alt="APK ARMv8"');
-    expect(rendered).toContain('alt="Setup x64"');
-    expect(rendered).toContain('alt="Portable x64"');
+    expect(rendered).toContain('alt="APK ARMv7"');
+    expect(rendered).toContain('alt="APK x64"');
     expect(rendered).not.toContain('GitPulse-flutter-v1.2.3-android.apk');
-    expect(rendered).not.toContain('macos');
+    expect(rendered).not.toContain('windows');
     rmSync(root, { recursive: true });
   });
 });

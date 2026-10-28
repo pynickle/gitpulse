@@ -503,7 +503,7 @@ void main() {
   );
 
   testWidgets(
-    'phone and desktop layouts keep discovery controls and follows accessible',
+    'discovery controls and follows stay reachable at every phone size',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1;
@@ -537,114 +537,103 @@ void main() {
         ),
         findsNothing,
       );
-      for (final size in [
-        const Size(320, 640),
-        const Size(700, 900),
-        const Size(1500, 900),
-      ]) {
+      for (final size in [const Size(320, 640), const Size(700, 900)]) {
         tester.view.physicalSize = size;
         tester.platformDispatcher.textScaleFactorTestValue = 1.8;
         await tester.pumpAndSettle();
-        if (size.width < 1100) {
-          final manage = find.byKey(const ValueKey('manage-follows'));
-          expect(manage.hitTestable(), findsOneWidget);
-          final source = tester.getRect(
-            find.ancestor(
-              of: find.text('Starred'),
-              matching: find.byType(TabBar),
+        final manage = find.byKey(const ValueKey('manage-follows'));
+        expect(manage.hitTestable(), findsOneWidget);
+        final source = tester.getRect(
+          find.ancestor(
+            of: find.text('Starred'),
+            matching: find.byType(TabBar),
+          ),
+        );
+        final sort = tester.getRect(
+          find.ancestor(
+            of: find.text('Starred date'),
+            matching: find.byWidgetPredicate(
+              (widget) => widget is SegmentedButton<dynamic>,
             ),
-          );
-          final sort = tester.getRect(
-            find.ancestor(
-              of: find.text('Starred date'),
-              matching: find.byWidgetPredicate(
-                (widget) => widget is SegmentedButton<dynamic>,
-              ),
-            ),
-          );
-          expect(source.left, GitPulseSpace.gutter);
-          expect(source.right, size.width - GitPulseSpace.gutter);
-          expect(sort.left, source.left);
-          final direction = tester.getRect(
-            find.ancestor(
-              of: find.byTooltip('Descending'),
-              matching: find.byType(IconButton),
-            ),
-          );
-          expect(direction.right, source.right);
-          final pages = tester.getRect(find.byType(RepositoryPagination));
-          final followed = tester.getRect(manage);
-          final pageField = tester.getRect(
-            find.byKey(const ValueKey('repository-page')),
-          );
-          // The number, both steps and the total are one pill, and the pill is
-          // one cell high until the reader's type outgrows that cell.
-          final pill = tester.getRect(find.byType(GitPulsePill));
-          expect(pill.height, greaterThanOrEqualTo(GitPulseHeight.pill));
-          expect(pill.contains(pageField.center), isTrue);
-          expect(
-            tester.getRect(find.byTooltip('Previous page')).center.dy,
-            closeTo(pageField.center.dy, 1),
-          );
-          expect(
-            tester.getRect(find.byTooltip('Next page')).center.dy,
-            closeTo(pageField.center.dy, 1),
-          );
-          expect(followed.left, greaterThanOrEqualTo(pages.right));
-          expect(followed.center.dy, closeTo(pages.center.dy, 1));
-          expect(followed.width, lessThan(size.width / 2));
-          expect(
-            tester.getBottomLeft(find.text('Starred')).dy,
-            lessThan(tester.getTopLeft(find.text('Starred date')).dy),
-          );
-          expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
-          await tester.drag(
-            find.byType(CustomScrollView).first,
-            const Offset(0, -1200),
+          ),
+        );
+        expect(source.left, GitPulseSpace.gutter);
+        expect(source.right, size.width - GitPulseSpace.gutter);
+        expect(sort.left, source.left);
+        final direction = tester.getRect(
+          find.ancestor(
+            of: find.byTooltip('Descending'),
+            matching: find.byType(IconButton),
+          ),
+        );
+        expect(direction.right, source.right);
+        final pages = tester.getRect(find.byType(RepositoryPagination));
+        final followed = tester.getRect(manage);
+        final pageField = tester.getRect(
+          find.byKey(const ValueKey('repository-page')),
+        );
+        // The number, both steps and the total are one pill, and the pill is
+        // one cell high until the reader's type outgrows that cell.
+        final pill = tester.getRect(find.byType(GitPulsePill));
+        expect(pill.height, greaterThanOrEqualTo(GitPulseHeight.pill));
+        expect(pill.contains(pageField.center), isTrue);
+        expect(
+          tester.getRect(find.byTooltip('Previous page')).center.dy,
+          closeTo(pageField.center.dy, 1),
+        );
+        expect(
+          tester.getRect(find.byTooltip('Next page')).center.dy,
+          closeTo(pageField.center.dy, 1),
+        );
+        expect(followed.left, greaterThanOrEqualTo(pages.right));
+        expect(followed.center.dy, closeTo(pages.center.dy, 1));
+        expect(followed.width, lessThan(size.width / 2));
+        expect(
+          tester.getBottomLeft(find.text('Starred')).dy,
+          lessThan(tester.getTopLeft(find.text('Starred date')).dy),
+        );
+        expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+        await tester.drag(
+          find.byType(CustomScrollView).first,
+          const Offset(0, -1200),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Search').hitTestable(), findsOneWidget);
+        expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+        expect(manage.hitTestable(), findsOneWidget);
+        await tester.tap(manage);
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('followed-R_followed')).hitTestable(),
+          findsOneWidget,
+        );
+        await tester.tap(find.byTooltip('Close followed repositories'));
+        await tester.pumpAndSettle();
+        if (size.width == 320) {
+          server.saveStatus = 500;
+          await tester.ensureVisible(find.byTooltip('Follow releases').first);
+          await tester.pumpAndSettle();
+          await tester.tap(find.byTooltip('Follow releases').first);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Search'));
+          await tester.pumpAndSettle();
+          tester.view.viewInsets = const FakeViewPadding(bottom: 360);
+          await tester.enterText(
+            auth.fieldLabeled('Repository name or GitHub URL'),
+            'alpha',
           );
           await tester.pumpAndSettle();
-          expect(find.text('Search').hitTestable(), findsOneWidget);
-          expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
-          expect(manage.hitTestable(), findsOneWidget);
-          await tester.tap(manage);
-          await tester.pumpAndSettle();
+          expect(find.byKey(const ValueKey('manage-follows')), findsNothing);
           expect(
-            find.byKey(const ValueKey('followed-R_followed')).hitTestable(),
-            findsOneWidget,
+            tester.takeException(),
+            isNull,
+            reason: 'small phone with keyboard',
           );
-          await tester.tap(find.byTooltip('Close followed repositories'));
+          expect(find.byTooltip('Search').hitTestable(), findsOneWidget);
+          tester.view.resetViewInsets();
           await tester.pumpAndSettle();
-          if (size.width == 320) {
-            server.saveStatus = 500;
-            await tester.ensureVisible(find.byTooltip('Follow releases').first);
-            await tester.pumpAndSettle();
-            await tester.tap(find.byTooltip('Follow releases').first);
-            await tester.pumpAndSettle();
-            await tester.tap(find.text('Search'));
-            await tester.pumpAndSettle();
-            tester.view.viewInsets = const FakeViewPadding(bottom: 360);
-            await tester.enterText(
-              auth.fieldLabeled('Repository name or GitHub URL'),
-              'alpha',
-            );
-            await tester.pumpAndSettle();
-            expect(find.byKey(const ValueKey('manage-follows')), findsNothing);
-            expect(
-              tester.takeException(),
-              isNull,
-              reason: 'small phone with keyboard',
-            );
-            expect(find.byTooltip('Search').hitTestable(), findsOneWidget);
-            tester.view.resetViewInsets();
-            await tester.pumpAndSettle();
-            await tester.tap(find.text('Starred'));
-            await tester.pumpAndSettle();
-          }
-        } else {
-          expect(
-            find.byKey(const ValueKey('followed-R_followed')).hitTestable(),
-            findsOneWidget,
-          );
+          await tester.tap(find.text('Starred'));
+          await tester.pumpAndSettle();
         }
         expect(tester.takeException(), isNull, reason: '$size');
       }
@@ -1146,10 +1135,6 @@ void main() {
   testWidgets(
     'Followed Repositories remember Detailed View on this device only',
     (tester) async {
-      tester.view.physicalSize = const Size(1500, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
       final server = FollowsServer();
       server.settings['followedRepositories'] = [
         followJson('R_kept', 'octo', 'kept'),
@@ -1165,6 +1150,12 @@ void main() {
       final preferences = _preferencesFile();
       await _openFollows(tester, server, presentationFile: preferences);
       await _settleUi(tester);
+      Future<void> openPanel() async {
+        await tester.tap(find.byKey(const ValueKey('manage-follows')));
+        await _settleUi(tester);
+      }
+
+      await openPanel();
       expect(find.byTooltip('Compact'), findsOneWidget);
       expect(find.text('Compact'), findsNothing);
       expect(find.text('Detailed'), findsNothing);
@@ -1197,10 +1188,13 @@ void main() {
         isFalse,
       );
 
+      await tester.tap(find.byTooltip('Close followed repositories'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
+      await openPanel();
       expect(find.byTooltip('Detailed'), findsOneWidget);
       expect(find.text('Notes for followers'), findsOneWidget);
       expect(server.settings['releaseFollows'], isNull);
@@ -1209,6 +1203,7 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await _openFollows(tester, server, presentationFile: preferences);
       await _settleUi(tester);
+      await openPanel();
       expect(find.byTooltip('Detailed'), findsOneWidget);
       expect(find.text('Notes for followers'), findsOneWidget);
     },
@@ -1252,10 +1247,5 @@ void main() {
     await tester.tap(find.byTooltip('Close followed repositories'));
     await tester.pumpAndSettle();
     expect(find.text(saveFailed), findsNothing);
-
-    tester.view.physicalSize = const Size(1500, 900);
-    await tester.pumpAndSettle();
-    expect(find.text(saveFailed), findsOneWidget);
-    expect(manage, findsNothing);
   });
 }

@@ -7,7 +7,6 @@ import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
-import '../timeline/timeline_layout.dart';
 import 'document_content.dart';
 import 'release_detail_service.dart';
 import 'release_details_view.dart';
@@ -88,7 +87,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   /// beneath it owns the reading gesture. Without that attachment the grab handle
   /// would have nothing to resize.
   Widget _documentBody({
-    required ScrollController? controller,
+    required ScrollController controller,
     required Widget child,
   }) => LayoutBuilder(
     builder: (context, constraints) => ListView(
@@ -109,7 +108,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   /// sheet's own controller, so a drag on it still moves the sheet; a document
   /// replaces it with the notes' own scroll owner.
   Widget _scrollableBody({
-    required ScrollController? controller,
+    required ScrollController controller,
     required Widget child,
   }) => SingleChildScrollView(
     key: ValueKey(_target),
@@ -212,9 +211,8 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     );
 
     Widget panel({
-      ScrollController? controller,
-      bool sheet = false,
-      double availableHeight = 1,
+      required ScrollController controller,
+      required double availableHeight,
     }) {
       // The chrome line names what is being read and targets that repository.
       // Another repository's release replaces it while it is open, and the
@@ -234,60 +232,55 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       return Material(
         key: const Key('release-drawer'),
         color: theme.colorScheme.surface,
-        borderRadius: sheet
-            ? const BorderRadius.vertical(
-                top: Radius.circular(GitPulseRadius.sheetTop),
-              )
-            : null,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(GitPulseRadius.sheetTop),
+        ),
         clipBehavior: Clip.antiAlias,
         // The sheet's top edge sits in the middle of the screen, so the status
-        // bar inset above it is screen the notes could be using. The wide
-        // panel does run to the top edge, so it keeps that inset.
+        // bar inset above it is screen the notes could be using.
         child: SafeArea(
-          top: !sheet,
+          top: false,
           child: Column(
             children: [
-              if (sheet)
-                Semantics(
-                  button: true,
-                  label: l10n.releaseResizeSheet,
-                  child: GestureDetector(
-                    key: const Key('release-sheet-handle'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () =>
-                        _snapSheet(_sheetController.size < .85 ? 1 : .7),
-                    onVerticalDragUpdate: (details) {
-                      if (_sheetController.isAttached) {
-                        _sheetController.jumpTo(
-                          (_sheetController.size -
-                                  details.delta.dy / availableHeight)
-                              .clamp(.4, 1),
-                        );
-                      }
-                    },
-                    onVerticalDragEnd: (_) {
-                      if (_sheetController.isAttached) {
-                        _snapSheet(_sheetController.size > .85 ? 1 : .7);
-                      }
-                    },
-                    child: SizedBox(
-                      height: 28,
-                      width: double.infinity,
-                      child: Center(
-                        child: SizedBox(
-                          width: 40,
-                          // The sheet's grab affordance rather than a rule: it
-                          // is toned as a line inside the sheet so it is the
-                          // app's one tone and not a theme default.
-                          child: Divider(
-                            thickness: _sheetGrabThickness,
-                            color: toneRule(theme.colorScheme),
-                          ),
+              Semantics(
+                button: true,
+                label: l10n.releaseResizeSheet,
+                child: GestureDetector(
+                  key: const Key('release-sheet-handle'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _snapSheet(_sheetController.size < .85 ? 1 : .7),
+                  onVerticalDragUpdate: (details) {
+                    if (_sheetController.isAttached) {
+                      _sheetController.jumpTo(
+                        (_sheetController.size -
+                                details.delta.dy / availableHeight)
+                            .clamp(.4, 1),
+                      );
+                    }
+                  },
+                  onVerticalDragEnd: (_) {
+                    if (_sheetController.isAttached) {
+                      _snapSheet(_sheetController.size > .85 ? 1 : .7);
+                    }
+                  },
+                  child: SizedBox(
+                    height: 28,
+                    width: double.infinity,
+                    child: Center(
+                      child: SizedBox(
+                        width: 40,
+                        // The sheet's grab affordance rather than a rule: it
+                        // is toned as a line inside the sheet so it is the
+                        // app's one tone and not a theme default.
+                        child: Divider(
+                          thickness: _sheetGrabThickness,
+                          color: toneRule(theme.colorScheme),
                         ),
                       ),
                     ),
                   ),
                 ),
+              ),
               SizedBox(
                 height: GitPulseHeight.standard,
                 child: Row(
@@ -471,6 +464,9 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       );
     }
 
+    // The sheet's drag converts pixels to a share of the window it stands in,
+    // so both numbers are read once here rather than from the sheet's own box.
+    final windowHeight = MediaQuery.sizeOf(context).height;
     return Shortcuts(
       shortcuts: const {
         SingleActivator(LogicalKeyboardKey.escape): DismissIntent(),
@@ -484,45 +480,28 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
             },
           ),
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth > releaseTimelinePhoneMaxWidth) {
-              return Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: releaseDrawerPanelWidth(constraints.maxWidth),
-                  height: constraints.maxHeight,
-                  child: panel(),
-                ),
-              );
-            }
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: NotificationListener<DraggableScrollableNotification>(
-                onNotification: (notification) {
-                  if (notification.extent <= notification.minExtent &&
-                      notification.shouldCloseOnMinExtent) {
-                    Navigator.of(context).pop();
-                  }
-                  return false;
-                },
-                child: DraggableScrollableSheet(
-                  controller: _sheetController,
-                  initialChildSize: .7,
-                  minChildSize: .4,
-                  maxChildSize: 1,
-                  expand: false,
-                  snap: true,
-                  snapSizes: const [.7],
-                  builder: (context, controller) => panel(
-                    controller: controller,
-                    sheet: true,
-                    availableHeight: constraints.maxHeight,
-                  ),
-                ),
-              ),
-            );
-          },
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: NotificationListener<DraggableScrollableNotification>(
+            onNotification: (notification) {
+              if (notification.extent <= notification.minExtent &&
+                  notification.shouldCloseOnMinExtent) {
+                Navigator.of(context).pop();
+              }
+              return false;
+            },
+            child: DraggableScrollableSheet(
+              controller: _sheetController,
+              initialChildSize: .7,
+              minChildSize: .4,
+              maxChildSize: 1,
+              expand: false,
+              snap: true,
+              snapSizes: const [.7],
+              builder: (context, controller) =>
+                  panel(controller: controller, availableHeight: windowHeight),
+            ),
+          ),
         ),
       ),
     );

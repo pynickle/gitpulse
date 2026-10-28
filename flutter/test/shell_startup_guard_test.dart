@@ -15,9 +15,10 @@ import 'support/settling.dart';
 
 /// The support directory the real device store and timeline cache ask for.
 ///
-/// Widget tests register `path_provider_windows`, which ignores the legacy
-/// method channel and creates the real roaming directory. Replacing the
-/// platform instance is what keeps this test on a directory it can see.
+/// On a Windows host, widget tests register `path_provider_windows`, which
+/// ignores the legacy method channel and creates the real roaming directory.
+/// Replacing the platform instance keeps this test on a directory it can see,
+/// on whichever host runs it.
 class _TempSupportDirectory extends PathProviderPlatform {
   _TempSupportDirectory(this.path);
 

@@ -1,46 +1,8 @@
-import 'dart:math' as math;
-
 import '../presentation/gitpulse_tokens.dart';
 import 'timeline_models.dart';
 
-/// Phone layout ceiling for the Release Timeline, matching the web timeline.
-const releaseTimelinePhoneMaxWidth = GitPulseWidth.timelinePhone;
-
-/// Tablet layout ceiling: above it the timeline uses three columns.
-const releaseTimelineTabletMaxWidth = GitPulseWidth.timelineTablet;
-
-/// Horizontal padding on each side of the Release Timeline's columns. The wide
-/// Release Drawer sizes itself from it, so both must come from here.
+/// Horizontal padding on each side of the Release Timeline's single column.
 const releaseTimelineHorizontalPadding = GitPulseSpace.gutter;
-
-/// Gap between adjacent Release Timeline columns, shared with the wide Release
-/// Drawer's panel width for the same reason.
-const releaseTimelineColumnGap = GitPulseSpace.columnGap;
-
-/// The narrowest wide-layout panel that still reads as a document column.
-const releaseDrawerMinimumPanelWidth = 320.0;
-
-/// One to three date-grouped columns, matching the web timeline's breakpoints.
-int resolveTimelineColumnCount(double width) {
-  if (width <= releaseTimelinePhoneMaxWidth) return 1;
-  if (width <= releaseTimelineTabletMaxWidth) return 2;
-  return 3;
-}
-
-/// The wide Release Drawer's panel width: the right-most Release Timeline
-/// column plus the trail padding, so the columns beside it stay readable and
-/// the two layouts cannot drift apart. Clamped to the viewport and to a
-/// readable minimum.
-double releaseDrawerPanelWidth(double width) {
-  final columns = resolveTimelineColumnCount(width);
-  final columnWidth =
-      (width -
-          releaseTimelineHorizontalPadding * 2 -
-          releaseTimelineColumnGap * (columns - 1)) /
-      columns;
-  final panel = columnWidth + releaseTimelineHorizontalPadding;
-  return math.min(width, math.max(releaseDrawerMinimumPanelWidth, panel));
-}
 
 sealed class TimelineRow {
   const TimelineRow();
@@ -52,10 +14,12 @@ class TimelineDateRow extends TimelineRow {
   final String date;
 }
 
-class TimelineCardsRow extends TimelineRow {
-  const TimelineCardsRow(this.items);
+/// One release, alone in its row: the Release Timeline never puts two cards
+/// side by side.
+class TimelineCardRow extends TimelineRow {
+  const TimelineCardRow(this.item);
 
-  final List<TimelineRelease> items;
+  final TimelineRelease item;
 }
 
 class TimelineBaselineRow extends TimelineRow {
@@ -74,7 +38,6 @@ class TimelineBaselineRow extends TimelineRow {
 /// baseline, and after everything when it is older than the loaded window.
 List<TimelineRow> buildTimelineRows(
   List<TimelineGroup> groups,
-  int columnCount,
   String? exposedBaseline, {
   String Function(DateTime instant) localDateKey = systemLocalDateKey,
 }) {
@@ -87,27 +50,18 @@ List<TimelineRow> buildTimelineRows(
 
   for (final group in groups) {
     rows.add(TimelineDateRow(group.date));
-    var items = <TimelineRelease>[];
-
-    void flush() {
-      if (items.isNotEmpty) rows.add(TimelineCardsRow(items));
-      items = <TimelineRelease>[];
-    }
 
     for (final item in group.items) {
       if (baseline != null &&
           !inserted &&
           !item.publishedAt.isAfter(baseline)) {
-        flush();
         rows.add(
           TimelineBaselineRow(baseline, includeDate: group.date != baselineDay),
         );
         inserted = true;
       }
-      items.add(item);
-      if (items.length == columnCount) flush();
+      rows.add(TimelineCardRow(item));
     }
-    flush();
   }
 
   if (baseline != null && !inserted) {

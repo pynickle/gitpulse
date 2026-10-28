@@ -5,14 +5,12 @@
 """Regenerate native icons: uv run --locked tool/generate_app_icons.py."""
 
 from collections import Counter
-from io import BytesIO
 from pathlib import Path
 import json
 import shutil
-import struct
 import subprocess
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = ROOT / "tool/icons/generated"
@@ -21,14 +19,6 @@ WHITE = (255, 255, 255, 255)
 
 def save(image, name):
     image.save(SOURCES / name, compress_level=9)
-
-
-def windows_artwork(mark):
-    background = Image.new("RGBA", mark.size)
-    ImageDraw.Draw(background).ellipse(
-        (0, 0, mark.width - 1, mark.height - 1), fill=WHITE
-    )
-    return Image.alpha_composite(background, mark)
 
 
 def recover_mark(original):
@@ -71,7 +61,6 @@ def derive_sources():
         raise ValueError("Expected the 1024px web brand source")
     mark = recover_mark(original)
     save(mark, "mark.png")
-    save(windows_artwork(mark), "windows.png")
     square = Image.alpha_composite(Image.new("RGBA", mark.size, WHITE), mark)
     save(square.convert("RGB"), "square.png")
     monochrome = Image.new("RGBA", mark.size, (0, 0, 0, 0))
@@ -84,61 +73,6 @@ def derive_sources():
     )
     save(dark, "dark.png")
     save(square.convert("L").convert("RGB"), "tinted.png")
-    shell = Image.open(ROOT / "tool/icons/macos-shell.png").convert("RGBA")
-    save(Image.alpha_composite(shell, mark), "macos.png")
-    return mark
-
-
-def small_mark(mark, size):
-    """Thicken the existing dark silhouette to ~1.2px; preserve both end dots."""
-    mask = Image.new("L", mark.size)
-    mask.putdata(
-        [a if abs(g - r) < 20 else 0 for r, g, b, a in mark.get_flattened_data()]
-    )
-    # Source stroke is ~27px at 1024px; MaxFilter expands both sides equally.
-    kernel = max(3, round(1.2 * mark.width / size - 27) | 1)
-    stroke_colors = Counter(
-        (r, g, b)
-        for r, g, b, a in mark.get_flattened_data()
-        if a >= 250 and abs(g - r) < 20 and max(r, g, b) < 128
-    )
-    stroke_color = stroke_colors.most_common(1)[0][0]
-    thickened = Image.new("RGBA", mark.size, (*stroke_color, 0))
-    thickened.putalpha(mask.filter(ImageFilter.MaxFilter(kernel)))
-    return Image.alpha_composite(thickened, mark)
-
-
-def patch_small_icons(mark):
-    shell = Image.open(ROOT / "tool/icons/macos-shell.png").convert("RGBA")
-    small = Image.alpha_composite(shell, small_mark(mark, 16))
-    small.resize((16, 16), Image.Resampling.LANCZOS).save(
-        ROOT / "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png",
-        compress_level=9,
-    )
-
-
-def complete_windows_ico(mark):
-    # Render every circular frame directly from 1024px with alpha-aware resizing.
-    path = ROOT / "windows/runner/resources/app_icon.ico"
-    sizes = (16, 24, 32, 48, 64, 96, 128, 192, 256)
-    entries = []
-    for size in sizes:
-        artwork = small_mark(mark, size) if size <= 24 else mark
-        frame = windows_artwork(artwork).resize((size, size), Image.Resampling.LANCZOS)
-        data = BytesIO()
-        frame.save(data, format="PNG", compress_level=9)
-        entries.append((size, data.getvalue()))
-    # ICO header + directory + PNG frames (supported by all target Windows).
-    offset = 6 + 16 * len(entries)
-    directory = bytearray(struct.pack("<HHH", 0, 1, len(entries)))
-    for size, data in entries:
-        directory.extend(
-            struct.pack(
-                "<BBBBHHII", size % 256, size % 256, 0, 0, 1, 32, len(data), offset
-            )
-        )
-        offset += len(data)
-    path.write_bytes(directory + b"".join(data for _, data in entries))
 
 
 def run(command, *args):
@@ -179,7 +113,7 @@ def normalize_catalog(platform):
 
 
 def main():
-    mark = derive_sources()
+    derive_sources()
     run("flutter", "pub", "get", "--enforce-lockfile")
     project = ROOT / "ios/Runner.xcodeproj/project.pbxproj"
     original_project = project.read_bytes()
@@ -190,10 +124,7 @@ def main():
         # including GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS, to "AppIcon".
         project.write_bytes(original_project)
     normalize_catalog("ios")
-    normalize_catalog("macos")
     normalize_white_backgrounds()
-    patch_small_icons(mark)
-    complete_windows_ico(mark)
     run("flutter", "test", "--no-pub", "test/app_icons_test.dart")
 
 

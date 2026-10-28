@@ -9,6 +9,4 @@ analyzer:
     - build/**
     - android/**
     - ios/**
-    - windows/**
-    - macos/**
-    - linux/**
+

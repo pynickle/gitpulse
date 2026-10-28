@@ -109,7 +109,6 @@ void main() {
       await mountApp(tester, CapabilityServer());
       await connectTo(tester, 'https://phone.example');
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
       expect(find.text('Password'), findsOneWidget);

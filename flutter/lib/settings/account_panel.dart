@@ -480,7 +480,7 @@ class _CredentialForm extends StatelessWidget {
 }
 
 /// The account panel as a page shows it while nobody is signed in: centred, and
-/// held to a panel's width so a desktop window does not stretch a sign-in form
+/// held to a panel's width so a wide window does not stretch a sign-in form
 /// across the whole screen.
 ///
 /// The shell's Timeline and Follows destinations and the repository pages all

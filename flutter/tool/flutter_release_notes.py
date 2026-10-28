@@ -1,8 +1,8 @@
 """Render the Flutter draft-release body.
 
-The download table follows FlClash's release template: shields.io badges inside
-an HTML table. GitPulse publishes Android and Windows only, so the table has
-those two rows.
+The downloads follow FlClash's release template — shields.io badges rather than
+plain links — for the Android split APKs, one badge per ABI. GitPulse publishes
+the Flutter client to Android only.
 """
 
 from __future__ import annotations
@@ -17,8 +17,6 @@ BADGES = {
     "arm64-v8a": ("APK", "ARMv8", "168039", "android"),
     "armeabi-v7a": ("APK", "ARMv7", "45bf55", "android"),
     "x86_64": ("APK", "x64", "96ed89", "android"),
-    "setup": ("Setup", "x64", "2d7d9a", "windows"),
-    "portable": ("Portable", "x64", "67b7d1", "windows"),
 }
 
 
@@ -39,50 +37,16 @@ def _link(url: str, kind: str, label: str, color: str, logo: str) -> str:
 
 
 def render_download_table(version: str, repository: str) -> str:
-    names = release_binary_names(version)
-    by_abi = dict(zip(SPLIT_ABIS, names[:3], strict=True))
-    setup_name, portable_name = names[3], names[4]
     android_links = "<br>\n".join(
         _link(download_url(repository, version, filename), *BADGES[abi])
-        for abi, filename in by_abi.items()
+        for abi, filename in zip(
+            SPLIT_ABIS, release_binary_names(version), strict=True
+        )
     )
-    windows_links = "<br>\n".join(
-        [
-            _link(
-                download_url(repository, version, setup_name),
-                *BADGES["setup"],
-            ),
-            _link(
-                download_url(repository, version, portable_name),
-                *BADGES["portable"],
-            ),
-        ]
-    )
-    return f"""**Download based on your OS:**
+    return f"""**Download for Android, by device ABI:**
 
 <div align="left">
-<table>
-<thead align="left">
-<tr>
-<th>OS</th>
-<th>Download</th>
-</tr>
-</thead>
-<tbody align="left">
-<tr>
-<td>Android</td>
-<td>
 {android_links}
-</td>
-</tr>
-<tr>
-<td>Windows</td>
-<td>
-{windows_links}
-</td>
-</tr>
-</tbody>
-</table>
 </div>
 """
 

@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
-import 'package:gitpulse/timeline/timeline_layout.dart';
 
 import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
@@ -560,13 +559,6 @@ void main() {
     );
   });
 
-  testWidgets('a wide release panel squares its corners', (tester) async {
-    final panel = await openReleaseDrawer(tester, size: const Size(1400, 900));
-    // The top radius belongs to the sheet: a panel that runs to the top edge has
-    // no corner to round.
-    expect(panel.borderRadius, isNull);
-  });
-
   testWidgets(
     'a phone sheet spends its first screen on the notes and folds the rest away',
     (tester) async {
@@ -734,12 +726,12 @@ void main() {
   );
 
   testWidgets(
-    'a desktop release opens over the scrolled timeline and Escape restores its context',
+    'the release sheet opens from the keyboard and Escape restores its context',
     (tester) async {
       final response = Completer<BackendResult>();
       final mounted = await pumpTimelineScreen(
         tester,
-        size: const Size(1400, 900),
+        size: const Size(390, 844),
         handlers: {
           'GET api/settings': () => BackendResult(
             statusCode: 200,
@@ -760,8 +752,6 @@ void main() {
       );
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
-      final cards = find.byType(ReleaseTimelineCard);
-      final row = [for (var i = 0; i < 3; i++) tester.getRect(cards.at(i))];
       final card = find.byType(ReleaseTimelineCard).hitTestable().first;
       final item = tester.widget<ReleaseTimelineCard>(card).item;
       final location = tester.getTopLeft(card);
@@ -794,15 +784,11 @@ void main() {
         find.textContaining('Ready to use.', findRichText: true),
         findsOneWidget,
       );
+      // The sheet stands on the bottom edge and leaves the timeline above it,
+      // so the release being read stays where the reader left it.
       final bounds = tester.getRect(find.byKey(const Key('release-drawer')));
-      expect(bounds.right, 1400);
-      expect(bounds.top, 0);
-      // The panel covers exactly the right-most timeline column plus the trail
-      // padding, measured from the timeline it sits beside.
-      final trailPadding = 1400 - row[2].right;
-      expect(trailPadding, releaseTimelineHorizontalPadding);
-      expect(row[1].left - row[0].right, releaseTimelineColumnGap);
-      expect(bounds.width, closeTo(row[2].width + trailPadding, 1));
+      expect(bounds.bottom, 844);
+      expect(bounds.top, greaterThan(0));
       expect(FocusManager.instance.primaryFocus?.context?.widget, isNotNull);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
@@ -811,7 +797,6 @@ void main() {
       expect(FocusManager.instance.primaryFocus, openerFocus);
     },
   );
-
   testWidgets(
     'a phone sheet still resizes from the list band while a page loads',
     (tester) async {
@@ -905,7 +890,7 @@ void main() {
     (tester) async {
       await pumpTimelineScreen(
         tester,
-        size: const Size(1200, 1000),
+        size: const Size(390, 900),
         handlers: {
           ...browsingHandlers(),
           'GET api/releases/canonical/project?page=1&per_page=20': () =>
@@ -922,6 +907,10 @@ void main() {
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
       await openRepositoryReleases(tester);
+      // The sheet opens at 70% of the screen, and a drag on its rows resizes it
+      // until it reaches its own height; only then do the rows own the gesture.
+      await tester.drag(find.text('release-50'), const Offset(0, -600));
+      await tester.pumpAndSettle();
       final filters = tester.getTopLeft(find.text('All'));
       final pager = tester.getBottomLeft(find.byTooltip('Next page'));
       expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);

@@ -278,7 +278,7 @@ await acheck('render failures report to Dart and subsequent valid updates render
 });
 
 // jsdom has no layout. Controlled rectangles verify anchor selection and scroll
-// correction, not platform geometry; Windows and Android still need acceptance.
+// correction, not platform geometry; Android still needs acceptance.
 await acheck('preserves paragraphs across reflow, chooses a neighbour after removal, resets new documents', async () => {
   let scroll = 0;
   let height = 100;

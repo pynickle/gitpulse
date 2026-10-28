@@ -30,23 +30,6 @@ img.Image png(String path, int size) {
   return image;
 }
 
-double darkInk(img.Image image) {
-  var ink = 0.0;
-  for (final pixel in image) {
-    // Measure the mark, excluding the macOS shell's baked shadow.
-    if (pixel.x < image.width * .15 ||
-        pixel.x >= image.width * .85 ||
-        pixel.y < image.height * .2 ||
-        pixel.y >= image.height * .72) {
-      continue;
-    }
-    if ((pixel.g - pixel.r).abs() < 20) {
-      ink += (255 - pixel.r) / 255 * pixel.a / 255;
-    }
-  }
-  return ink;
-}
-
 void main() {
   test('transparent mark preserves the web brand when composited on white', () {
     final original = png('../public/icon.png', 1024);
@@ -233,97 +216,6 @@ void main() {
       );
       expect(marketing['size'], '1024x1024');
       expect(marketing['appearances'], isNull);
-    },
-  );
-
-  test('macOS retains its native shell and strengthens its 16px mark', () {
-    final entries = catalog('macos');
-    final sizes = <int>{};
-    for (final entry in entries) {
-      final size =
-          (double.parse((entry['size'] as String).split('x').first) *
-                  double.parse((entry['scale'] as String).replaceAll('x', '')))
-              .round();
-      sizes.add(size);
-      png(p.join(iconDirectory('macos'), entry['filename'] as String), size);
-    }
-    expect(entries.length, 10);
-    expect(sizes, {16, 32, 64, 128, 256, 512, 1024});
-    final large = png(
-      'macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_1024.png',
-      1024,
-    );
-    expect(large.getPixel(0, 0).a, 0);
-    expect(large.getPixel(512, 101).r, 255);
-    expect(large.getPixel(512, 101).a, 255);
-    expect(large.getPixel(512, 930).a, inExclusiveRange(0, 255));
-    // The pulse's left end dot keeps its existing position inside the shell.
-    expect(large.getPixel(256, 489).r, lessThan(100));
-    final small = png(
-      'macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_16.png',
-      16,
-    );
-    final unmodified = img.copyResize(
-      large,
-      width: 16,
-      height: 16,
-      interpolation: img.Interpolation.average,
-    );
-    expect(darkInk(small), greaterThan(darkInk(unmodified) * 1.3));
-  });
-
-  test(
-    'Windows ICO has crisp scale entries and stronger 16px and 24px artwork',
-    () {
-      final decoder = img.IcoDecoder();
-      decoder.startDecode(
-        File('windows/runner/resources/app_icon.ico').readAsBytesSync(),
-      );
-      expect(decoder.numFrames(), 9);
-      final source = png('tool/icons/generated/square.png', 1024);
-      final sizes = <int>{};
-      for (var i = 0; i < decoder.numFrames(); i++) {
-        final frame = decoder.decodeFrame(i)!;
-        final size = frame.width;
-        sizes.add(size);
-        expect(frame.height, size);
-        expect(frame.getPixel(0, 0).a, 0);
-        expect(frame.getPixel(size ~/ 2, size ~/ 8).a, 255);
-        final normal = img.copyResize(
-          source,
-          width: size,
-          height: size,
-          interpolation: img.Interpolation.average,
-        );
-        if (size <= 24) {
-          expect(darkInk(frame), greaterThan(darkInk(normal) * 1.3));
-          for (final x in [.25, .758]) {
-            final dot = frame.getPixel(
-              (size * x).floor(),
-              (size * .477).floor(),
-            );
-            expect(dot.r, lessThan(130), reason: '$size px end dot');
-          }
-        } else {
-          var error = 0.0;
-          for (final pixel in frame) {
-            final reference = normal.getPixel(pixel.x, pixel.y);
-            for (var c = 0; c < 3; c++) {
-              error +=
-                  (pixel[c] * pixel.a / 255 +
-                          255 * (1 - pixel.a / 255) -
-                          reference[c])
-                      .abs();
-            }
-          }
-          expect(
-            error / (size * size * 3),
-            lessThan(3),
-            reason: '$size px retains the unmodified mark',
-          );
-        }
-      }
-      expect(sizes, {16, 24, 32, 48, 64, 96, 128, 192, 256});
     },
   );
 

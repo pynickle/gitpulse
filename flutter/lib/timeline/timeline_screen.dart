@@ -39,6 +39,9 @@ const _floatingInset = GitPulseSpace.bandGap;
 /// standard height, and the inset again as breathing room.
 const _listEndInset = _floatingInset * 2 + GitPulseHeight.standard;
 
+/// Space between two releases stacked in the Timeline's one column.
+const _cardSpacing = 12.0;
+
 // Kept in memory across destination widgets, independently of cached releases.
 final _readingPositionProvider = Provider((ref) {
   ref.watch(
@@ -181,7 +184,6 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
               key: ValueKey(state.filters),
               state: state,
               readingPosition: readingPosition,
-              columns: resolveTimelineColumnCount(constraints.maxWidth),
               now: now,
               localDateKey: localDateKey,
               onRetry: retry,
@@ -201,7 +203,6 @@ class _Body extends StatelessWidget {
     super.key,
     required this.state,
     required this.readingPosition,
-    required this.columns,
     required this.now,
     required this.localDateKey,
     required this.onRefresh,
@@ -212,7 +213,6 @@ class _Body extends StatelessWidget {
 
   final TimelineViewState state;
   final _TimelineReadingPosition readingPosition;
-  final int columns;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
   final Future<void> Function() onRefresh;
@@ -244,7 +244,6 @@ class _Body extends StatelessWidget {
       return _TimelineList(
         state: state,
         readingPosition: readingPosition,
-        columns: columns,
         now: now,
         localDateKey: localDateKey,
         landedRefreshes: readingPosition.landedRefreshes,
@@ -398,7 +397,6 @@ class _TimelineList extends StatefulWidget {
   const _TimelineList({
     required this.state,
     required this.readingPosition,
-    required this.columns,
     required this.now,
     required this.localDateKey,
     required this.landedRefreshes,
@@ -410,7 +408,6 @@ class _TimelineList extends StatefulWidget {
 
   final TimelineViewState state;
   final _TimelineReadingPosition readingPosition;
-  final int columns;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
 
@@ -594,7 +591,7 @@ class _TimelineListState extends State<_TimelineList> {
 
   Key _rowKey(TimelineRow row) => ValueKey(switch (row) {
     TimelineDateRow(:final date) => 'date/$date',
-    TimelineCardsRow(:final items) => 'cards/${items.first.key}',
+    TimelineCardRow(:final item) => 'card/${item.key}',
     TimelineBaselineRow(:final timestamp) => 'baseline/$timestamp',
   });
 
@@ -602,10 +599,15 @@ class _TimelineListState extends State<_TimelineList> {
     key: _rowKey(row),
     child: switch (row) {
       TimelineDateRow(:final date) => _DateHeader(date: date),
-      TimelineCardsRow(:final items) => _CardsRow(
-        items: items,
-        columns: widget.columns,
-        cardKey: (key) => _cardKeys.putIfAbsent(key, () => GlobalKey()),
+      // One card per row, so the row has nothing to even out: no [Row] and no
+      // [IntrinsicHeight], which would price a second layout pass on every
+      // release for a height nothing compares against.
+      TimelineCardRow(:final item) => Padding(
+        padding: const EdgeInsets.only(bottom: _cardSpacing),
+        child: ReleaseTimelineCard(
+          key: _cardKeys.putIfAbsent(item.key, () => GlobalKey()),
+          item: item,
+        ),
       ),
       TimelineBaselineRow(:final timestamp, :final includeDate) =>
         _PreviousRefreshMark(
@@ -621,14 +623,11 @@ class _TimelineListState extends State<_TimelineList> {
   Widget build(BuildContext context) {
     final rows = buildTimelineRows(
       widget.state.visibleGroups,
-      widget.columns,
       widget.state.baselineExposed ? widget.state.previousBaseline : null,
       localDateKey: widget.localDateKey,
     );
     final found = rows.indexWhere(
-      (row) =>
-          row is TimelineCardsRow &&
-          row.items.any((item) => item.key == _anchor),
+      (row) => row is TimelineCardRow && row.item.key == _anchor,
     );
     final pivot = found < 0 ? 0 : found;
     final before = rows.take(pivot).toList().reversed.toList();
@@ -887,43 +886,6 @@ class _RuleRow extends StatelessWidget {
           ),
           Expanded(child: rule),
         ],
-      ),
-    );
-  }
-}
-
-class _CardsRow extends StatelessWidget {
-  const _CardsRow({
-    required this.items,
-    required this.columns,
-    required this.cardKey,
-  });
-
-  final List<TimelineRelease> items;
-  final int columns;
-  final Key Function(String) cardKey;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var column = 0; column < columns; column++) ...[
-              if (column > 0) const SizedBox(width: releaseTimelineColumnGap),
-              Expanded(
-                child: column < items.length
-                    ? ReleaseTimelineCard(
-                        key: cardKey(items[column].key),
-                        item: items[column],
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }

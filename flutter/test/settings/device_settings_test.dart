@@ -375,10 +375,11 @@ void main() {
     expect(find.text('Keep releases for'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
 
+    // A wider window keeps the same bottom bar: the shell has one arrangement,
+    // not a second one it swaps in.
     tester.view.physicalSize = const Size(1200, 900);
     await pumpFrames(tester);
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(AppBar), findsNothing);
     expect(find.text('Settings'), findsOneWidget);
   });

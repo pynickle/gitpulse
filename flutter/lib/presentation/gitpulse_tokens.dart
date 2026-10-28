@@ -47,12 +47,6 @@ abstract final class GitPulseSpace {
   /// An optical nudge between a name and the meta line that follows it — small
   /// enough that it corrects an alignment instead of adding a gap.
   static const nudge = 2.0;
-
-  /// Between two adjacent Release Timeline columns.
-  ///
-  /// The wide Release Drawer derives its panel width from this same value, so
-  /// a column and the panel that replaces it cannot drift apart (ADR 0018).
-  static const columnGap = 12.0;
 }
 
 /// The corner radii a surface may take, plus the strip a decoration draws.
@@ -164,11 +158,10 @@ abstract final class GitPulseHeight {
 /// The shared layout and editor widths, registered so a width is changed
 /// in one place instead of in each page that happens to need it.
 ///
-/// The layout limits stay separate rather than sharing one "content width" because they answer
-/// four different questions — how wide a line of prose may get, how wide a
-/// column of Settings cards may get, and where a Timeline goes from one column to two
-/// and from two to three. One shared maximum would make three of the four
-/// answers wrong.
+/// The layout limits stay separate rather than sharing one "content width"
+/// because they answer different questions — how wide a line of prose may get,
+/// and how wide a column of Settings cards may get. One shared maximum would
+/// make the other answer wrong.
 abstract final class GitPulseWidth {
   /// A persistent integer editor, shared by retention and page navigation.
   static const integerField = 72.0;
@@ -184,12 +177,6 @@ abstract final class GitPulseWidth {
   /// The scanning ceiling of the Settings cards. Past this width the eye has
   /// to travel too far from a card's title to its control.
   static const settingsTable = 1120.0;
-
-  /// The Release Timeline's phone ceiling: at or below it, one column.
-  static const timelinePhone = 700.0;
-
-  /// The Release Timeline's tablet ceiling: above it, three columns.
-  static const timelineTablet = 1100.0;
 }
 
 /// The numbered reading scale — the one place the app states a font size.

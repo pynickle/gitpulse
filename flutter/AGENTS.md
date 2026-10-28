@@ -100,8 +100,9 @@ one too (`../docs/adr/`).
 ## Verification bar
 
 `flutter analyze` + `flutter test` cover Dart behavior; Flutter Release additionally builds the
-Windows/Android distributions. Credential stores, device networking and install/update stay
-owner-manual. Linux/macOS/iOS are code-level only: macOS/iOS need a configured Keychain access group
-and Linux a running D-Bus Secret Service before the session cookie can be stored. Plugin platform
-badges are not runtime evidence — state exactly what was run. Use Marionette MCP only when the user
-explicitly requests it.
+Android distribution. Android is the only platform this project builds and runs: the client is a
+phone layout at every window width (ADR 0029), and Windows/macOS/Linux have no platform folder.
+iOS keeps its platform code and configuration — it needs a configured Keychain access group — and is
+code-level only. Credential stores, device networking and install/update stay owner-manual. Plugin
+platform badges are not runtime evidence — state exactly what was run. Use Marionette MCP only when
+the user explicitly requests it.

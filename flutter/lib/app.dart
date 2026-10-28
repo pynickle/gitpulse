@@ -18,7 +18,7 @@ import 'follows/release_follows_screen.dart';
 import 'releases/repository_releases_screen.dart';
 import 'repositories/repository_screen.dart';
 
-/// The shell destinations, in navigation-rail and bottom-bar order.
+/// The shell destinations, in bottom-bar order.
 const _destinationPaths = ['/timeline', '/follows', '/settings'];
 const _settingsDestination = 2;
 
@@ -91,25 +91,15 @@ class GitPulseApp extends ConsumerWidget {
       locale: device.preferences.locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      builder: (context, child) {
-        // Typography follows the resolved app language, so an explicit
-        // language choice also chooses the Chinese or Latin typeface.
-        return Theme(
-          data: gitPulseTypography(
-            Theme.of(context),
-            locale: Localizations.localeOf(context),
-          ),
-          child: restoring
-              ? Scaffold(
-                  body: SafeArea(
-                    child: GitPulseLoadingView(
-                      label: AppLocalizations.of(context).connecting,
-                    ),
-                  ),
-                )
-              : child!,
-        );
-      },
+      builder: (context, child) => restoring
+          ? Scaffold(
+              body: SafeArea(
+                child: GitPulseLoadingView(
+                  label: AppLocalizations.of(context).connecting,
+                ),
+              ),
+            )
+          : child!,
       routerConfig: ref.watch(_routerProvider),
     );
   }
@@ -166,50 +156,22 @@ class _AppShell extends ConsumerWidget {
     ];
     void navigate(int index) => context.go(_destinationPaths[index]);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 720;
-        final destination = _destination(
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: _destination(
           index,
           signedIn: session.phase == SessionPhase.signedIn,
-        );
-        return Scaffold(
-          body: SafeArea(
-            bottom: false,
-            child: Row(
-              children: [
-                if (wide)
-                  NavigationRail(
-                    selectedIndex: index,
-                    onDestinationSelected: navigate,
-                    labelType: NavigationRailLabelType.all,
-                    destinations: [
-                      for (var i = 0; i < labels.length; i++)
-                        NavigationRailDestination(
-                          icon: Icon(icons[i]),
-                          label: Text(labels[i]),
-                        ),
-                    ],
-                  ),
-                Expanded(child: destination),
-              ],
-            ),
-          ),
-          bottomNavigationBar: wide
-              ? null
-              : NavigationBar(
-                  selectedIndex: index,
-                  onDestinationSelected: navigate,
-                  destinations: [
-                    for (var i = 0; i < labels.length; i++)
-                      NavigationDestination(
-                        icon: Icon(icons[i]),
-                        label: labels[i],
-                      ),
-                  ],
-                ),
-        );
-      },
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: navigate,
+        destinations: [
+          for (var i = 0; i < labels.length; i++)
+            NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
+        ],
+      ),
     );
   }
 }

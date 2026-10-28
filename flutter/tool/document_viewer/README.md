@@ -63,5 +63,5 @@ shows selectable Markdown in Dart; a changed payload starts rendering again.
 Host tests replace only `documentEngineBuilderProvider` platform operations;
 upper screen tests may still use `documentViewerOverrides()`. jsdom tests use
 controlled rectangles for scroll logic: they do not prove actual platform
-geometry. Windows WebView2 and Android WebView reading continuity and recovery
-must be accepted separately on real engines.
+geometry. Android WebView reading continuity and recovery must be accepted
+separately on a real engine.

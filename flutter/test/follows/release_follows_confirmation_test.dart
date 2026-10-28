@@ -897,6 +897,8 @@ void main() {
       );
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('followed-R_alpha')), findsOneWidget);
       expect(container.read(releaseFollowsSessionProvider).loaded, isTrue);
       expect(container.read(releaseFollowsSessionProvider).loading, isFalse);

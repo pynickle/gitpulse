@@ -86,5 +86,5 @@ processes, foreground resumption, and cancellation of obsolete responses.
 The cross-language test runs local source handlers through Bun with isolated
 temporary storage. Only the external GitHub success boundary is simulated.
 
-Windows/Android system-browser behavior and the remaining platform prerequisites
-still need native device verification; automated tests do not claim it.
+Android system-browser behavior and the remaining platform prerequisites still
+need native device verification; automated tests do not claim it.

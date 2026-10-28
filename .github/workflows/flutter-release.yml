@@ -33,60 +33,6 @@ jobs:
     needs: validate
     uses: ./.github/workflows/flutter-ci.yml
 
-  windows:
-    name: Windows x64 setup and portable ZIP
-    needs: [validate, checks]
-    runs-on: windows-2025
-    defaults:
-      run:
-        working-directory: flutter
-        shell: pwsh
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          flutter-version-file: flutter/pubspec.yaml
-          cache: true
-
-      - name: Resolve the committed dependency graph
-        run: flutter pub get --enforce-lockfile
-
-      - name: Build the complete Windows runtime
-        run: flutter build windows --release --no-pub
-
-      - name: Install NSIS 3.13
-        run: |
-          $zip = Join-Path $env:RUNNER_TEMP 'nsis-3.13.zip'
-          curl.exe -L --fail --retry 3 -A 'GitPulse' -o $zip 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip'
-          if ($LASTEXITCODE -ne 0) {
-            throw "NSIS download failed."
-          }
-          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash
-          $expected = 'BA63DFFC4410EE89193E1CB5A41989991BD77C61068DA17E3156D136B7B0B3D8'
-          if ($actual -ne $expected) {
-            throw "NSIS zip hash is $actual."
-          }
-          $extract = Join-Path $env:RUNNER_TEMP 'nsis'
-          Expand-Archive -LiteralPath $zip -DestinationPath $extract
-          Add-Content -Path $env:GITHUB_ENV -Value "MAKENSIS=$extract\nsis-3.13\bin\makensis.exe" -Encoding utf8NoBOM
-
-      - name: Package the portable ZIP and per-user setup
-        run: ./tool/package_windows_setup.ps1
-
-      - name: Upload Windows distribution
-        uses: actions/upload-artifact@v7
-        with:
-          name: gitpulse-flutter-v${{ needs.validate.outputs.version }}-windows-x64
-          path: |
-            flutter/build/distributions/*.zip
-            flutter/build/distributions/*.exe
-            flutter/build/distributions/*.sha256
-          if-no-files-found: error
-
   android:
     name: Android release APKs
     needs: [validate, checks]
@@ -156,7 +102,7 @@ jobs:
 
   release:
     name: Create draft GitHub Release
-    needs: [validate, windows, android]
+    needs: [validate, android]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     permissions:
