@@ -1,9 +1,11 @@
 # AGENTS.md — GitPulse Flutter native client
 
-> Native Flutter client for GitPulse — Release Timeline, Release Follows, and Settings,
-> rendered natively, no WebView anywhere. Independently released package. Connects to any
-> GitPulse backend: discovers providers via `GET /api/native/capabilities`, then signs in with
-> personal password, PAT, or GitHub OAuth through the system browser. Deep contract (timeline
+> Native Flutter client for GitPulse — Release Timeline, Release Follows, and Settings, rendered
+> natively. The one WebView is the document renderer: a release's notes and a repository README are
+> GitHub Markdown an author also wrote HTML into, so they are drawn by the browser engine running the
+> app's own renderer (`lib/releases/release_document.dart`, ADR 0028). Independently released package.
+> Connects to any GitPulse backend: discovers providers via `GET /api/native/capabilities`, then signs
+> in with personal password, PAT, or GitHub OAuth through the system browser. Deep contract (timeline
 > window semantics, platform matrix, dependency rationale): `../docs/flutter-release-timeline-spec.md`
 > and `../docs/flutter-release-timeline-plan.md`. Server handoff protocol: `../docs/native-login-handoff.md`.
 
@@ -83,6 +85,18 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
   `repositoryReleasesTitle` stays in its `Semantics` label and in the Release Drawer's tooltip),
   the other two are `presentation/gitpulse_icon_action.dart` compact targets named by tooltip. A
   README failure stays inside its band; only a repository failure replaces the page.
+- **Documents are drawn by the app's own WebView renderer** (`lib/releases/release_document.dart`,
+  `document_view_page.dart`, `document_web_view.dart`; ADR 0028): a release's notes and a repository
+  README are GitHub Markdown an author also wrote HTML into, so the page parses, sanitizes and lays
+  them out, and `flutter/tool/document_viewer` builds the two committed assets. The app keeps the
+  theme, the reading scale, the address policy (`RepositoryDocumentContext.resolve`), navigation and
+  the clipboard, reached from the page through four named bridge calls — never add a second
+  Markdown-to-widget path to fix a rendering gap. The document owns its own scroll, because a
+  platform view keeps the gestures that land on it, so its host fixes the chrome around it: the
+  Release Drawer keeps its header above the notes and its Release Assets row below them (opening the
+  assets puts the list in the reading area, folding them puts the notes back), and the repository
+  page keeps its identity band above the README. Never stretch a document to its content height
+  inside a Flutter scroll view.
 - **Release Follow from the detail page** reads and writes the shared
   `releaseFollowsSessionProvider` — the `node_id` the page maps is the same identity a follow
   stores, so there is no second follow state. The action is a bookmark (never a GitHub star or
@@ -145,6 +159,21 @@ an existing rule needs an ADR (see `../docs/adr/0023-flutter-press-feedback-scop
   `presentation_preferences.json` (ADR 0024), and the old view text file is unused (ADR 0022).
 - The window is resolved before anything is pruned or saved; an installation without one is seeded
   once from the window its cache ledger last wrote. Never prune or save against an unresolved window.
+
+### Documents
+
+- Rebuild the renderer after changing `tool/document_viewer/src/` or its pinned versions:
+  `cd tool/document_viewer && bun install && bun run build && bun run verify`, then commit
+  `assets/document_viewer/`. A Flutter checkout needs no JavaScript toolchain; a renderer change
+  does.
+- A widget test has no browser engine. Mount a document with `documentViewerOverrides()`
+  (`test/support/document_viewer.dart`), which stubs the assets and the platform view; the global
+  `mountedDocument` is how a screen test acts as the page — reporting a link tap, a copy, or a failed
+  render. What the renderer does with a document is asserted in `tool/document_viewer/verify.mjs`,
+  not in Flutter.
+- The sheet's grab handle resizes through `DraggableScrollableSheet`'s scroll controller, so the
+  drawer body keeps a scrollable attached to it (`_documentBody`, never scrollable). Without that
+  attachment the handle silently stops resizing the sheet.
 
 ### Testing
 

@@ -227,6 +227,7 @@
   "releaseSizeMegabytes": "MB",
   "releaseSizeGigabytes": "GB",
   "contentCopyCode": "Copy code",
+  "contentCodeCopied": "Copied",
   "contentPlainText": "Plain text",
   "releaseResourceUnavailable": "Image unavailable",
   "releaseLinkFailed": "Could not open this link in your browser.",

@@ -81,6 +81,43 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     );
   }
 
+  /// The reading body: the drawer's own chrome around the notes' own scroller.
+  ///
+  /// The sheet resizes through its scroll controller, so this body keeps a
+  /// scrollable attached to it — one that cannot move, because the document
+  /// beneath it owns the reading gesture. Without that attachment the grab handle
+  /// would have nothing to resize.
+  Widget _documentBody({
+    required ScrollController? controller,
+    required Widget child,
+  }) => LayoutBuilder(
+    builder: (context, constraints) => ListView(
+      key: ValueKey(_target),
+      controller: controller,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      children: [
+        SizedBox(
+          height: constraints.maxHeight,
+          child: Padding(padding: const EdgeInsets.all(20), child: child),
+        ),
+      ],
+    ),
+  );
+
+  /// A body that is only a report — loading, or a read that failed. It keeps the
+  /// sheet's own controller, so a drag on it still moves the sheet; a document
+  /// replaces it with the notes' own scroll owner.
+  Widget _scrollableBody({
+    required ScrollController? controller,
+    required Widget child,
+  }) => SingleChildScrollView(
+    key: ValueKey(_target),
+    controller: controller,
+    padding: const EdgeInsets.all(20),
+    child: child,
+  );
+
   /// The controller behind the Repository Release List currently on screen, so
   /// its pager and filters share one lookup just as the fullscreen host does.
   RepositoryReleasesController _listController(RepositoryReleasesScope scope) =>
@@ -386,33 +423,46 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                           _showList = false;
                         }),
                       )
-                    : SingleChildScrollView(
-                        key: ValueKey(_target),
-                        controller: controller,
-                        padding: const EdgeInsets.all(20),
-                        child: result.when(
-                          skipLoadingOnRefresh: false,
-                          loading: () =>
-                              GitPulseLoadingView(label: l10n.releaseLoading),
-                          error: (error, stack) => _ReleaseFailure(
+                    : result.when(
+                        skipLoadingOnRefresh: false,
+                        loading: () => _scrollableBody(
+                          controller: controller,
+                          child: GitPulseLoadingView(
+                            label: l10n.releaseLoading,
+                          ),
+                        ),
+                        error: (error, stack) => _scrollableBody(
+                          controller: controller,
+                          child: _ReleaseFailure(
                             failure: ReleaseDetailFailure.server,
                             onRetry: () =>
                                 ref.invalidate(releaseDetailProvider(_target)),
                           ),
-                          data: (data) => data.release == null
-                              ? _ReleaseFailure(
+                        ),
+                        data: (data) => data.release == null
+                            ? _scrollableBody(
+                                controller: controller,
+                                child: _ReleaseFailure(
                                   failure: data.failure!,
                                   onRetry: () => ref.invalidate(
                                     releaseDetailProvider(_target),
                                   ),
-                                )
-                              : ReleaseDetailsView(
+                                ),
+                              )
+                            // The notes are the body's only scroller. A document
+                            // is a platform view, so it keeps the gestures that
+                            // land on it; the drawer's own chrome and the
+                            // Release Assets row sit outside it.
+                            : _documentBody(
+                                controller: controller,
+                                child: ReleaseDetailsView(
+                                  key: ValueKey(_target),
                                   release: data.release!,
                                   onTapUrl: _openLink,
                                   onOpenExternal: (url) =>
                                       _openLink(url, external: true),
                                 ),
-                        ),
+                              ),
                       ),
               ),
             ],

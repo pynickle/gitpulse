@@ -32,21 +32,20 @@ Keep local cached content hidden after an explicit server session rejection, wit
 
 Versions below are observed stable versions, not a frozen manifest. At implementation time select the newest mutually compatible stable set, commit `flutter/pubspec.lock`, and record any necessary older selection. Do not force incompatible versions together through overrides.
 
-| Role                           | Selected package / observed version                                                  |
-| ------------------------------ | ------------------------------------------------------------------------------------ |
-| UI                             | Flutter SDK Material 3                                                               |
-| State and dependency injection | flutter_riverpod 3.4.3; handwritten providers                                        |
-| Local database                 | drift 2.35.2 with sqlite3 3.7.1 native implementation                                |
-| HTTP                           | dio 5.11.1                                                                           |
-| Cookie handling                | cookie_jar 4.0.9, dio_cookie_manager 3.5.0                                           |
-| Remembered credentials         | flutter_secure_storage 11.2.0                                                        |
-| Navigation                     | go_router 18.1.0                                                                     |
-| Markdown conversion            | markdown 7.3.1                                                                       |
-| Native HTML                    | flutter_widget_from_html_core 0.17.4                                                 |
-| Code highlighting              | shiki_flutter 1.1.0, default pure-Dart engine                                        |
-| SVG in HTML                    | fwfh_svg 0.16.1; flutter_svg resolved through the companion unless directly imported |
-| JSON DTO mapping               | json_annotation 4.12.0, json_serializable 6.14.1                                     |
-| Internationalization           | SDK flutter_localizations and intl 0.20.3                                            |
+| Role                           | Selected package / observed version                                                       |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| UI                             | Flutter SDK Material 3                                                                    |
+| State and dependency injection | flutter_riverpod 3.4.3; handwritten providers                                             |
+| Local database                 | drift 2.35.2 with sqlite3 3.7.1 native implementation                                     |
+| HTTP                           | dio 5.11.1                                                                                |
+| Cookie handling                | cookie_jar 4.0.9, dio_cookie_manager 3.5.0                                                |
+| Remembered credentials         | flutter_secure_storage 11.2.0                                                             |
+| Navigation                     | go_router 18.1.0                                                                          |
+| Document rendering             | flutter_inappwebview 6.1.5; the page runs the app's own renderer (ADR 0028)               |
+| Markdown, sanitizing, code     | markdown-it 15.0.3, DOMPurify 3.4.17, highlight.js 11.12.0; built by tool/document_viewer |
+| Timeline filters               | markdown 7.3.1                                                                            |
+| JSON DTO mapping               | json_annotation 4.12.0, json_serializable 6.14.1                                          |
+| Internationalization           | SDK flutter_localizations and intl 0.20.3                                                 |
 
 Supporting direct dependencies proposed for the final profile:
 
@@ -60,7 +59,7 @@ Supporting direct dependencies proposed for the final profile:
 | drift_dev, build_runner                            | Required generation tools, selected as a compatible set                                                              |
 | SDK flutter_test and standard Flutter lint tooling | Behavioral/widget tests and static analysis                                                                          |
 
-Use Drift's native opener with an application-support path; drift_flutter is a viable optional helper but unnecessary for the proposed path/lifecycle ownership. Do not add Freezed, riverpod_generator, get_it/Provider, experimental Riverpod persistence, a WebView, an editor, a persistent image-cache library, or native Shiki engines as part of this agreed profile.
+Use Drift's native opener with an application-support path; drift_flutter is a viable optional helper but unnecessary for the proposed path/lifecycle ownership. Do not add Freezed, riverpod_generator, get_it/Provider, experimental Riverpod persistence, an editor, a persistent image-cache library, or native Shiki engines as part of this agreed profile. The document WebView is the one exception, scoped by [ADR 0028](adr/0028-flutter-document-webview-boundary.md).
 
 A real observed generator conflict exists: build_runner 2.17.1 requires build 5 while current drift_dev/json_serializable require build 4. The complete project must be resolved rather than copying every independent newest version. Sources and the existing-SDK checks are in [dependency research](research/flutter-release-timeline-dependencies.md) and [highlighting research](research/flutter-syntax-highlighting.md).
 

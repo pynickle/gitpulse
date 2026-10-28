@@ -11,6 +11,7 @@ import 'package:gitpulse/timeline/timeline_layout.dart';
 import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
 import 'release_detail_service_test.dart' show releaseDetailJson;
+import '../support/document_viewer.dart';
 import 'repository_releases_service_test.dart'
     show listReleaseJson, releaseListJson;
 
@@ -332,11 +333,8 @@ void main() {
       // Repository Release List beside it.
       expect(find.byTooltip('Return to Entry Release'), findsOneWidget);
       expect(find.byTooltip('Repository releases'), findsOneWidget);
-      await tester.tapAt(
-        tester.getTopLeft(
-              find.textContaining('Another repository', findRichText: true),
-            ) +
-            const Offset(30, 8),
+      await mountedDocument!.bridge.open(
+        'https://github.com/other/tool/releases/tag/v1',
       );
       await tester.pumpAndSettle();
       expect(find.text('Another repository notes'), findsOneWidget);
@@ -373,11 +371,8 @@ void main() {
         ),
         hasLength(1),
       );
-      await tester.tapAt(
-        tester.getTopLeft(
-              find.textContaining('Another repository', findRichText: true),
-            ) +
-            const Offset(30, 8),
+      await mountedDocument!.bridge.open(
+        'https://github.com/other/tool/releases/tag/v1',
       );
       await tester.pump();
       expect(find.text('Another repository notes'), findsOneWidget);
@@ -662,20 +657,10 @@ void main() {
         tester.getRect(github).bottom,
         lessThanOrEqualTo(tester.getTopLeft(notes).dy),
       );
-      expect(
-        find.textContaining('Hidden HTML', findRichText: true).hitTestable(),
-        findsNothing,
-      );
-      await tester.tap(find.textContaining('Nested', findRichText: true));
-      await tester.pumpAndSettle();
-      expect(
-        find.textContaining('Hidden HTML', findRichText: true).hitTestable(),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('Wide cell', findRichText: true),
-        findsOneWidget,
-      );
+      // What the document draws for itself — a folded <details>, a table, a code
+      // block — is the renderer's behaviour, asserted against the built renderer
+      // in tool/document_viewer/verify.mjs. What this surface owns is where the
+      // document sits and what a link tap does, which is what follows.
       // Release Assets wait below the notes, folded into one labelled row that
       // states how many there are and their total size.
       expect(find.text('1 asset · 2 KB'), findsOneWidget);
@@ -694,11 +679,22 @@ void main() {
         launched.single.toString(),
         'https://github.com/canonical/project/releases/download/v2/app.zip',
       );
-      await tester.tapAt(
-        tester.getTopLeft(
-              find.textContaining('Next release', findRichText: true),
-            ) +
-            const Offset(30, 8),
+      // The list takes the reading area while it is open.
+      expect(
+        find.textContaining('Visible HTML', findRichText: true),
+        findsNothing,
+      );
+      // Folding the assets away gives the notes their area back.
+      await tester.tap(find.byKey(const Key('release-assets')));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Visible HTML', findRichText: true),
+        findsOneWidget,
+      );
+      // A link is the page's report to the app, never a navigation the page
+      // performs itself.
+      await mountedDocument!.bridge.open(
+        'https://github.com/canonical/project/releases/tag/v3',
       );
       await tester.pumpAndSettle();
       expect(find.text('Next notes'), findsOneWidget);

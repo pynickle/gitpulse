@@ -13,7 +13,13 @@ import 'release_document.dart';
 /// line owns the release identity and every action that leaves the notes — the
 /// repository page, the Repository Release List, GitHub and close — so nothing
 /// here competes with the notes for the top of the surface.
-class ReleaseDetailsView extends StatelessWidget {
+///
+/// The notes are the one scroller in this body: a document is shown by a
+/// WebView, which keeps the gestures that land on it, so the chrome above it and
+/// the Release Assets row below it stay put while the document scrolls. Opening
+/// the assets swaps them into the reading area rather than stacking a second
+/// scroller under the document.
+class ReleaseDetailsView extends StatefulWidget {
   const ReleaseDetailsView({
     super.key,
     required this.release,
@@ -26,7 +32,15 @@ class ReleaseDetailsView extends StatelessWidget {
   final Future<bool> Function(String) onOpenExternal;
 
   @override
+  State<ReleaseDetailsView> createState() => _ReleaseDetailsViewState();
+}
+
+class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
+  bool _showingAssets = false;
+
+  @override
   Widget build(BuildContext context) {
+    final release = widget.release;
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final meta = [
@@ -36,6 +50,17 @@ class ReleaseDetailsView extends StatelessWidget {
       if (release.dto.prerelease) l10n.timelinePrerelease,
       if (release.dto.draft) l10n.releaseDraft,
     ].join(' · ');
+    final reading = release.body.isEmpty
+        ? Align(alignment: Alignment.topLeft, child: Text(l10n.releaseNoNotes))
+        : ReleaseDocument(
+            source: release.body,
+            document: RepositoryDocumentContext(
+              owner: release.owner,
+              repository: release.repository,
+              ref: release.tag,
+            ),
+            onTapUrl: widget.onTapUrl,
+          );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -83,53 +108,47 @@ class ReleaseDetailsView extends StatelessWidget {
             color: toneRule(theme.colorScheme),
           ),
         ),
-        if (release.body.isEmpty)
-          Text(l10n.releaseNoNotes)
-        else
-          ReleaseDocument(
-            source: release.body,
-            document: RepositoryDocumentContext(
-              owner: release.owner,
-              repository: release.repository,
-              ref: release.tag,
-            ),
-            onTapUrl: onTapUrl,
-          ),
+        Expanded(
+          child: _showingAssets && release.assets.isNotEmpty
+              ? _ReleaseAssetList(
+                  assets: release.assets,
+                  onOpenExternal: widget.onOpenExternal,
+                )
+              : reading,
+        ),
         if (release.assets.isNotEmpty)
-          _ReleaseAssets(
+          _ReleaseAssetsToggle(
             assets: release.assets,
-            onOpenExternal: onOpenExternal,
+            expanded: _showingAssets,
+            onTap: () => setState(() => _showingAssets = !_showingAssets),
           ),
       ],
     );
   }
 }
 
-/// The Release Assets as their own module below the notes: a ruled boundary, one
-/// fold row in the section-label type language, and — once the reader opens it —
-/// one row per asset.
+/// The Release Assets as their own module below the notes: a ruled boundary and
+/// one fold row in the section-label type language. It is the way in and the way
+/// back, so it never leaves the surface.
 ///
 /// It is deliberately not wrapped in a tonal card: the drawer is already a
 /// surface, and nesting a second container inside its padding fights both.
-class _ReleaseAssets extends StatefulWidget {
-  const _ReleaseAssets({required this.assets, required this.onOpenExternal});
+class _ReleaseAssetsToggle extends StatelessWidget {
+  const _ReleaseAssetsToggle({
+    required this.assets,
+    required this.expanded,
+    required this.onTap,
+  });
 
   final List<ReleaseAssetDto> assets;
-  final Future<bool> Function(String) onOpenExternal;
-
-  @override
-  State<_ReleaseAssets> createState() => _ReleaseAssetsState();
-}
-
-class _ReleaseAssetsState extends State<_ReleaseAssets> {
-  bool _expanded = false;
+  final bool expanded;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final assets = widget.assets;
     // An unknown size is reported as zero and contributes nothing to the total,
     // and a total of nothing leaves the fold row its count alone.
     final totalSize = gitPulseByteSize(
@@ -149,16 +168,14 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
             color: toneRule(scheme),
           ),
         ),
-        // The fold row reads as a section label rather than one more sentence of
-        // the changelog, and the whole row is the toggle.
         MergeSemantics(
           child: Semantics(
             button: true,
-            expanded: _expanded,
+            expanded: expanded,
             child: InkWell(
               key: const Key('release-assets'),
               borderRadius: BorderRadius.circular(GitPulseRadius.row),
-              onTap: () => setState(() => _expanded = !_expanded),
+              onTap: onTap,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
@@ -185,7 +202,7 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
                       ),
                     ),
                     AnimatedRotation(
-                      turns: _expanded ? .5 : 0,
+                      turns: expanded ? .5 : 0,
                       duration: const Duration(milliseconds: 180),
                       child: Icon(
                         Icons.expand_more,
@@ -199,14 +216,27 @@ class _ReleaseAssetsState extends State<_ReleaseAssets> {
             ),
           ),
         ),
-        // Rows are separated by breathing room, never by rules: 31 hairlines in
-        // a phone-width sheet read as a spreadsheet.
-        if (_expanded)
-          for (final asset in assets)
-            _ReleaseAssetRow(
-              asset: asset,
-              onOpenExternal: widget.onOpenExternal,
-            ),
+      ],
+    );
+  }
+}
+
+/// One row per asset, in the reading area the notes left behind. Rows are
+/// separated by breathing room, never by rules: 31 hairlines in a phone-width
+/// sheet read as a spreadsheet.
+class _ReleaseAssetList extends StatelessWidget {
+  const _ReleaseAssetList({required this.assets, required this.onOpenExternal});
+
+  final List<ReleaseAssetDto> assets;
+  final Future<bool> Function(String) onOpenExternal;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        for (final asset in assets)
+          _ReleaseAssetRow(asset: asset, onOpenExternal: onOpenExternal),
       ],
     );
   }

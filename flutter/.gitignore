@@ -47,3 +47,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# The document renderer build tooling
+/tool/document_viewer/node_modules/
+/tool/document_viewer/preview.html

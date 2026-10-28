@@ -1,383 +1,211 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:ui' as ui;
-
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/releases/document_content.dart';
+import 'package:gitpulse/releases/document_viewer_assets.dart';
+import 'package:gitpulse/releases/document_web_view.dart';
 import 'package:gitpulse/releases/release_document.dart';
-import 'package:gitpulse/session/gitpulse_http.dart';
 
-void main() {
-  testWidgets(
-    'mounted SVG currentColor follows the app theme and keeps explicit colors',
-    (tester) async {
-      final overrides = HttpOverrides.current;
-      HttpOverrides.global = null;
-      addTearDown(() => HttpOverrides.global = overrides);
-      final server = (await tester.runAsync(
-        () => HttpServer.bind(InternetAddress.loopbackIPv4, 0),
-      ))!;
-      addTearDown(() => server.close(force: true));
-      server.listen((request) async {
-        request.response.headers.contentType = ContentType('image', 'svg+xml');
-        request.response.write(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">'
-          '<rect width="20" height="40" fill="currentColor"/>'
-          '<rect x="20" width="20" height="40" fill="#00ff00"/></svg>',
-        );
-        await request.response.close();
-      });
-      final themeMode = ValueNotifier(ThemeMode.light);
-      addTearDown(themeMode.dispose);
-      const paintKey = ValueKey('document-paint');
-      final home = Scaffold(
-        body: RepaintBoundary(
-          key: paintKey,
-          child: ReleaseDocument(
-            source:
-                '![Themed badge](http://127.0.0.1:${server.port}/badge.svg)',
+import '../support/document_viewer.dart';
+
+const _source = '''
+# Release notes
+
+A [guide](../guide.md) and a ![chart](images/chart.png).
+''';
+
+/// The surface colour the page was painted with.
+String? _background(String html) =>
+    RegExp(r'--gp-bg:(#[0-9a-f]{6});').firstMatch(html)?.group(1);
+
+class _Harness {
+  _Harness(this.probe);
+
+  final DocumentViewerProbe probe;
+  final List<String> taps = [];
+}
+
+/// Mounts one document over the stand-in engine and returns what the page asked
+/// the app for.
+Future<_Harness> _pump(
+  WidgetTester tester, {
+  String source = _source,
+  Brightness brightness = Brightness.light,
+  bool withoutRenderer = false,
+  _Harness? reuse,
+}) async {
+  final harness = reuse ?? _Harness(DocumentViewerProbe());
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: withoutRenderer
+          ? [
+              documentViewerAssetsProvider.overrideWith(
+                (ref) => Future<DocumentViewerAssets>.error(
+                  StateError('the renderer asset is missing'),
+                ),
+              ),
+              documentWebViewBuilderProvider.overrideWith(
+                (ref) => harness.probe.call,
+              ),
+            ]
+          : documentViewerOverrides(engine: harness.probe.call),
+      child: MaterialApp(
+        theme: gitPulseTheme(brightness),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ReleaseDocument(
+            source: source,
             document: const RepositoryDocumentContext(
               owner: 'octo',
               repository: 'app',
               ref: 'v2',
+              documentPath: 'docs/README.md',
             ),
-            onTapUrl: (_) async => true,
+            onTapUrl: (url) async {
+              harness.taps.add(url);
+              return true;
+            },
           ),
         ),
-      );
-      await tester.pumpWidget(
-        ValueListenableBuilder(
-          valueListenable: themeMode,
-          builder: (context, mode, child) => MaterialApp(
-            theme: gitPulseTheme(Brightness.light),
-            darkTheme: gitPulseTheme(Brightness.dark),
-            themeMode: mode,
-            themeAnimationDuration: Duration.zero,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: child,
-          ),
-          child: home,
+      ),
+    ),
+  );
+  await tester.pump();
+  return harness;
+}
+
+void main() {
+  testWidgets('the engine is handed the document and the app theme', (
+    tester,
+  ) async {
+    final light = await _pump(tester);
+    expect(light.probe.last, isNotNull);
+    final page = light.probe.last!.page;
+    expect(page.html, contains('/* document renderer */'));
+    expect(page.html, contains('/* document stylesheet */'));
+    expect(page.renderScript, contains(r'# Release notes'));
+    expect(page.renderScript, contains('docs/README.md'));
+    expect(page.renderScript, contains('Copy code'));
+    expect(page.html, contains('--gp-font-size:15.00px'));
+    expect(page.html, contains('data-appearance="light"'));
+    final lightBackground = _background(page.html);
+    expect(lightBackground, isNotNull);
+
+    // Unmounted first, so the dark document is a fresh mount rather than a
+    // rebuild of the light one.
+    await tester.pumpWidget(const SizedBox.shrink());
+    final dark = await _pump(tester, reuse: light, brightness: Brightness.dark);
+    expect(dark.probe.last!.page.html, contains('data-appearance="dark"'));
+    expect(
+      _background(dark.probe.last!.page.html),
+      isNot(lightBackground),
+      reason: 'the document is painted in the app surface it sits on',
+    );
+  });
+
+  testWidgets('a relative address resolves through the repository', (
+    tester,
+  ) async {
+    final harness = await _pump(tester);
+    expect(
+      harness.probe.bridge.resolve(const [
+        DocumentResourceTarget(value: '../guide.md', image: false),
+        DocumentResourceTarget(value: 'images/chart.png', image: true),
+        DocumentResourceTarget(value: '#install', image: false),
+      ]),
+      [
+        'https://github.com/octo/app/blob/v2/guide.md',
+        'https://raw.githubusercontent.com/octo/app/v2/docs/images/chart.png',
+        '#install',
+      ],
+    );
+  });
+
+  testWidgets('an active or local address never survives the bridge', (
+    tester,
+  ) async {
+    final harness = await _pump(tester);
+    expect(
+      harness.probe.bridge.resolve(const [
+        DocumentResourceTarget(value: 'javascript:alert(1)', image: false),
+        DocumentResourceTarget(value: 'file:///etc/passwd', image: true),
+        DocumentResourceTarget(
+          value: 'data:image/png;base64,AAAA',
+          image: true,
         ),
-      );
-
-      for (final mode in [ThemeMode.light, ThemeMode.dark, ThemeMode.light]) {
-        themeMode.value = mode;
-        await tester.pump();
-        for (var attempt = 0; attempt < 100; attempt++) {
-          await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 20)),
-          );
-          await tester.pump();
-          if (find.byType(SvgPicture).evaluate().isNotEmpty) break;
-        }
-        final badge = find.byType(SvgPicture);
-        expect(badge, findsOneWidget);
-        final brightness = mode == ThemeMode.dark
-            ? Brightness.dark
-            : Brightness.light;
-        final theme = Theme.of(tester.element(badge));
-        expect(theme.brightness, brightness);
-        final boundary = tester.renderObject<RenderRepaintBoundary>(
-          find.byKey(paintKey),
-        );
-        final origin =
-            tester.getTopLeft(badge) - boundary.localToGlobal(Offset.zero);
-        final size = tester.getSize(badge);
-        final image = (await tester.runAsync(
-          () => boundary.toImage(pixelRatio: 1),
-        ))!;
-        try {
-          final data = (await tester.runAsync(
-            () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
-          ))!;
-          final pixels = data.buffer.asUint8List();
-          Color pixelAt(double horizontalFraction) {
-            final offset =
-                ((origin.dy + size.height / 2).floor() * image.width +
-                    (origin.dx + size.width * horizontalFraction).floor()) *
-                4;
-            return Color.fromARGB(
-              pixels[offset + 3],
-              pixels[offset],
-              pixels[offset + 1],
-              pixels[offset + 2],
-            );
-          }
-
-          expect(
-            pixelAt(0.25),
-            theme.colorScheme.onSurface,
-            reason: 'SVG currentColor must follow the mounted $mode theme',
-          );
-          expect(
-            pixelAt(0.75),
-            const Color(0xff00ff00),
-            reason: 'Theme changes must preserve explicit SVG colors',
-          );
-        } finally {
-          image.dispose();
-        }
-      }
-      await tester.pumpWidget(const SizedBox.shrink());
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets(
-    'SVG badges render safely and failed resources keep their alt text',
-    (tester) async {
-      final overrides = HttpOverrides.current;
-      HttpOverrides.global = null;
-      addTearDown(() => HttpOverrides.global = overrides);
-      final server = (await tester.runAsync(
-        () => HttpServer.bind(InternetAddress.loopbackIPv4, 0),
-      ))!;
-      addTearDown(() => server.close(force: true));
-      final seen = <HttpRequest>[];
-      final client = HttpClient();
-      debugNetworkImageHttpClientProvider = () => client;
-      addTearDown(() {
-        debugNetworkImageHttpClientProvider = null;
-        client.close(force: true);
-      });
-      server.listen((request) async {
-        seen.add(request);
-        request.response.headers.contentType = ContentType('image', 'svg+xml');
-        if (request.uri.path == '/badge.svg' ||
-            request.uri.path == '/badge' ||
-            request.uri.path == '/badge/version-1.2.3-blue') {
-          request.response.write(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="20">'
-            '<rect width="120" height="20" fill="#00ff00"/></svg>',
-          );
-        } else if (request.uri.path == '/broken.svg') {
-          request.response.write('not SVG');
-        } else {
-          request.response.statusCode = 404;
-        }
-        await request.response.close();
-      });
-      final address = Uri.parse('http://127.0.0.1:${server.port}/');
-      final jar = CookieJar();
-      await jar.saveFromResponse(address, [
-        Cookie(sessionCookieName, 'private-session'),
-        Cookie(csrfCookieName, 'private-csrf'),
-      ]);
-      final semantics = tester.ensureSemantics();
-      try {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [cookieJarProvider.overrideWithValue(jar)],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: SingleChildScrollView(
-                  child: ReleaseDocument(
-                    source:
-                        '''
-![Build passing](${address}badge.svg?style=flat)
-
-![Missing badge](${address}missing.svg)
-
-![Broken badge](${address}broken.svg)
-
-![Extensionless badge](${address}badge)
-
-![Version badge](${address}badge/version-1.2.3-blue)
-
-<svg><script>unsafe()</script></svg>
-<img src="file:///private/badge.svg" alt="Blocked badge">
-''',
-                    document: const RepositoryDocumentContext(
-                      owner: 'octo',
-                      repository: 'app',
-                      ref: 'v2',
-                    ),
-                    onTapUrl: (_) async => true,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        for (var attempt = 0; attempt < 100; attempt++) {
-          await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 20)),
-          );
-          await tester.pump();
-          if (find.text('Broken badge').evaluate().isNotEmpty &&
-              find.text('Missing badge').evaluate().isNotEmpty &&
-              ['Build passing', 'Extensionless badge', 'Version badge'].every(
-                (label) => find.bySemanticsLabel(label).evaluate().isNotEmpty,
-              )) {
-            break;
-          }
-        }
-        expect(
-          seen.map((request) => request.uri.path),
-          unorderedEquals([
-            '/badge.svg',
-            '/missing.svg',
-            '/broken.svg',
-            '/badge',
-            '/badge',
-            '/badge/version-1.2.3-blue',
-            '/badge/version-1.2.3-blue',
-          ]),
-        );
-        for (final request in seen) {
-          expect(request.headers.value('cookie'), isNull);
-          expect(request.headers.value('authorization'), isNull);
-          expect(request.headers.value(csrfHeaderName), isNull);
-        }
-        expect(find.bySemanticsLabel('Build passing'), findsWidgets);
-        expect(find.bySemanticsLabel('Extensionless badge'), findsWidgets);
-        expect(find.bySemanticsLabel('Version badge'), findsWidgets);
-        expect(find.text('Missing badge'), findsOneWidget);
-        expect(find.text('Broken badge'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-        // Inspect the painted result, not merely the existence of an SVG widget.
-        final boundary = tester.renderObject<RenderRepaintBoundary>(
-          find.byType(RepaintBoundary).first,
-        );
-        final image = (await tester.runAsync(
-          () => boundary.toImage(pixelRatio: 1),
-        ))!;
-        final data = (await tester.runAsync(
-          () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
-        ))!;
-        final pixels = data.buffer.asUint8List();
-        var green = false;
-        for (var i = 0; i < pixels.length; i += 4) {
-          if (pixels[i] == 0 && pixels[i + 1] == 255 && pixels[i + 2] == 0) {
-            green = true;
-            break;
-          }
-        }
-        image.dispose();
-        expect(green, isTrue, reason: 'The SVG badge must actually paint');
-        await tester.pumpWidget(const SizedBox.shrink());
-      } finally {
-        semantics.dispose();
-        debugNetworkImageHttpClientProvider = null;
-        client.close(force: true);
-      }
-    },
-  );
-
-  testWidgets(
-    'native document images load without backend credentials and unavailable images keep their alt text',
-    (tester) async {
-      final overrides = HttpOverrides.current;
-      HttpOverrides.global = null;
-      addTearDown(() => HttpOverrides.global = overrides);
-      final client = HttpClient();
-      debugNetworkImageHttpClientProvider = () => client;
-      addTearDown(() {
-        debugNetworkImageHttpClientProvider = null;
-        client.close(force: true);
-      });
-      final server = (await tester.runAsync(
-        () => HttpServer.bind(InternetAddress.loopbackIPv4, 0),
-      ))!;
-      addTearDown(() => server.close(force: true));
-      final seen = <HttpRequest>[];
-      server.listen((request) async {
-        seen.add(request);
-        if (request.uri.path == '/image.png') {
-          request.response.headers.contentType = ContentType('image', 'png');
-          request.response.add(
-            base64Decode(
-              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
-            ),
-          );
-        } else {
-          request.response.statusCode = 404;
-        }
-        await request.response.close();
-      });
-      final address = Uri.parse('http://127.0.0.1:${server.port}/');
-      final jar = CookieJar();
-      // The same hostname could hold a self-hosted backend cookie. The document
-      // loader must not reuse its authenticated jar even on a matching host.
-      await jar.saveFromResponse(address, [
-        Cookie(sessionCookieName, 'private-session'),
-        Cookie(csrfCookieName, 'private-csrf'),
-      ]);
-      final external = <String>[];
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [cookieJarProvider.overrideWithValue(jar)],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: ReleaseDocument(
-                  source:
-                      '![Available](${address}image.png)\n\n![Missing diagram](${address}missing.png)\n\n<a href="#part">Jump</a><p id="part">Target</p>',
-                  document: const RepositoryDocumentContext(
-                    owner: 'octo',
-                    repository: 'app',
-                    ref: 'v2',
-                  ),
-                  onTapUrl: (url) async {
-                    external.add(url);
-                    return true;
-                  },
-                ),
-              ),
-            ),
-          ),
+        DocumentResourceTarget(
+          value: 'https://user:secret@github.com/octo/app',
+          image: false,
         ),
-      );
-      for (var attempt = 0; attempt < 100; attempt++) {
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 20)),
-        );
-        await tester.pump();
-        if (tester
-            .widgetList<RawImage>(find.byType(RawImage))
-            .any((image) => image.image != null)) {
-          break;
+        DocumentResourceTarget(value: '', image: false),
+      ]),
+      [null, null, null, null, null],
+    );
+  });
+
+  testWidgets('a link the page reports leaves through the app, not the page', (
+    tester,
+  ) async {
+    final harness = await _pump(tester);
+    await harness.probe.bridge.open('https://example.com/target');
+    expect(harness.taps, ['https://example.com/target']);
+  });
+
+  testWidgets("a code block's copy action writes the reader's clipboard", (
+    tester,
+  ) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
         }
-      }
-      expect(
-        seen.map((request) => request.uri.path),
-        containsAll(['/image.png', '/missing.png']),
-      );
-      for (final request in seen) {
-        expect(request.headers.value('cookie'), isNull);
-        expect(request.headers.value('authorization'), isNull);
-        expect(request.headers.value(csrfHeaderName), isNull);
-        expect(request.uri.hasQuery, isFalse);
-      }
-      expect(
-        tester
-            .widgetList<RawImage>(find.byType(RawImage))
-            .where((image) => image.image != null),
-        hasLength(1),
-      );
-      expect(find.text('Missing diagram'), findsOneWidget);
-      await tester.tapAt(
-        tester.getTopLeft(find.textContaining('Jump', findRichText: true)) +
-            const Offset(10, 8),
-      );
-      await tester.pumpAndSettle();
-      expect(external, isEmpty);
-      await tester.pumpWidget(const SizedBox.shrink());
-      client.close(force: true);
-      await tester.pump();
-      debugNetworkImageHttpClientProvider = null;
-    },
-  );
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    final harness = await _pump(tester);
+    harness.probe.bridge.copy('const answer = 42;');
+    await tester.pump();
+    expect(copied, 'const answer = 42;');
+  });
+
+  testWidgets('a document the page cannot render falls back to its text', (
+    tester,
+  ) async {
+    final harness = await _pump(tester);
+    expect(find.byType(DocumentSourceFallback), findsNothing);
+
+    harness.probe.bridge.failed('the renderer threw');
+    await tester.pump();
+
+    expect(find.byType(DocumentSourceFallback), findsOneWidget);
+    expect(
+      find.textContaining('# Release notes', findRichText: true),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('a missing renderer still leaves the document readable', (
+    tester,
+  ) async {
+    await _pump(tester, withoutRenderer: true);
+    await tester.pump();
+    expect(find.byType(DocumentSourceFallback), findsOneWidget);
+    expect(
+      find.textContaining('A [guide](../guide.md)', findRichText: true),
+      findsWidgets,
+    );
+  });
 }

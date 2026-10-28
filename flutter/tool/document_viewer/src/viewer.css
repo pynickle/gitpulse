@@ -1,0 +1,577 @@
+/*
+ * The document surface. GitHub's Markdown typography — the same rules the web
+ * app renders through Primer — expressed against the tokens the Flutter app
+ * hands down as CSS variables, so a README and a release's notes read like the
+ * rest of GitPulse instead of like github.com.
+ *
+ * Colours that carry meaning rather than structure (syntax tokens, alert
+ * kinds) stay here as a light/dark pair, selected by the `data-appearance`
+ * attribute the page sets from the app's own theme, never from the operating
+ * system's `prefers-color-scheme`.
+ */
+
+:root {
+  --gp-fg: #1f2328;
+  --gp-bg: #ffffff;
+  --gp-muted: #59636e;
+  --gp-rule: #d1d9e0;
+  --gp-accent: #0969da;
+  --gp-code-bg: #f6f8fa;
+  --gp-inline-code-bg: #eff1f3;
+  --gp-font-size: 15px;
+  --gp-line-height: 1.6;
+  --gp-heading-1: 20px;
+  --gp-heading-2: 17px;
+  --gp-heading-3: 15px;
+  --gp-list-indent: 20px;
+  --gp-quote-indent: 12px;
+  --gp-code-font-size: 13px;
+  --gp-radius: 8px;
+  --gp-note: #0969da;
+  --gp-tip: #1a7f37;
+  --gp-important: #8250df;
+  --gp-warning: #9a6700;
+  --gp-caution: #cf222e;
+  --hl-comment: #6e7781;
+  --hl-keyword: #cf222e;
+  --hl-string: #0a3069;
+  --hl-number: #0550ae;
+  --hl-title: #8250df;
+  --hl-variable: #953800;
+  --hl-type: #0550ae;
+  --hl-builtin: #953800;
+  --hl-attr: #0550ae;
+  --hl-meta: #6e7781;
+}
+
+:root[data-appearance='dark'] {
+  --gp-fg: #e6edf3;
+  --gp-bg: #0d1117;
+  --gp-muted: #9198a1;
+  --gp-rule: #3d444d;
+  --gp-accent: #4493f8;
+  --gp-code-bg: #151b23;
+  --gp-inline-code-bg: #262c36;
+  --gp-note: #4493f8;
+  --gp-tip: #3fb950;
+  --gp-important: #ab7df8;
+  --gp-warning: #d29922;
+  --gp-caution: #f85149;
+  --hl-comment: #9198a1;
+  --hl-keyword: #ff7b72;
+  --hl-string: #a5d6ff;
+  --hl-number: #79c0ff;
+  --hl-title: #d2a8ff;
+  --hl-variable: #ffa657;
+  --hl-type: #79c0ff;
+  --hl-builtin: #ffa657;
+  --hl-attr: #79c0ff;
+  --hl-meta: #9198a1;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--gp-bg);
+  color: var(--gp-fg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+
+.markdown-body {
+  font-size: var(--gp-font-size);
+  line-height: var(--gp-line-height);
+  overflow-wrap: break-word;
+  word-break: normal;
+  padding: 0;
+}
+
+/* Blocks carry their own rhythm: no browser default margins, no ladder. */
+.markdown-body > :first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0 !important;
+}
+
+.markdown-body p,
+.markdown-body blockquote,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body dl,
+.markdown-body table,
+.markdown-body pre,
+.markdown-body details,
+.markdown-body .code-block {
+  margin: 0 0 12px;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 24px 0 10px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.markdown-body h1 {
+  font-size: var(--gp-heading-1);
+  font-weight: 700;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--gp-rule);
+}
+
+.markdown-body h2 {
+  font-size: var(--gp-heading-2);
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--gp-rule);
+}
+
+.markdown-body h3 {
+  font-size: var(--gp-heading-3);
+}
+
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-size: var(--gp-heading-3);
+  color: var(--gp-muted);
+}
+
+.markdown-body a {
+  color: var(--gp-accent);
+  text-decoration: none;
+}
+
+.markdown-body a:hover,
+.markdown-body a:focus-visible {
+  text-decoration: underline;
+}
+
+.markdown-body strong,
+.markdown-body b {
+  font-weight: 600;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-inline-start: var(--gp-list-indent);
+}
+
+.markdown-body li + li {
+  margin-top: 4px;
+}
+
+.markdown-body li > p {
+  margin-bottom: 4px;
+}
+
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.markdown-body blockquote {
+  padding-inline-start: var(--gp-quote-indent);
+  border-inline-start: 3px solid var(--gp-rule);
+  color: var(--gp-muted);
+}
+
+.markdown-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body hr {
+  height: 0;
+  margin: 20px 0;
+  border: 0;
+  border-top: 1px solid var(--gp-rule);
+}
+
+.markdown-body img,
+.markdown-body video {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-body img {
+  border-style: none;
+  vertical-align: middle;
+}
+
+/* An author's `align` is the one layout attribute the document keeps. */
+.markdown-body [align='center'] {
+  display: block;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.markdown-body [align='right'] {
+  margin-inline-start: auto;
+  text-align: right;
+}
+
+.markdown-body [align='left'] {
+  margin-inline-end: auto;
+  text-align: left;
+}
+
+.markdown-body p[align='center'],
+.markdown-body div[align='center'],
+.markdown-body h1[align='center'],
+.markdown-body h2[align='center'],
+.markdown-body h3[align='center'],
+.markdown-body h4[align='center'],
+.markdown-body h5[align='center'],
+.markdown-body h6[align='center'] {
+  display: block;
+  text-align: center;
+}
+
+.markdown-body p[align='right'],
+.markdown-body div[align='right'] {
+  text-align: right;
+}
+
+.markdown-body p[align='left'],
+.markdown-body div[align='left'] {
+  text-align: left;
+}
+
+/* An author's <center> wrapper, still used by older READMEs. */
+.markdown-body center {
+  display: block;
+  text-align: center;
+}
+
+.markdown-body center > * {
+  margin-inline: auto;
+}
+
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body pre,
+.markdown-body samp,
+.markdown-body tt {
+  font-family: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+.markdown-body code {
+  font-size: 85%;
+  background: var(--gp-inline-code-bg);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+}
+
+.markdown-body kbd {
+  font-size: 80%;
+  padding: 0.2em 0.4em;
+  border: 1px solid var(--gp-rule);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--gp-inline-code-bg);
+}
+
+.markdown-body pre {
+  overflow: auto;
+  padding: 12px;
+  border-radius: var(--gp-radius);
+  background: var(--gp-code-bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+.markdown-body pre code {
+  display: block;
+  font-size: var(--gp-code-font-size);
+  line-height: 1.55;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+/* One code block: a language label and the copy action on the header line, the
+   code beneath it — the same shape the web app renders. */
+.code-block {
+  border: 1px solid var(--gp-rule);
+  border-radius: var(--gp-radius);
+  background: var(--gp-code-bg);
+  overflow: hidden;
+}
+
+.code-block > pre {
+  margin: 0;
+  border-radius: 0;
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border-bottom: 1px solid var(--gp-rule);
+}
+
+.code-block-language {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: lowercase;
+  color: var(--gp-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-block-copy {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--gp-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.code-block-copy:hover,
+.code-block-copy:focus-visible {
+  color: var(--gp-fg);
+  background: var(--gp-inline-code-bg);
+  outline: none;
+}
+
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  padding: 6px 12px;
+  border: 1px solid var(--gp-rule);
+}
+
+.markdown-body table th {
+  font-weight: 600;
+  background: var(--gp-code-bg);
+}
+
+.markdown-body table tr:nth-child(2n) td {
+  background: color-mix(in srgb, var(--gp-code-bg) 55%, transparent);
+}
+
+.markdown-body dl dt {
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.markdown-body dl dd {
+  margin-inline-start: var(--gp-list-indent);
+}
+
+.markdown-body details {
+  border-inline-start: 1px solid var(--gp-rule);
+  padding-inline-start: 12px;
+}
+
+.markdown-body summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.markdown-body summary > :first-child {
+  display: inline;
+}
+
+.markdown-body sub,
+.markdown-body sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.markdown-body sup {
+  top: -0.5em;
+}
+
+.markdown-body sub {
+  bottom: -0.25em;
+}
+
+.markdown-body mark {
+  background: var(--gp-inline-code-bg);
+  color: inherit;
+}
+
+.markdown-body figcaption {
+  font-size: 85%;
+  color: var(--gp-muted);
+}
+
+/* Task lists: the checkbox takes the item's marker slot. */
+.markdown-body .contains-task-list {
+  padding-inline-start: 4px;
+  list-style: none;
+}
+
+.markdown-body .task-list-item {
+  list-style: none;
+}
+
+.markdown-body .task-list-item-checkbox {
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+  accent-color: var(--gp-accent);
+}
+
+/* Alerts: `> [!NOTE]` and its four siblings. */
+.markdown-body .markdown-alert {
+  padding: 8px 12px;
+  border-inline-start: 4px solid var(--gp-note);
+  color: inherit;
+}
+
+.markdown-body .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body .markdown-alert-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  color: var(--gp-note);
+}
+
+.markdown-body .markdown-alert-note {
+  border-inline-start-color: var(--gp-note);
+}
+
+.markdown-body .markdown-alert-note .markdown-alert-title {
+  color: var(--gp-note);
+}
+
+.markdown-body .markdown-alert-tip {
+  border-inline-start-color: var(--gp-tip);
+}
+
+.markdown-body .markdown-alert-tip .markdown-alert-title {
+  color: var(--gp-tip);
+}
+
+.markdown-body .markdown-alert-important {
+  border-inline-start-color: var(--gp-important);
+}
+
+.markdown-body .markdown-alert-important .markdown-alert-title {
+  color: var(--gp-important);
+}
+
+.markdown-body .markdown-alert-warning {
+  border-inline-start-color: var(--gp-warning);
+}
+
+.markdown-body .markdown-alert-warning .markdown-alert-title {
+  color: var(--gp-warning);
+}
+
+.markdown-body .markdown-alert-caution {
+  border-inline-start-color: var(--gp-caution);
+}
+
+.markdown-body .markdown-alert-caution .markdown-alert-title {
+  color: var(--gp-caution);
+}
+
+/* Syntax tokens, as GitHub renders them. */
+.hljs-comment,
+.hljs-quote {
+  color: var(--hl-comment);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-doctag,
+.hljs-template-tag {
+  color: var(--hl-keyword);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--hl-string);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link {
+  color: var(--hl-number);
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: var(--hl-title);
+}
+
+.hljs-variable,
+.hljs-template-variable,
+.hljs-params,
+.hljs-deletion {
+  color: var(--hl-variable);
+}
+
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-attribute,
+.hljs-property {
+  color: var(--hl-type);
+}
+
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-meta,
+.hljs-meta .hljs-keyword {
+  color: var(--hl-builtin);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 600;
+}

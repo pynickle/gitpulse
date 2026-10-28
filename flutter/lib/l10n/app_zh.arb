@@ -196,6 +196,7 @@
   "releaseSizeMegabytes": "MB",
   "releaseSizeGigabytes": "GB",
   "contentCopyCode": "复制代码",
+  "contentCodeCopied": "已复制",
   "contentPlainText": "纯文本",
   "releaseResourceUnavailable": "图片不可用",
   "releaseLinkFailed": "无法在浏览器中打开此链接。",

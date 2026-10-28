@@ -6,6 +6,8 @@ import 'package:gitpulse/releases/release_detail_dto.dart';
 import 'package:gitpulse/releases/release_detail_service.dart';
 import 'package:gitpulse/releases/release_details_view.dart';
 
+import '../support/document_viewer.dart';
+
 ReleaseDetail releaseWith({
   String? name,
   String tag = 'v2.0.0',
@@ -56,23 +58,25 @@ Future<List<Uri>> pumpDetails(
   final launched = <Uri>[];
   await tester.pumpWidget(
     ProviderScope(
+      overrides: documentViewerOverrides(),
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Align(
             alignment: Alignment.topLeft,
+            // The notes own their own scroll, so the body is given the height a
+            // drawer gives it rather than an unbounded scroll parent.
             child: SizedBox(
               width: width,
-              child: SingleChildScrollView(
-                child: ReleaseDetailsView(
-                  release: release,
-                  onTapUrl: (_) async => true,
-                  onOpenExternal: (url) async {
-                    launched.add(Uri.parse(url));
-                    return true;
-                  },
-                ),
+              height: 600,
+              child: ReleaseDetailsView(
+                release: release,
+                onTapUrl: (_) async => true,
+                onOpenExternal: (url) async {
+                  launched.add(Uri.parse(url));
+                  return true;
+                },
               ),
             ),
           ),

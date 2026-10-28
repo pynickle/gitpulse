@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/releases/document_content.dart';
-import 'package:html/parser.dart' as html;
 
 void main() {
   test(
@@ -55,60 +54,62 @@ void main() {
         repository: 'app',
         ref: 'v2',
       );
-      final document = html.parseFragment(
-        prepareDocument('''
-<script>secret()</script><iframe src="https://bad.test"></iframe>
-<p style="background:url(https://bad.test)" onclick="secret()">Safe</p>
-<a href="javascript:secret()">Bad link</a>
-<img src="file:///private/secret" srcset="https://bad.test 2x">
-<img src="https://github.com/octo/app/blob/v2/logo.png" alt="Logo">
-''', context),
-      );
-      expect(document.querySelector('script'), isNull);
-      expect(document.querySelector('iframe'), isNull);
-      expect(document.querySelector('p')!.attributes, isEmpty);
-      expect(document.querySelector('a')!.attributes['href'], isNull);
-      final images = document.querySelectorAll('img');
-      expect(images.first.attributes, isEmpty);
       expect(
-        images.last.attributes['src'],
+        context
+            .resolve(
+              'https://github.com/octo/app/blob/v2/logo.png',
+              image: true,
+            )
+            .toString(),
         'https://raw.githubusercontent.com/octo/app/v2/logo.png',
       );
+      for (final blocked in [
+        'javascript:secret()',
+        'file:///private/secret',
+        'data:image/png;base64,secret',
+        'https://user:secret@github.com/octo/app',
+        '   ',
+      ]) {
+        expect(context.resolve(blocked), isNull, reason: blocked);
+        expect(context.resolve(blocked, image: true), isNull, reason: blocked);
+      }
       expect(safeContentUri('https://user:secret@github.com/octo/app'), isNull);
       expect(
         safeContentUri('data:image/png;base64,secret', image: true),
         isNull,
       );
+      expect(
+        safeContentUri('mailto:team@example.com').toString(),
+        'mailto:team@example.com',
+      );
+      expect(safeContentUri('mailto:team@example.com', image: true), isNull);
     },
   );
 
-  test('normalizes links and raw resources using repository, ref and document directory', () {
+  test('links and resources resolve against the document directory and its revision', () {
     const context = RepositoryDocumentContext(
       owner: 'octo',
       repository: 'app',
       ref: 'release/2',
       documentPath: 'docs/README.md',
     );
-    final document = html.parseFragment(
-      prepareDocument('''
-[Guide](../guide.md)
-![Chart](images/chart.png)
-<details open><summary>Changes</summary><p>Ready</p></details>
-<table><tr><td colspan="2">Cell</td></tr></table>
-''', context),
-    );
     expect(
-      document.querySelector('a')!.attributes['href'],
+      context.resolve('../guide.md').toString(),
       'https://github.com/octo/app/blob/release%2F2/guide.md',
     );
     expect(
-      document.querySelector('img')!.attributes['src'],
+      context.resolve('images/chart.png', image: true).toString(),
       'https://raw.githubusercontent.com/octo/app/release%2F2/docs/images/chart.png',
     );
+    expect(context.resolve('#install').toString(), '#install');
+    expect(context.resolve('#install', image: true), isNull);
     expect(
-      document.querySelector('details')!.attributes.containsKey('open'),
-      isTrue,
+      context.resolve('//cdn.example.com/chart.png', image: true).toString(),
+      'https://cdn.example.com/chart.png',
     );
-    expect(document.querySelector('td')!.attributes['colspan'], '2');
+    expect(
+      context.resolve('mailto:team@example.com').toString(),
+      'mailto:team@example.com',
+    );
   });
 }

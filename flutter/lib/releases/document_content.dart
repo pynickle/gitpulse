@@ -1,9 +1,10 @@
-import 'package:html/dom.dart';
-import 'package:html/parser.dart' as html;
-import 'package:markdown/markdown.dart' as markdown;
-
 import 'release_detail_service.dart';
 
+/// Where a document was read from, and how one of its addresses resolves.
+///
+/// This is the only implementation of the app's repository-relative rule: the
+/// document page asks for a resolution rather than performing one, so a link in
+/// a README and a link in a release's notes reach the same place.
 class RepositoryDocumentContext {
   const RepositoryDocumentContext({
     required this.owner,
@@ -38,7 +39,9 @@ class RepositoryDocumentContext {
       }
       return safe;
     }
-    if (uri.path.isEmpty && uri.hasFragment && !image) return uri;
+    // A fragment is an address inside the document itself, so it never names a
+    // resource the page loads.
+    if (uri.path.isEmpty && uri.hasFragment) return image ? null : uri;
     // A leading slash starts at the repository root, independent of the
     // current document directory (GitHub's repository Markdown convention).
     final resolved = Uri(path: '/$documentPath').resolveUri(uri);
@@ -58,6 +61,9 @@ class RepositoryDocumentContext {
   }
 }
 
+/// The one gate an address from a document passes: an http(s) URL with a host,
+/// a mailto with an address, and nothing else. No user info, no other scheme, no
+/// address without a host.
 Uri? safeContentUri(String value, {bool image = false}) {
   final uri = Uri.tryParse(value.trim());
   if (uri == null || uri.userInfo.isNotEmpty) return null;
@@ -66,146 +72,6 @@ Uri? safeContentUri(String value, {bool image = false}) {
     return null;
   }
   return uri;
-}
-
-// The native renderer never receives active content, CSS URLs, srcsets, forms,
-// embedded browsing contexts, local-file URLs, or inline SVG from a document.
-const _allowedElements = {
-  'a',
-  'abbr',
-  'b',
-  'blockquote',
-  'br',
-  'caption',
-  'code',
-  'dd',
-  'del',
-  'details',
-  'div',
-  'dl',
-  'dt',
-  'em',
-  'figcaption',
-  'figure',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'hr',
-  'i',
-  'img',
-  'kbd',
-  'li',
-  'ol',
-  'p',
-  'pre',
-  's',
-  'samp',
-  'small',
-  'span',
-  'strong',
-  'sub',
-  'summary',
-  'sup',
-  'table',
-  'tbody',
-  'td',
-  'tfoot',
-  'th',
-  'thead',
-  'tr',
-  'ul',
-};
-const _discardElements = {
-  'script',
-  'style',
-  'iframe',
-  'object',
-  'embed',
-  'form',
-  'input',
-  'button',
-  'textarea',
-  'select',
-  'video',
-  'audio',
-  'source',
-  'svg',
-  'math',
-  'link',
-  'meta',
-  'base',
-};
-
-String prepareDocument(
-  String source,
-  RepositoryDocumentContext context, {
-  String detailsLabel = 'Details',
-}) {
-  final fragment = html.parseFragment(
-    markdown.markdownToHtml(
-      source,
-      extensionSet: markdown.ExtensionSet.gitHubWeb,
-    ),
-  );
-  void clean(Node parent) {
-    for (final element in parent.children.toList()) {
-      final tag = element.localName;
-      if (_discardElements.contains(tag)) {
-        element.remove();
-        continue;
-      }
-      clean(element);
-      if (!_allowedElements.contains(tag)) {
-        element.replaceWith(
-          DocumentFragment()..nodes.addAll(element.nodes.toList()),
-        );
-        continue;
-      }
-      element.attributes.removeWhere(
-        (name, _) => !{
-          'id',
-          'title',
-          if (tag == 'a') 'href',
-          if (tag == 'img') ...['src', 'alt', 'width', 'height'],
-          if (tag == 'details') 'open',
-          if (tag == 'td' || tag == 'th') ...['colspan', 'rowspan'],
-          if (tag == 'ol') 'start',
-          if (tag == 'code' || tag == 'pre') 'class',
-        }.contains(name),
-      );
-      if (tag == 'code' || tag == 'pre') {
-        final languages = element.classes
-            .where(
-              (name) => RegExp(r'^language-[a-zA-Z0-9_+#.\-]+$').hasMatch(name),
-            )
-            .toList();
-        element.attributes.remove('class');
-        if (languages.isNotEmpty) {
-          element.attributes['class'] = languages.first;
-        }
-      }
-      for (final attribute in ['href', 'src']) {
-        final original = element.attributes[attribute];
-        if (original == null) continue;
-        final resolved = context.resolve(original, image: attribute == 'src');
-        if (resolved == null) {
-          element.attributes.remove(attribute);
-        } else {
-          element.attributes[attribute] = resolved.toString();
-        }
-      }
-      if (tag == 'details' &&
-          !element.children.any((child) => child.localName == 'summary')) {
-        element.nodes.insert(0, Element.tag('summary')..text = detailsLabel);
-      }
-    }
-  }
-
-  clean(fragment);
-  return fragment.outerHtml;
 }
 
 ReleaseTarget? releaseTargetFromUri(Uri uri) {

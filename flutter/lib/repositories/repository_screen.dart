@@ -136,16 +136,19 @@ class _RepositoryBands extends StatelessWidget {
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: _maximumContentWidth),
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _Identity(repository: repository)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Identity(repository: repository),
             // The same full-width rule that closes a Settings band: one line
             // from edge to edge is what says the identity is over.
-            const SliverToBoxAdapter(child: GitPulseSettingsDivider(indent: 0)),
-            SliverToBoxAdapter(
+            const GitPulseSettingsDivider(indent: 0),
+            // The README is a document shown by a WebView: it keeps the gestures
+            // that land on it and scrolls itself, so the identity above it stays
+            // put instead of sharing one scroll owner with a platform view.
+            Expanded(
               child: _Readme(repository: repository, opening: opening),
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         ),
       ),
@@ -577,17 +580,22 @@ class _DocumentBand extends ConsumerWidget {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: _gutter),
-          child: ReleaseDocument(
-            source: content,
-            document: RepositoryDocumentContext(
-              owner: repository.owner.login,
-              repository: repository.name,
-              ref: branch,
-              documentPath: path,
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: _gutter),
+            child: ReleaseDocument(
+              source: content,
+              document: RepositoryDocumentContext(
+                owner: repository.owner.login,
+                repository: repository.name,
+                ref: branch,
+                documentPath: path,
+              ),
+              onTapUrl: (url) => openNativeContentLink(context, ref, url),
+              // The document scrolls itself, so the room under its last line
+              // belongs inside that scroll rather than below the platform view.
+              bottomInset: GitPulseSpace.bandGapLoose,
             ),
-            onTapUrl: (url) => openNativeContentLink(context, ref, url),
           ),
         ),
       ],

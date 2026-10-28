@@ -199,15 +199,18 @@ and is never uploaded by the release workflow.
 The existing Android cleartext allowance and Apple ATS/local-network declarations
 allow compatible self-hosted/local development backends; they do not bypass TLS
 certificate validation. Use HTTPS for real credentials. No background service,
-registered OAuth callback scheme, storage/media permission, embedded WebView or
+registered OAuth callback scheme, storage/media permission, an embedded browser or
 in-app asset downloader is required: browser handoff is polled after returning
 to the app and assets open externally.
 
 The selected native plugins are `flutter_secure_storage` 11.2.0 (Windows 4.2.2,
 Linux 3.0.3, Darwin 0.4.3), `url_launcher` 6.3.3, `path_provider` 2.1.6, and
 Drift/SQLite 2.35.2 / 3.7.1. SQLite is bundled via native assets rather than a
-separately installed database. `shiki_flutter` 1.1.0 uses its default Dart engine;
-its transitive native assets still belong in the runtime bundle. Plugin platform
+separately installed database. Repository documents are drawn by
+`flutter_inappwebview` 6.1.5 in the platform browser engine — WebView2 on Windows, so the
+WebView2 runtime must be present and the plugin ships with the portable package — running the
+renderer committed under `flutter/assets/document_viewer` (ADR 0028). Its transitive native
+assets still belong in the runtime bundle. Plugin platform
 metadata establishes configuration compatibility, not verified operation on all
 five platforms. `main.dart` initializes Marionette only in debug mode; release
 builds use the standard Flutter binding. See the authoritative [secure-storage setup](https://pub.dev/packages/flutter_secure_storage/versions/11.2.0),

@@ -15,6 +15,7 @@ import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:intl/intl.dart';
 
 import '../support/app_overrides.dart';
+import '../support/document_viewer.dart';
 import 'timeline_test_support.dart';
 
 class MountedTimeline {
@@ -46,6 +47,7 @@ Future<MountedTimeline> pumpTimelineScreen(
     ProviderScope(
       overrides: [
         ...gitPulseHarnessOverrides(),
+        ...documentViewerOverrides(),
         if (launchBrowser != null)
           browserLauncherProvider.overrideWithValue(launchBrowser),
         sessionControllerProvider.overrideWith(() {

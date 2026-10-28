@@ -12,6 +12,10 @@ import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 import 'package:gitpulse/repositories/repository_share.dart';
+import 'package:gitpulse/releases/document_web_view.dart';
+
+import '../support/document_viewer.dart';
+
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -113,6 +117,7 @@ Future<FakeSessionController> pumpRepository(
     ProviderScope(
       overrides: [
         sessionControllerProvider.overrideWith(() => session),
+        ...documentViewerOverrides(),
         if (launchBrowser != null)
           browserLauncherProvider.overrideWithValue(launchBrowser),
         if (share != null) repositorySharerProvider.overrideWithValue(share),
@@ -236,32 +241,37 @@ void main() {
               ),
         },
       );
-      Future<void> tapLink(String label) async {
-        final link = find.text(label, findRichText: true);
-        await tester.ensureVisible(link);
-        await tester.tapAt(tester.getTopLeft(link) + const Offset(10, 8));
+      // A link in the README is the page's report to the app: the address the
+      // author wrote is resolved against the revision and directory the document
+      // was read from, and the app decides where it goes.
+      Future<void> followLink(String href) async {
+        final address = mountedDocument!.bridge.resolve([
+          DocumentResourceTarget(value: href, image: false),
+        ]);
+        expect(address.single, isNotNull, reason: href);
+        unawaited(mountedDocument!.bridge.open(address.single!));
         await tester.pumpAndSettle();
       }
 
-      await tapLink('Guide');
+      await followLink('../guide.md');
       expect(
         launched.single.toString(),
         'https://github.com/canonical/project/blob/docs%2Fcurrent/guide.md',
       );
-      await tapLink('Issue');
+      await followLink('https://github.com/canonical/project/issues/1');
       expect(
         launched.last.toString(),
         'https://github.com/canonical/project/issues/1',
       );
-      await tapLink('Other project');
+      await followLink('https://github.com/other/tool');
       expect(find.text('Another project'), findsOneWidget);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
-      await tapLink('All versions');
+      await followLink('https://github.com/canonical/project/releases');
       expect(find.text('v2'), findsOneWidget);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
-      await tapLink('Release notes');
+      await followLink('https://github.com/canonical/project/releases/tag/v2');
       expect(find.text('README release notes'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
