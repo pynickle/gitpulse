@@ -424,6 +424,40 @@ void main() {
       );
     });
 
+    testWidgets('presents new results without fading when already at the top', (
+      tester,
+    ) async {
+      final timeline = await _openTimeline(tester);
+      final held = await _holdNextRound(tester, timeline.server);
+      timeline.server.pages['R_alpha'] = pageJson(
+        'octo',
+        'alpha',
+        _releases(41),
+      );
+
+      await tester.tap(find.byTooltip('Reload'));
+      await settleUi(tester, frames: 5);
+      held.complete();
+      await pumpUntil(
+        tester,
+        () => tester.widget<IconButton>(_refreshButton).onPressed != null,
+        reason: 'refresh results arrive',
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+
+      expect(find.text('v41').hitTestable(), findsOneWidget);
+      final fade = find
+          .ancestor(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(FadeTransition),
+          )
+          .first;
+      expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
+      expect(_returnToTop.hitTestable(), findsNothing);
+    });
+
     testWidgets('keeps the cards and the position when it fails completely', (
       tester,
     ) async {
@@ -575,6 +609,134 @@ void main() {
       expect(timeline.rounds, rounds);
       expect(_returnToTop.hitTestable(), findsNothing);
     });
+
+    testWidgets('skips distant history under a brief list transition', (
+      tester,
+    ) async {
+      final timeline = await _openTimeline(tester, releases: _releases(200));
+      await _scrollBy(tester, -_listHeight(tester) * 12);
+      final position = tester
+          .state<ScrollableState>(find.byType(Scrollable).last)
+          .position;
+      final start = position.pixels;
+      expect(
+        start - position.minScrollExtent,
+        greaterThan(_listHeight(tester) * 3),
+      );
+      final rounds = timeline.rounds;
+      final toolbarTop = tester.getTopLeft(find.byType(TextField));
+      final seen = <String>{};
+      void recordCards() {
+        seen.addAll(
+          tester
+              .widgetList<ReleaseTimelineCard>(find.byType(ReleaseTimelineCard))
+              .map((card) => card.item.tagName),
+        );
+      }
+
+      recordCards();
+      final previousBuildCallback = debugOnRebuildDirtyWidget;
+      addTearDown(() => debugOnRebuildDirtyWidget = previousBuildCallback);
+      debugOnRebuildDirtyWidget = (element, builtOnce) {
+        previousBuildCallback?.call(element, builtOnce);
+        final widget = element.widget;
+        if (widget is ReleaseTimelineCard) seen.add(widget.item.tagName);
+      };
+
+      await tester.tap(_returnToTop);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(
+        position.pixels,
+        start,
+        reason: 'distant returns fade instead of scrolling through history',
+      );
+      final fade = find
+          .ancestor(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(FadeTransition),
+          )
+          .first;
+      expect(
+        tester.widget<FadeTransition>(fade).opacity.value,
+        inExclusiveRange(0, 1),
+      );
+
+      for (var frame = 0; frame < 24; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(tester.getTopLeft(find.byType(TextField)), toolbarTop);
+      }
+      expect(find.text('v200').hitTestable(), findsOneWidget);
+      expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
+      expect(
+        seen.length,
+        lessThan(24),
+        reason: 'only the departure and arrival windows are built',
+      );
+      expect(timeline.rounds, rounds);
+      expect(_returnToTop.hitTestable(), findsNothing);
+    });
+
+    testWidgets('a touch interrupts a distant return before it relocates', (
+      tester,
+    ) async {
+      await _openTimeline(tester);
+      await _scrollBy(tester, -_listHeight(tester) * 6);
+      await tester.tap(_returnToTop);
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.byType(CustomScrollView)),
+      );
+      await tester.pump();
+      await gesture.cancel();
+      await tester.pumpAndSettle();
+
+      expect(find.text('v40').hitTestable(), findsNothing);
+      expect(_returnToTop.hitTestable(), findsOneWidget);
+      final fade = find
+          .ancestor(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(FadeTransition),
+          )
+          .first;
+      expect(tester.widget<FadeTransition>(fade).opacity.value, 1);
+    });
+
+    for (final reducedMotion in [false, true]) {
+      testWidgets(
+        'returns from restored deep history with reduced motion $reducedMotion',
+        (tester) async {
+          await _openTimeline(tester, disableAnimations: reducedMotion);
+          await _scrollBy(tester, -_listHeight(tester) * 6);
+          await tester.tap(find.text('Settings').last);
+          await settleUi(tester);
+          await tester.tap(find.text('Timeline').last);
+          await settleUi(tester);
+          expect(find.text('v40').hitTestable(), findsNothing);
+
+          await tester.tap(_returnToTop);
+          if (reducedMotion) {
+            await tester.pump();
+            await tester.pump();
+          } else {
+            await tester.pumpAndSettle();
+          }
+          expect(find.text('v40').hitTestable(), findsOneWidget);
+          expect(_returnToTop.hitTestable(), findsNothing);
+
+          await tester.tap(find.text('Settings').last);
+          await settleUi(tester);
+          await tester.tap(find.text('Timeline').last);
+          await settleUi(tester);
+          expect(find.text('v40').hitTestable(), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
 
     testWidgets('positions directly when motion is reduced', (tester) async {
       await _openTimeline(tester, disableAnimations: true);

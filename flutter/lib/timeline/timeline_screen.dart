@@ -21,8 +21,8 @@ import 'timeline_toolbar.dart';
 /// How long the return-to-top button takes to appear or disappear.
 const _returnToTopFade = Duration(milliseconds: 120);
 
-/// How long a return to the top of the results takes, whether it comes from the
-/// button or from a refresh that lands while the reader is further down.
+/// The nearby scroll duration and the arrival phase of a distant return, from
+/// either the button or a refresh that lands while the reader is further down.
 const _returnToTopMove = Duration(milliseconds: 240);
 
 /// How far the floating return-to-top button sits from the edges it floats
@@ -423,16 +423,21 @@ class _TimelineList extends StatefulWidget {
   State<_TimelineList> createState() => _TimelineListState();
 }
 
-class _TimelineListState extends State<_TimelineList> {
-  final _centerKey = GlobalKey();
+class _TimelineListState extends State<_TimelineList>
+    with SingleTickerProviderStateMixin {
+  var _centerKey = GlobalKey();
   final _cardKeys = <String, GlobalKey>{};
   late ScrollController _controller;
   String? _anchor;
   bool _returnToTop = false;
+  late final AnimationController _listVisibility;
+  bool _returningToTop = false;
+  int _returnRevision = 0;
 
   @override
   void initState() {
     super.initState();
+    _listVisibility = AnimationController(vsync: this, value: 1);
     final saved = widget.readingPosition.anchor;
     final exists = widget.state.visibleGroups.any(
       (group) => group.items.any((item) => item.key == saved?.releaseKey),
@@ -493,18 +498,89 @@ class _TimelineListState extends State<_TimelineList> {
   void _scrollToTop() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_controller.hasClients) return;
-      final target = _controller.position.minScrollExtent;
+      _cancelReturnTransition();
+      final position = _controller.position;
+      final distance = position.pixels - position.minScrollExtent;
       if (MediaQuery.disableAnimationsOf(context)) {
-        _controller.jumpTo(target);
-        _syncReturnToTop();
+        _resetToTop();
         return;
       }
-      if ((_controller.offset - target).abs() < 1) return;
+      if (distance.abs() < 1) return;
+      // A restored center has unmeasured rows above it: its negative extent is
+      // an estimate. Rebase it as well, so the destination is the actual first
+      // date rather than an estimate of that date's offset.
+      if (_anchor != null || distance > position.viewportDimension * 3) {
+        _returnFromDistance();
+        return;
+      }
       _controller.animateTo(
-        target,
+        position.minScrollExtent,
         duration: _returnToTopMove,
         curve: Curves.decelerate,
       );
+    });
+  }
+
+  Future<void> _returnFromDistance() async {
+    final revision = _returnRevision;
+    _returningToTop = true;
+    // Stop any ongoing fling while its departure window fades out.
+    _controller.jumpTo(_controller.offset);
+    try {
+      await _listVisibility
+          .animateTo(0, duration: _returnToTopFade, curve: Curves.easeIn)
+          .orCancel;
+      _resetToTop();
+      // Lay out just the newest window while the list is invisible. No scroll
+      // animation visits or measures the intervening history.
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || revision != _returnRevision) return;
+      await _listVisibility
+          .animateTo(1, duration: _returnToTopMove, curve: Curves.easeOutCubic)
+          .orCancel;
+    } on TickerCanceled {
+      // A touch, wheel, repeat return, or disposal gives control to the reader.
+    } finally {
+      if (mounted && revision == _returnRevision) {
+        _returningToTop = false;
+        _scheduleReadingPosition();
+      }
+    }
+  }
+
+  void _cancelReturnTransition() {
+    _returnRevision++;
+    _returningToTop = false;
+    _listVisibility.stop();
+    _listVisibility.value = 1;
+    _scheduleReadingPosition();
+  }
+
+  void _resetToTop() {
+    final previous = _controller;
+    previous.removeListener(_syncReturnToTop);
+    setState(() {
+      _anchor = null;
+      widget.readingPosition.anchor = null;
+      // A retained center would graft its old SliverList (and distant layout
+      // origin) into the new viewport, rebuilding the skipped rows in one frame.
+      _centerKey = GlobalKey();
+      _cardKeys.clear();
+      _controller = _newController();
+      _returnToTop = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      previous.dispose();
+      if (mounted) _syncReturnToTop();
+    });
+  }
+
+  void _scheduleReadingPosition() {
+    final controller = _controller;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_returningToTop && identical(controller, _controller)) {
+        _rememberReadingPosition();
+      }
     });
   }
 
@@ -538,6 +614,7 @@ class _TimelineListState extends State<_TimelineList> {
 
   @override
   void dispose() {
+    _listVisibility.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -546,6 +623,15 @@ class _TimelineListState extends State<_TimelineList> {
   void didUpdateWidget(_TimelineList oldWidget) {
     super.didUpdateWidget(oldWidget);
     final expectsTop = widget.landedRefreshes != oldWidget.landedRefreshes;
+    if (expectsTop &&
+        _controller.hasClients &&
+        (_controller.offset - _controller.position.minScrollExtent).abs() < 1) {
+      // A refresh at the top presents its new first row immediately, even when
+      // that row was inserted above the release previously being read.
+      _cancelReturnTransition();
+      _resetToTop();
+      return;
+    }
     void settle() {
       _scheduleReturnToTopSync();
       if (expectsTop) _scrollToTop();
@@ -645,54 +731,78 @@ class _TimelineListState extends State<_TimelineList> {
         NotificationListener<ScrollNotification>(
           onNotification: (notification) {
             if (notification.depth == 0) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) _rememberReadingPosition();
-              });
+              _scheduleReadingPosition();
             }
             return false;
           },
-          child: GitPulsePullToRefresh(
-            onRefresh: widget.onPullRefresh,
-            child: CustomScrollView(
-              key: ObjectKey(_controller),
-              controller: _controller,
-              center: _centerKey,
-              // A short list still answers the pull: the gesture is about
-              // asking for new releases, not about having enough to scroll.
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: releaseTimelineHorizontalPadding,
+          child: Listener(
+            onPointerDown: (_) => _cancelReturnTransition(),
+            onPointerSignal: (_) => _cancelReturnTransition(),
+            child: ClipRect(
+              child: FadeTransition(
+                opacity: _listVisibility,
+                child: AnimatedBuilder(
+                  animation: _listVisibility,
+                  builder: (context, child) => Transform.translate(
+                    offset: Offset(
+                      0,
+                      -GitPulseMotion.timelineReturnShift *
+                          (1 - _listVisibility.value),
+                    ),
+                    child: child,
                   ),
-                  sliver: SliverList.builder(
-                    itemCount: before.length,
-                    findChildIndexCallback: (key) => beforeIndices[key],
-                    itemBuilder: (context, index) => _row(before[index]),
-                  ),
-                ),
-                SliverPadding(
-                  key: _centerKey,
-                  padding: const EdgeInsets.fromLTRB(
-                    releaseTimelineHorizontalPadding,
-                    0,
-                    releaseTimelineHorizontalPadding,
-                    _listEndInset,
-                  ),
-                  sliver: SliverList.builder(
-                    itemCount: after.length + 1,
-                    findChildIndexCallback: (key) => afterIndices[key],
-                    itemBuilder: (context, index) => index < after.length
-                        ? _row(after[index])
-                        : _StatusFooter(
-                            state: widget.state,
-                            onRefresh: widget.onRefresh,
-                            onRetry: widget.onRetry,
-                            onLoadOlder: widget.onLoadOlder,
+                  child: RepaintBoundary(
+                    child: GitPulsePullToRefresh(
+                      onRefresh: widget.onPullRefresh,
+                      child: CustomScrollView(
+                        key: ObjectKey(_controller),
+                        controller: _controller,
+                        center: _centerKey,
+                        // A short list still answers the pull: the gesture is about
+                        // asking for new releases, not about having enough to scroll.
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: releaseTimelineHorizontalPadding,
+                            ),
+                            sliver: SliverList.builder(
+                              itemCount: before.length,
+                              findChildIndexCallback: (key) =>
+                                  beforeIndices[key],
+                              itemBuilder: (context, index) =>
+                                  _row(before[index]),
+                            ),
                           ),
+                          SliverPadding(
+                            key: _centerKey,
+                            padding: const EdgeInsets.fromLTRB(
+                              releaseTimelineHorizontalPadding,
+                              0,
+                              releaseTimelineHorizontalPadding,
+                              _listEndInset,
+                            ),
+                            sliver: SliverList.builder(
+                              itemCount: after.length + 1,
+                              findChildIndexCallback: (key) =>
+                                  afterIndices[key],
+                              itemBuilder: (context, index) =>
+                                  index < after.length
+                                  ? _row(after[index])
+                                  : _StatusFooter(
+                                      state: widget.state,
+                                      onRefresh: widget.onRefresh,
+                                      onRetry: widget.onRetry,
+                                      onLoadOlder: widget.onLoadOlder,
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),

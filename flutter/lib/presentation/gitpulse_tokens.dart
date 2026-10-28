@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/// Small content movements that accompany navigation, separate from layout.
+abstract final class GitPulseMotion {
+  /// The Release Timeline's distant return, hidden between its two positions.
+  /// Registered in ADR 0030; this is a paint offset, never layout spacing.
+  static const timelineReturnShift = 12.0;
+}
+
 /// The distances every GitPulse surface is laid out on, named by the job each
 /// one does rather than by its size.
 ///
