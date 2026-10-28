@@ -1,0 +1,15 @@
+diff --git a/dist/module.mjs b/dist/module.mjs
+index 03e1be6371c4bc2998773e52dee300e89ad24551..6b948bb849e1973a722eb3de79392ba890c57a4d 100644
+--- a/dist/module.mjs
++++ b/dist/module.mjs
+@@ -26,7 +26,9 @@ const PACKAGE_VERSION = metadata.version;
+ 
+ async function loadSkillFilesFromDir(dir, skip) {
+   const entries = [];
+-  for await (const relativePath of promises.glob("**/*", { cwd: dir })) {
++  for await (const globPath of promises.glob("**/*", { cwd: dir })) {
++    // node:fs glob returns platform separators; pack metadata keys use "/".
++    const relativePath = globPath.replaceAll("\\", "/");
+     const absolutePath = join(dir, relativePath);
+     if (relativePath.split("/").some((segment) => segment.startsWith(".")) || basename(relativePath).startsWith("_") || !(await promises.lstat(absolutePath)).isFile()) {
+       continue;
