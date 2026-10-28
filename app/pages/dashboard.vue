@@ -1545,6 +1545,20 @@ watch(
   overflow-x: hidden;
 }
 
+// The in-card title row is hidden on narrow, so Bulma's 1.5rem inline padding
+// no longer lines up with the 0.25rem block start left for that row.
+.dashboard-page--narrow .dashboard-list-card-content {
+  padding: 0.75rem;
+}
+
+.dashboard-page--narrow .dashboard-pagination-footer {
+  padding: 0.75rem;
+
+  @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
 .dashboard-page--narrow :deep(.dashboard-empty-state),
 .dashboard-page--narrow :deep(.dashboard-error-state__description) {
   overflow-wrap: anywhere;
