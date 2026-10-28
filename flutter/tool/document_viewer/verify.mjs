@@ -5,8 +5,8 @@
 //
 //   cd flutter/tool/document_viewer && bun run verify
 //
-// The Flutter-side bridge is mocked with the same policy Dart applies, so the
-// resolution and blocking behaviour is asserted end to end rather than assumed.
+// Shared protocol fixtures cover transport. Preview policy simulations below do
+// not prove Dart policy; the real host tests exercise that policy separately.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -22,6 +22,7 @@ const dom = new JSDOM(
 );
 
 const { window } = dom;
+window.scrollTo = window.scrollBy = () => {};
 for (const name of ['window', 'document', 'DOMParser', 'Node', 'Element', 'NodeFilter', 'getComputedStyle']) {
   globalThis[name] = window[name];
 }
@@ -32,14 +33,14 @@ for (const name of ['window', 'document', 'DOMParser', 'Node', 'Element', 'NodeF
 const BASE = 'https://github.com/owner/repo/blob/main/README.md';
 
 function resolveDocumentUrls(values) {
-  return values.map((value) => {
+  return values.map(({value, image}) => {
     if (!value) return null;
     if (value.startsWith('#')) return value;
     if (/^mailto:|^tel:|^https?:\/\//i.test(value)) return value;
     if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return null; // javascript:, data:, file:
     const resolved = new URL(value, BASE);
     const relative = resolved.pathname.replace('/owner/repo/blob/main/', '');
-    return /\.(png|jpe?g|gif|svg|webp)$/i.test(resolved.pathname)
+    return image
       ? `https://raw.githubusercontent.com/owner/repo/main/${relative}`
       : `https://github.com/owner/repo/blob/main/${relative}`;
   });
@@ -49,7 +50,7 @@ const calls = [];
 window.flutter_inappwebview = {
   callHandler(name, payload) {
     calls.push({ name, payload });
-    if (name === 'resolveDocumentUrls') return Promise.resolve(resolveDocumentUrls(payload));
+    if (name === 'resolveDocumentUrls') return Promise.resolve(resolveDocumentUrls(payload.targets));
     return Promise.resolve(true);
   },
 };
@@ -197,50 +198,182 @@ check('routes a link tap through the host bridge instead of navigating', () => {
   );
 });
 
-// A bridge that has not registered its handlers yet answers `undefined`. The
-// document must keep its addresses in that case — an empty answer would be a
-// page that can be read but has no pictures and no links.
 async function acheck(name, run) {
-  try {
-    await run();
-    checks.push(`ok   ${name}`);
-  } catch (error) {
-    checks.push(`FAIL ${name}: ${error.message}`);
-    process.exitCode = 1;
-  }
+  try { await run(); checks.push(`ok   ${name}`); }
+  catch (error) { checks.push(`FAIL ${name}: ${error.message}`); process.exitCode = 1; }
 }
+await acheck('temporarily unavailable addresses stay disabled without losing formatting', async () => {
+  window.flutter_inappwebview.callHandler = () => Promise.resolve(undefined);
+  await window.gitpulseDocument.render({source: '**Readable** [Link](guide.md) ![Author alt](chart)', base: BASE});
+  assert.equal($('strong').textContent, 'Readable');
+  assert.equal($('a').hasAttribute('href'), false);
+  assert.equal($('img').hasAttribute('src'), false);
+  assert.equal($('img').alt, 'Author alt');
+});
+await acheck('real renderer sends the shared protocol and preserves resource kinds', async () => {
+  const fixture = JSON.parse(await readFile(join(here, 'protocol.json'), 'utf8'));
+  let sent;
+  window.flutter_inappwebview.callHandler = (name, payload) => {
+    if (name !== 'resolveDocumentUrls') return Promise.resolve(true);
+    sent = JSON.parse(JSON.stringify(payload));
+    return Promise.resolve(payload.targets.map((target) => fixture.answers[fixture.targets.findIndex((item) => item.value === target.value && item.image === target.image)]));
+  };
+  await window.gitpulseDocument.render({base: fixture.base, source: '[Guide](../guide.md) ![Chart](images/chart) [Install](#install) [Absolute](https://example.com/a)'});
+  assert.deepEqual(sent, {base: fixture.base, targets: [0, 2, 3, 1].map((i) => fixture.targets[i])});
+  assert.equal($('img').getAttribute('src'), fixture.answers[1]);
+});
 
-await acheck('keeps its addresses when the host bridge answers nothing', async () => {
-  const realHandler = window.flutter_inappwebview.callHandler;
-  window.flutter_inappwebview.callHandler = (name) =>
-    name === 'resolveDocumentUrls' ? Promise.resolve(undefined) : Promise.resolve(true);
+await acheck('retries only transient candidates and keeps successful DOM and refused URLs', async () => {
+  let attempts = 0;
+  window.flutter_inappwebview.callHandler = (name, payload) => {
+    if (name !== 'resolveDocumentUrls') return Promise.resolve(true);
+    attempts++;
+    if (attempts === 1) return Promise.resolve(['https://example.com/ok', null, {transient: true}]);
+    assert.deepEqual(payload.targets, [{value: 'image', image: true}]);
+    return Promise.resolve(['https://example.com/restored.png']);
+  };
+  await window.gitpulseDocument.render({identity: 'retry', base: BASE, source: '**Body** [Success](ok) [Refused](no) ![Alt](image)'});
+  const link = $('a');
+  assert.equal(link.getAttribute('href'), 'https://example.com/ok');
+  assert.equal(all('a')[1].hasAttribute('href'), false);
+  assert.equal($('img').alt, 'Alt');
+  await new Promise((resolve) => setTimeout(resolve, 1100));
+  assert.equal(attempts, 2);
+  assert.equal($('a'), link);
+  assert.equal($('img').getAttribute('src'), 'https://example.com/restored.png');
+  assert.equal(all('a')[1].hasAttribute('href'), false);
+});
+
+await acheck('updates the mounted document presentation, content and context', async () => {
+  window.flutter_inappwebview.callHandler = (name, payload) => Promise.resolve(name === 'resolveDocumentUrls' ? payload.targets.map(() => payload.base + '/resolved') : true);
+  await window.gitpulseDocument.render({identity: 'same', source: '# Before', base: BASE});
+  await window.gitpulseDocument.render({identity: 'same', source: '# After\n\n```\ncode\n```\n[New](target)', base: 'https://new.example', language: 'zh', dark: true,
+    css: ':root{--gp-font-size:30px}', strings: {copyCode: '复制', plainText: '文本'}});
+  assert.equal($('h1').textContent, 'After');
+  assert.equal($('a').getAttribute('href'), 'https://new.example/resolved');
+  assert.equal(document.documentElement.lang, 'zh');
+  assert.equal(document.documentElement.dataset.appearance, 'dark');
+  assert.equal(document.getElementById('document-presentation').textContent, ':root{--gp-font-size:30px}');
+  assert.equal($('.code-block-copy').textContent, '复制');
+});
+
+await acheck('late address replies cannot overwrite a newer document', async () => {
+  let release;
+  window.flutter_inappwebview.callHandler = (name) => name === 'resolveDocumentUrls' ? new Promise((resolve) => { release = resolve; }) : Promise.resolve(true);
+  const old = window.gitpulseDocument.render({identity: 'old', source: '[Old](old)', base: BASE});
+  await window.gitpulseDocument.render({identity: 'new', source: '# New', base: BASE});
+  release(['https://example.com/old']);
+  await old;
+  assert.equal($('h1').textContent, 'New');
+  assert.equal($('a'), null);
+});
+
+await acheck('render failures report to Dart and subsequent valid updates render', async () => {
+  const failed = [];
+  window.flutter_inappwebview.callHandler = (name, payload) => { if (name === 'documentFailed') failed.push(payload); return Promise.resolve(true); };
+  await window.gitpulseDocument.render({source: {invalid: true}, base: BASE});
+  assert.equal(failed.length, 1);
+  await window.gitpulseDocument.render({source: '# Recovered', base: BASE});
+  assert.equal($('h1').textContent, 'Recovered');
+});
+
+// jsdom has no layout. Controlled rectangles verify anchor selection and scroll
+// correction, not platform geometry; Windows and Android still need acceptance.
+await acheck('preserves paragraphs across reflow, chooses a neighbour after removal, resets new documents', async () => {
+  let scroll = 0;
+  let height = 100;
+  const original = window.Element.prototype.getBoundingClientRect;
+  window.Element.prototype.getBoundingClientRect = function () {
+    const blocks = Array.from(root.querySelectorAll('p'));
+    const top = blocks.indexOf(this) * height - scroll;
+    return {top, bottom: top + height};
+  };
+  window.scrollTo = (_, y) => { scroll = y; };
+  window.scrollBy = (_, y) => { scroll += y; };
+  const render = (source, identity = 'reading') => window.gitpulseDocument.render({source, identity, base: BASE});
   try {
-    await window.gitpulseDocument.render({
-      source: '[Absolute](https://example.com/a) ![Shot](https://example.com/b.png) [Relative](../rel.md)',
-      base: BASE,
-      strings: { copyCode: 'Copy', copied: 'Copied', plainText: 'Text' },
-    });
-  } finally {
-    window.flutter_inappwebview.callHandler = realHandler;
-  }
-  const root = window.document.getElementById('document');
-  assert.equal(
-    root.querySelector('a[href="https://example.com/a"]')?.textContent,
-    'Absolute',
-    'an absolute link was dropped',
-  );
-  assert.equal(
-    root.querySelector('img')?.getAttribute('src'),
-    'https://example.com/b.png',
-    'an absolute image was dropped',
-  );
-  assert.equal(
-    root.querySelectorAll('a')[1]?.getAttribute('href')?.startsWith('https://github.com/owner/repo/blob/'),
-    true,
-    'a relative link lost its resolved address',
-  );
+    await render('Alpha\n\nBravo\n\nCharlie');
+    scroll = 110;
+    await render('Inserted\n\nAlpha\n\nBravo\n\nCharlie');
+    assert.equal(scroll, 210);
+    // Style reflow occurs when the new DOM is installed, after old geometry is captured.
+    const style = document.getElementById('document-presentation');
+    const textContent = Object.getOwnPropertyDescriptor(window.Node.prototype, 'textContent');
+    Object.defineProperty(style, 'textContent', {configurable: true, set(value) { height = 200; textContent.set.call(this, value); }});
+    await render('Inserted\n\nAlpha\n\nBravo\n\nCharlie');
+    assert.equal(scroll, 410);
+    await render('Inserted\n\nAlpha\n\nCharlie');
+    assert.equal(root.querySelectorAll('p')[Math.floor(scroll / height)].textContent, 'Alpha');
+    await render('Other', 'another');
+    assert.equal(scroll, 0);
+    delete style.textContent;
+  } finally { window.Element.prototype.getBoundingClientRect = original; }
+});
+await acheck('presentation updates retain successful URLs while the bridge is unavailable', async () => {
+  window.flutter_inappwebview.callHandler = (name, payload) => Promise.resolve(name === 'resolveDocumentUrls' ? payload.targets.map(() => 'https://example.com/ok') : true);
+  const payload = {source: '[Working](target)', identity: 'stable', base: BASE};
+  await window.gitpulseDocument.render(payload);
+  const link = $('a');
+  window.flutter_inappwebview.callHandler = () => Promise.reject(new Error('offline'));
+  await window.gitpulseDocument.render({...payload, dark: true});
+  assert.equal($('a'), link);
+  assert.equal(link.getAttribute('href'), 'https://example.com/ok');
+  window.flutter_inappwebview.callHandler = () => Promise.resolve(true);
+});
+
+await acheck('nested and repeated paragraphs keep the visible occurrence, including a delayed update', async () => {
+  let scroll = 0;
+  const original = window.Element.prototype.getBoundingClientRect;
+  window.Element.prototype.getBoundingClientRect = function () {
+    const leaves = Array.from(root.querySelectorAll('p'));
+    const top = leaves.indexOf(this) * 100 - scroll;
+    return this.tagName === 'BLOCKQUOTE' ? {top: -scroll, bottom: 1000-scroll} : {top, bottom: top+100};
+  };
+  window.scrollTo = (_, y) => {scroll = y;};
+  window.scrollBy = (_, y) => {scroll += y;};
+  const source = '> Repeat\n>\n> Middle\n>\n> Repeat\n>\n> Tail';
+  try {
+    await window.gitpulseDocument.render({source, identity: 'nested', base: BASE});
+    scroll = 210;
+    await window.gitpulseDocument.render({source, identity: 'nested', base: BASE, dark: true});
+    assert.equal(scroll, 210);
+    let finish;
+    window.flutter_inappwebview.callHandler = (name) => name === 'resolveDocumentUrls' ? new Promise((resolve) => { finish = resolve; }) : Promise.resolve(true);
+    const pending = window.gitpulseDocument.render({source: source + '\n\n[Link](target)', identity: 'nested', base: BASE});
+    scroll = 310;
+    finish(['https://example.com/target']);
+    await pending;
+    assert.equal(scroll, 310, 'the reader can move while the address bridge is pending');
+  } finally { window.Element.prototype.getBoundingClientRect = original; }
+});
+await acheck('rejected address calls recover automatically and image recovery preserves the reading paragraph', async () => {
+  let scroll = 0;
+  let attempts = 0;
+  const original = window.Element.prototype.getBoundingClientRect;
+  window.Element.prototype.getBoundingClientRect = function () {
+    const index = Array.from(root.querySelectorAll('p')).indexOf(this);
+    const extra = root.querySelector('img')?.hasAttribute('src') && index > 0 ? 200 : 0;
+    const top = index * 100 + extra - scroll;
+    return {top, bottom: top + 100};
+  };
+  window.scrollTo = (_, y) => {scroll = y;};
+  window.scrollBy = (_, y) => {scroll += y;};
+  window.flutter_inappwebview.callHandler = (name) => {
+    if (name !== 'resolveDocumentUrls') return Promise.resolve(true);
+    attempts++;
+    return attempts === 1 ? Promise.reject(new Error('temporary')) : Promise.resolve(['https://example.com/image.png']);
+  };
+  try {
+    await window.gitpulseDocument.render({source: '![Alt](image)\n\nReading\n\nNext', identity: 'image-recovery', base: BASE});
+    scroll = 110;
+    window.dispatchEvent(new window.Event('scroll'));
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    assert.equal($('img').getAttribute('src'), 'https://example.com/image.png');
+    assert.equal(scroll, 310);
+    $('img').dispatchEvent(new window.Event('load'));
+    assert.equal(scroll, 310);
+    assert.equal(attempts, 2);
+  } finally {window.Element.prototype.getBoundingClientRect = original;}
 });
 console.log(checks.join('\n'));
-if (process.exitCode) {
-  console.error(`\n${checks.filter((line) => line.startsWith('FAIL')).length} check(s) failed`);
-}
+window.close();

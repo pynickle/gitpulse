@@ -55,6 +55,7 @@ await writeFile(
   <body>
     <article id="document" class="markdown-body" aria-busy="true"></article>
     <script type="application/json" id="sample">${sample}</script>
+    <script src="preview-adapter.js"></script>
     <script src="../../assets/document_viewer/viewer.js"></script>
     <script>
       window.__rendered = window.gitpulseDocument.render({

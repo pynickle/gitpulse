@@ -30,7 +30,7 @@ the app's bridge, heading ids, highlighted code with a label and a copy action, 
 link tap reach the bridge, and that nothing active from the author survives sanitizing.
 
 `preview.html` is generated from `sample.md`: open it in a browser to look at the renderer the app
-ships. It stands in for the Flutter bridge with the bundle's own fallback resolver.
+ships. It injects `preview-adapter.js`, a preview-only address simulation. The production renderer never resolves addresses on its own.
 
 ## Why these three
 
@@ -40,3 +40,28 @@ The boundary between the page and the app is
 [ADR 0028](../../../docs/adr/0028-flutter-document-webview-boundary.md): the page parses, sanitizes
 and paints; the app owns the theme, the reading scale, where an address points, where a tap goes and
 the clipboard.
+
+## Host protocol and recovery
+
+`resolveDocumentUrls` sends `{base, targets: [{value, image}]}`. Dart checks the
+base against the current document context before resolving. Responses preserve
+input order: a nonempty string allows a URL, `null` refuses it permanently, and
+an invalid entry/response, rejected promise or timed-out call is transient.
+Only transient candidates retry, once per second after a completed attempt;
+links retain text and images retain author alt text while disabled.
+`protocol.json` is shared by the real renderer and Dart host tests. Preview
+resolution is a simulation, not evidence of Dart policy correctness.
+
+The host waits for engine readiness and then renders its latest payload. Updates
+carry stable document identity separately from the address context, plus source,
+language, appearance, CSS scale and labels. The engine stays mounted for updates.
+The renderer restores the visible paragraph, falls back to nearby surviving
+content, resets a different identity to the top, and corrects subsequent image
+and resize reflow. Late URL replies cannot update a newer render. A failed render
+shows selectable Markdown in Dart; a changed payload starts rendering again.
+
+Host tests replace only `documentEngineBuilderProvider` platform operations;
+upper screen tests may still use `documentViewerOverrides()`. jsdom tests use
+controlled rectangles for scroll logic: they do not prove actual platform
+geometry. Windows WebView2 and Android WebView reading continuity and recovery
+must be accepted separately on real engines.

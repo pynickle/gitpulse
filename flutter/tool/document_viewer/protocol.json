@@ -1,0 +1,16 @@
+{
+  "base": "https://github.com/octo/app/blob/v2/docs/README.md",
+  "targets": [
+    {"value":"../guide.md", "image":false},
+    {"value":"images/chart", "image":true},
+    {"value":"#install", "image":false},
+    {"value":"https://example.com/a", "image":false},
+    {"value":"mailto:reader@example.com", "image":true},
+    {"value":"file:///secret", "image":false}
+  ],
+  "answers": [
+    "https://github.com/octo/app/blob/v2/guide.md",
+    "https://raw.githubusercontent.com/octo/app/v2/docs/images/chart",
+    "#install", "https://example.com/a", null, null
+  ]
+}

@@ -78,142 +78,161 @@ final documentWebViewBuilderProvider = Provider<DocumentWebViewBuilder>(
   (ref) => buildDocumentWebView,
 );
 
-class _InAppWebViewDocument extends StatefulWidget {
-  const _InAppWebViewDocument({required this.request});
-
-  final DocumentWebViewRequest request;
-
-  @override
-  State<_InAppWebViewDocument> createState() => _InAppWebViewDocumentState();
+/// Only platform operations are replaceable. Protocol decoding and update
+/// orchestration stay in the real document host, including in host tests.
+class DocumentEngineRequest {
+  const DocumentEngineRequest({
+    required this.page,
+    required this.ready,
+    required this.message,
+    required this.navigate,
+  });
+  final DocumentViewPage page;
+  final void Function(Future<void> Function(String) evaluate) ready;
+  final Object? Function(String name, List<dynamic> args) message;
+  final void Function(String url) navigate;
 }
 
-class _InAppWebViewDocumentState extends State<_InAppWebViewDocument> {
-  InAppWebViewController? _controller;
+typedef DocumentEngineBuilder = Widget Function(
+  BuildContext context,
+  DocumentEngineRequest request,
+);
+final documentEngineBuilderProvider = Provider<DocumentEngineBuilder>(
+  (ref) => _buildEngine,
+);
+
+class _InAppWebViewDocument extends ConsumerStatefulWidget {
+  const _InAppWebViewDocument({required this.request});
+  final DocumentWebViewRequest request;
+  @override
+  ConsumerState<_InAppWebViewDocument> createState() =>
+      _InAppWebViewDocumentState();
+}
+
+class _InAppWebViewDocumentState extends ConsumerState<_InAppWebViewDocument> {
+  Future<void> Function(String)? _evaluate;
+  late final DocumentViewPage _initialPage = widget.request.page;
 
   @override
   void didUpdateWidget(_InAppWebViewDocument oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final page = widget.request.page;
-    if (page.html != oldWidget.request.page.html) {
-      // A new document, or the same one in another theme or text scale: the
-      // page owns its stylesheet, so it is replaced rather than re-rendered.
-      _controller?.loadData(
-        data: page.html,
-        mimeType: 'text/html',
-        encoding: 'utf8',
-        baseUrl: WebUri(page.baseUrl),
-      );
+    if (widget.request.page.renderScript !=
+        oldWidget.request.page.renderScript) {
+      _render();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final request = widget.request;
-    return ColoredBox(
-      color: request.background,
-      child: InAppWebView(
-        initialData: InAppWebViewInitialData(
-          data: request.page.html,
-          mimeType: 'text/html',
-          encoding: 'utf8',
-          baseUrl: WebUri(request.page.baseUrl),
-        ),
-        initialSettings: InAppWebViewSettings(
-          // The renderer is the only script this page runs; the document it
-          // builds was sanitized in this same engine before it was inserted.
-          javaScriptEnabled: true,
-          javaScriptCanOpenWindowsAutomatically: false,
-          supportMultipleWindows: false,
-          useShouldOverrideUrlLoading: true,
-          // A document reads the network for its own images and nothing else.
-          allowFileAccess: false,
-          allowContentAccess: false,
-          allowFileAccessFromFileURLs: false,
-          allowUniversalAccessFromFileURLs: false,
-          thirdPartyCookiesEnabled: false,
-          mediaPlaybackRequiresUserGesture: true,
-          // The reader's text scale is applied by the page's own stylesheet, so
-          // the platform must not apply it a second time.
-          textZoom: 100,
-          isInspectable: kDebugMode,
-          verticalScrollBarEnabled: false,
-        ),
-        onWebViewCreated: (controller) {
-          _controller = controller;
-          _bind(controller);
-        },
-        // The page is rendered here rather than by a script inside it: the
-        // bridge handlers are only registered once the view exists, and a page
-        // that asks them anything before that gets nothing back. `onLoadStop` is
-        // the first moment both are true.
-        onLoadStop: (controller, url) {
-          controller.evaluateJavascript(source: request.page.renderScript);
-        },
-        shouldOverrideUrlLoading: (controller, action) async {
-          final url = action.request.url;
-          if (url == null) return NavigationActionPolicy.CANCEL;
-          if (url.scheme == 'about' || url.scheme == 'data') {
-            return NavigationActionPolicy.ALLOW;
-          }
-          // The page never navigates: every address the reader reaches leaves
-          // through the app's own link policy. The answer is immediate — the app
-          // may push a route or open a browser, and the page must not wait on it.
-          request.bridge.open(url.toString()).ignore();
-          return NavigationActionPolicy.CANCEL;
-        },
-        onConsoleMessage: (controller, message) {
-          if (kDebugMode) debugPrint('document: ${message.message}');
-        },
-      ),
-    );
+  void _render() {
+    _evaluate?.call(widget.request.page.renderScript).catchError((
+      Object error,
+    ) {
+      if (mounted) widget.request.bridge.failed(error.toString());
+    });
   }
 
-  void _bind(InAppWebViewController controller) {
+  Object? _message(String name, List<dynamic> args) {
     final bridge = widget.request.bridge;
-    controller.addJavaScriptHandler(
-      handlerName: 'resolveDocumentUrls',
-      callback: (List<dynamic> args) {
-        final raw = args.isEmpty ? null : args.first;
-        final targets = <DocumentResourceTarget>[
-          if (raw is List)
-            for (final target in raw)
-              if (target is Map)
+    final raw = args.isEmpty ? null : args.first;
+    switch (name) {
+      case 'resolveDocumentUrls':
+        if (raw is! Map ||
+            raw['base'] != widget.request.page.baseUrl ||
+            raw['targets'] is! List) {
+          return null;
+        }
+        return [
+          for (final target in raw['targets'] as List)
+            if (target is Map &&
+                target['value'] is String &&
+                target['image'] is bool)
+              bridge.resolve([
                 DocumentResourceTarget(
-                  value: '${target['value'] ?? ''}',
-                  image: target['image'] == true,
+                  value: target['value'] as String,
+                  image: target['image'] as bool,
                 ),
+              ]).single
+            else
+              <String, bool>{'transient': true},
         ];
-        return bridge.resolve(targets);
-      },
-    );
-    controller.addJavaScriptHandler(
-      handlerName: 'openDocumentUrl',
-      callback: (List<dynamic> args) {
-        final url = args.isEmpty ? null : args.first;
-        // The handler answers the page at once; the app's own navigation — a
-        // pushed route, a release drawer, the system browser — runs after it.
-        if (url is String) bridge.open(url).ignore();
-        return null;
-      },
-    );
-    controller.addJavaScriptHandler(
-      handlerName: 'copyDocumentCode',
-      callback: (List<dynamic> args) {
-        final text = args.isEmpty ? null : args.first;
-        if (text is String) bridge.copy(text);
-        return null;
-      },
-    );
-    controller.addJavaScriptHandler(
-      handlerName: 'documentFailed',
-      callback: (List<dynamic> args) {
-        final message = args.isEmpty ? null : args.first;
-        bridge.failed(message is String ? message : '');
-        return null;
-      },
-    );
+      case 'openDocumentUrl':
+        if (raw is String) bridge.open(raw).ignore();
+      case 'copyDocumentCode':
+        if (raw is String) bridge.copy(raw);
+      case 'documentFailed':
+        bridge.failed(raw is String ? raw : '');
+    }
+    return null;
   }
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color: widget.request.background,
+    child: ref.watch(documentEngineBuilderProvider)(
+      context,
+      DocumentEngineRequest(
+        page: _initialPage,
+        ready: (evaluate) {
+          _evaluate = evaluate;
+          _render();
+        },
+        message: _message,
+        navigate: (url) => widget.request.bridge.open(url).ignore(),
+      ),
+    ),
+  );
 }
+
+Widget _buildEngine(BuildContext context, DocumentEngineRequest request) =>
+    InAppWebView(
+      initialData: InAppWebViewInitialData(
+        data: request.page.html,
+        mimeType: 'text/html',
+        encoding: 'utf8',
+        baseUrl: WebUri(request.page.baseUrl),
+      ),
+      initialSettings: InAppWebViewSettings(
+        javaScriptEnabled: true,
+        javaScriptCanOpenWindowsAutomatically: false,
+        supportMultipleWindows: false,
+        useShouldOverrideUrlLoading: true,
+        allowFileAccess: false,
+        allowContentAccess: false,
+        allowFileAccessFromFileURLs: false,
+        allowUniversalAccessFromFileURLs: false,
+        thirdPartyCookiesEnabled: false,
+        mediaPlaybackRequiresUserGesture: true,
+        textZoom: 100,
+        isInspectable: kDebugMode,
+        verticalScrollBarEnabled: false,
+      ),
+      onWebViewCreated: (controller) {
+        for (final name in [
+          'resolveDocumentUrls',
+          'openDocumentUrl',
+          'copyDocumentCode',
+          'documentFailed',
+        ]) {
+          controller.addJavaScriptHandler(
+            handlerName: name,
+            callback: (List<dynamic> args) => request.message(name, args),
+          );
+        }
+      },
+      onLoadStop: (controller, url) => request.ready((source) async {
+        await controller.evaluateJavascript(source: source);
+      }),
+      shouldOverrideUrlLoading: (controller, action) async {
+        final url = action.request.url;
+        if (url != null && (url.scheme == 'about' || url.scheme == 'data')) {
+          return NavigationActionPolicy.ALLOW;
+        }
+        if (url != null) request.navigate(url.toString());
+        return NavigationActionPolicy.CANCEL;
+      },
+      onConsoleMessage: (controller, message) {
+        if (kDebugMode) debugPrint('document: ${message.message}');
+      },
+    );
 
 /// The clipboard write a copy action performs, kept here so the bridge in
 /// `release_document.dart` states only what it means.

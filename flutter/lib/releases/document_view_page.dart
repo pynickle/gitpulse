@@ -164,9 +164,14 @@ DocumentViewPage buildDocumentViewPage({
   required String language,
   required DocumentViewerStyle style,
   required DocumentViewerStrings strings,
+  String? identity,
 }) {
   final payload = jsonEncode({
     'source': source,
+    'identity': identity ?? baseUrl,
+    'language': _languageTag(language),
+    'dark': style.dark,
+    'css': style.cssVariables,
     'base': baseUrl,
     'strings': strings.toJson(),
   }).replaceAll('</', r'<\/');

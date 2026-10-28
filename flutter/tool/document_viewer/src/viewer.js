@@ -212,57 +212,28 @@ function callBridge(name, payload) {
   const host = window.flutter_inappwebview;
   if (!host || typeof host.callHandler !== 'function') return null;
   try {
-    return host.callHandler(name, payload);
+    return Promise.resolve(host.callHandler(name, payload)).catch(() => null);
   } catch (error) {
     console.error(`bridge ${name} failed`, error);
     return null;
   }
 }
 
-function fallbackResolve(value, base) {
-  try {
-    const url = new URL(value, base || 'https://github.com/');
-    return ['http:', 'https:', 'mailto:'].includes(url.protocol) ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
-const fallbackResolveAll = (values, base) =>
-  values.map((value) => fallbackResolve(value, base));
-
 const bridge = {
-  resolve(values, base) {
-    const pending = callBridge('resolveDocumentUrls', values);
-    if (pending && typeof pending.then === 'function') {
-      // The host answers with one address per target, in order. Anything else —
-      // a handler that was not ready yet, a failed call — falls back to this
-      // page's own resolver rather than dropping the address: a document must
-      // never lose its links and images because a bridge call went wrong.
-      return pending
-        .then((answer) =>
-          Array.isArray(answer) && answer.length === values.length
-            ? answer
-            : fallbackResolveAll(values, base)
-        )
-        .catch(() => fallbackResolveAll(values, base));
-    }
-    return Promise.resolve(fallbackResolveAll(values, base));
+  async resolve(targets, base) {
+    try {
+      let timer;
+      const timeout = new Promise((resolve) => { timer = window.setTimeout(resolve, 3000); });
+      try {
+        const answer = await Promise.race([Promise.resolve(callBridge('resolveDocumentUrls', {base, targets})), timeout]);
+        return Array.isArray(answer) && answer.length === targets.length ? answer : [];
+      } finally { window.clearTimeout(timer); }
+    } catch { return []; }
   },
-  open(href) {
-    if (!callBridge('openDocumentUrl', href)) window.location.href = href;
-  },
-  copy(text) {
-    if (!callBridge('copyDocumentCode', text) && navigator.clipboard) {
-      navigator.clipboard.writeText(text).catch(() => {});
-    }
-  },
-  rendered() {
-    callBridge('documentRendered');
-  },
-  failed(message) {
-    callBridge('documentFailed', String(message));
-  },
+  open(href) { callBridge('openDocumentUrl', href); },
+  copy(text) { callBridge('copyDocumentCode', text); },
+  rendered() { callBridge('documentRendered'); },
+  failed(message) { callBridge('documentFailed', String(message)); },
 };
 
 /** Every element whose URL has to be resolved against the repository. */
@@ -288,32 +259,36 @@ function resourceTargets(root) {
   return targets;
 }
 
-async function resolveResources(root, base) {
-  const targets = resourceTargets(root);
-  if (!targets.length) return;
-  const flat = targets.flatMap((target) => (Array.isArray(target.value) ? target.value : [target.value]));
-  const answers = await bridge.resolve(flat, base);
-  let cursor = 0;
+// Strings and null are final results; undefined means retry only this candidate.
+function pendingResources(root) {
+  return resourceTargets(root).map((target) => {
+    target.candidates = (Array.isArray(target.value) ? target.value : [target.value])
+      .map((value) => ({value: target.name === 'srcset' ? value.split(/\s+/)[0] : value,
+        descriptor: target.name === 'srcset' ? value.slice(value.split(/\s+/)[0].length) : '',
+        image: target.name !== 'href', answer: undefined}));
+    target.element.removeAttribute(target.name);
+    return target;
+  });
+}
+async function resolveResources(targets, base, current) {
+  const pending = targets.flatMap((target) => target.candidates).filter((item) => item.answer === undefined);
+  if (!pending.length) return false;
+  const answers = await bridge.resolve(pending.map(({value, image}) => ({value, image})), base);
+  if (!current()) return false;
+  const position = capturePosition();
+  pending.forEach((item, index) => {
+    const answer = answers[index];
+    if (answer === null || (typeof answer === 'string' && answer.length)) item.answer = answer;
+  });
   for (const target of targets) {
-    const values = Array.isArray(target.value) ? target.value : [target.value];
-    const resolved = values
-      .map((original, index) => {
-        const answer = answers[cursor + index];
-        return answer ? [answer, original] : null;
-      })
-      .filter(Boolean);
-    cursor += values.length;
-    if (!resolved.length) {
-      target.element.removeAttribute(target.name);
-      continue;
+    const values = target.candidates.filter((item) => typeof item.answer === 'string');
+    const value = values.map((item) => item.answer + item.descriptor).join(', ');
+    if (values.length && target.element.getAttribute(target.name) !== value) {
+      target.element.setAttribute(target.name, value);
     }
-    target.element.setAttribute(
-      target.name,
-      Array.isArray(target.value)
-        ? resolved.map(([answer, original]) => original.replace(original.split(/\s+/)[0], answer)).join(', ')
-        : resolved[0][0]
-    );
   }
+  restorePosition(position);
+  return pending.some((item) => item.answer === undefined);
 }
 
 function buildCodeBlock(code, language, strings) {
@@ -323,6 +298,7 @@ function buildCodeBlock(code, language, strings) {
   header.className = 'code-block-header';
   const label = document.createElement('span');
   label.className = 'code-block-language';
+  label.dataset.language = language;
   label.textContent = language || strings.plainText;
   const copy = document.createElement('button');
   copy.type = 'button';
@@ -330,9 +306,9 @@ function buildCodeBlock(code, language, strings) {
   copy.textContent = strings.copyCode;
   copy.addEventListener('click', () => {
     bridge.copy(code.textContent);
-    copy.textContent = strings.copied;
+    copy.textContent = viewerStrings.copied;
     window.setTimeout(() => {
-      copy.textContent = strings.copyCode;
+      copy.textContent = viewerStrings.copyCode;
     }, 1500);
   });
   header.append(label, copy);
@@ -375,36 +351,108 @@ function wireLinks(root) {
 }
 
 let markdown = null;
-let container = null;
+const container = document.getElementById('document');
+let generation = 0;
+let documentId;
+let retryTimer;
+let readingPosition;
+let observer;
+let activeResources;
+let lastPayload;
+let viewerStrings = {};
+
+function readingBlocks() {
+  const blocks = Array.from(container.querySelectorAll('p, h1, h2, h3, h4, h5, h6, pre, tr, li, blockquote'));
+  return blocks.filter((block) => !blocks.some((child) => child !== block && block.contains(child)));
+}
+function capturePosition() {
+  const blocks = readingBlocks();
+  const index = blocks.findIndex((node) => node.getBoundingClientRect().bottom > 0);
+  if (index < 0) return null;
+  return { index, offset: blocks[index].getBoundingClientRect().top,
+    nearby: blocks.map((node, i) => ({text: node.textContent, tag: node.tagName, distance: i - index}))
+      .sort((a, b) => Math.abs(a.distance) - Math.abs(b.distance)) };
+}
+function restorePosition(position) {
+  if (!position) return;
+  const blocks = readingBlocks();
+  let node;
+  for (const candidate of position.nearby) {
+    const expectedIndex = position.index + candidate.distance;
+    node = blocks.map((block, index) => ({block, index}))
+      .filter(({block}) => block.tagName === candidate.tag && block.textContent === candidate.text)
+      .sort((a, b) => Math.abs(a.index - expectedIndex) - Math.abs(b.index - expectedIndex))[0]?.block;
+    if (node) break;
+  }
+  node ||= blocks[Math.min(position.index, blocks.length - 1)];
+  if (node) window.scrollBy(0, node.getBoundingClientRect().top - position.offset);
+}
+window.addEventListener('scroll', () => { readingPosition = capturePosition(); }, {passive: true});
 
 async function render(payload) {
-  const strings = payload.strings || {};
-  markdown = markdown || createMarkdown();
-  container = container || document.getElementById('document');
-  if (!container) return;
+  const version = ++generation;
+  window.clearTimeout(retryTimer);
+  observer?.disconnect();
+  const identity = payload.identity ?? payload.base;
+  const sameDocument = identity === documentId;
+  documentId = identity;
+  const current = () => version === generation;
   try {
-    const html = DOMPurify.sanitize(markdown.render(payload.source || ''), SANITIZE);
-    const parsed = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
-    await resolveResources(parsed.body, payload.base);
-    const fragment = document.createDocumentFragment();
-    for (const child of Array.from(parsed.body.childNodes)) {
-      fragment.append(document.importNode(child, true));
+    markdown ||= createMarkdown();
+    const reuse = sameDocument && lastPayload?.source === payload.source && lastPayload?.base === payload.base && activeResources;
+    let parsed;
+    let targets = activeResources;
+    if (!reuse) {
+      const html = DOMPurify.sanitize(markdown.render(payload.source || ''), SANITIZE);
+      parsed = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+      targets = pendingResources(parsed.body);
+      await resolveResources(targets, payload.base, current);
     }
-    container.replaceChildren(fragment);
-    highlightAndDecorate(container, {
-      copyCode: strings.copyCode || 'Copy',
-      copied: strings.copied || 'Copied',
-      plainText: strings.plainText || 'Text',
-    });
+    if (!current()) return;
+    const transient = targets.some((target) => target.candidates.some((item) => item.answer === undefined));
+    const position = sameDocument ? capturePosition() : null;
+    document.documentElement.lang = payload.language || 'en';
+    document.documentElement.dataset.appearance = payload.dark ? 'dark' : 'light';
+    let style = document.getElementById('document-presentation');
+    if (!style) { style = document.createElement('style'); style.id = 'document-presentation'; document.head.append(style); }
+    style.textContent = payload.css || '';
+    const strings = payload.strings || {};
+    viewerStrings = {copyCode: strings.copyCode || 'Copy', copied: strings.copied || 'Copied', plainText: strings.plainText || 'Text'};
+    if (!reuse) {
+      container.replaceChildren(...parsed.body.childNodes);
+      highlightAndDecorate(container, viewerStrings);
+    } else {
+      for (const button of container.querySelectorAll('.code-block-copy')) button.textContent = viewerStrings.copyCode;
+      for (const label of container.querySelectorAll('.code-block-language')) label.textContent = label.dataset.language || viewerStrings.plainText;
+    }
+    activeResources = targets;
+    lastPayload = payload;
+    if (sameDocument) restorePosition(position);
+    else window.scrollTo(0, 0);
+    readingPosition = capturePosition();
+    if (window.ResizeObserver) {
+      observer = new window.ResizeObserver(() => {
+        if (current()) restorePosition(readingPosition);
+      });
+      observer.observe(container);
+    }
+    for (const image of container.querySelectorAll('img')) {
+      image.onload = () => { if (current()) restorePosition(readingPosition); };
+    }
+    const retry = async () => {
+      const more = await resolveResources(targets, payload.base, current);
+      if (current() && more) retryTimer = window.setTimeout(retry, 1000);
+    };
+    if (transient) retryTimer = window.setTimeout(retry, 1000);
     container.removeAttribute('aria-busy');
     bridge.rendered();
   } catch (error) {
-    console.error('document render failed', error);
+    if (!current()) return;
+    activeResources = null;
+    lastPayload = null;
     container.removeAttribute('aria-busy');
     bridge.failed(error?.message || String(error));
   }
 }
-
 wireLinks(document);
-
 window.gitpulseDocument = { render };

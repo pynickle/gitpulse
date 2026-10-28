@@ -28,10 +28,14 @@ class ReleaseDocument extends ConsumerWidget {
     required this.document,
     required this.onTapUrl,
     this.bottomInset = 0,
+    this.documentIdentity,
   });
 
   /// The document's Markdown, exactly as the author wrote it.
   final String source;
+
+  /// Stable across content and context updates; a new identity starts at the top.
+  final String? documentIdentity;
 
   /// Where the document was read from: the repository, revision and path its
   /// relative links resolve against.
@@ -62,6 +66,9 @@ class ReleaseDocument extends ConsumerWidget {
         page: buildDocumentViewPage(
           assets: assets,
           source: source,
+          identity:
+              documentIdentity ??
+              '${document.owner}/${document.repository}/${document.documentPath}',
           baseUrl: _githubBase(document).toString(),
           language: Localizations.localeOf(context).toLanguageTag(),
           style: style,
@@ -101,6 +108,14 @@ class _DocumentSurfaceState extends State<_DocumentSurface> {
   /// Set when the page itself reports that it could not render. A document the
   /// reader can still read as text beats an empty band.
   bool _unrendered = false;
+
+  @override
+  void didUpdateWidget(_DocumentSurface oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.page.renderScript != oldWidget.page.renderScript) {
+      _unrendered = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -54,6 +54,8 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
         ? Align(alignment: Alignment.topLeft, child: Text(l10n.releaseNoNotes))
         : ReleaseDocument(
             source: release.body,
+            documentIdentity:
+                'release:${release.owner}/${release.repository}/${release.dto.id}',
             document: RepositoryDocumentContext(
               owner: release.owner,
               repository: release.repository,

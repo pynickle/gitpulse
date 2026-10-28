@@ -20,11 +20,15 @@ copyable. The comparison behind that choice is in
 
 **What the app still owns.** A document is not delegated: the theme, the reading scale, the
 address policy, navigation and the clipboard stay in Dart, and the page reaches them only through
-four named bridge calls.
+named bridge calls.
 
 - `resolveDocumentUrls` — the page never resolves a repository-relative address itself. The app
   resolves it with `RepositoryDocumentContext.resolve` and `safeContentUri`, the one implementation
   every other caller uses, and returns `null` for anything that does not survive that policy.
+  The request is `{base, targets: [{value, image}]}`; replies preserve input order.
+  A string allows, `null` refuses, and invalid replies or temporary bridge failures
+  disable only affected addresses and retry automatically. The production page
+  has no fallback URL resolver; preview resolution belongs to a separate adapter.
 - `openDocumentUrl` — a link tap is a report to the app, never a navigation the page performs.
   `shouldOverrideUrlLoading` cancels everything else, so the page cannot leave its own content.
 - `copyDocumentCode` — the real clipboard is written by the app; `navigator.clipboard` is not a
@@ -73,3 +77,22 @@ the asset list into the reading area — an explicit action with an explicit way
 - **`flutter/AGENTS.md` changes with this.** Its opening statement "rendered natively, no WebView
   anywhere" was true of every surface before this decision; documents are now the one WebView, and
   the rest of the app stays native.
+
+## Host updates and reading continuity (#140)
+
+The document host owns readiness, real message decoding and same-instance
+updates. Only platform engine operations are replaced in its tests. Stable
+document identity is separate from resolution context: source, context, theme,
+language and text scale updates reach the mounted renderer; a new identity
+starts at the top. The renderer anchors the visible paragraph with neighbouring
+content as fallback, including asynchronous image and resize reflow. Successful
+URLs stay usable during recovery, refused URLs stay disabled, and stale replies
+cannot affect a newer render. An actual render failure still shows selectable
+Markdown; a later changed payload permits rendering again.
+
+`protocol.json` is exercised by Dart's real host decoder and the built renderer.
+Renderer DOM tests preserve sanitization, highlighting and navigation/clipboard
+coverage. Controlled rectangles check scroll correction logic in jsdom, whose
+lack of layout prevents it from proving physical reading continuity. Windows and
+Android real-engine reading position, image restoration and bridge acceptance
+remain separate device checks and must be reported as executed or unexecuted.

@@ -75,6 +75,7 @@ Future<_Harness> _pump(
     ),
   );
   await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
   return harness;
 }
 
@@ -95,9 +96,6 @@ void main() {
     final lightBackground = _background(page.html);
     expect(lightBackground, isNotNull);
 
-    // Unmounted first, so the dark document is a fresh mount rather than a
-    // rebuild of the light one.
-    await tester.pumpWidget(const SizedBox.shrink());
     final dark = await _pump(tester, reuse: light, brightness: Brightness.dark);
     expect(dark.probe.last!.page.html, contains('data-appearance="dark"'));
     expect(
@@ -196,6 +194,19 @@ void main() {
       findsWidgets,
     );
   });
+
+  testWidgets(
+    'a valid update recovers from a failed render on the same surface',
+    (tester) async {
+      final harness = await _pump(tester);
+      harness.probe.bridge.failed('failed');
+      await tester.pump();
+      expect(find.byType(SelectionArea), findsOneWidget);
+      await _pump(tester, reuse: harness, source: '# Updated');
+      expect(find.byType(DocumentSourceFallback), findsNothing);
+      expect(harness.probe.last!.page.source, '# Updated');
+    },
+  );
 
   testWidgets('a missing renderer still leaves the document readable', (
     tester,
