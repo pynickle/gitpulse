@@ -121,12 +121,24 @@ and backend/account changes clear local timeline data and invalidate outstanding
 writes. Database writes and exposed membership updates commit transactionally;
 failed writes leave fresh results readable with a cache-error indication.
 
+Refresh and load-older wait for the local save attempt before clearing loading.
+A completed refresh does not guarantee that saving succeeded: a failed attempt
+keeps fresh results readable and leaves the unsaved pages available for retry.
+Cache write optimizations preserve this completion contract, the serial operation
+queue, transactional rollback, and invalidation of writes after an account change
+or cache clear.
+
 Timeline and Settings expose **Retry saving** after a local write failure. The
 facade keeps the current cycle's fetched pages until they can be committed with
 the exposed membership, so a later successful page cannot silently omit an
 earlier failed write. Retrying a known local write does not fetch releases or
 advance the shared refresh baseline. Failed cache clearing remains pending:
 subsequent reads must complete it before any saved history can be restored.
+
+The timeline session owns the current cycle's fetched-page journal, commit
+acknowledgement and retry/rebuild orchestration. The cache module owns SQL,
+transaction ordering, pruning and account isolation. Write-path optimizations
+remain behind that module's existing interface.
 
 Damaged SQLite files and malformed cached content show a separate **Rebuild
 cache** action. Rebuilding closes the old database, removes only the timeline
@@ -182,3 +194,39 @@ request, and a window changed after the session ended leaves saved history alone
 same awaitable choose-and-apply command Settings uses, with delayed and failed
 SQLite stages, independent preference failures, queued choices, session changes,
 unchanged-window query observations, and a close/offline-reopen check.
+
+## Accepted write-path optimization plan
+
+Implementation is pending and tracked in [issue #142](https://github.com/pynickle/gitpulse/issues/142).
+Keep the completion contract and module ownership described above; optimize
+behind the existing cache interface.
+
+- Add a `cache_releases(published_at)` index for expiry and a
+  `cache_segments(repository_id, cycle, request_cursor)` index for cycle lookups
+  and repeated-page cleanup. Do not add a redundant repository/cycle index.
+  Schema creation and version handling must install the indexes; preserving old
+  cache formats is not an acceptance requirement for this work.
+- Insert each segment with an operation that returns its generated ID, removing
+  the separate `last_insert_rowid()` query. Batch that page's release mutations,
+  membership writes and repeated-page cleanup in their existing order. Later
+  pages can change the content or retention eligibility of the same release, so
+  do not globally reorder deletions and upserts.
+- Replace per-release visible-membership inserts with bounded, chunked `VALUES`
+  input joined to `cache_releases`. Preserve the join: online results can include
+  releases that are not eligible for durable retention. Replacing the visible
+  membership, including all chunks, stays inside the existing save transaction.
+- Preserve authoritative-exhaustion filtering, the inclusive retention cutoff,
+  final pruning and graph compaction, and both pre-write and pre-commit validity
+  checks. Empty pagination continuations remain part of retained page graphs.
+
+Validate through the existing cache and timeline interfaces using actual SQLite
+databases: rollback after a failed write, invalidation during a write, local retry
+of unsaved pages, account isolation and close/offline-reopen behavior must survive.
+Compare complete `save()` and `prune()` operations against the original
+implementation using equivalent on-disk fixtures and the production background
+connection, across different data sizes and expiry proportions. Report latency
+distributions as well as SQL executions and query plans. A row batch reduces
+preparation and asynchronous round trips, not the number of SQLite row statements;
+further set-based content/member writes are selected by the same full-path
+benchmark. No fixed speedup is assumed, and desktop results do not establish
+Android device performance.
