@@ -46,10 +46,36 @@ List, one-step return).
 - Opening height, snap sizes and drag thresholds remain ADR 0010's. Reading space was bought from the
   chrome, not from the sheet.
 
-## Earlier downward dismissal
+## Earlier downward dismissal — superseded by the section below
 
 The Flutter Release Drawer's minimum height is now 50% of the window, superseding the 40% minimum
 above. A downward drag closes the drawer when its top reaches the middle of the screen, reducing
 travel from the 70% opening height by one third. The opening height, full-screen maximum and 0.7 snap
 remain unchanged. Header drags and repository-list drags use the same minimum, and dismissal still
 prevents a subsequent snap animation. This tuning is specific to the Flutter Release Drawer.
+
+## A short pull closes the drawer
+
+Half the screen was still a long way to pull to put a sheet away, so the drawer now closes once its top
+edge has fallen 96dp below the opening line — on a 1000dp window that is 60.4% of the height, against
+the 50% the section above recorded and the 40% before it. 96dp is a distance, not a share of the window,
+so the same finger travel closes the drawer on a short phone and on a tall one. The closing line is one
+number wherever the gesture starts, because it _is_ the sheet's minimum size: the header drag, the
+Repository Release List's own scroll and the notification that closes the drawer all arrive at the same
+height.
+
+A header pull reaches that line after 96dp of sheet — a little more of finger, since a drag gives up its
+first 20dp to the gesture's own slop — and a slow pull that stops short of it rebounds to the opening
+height, so a touch that drifts while reading the chrome does not close the notes. A quick downward flick
+of the header — about 700dp a second — closes the drawer without that pull, once the flick has carried
+the sheet back to its opening height: throwing a full-screen read downward settles it at 70% rather than
+closing the notes a reader had enlarged, and one more flick puts the drawer away.
+
+A list scrolled past its own top shrinks the sheet through `DraggableScrollableSheet`'s snapping, which
+settles on the nearest of the closing line and the opening height; the halfway point between them is
+about 70dp of finger, so that route is if anything quicker than the header's. It is the framework's own
+path, and the reason the minimum had to become the closing line at all. The opening height, the 0.7 snap
+and the full-screen maximum are unchanged, and a window too short for the pull keeps the old 40% floor.
+
+A future reader should not reintroduce a share of the window as the dismissal threshold, and should not
+make the flick close from full screen: both are how the drawer came to need a drag the reader noticed.

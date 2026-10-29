@@ -208,22 +208,47 @@ void main() {
     expect(find.text('Entry notes'), findsOneWidget);
   });
 
-  testWidgets(
-    'a header drag dismisses at half-screen without closing too early',
-    (tester) async {
-      await openReleaseDrawer(tester, size: const Size(390, 1000));
-      final drawer = find.byKey(const Key('release-drawer'));
-      await tester.drag(find.text('Entry notes'), const Offset(0, 120));
-      await tester.pumpAndSettle();
-      expect(tester.getRect(drawer).top, closeTo(300, .01));
+  testWidgets('a short pull down the header closes the drawer', (tester) async {
+    await openReleaseDrawer(tester, size: const Size(390, 1000));
+    final drawer = find.byKey(const Key('release-drawer'));
+    // The gesture keeps its own 20dp of slop, so 60dp of finger is 40dp of
+    // sheet: short of the 96dp closing line, and the drawer settles back where
+    // it opened instead of closing at a touch that drifts.
+    await tester.drag(find.text('Entry notes'), const Offset(0, 60));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, closeTo(300, .01));
 
-      // This crosses the halfway line but never reaches the old 60% boundary.
-      await tester.drag(find.text('Entry notes'), const Offset(0, 230));
-      await tester.pumpAndSettle();
-      expect(drawer, findsNothing);
-      expect(find.byType(ReleaseTimelineCard), findsOneWidget);
-    },
-  );
+    // 130dp of finger is 110dp of sheet, which passes that line — a little over
+    // half of the 200dp of sheet this drawer used to need before it closed.
+    await tester.drag(find.text('Entry notes'), const Offset(0, 130));
+    await tester.pumpAndSettle();
+    expect(drawer, findsNothing);
+    expect(find.byType(ReleaseTimelineCard), findsOneWidget);
+  });
+
+  testWidgets('a quick flick down closes the drawer without a long pull', (
+    tester,
+  ) async {
+    await openReleaseDrawer(tester, size: const Size(390, 1000));
+    final drawer = find.byKey(const Key('release-drawer'));
+    // 60dp of finger is 40dp of sheet — nowhere near the 96dp closing line —
+    // and the drawer closes all the same because the header was thrown down at
+    // 1250dp a second rather than dragged.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('release-sheet-handle'))),
+    );
+    for (var step = 1; step <= 3; step++) {
+      await gesture.moveBy(
+        const Offset(0, 20),
+        timeStamp: Duration(milliseconds: 16 * step),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await gesture.up(timeStamp: const Duration(milliseconds: 52));
+    await tester.pumpAndSettle();
+    expect(drawer, findsNothing);
+    expect(find.byType(ReleaseTimelineCard), findsOneWidget);
+  });
 
   testWidgets('drag dismissal never rebounds upward before closing', (
     tester,
@@ -248,6 +273,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(drawer, findsNothing);
     expect(find.byType(ReleaseTimelineCard), findsOneWidget);
+  });
+
+  testWidgets('a list scrolled past its top closes the drawer through its own '
+      'snap', (tester) async {
+    await pumpTimelineScreen(
+      tester,
+      size: const Size(390, 1000),
+      handlers: {
+        ...browsingHandlers(),
+        'GET api/releases/canonical/project?page=1&per_page=20': () =>
+            BackendResult(
+              statusCode: 200,
+              data: releaseListJson([
+                listReleaseJson(42, 'v2/rc', prerelease: true),
+                for (var id = 50; id < 60; id++)
+                  listReleaseJson(id, 'release-$id'),
+              ]),
+            ),
+      },
+    );
+    await tester.tap(find.byType(ReleaseTimelineCard).hitTestable().first);
+    await tester.pumpAndSettle();
+    await openRepositoryReleases(tester);
+    final drawer = find.byKey(const Key('release-drawer'));
+
+    // The rows own this gesture, so the sheet reaches the closing line by
+    // snapping to it rather than by a header pull: 60dp of finger is not yet
+    // halfway, and the drawer settles back.
+    await tester.drag(find.text('release-50'), const Offset(0, 60));
+    await tester.pumpAndSettle();
+    expect(drawer, findsOneWidget);
+    expect(tester.getRect(drawer).top, closeTo(300, .01));
+
+    await tester.drag(find.text('release-50'), const Offset(0, 80));
+    await tester.pumpAndSettle();
+    expect(drawer, findsNothing);
   });
 
   testWidgets(

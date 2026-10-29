@@ -11,6 +11,7 @@ import '../session/session_controller.dart';
 import 'document_content.dart';
 import 'release_detail_service.dart';
 import 'release_details_view.dart';
+import 'release_drawer_geometry.dart';
 import 'repository_releases_controller.dart';
 import 'repository_releases_view.dart';
 
@@ -40,9 +41,6 @@ Widget _chromeAction({
 /// sheet can be dragged, so its size answers to the finger rather than to the
 /// ink hierarchy.
 const _sheetGrabThickness = 4.0;
-
-/// Half the window remains visible when a downward drag dismisses the drawer.
-const _sheetMinExtent = .5;
 
 class ReleaseDrawer extends ConsumerStatefulWidget {
   const ReleaseDrawer({super.key, required this.entry});
@@ -80,6 +78,21 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       curve: Curves.easeOut,
     );
   }
+
+  /// Closes the drawer, whichever gesture or scroll asked for it, once.
+  void _close() {
+    if (_closing) return;
+    _closing = true;
+    Navigator.of(context).pop();
+  }
+
+  /// The grab handle is a toggle rather than a drag: below the full height it
+  /// opens the drawer, and above it settles back to the height it opens at.
+  void _toggleSheet() => _snapSheet(
+    _sheetController.size < releaseDrawerFullSnapExtent
+        ? 1
+        : releaseDrawerOpeningExtent,
+  );
 
   /// The reading body: the drawer's own chrome around the notes' own scroller.
   ///
@@ -184,6 +197,12 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     final listState = listStates[_listScope];
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    // The sheet's gestures convert pixels into a share of the window they stand
+    // in — the sheet fills the window it stands in, so one number serves as both
+    // the room the drag divides by and the height the closing line is a
+    // distance in.
+    final windowHeight = MediaQuery.sizeOf(context).height;
+    final dismissExtent = releaseDrawerDismissExtent(windowHeight);
 
     // The Entry Release is identified by the release it resolved to, not by the
     // address it was opened with: a link that names the tag and a list row that
@@ -208,10 +227,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       }),
     );
 
-    Widget panel({
-      required ScrollController controller,
-      required double availableHeight,
-    }) {
+    Widget panel({required ScrollController controller}) {
       // The chrome line names what is being read and targets that repository.
       // Another repository's release replaces it while it is open, and the
       // Repository Release List names the repository it lists.
@@ -231,15 +247,29 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
         behavior: HitTestBehavior.opaque,
         onVerticalDragUpdate: (details) {
           if (!_closing && _sheetController.isAttached) {
+            // The closing line is the sheet's own floor, so a pull that reaches
+            // it closes the drawer through the same report every other drag
+            // makes — the pull is a short distance, not a share of the screen.
             _sheetController.jumpTo(
-              (_sheetController.size - details.delta.dy / availableHeight)
-                  .clamp(_sheetMinExtent, 1),
+              (_sheetController.size - details.delta.dy / windowHeight).clamp(
+                dismissExtent,
+                1,
+              ),
             );
           }
         },
-        onVerticalDragEnd: (_) {
-          if (_sheetController.isAttached) {
-            _snapSheet(_sheetController.size > .85 ? 1 : .7);
+        onVerticalDragEnd: (details) {
+          if (!_sheetController.isAttached) return;
+          switch (resolveReleaseDrawerRelease(
+            extent: _sheetController.size,
+            velocity: details.velocity.pixelsPerSecond.dy,
+          )) {
+            case ReleaseDrawerRelease.dismiss:
+              _close();
+            case ReleaseDrawerRelease.full:
+              _snapSheet(1);
+            case ReleaseDrawerRelease.opening:
+              _snapSheet(releaseDrawerOpeningExtent);
           }
         },
         child: child,
@@ -260,8 +290,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                     child: GestureDetector(
                       key: const Key('release-sheet-handle'),
                       behavior: HitTestBehavior.opaque,
-                      onTap: () =>
-                          _snapSheet(_sheetController.size < .85 ? 1 : .7),
+                      onTap: _toggleSheet,
                       child: SizedBox(
                         height: 28,
                         width: double.infinity,
@@ -378,7 +407,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                           label: l10n.releaseClose,
                           icon: Icons.close,
                           autofocus: true,
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: _close,
                         ),
                       ],
                     ),
@@ -470,31 +499,25 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       );
     }
 
-    // The sheet's drag converts pixels to a share of the window it stands in,
-    // so both numbers are read once here rather than from the sheet's own box.
-    final windowHeight = MediaQuery.sizeOf(context).height;
     return KeyedSubtree(
       key: const Key('release-drawer'),
       child: NotificationListener<DraggableScrollableNotification>(
         onNotification: (notification) {
           if (notification.extent <= notification.minExtent &&
-              notification.shouldCloseOnMinExtent &&
-              !_closing) {
-            _closing = true;
-            Navigator.of(context).pop();
+              notification.shouldCloseOnMinExtent) {
+            _close();
           }
           return false;
         },
         child: DraggableScrollableSheet(
           controller: _sheetController,
-          initialChildSize: .7,
-          minChildSize: _sheetMinExtent,
+          initialChildSize: releaseDrawerOpeningExtent,
+          minChildSize: dismissExtent,
           maxChildSize: 1,
           expand: false,
           snap: true,
-          snapSizes: const [.7],
-          builder: (context, controller) =>
-              panel(controller: controller, availableHeight: windowHeight),
+          snapSizes: const [releaseDrawerOpeningExtent],
+          builder: (context, controller) => panel(controller: controller),
         ),
       ),
     );
