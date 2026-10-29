@@ -35,6 +35,15 @@ abstract final class GitPulseSpace {
   /// A row's top and bottom inset, in a table and in Settings.
   static const rowInsetV = 12.0;
 
+  /// The inset that holds the bottom bar's active step inside the compartment it
+  /// marks.
+  ///
+  /// Enough that the step reads as a block standing on the bar rather than as one
+  /// third of it, and small enough that it still names exactly that third. It is
+  /// one distance on all four sides, so the block is the same shape whichever
+  /// destination it is standing over (ADR 0034).
+  static const destinationStepInset = 6.0;
+
   /// A card's or a banner's inner padding, on all four sides.
   static const surfaceInset = 14.0;
 

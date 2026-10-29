@@ -4,11 +4,17 @@ import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 
+import '../support/navigation_step.dart';
+
 /// The app's bottom bar is its own face (ADR 0032). These tests assert what a
 /// reader gets: one destination per label, a selected state that reads in both
 /// presentations, the app's one ink contract, and the label-and-selected
 /// semantics a screen reader already received from Material's bar.
 void main() {
+  /// The ink one destination's label is set in.
+  Color labelInk(WidgetTester tester, String label) =>
+      tester.widget<Text>(find.text(label)).style!.color!;
+
   const destinations = [
     GitPulseNavigationDestination(
       icon: Icons.view_timeline_outlined,
@@ -24,14 +30,25 @@ void main() {
     ),
   ];
 
+  /// Where a compartment's step stands once the bar is at rest.
+  double stepLeftOf(int index, double barWidth) =>
+      navigationStepLeft(index, barWidth, count: destinations.length);
+
   Future<void> pumpBar(
     WidgetTester tester, {
     required int selected,
     ValueChanged<int>? onSelected,
     Brightness brightness = Brightness.light,
+    bool reduceMotion = false,
   }) => tester.pumpWidget(
     MaterialApp(
       theme: gitPulseTheme(brightness),
+      builder: (context, child) => reduceMotion
+          ? MediaQuery(
+              data: MediaQuery.of(context).copyWith(disableAnimations: true),
+              child: child!,
+            )
+          : child!,
       home: Scaffold(
         bottomNavigationBar: GitPulseNavigationBar(
           destinations: destinations,
@@ -41,14 +58,6 @@ void main() {
       ),
     ),
   );
-
-  /// The surface one destination is painted on.
-  Material surfaceOf(WidgetTester tester, String label) =>
-      tester.widget<Material>(
-        find
-            .ancestor(of: find.text(label), matching: find.byType(Material))
-            .first,
-      );
 
   InkWell inkOf(WidgetTester tester, String label) => tester.widget<InkWell>(
     find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first,
@@ -69,17 +78,17 @@ void main() {
       expect(find.byType(NavigationDestination), findsNothing);
 
       final context = tester.element(find.byType(GitPulseNavigationBar));
-      // The selected destination is the only one filled with the active step,
-      // and its mark is the Accent; the others are read as quiet chrome.
-      expect(surfaceOf(tester, 'Settings').color, toneSurfaceActive(context));
+      // The active step stands over the selected destination — the only one
+      // filled — and that destination's mark is the Accent; the others are read
+      // as quiet chrome.
+      final step = navigationStepRect(tester);
+      final mark = tester.getRect(find.byIcon(Icons.settings_outlined));
+      expect(step.left, lessThan(mark.center.dx));
+      expect(step.right, greaterThan(mark.center.dx));
       expect(
         IconTheme.of(tester.element(find.byIcon(Icons.settings_outlined)))
             .color,
         toneAccent(context),
-      );
-      expect(
-        surfaceOf(tester, 'Timeline').color,
-        isNot(toneSurfaceActive(context)),
       );
       expect(
         IconTheme.of(tester.element(find.byIcon(Icons.view_timeline_outlined)))
@@ -98,6 +107,77 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(chosen, [1, 2]);
+  });
+
+  testWidgets('the active step travels to the destination a reader chose', (
+    tester,
+  ) async {
+    await pumpBar(tester, selected: 0);
+
+    final barWidth = tester.getSize(find.byType(GitPulseNavigationBar)).width;
+    final atRest = navigationStepRect(tester);
+    expect(atRest.left, moreOrLessEquals(stepLeftOf(0, barWidth)));
+    expect(
+      atRest.width,
+      moreOrLessEquals(
+        barWidth / 3 - GitPulseSpace.destinationStepInset * 2,
+        epsilon: 0.5,
+      ),
+    );
+
+    // The step leaves the destination that was marked before it arrives at the
+    // one chosen, in one movement rather than by reappearing.
+    await pumpBar(tester, selected: 2);
+    expect(navigationStepRect(tester).left, moreOrLessEquals(atRest.left));
+    await tester.pump(const Duration(milliseconds: 110));
+    final travelling = navigationStepRect(tester).left;
+    expect(travelling, greaterThan(atRest.left));
+    expect(travelling, lessThan(stepLeftOf(2, barWidth)));
+
+    await tester.pumpAndSettle();
+    expect(
+      navigationStepRect(tester).left,
+      moreOrLessEquals(stepLeftOf(2, barWidth)),
+    );
+  });
+
+  testWidgets('a destination’s word and mark cross to the Accent as it '
+      'arrives', (tester) async {
+    await pumpBar(tester, selected: 0);
+    final context = tester.element(find.byType(GitPulseNavigationBar));
+    expect(labelInk(tester, 'Follows'), toneTextMuted(context));
+
+    await pumpBar(tester, selected: 1);
+    await tester.pump(const Duration(milliseconds: 110));
+
+    final crossing = labelInk(tester, 'Follows');
+    expect(crossing, isNot(toneTextMuted(context)));
+    expect(crossing, isNot(toneAccent(context)));
+    expect(
+      IconTheme.of(tester.element(find.byIcon(Icons.bookmarks_outlined))).color,
+      crossing,
+      reason: 'the mark crosses with the word it belongs to',
+    );
+
+    await tester.pumpAndSettle();
+    expect(labelInk(tester, 'Follows'), toneAccent(context));
+    expect(labelInk(tester, 'Timeline'), toneTextMuted(context));
+  });
+
+  testWidgets('reduced motion puts the step in place without travelling', (
+    tester,
+  ) async {
+    await pumpBar(tester, selected: 0, reduceMotion: true);
+    await pumpBar(tester, selected: 2, reduceMotion: true);
+    await tester.pump();
+
+    final barWidth = tester.getSize(find.byType(GitPulseNavigationBar)).width;
+    expect(
+      navigationStepRect(tester).left,
+      moreOrLessEquals(stepLeftOf(2, barWidth)),
+    );
+    final context = tester.element(find.byType(GitPulseNavigationBar));
+    expect(labelInk(tester, 'Settings'), toneAccent(context));
   });
 
   testWidgets('the bar keeps the app’s own row and rule geometry', (

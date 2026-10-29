@@ -50,7 +50,9 @@ table. Concretely:
   are `toneTextMuted`. That is the same pairing ADR 0031 states for a selected row and a chosen
   chip, so "where I am" needs no second colour and reads on both presentations. A screen reader
   hears what Material's bar told it — the label, that it is a button, and whether it is selected —
-  from a `Semantics` node the bar now writes itself.
+  from a `Semantics` node the bar now writes itself. The step itself is one block the bar draws and
+  moves between compartments rather than a fill a destination paints for itself; ADR 0034 owns that
+  block, its inset and the switch it animates.
 - **A button's label** is the type table's `labelMedium` row through `gitPulseTypeControlLabel`.
   Emphasis comes from the tone a variant reads on, never from a larger size: filled reads
   `toneOnAccent` on `toneAccent`, tonal reads the Accent on `toneAccentSoft`, outlined reads
@@ -137,10 +139,12 @@ tonal surface keeps an answer to a press.**
   did nothing at all under the finger reads as broken rather than as calm.
 - **A control paints its own fill.** Ink is drawn below a `Material`'s child, so a control with a
   visible fill paints that fill through its own `Material` rather than through a container above the
-  ink — the same failure ADR 0019 found in the Release Timeline card. The bar's selected
-  destination and the filled button are built that way; the toggles paint their track, box and thumb
-  through `Ink` on the ink layer for the same reason, so the app's one tint reads over a switch's
-  track exactly as it reads over a card.
+  ink — the same failure ADR 0019 found in the Release Timeline card. The filled button is built
+  that way; the toggles paint their track, box and thumb through `Ink` on the ink layer for the same
+  reason, so the app's one tint reads over a switch's track exactly as it reads over a card. The
+  bar's selected destination is the one place the fill is not the destination's: the active step is
+  the bar's own drawing, placed below the destinations' ink layers, so a press, a hover and the
+  keyboard's focus still read over it exactly as they read over the bar (ADR 0034).
 - **No surface sets its own overlay colour**, and nothing reintroduces a pressed tint. The
   sanctioned remedy if a press ever reads as dead is still the one ADR 0023 named: a pressed surface
   moves its hairline toward the Accent, and that needs its own record.

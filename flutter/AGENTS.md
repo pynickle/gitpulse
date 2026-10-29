@@ -129,6 +129,15 @@ one too (`../docs/adr/`).
   as long as a reader typed and move the page by the gesture inset on every tap into a search field.
   A surface that only needs the device's inset for its own bottom edge reads `viewPaddingOf`, the way
   the Timeline's Filter Panel does.
+- **The bar belongs to the shell, not to a destination** (ADR 0034). `/timeline`, `/follows` and
+  `/settings` are children of one `ShellRoute` in `lib/app.dart`, and the shell builds the `Scaffold`
+  the bar stands on; a switch travels the bar's active step (`gitPulseDestinationTransition`,
+  `GitPulseSpace.destinationStepInset`) while the arriving page crosses over the one it replaces,
+  over the same duration and curve (`gitPulseDestinationTurn(context)` is the only reader of them).
+  A destination page owns no chrome: a bar built by a page has no previous position to animate from,
+  so do not move the bar back inside a destination or give those three paths sibling pages again.
+  Each destination still decides only its own content (`_DestinationContent`: Settings always, the
+  signed-in page or the account gate elsewhere).
 - **Documents** — a release's notes and a repository README — render only through
   `tool/document_viewer` (ADR 0028). Fix a rendering gap there; a second Markdown-to-widget path is
   never the answer.
@@ -189,7 +198,8 @@ one too (`../docs/adr/`).
 - A provider the mount awaits for device, preference or cache I/O is overridden by
   `gitPulseHarnessOverrides` (`test/support/app_overrides.dart`); a new provider of that kind is added
   there. The test body advances that I/O with `tester.runAsync`, or with `settleUi` / `pumpUntil`
-  (`test/support/settling.dart`) — never `pumpAndSettle`.
+  (`test/support/settling.dart`) — never `pumpAndSettle` to advance awaited I/O (settling a mounted
+  tree that owes nothing to real I/O is fine, as `test/app_shell_test.dart` does).
 - When the suite fails but one file passes, suspect the shared startup path:
   `test/shell_startup_guard_test.dart` mounts the real shell with no device-store override, and must
   settle without writing the support directory.
