@@ -62,6 +62,20 @@ table. Concretely:
   mark), inside a control (`dimension: GitPulseHeight.compact` for a field's clear mark, so the mark
   never grows the field it sits in), and floating over content (`floating: true`, a shell-toned disc
   inside one hairline — the app raises a surface with a boundary, never with a shadow).
+- **A control owns its mark's tone, and one status may overrule it.** The rule is the control's,
+  not the caller's: an `icon` handed to a button takes the variant's ink, so a button reads as one
+  control in whichever standing it is drawn. A caller may name a tone in exactly one situation, and
+  `GitPulseButton.statusMarkTone` exists for no other: when the mark **is** the status the action
+  reports rather than a picture of what it does, and no line of text carries that status — a Follow
+  set the app could not read or save, reported by the manage action's mark; a clear that landed,
+  reported by the check that stands in its bin's place. That argument takes a status tone
+  (`toneDanger`, `toneSuccess`) and never the Accent, which means the app is acting; a disabled
+  action quiets its mark with the rest of itself. Every ordinary action — a retry, a filter, a
+  share, a follow, a close — passes nothing. An icon action has the same rule in its own shape: its
+  mark is quiet on the page and floats in `toneText` on its own surface, and the two states it can
+  _be_ are `emphasized` (this is already applied) and `selected` (this is a mode the reader turned
+  on, which the control announces to a screen reader as selected rather than leaving a surface to
+  paint one half of the statement and forget the other).
 - **The switch** is a `gitPulseSwitchTrack` (52 × 32) pill inside a `GitPulseHeight.standard` target.
   Off is the palette's active step (`toneSurfaceActive`) framed by one `toneBorderStrong` hairline,
   under a `toneTextSubtle` thumb; on is the Accent with the thumb in `toneOnAccent`. The thumb crosses
@@ -103,6 +117,17 @@ tonal surface keeps an answer to a press.**
 - `gitPulseInkOverlay` resolves `pressed` to nothing, `hovered` and `focused` to
   `gitPulseHoverTint`, and every other state to null. Every control that has no fill of its own —
   outlined, text, icon, a destination in the bar, both toggles — paints through it.
+- **The one tint is the active step at `gitPulseHoverTintAlpha` (one half), and it is not the shared
+  `surface-hover` tone.** These two answer different questions, and the record settles which one
+  this client paints: `surface-hover` is a _static background_ the web app puts under a row the
+  pointer is on, while this tint is an _overlay_ the client lays over whatever fill a surface
+  already has — a white card, a tinted chip, the bar's own surface. Painting the shared background
+  under an ink layer would either hide the surface's own fill or double the tone on a surface that
+  already carries it. So the client's wash is `surface-active` at a named alpha, `surface-hover` is
+  a background this client does not paint, and both stay rows of the shared data because both
+  clients may present them. The strength is stated once in `gitpulse_theme.dart` rather than inside
+  the expression, because it is a decision and not arithmetic; changing the tint's appearance is a
+  change to that constant and to this paragraph, never a quiet edit to a formula.
 - `gitPulseFilledInkOverlay` is the same rule for a control that already paints the Accent: its own
   foreground laid on at `gitPulseFilledPressAlpha` (one tenth, the strength Material's filled
   overlay used) while pressed, and the one tint while hovered or focused. A coloured surface that
@@ -222,6 +247,34 @@ than a fill of its own says `GitPulsePaint.none`, and a size that a widget needs
 of the type table. Nothing states a `fontSize` at a call site: the eight chrome roles and the
 reading scale are the table's, and a ninth size is a row.
 
+**Two tones are data for both clients, not strengths this client mixes.** `page-bg` is the canvas a
+page stands on — the tone the web app paints its own body with — and `shell-bg` is a step _within_ a
+surface: the well a field, an avatar disc or a floating action is cut into. `scaffoldBackgroundColor`
+is the page tone, so a Repository page and the web page about the same repository stand on the same
+slate, and a card, a bar or a sheet is told apart from it by the palette's step and its own hairline.
+`danger-soft` is the wash a failure is reported on, and both the failure banner and the scheme's
+`errorContainer` read it: the web app paints the same value behind its own failure banners, and a
+client that derived its own proportion would sit on a different hue in the light presentation and at
+a different strength in the dark one. Every other wash the client paints is a named constant with a
+stated job — `gitPulseHoverTintAlpha`, `gitPulseFilledPressAlpha`, `gitPulseDialogBarrierAlpha` — and
+no surface alpha-blends a tone on its own.
+
+**A tone nobody paints is still data.** Four tones in the shared palette have no reader in the
+client, because the client draws no surface of that job: `surface-raised` (a step the client's cards
+do not take), `surface-hover` (a static row background, above), `success-solid` and `danger-solid`
+(the fills a status chip or a solid badge paints — the client's receipts are a mark and a line).
+They stay rows of the shared data rather than being deleted, because the web app presents the same
+vocabulary and a second client may present them; what is deleted is a **reader** with no reader. The
+theme test states the set: it fails if a tone has no reader that should have one, and it fails if one
+of these four grows a reader without a surface that paints it.
+
+**One recorded literal exemption.** `gitpulse_language_colors.dart` maps a repository's language to
+a colour with raw literals, duplicating the web app's language colours. It is pre-existing and is not
+migrated here: the two lists are presentation data in neither client's palette, they disagree today,
+and reconciling them is a data decision of its own rather than a value this record may declare. It is
+the one file outside the tone modules that names a colour, and it stays named as the exemption until
+a change reconciles the two lists into the shared data.
+
 ## The release gate
 
 No screen may present the old controls and the new ones side by side at release. The transition is
@@ -233,11 +286,16 @@ together with three of the replaced faces while every remaining exception lives 
 Enforcement is executable rather than documentary. Each migrated screen's widget test asserts that
 the replaced Material faces are absent from its rendered tree (`find.byType(FilledButton)` and its
 siblings → `findsNothing` inside that screen), and `test/presentation/app_faces_test.dart` is the
-client's own settlement: it mounts the real app and visits the three destinations and the Connection
-page, asserting that none of the replaced faces renders, that the exceptions still render as
-themselves, and that the day the theme's remaining entries reached the picker's buttons is the day
-they stopped being dead weight. The project's rule against testing source text is respected because
-every assertion is about what rendered.
+client's own settlement: it mounts the real app and visits the three destinations, the Connection
+page, the Repository page and the release surfaces — the Release Drawer a Timeline card opens, with
+its notes and its asset rows — asserting that none of the replaced faces renders, that the exceptions
+still render as themselves, and that the day the theme's remaining entries reached the picker's
+buttons is the day they stopped being dead weight. The list and the exception carve-outs live in one
+place, `test/support/material_faces.dart`, so a screen test, the Timeline's own screen test, the
+Settings page, the reading surface and the app-wide test assert **one** rule instead of a copy of it
+per file: a stray face added to any of them fails, and an exception added to the list is a decision
+recorded here rather than a copy edited in one file. The project's rule against testing source text
+is respected because every assertion is about what rendered.
 
 ## Consequences
 
@@ -245,6 +303,24 @@ every assertion is about what rendered.
   made of, the ink-below-content failure, the Release Asset row, the notes/assets boundary, the
   humanised download sizes, and the reasons a press paints nothing are all still true and are
   inherited here.
+- **The page is the shared canvas tone, not the shell's.** `scaffoldBackgroundColor` reads the
+  palette's `page-bg`, so the client and the web app put every page on the same slate; the shell step
+  becomes what it is on the web — the well a field, an avatar disc or a floating action is cut into.
+  The visible consequence is in the dark presentation, where the page behind the cards deepens from
+  the shell's step to the canvas's; the light presentation keeps the same near-white family it had.
+  Nothing about the cards, bars or sheets moves, because each of them already draws its own surface
+  and its own hairline against whatever it stands on.
+- **The danger wash is the web app's wash.** The failure banner and the scheme's `errorContainer` now
+  read the shared `danger-soft` instead of a tenth of the danger ink, so the light presentation's
+  banner sits on GitHub's `#f85149`-derived wash rather than on `#cf222e`, and the dark one is the
+  stronger 14% the web uses. The banner's boundary is the app's own edge tone: the edge and the fill
+  are two tones, because an edge drawn in the fill it bounds is not an edge.
+- **An empty page's glyph is a noun, not an action.** A page-level empty state paints its mark in a
+  text tone and keeps the Accent for primary actions, the selected state and focus; a failure's mark
+  stays in the danger tone, because a failure is the one status such a page reports.
+- **The dialog entry point names its own barrier.** `showGitPulseDialog` supplies the platform's
+  `modalBarrierDismissLabel` itself; the three call sites that repeated it pass nothing, and a caller
+  overrides the label only when a barrier means something other than "dismiss".
 - The interaction contract is now asserted in two places, and both must keep passing: the
   theme-level test reads the ink the framework is handed by the app's own controls and by the two
   Material families a retained face still draws, and each face's own test reads what a reader gets —
