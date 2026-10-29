@@ -1,3 +1,5 @@
+import { themePaletteStyleSheet } from '#shared/utils/theme-palette';
+
 export default defineNuxtPlugin(async () => {
   const { loadSettings, appFontFamily, codeFontFamily, prReviewCodeFontSizePx } = useUserSettings();
   const { loggedIn } = useUserSession();
@@ -10,6 +12,8 @@ export default defineNuxtPlugin(async () => {
         '--gitpulse-pr-review-code-font-size': prReviewCodeFontSizePx.value,
       },
     },
+    // The Theme Preset's palette, from the data both clients share.
+    style: [{ key: 'gitpulse-theme-palette', innerHTML: themePaletteStyleSheet }],
   }));
 
   if (import.meta.server && loggedIn.value) {
