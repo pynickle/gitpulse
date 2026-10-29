@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/presentation/gitpulse_preset.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/document_view_page.dart';
 import 'package:gitpulse/releases/document_viewer_assets.dart';
@@ -59,20 +60,18 @@ double _cssNumber(DocumentViewPage page, String name) {
 }
 
 void main() {
-  test('the reading scale reaches the page as the tokens register it', () {
+  test('the reading scale reaches the page as the type table registers it', () {
     final page = _page();
-    expect(_cssPx(page, 'gp-font-size'), GitPulseType.readingBodySize);
-    expect(_cssPx(page, 'gp-heading-1'), GitPulseType.readingHeading1Size);
-    expect(_cssPx(page, 'gp-heading-2'), GitPulseType.readingHeading2Size);
-    expect(_cssPx(page, 'gp-heading-3'), GitPulseType.readingHeading3Size);
-    expect(_cssPx(page, 'gp-list-indent'), GitPulseType.readingListIndent);
-    expect(_cssPx(page, 'gp-quote-indent'), GitPulseType.readingQuoteIndent);
+    final type = gitPulseTypeTable;
+    expect(_cssPx(page, 'gp-font-size'), type.readingBody.size);
+    expect(_cssPx(page, 'gp-heading-1'), type.readingHeading1.size);
+    expect(_cssPx(page, 'gp-heading-2'), type.readingHeading2.size);
+    expect(_cssPx(page, 'gp-heading-3'), type.readingHeading3.size);
+    expect(_cssPx(page, 'gp-list-indent'), GitPulseSpace.readingListIndent);
+    expect(_cssPx(page, 'gp-quote-indent'), GitPulseSpace.readingQuoteIndent);
     expect(
       _cssNumber(page, 'gp-line-height'),
-      closeTo(
-        GitPulseType.readingBodyLineHeight / GitPulseType.readingBodySize,
-        .001,
-      ),
+      closeTo(type.readingBody.height, .001),
     );
     // No heading tier is smaller than the body text.
     expect(
@@ -89,7 +88,7 @@ void main() {
     expect(_cssPx(page, 'gp-list-indent'), closeTo(40, .01));
     expect(
       _cssPx(page, 'gp-quote-indent'),
-      closeTo(GitPulseType.readingQuoteIndent * 2, .01),
+      closeTo(GitPulseSpace.readingQuoteIndent * 2, .01),
     );
   });
 

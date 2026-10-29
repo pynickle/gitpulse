@@ -33,6 +33,17 @@ spacing or interaction state. `gitPulseTheme` is the single theme source; a dist
 names is an ADR rather than a literal, and a visual choice that contradicts a registered rule needs
 one too (`../docs/adr/`).
 
+- **The theme is a Theme Preset, not a seed** (ADR 0031): `gitPulsePreset`
+  (`lib/presentation/gitpulse_preset.dart`) carries the light and dark palettes and the one type
+  table; `gitPulseColorScheme` and the table fill Material's `ColorScheme` and `TextTheme` so a
+  retained Material control still receives coherent values. There is no `ColorScheme.fromSeed` and no
+  second preset to choose from — a second one is data, not a code path.
+- **Colours are read as tones, type as helpers**: `tone…(context)` functions in
+  `gitpulse_tokens.dart` (`toneSurface`, `toneTextMuted`, `toneTextStrong`, `toneAccent`,
+  `toneDanger`…) are the app's colour vocabulary, and `gitPulseType…(context)` are its type. A widget
+  that reads `colorScheme.<role>` or invents a `fontSize` is out of spec; a new tone or type size is
+  a row in the preset, never a literal in a widget.
+
 - **Repository detail page**: Release List, Release Follow and Share stay on one row at every width
   (`lib/repositories/repository_screen.dart`). A two-row fallback was tried and rejected — the row's
   spare width goes to the list, at a short action name.
