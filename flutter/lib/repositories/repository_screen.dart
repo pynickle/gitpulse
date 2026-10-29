@@ -17,7 +17,7 @@ import '../releases/document_content.dart';
 import '../releases/release_document.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
-import '../settings/account_panel.dart';
+import '../settings/account_gate.dart';
 import '../timeline/timeline_models.dart';
 import 'repository_dto.dart';
 import 'repository_navigation.dart';

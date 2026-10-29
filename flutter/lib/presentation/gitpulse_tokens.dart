@@ -194,7 +194,8 @@ Color toneTextSubtle(BuildContext context) =>
 /// surface may use one in the other's place (ADR 0031).
 Color toneAccent(BuildContext context) => gitPulseTonesOf(context).accent;
 
-/// The Accent laid on as a wash: a selected pill's fill, a confirmation's ground.
+/// The Accent laid on as a wash: a selected pill's fill, a confirmation's ground,
+/// and the disc that holds the mark of a way into the app.
 Color toneAccentSoft(BuildContext context) =>
     gitPulseTonesOf(context).accentSoft;
 

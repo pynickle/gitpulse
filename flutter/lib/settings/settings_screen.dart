@@ -12,6 +12,11 @@ import 'timeline_cache_settings.dart';
 ///
 /// Each choice is its own card, stacked in one column: the account first, then
 /// the device's own choices, then the Timeline cache of the signed-in account.
+///
+/// The cards that only describe a signed-in reader's history — the retention
+/// window and the Timeline cache — are not drawn until there is such a reader:
+/// signed out, this page has nothing to keep, and the ways in live on Timeline
+/// and Follows rather than here.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -40,9 +45,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  const AccountPanel(card: true),
+                  const AccountPanel(),
                   const SizedBox(height: GitPulseSpace.bandGap),
-                  const DeviceSettings(),
+                  DeviceSettings(showRetention: signedIn),
                   if (signedIn) ...[
                     const SizedBox(height: GitPulseSpace.bandGap),
                     TimelineCacheSettings(key: ValueKey(identity)),

@@ -649,7 +649,7 @@ void main() {
         },
       );
       await connectTo(tester, 'https://gitpulse.example');
-      await tester.tap(find.text('Continue with GitHub'));
+      await tester.tap(find.text('Continue with GitPulse'));
       await tester.pumpAndSettle();
       expect(launched?.origin, 'https://gitpulse.example');
       expect(find.textContaining('ABCD1234'), findsOneWidget);
@@ -1049,6 +1049,12 @@ void main() {
       await tester.pumpAndSettle();
       final stored = await const FlutterSecureStorage().readAll();
       expect(stored.values.join().contains(server.sessionValue), isFalse);
+      // Signing out here leaves the page stating the installation: the way in
+      // belongs to Timeline and Follows, so the reader is sent to the one they
+      // would reach anyway.
+      expect(fieldLabeled('GitHub token'), findsNothing);
+      await tester.tap(find.text('Timeline').last);
+      await tester.pumpAndSettle();
       expect(fieldLabeled('GitHub token'), findsOneWidget);
       hold.complete();
     },
@@ -1189,7 +1195,11 @@ void main() {
     await connectTo(tester, 'https://oauth.example');
     expect(fieldLabeled('Password'), findsNothing);
     expect(fieldLabeled('GitHub token'), findsNothing);
-    expect(find.textContaining('only offers GitHub OAuth'), findsOneWidget);
+    // One method, so one card, and no sentence that lists the methods this
+    // backend leaves out.
+    expect(find.text('Sign in with GitPulse'), findsOneWidget);
+    expect(find.text('Continue with GitPulse'), findsOneWidget);
+    expect(find.text('Or'), findsNothing);
   });
 
   testWidgets('a disabled PAT method is reported without signing in', (
@@ -1502,8 +1512,12 @@ void main() {
         notifier.transitionLog.whereType<IdentityCleared>().single.reason,
         IdentityClearReason.backendChange,
       );
-      // The account gate is back to its own credential field. The device's own
-      // rows are not account state and stay on the Settings page.
+      // Settings states the installation it now points at, and the account gate
+      // on Timeline is where the new one is signed into: the device's own rows
+      // are not account state and stay on the Settings page.
+      expect(fieldLabeled('Password'), findsNothing);
+      await tester.tap(find.text('Timeline').last);
+      await tester.pumpAndSettle();
       expect(fieldLabeled('Password'), findsOneWidget);
       expect(find.byType(TimelineScreen), findsNothing);
       final stored = await const FlutterSecureStorage().readAll();
@@ -1578,6 +1592,10 @@ void main() {
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Sign out'));
+      await tester.pumpAndSettle();
+      // Signing out leaves the account gate on Timeline, which is where the
+      // next account is signed in.
+      await tester.tap(find.text('Timeline').last);
       await tester.pumpAndSettle();
       await submitField(
         tester,

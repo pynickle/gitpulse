@@ -11,7 +11,7 @@ import 'presentation/gitpulse_theme.dart';
 import 'presentation/gitpulse_state_views.dart';
 import 'session/session_controller.dart';
 import 'session/session_notice.dart';
-import 'settings/account_panel.dart';
+import 'settings/account_gate.dart';
 import 'settings/settings_screen.dart';
 import 'timeline/timeline_screen.dart';
 import 'timeline/timeline_cache_lifecycle.dart';

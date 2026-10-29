@@ -13,14 +13,20 @@ import '../presentation/gitpulse_tokens.dart';
 import '../timeline/timeline_session.dart';
 
 /// This installation's own choices, as settings cards: language, appearance,
-/// and how much release history it keeps.
+/// and — for a reader with an account — how much release history it keeps.
 ///
-/// They work before a backend is reachable, before sign-in, and offline: a
-/// choice applies immediately and is remembered in local device storage. Each
-/// card's control names its own choices, so no line has to explain what the
-/// card is for.
+/// They work before a backend is reachable, and offline: a choice applies
+/// immediately and is remembered in local device storage. Each card's control
+/// names its own choices, so no line has to explain what the card is for.
 class DeviceSettings extends ConsumerWidget {
-  const DeviceSettings({super.key});
+  const DeviceSettings({super.key, this.showRetention = false});
+
+  /// Whether the retention window's card is drawn.
+  ///
+  /// The window is the device's choice, but it is only a choice about a
+  /// signed-in reader's history: with nobody signed in, there is nothing for it
+  /// to keep, so its card is not shown.
+  final bool showRetention;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,8 +41,10 @@ class DeviceSettings extends ConsumerWidget {
         const _LanguageRow(),
         const SizedBox(height: GitPulseSpace.bandGap),
         const _AppearanceRow(),
-        const SizedBox(height: GitPulseSpace.bandGap),
-        const _RetentionRow(),
+        if (showRetention) ...[
+          const SizedBox(height: GitPulseSpace.bandGap),
+          const _RetentionRow(),
+        ],
         if (rememberFailed) ...[
           const SizedBox(height: GitPulseSpace.tight),
           GitPulseSettingNote(

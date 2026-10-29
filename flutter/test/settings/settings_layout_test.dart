@@ -281,4 +281,35 @@ void main() {
     expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('signed out, the page keeps the installation and the device '
+      'choices, and asks nobody to sign in', (tester) async {
+    _useWindow(tester, const Size(390, 844));
+    final harness = harnessFor(tester);
+    await tester.runAsync(harness.open);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: harness.container,
+        child: const GitPulseApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+
+    // This installation's own facts and choices stay…
+    _expectCard(tester, 'Backend', Icons.dns_outlined);
+    _expectCard(tester, 'Language', Icons.language);
+    _expectCard(tester, 'Appearance', Icons.palette_outlined);
+    // …while the choices that describe a signed-in reader's saved history are
+    // not drawn, because there is no such history to describe.
+    expect(find.text('Keep releases for'), findsNothing);
+    expect(find.byKey(const ValueKey('retention-days')), findsNothing);
+    expect(find.text('Timeline cache'), findsNothing);
+    // Nor is this page a way in: signing in belongs to Timeline and Follows.
+    expect(find.text('Sign in with a token'), findsNothing);
+    expect(find.text('Sign in with GitPulse'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

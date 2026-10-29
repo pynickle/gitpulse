@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/repository_navigation.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
-import '../settings/account_panel.dart';
+import '../settings/account_gate.dart';
 import 'release_drawer.dart';
 import 'repository_releases_controller.dart';
 import 'repository_releases_view.dart';
@@ -48,15 +48,12 @@ class _RepositoryReleasesScreenState
       body: SafeArea(
         child: Column(
           children: [
-            // Signed out, the account panel below states the session's trouble;
+            // Signed out, the account gate below states the session's trouble;
             // drawing it here as well would print the same line twice.
             if (session.phase == SessionPhase.signedIn) const SessionNotice(),
             Expanded(
               child: session.phase != SessionPhase.signedIn
-                  ? const SingleChildScrollView(
-                      padding: EdgeInsets.all(20),
-                      child: AccountPanel(),
-                    )
+                  ? const AccountGate()
                   // The list owns its own bands and scrolls inside itself; the
                   // host supplies only the chrome and the safe area.
                   : RepositoryReleasesView(

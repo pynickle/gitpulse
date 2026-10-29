@@ -452,7 +452,7 @@ void main() {
       expect(find.text('Password'), findsNothing);
       expect(find.text('GitHub token'), pat ? findsOneWidget : findsNothing);
       expect(
-        find.text('Continue with GitHub'),
+        find.text('Sign in with GitPulse'),
         oauth ? findsOneWidget : findsNothing,
       );
     });
@@ -577,7 +577,7 @@ void main() {
         'https://self-hosted.example/gitpulse/api/native/capabilities',
       );
       expect(find.text('Password'), findsOneWidget);
-      expect(find.text('Continue with GitHub'), findsNothing);
+      expect(find.text('Sign in with GitPulse'), findsNothing);
       expect(find.text('GitHub token'), findsNothing);
       expect(find.text('Timeline'), findsWidgets);
 
