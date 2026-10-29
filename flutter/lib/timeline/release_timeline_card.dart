@@ -22,6 +22,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final now = ref.watch(timelineClockProvider)();
     final meta = gitPulseTypeMeta(context);
+    final relative = gitPulseRelativeTime(context, item.publishedAt, now: now);
 
     return Material(
       color: GitPulsePaint.none,
@@ -64,19 +65,19 @@ class ReleaseTimelineCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: GitPulseSpace.inline),
-                    Tooltip(
-                      message: gitPulseDateTime(
-                        context,
-                        item.publishedAt.toLocal(),
-                      ),
-                      triggerMode: TooltipTriggerMode.longPress,
-                      child: Text(
-                        gitPulseRelativeTime(
-                          context,
-                          item.publishedAt,
-                          now: now,
+                    // The card says how long ago the release landed, and the
+                    // instant it landed at is the one fact those words leave
+                    // out: a screen reader hears both, in place of the hint a
+                    // long press used to raise over the card.
+                    Semantics(
+                      label:
+                          '$relative '
+                          '${gitPulseDateTime(context, item.publishedAt.toLocal())}',
+                      child: ExcludeSemantics(
+                        child: Text(
+                          relative,
+                          style: gitPulseTypeMetaTight(context),
                         ),
-                        style: gitPulseTypeMetaTight(context),
                       ),
                     ),
                   ],

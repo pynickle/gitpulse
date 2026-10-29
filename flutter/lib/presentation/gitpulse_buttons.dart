@@ -67,9 +67,12 @@ class GitPulseButton extends StatelessWidget {
   /// The action's whole name, when [label] is the shortening its ink has room
   /// for rather than the name itself.
   ///
-  /// Only a destination whose own name does not fit passes one: a screen reader
-  /// then hears what the action does, and a reader who can see the button keeps
-  /// reading the short word. Every other button is named by its label.
+  /// A destination whose own name does not fit passes one, and so does a label
+  /// that is a value instead of a name: the filter panel's date bounds read as
+  /// the date and are spoken as "Published from …", and the Follows panel's
+  /// count reads as a number and is spoken as the panel it opens. A screen
+  /// reader then hears what the action is, and a reader who can see the button
+  /// keeps reading the short ink. Every other button is named by its label.
   final String? semanticsLabel;
 
   /// The tone of [icon] when that mark is a **status the action reports**, rather
@@ -212,12 +215,13 @@ class GitPulseButton extends StatelessWidget {
   }
 }
 
-/// The app's icon-only action: a mark inside a full touch target, named by its
-/// tooltip rather than by text beside it.
+/// The app's icon-only action: a mark inside a full touch target, named for a
+/// screen reader rather than by text beside it.
 ///
-/// The tooltip keeps the platform's own behaviour (a long press on touch, a
-/// hover on a pointer): it is a Platform Dialect Exception, and the app supplies
-/// the mark and the words the platform presents (ADR 0032). [emphasized] paints
+/// The name is spoken, never drawn: the control hands [label] to the
+/// accessibility tree itself instead of wrapping the mark in the platform's
+/// Tooltip, so nothing a reader touches answers a long press or a hover with a
+/// bubble laid over the content (ADR 0032). [emphasized] paints
 /// the mark in the Accent, which is how a row says "this is already applied"
 /// before it is read; [selected] is that same paint for a control whose Accent
 /// *is* a state the reader turned on, and it says so to a screen reader too.
@@ -231,7 +235,7 @@ class GitPulseButton extends StatelessWidget {
 class GitPulseIconButton extends StatelessWidget {
   const GitPulseIconButton({
     super.key,
-    required this.tooltip,
+    required this.label,
     required this.icon,
     required this.onPressed,
     this.size = GitPulseIconSize.action,
@@ -242,7 +246,9 @@ class GitPulseIconButton extends StatelessWidget {
     this.floating = false,
   });
 
-  final String tooltip;
+  /// The action's name, in the reader's language: a screen reader's whole
+  /// account of the control, since the mark is the only ink it draws.
+  final String label;
   final Widget icon;
   final VoidCallback? onPressed;
 
@@ -312,37 +318,33 @@ class GitPulseIconButton extends StatelessWidget {
       floating ? dimension / 2 : GitPulseRadius.row,
     );
 
-    // The tooltip sits inside the button's own semantics node, so the words a
-    // pointer is shown are the words a screen reader is told, on the control
-    // itself rather than on a node beside it.
+    // The name sits on the button's own semantics node, so the words a screen
+    // reader is told are the words the control has, on the control itself rather
+    // than on a node beside it.
     return Semantics(
       button: true,
       enabled: enabled,
       // A control that is a state reports it here, on itself: the mark's tone and the words a
       // screen reader hears are one decision (ADR 0032).
       selected: selected,
-      child: Tooltip(
-        message: tooltip,
-        child: SizedBox.square(
-          dimension: dimension,
-          child: Material(
-            type: fill == null
-                ? MaterialType.transparency
-                : MaterialType.canvas,
-            color: fill,
-            shape: shape,
-            clipBehavior: fill == null ? Clip.none : Clip.antiAlias,
-            child: InkWell(
-              onTap: onPressed,
-              autofocus: autofocus,
-              customBorder:
-                  shape ?? RoundedRectangleBorder(borderRadius: rounded),
-              overlayColor: gitPulseInkOverlay(scheme),
-              child: Center(
-                child: IconTheme(
-                  data: IconThemeData(color: ink, size: size),
-                  child: icon,
-                ),
+      label: label,
+      child: SizedBox.square(
+        dimension: dimension,
+        child: Material(
+          type: fill == null ? MaterialType.transparency : MaterialType.canvas,
+          color: fill,
+          shape: shape,
+          clipBehavior: fill == null ? Clip.none : Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed,
+            autofocus: autofocus,
+            customBorder:
+                shape ?? RoundedRectangleBorder(borderRadius: rounded),
+            overlayColor: gitPulseInkOverlay(scheme),
+            child: Center(
+              child: IconTheme(
+                data: IconThemeData(color: ink, size: size),
+                child: icon,
               ),
             ),
           ),

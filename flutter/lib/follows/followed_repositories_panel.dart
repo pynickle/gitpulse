@@ -49,7 +49,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                 ),
               ),
               GitPulseIconButton(
-                tooltip: detailed
+                label: detailed
                     ? l10n.followsViewDetailed
                     : l10n.followsViewCompact,
                 onPressed: () => unawaited(
@@ -64,13 +64,13 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                 icon: _FollowedViewIcon(detailed: detailed),
               ),
               GitPulseIconButton(
-                tooltip: l10n.followsReload,
+                label: l10n.followsReload,
                 onPressed: disabled ? null : facade.reload,
                 icon: const Icon(Icons.refresh),
               ),
               if (onClose != null)
                 GitPulseIconButton(
-                  tooltip: l10n.followsClose,
+                  label: l10n.followsClose,
                   onPressed: onClose,
                   icon: const Icon(Icons.close),
                 ),
@@ -195,7 +195,7 @@ class _FollowedLoadFailure extends StatelessWidget {
 }
 
 /// Three short lines for Compact View, or those lines plus a paragraph for
-/// Detailed View. The button's tooltip names the view; the words are not text.
+/// Detailed View. The button's name says the view; the words are not text.
 class _FollowedViewIcon extends StatelessWidget {
   const _FollowedViewIcon({required this.detailed});
 

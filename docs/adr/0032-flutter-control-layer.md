@@ -184,9 +184,6 @@ that behaviour without buying anything GitPulse can name:
   own measure and the check mark it shows while chosen are the platform's control grammar, and the
   app supplies what it has an opinion about — the tone pairing for the chosen state, and the one ink
   through the theme's transparent highlight and hover tint.
-- **Tooltips.** A tooltip's timing, its long-press on touch and its hover on a pointer are the
-  platform's; the app supplies the mark and the words, and `GitPulseIconButton` keeps the platform's
-  `Tooltip` wrapping it.
 - **Pull-to-refresh.** The gesture, its physics and its indicator belong to the scroll it is part
   of; the app decides only the tones that indicator is painted in. Its indicator is a
   `CircularProgressIndicator` subclass, which is why the app-wide assertion reads progress by
@@ -222,6 +219,7 @@ app believes in, and each has a consumer named here:
 | `datePickerTheme`                                        | The date picker: the surface tone the app's own sheets are drawn on.                                                                                                                                                                                                                                                                                             |
 | `highlightColor`/`splashColor`/`focusColor`/`hoverColor` | The plain ink — nothing on press, the one tint on hover and focus — for every `InkWell` the app draws without an overlay of its own: the Release Drawer's rows, the asset rows, the Follows rows, a chip that is not chosen, the filter panel's date bounds. A plain `InkWell` has no overlay of its own to state the rule in, so the rule is the theme default. |
 | `iconButtonTheme`                                        | `IconButton`: the bar's back affordance (`BackButton extends IconButton`) and the date picker's calendar/input toggle.                                                                                                                                                                                                                                           |
+| `tooltipTheme`                                           | The tooltips a retained Material face still mounts — the date picker's mode toggle and month arrows: no trigger, so nothing is drawn, while their words stay in the semantics tree.                                                                                                                                                                              |
 | `textButtonTheme`                                        | `TextButton`: the date picker's own action buttons.                                                                                                                                                                                                                                                                                                              |
 
 Three entries the theme used to carry are gone with the last surface that drew their family:
@@ -324,7 +322,8 @@ is respected because every assertion is about what rendered.
 - The interaction contract is now asserted in two places, and both must keep passing: the
   theme-level test reads the ink the framework is handed by the app's own controls and by the two
   Material families a retained face still draws, and each face's own test reads what a reader gets —
-  a press, a hover, a disabled control that refuses, a tooltip, a dialog that dismisses.
+  a press, a hover, a disabled control that refuses, a name a screen reader hears, a dialog that
+  dismisses.
 - A Flutter upgrade can no longer restyle the faces a reader operates. What is left to Material is
   the list above, and each entry on it is a behaviour the platform does better than the app would.
 - **The switch and the checkbox are GitPulse's now.** They were the last gap in this record's
@@ -353,3 +352,15 @@ is respected because every assertion is about what rendered.
   itself out of is reachable only as the success tone, on a receipt and never on an action. What is
   left to Material is the exception list above, and each entry on it is a behaviour the platform
   does better than the app would.
+- **A mark carries its name, not a hint.** No surface the app draws raises a hint any more: nothing
+  pops up when a finger rests on a control or a pointer hovers over it, so the `Tooltip` face leaves
+  the Platform Dialect Exceptions list and joins the faces the app-wide assertion refuses. The one
+  carve-out left is the date picker's calendar: its toggle and month arrows are Material's controls and
+  still mount Material's `Tooltip`s, so the theme installs `tooltipTheme` with a manual trigger — the
+  widgets stay in the tree, their words stay in the semantics tree, and nothing is ever raised. What a
+  tooltip used to carry was two things, and the record keeps the one that was work:
+  `GitPulseIconButton` hands its `label` to the accessibility tree itself, and `GitPulseButton`'s
+  `semanticsLabel` names a label that is a value rather than a name. The one hint that held information
+  rather than a name follows the same rule: the Release Timeline card's relative time is spoken
+  together with the instant it leaves out, so a reader who cannot see the card loses neither fact, and
+  nothing is raised over it for a resting finger.

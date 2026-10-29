@@ -20,7 +20,7 @@ Timeline Reading Position，控件不会遮挡底部操作，时间文字在窄�
 ## User Stories
 
 1. As a Flutter Release Timeline user, I want the new-release count beside the previous refresh information, so that more vertical space is available for release cards.
-2. As a user on a narrow phone, I want the complete refresh-time wording, so that I can understand its reference point without opening a tooltip.
+2. As a user on a narrow phone, I want the complete refresh-time wording, so that I can understand its reference point from the line itself.
 3. As a user with enlarged text, I want the information to remain readable and controls reachable, so that accessibility settings do not hide information or actions.
 4. As a user of either supported language, I want localized time and number formatting, so that the compact information remains natural to read.
 5. As a Release Timeline user, I want the count to describe loaded releases matching my current search and filters after the Timeline Refresh Baseline, so that I do not mistake it for an unread count or a complete remote total.

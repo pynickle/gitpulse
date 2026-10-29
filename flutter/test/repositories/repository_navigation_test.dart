@@ -14,6 +14,7 @@ import '../connection_flow_test.dart' show CapabilityServer;
 import '../support/app_overrides.dart';
 import '../releases/release_detail_service_test.dart' show releaseDetailJson;
 import '../releases/repository_releases_service_test.dart' show releaseListJson;
+import '../support/named_actions.dart';
 import '../timeline/timeline_test_support.dart';
 import 'repository_screen_test.dart' show repositoryJson;
 
@@ -94,7 +95,7 @@ void main() {
         expect(find.text('A useful project'), findsOneWidget);
         await tester.tap(find.text('Releases'));
         await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Home'));
+        await tester.tap(findNamedAction('Home'));
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('release-drawer')), findsNothing);
         expect(tester.getTopLeft(card), position);

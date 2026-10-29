@@ -126,7 +126,7 @@ class RepositoryPageAppBar extends StatelessWidget
       // Home is the app's own action; Back above it stays the platform's own
       // affordance, which is a registered Platform Dialect Exception.
       GitPulseIconButton(
-        tooltip: AppLocalizations.of(context).navigationHome,
+        label: AppLocalizations.of(context).navigationHome,
         icon: const Icon(Icons.home_outlined),
         onPressed: () {
           final router = GoRouter.maybeOf(context);

@@ -14,6 +14,7 @@ import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
 import 'release_detail_service_test.dart' show releaseDetailJson;
 import '../support/document_viewer.dart';
+import '../support/named_actions.dart';
 import 'repository_releases_service_test.dart'
     show listReleaseJson, releaseListJson;
 
@@ -44,7 +45,7 @@ Future<void> openRepositoryReleases(
   WidgetTester tester, {
   bool settle = true,
 }) async {
-  await tester.tap(find.byTooltip('Repository releases'));
+  await tester.tap(findNamedAction('Repository releases'));
   if (settle) {
     await tester.pumpAndSettle();
   } else {
@@ -100,9 +101,9 @@ void main() {
     final drawer = find.byKey(const Key('release-drawer'));
     final starts = <String, Offset Function()>{
       'repository': () => tester.getCenter(find.text('canonical/project')),
-      'list': () => tester.getCenter(find.byTooltip('Repository releases')),
-      'external': () => tester.getCenter(find.byTooltip('Open on GitHub')),
-      'close': () => tester.getCenter(find.byTooltip('Close release details')),
+      'list': () => tester.getCenter(findNamedAction('Repository releases')),
+      'external': () => tester.getCenter(findNamedAction('Open on GitHub')),
+      'close': () => tester.getCenter(findNamedAction('Close release details')),
       'metadata': () => tester.getCenter(find.textContaining('octocat')),
       'top padding': () =>
           tester.getTopLeft(find.text('Entry notes')) - const Offset(0, 10),
@@ -142,7 +143,7 @@ void main() {
         tester.getRect(find.byKey(const Key('release-drawer'))).top,
         closeTo(253.2, .01),
       );
-      await tester.tap(find.byTooltip('Close release details'));
+      await tester.tap(findNamedAction('Close release details'));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('release-drawer')), findsNothing);
     },
@@ -191,7 +192,7 @@ void main() {
     );
     await openRepositoryReleases(tester);
     expect(document.mounted, isTrue);
-    await tester.tap(find.byTooltip('Return to Entry Release'));
+    await tester.tap(findNamedAction('Return to Entry Release'));
     await tester.pumpAndSettle();
     expect(tester.element(find.byType(ReleaseDocument)), same(document));
     expect(tester.state<ScrollableState>(scroll).position.pixels, offset);
@@ -285,8 +286,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('entry-preview'), findsOneWidget);
       expect(find.text('draft-preview'), findsNothing);
-      await tester.ensureVisible(find.byTooltip('Next page'));
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.ensureVisible(findNamedAction('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       expect(
         find.text(
@@ -318,12 +319,12 @@ void main() {
               listReleaseJson(40, 'older-preview', prerelease: true),
             ], page: 3),
           );
-      await tester.ensureVisible(find.byTooltip('Next page'));
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.ensureVisible(findNamedAction('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       expect(find.text('older-preview'), findsOneWidget);
-      await tester.ensureVisible(find.byTooltip('Previous page'));
-      await tester.tap(find.byTooltip('Previous page'));
+      await tester.ensureVisible(findNamedAction('Previous page'));
+      await tester.tap(findNamedAction('Previous page'));
       await tester.pumpAndSettle();
       expect(find.text('Page 2'), findsOneWidget);
       expect(find.text('older-preview'), findsNothing);
@@ -375,7 +376,7 @@ void main() {
       expect(find.text('Fresh opening'), findsOneWidget);
       expect(find.text('Obsolete opening'), findsNothing);
       final oldAccountPage = Completer<BackendResult>();
-      await tester.tap(find.byTooltip('Close release details'));
+      await tester.tap(findNamedAction('Close release details'));
       await tester.pumpAndSettle();
       mounted
               .session
@@ -480,7 +481,7 @@ void main() {
       // back to where the reader already is.
       expect(find.text('v2/rc'), findsOneWidget);
       expect(find.text('canonical/project'), findsOneWidget);
-      expect(find.byTooltip('Return to Entry Release'), findsNothing);
+      expect(findNamedAction('Return to Entry Release'), findsNothing);
       await openRepositoryReleases(tester);
       // The chrome line owns the repository name and the list never repeats it.
       expect(find.text('canonical/project'), findsOneWidget);
@@ -491,10 +492,10 @@ void main() {
         contains('Entry Release'),
       );
       // The list slot holds the one way back while the list is open.
-      expect(find.byTooltip('Return to Entry Release'), findsOneWidget);
-      expect(find.byTooltip('Repository releases'), findsNothing);
+      expect(findNamedAction('Return to Entry Release'), findsOneWidget);
+      expect(findNamedAction('Repository releases'), findsNothing);
       // The list keeps the way out to GitHub, aimed at the list's own page.
-      await tester.tap(find.byTooltip('Open on GitHub'));
+      await tester.tap(findNamedAction('Open on GitHub'));
       await tester.pumpAndSettle();
       expect(
         launched.single.toString(),
@@ -511,7 +512,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('stable')));
       await tester.pumpAndSettle();
       expect(find.text('No releases match on this page.'), findsOneWidget);
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       expect(find.text('older-stable'), findsOneWidget);
       expect(find.text('older-preview'), findsNothing);
@@ -520,8 +521,8 @@ void main() {
       expect(find.text('Other notes'), findsOneWidget);
       // Another release in the same repository keeps the one step back and the
       // Repository Release List beside it.
-      expect(find.byTooltip('Return to Entry Release'), findsOneWidget);
-      expect(find.byTooltip('Repository releases'), findsOneWidget);
+      expect(findNamedAction('Return to Entry Release'), findsOneWidget);
+      expect(findNamedAction('Repository releases'), findsOneWidget);
       await mountedDocument!.bridge.open(
         'https://github.com/other/tool/releases/tag/v1',
       );
@@ -537,7 +538,7 @@ void main() {
         tester.getSemantics(find.text('another-repo-release')).label,
         isNot(contains('Entry Release')),
       );
-      await tester.tap(find.byTooltip('Return to Entry Release'));
+      await tester.tap(findNamedAction('Return to Entry Release'));
       await tester.pump();
       expect(find.text('Entry notes'), findsOneWidget);
       expect(find.byType(GitPulseProgressPage), findsNothing);
@@ -572,7 +573,7 @@ void main() {
         ),
         hasLength(1),
       );
-      await tester.tap(find.byTooltip('Return to Entry Release'));
+      await tester.tap(findNamedAction('Return to Entry Release'));
       await tester.pump();
       expect(find.text('Entry notes'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -603,7 +604,7 @@ void main() {
             .length,
         2,
       );
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('older-stable'));
       await tester.pumpAndSettle();
@@ -641,15 +642,15 @@ void main() {
       );
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Return to Entry Release'), findsNothing);
+      expect(findNamedAction('Return to Entry Release'), findsNothing);
       await openRepositoryReleases(tester);
       await tester.tap(find.text('v2/rc'));
       await tester.pumpAndSettle();
       expect(find.text('Entry notes'), findsOneWidget);
       // Same release, different address: the drawer is still on the Entry
       // Release, so a back arrow would point at where the reader already is.
-      expect(find.byTooltip('Return to Entry Release'), findsNothing);
-      expect(find.byTooltip('Repository releases'), findsOneWidget);
+      expect(findNamedAction('Return to Entry Release'), findsNothing);
+      expect(findNamedAction('Repository releases'), findsOneWidget);
     },
   );
 
@@ -833,7 +834,7 @@ void main() {
       expect(nameToMeta, lessThan(8));
       expect(metaToNotes, greaterThan(24));
       // Leaving for GitHub is one tap away without scrolling the notes.
-      final github = find.byTooltip('Open on GitHub');
+      final github = findNamedAction('Open on GitHub');
       expect(github, findsOneWidget);
       expect(
         tester.getRect(github).bottom,
@@ -853,7 +854,7 @@ void main() {
       expect(find.text('app.zip'), findsOneWidget);
       // No trailing button offers the download any more: the row is the only
       // affordance, right to the edge that button used to occupy.
-      expect(find.byTooltip('Download in browser'), findsNothing);
+      expect(findNamedAction('Download in browser'), findsNothing);
       final assetRow = tester.getRect(find.text('app.zip'));
       await tester.tapAt(Offset(drawer.right - 24, assetRow.center.dy));
       await tester.pumpAndSettle();
@@ -882,12 +883,12 @@ void main() {
       expect(find.text('Next notes'), findsOneWidget);
       expect(find.text('Next body', findRichText: true), findsOneWidget);
       expect(launched, hasLength(1));
-      await tester.tap(find.byTooltip('Return to Entry Release'));
+      await tester.tap(findNamedAction('Return to Entry Release'));
       await tester.pumpAndSettle();
       expect(find.text('Entry notes'), findsOneWidget);
       // The chrome action leaves for the release on GitHub, not for the
       // release currently loaded.
-      await tester.tap(find.byTooltip('Open on GitHub'));
+      await tester.tap(findNamedAction('Open on GitHub'));
       await tester.pumpAndSettle();
       expect(
         launched.last.toString(),
@@ -1070,7 +1071,7 @@ void main() {
       expect(entry.label, contains('Entry Release'));
       expect(entry, isSemantics(hasTapAction: true));
       // Changing page is one tap from anywhere in the list.
-      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+      expect(findNamedAction('Next page').hitTestable(), findsOneWidget);
       expect(find.text('Page 1'), findsOneWidget);
     },
   );
@@ -1102,15 +1103,15 @@ void main() {
       await tester.drag(find.text('release-50'), const Offset(0, -600));
       await tester.pumpAndSettle();
       final filters = tester.getTopLeft(find.text('All'));
-      final pager = tester.getBottomLeft(find.byTooltip('Next page'));
-      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+      final pager = tester.getBottomLeft(findNamedAction('Next page'));
+      expect(findNamedAction('Next page').hitTestable(), findsOneWidget);
       await tester.drag(find.text('release-50'), const Offset(0, -300));
       await tester.pumpAndSettle();
       // The rows moved; the filter bar and the pager did not.
       expect(find.text('release-50').hitTestable(), findsNothing);
       expect(tester.getTopLeft(find.text('All')), filters);
-      expect(tester.getBottomLeft(find.byTooltip('Next page')), pager);
-      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+      expect(tester.getBottomLeft(findNamedAction('Next page')), pager);
+      expect(findNamedAction('Next page').hitTestable(), findsOneWidget);
     },
   );
 
@@ -1126,12 +1127,12 @@ void main() {
         find.descendant(of: drawer, matching: find.byType(GitPulseIconButton)),
         findsWidgets,
       );
-      for (final tooltip in [
+      for (final name in [
         'Repository releases',
         'Open on GitHub',
         'Close release details',
       ]) {
-        expect(find.byTooltip(tooltip), findsOneWidget, reason: tooltip);
+        expect(findNamedAction(name), findsOneWidget, reason: name);
       }
       // …and none of the Material faces this change replaced is left in it.
       for (final replaced in <Type>[

@@ -22,6 +22,7 @@ import 'package:gitpulse/settings/settings_screen.dart';
 import '../support/device_preferences_support.dart';
 import '../support/settling.dart';
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 import '../support/presentation_harness.dart';
 import '../timeline/timeline_cache_test_support.dart';
 import '../timeline/timeline_test_support.dart';
@@ -92,13 +93,8 @@ Future<void> confirmRetention(WidgetTester tester, String value) async {
   await settleUi(tester);
 }
 
-GitPulseIconButton retentionStep(WidgetTester tester, String tooltip) =>
-    tester.widget<GitPulseIconButton>(
-      find.ancestor(
-        of: find.byTooltip(tooltip),
-        matching: find.byType(GitPulseIconButton),
-      ),
-    );
+GitPulseIconButton retentionStep(WidgetTester tester, String name) =>
+    tester.widget<GitPulseIconButton>(findNamedAction(name));
 
 /// The saved window this device would read back, in timeline order.
 ///
@@ -238,7 +234,7 @@ void main() {
     await pumpApp(tester, harness);
 
     expect(find.text('Connect to GitPulse'), findsOneWidget);
-    await tester.tap(find.byTooltip('Language and appearance'));
+    await tester.tap(findNamedAction('Language and appearance'));
     await settleUi(tester);
     expect(find.byType(GitPulseDialog), findsOneWidget);
 
@@ -553,7 +549,7 @@ void main() {
         () => started.isCompleted,
         reason: 'cache transaction begins',
       );
-      await tester.tap(find.byTooltip('Decrease retention'));
+      await tester.tap(findNamedAction('Decrease retention'));
       await settleUi(tester);
       expect(tester.widget<TextField>(retentionField).enabled, isFalse);
       expect(retentionStep(tester, 'Decrease retention').onPressed, isNull);
@@ -711,7 +707,7 @@ void main() {
       await openSettings(tester, 'Settings');
       await showRetention(tester);
 
-      final decrease = find.byTooltip('Decrease retention');
+      final decrease = findNamedAction('Decrease retention');
       expect(retentionStep(tester, 'Decrease retention').onPressed, isNotNull);
       expect(retentionStep(tester, 'Increase retention').onPressed, isNotNull);
 

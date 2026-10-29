@@ -13,6 +13,7 @@ import 'package:gitpulse/session/session_controller.dart';
 import 'package:intl/intl.dart';
 
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 import '../timeline/timeline_test_support.dart';
 import 'release_detail_service_test.dart' show releaseDetailJson;
 import 'repository_releases_service_test.dart'
@@ -196,7 +197,7 @@ void main() {
       expect(single, isNot(contains('1 downloads')));
       // The loaded page is the only page, so it is not worth a pager.
       expect(find.text('Page 1'), findsNothing);
-      expect(find.byTooltip('Next page'), findsNothing);
+      expect(findNamedAction('Next page'), findsNothing);
     },
   );
 
@@ -355,7 +356,7 @@ void main() {
       expect(find.text('release-20'), findsNothing);
       expect(find.text('Page 1'), findsOneWidget);
       // The pager is one tap away without scrolling past the page.
-      expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+      expect(findNamedAction('Next page').hitTestable(), findsOneWidget);
       expect(
         tester
             .widget<GitPulseIconButton>(
@@ -364,7 +365,7 @@ void main() {
             .onPressed,
         isNull,
       );
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       expect(find.text('second-page-release'), findsOneWidget);
       expect(find.text('Page 2'), findsOneWidget);

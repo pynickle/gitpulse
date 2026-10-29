@@ -21,6 +21,7 @@ import 'package:gitpulse/session/secure_storage.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 
 import 'support/app_overrides.dart';
+import 'support/named_actions.dart';
 import 'support/settling.dart';
 
 class FaultyStorage extends FlutterSecureStorage {
@@ -500,10 +501,10 @@ void main() {
         action: 'Unlock',
       );
       expect(find.text('octocat'), findsNothing);
-      expect(find.byTooltip('Sign out'), findsNothing);
+      expect(findNamedAction('Sign out'), findsNothing);
       expect(find.text('Release Timeline'), findsNothing);
       expect(find.textContaining('GitPulse ·'), findsNothing);
-      final refresh = find.byTooltip('Reload');
+      final refresh = findNamedAction('Reload');
       expect(refresh, findsOneWidget);
       expect(tester.getTopLeft(refresh).dy, greaterThanOrEqualTo(24));
       expect(tester.getCenter(refresh).dy, lessThan(90));
@@ -511,11 +512,11 @@ void main() {
       await tester.tap(find.text('Follows').last);
       await tester.pumpAndSettle();
       expect(find.text('octocat'), findsNothing);
-      expect(find.byTooltip('Sign out'), findsNothing);
+      expect(findNamedAction('Sign out'), findsNothing);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
       expect(find.text('octocat'), findsOneWidget);
-      expect(find.byTooltip('Sign out'), findsOneWidget);
+      expect(findNamedAction('Sign out'), findsOneWidget);
       expect(find.text('Change backend'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -742,7 +743,7 @@ void main() {
         SignInFailure.storage,
       );
       expect(container.read(sessionControllerProvider).busy, isFalse);
-      expect(find.byTooltip('Sign out'), findsNothing);
+      expect(findNamedAction('Sign out'), findsNothing);
       storage.failWrite = null;
       await submitField(
         tester,
@@ -1039,7 +1040,7 @@ void main() {
       expect(server.holding, isTrue);
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Sign out'));
+      await tester.tap(findNamedAction('Sign out'));
       expect(container.read(sessionControllerProvider).identity, isNull);
       expect(
         notifier.transitionLog.whereType<IdentityCleared>().single.reason,
@@ -1224,7 +1225,7 @@ void main() {
       find.text('This sign-in method is not enabled on the server.'),
       findsOneWidget,
     );
-    expect(find.byTooltip('Sign out'), findsNothing);
+    expect(findNamedAction('Sign out'), findsNothing);
   });
 
   testWidgets(
@@ -1591,7 +1592,7 @@ void main() {
       });
       await tester.tap(find.text('Settings').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Sign out'));
+      await tester.tap(findNamedAction('Sign out'));
       await tester.pumpAndSettle();
       // Signing out leaves the account gate on Timeline, which is where the
       // next account is signed in.
@@ -1700,7 +1701,7 @@ void main() {
       find.text('Could not reach the server. Your session was not changed.'),
       findsOneWidget,
     );
-    expect(find.byTooltip('Sign out'), findsNothing);
+    expect(findNamedAction('Sign out'), findsNothing);
 
     server.offline = false;
     server.signInStatus = 429;
@@ -1717,7 +1718,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byTooltip('Sign out'), findsNothing);
+    expect(findNamedAction('Sign out'), findsNothing);
   });
 
   testWidgets(

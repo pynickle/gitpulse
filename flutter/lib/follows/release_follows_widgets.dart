@@ -285,7 +285,7 @@ class FollowRepositoryCard extends StatelessWidget {
       )),
       actions: [
         GitPulseIconButton(
-          tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
+          label: followed ? l10n.followsUnfollow : l10n.followsFollow,
           icon: Icon(followed ? Icons.bookmark : Icons.bookmark_add_outlined),
           emphasized: followed,
           onPressed: onToggle,
@@ -340,12 +340,12 @@ class FollowedRepositoryCard extends StatelessWidget {
       actions: [
         if (transient)
           GitPulseIconButton(
-            tooltip: l10n.followsRetryMetadata(repository.fullName),
+            label: l10n.followsRetryMetadata(repository.fullName),
             icon: const Icon(Icons.refresh),
             onPressed: enabled ? onRetry : null,
           ),
         GitPulseIconButton(
-          tooltip: l10n.followsUnfollow,
+          label: l10n.followsUnfollow,
           icon: const Icon(Icons.bookmark_remove_outlined),
           onPressed: enabled ? onUnfollow : null,
         ),

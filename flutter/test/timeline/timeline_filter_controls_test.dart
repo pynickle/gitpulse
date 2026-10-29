@@ -19,6 +19,7 @@ import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import '../support/app_overrides.dart';
+import '../support/named_actions.dart';
 import 'timeline_test_support.dart';
 
 typedef MountedTimeline = ({
@@ -154,14 +155,14 @@ void main() {
         0,
       );
 
-      await tester.tap(find.byTooltip(l10n.timelineIncludeNotes));
+      await tester.tap(findNamedAction(l10n.timelineIncludeNotes));
       await tester.pump();
       expect(find.text('Unrelated release'), findsOneWidget);
       expect(find.text('Context bar default'), findsNothing);
       expect(find.text(l10n.timelineNewReleases(1)), findsOneWidget);
       expect(mounted.session.requests, requests);
 
-      await tester.tap(find.byTooltip(l10n.timelineSearchClear));
+      await tester.tap(findNamedAction(l10n.timelineSearchClear));
       await tester.pump();
       // Scroll preservation may keep only part of the restored list built.
       expect(
@@ -228,7 +229,7 @@ void main() {
           mounted.container.read(releaseTimelineSessionProvider).filters;
       final requests = List.of(mounted.session.requests);
 
-      await tester.tap(find.byTooltip(l10n.timelineFilters));
+      await tester.tap(findNamedAction(l10n.timelineFilters));
       await tester.pumpAndSettle();
       expect(find.text(l10n.timelineFilterPanelTitle), findsOneWidget);
 
@@ -283,7 +284,7 @@ void main() {
       expect(find.byType(ReleaseTimelineCard), findsNWidgets(2));
 
       await tester.tap(
-        find.byTooltip(l10n.timelineFilterTo(l10n.timelineFilterAnyDate)),
+        findNamedAction(l10n.timelineFilterTo(l10n.timelineFilterAnyDate)),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('10'));
@@ -295,7 +296,7 @@ void main() {
 
       // A lower bound after the upper bound drops the inverted upper bound.
       await tester.tap(
-        find.byTooltip(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate)),
+        findNamedAction(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate)),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('12'));
@@ -315,7 +316,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(l10n.timelineFilterPanelTitle), findsNothing);
 
-      await tester.tap(find.byTooltip(l10n.timelineFilters));
+      await tester.tap(findNamedAction(l10n.timelineFilters));
       await tester.pumpAndSettle();
       await tester.tap(find.text(l10n.timelineFilterClearAll));
       await tester.pump();
@@ -371,7 +372,7 @@ void main() {
       TimelineFilterState filters() =>
           mounted.container.read(releaseTimelineSessionProvider).filters;
 
-      await tester.tap(find.byTooltip(l10n.timelineFilters));
+      await tester.tap(findNamedAction(l10n.timelineFilters));
       await tester.pumpAndSettle();
 
       // The Timeline cards behind the overlay print the same repository names,
@@ -436,7 +437,7 @@ void main() {
       );
 
       // The selection survives narrowing the list back to every repository.
-      await tester.tap(find.byTooltip(l10n.timelineSearchClear));
+      await tester.tap(findNamedAction(l10n.timelineSearchClear));
       await tester.pump();
       expect(inPanel('octo/repo4'), findsOneWidget);
       expect(rowChecked(tester, 'R_3'), isTrue);
@@ -518,7 +519,7 @@ void main() {
         TimelineFilterState filters() =>
             mounted.container.read(releaseTimelineSessionProvider).filters;
 
-        await tester.tap(find.byTooltip(l10n.timelineFilters));
+        await tester.tap(findNamedAction(l10n.timelineFilters));
         await tester.pumpAndSettle();
         expect(find.text(l10n.timelineFilterPanelTitle), findsOneWidget);
         expect(rowChecked(tester, 'R_alpha'), isFalse);
@@ -609,7 +610,7 @@ void main() {
       }
 
       Future<void> openDate(String label) async {
-        await tester.tap(find.byTooltip(label));
+        await tester.tap(findNamedAction(label));
         await tester.pumpAndSettle();
         final material = MaterialLocalizations.of(
           tester.element(find.byType(DatePickerDialog)),
@@ -618,7 +619,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await tester.tap(find.byTooltip(l10n.timelineFilters));
+      await tester.tap(findNamedAction(l10n.timelineFilters));
       await tester.pumpAndSettle();
       await openDate(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate));
 

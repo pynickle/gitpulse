@@ -18,6 +18,7 @@ import 'package:path/path.dart' as p;
 
 import '../follows/follows_test_support.dart';
 import '../session_flow_test.dart' as auth;
+import '../support/named_actions.dart';
 import '../support/settling.dart';
 import 'timeline_test_support.dart';
 
@@ -174,12 +175,9 @@ Finder _card(String tag) => find.byWidgetPredicate(
   (widget) => widget is ReleaseTimelineCard && widget.item.tagName == tag,
 );
 
-Finder get _returnToTop => find.byTooltip(_backToTop);
+Finder get _returnToTop => findNamedAction(_backToTop);
 
-Finder get _refreshButton => find.ancestor(
-  of: find.byTooltip('Reload'),
-  matching: find.byType(GitPulseIconButton),
-);
+Finder get _refreshButton => findNamedAction('Reload');
 
 /// The opacity the return-to-top button is currently painted at.
 double _fadeValue(WidgetTester tester) {
@@ -268,7 +266,7 @@ void main() {
       );
       expect(find.text('10 new releases'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Filters'));
+      await tester.tap(findNamedAction('Filters'));
       await tester.pumpAndSettle();
       await tester.tap(find.byType(GitPulseSwitch));
       await tester.pumpAndSettle();
@@ -371,7 +369,7 @@ void main() {
         isNull,
       );
 
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
       await _pull(tester);
 
@@ -389,7 +387,7 @@ void main() {
       final reading = await _readFurther(tester);
       final held = await _holdNextRound(tester, timeline.server);
 
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
 
       expect(reading.card, findsOneWidget);
@@ -411,7 +409,7 @@ void main() {
       await _readFurther(tester);
       final held = await _holdNextRound(tester, timeline.server);
 
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
       final page = timeline.server.pages['R_alpha']! as Map<String, Object?>;
       page['releases'] = [
@@ -441,7 +439,7 @@ void main() {
         _releases(41),
       );
 
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
       held.complete();
       await pumpUntil(
@@ -472,7 +470,7 @@ void main() {
       final reading = await _readFurther(tester);
       final held = await _holdNextRound(tester, timeline.server);
 
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
       timeline.server.roundStatus = 500;
       held.complete();
@@ -507,7 +505,7 @@ void main() {
       await tester.pumpAndSettle();
       final held = await _holdNextRound(tester, timeline.server);
 
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
       held.complete();
       await settleUi(tester);
@@ -529,7 +527,7 @@ void main() {
 
       await tester.tap(find.byType(TextField));
       await tester.pump();
-      await tester.tap(find.byTooltip('Reload'));
+      await tester.tap(findNamedAction('Reload'));
       await settleUi(tester, frames: 5);
       final focus = FocusManager.instance.primaryFocus;
       timeline.server.roundStatus = 500;
@@ -769,7 +767,7 @@ void main() {
       await _scrollBy(tester, -_listHeight(tester) * 2);
 
       final semantics = tester.getSemantics(_returnToTop).getSemanticsData();
-      expect(semantics.tooltip, _backToTop);
+      expect(semantics.label, _backToTop);
       expect(
         semantics.flagsCollection.isButton,
         isTrue,

@@ -19,6 +19,7 @@ import '../timeline/timeline_test_support.dart';
 import 'follows_test_support.dart';
 import '../support/settling.dart';
 import '../support/follows_session_harness.dart';
+import '../support/named_actions.dart';
 import '../support/provider_wait.dart';
 
 void main() {
@@ -902,7 +903,7 @@ void main() {
       expect(find.byKey(const ValueKey('followed-R_alpha')), findsOneWidget);
       expect(container.read(releaseFollowsSessionProvider).loaded, isTrue);
       expect(container.read(releaseFollowsSessionProvider).loading, isFalse);
-      await tester.tap(find.byTooltip('Unfollow'));
+      await tester.tap(findNamedAction('Unfollow'));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('followed-R_alpha')), findsNothing);
       hold.complete();

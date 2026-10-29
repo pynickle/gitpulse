@@ -261,10 +261,10 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
               _DateRange(
                 from: dateLabel(filters.dateRange.from),
                 to: dateLabel(filters.dateRange.to),
-                fromTooltip: l10n.timelineFilterFrom(
+                fromSemanticsLabel: l10n.timelineFilterFrom(
                   dateLabel(filters.dateRange.from),
                 ),
-                toTooltip: l10n.timelineFilterTo(
+                toSemanticsLabel: l10n.timelineFilterTo(
                   dateLabel(filters.dateRange.to),
                 ),
                 clearable: !filters.dateRange.isEmpty,
@@ -340,7 +340,7 @@ class _RepositorySearch extends StatelessWidget {
         suffixIcon: controller.text.isEmpty
             ? null
             : GitPulseIconButton(
-                tooltip: l10n.timelineSearchClear,
+                label: l10n.timelineSearchClear,
                 size: GitPulseIconSize.inControl,
                 // The field's own height, so the mark never grows the field it
                 // appears in.
@@ -462,14 +462,15 @@ class _TappableRow extends StatelessWidget {
 ///
 /// The bounds read as one range instead of two labelled buttons, so the line
 /// fits a phone's panel width and never wraps the clear action onto a second
-/// row. Each bound keeps its spoken name — "Published from …" — in its tooltip,
-/// where the words are available without being printed twice.
+/// row. Each bound keeps its spoken name — "Published from …" — as the name it
+/// hands a screen reader, where the words are available without being printed
+/// twice.
 class _DateRange extends StatelessWidget {
   const _DateRange({
     required this.from,
     required this.to,
-    required this.fromTooltip,
-    required this.toTooltip,
+    required this.fromSemanticsLabel,
+    required this.toSemanticsLabel,
     required this.clearable,
     required this.onFrom,
     required this.onTo,
@@ -478,8 +479,8 @@ class _DateRange extends StatelessWidget {
 
   final String from;
   final String to;
-  final String fromTooltip;
-  final String toTooltip;
+  final String fromSemanticsLabel;
+  final String toSemanticsLabel;
   final bool clearable;
   final VoidCallback onFrom;
   final VoidCallback onTo;
@@ -499,7 +500,12 @@ class _DateRange extends StatelessWidget {
         ),
         const SizedBox(width: GitPulseSpace.tight),
         Flexible(
-          child: _DateBound(label: from, tooltip: fromTooltip, onTap: onFrom),
+          child: GitPulseButton(
+            label: from,
+            semanticsLabel: fromSemanticsLabel,
+            variant: GitPulseButtonVariant.outlined,
+            onPressed: onFrom,
+          ),
         ),
         ExcludeSemantics(
           child: Padding(
@@ -510,11 +516,16 @@ class _DateRange extends StatelessWidget {
           ),
         ),
         Flexible(
-          child: _DateBound(label: to, tooltip: toTooltip, onTap: onTo),
+          child: GitPulseButton(
+            label: to,
+            semanticsLabel: toSemanticsLabel,
+            variant: GitPulseButtonVariant.outlined,
+            onPressed: onTo,
+          ),
         ),
         if (clearable)
           GitPulseIconButton(
-            tooltip: l10n.timelineFilterClearDates,
+            label: l10n.timelineFilterClearDates,
             size: GitPulseIconSize.inControl,
             dimension: GitPulseHeight.compact,
             onPressed: onClear,
@@ -523,32 +534,6 @@ class _DateRange extends StatelessWidget {
         else
           const SizedBox(width: GitPulseSpace.glyphGap),
       ],
-    );
-  }
-}
-
-/// One bound of the published-date condition: a compact outlined pill whose
-/// label is the date itself.
-class _DateBound extends StatelessWidget {
-  const _DateBound({
-    required this.label,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final String label;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: GitPulseButton(
-        label: label,
-        variant: GitPulseButtonVariant.outlined,
-        onPressed: onTap,
-      ),
     );
   }
 }

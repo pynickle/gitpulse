@@ -23,12 +23,12 @@ Future<void> showReleaseDrawer(BuildContext context, ReleaseTarget entry) =>
 
 /// One action in the chrome line's icon slots.
 Widget _chromeAction({
-  required String tooltip,
+  required String label,
   required IconData icon,
   required VoidCallback onPressed,
   bool autofocus = false,
 }) => GitPulseIconButton(
-  tooltip: tooltip,
+  label: label,
   autofocus: autofocus,
   onPressed: onPressed,
   icon: Icon(icon),
@@ -200,7 +200,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     }
 
     Widget entryButton() => _chromeAction(
-      tooltip: l10n.releaseEntry,
+      label: l10n.releaseEntry,
       icon: Icons.arrow_back,
       onPressed: () => setState(() {
         _target = _entry;
@@ -352,7 +352,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                           entryButton()
                         else if (release != null)
                           _chromeAction(
-                            tooltip: l10n.repositoryReleasesTitle,
+                            label: l10n.repositoryReleasesTitle,
                             icon: Icons.list_alt,
                             onPressed: () => setState(() {
                               _listScope = (
@@ -369,13 +369,13 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                         // reached by scrolling past the notes.
                         if (githubUrl != null)
                           _chromeAction(
-                            tooltip: l10n.releaseOpenOnGitHub,
+                            label: l10n.releaseOpenOnGitHub,
                             icon: Icons.open_in_new,
                             onPressed: () =>
                                 _openLink(githubUrl, external: true),
                           ),
                         _chromeAction(
-                          tooltip: l10n.releaseClose,
+                          label: l10n.releaseClose,
                           icon: Icons.close,
                           autofocus: true,
                           onPressed: () => Navigator.of(context).pop(),

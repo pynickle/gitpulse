@@ -145,13 +145,13 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GitPulseIconButton(
-            tooltip: l10n.followsFirstPage,
+            label: l10n.followsFirstPage,
             dimension: GitPulseHeight.compact,
             onPressed: widget.loading ? null : () => _navigate(1),
             icon: const Icon(Icons.first_page),
           ),
           GitPulseIconButton(
-            tooltip: l10n.followsPreviousPage,
+            label: l10n.followsPreviousPage,
             dimension: GitPulseHeight.compact,
             onPressed: !widget.loading && meta.hasPrev
                 ? () => _navigate(meta.page - 1)
@@ -206,26 +206,23 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
                         button: true,
                         enabled: !widget.loading,
                         label: '${l10n.followsEditPage}, $label',
-                        child: Tooltip(
-                          message: l10n.followsEditPage,
-                          child: InkWell(
-                            onTap: widget.loading ? null : _beginEdit,
-                            overlayColor: gitPulseFilledInkOverlay(
-                              Theme.of(context).colorScheme,
-                              ink,
+                        child: InkWell(
+                          onTap: widget.loading ? null : _beginEdit,
+                          overlayColor: gitPulseFilledInkOverlay(
+                            Theme.of(context).colorScheme,
+                            ink,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: GitPulseSpace.inline,
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: GitPulseSpace.inline,
-                              ),
-                              child: Center(
-                                child: ExcludeSemantics(
-                                  child: Text(
-                                    label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: style,
-                                  ),
+                            child: Center(
+                              child: ExcludeSemantics(
+                                child: Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: style,
                                 ),
                               ),
                             ),
@@ -236,7 +233,7 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
             ),
           ),
           GitPulseIconButton(
-            tooltip: l10n.followsNextPage,
+            label: l10n.followsNextPage,
             dimension: GitPulseHeight.compact,
             onPressed: !widget.loading && meta.hasNext
                 ? () => _navigate(meta.page + 1)

@@ -314,7 +314,7 @@ class _Actions extends ConsumerWidget {
             const SizedBox(width: GitPulseSpace.inline),
             GitPulseIconButton(
               key: const ValueKey('repository-follow'),
-              tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
+              label: followed ? l10n.followsUnfollow : l10n.followsFollow,
               icon: Icon(
                 followed ? Icons.bookmark : Icons.bookmark_add_outlined,
               ),
@@ -335,7 +335,7 @@ class _Actions extends ConsumerWidget {
             const SizedBox(width: GitPulseSpace.tight),
             GitPulseIconButton(
               key: const ValueKey('repository-share'),
-              tooltip: l10n.repositoryShare,
+              label: l10n.repositoryShare,
               icon: const Icon(Icons.ios_share),
               onPressed: () => unawaited(
                 shareRepositoryLink(

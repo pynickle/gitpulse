@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 
 import '../follows/follows_test_support.dart';
 import '../session_flow_test.dart' as auth;
+import '../support/named_actions.dart';
 import '../support/settling.dart';
 import 'timeline_test_support.dart';
 
@@ -149,7 +150,7 @@ void main() {
           if (!response.isCompleted) response.complete();
         });
 
-        await tester.tap(find.byTooltip('Reload'));
+        await tester.tap(findNamedAction('Reload'));
         await settleUi(tester, frames: 5);
         if (switchTab) {
           await tester.tap(find.text('Settings').last);
@@ -196,12 +197,12 @@ void main() {
     await tester.pumpAndSettle();
     final unfollow = find.descendant(
       of: find.byKey(const ValueKey('followed-R_alpha')),
-      matching: find.byTooltip('Unfollow'),
+      matching: findNamedAction('Unfollow'),
     );
     await tester.ensureVisible(unfollow);
     await tester.tap(unfollow);
     await settleUi(tester);
-    await tester.tap(find.byTooltip('Close followed repositories'));
+    await tester.tap(findNamedAction('Close followed repositories'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Timeline').last);
     await settleUi(tester);
@@ -223,7 +224,7 @@ void main() {
     final server = await _openTimeline(tester, 390);
     await _readFurther(tester);
     final before = server.featureRequests.length;
-    await tester.tap(find.byTooltip('Filters'));
+    await tester.tap(findNamedAction('Filters'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(GitPulseSwitch));
     await tester.pumpAndSettle();

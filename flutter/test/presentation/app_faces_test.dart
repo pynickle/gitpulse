@@ -23,6 +23,7 @@ import '../releases/release_drawer_test.dart' show browsingHandlers;
 import '../repositories/repository_screen_test.dart' show repositoryJson;
 import '../support/document_viewer.dart';
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 import '../support/presentation_harness.dart';
 import '../timeline/timeline_filter_controls_test.dart' show pumpTimeline;
 import '../timeline/timeline_test_support.dart';
@@ -286,10 +287,10 @@ void main() {
     final l10n = AppLocalizations.of(
       tester.element(find.byType(TimelineScreen)),
     );
-    await tester.tap(find.byTooltip(l10n.timelineFilters));
+    await tester.tap(findNamedAction(l10n.timelineFilters));
     await tester.pumpAndSettle();
     await tester.tap(
-      find.byTooltip(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate)),
+      findNamedAction(l10n.timelineFilterFrom(l10n.timelineFilterAnyDate)),
     );
     await tester.pumpAndSettle();
 
@@ -340,5 +341,13 @@ void main() {
     ]) {
       expect(find.byType(face), findsNothing, reason: '$face');
     }
+
+    // The picker's own tooltips are Material's words inside a retained face, and
+    // the theme's manual trigger keeps even those from being raised: a finger
+    // resting on the mode toggle draws nothing over the calendar.
+    final material = MaterialLocalizations.of(context);
+    await tester.longPress(toggle.first);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text(material.inputDateModeButtonLabel), findsNothing);
   });
 }

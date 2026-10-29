@@ -260,8 +260,7 @@ TextTheme _platformTextTheme(Brightness brightness) {
 /// The theme is GitPulse's: its tones come from the `gitpulse` Theme Preset, its type from
 /// that preset's table, and the page behind every screen is the canvas tone the web app paints.
 /// Material keeps the jobs that are genuinely the platform's — text input and its IME, the
-/// date picker's calendar, tooltips, pull-to-refresh — and receives coherent values for them
-/// from here.
+/// date picker's calendar, pull-to-refresh — and receives coherent values for them from here.
 ///
 /// **Every component theme installed below has a consumer named in ADR 0032.** There are no
 /// entries left over from undoing Material: an entry whose family the client no longer draws
@@ -310,6 +309,13 @@ ThemeData gitPulseTheme(Brightness brightness) {
     // it reads this: the app gives it the tone the app's own sheets are drawn on rather than
     // a Material overlay with a tone of its own.
     datePickerTheme: DatePickerThemeData(backgroundColor: tones.surface),
+    // No hint is raised anywhere in the client, and the tooltips still mounted are Material's own
+    // inside the retained date picker. `manual` is the only trigger mode that draws nothing on a
+    // press or a hover, so the rule holds wherever the reader puts a finger — while the words still
+    // reach a screen reader from the node the tooltip wraps (ADR 0032).
+    tooltipTheme: const TooltipThemeData(
+      triggerMode: TooltipTriggerMode.manual,
+    ),
     extensions: <ThemeExtension<dynamic>>[
       GitPulseFoundation(preset: preset, palette: tones),
     ],

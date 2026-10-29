@@ -18,6 +18,7 @@ import 'package:gitpulse/timeline/timeline_toolbar.dart';
 import 'timeline_filter_controls_test.dart' show pumpTimeline;
 import 'timeline_test_support.dart';
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 
 /// The Release Timeline on the app's own presentation (ADR 0032).
 ///
@@ -144,7 +145,7 @@ void main() {
     final l10n = AppLocalizations.of(
       tester.element(find.byType(TimelineScreen)),
     );
-    await tester.tap(find.byTooltip(l10n.timelineFilters));
+    await tester.tap(findNamedAction(l10n.timelineFilters));
     await tester.pumpAndSettle();
 
     final panel = find.byType(TimelineFilterPanel);

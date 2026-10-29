@@ -245,12 +245,12 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
       borderSide: BorderSide.none,
     );
     Widget stepButton({
-      required String tooltip,
+      required String label,
       required IconData icon,
       required bool enabled,
       required int delta,
     }) => GitPulseIconButton(
-      tooltip: tooltip,
+      label: label,
       onPressed: !locked && enabled ? () => _step(delta) : null,
       size: GitPulseIconSize.inControl,
       icon: Icon(icon),
@@ -275,7 +275,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           stepButton(
-            tooltip: l10n.decreaseRetention,
+            label: l10n.decreaseRetention,
             icon: Icons.remove,
             enabled: days > DevicePreferences.minimumRetentionDays,
             delta: -1,
@@ -318,7 +318,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
             ),
           ),
           stepButton(
-            tooltip: l10n.increaseRetention,
+            label: l10n.increaseRetention,
             icon: Icons.add,
             enabled: days < DevicePreferences.maximumRetentionDays,
             delta: 1,

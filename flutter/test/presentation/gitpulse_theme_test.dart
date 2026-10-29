@@ -67,7 +67,7 @@ void main() {
     (
       GitPulseIconButton,
       GitPulseIconButton(
-        tooltip: 'Reload',
+        label: 'Reload',
         onPressed: () {},
         icon: const Icon(Icons.refresh),
       ),

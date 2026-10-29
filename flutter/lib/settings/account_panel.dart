@@ -56,7 +56,7 @@ class AccountPanel extends ConsumerWidget {
               // One way out of an account, because there is only one. The
               // action's own padding keeps the name off the card below it.
               GitPulseIconButton(
-                tooltip: l10n.signOut,
+                label: l10n.signOut,
                 onPressed: busy ? null : notifier.signOut,
                 icon: const Icon(Icons.logout),
               ),

@@ -861,7 +861,7 @@ class _ReturnToTop extends StatelessWidget {
             // it: a disc inside one hairline, which is how a floating surface is
             // told apart from the cards beneath it without a shadow.
             child: GitPulseIconButton(
-              tooltip: l10n.timelineBackToTop,
+              label: l10n.timelineBackToTop,
               onPressed: onPressed,
               floating: true,
               // A plain up arrow, not `vertical_align_top`: that glyph is a

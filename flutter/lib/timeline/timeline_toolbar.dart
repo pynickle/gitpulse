@@ -126,7 +126,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                     suffixIcon: _query.text.isEmpty
                         ? null
                         : GitPulseIconButton(
-                            tooltip: l10n.timelineSearchClear,
+                            label: l10n.timelineSearchClear,
                             size: GitPulseIconSize.inControl,
                             // The field's own height, so the mark never grows
                             // the field it appears in.
@@ -163,7 +163,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                 ),
               ),
               GitPulseIconButton(
-                tooltip: l10n.timelineIncludeNotes,
+                label: l10n.timelineIncludeNotes,
                 icon: Icon(notes ? Icons.article : Icons.article_outlined),
                 selected: notes,
                 onPressed: () => _change(
@@ -173,7 +173,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                 ),
               ),
               GitPulseIconButton(
-                tooltip: l10n.timelineReload,
+                label: l10n.timelineReload,
                 onPressed: state.loading ? null : () => widget.onRefresh(),
                 // A round the pull started shows its progress at the top of
                 // the list instead, so only one indicator is ever on screen.
@@ -196,7 +196,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                 ),
               ),
               GitPulseIconButton(
-                tooltip: l10n.timelineFilters,
+                label: l10n.timelineFilters,
                 icon: const Icon(Icons.filter_list),
                 selected: filtering,
                 onPressed: widget.onOpenFilters,

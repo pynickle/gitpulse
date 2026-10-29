@@ -28,6 +28,7 @@ import '../releases/release_drawer_test.dart' show browsingHandlers;
 import '../releases/release_detail_service_test.dart' show releaseDetailJson;
 import '../releases/repository_releases_service_test.dart'
     show listReleaseJson, releaseListJson;
+import '../support/named_actions.dart';
 import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
 
@@ -514,8 +515,8 @@ void main() {
       for (final key in [_releasesKey, _followKey, _shareKey]) {
         expect(find.byKey(key).hitTestable(), findsOneWidget);
       }
-      expect(find.byTooltip('Follow releases'), findsOneWidget);
-      expect(find.byTooltip('Share'), findsOneWidget);
+      expect(findNamedAction('Follow releases'), findsOneWidget);
+      expect(findNamedAction('Share'), findsOneWidget);
       // The shortcut on the row keeps the destination's whole name for a screen
       // reader, so shortening it costs nothing but ink.
       expect(find.bySemanticsLabel('Repository releases'), findsOneWidget);
@@ -533,7 +534,7 @@ void main() {
     'following from the page writes the shared follow set and shows the bookmark',
     (tester) async {
       final session = await pumpRepository(tester);
-      expect(find.byTooltip('Follow releases'), findsOneWidget);
+      expect(findNamedAction('Follow releases'), findsOneWidget);
       await tester.tap(find.byKey(_followKey));
       await tester.pumpAndSettle();
       expect(session.bodies['PUT api/settings'], {
@@ -543,8 +544,8 @@ void main() {
       });
       // One follow set: the session the Follows page renders now holds it too.
       expect(readFollows(tester).state.repositories.single.id, 'R_project');
-      expect(find.byTooltip('Unfollow'), findsOneWidget);
-      expect(find.byTooltip('Follow releases'), findsNothing);
+      expect(findNamedAction('Unfollow'), findsOneWidget);
+      expect(findNamedAction('Follow releases'), findsNothing);
       // The Release Follow is a bookmark of this app, never a GitHub star or
       // watch: nothing under the repository was written on GitHub.
       expect(session.requests.where((request) => request.startsWith('PUT')), [
@@ -562,14 +563,14 @@ void main() {
         {'id': 'R_project', 'owner': 'canonical', 'name': 'project'},
       ],
     );
-    expect(find.byTooltip('Unfollow'), findsOneWidget);
+    expect(findNamedAction('Unfollow'), findsOneWidget);
     await tester.tap(find.byKey(_followKey));
     await tester.pumpAndSettle();
     expect(session.bodies['PUT api/settings'], {
       'followedRepositories': <Object?>[],
     });
     expect(readFollows(tester).state.repositories, isEmpty);
-    expect(find.byTooltip('Follow releases'), findsOneWidget);
+    expect(findNamedAction('Follow releases'), findsOneWidget);
   });
 
   testWidgets(
@@ -594,7 +595,7 @@ void main() {
       // The confirmed list is unchanged, so the page still shows the repository
       // as followed.
       expect(readFollows(tester).state.repositories.single.id, 'R_project');
-      expect(find.byTooltip('Unfollow'), findsOneWidget);
+      expect(findNamedAction('Unfollow'), findsOneWidget);
     },
   );
 
@@ -676,10 +677,10 @@ void main() {
         expect(follow.center.dy, closeTo(releases.center.dy, 1));
         expect(share.center.dy, closeTo(releases.center.dy, 1));
         expect(
-          find.byTooltip(chinese ? '关注 Release' : 'Follow releases'),
+          findNamedAction(chinese ? '关注 Release' : 'Follow releases'),
           findsOneWidget,
         );
-        expect(find.byTooltip(chinese ? '分享' : 'Share'), findsOneWidget);
+        expect(findNamedAction(chinese ? '分享' : 'Share'), findsOneWidget);
         semantics.dispose();
       },
     );
@@ -692,7 +693,7 @@ void main() {
       // The band below already names the page, so the bar renders no title.
       expect(tester.widget<AppBar>(find.byType(AppBar)).title, isNull);
       expect(find.byType(BackButton), findsOneWidget);
-      expect(find.byTooltip('Home'), findsOneWidget);
+      expect(findNamedAction('Home'), findsOneWidget);
     },
   );
 

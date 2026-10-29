@@ -38,7 +38,7 @@ class ConnectionScreen extends ConsumerWidget {
           // is: this page is the first one a reader meets, and the way into the
           // app's own choices is drawn with the app's own action.
           GitPulseIconButton(
-            tooltip: l10n.presentationSettings,
+            label: l10n.presentationSettings,
             onPressed: () => showDeviceSettingsDialog(context),
             icon: const Icon(Icons.tune),
           ),

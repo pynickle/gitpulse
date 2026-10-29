@@ -241,7 +241,7 @@
   "releaseLinkFailed": "Could not open this link in your browser.",
   "repositoryReleasesTitle": "Repository releases",
   "repositoryReleasesAction": "Releases",
-  "@repositoryReleasesAction": {"description":"The primary action on a repository page. Its name has to share one row with the Release Follow and Share actions, so it is the short name of the destination the drawer's tooltip names in full."},
+  "@repositoryReleasesAction": {"description":"The primary action on a repository page. Its name has to share one row with the Release Follow and Share actions, so it is the short name of the destination the drawer's chrome action names in full."},
   "repositoryReleasesAll": "All",
   "repositoryReleasesStable": "Stable",
   "repositoryReleasesLoading": "Loading repository releases",

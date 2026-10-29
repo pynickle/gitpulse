@@ -100,21 +100,25 @@ void main() {
     }
   }
 
-  testWidgets('long-pressing the relative time shows the exact instant', (
+  testWidgets('the relative time keeps the exact instant for a screen reader', (
     tester,
   ) async {
     final at = _clock.subtract(const Duration(days: 3));
     await _pumpCard(tester, _release(publishedAt: at), signedIn: true);
     expect(find.byKey(const Key('release-drawer')), findsNothing);
-    await tester.longPress(find.text('3 days ago'));
-    await tester.pump(const Duration(seconds: 1));
-    expect(
-      find.text(formatGitPulseDateTime('en', at.toLocal())),
-      findsOneWidget,
-    );
-    expect(find.byKey(const Key('release-drawer')), findsNothing);
 
-    await tester.tap(find.text('One'));
+    // The card states how long ago the release landed. The instant it landed at
+    // is the one fact those words leave out, and both reach a screen reader
+    // rather than a hint raised over the card for a resting finger.
+    final instant = formatGitPulseDateTime('en', at.toLocal());
+    final spoken = tester.getSemantics(find.text('3 days ago')).label;
+    expect(spoken, contains('3 days ago'));
+    expect(spoken, contains(instant));
+    expect(find.text(instant), findsNothing);
+
+    // A resting finger raises nothing: the card is a pressable like any other,
+    // so a long press only opens the release drawer a tap opens.
+    await tester.longPress(find.text('3 days ago'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('release-drawer')), findsOneWidget);
   });

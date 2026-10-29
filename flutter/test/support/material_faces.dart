@@ -20,6 +20,7 @@ const replacedMaterialFaces = <Type>[
   AlertDialog,
   Dialog,
   LinearProgressIndicator,
+  Tooltip,
 ];
 
 /// The widgets a registered Platform Dialect Exception (ADR 0032) draws Material children of its
@@ -35,6 +36,10 @@ final materialFaceExceptionHosts = <bool Function(Widget)>[
   // The Follows sort control: a segmented choice is the platform's grammar, and Material builds
   // its segments out of `TextButton`s.
   (widget) => widget is SegmentedButton,
+  // The date picker's calendar: its mode toggle and month arrows are Material's own controls, and
+  // they still mount Material's `Tooltip`s. The theme gives those a manual trigger, so the widget
+  // is in the tree while nothing is ever raised.
+  (widget) => widget is DatePickerDialog || widget is CalendarDatePicker,
 ];
 
 /// Whether [element] sits under a registered exception host.

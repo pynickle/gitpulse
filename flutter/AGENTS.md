@@ -18,7 +18,8 @@ Root `bun run lint` / `fmt:check` skip this tree (the `flutter/` ignore in `pack
   with `Get-Process flutter_tester | Stop-Process -Force`. `--reporter expanded` prints each test as
   it starts; `--timeout 30s` makes a hang fail on a line.
 
-Committed codegen, regenerated in the change that causes it: `dart run build_runner build` after any
+Codegen, regenerated in the change that causes it — committed for `build_runner` and the palette,
+gitignored for the localizations (`lib/l10n/generated/`): `dart run build_runner build` after any
 `@JsonSerializable` DTO or `timeline_cache.drift` edit, `flutter gen-l10n` after every
 `lib/l10n/*.arb` edit, and `dart run tool/generate_theme_palette.dart` after any
 `../shared/data/theme-palette.json` edit — that file is the palette both clients present, and
@@ -95,6 +96,9 @@ one too (`../docs/adr/`).
   that says so, so a surface never writes `Semantics(selected:)` around the face; `autofocus` gives a
   sheet's close the keyboard focus, so the Escape key it answers has a focused subtree to arrive in.
   A surface passes the measure it decided; the action never picks one.
+  An icon action is named by its `label`, which reaches the accessibility tree and is never drawn:
+  the client shows no hint for a mark, so nothing pops up on a long press or a hover (ADR 0032), and
+  `tooltipTheme` holds that even for the tooltips a retained Material face still mounts.
   `GitPulseButton` owns its icon's tone for the same reason, and the single exception is
   `statusMarkTone`: pass it only when the mark **is** the status the action reports and no line of
   text carries it (a Follow the app could not save, a clear that landed), with `toneDanger` or
@@ -107,13 +111,14 @@ one too (`../docs/adr/`).
   `switchTheme`, no `outlinedButtonTheme` and no `dialogTheme`: the client draws no Material
   checkbox, switch, `OutlinedButton` or dialog, so such an entry would be an override with nothing to
   override. What is installed — the Foundation Layer, the plain ink, `appBarTheme`,
-  `datePickerTheme`, and the `iconButtonTheme`/`textButtonTheme` pair a retained face still draws —
-  each serves a named consumer, listed in ADR 0032. A new entry needs a consumer in the same change.
+  `datePickerTheme`, the `iconButtonTheme`/`textButtonTheme` pair a retained face still draws, and
+  the `tooltipTheme` that keeps the picker's own tooltips from being raised — each serves a named
+  consumer, listed in ADR 0032. A new entry needs a consumer in the same change.
 - **Platform Dialect Exceptions** are the controls that stay Material's on purpose. The list and each
   reason live in ADR 0032: text input and its IME/selection/magnifier/autofill, the date picker's
   calendar, the `AppBar` (skinned through the theme, its behaviour the platform's), the Follows sort
   control (`SegmentedButton`, handed the app's ink at its call site because its own
-  `TextButtonTheme` shadows the theme's), the choice chip, tooltips, pull-to-refresh, the snackbar
+  `TextButtonTheme` shadows the theme's), the choice chip, pull-to-refresh, the snackbar
   (skinned, not replaced), tabs, the Material icon glyphs, and the platform's page transitions and
   back affordance. Adding a Material face a reader operates means amending that record, not just
   mounting the widget; a face in neither list is an oversight, not a decision.

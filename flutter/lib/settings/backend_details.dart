@@ -150,7 +150,7 @@ class _BackendDetailsState extends ConsumerState<BackendDetails> {
         else
           Expanded(child: addressText),
         GitPulseIconButton(
-          tooltip: l10n.copyBackendAddress,
+          label: l10n.copyBackendAddress,
           onPressed: () => _copyAddress(address),
           size: GitPulseIconSize.inControl,
           emphasized: _copied,

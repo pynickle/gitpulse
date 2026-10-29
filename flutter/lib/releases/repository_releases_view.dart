@@ -191,7 +191,7 @@ class _RepositoryReleasesPager extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GitPulseIconButton(
-            tooltip: l10n.repositoryReleasesPrevious,
+            label: l10n.repositoryReleasesPrevious,
             onPressed: pagination.hasPrev ? () => onPage(page - 1) : null,
             icon: const Icon(Icons.chevron_left),
           ),
@@ -200,7 +200,7 @@ class _RepositoryReleasesPager extends StatelessWidget {
             style: gitPulseTypeMeta(context),
           ),
           GitPulseIconButton(
-            tooltip: l10n.repositoryReleasesNext,
+            label: l10n.repositoryReleasesNext,
             onPressed: pagination.hasNext ? () => onPage(page + 1) : null,
             icon: const Icon(Icons.chevron_right),
           ),

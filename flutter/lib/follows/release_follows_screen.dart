@@ -242,7 +242,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                           children: [
                             if (_query.text.isNotEmpty)
                               GitPulseIconButton(
-                                tooltip: l10n.followsClearSearch,
+                                label: l10n.followsClearSearch,
                                 size: GitPulseIconSize.inControl,
                                 onPressed: () {
                                   _query.clear();
@@ -251,7 +251,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                                 icon: const Icon(Icons.close),
                               ),
                             GitPulseIconButton(
-                              tooltip: l10n.followsSearch,
+                              label: l10n.followsSearch,
                               size: GitPulseIconSize.inControl,
                               onPressed: _query.text.trim().isEmpty
                                   ? null
@@ -314,22 +314,24 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                               ),
                       ),
                       const SizedBox(width: GitPulseSpace.inline),
-                      Tooltip(
-                        message: l10n.followsManage(state.repositories.length),
-                        child: GitPulseButton(
-                          key: const ValueKey('manage-follows'),
-                          label: MaterialLocalizations.of(context)
-                              .formatDecimal(state.repositories.length),
-                          variant: GitPulseButtonVariant.tonal,
-                          onPressed: _showFollowed,
-                          icon: const Icon(Icons.bookmarks_outlined),
-                          // A follow set the app could not read or save is reported by
-                          // the mark as well as by the line under the page: the one job
-                          // where a button's mark is a status rather than a picture.
-                          statusMarkTone: state.problem == null
-                              ? null
-                              : toneDanger(context),
+                      GitPulseButton(
+                        key: const ValueKey('manage-follows'),
+                        label: MaterialLocalizations.of(context)
+                            .formatDecimal(state.repositories.length),
+                        // The number is the ink; the words that count for a
+                        // screen reader are the control's name.
+                        semanticsLabel: l10n.followsManage(
+                          state.repositories.length,
                         ),
+                        variant: GitPulseButtonVariant.tonal,
+                        onPressed: _showFollowed,
+                        icon: const Icon(Icons.bookmarks_outlined),
+                        // A follow set the app could not read or save is reported by
+                        // the mark as well as by the line under the page: the one job
+                        // where a button's mark is a status rather than a picture.
+                        statusMarkTone: state.problem == null
+                            ? null
+                            : toneDanger(context),
                       ),
                     ],
                   ),
@@ -465,7 +467,7 @@ class _SortControls extends StatelessWidget {
           ),
         ),
         GitPulseIconButton(
-          tooltip: ascending ? l10n.followsAscending : l10n.followsDescending,
+          label: ascending ? l10n.followsAscending : l10n.followsDescending,
           onPressed: enabled ? onToggleDirection : null,
           icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
         ),

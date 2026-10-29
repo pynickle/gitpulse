@@ -10,6 +10,7 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
+import '../support/named_actions.dart';
 import '../support/presentation_harness.dart';
 import '../support/settling.dart';
 import '../timeline/timeline_test_support.dart';
@@ -180,7 +181,7 @@ void main() {
     expect(appearanceChoice.left, lessThan(appearanceLabel.left));
     expect(appearanceChoice.left, languageChoice.left);
     final name = tester.getRect(find.text('octocat'));
-    final signOut = tester.getRect(find.byTooltip('Sign out'));
+    final signOut = tester.getRect(findNamedAction('Sign out'));
     // The name and sign-out stay above the backend card, on one line. The
     // action is the app's own full touch target, so it begins where the name's
     // line ends rather than leaving a margin of its own.
@@ -271,7 +272,7 @@ void main() {
       () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
     );
 
-    await tester.tap(find.byTooltip('Copy backend address'));
+    await tester.tap(findNamedAction('Copy backend address'));
     await tester.pump();
     expect(copied, 'https://gitpulse.example/');
     expect(find.byIcon(Icons.check), findsOneWidget);

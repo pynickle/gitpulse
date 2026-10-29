@@ -5,6 +5,8 @@ import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 
+import '../support/named_actions.dart';
+
 /// The button family is GitPulse's own (ADR 0032). These tests mount the real
 /// controls under the real theme and assert what a reader gets: the ink each
 /// variant hands the framework, the tones each one paints, the tap-target
@@ -254,7 +256,7 @@ void main() {
     await pumpThemed(
       tester,
       GitPulseIconButton(
-        tooltip: 'Reload',
+        label: 'Reload',
         icon: const Icon(Icons.refresh),
         onPressed: () {},
       ),
@@ -308,8 +310,8 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('an icon button is named by its tooltip and refuses when '
-      'disabled', (tester) async {
+  testWidgets('an icon button is named for a screen reader, raises no hint and '
+      'refuses when disabled', (tester) async {
     final semantics = tester.ensureSemantics();
     var taps = 0;
     await pumpThemed(
@@ -318,12 +320,12 @@ void main() {
         mainAxisSize: MainAxisSize.min,
         children: [
           GitPulseIconButton(
-            tooltip: 'Reload',
+            label: 'Reload',
             icon: const Icon(Icons.refresh),
             onPressed: () => taps++,
           ),
           GitPulseIconButton(
-            tooltip: 'Sign out',
+            label: 'Sign out',
             icon: const Icon(Icons.logout),
             onPressed: null,
           ),
@@ -331,21 +333,28 @@ void main() {
       ),
     );
 
-    expect(find.byTooltip('Reload'), findsOneWidget);
-    await tester.tap(find.byTooltip('Reload'));
+    // The mark draws no text, so the name on the control's own node is the whole
+    // account a screen reader has of it.
+    expect(
+      tester.getSemantics(find.byType(GitPulseIconButton).first),
+      isSemantics(label: 'Reload', isButton: true, isEnabled: true),
+    );
+    // Nothing the reader touches raises a bubble over the page: the words are
+    // spoken, never drawn (ADR 0032).
+    await tester.longPress(findNamedAction('Sign out'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign out').hitTestable(), findsNothing);
+    expect(taps, 0);
+
+    await tester.tap(findNamedAction('Reload'));
     await tester.pumpAndSettle();
     expect(taps, 1);
 
-    await tester.tap(find.byTooltip('Sign out'), warnIfMissed: false);
+    await tester.tap(findNamedAction('Sign out'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(taps, 1);
     expect(
-      tester.getSemantics(
-        find.ancestor(
-          of: find.byTooltip('Sign out'),
-          matching: find.byType(GitPulseIconButton),
-        ),
-      ),
+      tester.getSemantics(findNamedAction('Sign out')),
       isSemantics(isEnabled: false),
     );
     semantics.dispose();
@@ -360,13 +369,13 @@ void main() {
         mainAxisSize: MainAxisSize.min,
         children: [
           GitPulseIconButton(
-            tooltip: 'Copy',
+            label: 'Copy',
             icon: const Icon(Icons.copy),
             onPressed: () {},
             emphasized: true,
           ),
           GitPulseIconButton(
-            tooltip: 'Sign out',
+            label: 'Sign out',
             icon: const Icon(Icons.logout),
             onPressed: () {},
           ),
@@ -389,7 +398,7 @@ void main() {
     await pumpThemed(
       tester,
       GitPulseIconButton(
-        tooltip: 'Clear',
+        label: 'Clear',
         icon: const Icon(Icons.close),
         onPressed: () {},
         size: GitPulseIconSize.inControl,
@@ -442,13 +451,13 @@ void main() {
         mainAxisSize: MainAxisSize.min,
         children: [
           GitPulseIconButton(
-            tooltip: 'Close',
+            label: 'Close',
             icon: const Icon(Icons.close),
             onPressed: () {},
             autofocus: true,
           ),
           GitPulseIconButton(
-            tooltip: 'Reload',
+            label: 'Reload',
             icon: const Icon(Icons.refresh),
             onPressed: () {},
           ),
@@ -472,7 +481,7 @@ void main() {
     await pumpThemed(
       tester,
       GitPulseIconButton(
-        tooltip: 'Back to top',
+        label: 'Back to top',
         icon: const Icon(Icons.arrow_upward),
         onPressed: () {},
         floating: true,

@@ -16,6 +16,7 @@ import 'package:gitpulse/repositories/repository_screen.dart';
 
 import '../session_flow_test.dart' as auth;
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 import '../timeline/timeline_test_support.dart';
 import 'follows_test_support.dart';
 
@@ -139,7 +140,7 @@ void main() {
         ..starredRepositories = [repositoryJson()]
         ..starredHasMore = true;
       await _openFollows(tester, server);
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await _pumpFrames(tester);
       final requests = server.featureRequests.length;
       final indicator = find.byKey(const ValueKey('repository-page'));
@@ -161,7 +162,7 @@ void main() {
         tester.view.resetViewInsets();
         await _pumpFrames(tester);
         expect(_pageLabel(target).hitTestable(), findsOneWidget);
-        expect(find.byTooltip('First page').hitTestable(), findsOneWidget);
+        expect(findNamedAction('First page').hitTestable(), findsOneWidget);
         expect(
           find.byKey(const ValueKey('manage-follows')).hitTestable(),
           findsOneWidget,
@@ -188,7 +189,7 @@ void main() {
     server.starredRepositories = [
       repositoryJson(id: 'R_second', name: 'second'),
     ];
-    await tester.tap(find.byTooltip('Next page'));
+    await tester.tap(findNamedAction('Next page'));
     await _pumpFrames(tester);
     expect(find.byType(GitPulseLoadingView), findsOneWidget);
     await tester.tap(find.text('Settings'));
@@ -290,7 +291,7 @@ void main() {
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
         await _pumpFrames(tester);
         server.starredRepositories = server.repositories = second;
-        await tester.tap(find.byTooltip('Next page'));
+        await tester.tap(findNamedAction('Next page'));
         await _pumpFrames(tester);
         expect(
           tester
@@ -303,7 +304,7 @@ void main() {
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -700));
         await _pumpFrames(tester);
         final requests = server.featureRequests.length;
-        await tester.tap(find.byTooltip('Previous page'));
+        await tester.tap(findNamedAction('Previous page'));
         await _pumpFrames(tester);
         expect(
           tester
@@ -358,13 +359,13 @@ void main() {
 
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
         await _pumpFrames(tester);
-        await tester.tap(find.byTooltip('First page'));
+        await tester.tap(findNamedAction('First page'));
         await _pumpFrames(tester);
         expect(_pageLabel(1), findsOneWidget);
         expect(find.text('octo/first-0').hitTestable(), findsOneWidget);
         await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
         await _pumpFrames(tester);
-        await tester.tap(find.byTooltip('First page'));
+        await tester.tap(findNamedAction('First page'));
         await _pumpFrames(tester);
         expect(
           tester
@@ -393,7 +394,7 @@ void main() {
             repositoryJson(id: 'R_star_$i', name: 'star-$i'),
         ];
       await _openFollows(tester, server);
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await _pumpFrames(tester);
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -650));
       await _pumpFrames(tester);
@@ -413,7 +414,7 @@ void main() {
       );
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await _pumpFrames(tester);
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await _pumpFrames(tester);
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -950));
       await _pumpFrames(tester);
@@ -443,7 +444,7 @@ void main() {
         tester.getTopLeft(find.byKey(searchKey)).dy,
         closeTo(searchTop, 1),
       );
-      expect(find.byTooltip('Previous page').hitTestable(), findsOneWidget);
+      expect(findNamedAction('Previous page').hitTestable(), findsOneWidget);
       expect(server.featureRequests.length, requests);
     },
   );
@@ -485,7 +486,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(server.featureRequests.length, initialRequests + 2);
       expect(server.featureRequests.last.uri.queryParameters['page'], '6');
-      await tester.tap(find.byTooltip('Previous page'));
+      await tester.tap(findNamedAction('Previous page'));
       await tester.pumpAndSettle();
       expect(_pageLabel(5), findsOneWidget);
     },
@@ -583,7 +584,7 @@ void main() {
       ..starredHasMore = true
       ..starredTotalPages = 10;
     await _openFollows(tester, server);
-    await tester.tap(find.byTooltip('Next page'));
+    await tester.tap(findNamedAction('Next page'));
     await tester.pumpAndSettle();
     expect(server.featureRequests.last.uri.queryParameters['page'], '2');
     final requests = server.featureRequests.length;
@@ -627,7 +628,7 @@ void main() {
     );
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Next page'));
+    await tester.tap(findNamedAction('Next page'));
     await tester.pumpAndSettle();
     final requests = server.featureRequests.length;
 
@@ -659,13 +660,13 @@ void main() {
       expect(find.byKey(const ValueKey('repository-page')), findsOneWidget);
       expect(find.textContaining('page'), findsNothing);
       expect(find.text('…'), findsNothing);
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Search'));
       await tester.pumpAndSettle();
       expect(find.text('Starred date'), findsNothing);
-      expect(find.byTooltip('Descending'), findsNothing);
-      expect(find.byTooltip('Next page'), findsNothing);
+      expect(findNamedAction('Descending'), findsNothing);
+      expect(findNamedAction('Next page'), findsNothing);
       await tester.enterText(
         auth.fieldLabeled('Repository name or GitHub URL'),
         'alpha',
@@ -674,7 +675,7 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
       server.searchStatus = 500;
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       // The page that failed replaces the results it could not load.
       expect(find.text('octo/alpha'), findsNothing);
@@ -714,8 +715,8 @@ void main() {
   ) async {
     final server = FollowsServer()..starredRepositories = [repositoryJson()];
     await _openFollows(tester, server);
-    expect(find.byTooltip('Previous page'), findsNothing);
-    expect(find.byTooltip('Next page'), findsNothing);
+    expect(findNamedAction('Previous page'), findsNothing);
+    expect(findNamedAction('Next page'), findsNothing);
     expect(find.byKey(const ValueKey('repository-page')), findsNothing);
     await tester.tap(find.text('Search'));
     await tester.pumpAndSettle();
@@ -728,7 +729,7 @@ void main() {
     expect(find.text('octo/alpha'), findsOneWidget);
     expect(server.featureRequests.last.uri.path, '/api/repos/octo/alpha');
     expect(find.byKey(const ValueKey('repository-page')), findsNothing);
-    expect(find.byTooltip('Next page'), findsNothing);
+    expect(findNamedAction('Next page'), findsNothing);
   });
 
   testWidgets('discovery sorting, pagination and repository navigation work', (
@@ -749,7 +750,7 @@ void main() {
     await tester.pumpAndSettle();
     server.starredRepositories = [repositoryJson(id: 'R_beta', name: 'beta')];
     server.starredHasMore = false;
-    await tester.tap(find.byTooltip('Next page'));
+    await tester.tap(findNamedAction('Next page'));
     await tester.pumpAndSettle();
     expect(find.text('octo/alpha'), findsNothing);
     expect(find.text('octo/beta'), findsOneWidget);
@@ -758,7 +759,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(server.featureRequests.last.uri.queryParameters['sort'], 'updated');
     expect(server.featureRequests.last.uri.queryParameters['page'], '1');
-    await tester.tap(find.byTooltip('Descending'));
+    await tester.tap(findNamedAction('Descending'));
     await tester.pumpAndSettle();
     expect(server.featureRequests.last.uri.queryParameters['direction'], 'asc');
     await tester.tap(find.text('octo/beta'));
@@ -774,7 +775,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('octo/beta').hitTestable(), findsOneWidget);
     expect(find.text('Last updated'), findsOneWidget);
-    expect(find.byTooltip('Ascending'), findsOneWidget);
+    expect(findNamedAction('Ascending'), findsOneWidget);
   });
 
   testWidgets(
@@ -798,7 +799,7 @@ void main() {
         'alpha',
       );
       await tester.pump();
-      await tester.tap(find.byTooltip('Search'));
+      await tester.tap(findNamedAction('Search'));
       await tester.pumpAndSettle();
       expect(
         find.text(
@@ -816,12 +817,12 @@ void main() {
       );
       server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
       server.searchHasMore = false;
-      await tester.tap(find.byTooltip('Next page'));
+      await tester.tap(findNamedAction('Next page'));
       await tester.pumpAndSettle();
       expect(find.text('octo/beta'), findsOneWidget);
       expect(server.featureRequests.last.uri.queryParameters['page'], '2');
       final requests = server.featureRequests.length;
-      await tester.tap(find.byTooltip('Clear search'));
+      await tester.tap(findNamedAction('Clear search'));
       await tester.pumpAndSettle();
       expect(find.text('octo/alpha'), findsNothing);
       expect(find.text('octo/beta'), findsNothing);
@@ -888,12 +889,7 @@ void main() {
         expect(source.left, GitPulseSpace.gutter);
         expect(source.right, size.width - GitPulseSpace.gutter);
         expect(sort.left, source.left);
-        final direction = tester.getRect(
-          find.ancestor(
-            of: find.byTooltip('Descending'),
-            matching: find.byType(GitPulseIconButton),
-          ),
-        );
+        final direction = tester.getRect(findNamedAction('Descending'));
         expect(direction.right, source.right);
         final pages = tester.getRect(find.byType(RepositoryPagination));
         final followed = tester.getRect(manage);
@@ -904,7 +900,7 @@ void main() {
         // the fixed footer at the reader's font size.
         expect(pageField.height, greaterThanOrEqualTo(GitPulseHeight.compact));
         expect(find.byIcon(Icons.edit_outlined), findsNothing);
-        expect(find.byTooltip('First page').hitTestable(), findsOneWidget);
+        expect(findNamedAction('First page').hitTestable(), findsOneWidget);
         await tester.tap(find.byKey(const ValueKey('repository-page')));
         await _pumpFrames(tester);
         final editor = find.byKey(const ValueKey('repository-page-editor'));
@@ -923,11 +919,11 @@ void main() {
         await tester.testTextInput.receiveAction(TextInputAction.done);
         await _pumpFrames(tester);
         expect(
-          tester.getRect(find.byTooltip('Previous page')).center.dy,
+          tester.getRect(findNamedAction('Previous page')).center.dy,
           closeTo(pageField.center.dy, 1),
         );
         expect(
-          tester.getRect(find.byTooltip('Next page')).center.dy,
+          tester.getRect(findNamedAction('Next page')).center.dy,
           closeTo(pageField.center.dy, 1),
         );
         expect(followed.left, greaterThanOrEqualTo(pages.right));
@@ -937,14 +933,14 @@ void main() {
           tester.getBottomLeft(find.text('Starred')).dy,
           lessThan(tester.getTopLeft(find.text('Starred date')).dy),
         );
-        expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+        expect(findNamedAction('Next page').hitTestable(), findsOneWidget);
         await tester.drag(
           find.byType(CustomScrollView).first,
           const Offset(0, -1200),
         );
         await tester.pumpAndSettle();
         expect(find.text('Search').hitTestable(), findsOneWidget);
-        expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+        expect(findNamedAction('Next page').hitTestable(), findsOneWidget);
         expect(manage.hitTestable(), findsOneWidget);
         await tester.tap(manage);
         await tester.pumpAndSettle();
@@ -952,13 +948,13 @@ void main() {
           find.byKey(const ValueKey('followed-R_followed')).hitTestable(),
           findsOneWidget,
         );
-        await tester.tap(find.byTooltip('Close followed repositories'));
+        await tester.tap(findNamedAction('Close followed repositories'));
         await tester.pumpAndSettle();
         if (size.width == 320) {
           server.saveStatus = 500;
-          await tester.ensureVisible(find.byTooltip('Follow releases').first);
+          await tester.ensureVisible(findNamedAction('Follow releases').first);
           await tester.pumpAndSettle();
-          await tester.tap(find.byTooltip('Follow releases').first);
+          await tester.tap(findNamedAction('Follow releases').first);
           await tester.pumpAndSettle();
           await tester.tap(find.text('Search'));
           await tester.pumpAndSettle();
@@ -974,7 +970,7 @@ void main() {
             isNull,
             reason: 'small phone with keyboard',
           );
-          expect(find.byTooltip('Search').hitTestable(), findsOneWidget);
+          expect(findNamedAction('Search').hitTestable(), findsOneWidget);
           tester.view.resetViewInsets();
           await tester.pumpAndSettle();
           await tester.tap(find.text('Starred'));
@@ -1003,9 +999,9 @@ void main() {
       expect(find.text('octo/star').hitTestable(), findsOneWidget);
       expect(find.text('42'), findsOneWidget);
       expect(find.text('Follow releases'), findsNothing);
-      await tester.tap(find.byTooltip('Follow releases'));
+      await tester.tap(findNamedAction('Follow releases'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Unfollow'), findsOneWidget);
+      expect(findNamedAction('Unfollow'), findsOneWidget);
       expect(find.text('Followed'), findsNothing);
       expect(
         (server.settings['followedRepositories'] as List).single,
@@ -1097,12 +1093,12 @@ void main() {
       expect(find.text('old/project'), findsOneWidget);
       expect(find.text('new/project'), findsNothing);
       expect(find.textContaining('Renamed from'), findsNothing);
-      await tester.tap(find.byTooltip('Compact'));
+      await tester.tap(findNamedAction('Compact'));
       await _settleUi(tester);
       expect(find.text('new/project'), findsOneWidget);
       expect(find.text('old/project'), findsNothing);
       expect(find.textContaining('Renamed from'), findsNothing);
-      await tester.tap(find.byTooltip('Close followed repositories'));
+      await tester.tap(findNamedAction('Close followed repositories'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Search'));
       await tester.pumpAndSettle();
@@ -1112,9 +1108,9 @@ void main() {
       );
       await tester.testTextInput.receiveAction(TextInputAction.search);
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byTooltip('Follow releases'));
+      await tester.ensureVisible(findNamedAction('Follow releases'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Follow releases'));
+      await tester.tap(findNamedAction('Follow releases'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('manage-follows')));
       await tester.pumpAndSettle();
@@ -1122,7 +1118,7 @@ void main() {
       server.saveStatus = 500;
       final remove = find.descendant(
         of: find.byKey(const ValueKey('followed-R_alpha')),
-        matching: find.byTooltip('Unfollow'),
+        matching: findNamedAction('Unfollow'),
       );
       await tester.ensureVisible(remove);
       await tester.pumpAndSettle();
@@ -1142,9 +1138,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('followed-R_alpha')), findsNothing);
       server.metadata['R_old'] = {'status': 'unavailable'};
-      await tester.ensureVisible(find.byTooltip('Reload follows'));
+      await tester.ensureVisible(findNamedAction('Reload follows'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Reload follows'));
+      await tester.tap(findNamedAction('Reload follows'));
       await tester.pumpAndSettle();
       expect(find.text('Unavailable'), findsOneWidget);
       expect(
@@ -1155,7 +1151,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(RepositoryScreen), findsNothing);
       server.metadata['R_old'] = {'status': 'transient'};
-      await tester.tap(find.byTooltip('Reload follows'));
+      await tester.tap(findNamedAction('Reload follows'));
       await tester.pumpAndSettle();
       expect(
         find.text(
@@ -1163,7 +1159,7 @@ void main() {
         ),
         findsNothing,
       );
-      final retry = find.byTooltip('Retry details for new/project');
+      final retry = findNamedAction('Retry details for new/project');
       expect(retry, findsOneWidget);
       final metadataBefore = _metadataRequestCount(server);
       await tester.tap(retry);
@@ -1195,7 +1191,7 @@ void main() {
       expect(find.byKey(const ValueKey('followed-R_alpha')), findsOneWidget);
 
       server.offline = true;
-      await tester.tap(find.byTooltip('Reload follows'));
+      await tester.tap(findNamedAction('Reload follows'));
       await tester.pumpAndSettle();
 
       final panel = find.byType(FollowedRepositoriesPanel);
@@ -1258,7 +1254,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(server.featureRequests.last.uri.queryParameters['sort'], 'updated');
     expect(server.featureRequests.last.uri.queryParameters['page'], '1');
-    await tester.tap(find.byTooltip('Descending'));
+    await tester.tap(findNamedAction('Descending'));
     await tester.pumpAndSettle();
     expect(server.featureRequests.last.uri.queryParameters['direction'], 'asc');
 
@@ -1277,8 +1273,8 @@ void main() {
       Theme.of(tester.element(find.text('加星时间'))).brightness,
       Brightness.dark,
     );
-    expect(find.byTooltip('下一页').hitTestable(), findsOneWidget);
-    _expectInsideView(tester, find.byTooltip('下一页'));
+    expect(findNamedAction('下一页').hitTestable(), findsOneWidget);
+    _expectInsideView(tester, findNamedAction('下一页'));
     expect(find.text('排序'), findsNothing);
     expect(tester.takeException(), isNull);
     _expectInsideView(tester, find.text('加星时间'));
@@ -1362,7 +1358,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: find.byKey(const ValueKey('starred-R_py')),
-          matching: find.byTooltip('Follow releases'),
+          matching: findNamedAction('Follow releases'),
         ),
       );
       await tester.pumpAndSettle();
@@ -1374,7 +1370,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('starred-R_py')),
-          matching: find.byTooltip('Unfollow'),
+          matching: findNamedAction('Unfollow'),
         ),
         findsOneWidget,
       );
@@ -1511,15 +1507,15 @@ void main() {
       }
 
       await openPanel();
-      expect(find.byTooltip('Compact'), findsOneWidget);
+      expect(findNamedAction('Compact'), findsOneWidget);
       expect(find.text('Compact'), findsNothing);
       expect(find.text('Detailed'), findsNothing);
       expect(find.text('Notes for followers'), findsNothing);
       expect(_metadataRequestCount(server), 0);
 
-      await tester.tap(find.byTooltip('Compact'));
+      await tester.tap(findNamedAction('Compact'));
       await _settleUi(tester);
-      expect(find.byTooltip('Detailed'), findsOneWidget);
+      expect(findNamedAction('Detailed'), findsOneWidget);
       expect(find.text('Detailed'), findsNothing);
       expect(find.text('Notes for followers'), findsOneWidget);
       expect(find.text('Python'), findsOneWidget);
@@ -1543,14 +1539,14 @@ void main() {
         isFalse,
       );
 
-      await tester.tap(find.byTooltip('Close followed repositories'));
+      await tester.tap(findNamedAction('Close followed repositories'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
       await openPanel();
-      expect(find.byTooltip('Detailed'), findsOneWidget);
+      expect(findNamedAction('Detailed'), findsOneWidget);
       expect(find.text('Notes for followers'), findsOneWidget);
       expect(server.settings['releaseFollows'], isNull);
 
@@ -1559,7 +1555,7 @@ void main() {
       await _openFollows(tester, server, presentationFile: preferences);
       await _settleUi(tester);
       await openPanel();
-      expect(find.byTooltip('Detailed'), findsOneWidget);
+      expect(findNamedAction('Detailed'), findsOneWidget);
       expect(find.text('Notes for followers'), findsOneWidget);
     },
   );
@@ -1577,9 +1573,9 @@ void main() {
       ..starredRepositories = [repositoryJson(id: 'R_new', name: 'new')]
       ..saveStatus = 500;
     await _openFollows(tester, server);
-    await tester.tap(find.byTooltip('Follow releases'));
+    await tester.tap(findNamedAction('Follow releases'));
     await tester.pumpAndSettle();
-    expect(find.byTooltip('Follow releases'), findsOneWidget);
+    expect(findNamedAction('Follow releases'), findsOneWidget);
     expect(find.text(saveFailed), findsNothing);
     expect((server.settings['followedRepositories'] as List), isEmpty);
     final manage = find.byKey(const ValueKey('manage-follows'));
@@ -1593,7 +1589,7 @@ void main() {
       IconTheme.of(tester.element(icon)).color,
       Theme.of(tester.element(manage)).colorScheme.error,
     );
-    expect(find.byTooltip('0 followed'), findsOneWidget);
+    expect(findNamedAction('0 followed'), findsOneWidget);
     expect(
       find.descendant(of: manage, matching: find.text('0')),
       findsOneWidget,
@@ -1602,7 +1598,7 @@ void main() {
     await tester.tap(manage);
     await tester.pumpAndSettle();
     expect(find.text(saveFailed), findsOneWidget);
-    await tester.tap(find.byTooltip('Close followed repositories'));
+    await tester.tap(findNamedAction('Close followed repositories'));
     await tester.pumpAndSettle();
     expect(find.text(saveFailed), findsNothing);
   });
@@ -1683,7 +1679,7 @@ void main() {
       // Its header actions are the app's own, and none of the replaced faces is
       // left in it.
       expectNoReplacedMaterialFaces(panel);
-      for (final tooltip in [
+      for (final name in [
         'Compact',
         'Reload follows',
         'Close followed repositories',
@@ -1691,9 +1687,9 @@ void main() {
         expect(
           find.descendant(of: panel, matching: find.byType(GitPulseIconButton)),
           findsWidgets,
-          reason: tooltip,
+          reason: name,
         );
-        expect(find.byTooltip(tooltip), findsOneWidget, reason: tooltip);
+        expect(findNamedAction(name), findsOneWidget, reason: name);
       }
       expect(
         find.byKey(const ValueKey('followed-R_followed')).hitTestable(),

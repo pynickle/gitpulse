@@ -9,6 +9,8 @@ import 'package:gitpulse/timeline/timeline_filters.dart';
 import 'package:gitpulse/timeline/timeline_state.dart';
 import 'package:gitpulse/timeline/timeline_toolbar.dart';
 
+import '../support/named_actions.dart';
+
 void main() {
   for (final width in [320.0, 1280.0]) {
     for (final locale in [const Locale('en'), const Locale('zh')]) {
@@ -58,9 +60,11 @@ void main() {
           tester.element(find.byType(TimelineToolbar)),
         );
         final search = tester.getRect(find.byType(TextField));
-        final notes = tester.getRect(find.byTooltip(l10n.timelineIncludeNotes));
-        final refresh = tester.getRect(find.byTooltip(l10n.timelineReload));
-        final filter = tester.getRect(find.byTooltip(l10n.timelineFilters));
+        final notes = tester.getRect(
+          findNamedAction(l10n.timelineIncludeNotes),
+        );
+        final refresh = tester.getRect(findNamedAction(l10n.timelineReload));
+        final filter = tester.getRect(findNamedAction(l10n.timelineFilters));
         final baseline = tester.getRect(
           find.textContaining(l10n.timelinePreviousRefreshMark),
         );
@@ -100,19 +104,14 @@ void main() {
         expect(find.text(l10n.timelineCacheFailed), findsOneWidget);
         expect(find.text(l10n.timelineRetrySaving), findsOneWidget);
 
-        await tester.tap(find.byTooltip(l10n.timelineReload));
+        await tester.tap(findNamedAction(l10n.timelineReload));
         expect(refreshes, 1);
         loading = true;
         await mount();
         await tester.pump();
         expect(
           tester
-              .widget<GitPulseIconButton>(
-                find.ancestor(
-                  of: find.byTooltip(l10n.timelineReload),
-                  matching: find.byType(GitPulseIconButton),
-                ),
-              )
+              .widget<GitPulseIconButton>(findNamedAction(l10n.timelineReload))
               .onPressed,
           isNull,
         );
@@ -169,7 +168,7 @@ void main() {
         find.textContaining(l10n.timelinePreviousRefreshMark),
         findsNothing,
       );
-      expect(find.byTooltip(l10n.timelineFilters), findsOneWidget);
+      expect(findNamedAction(l10n.timelineFilters), findsOneWidget);
     });
   }
 
@@ -220,7 +219,7 @@ void main() {
 
     expect(find.text(l10n.timelineOffline), findsOneWidget);
     expect(find.textContaining(l10n.timelineSavedAt('')), findsNothing);
-    expect(find.byTooltip(l10n.timelineReload), findsOneWidget);
+    expect(findNamedAction(l10n.timelineReload), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('the refresh instant and the loaded-new count share one row', (
@@ -240,7 +239,7 @@ void main() {
     );
     final count = find.text(l10n.timelineNewReleases(7));
     final countRect = tester.getRect(count);
-    final filter = tester.getRect(find.byTooltip(l10n.timelineFilters));
+    final filter = tester.getRect(findNamedAction(l10n.timelineFilters));
 
     expect(_overlapsVertically(instant, countRect), isTrue);
     expect(countRect.left, greaterThan(instant.right));
@@ -256,10 +255,7 @@ void main() {
   ) async {
     await _pumpToolbar(tester, state: const TimelineViewState(loading: true));
     final l10n = _l10n(tester);
-    final button = find.ancestor(
-      of: find.byTooltip(l10n.timelineReload),
-      matching: find.byType(GitPulseIconButton),
-    );
+    final button = findNamedAction(l10n.timelineReload);
     expect(tester.widget<GitPulseIconButton>(button).onPressed, isNull);
     expect(find.byType(GitPulseProgressInline), findsOneWidget);
 
@@ -291,7 +287,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'v1');
     await tester.pump();
-    expect(find.byTooltip(l10n.timelineSearchClear), findsOneWidget);
+    expect(findNamedAction(l10n.timelineSearchClear), findsOneWidget);
     expect(tester.getSize(find.byType(TextField)).height, fieldRect.height);
     expect(tester.takeException(), isNull);
   });
@@ -311,30 +307,27 @@ void main() {
     // An applied mode is the app's emphasized action, and it says so to a
     // screen reader as a selected control.
     final notes = tester.widget<GitPulseIconButton>(
-      find.ancestor(
-        of: find.byTooltip(l10n.timelineIncludeNotes),
-        matching: find.byType(GitPulseIconButton),
-      ),
+      findNamedAction(l10n.timelineIncludeNotes),
     );
     expect(notes.selected, isTrue);
     expect(
-      tester.getSemantics(find.byTooltip(l10n.timelineIncludeNotes)),
+      tester.getSemantics(findNamedAction(l10n.timelineIncludeNotes)),
       isSemantics(isSelected: true),
     );
 
     await tester.enterText(find.byType(TextField), 'v1');
     await tester.pump();
-    expect(find.byTooltip(l10n.timelineSearchClear), findsOneWidget);
-    await tester.tap(find.byTooltip(l10n.timelineSearchClear));
+    expect(findNamedAction(l10n.timelineSearchClear), findsOneWidget);
+    await tester.tap(findNamedAction(l10n.timelineSearchClear));
     await tester.pump();
-    expect(find.byTooltip(l10n.timelineSearchClear), findsNothing);
+    expect(findNamedAction(l10n.timelineSearchClear), findsNothing);
     expect(changes.last.query, isEmpty);
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller?.text,
       isEmpty,
     );
 
-    await tester.tap(find.byTooltip(l10n.timelineIncludeNotes));
+    await tester.tap(findNamedAction(l10n.timelineIncludeNotes));
     expect(changes.last.includeReleaseNotes, isFalse);
   });
 
@@ -351,13 +344,10 @@ void main() {
     );
     final l10n = _l10n(tester);
     final filter = tester.widget<GitPulseIconButton>(
-      find.ancestor(
-        of: find.byTooltip(l10n.timelineFilters),
-        matching: find.byType(GitPulseIconButton),
-      ),
+      findNamedAction(l10n.timelineFilters),
     );
     expect(filter.selected, isTrue);
-    await tester.tap(find.byTooltip(l10n.timelineFilters));
+    await tester.tap(findNamedAction(l10n.timelineFilters));
     expect(opened, 1);
   });
 }
