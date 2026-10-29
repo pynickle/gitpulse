@@ -24,12 +24,16 @@ changes from another client remaining unseen until explicit refresh in exchange
 for predictable reading and navigation.
 
 Keep numbered pagination with a first-page action, previous and next actions,
-and one page indicator with a persistent pencil glyph. Tapping the indicator
-replaces its entire contents with a selected numeric input; its total and pencil
-return after submission or focus loss. The indicator reserves the same size in
-both states. Unknown totals name only the current page. This preserves direct
-entry without keeping an input and a separate total side by side, while the
-pencil and filled surface make editing discoverable.
+and one page indicator on a softly filled surface. Tapping the indicator
+replaces its entire contents with a selected, vertically centered numeric input;
+its label returns after submission or focus loss, including when the page is
+unchanged. The indicator reserves the same size in both states. Unknown totals
+name only the current page. This preserves direct entry without keeping an input
+and a separate total side by side.
+
+The subsequent user correction removes the pencil and its reserved space. The
+shared integer-field width for page navigation and Settings retention is 56dp,
+reduced from 72dp; page labels may still grow the indicator to fit their text.
 
 This supersedes ADR 0026's shared border, cell dividers, and 32dp pill exception.
 The new footer uses the existing compact control floor, grows for larger text,

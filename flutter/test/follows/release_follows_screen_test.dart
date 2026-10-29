@@ -127,6 +127,55 @@ Finder _pageLabel(int page) => find.descendant(
 );
 
 void main() {
+  testWidgets(
+    'submitting unchanged or cached pages restores the whole footer',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      final server = FollowsServer()
+        ..starredRepositories = [repositoryJson()]
+        ..starredHasMore = true;
+      await _openFollows(tester, server);
+      await tester.tap(find.byTooltip('Next page'));
+      await _pumpFrames(tester);
+      final requests = server.featureRequests.length;
+      final indicator = find.byKey(const ValueKey('repository-page'));
+      for (final (index, target) in [2, 1, 2].indexed) {
+        await tester.tap(indicator);
+        await _pumpFrames(tester);
+        if (index > 0) {
+          await tester.enterText(
+            find.byKey(const ValueKey('repository-page-editor')),
+            '$target',
+          );
+        }
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await _pumpFrames(tester);
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        // Focus is lost before Android finishes closing the keyboard. Let the
+        // footer react to that state before delivering the final inset change.
+        await _pumpFrames(tester);
+        tester.view.resetViewInsets();
+        await _pumpFrames(tester);
+        expect(_pageLabel(target).hitTestable(), findsOneWidget);
+        expect(find.byTooltip('First page').hitTestable(), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('manage-follows')).hitTestable(),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('repository-page-editor')),
+          findsNothing,
+        );
+        expect(server.featureRequests.length, requests);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
   testWidgets('a page completed away from Follows is reused on return', (
     tester,
   ) async {
@@ -268,7 +317,24 @@ void main() {
 
         final indicator = find.byKey(const ValueKey('repository-page'));
         final before = tester.getRect(indicator);
-        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        await tester.tap(indicator);
+        await tester.pump();
+        final editable = find.descendant(
+          of: indicator,
+          matching: find.byType(EditableText),
+        );
+        expect(
+          tester.getRect(editable).center.dy,
+          closeTo(before.center.dy, 1),
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await _pumpFrames(tester);
+        expect(find.text('1 / 10').hitTestable(), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('repository-page-editor')),
+          findsNothing,
+        );
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
         expect(
           find.byKey(const ValueKey('repository-page-editor')),
           findsNothing,
@@ -837,8 +903,25 @@ void main() {
         // The number is one editable button, and all navigation stays within
         // the fixed footer at the reader's font size.
         expect(pageField.height, greaterThanOrEqualTo(GitPulseHeight.compact));
-        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
         expect(find.byTooltip('First page').hitTestable(), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('repository-page')));
+        await _pumpFrames(tester);
+        final editor = find.byKey(const ValueKey('repository-page-editor'));
+        final editable = find.descendant(
+          of: editor,
+          matching: find.byType(EditableText),
+        );
+        expect(
+          tester.getRect(editable).center.dy,
+          closeTo(pageField.center.dy, 1),
+        );
+        expect(
+          tester.getRect(editable).height,
+          lessThanOrEqualTo(pageField.height),
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await _pumpFrames(tester);
         expect(
           tester.getRect(find.byTooltip('Previous page')).center.dy,
           closeTo(pageField.center.dy, 1),

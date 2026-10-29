@@ -46,11 +46,14 @@ keeps the existing sheet presentation and restores the discovery tabs beneath it
 The accepted option A is a fixed footer with first-page and previous-page
 buttons, a directly editable current page, an optional total-page count, and a
 next-page button. Remove the enclosing pill border and internal dividers. The
-whole current-page/total indicator is a softly filled rounded button with a
-persistent pencil glyph. Tapping it replaces the whole indicator with a numeric
-input and selects the current page; the total and pencil disappear while editing
-and return after submission or focus loss. Keep the indicator's dimensions stable
-and retain validation of the target number.
+whole current-page/total indicator is a softly filled rounded button without a
+pencil glyph. Tapping it replaces the whole indicator with a vertically centered
+numeric input and selects the current page; the total disappears while editing
+and returns after submission or focus loss. Keep the indicator's dimensions stable
+and retain validation of the target number. The minimum width is 56dp, shared
+with the Settings retention editor; longer page labels and larger text can grow
+the indicator. Completing an unchanged page edit restores the indicator without
+requiring a tab switch.
 Unknown totals omit the total rather than inventing a last page.
 
 The first-page action also returns to the top when already on page one, without
@@ -59,7 +62,8 @@ geometry and support larger text. ADR 0033 replaces the special
 32dp pill geometry in ADR 0026. The management sheet retains its
 existing presentation; no overlay-lifecycle redesign is proposed.
 
-The user confirmed this version after clarifying the edit affordance.
+The user subsequently requested removal of the pencil, smaller integer editors,
+centered input text, and reliable completion of an unchanged page edit.
 
 ## Acceptance scenarios
 

@@ -282,6 +282,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.done,
               textAlign: TextAlign.center,
+              textAlignVertical: TextAlignVertical.center,
               style: gitPulseTypeFieldText(
                 context,
               )?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),

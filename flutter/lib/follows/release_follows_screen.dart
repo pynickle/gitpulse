@@ -40,7 +40,7 @@ class ReleaseFollowsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final TextEditingController _query;
   late final TabController _sourceTabs;
   Timer? _debounce;
@@ -49,6 +49,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final state = ref.read(repositoryDiscoverySessionProvider);
     _query = TextEditingController(text: state.query);
     _sourceTabs = TabController(
@@ -67,10 +68,18 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
     _sourceTabs.dispose();
     _query.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    // The Scaffold removes keyboard insets from this body's MediaQuery, so
+    // reading View.viewInsets below also needs its own metrics notification.
+    setState(() {});
   }
 
   void _search({bool submit = false}) {

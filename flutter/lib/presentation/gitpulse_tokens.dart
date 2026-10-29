@@ -317,7 +317,7 @@ abstract final class GitPulseHeight {
 /// make the other answer wrong.
 abstract final class GitPulseWidth {
   /// A persistent integer editor, shared by retention and page navigation.
-  static const integerField = 72.0;
+  static const integerField = 56.0;
 
   /// The reading measure: the width at which a Repository page's README stays a
   /// line the eye does not lose its place in.

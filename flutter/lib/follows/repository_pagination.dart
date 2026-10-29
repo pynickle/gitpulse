@@ -9,8 +9,8 @@ import '../presentation/gitpulse_tokens.dart';
 import 'release_follows_dto.dart';
 
 /// Fixed page navigation with a discoverable, inline page-number editor.
-/// The complete page indicator becomes a field while editing; totals and the
-/// pencil return after submission without moving the neighbouring controls.
+/// The complete page indicator becomes a field while editing; the label
+/// returns after submission without moving the neighbouring controls.
 class RepositoryPagination extends StatefulWidget {
   const RepositoryPagination({
     super.key,
@@ -133,10 +133,7 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
     )..layout();
     final width = math.max(
       GitPulseWidth.integerField,
-      measure.width +
-          GitPulseIconSize.inControl +
-          GitPulseSpace.glyphGap +
-          GitPulseSpace.inline * 2,
+      measure.width + GitPulseSpace.inline * 2,
     );
     final height = math.max(
       GitPulseHeight.compact,
@@ -181,26 +178,28 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: _editing
-                    ? TextField(
-                        key: const ValueKey('repository-page-editor'),
-                        controller: _page,
-                        focusNode: _focus,
-                        keyboardType: TextInputType.number,
-                        textInputAction: TextInputAction.done,
-                        textAlign: TextAlign.center,
-                        style: gitPulseTypeFieldText(context),
-                        onSubmitted: (_) => _commit(),
-                        onTapOutside: (_) => _focus.unfocus(),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: GitPulseSpace.inline,
+                    ? Center(
+                        child: TextField(
+                          key: const ValueKey('repository-page-editor'),
+                          controller: _page,
+                          focusNode: _focus,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          textAlign: TextAlign.center,
+                          textAlignVertical: TextAlignVertical.center,
+                          style: gitPulseTypeFieldText(context),
+                          onSubmitted: (_) => _commit(),
+                          onTapOutside: (_) => _focus.unfocus(),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: GitPulseSpace.inline,
+                            ),
+                            hintText: l10n.followsPage,
                           ),
-                          constraints: BoxConstraints(minHeight: height),
-                          hintText: l10n.followsPage,
                         ),
                       )
                     : Semantics(
@@ -219,30 +218,15 @@ class _RepositoryPaginationState extends State<RepositoryPagination> {
                               padding: const EdgeInsets.symmetric(
                                 horizontal: GitPulseSpace.inline,
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: ExcludeSemantics(
-                                      child: Text(
-                                        label,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: style,
-                                      ),
-                                    ),
+                              child: Center(
+                                child: ExcludeSemantics(
+                                  child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: style,
                                   ),
-                                  const SizedBox(width: GitPulseSpace.glyphGap),
-                                  ExcludeSemantics(
-                                    child: Icon(
-                                      Icons.edit_outlined,
-                                      size: GitPulseIconSize.inControl,
-                                      color: widget.loading
-                                          ? toneTextSubtle(context)
-                                          : toneTextMuted(context),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
