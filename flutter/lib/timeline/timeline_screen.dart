@@ -354,7 +354,13 @@ class _LookupFailureBanner extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(GitPulseSpace.surfaceInset),
       decoration: BoxDecoration(
-        border: Border.all(color: wash),
+        // The boundary is the app's edge tone and the ground is the shared danger wash: a border
+        // drawn in the same ink as the fill it bounds is not an edge, it is a second wash, and the
+        // banner loses the shape that tells it apart from the list it stands over.
+        border: Border.all(
+          color: toneEdge(Theme.of(context).colorScheme),
+          width: GitPulseStroke.hairline,
+        ),
         borderRadius: BorderRadius.circular(GitPulseRadius.surface),
         // A banner that reports a failure: the danger tone laid on as a wash,
         // never the Accent, which means the app is acting (ADR 0031).
