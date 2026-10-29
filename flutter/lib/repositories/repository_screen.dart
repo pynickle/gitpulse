@@ -9,7 +9,6 @@ import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_avatar.dart';
 import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
-import '../presentation/gitpulse_icon_action.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_state_views.dart';
@@ -313,10 +312,12 @@ class _Actions extends ConsumerWidget {
           children: [
             Expanded(child: _RepositoryReleasesButton(repository: repository)),
             const SizedBox(width: GitPulseSpace.inline),
-            GitPulseIconAction(
+            GitPulseIconButton(
               key: const ValueKey('repository-follow'),
               tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
-              icon: followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+              icon: Icon(
+                followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+              ),
               emphasized: followed,
               onPressed: follows.editBlocked
                   ? null
@@ -332,10 +333,10 @@ class _Actions extends ConsumerWidget {
                     },
             ),
             const SizedBox(width: GitPulseSpace.tight),
-            GitPulseIconAction(
+            GitPulseIconButton(
               key: const ValueKey('repository-share'),
               tooltip: l10n.repositoryShare,
-              icon: Icons.ios_share,
+              icon: const Icon(Icons.ios_share),
               onPressed: () => unawaited(
                 shareRepositoryLink(
                   context,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_preset.dart';
 import 'gitpulse_theme.dart';
 
 /// Small content movements that accompany navigation, separate from layout.
@@ -91,14 +92,33 @@ abstract final class GitPulseRadius {
   static const bar = 2.0;
 }
 
-/// The one line width the app draws.
+/// The line widths the app draws.
 ///
 /// Half-pixel rules are gone deliberately: 0.5 renders inconsistently on
 /// high-DPI displays, and it was the wrong hierarchy signal besides.
+///
+/// There is one width for every line the app separates or bounds anything with — a card's
+/// edge, a table rule, a bar's hairline, an input's outline — and it is [hairline]. A stronger
+/// boundary is a darker tone at that same width, never a thicker line.
+///
+/// The three heavier widths below are not rules at all: they are the pen a drawn *mark* is made
+/// with, and each is named for the mark that needs it, because a stroke that draws a check or an
+/// arc is a different job from one that divides two tones.
 abstract final class GitPulseStroke {
-  /// The only stroke width. A stronger rule is a darker tone here, never a
-  /// thicker line.
+  /// The only rule width. A stronger rule is a darker tone here, never a thicker line.
   static const hairline = 1.0;
+
+  /// The pen a toggle's mark is drawn with: the checkbox's check and its mixed-state dash,
+  /// painted inside an 18dp box.
+  static const toggleMark = 2.0;
+
+  /// The pen a row indicator's arc is drawn with, at a glyph's measure (20dp): heavy enough to
+  /// read in a row of text, light enough not to read as a solid disc.
+  static const progressInline = 2.0;
+
+  /// The pen a page indicator's arc is drawn with, at the page state's measure (32dp): the
+  /// larger mark needs the heavier pen to keep the same visual weight as the row's.
+  static const progressPage = 3.0;
 }
 
 /// What the app paints when a surface shows the ink beneath it rather than a
@@ -124,6 +144,18 @@ abstract final class GitPulsePaint {
 ///
 /// Each reader takes the [BuildContext] the app's own type helpers take, and resolves through
 /// the theme's preset, so a tone cannot be read from anywhere but the presentation layer.
+/// The tone of the page: the canvas every screen stands on, and the tone the web app paints its
+/// own body with.
+///
+/// It is the palette's outermost step, darker than a surface in the light presentation and
+/// darker than the shell in the dark one, which is what lets a card, a bar and a sheet stand on
+/// the page and be read as raised from it.
+Color tonePage(BuildContext context) => gitPulseTonesOf(context).pageBg;
+
+/// The tone of a well cut into a surface: a field's own fill, an avatar's disc, the ground a
+/// floating action stands on, and the backdrop a pull-to-refresh paints.
+///
+/// It is a step *within* a surface, not the page: the page is [tonePage].
 Color toneShell(BuildContext context) => gitPulseTonesOf(context).shellBg;
 
 /// The tone of a card, a sheet, a dialog: the surface a reader reads.
@@ -132,14 +164,6 @@ Color toneSurface(BuildContext context) => gitPulseTonesOf(context).surface;
 /// A muted block within a surface: a Settings row's fill, a document's code block.
 Color toneSurfaceMuted(BuildContext context) =>
     gitPulseTonesOf(context).surfaceMuted;
-
-/// A block raised above the surface it sits on — the dark presentation's step up from a card.
-Color toneSurfaceRaised(BuildContext context) =>
-    gitPulseTonesOf(context).surfaceRaised;
-
-/// The fill a row, a list item or a menu line takes under the pointer.
-Color toneSurfaceHover(BuildContext context) =>
-    gitPulseTonesOf(context).surfaceHover;
 
 /// The fill a selected row, a chosen chip or an active destination takes.
 Color toneSurfaceActive(BuildContext context) =>
@@ -184,26 +208,24 @@ Color toneOnAccent(BuildContext context) =>
     gitPulseOnFill(gitPulseTonesOf(context), Theme.of(context).brightness);
 
 /// The success tone, read as text: "this succeeded", and nothing else.
+///
+/// It is the only reader the success family needs: the app paints no solid success fill — a
+/// receipt is a mark and a line, never a filled block — so `success-solid` stays a row of the
+/// shared palette that both clients may present, and this module has nothing to read it with.
 Color toneSuccess(BuildContext context) => gitPulseTonesOf(context).success;
-
-/// The success tone as a fill a status chip or a solid badge paints.
-Color toneSuccessSolid(BuildContext context) =>
-    gitPulseTonesOf(context).successSolid;
 
 /// The danger tone, read as text: a failure, a destructive action's label.
 Color toneDanger(BuildContext context) => gitPulseTonesOf(context).danger;
 
-/// The danger tone as a fill a status chip or a destructive button paints.
-Color toneDangerSolid(BuildContext context) =>
-    gitPulseTonesOf(context).dangerSolid;
-
-/// The danger tone laid on as a wash: the ground of a banner that reports a failure.
+/// The danger tone as a wash: the ground of a banner that reports a failure, and the fill of a
+/// failure's container.
 ///
-/// The shared data carries the text and solid tones; the wash is this presentation's own
-/// derivation from the text tone, in the same shape the web app derives its danger-soft from
-/// the same tone. It is a tone the app reads, not a colour a surface mixes for itself.
+/// It is a row of the shared palette (`danger-soft`) rather than a strength this client mixes for
+/// itself, because the web app paints the same wash behind its own failure banners: a client that
+/// derived its own proportion would drift from the other's hue in the light presentation and from
+/// its strength in the dark one. Hue and alpha are the data's (ADR 0032).
 Color toneDangerSoft(BuildContext context) =>
-    toneDanger(context).withValues(alpha: gitPulseStatusWashAlpha);
+    gitPulseTonesOf(context).dangerSoft;
 
 /// The tone a modal barrier is drawn in: the darkest ink the presentation has.
 ///
@@ -324,81 +346,114 @@ abstract final class GitPulseWidth {
   static const dialog = 420.0;
 }
 
+/// One row of the Theme Preset's type table, read as a text style.
+///
+/// It is the single path from a type role to the app's type: the row's size, weight, line height
+/// and letter spacing are the table's (ADR 0031), and a helper decides only the colour and —
+/// where one role has to carry two jobs — the weight. No helper states a size, a line height or a
+/// letter spacing, so the style a screen is set in cannot disagree with the style Material hands a
+/// retained control: both come from the same rows.
+///
+/// It reads the table the theme carries rather than the `TextTheme` the theme installed, because
+/// those two stop agreeing the moment a subtree supplies a theme of its own — a preview, a probe,
+/// a retained Material face that re-themes its descendants. A role asked of the table is the
+/// preset's role wherever it is asked from.
+TextStyle _typeRow(
+  BuildContext context,
+  GitPulseTypeRow Function(GitPulseTypeTable table) row, {
+  required Color color,
+  FontWeight? weight,
+}) {
+  final style = row(gitPulseTypeTableOf(context)).toTextStyle(color: color);
+  return weight == null ? style : style.copyWith(fontWeight: weight);
+}
+
 /// A page's own name: a Repository page's identity, at the emphasis of a
 /// heading rather than of a paragraph.
-///
-/// Every helper below takes a role's metrics from the Theme Preset's type table
-/// (ADR 0031) and decides only the colour and — where one role has to carry two
-/// jobs — the weight. No helper states a size, a line height or a letter
-/// spacing: those are rows of the table, so the style a helper returns cannot
-/// disagree with the style Material hands a retained control.
-TextStyle? gitPulseTypePageTitle(BuildContext context) {
-  return Theme.of(context).textTheme.headlineSmall
-      ?.copyWith(color: toneTextStrong(context));
-}
+TextStyle? gitPulseTypePageTitle(BuildContext context) => _typeRow(
+  context,
+  (table) => table.headlineSmall,
+  color: toneTextStrong(context),
+);
 
 /// The owner named above the repository's own name.
 ///
 /// The page says who owns the repository before it says which one it is, and
 /// the two are separate lines: this one only carries the address, so it keeps
 /// the row's size, the lighter weight, and the muted tone.
-TextStyle? gitPulseTypePageOwner(BuildContext context) {
-  return Theme.of(context).textTheme.titleSmall
-      ?.copyWith(fontWeight: FontWeight.w400, color: toneTextMuted(context));
-}
+TextStyle? gitPulseTypePageOwner(BuildContext context) => _typeRow(
+  context,
+  (table) => table.titleSmall,
+  color: toneTextMuted(context),
+  weight: FontWeight.w400,
+);
 
 /// The title of a surface within a page: a Timeline card, an empty or error
 /// state.
-TextStyle? gitPulseTypeSurfaceTitle(BuildContext context) {
-  return Theme.of(context).textTheme.titleMedium
-      ?.copyWith(color: toneTextStrong(context));
-}
+TextStyle? gitPulseTypeSurfaceTitle(BuildContext context) => _typeRow(
+  context,
+  (table) => table.titleMedium,
+  color: toneTextStrong(context),
+);
 
 /// The name a row is about: a setting's label, a Follows row's repository.
-TextStyle? gitPulseTypeRowLabel(BuildContext context) {
-  return Theme.of(context).textTheme.titleSmall
-      ?.copyWith(color: toneTextStrong(context));
-}
+TextStyle? gitPulseTypeRowLabel(BuildContext context) => _typeRow(
+  context,
+  (table) => table.titleSmall,
+  color: toneTextStrong(context),
+);
 
 /// A date group's header in the Timeline.
 ///
 /// Set at the body weight rather than at the row name's: the header already
 /// sits between two rules, and bolding it as well would make it compete with the
 /// cards it introduces.
-TextStyle? gitPulseTypeGroupHeader(BuildContext context) {
-  return Theme.of(context).textTheme.titleSmall
-      ?.copyWith(fontWeight: FontWeight.w400, color: toneTextStrong(context));
-}
+TextStyle? gitPulseTypeGroupHeader(BuildContext context) => _typeRow(
+  context,
+  (table) => table.titleSmall,
+  color: toneTextStrong(context),
+  weight: FontWeight.w400,
+);
 
 /// The repository's full name in a Timeline card — the only coloured text a
 /// card is allowed.
-TextStyle? gitPulseTypeBrandName(BuildContext context) {
-  return Theme.of(context).textTheme.labelMedium
-      ?.copyWith(fontWeight: FontWeight.w600, color: toneAccent(context));
-}
+///
+/// Its name says the job rather than the tone it happens to read: a card leads with the
+/// repository it is about, and that line is the one place the Accent stands for identity.
+TextStyle? gitPulseTypeRepositoryName(BuildContext context) => _typeRow(
+  context,
+  (table) => table.labelMedium,
+  color: toneAccent(context),
+  weight: FontWeight.w600,
+);
 
 /// The label of a block within a surface: a folded asset row, the Previous
 /// Refresh marker.
 ///
 /// The letter spacing is the table's, not this helper's: it is what makes an
 /// all-but-caps label read as a label instead of as small text.
-TextStyle? gitPulseTypeSectionLabel(BuildContext context) {
-  return Theme.of(context).textTheme.labelSmall
-      ?.copyWith(fontWeight: FontWeight.w600, color: toneTextMuted(context));
-}
+TextStyle? gitPulseTypeSectionLabel(BuildContext context) => _typeRow(
+  context,
+  (table) => table.labelSmall,
+  color: toneTextMuted(context),
+  weight: FontWeight.w600,
+);
 
 /// A card's summary, a setting's note, a meta line.
-TextStyle? gitPulseTypeMeta(BuildContext context) {
-  return Theme.of(context).textTheme.bodySmall
-      ?.copyWith(color: toneTextMuted(context));
-}
+TextStyle? gitPulseTypeMeta(BuildContext context) => _typeRow(
+  context,
+  (table) => table.bodySmall,
+  color: toneTextMuted(context),
+);
 
 /// The tightest meta there is: a card's timestamp, an asset's size and download
 /// count.
-TextStyle? gitPulseTypeMetaTight(BuildContext context) {
-  return Theme.of(context).textTheme.labelSmall
-      ?.copyWith(fontWeight: FontWeight.w400, color: toneTextMuted(context));
-}
+TextStyle? gitPulseTypeMetaTight(BuildContext context) => _typeRow(
+  context,
+  (table) => table.labelSmall,
+  color: toneTextMuted(context),
+  weight: FontWeight.w400,
+);
 
 /// One fact on a data line: the number a glyph stands beside, in the tone a line
 /// that supports another one is set in.
@@ -406,17 +461,19 @@ TextStyle? gitPulseTypeMetaTight(BuildContext context) {
 /// A fact is a label weight rather than a paragraph, so the numbers compare down
 /// the line instead of reading as prose; the glyph that says what they count
 /// lives in the fact's semantics, so the line never repeats its nouns.
-TextStyle? gitPulseTypeFactValue(BuildContext context) {
-  return Theme.of(context).textTheme.labelMedium
-      ?.copyWith(color: toneTextMuted(context));
-}
+TextStyle? gitPulseTypeFactValue(BuildContext context) => _typeRow(
+  context,
+  (table) => table.labelMedium,
+  color: toneTextMuted(context),
+);
 
 /// The largest statement the client makes: a page-level headline above a form,
 /// as the connection page's own name is.
-TextStyle? gitPulseTypePageHeadline(BuildContext context) {
-  return Theme.of(context).textTheme.headlineMedium
-      ?.copyWith(color: toneTextStrong(context));
-}
+TextStyle? gitPulseTypePageHeadline(BuildContext context) => _typeRow(
+  context,
+  (table) => table.headlineMedium,
+  color: toneTextStrong(context),
+);
 
 /// The label of a control: a button's text, a dialog's action, a navigation
 /// destination.
@@ -426,35 +483,31 @@ TextStyle? gitPulseTypePageHeadline(BuildContext context) {
 /// Accent, or the surface's own text — and emphasis comes from that tone rather
 /// than from a larger size. Everything else about the label is the type table's
 /// control role, so a control cannot invent a size of its own.
-TextStyle? gitPulseTypeControlLabel(BuildContext context, Color color) {
-  return Theme.of(context).textTheme.labelMedium?.copyWith(color: color);
-}
+TextStyle? gitPulseTypeControlLabel(BuildContext context, Color color) =>
+    _typeRow(context, (table) => table.labelMedium, color: color);
 
 /// A repository's description: prose, but still part of a page that is scanned.
 ///
 /// It sits at the body role rather than at the reading body's roomier line,
 /// because the title above it carries the page and the description only says
 /// what the repository is for.
-TextStyle? gitPulseTypeDescription(BuildContext context) {
-  return Theme.of(context).textTheme.bodyMedium
-      ?.copyWith(color: toneTextMuted(context));
-}
+TextStyle? gitPulseTypeDescription(BuildContext context) => _typeRow(
+  context,
+  (table) => table.bodyMedium,
+  color: toneTextMuted(context),
+);
 
 /// What a field holds: the value a reader typed, or the number one is showing.
 ///
 /// It is the body role in the tone prose is set in — a field is read, not
 /// announced — so the platform's own text input keeps the app's type instead of
 /// the type the platform would have given it.
-TextStyle? gitPulseTypeFieldText(BuildContext context) {
-  return Theme.of(context).textTheme.bodyMedium
-      ?.copyWith(color: toneText(context));
-}
+TextStyle? gitPulseTypeFieldText(BuildContext context) =>
+    _typeRow(context, (table) => table.bodyMedium, color: toneText(context));
 
 /// The reading body of a notes or README document.
 ///
-/// The one style the app sets outside Material's roles: it is a row of the same
-/// type table — 15 on a 24 line — so the reading scale is authored in the table
-/// the rest of the app's type comes from, instead of in a special case beside
-/// it.
+/// It is a row of the same type table — 15 on a 24 line — so the reading scale is authored in the
+/// table the rest of the app's type comes from, instead of in a special case beside it.
 TextStyle? gitPulseTypeReadingBody(BuildContext context) =>
     gitPulseTypeTableOf(context).readingBody.toTextStyle();

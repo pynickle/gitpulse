@@ -9,6 +9,7 @@ import 'dart:ui' show Color;
 /// One presentation of the `gitpulse` Theme Preset palette.
 class GitPulsePaletteTones {
   const GitPulsePaletteTones({
+    required this.pageBg,
     required this.shellBg,
     required this.surface,
     required this.surfaceMuted,
@@ -27,8 +28,10 @@ class GitPulsePaletteTones {
     required this.successSolid,
     required this.danger,
     required this.dangerSolid,
+    required this.dangerSoft,
   });
 
+  final Color pageBg;
   final Color shellBg;
   final Color surface;
   final Color surfaceMuted;
@@ -47,9 +50,11 @@ class GitPulsePaletteTones {
   final Color successSolid;
   final Color danger;
   final Color dangerSolid;
+  final Color dangerSoft;
 
   /// Every tone by the name the shared data gives it.
   Map<String, Color> toToneMap() => <String, Color>{
+    'page-bg': pageBg,
     'shell-bg': shellBg,
     'surface': surface,
     'surface-muted': surfaceMuted,
@@ -68,6 +73,7 @@ class GitPulsePaletteTones {
     'success-solid': successSolid,
     'danger': danger,
     'danger-solid': dangerSolid,
+    'danger-soft': dangerSoft,
   };
 }
 
@@ -75,6 +81,7 @@ class GitPulsePaletteTones {
 abstract final class GitPulsePalette {
   /// The light presentation.
   static const light = GitPulsePaletteTones(
+    pageBg: Color(0xFFF8FAFC),
     shellBg: Color(0xFFF1F5F9),
     surface: Color(0xFFFFFFFF),
     surfaceMuted: Color(0xFFF8FAFC),
@@ -93,10 +100,12 @@ abstract final class GitPulsePalette {
     successSolid: Color(0xFF1A7F37),
     danger: Color(0xFFCF222E),
     dangerSolid: Color(0xFFCF222E),
+    dangerSoft: Color.fromRGBO(248, 81, 73, 0.1),
   );
 
   /// The dark presentation.
   static const dark = GitPulsePaletteTones(
+    pageBg: Color(0xFF111318),
     shellBg: Color(0xFF171A21),
     surface: Color(0xFF1B1F27),
     surfaceMuted: Color(0xFF20252F),
@@ -115,5 +124,6 @@ abstract final class GitPulsePalette {
     successSolid: Color(0xFF238636),
     danger: Color(0xFFFF7B72),
     dangerSolid: Color(0xFFDA3633),
+    dangerSoft: Color.fromRGBO(255, 123, 114, 0.14),
   );
 }

@@ -12,6 +12,7 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:intl/intl.dart';
 
+import '../support/material_faces.dart';
 import '../timeline/timeline_test_support.dart';
 import 'release_detail_service_test.dart' show releaseDetailJson;
 import 'repository_releases_service_test.dart'
@@ -457,21 +458,7 @@ void main() {
         findsWidgets,
       );
       // …and none of the Material faces this change replaced is left in it.
-      for (final replaced in <Type>[
-        FilledButton,
-        OutlinedButton,
-        TextButton,
-        CircularProgressIndicator,
-        LinearProgressIndicator,
-        AlertDialog,
-        Dialog,
-      ]) {
-        expect(
-          find.descendant(of: page, matching: find.byType(replaced)),
-          findsNothing,
-          reason: '$replaced',
-        );
-      }
+      expectNoReplacedMaterialFaces(page);
       // The one Material icon button left in the page is the platform's own
       // back affordance, which the app keeps as a Platform Dialect Exception.
       expect(

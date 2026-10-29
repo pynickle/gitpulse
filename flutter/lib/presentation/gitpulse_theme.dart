@@ -38,6 +38,7 @@ class GitPulseFoundation extends ThemeExtension<GitPulseFoundation> {
       // preset's presentation settles, and the table snaps with it.
       preset: t < 0.5 ? preset : other.preset,
       palette: GitPulsePaletteTones(
+        pageBg: mix(from.pageBg, to.pageBg),
         shellBg: mix(from.shellBg, to.shellBg),
         surface: mix(from.surface, to.surface),
         surfaceMuted: mix(from.surfaceMuted, to.surfaceMuted),
@@ -56,6 +57,7 @@ class GitPulseFoundation extends ThemeExtension<GitPulseFoundation> {
         successSolid: mix(from.successSolid, to.successSolid),
         danger: mix(from.danger, to.danger),
         dangerSolid: mix(from.dangerSolid, to.dangerSolid),
+        dangerSoft: mix(from.dangerSoft, to.dangerSoft),
       ),
     );
   }
@@ -84,6 +86,21 @@ GitPulsePaletteTones gitPulseTonesOf(BuildContext context) =>
 GitPulseTypeTable gitPulseTypeTableOf(BuildContext context) =>
     gitPulseFoundationOf(context).preset.type;
 
+/// The proportion the preset's active step is laid on at for hover and keyboard focus.
+///
+/// The half-strength tint is the whole of the app's hover ink, and the strength is stated
+/// here rather than left in the expression, because it is a decision: the active step at full
+/// strength is a selected row, and at half strength it is a pointer's position.
+///
+/// It is deliberately **not** the shared `surface-hover` tone. Those two answer different
+/// questions: `surface-hover` is a static background the web app paints under a row the reader
+/// is pointing at, while this tint is an overlay the client lays *over* whatever fill a surface
+/// already has — a white card, a tinted chip, a bar's own surface. Painting the shared background
+/// under an ink layer would either hide the surface's own fill or double the tone on it, so the
+/// client states its wash as the active step at this alpha and leaves `surface-hover` to the
+/// surfaces that paint a background (ADR 0032).
+const gitPulseHoverTintAlpha = 0.5;
+
 /// The only interactive tint the app paints: the preset's active step, laid on lightly for
 /// hover and keyboard focus.
 ///
@@ -94,7 +111,7 @@ GitPulseTypeTable gitPulseTypeTableOf(BuildContext context) =>
 /// preset: the active step is the strongest step the palette carries in either presentation,
 /// which is what keeps a hover or a focus ring visible on a white card.
 Color gitPulseHoverTint(ColorScheme scheme) =>
-    scheme.surfaceContainerHighest.withValues(alpha: 0.5);
+    scheme.surfaceContainerHighest.withValues(alpha: gitPulseHoverTintAlpha);
 
 /// The ink any pressable control paints, state by state: nothing at all while it is pressed,
 /// and [gitPulseHoverTint] while it is hovered or focused.
@@ -165,14 +182,6 @@ WidgetStateProperty<Color?> gitPulseFilledInkOverlay(
 Color gitPulseOnFill(GitPulsePaletteTones tones, Brightness brightness) =>
     brightness == Brightness.light ? tones.surface : tones.shellBg;
 
-/// The proportion a status tone is laid on at when it is used as a wash rather than as ink:
-/// the ground of a banner that reports a failure.
-///
-/// The shared palette data carries the status tones as text and as solid fills; a wash is the
-/// presentation's own derivation from one of them, at the proportion the web app's own
-/// danger-soft uses, so the two clients' washes are the same strength.
-const gitPulseStatusWashAlpha = 0.10;
-
 /// The Material colour scheme the preset's palette fills, role by role.
 ///
 /// Nothing here is generated: `ColorScheme.fromSeed` is gone, because a scheme derived from
@@ -181,10 +190,10 @@ const gitPulseStatusWashAlpha = 0.10;
 /// too — an `on…` for every container, an inverse pair for a snackbar — so a retained control
 /// reads coherent values instead of the nonsense an unfilled role would give it.
 ///
-/// The neutral steps are filled by job rather than as a ladder of five: the shell is what a
-/// surface sits on, the muted surface is a block within it, the shell again is what a surface
-/// cuts a well into (a field's own fill, an avatar's disc), and the active step is the
-/// palette's strongest — the one a selection and the app's hover ink use.
+/// The neutral steps are filled by job rather than as a ladder of five: the page is the palette's
+/// outermost canvas, the shell is the step a surface cuts a well into, the muted surface is a
+/// block within one, and the active step is the palette's strongest — the one a selection and
+/// the app's hover ink use.
 ColorScheme gitPulseColorScheme(
   GitPulseThemePreset preset,
   Brightness brightness,
@@ -193,9 +202,6 @@ ColorScheme gitPulseColorScheme(
   // The tone that reads on the Accent and on the danger fill: the white surface under a light
   // Accent, the shell under a dark one.
   final onFill = gitPulseOnFill(tones, brightness);
-  // The soft danger wash the app's own banner paints, derived from the danger tone the way
-  // the web app derives its danger-soft from the same tone.
-  final dangerSoft = tones.danger.withValues(alpha: gitPulseStatusWashAlpha);
 
   return ColorScheme(
     brightness: brightness,
@@ -213,7 +219,10 @@ ColorScheme gitPulseColorScheme(
     onTertiaryContainer: tones.success,
     error: tones.danger,
     onError: onFill,
-    errorContainer: dangerSoft,
+    // The wash a failure's banner and a failure's container are drawn on is the palette's own
+    // `danger-soft` tone — the value the web app paints — rather than a stronger or weaker
+    // mix of the danger ink (ADR 0032).
+    errorContainer: tones.dangerSoft,
     onErrorContainer: tones.danger,
     surface: tones.surface,
     onSurface: tones.text,
@@ -249,7 +258,7 @@ TextTheme _platformTextTheme(Brightness brightness) {
 /// The GitPulse Material 3 theme for [brightness].
 ///
 /// The theme is GitPulse's: its tones come from the `gitpulse` Theme Preset, its type from
-/// that preset's table, and the page behind every screen is the shell tone the web app uses.
+/// that preset's table, and the page behind every screen is the canvas tone the web app paints.
 /// Material keeps the jobs that are genuinely the platform's — text input and its IME, the
 /// date picker's calendar, tooltips, pull-to-refresh — and receives coherent values for them
 /// from here.
@@ -271,9 +280,11 @@ ThemeData gitPulseTheme(Brightness brightness) {
     useMaterial3: true,
     colorScheme: scheme,
     textTheme: textTheme,
-    // The page a screen stands on is the shell's tone, as it is on the web: a card is the
-    // surface, and the two are told apart by that step rather than by a border.
-    scaffoldBackgroundColor: tones.shellBg,
+    // The page a screen stands on is the palette's own canvas, the tone the web app paints its
+    // body with: a card is the surface, and the two are told apart by that step and the card's
+    // own hairline. The shell is a different step — the well a field or an avatar disc is cut
+    // into — so the two clients agree about which tone the page is (ADR 0031).
+    scaffoldBackgroundColor: tones.pageBg,
     // The bar a page is titled with is the app's chrome, not Material's: the surface tone the
     // navigation bar and the cards share, told apart from the page by the one hairline the app
     // separates chrome with — never by Material 3's elevation or its scroll-under tint, which

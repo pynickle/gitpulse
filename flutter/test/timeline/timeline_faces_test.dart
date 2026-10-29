@@ -17,6 +17,7 @@ import 'package:gitpulse/timeline/timeline_toolbar.dart';
 
 import 'timeline_filter_controls_test.dart' show pumpTimeline;
 import 'timeline_test_support.dart';
+import '../support/material_faces.dart';
 
 /// The Release Timeline on the app's own presentation (ADR 0032).
 ///
@@ -27,33 +28,6 @@ import 'timeline_test_support.dart';
 /// about what rendered — the project's rule against reading source text holds
 /// here as everywhere.
 void main() {
-  /// The Material faces that were replaced, by their widget types, so a screen
-  /// that still mounts one fails rather than passes review.
-  const replaced = <Type>[
-    FilledButton,
-    ElevatedButton,
-    OutlinedButton,
-    TextButton,
-    IconButton,
-    NavigationBar,
-    NavigationDestination,
-    Checkbox,
-    Switch,
-    CircularProgressIndicator,
-    LinearProgressIndicator,
-    AlertDialog,
-  ];
-
-  void expectNoReplacedFaces(Finder scope) {
-    for (final face in replaced) {
-      expect(
-        find.descendant(of: scope, matching: find.byType(face)),
-        findsNothing,
-        reason: '$face is not GitPulse’s any more',
-      );
-    }
-  }
-
   Map<String, Object?> roundWith(List<Map<String, Object?>> releases) =>
       roundJson(
         pages: {'R_alpha': pageJson('octo', 'alpha', releases)},
@@ -100,7 +74,7 @@ void main() {
     // rather than a gap (ADR 0032)…
     expect(find.byType(TextField), findsOneWidget);
     // …and nothing Material's is left to operate.
-    expectNoReplacedFaces(find.byType(TimelineScreen));
+    expectNoReplacedMaterialFaces(find.byType(TimelineScreen));
     expect(tester.takeException(), isNull);
   });
 
@@ -193,7 +167,7 @@ void main() {
       find.descendant(of: panel, matching: find.byType(TextField)),
       findsOneWidget,
     );
-    expectNoReplacedFaces(panel);
+    expectNoReplacedMaterialFaces(panel);
     expect(tester.takeException(), isNull);
   });
 
@@ -215,7 +189,7 @@ void main() {
 
     expect(find.byType(GitPulseProgressPage), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expectNoReplacedFaces(find.byType(TimelineScreen));
+    expectNoReplacedMaterialFaces(find.byType(TimelineScreen));
 
     held.complete(BackendResult(statusCode: 200, data: roundWith(const [])));
     await tester.pump();
@@ -240,7 +214,16 @@ void main() {
       find.descendant(of: message, matching: find.byType(GitPulseButton)),
       findsNothing,
     );
-    expectNoReplacedFaces(find.byType(TimelineScreen));
+    // An empty page is not the app acting: its glyph is a noun — the mark that says what the
+    // page is about — so it is painted in a text tone rather than in the Accent, which belongs
+    // to primary actions, the selected state and focus (CONTEXT.md).
+    final context = tester.element(message);
+    final glyph = tester.widget<Icon>(
+      find.descendant(of: message, matching: find.byType(Icon)).first,
+    );
+    expect(glyph.color, toneTextMuted(context));
+    expect(glyph.color, isNot(toneAccent(context)));
+    expectNoReplacedMaterialFaces(find.byType(TimelineScreen));
   });
 
   testWidgets('a failed round offers the app’s own recovery action', (
@@ -267,6 +250,21 @@ void main() {
       findsOneWidget,
       reason: 'the failure keeps a retry, on the app’s own button',
     );
-    expectNoReplacedFaces(find.byType(TimelineScreen));
+    // A failure stays in the danger tone: that is the one status a page-level message reports.
+    final context = tester.element(find.byType(GitPulseMessageView));
+    expect(
+      tester
+          .widget<Icon>(
+            find
+                .descendant(
+                  of: find.byType(GitPulseMessageView),
+                  matching: find.byType(Icon),
+                )
+                .first,
+          )
+          .color,
+      toneDanger(context),
+    );
+    expectNoReplacedMaterialFaces(find.byType(TimelineScreen));
   });
 }

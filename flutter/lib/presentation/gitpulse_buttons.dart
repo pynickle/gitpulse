@@ -35,7 +35,9 @@ enum GitPulseButtonVariant {
 /// its place in the layout, and announces itself as unavailable.
 ///
 /// The control owns its mark: an [icon] passed here takes the variant's tone and
-/// the in-control measure, so a caller never decides a colour for it.
+/// the in-control measure, so a caller never decides a colour for it — unless the
+/// mark *is* the status the action reports, which is what [statusMarkTone] is
+/// for and the only thing it is for.
 class GitPulseButton extends StatelessWidget {
   const GitPulseButton({
     super.key,
@@ -45,6 +47,7 @@ class GitPulseButton extends StatelessWidget {
     this.icon,
     this.expand = false,
     this.semanticsLabel,
+    this.statusMarkTone,
   });
 
   /// The action, in the reader's language.
@@ -68,6 +71,25 @@ class GitPulseButton extends StatelessWidget {
   /// then hears what the action does, and a reader who can see the button keeps
   /// reading the short word. Every other button is named by its label.
   final String? semanticsLabel;
+
+  /// The tone of [icon] when that mark is a **status the action reports**, rather
+  /// than a picture of what the action does.
+  ///
+  /// This is the one exception to the control owning its mark's tone, and it is
+  /// deliberately narrow: an ordinary action — a retry, a filter, a follow, a
+  /// clear — passes nothing, so its mark takes the variant's ink and the button
+  /// reads as one control rather than as a coloured picture. A caller passes this
+  /// only where the status is the whole point of the mark and no line of text
+  /// carries it: a Follow set the app could not read or save, reported by the
+  /// manage action's mark; a clear that landed, reported by the check that stands
+  /// in its bin's place.
+  ///
+  /// It takes a status tone and nothing else — [toneDanger], [toneSuccess]. The
+  /// Accent is never a status: it means the app is acting (ADR 0031).
+  ///
+  /// A disabled control quiets the mark with the rest of itself: a status the
+  /// action can no longer report is not painted at full strength.
+  final Color? statusMarkTone;
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +125,8 @@ class GitPulseButton extends StatelessWidget {
             variant == GitPulseButtonVariant.tonal
         ? gitPulseFilledInkOverlay(scheme, ink)
         : gitPulseInkOverlay(scheme);
+    // The label's ink, unless the mark itself is the status the action reports.
+    final markInk = enabled ? (statusMarkTone ?? ink) : ink;
 
     return Semantics(
       button: true,
@@ -121,11 +145,11 @@ class GitPulseButton extends StatelessWidget {
               // A row lays a control out at its own natural width, so an action
               // that fills its width only does so where there is a width to
               // fill: everywhere else it keeps its label's measure.
-              final fill = expand && constraints.hasBoundedWidth;
+              final fillsTheRow = expand && constraints.hasBoundedWidth;
               return ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: GitPulseHeight.compact,
-                  minWidth: fill ? constraints.maxWidth : 0,
+                  minWidth: fillsTheRow ? constraints.maxWidth : 0,
                 ),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -144,7 +168,7 @@ class GitPulseButton extends StatelessWidget {
                         if (icon case final icon?) ...[
                           IconTheme(
                             data: IconThemeData(
-                              color: ink,
+                              color: markInk,
                               size: GitPulseIconSize.inControl,
                             ),
                             child: icon,
@@ -195,7 +219,8 @@ class GitPulseButton extends StatelessWidget {
 /// hover on a pointer): it is a Platform Dialect Exception, and the app supplies
 /// the mark and the words the platform presents (ADR 0032). [emphasized] paints
 /// the mark in the Accent, which is how a row says "this is already applied"
-/// before it is read.
+/// before it is read; [selected] is that same paint for a control whose Accent
+/// *is* a state the reader turned on, and it says so to a screen reader too.
 ///
 /// The face has three standings and knows all of them. An action standing on the
 /// page is a mark on that page; an action inside a control stands at the
@@ -211,6 +236,7 @@ class GitPulseIconButton extends StatelessWidget {
     required this.onPressed,
     this.size = GitPulseIconSize.action,
     this.emphasized = false,
+    this.selected,
     this.autofocus = false,
     this.dimension = GitPulseHeight.standard,
     this.floating = false,
@@ -223,7 +249,19 @@ class GitPulseIconButton extends StatelessWidget {
   /// The mark's own measure, by the job it does — never the target's.
   final double size;
 
+  /// Whether the action stands for something already applied — a Follow the
+  /// account has confirmed, a copy that has landed — without being a state the
+  /// reader turned on. The mark is the Accent and nothing is announced.
   final bool emphasized;
+
+  /// Whether the action's Accent *is* its state: the Timeline's release-notes
+  /// and filter modes, which stay applied until they are turned off again.
+  ///
+  /// It owns both halves of that statement — the mark is painted in the Accent
+  /// and the control's semantics node reports whether it is selected — so a
+  /// surface cannot paint one half and forget the other. Null, the default, is
+  /// "this action is not a state at all" rather than "this state is off".
+  final bool? selected;
 
   /// Takes the keyboard focus when it appears.
   ///
@@ -250,9 +288,10 @@ class GitPulseIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final enabled = onPressed != null;
+    final accented = emphasized || (selected ?? false);
     final ink = !enabled
         ? toneTextSubtle(context)
-        : emphasized
+        : accented
         ? toneAccent(context)
         // A floating action sits on a surface of its own, so its mark is as
         // strong as that surface's text; one standing on the page is a quiet
@@ -279,6 +318,9 @@ class GitPulseIconButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
+      // A control that is a state reports it here, on itself: the mark's tone and the words a
+      // screen reader hears are one decision (ADR 0032).
+      selected: selected,
       child: Tooltip(
         message: tooltip,
         child: SizedBox.square(

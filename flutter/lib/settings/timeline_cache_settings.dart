@@ -39,7 +39,6 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showGitPulseDialog<bool>(
       context,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       builder: (context) => GitPulseDialog(
         title: Text(l10n.settingsClearCacheTitle),
         actions: [
@@ -101,12 +100,13 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                 child: Icon(
                   _cleared ? Icons.check : Icons.delete_outline,
                   key: ValueKey(_cleared),
-                  // A clear that landed is a success, and the success tone is
-                  // the one tone that says so (ADR 0031): the Accent means the
-                  // app is acting, never that something worked.
-                  color: _cleared ? toneSuccess(context) : null,
                 ),
               ),
+              // A clear that landed is a success, and the success tone is the one
+              // tone that says so (ADR 0031): the Accent means the app is acting,
+              // never that something worked. The check standing in the bin's place
+              // is a status, so it is the mark the button may tone.
+              statusMarkTone: _cleared ? toneSuccess(context) : null,
             ),
       notes: [
         if (actions.clearFailed)

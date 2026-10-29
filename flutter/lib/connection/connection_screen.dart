@@ -74,7 +74,6 @@ Future<String?> showBackendAddressEditor(
   String address,
 ) => showGitPulseDialog<String>(
   context,
-  barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
   builder: (_) => _BackendAddressEditor(address: address),
 );
 

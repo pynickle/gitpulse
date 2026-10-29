@@ -1,12 +1,11 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/presentation/gitpulse_palette.g.dart';
 import 'package:gitpulse/presentation/gitpulse_preset.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
+
+import '../support/shared_palette.dart';
 
 /// ADR 0031: the client presents one Theme Preset. Its palette and its type table live once,
 /// as data, and the theme hands them to Material so a retained control (a text field's
@@ -15,47 +14,6 @@ import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 /// These tests read what the theme actually hands the framework and what the app's own
 /// readers return, in both presentations. The shared data is read from its file here rather
 /// than from the generated constants, so a tone has an independent source to be compared to.
-Map<String, Map<String, String>> sharedPalette() {
-  final decoded = jsonDecode(
-    File('../shared/data/theme-palette.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
-  return decoded.map(
-    (presentation, tones) => MapEntry(
-      presentation,
-      (tones as Map<String, dynamic>).map(
-        (tone, value) => MapEntry(tone, value as String),
-      ),
-    ),
-  );
-}
-
-/// The ARGB value a CSS colour notation resolves to.
-int argbOf(String css) {
-  final hex = RegExp(r'^#([0-9a-fA-F]{6})$').firstMatch(css);
-  if (hex != null) {
-    return 0xFF000000 | int.parse(hex.group(1)!, radix: 16);
-  }
-  final channels = RegExp(r'^rgba?\(([^)]*)\)$').firstMatch(css);
-  if (channels == null) {
-    throw ArgumentError.value(
-      css,
-      'css',
-      'not a colour notation this test understands',
-    );
-  }
-  final parts = channels
-      .group(1)!
-      .split(',')
-      .map((part) => part.trim())
-      .toList();
-  final alpha = parts.length == 4
-      ? (double.parse(parts[3]) * 255).round()
-      : 255;
-  return (alpha << 24) |
-      (int.parse(parts[0]) << 16) |
-      (int.parse(parts[1]) << 8) |
-      int.parse(parts[2]);
-}
 
 /// The contrast ratio the WCAG defines, so a paired `on…` role is judged as a reader sees it.
 double contrast(Color foreground, Color background) {
@@ -80,13 +38,15 @@ class ThemeProbe {
 
   ColorScheme get scheme => theme.colorScheme;
 
-  /// Every semantic tone the app can read, by the name the shared data gives it.
-  Map<String, Color> get tones => <String, Color>{
+  /// The tone readers the client has, by the shared data's name for the tone each one reads.
+  ///
+  /// A reader is the app's way of saying what a tone is *for*; this map is what proves each one
+  /// hands back the value the shared data declares, in both presentations.
+  Map<String, Color> get readers => <String, Color>{
+    'page-bg': tonePage(context),
     'shell-bg': toneShell(context),
     'surface': toneSurface(context),
     'surface-muted': toneSurfaceMuted(context),
-    'surface-raised': toneSurfaceRaised(context),
-    'surface-hover': toneSurfaceHover(context),
     'surface-active': toneSurfaceActive(context),
     'border': toneBorder(context),
     'border-strong': toneBorderStrong(context),
@@ -97,10 +57,13 @@ class ThemeProbe {
     'accent': toneAccent(context),
     'accent-soft': toneAccentSoft(context),
     'success': toneSuccess(context),
-    'success-solid': toneSuccessSolid(context),
     'danger': toneDanger(context),
-    'danger-solid': toneDangerSolid(context),
+    'danger-soft': toneDangerSoft(context),
   };
+
+  /// Every tone the preset carries, by the name the shared data gives it — including the four
+  /// the client paints no surface of its own for, which are still data both clients may present.
+  Map<String, Color> get tones => gitPulseTonesOf(context).toToneMap();
 
   /// The eight roles Material's [TextTheme] carries for this app, by role name.
   Map<String, TextStyle> get roles => <String, TextStyle>{
@@ -114,6 +77,20 @@ class ThemeProbe {
     'headlineMedium': theme.textTheme.headlineMedium!,
   };
 }
+
+/// The helper each row of the table reaches the app through, by the Material role an equivalent
+/// `TextTheme` entry carries. The theme table and the app's own helpers have to agree about
+/// every one of them.
+final helperRoles = <String, TextStyle? Function(BuildContext context)>{
+  'headlineSmall': gitPulseTypePageTitle,
+  'titleSmall': gitPulseTypeRowLabel,
+  'titleMedium': gitPulseTypeSurfaceTitle,
+  'labelMedium': (context) => gitPulseTypeFactValue(context),
+  'labelSmall': gitPulseTypeMetaTight,
+  'bodySmall': gitPulseTypeMeta,
+  'headlineMedium': gitPulseTypePageHeadline,
+  'bodyMedium': gitPulseTypeDescription,
+};
 
 Future<ThemeProbe> pumpTheme(WidgetTester tester, Brightness brightness) async {
   late ThemeProbe probe;
@@ -277,28 +254,129 @@ void main() {
     );
 
     testWidgets(
+      '${brightness.name}: every type helper agrees with the theme’s own TextTheme',
+      (tester) async {
+        final probe = await pumpTheme(tester, brightness);
+        final table = gitPulsePreset.type;
+
+        // One table, two readers of it: the `TextTheme` a retained Material control receives and
+        // the helpers the app's own screens are set in. A role cannot be one size in one and
+        // another in the other, because both are rows of the same table.
+        for (final MapEntry(key: role, value: helper) in helperRoles.entries) {
+          final fromHelper = helper(probe.context)!;
+          final fromTheme = probe.roles[role]!;
+          final row = table.chromeRoles[role]!;
+
+          expect(fromHelper.fontSize, row.size, reason: role);
+          expect(fromHelper.height, row.height, reason: role);
+          expect(fromHelper.letterSpacing, row.letterSpacing, reason: role);
+          expect(fromHelper.fontSize, fromTheme.fontSize, reason: role);
+          expect(fromHelper.height, fromTheme.height, reason: role);
+          expect(
+            fromHelper.letterSpacing,
+            fromTheme.letterSpacing,
+            reason: role,
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      '${brightness.name}: the type helpers keep the table’s role in a re-themed subtree',
+      (tester) async {
+        // The helpers read the type table the theme carries rather than the `TextTheme` a subtree
+        // happens to install: a preview, a probe or a retained Material face that re-themes its
+        // descendants must not be able to redefine the app's rhythm for the widgets inside it.
+        late TextStyle? fromHelper;
+        late TextStyle? fromAmbient;
+        final reThemed = gitPulseTheme(brightness);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: reThemed,
+            home: Theme(
+              data: reThemed.copyWith(
+                textTheme: reThemed.textTheme.copyWith(
+                  headlineSmall: const TextStyle(fontSize: 99),
+                ),
+              ),
+              child: Builder(
+                builder: (context) {
+                  fromHelper = gitPulseTypePageTitle(context);
+                  fromAmbient = Theme.of(context).textTheme.headlineSmall;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          fromAmbient!.fontSize,
+          99,
+          reason: 'the subtree’s theme did apply',
+        );
+        expect(
+          fromHelper!.fontSize,
+          gitPulsePreset.type.headlineSmall.size,
+          reason: 'a helper must keep the preset’s role',
+        );
+        expect(fromHelper!.height, gitPulsePreset.type.headlineSmall.height);
+      },
+    );
+
+    testWidgets(
       '${brightness.name}: the semantic tones resolve to the shared data',
       (tester) async {
         final probe = await pumpTheme(tester, brightness);
         final shared = sharedPalette()[brightness.name]!;
-        final tones = probe.tones;
 
-        expect(tones.keys, unorderedEquals(shared.keys));
+        // The palette the theme presents carries every tone the data declares, in the data's
+        // order — a tone the client paints nothing with is still part of the shared vocabulary.
+        expect(probe.tones.keys, unorderedEquals(shared.keys));
         for (final MapEntry(key: tone, value: value) in shared.entries) {
           expect(
-            tones[tone]!.toARGB32(),
+            probe.tones[tone]!.toARGB32(),
             argbOf(value),
             reason: '$tone ($value)',
           );
         }
 
-        // The soft danger wash is the presentation's own derivation from the danger tone, the
-        // way the web app derives its danger-soft from the same tone; it carries the tone's
-        // colour at the soft alpha rather than inventing one.
-        expect(toneDangerSoft(probe.context).r, toneDanger(probe.context).r);
-        expect(toneDangerSoft(probe.context).g, toneDanger(probe.context).g);
-        expect(toneDangerSoft(probe.context).b, toneDanger(probe.context).b);
-        expect(toneDangerSoft(probe.context).a, inExclusiveRange(0.05, 0.3));
+        // Every reader the client has hands back that same value…
+        expect(
+          shared.keys.toSet().containsAll(probe.readers.keys),
+          isTrue,
+          reason: 'a reader for a tone the shared data does not declare',
+        );
+        for (final MapEntry(key: tone, value: toneColor)
+            in probe.readers.entries) {
+          expect(
+            toneColor.toARGB32(),
+            argbOf(shared[tone]!),
+            reason: 'tone$tone does not read the shared $tone',
+          );
+        }
+
+        // …and the tones with no reader are exactly the four the client paints no surface of that
+        // job for: the raised step, the web's static row-background hover tone, and the two solid
+        // status fills. They stay rows of the shared data rather than being deleted, because they
+        // are values both clients may present (ADR 0032).
+        expect(
+          shared.keys.toSet().difference(probe.readers.keys.toSet()),
+          <String>{
+            'surface-raised',
+            'surface-hover',
+            'success-solid',
+            'danger-solid',
+          },
+          reason:
+              'a tone without a reader, or a reader for a tone nobody paints',
+        );
+
+        // The page a screen stands on is the shared canvas tone, and the soft danger wash is the
+        // shared wash rather than a strength this client mixes for itself (ADR 0032).
+        expect(probe.theme.scaffoldBackgroundColor, probe.tones['page-bg']);
+        expect(probe.scheme.errorContainer, probe.tones['danger-soft']);
+        expect(probe.tones['danger-soft']!.a, lessThan(1));
       },
     );
 

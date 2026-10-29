@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_preset.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/document_view_page.dart';
+import 'package:gitpulse/releases/document_content.dart';
 import 'package:gitpulse/releases/document_viewer_assets.dart';
+import 'package:gitpulse/releases/release_document.dart';
+
+import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
+
+/// Nothing in this page opens a link: the surface is being read, not followed.
+Future<bool> _ignoreUrl(String url) async => true;
 
 const _assets = DocumentViewerAssets(
   script: 'RENDERER();',
@@ -238,5 +248,39 @@ void main() {
     // The reading scale is the type table's, so the document grows with the
     // same rows the chrome is set in.
     expect(style.type, gitPulseTypeTableOf(context));
+  });
+  testWidgets('the reading surface renders none of the Material faces this '
+      'client replaced', (tester) async {
+    // A README is a surface a reader spends time on, so it is part of the app's
+    // presentation rather than a page dropped into it: its shell draws none of
+    // the faces the Control Layer replaced (ADR 0032).
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: documentViewerOverrides(),
+        child: MaterialApp(
+          theme: gitPulseTheme(Brightness.light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: ReleaseDocument(
+              source: '# A README\n\nSome prose to read.',
+              documentIdentity: 'readme',
+              document: RepositoryDocumentContext(
+                owner: 'octo',
+                repository: 'app',
+                ref: 'main',
+                documentPath: 'docs/README.md',
+              ),
+              onTapUrl: _ignoreUrl,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(ReleaseDocument), findsOneWidget);
+    expectNoReplacedMaterialFaces(find.byType(ReleaseDocument));
+    expect(tester.takeException(), isNull);
   });
 }

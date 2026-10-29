@@ -17,8 +17,11 @@ import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
+import 'package:gitpulse/settings/settings_screen.dart';
+
 import '../support/device_preferences_support.dart';
 import '../support/settling.dart';
+import '../support/material_faces.dart';
 import '../support/presentation_harness.dart';
 import '../timeline/timeline_cache_test_support.dart';
 import '../timeline/timeline_test_support.dart';
@@ -803,5 +806,19 @@ void main() {
     await pumpApp(tester, harness);
     await openSettings(tester, 'Settings');
     expect(find.text('Offline'), findsOneWidget);
+  });
+  testWidgets('the Settings page renders none of the Material faces this '
+      'client replaced', (tester) async {
+    useNarrowWindow(tester);
+    tester.binding.platformDispatcher.localesTestValue = [const Locale('en')];
+    addTearDown(tester.binding.platformDispatcher.clearAllTestValues);
+    final harness = harnessFor(tester);
+    await tester.runAsync(harness.open);
+    await pumpApp(tester, harness);
+    await openSettings(tester, 'Settings');
+
+    expect(find.text('Language'), findsOneWidget);
+    expectNoReplacedMaterialFaces(find.byType(SettingsScreen));
+    expect(tester.takeException(), isNull);
   });
 }

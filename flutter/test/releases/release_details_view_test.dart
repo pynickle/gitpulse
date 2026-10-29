@@ -9,6 +9,7 @@ import 'package:gitpulse/releases/release_detail_service.dart';
 import 'package:gitpulse/releases/release_details_view.dart';
 
 import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
 
 ReleaseDetail releaseWith({
   String? name,
@@ -344,20 +345,7 @@ void main() {
     expect(fold.style?.color, toneTextMuted(context));
     expect(fold.style?.fontSize, gitPulseTypeTableOf(context).labelSmall.size);
     // And no Material face this change replaced is left in the body.
-    for (final replaced in <Type>[
-      FilledButton,
-      OutlinedButton,
-      TextButton,
-      IconButton,
-      CircularProgressIndicator,
-      LinearProgressIndicator,
-    ]) {
-      expect(
-        find.descendant(of: view, matching: find.byType(replaced)),
-        findsNothing,
-        reason: '$replaced',
-      );
-    }
+    expectNoReplacedMaterialFaces(view);
     expect(tester.takeException(), isNull);
   });
 }

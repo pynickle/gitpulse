@@ -353,15 +353,13 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                               .formatDecimal(state.repositories.length),
                           variant: GitPulseButtonVariant.tonal,
                           onPressed: _showFollowed,
-                          icon: Icon(
-                            Icons.bookmarks_outlined,
-                            // A follow set the app could not read or save is
-                            // reported by the mark as well as by the line
-                            // under the page.
-                            color: state.problem == null
-                                ? null
-                                : toneDanger(context),
-                          ),
+                          icon: const Icon(Icons.bookmarks_outlined),
+                          // A follow set the app could not read or save is reported by
+                          // the mark as well as by the line under the page: the one job
+                          // where a button's mark is a status rather than a picture.
+                          statusMarkTone: state.problem == null
+                              ? null
+                              : toneDanger(context),
                         ),
                       ),
                     ],

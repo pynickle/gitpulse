@@ -4,14 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'gitpulse_tokens.dart';
 
-/// The line a row's indicator is drawn with: thin enough to sit beside a glyph
-/// without thickening the row it belongs to.
-const gitPulseInlineProgressStroke = 2.0;
-
-/// The line a page's indicator is drawn with: heavy enough to read as the
-/// page's whole state from across a phone.
-const gitPulsePageProgressStroke = 3.0;
-
 /// How long one turn of either indicator takes.
 const gitPulseProgressTurn = Duration(milliseconds: 900);
 
@@ -30,7 +22,7 @@ class GitPulseProgressInline extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _GitPulseSpinner(
     extent: GitPulseIconSize.action,
-    stroke: gitPulseInlineProgressStroke,
+    stroke: GitPulseStroke.progressInline,
     label: label,
   );
 }
@@ -49,7 +41,7 @@ class GitPulseProgressPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _GitPulseSpinner(
     extent: GitPulseIconSize.page,
-    stroke: gitPulsePageProgressStroke,
+    stroke: GitPulseStroke.progressPage,
     label: label,
   );
 }

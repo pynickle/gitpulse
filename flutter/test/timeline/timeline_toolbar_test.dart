@@ -316,7 +316,7 @@ void main() {
         matching: find.byType(GitPulseIconButton),
       ),
     );
-    expect(notes.emphasized, isTrue);
+    expect(notes.selected, isTrue);
     expect(
       tester.getSemantics(find.byTooltip(l10n.timelineIncludeNotes)),
       isSemantics(isSelected: true),
@@ -356,7 +356,7 @@ void main() {
         matching: find.byType(GitPulseIconButton),
       ),
     );
-    expect(filter.emphasized, isTrue);
+    expect(filter.selected, isTrue);
     await tester.tap(find.byTooltip(l10n.timelineFilters));
     expect(opened, 1);
   });

@@ -46,20 +46,21 @@ decoration, a snackbar, the date picker, a divider — reads coherent values in 
   one; `primaryContainer` is the Accent's soft wash with the Accent reading back on top.
 - `secondaryContainer` is the active step and `onSecondaryContainer` the Accent: the selected row, the
   chosen chip and the navigation bar's indicator all take one tone, in the Accent's family.
-- `error` is the danger tone and `onError` reads on it; `errorContainer` is that tone as a wash at
-  `gitPulseStatusWashAlpha` (one tenth, the proportion the web app's own danger-soft uses), with the
-  danger tone reading back on top.
+- `error` is the danger tone and `onError` reads on it; `errorContainer` is the shared palette's
+  `danger-soft` wash — the value the web app paints behind its own failure banners — with the danger
+  tone reading back on top.
 - `surface` is the card's tone and `onSurface` is `text`, `onSurfaceVariant` is `text-muted`; `outline`
   is `border-strong` and `outlineVariant` is `border`, which is why `toneEdge` and `toneRule` keep
   their meaning without changing a line.
 - The neutral containers are filled by job rather than as a ladder of five. `surfaceContainerLowest`
-  is the shell — what a surface sits on; `surfaceContainerLow` and `surfaceContainer` are the muted
-  surface — a block within one; `surfaceContainerHigh` is the shell again, because that is the step a
-  surface cuts a well _into_ (a field's own fill, an avatar's disc, a picker's chrome); and
-  `surfaceContainerHighest` is the active step, the palette's strongest in either presentation.
+  is the shell — the step a surface cuts a well _into_ (a field's own fill, an avatar's disc, a
+  picker's chrome); `surfaceContainerLow` and `surfaceContainer` are the muted surface — a block
+  within one; `surfaceContainerHigh` is the shell again; and `surfaceContainerHighest` is the active
+  step, the palette's strongest in either presentation.
 - `inverseSurface`/`onInverseSurface` are a snackbar's pair (strong text tone under a surface tone),
-  and `scaffoldBackgroundColor` is the shell tone, so a page is the web app's slate and a card is the
-  surface standing on it.
+  and `scaffoldBackgroundColor` is the palette's `page-bg`, the canvas the web app paints its own body
+  with, so a page is the same slate in both clients and a card is the surface standing on it. The
+  shell step is a well inside a surface, not the page (ADR 0032).
 
 Dialogs and the date picker are then given the surface tone explicitly, because that is the tone the
 app's own sheets already paint; a Material overlay reads as one of GitPulse's overlays instead of as a
@@ -84,20 +85,24 @@ re-flow.
 
 `ThemeData.textTheme` is the platform's own typography with those eight roles re-authored on top, so
 the roles the table does not name (`bodyLarge`, the display sizes, `labelLarge`) still reach a
-retained control. The `gitPulseType*` helpers read the same roles out of that theme and decide only
-the colour — and, where one role carries two jobs, the weight. No helper states a size, a line height
-or a letter spacing, so a role cannot disagree with itself.
+retained control. The `gitPulseType*` helpers read those roles out of the preset's type table — the
+table the theme carries, not the `TextTheme` a subtree may have installed — and decide only the
+colour and, where one role carries two jobs, the weight. No helper states a size, a line height or a
+letter spacing, so a role cannot disagree with itself, and a re-themed subtree cannot redefine the
+app's type inside itself (ADR 0032).
 
 ## Semantic reading
 
 App code stops taking its tones from Material's roles and takes them from the preset. The readers live
 beside `toneEdge`/`toneRule` in `lib/presentation/gitpulse_tokens.dart`, in the same shape — free
 functions named `tone…` — and take the `BuildContext` the app's type helpers take: `toneShell`,
-`toneSurface`, `toneSurfaceMuted`, `toneSurfaceRaised`, `toneSurfaceHover`, `toneSurfaceActive`,
+`tonePage`, `toneShell`, `toneSurface`, `toneSurfaceMuted`, `toneSurfaceActive`,
 `toneBorder`, `toneBorderStrong`, `toneText`, `toneTextStrong`, `toneTextMuted`, `toneTextSubtle`,
-`toneAccent`, `toneAccentSoft`, `toneSuccess`, `toneSuccessSolid`, `toneDanger`, `toneDangerSolid` and
-`toneDangerSoft` (the danger tone as a wash). Between them they cover every tone the client currently
-takes from a Material colour role.
+`toneAccent`, `toneAccentSoft`, `toneSuccess`, `toneDanger` and `toneDangerSoft` (the danger tone as
+a wash). Between them they cover every tone the client currently takes from a Material colour role.
+Four tones the palette carries have no reader, because the client paints no surface of that job —
+`surface-raised`, `surface-hover`, `success-solid` and `danger-solid` — and they stay rows of the
+shared data rather than being deleted, since both clients may present them (ADR 0032).
 
 The readers resolve through `GitPulseFoundation`, which the theme carries; a widget mounted outside
 `gitPulseTheme` — a probe, a preview, a test — reads the product preset's tones instead of throwing,
@@ -125,7 +130,7 @@ test that asserts it through the framework passes without an edit.
 
 ## Consequences
 
-- The client's appearance changes app-wide at once: the page is the shell's slate, cards are the
+- The client's appearance changes app-wide at once: the page is the palette's canvas, cards are the
   surface, the Accent is indigo, a confirmation is GitHub's green and nothing else is, and the type is
   the table's. No screen gets a local theme override during the pilot; a second theme would hide
   exactly the cross-screen failures the pilot exists to find.
@@ -136,9 +141,10 @@ test that asserts it through the framework passes without an edit.
   and the lowest step is the shell too. A reader who expects Material's monotone container ramp will
   find GitPulse's ramp instead. The next role that needs a step the palette does not carry is a data
   change to the shared palette, not a literal in a widget.
-- The soft danger wash, `toneDangerSoft` and `errorContainer`, is derived from the danger tone at one
-  declared proportion rather than added to the shared data; the web app derives its danger-soft the
-  same way. If a second client ever needs it at another strength, the value belongs in the data.
+- The soft danger wash, `toneDangerSoft` and `errorContainer`, is a row of the shared data
+  (`danger-soft`) rather than a proportion this client mixes: the web app paints the same value, and
+  a wash each client derives for itself is a wash that drifts between them in hue or in strength. The
+  same holds for the page canvas: `page-bg` is data, not a step the client picks (ADR 0032).
 - Three type sizes did not move — the body's 14, the section label's 11 and the row name's 14 — because
   measured controls and one long-standing row are built around them. The table owns them anyway, so
   moving one later is one edit and one regression test, not a hunt.
