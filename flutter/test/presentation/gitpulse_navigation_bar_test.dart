@@ -126,6 +126,40 @@ void main() {
     expect(decoration.boxShadow, isNull);
   });
 
+  testWidgets('the bar stands on the device, not on the keyboard', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewPadding);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewInsets);
+
+    await pumpBar(tester, selected: 0);
+    final withoutInset = tester
+        .getSize(find.byType(GitPulseNavigationBar))
+        .height;
+    // A phone's gesture area, reported the way the platform reports it.
+    tester.view.viewPadding = const FakeViewPadding(bottom: 24);
+    tester.view.padding = const FakeViewPadding(bottom: 24);
+    await tester.pump();
+    final onDevice = tester.getSize(find.byType(GitPulseNavigationBar)).height;
+    expect(onDevice, withoutInset + 24, reason: 'the bar pads for the gesture');
+
+    // The keyboard consumes what the inset left the page, and this bar keeps its
+    // height anyway: the shell sizes the page above the bar by it, so a bar that
+    // answered the keyboard would move the page by the gesture inset on every
+    // tap into a search field.
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+    tester.view.padding = FakeViewPadding.zero;
+    await tester.pump();
+    expect(
+      tester.getSize(find.byType(GitPulseNavigationBar)).height,
+      onDevice,
+      reason: 'the bar stands on the device, not on the keyboard',
+    );
+  });
+
   testWidgets('each destination carries the app’s ink contract', (
     tester,
   ) async {

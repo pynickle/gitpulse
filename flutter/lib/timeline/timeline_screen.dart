@@ -825,7 +825,8 @@ class _TimelineListState extends State<_TimelineList>
           right: _floatingInset,
           // Above the app's bottom bar, which the shell already reserves, and
           // above the system's own inset where no bar stands on it: the shell
-          // removes the body's bottom padding only when it shows that bar.
+          // removes the body's bottom padding only when it shows that bar, so
+          // this inset is what is left for a page that has no bar of its own.
           bottom: _floatingInset + MediaQuery.paddingOf(context).bottom,
           child: _ReturnToTop(visible: _returnToTop, onPressed: _scrollToTop),
         ),

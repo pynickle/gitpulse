@@ -58,9 +58,17 @@ class GitPulseNavigationBar extends StatelessWidget {
           ),
         ),
         // The bar sits above the phone's own gesture area, so it pads for it
-        // the way the page above it already does.
+        // the way the page above it already does — and keeps that padding while
+        // a field has the keyboard. The platform reports no bottom padding once
+        // the IME covers it, and a bar that answered that would lose its
+        // gesture inset for as long as a reader types: the shell sizes the page
+        // against this bar's height, so every tap into a search field would move
+        // the page by that inset and back. The inset is the device's, not the
+        // keyboard's, so it is read as the view's own padding rather than as
+        // what is left of it.
         child: SafeArea(
           top: false,
+          maintainBottomViewPadding: true,
           child: Row(
             children: [
               for (var index = 0; index < destinations.length; index++)

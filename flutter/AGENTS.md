@@ -122,6 +122,13 @@ one too (`../docs/adr/`).
   (skinned, not replaced), tabs, the Material icon glyphs, and the platform's page transitions and
   back affordance. Adding a Material face a reader operates means amending that record, not just
   mounting the widget; a face in neither list is an oversight, not a decision.
+- **The bar stands on the device, not on the keyboard.** `GitPulseNavigationBar` pads itself with the
+  view's own bottom inset (`maintainBottomViewPadding`), so the bar keeps its height while a field has
+  the keyboard. That height is the measure `Scaffold` sizes the body by (`max(viewInsets, barHeight)`),
+  so a bar that read `padding` — which the platform zeroes once the IME covers it — would shrink for
+  as long as a reader typed and move the page by the gesture inset on every tap into a search field.
+  A surface that only needs the device's inset for its own bottom edge reads `viewPaddingOf`, the way
+  the Timeline's Filter Panel does.
 - **Documents** — a release's notes and a repository README — render only through
   `tool/document_viewer` (ADR 0028). Fix a rendering gap there; a second Markdown-to-widget path is
   never the answer.
