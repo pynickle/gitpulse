@@ -52,7 +52,24 @@ one too (`../docs/adr/`).
 - **Sheets** — the Release Drawer and the Release Timeline Filter Panel — open only through
   `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`), which owns the route, entry, rounded
   surface and Escape dismissal (ADR 0029). Do not open a second `showGeneralDialog` sheet; pass a
-  body that decides its own content and height.
+  body that decides its own content and height. **Dialogs** open only through `showGitPulseDialog`
+  (`lib/presentation/gitpulse_dialog.dart`) for the same reason (ADR 0032): pass a `GitPulseDialog`
+  body that decides its title, content and actions.
+- **Controls are GitPulse's own** (ADR 0032): the bottom bar (`GitPulseNavigationBar`), the button
+  family (`GitPulseButton` with its four variants, and `GitPulseIconButton`), the two progress
+  indicators (`GitPulseProgressInline`, `GitPulseProgressPage`) and the dialog entry point replace
+  Material's `NavigationBar`, its five button widgets, its spinner and its dialog. A migrated screen
+  mounts none of those Material faces, and its widget test asserts they are absent from its rendered
+  tree (`find.byType(FilledButton)` → `findsNothing`). The interaction contract is one rule and lives
+  in `gitpulse_theme.dart`: `gitPulseInkOverlay` for a control with no fill (nothing on press, the
+  one half-strength tint on hover and focus) and `gitPulseFilledInkOverlay` for a filled or tonal
+  one (its own foreground while pressed). A control that paints a fill paints it through its own
+  `Material`, never above the ink.
+- **Platform Dialect Exceptions** are the controls that stay Material's on purpose — text input and
+  its IME/selection/magnifier/autofill, the date picker's calendar, tooltips, pull-to-refresh, the
+  snackbar's behaviour (skinned, not replaced), tabs, the Material icon glyphs, and the platform's
+  page transitions and back affordance. The list and each reason live in ADR 0032; adding a Material
+  face a reader operates means amending that record, not just mounting the widget.
 - **Documents** — a release's notes and a repository README — render only through
   `tool/document_viewer` (ADR 0028). Fix a rendering gap there; a second Markdown-to-widget path is
   never the answer.
