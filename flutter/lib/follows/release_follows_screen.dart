@@ -493,12 +493,21 @@ class _SortControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Row(
       children: [
         Expanded(
           child: SegmentedButton<StarredRepositorySort>(
             expandedInsets: EdgeInsets.zero,
             showSelectedIcon: false,
+            // The sort control is Material's — a Platform Dialect Exception, because a
+            // segmented choice is the platform's grammar (ADR 0032) — and it draws its
+            // segments as `TextButton`s inside a `TextButtonTheme` of its own, which
+            // shadows the app's. So the app's one ink rule is handed to it the way the
+            // TabBar above it takes it: no press wash, the one hover and focus tint.
+            style: ButtonStyle(
+              overlayColor: gitPulseInkOverlay(theme.colorScheme),
+            ),
             segments: [
               ButtonSegment(
                 value: StarredRepositorySort.created,
