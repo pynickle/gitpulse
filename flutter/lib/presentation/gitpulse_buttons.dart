@@ -44,6 +44,7 @@ class GitPulseButton extends StatelessWidget {
     this.variant = GitPulseButtonVariant.text,
     this.icon,
     this.expand = false,
+    this.semanticsLabel,
   });
 
   /// The action, in the reader's language.
@@ -59,6 +60,14 @@ class GitPulseButton extends StatelessWidget {
 
   /// Fills the width it is given, for an action that owns the end of a row.
   final bool expand;
+
+  /// The action's whole name, when [label] is the shortening its ink has room
+  /// for rather than the name itself.
+  ///
+  /// Only a destination whose own name does not fit passes one: a screen reader
+  /// then hears what the action does, and a reader who can see the button keeps
+  /// reading the short word. Every other button is named by its label.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +152,28 @@ class GitPulseButton extends StatelessWidget {
                           const SizedBox(width: GitPulseSpace.inline),
                         ],
                         Flexible(
-                          child: Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            style: gitPulseTypeControlLabel(context, ink),
-                          ),
+                          child: semanticsLabel == null
+                              ? Text(
+                                  label,
+                                  textAlign: TextAlign.center,
+                                  style: gitPulseTypeControlLabel(context, ink),
+                                )
+                              // The short word stays the ink; the whole name is
+                              // what a screen reader is given, so shortening a
+                              // destination costs nothing but letters.
+                              : Semantics(
+                                  label: semanticsLabel,
+                                  child: ExcludeSemantics(
+                                    child: Text(
+                                      label,
+                                      textAlign: TextAlign.center,
+                                      style: gitPulseTypeControlLabel(
+                                        context,
+                                        ink,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -178,6 +204,8 @@ class GitPulseIconButton extends StatelessWidget {
     required this.onPressed,
     this.size = GitPulseIconSize.action,
     this.emphasized = false,
+    this.autofocus = false,
+    this.dimension = GitPulseHeight.standard,
   });
 
   final String tooltip;
@@ -188,6 +216,23 @@ class GitPulseIconButton extends StatelessWidget {
   final double size;
 
   final bool emphasized;
+
+  /// Takes the keyboard focus when it appears.
+  ///
+  /// A surface that opens with one action — a sheet's close — passes this so
+  /// the keyboard has somewhere to be, and the Escape key the surface answers
+  /// has a focused subtree to arrive in.
+  final bool autofocus;
+
+  /// The touch target's own measure: the app's 48dp action, or the cell a flat
+  /// control gives its step.
+  ///
+  /// It is stated by the surface the action sits in, never chosen by the action:
+  /// a page pill's step is one cell of the pill's recorded geometry (ADR 0026),
+  /// and a full-height square there would be taller than the pill it belongs to.
+  /// A parent that lays the control out shorter than this still decides the
+  /// height — the measure is what the control asks for, not what it forces.
+  final double dimension;
 
   @override
   Widget build(BuildContext context) {
@@ -206,11 +251,12 @@ class GitPulseIconButton extends StatelessWidget {
         button: true,
         enabled: enabled,
         child: SizedBox.square(
-          dimension: GitPulseHeight.standard,
+          dimension: dimension,
           child: Material(
             type: MaterialType.transparency,
             child: InkWell(
               onTap: onPressed,
+              autofocus: autofocus,
               borderRadius: rounded,
               overlayColor: gitPulseInkOverlay(scheme),
               child: Center(

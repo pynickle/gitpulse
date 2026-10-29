@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/releases/repository_releases_screen.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -356,8 +357,8 @@ void main() {
       expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
       expect(
         tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.chevron_left),
+            .widget<GitPulseIconButton>(
+              find.widgetWithIcon(GitPulseIconButton, Icons.chevron_left),
             )
             .onPressed,
         isNull,
@@ -368,8 +369,8 @@ void main() {
       expect(find.text('Page 2'), findsOneWidget);
       expect(
         tester
-            .widget<IconButton>(
-              find.widgetWithIcon(IconButton, Icons.chevron_right),
+            .widget<GitPulseIconButton>(
+              find.widgetWithIcon(GitPulseIconButton, Icons.chevron_right),
             )
             .onPressed,
         isNull,
@@ -427,6 +428,64 @@ void main() {
         ),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'the repository release list renders on the app’s faces and none of the '
+    'replaced ones',
+    (tester) async {
+      await pumpReleasesPage(
+        tester,
+        size: const Size(390, 844),
+        handlers: {
+          'GET api/releases/octo/app?page=1&per_page=20': () => BackendResult(
+            statusCode: 200,
+            data: releaseListJson([
+              listReleaseJson(42, 'stable-release'),
+            ], hasNext: true),
+          ),
+        },
+      );
+
+      final page = find.byType(RepositoryReleasesScreen);
+      expect(page, findsOneWidget);
+      // The pager is the app's own action, and the filter row is the app's own
+      // pill…
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseIconButton)),
+        findsWidgets,
+      );
+      // …and none of the Material faces this change replaced is left in it.
+      for (final replaced in <Type>[
+        FilledButton,
+        OutlinedButton,
+        TextButton,
+        CircularProgressIndicator,
+        LinearProgressIndicator,
+        AlertDialog,
+        Dialog,
+      ]) {
+        expect(
+          find.descendant(of: page, matching: find.byType(replaced)),
+          findsNothing,
+          reason: '$replaced',
+        );
+      }
+      // The one Material icon button left in the page is the platform's own
+      // back affordance, which the app keeps as a Platform Dialect Exception.
+      expect(
+        find.descendant(of: page, matching: find.byType(IconButton)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(BackButton),
+          matching: find.byType(IconButton),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }

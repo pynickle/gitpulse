@@ -2,13 +2,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'gitpulse_buttons.dart';
 import 'gitpulse_tokens.dart';
 
 /// The type a pill's number is set in, and the one line height the pill is built
 /// around: the body role, with tabular figures so the number does not shift as
 /// its digits change.
 TextStyle? gitPulsePillNumberStyle(BuildContext context) =>
-    Theme.of(context).textTheme.bodyMedium
+    gitPulseTypeFieldText(context)
         ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 
 /// One line of the number's type at this reader's text scale.
@@ -52,11 +53,10 @@ class GitPulsePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final rule = VerticalDivider(
       width: GitPulseStroke.hairline,
       thickness: GitPulseStroke.hairline,
-      color: toneRule(scheme),
+      color: toneRule(Theme.of(context).colorScheme),
     );
     return SizedBox(
       height: heightFor(context),
@@ -64,7 +64,9 @@ class GitPulsePill extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(GitPulseRadius.row),
           border: Border.all(
-            color: focused ? scheme.primary : toneEdge(scheme),
+            color: focused
+                ? toneAccent(context)
+                : toneEdge(Theme.of(context).colorScheme),
             width: GitPulseStroke.hairline,
           ),
         ),
@@ -104,18 +106,14 @@ class GitPulsePillStep extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => IconButton(
+  Widget build(BuildContext context) => GitPulseIconButton(
     tooltip: tooltip,
     onPressed: onPressed,
-    iconSize: GitPulseIconSize.action,
-    visualDensity: VisualDensity.compact,
-    style: IconButton.styleFrom(
-      padding: EdgeInsets.zero,
-      minimumSize: Size.zero,
-      fixedSize: size,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    ),
     icon: Icon(icon),
+    // One cell of the pill, not a standalone action: the pill's own flat
+    // geometry decides the step's width, and the pill's height decides the rest
+    // (ADR 0026).
+    dimension: size.width,
   );
 }
 

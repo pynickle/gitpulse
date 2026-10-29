@@ -50,16 +50,18 @@ class DocumentViewerStyle {
     double bottomInset = 0,
   }) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return DocumentViewerStyle(
       dark: theme.brightness == Brightness.dark,
-      foreground: scheme.onSurface,
-      background: scheme.surface,
-      muted: scheme.onSurfaceVariant,
-      rule: toneRule(scheme),
-      accent: scheme.primary,
-      codeBackground: scheme.surfaceContainer,
-      inlineCodeBackground: scheme.surfaceContainerHighest,
+      // Every tone the document paints is the app's own, read by the job it
+      // does rather than by a Material role's name: a README is part of the app,
+      // not a page dropped into it.
+      foreground: toneText(context),
+      background: toneSurface(context),
+      muted: toneTextMuted(context),
+      rule: toneRule(theme.colorScheme),
+      accent: toneAccent(context),
+      codeBackground: toneSurfaceMuted(context),
+      inlineCodeBackground: toneSurfaceActive(context),
       textScale: MediaQuery.textScalerOf(context),
       type: gitPulseTypeTableOf(context),
       bottomInset: bottomInset,

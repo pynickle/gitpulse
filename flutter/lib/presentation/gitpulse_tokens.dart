@@ -375,6 +375,24 @@ TextStyle? gitPulseTypeMetaTight(BuildContext context) {
       ?.copyWith(fontWeight: FontWeight.w400, color: toneTextMuted(context));
 }
 
+/// One fact on a data line: the number a glyph stands beside, in the tone a line
+/// that supports another one is set in.
+///
+/// A fact is a label weight rather than a paragraph, so the numbers compare down
+/// the line instead of reading as prose; the glyph that says what they count
+/// lives in the fact's semantics, so the line never repeats its nouns.
+TextStyle? gitPulseTypeFactValue(BuildContext context) {
+  return Theme.of(context).textTheme.labelMedium
+      ?.copyWith(color: toneTextMuted(context));
+}
+
+/// The largest statement the client makes: a page-level headline above a form,
+/// as the connection page's own name is.
+TextStyle? gitPulseTypePageHeadline(BuildContext context) {
+  return Theme.of(context).textTheme.headlineMedium
+      ?.copyWith(color: toneTextStrong(context));
+}
+
 /// The label of a control: a button's text, a dialog's action, a navigation
 /// destination.
 ///

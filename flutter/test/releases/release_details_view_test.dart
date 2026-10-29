@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/release_detail_dto.dart';
 import 'package:gitpulse/releases/release_detail_service.dart';
 import 'package:gitpulse/releases/release_details_view.dart';
@@ -54,12 +56,14 @@ Future<List<Uri>> pumpDetails(
   WidgetTester tester,
   ReleaseDetail release, {
   double width = 420,
+  ThemeData? theme,
 }) async {
   final launched = <Uri>[];
   await tester.pumpWidget(
     ProviderScope(
       overrides: documentViewerOverrides(),
       child: MaterialApp(
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -315,5 +319,45 @@ void main() {
     );
     expect(find.textContaining('Saved'), findsOneWidget);
     expect(find.textContaining('Oct 18, 2026'), findsWidgets);
+  });
+
+  testWidgets('the release body is the app’s surface, not Material’s faces', (
+    tester,
+  ) async {
+    await pumpDetails(
+      tester,
+      releaseWith(name: 'The big one', assets: [asset()]),
+      theme: gitPulseTheme(Brightness.light),
+    );
+
+    final view = find.byType(ReleaseDetailsView);
+    // The release's name is a surface's title and the assets fold is a section
+    // label: both are rows of the type table, in the app's own tones.
+    final context = tester.element(view);
+    final title = tester.widget<SelectableText>(find.byType(SelectableText));
+    expect(
+      title.style?.fontSize,
+      gitPulseTypeTableOf(context).titleMedium.size,
+    );
+    expect(title.style?.color, toneTextStrong(context));
+    final fold = tester.widget<Text>(find.textContaining('asset'));
+    expect(fold.style?.color, toneTextMuted(context));
+    expect(fold.style?.fontSize, gitPulseTypeTableOf(context).labelSmall.size);
+    // And no Material face this change replaced is left in the body.
+    for (final replaced in <Type>[
+      FilledButton,
+      OutlinedButton,
+      TextButton,
+      IconButton,
+      CircularProgressIndicator,
+      LinearProgressIndicator,
+    ]) {
+      expect(
+        find.descendant(of: view, matching: find.byType(replaced)),
+        findsNothing,
+        reason: '$replaced',
+      );
+    }
+    expect(tester.takeException(), isNull);
   });
 }
