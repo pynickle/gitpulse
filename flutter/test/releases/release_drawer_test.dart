@@ -207,6 +207,23 @@ void main() {
     expect(find.text('Entry notes'), findsOneWidget);
   });
 
+  testWidgets(
+    'a header drag dismisses at half-screen without closing too early',
+    (tester) async {
+      await openReleaseDrawer(tester, size: const Size(390, 1000));
+      final drawer = find.byKey(const Key('release-drawer'));
+      await tester.drag(find.text('Entry notes'), const Offset(0, 120));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(drawer).top, closeTo(300, .01));
+
+      // This crosses the halfway line but never reaches the old 60% boundary.
+      await tester.drag(find.text('Entry notes'), const Offset(0, 230));
+      await tester.pumpAndSettle();
+      expect(drawer, findsNothing);
+      expect(find.byType(ReleaseTimelineCard), findsOneWidget);
+    },
+  );
+
   testWidgets('drag dismissal never rebounds upward before closing', (
     tester,
   ) async {

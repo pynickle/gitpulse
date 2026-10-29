@@ -82,8 +82,8 @@ abstract final class GitPulseRadius {
   /// the Timeline card).
   static const surface = 12.0;
 
-  /// A mobile bottom sheet's top corners. The rest of that sheet's
-  /// geometry — 70% open, 40% floor, 0.7 snap — belongs to ADR 0010.
+  /// A mobile bottom sheet's top corners. The Release Drawer's remaining
+  /// geometry — 70% open, 50% floor, 0.7 snap — is recorded in ADR 0018.
   static const sheetTop = 20.0;
 
   /// The smallest rounding the app draws, on a decoration rather than a

@@ -45,3 +45,11 @@ List, one-step return).
   changing a heading tier, changes what every release body reads like.
 - Opening height, snap sizes and drag thresholds remain ADR 0010's. Reading space was bought from the
   chrome, not from the sheet.
+
+## Earlier downward dismissal
+
+The Flutter Release Drawer's minimum height is now 50% of the window, superseding the 40% minimum
+above. A downward drag closes the drawer when its top reaches the middle of the screen, reducing
+travel from the 70% opening height by one third. The opening height, full-screen maximum and 0.7 snap
+remain unchanged. Header drags and repository-list drags use the same minimum, and dismissal still
+prevents a subsequent snap animation. This tuning is specific to the Flutter Release Drawer.

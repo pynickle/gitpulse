@@ -41,6 +41,9 @@ Widget _chromeAction({
 /// ink hierarchy.
 const _sheetGrabThickness = 4.0;
 
+/// Half the window remains visible when a downward drag dismisses the drawer.
+const _sheetMinExtent = .5;
+
 class ReleaseDrawer extends ConsumerStatefulWidget {
   const ReleaseDrawer({super.key, required this.entry});
 
@@ -230,7 +233,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
           if (!_closing && _sheetController.isAttached) {
             _sheetController.jumpTo(
               (_sheetController.size - details.delta.dy / availableHeight)
-                  .clamp(.4, 1),
+                  .clamp(_sheetMinExtent, 1),
             );
           }
         },
@@ -485,7 +488,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
         child: DraggableScrollableSheet(
           controller: _sheetController,
           initialChildSize: .7,
-          minChildSize: .4,
+          minChildSize: _sheetMinExtent,
           maxChildSize: 1,
           expand: false,
           snap: true,
