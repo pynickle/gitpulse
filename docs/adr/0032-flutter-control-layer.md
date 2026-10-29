@@ -29,12 +29,12 @@ given. With them, no Material checkbox or switch is drawn anywhere in the client
 longer installs `CheckboxThemeData`: an ink override for a control the client does not draw would be
 an override with nothing to override.
 
-The **choice chip** (Settings' language and appearance choices) is not one of the seven faces and is
-not decided here. It stays Material's drawing, its selected state already comes from the app's own
+The **choice chip** (Settings' language and appearance choices) is not one of the seven faces. It
+stays Material's drawing, its selected state already comes from the app's own
 `secondaryContainer`/`onSecondaryContainer` pairing in the theme, and the press rule reaches it
-through the transparent highlight the theme sets. A chip that later needs GitPulse's own skin is an
-eighth face of the same decision and needs its own amendment — it is named here so that its absence
-from the replaced set is not read as an oversight.
+through the transparent highlight the theme sets. It is registered below as a Platform Dialect
+Exception rather than left out of both lists: a chip that later needs GitPulse's own skin is an
+eighth face of this decision and needs its own amendment.
 
 ## What each face keeps from the app it replaces
 
@@ -84,10 +84,15 @@ table. Concretely:
   the barrier, the scrim, the surface tone, the shape, the measure and the Escape key are decided in
   one place, and a body (`GitPulseDialog`) decides only its title, content and actions. The surface
   is `toneSurface` at `GitPulseRadius.surface`; the measure is `GitPulseWidth.dialog` (420dp), taken
-  out of the page by the gutter, so a confirmation and a form arrive the same size; the scrim is the
-  scheme's own `scrim` at `gitPulseDialogBarrierAlpha` (0.54, the strength Material's dialogs already
-  had). A dialog keeps a scrim the sheets do not: a sheet is pulled away, a dialog is tapped away,
-  and the page under a tap has to read as covered. Escape dismisses either.
+  out of the page by the gutter, so a confirmation and a form arrive the same size; the barrier is
+  `toneScrim` — the scheme's own darkest ink, `scrim` — at `gitPulseDialogBarrierAlpha` (0.54, the
+  strength Material's dialogs already had). A dialog keeps a barrier the sheets do not: a sheet is
+  pulled away, a dialog is tapped away, and the page under a tap has to read as covered. Escape
+  dismisses either. The barrier is the one Material colour role the client still reads, and it reads
+  it in the tone module (`toneScrim`) rather than in the dialog, because a barrier's value is "the
+  darkest ink this presentation has" rather than a step the shared palette names — it is black on
+  both presentations and would be a wrong tone if it were the palette's strong text, which is near
+  white in the dark one. A future preset that carries an `overlay` tone takes the role over.
 
 ## The interaction contract, restated
 
@@ -112,11 +117,13 @@ tonal surface keeps an answer to a press.**
   sanctioned remedy if a press ever reads as dead is still the one ADR 0023 named: a pressed surface
   moves its hairline toward the Accent, and that needs its own record.
 
-The theme keeps installing the same overlay on the Material families the client has not replaced yet
-(`IconButton`, `TextButton`, `OutlinedButton`, for the Follows, Connection, Repository and Release
-surfaces), so the contract holds across the two implementations rather than only in the new one. The
-toggle families are no longer among them: `checkboxTheme` is gone, `switchTheme` was never installed,
-and the app's own toggles read `gitPulseInkOverlay` directly.
+The theme installs that overlay on the two Material families a retained control still draws —
+`IconButton`, which the bar's back affordance and the date picker's calendar/input toggle are, and
+`TextButton`, which the date picker's own actions are — so the contract holds in the one place a
+reader still meets Material's drawing rather than only in the app's own controls. A retained face a
+screen mounts itself is handed the same overlay at its call site; see the exceptions below. The
+toggle families are not among them: `checkboxTheme` is gone, `switchTheme` was never installed, and
+the app's own toggles read `gitPulseInkOverlay` directly.
 
 ## Platform Dialect Exceptions
 
@@ -129,40 +136,108 @@ that behaviour without buying anything GitPulse can name:
   and nothing about typing. A field the reader cannot select or paste in is a worse field, and no
   skin is worth that.
 - **The date picker's calendar.** Choosing a date is the one interaction where the platform's own
-  grammar (month paging, year selection, the accessibility of a grid of days) is the feature.
+  grammar (month paging, year selection, the accessibility of a grid of days) is the feature. The
+  theme gives it the app's surface tone and the app's ink on its own buttons, and nothing else.
+- **The bar a page is titled with (`AppBar`)**: the Connection page's bar and
+  `RepositoryPageAppBar`. A bar is where the platform's contract with the reader actually arrives —
+  the back affordance, the system back gesture, the page below animating under a toolbar of the
+  framework's own height — and the app's only reader-operated controls in it are its own: an icon
+  action, and a back affordance that is the platform's. So the bar keeps the platform's behaviour
+  and is _skinned_ through the theme instead of replaced: the app's surface tone, no Material 3
+  elevation and no scroll-under tint, the one hairline the app separates chrome with, and the type
+  table's role for its title. Its drawing is not stock Material even though its behaviour is the
+  platform's; converting it into an eighth face would mean owning the back affordance and the
+  page transition, which is the opposite of what this record decides.
+- **The segmented control (`SegmentedButton`)**: the Follows sort control. A segmented choice is the
+  platform's grammar for "one of these, and one is chosen" — its keyboard and pointer handling, its
+  selection group semantics and its own single-shape drawing — and the app has no second control
+  that wants that shape. It is the one retained face a screen mounts itself, so it is handed the
+  app's ink at its call site: the `TextButtonTheme` it wraps its segments in would otherwise shadow
+  the theme's entry, and a segment would paint Material's pressed wash. It draws its segments as
+  Material `TextButton`s, which is why the app-wide assertion lets an occurrence under it through.
+- **The choice chip (`ChoiceChip`)**: Settings' language and appearance choices. A chip's press, its
+  own measure and the check mark it shows while chosen are the platform's control grammar, and the
+  app supplies what it has an opinion about — the tone pairing for the chosen state, and the one ink
+  through the theme's transparent highlight and hover tint.
 - **Tooltips.** A tooltip's timing, its long-press on touch and its hover on a pointer are the
   platform's; the app supplies the mark and the words, and `GitPulseIconButton` keeps the platform's
   `Tooltip` wrapping it.
 - **Pull-to-refresh.** The gesture, its physics and its indicator belong to the scroll it is part
-  of; the app decides only the tones that indicator is painted in.
-- **The snackbar's behaviour.** It is skinned through the theme — its tone pair, its place on the
-  screen, how long it stays — and not replaced, because a transient message's behaviour is the
-  platform's and the app has nothing to add to it.
+  of; the app decides only the tones that indicator is painted in. Its indicator is a
+  `CircularProgressIndicator` subclass, which is why the app-wide assertion reads progress by
+  subtype only on a settled tree.
+- **The snackbar's behaviour.** It is skinned through the theme — the scheme's inverse tone pair,
+  which is what a snackbar reads — and not replaced, because a transient message's behaviour is the
+  platform's and the app has nothing to add to it. There is no `snackBarTheme`: the tone pair is
+  already the app's.
 - **Tabs.** The tab bar's drag-to-switch, its paging and its swipe affordance are the platform's
-  navigation grammar.
+  navigation grammar. The app hands the Follows tab bar its own indicator, hairline and ink.
 - **The Material icon glyphs.** The app writes its own names for them (`Icons.view_timeline_outlined`)
   and decides their tones and measures; the drawings themselves stay the platform's set, because a
   bundled icon font is its own decision.
 - **The platform's page transitions and back affordance.** Push and pop, the predictive-back
-  gesture and the system back button are the operating system's contract with the reader.
+  gesture and the system back button are the operating system's contract with the reader. In the
+  repository pages' bar the affordance is literally Material's `BackButton`, which is an
+  `IconButton` — the family the theme still inks for that reason.
 
 **The list may not grow silently.** Adding a Material control face that a reader operates requires
 an amendment to this record naming the exception and its reason; a face that is missing from both
 this list and the replaced set is an oversight, not a decision.
+
+## What the theme still installs, and why
+
+`gitpulse_theme.dart` is no longer a document of undone Material. Every entry it installs is one the
+app believes in, and each has a consumer named here:
+
+| Entry                                                    | What it serves                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `colorScheme`, `textTheme`, `extensions`                 | The Foundation Layer itself (ADR 0031): the preset's tones and type table, presented to every widget, and read back by the `tone…` and `gitPulseType…` helpers.                                                                                                                                                                                                  |
+| `scaffoldBackgroundColor`                                | The page: the shell tone every screen stands on, the web app's slate.                                                                                                                                                                                                                                                                                            |
+| `appBarTheme`                                            | The two bars (see the exceptions): surface tone, no elevation, no M3 scroll tint, one hairline, the table's title role.                                                                                                                                                                                                                                          |
+| `datePickerTheme`                                        | The date picker: the surface tone the app's own sheets are drawn on.                                                                                                                                                                                                                                                                                             |
+| `highlightColor`/`splashColor`/`focusColor`/`hoverColor` | The plain ink — nothing on press, the one tint on hover and focus — for every `InkWell` the app draws without an overlay of its own: the Release Drawer's rows, the asset rows, the Follows rows, a chip that is not chosen, the filter panel's date bounds. A plain `InkWell` has no overlay of its own to state the rule in, so the rule is the theme default. |
+| `iconButtonTheme`                                        | `IconButton`: the bar's back affordance (`BackButton extends IconButton`) and the date picker's calendar/input toggle.                                                                                                                                                                                                                                           |
+| `textButtonTheme`                                        | `TextButton`: the date picker's own action buttons.                                                                                                                                                                                                                                                                                                              |
+
+Three entries the theme used to carry are gone with the last surface that drew their family:
+`outlinedButtonTheme` (the client mounts no `OutlinedButton`, and no retained control builds one),
+`dialogTheme` (no Material dialog is opened — the date picker reads `datePickerTheme` instead) and
+`checkboxTheme` (retired with the toggles). `switchTheme` was never installed. What is absent is
+absent by decision: re-adding one of them without a screen that draws the family is the "override
+with nothing to override" this record exists to end.
+
+## The vocabulary, and the literals
+
+App code names a GitPulse tone or a GitPulse type role, never a Material one: outside the tone and
+type modules no file reads `colorScheme.<role>` or `Theme.of(context).textTheme.<role>`. A file that
+needs a scheme at all hands the whole object to `toneEdge`, `toneRule`, `toneScrim` or
+`gitPulseInkOverlay` — a reader in the module that owns the translation — and never takes a role off
+it. The tone and type modules (`gitpulse_tokens.dart`, `gitpulse_preset.dart`, the generated palette
+and `gitpulse_theme.dart`) are the one place the client speaks Material's colour and type
+vocabulary, which is what makes a Flutter upgrade unable to redefine what the app's design says.
+
+No screen or widget states a colour either. `Color(0x…)` and `Colors.<name>` live in the preset, the
+generated palette and the theme's own scheme mapping; a surface that shows the ink beneath it rather
+than a fill of its own says `GitPulsePaint.none`, and a size that a widget needs is a token or a row
+of the type table. Nothing states a `fontSize` at a call site: the eight chrome roles and the
+reading scale are the table's, and a ninth size is a row.
 
 ## The release gate
 
 No screen may present the old controls and the new ones side by side at release. The transition is
 allowed inside a development branch only: a Flutter distribution that shipped half the client on
 Material's button family and half on GitPulse's would be visible as a mixture, and a reader would
-learn the app twice. The pilot is Settings, because it is the only surface that carries the shell's
-bar together with three of the replaced faces while every remaining exception lives elsewhere.
+learn the app twice. The pilot was Settings, because it was the surface that carried the shell's bar
+together with three of the replaced faces while every remaining exception lives elsewhere.
 
-Enforcement is executable rather than documentary: a migrated screen's widget test asserts that the
-replaced Material faces are absent from its rendered tree (`find.byType(FilledButton)` and its
-siblings → `findsNothing` inside that screen). The project's rule against testing source text is
-respected because the assertion is about what rendered. The Settings pilot and the Release Timeline
-both carry that test, and a screen adopted later joins them.
+Enforcement is executable rather than documentary. Each migrated screen's widget test asserts that
+the replaced Material faces are absent from its rendered tree (`find.byType(FilledButton)` and its
+siblings → `findsNothing` inside that screen), and `test/presentation/app_faces_test.dart` is the
+client's own settlement: it mounts the real app and visits the three destinations and the Connection
+page, asserting that none of the replaced faces renders, that the exceptions still render as
+themselves, and that the day the theme's remaining entries reached the picker's buttons is the day
+they stopped being dead weight. The project's rule against testing source text is respected because
+every assertion is about what rendered.
 
 ## Consequences
 
@@ -171,9 +246,9 @@ both carry that test, and a screen adopted later joins them.
   humanised download sizes, and the reasons a press paints nothing are all still true and are
   inherited here.
 - The interaction contract is now asserted in two places, and both must keep passing: the
-  theme-level test reads the ink the framework is handed by the app's own controls (and by the
-  Material families still in use), and each face's own test reads what a reader gets — a press, a
-  hover, a disabled control that refuses, a tooltip, a dialog that dismisses.
+  theme-level test reads the ink the framework is handed by the app's own controls and by the two
+  Material families a retained face still draws, and each face's own test reads what a reader gets —
+  a press, a hover, a disabled control that refuses, a tooltip, a dialog that dismisses.
 - A Flutter upgrade can no longer restyle the faces a reader operates. What is left to Material is
   the list above, and each entry on it is a behaviour the platform does better than the app would.
 - **The switch and the checkbox are GitPulse's now.** They were the last gap in this record's
@@ -190,7 +265,15 @@ both carry that test, and a screen adopted later joins them.
   `OutlinedButton`s, and the box at each repository row's end draws the app's own 18dp box. The panel
   keeps the row rhythm it had — a repository row still stands at `GitPulseHeight.rowMin` — because
   the box takes the square the row has left rather than a target of its own.
-- The theme's own Material component themes (`iconButtonTheme`, `textButtonTheme`,
-  `outlinedButtonTheme`) stay installed while the Follows, Connection, Repository and Release
-  surfaces still mount those families. They become deletable when the last screen moves, and
-  deleting them is the proof this decision is finished rather than merely recorded.
+- The theme's own Material component themes were the last thing this record could not settle until
+  every screen had moved: `outlinedButtonTheme` and `dialogTheme` are deleted, `checkboxTheme` went
+  with the toggles, and the two families a retained face genuinely draws keep theirs. Deleting them
+  is the proof the decision is finished rather than merely recorded, and the app-wide test fails if
+  one comes back without a screen that draws its family.
+- **What the client no longer contains.** No screen mounts Material's button family, navigation bar,
+  switch, checkbox, dialog or progress face; no app code outside the tone and type modules reads one
+  of Material's colour roles or type roles; no surface states a colour literal or a font size; and
+  the constant that called itself the brand is not in the tree. The green the client used to build
+  itself out of is reachable only as the success tone, on a receipt and never on an action. What is
+  left to Material is the exception list above, and each entry on it is a behaviour the platform
+  does better than the app would.
