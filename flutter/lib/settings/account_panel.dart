@@ -9,9 +9,9 @@ import '../connection/connection_screen.dart'
     show connectionProblemLabel, showBackendAddressEditor;
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_avatar.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_status_badge.dart';
-import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
@@ -91,8 +91,6 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final connection = ref.watch(connectionControllerProvider).value;
     final backend = connection?.backend;
     final session = ref.watch(sessionControllerProvider);
@@ -103,15 +101,11 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
     final signedIn = session.phase == SessionPhase.signedIn && identity != null;
     final busy = session.busy;
     final notifier = ref.read(sessionControllerProvider.notifier);
-    final secondary = theme.textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
+    final secondary = gitPulseTypeMeta(context);
 
     final inset = widget.card ? 0.0 : gitPulseSettingsGutter;
     final problem = connection?.problem;
-    final loginStyle = theme.textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w600,
-    );
+    final loginStyle = gitPulseTypeRowLabel(context);
 
     Widget note(String text, GitPulseSettingNoteTone tone) => Padding(
       padding: EdgeInsets.fromLTRB(inset, GitPulseSpace.inline, inset, 0),
@@ -129,7 +123,7 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
                 child: Icon(
                   Icons.dns_outlined,
                   size: GitPulseIconSize.inline,
-                  color: scheme.onSurfaceVariant,
+                  color: toneTextMuted(context),
                 ),
               ),
               const SizedBox(width: GitPulseSpace.inline),
@@ -163,17 +157,11 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
                   style: secondary,
                 ),
               ),
-              IconButton(
+              GitPulseIconButton(
                 tooltip: l10n.copyBackendAddress,
                 onPressed: () => _copyAddress(backend.address.toString()),
-                iconSize: GitPulseIconSize.inControl,
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: GitPulseHeight.compact,
-                  minHeight: GitPulseHeight.compact,
-                ),
-                color: _copied ? scheme.primary : scheme.onSurfaceVariant,
+                size: GitPulseIconSize.inControl,
+                emphasized: _copied,
                 icon: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 180),
                   switchInCurve: Curves.easeOut,
@@ -189,16 +177,12 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
             ],
           ),
           const SizedBox(height: GitPulseSpace.tight),
-          OutlinedButton.icon(
+          GitPulseButton(
+            label: l10n.changeBackend,
+            variant: GitPulseButtonVariant.outlined,
+            expand: true,
             onPressed: busy ? null : () => _editBackend(backend.address),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(GitPulseHeight.compact),
-              foregroundColor: scheme.onSurface,
-              side: BorderSide(color: scheme.outlineVariant),
-              textStyle: theme.textTheme.bodyMedium,
-            ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
-            icon: const Icon(Icons.sync, size: GitPulseIconSize.inControl),
-            label: Text(l10n.changeBackend),
+            icon: const Icon(Icons.sync),
           ),
         ],
         if (!widget.card && identity != null)
@@ -244,15 +228,12 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
                 // text scale leaves room for only one of them; then both give way
                 // a little rather than pushing the row past the window.
                 Flexible(
-                  child: TextButton(
+                  child: GitPulseButton(
+                    label: l10n.changeBackend,
+                    variant: GitPulseButtonVariant.text,
                     onPressed: busy
                         ? null
                         : () => _editBackend(backend.address),
-                    child: Text(
-                      l10n.changeBackend,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ),
                 ),
               ],
@@ -312,14 +293,18 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
                       liveRegion: true,
                     ),
                     const SizedBox(height: 8),
-                    OutlinedButton(
+                    GitPulseButton(
+                      label: l10n.cancelBrowserSignIn,
+                      variant: GitPulseButtonVariant.outlined,
+                      expand: true,
                       onPressed: () => notifier.cancelBrowserSignIn(),
-                      child: Text(l10n.cancelBrowserSignIn),
                     ),
                   ] else
-                    FilledButton.tonal(
+                    GitPulseButton(
+                      label: l10n.continueWithGitHub,
+                      variant: GitPulseButtonVariant.tonal,
+                      expand: true,
                       onPressed: busy ? null : notifier.startBrowserSignIn,
-                      child: Text(l10n.continueWithGitHub),
                     ),
                 ],
                 if (!providers.personalMode &&
@@ -329,9 +314,11 @@ class _AccountPanelState extends ConsumerState<AccountPanel> {
                 if (session.failure == SignInFailure.storage &&
                     identity == null) ...[
                   const SizedBox(height: 12),
-                  OutlinedButton(
+                  GitPulseButton(
+                    label: l10n.signOut,
+                    variant: GitPulseButtonVariant.outlined,
+                    expand: true,
                     onPressed: busy ? null : notifier.signOut,
-                    child: Text(l10n.signOut),
                   ),
                 ],
               ],
@@ -396,13 +383,10 @@ class _AccountAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
+    // A header action: a 20dp mark inside the app's full touch target.
+    return GitPulseIconButton(
       tooltip: tooltip,
       onPressed: onPressed,
-      // A header action, sized as the Followed Repositories panel's header
-      // actions are: a 20dp mark inside Material's full touch target.
-      iconSize: GitPulseIconSize.action,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
       icon: Icon(icon),
     );
   }
@@ -429,6 +413,8 @@ class _CredentialForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // The secret itself stays the platform's own input (ADR 0032): the app
+        // owns the frame, the platform owns the typing.
         TextField(
           controller: controller,
           enabled: !busy,
@@ -437,6 +423,7 @@ class _CredentialForm extends StatelessWidget {
           autocorrect: false,
           autofillHints: const [],
           textInputAction: TextInputAction.done,
+          style: gitPulseTypeFieldText(context),
           decoration: InputDecoration(
             labelText: label,
             border: const OutlineInputBorder(),
@@ -444,7 +431,12 @@ class _CredentialForm extends StatelessWidget {
           onSubmitted: (_) => onSubmit(),
         ),
         const SizedBox(height: 12),
-        FilledButton(onPressed: busy ? null : onSubmit, child: Text(action)),
+        GitPulseButton(
+          label: action,
+          variant: GitPulseButtonVariant.filled,
+          expand: true,
+          onPressed: busy ? null : onSubmit,
+        ),
       ],
     );
   }

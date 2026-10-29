@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
+import '../presentation/gitpulse_dialog.dart';
+import '../presentation/gitpulse_progress.dart';
 import '../presentation/gitpulse_setting_rows.dart';
-import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../timeline/timeline_session.dart';
 
@@ -35,18 +37,21 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
 
   Future<void> _askToClear() async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+    final confirmed = await showGitPulseDialog<bool>(
+      context,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      builder: (context) => GitPulseDialog(
         title: Text(l10n.settingsClearCacheTitle),
         actions: [
-          TextButton(
+          GitPulseButton(
+            label: MaterialLocalizations.of(context).cancelButtonLabel,
+            variant: GitPulseButtonVariant.text,
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
           ),
-          TextButton(
+          GitPulseButton(
+            label: l10n.settingsClear,
+            variant: GitPulseButtonVariant.text,
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.settingsClear),
           ),
         ],
       ),
@@ -68,8 +73,6 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final timeline = ref.watch(releaseTimelineSessionProvider);
     final actions = timeline.cacheActions;
     final facade = ref.read(releaseTimelineSessionProvider.notifier);
@@ -82,26 +85,13 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
       control: actions.clearing
           ? Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Semantics(
-                label: l10n.clearingTimelineCache,
-                liveRegion: true,
-                child: const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
+              child: GitPulseProgressInline(label: l10n.clearingTimelineCache),
             )
-          : OutlinedButton.icon(
+          : GitPulseButton(
+              label: l10n.settingsClear,
+              variant: GitPulseButtonVariant.outlined,
+              expand: true,
               onPressed: locked ? null : _askToClear,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(0, 40),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                visualDensity: VisualDensity.compact,
-                foregroundColor: _cleared ? scheme.primary : scheme.onSurface,
-                side: BorderSide(color: scheme.outlineVariant),
-                textStyle: theme.textTheme.bodyMedium,
-              ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
               icon: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 switchInCurve: Curves.easeOut,
@@ -111,10 +101,12 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                 child: Icon(
                   _cleared ? Icons.check : Icons.delete_outline,
                   key: ValueKey(_cleared),
-                  size: GitPulseIconSize.inControl,
+                  // A clear that landed is a success, and the success tone is
+                  // the one tone that says so (ADR 0031): the Accent means the
+                  // app is acting, never that something worked.
+                  color: _cleared ? toneSuccess(context) : null,
                 ),
               ),
-              label: Text(l10n.settingsClear),
             ),
       notes: [
         if (actions.clearFailed)
@@ -133,17 +125,16 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
           ),
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
+            child: GitPulseButton(
+              label: timeline.cacheCorrupted
+                  ? l10n.timelineRebuildCache
+                  : l10n.timelineRetrySaving,
+              variant: GitPulseButtonVariant.text,
               onPressed: locked
                   ? null
                   : timeline.cacheCorrupted
                   ? facade.rebuildCache
                   : facade.retryCache,
-              child: Text(
-                timeline.cacheCorrupted
-                    ? l10n.timelineRebuildCache
-                    : l10n.timelineRetrySaving,
-              ),
             ),
           ),
         ],

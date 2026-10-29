@@ -9,6 +9,9 @@ import 'package:gitpulse/connection/backend_service.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/device/device_preferences.dart';
 import 'package:gitpulse/device/device_preferences_controller.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_dialog.dart';
+import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -86,11 +89,11 @@ Future<void> confirmRetention(WidgetTester tester, String value) async {
   await settleUi(tester);
 }
 
-IconButton retentionStep(WidgetTester tester, String tooltip) =>
-    tester.widget<IconButton>(
+GitPulseIconButton retentionStep(WidgetTester tester, String tooltip) =>
+    tester.widget<GitPulseIconButton>(
       find.ancestor(
         of: find.byTooltip(tooltip),
-        matching: find.byType(IconButton),
+        matching: find.byType(GitPulseIconButton),
       ),
     );
 
@@ -166,7 +169,9 @@ void main() {
       );
       // Changing presentation never leaves the page that is being read.
       expect(
-        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex,
+        tester
+            .widget<GitPulseNavigationBar>(find.byType(GitPulseNavigationBar))
+            .selectedIndex,
         2,
       );
 
@@ -232,11 +237,11 @@ void main() {
     expect(find.text('Connect to GitPulse'), findsOneWidget);
     await tester.tap(find.byTooltip('Language and appearance'));
     await settleUi(tester);
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(GitPulseDialog), findsOneWidget);
 
     await tapChoice(tester, 'Simplified Chinese');
     // The open dialog re-localizes in place instead of closing.
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.byType(GitPulseDialog), findsOneWidget);
     expect(find.text('语言与外观'), findsOneWidget);
     expect(find.text('语言'), findsOneWidget);
   });
@@ -273,7 +278,7 @@ void main() {
       await openSettings(tester, 'Settings');
       await tapChoice(tester, 'Simplified Chinese');
 
-      final clear = find.widgetWithText(OutlinedButton, '清除');
+      final clear = find.widgetWithText(GitPulseButton, '清除');
       await tester.ensureVisible(clear);
       await pumpFrames(tester);
       await tester.tap(clear);
@@ -290,7 +295,12 @@ void main() {
 
       await tester.tap(clear);
       await tester.pump();
-      await tester.tap(find.widgetWithText(TextButton, '清除'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(GitPulseDialog),
+          matching: find.widgetWithText(GitPulseButton, '清除'),
+        ),
+      );
       await settleUi(tester);
       expect(
         harness.container
@@ -354,7 +364,7 @@ void main() {
     await pumpApp(tester, harness);
 
     expect(find.byType(AppBar), findsNothing);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(GitPulseNavigationBar), findsOneWidget);
     expect(find.text('Timeline'), findsOneWidget);
 
     await tester.tap(find.text('Follows'));
@@ -379,7 +389,7 @@ void main() {
     // not a second one it swaps in.
     tester.view.physicalSize = const Size(1200, 900);
     await pumpFrames(tester);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(GitPulseNavigationBar), findsOneWidget);
     expect(find.byType(AppBar), findsNothing);
     expect(find.text('Settings'), findsOneWidget);
   });
