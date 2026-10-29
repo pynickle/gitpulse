@@ -67,7 +67,8 @@ class BackendService {
     // is its own choice now, so no backend capability has to grant it.
     if (capabilities.protocolVersion != 1 ||
         !capabilities.capabilities.contains('provider-discovery') ||
-        !capabilities.capabilities.contains('release-timeline')) {
+        !capabilities.capabilities.contains('release-timeline') ||
+        !capabilities.capabilities.contains('release-note-search-text')) {
       throw const ConnectionException(ConnectionProblem.serverUpgrade);
     }
     final providers = capabilities.providers;

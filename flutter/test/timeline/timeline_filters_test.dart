@@ -43,6 +43,7 @@ void main() {
                   '2026-10-12T10:00:00Z',
                   name: 'Widgets release',
                   description: 'Notes about widgets.',
+                  notesSearchText: 'notes about widgets.',
                 ),
                 releaseJson(
                   2,
@@ -50,6 +51,7 @@ void main() {
                   '2026-10-11T10:00:00Z',
                   name: 'Context bar default',
                   description: 'Explains the context bar.',
+                  notesSearchText: 'explains the context bar.',
                 ),
               ]),
               'R_api': pageJson('acme', 'api', [
@@ -61,6 +63,7 @@ void main() {
                   description:
                       'Read [the docs](https://example.com/HIDDENPATH) and '
                       '![badge](https://img.example/badge.svg) about ZEBRA.',
+                  notesSearchText: 'read the docs and badge about zebra.',
                 ),
                 releaseJson(
                   4,
@@ -98,6 +101,7 @@ void main() {
                       '<details open><summary>RawLabel</summary>'
                       '<p>Visible body</p></details> '
                       '<img src="https://img.example/HIDDENSRC" alt="RawAlt">',
+                  notesSearchText: 'rawlabel visible body rawalt',
                 ),
               ]),
             },
@@ -159,6 +163,44 @@ void main() {
     expect(visibleKeys(harness), hasLength(10));
   });
 
+  test(
+    'note search uses the backend text without parsing the source',
+    () async {
+      harness.session.handlers['POST api/release-timeline/refresh'] = () =>
+          BackendResult(
+            statusCode: 200,
+            data: roundJson(
+              pages: {
+                'R_alpha': pageJson('octo', 'alpha', [
+                  releaseJson(
+                    9,
+                    'v9.0.0',
+                    '2026-10-18T10:00:00Z',
+                    description: 'source-only',
+                    notesSearchText: 'server content',
+                  ),
+                ]),
+              },
+            ),
+          );
+      await facade().refresh();
+      facade().applyFilters(
+        const TimelineFilterState(
+          query: 'server content',
+          includeReleaseNotes: true,
+        ),
+      );
+      expect(visibleKeys(harness), ['R_alpha:9']);
+      facade().applyFilters(
+        const TimelineFilterState(
+          query: 'source-only',
+          includeReleaseNotes: true,
+        ),
+      );
+      expect(visibleKeys(harness), isEmpty);
+    },
+  );
+
   test('full release notes beyond the card preview are searchable only when enabled', () async {
     final long = List.filled(30, 'Complete release notes.\n').join();
     harness.session.handlers['POST api/release-timeline/refresh'] = () =>
@@ -172,6 +214,7 @@ void main() {
                   'v9.0.0',
                   '2026-10-18T10:00:00Z',
                   description: '$long deep needle',
+                  notesSearchText: 'complete release notes. deep needle',
                 ),
               ]),
             },

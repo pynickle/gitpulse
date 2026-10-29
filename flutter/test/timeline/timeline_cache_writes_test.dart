@@ -399,6 +399,7 @@ ReleaseItem _release(
   tagName: 'v$id',
   name: null,
   description: notes ?? 'Complete notes for $id. ' * 80,
+  notesSearchText: '',
   publishedAt: publishedAt ?? _now.subtract(Duration(minutes: id)),
   isDraft: draft,
   isPrerelease: false,

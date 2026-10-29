@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
 
 import {
   computed,
@@ -26,7 +26,7 @@ import { useReleaseDrawer } from '../app/composables/useReleaseDrawer';
 import { useReleaseOverlaySheet } from '../app/composables/useReleaseOverlaySheet';
 import { useRepoReleases } from '../app/composables/useRepoReleases';
 import * as dateRange from '../app/utils/filterDateRange';
-import filterReleaseTimelineGroups, * as filters from '../app/utils/filterReleaseTimelineGroups';
+import type { ReleaseTimelineFilterState } from '../app/utils/filterReleaseTimelineGroups';
 import formatCompactNumber from '../app/utils/formatCompactNumber';
 import formatDurationFromNow from '../app/utils/formatDurationFromNow';
 import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
@@ -35,8 +35,12 @@ import getReleaseAssetNamePrefix from '../app/utils/getReleaseAssetNamePrefix';
 import handleRovingTablistKeydown from '../app/utils/handleRovingTablistKeydown';
 import withPendingPaginationPage from '../app/utils/withPendingPaginationPage';
 import english from '../i18n/locales/en.json';
+import * as searchText from '../shared/utils/release-note-search-text';
 import { compileVue as compileSfc } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
+mock.module('#shared/utils/release-note-search-text', () => searchText);
+const filters = await import('../app/utils/filterReleaseTimelineGroups');
+const { default: filterReleaseTimelineGroups } = filters;
 const compileVue = (path: string, modules: Record<string, unknown> = {}) =>
   compileSfc(path, { '~/components/ui/ScrollArea.vue': { default: ScrollArea }, ...modules });
 import { createVueDom } from './helpers/vue-dom';
@@ -384,7 +388,7 @@ beforeEach(() => {
     useGitHubLinkRouting: () => ({ opensGitHubLinks: githubLinks }),
     useReleaseFollows: () => ({ followedRepositories: shallowRef([item.repository]) }),
     shouldShowReleaseTimelineBackToTop: () => false,
-    useReleaseTimeline: (filter: Readonly<Ref<filters.ReleaseTimelineFilterState>>) => ({
+    useReleaseTimeline: (filter: Readonly<Ref<ReleaseTimelineFilterState>>) => ({
       loaded: shallowRef(true),
       visibleGroups: computed(() =>
         filterReleaseTimelineGroups(
@@ -446,6 +450,7 @@ test('release-note search starts off and the real header option includes full no
           tagName: item.tagName,
           name: item.title,
           description: 'Migration guide',
+          notesSearchText: 'migration guide',
           publishedAt: item.publishedAt,
           isDraft: false,
           isPrerelease: false,

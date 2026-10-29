@@ -20,10 +20,12 @@ import { createStorage } from 'unstorage';
 import fsDriver from 'unstorage/drivers/fs-lite';
 
 import * as authReturn from '../../shared/utils/auth-return-route';
+import * as searchText from '../../shared/utils/release-note-search-text';
 import * as env from '../../shared/utils/user-settings-storage-env';
 
 mock.module('#shared/utils/auth-return-route', () => authReturn);
 mock.module('#shared/utils/user-settings-storage-env', () => env);
+mock.module('#shared/utils/release-note-search-text', () => searchText);
 
 type FixtureRepository = { id: string; owner: string; name: string };
 type FixturePage = Record<string, unknown>;
@@ -42,7 +44,22 @@ mock.module('../../server/utils/release-timeline-graphql-utils', () => ({
     follows: FixtureRepository[]
   ): Promise<Record<string, FixturePage>> =>
     Object.fromEntries(
-      follows.map((follow) => [follow.id, scenario.pages[follow.id] ?? { status: 'transient' }])
+      follows.map((follow) => {
+        const page = scenario.pages[follow.id] ?? { status: 'transient' };
+        const releases = page.releases as { description?: string | null }[] | undefined;
+        return [
+          follow.id,
+          {
+            ...page,
+            ...(releases && {
+              releases: releases.map((release) => ({
+                ...release,
+                notesSearchText: searchText.releaseNoteSearchText(release.description ?? ''),
+              })),
+            }),
+          },
+        ];
+      })
     ),
 }));
 

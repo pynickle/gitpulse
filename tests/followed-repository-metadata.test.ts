@@ -6,9 +6,11 @@ import type {
 } from '../shared/types/release-follows';
 import * as reactions from '../shared/utils/reactions';
 import * as follows from '../shared/utils/release-follows';
+import * as searchText from '../shared/utils/release-note-search-text';
 
 mock.module('#shared/utils/reactions', () => reactions);
 mock.module('#shared/utils/release-follows', () => follows);
+mock.module('#shared/utils/release-note-search-text', () => searchText);
 
 const graphql = await import('../server/utils/release-timeline-graphql-utils');
 mock.module('#server/utils/release-timeline-graphql-utils', () => graphql);

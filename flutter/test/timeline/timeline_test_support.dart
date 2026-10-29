@@ -90,6 +90,7 @@ Map<String, Object?> releaseJson(
   String publishedAt, {
   String? name,
   String? description,
+  String notesSearchText = '',
   bool isDraft = false,
   bool isPrerelease = false,
   int assetCount = 0,
@@ -99,6 +100,7 @@ Map<String, Object?> releaseJson(
   'tagName': tag,
   'name': name,
   'description': description,
+  'notesSearchText': notesSearchText,
   'publishedAt': publishedAt,
   'isDraft': isDraft,
   'isPrerelease': isPrerelease,

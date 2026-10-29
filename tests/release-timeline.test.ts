@@ -26,6 +26,7 @@ const release = (
   tagName: overrides.tagName ?? `v${overrides.id}`,
   name: overrides.name ?? null,
   description: overrides.description ?? null,
+  notesSearchText: overrides.notesSearchText ?? '',
   isDraft: overrides.isDraft ?? false,
   isPrerelease: overrides.isPrerelease ?? false,
   assetCount: overrides.assetCount ?? 0,

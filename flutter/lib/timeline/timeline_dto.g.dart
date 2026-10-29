@@ -100,9 +100,15 @@ RepositoryPageDto _$RepositoryPageDtoFromJson(Map<String, dynamic> json) =>
 ReleaseItemDto _$ReleaseItemDtoFromJson(
   Map<String, dynamic> json,
 ) => $checkedCreate('ReleaseItemDto', json, ($checkedConvert) {
+  $checkKeys(
+    json,
+    requiredKeys: const ['notesSearchText'],
+    disallowNullValues: const ['notesSearchText'],
+  );
   final val = ReleaseItemDto(
     id: $checkedConvert('id', (v) => (v as num).toInt()),
     tagName: $checkedConvert('tagName', (v) => v as String),
+    notesSearchText: $checkedConvert('notesSearchText', (v) => v as String),
     name: $checkedConvert('name', (v) => v as String?),
     description: $checkedConvert('description', (v) => v as String?),
     publishedAt: $checkedConvert('publishedAt', (v) => v as String?),

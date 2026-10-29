@@ -8,6 +8,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
+import 'package:gitpulse/connection/backend_address_store.dart';
+import 'package:gitpulse/connection/backend_service.dart';
+import 'package:gitpulse/connection/native_capabilities.dart';
 import 'package:gitpulse/connection/connection_screen.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_dialog.dart';
@@ -23,7 +26,11 @@ class CapabilityServer implements HttpClientAdapter {
   int statusCode = 200;
   Object? payload = {
     'protocolVersion': 1,
-    'capabilities': ['provider-discovery', 'release-timeline'],
+    'capabilities': [
+      'provider-discovery',
+      'release-timeline',
+      'release-note-search-text',
+    ],
     'providers': {
       'personalMode': true,
       'patEnabled': false,
@@ -90,6 +97,31 @@ Future<void> connectTo(WidgetTester tester, String address) async {
 }
 
 void main() {
+  for (final supportsText in [false, true]) {
+    test(
+      'saved backend search-text support is required: $supportsText',
+      () async {
+        FlutterSecureStorage.setMockInitialValues({});
+        final payload = Map<String, dynamic>.from(
+          CapabilityServer().payload! as Map,
+        );
+        if (!supportsText) {
+          payload['capabilities'] = ['provider-discovery', 'release-timeline'];
+        }
+        final store = BackendAddressStore(const FlutterSecureStorage());
+        await store.rememberCapabilities(
+          ConnectedBackend(
+            Uri.parse('https://gitpulse.example/'),
+            NativeCapabilities.fromJson(payload),
+          ),
+        );
+        expect(
+          await store.readOfflineBackend('https://gitpulse.example/'),
+          supportsText ? isNotNull : isNull,
+        );
+      },
+    );
+  }
   testWidgets(
     'the connection page renders on the app’s faces and none of the replaced '
     'ones',
@@ -267,7 +299,11 @@ void main() {
       final server = CapabilityServer()
         ..payload = {
           'protocolVersion': 1,
-          'capabilities': ['provider-discovery', 'release-timeline'],
+          'capabilities': [
+            'provider-discovery',
+            'release-timeline',
+            'release-note-search-text',
+          ],
           'providers': {
             'personalMode': false,
             'patEnabled': false,
@@ -361,13 +397,31 @@ void main() {
       },
       200,
     ),
+    (
+      'missing note-search capability',
+      {
+        'protocolVersion': 1,
+        'capabilities': ['provider-discovery', 'release-timeline'],
+        'providers': {
+          'personalMode': true,
+          'patEnabled': false,
+          'oauthEnabled': false,
+          'mode': 'personal',
+        },
+      },
+      200,
+    ),
     ('non-GitPulse response', '<html>Another application</html>', 200),
     ('missing capability endpoint', {}, 404),
     (
       'OAuth-only server without app handoff',
       {
         'protocolVersion': 1,
-        'capabilities': ['provider-discovery', 'release-timeline'],
+        'capabilities': [
+          'provider-discovery',
+          'release-timeline',
+          'release-note-search-text',
+        ],
         'providers': {
           'personalMode': false,
           'patEnabled': false,
@@ -381,7 +435,11 @@ void main() {
       'conflicting personal providers',
       {
         'protocolVersion': 1,
-        'capabilities': ['provider-discovery', 'release-timeline'],
+        'capabilities': [
+          'provider-discovery',
+          'release-timeline',
+          'release-note-search-text',
+        ],
         'providers': {
           'personalMode': true,
           'patEnabled': true,
@@ -431,6 +489,7 @@ void main() {
           'capabilities': [
             'provider-discovery',
             'release-timeline',
+            'release-note-search-text',
             if (oauth) 'native-login-handoff',
             'future-additive-capability',
           ],

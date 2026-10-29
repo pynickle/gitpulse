@@ -1,12 +1,10 @@
-import { Parser } from 'htmlparser2';
-import { createMarkdownExit } from 'markdown-exit';
-
 import type {
   FollowedRepository,
   ReleaseTimelineGroup,
   RepositoryReleaseLookup,
   TimelineRelease,
 } from '#shared/types/release-follows';
+import { releaseNoteSearchText } from '#shared/utils/release-note-search-text';
 
 import type { DateRange } from './filterDateRange';
 
@@ -30,67 +28,6 @@ export function toFollowedRepositoryKey(repository: FollowedRepository): string 
 const toRepositoryMatchKey = (owner: string, name: string) => `${owner}/${name}`.toLowerCase();
 const normalizeSearchText = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
 type SearchFields = { defaults: string[]; notes: string };
-const markdown = createMarkdownExit({ html: true });
-const blockTags = new Set([
-  'address',
-  'article',
-  'aside',
-  'blockquote',
-  'br',
-  'caption',
-  'dd',
-  'div',
-  'dl',
-  'dt',
-  'figcaption',
-  'figure',
-  'footer',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'header',
-  'hr',
-  'li',
-  'main',
-  'ol',
-  'p',
-  'pre',
-  'section',
-  'table',
-  'td',
-  'th',
-  'tr',
-  'ul',
-]);
-
-function releaseNoteSearchText(source: string): string {
-  if (!source) return '';
-  const text: string[] = [];
-  let hiddenDepth = 0;
-  // Parse off-DOM: collect visible text only, never render this HTML or search its attributes.
-  // Markdown rendering escapes code first, preserving literal HTML inside code examples.
-  const parser = new Parser({
-    onopentag(name, attributes) {
-      if (name === 'script' || name === 'style') hiddenDepth++;
-      if (hiddenDepth) return;
-      if (blockTags.has(name)) text.push(' ');
-      if (name === 'img' && attributes.alt) text.push(attributes.alt);
-    },
-    ontext(value) {
-      if (!hiddenDepth) text.push(value);
-    },
-    onclosetag(name) {
-      if (name === 'script' || name === 'style') hiddenDepth = Math.max(0, hiddenDepth - 1);
-      if (!hiddenDepth && blockTags.has(name)) text.push(' ');
-    },
-  });
-  parser.end(markdown.render(source));
-  return normalizeSearchText(text.join(''));
-}
-
 /** Prepare on source changes; full notes belong to pagination pages, never card previews. */
 export function prepareReleaseTimelineSearch(
   groups: ReleaseTimelineGroup[],

@@ -166,6 +166,7 @@ class AuthServer implements HttpClientAdapter {
           'capabilities': [
             'provider-discovery',
             'release-timeline',
+            'release-note-search-text',
             if (handoffEnabled) 'native-login-handoff',
           ],
           'providers': providers,

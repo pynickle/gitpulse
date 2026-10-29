@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
+import 'package:gitpulse/timeline/timeline_filters.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/releases/release_detail_service.dart';
@@ -42,7 +43,16 @@ void main() {
           data: roundJson(
             pages: {
               'R_a': pageJson('octo', 'alpha', [
-                releaseJson(3, 'v3', '2026-10-19T12:00:00Z', description: body),
+                releaseJson(
+                  3,
+                  'v3',
+                  '2026-10-19T12:00:00Z',
+                  description: body,
+                  notesSearchText: List.filled(
+                    300,
+                    'complete release notes.',
+                  ).join(' '),
+                ),
                 releaseJson(2, 'v2', '2026-09-19T12:00:00Z'),
                 releaseJson(1, 'v1', '2026-09-19T11:59:59.999Z'),
               ]),
@@ -73,6 +83,20 @@ void main() {
     expect(state.offline, isTrue);
     expect(state.savedAt, now);
     expect(state.groups.first.items.first.notes, body);
+    offline.container
+        .read(releaseTimelineSessionProvider.notifier)
+        .applyFilters(
+          const TimelineFilterState(
+            query: '"complete release notes"',
+            includeReleaseNotes: true,
+          ),
+        );
+    expect(
+      readState(offline.container).visibleGroups
+          .expand((group) => group.items)
+          .map((item) => item.key),
+      ['R_a:3'],
+    );
     offline.session.handlers['GET api/releases/octo/alpha/3'] = () =>
         const BackendResult(problem: BackendProblem.network);
     final detail = await offline.container.read(

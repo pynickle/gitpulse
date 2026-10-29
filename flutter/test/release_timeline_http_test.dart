@@ -8,6 +8,7 @@ import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
+import 'package:gitpulse/timeline/timeline_filters.dart';
 
 import 'support/app_overrides.dart';
 import 'support/release_timeline_server.dart';
@@ -76,7 +77,14 @@ void main() {
       ],
       'pages': {
         'R_alpha': fixturePage('octo', 'alpha', [
-          fixtureRelease(12, 'v1.2', '2026-10-05T10:00:00Z'),
+          fixtureRelease(
+            12,
+            'v1.2',
+            '2026-10-05T10:00:00Z',
+            description:
+                '修复 **登录** 问题 [docs](https://example.com/HIDDENPATH) '
+                'before![badge](https://img.example/HIDDENSRC)after',
+          ),
           fixtureRelease(11, 'v1.1', '2026-10-04T10:00:00Z'),
         ]),
       },
@@ -90,6 +98,43 @@ void main() {
       ['R_alpha:12', 'R_alpha:11'],
     );
     expect(state.failure, isNull);
+    expect(
+      state.groups.first.items.first.notesSearchText,
+      '修复 登录 问题 docs before badge after',
+    );
+    facade.applyFilters(
+      const TimelineFilterState(query: '"修复 登录 问题"', includeReleaseNotes: true),
+    );
+    expect(
+      container
+          .read(releaseTimelineSessionProvider)
+          .visibleGroups
+          .expand((g) => g.items)
+          .map((item) => item.key),
+      ['R_alpha:12'],
+    );
+    facade.applyFilters(
+      const TimelineFilterState(
+        query: '"before badge after"',
+        includeReleaseNotes: true,
+      ),
+    );
+    expect(
+      container
+          .read(releaseTimelineSessionProvider)
+          .visibleGroups
+          .expand((g) => g.items)
+          .map((item) => item.key),
+      ['R_alpha:12'],
+    );
+    facade.applyFilters(
+      const TimelineFilterState(query: 'HIDDENPATH', includeReleaseNotes: true),
+    );
+    expect(
+      container.read(releaseTimelineSessionProvider).visibleGroups,
+      isEmpty,
+    );
+    facade.applyFilters(const TimelineFilterState());
     // The first usable round establishes the shared baseline without calling
     // the loaded history new.
     expect(state.previousBaseline, isNull);
@@ -154,6 +199,7 @@ void main() {
     });
     await facade.retryFailed();
     state = container.read(releaseTimelineSessionProvider);
+    expect(state.groups.last.items.last.notesSearchText, '');
     expect(state.groups.expand((g) => g.items).map((item) => item.key), [
       'R_alpha:13',
       'R_alpha:11',

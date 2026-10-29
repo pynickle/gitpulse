@@ -1,6 +1,7 @@
 # Flutter timeline retention and offline reading
 
-The native client requires the `provider-discovery` and `release-timeline` backend
+The native client requires the `provider-discovery`, `release-timeline`, and
+`release-note-search-text` backend
 capabilities. How much history it keeps is not an account setting and needs no
 backend capability: the window is one of the installation's own device preferences
 (language, appearance, Followed Repository View, and the window), kept in a local
@@ -66,12 +67,21 @@ timeline content, saved membership and pagination provenance before loading firs
 pages. A failed first round after an addition cannot restore the previous window.
 These changes preserve login, the installation's window, and the server-owned baseline.
 
-Schema version 2 adds a pending-follow record, committed before destructive
-cleanup. Every subsequent cache operation must finish that cleanup before reading
-or writing history. A cleanup failure therefore remains a restore barrier across
-process restarts; Retry saving can complete it offline. The version 1 migration
-preserves existing content and settings. As with other local persistence, a
-failure to write the pending record itself is reported as a cache error.
+The pending-follow record is committed before destructive cleanup. Every
+subsequent cache operation must finish that cleanup before reading or writing
+history. A cleanup failure therefore remains a restore barrier across process
+restarts; Retry saving can complete it offline. As with other local persistence,
+a failure to write the pending record itself is reported as a cache error.
+
+Schema version 4 recreates earlier cache schemas instead of preserving their
+history. Earlier release records lack the required backend-supplied
+`notesSearchText`. Both timeline response paths supply this text from complete
+notes; the cache stores it in each release's existing JSON content and restores
+it for offline search. Flutter does not parse Markdown or HTML to search notes.
+The secure session, device preferences and Release Follows survive the reset.
+The upgraded app must contact an updated backend and refresh once before offline
+reading is available again; saved backend capabilities must also declare the new
+search-text capability. See [ADR 0036](adr/0036-server-owned-release-note-search-text.md).
 
 Startup restores eligible exposed membership and attempts a fresh round. A wholly
 failed round preserves the committed view. Fresh usable results replace that view.
@@ -195,9 +205,9 @@ same awaitable choose-and-apply command Settings uses, with delayed and failed
 SQLite stages, independent preference failures, queued choices, session changes,
 unchanged-window query observations, and a close/offline-reopen check.
 
-## Accepted write-path optimization plan
+## Cache write-path optimizations
 
-Implementation is pending and tracked in [issue #142](https://github.com/pynickle/gitpulse/issues/142).
+The indexed, batched write path is tracked in [issue #142](https://github.com/pynickle/gitpulse/issues/142).
 Keep the completion contract and module ownership described above; optimize
 behind the existing cache interface.
 

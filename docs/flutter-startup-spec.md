@@ -28,6 +28,12 @@ Refreshing capabilities must not reconnect a backend the user has left. Fresh
 incompatible capability responses retain the existing connection error flow.
 Foreground return keeps its existing reading and browser-login behavior.
 
+Saved capabilities must include `release-note-search-text`, the capability that
+supplies the release-note text used by offline search. Updating from an earlier
+client requires one successful connection to the updated backend and a timeline
+refresh because the old timeline cache is rebuilt. Login, device preferences and
+Release Follows are preserved. See [ADR 0036](adr/0036-server-owned-release-note-search-text.md).
+
 Behavior checks mount the real app with controlled HTTP and secure-storage
 boundaries, and a real SQLite timeline cache. They assert the rendered loading,
 saved-content and sign-in states while startup work is deliberately delayed,

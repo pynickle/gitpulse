@@ -24,7 +24,11 @@ import 'settling.dart';
 
 const _capabilities = NativeCapabilities(
   protocolVersion: 1,
-  capabilities: ['provider-discovery', 'release-timeline'],
+  capabilities: [
+    'provider-discovery',
+    'release-timeline',
+    'release-note-search-text',
+  ],
   providers: SignInProviders(
     personalMode: false,
     patEnabled: true,

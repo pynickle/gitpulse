@@ -4,10 +4,12 @@ import { z } from 'zod';
 
 import * as reactions from '../shared/utils/reactions';
 import * as follows from '../shared/utils/release-follows';
+import * as searchText from '../shared/utils/release-note-search-text';
 import * as timeline from '../shared/utils/release-timeline';
 import * as env from '../shared/utils/user-settings-storage-env';
 mock.module('#shared/utils/reactions', () => reactions);
 mock.module('#shared/utils/user-settings-storage-env', () => env);
+mock.module('#shared/utils/release-note-search-text', () => searchText);
 const graphql = await import('../server/utils/release-timeline-graphql-utils');
 const { createTimelineHistoryService } = await import('../server/utils/timeline-history-utils');
 import type { ReleaseTimelinePage } from '../shared/types/release-follows';
@@ -137,3 +139,35 @@ test('partial refresh success advances the baseline despite another repository f
   expect(result.unavailableIds).toEqual(['B']);
   expect((await app.history.read('octo')).baseline).toBe(result.refresh!.startedAt);
 });
+
+test.each([true, false])(
+  'timeline round supplies complete readable note text (refresh=%s)',
+  async (refresh) => {
+    const app = harness();
+    app.setResponse({
+      repo0: {
+        id: 'A',
+        releases: {
+          pageInfo: { hasNextPage: false },
+          nodes: [
+            {
+              databaseId: 1,
+              tagName: 'v1',
+              publishedAt: '2026-10-20T12:00:00Z',
+              description: `${'intro '.repeat(120)}修复 **登录** 问题 [docs](https://example.com/HIDDENPATH) ![badge](https://img.example/HIDDENSRC) <img src="HIDDENIMAGE" alt="RawAlt">`,
+            },
+            { databaseId: 2, description: null },
+          ],
+        },
+      },
+    });
+    const result = await app.load({}, refresh);
+    const page = result.pages.A;
+    if (page?.status !== 'available') throw new Error('Expected an available release page');
+    expect(page.releases[0]!.notesSearchText.endsWith('修复 登录 问题 docs badge rawalt')).toBe(
+      true
+    );
+    expect(page.releases[0]!.notesSearchText).not.toContain('hidden');
+    expect(page.releases[1]!.notesSearchText).toBe('');
+  }
+);

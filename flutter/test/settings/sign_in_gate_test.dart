@@ -19,6 +19,7 @@ const _hybrid = NativeCapabilities(
   capabilities: [
     'provider-discovery',
     'release-timeline',
+    'release-note-search-text',
     'native-login-handoff',
   ],
   providers: SignInProviders(
@@ -41,7 +42,11 @@ BackendConnectionState _tokenConnection() => BackendConnectionState(
     Uri.parse('https://gitpulse.example/'),
     const NativeCapabilities(
       protocolVersion: 1,
-      capabilities: ['provider-discovery', 'release-timeline'],
+      capabilities: [
+        'provider-discovery',
+        'release-timeline',
+        'release-note-search-text',
+      ],
       providers: SignInProviders(
         personalMode: false,
         patEnabled: true,

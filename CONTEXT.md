@@ -325,6 +325,7 @@ _Avoid_: timeline search, filter bar, dashboard filters when referring to this s
 
 **Release Timeline Search**:
 The text search used to locate releases on the Release Timeline by repository identity, release title, tag, or optionally release notes.
+Release-note matching includes prose, link labels, code, and image alternative text; link destinations and hidden content are excluded.
 _Avoid_: Release Timeline Filter when referring to the text search
 
 **Active Timeline Filter**:

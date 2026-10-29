@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
+import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -294,9 +295,9 @@ void main() {
     );
   });
 
-  for (final version in [1, 2]) {
+  for (final version in [1, 2, 3]) {
     test(
-      'upgrading a version $version database keeps its saved window and retention',
+      'upgrading a version $version database discards history and keeps device preferences',
       () async {
         final disk = await DiskTimeline.create();
         var h = disk.open(retentionDays: 7);
@@ -319,14 +320,27 @@ void main() {
         );
         await disk.cache!.customStatement('PRAGMA user_version = $version');
         await disk.close();
-        // This device has not chosen a window yet, so the one its saved history
-        // was written under is the seed.
-        h = disk.open(retentionDays: null, freshDeviceChoice: true);
+        h = disk.open();
         goOffline(h);
         await settle(h.container);
-        expect(keys(h.container), ['R_a:8']);
+        expect(keys(h.container), isEmpty);
         expect(h.device.value.retentionDays, 7);
         expect(readState(h.container).cacheFailed, isFalse);
+        expect(h.session.state.phase, SessionPhase.signedIn);
+
+        await disk.close();
+        h = disk.open();
+        configure(
+          h,
+          releases: [releaseJson(9, 'refreshed', '2026-10-18T00:00:00Z')],
+        );
+        await settle(h.container);
+        expect(keys(h.container), ['R_a:9']);
+        await disk.close();
+        h = disk.open();
+        goOffline(h);
+        await settle(h.container);
+        expect(keys(h.container), ['R_a:9']);
       },
     );
   }

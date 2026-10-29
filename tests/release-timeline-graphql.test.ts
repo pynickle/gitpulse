@@ -2,6 +2,8 @@ import { describe, expect, mock, test } from 'bun:test';
 
 const reactions = await import('../shared/utils/reactions');
 mock.module('#shared/utils/reactions', () => reactions);
+const searchText = await import('../shared/utils/release-note-search-text');
+mock.module('#shared/utils/release-note-search-text', () => searchText);
 
 const {
   fetchFollowedRepositoryIdentityLookups,
@@ -75,6 +77,7 @@ describe('mapRepositoryReleaseLookup', () => {
           tagName: 'v1.1',
           name: 'Widgets 1.1',
           description: 'Notes',
+          notesSearchText: 'notes',
           publishedAt: '2026-08-22T12:00:00.000Z',
           isDraft: false,
           isPrerelease: true,

@@ -224,6 +224,7 @@ RepositoryPage _page(int offset, int count, {required int expiredPercent}) =>
             tagName: 'v$i',
             name: 'Release $i',
             description: 'Complete release notes. ' * 40,
+            notesSearchText: 'complete release notes. ' * 40,
             // All rows are initially retained. Advancing two days expires the chosen
             // fraction during prune; save still writes the same number of rows.
             publishedAt: _now.subtract(

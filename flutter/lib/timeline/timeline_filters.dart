@@ -1,7 +1,3 @@
-import 'package:html/dom.dart';
-import 'package:html/parser.dart' as html;
-import 'package:markdown/markdown.dart' as markdown;
-
 import 'timeline_models.dart';
 
 /// The Release Timeline Filter and Release Timeline Search conditions applied
@@ -137,17 +133,16 @@ class TimelineSearchFields {
 
 /// Normalized search fields for the releases of one exposed window.
 ///
-/// Release-note text is derived lazily, so a window stays cheap to prepare
-/// while note search is off.
+/// Release-note text is supplied by the backend and retained with the window.
 class PreparedTimelineSearch {
-  PreparedTimelineSearch._(this._releases, this._defaults);
+  PreparedTimelineSearch._(this._defaults, this._notes);
 
   factory PreparedTimelineSearch.fromGroups(List<TimelineGroup> groups) {
-    final releases = <String, TimelineRelease>{};
+    final notes = <String, String>{};
     final defaults = <String, List<String>>{};
     for (final group in groups) {
       for (final item in group.items) {
-        releases[item.key] = item;
+        notes[item.key] = item.notesSearchText;
         defaults[item.key] = [
           '${item.repository.owner}/${item.repository.name}',
           item.title,
@@ -155,24 +150,18 @@ class PreparedTimelineSearch {
         ].map(normalizeTimelineSearchText).toList(growable: false);
       }
     }
-    return PreparedTimelineSearch._(releases, defaults);
+    return PreparedTimelineSearch._(defaults, notes);
   }
 
-  final Map<String, TimelineRelease> _releases;
   final Map<String, List<String>> _defaults;
-  final _notes = <String, String>{};
-
-  String _notesFor(String key) => _notes.putIfAbsent(
-    key,
-    () => releaseNoteSearchText(_releases[key]?.notes ?? ''),
-  );
+  final Map<String, String> _notes;
 
   TimelineSearchFields? fieldsFor(String key, {required bool includeNotes}) {
     final defaults = _defaults[key];
     if (defaults == null) return null;
     return TimelineSearchFields(
       defaults: defaults,
-      notes: includeNotes ? _notesFor(key) : '',
+      notes: includeNotes ? _notes[key]! : '',
     );
   }
 }
@@ -312,82 +301,4 @@ List<TimelineGroup> filterTimelineGroups(
   }
 
   return filtered;
-}
-
-const _noteBlockTags = {
-  'address',
-  'article',
-  'aside',
-  'blockquote',
-  'br',
-  'caption',
-  'dd',
-  'div',
-  'dl',
-  'dt',
-  'figcaption',
-  'figure',
-  'footer',
-  'h1',
-  'h2',
-  'h3',
-  'h4',
-  'h5',
-  'h6',
-  'header',
-  'hr',
-  'li',
-  'main',
-  'ol',
-  'p',
-  'pre',
-  'section',
-  'table',
-  'td',
-  'th',
-  'tr',
-  'ul',
-};
-
-/// Readable release-note text for search.
-///
-/// Link destinations, image source addresses, and HTML tags are excluded.
-/// Link labels, code, and image alternative text remain searchable.
-String releaseNoteSearchText(String source) {
-  if (source.trim().isEmpty) return '';
-  final fragment = html.parseFragment(
-    markdown.markdownToHtml(
-      source,
-      extensionSet: markdown.ExtensionSet.gitHubWeb,
-    ),
-  );
-  final buffer = StringBuffer();
-
-  void walk(Node node) {
-    if (node is Text) {
-      buffer.write(node.text);
-      return;
-    }
-    if (node is! Element) {
-      for (final child in node.nodes) {
-        walk(child);
-      }
-      return;
-    }
-    final tag = node.localName;
-    if (tag == 'script' || tag == 'style') return;
-    final block = _noteBlockTags.contains(tag);
-    if (block) buffer.write(' ');
-    if (tag == 'img') {
-      final alt = node.attributes['alt'];
-      if (alt != null && alt.isNotEmpty) buffer.write(' $alt ');
-    }
-    for (final child in node.nodes) {
-      walk(child);
-    }
-    if (block) buffer.write(' ');
-  }
-
-  walk(fragment);
-  return normalizeTimelineSearchText(buffer.toString());
 }

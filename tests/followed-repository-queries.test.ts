@@ -11,8 +11,10 @@ import type {
 import { createFollowedRepositoryHttpAdapter } from '../app/composables/followed-repositories/httpAdapter';
 import { getFollowedRepositoryQueries } from '../app/composables/followed-repositories/queries';
 import type { ReleaseTimelineSessionEntry } from '../app/composables/release-timeline/session';
+import * as searchText from '../shared/utils/release-note-search-text';
 import * as timelineUtils from '../shared/utils/release-timeline';
 mock.module('#shared/utils/release-timeline', () => timelineUtils);
+mock.module('#shared/utils/release-note-search-text', () => searchText);
 const { createReleaseTimelineSession } =
   await import('../app/composables/release-timeline/session');
 import * as followUtils from '../shared/utils/release-follows';

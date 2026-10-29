@@ -9,6 +9,7 @@ import type {
   RepositoryReleaseLookup,
 } from '#shared/types/release-follows';
 import { normalizeGraphQLReactionGroups } from '#shared/utils/reactions';
+import { releaseNoteSearchText } from '#shared/utils/release-note-search-text';
 
 export interface ReleaseTimelineGraphQLClient {
   graphql: <T>(query: string, variables?: Record<string, unknown>) => Promise<T>;
@@ -162,6 +163,7 @@ const mapReleaseNode = (node: GraphQLReleaseNode | null): RepositoryReleaseItem 
     tagName: toNonEmptyString(node.tagName) ?? '',
     name: toNonEmptyString(node.name),
     description: typeof node.description === 'string' ? node.description : null,
+    notesSearchText: releaseNoteSearchText(node.description ?? ''),
     publishedAt: toNonEmptyString(node.publishedAt),
     isDraft: Boolean(node.isDraft),
     isPrerelease: Boolean(node.isPrerelease),

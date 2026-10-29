@@ -24,6 +24,8 @@ export interface RepositoryReleaseItem {
   tagName: string;
   name: string | null;
   description: string | null;
+  /** Readable complete release notes, normalized for timeline search. */
+  notesSearchText: string;
   publishedAt: string | null;
   isDraft: boolean;
   isPrerelease: boolean;

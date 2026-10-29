@@ -27,6 +27,7 @@ TimelineRelease _release({
   title: title,
   publishedAt: publishedAt,
   notes: '',
+  notesSearchText: '',
   changelog: 'Notes excerpt',
   changelogTruncated: false,
   assetCount: assetCount,

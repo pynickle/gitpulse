@@ -18,11 +18,14 @@ import type {
 } from '#shared/types/release-follows';
 
 import { getFollowedRepositoryQueries } from '../app/composables/followed-repositories/queries';
-import filterReleaseTimelineGroups from '../app/utils/filterReleaseTimelineGroups';
+import * as searchText from '../shared/utils/release-note-search-text';
 import * as timelineUtils from '../shared/utils/release-timeline';
 import { createVueDom } from './helpers/vue-dom';
 
 mock.module('#shared/utils/release-timeline', () => timelineUtils);
+mock.module('#shared/utils/release-note-search-text', () => searchText);
+const { default: filterReleaseTimelineGroups } =
+  await import('../app/utils/filterReleaseTimelineGroups');
 
 const { createReleaseTimelineSession } =
   await import('../app/composables/release-timeline/session');
@@ -324,6 +327,7 @@ const releasePage = (
     tagName: date,
     name: date,
     description: '',
+    notesSearchText: '',
     publishedAt: `${date}T12:00:00Z`,
     isDraft: false,
     isPrerelease: false,

@@ -124,6 +124,7 @@ class ReleaseItemDto {
   const ReleaseItemDto({
     required this.id,
     required this.tagName,
+    required this.notesSearchText,
     this.name,
     this.description,
     this.publishedAt,
@@ -142,6 +143,8 @@ class ReleaseItemDto {
 
   /// The complete release notes, kept for the release surfaces.
   final String? description;
+  @JsonKey(required: true, disallowNullValue: true)
+  final String notesSearchText;
   final String? publishedAt;
   final bool isDraft;
   final bool isPrerelease;
@@ -153,6 +156,7 @@ class ReleaseItemDto {
     tagName: tagName,
     name: name,
     description: description,
+    notesSearchText: notesSearchText,
     publishedAt: publishedAt == null
         ? null
         : DateTime.tryParse(publishedAt!)?.toUtc(),

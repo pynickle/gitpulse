@@ -36,7 +36,8 @@ class BackendAddressStore {
     // The saved capabilities are only trusted for a backend that can still be
     // read offline: any server that served this app's timeline carries these.
     if (capabilities.protocolVersion != 1 ||
-        !capabilities.capabilities.contains('release-timeline')) {
+        !capabilities.capabilities.contains('release-timeline') ||
+        !capabilities.capabilities.contains('release-note-search-text')) {
       return null;
     }
     return ConnectedBackend(base, capabilities);

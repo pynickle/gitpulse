@@ -120,6 +120,7 @@ void main() {
                     '2026-10-12T10:00:00Z',
                     name: 'Context bar default',
                     description: 'Explains the context bar.',
+                    notesSearchText: 'explains the context bar.',
                   ),
                   releaseJson(
                     2,
@@ -127,6 +128,7 @@ void main() {
                     '2026-10-11T10:00:00Z',
                     name: 'Unrelated release',
                     description: 'A deep ZEBRA token lives here.',
+                    notesSearchText: 'a deep zebra token lives here.',
                   ),
                 ]),
               },

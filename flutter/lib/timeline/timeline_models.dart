@@ -61,6 +61,7 @@ class ReleaseItem {
     required this.tagName,
     required this.name,
     required this.description,
+    required this.notesSearchText,
     required this.publishedAt,
     required this.isDraft,
     required this.isPrerelease,
@@ -72,6 +73,7 @@ class ReleaseItem {
   final String tagName;
   final String? name;
   final String? description;
+  final String notesSearchText;
   final DateTime? publishedAt;
   final bool isDraft;
   final bool isPrerelease;
@@ -96,6 +98,7 @@ class TimelineRelease {
     required this.title,
     required this.publishedAt,
     required this.notes,
+    required this.notesSearchText,
     required this.changelog,
     required this.changelogTruncated,
     required this.assetCount,
@@ -112,6 +115,7 @@ class TimelineRelease {
 
   /// The complete release notes as fetched, kept for the release surfaces.
   final String notes;
+  final String notesSearchText;
 
   /// The card summary, truncated for display.
   final String changelog;
@@ -133,6 +137,7 @@ class TimelineRelease {
         title: title,
         publishedAt: publishedAt,
         notes: notes,
+        notesSearchText: notesSearchText,
         changelog: changelog,
         changelogTruncated: changelogTruncated,
         assetCount: assetCount,
@@ -301,6 +306,7 @@ List<TimelineGroup> assembleTimelineGroups(
           title: item.title,
           publishedAt: item.publishedAt!,
           notes: item.description ?? '',
+          notesSearchText: item.notesSearchText,
           changelog: changelog.text,
           changelogTruncated: changelog.truncated,
           assetCount: item.assetCount,

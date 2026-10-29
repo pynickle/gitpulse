@@ -75,20 +75,19 @@ class TimelineCache extends _$TimelineCache {
   TimelineCache(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
-      if (from < 2) {
+      // Previous content has no server-supplied search text. Refill it from the
+      // current backend; session and device preferences live outside this cache.
+      for (final table in allTables.toList().reversed) {
         await customStatement(
-          'ALTER TABLE cache_account ADD COLUMN pending_follows TEXT',
+          'DROP TABLE IF EXISTS "${table.actualTableName}"',
         );
       }
-      if (from < 3) {
-        await migrator.createIndex(cacheReleasesPublishedAt);
-        await migrator.createIndex(cacheSegmentsRepositoryCycleCursor);
-      }
+      await migrator.createAll();
     },
   );
 
@@ -626,6 +625,7 @@ class TimelineCache extends _$TimelineCache {
                 'tagName': item.tagName,
                 'name': item.name,
                 'description': item.description,
+                'notesSearchText': item.notesSearchText,
                 'publishedAt': item.publishedAt!.toUtc().toIso8601String(),
                 'isDraft': item.isDraft,
                 'isPrerelease': item.isPrerelease,
