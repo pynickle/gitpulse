@@ -74,10 +74,14 @@ one too (`../docs/adr/`).
   out, the rounded surface and Escape dismissal (ADR 0029). Do not open a second `showGeneralDialog`
   sheet, and never fade a sheet — a release's notes are a texture-backed platform view now (ADR 0028),
   and an opacity layer over any platform view is where the drawer's closing flash came from; pass a body
-  that decides its own content and height. **Dialogs** open only through `showGitPulseDialog`
-  (`lib/presentation/gitpulse_dialog.dart`) for the same reason (ADR 0032): pass a `GitPulseDialog`
-  body that decides its title, content and actions. The entry point names its own barrier with the
-  platform's `modalBarrierDismissLabel`, so a call site passes nothing for it.
+  that decides its own content and height. The one opacity inside a sheet is the Release Assets module
+  rising over the notes (`_ReleaseAssetsReveal` in `lib/releases/release_details_view.dart`, with
+  `GitPulseMotion.assetsRevealShift` and `gitPulseAssetsReveal`/`gitPulseAssetsFold`, ADR 0035): it
+  sits **above** the platform view and never around it, and the notes stay mounted beneath it.
+  **Dialogs** open only through `showGitPulseDialog` (`lib/presentation/gitpulse_dialog.dart`) for
+  the same reason (ADR 0032): pass a `GitPulseDialog` body that decides its title, content and
+  actions. The entry point names its own barrier with the platform's `modalBarrierDismissLabel`, so a
+  call site passes nothing for it.
 - **Controls are GitPulse's own — seven faces** (ADR 0032): the bottom navigation bar
   (`GitPulseNavigationBar`), the button family (`GitPulseButton`'s four variants and
   `GitPulseIconButton`), the switch and the checkbox (`GitPulseSwitch`, `GitPulseCheckbox`, in

@@ -8,6 +8,29 @@ import 'release_detail_dto.dart';
 import 'release_detail_service.dart';
 import 'release_document.dart';
 
+/// How long the Release Assets module takes to rise over the notes.
+///
+/// The app's one speed for handing a whole reading area over to something else
+/// — gitPulseDestinationTransition, which a destination switch travels by —
+/// rather than the shorter turn a control inside a surface takes: this module
+/// covers the notes, and the fold row's chevron turns on this same clock
+/// instead of the 180ms it used to turn on alone, so the row cannot finish
+/// saying "open" before the module has arrived (ADR 0035).
+const gitPulseAssetsReveal = Duration(milliseconds: 220);
+
+/// How long the module takes to fold back onto the row that opened it.
+///
+/// Shorter than the way in: an arrival has to be read, a departure only has to
+/// get out of the way. The module's own movement runs the arrival's curve in
+/// reverse, so it starts slowly and accelerates away instead of easing to a
+/// stop on a list nobody is reading any more, and the chevron turns on this
+/// shorter clock rather than outliving the module it points at.
+const gitPulseAssetsFold = Duration(milliseconds: 140);
+
+/// The one curve the module is made of: fast enough to answer the tap, slow
+/// enough at the end to settle.
+const gitPulseAssetsRevealCurve = Curves.easeOutCubic;
+
 /// The reading body of the Release Drawer: offline notice, the release's name,
 /// one quiet meta line, the notes, and the Release Assets. The drawer's chrome
 /// line owns the release identity and every action that leaves the notes — the
@@ -17,8 +40,9 @@ import 'release_document.dart';
 /// The notes are the one scroller in this body: a document is shown by a
 /// WebView, which keeps the gestures that land on it, so the chrome above it and
 /// the Release Assets row below it stay put while the document scrolls. Opening
-/// the assets swaps them into the reading area rather than stacking a second
-/// scroller under the document.
+/// the assets lifts them over the reading area rather than stacking a second
+/// scroller under the document, and the notes stay mounted beneath them, so the
+/// reader comes back to the same rendered page at the same place (ADR 0035).
 class ReleaseDetailsView extends StatefulWidget {
   const ReleaseDetailsView({
     super.key,
@@ -37,8 +61,81 @@ class ReleaseDetailsView extends StatefulWidget {
   State<ReleaseDetailsView> createState() => _ReleaseDetailsViewState();
 }
 
-class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
-  bool _showingAssets = false;
+class _ReleaseDetailsViewState extends State<ReleaseDetailsView>
+    with SingleTickerProviderStateMixin {
+  /// Whether the reader has the Release Assets module open.
+  bool _assetsOpen = false;
+
+  /// Whether the module is on screen at all. It stays mounted from the tap that
+  /// opens it until it has settled back onto its fold row, so the notes are
+  /// never seen through a list on its way out.
+  bool _assetsOnScreen = false;
+
+  late final AnimationController _assets;
+
+  /// The module's own progress: the controller, curved once, so the way in and
+  /// the way out are one movement rather than two.
+  late final CurvedAnimation _assetsProgress;
+
+  @override
+  void initState() {
+    super.initState();
+    _assets = AnimationController(vsync: this, duration: gitPulseAssetsReveal)
+      ..addStatusListener(_settleAssets);
+    _assetsProgress = CurvedAnimation(
+      parent: _assets,
+      curve: gitPulseAssetsRevealCurve,
+    );
+  }
+
+  @override
+  void dispose() {
+    _assetsProgress.dispose();
+    _assets.dispose();
+    super.dispose();
+  }
+
+  /// How long the module takes to answer a tap for this reader, on the way in
+  /// or on the way out.
+  Duration _assetsTurn({required bool open}) =>
+      MediaQuery.disableAnimationsOf(context)
+      ? Duration.zero
+      : open
+      ? gitPulseAssetsReveal
+      : gitPulseAssetsFold;
+
+  /// Drops the module once it has finished leaving, so the reading area holds
+  /// one of the two at rest exactly as it did before either could move.
+  void _settleAssets(AnimationStatus status) {
+    if (status != AnimationStatus.dismissed ||
+        _assetsOpen ||
+        !_assetsOnScreen) {
+      return;
+    }
+    setState(() => _assetsOnScreen = false);
+  }
+
+  /// The curve the fold row's chevron turns by: the module's own curve, and the
+  /// same curve mirrored on the way out, so the chevron closes at the speed the
+  /// module leaves instead of easing shut while the module is still on screen.
+  Curve _assetsTurnCurve({required bool open}) =>
+      open ? gitPulseAssetsRevealCurve : gitPulseAssetsRevealCurve.flipped;
+
+  /// Opens or folds the module. A reader who asked for reduced motion gets the
+  /// module, not the crossing.
+  void _toggleAssets() {
+    final open = !_assetsOpen;
+    _assets.duration = _assetsTurn(open: open);
+    setState(() {
+      _assetsOpen = open;
+      if (open) _assetsOnScreen = true;
+    });
+    if (open) {
+      _assets.forward();
+    } else {
+      _assets.reverse();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,12 +218,31 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _showingAssets && release.assets.isNotEmpty
-                ? _ReleaseAssetList(
-                    assets: release.assets,
-                    onOpenExternal: widget.onOpenExternal,
-                  )
-                : reading,
+            // The notes keep their element under the module — the reason the
+            // drawer keeps a document behind its Repository Release List — so a
+            // folded module returns to the page the reader left instead of
+            // rendering the document again, and the module has a lit surface to
+            // settle back onto while it leaves.
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ExcludeSemantics(excluding: _assetsOnScreen, child: reading),
+                if (_assetsOnScreen && release.assets.isNotEmpty)
+                  _ReleaseAssetsReveal(
+                    progress: _assetsProgress,
+                    child: Material(
+                      // The module stands on the sheet's own surface, so its
+                      // fill is invisible and it is the module's ink — not a
+                      // colour above it — that answers a press (ADR 0019).
+                      color: toneSurface(context),
+                      child: _ReleaseAssetList(
+                        assets: release.assets,
+                        onOpenExternal: widget.onOpenExternal,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
         Padding(
@@ -134,8 +250,10 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
           child: release.assets.isNotEmpty
               ? _ReleaseAssetsToggle(
                   assets: release.assets,
-                  expanded: _showingAssets,
-                  onTap: () => setState(() => _showingAssets = !_showingAssets),
+                  expanded: _assetsOpen,
+                  turn: _assetsTurn(open: _assetsOpen),
+                  turnCurve: _assetsTurnCurve(open: _assetsOpen),
+                  onTap: _toggleAssets,
                 )
               : const SizedBox.shrink(),
         ),
@@ -154,11 +272,19 @@ class _ReleaseAssetsToggle extends StatelessWidget {
   const _ReleaseAssetsToggle({
     required this.assets,
     required this.expanded,
+    required this.turn,
+    required this.turnCurve,
     required this.onTap,
   });
 
   final List<ReleaseAssetDto> assets;
   final bool expanded;
+
+  /// How long the module takes to answer the tap, decided by the body that owns
+  /// both halves: the chevron turns for exactly as long as the module travels,
+  /// by the same curve.
+  final Duration turn;
+  final Curve turnCurve;
   final VoidCallback onTap;
 
   @override
@@ -214,7 +340,8 @@ class _ReleaseAssetsToggle extends StatelessWidget {
                     ),
                     AnimatedRotation(
                       turns: expanded ? .5 : 0,
-                      duration: const Duration(milliseconds: 180),
+                      duration: turn,
+                      curve: turnCurve,
                       child: Icon(
                         Icons.expand_more,
                         size: GitPulseIconSize.inControl,
@@ -230,6 +357,47 @@ class _ReleaseAssetsToggle extends StatelessWidget {
       ],
     );
   }
+}
+
+/// The module as it arrives over the notes and as it folds away again.
+///
+/// It rises [GitPulseMotion.assetsRevealShift] and fades in, both of them paint
+/// only, so the reading area neither re-lays out nor scrolls beneath it. The
+/// notes are only ever drawn over — never faded or moved — because an opacity
+/// layer over a platform view is the path ADR 0029 keeps closed: what fades here
+/// holds no platform view at all.
+class _ReleaseAssetsReveal extends StatelessWidget {
+  const _ReleaseAssetsReveal({required this.progress, required this.child});
+
+  /// How far into standing on the reading area the module is: 0 one registered
+  /// rise below its own resting place, 1 in place.
+  final Animation<double> progress;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: progress,
+    child: child,
+    builder: (context, child) => AbsorbPointer(
+      // Only a module that has come to rest answers a tap. On the way in it is
+      // still see-through and on the way out it is already going away, and a
+      // row that can be hit either time starts a download nobody asked for. The
+      // notes beneath are given nothing either, so a moving module cannot pass
+      // its gestures through to them.
+      absorbing: progress.value < 1,
+      child: Opacity(
+        opacity: progress.value,
+        child: Transform.translate(
+          offset: Offset(
+            0,
+            GitPulseMotion.assetsRevealShift * (1 - progress.value),
+          ),
+          child: child,
+        ),
+      ),
+    ),
+  );
 }
 
 /// One row per asset, in the reading area the notes left behind. Rows are

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
@@ -58,6 +59,7 @@ Future<List<Uri>> pumpDetails(
   ReleaseDetail release, {
   double width = 420,
   ThemeData? theme,
+  bool reduceMotion = false,
 }) async {
   final launched = <Uri>[];
   await tester.pumpWidget(
@@ -67,6 +69,12 @@ Future<List<Uri>> pumpDetails(
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: (context, child) => reduceMotion
+            ? MediaQuery(
+                data: MediaQuery.of(context).copyWith(disableAnimations: true),
+                child: child!,
+              )
+            : child!,
         home: Scaffold(
           body: Align(
             alignment: Alignment.topLeft,
@@ -167,6 +175,115 @@ void main() {
     expect(find.text('linux.zip'), findsOneWidget);
     expect(find.text('windows.zip'), findsOneWidget);
     expect(find.text('app.zip.minisig'), findsOneWidget);
+  });
+
+  testWidgets('the module rises onto the reading area rather than appearing', (
+    tester,
+  ) async {
+    await pumpDetails(tester, releaseWith(assets: [asset()]));
+    await tester.tap(find.byKey(const Key('release-assets')));
+    // The first frame after the tap: the module is already mounted and still
+    // the registered rise below the place it comes to rest.
+    await tester.pump();
+    final row = find.text('app.zip');
+    expect(row, findsOneWidget);
+    final arriving = tester.getTopLeft(row).dy;
+    await tester.pumpAndSettle();
+    expect(
+      arriving - tester.getTopLeft(row).dy,
+      moreOrLessEquals(GitPulseMotion.assetsRevealShift),
+    );
+  });
+
+  testWidgets('the notes stay mounted under the module and come back to it', (
+    tester,
+  ) async {
+    await pumpDetails(tester, releaseWith(assets: [asset()]));
+    final notes = find.textContaining('Release notes body', findRichText: true);
+    final document = tester.element(notes);
+    await openAssets(tester);
+    expect(find.text('app.zip'), findsOneWidget);
+    // The notes are covered, not thrown away: the element the renderer lives in
+    // is the same one, so folding the module away returns to the page the
+    // reader left instead of rendering the document again.
+    expect(identical(tester.element(notes), document), isTrue);
+    await tester.tap(find.byKey(const Key('release-assets')));
+    await tester.pump();
+    // Covered on the way out too, so the notes never show through a leaving
+    // list.
+    expect(find.text('app.zip'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('app.zip'), findsNothing);
+    expect(identical(tester.element(notes), document), isTrue);
+  });
+
+  testWidgets('the module folds away faster than it arrives', (tester) async {
+    await pumpDetails(tester, releaseWith(assets: [asset()]));
+    await openAssets(tester);
+    await tester.tap(find.byKey(const Key('release-assets')));
+    await tester.pump();
+    // Still on screen on the frame the tap lands, and still leaving halfway
+    // through the fold...
+    final row = find.text('app.zip');
+    expect(row, findsOneWidget);
+    await tester.pump(gitPulseAssetsFold ~/ 2);
+    expect(row, findsOneWidget);
+    // ...then gone, inside a fold — sooner than the notes took to be covered.
+    await tester.pump(gitPulseAssetsFold);
+    expect(row, findsNothing);
+    expect(gitPulseAssetsFold, lessThan(gitPulseAssetsReveal));
+  });
+
+  testWidgets('a row answers a tap only once the module has come to rest', (
+    tester,
+  ) async {
+    final launched = await pumpDetails(tester, releaseWith(assets: [asset()]));
+    await tester.tap(find.byKey(const Key('release-assets')));
+    await tester.pump();
+    final row = find.text('app.zip');
+    await tester.pump(gitPulseAssetsReveal ~/ 2);
+    // Halfway in the row is already where the reader can see it, but it is
+    // still arriving: a tap there must not start a download from a list that
+    // has not landed yet.
+    await tester.tapAt(tester.getCenter(row));
+    await tester.pumpAndSettle();
+    expect(launched, isEmpty);
+    // At rest, the same row is the download it looks like.
+    await tester.tapAt(tester.getCenter(row));
+    await tester.pumpAndSettle();
+    expect(launched, hasLength(1));
+  });
+  testWidgets('reduced motion puts the module in place without travelling', (
+    tester,
+  ) async {
+    await pumpDetails(
+      tester,
+      releaseWith(assets: [asset()]),
+      reduceMotion: true,
+    );
+    await tester.tap(find.byKey(const Key('release-assets')));
+    await tester.pump();
+    final row = find.text('app.zip');
+    final placed = tester.getTopLeft(row).dy;
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(row).dy, placed);
+    // And it folds away in the same tap rather than fading out.
+    await tester.tap(find.byKey(const Key('release-assets')));
+    await tester.pumpAndSettle();
+    expect(find.text('app.zip'), findsNothing);
+  });
+
+  testWidgets('the module covers the notes for a screen reader too', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pumpDetails(tester, releaseWith(assets: [asset()]));
+    expect(announces(tester, 'Release notes body'), isTrue);
+    await openAssets(tester);
+    // What the reader cannot see is not read out beside the module.
+    expect(announces(tester, 'Release notes body'), isFalse);
+    expect(announces(tester, 'app.zip'), isTrue);
+    semantics.dispose();
   });
 
   testWidgets(
@@ -348,4 +465,30 @@ void main() {
     expectNoReplacedMaterialFaces(view);
     expect(tester.takeException(), isNull);
   });
+}
+
+/// Whether anything a screen reader is given in the current tree says [text].
+///
+/// Read from the semantics tree itself rather than from a widget, because what
+/// a widget would announce is not what a reader hears: an excluded subtree keeps
+/// its own cached node while the platform is told nothing about it.
+bool announces(WidgetTester tester, String text) {
+  final root = tester
+      .binding
+      .renderViews
+      .single
+      .owner!
+      .semanticsOwner!
+      .rootSemanticsNode!;
+  var heard = false;
+  void visit(SemanticsNode node) {
+    if (node.getSemanticsData().label.contains(text)) heard = true;
+    node.visitChildren((SemanticsNode child) {
+      visit(child);
+      return true;
+    });
+  }
+
+  visit(root);
+  return heard;
 }

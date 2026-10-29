@@ -3,11 +3,18 @@ import 'package:flutter/material.dart';
 import 'gitpulse_preset.dart';
 import 'gitpulse_theme.dart';
 
-/// Small content movements that accompany navigation, separate from layout.
+/// Small content movements that accompany navigation or a module arriving,
+/// separate from layout.
 abstract final class GitPulseMotion {
   /// The Release Timeline's distant return, hidden between its two positions.
   /// Registered in ADR 0030; this is a paint offset, never layout spacing.
   static const timelineReturnShift = 12.0;
+
+  /// How far the Release Assets module rises off the fold row that opened it
+  /// before it stands on the reading area, and the distance it settles back
+  /// over. Registered in ADR 0035; paint-only, like [timelineReturnShift], so
+  /// the notes beneath are never re-laid out by it.
+  static const assetsRevealShift = 16.0;
 }
 
 /// The distances every GitPulse surface is laid out on, named by the job each

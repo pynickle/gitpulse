@@ -49,6 +49,11 @@ now (ADR 0028) and would compose, but putting a sheet away is a movement, and an
 platform view is the fragile path that already flashed once. A sheet body is therefore never wrapped in
 an `Opacity` or an alpha-blended `AnimatedOpacity` either.
 
+What that rule protects is the platform view, not every pixel inside a sheet: a layer that holds no
+platform view may fade above one. The Release Assets module is the one case (ADR 0035) — it rises and
+fades over the notes, which stay mounted as a sibling beneath it and are never inside the fading
+layer — and a second one would need its own record rather than a precedent.
+
 **What this does not change.** Auth, cache, retention, documents, follow semantics and the sheet
 geometry ADR 0010 and ADR 0018 fix are untouched. A page-level _ceiling_ is not a wide-screen branch
 and stays where a page has one: the reading measure on a repository page, the scanning ceiling on

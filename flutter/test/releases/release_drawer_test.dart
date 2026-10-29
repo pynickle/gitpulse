@@ -1002,9 +1002,15 @@ void main() {
         launched.single.toString(),
         'https://github.com/canonical/project/releases/download/v2/app.zip',
       );
-      // The list takes the reading area while it is open.
+      // The list takes the reading area while it is open: the notes stay
+      // mounted under it — folding the module away returns to the page the
+      // reader left — but nothing of them is reachable through the list.
       expect(
         find.textContaining('Visible HTML', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Visible HTML', findRichText: true).hitTestable(),
         findsNothing,
       );
       // Folding the assets away gives the notes their area back.
