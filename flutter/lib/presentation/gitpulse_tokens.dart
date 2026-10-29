@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_theme.dart';
+
 /// Small content movements that accompany navigation, separate from layout.
 abstract final class GitPulseMotion {
   /// The Release Timeline's distant return, hidden between its two positions.
@@ -54,6 +56,15 @@ abstract final class GitPulseSpace {
   /// An optical nudge between a name and the meta line that follows it — small
   /// enough that it corrects an alignment instead of adding a gap.
   static const nudge = 2.0;
+
+  /// A reading list's indent, under the paragraph that introduces it.
+  ///
+  /// The reading surface's own distance rather than the chrome's: it is set
+  /// against the reading measure, not against a card's inset.
+  static const readingListIndent = 20.0;
+
+  /// A reading blockquote's indent, under its quote bar.
+  static const readingQuoteIndent = 12.0;
 }
 
 /// The corner radii a surface may take, plus the strip a decoration draws.
@@ -88,20 +99,105 @@ abstract final class GitPulseStroke {
   static const hairline = 1.0;
 }
 
+/// The tones the app's own surfaces are painted with, read by the job each one does.
+///
+/// These are the Theme Preset's semantic tones (ADR 0031): the names the shared palette data
+/// declares and the web app injects as CSS custom properties, so a reader of either client
+/// meets one vocabulary. App code reads these for colour and stops reading Material's roles —
+/// `onSurface` stops meaning "GitPulse's text", `primary` stops meaning "the Accent", and a
+/// green stops meaning "GitPulse" (it means a status, and only that).
+///
+/// Each reader takes the [BuildContext] the app's own type helpers take, and resolves through
+/// the theme's preset, so a tone cannot be read from anywhere but the presentation layer.
+Color toneShell(BuildContext context) => gitPulseTonesOf(context).shellBg;
+
+/// The tone of a card, a sheet, a dialog: the surface a reader reads.
+Color toneSurface(BuildContext context) => gitPulseTonesOf(context).surface;
+
+/// A muted block within a surface: a Settings row's fill, a document's code block.
+Color toneSurfaceMuted(BuildContext context) =>
+    gitPulseTonesOf(context).surfaceMuted;
+
+/// A block raised above the surface it sits on — the dark presentation's step up from a card.
+Color toneSurfaceRaised(BuildContext context) =>
+    gitPulseTonesOf(context).surfaceRaised;
+
+/// The fill a row, a list item or a menu line takes under the pointer.
+Color toneSurfaceHover(BuildContext context) =>
+    gitPulseTonesOf(context).surfaceHover;
+
+/// The fill a selected row, a chosen chip or an active destination takes.
+Color toneSurfaceActive(BuildContext context) =>
+    gitPulseTonesOf(context).surfaceActive;
+
+/// The hairline between two lines within a surface, and the quietest boundary the app draws.
+Color toneBorder(BuildContext context) => gitPulseTonesOf(context).border;
+
+/// The stronger boundary: a card's own edge, an input's outline.
+Color toneBorderStrong(BuildContext context) =>
+    gitPulseTonesOf(context).borderStrong;
+
+/// The tone a passage of prose is set in.
+Color toneText(BuildContext context) => gitPulseTonesOf(context).text;
+
+/// The tone a name, a title or any emphasised line is set in.
+Color toneTextStrong(BuildContext context) =>
+    gitPulseTonesOf(context).textStrong;
+
+/// The tone a line that supports another one is set in: a note, a meta line, an owner.
+Color toneTextMuted(BuildContext context) => gitPulseTonesOf(context).textMuted;
+
+/// The quietest ink the app draws: a count beside a label, a footnote.
+Color toneTextSubtle(BuildContext context) =>
+    gitPulseTonesOf(context).textSubtle;
+
+/// The Accent: primary actions, the selected state, focus. It is not the success tone, and no
+/// surface may use one in the other's place (ADR 0031).
+Color toneAccent(BuildContext context) => gitPulseTonesOf(context).accent;
+
+/// The Accent laid on as a wash: a selected pill's fill, a confirmation's ground.
+Color toneAccentSoft(BuildContext context) =>
+    gitPulseTonesOf(context).accentSoft;
+
+/// The success tone, read as text: "this succeeded", and nothing else.
+Color toneSuccess(BuildContext context) => gitPulseTonesOf(context).success;
+
+/// The success tone as a fill a status chip or a solid badge paints.
+Color toneSuccessSolid(BuildContext context) =>
+    gitPulseTonesOf(context).successSolid;
+
+/// The danger tone, read as text: a failure, a destructive action's label.
+Color toneDanger(BuildContext context) => gitPulseTonesOf(context).danger;
+
+/// The danger tone as a fill a status chip or a destructive button paints.
+Color toneDangerSolid(BuildContext context) =>
+    gitPulseTonesOf(context).dangerSolid;
+
+/// The danger tone laid on as a wash: the ground of a banner that reports a failure.
+///
+/// The shared data carries the text and solid tones; the wash is this presentation's own
+/// derivation from the text tone, in the same shape the web app derives its danger-soft from
+/// the same tone. It is a tone the app reads, not a colour a surface mixes for itself.
+Color toneDangerSoft(BuildContext context) =>
+    toneDanger(context).withValues(alpha: gitPulseStatusWashAlpha);
+
 /// The tone of a surface's outer boundary: a card's border, an input's outline,
 /// a sheet's edge.
 ///
 /// Taken from the scheme's outline rather than from the theme's `dividerColor`,
 /// which under Material 3 resolves to that same outline: reading it for an
 /// internal line is what once made a table rule and a card border carry the
-/// same weight of ink.
+/// same weight of ink. The scheme fills that role from the preset's
+/// [toneBorderStrong] tone (ADR 0031), which is why this reader and that one
+/// agree.
 Color toneEdge(ColorScheme scheme) => scheme.outline;
 
 /// The tone of a line drawn inside a surface: a Settings hairline, a date
 /// group's header, an asset module's boundary.
 ///
 /// A surface uses this for every line within it and [toneEdge] only for its
-/// own edge, which is the whole difference between the two.
+/// own edge, which is the whole difference between the two. The scheme fills
+/// this role from the preset's [toneBorder] tone.
 Color toneRule(ColorScheme scheme) => scheme.outlineVariant;
 
 /// Icon extents by what the icon does, not by the glyph's shape.
@@ -187,168 +283,97 @@ abstract final class GitPulseWidth {
   static const settingsTable = 1120.0;
 }
 
-/// The numbered reading scale — the one place the app states a font size.
-///
-/// Everything else takes its size from a Material text role. Notes and READMEs
-/// do not: they are read rather than operated, so their body sits at 15 on a 24
-/// line and their headings take three tiers. ADR 0018 records why the
-/// renderer's own ladder is not used instead — it once pushed a first-level
-/// heading 65px down the page and made a fifth-level heading smaller than the
-/// body text.
-abstract final class GitPulseType {
-  /// A page's own name: the repository at the head of its page.
-  ///
-  /// A repository page is read as well as scanned, so its title sits below a
-  /// Material heading's 24 and above its body: large enough to be the page's,
-  /// small enough to leave the README beneath it the room to be read.
-  static const pageTitleSize = 22.0;
-
-  /// The reading body's size.
-  static const readingBodySize = 15.0;
-
-  /// The reading body's line height, in the same units as [readingBodySize]:
-  /// 24 over 15, a line-and-a-half for sustained reading.
-  static const readingBodyLineHeight = 24.0;
-
-  /// A reading heading's line height, applied to all three tiers so their
-  /// blocks keep one rhythm.
-  static const readingHeadingLineHeight = 1.35;
-
-  /// A first-level reading heading.
-  static const readingHeading1Size = 20.0;
-
-  /// A second-level reading heading.
-  static const readingHeading2Size = 17.0;
-
-  /// A third-level reading heading, and every level below it: no heading is
-  /// smaller than the body text, so tiers four to six fold into this one.
-  static const readingHeading3Size = readingBodySize;
-
-  /// A reading list's indent.
-  static const readingListIndent = 20.0;
-
-  /// A reading blockquote's indent, under its quote bar.
-  static const readingQuoteIndent = 12.0;
-}
-
 /// A page's own name: a Repository page's identity, at the emphasis of a
 /// heading rather than of a paragraph.
+///
+/// Every helper below takes a role's metrics from the Theme Preset's type table
+/// (ADR 0031) and decides only the colour and — where one role has to carry two
+/// jobs — the weight. No helper states a size, a line height or a letter
+/// spacing: those are rows of the table, so the style a helper returns cannot
+/// disagree with the style Material hands a retained control.
 TextStyle? gitPulseTypePageTitle(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.headlineSmall?.copyWith(
-    fontSize: GitPulseType.pageTitleSize,
-    fontWeight: FontWeight.w600,
-    color: theme.colorScheme.onSurface,
-  );
+  return Theme.of(context).textTheme.headlineSmall
+      ?.copyWith(color: toneTextStrong(context));
 }
 
 /// The owner named above the repository's own name.
 ///
 /// The page says who owns the repository before it says which one it is, and
 /// the two are separate lines: this one only carries the address, so it keeps
-/// the body size, the lighter weight, and the muted tone.
+/// the row's size, the lighter weight, and the muted tone.
 TextStyle? gitPulseTypePageOwner(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.titleSmall?.copyWith(
-    fontWeight: FontWeight.w400,
-    color: theme.colorScheme.onSurfaceVariant,
-  );
+  return Theme.of(context).textTheme.titleSmall
+      ?.copyWith(fontWeight: FontWeight.w400, color: toneTextMuted(context));
 }
 
 /// The title of a surface within a page: a Timeline card, an empty or error
 /// state.
 TextStyle? gitPulseTypeSurfaceTitle(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.titleMedium?.copyWith(
-    fontWeight: FontWeight.w600,
-    color: theme.colorScheme.onSurface,
-  );
+  return Theme.of(context).textTheme.titleMedium
+      ?.copyWith(color: toneTextStrong(context));
 }
 
 /// The name a row is about: a setting's label, a Follows row's repository.
 TextStyle? gitPulseTypeRowLabel(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.titleSmall?.copyWith(
-    fontWeight: FontWeight.w600,
-    color: theme.colorScheme.onSurface,
-  );
+  return Theme.of(context).textTheme.titleSmall
+      ?.copyWith(color: toneTextStrong(context));
 }
 
 /// A date group's header in the Timeline.
 ///
-/// Left at the weight Material gives it: the header already sits between two
-/// rules, and bolding it as well would make it compete with the cards it
-/// introduces.
+/// Set at the body weight rather than at the row name's: the header already
+/// sits between two rules, and bolding it as well would make it compete with the
+/// cards it introduces.
 TextStyle? gitPulseTypeGroupHeader(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.titleSmall?.copyWith(
-    color: theme.colorScheme.onSurface,
-  );
+  return Theme.of(context).textTheme.titleSmall
+      ?.copyWith(fontWeight: FontWeight.w400, color: toneTextStrong(context));
 }
 
 /// The repository's full name in a Timeline card — the only coloured text a
 /// card is allowed.
 TextStyle? gitPulseTypeBrandName(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.labelMedium?.copyWith(
-    fontWeight: FontWeight.w600,
-    color: theme.colorScheme.primary,
-  );
+  return Theme.of(context).textTheme.labelMedium
+      ?.copyWith(fontWeight: FontWeight.w600, color: toneAccent(context));
 }
 
 /// The label of a block within a surface: a folded asset row, the Previous
 /// Refresh marker.
 ///
-/// The letter spacing is what makes an 11sp all-but-caps label read as a label
-/// instead of as small text.
+/// The letter spacing is the table's, not this helper's: it is what makes an
+/// all-but-caps label read as a label instead of as small text.
 TextStyle? gitPulseTypeSectionLabel(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.labelSmall?.copyWith(
-    fontWeight: FontWeight.w600,
-    letterSpacing: 0.6,
-    color: theme.colorScheme.onSurfaceVariant,
-  );
+  return Theme.of(context).textTheme.labelSmall
+      ?.copyWith(fontWeight: FontWeight.w600, color: toneTextMuted(context));
 }
 
 /// A card's summary, a setting's note, a meta line.
 TextStyle? gitPulseTypeMeta(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.bodySmall?.copyWith(
-    fontWeight: FontWeight.w400,
-    color: theme.colorScheme.onSurfaceVariant,
-  );
+  return Theme.of(context).textTheme.bodySmall
+      ?.copyWith(color: toneTextMuted(context));
 }
 
 /// The tightest meta there is: a card's timestamp, an asset's size and download
 /// count.
 TextStyle? gitPulseTypeMetaTight(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.labelSmall?.copyWith(
-    fontWeight: FontWeight.w400,
-    color: theme.colorScheme.onSurfaceVariant,
-  );
+  return Theme.of(context).textTheme.labelSmall
+      ?.copyWith(fontWeight: FontWeight.w400, color: toneTextMuted(context));
 }
 
 /// A repository's description: prose, but still part of a page that is scanned.
 ///
-/// It sits at the body size rather than at the 16 of a passage read on its own,
+/// It sits at the body role rather than at the reading body's roomier line,
 /// because the title above it carries the page and the description only says
 /// what the repository is for.
 TextStyle? gitPulseTypeDescription(BuildContext context) {
-  final theme = Theme.of(context);
-  return theme.textTheme.bodyMedium?.copyWith(
-    fontWeight: FontWeight.w400,
-    color: theme.colorScheme.onSurfaceVariant,
-  );
+  return Theme.of(context).textTheme.bodyMedium
+      ?.copyWith(color: toneTextMuted(context));
 }
 
 /// The reading body of a notes or README document.
 ///
-/// The one style in the app with a written size and line height; everything
-/// else inherits a Material role's own metrics.
+/// The one style the app sets outside Material's roles: it is a row of the same
+/// type table — 15 on a 24 line — so the reading scale is authored in the table
+/// the rest of the app's type comes from, instead of in a special case beside
+/// it.
 TextStyle? gitPulseTypeReadingBody(BuildContext context) =>
-    Theme.of(context).textTheme.bodyMedium?.copyWith(
-      fontSize: GitPulseType.readingBodySize,
-      fontWeight: FontWeight.w400,
-      height: GitPulseType.readingBodyLineHeight / GitPulseType.readingBodySize,
-    );
+    gitPulseTypeTableOf(context).readingBody.toTextStyle();
