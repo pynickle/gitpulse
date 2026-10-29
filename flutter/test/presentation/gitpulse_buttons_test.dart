@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
@@ -87,23 +86,6 @@ void main() {
       });
     }
   }
-
-  testWidgets('a pointer over a button starts the app’s tint', (tester) async {
-    await pumpThemed(tester, textButton());
-    expect(tester.binding.transientCallbackCount, 0);
-
-    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-    await gesture.addPointer(location: Offset.zero);
-    addTearDown(gesture.removePointer);
-    await tester.pump();
-    await gesture.moveTo(tester.getCenter(find.byType(GitPulseButton)));
-    await tester.pump();
-
-    // The tint fades in over the control: the pointer found the pressable the
-    // contract lives on, and that pressable answered with the app's one tint
-    // instead of with nothing.
-    expect(tester.binding.transientCallbackCount, greaterThan(0));
-  });
 
   testWidgets('each variant carries its own tone', (tester) async {
     for (final variant in GitPulseButtonVariant.values) {

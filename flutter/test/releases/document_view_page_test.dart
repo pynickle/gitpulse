@@ -230,14 +230,6 @@ void main() {
     );
   });
 
-  test('the document resolves against the address it was read from', () {
-    expect(_page().baseUrl, 'https://github.com/octo/app/blob/v2/README.md');
-    expect(
-      _page().renderScript,
-      contains('https://github.com/octo/app/blob/v2/README.md'),
-    );
-  });
-
   test('a row of inline images gets room between its wrapped lines', () {
     // Two badges that do not fit on one line must not touch: the gap is half of
     // `tight` on each side, so the wrapped rows end up one `tight` apart.

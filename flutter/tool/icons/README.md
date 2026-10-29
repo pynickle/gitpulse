@@ -10,7 +10,10 @@ Install `uv` and the Flutter SDK pinned in `flutter/pubspec.yaml` first. The
 script's inline metadata and adjacent uv lockfile supply Python 3.15 and
 Pillow 13.0.0 in a uv-managed environment. It resolves the committed Dart lockfile,
 runs `flutter_launcher_icons` 0.14.4, applies the corrections below, and runs
-`flutter/test/app_icons_test.dart`. A failed self-check exits nonzero.
+`flutter/test/app_icons_test.dart`. A failed self-check exits nonzero. That
+self-check covers the brand recomposition only; the platform configuration it
+writes is verified by reviewing the committed artifact diff and by the owner
+acceptance below.
 Do not run `dart run flutter_launcher_icons` alone: it omits those corrections.
 
 Commit the generated sources, platform binaries, catalogs, configuration and
@@ -56,12 +59,16 @@ restores near-white backgrounds to pure white.
 
 ## Verification
 
-`flutter test --no-pub test/app_icons_test.dart` decodes committed PNG files and
-parses XML/JSON/YAML platform configuration. It checks brand recomposition,
-dimensions and catalog coverage, adaptive safe zones and themed layers, iOS
-alpha and contrast, and exclusion of tooling sources from runtime assets. The
-existing Flutter CI runs this contract on every change, including the iOS
-artifacts on Linux.
+`flutter test --no-pub test/app_icons_test.dart` decodes the committed
+`generated/` PNGs and checks brand recomposition on white: the transparent mark
+and its square variant still reproduce `../public/icon.png`. Flutter CI runs it
+on every change.
+
+The platform configuration is read from files, not exercised by code, so it is
+verified by review instead: the checks that used to live in that test were
+manifest and `colors.xml` wiring, adaptive inset safe zones and monochrome ink,
+density dimensions, and the iOS appearance sets. Read them against the generated
+diff, and treat the "Platform output" section above as the contract to check.
 
 After regeneration, running the command again should leave every artifact
 byte-identical. Keep the Python/Pillow, Flutter SDK and Dart lockfiles pinned

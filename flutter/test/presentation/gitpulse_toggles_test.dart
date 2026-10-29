@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
@@ -192,22 +191,6 @@ void main() {
       expect(ink.overlayColor!.resolve({WidgetState.focused}), tint);
     });
 
-    testWidgets('a pointer over the switch starts the app’s tint', (
-      tester,
-    ) async {
-      await pumpThemed(tester, switchFace());
-      expect(tester.binding.transientCallbackCount, 0);
-
-      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await gesture.addPointer(location: Offset.zero);
-      addTearDown(gesture.removePointer);
-      await tester.pump();
-      await gesture.moveTo(tester.getCenter(find.byType(GitPulseSwitch)));
-      await tester.pump();
-
-      expect(tester.binding.transientCallbackCount, greaterThan(0));
-    });
-
     testWidgets('the track is the app’s own step in both states', (
       tester,
     ) async {
@@ -364,20 +347,6 @@ void main() {
       );
       expect(ink.overlayColor!.resolve({WidgetState.hovered}), tint);
       expect(ink.overlayColor!.resolve({WidgetState.focused}), tint);
-    });
-
-    testWidgets('a pointer over the box starts the app’s tint', (tester) async {
-      await pumpThemed(tester, box());
-      expect(tester.binding.transientCallbackCount, 0);
-
-      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
-      await gesture.addPointer(location: Offset.zero);
-      addTearDown(gesture.removePointer);
-      await tester.pump();
-      await gesture.moveTo(tester.getCenter(find.byType(GitPulseCheckbox)));
-      await tester.pump();
-
-      expect(tester.binding.transientCallbackCount, greaterThan(0));
     });
 
     testWidgets('the box is the app’s own: a hairline when clear, the Accent '

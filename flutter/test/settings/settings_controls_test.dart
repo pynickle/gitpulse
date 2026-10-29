@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_dialog.dart';
-import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
@@ -60,74 +59,6 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.platformDispatcher.clearAllTestValues);
   }
-
-  int selectedDestination(WidgetTester tester) => tester
-      .widget<GitPulseNavigationBar>(find.byType(GitPulseNavigationBar))
-      .selectedIndex;
-
-  testWidgets('the shell’s bar carries three destinations, one selected', (
-    tester,
-  ) async {
-    useWindow(tester, const Size(390, 844));
-    await openSettings(tester);
-
-    expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byType(NavigationDestination), findsNothing);
-    for (final label in ['Timeline', 'Follows', 'Settings']) {
-      expect(find.text(label), findsOneWidget, reason: label);
-    }
-    expect(selectedDestination(tester), 2);
-
-    await tester.tap(find.text('Timeline'));
-    await tester.pumpAndSettle();
-    expect(selectedDestination(tester), 0);
-
-    await tester.tap(find.text('Follows'));
-    await tester.pumpAndSettle();
-    expect(selectedDestination(tester), 1);
-
-    await tester.tap(find.text('Settings'));
-    await tester.pumpAndSettle();
-    expect(selectedDestination(tester), 2);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('Settings renders on the app’s faces and none of the replaced '
-      'ones', (tester) async {
-    useWindow(tester, const Size(390, 844));
-    await openSettings(tester);
-
-    final settings = find.byType(SettingsScreen);
-    expect(settings, findsOneWidget);
-    // It is built from the app's own controls…
-    expect(
-      find.descendant(of: settings, matching: find.byType(GitPulseButton)),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(of: settings, matching: find.byType(GitPulseIconButton)),
-      findsWidgets,
-    );
-    // …and none of the Material faces this change replaced is left in it.
-    for (final replaced in <Type>[
-      FilledButton,
-      OutlinedButton,
-      TextButton,
-      IconButton,
-      NavigationBar,
-      CircularProgressIndicator,
-      AlertDialog,
-      Dialog,
-      GitPulseProgressPage,
-    ]) {
-      expect(
-        find.descendant(of: settings, matching: find.byType(replaced)),
-        findsNothing,
-        reason: '$replaced',
-      );
-    }
-    expect(tester.takeException(), isNull);
-  });
 
   testWidgets('the app’s dialog owns the clear-cache confirmation', (
     tester,

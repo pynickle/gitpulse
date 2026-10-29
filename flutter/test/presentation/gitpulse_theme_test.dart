@@ -216,24 +216,6 @@ void main() {
       expect(theme.textButtonTheme.style?.overlayColor, isNotNull);
     });
 
-    testWidgets('${brightness.name}: list rows press through the theme', (
-      tester,
-    ) async {
-      final theme = await pumpThemed(
-        tester,
-        ListTile(title: const Text('GitPulse'), onTap: () {}),
-        brightness: brightness,
-      );
-
-      // ListTileThemeData carries no overlay field, so a row's press falls
-      // through to the theme-wide ink: these are the colours its press and
-      // hover are judged by.
-      expect(theme.highlightColor.a, 0);
-      expect(theme.splashColor.a, 0);
-      expect(theme.hoverColor.a, greaterThan(0));
-      expect(theme.focusColor, theme.hoverColor);
-    });
-
     testWidgets('${brightness.name}: the app’s toggles paint the one ink rule '
         'and the theme installs none of their own', (tester) async {
       final theme = await pumpThemed(

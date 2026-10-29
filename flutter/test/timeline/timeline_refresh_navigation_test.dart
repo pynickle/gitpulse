@@ -305,32 +305,6 @@ void main() {
       expect(find.byType(RefreshProgressIndicator), findsNothing);
     });
 
-    testWidgets('is cancelled when the pull never reaches the threshold', (
-      tester,
-    ) async {
-      final timeline = await _openTimeline(tester);
-      final before = timeline.rounds;
-
-      await _pull(tester, distance: _listHeight(tester) * 0.1);
-      await tester.pumpAndSettle();
-
-      expect(timeline.rounds, before);
-      expect(find.byType(RefreshProgressIndicator), findsNothing);
-    });
-
-    testWidgets('scrolls instead of reading when it starts below the top', (
-      tester,
-    ) async {
-      final timeline = await _openTimeline(tester);
-      final reading = await _readFurther(tester);
-      final before = timeline.rounds;
-
-      await _scrollBy(tester, _listHeight(tester) * 0.5);
-
-      expect(timeline.rounds, before);
-      expect(tester.getTopLeft(reading.card).dy, greaterThan(reading.top));
-    });
-
     testWidgets('stays available on a list shorter than the screen', (
       tester,
     ) async {

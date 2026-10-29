@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
-import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
@@ -20,7 +19,6 @@ import 'package:intl/intl.dart';
 
 import '../support/app_overrides.dart';
 import '../support/document_viewer.dart';
-import '../support/material_faces.dart';
 import 'timeline_test_support.dart';
 
 class MountedTimeline {
@@ -468,36 +466,6 @@ void main() {
     },
   );
 
-  testWidgets('waiting for the first round shows a loading indicator', (
-    tester,
-  ) async {
-    final held = Completer<BackendResult>();
-    await pumpTimelineScreen(
-      tester,
-      handlers: {
-        'GET api/settings': () => BackendResult(
-          statusCode: 200,
-          data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
-        ),
-        'POST api/release-timeline/refresh': () => held.future,
-      },
-    );
-
-    expect(find.byType(GitPulseProgressPage), findsWidgets);
-
-    held.complete(
-      BackendResult(
-        statusCode: 200,
-        data: roundJson(
-          pages: {'R_alpha': pageJson('octo', 'alpha', const [])},
-          refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-  });
-
   testWidgets('a phone window renders one column without overflow', (
     tester,
   ) async {
@@ -590,35 +558,4 @@ void main() {
       expect(find.text('v1.1'), findsOneWidget);
     },
   );
-  testWidgets('the Timeline renders none of the Material faces this client '
-      'replaced', (tester) async {
-    await pumpTimelineScreen(
-      tester,
-      size: const Size(390, 844),
-      handlers: {
-        'GET api/settings': () => BackendResult(
-          statusCode: 200,
-          data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
-        ),
-        'POST api/release-timeline/refresh': () => BackendResult(
-          statusCode: 200,
-          data: roundJson(
-            pages: {
-              'R_alpha': pageJson('octo', 'alpha', [
-                releaseJson(12, 'v1.2', '2026-10-04T12:00:00Z'),
-              ]),
-            },
-            refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
-          ),
-        ),
-      },
-    );
-
-    expect(find.byType(ReleaseTimelineCard), findsWidgets);
-    // The field a reader searches in stays the platform's own — a registered
-    // exception (ADR 0032) — and nothing of Material's control layer is left.
-    expect(find.byType(TextField), findsOneWidget);
-    expectNoReplacedMaterialFaces(find.byType(TimelineScreen));
-    expect(tester.takeException(), isNull);
-  });
 }

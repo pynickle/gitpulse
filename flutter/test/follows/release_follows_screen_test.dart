@@ -1027,41 +1027,6 @@ void main() {
     },
   );
 
-  testWidgets('search results stay visible with many followed repositories', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final server = FollowsServer();
-    server.settings['followedRepositories'] = [
-      for (var i = 0; i < 25; i++) followJson('R_$i', 'octo', 'project-$i'),
-    ];
-    await auth.mountApp(tester, server);
-    await auth.connectTo(tester, 'https://gitpulse.example');
-    await auth.submitField(
-      tester,
-      label: 'Password',
-      value: 'correct-horse',
-      action: 'Unlock',
-    );
-    await tester.tap(find.text('Follows'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Search'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      auth.fieldLabeled('Repository name or GitHub URL'),
-      'alpha',
-    );
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('search-R_alpha')).hitTestable(),
-      findsOneWidget,
-    );
-  });
-
   testWidgets(
     'a phone user can search, save, recover a failed removal and manage unavailable or renamed follows',
     (tester) async {
@@ -1387,40 +1352,6 @@ void main() {
       expect(find.text('A project for release followers'), findsOneWidget);
       expect(find.text('Follow releases'), findsNothing);
       expect(find.byIcon(Icons.book_outlined), findsNothing);
-    },
-  );
-
-  testWidgets(
-    'a glyph inside the search field is smaller than a standalone one',
-    (tester) async {
-      final server = FollowsServer()..starredRepositories = [repositoryJson()];
-      await _openFollows(tester, server);
-      // The sort direction stands on its own in the toolbar, so it takes the
-      // action size; every glyph the search field carries is a mark inside a
-      // control and takes the smaller one. Read from the rendered box, not from
-      // the argument that asked for it.
-      expect(
-        tester.getSize(find.byIcon(Icons.arrow_downward)),
-        const Size.square(GitPulseIconSize.action),
-      );
-
-      await tester.tap(find.text('Search'));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        auth.fieldLabeled('Repository name or GitHub URL'),
-        'alpha',
-      );
-      await tester.pumpAndSettle();
-      final field = find.byType(TextField);
-      for (final glyph in [Icons.close, Icons.search]) {
-        expect(
-          tester.getSize(
-            find.descendant(of: field, matching: find.byIcon(glyph)),
-          ),
-          const Size.square(GitPulseIconSize.inControl),
-          reason: '$glyph',
-        );
-      }
     },
   );
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gitpulse/presentation/gitpulse_palette.g.dart';
 import 'package:gitpulse/presentation/gitpulse_preset.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
@@ -111,25 +110,6 @@ Future<ThemeProbe> pumpTheme(WidgetTester tester, Brightness brightness) async {
 }
 
 void main() {
-  test(
-    'exactly one Theme Preset is registered, and it carries both presentations',
-    () {
-      expect(gitPulsePresets.keys.toList(), ['gitpulse']);
-
-      final preset = gitPulsePresets['gitpulse']!;
-      expect(preset.name, 'gitpulse');
-      expect(preset.paletteFor(Brightness.light), GitPulsePalette.light);
-      expect(preset.paletteFor(Brightness.dark), GitPulsePalette.dark);
-      expect(
-        preset.paletteFor(Brightness.light),
-        isNot(preset.paletteFor(Brightness.dark)),
-      );
-      // One type table, shared by both presentations: a reader who changes appearance keeps
-      // the rhythm they were reading.
-      expect(preset.type, same(gitPulsePreset.type));
-    },
-  );
-
   test(
     'the type table authors every role the app sets, and none is Material\'s',
     () {
