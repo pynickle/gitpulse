@@ -140,4 +140,12 @@ void main() {
       expect(shown.last['identity'], 'other-document');
     },
   );
+
+  test('the document is drawn into a texture, not laid over Flutter', () {
+    // Hybrid composition is an Android View over Flutter's canvas: it cannot
+    // take the sheet's opacity and hands the system one stale frame of the whole
+    // sheet as it is torn down, which is the flash the drawer's close showed
+    // (ADR 0028). The document is a texture, so a sheet can move it away.
+    expect(documentWebViewSettings().useHybridComposition, isFalse);
+  });
 }

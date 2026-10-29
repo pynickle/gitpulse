@@ -96,3 +96,17 @@ coverage. Controlled rectangles check scroll correction logic in jsdom, whose
 lack of layout prevents it from proving physical reading continuity. Windows and
 Android real-engine reading position, image restoration and bridge acceptance
 remain separate device checks and must be reported as executed or unexecuted.
+
+## The document is drawn into a texture, not laid over Flutter
+
+The Android host draws a document as a texture (`useHybridComposition: false`, Flutter's
+texture-layer composition) instead of as an Android `View` floating above Flutter's canvas. A
+hybrid-composition WebView is not part of the app's layer tree: it cannot take the opacity of the
+surface it stands on, so the Release Drawer used to fade its chrome and its barrier away while the
+notes stayed lit at full strength, and it handed the system one stale frame of the whole sheet as it
+was torn down — the flash a reader saw as the drawer shut. Drawn into a texture, the page composites
+like any other layer, so the sheet around it can move it or put it away.
+
+`initSurfaceAndroidView` falls back to hybrid composition where the device cannot present a texture
+platform view, so the old behaviour can come back on an old device. That fallback is the platform's,
+not a second path in the app.

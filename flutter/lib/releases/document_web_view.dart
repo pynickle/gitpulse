@@ -182,6 +182,34 @@ class _InAppWebViewDocumentState extends ConsumerState<_InAppWebViewDocument> {
   );
 }
 
+/// The settings every document is drawn with.
+///
+/// [InAppWebViewSettings.useHybridComposition] is off, so the page is drawn into
+/// a texture rather than as an Android View laid over Flutter's canvas. A
+/// hybrid-composition WebView cannot take the opacity of the sheet it stands in —
+/// it stayed lit while the Release Drawer's chrome and barrier faded — and it
+/// tore down with one stale frame of the whole sheet, the flash a reader saw as
+/// the drawer shut (ADR 0028). Texture-layer composition keeps the page inside
+/// the app's own layer tree, so a sheet can move it or put it away like any other
+/// surface.
+InAppWebViewSettings documentWebViewSettings() => InAppWebViewSettings(
+  useHybridComposition: false,
+  transparentBackground: true,
+  javaScriptEnabled: true,
+  javaScriptCanOpenWindowsAutomatically: false,
+  supportMultipleWindows: false,
+  useShouldOverrideUrlLoading: true,
+  allowFileAccess: false,
+  allowContentAccess: false,
+  allowFileAccessFromFileURLs: false,
+  allowUniversalAccessFromFileURLs: false,
+  thirdPartyCookiesEnabled: false,
+  mediaPlaybackRequiresUserGesture: true,
+  textZoom: 100,
+  isInspectable: kDebugMode,
+  verticalScrollBarEnabled: false,
+);
+
 Widget _buildEngine(BuildContext context, DocumentEngineRequest request) =>
     InAppWebView(
       initialData: InAppWebViewInitialData(
@@ -190,22 +218,7 @@ Widget _buildEngine(BuildContext context, DocumentEngineRequest request) =>
         encoding: 'utf8',
         baseUrl: WebUri(request.page.baseUrl),
       ),
-      initialSettings: InAppWebViewSettings(
-        transparentBackground: true,
-        javaScriptEnabled: true,
-        javaScriptCanOpenWindowsAutomatically: false,
-        supportMultipleWindows: false,
-        useShouldOverrideUrlLoading: true,
-        allowFileAccess: false,
-        allowContentAccess: false,
-        allowFileAccessFromFileURLs: false,
-        allowUniversalAccessFromFileURLs: false,
-        thirdPartyCookiesEnabled: false,
-        mediaPlaybackRequiresUserGesture: true,
-        textZoom: 100,
-        isInspectable: kDebugMode,
-        verticalScrollBarEnabled: false,
-      ),
+      initialSettings: documentWebViewSettings(),
       onWebViewCreated: (controller) {
         for (final name in [
           'resolveDocumentUrls',

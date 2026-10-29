@@ -41,12 +41,13 @@ had named 12dp for a panel that also opened at the window's right edge.
 
 **A sheet moves; it never fades.** Arriving and leaving are one translation of the sheet by its own
 height over `gitPulseSheetTransition`; the barrier still fades, but nothing on the sheet does, and the
-route's own default transition (which fades the page it holds) is passed through untouched. A
-release's notes are drawn by a platform view, and a platform view keeps its own opacity: the sheet
-used to fade, so its chrome and its barrier went while the notes stayed lit at full strength, and the
-frame the route was removed on could be presented with the whole sheet back at its opening size — a
-flash the reader saw as the drawer shut. For the same reason a sheet body is never wrapped in an
-`Opacity` or an alpha-blended `AnimatedOpacity`, and a future reader should not re-add the fade.
+route's own default transition (which fades the page it holds) is passed through untouched. The Release
+Drawer's closing flash is the reason to keep it that way: its notes were drawn by a hybrid-composition
+WebView, which ignores the opacity of the surface it stands on and tore down with one stale frame of
+the whole sheet, so a faded sheet left the notes lit while everything else went. The notes are a texture
+now (ADR 0028) and would compose, but putting a sheet away is a movement, and an opacity layer over any
+platform view is the fragile path that already flashed once. A sheet body is therefore never wrapped in
+an `Opacity` or an alpha-blended `AnimatedOpacity` either.
 
 **What this does not change.** Auth, cache, retention, documents, follow semantics and the sheet
 geometry ADR 0010 and ADR 0018 fix are untouched. A page-level _ceiling_ is not a wide-screen branch
