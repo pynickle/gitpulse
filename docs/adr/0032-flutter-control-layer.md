@@ -8,25 +8,32 @@ Material is the client's runtime, not its design language (ADR 0031). The Founda
 supplies every tone and every type row; this record decides the **Control Layer** — the surfaces a
 reader operates — and the ink rule that governs all of them.
 
-Five faces become GitPulse's own, each replacing its Material counterpart everywhere it appears:
+Seven faces become GitPulse's own, each replacing its Material counterpart everywhere it appears:
 
 | Face                      | GitPulse's own                                                                                                                                      | Replaced                                                                           |
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | The bottom navigation bar | `GitPulseNavigationBar` + `GitPulseNavigationDestination` (`lib/presentation/gitpulse_navigation_bar.dart`)                                         | `NavigationBar` / `NavigationDestination`                                          |
 | The button family         | `GitPulseButton` with `GitPulseButtonVariant.filled / tonal / outlined / text`, and `GitPulseIconButton` (`lib/presentation/gitpulse_buttons.dart`) | `FilledButton`, `FilledButton.tonal`, `OutlinedButton`, `TextButton`, `IconButton` |
+| The switch                | `GitPulseSwitch` (`lib/presentation/gitpulse_toggles.dart`)                                                                                         | `Switch` / `SwitchListTile`                                                        |
+| The checkbox              | `GitPulseCheckbox` (`lib/presentation/gitpulse_toggles.dart`)                                                                                       | `Checkbox` / `CheckboxListTile`                                                    |
 | The row indicator         | `GitPulseProgressInline` (`lib/presentation/gitpulse_progress.dart`)                                                                                | `CircularProgressIndicator(strokeWidth: 2)` in a row                               |
 | The page indicator        | `GitPulseProgressPage` (`lib/presentation/gitpulse_progress.dart`)                                                                                  | `CircularProgressIndicator` in the loading/empty/error views                       |
 | The dialog entry point    | `showGitPulseDialog` + `GitPulseDialog` (`lib/presentation/gitpulse_dialog.dart`)                                                                   | `showDialog` + `AlertDialog`                                                       |
 
-The **switch** and the **checkbox** are the remaining faces of this decision. No screen this change
-touched carries either, so they keep Material's own drawing until the screens that do are migrated;
-until then `gitPulseInkOverlay` stays installed on `CheckboxThemeData`, exactly as ADR 0023 left it.
+The switch and the checkbox were the last two faces named by this record as still Material's. They
+arrive with the surface that carries them — the Release Timeline's Filter Panel, the client's only
+toggle surface — and they carry what Material's carried: the track and the box drawn in the preset's
+tones, the thumb crossing the track and the check drawing itself in, the mixed state a tristate box
+states, the disabled state, the tap-target floors, and the role, state and name a screen reader is
+given. With them, no Material checkbox or switch is drawn anywhere in the client, so the theme no
+longer installs `CheckboxThemeData`: an ink override for a control the client does not draw would be
+an override with nothing to override.
 
-The **choice chip** (Settings' language and appearance choices) is not one of the five faces and is
+The **choice chip** (Settings' language and appearance choices) is not one of the seven faces and is
 not decided here. It stays Material's drawing, its selected state already comes from the app's own
 `secondaryContainer`/`onSecondaryContainer` pairing in the theme, and the press rule reaches it
-through the transparent highlight the theme sets. A chip that later needs GitPulse's own skin is a
-sixth face of the same decision and needs its own amendment — it is named here so that its absence
+through the transparent highlight the theme sets. A chip that later needs GitPulse's own skin is an
+eighth face of the same decision and needs its own amendment — it is named here so that its absence
 from the replaced set is not read as an oversight.
 
 ## What each face keeps from the app it replaces
@@ -51,6 +58,23 @@ table. Concretely:
   control quiets to `toneTextSubtle` and keeps its place in the layout. The tap target is
   `GitPulseHeight.compact` at its floor; an icon action is a `GitPulseHeight.standard` square, which
   is the target Material's `IconButton` gave it, and the control owns its mark's tone and measure.
+  That face has three standings and knows all of them: on the page (the platform's square, a quiet
+  mark), inside a control (`target: GitPulseHeight.compact` for a field's clear mark, so the mark
+  never grows the field it sits in), and floating over content (`floating: true`, a shell-toned disc
+  inside one hairline — the app raises a surface with a boundary, never with a shadow).
+- **The switch** is a `gitPulseSwitchTrack` (52 × 32) pill inside a `GitPulseHeight.standard` target.
+  Off is the palette's active step (`toneSurfaceActive`) framed by one `toneBorderStrong` hairline,
+  under a `toneTextSubtle` thumb; on is the Accent with the thumb in `toneOnAccent`. The thumb crosses
+  the track over `gitPulseToggleTurn` and the two tones cross with it, and a disabled switch holds its
+  shape in `toneSurfaceMuted` and `toneTextSubtle`. It stands where Material's switch stood, so the
+  panel's row keeps its height.
+- **The checkbox** is a `GitPulseIconSize.inControl` (18dp) box at `GitPulseRadius.bar`: a
+  `toneBorderStrong` hairline with no fill while it is clear, the Accent with a `toneOnAccent` mark
+  while it is chosen, and the dash of the same mark when a tristate value is mixed. The mark is a
+  drawn path that fills in over `gitPulseToggleTurn`, not a Material glyph. `target` is the square it
+  answers a finger in; a box drawn at the end of a row takes the row's own remaining square (the
+  Timeline's Filter Panel passes `GitPulseHeight.rowMin` less its two insets), because there the row —
+  not the box — is the target, and the row keeps the rhythm it already had.
 - **The two indicators** are drawn, not skinned: three quarters of a circle in the Accent, turning
   once every `gitPulseProgressTurn`, at a glyph's measure (20dp inline) or at the page state's
   measure (32dp, the size a message view leads with). A Material spinner the theme cannot reach is a
@@ -73,7 +97,7 @@ tonal surface keeps an answer to a press.**
 
 - `gitPulseInkOverlay` resolves `pressed` to nothing, `hovered` and `focused` to
   `gitPulseHoverTint`, and every other state to null. Every control that has no fill of its own —
-  outlined, text, icon, a destination in the bar — paints through it.
+  outlined, text, icon, a destination in the bar, both toggles — paints through it.
 - `gitPulseFilledInkOverlay` is the same rule for a control that already paints the Accent: its own
   foreground laid on at `gitPulseFilledPressAlpha` (one tenth, the strength Material's filled
   overlay used) while pressed, and the one tint while hovered or focused. A coloured surface that
@@ -81,14 +105,18 @@ tonal surface keeps an answer to a press.**
 - **A control paints its own fill.** Ink is drawn below a `Material`'s child, so a control with a
   visible fill paints that fill through its own `Material` rather than through a container above the
   ink — the same failure ADR 0019 found in the Release Timeline card. The bar's selected
-  destination and the filled button are built that way.
+  destination and the filled button are built that way; the toggles paint their track, box and thumb
+  through `Ink` on the ink layer for the same reason, so the app's one tint reads over a switch's
+  track exactly as it reads over a card.
 - **No surface sets its own overlay colour**, and nothing reintroduces a pressed tint. The
   sanctioned remedy if a press ever reads as dead is still the one ADR 0023 named: a pressed surface
   moves its hairline toward the Accent, and that needs its own record.
 
-The theme keeps installing the same overlay on the Material families (`IconButton`, `TextButton`,
-`OutlinedButton`, `Checkbox`) for the screens that have not been migrated yet, so the contract holds
-across the two implementations rather than only in the new one.
+The theme keeps installing the same overlay on the Material families the client has not replaced yet
+(`IconButton`, `TextButton`, `OutlinedButton`, for the Follows, Connection, Repository and Release
+surfaces), so the contract holds across the two implementations rather than only in the new one. The
+toggle families are no longer among them: `checkboxTheme` is gone, `switchTheme` was never installed,
+and the app's own toggles read `gitPulseInkOverlay` directly.
 
 ## Platform Dialect Exceptions
 
@@ -133,7 +161,8 @@ bar together with three of the replaced faces while every remaining exception li
 Enforcement is executable rather than documentary: a migrated screen's widget test asserts that the
 replaced Material faces are absent from its rendered tree (`find.byType(FilledButton)` and its
 siblings → `findsNothing` inside that screen). The project's rule against testing source text is
-respected because the assertion is about what rendered.
+respected because the assertion is about what rendered. The Settings pilot and the Release Timeline
+both carry that test, and a screen adopted later joins them.
 
 ## Consequences
 
@@ -147,15 +176,21 @@ respected because the assertion is about what rendered.
   hover, a disabled control that refuses, a tooltip, a dialog that dismisses.
 - A Flutter upgrade can no longer restyle the faces a reader operates. What is left to Material is
   the list above, and each entry on it is a behaviour the platform does better than the app would.
-- The switch and the checkbox are still Material's today. That is a gap in this record's coverage,
-  not a reversal of it: the two screens that show them are the next migration, and until then the
-  theme's overlay keeps their press rule identical to the app's.
+- **The switch and the checkbox are GitPulse's now.** They were the last gap in this record's
+  coverage, and closing it removed the `checkboxTheme` ink installation rather than leaving it
+  behind: the client draws no Material checkbox or switch, so there is nothing for such an entry to
+  restyle.
 - Two small visible changes follow from the geometry the faces keep rather than choose: an icon
   action in Settings is now one 40dp-square target instead of Material's padded 48dp variant, and
   the Settings row that clears the timeline cache reports success with the **success** tone on its
   check mark rather than with the Accent — a confirmation is a receipt, and the Accent means the app
   is acting (ADR 0031).
+- A third small visible change follows from the toggles' own drawing: the Timeline Filter Panel's
+  date bounds are two `GitPulseButton` pills at the app's control height instead of Material's 32dp
+  `OutlinedButton`s, and the box at each repository row's end draws the app's own 18dp box. The panel
+  keeps the row rhythm it had — a repository row still stands at `GitPulseHeight.rowMin` — because
+  the box takes the square the row has left rather than a target of its own.
 - The theme's own Material component themes (`iconButtonTheme`, `textButtonTheme`,
-  `outlinedButtonTheme`, `checkboxTheme`) stay installed while unmigrated screens use them. They
-  become deletable when the last screen moves, and deleting them is the proof this decision is
-  finished rather than merely recorded.
+  `outlinedButtonTheme`) stay installed while the Follows, Connection, Repository and Release
+  surfaces still mount those families. They become deletable when the last screen moves, and
+  deleting them is the proof this decision is finished rather than merely recorded.
