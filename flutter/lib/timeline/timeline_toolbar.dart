@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_progress.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'timeline_cache.dart';
 import 'timeline_filters.dart';
@@ -71,36 +73,46 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final state = widget.state;
     final filters = state.filters;
     final now = ref.watch(timelineClockProvider)();
     final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
-    final scheme = theme.colorScheme;
     final baseline = _baselineLabel(l10n, now, localDateKey);
     final refreshProgress = state.loading && !widget.pullRefreshing;
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
     );
+    // The two marks that state a mode rather than run an action: each says
+    // whether it is applied, which is what a screen reader hears from it.
+    final notes = filters.includeReleaseNotes;
+    final filtering = filters.hasActiveTimelineFilter;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: GitPulseSpace.gutter,
+        vertical: GitPulseSpace.inline,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Expanded(
+                // The field itself is the platform's own — its IME, selection
+                // and paste — and the app owns the shape and the type around it
+                // (ADR 0032).
                 child: TextField(
                   controller: _query,
                   maxLines: 1,
                   textAlignVertical: TextAlignVertical.center,
-                  style: theme.textTheme.bodyMedium,
+                  style: gitPulseTypeFieldText(context),
                   decoration: InputDecoration(
                     isDense: true,
                     filled: true,
-                    fillColor: scheme.surfaceContainerHigh,
+                    // The field is a well cut into the page, so it takes the
+                    // page's own tone rather than a surface's.
+                    fillColor: toneShell(context),
                     hintText: l10n.timelineSearchPlaceholder,
                     hintMaxLines: 1,
                     prefixIcon: const Icon(
@@ -113,19 +125,17 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                     ),
                     suffixIcon: _query.text.isEmpty
                         ? null
-                        : IconButton(
+                        : GitPulseIconButton(
                             tooltip: l10n.timelineSearchClear,
-                            // A padded 48dp target is taller than this dense
-                            // field and stretches it once the button appears.
-                            style: IconButton.styleFrom(
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
+                            size: GitPulseIconSize.inControl,
+                            // The field's own height, so the mark never grows
+                            // the field it appears in.
+                            dimension: GitPulseHeight.compact,
                             onPressed: () {
                               _query.clear();
                               setState(() {});
                               _change((filters) => filters.copyWith(query: ''));
                             },
-                            iconSize: GitPulseIconSize.inControl,
                             icon: const Icon(Icons.close),
                           ),
                     suffixIconConstraints: const BoxConstraints(
@@ -142,7 +152,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                     border: border,
                     enabledBorder: border,
                     focusedBorder: border.copyWith(
-                      borderSide: BorderSide(color: scheme.primary),
+                      borderSide: BorderSide(color: toneAccent(context)),
                     ),
                   ),
                   textInputAction: TextInputAction.search,
@@ -152,26 +162,26 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                   },
                 ),
               ),
-              IconButton(
-                tooltip: l10n.timelineIncludeNotes,
-                isSelected: filters.includeReleaseNotes,
-                onPressed: () => _change(
-                  (filters) => filters.copyWith(
-                    includeReleaseNotes: !filters.includeReleaseNotes,
+              Semantics(
+                selected: notes,
+                child: GitPulseIconButton(
+                  tooltip: l10n.timelineIncludeNotes,
+                  icon: Icon(notes ? Icons.article : Icons.article_outlined),
+                  emphasized: notes,
+                  onPressed: () => _change(
+                    (filters) => filters.copyWith(
+                      includeReleaseNotes: !filters.includeReleaseNotes,
+                    ),
                   ),
                 ),
-                icon: const Icon(Icons.article_outlined),
-                selectedIcon: const Icon(Icons.article),
               ),
-              IconButton(
+              GitPulseIconButton(
                 tooltip: l10n.timelineReload,
                 onPressed: state.loading ? null : () => widget.onRefresh(),
+                // A round the pull started shows its progress at the top of
+                // the list instead, so only one indicator is ever on screen.
                 icon: refreshProgress
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const GitPulseProgressInline()
                     : const Icon(Icons.refresh),
               ),
             ],
@@ -188,11 +198,14 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                   localDateKey: localDateKey,
                 ),
               ),
-              IconButton(
-                tooltip: l10n.timelineFilters,
-                isSelected: filters.hasActiveTimelineFilter,
-                onPressed: widget.onOpenFilters,
-                icon: const Icon(Icons.filter_list),
+              Semantics(
+                selected: filtering,
+                child: GitPulseIconButton(
+                  tooltip: l10n.timelineFilters,
+                  icon: const Icon(Icons.filter_list),
+                  emphasized: filtering,
+                  onPressed: widget.onOpenFilters,
+                ),
               ),
             ],
           ),
@@ -201,21 +214,20 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
               state.cacheCorrupted
                   ? l10n.timelineCacheCorrupted
                   : l10n.timelineCacheFailed,
+              style: gitPulseTypeMeta(context),
             ),
           if (state.cacheFailed && widget.onRetryCache != null)
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: TextButton(
+              child: GitPulseButton(
+                label: state.cacheCorrupted
+                    ? l10n.timelineRebuildCache
+                    : l10n.timelineRetrySaving,
                 onPressed: state.loading || state.cacheActions.clearing
                     ? null
                     : state.cacheCorrupted
                     ? widget.onRebuildCache
                     : widget.onRetryCache,
-                child: Text(
-                  state.cacheCorrupted
-                      ? l10n.timelineRebuildCache
-                      : l10n.timelineRetrySaving,
-                ),
               ),
             ),
         ],
@@ -293,7 +305,7 @@ class _MetaLine extends StatelessWidget {
           Icon(
             Icons.cloud_off,
             size: GitPulseIconSize.inline,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: toneTextMuted(context),
           ),
           // The glyph and the word it stands for read as one unit, so this is
           // `glyphGap` rather than the gap between two facts.

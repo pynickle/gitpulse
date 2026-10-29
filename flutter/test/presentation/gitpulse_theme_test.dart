@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/presentation/gitpulse_toggles.dart';
 
 /// ADR 0032: the app's controls press with no background anywhere, hover and
 /// keyboard focus keep the single half-strength tint, and a filled or tonal
@@ -208,32 +209,33 @@ void main() {
       expect(theme.focusColor, theme.hoverColor);
     });
 
-    testWidgets('${brightness.name}: a checkbox presses with no background', (
-      tester,
-    ) async {
+    testWidgets('${brightness.name}: the app’s toggles paint the one ink rule '
+        'and the theme installs none of their own', (tester) async {
       final theme = await pumpThemed(
         tester,
-        Checkbox(value: true, onChanged: (_) {}),
+        GitPulseCheckbox(value: true, onChanged: (_) {}),
         brightness: brightness,
       );
 
-      // A checkbox paints its press reaction itself instead of inking through
-      // an InkWell, so the overlay it resolves is where its states are judged:
-      // the same nothing on press and the same one tint on hover and focus.
-      final overlay = CheckboxTheme.of(tester.element(find.byType(Checkbox)))
-          .overlayColor!;
+      // The client draws no Material checkbox or switch, so the theme installs
+      // no ink for either: what is left is a Material entry with nothing to
+      // override, which is what this asserts is gone (ADR 0032).
+      expect(theme.checkboxTheme.overlayColor, isNull);
+      expect(theme.switchTheme.overlayColor, isNull);
 
-      // A checked box resolves its states with `selected` alongside them.
+      // A toggle is a control with no fill of its own, so it answers with the
+      // app's rule: nothing on press, the one tint on hover and focus.
+      final ink = inkInside(tester, GitPulseCheckbox);
       expect(
-        overlay.resolve({WidgetState.selected, WidgetState.pressed}),
+        ink.overlayColor!.resolve({WidgetState.pressed}),
         Colors.transparent,
       );
       expect(
-        overlay.resolve({WidgetState.selected, WidgetState.hovered}),
+        ink.overlayColor!.resolve({WidgetState.hovered}),
         theme.hoverColor,
       );
       expect(
-        overlay.resolve({WidgetState.selected, WidgetState.focused}),
+        ink.overlayColor!.resolve({WidgetState.focused}),
         theme.hoverColor,
       );
     });

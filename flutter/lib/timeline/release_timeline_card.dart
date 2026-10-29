@@ -19,12 +19,9 @@ class ReleaseTimelineCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
     final now = ref.watch(timelineClockProvider)();
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
+    final meta = gitPulseTypeMeta(context);
 
     return Material(
       color: Colors.transparent,
@@ -48,10 +45,10 @@ class ReleaseTimelineCard extends ConsumerWidget {
               width: GitPulseStroke.hairline,
             ),
             borderRadius: BorderRadius.circular(GitPulseRadius.surface),
-            color: scheme.surfaceContainerLow,
+            color: toneSurfaceMuted(context),
           ),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(GitPulseSpace.surfaceInset),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -63,13 +60,10 @@ class ReleaseTimelineCard extends ConsumerWidget {
                         item.repository.fullName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: scheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: gitPulseTypeBrandName(context),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: GitPulseSpace.inline),
                     Tooltip(
                       message: gitPulseDateTime(
                         context,
@@ -82,25 +76,18 @@ class ReleaseTimelineCard extends ConsumerWidget {
                           item.publishedAt,
                           now: now,
                         ),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                        style: gitPulseTypeMetaTight(context),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: GitPulseSpace.tight),
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 4,
+                  spacing: GitPulseSpace.inline,
+                  runSpacing: GitPulseSpace.glyphGap,
                   children: [
-                    Text(
-                      item.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(item.title, style: gitPulseTypeSurfaceTitle(context)),
                     if (item.isPrerelease)
                       GitPulseStatusBadge(
                         icon: Icons.science_outlined,
@@ -109,20 +96,18 @@ class ReleaseTimelineCard extends ConsumerWidget {
                   ],
                 ),
                 if (item.changelog.isNotEmpty) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: GitPulseSpace.tight),
                   Text(
                     item.changelog,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                    style: meta,
                   ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: GitPulseSpace.meta),
                 Wrap(
                   spacing: 12,
-                  runSpacing: 4,
+                  runSpacing: GitPulseSpace.glyphGap,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Row(
@@ -132,18 +117,18 @@ class ReleaseTimelineCard extends ConsumerWidget {
                           child: Icon(
                             Icons.attach_file,
                             size: GitPulseIconSize.inline,
-                            color: scheme.onSurfaceVariant,
+                            color: toneTextMuted(context),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: GitPulseSpace.glyphGap),
                         Text(
                           l10n.timelineAssetCount(item.assetCount),
-                          style: muted,
+                          style: meta,
                         ),
                       ],
                     ),
                     if (item.isOldestShown)
-                      Text(l10n.timelineOldestShown, style: muted),
+                      Text(l10n.timelineOldestShown, style: meta),
                   ],
                 ),
               ],

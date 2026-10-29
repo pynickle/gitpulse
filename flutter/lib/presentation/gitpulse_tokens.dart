@@ -85,7 +85,9 @@ abstract final class GitPulseRadius {
   /// geometry — 70% open, 40% floor, 0.7 snap — belongs to ADR 0010.
   static const sheetTop = 20.0;
 
-  /// The Entry Release marker's 4dp-wide strip: a decoration, not a surface.
+  /// The smallest rounding the app draws, on a decoration rather than a
+  /// surface: the Entry Release marker's 4dp-wide strip, and a toggle's box —
+  /// a mark that is read at a glance rather than a block that is read.
   static const bar = 2.0;
 }
 

@@ -196,6 +196,13 @@ class GitPulseButton extends StatelessWidget {
 /// the mark and the words the platform presents (ADR 0032). [emphasized] paints
 /// the mark in the Accent, which is how a row says "this is already applied"
 /// before it is read.
+///
+/// The face has three standings and knows all of them. An action standing on the
+/// page is a mark on that page; an action inside a control stands at the
+/// control's own measure ([dimension]), so a clear mark never grows the field it
+/// sits in; and an action that [floats] over content is a shell-toned disc inside
+/// one hairline, which is how it is read as above the list rather than as part of
+/// it — the app raises a surface with a boundary, never with a shadow.
 class GitPulseIconButton extends StatelessWidget {
   const GitPulseIconButton({
     super.key,
@@ -206,6 +213,7 @@ class GitPulseIconButton extends StatelessWidget {
     this.emphasized = false,
     this.autofocus = false,
     this.dimension = GitPulseHeight.standard,
+    this.floating = false,
   });
 
   final String tooltip;
@@ -224,8 +232,9 @@ class GitPulseIconButton extends StatelessWidget {
   /// has a focused subtree to arrive in.
   final bool autofocus;
 
-  /// The touch target's own measure: the app's 48dp action, or the cell a flat
-  /// control gives its step.
+  /// The touch target's own measure: the app's 48dp action, the cell a flat
+  /// control gives its step, or the control's own height when the action is
+  /// drawn inside one.
   ///
   /// It is stated by the surface the action sits in, never chosen by the action:
   /// a page pill's step is one cell of the pill's recorded geometry (ADR 0026),
@@ -233,6 +242,9 @@ class GitPulseIconButton extends StatelessWidget {
   /// A parent that lays the control out shorter than this still decides the
   /// height — the measure is what the control asks for, not what it forces.
   final double dimension;
+
+  /// Whether the action stands over content rather than on it.
+  final bool floating;
 
   @override
   Widget build(BuildContext context) {
@@ -242,22 +254,47 @@ class GitPulseIconButton extends StatelessWidget {
         ? toneTextSubtle(context)
         : emphasized
         ? toneAccent(context)
+        // A floating action sits on a surface of its own, so its mark is as
+        // strong as that surface's text; one standing on the page is a quiet
+        // mark beside the thing it acts on.
+        : floating
+        ? toneText(context)
         : toneTextMuted(context);
-    final rounded = BorderRadius.circular(GitPulseRadius.row);
+    final fill = floating ? toneShell(context) : null;
+    final shape = floating
+        ? CircleBorder(
+            side: BorderSide(
+              color: toneEdge(scheme),
+              width: GitPulseStroke.hairline,
+            ),
+          )
+        : null;
+    final rounded = BorderRadius.circular(
+      floating ? dimension / 2 : GitPulseRadius.row,
+    );
 
-    return Tooltip(
-      message: tooltip,
-      child: Semantics(
-        button: true,
-        enabled: enabled,
+    // The tooltip sits inside the button's own semantics node, so the words a
+    // pointer is shown are the words a screen reader is told, on the control
+    // itself rather than on a node beside it.
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      child: Tooltip(
+        message: tooltip,
         child: SizedBox.square(
           dimension: dimension,
           child: Material(
-            type: MaterialType.transparency,
+            type: fill == null
+                ? MaterialType.transparency
+                : MaterialType.canvas,
+            color: fill,
+            shape: shape,
+            clipBehavior: fill == null ? Clip.none : Clip.antiAlias,
             child: InkWell(
               onTap: onPressed,
               autofocus: autofocus,
-              borderRadius: rounded,
+              customBorder:
+                  shape ?? RoundedRectangleBorder(borderRadius: rounded),
               overlayColor: gitPulseInkOverlay(scheme),
               child: Center(
                 child: IconTheme(

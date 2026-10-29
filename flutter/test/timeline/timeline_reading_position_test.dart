@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/presentation/gitpulse_toggles.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:path/path.dart' as p;
@@ -224,7 +225,7 @@ void main() {
     final before = server.featureRequests.length;
     await tester.tap(find.byTooltip('Filters'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(Switch));
+    await tester.tap(find.byType(GitPulseSwitch));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();

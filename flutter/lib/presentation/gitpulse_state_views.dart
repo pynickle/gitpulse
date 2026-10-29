@@ -50,13 +50,14 @@ class GitPulseMessageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final detailStyle = gitPulseTypeDescription(context);
     Widget? detail;
     if (description case final description?) {
-      final text = Text(description, textAlign: TextAlign.center, style: muted);
+      final text = Text(
+        description,
+        textAlign: TextAlign.center,
+        style: detailStyle,
+      );
       detail = liveRegion ? Semantics(liveRegion: true, child: text) : text;
     }
     final content = Column(
@@ -65,21 +66,22 @@ class GitPulseMessageView extends StatelessWidget {
         Icon(
           icon,
           size: GitPulseIconSize.page,
+          // A failure is the danger tone and a page with nothing to show yet is
+          // the Accent: the app is not reporting a status when it says it found
+          // nothing (ADR 0031).
           color: tone == GitPulseMessageTone.error
-              ? theme.colorScheme.error
-              : theme.colorScheme.primary,
+              ? toneDanger(context)
+              : toneAccent(context),
         ),
         const SizedBox(height: 12),
-        Text(title, style: theme.textTheme.titleMedium),
+        Text(title, style: gitPulseTypeSurfaceTitle(context)),
         if (detail != null) ...[const SizedBox(height: 6), detail],
         if (hint case final hint?) ...[
           const SizedBox(height: 6),
           Text(
             hint,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: gitPulseTypeMeta(context),
           ),
         ],
         if (action case final action?) ...[const SizedBox(height: 12), action],
