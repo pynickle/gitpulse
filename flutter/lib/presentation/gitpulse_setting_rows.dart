@@ -24,13 +24,14 @@ class GitPulseSettingSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        // A block within the page, read by the job it does rather than by a
+        // Material step's name.
+        color: toneSurfaceMuted(context),
         borderRadius: BorderRadius.circular(GitPulseRadius.surface),
         border: Border.all(
-          color: toneEdge(scheme),
+          color: toneEdge(Theme.of(context).colorScheme),
           width: GitPulseStroke.hairline,
         ),
       ),
@@ -73,7 +74,6 @@ class GitPulseSettingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final name = Text(
       label,
       maxLines: 1,
@@ -84,7 +84,7 @@ class GitPulseSettingRow extends StatelessWidget {
       child: Icon(
         icon,
         size: GitPulseIconSize.inline,
-        color: scheme.onSurfaceVariant,
+        color: toneTextMuted(context),
       ),
     );
     return GitPulseSettingSurface(
@@ -146,13 +146,15 @@ class GitPulseSettingNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final text = Text(
       this.text,
-      style: theme.textTheme.bodySmall?.copyWith(
+      // The type table's meta role, in the tone the line's state asks for: a
+      // note that reports a failure is the danger tone, ordinary state is the
+      // muted one.
+      style: gitPulseTypeMeta(context)?.copyWith(
         color: tone == GitPulseSettingNoteTone.error
-            ? theme.colorScheme.error
-            : theme.colorScheme.onSurfaceVariant,
+            ? toneDanger(context)
+            : toneTextMuted(context),
       ),
     );
     if (!liveRegion) return text;
