@@ -4,15 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_dialog.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
+import 'package:gitpulse/timeline/timeline_session.dart';
 
 import '../support/presentation_harness.dart';
+import '../support/settling.dart';
 import '../timeline/timeline_test_support.dart';
 
 /// A signed-in Settings page using the same installation setup as presentation tests.
-Future<void> _openSettings(WidgetTester tester) async {
+Future<PresentationHarness> _openSettings(WidgetTester tester) async {
   final harness = harnessFor(
     tester,
     session: SessionState(
@@ -43,6 +46,7 @@ Future<void> _openSettings(WidgetTester tester) async {
   await tester.pumpAndSettle();
   await tester.tap(find.text('Settings').last);
   await tester.pumpAndSettle();
+  return harness;
 }
 
 void _useWindow(WidgetTester tester, Size size, {double textScale = 1}) {
@@ -98,6 +102,60 @@ void _expectSettingCards(WidgetTester tester) {
 }
 
 void main() {
+  for (final height in [600.0, 900.0]) {
+    testWidgets(
+      'confirming cache clear preserves the settings scroll position at $height',
+      (tester) async {
+        _useWindow(tester, Size(390, height));
+        final harness = await _openSettings(tester);
+        final clear = find.widgetWithText(GitPulseButton, 'Clear');
+        await tester.scrollUntilVisible(
+          clear,
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        final position = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
+        final offset = position.pixels;
+        expect(offset, greaterThan(0));
+
+        await tester.tap(clear);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(GitPulseDialog),
+            matching: find.widgetWithText(GitPulseButton, 'Clear'),
+          ),
+        );
+        await tester.pump();
+        await pumpUntil(
+          tester,
+          () => !harness.container
+              .read(releaseTimelineSessionProvider)
+              .cacheActions
+              .clearing,
+          reason: 'finish clearing the timeline cache',
+        );
+        await tester.pumpAndSettle();
+        expect(
+          harness.container
+              .read(releaseTimelineSessionProvider)
+              .cacheActions
+              .cleared,
+          isTrue,
+        );
+        expect(position.pixels, closeTo(offset, 1));
+        expect(clear.hitTestable(), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 900));
+        await tester.pumpAndSettle();
+        expect(position.pixels, closeTo(offset, 1));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   testWidgets('a phone stacks each label over its control and keeps both fits', (
     tester,
   ) async {

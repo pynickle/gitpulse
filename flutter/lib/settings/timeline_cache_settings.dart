@@ -81,17 +81,16 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
       icon: Icons.storage_outlined,
       label: l10n.settingsTimelineCache,
       inlineControl: true,
-      control: actions.clearing
-          ? Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: GitPulseProgressInline(label: l10n.clearingTimelineCache),
-            )
-          : GitPulseButton(
-              label: l10n.settingsClear,
-              variant: GitPulseButtonVariant.outlined,
-              expand: true,
-              onPressed: locked ? null : _askToClear,
-              icon: AnimatedSwitcher(
+      // Keep the row's measure while clearing: shrinking the last card clamps
+      // the page's scroll offset before the button returns.
+      control: GitPulseButton(
+        label: l10n.settingsClear,
+        variant: GitPulseButtonVariant.outlined,
+        expand: true,
+        onPressed: locked ? null : _askToClear,
+        icon: actions.clearing
+            ? GitPulseProgressInline(label: l10n.clearingTimelineCache)
+            : AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeIn,
@@ -102,12 +101,12 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
                   key: ValueKey(_cleared),
                 ),
               ),
-              // A clear that landed is a success, and the success tone is the one
-              // tone that says so (ADR 0031): the Accent means the app is acting,
-              // never that something worked. The check standing in the bin's place
-              // is a status, so it is the mark the button may tone.
-              statusMarkTone: _cleared ? toneSuccess(context) : null,
-            ),
+        // A clear that landed is a success, and the success tone is the one
+        // tone that says so (ADR 0031): the Accent means the app is acting,
+        // never that something worked. The check standing in the bin's place
+        // is a status, so it is the mark the button may tone.
+        statusMarkTone: _cleared ? toneSuccess(context) : null,
+      ),
       notes: [
         if (actions.clearFailed)
           GitPulseSettingNote(
