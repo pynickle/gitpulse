@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by ADR-0033
 ---
 
 # The page pill is flatter than a toolbar control, and its cells are wider than they are tall

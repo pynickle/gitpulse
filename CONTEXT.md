@@ -229,6 +229,12 @@ _Avoid_: right panel, metadata column, "sidebar" used alone
 
 ## Release Follows
 
+**Repository Discovery**:
+The repositories a user browses through GitHub Starred or repository search to choose Release Follows. A discovery result does not imply that the repository is followed.
+
+**Follows Browsing Position**:
+The discovery source, result page, repository, and place within its row where a user stopped browsing Follows.
+
 **Release Follow**:
 A GitPulse-local subscription to a repository's releases, independent of GitHub Watch and Star.
 _Avoid_: watch, following, star, subscribe

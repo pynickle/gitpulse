@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/release_follows_state.dart';
+import 'package:gitpulse/follows/repository_discovery_session.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -26,7 +27,9 @@ void main() {
         server,
         address: 'https://gitpulse.example/pulse',
       );
-      final facade = container.read(releaseFollowsSessionProvider.notifier);
+      final facade = container.read(
+        repositoryDiscoverySessionProvider.notifier,
+      );
       await facade.loadStarred();
       final first = server.featureRequests.singleWhere(
         (request) => request.uri.path.endsWith('/api/starred'),
@@ -39,7 +42,7 @@ void main() {
         'direction': 'desc',
       });
       final pagination = container
-          .read(releaseFollowsSessionProvider)
+          .read(repositoryDiscoverySessionProvider)
           .starred
           .pagination!;
       expect(pagination.page, 1);
@@ -51,7 +54,7 @@ void main() {
       server.starredRepositories = [repositoryJson(id: 'R_beta', name: 'beta')];
       server.starredHasMore = false;
       await facade.loadStarred(page: 2);
-      var starred = container.read(releaseFollowsSessionProvider).starred;
+      var starred = container.read(repositoryDiscoverySessionProvider).starred;
       expect(starred.items.map((item) => item.repository.id), ['R_beta']);
       expect(starred.page, 2);
       expect(starred.hasMore, isFalse);
@@ -63,7 +66,7 @@ void main() {
         sort: StarredRepositorySort.updated,
         ascending: true,
       );
-      starred = container.read(releaseFollowsSessionProvider).starred;
+      starred = container.read(repositoryDiscoverySessionProvider).starred;
       expect(starred.items.single.repository.id, 'R_gamma');
       expect(starred.page, 1);
       expect(server.featureRequests.last.uri.queryParameters, {
@@ -74,7 +77,7 @@ void main() {
       });
       server.starredStatus = 500;
       await facade.loadStarred(page: 2);
-      starred = container.read(releaseFollowsSessionProvider).starred;
+      starred = container.read(repositoryDiscoverySessionProvider).starred;
       expect(starred.items.single.repository.id, 'R_gamma');
       expect(starred.page, 1);
       expect(starred.problem, FollowProblem.server);
@@ -82,7 +85,7 @@ void main() {
       await facade.loadStarred(page: 2);
       expect(server.featureRequests.last.uri.queryParameters['page'], '2');
       expect(
-        container.read(releaseFollowsSessionProvider).starred.problem,
+        container.read(repositoryDiscoverySessionProvider).starred.problem,
         isNull,
       );
     },
@@ -94,7 +97,7 @@ void main() {
       server,
       address: 'https://gitpulse.example',
     );
-    final facade = container.read(releaseFollowsSessionProvider.notifier);
+    final facade = container.read(repositoryDiscoverySessionProvider.notifier);
     final hold = Completer<void>();
     server.holdStarred = hold.future;
     final requestStarted = server.nextRequest('GET', '/api/starred');
@@ -107,7 +110,7 @@ void main() {
     await obsolete;
     expect(
       container
-          .read(releaseFollowsSessionProvider)
+          .read(repositoryDiscoverySessionProvider)
           .starred
           .items
           .single
@@ -118,16 +121,16 @@ void main() {
     final logoutHold = Completer<void>();
     server.holdStarred = logoutHold.future;
     final accountStarted = server.nextRequest('GET', '/api/starred');
-    final accountRequest = facade.loadStarred();
+    final accountRequest = facade.refresh();
     await accountStarted;
     await container.read(sessionControllerProvider.notifier).signOut();
     logoutHold.complete();
     await accountRequest;
     expect(
-      container.read(releaseFollowsSessionProvider).starred.items,
+      container.read(repositoryDiscoverySessionProvider).starred.items,
       isEmpty,
     );
-    expect(container.read(releaseFollowsSessionProvider).active, isFalse);
+    expect(container.read(repositoryDiscoverySessionProvider).active, isFalse);
   });
 
   test('search and follow use the same account settings and preserve unrelated preferences', () async {
@@ -138,12 +141,17 @@ void main() {
     );
     final facade = container.read(releaseFollowsSessionProvider.notifier);
     await facade.reload();
-    await facade.search('  alpha  ');
+    await container
+        .read(repositoryDiscoverySessionProvider.notifier)
+        .search('  alpha  ');
+    final results = container
+        .read(repositoryDiscoverySessionProvider)
+        .search
+        .items;
+    expect(results.single.repository.id, 'R_alpha');
+    expect(results.single.repository.fullName, 'octo/alpha');
+    await facade.follow(results.single.repository);
     var state = container.read(releaseFollowsSessionProvider);
-    expect(state.results.single.repository.id, 'R_alpha');
-    expect(state.results.single.repository.fullName, 'octo/alpha');
-    await facade.follow(state.results.single.repository);
-    state = container.read(releaseFollowsSessionProvider);
     expect(state.repositories.map((repo) => repo.id), ['R_alpha']);
     expect(state.problem, isNull);
     final save = server.featureRequests.singleWhere(
@@ -178,11 +186,10 @@ void main() {
       server,
       address: 'https://gitpulse.example/pulse',
     );
-    final facade = container.read(releaseFollowsSessionProvider.notifier);
-    await facade.reload();
+    final facade = container.read(repositoryDiscoverySessionProvider.notifier);
     await facade.search(' https://github.com/old-owner/alpha.git/ ');
-    var state = container.read(releaseFollowsSessionProvider);
-    expect(state.results.single.repository.fullName, 'new-owner/renamed');
+    var state = container.read(repositoryDiscoverySessionProvider);
+    expect(state.search.items.single.repository.fullName, 'new-owner/renamed');
     expect(
       server.featureRequests.last.uri.path,
       '/pulse/api/repos/old-owner/alpha',
@@ -197,10 +204,10 @@ void main() {
       'file://github.com/octo/alpha',
     ]) {
       await facade.search(invalid);
-      state = container.read(releaseFollowsSessionProvider);
-      expect(state.results, isEmpty, reason: invalid);
+      state = container.read(repositoryDiscoverySessionProvider);
+      expect(state.search.items, isEmpty, reason: invalid);
       expect(
-        state.searchProblem,
+        state.search.problem,
         FollowProblem.invalidRepository,
         reason: invalid,
       );
@@ -208,14 +215,14 @@ void main() {
     server.repositories.clear();
     await facade.search('https://github.com/octo/missing');
     expect(
-      container.read(releaseFollowsSessionProvider).searchProblem,
+      container.read(repositoryDiscoverySessionProvider).search.problem,
       FollowProblem.notFound,
     );
     server.repositories = [repositoryJson()];
     server.searchStatus = 429;
     await facade.search('https://github.com/octo/alpha');
     expect(
-      container.read(releaseFollowsSessionProvider).searchProblem,
+      container.read(repositoryDiscoverySessionProvider).search.problem,
       FollowProblem.rateLimited,
     );
   });
@@ -425,22 +432,28 @@ void main() {
       server,
       address: 'https://gitpulse.example/pulse',
     );
-    final facade = container.read(releaseFollowsSessionProvider.notifier);
-    await facade.reload();
+    final facade = container.read(repositoryDiscoverySessionProvider.notifier);
     await facade.search('release');
-    expect(container.read(releaseFollowsSessionProvider).hasMore, isTrue);
+    expect(
+      container.read(repositoryDiscoverySessionProvider).search.hasMore,
+      isTrue,
+    );
     server.repositories = [repositoryJson(id: 'R_beta', name: 'beta')];
     server.searchHasMore = false;
     await facade.search('release', page: 2);
     expect(
       container
-          .read(releaseFollowsSessionProvider)
-          .results
+          .read(repositoryDiscoverySessionProvider)
+          .search
+          .items
           .map((item) => item.repository.id),
       ['R_beta'],
     );
     expect(server.featureRequests.last.uri.queryParameters['page'], '2');
-    expect(container.read(releaseFollowsSessionProvider).hasMore, isFalse);
+    expect(
+      container.read(repositoryDiscoverySessionProvider).search.hasMore,
+      isFalse,
+    );
     final hold = Completer<void>();
     server.holdSearch = hold.future;
     final requestStarted = server.nextRequest(
@@ -454,18 +467,22 @@ void main() {
     await facade.search('new');
     hold.complete();
     await obsolete;
-    expect(container.read(releaseFollowsSessionProvider).query, 'new');
+    expect(container.read(repositoryDiscoverySessionProvider).query, 'new');
     expect(
       container
-          .read(releaseFollowsSessionProvider)
-          .results
+          .read(repositoryDiscoverySessionProvider)
+          .search
+          .items
           .single
           .repository
           .id,
       'R_gamma',
     );
     await facade.search('');
-    expect(container.read(releaseFollowsSessionProvider).hasMore, isFalse);
+    expect(
+      container.read(repositoryDiscoverySessionProvider).search.hasMore,
+      isFalse,
+    );
   });
 
   test(
@@ -510,7 +527,9 @@ void main() {
     server.holdSave = saveHold.future;
     final searchStarted = server.nextRequest('GET', '/api/search/repositories');
     final saveStarted = server.nextRequest('PUT', '/api/settings');
-    final search = facade.search('alpha');
+    final search = container
+        .read(repositoryDiscoverySessionProvider.notifier)
+        .search('alpha');
     final save = facade.follow(
       const TimelineRepository(id: 'R_alpha', owner: 'octo', name: 'alpha'),
     );
@@ -523,7 +542,10 @@ void main() {
     await Future.wait([search, save]);
     final state = container.read(releaseFollowsSessionProvider);
     expect(state.repositories, isEmpty);
-    expect(state.results, isEmpty);
+    expect(
+      container.read(repositoryDiscoverySessionProvider).search.items,
+      isEmpty,
+    );
     expect(state.active, isFalse);
     expect(container.read(releaseTimelineSessionProvider).active, isFalse);
   });

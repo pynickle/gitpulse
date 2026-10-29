@@ -306,13 +306,6 @@ abstract final class GitPulseHeight {
   /// A default Material icon button's padded touch target, and a drawer's
   /// chrome row.
   static const standard = 48.0;
-
-  /// A page pill: one flat cell of page navigation.
-  ///
-  /// Flatter than [compact] on purpose — the pill is a footnote to the list it
-  /// belongs to, and a cell wider than it is tall keeps the step arrows a full
-  /// 40dp target across (ADR 0026).
-  static const pill = 32.0;
 }
 
 /// The shared layout and editor widths, registered so a width is changed
@@ -325,10 +318,6 @@ abstract final class GitPulseHeight {
 abstract final class GitPulseWidth {
   /// A persistent integer editor, shared by retention and page navigation.
   static const integerField = 72.0;
-
-  /// The number cell of a page pill, before the reader's text scale: four
-  /// tabular digits at the body size.
-  static const pillNumber = 32.0;
 
   /// The reading measure: the width at which a Repository page's README stays a
   /// line the eye does not lose its place in.

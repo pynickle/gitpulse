@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import '../timeline/timeline_models.dart';
 import '../timeline/timeline_dto.dart';
@@ -18,12 +17,10 @@ final releaseFollowsSessionProvider =
       ReleaseFollowsSession.new,
     );
 
-/// The account's confirmed Release Follows and repository discovery actions.
+/// The account's sole confirmation authority for Release Follows.
 class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   int _generation = 0;
   int _metadataTicket = 0;
-  int _searchGeneration = 0;
-  int _starredGeneration = 0;
   String? _context;
   Future<TimelineResult<UserSettingsDto>>? _settingsRead;
   TimelineFailure? _readFailure;
@@ -33,28 +30,13 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   final Map<String, int> _nameVersions = {};
   int _nameVersion = 0;
 
-  ReleaseFollowsService get _service => ReleaseFollowsService(({
-    required method,
-    required path,
-    body,
-  }) {
-    if (!ref.mounted) {
-      return Future.value(
-        const BackendResult(cancelled: true, problem: BackendProblem.cancelled),
-      );
-    }
-    return ref
-        .read(sessionControllerProvider.notifier)
-        .request(method: method, path: path, body: body);
-  });
+  ReleaseFollowsService get _service => ref.read(releaseFollowsServiceProvider);
 
   @override
   ReleaseFollowsState build() {
     ref.onDispose(() {
       _generation++;
       _metadataTicket++;
-      _searchGeneration++;
-      _starredGeneration++;
     });
     ref.listen(sessionControllerProvider, (_, next) {
       final context = _sessionContext();
@@ -62,8 +44,6 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       _context = context;
       _generation++;
       _metadataTicket++;
-      _searchGeneration++;
-      _starredGeneration++;
       _settingsRead = null;
       _readFailure = null;
       _members.clear();
@@ -189,128 +169,6 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     );
     if (_detailed) unawaited(loadMetadata());
     return TimelineResult.data(_confirmedSettings);
-  }
-
-  /// Searches repositories or resolves a pasted GitHub repository URL.
-  Future<void> search(String input, {int page = 1}) async {
-    if (!state.active) return;
-    final query = input.trim();
-    final ticket = ++_searchGeneration;
-    final context = _context;
-    final changed = query != state.query;
-    if (changed) page = 1;
-    state = state.copyWith(
-      query: query,
-      searching: query.isNotEmpty,
-      results: changed || query.isEmpty ? const [] : null,
-      searchPage: changed || query.isEmpty ? 0 : null,
-      clearSearchPagination: changed || query.isEmpty,
-      searchRequestedPage: page,
-      clearSearchProblem: true,
-    );
-    if (query.isEmpty) return;
-    try {
-      final result = await _service.search(query, page);
-      if (!ref.mounted || context != _context || ticket != _searchGeneration) {
-        return;
-      }
-      state = state.copyWith(
-        results: List.unmodifiable(result.items),
-        searching: false,
-        searchPage: result.pagination?.page ?? page,
-        searchPagination: result.pagination,
-        clearSearchPagination: result.pagination == null,
-      );
-    } on FollowRequestFailure catch (error) {
-      if (ref.mounted && context == _context && ticket == _searchGeneration) {
-        state = state.copyWith(searching: false, searchProblem: error.problem);
-      }
-    }
-  }
-
-  /// Invalidates pending search results as the input changes.
-  void updateQuery(String input) {
-    _searchGeneration++;
-    state = state.copyWith(
-      query: input.trim(),
-      searching: false,
-      results: const [],
-      clearSearchPagination: true,
-      searchRequestedPage: 1,
-      searchPage: 0,
-      clearSearchProblem: true,
-    );
-  }
-
-  /// Re-reads the starred page on screen. A pull asks for the page the reader is
-  /// on, not for the first one, and an account that has not read a page yet
-  /// starts at the first.
-  Future<void> refreshStarredPage() =>
-      loadStarred(page: state.starred.page < 1 ? 1 : state.starred.page);
-
-  /// Repeats the search on the page it is showing, and does nothing before there
-  /// is a query to repeat.
-  Future<void> refreshSearchPage() {
-    final query = state.query;
-    if (query.isEmpty) return Future<void>.value();
-    return search(query, page: state.searchPage < 1 ? 1 : state.searchPage);
-  }
-
-  /// Loads starred repositories using the same ordering as the web app.
-  Future<void> loadStarred({
-    int page = 1,
-    StarredRepositorySort? sort,
-    bool? ascending,
-  }) async {
-    if (!state.active) return;
-    final starred = state.starred;
-    final ticket = ++_starredGeneration;
-    final context = _context;
-    final nextSort = sort ?? starred.sort;
-    final nextAscending = ascending ?? starred.ascending;
-    final changed =
-        nextSort != starred.sort || nextAscending != starred.ascending;
-    if (changed) page = 1;
-    state = state.copyWith(
-      starred: starred.copyWith(
-        loading: true,
-        items: changed ? const [] : null,
-        page: changed ? 0 : null,
-        clearPagination: changed,
-        requestedPage: page,
-        sort: nextSort,
-        ascending: nextAscending,
-        clearProblem: true,
-      ),
-    );
-    try {
-      final result = await _service.starred(
-        page,
-        sort: nextSort,
-        ascending: nextAscending,
-      );
-      if (!ref.mounted || context != _context || ticket != _starredGeneration) {
-        return;
-      }
-      state = state.copyWith(
-        starred: state.starred.copyWith(
-          items: List.unmodifiable(result.items),
-          loading: false,
-          page: result.pagination?.page ?? page,
-          pagination: result.pagination,
-          clearPagination: result.pagination == null,
-        ),
-      );
-    } on FollowRequestFailure catch (error) {
-      if (ref.mounted && context == _context && ticket == _starredGeneration) {
-        state = state.copyWith(
-          starred: state.starred.copyWith(
-            loading: false,
-            problem: error.problem,
-          ),
-        );
-      }
-    }
   }
 
   /// Adds a Release Follow after checking the latest shared list and limits.

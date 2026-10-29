@@ -88,9 +88,8 @@ one too (`../docs/adr/`).
   three destinations, the Connection page, the Repository page and the release surfaces).
   `GitPulseIconButton` has six arguments that are decisions rather than knobs: `size` is the mark's
   own measure, by the job it does; `dimension` is the touch target the _surface_ states — the
-  platform's `GitPulseHeight.standard` square on a page, the control's own height inside one, and one
-  cell of the page pill's recorded geometry (ADR 0026), which is why the pill's step is a flat 32dp
-  cell rather than a full-height square; `floating` is a shell-toned disc inside one hairline for an
+  platform's `GitPulseHeight.standard` square on a page, or `GitPulseHeight.compact` inside a
+  control, including discovery pagination (ADR 0033); `floating` is a shell-toned disc inside one hairline for an
   action standing over content; `emphasized` paints the mark in the Accent for "this is already
   applied"; `selected` is the same paint for a mode the reader turned on **and** the semantics flag
   that says so, so a surface never writes `Semantics(selected:)` around the face; `autofocus` gives a
@@ -150,6 +149,9 @@ one too (`../docs/adr/`).
   storing a record never authorizes exposing it.
 - Follow edits send only `followedRepositories` to `PUT /api/settings`, so unrelated preferences
   survive the write.
+- Follows discovery navigation and page editing follow
+  `../docs/flutter-follows-navigation-spec.md`: destination/source returns restore the reading
+  position, while explicit page navigation reuses results and starts at the top (ADR 0033).
 - Language, appearance, Followed Repository View and the retention window are **device** choices
   (`lib/device/`): they outlive clear-cache, sign-out and account change, so a new choice of that kind
   belongs there rather than in the account's settings payload.

@@ -1,4 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../session/gitpulse_http.dart';
+import '../session/session_controller.dart';
 import '../timeline/timeline_dto.dart';
 import '../timeline/timeline_models.dart';
 import 'release_follows_dto.dart';
@@ -9,6 +12,19 @@ typedef FollowRequest = Future<BackendResult> Function({
   required String path,
   Object? body,
 });
+
+final releaseFollowsServiceProvider = Provider<ReleaseFollowsService>(
+  (ref) => ReleaseFollowsService(({required method, required path, body}) {
+    if (!ref.mounted) {
+      return Future.value(
+        const BackendResult(cancelled: true, problem: BackendProblem.cancelled),
+      );
+    }
+    return ref
+        .read(sessionControllerProvider.notifier)
+        .request(method: method, path: path, body: body);
+  }),
+);
 
 class FollowRequestFailure implements Exception {
   const FollowRequestFailure(this.problem);

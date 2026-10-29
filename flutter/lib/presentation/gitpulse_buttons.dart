@@ -275,8 +275,8 @@ class GitPulseIconButton extends StatelessWidget {
   /// drawn inside one.
   ///
   /// It is stated by the surface the action sits in, never chosen by the action:
-  /// a page pill's step is one cell of the pill's recorded geometry (ADR 0026),
-  /// and a full-height square there would be taller than the pill it belongs to.
+  /// page navigation uses the compact control target (ADR 0033), while a
+  /// standalone page action uses the standard square.
   /// A parent that lays the control out shorter than this still decides the
   /// height — the measure is what the control asks for, not what it forces.
   final double dimension;

@@ -7,9 +7,9 @@ import 'package:gitpulse/follows/followed_repositories_panel.dart';
 import 'package:gitpulse/follows/release_follows_screen.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/release_follows_state.dart';
+import 'package:gitpulse/follows/release_follows_widgets.dart';
 import 'package:gitpulse/follows/repository_pagination.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
-import 'package:gitpulse/presentation/gitpulse_pill.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
@@ -99,7 +99,289 @@ void _expectInsideView(WidgetTester tester, Finder finder) {
   expect(rect.bottom, lessThanOrEqualTo(size.height));
 }
 
+/// Opens the page indicator's inline editor as a user would.
+Future<void> _enterPage(
+  WidgetTester tester,
+  Finder indicator,
+  String value,
+) async {
+  if (find.byKey(const ValueKey('repository-page-editor')).evaluate().isEmpty) {
+    await tester.tap(indicator);
+    await tester.pump();
+  }
+  await tester.enterText(
+    find.byKey(const ValueKey('repository-page-editor')),
+    value,
+  );
+}
+
+Finder _pageLabel(int page) => find.descendant(
+  of: find.byKey(const ValueKey('repository-page')),
+  matching: find.byWidgetPredicate(
+    (widget) =>
+        widget is Text &&
+        (widget.data == '$page' ||
+            widget.data == 'Page $page' ||
+            widget.data?.startsWith('$page / ') == true),
+  ),
+);
+
 void main() {
+  testWidgets('a page completed away from Follows is reused on return', (
+    tester,
+  ) async {
+    final server = FollowsServer()
+      ..starredRepositories = [repositoryJson()]
+      ..starredHasMore = true;
+    await _openFollows(tester, server);
+    final hold = Completer<void>();
+    server.holdStarred = hold.future;
+    server.starredRepositories = [
+      repositoryJson(id: 'R_second', name: 'second'),
+    ];
+    await tester.tap(find.byTooltip('Next page'));
+    await _pumpFrames(tester);
+    expect(find.byType(GitPulseLoadingView), findsOneWidget);
+    await tester.tap(find.text('Settings'));
+    await _pumpFrames(tester);
+    final requests = server.featureRequests.length;
+    hold.complete();
+    await _pumpFrames(tester);
+    await tester.tap(find.text('Follows'));
+    await _pumpFrames(tester);
+    expect(_pageLabel(2), findsOneWidget);
+    expect(find.text('octo/second').hitTestable(), findsOneWidget);
+    expect(server.featureRequests.length, requests);
+  });
+
+  testWidgets(
+    'returning after text reflow restores the repository and row inset',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      final server = FollowsServer()
+        ..starredRepositories = [
+          for (var i = 0; i < 30; i++)
+            repositoryJson(
+              id: 'R_$i',
+              name: 'project-$i',
+              description: 'A repository with a description that takes more than one line on a phone.',
+            ),
+        ];
+      await _openFollows(tester, server);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -670));
+      await _pumpFrames(tester);
+      final viewport = tester.getRect(find.byType(CustomScrollView));
+      final card = find.byKey(
+        find
+            .byType(FollowRepositoryCard)
+            .evaluate()
+            .firstWhere((element) {
+              return tester
+                  .getRect(find.byKey(element.widget.key!))
+                  .overlaps(viewport);
+            })
+            .widget
+            .key!,
+      );
+      final key = tester.widget(card).key!;
+      final inset =
+          tester.getTopLeft(card).dy -
+          tester.getTopLeft(find.byType(CustomScrollView)).dy;
+      final requests = server.featureRequests.length;
+      await tester.tap(find.text('Settings'));
+      await _pumpFrames(tester);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      await tester.tap(find.text('Follows'));
+      await _pumpFrames(tester);
+      expect(
+        tester.getTopLeft(find.byKey(key)).dy -
+            tester.getTopLeft(find.byType(CustomScrollView)).dy,
+        closeTo(inset, 1),
+      );
+      expect(find.byKey(key).hitTestable(), findsOneWidget);
+      expect(server.featureRequests.length, requests);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final search in [false, true]) {
+    testWidgets(
+      '${search ? 'search' : 'starred'} page navigation reuses cached results and always starts at the top',
+      (tester) async {
+        final first = [
+          for (var i = 0; i < 30; i++)
+            repositoryJson(id: 'R_first_$i', name: 'first-$i'),
+        ];
+        final second = [
+          for (var i = 0; i < 30; i++)
+            repositoryJson(id: 'R_second_$i', name: 'second-$i'),
+        ];
+        final server = FollowsServer()
+          ..starredRepositories = first
+          ..repositories = first
+          ..starredHasMore = true
+          ..searchHasMore = true
+          ..starredTotalPages = 10
+          ..searchTotalPages = 10;
+        await _openFollows(tester, server);
+        if (search) {
+          await tester.tap(find.text('Search'));
+          await _pumpFrames(tester);
+          await tester.enterText(
+            auth.fieldLabeled('Repository name or GitHub URL'),
+            'release',
+          );
+          await tester.testTextInput.receiveAction(TextInputAction.search);
+          await _pumpFrames(tester);
+        }
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+        await _pumpFrames(tester);
+        server.starredRepositories = server.repositories = second;
+        await tester.tap(find.byTooltip('Next page'));
+        await _pumpFrames(tester);
+        expect(
+          tester
+              .widget<CustomScrollView>(find.byType(CustomScrollView))
+              .controller!
+              .offset,
+          0,
+        );
+        expect(find.text('octo/second-0').hitTestable(), findsOneWidget);
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -700));
+        await _pumpFrames(tester);
+        final requests = server.featureRequests.length;
+        await tester.tap(find.byTooltip('Previous page'));
+        await _pumpFrames(tester);
+        expect(
+          tester
+              .widget<CustomScrollView>(find.byType(CustomScrollView))
+              .controller!
+              .offset,
+          0,
+        );
+        expect(find.text('octo/first-0').hitTestable(), findsOneWidget);
+        expect(server.featureRequests.length, requests);
+
+        final indicator = find.byKey(const ValueKey('repository-page'));
+        final before = tester.getRect(indicator);
+        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('repository-page-editor')),
+          findsNothing,
+        );
+        await _enterPage(tester, indicator, '2');
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.text('1 / 10'), findsNothing);
+        expect(tester.getRect(indicator), before);
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await _pumpFrames(tester);
+        expect(_pageLabel(2), findsOneWidget);
+        expect(find.text('octo/second-0').hitTestable(), findsOneWidget);
+        expect(
+          tester
+              .widget<CustomScrollView>(find.byType(CustomScrollView))
+              .controller!
+              .offset,
+          0,
+        );
+        expect(server.featureRequests.length, requests);
+
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+        await _pumpFrames(tester);
+        await tester.tap(find.byTooltip('First page'));
+        await _pumpFrames(tester);
+        expect(_pageLabel(1), findsOneWidget);
+        expect(find.text('octo/first-0').hitTestable(), findsOneWidget);
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+        await _pumpFrames(tester);
+        await tester.tap(find.byTooltip('First page'));
+        await _pumpFrames(tester);
+        expect(
+          tester
+              .widget<CustomScrollView>(find.byType(CustomScrollView))
+              .controller!
+              .offset,
+          0,
+        );
+        expect(server.featureRequests.length, requests);
+      },
+    );
+  }
+
+  testWidgets(
+    'tab switches restore the selected source, page and reading row',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final server = FollowsServer()
+        ..starredHasMore = true
+        ..searchHasMore = true
+        ..starredRepositories = [
+          for (var i = 0; i < 30; i++)
+            repositoryJson(id: 'R_star_$i', name: 'star-$i'),
+        ];
+      await _openFollows(tester, server);
+      await tester.tap(find.byTooltip('Next page'));
+      await _pumpFrames(tester);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -650));
+      await _pumpFrames(tester);
+      final starred = find.byType(FollowRepositoryCard).hitTestable().first;
+      final starredKey = tester.widget(starred).key!;
+      final starredTop = tester.getTopLeft(starred).dy;
+
+      await tester.tap(find.text('Search'));
+      await _pumpFrames(tester);
+      server.repositories = [
+        for (var i = 0; i < 30; i++)
+          repositoryJson(id: 'R_search_$i', name: 'search-$i'),
+      ];
+      await tester.enterText(
+        auth.fieldLabeled('Repository name or GitHub URL'),
+        'release',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await _pumpFrames(tester);
+      await tester.tap(find.byTooltip('Next page'));
+      await _pumpFrames(tester);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -950));
+      await _pumpFrames(tester);
+      final search = find.byType(FollowRepositoryCard).hitTestable().first;
+      final searchKey = tester.widget(search).key!;
+      final searchTop = tester.getTopLeft(search).dy;
+      final requests = server.featureRequests.length;
+
+      await tester.tap(find.text('Starred'));
+      await _pumpFrames(tester);
+      expect(
+        tester.getTopLeft(find.byKey(starredKey)).dy,
+        closeTo(starredTop, 1),
+      );
+      await tester.tap(find.text('Settings'));
+      await _pumpFrames(tester);
+      await tester.tap(find.text('Follows'));
+      await _pumpFrames(tester);
+      expect(auth.fieldLabeled('Repository name or GitHub URL'), findsNothing);
+      expect(
+        tester.getTopLeft(find.byKey(starredKey)).dy,
+        closeTo(starredTop, 1),
+      );
+      await tester.tap(find.text('Search'));
+      await _pumpFrames(tester);
+      expect(
+        tester.getTopLeft(find.byKey(searchKey)).dy,
+        closeTo(searchTop, 1),
+      );
+      expect(find.byTooltip('Previous page').hitTestable(), findsOneWidget);
+      expect(server.featureRequests.length, requests);
+    },
+  );
+
   testWidgets(
     'page input restores invalid values and commits once on submit or blur',
     (tester) async {
@@ -116,25 +398,19 @@ void main() {
       final field = find.byKey(const ValueKey('repository-page'));
       final initialRequests = server.featureRequests.length;
       for (final invalid in ['', '0', '-1', '1.5', 'abc', '11']) {
-        await tester.enterText(field, invalid);
+        await _enterPage(tester, field, invalid);
         await tester.testTextInput.receiveAction(TextInputAction.done);
         await tester.pumpAndSettle();
-        expect(
-          find.descendant(of: field, matching: find.text('1')),
-          findsOneWidget,
-        );
+        expect(_pageLabel(1), findsOneWidget);
         expect(server.featureRequests.length, initialRequests);
       }
-      await tester.enterText(field, '5');
+      await _enterPage(tester, field, '5');
       tester.binding.focusManager.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
       expect(server.featureRequests.last.uri.queryParameters['page'], '5');
       expect(server.featureRequests.length, initialRequests + 1);
-      expect(
-        find.descendant(of: field, matching: find.text('5')),
-        findsOneWidget,
-      );
-      await tester.enterText(field, '6');
+      expect(_pageLabel(5), findsOneWidget);
+      await _enterPage(tester, field, '6');
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pump();
       expect(field.hitTestable(), findsOneWidget);
@@ -145,10 +421,7 @@ void main() {
       expect(server.featureRequests.last.uri.queryParameters['page'], '6');
       await tester.tap(find.byTooltip('Previous page'));
       await tester.pumpAndSettle();
-      expect(
-        find.descendant(of: field, matching: find.text('5')),
-        findsOneWidget,
-      );
+      expect(_pageLabel(5), findsOneWidget);
     },
   );
 
@@ -165,10 +438,7 @@ void main() {
       await _openFollows(tester, server);
       final field = find.byKey(const ValueKey('repository-page'));
       expect(field.hitTestable(), findsOneWidget);
-      expect(
-        find.descendant(of: field, matching: find.text('1')),
-        findsOneWidget,
-      );
+      expect(_pageLabel(1), findsOneWidget);
       // Read partway down a page, so a jump has somewhere to come back from and
       // the fixed bars have something to stay level with.
       final results = find.byType(CustomScrollView).first;
@@ -184,15 +454,12 @@ void main() {
       server.starredStatus = 500;
       final hold = Completer<void>();
       server.holdStarred = hold.future;
-      await tester.enterText(field, '10');
+      await _enterPage(tester, field, '10');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await _pumpFrames(tester);
       // A page that is on its way is already the page being read, so the field
       // names it as soon as the jump starts.
-      expect(
-        find.descendant(of: field, matching: find.text('10')),
-        findsOneWidget,
-      );
+      expect(_pageLabel(10), findsOneWidget);
       expect(find.byKey(const ValueKey('starred-R_0')), findsNothing);
       // The page that has not arrived fills the list's place on its own: no
       // progress bar is drawn beside it.
@@ -228,11 +495,8 @@ void main() {
       expect(server.featureRequests.last.uri.queryParameters['page'], '10');
       expect(find.text('octo/last').hitTestable(), findsOneWidget);
       expect(find.textContaining('octo/project-'), findsNothing);
-      expect(
-        find.descendant(of: field, matching: find.text('10')),
-        findsOneWidget,
-      );
-      expect(find.text('10 pages'), findsOneWidget);
+      expect(_pageLabel(10), findsOneWidget);
+      expect(find.text('10 / 10'), findsOneWidget);
       // A page that finally arrives is read from its top.
       expect(
         tester
@@ -364,13 +628,7 @@ void main() {
       await tester.tap(find.text('Starred'));
       await tester.pumpAndSettle();
       expect(find.text('octo/star'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('repository-page')),
-          matching: find.text('2'),
-        ),
-        findsOneWidget,
-      );
+      expect(_pageLabel(2), findsOneWidget);
       await tester.tap(find.text('Search'));
       await tester.pumpAndSettle();
       expect(find.text('octo/beta'), findsOneWidget);
@@ -576,11 +834,11 @@ void main() {
         final pageField = tester.getRect(
           find.byKey(const ValueKey('repository-page')),
         );
-        // The number, both steps and the total are one pill, and the pill is
-        // one cell high until the reader's type outgrows that cell.
-        final pill = tester.getRect(find.byType(GitPulsePill));
-        expect(pill.height, greaterThanOrEqualTo(GitPulseHeight.pill));
-        expect(pill.contains(pageField.center), isTrue);
+        // The number is one editable button, and all navigation stays within
+        // the fixed footer at the reader's font size.
+        expect(pageField.height, greaterThanOrEqualTo(GitPulseHeight.compact));
+        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(find.byTooltip('First page').hitTestable(), findsOneWidget);
         expect(
           tester.getRect(find.byTooltip('Previous page')).center.dy,
           closeTo(pageField.center.dy, 1),
@@ -645,7 +903,7 @@ void main() {
   );
 
   testWidgets(
-    'starred repositories can be followed and refresh when the page reopens',
+    'starred repositories keep their cached page until an explicit refresh',
     (tester) async {
       final server = FollowsServer()
         ..starredRepositories = [repositoryJson(id: 'R_star', name: 'star')];
@@ -671,9 +929,19 @@ void main() {
         followJson('R_star', 'octo', 'star'),
       );
       server.starredRepositories = [repositoryJson(id: 'R_new', name: 'new')];
+      final requests = server.featureRequests.length;
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Follows'));
+      await tester.pumpAndSettle();
+      expect(find.text('octo/star').hitTestable(), findsOneWidget);
+      expect(find.text('octo/new'), findsNothing);
+      expect(server.featureRequests.length, requests);
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 300),
+        1000,
+      );
       await tester.pumpAndSettle();
       expect(find.text('octo/new').hitTestable(), findsOneWidget);
       expect(find.text('octo/star'), findsNothing);
