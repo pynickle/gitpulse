@@ -91,16 +91,18 @@ void main() {
     ),
   ];
 
-  /// The Material families the app has not replaced yet. They stay here until
-  /// the screens that still use them are migrated; the contract they answer
-  /// with is the same one.
+  /// The Material families the theme still inks, because a retained control a
+  /// reader operates draws them (ADR 0032): the platform's back affordance —
+  /// `BackButton` is an `IconButton` — in the repository pages' bar, and the date
+  /// picker's own actions and mode toggle. They answer with the app's contract,
+  /// so the rule holds in the one place a reader still meets Material's drawing.
+  ///
+  /// `OutlinedButton` is not here any more: no screen draws one and no retained
+  /// control builds one, so the theme installs no ink for it.
   final retainedControls = <(Type, Widget)>[
     (IconButton, IconButton(onPressed: () {}, icon: const Icon(Icons.refresh))),
+    (BackButton, BackButton(onPressed: () {})),
     (TextButton, TextButton(onPressed: () {}, child: const Text('Retry'))),
-    (
-      OutlinedButton,
-      OutlinedButton(onPressed: () {}, child: const Text('Open')),
-    ),
   ];
 
   for (final brightness in Brightness.values) {
@@ -189,6 +191,29 @@ void main() {
           reason: '$type',
         );
       }
+    });
+
+    testWidgets('${brightness.name}: the theme installs no Material entry the '
+        'client does not draw', (tester) async {
+      final theme = await pumpThemed(
+        tester,
+        const SizedBox.shrink(),
+        brightness: brightness,
+      );
+
+      // The overrides that existed only to undo Material, retired with the last
+      // surface that drew the family they styled (ADR 0032): no screen mounts an
+      // `OutlinedButton`, and no Material dialog is opened, so an entry for
+      // either is an override with nothing to override.
+      expect(theme.outlinedButtonTheme.style, isNull);
+      expect(theme.dialogTheme.backgroundColor, isNull);
+      expect(theme.checkboxTheme.overlayColor, isNull);
+      expect(theme.switchTheme.overlayColor, isNull);
+
+      // What stays is what a retained control reads: the two families the bar's
+      // back affordance and the date picker's own buttons draw.
+      expect(theme.iconButtonTheme.style?.overlayColor, isNotNull);
+      expect(theme.textButtonTheme.style?.overlayColor, isNotNull);
     });
 
     testWidgets('${brightness.name}: list rows press through the theme', (

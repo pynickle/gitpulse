@@ -32,7 +32,7 @@ Future<T?> showGitPulseDialog<T>(
     context: context,
     barrierDismissible: true,
     barrierLabel: barrierLabel,
-    barrierColor: Theme.of(context).colorScheme.scrim
+    barrierColor: toneScrim(context)
         .withValues(alpha: gitPulseDialogBarrierAlpha),
     requestFocus: true,
     transitionDuration: gitPulseDialogTransition,

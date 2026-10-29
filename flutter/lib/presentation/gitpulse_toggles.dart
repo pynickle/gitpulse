@@ -109,7 +109,7 @@ class GitPulseSwitch extends StatelessWidget {
                         ? toneBorder(context)
                         : Color.lerp(
                             toneBorderStrong(context),
-                            Colors.transparent,
+                            GitPulsePaint.none,
                             crossed,
                           )!;
                     final thumb = !enabled
@@ -238,7 +238,7 @@ class GitPulseCheckbox extends StatelessWidget {
                         : (crossed <= 0
                               ? null
                               : Color.lerp(
-                                  Colors.transparent,
+                                  GitPulsePaint.none,
                                   toneAccent(context),
                                   crossed,
                                 ));
@@ -248,7 +248,7 @@ class GitPulseCheckbox extends StatelessWidget {
                               ? null
                               : Color.lerp(
                                   toneBorderStrong(context),
-                                  Colors.transparent,
+                                  GitPulsePaint.none,
                                   crossed,
                                 ));
                     final mark = enabled

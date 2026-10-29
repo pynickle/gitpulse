@@ -448,7 +448,7 @@ class _TappableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
+    color: GitPulsePaint.none,
     child: InkWell(
       borderRadius: _radius,
       onTap: onTap,

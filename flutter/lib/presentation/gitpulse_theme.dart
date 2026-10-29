@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'gitpulse_palette.g.dart';
 import 'gitpulse_preset.dart';
+import 'gitpulse_tokens.dart';
 
 /// The Foundation Layer values a theme presents: the Theme Preset's palette for this
 /// presentation, and the type table every presentation of that preset shares.
@@ -104,18 +105,20 @@ Color gitPulseHoverTint(ColorScheme scheme) =>
 /// because they answer a different question: whether a surface is clickable, and where the
 /// focus sits.
 ///
-/// [gitPulseTheme] installs this on the Material families the client has not replaced yet —
-/// `IconButton`, `TextButton` and `OutlinedButton` — so the rule holds across the two
-/// implementations rather than only in the app's own (ADR 0032). The app's own controls read it
-/// directly at their own call sites. It is public for the same reason: `ButtonStyle.styleFrom`
-/// with an explicit `foregroundColor` builds Material's pressed wash at the call site, where a
-/// theme cannot reach it, so such a control passes this through `copyWith(overlayColor: …)`
-/// instead of setting an overlay of its own.
+/// [gitPulseTheme] installs this on the two Material families a retained control still
+/// draws — `IconButton`, which the bar's back affordance and the date picker's own toggle
+/// are, and `TextButton`, which the date picker's actions are — so the rule holds in the one
+/// place a reader still meets Material's drawing (ADR 0032). The app's own controls read it
+/// directly at their own call sites, and a retained Material face a screen mounts itself (the
+/// Follows sort control) is handed it the same way. It is public for that reason:
+/// `ButtonStyle.styleFrom` with an explicit `foregroundColor` builds Material's pressed wash
+/// at the call site, where a theme cannot reach it, so such a control passes this through
+/// `copyWith(overlayColor: …)` instead of setting an overlay of its own.
 WidgetStateProperty<Color?> gitPulseInkOverlay(ColorScheme scheme) {
   final tint = gitPulseHoverTint(scheme);
   return WidgetStateProperty.resolveWith(
     (states) => switch (states) {
-      _ when states.contains(WidgetState.pressed) => Colors.transparent,
+      _ when states.contains(WidgetState.pressed) => GitPulsePaint.none,
       _ when states.contains(WidgetState.hovered) => tint,
       _ when states.contains(WidgetState.focused) => tint,
       _ => null,
@@ -250,6 +253,11 @@ TextTheme _platformTextTheme(Brightness brightness) {
 /// Material keeps the jobs that are genuinely the platform's — text input and its IME, the
 /// date picker's calendar, tooltips, pull-to-refresh — and receives coherent values for them
 /// from here.
+///
+/// **Every component theme installed below has a consumer named in ADR 0032.** There are no
+/// entries left over from undoing Material: an entry whose family the client no longer draws
+/// is an override with nothing to override, and it was deleted with the screen that used to
+/// mount that family.
 ThemeData gitPulseTheme(Brightness brightness) {
   final preset = gitPulsePreset;
   final tones = preset.paletteFor(brightness);
@@ -266,36 +274,54 @@ ThemeData gitPulseTheme(Brightness brightness) {
     // The page a screen stands on is the shell's tone, as it is on the web: a card is the
     // surface, and the two are told apart by that step rather than by a border.
     scaffoldBackgroundColor: tones.shellBg,
-    // Overlays are surface-toned, which is the tone the app's own sheets already paint, so a
-    // retained Material dialog reads as one of the app's overlays rather than as a component
-    // with a tone of its own.
-    dialogTheme: DialogThemeData(backgroundColor: tones.surface),
+    // The bar a page is titled with is the app's chrome, not Material's: the surface tone the
+    // navigation bar and the cards share, told apart from the page by the one hairline the app
+    // separates chrome with — never by Material 3's elevation or its scroll-under tint, which
+    // would wash the bar in the Accent as a page scrolled beneath it. Its behaviour stays the
+    // platform's: it is the surface a back affordance arrives on, which ADR 0032 records as a
+    // Platform Dialect Exception.
+    appBarTheme: AppBarTheme(
+      backgroundColor: tones.surface,
+      foregroundColor: tones.text,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: GitPulsePaint.none,
+      shape: Border(
+        bottom: BorderSide(color: tones.border, width: GitPulseStroke.hairline),
+      ),
+      // A surface's title, at the role the app's own surfaces take it: the bar is a surface
+      // standing over the page, so its title is not a second page headline.
+      titleTextStyle: preset.type.titleMedium.toTextStyle(
+        color: tones.textStrong,
+      ),
+    ),
+    // The date picker is one of the surfaces that stays the platform's own (ADR 0032), and
+    // it reads this: the app gives it the tone the app's own sheets are drawn on rather than
+    // a Material overlay with a tone of its own.
     datePickerTheme: DatePickerThemeData(backgroundColor: tones.surface),
     extensions: <ThemeExtension<dynamic>>[
       GitPulseFoundation(preset: preset, palette: tones),
     ],
-    // The plain ink response — list rows, chips, the timeline card — reads these four, and
-    // `ListTileThemeData` has no overlay field to override with, so the transparent press has
-    // to be the theme-wide default.
-    highlightColor: Colors.transparent,
-    splashColor: Colors.transparent,
+    // The plain ink response — the app's own row, asset and chip surfaces, and every plain
+    // `InkWell` beneath them — reads these four. A plain `InkWell` has no overlay of its own
+    // to state the rule in, so the transparent press has to be the theme-wide default.
+    highlightColor: GitPulsePaint.none,
+    splashColor: GitPulsePaint.none,
     focusColor: gitPulseHoverTint(scheme),
     hoverColor: gitPulseHoverTint(scheme),
-    // The button families resolve their own overlay and would otherwise keep Material's
-    // darker default; filled and elevated buttons are left alone so a primary action still
-    // answers a press.
+    // Two button families are still drawn by a control that stays the platform's own, so they
+    // keep the app's ink: `IconButton`, which the bar's back affordance is (`BackButton extends
+    // IconButton`) and which the date picker's calendar/input toggle is; and `TextButton`,
+    // which is the date picker's own actions. Material's default would otherwise paint its
+    // pressed wash on both. Nothing else is left to install: the client mounts no
+    // `OutlinedButton`, no Material dialog, and no Material checkbox or switch, so
+    // `outlinedButtonTheme`, `dialogTheme`, `checkboxTheme` and `switchTheme` are absent by
+    // decision rather than by omission (ADR 0032).
     iconButtonTheme: IconButtonThemeData(
       style: ButtonStyle(overlayColor: overlay),
     ),
     textButtonTheme: TextButtonThemeData(
       style: ButtonStyle(overlayColor: overlay),
     ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: ButtonStyle(overlayColor: overlay),
-    ),
-    // There is no `checkboxTheme` and no `switchTheme`: the app's own toggles
-    // (`GitPulseCheckbox`, `GitPulseSwitch`) are its only toggles, they paint their own press
-    // answer through `gitPulseInkOverlay`, and a Material theme entry for a control the client
-    // no longer draws would be an override with nothing to override (ADR 0032).
   );
 }
