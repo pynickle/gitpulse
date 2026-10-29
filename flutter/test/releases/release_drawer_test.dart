@@ -250,6 +250,85 @@ void main() {
     expect(find.byType(ReleaseTimelineCard), findsOneWidget);
   });
 
+  testWidgets('a short pull up the header opens the drawer fully', (
+    tester,
+  ) async {
+    await openReleaseDrawer(tester, size: const Size(390, 1000));
+    final drawer = find.byKey(const Key('release-drawer'));
+    // 60dp of finger is 40dp of sheet: short of the 96dp line, so the drawer
+    // settles back where it opened rather than jumping to full screen.
+    await tester.drag(find.text('Entry notes'), const Offset(0, -60));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, closeTo(300, .01));
+
+    // 130dp of finger is 110dp of sheet, which passes it.
+    await tester.drag(find.text('Entry notes'), const Offset(0, -130));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, 0);
+    expect(find.text('Entry notes'), findsOneWidget);
+  });
+
+  testWidgets('a quick flick up opens the drawer fully', (tester) async {
+    await openReleaseDrawer(tester, size: const Size(390, 1000));
+    final drawer = find.byKey(const Key('release-drawer'));
+    // 60dp of finger is 40dp of sheet, thrown up at 1250dp a second.
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('release-sheet-handle'))),
+    );
+    for (var step = 1; step <= 3; step++) {
+      await gesture.moveBy(
+        const Offset(0, -20),
+        timeStamp: Duration(milliseconds: 16 * step),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await gesture.up(timeStamp: const Duration(milliseconds: 52));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, 0);
+  });
+
+  testWidgets('a short pull back down from full screen returns the drawer', (
+    tester,
+  ) async {
+    await openReleaseDrawer(tester, size: const Size(390, 1000));
+    final drawer = find.byKey(const Key('release-drawer'));
+    await tester.drag(find.text('Entry notes'), const Offset(0, -130));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, 0);
+
+    // Closing a full-screen read takes 110dp of sheet, and it lands back at the
+    // height the drawer opens at instead of closing the notes.
+    await tester.drag(find.text('Entry notes'), const Offset(0, 130));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, closeTo(300, .01));
+    expect(find.text('Entry notes'), findsOneWidget);
+  });
+
+  testWidgets('a quick flick down from full screen returns the drawer', (
+    tester,
+  ) async {
+    await openReleaseDrawer(tester, size: const Size(390, 1000));
+    final drawer = find.byKey(const Key('release-drawer'));
+    await tester.drag(find.text('Entry notes'), const Offset(0, -130));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(drawer).top, 0);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('release-sheet-handle'))),
+    );
+    for (var step = 1; step <= 3; step++) {
+      await gesture.moveBy(
+        const Offset(0, 20),
+        timeStamp: Duration(milliseconds: 16 * step),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await gesture.up(timeStamp: const Duration(milliseconds: 52));
+    await tester.pumpAndSettle();
+    expect(drawer, findsOneWidget);
+    expect(tester.getRect(drawer).top, closeTo(300, .01));
+  });
+
   testWidgets('drag dismissal never rebounds upward before closing', (
     tester,
   ) async {

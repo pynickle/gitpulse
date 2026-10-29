@@ -92,8 +92,8 @@ abstract final class GitPulseRadius {
   static const surface = 12.0;
 
   /// A mobile bottom sheet's top corners. The Release Drawer's remaining
-  /// geometry — 70% open, a 96dp pull to close, 0.7 snap — is recorded in
-  /// ADR 0018.
+  /// geometry — 70% open, a 96dp pull to each of its heights, 0.7 snap — is
+  /// recorded in ADR 0018.
   static const sheetTop = 20.0;
 
   /// The smallest rounding the app draws, on a decoration rather than a

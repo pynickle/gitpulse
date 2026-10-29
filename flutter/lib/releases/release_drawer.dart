@@ -60,6 +60,10 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   RepositoryReleasesScope? _listScope;
   bool _showList = false;
   bool _closing = false;
+
+  /// Whether the drag now in progress began with the drawer opened fully: the
+  /// same height means opposite things on the way up and on the way back down.
+  bool _dragStartedFull = false;
   ReleaseTarget? _entryIdentity;
   late final _identity = ref.read(sessionControllerProvider).identity;
   final _sheetController = DraggableScrollableController();
@@ -203,6 +207,8 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
     // distance in.
     final windowHeight = MediaQuery.sizeOf(context).height;
     final dismissExtent = releaseDrawerDismissExtent(windowHeight);
+    final expandExtent = releaseDrawerExpandExtent(windowHeight);
+    final collapseExtent = releaseDrawerCollapseExtent(windowHeight);
 
     // The Entry Release is identified by the release it resolved to, not by the
     // address it was opened with: a link that names the tag and a list row that
@@ -245,6 +251,11 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
 
       Widget dragRegion(Widget child) => GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onVerticalDragStart: (_) {
+          _dragStartedFull =
+              _sheetController.isAttached &&
+              _sheetController.size > releaseDrawerOpeningExtent;
+        },
         onVerticalDragUpdate: (details) {
           if (!_closing && _sheetController.isAttached) {
             // The closing line is the sheet's own floor, so a pull that reaches
@@ -253,7 +264,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
             _sheetController.jumpTo(
               (_sheetController.size - details.delta.dy / windowHeight).clamp(
                 dismissExtent,
-                1,
+                releaseDrawerFullExtent,
               ),
             );
           }
@@ -263,11 +274,15 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
           switch (resolveReleaseDrawerRelease(
             extent: _sheetController.size,
             velocity: details.velocity.pixelsPerSecond.dy,
+            startedFull: _dragStartedFull,
+            dismissExtent: dismissExtent,
+            expandExtent: expandExtent,
+            collapseExtent: collapseExtent,
           )) {
             case ReleaseDrawerRelease.dismiss:
               _close();
             case ReleaseDrawerRelease.full:
-              _snapSheet(1);
+              _snapSheet(releaseDrawerFullExtent);
             case ReleaseDrawerRelease.opening:
               _snapSheet(releaseDrawerOpeningExtent);
           }
