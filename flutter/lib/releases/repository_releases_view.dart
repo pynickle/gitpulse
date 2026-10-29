@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_status_badge.dart';
@@ -119,9 +120,10 @@ class RepositoryReleasesView extends StatelessWidget {
               l10n.timelineErrorRateLimited,
             _ => l10n.repositoryReleasesFailed,
           },
-          action: OutlinedButton(
+          action: GitPulseButton(
+            label: l10n.timelineRetry,
+            variant: GitPulseButtonVariant.outlined,
             onPressed: () => onPage(state.page),
-            child: Text(l10n.timelineRetry),
           ),
         ),
       );
@@ -188,16 +190,16 @@ class _RepositoryReleasesPager extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          IconButton(
+          GitPulseIconButton(
             tooltip: l10n.repositoryReleasesPrevious,
             onPressed: pagination.hasPrev ? () => onPage(page - 1) : null,
             icon: const Icon(Icons.chevron_left),
           ),
           Text(
             l10n.repositoryReleasesPage(page),
-            style: Theme.of(context).textTheme.bodySmall,
+            style: gitPulseTypeMeta(context),
           ),
-          IconButton(
+          GitPulseIconButton(
             tooltip: l10n.repositoryReleasesNext,
             onPressed: pagination.hasNext ? () => onPage(page + 1) : null,
             icon: const Icon(Icons.chevron_right),
@@ -225,14 +227,16 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final ink = selected ? toneAccent(context) : toneTextMuted(context);
     return MergeSemantics(
       child: Semantics(
         button: true,
         selected: selected,
         child: Material(
-          color: selected ? scheme.secondaryContainer : Colors.transparent,
+          // A chosen chip keeps the active step of the palette, and its label
+          // reads back in the Accent — the same pairing the app states for a
+          // selected row (ADR 0031).
+          color: selected ? toneSurfaceActive(context) : GitPulsePaint.none,
           shape: const StadiumBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -247,14 +251,7 @@ class _FilterPill extends StatelessWidget {
                 horizontal: 12,
                 vertical: GitPulseSpace.meta,
               ),
-              child: Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: selected
-                      ? scheme.onSecondaryContainer
-                      : scheme.onSurfaceVariant,
-                ),
-              ),
+              child: Text(label, style: gitPulseTypeControlLabel(context, ink)),
             ),
           ),
         ),
@@ -284,8 +281,6 @@ class _ReleaseRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final title = item.title;
     // The release's state is one badge beside the name, never a second line:
     // it is the one thing about a release that neither its title nor its facts
@@ -313,7 +308,7 @@ class _ReleaseRow extends StatelessWidget {
                   child: Container(
                     width: 4,
                     decoration: BoxDecoration(
-                      color: scheme.primary,
+                      color: toneAccent(context),
                       borderRadius: BorderRadius.circular(GitPulseRadius.bar),
                     ),
                   ),
@@ -347,7 +342,7 @@ class _ReleaseRow extends StatelessWidget {
                                 title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall,
+                                style: gitPulseTypeRowLabel(context),
                               ),
                             ),
                             if (state case final state?) ...[
@@ -431,7 +426,7 @@ class _ReleaseRow extends StatelessWidget {
                   Icon(
                     Icons.chevron_right,
                     size: GitPulseIconSize.action,
-                    color: scheme.onSurfaceVariant,
+                    color: toneTextMuted(context),
                   ),
                 ],
               ),
@@ -469,7 +464,6 @@ class _MetaFact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Semantics(
       label: label ?? value,
       child: ExcludeSemantics(
@@ -479,13 +473,13 @@ class _MetaFact extends StatelessWidget {
             Icon(
               icon,
               size: _metaFactIconExtent,
-              color: theme.colorScheme.onSurfaceVariant,
+              color: toneTextMuted(context),
             ),
             const SizedBox(width: _metaFactIconGap),
             // A fact keeps its whole value: at a large text scale it takes the
             // width it is given and wraps inside the fact rather than painting
             // outside the row or losing the unit that makes it readable.
-            Flexible(child: Text(value, style: _metaTextStyle(theme))),
+            Flexible(child: Text(value, style: _metaTextStyle(context))),
           ],
         ),
       ),
@@ -500,11 +494,9 @@ const _metaFactIconGap = 3.0;
 
 /// The muted, tabular style the fact values share, so numbers compare down the
 /// list.
-TextStyle? _metaTextStyle(ThemeData theme) =>
-    theme.textTheme.labelSmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
+TextStyle? _metaTextStyle(BuildContext context) =>
+    gitPulseTypeMetaTight(context)
+        ?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 
 /// The widths the three facts share across every row on the page.
 ///
@@ -527,7 +519,7 @@ class _MetaColumns {
     BuildContext context,
     Iterable<RepositoryReleaseDto> items,
   ) {
-    final style = _metaTextStyle(Theme.of(context));
+    final style = _metaTextStyle(context);
     final textScaler = MediaQuery.textScalerOf(context);
     final textDirection = Directionality.of(context);
     double widest(Iterable<String> values) {

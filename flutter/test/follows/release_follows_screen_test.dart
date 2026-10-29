@@ -4,14 +4,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/followed_repositories_panel.dart';
+import 'package:gitpulse/follows/release_follows_screen.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/follows/repository_pagination.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_pill.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 
 import '../session_flow_test.dart' as auth;
+import '../support/material_faces.dart';
 import '../timeline/timeline_test_support.dart';
 import 'follows_test_support.dart';
 
@@ -563,7 +567,7 @@ void main() {
         final direction = tester.getRect(
           find.ancestor(
             of: find.byTooltip('Descending'),
-            matching: find.byType(IconButton),
+            matching: find.byType(GitPulseIconButton),
           ),
         );
         expect(direction.right, source.right);
@@ -869,7 +873,7 @@ void main() {
       await tester.tap(
         find.descendant(
           of: panel,
-          matching: find.widgetWithText(FilledButton, 'Retry'),
+          matching: find.widgetWithText(GitPulseButton, 'Retry'),
         ),
       );
       await tester.pumpAndSettle();
@@ -1228,13 +1232,16 @@ void main() {
     expect(find.text(saveFailed), findsNothing);
     expect((server.settings['followedRepositories'] as List), isEmpty);
     final manage = find.byKey(const ValueKey('manage-follows'));
-    final icon = tester.widget<Icon>(
-      find.descendant(
-        of: manage,
-        matching: find.byIcon(Icons.bookmarks_outlined),
-      ),
+    // The mark's tone is the control's to paint rather than the icon's to state, so it is read
+    // where the framework resolves it: the status the follow set reports, in the danger tone.
+    final icon = find.descendant(
+      of: manage,
+      matching: find.byIcon(Icons.bookmarks_outlined),
     );
-    expect(icon.color, Theme.of(tester.element(manage)).colorScheme.error);
+    expect(
+      IconTheme.of(tester.element(icon)).color,
+      Theme.of(tester.element(manage)).colorScheme.error,
+    );
     expect(find.byTooltip('0 followed'), findsOneWidget);
     expect(
       find.descendant(of: manage, matching: find.text('0')),
@@ -1248,4 +1255,100 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(saveFailed), findsNothing);
   });
+
+  testWidgets(
+    'the Follows page renders on the app’s faces and none of the replaced ones',
+    (tester) async {
+      final server = FollowsServer()
+        ..starredRepositories = [repositoryJson()]
+        ..starredHasMore = true;
+      await _openFollows(tester, server);
+
+      final page = find.byType(ReleaseFollowsScreen);
+      expect(page, findsOneWidget);
+      // It is built from the app's own controls…
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseButton)),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseIconButton)),
+        findsWidgets,
+      );
+      // …and none of the Material faces this change replaced is left in it.
+      expectNoReplacedMaterialFaces(page);
+      // The only Material button family left on the page is inside the sort
+      // control: it is the selection control the app keeps as Material's own,
+      // the way it keeps the choice chip (ADR 0023 records it, ADR 0032 names
+      // the chip as the same kind of decision).
+      final sortControl = find.descendant(
+        of: page,
+        matching: find.byType(SegmentedButton<StarredRepositorySort>),
+      );
+      expect(sortControl, findsOneWidget);
+      expect(
+        find.descendant(of: page, matching: find.byType(TextButton)),
+        findsNWidgets(2),
+      );
+      expect(
+        find.descendant(of: sortControl, matching: find.byType(TextButton)),
+        findsNWidgets(2),
+      );
+      // The source tabs stay the platform's own: a registered Platform Dialect
+      // Exception, kept for the grammar of switching between two sources.
+      expect(
+        find.descendant(of: page, matching: find.byType(TabBar)),
+        findsOneWidget,
+      );
+      // The search field stays the platform's own input.
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: page, matching: find.byType(TextField)),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'the followed repositories panel is the app’s own sheet, on the app’s faces',
+    (tester) async {
+      final server = FollowsServer()
+        ..starredRepositories = [repositoryJson()]
+        ..starredHasMore = true;
+      server.settings['followedRepositories'] = [
+        followJson('R_followed', 'octo', 'followed'),
+      ];
+      await _openFollows(tester, server);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await tester.pumpAndSettle();
+
+      final panel = find.byType(FollowedRepositoriesPanel);
+      expect(panel, findsOneWidget);
+      // The panel arrives through the one function that opens the app's sheets,
+      // not through Material's bottom sheet.
+      expect(find.byType(BottomSheet), findsNothing);
+      // Its header actions are the app's own, and none of the replaced faces is
+      // left in it.
+      expectNoReplacedMaterialFaces(panel);
+      for (final tooltip in [
+        'Compact',
+        'Reload follows',
+        'Close followed repositories',
+      ]) {
+        expect(
+          find.descendant(of: panel, matching: find.byType(GitPulseIconButton)),
+          findsWidgets,
+          reason: tooltip,
+        );
+        expect(find.byTooltip(tooltip), findsOneWidget, reason: tooltip);
+      }
+      expect(
+        find.byKey(const ValueKey('followed-R_followed')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

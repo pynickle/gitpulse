@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/connection/backend_service.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
@@ -59,6 +60,7 @@ class PresentationHarness {
     this.session,
     this.handlers = const {},
     this.deviceStore,
+    this.overrides = const [],
   });
 
   final Directory directory;
@@ -70,6 +72,11 @@ class PresentationHarness {
   final BackendConnectionState Function() connection;
   final SessionState? session;
   final Map<String, FutureOr<BackendResult> Function()> handlers;
+
+  /// Anything else a surface the test reaches needs replaced — the document
+  /// engine, a browser launcher, a share sheet. A widget test has no platform,
+  /// so a surface that talks to one is handed a stand-in here.
+  final List<Override> overrides;
   late ProviderContainer container;
   late TimelineCache cache;
   bool _open = false;
@@ -84,6 +91,7 @@ class PresentationHarness {
           preferencesFile: () async => preferencesFile,
           timelineCache: cache,
         ),
+        ...overrides,
         connectionControllerProvider.overrideWith(
           () => _TestConnectionController(connection),
         ),
@@ -120,6 +128,7 @@ PresentationHarness harnessFor(
   SessionState? session,
   Map<String, FutureOr<BackendResult> Function()> handlers = const {},
   DevicePreferencesStore? deviceStore,
+  List<Override> overrides = const [],
 }) {
   final directory = Directory.systemTemp.createTempSync(
     'gitpulse-presentation-',
@@ -133,6 +142,7 @@ PresentationHarness harnessFor(
     session: session,
     handlers: handlers,
     deviceStore: deviceStore,
+    overrides: overrides,
   );
   addTearDown(() async {
     await tester.pumpWidget(const SizedBox.shrink());

@@ -28,6 +28,28 @@ _Avoid_: document view, article view
 The maximum line width a Reading Surface allows before it stops growing, so a long line never outruns the eye.
 _Avoid_: max width, content width
 
+**Foundation Layer**:
+The part of a client's presentation that decides tone, type and motion for everything else — its palette, its type ramp, and the ink an interaction paints — and which no reader operates directly.
+_Avoid_: theme when meaning more than one client's theme object, design system when meaning only these values
+
+**Control Layer**:
+Every surface a reader operates: navigation, headers, buttons, fields, toggles, sheets, dialogs, progress. A control's behaviour and its skin are separate decisions, so one can be adopted from a platform while the other is the client's own.
+_Avoid_: component layer, widget layer
+
+**Content Layer**:
+Everything a reader only sees or reads — cards, rows, badges, bands, documents — built from the Foundation Layer rather than from a control.
+
+**Theme Preset**:
+A named set of Foundation Layer values that a client can present in full, light and dark both. One preset is the product's own; further presets exist only to answer a reader's need, never to serve a client.
+_Avoid_: theme, skin, color mode
+
+**Accent**:
+The one tone a client uses to mean "this is GitPulse acting": primary actions, the selected state, focus. It is not the tone that means success, and no surface may use one in the other's place.
+_Avoid_: brand color, primary when it could be confused with a status colour
+
+**Platform Dialect Exception**:
+A control whose behaviour and appearance both stay the platform's own by an explicit decision, named where the decision lives, rather than by nobody having got round to it.
+
 ## Integration
 
 **Browser Launch Link**:

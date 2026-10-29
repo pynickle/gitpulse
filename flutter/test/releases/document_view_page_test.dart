@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_preset.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/document_view_page.dart';
+import 'package:gitpulse/releases/document_content.dart';
 import 'package:gitpulse/releases/document_viewer_assets.dart';
+import 'package:gitpulse/releases/release_document.dart';
+
+import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
+
+/// Nothing in this page opens a link: the surface is being read, not followed.
+Future<bool> _ignoreUrl(String url) async => true;
 
 const _assets = DocumentViewerAssets(
   script: 'RENDERER();',
@@ -59,20 +71,18 @@ double _cssNumber(DocumentViewPage page, String name) {
 }
 
 void main() {
-  test('the reading scale reaches the page as the tokens register it', () {
+  test('the reading scale reaches the page as the type table registers it', () {
     final page = _page();
-    expect(_cssPx(page, 'gp-font-size'), GitPulseType.readingBodySize);
-    expect(_cssPx(page, 'gp-heading-1'), GitPulseType.readingHeading1Size);
-    expect(_cssPx(page, 'gp-heading-2'), GitPulseType.readingHeading2Size);
-    expect(_cssPx(page, 'gp-heading-3'), GitPulseType.readingHeading3Size);
-    expect(_cssPx(page, 'gp-list-indent'), GitPulseType.readingListIndent);
-    expect(_cssPx(page, 'gp-quote-indent'), GitPulseType.readingQuoteIndent);
+    final type = gitPulseTypeTable;
+    expect(_cssPx(page, 'gp-font-size'), type.readingBody.size);
+    expect(_cssPx(page, 'gp-heading-1'), type.readingHeading1.size);
+    expect(_cssPx(page, 'gp-heading-2'), type.readingHeading2.size);
+    expect(_cssPx(page, 'gp-heading-3'), type.readingHeading3.size);
+    expect(_cssPx(page, 'gp-list-indent'), GitPulseSpace.readingListIndent);
+    expect(_cssPx(page, 'gp-quote-indent'), GitPulseSpace.readingQuoteIndent);
     expect(
       _cssNumber(page, 'gp-line-height'),
-      closeTo(
-        GitPulseType.readingBodyLineHeight / GitPulseType.readingBodySize,
-        .001,
-      ),
+      closeTo(type.readingBody.height, .001),
     );
     // No heading tier is smaller than the body text.
     expect(
@@ -89,7 +99,7 @@ void main() {
     expect(_cssPx(page, 'gp-list-indent'), closeTo(40, .01));
     expect(
       _cssPx(page, 'gp-quote-indent'),
-      closeTo(GitPulseType.readingQuoteIndent * 2, .01),
+      closeTo(GitPulseSpace.readingQuoteIndent * 2, .01),
     );
   });
 
@@ -205,5 +215,72 @@ void main() {
       32,
     );
     expect(_cssPx(_page(), 'gp-bottom-inset'), 0);
+  });
+
+  testWidgets('the document is painted with the app’s own tones', (
+    tester,
+  ) async {
+    // The reading surface is part of the app's presentation, so a README is not
+    // a white card dropped into a dark client: every tone it paints comes from
+    // the Theme Preset, in the presentation the reader is in.
+    late DocumentViewerStyle style;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: gitPulseTheme(Brightness.dark),
+        home: Builder(
+          builder: (context) {
+            style = DocumentViewerStyle.of(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    final context = tester.element(find.byType(SizedBox).first);
+
+    expect(style.dark, isTrue);
+    expect(style.foreground, toneText(context));
+    expect(style.background, toneSurface(context));
+    expect(style.muted, toneTextMuted(context));
+    expect(style.accent, toneAccent(context));
+    expect(style.rule, toneRule(Theme.of(context).colorScheme));
+    expect(style.codeBackground, toneSurfaceMuted(context));
+    expect(style.inlineCodeBackground, toneSurfaceActive(context));
+    // The reading scale is the type table's, so the document grows with the
+    // same rows the chrome is set in.
+    expect(style.type, gitPulseTypeTableOf(context));
+  });
+  testWidgets('the reading surface renders none of the Material faces this '
+      'client replaced', (tester) async {
+    // A README is a surface a reader spends time on, so it is part of the app's
+    // presentation rather than a page dropped into it: its shell draws none of
+    // the faces the Control Layer replaced (ADR 0032).
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: documentViewerOverrides(),
+        child: MaterialApp(
+          theme: gitPulseTheme(Brightness.light),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: ReleaseDocument(
+              source: '# A README\n\nSome prose to read.',
+              documentIdentity: 'readme',
+              document: RepositoryDocumentContext(
+                owner: 'octo',
+                repository: 'app',
+                ref: 'main',
+                documentPath: 'docs/README.md',
+              ),
+              onTapUrl: _ignoreUrl,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(ReleaseDocument), findsOneWidget);
+    expectNoReplacedMaterialFaces(find.byType(ReleaseDocument));
+    expect(tester.takeException(), isNull);
   });
 }

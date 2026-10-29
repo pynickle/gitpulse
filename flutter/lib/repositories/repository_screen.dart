@@ -7,8 +7,8 @@ import '../follows/release_follows_session.dart';
 import '../follows/release_follows_widgets.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_avatar.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
-import '../presentation/gitpulse_icon_action.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_state_views.dart';
@@ -235,7 +235,7 @@ class _Identity extends StatelessWidget {
   }
 
   List<Widget> _facts(BuildContext context, AppLocalizations l10n) {
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final muted = toneTextMuted(context);
     Widget glyph(IconData icon) =>
         Icon(icon, size: _factIconExtent, color: muted);
     // The language swatch is smaller than a glyph, so it takes the same slot:
@@ -312,10 +312,12 @@ class _Actions extends ConsumerWidget {
           children: [
             Expanded(child: _RepositoryReleasesButton(repository: repository)),
             const SizedBox(width: GitPulseSpace.inline),
-            GitPulseIconAction(
+            GitPulseIconButton(
               key: const ValueKey('repository-follow'),
               tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
-              icon: followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+              icon: Icon(
+                followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+              ),
               emphasized: followed,
               onPressed: follows.editBlocked
                   ? null
@@ -331,10 +333,10 @@ class _Actions extends ConsumerWidget {
                     },
             ),
             const SizedBox(width: GitPulseSpace.tight),
-            GitPulseIconAction(
+            GitPulseIconButton(
               key: const ValueKey('repository-share'),
               tooltip: l10n.repositoryShare,
-              icon: Icons.ios_share,
+              icon: const Icon(Icons.ios_share),
               onPressed: () => unawaited(
                 shareRepositoryLink(
                   context,
@@ -372,42 +374,22 @@ class _RepositoryReleasesButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return FilledButton.tonal(
+    // The row's spare width, whatever the text scale: the label is the short
+    // name of the destination, and it still gives way a letter at a time before
+    // the row would be allowed to wrap. The whole name is what a screen reader
+    // is given, so the shortening stays a matter of ink.
+    return GitPulseButton(
       key: const ValueKey('repository-releases'),
+      label: l10n.repositoryReleasesAction,
+      semanticsLabel: l10n.repositoryReleasesTitle,
+      variant: GitPulseButtonVariant.tonal,
+      icon: const Icon(Icons.list_alt),
+      expand: true,
       onPressed: () => openRepositoryPage(context, (
         owner: repository.owner.login,
         repository: repository.name,
         releases: true,
       )),
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(0, GitPulseHeight.compact),
-        padding: const EdgeInsets.symmetric(
-          horizontal: GitPulseSpace.surfaceInset,
-        ),
-      ),
-      // The row's spare width, whatever the text scale: the label is the short
-      // name of the destination, and it still gives way a letter at a time
-      // before the row would be allowed to wrap. [Semantics] keeps the whole
-      // name for a screen reader, so the shortening stays a matter of ink.
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.list_alt, size: GitPulseIconSize.inControl),
-          const SizedBox(width: GitPulseSpace.inline),
-          Flexible(
-            child: Semantics(
-              label: l10n.repositoryReleasesTitle,
-              child: ExcludeSemantics(
-                child: Text(
-                  l10n.repositoryReleasesAction,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -431,7 +413,6 @@ class _Fact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Semantics(
       label: spoken,
       child: ExcludeSemantics(
@@ -445,10 +426,9 @@ class _Fact extends StatelessWidget {
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                style: gitPulseTypeFactValue(
+                  context,
+                )?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ),
           ],
@@ -559,7 +539,6 @@ class _DocumentBand extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final branch = repository.defaultBranch;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -575,10 +554,8 @@ class _DocumentBand extends ConsumerWidget {
                 '$branch · $path',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontFamily: 'monospace',
-                ),
+                style: gitPulseTypeMetaTight(context)
+                    ?.copyWith(fontFamily: 'monospace'),
               ),
             ),
           ),
@@ -637,9 +614,10 @@ class RepositoryFailureView extends StatelessWidget {
         RepositoryFailure.session => l10n.sessionExpired,
         _ => l10n.repositoryFailed,
       },
-      action: OutlinedButton(
+      action: GitPulseButton(
+        label: l10n.timelineRetry,
+        variant: GitPulseButtonVariant.outlined,
         onPressed: onRetry,
-        child: Text(l10n.timelineRetry),
       ),
     );
   }

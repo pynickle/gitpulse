@@ -45,36 +45,19 @@ textarea,
   --gitpulse-scrollbar-thumb-inset: 2px;
   --gitpulse-scrollbar-thumb-radius: 999px;
 
-  --gitpulse-page-bg: #f8fafc;
-  --gitpulse-shell-bg: #f1f5f9;
-  --gitpulse-surface: #ffffff;
-  --gitpulse-surface-muted: #f8fafc;
-  --gitpulse-surface-raised: #ffffff;
-  --gitpulse-surface-hover: #fbfdff;
-  --gitpulse-surface-active: #eef2ff;
+  /* The semantic palette — the page canvas, the shell, surface, border, text, accent and the
+     status tones — is injected at startup from shared/data/theme-palette.json, the data the
+     Flutter client reads too. */
   --gitpulse-overlay-bg: rgba(15, 23, 42, 0.68);
-  --gitpulse-border: rgba(15, 23, 42, 0.1);
-  --gitpulse-border-strong: rgba(15, 23, 42, 0.16);
-  --gitpulse-text: #334155;
-  --gitpulse-text-strong: #0f172a;
-  --gitpulse-text-muted: #64748b;
-  --gitpulse-text-subtle: #94a3b8;
-  --gitpulse-accent: #4f46e5;
   --gitpulse-accent-hover: #4338ca;
-  --gitpulse-accent-soft: rgba(79, 70, 229, 0.1);
   --gitpulse-primary-solid: #4f46e5;
   --gitpulse-primary-solid-hover: #4338ca;
   --gitpulse-link: #1f6feb;
   --gitpulse-link-solid: #1f6feb;
   --gitpulse-link-solid-hover: #1a5fd0;
-  --gitpulse-success: #1a7f37;
-  --gitpulse-success-solid: #1a7f37;
   --gitpulse-success-solid-hover: #16642d;
   --gitpulse-success-soft: rgba(34, 197, 94, 0.12);
-  --gitpulse-danger: #cf222e;
-  --gitpulse-danger-solid: #cf222e;
   --gitpulse-danger-solid-hover: #ad1a24;
-  --gitpulse-danger-soft: rgba(248, 81, 73, 0.1);
   --gitpulse-warning: #bf8700;
   --gitpulse-warning-solid: #bf8700;
   --gitpulse-warning-solid-hover: #a77200;
@@ -183,36 +166,17 @@ html.dark {
   --gitpulse-radius-lg: 8px;
   --gitpulse-radius-xl: 12px;
 
-  --gitpulse-page-bg: #111318;
-  --gitpulse-shell-bg: #171a21;
-  --gitpulse-surface: #1b1f27;
-  --gitpulse-surface-muted: #20252f;
-  --gitpulse-surface-raised: #222832;
-  --gitpulse-surface-hover: #252c37;
-  --gitpulse-surface-active: rgba(129, 140, 248, 0.16);
+  /* The semantic palette comes from the startup injection (shared/data/theme-palette.json). */
   --gitpulse-overlay-bg: rgba(5, 7, 12, 0.78);
-  --gitpulse-border: rgba(230, 237, 243, 0.12);
-  --gitpulse-border-strong: rgba(230, 237, 243, 0.2);
-  --gitpulse-text: #cbd5e1;
-  --gitpulse-text-strong: #f1f5f9;
-  --gitpulse-text-muted: #9aa4b2;
-  --gitpulse-text-subtle: #7f8a9a;
-  --gitpulse-accent: #a5b4fc;
   --gitpulse-accent-hover: #c4b5fd;
-  --gitpulse-accent-soft: rgba(165, 180, 252, 0.16);
   --gitpulse-primary-solid: #5048e5;
   --gitpulse-primary-solid-hover: #4338ca;
   --gitpulse-link: #79c0ff;
   --gitpulse-link-solid: #2563eb;
   --gitpulse-link-solid-hover: #1d4ed8;
-  --gitpulse-success: #7ee787;
-  --gitpulse-success-solid: #238636;
   --gitpulse-success-solid-hover: #1f7a31;
   --gitpulse-success-soft: rgba(126, 231, 135, 0.14);
-  --gitpulse-danger: #ff7b72;
-  --gitpulse-danger-solid: #da3633;
   --gitpulse-danger-solid-hover: #b62324;
-  --gitpulse-danger-soft: rgba(255, 123, 114, 0.14);
   --gitpulse-warning: #f2cc60;
   --gitpulse-warning-solid: #9a6700;
   --gitpulse-warning-solid-hover: #845900;

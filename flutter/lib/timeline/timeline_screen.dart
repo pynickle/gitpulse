@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
-import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_pull_to_refresh.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../session/session_controller.dart';
@@ -321,9 +321,10 @@ class _FailureState extends StatelessWidget {
       description: message,
       liveRegion: true,
       action: failure == null || failure.retryable
-          ? FilledButton.tonal(
+          ? GitPulseButton(
+              label: l10n.timelineRetry,
+              variant: GitPulseButtonVariant.tonal,
               onPressed: state.loading ? null : () => onRetry(),
-              child: Text(l10n.timelineRetry),
             )
           : null,
     );
@@ -342,15 +343,28 @@ class _LookupFailureBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final wash = toneDangerSoft(context);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.fromLTRB(
+        GitPulseSpace.gutter,
+        GitPulseSpace.inline,
+        GitPulseSpace.gutter,
+        0,
+      ),
+      padding: const EdgeInsets.all(GitPulseSpace.surfaceInset),
       decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.errorContainer),
+        // The boundary is the app's edge tone and the ground is the shared danger wash: a border
+        // drawn in the same ink as the fill it bounds is not an edge, it is a second wash, and the
+        // banner loses the shape that tells it apart from the list it stands over.
+        border: Border.all(
+          color: toneEdge(Theme.of(context).colorScheme),
+          width: GitPulseStroke.hairline,
+        ),
         borderRadius: BorderRadius.circular(GitPulseRadius.surface),
-        color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+        // A banner that reports a failure: the danger tone laid on as a wash,
+        // never the Accent, which means the app is acting (ADR 0031).
+        color: wash,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,33 +372,34 @@ class _LookupFailureBanner extends StatelessWidget {
           if (state.unavailableRepositories.isNotEmpty) ...[
             Text(
               l10n.timelineBannerUnavailableTitle,
-              style: theme.textTheme.titleSmall,
+              style: gitPulseTypeRowLabel(context),
             ),
             Text(
               l10n.timelineBannerUnavailableDescription(
                 _names(state.unavailableRepositories),
               ),
-              style: theme.textTheme.bodySmall,
+              style: gitPulseTypeMeta(context),
             ),
           ],
           if (state.transientRepositories.isNotEmpty) ...[
             Text(
               l10n.timelineBannerTransientTitle,
-              style: theme.textTheme.titleSmall,
+              style: gitPulseTypeRowLabel(context),
             ),
             Text(
               l10n.timelineBannerTransientDescription(
                 _names(state.transientRepositories),
               ),
-              style: theme.textTheme.bodySmall,
+              style: gitPulseTypeMeta(context),
             ),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: GitPulseSpace.inline),
           Align(
             alignment: Alignment.centerLeft,
-            child: OutlinedButton(
+            child: GitPulseButton(
+              label: l10n.timelineRetry,
+              variant: GitPulseButtonVariant.outlined,
               onPressed: state.loading ? null : () => onRetry(),
-              child: Text(l10n.timelineRetry),
             ),
           ),
         ],
@@ -832,7 +847,6 @@ class _ReturnToTop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return AnimatedOpacity(
       opacity: visible ? 1 : 0,
@@ -843,30 +857,17 @@ class _ReturnToTop extends StatelessWidget {
           excluding: !visible,
           child: ExcludeSemantics(
             excluding: !visible,
-            child: IconButton(
+            // The app's own icon action, standing over the list rather than on
+            // it: a disc inside one hairline, which is how a floating surface is
+            // told apart from the cards beneath it without a shadow.
+            child: GitPulseIconButton(
               tooltip: l10n.timelineBackToTop,
               onPressed: onPressed,
-              iconSize: GitPulseIconSize.action,
+              floating: true,
               // A plain up arrow, not `vertical_align_top`: that glyph is a
               // text-alignment mark — a bar under an arrow — and reads as
               // "align text" rather than "go back up the list".
               icon: const Icon(Icons.arrow_upward),
-              style:
-                  IconButton.styleFrom(
-                    foregroundColor: scheme.onSurface,
-                    backgroundColor: scheme.surfaceContainerHigh,
-                    minimumSize: const Size.square(GitPulseHeight.standard),
-                    padding: EdgeInsets.zero,
-                    shape: const CircleBorder(),
-                    side: BorderSide(
-                      color: toneEdge(scheme),
-                      width: GitPulseStroke.hairline,
-                    ),
-                  ).copyWith(
-                    // The app's own press and focus ink, shared with the theme,
-                    // rather than the wash a foreground colour would rebuild here.
-                    overlayColor: gitPulseInkOverlay(scheme),
-                  ),
             ),
           ),
         ),
@@ -886,7 +887,7 @@ class _DateHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
       child: Text(
         gitPulseDate(context, date),
-        style: Theme.of(context).textTheme.titleSmall,
+        style: gitPulseTypeGroupHeader(context),
       ),
     );
   }
@@ -915,8 +916,7 @@ class _PreviousRefreshMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
     final title = l10n.timelinePreviousRefreshMark;
     final instant = gitPulseBaselineInstantLabel(
       context,
@@ -936,23 +936,21 @@ class _PreviousRefreshMark extends StatelessWidget {
               Text(
                 title,
                 maxLines: 1,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
-                ),
+                // The section label at the Accent: the marker is the one block
+                // label on the list that says "the app did this", and its type
+                // row is the table's, so its measure is the one it always had.
+                style: gitPulseTypeSectionLabel(context)
+                    ?.copyWith(color: toneAccent(context)),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: GitPulseSpace.inline),
               Text(
                 instant,
                 maxLines: 1,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                style: gitPulseTypeMetaTight(
+                  context,
+                )?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: GitPulseSpace.meta),
               // A plain rule rather than a [Divider]: the day headers own that
               // widget, and the marker must not be mistakable for one.
               Expanded(
@@ -1017,15 +1015,15 @@ class _StatusFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final meta = gitPulseTypeMeta(context);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: GitPulseSpace.inline),
       child: Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 12,
-        runSpacing: 8,
+        runSpacing: GitPulseSpace.inline,
         children: [
           // Saved history that is not connected explains why the window is
           // incomplete, so it stays. That it *is* connected states nothing the
@@ -1039,28 +1037,20 @@ class _StatusFooter extends StatelessWidget {
                       .map((repository) => repository.fullName)
                       .join(', '),
                 ),
-                style: theme.textTheme.bodySmall,
+                style: meta,
               ),
             ),
-          if (state.partial)
-            Text(
-              l10n.timelinePartialWindow,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+          if (state.partial) Text(l10n.timelinePartialWindow, style: meta),
           if (state.persistenceFailed)
             Semantics(
               liveRegion: true,
-              child: Text(
-                l10n.timelinePersistenceError,
-                style: theme.textTheme.bodySmall,
-              ),
+              child: Text(l10n.timelinePersistenceError, style: meta),
             ),
           if (state.canLoadOlder)
-            FilledButton.tonal(
+            GitPulseButton(
+              label: l10n.timelineLoadOlder,
+              variant: GitPulseButtonVariant.tonal,
               onPressed: state.loading ? null : () => onLoadOlder(),
-              child: Text(l10n.timelineLoadOlder),
             ),
           // A failed round with saved releases still on screen keeps only the
           // action: the reader can see what they came for, so the reason is
@@ -1072,16 +1062,18 @@ class _StatusFooter extends StatelessWidget {
               TimelineFailureKind.network => l10n.timelineErrorNetwork,
               TimelineFailureKind.rateLimited => l10n.timelineErrorRateLimited,
               _ => l10n.timelineErrorServer,
-            }),
+            }, style: meta),
           if (state.canRetry)
-            OutlinedButton(
+            GitPulseButton(
+              label: l10n.timelineRetry,
+              variant: GitPulseButtonVariant.outlined,
               onPressed: state.loading ? null : () => onRetry(),
-              child: Text(l10n.timelineRetry),
             ),
           if (state.persistenceFailed)
-            OutlinedButton(
+            GitPulseButton(
+              label: l10n.timelineReload,
+              variant: GitPulseButtonVariant.outlined,
               onPressed: state.loading ? null : () => onRefresh(),
-              child: Text(l10n.timelineReload),
             ),
         ],
       ),

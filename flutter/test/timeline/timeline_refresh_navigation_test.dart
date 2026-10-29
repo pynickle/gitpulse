@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
+import 'package:gitpulse/presentation/gitpulse_toggles.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
@@ -175,7 +178,7 @@ Finder get _returnToTop => find.byTooltip(_backToTop);
 
 Finder get _refreshButton => find.ancestor(
   of: find.byTooltip('Reload'),
-  matching: find.byType(IconButton),
+  matching: find.byType(GitPulseIconButton),
 );
 
 /// The opacity the return-to-top button is currently painted at.
@@ -267,7 +270,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byType(Switch));
+      await tester.tap(find.byType(GitPulseSwitch));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
@@ -363,7 +366,10 @@ void main() {
 
       await _pull(tester);
       expect(timeline.rounds, before + 1);
-      expect(tester.widget<IconButton>(_refreshButton).onPressed, isNull);
+      expect(
+        tester.widget<GitPulseIconButton>(_refreshButton).onPressed,
+        isNull,
+      );
 
       await tester.tap(find.byTooltip('Reload'));
       await settleUi(tester, frames: 5);
@@ -388,10 +394,10 @@ void main() {
 
       expect(reading.card, findsOneWidget);
       expect(tester.getTopLeft(reading.card).dy, closeTo(reading.top, 1));
-      expect(
-        find.byWidgetPredicate((widget) => widget is CircularProgressIndicator),
-        findsOneWidget,
-      );
+      // The round is the app's own indicator in the toolbar, and the page
+      // itself keeps the releases it is reading.
+      expect(find.byType(GitPulseProgressInline), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Loading the Release Timeline'), findsNothing);
 
       held.complete();
@@ -440,7 +446,8 @@ void main() {
       held.complete();
       await pumpUntil(
         tester,
-        () => tester.widget<IconButton>(_refreshButton).onPressed != null,
+        () =>
+            tester.widget<GitPulseIconButton>(_refreshButton).onPressed != null,
         reason: 'refresh results arrive',
       );
       await tester.pump();
@@ -474,7 +481,10 @@ void main() {
       expect(reading.card, findsOneWidget);
       expect(tester.getTopLeft(reading.card).dy, closeTo(reading.top, 1));
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(tester.widget<IconButton>(_refreshButton).onPressed, isNotNull);
+      expect(
+        tester.widget<GitPulseIconButton>(_refreshButton).onPressed,
+        isNotNull,
+      );
 
       await _scrollBy(tester, -_listHeight(tester) * 12);
       // The reader still has the releases they came for, so the footer offers
@@ -486,7 +496,7 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.widgetWithText(OutlinedButton, 'Retry'), findsOneWidget);
+      expect(find.widgetWithText(GitPulseButton, 'Retry'), findsOneWidget);
     });
 
     testWidgets('keeps the search and the filters that are active', (

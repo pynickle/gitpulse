@@ -8,8 +8,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
+import 'package:gitpulse/connection/connection_screen.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_dialog.dart';
+import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/l10n/generated/app_localizations.dart';
 
 import 'support/app_overrides.dart';
+import 'support/presentation_harness.dart';
 
 class CapabilityServer implements HttpClientAdapter {
   bool offline = false;
@@ -84,6 +91,140 @@ Future<void> connectTo(WidgetTester tester, String address) async {
 
 void main() {
   testWidgets(
+    'the connection page renders on the app’s faces and none of the replaced '
+    'ones',
+    (tester) async {
+      // The page is mounted on the connected-but-signed-out state it mostly
+      // shows: the address form, and the way into the device settings.
+      final harness = harnessFor(tester);
+      await tester.runAsync(harness.open);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: harness.container,
+          child: MaterialApp(
+            theme: gitPulseTheme(Brightness.light),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const ConnectionScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final screen = find.byType(ConnectionScreen);
+      expect(screen, findsOneWidget);
+      // It is built from the app's own controls…
+      expect(
+        find.descendant(of: screen, matching: find.byType(GitPulseButton)),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: screen, matching: find.byType(GitPulseIconButton)),
+        findsWidgets,
+      );
+      // …and none of the Material faces this change replaced is left in it.
+      for (final replaced in <Type>[
+        FilledButton,
+        OutlinedButton,
+        TextButton,
+        IconButton,
+        AlertDialog,
+        Dialog,
+        CircularProgressIndicator,
+        LinearProgressIndicator,
+      ]) {
+        expect(
+          find.descendant(of: screen, matching: find.byType(replaced)),
+          findsNothing,
+          reason: '$replaced',
+        );
+      }
+      // The address still goes into the platform's own input.
+      expect(
+        find.descendant(of: screen, matching: find.byType(TextField)),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('the backend address editor is the app’s own dialog', (
+    tester,
+  ) async {
+    late Future<String?> editor;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: gitPulseTheme(Brightness.light),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => GitPulseButton(
+              label: 'Change backend',
+              onPressed: () => editor = showBackendAddressEditor(
+                context,
+                'https://gitpulse.example/',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Change backend'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GitPulseDialog), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(Dialog), findsNothing);
+    // Everything the editor offers is one of the app's own buttons, and the
+    // field it edits stays the platform's own input.
+    expect(
+      find.descendant(
+        of: find.byType(GitPulseDialog),
+        matching: find.byType(GitPulseButton),
+      ),
+      findsNWidgets(2),
+    );
+    for (final replaced in <Type>[FilledButton, TextButton, IconButton]) {
+      expect(
+        find.descendant(
+          of: find.byType(GitPulseDialog),
+          matching: find.byType(replaced),
+        ),
+        findsNothing,
+        reason: '$replaced',
+      );
+    }
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      'https://gitpulse.example/',
+    );
+
+    // An address that is not an address is refused in place, as before.
+    await tester.enterText(find.byType(TextField), 'gitpulse.example');
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Enter an HTTP or HTTPS'), findsOneWidget);
+    expect(find.byType(GitPulseDialog), findsOneWidget);
+
+    // A good one answers with the address the app will use.
+    await tester.enterText(find.byType(TextField), 'https://other.example');
+    await tester.tap(find.text('Connect'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GitPulseDialog), findsNothing);
+    expect(await tester.runAsync(() => editor), 'https://other.example/');
+
+    // And thinking better of it answers with nothing at all.
+    await tester.tap(find.text('Change backend'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GitPulseDialog), findsNothing);
+    expect(await tester.runAsync(() => editor), isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
     'first launch connects to the hosted backend without confirmation',
     (tester) async {
       FlutterSecureStorage.setMockInitialValues({});
@@ -108,7 +249,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await mountApp(tester, CapabilityServer());
       await connectTo(tester, 'https://phone.example');
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(GitPulseNavigationBar), findsOneWidget);
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
       expect(find.text('Password'), findsOneWidget);

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
+import '../presentation/gitpulse_progress.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../device/device_preferences_controller.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -43,11 +45,10 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                   l10n.followsCurrent(state.repositories.length),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: gitPulseTypeRowLabel(context),
                 ),
               ),
-              IconButton(
+              GitPulseIconButton(
                 tooltip: detailed
                     ? l10n.followsViewDetailed
                     : l10n.followsViewCompact,
@@ -62,13 +63,13 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                 ),
                 icon: _FollowedViewIcon(detailed: detailed),
               ),
-              IconButton(
+              GitPulseIconButton(
                 tooltip: l10n.followsReload,
                 onPressed: disabled ? null : facade.reload,
                 icon: const Icon(Icons.refresh),
               ),
               if (onClose != null)
-                IconButton(
+                GitPulseIconButton(
                   tooltip: l10n.followsClose,
                   onPressed: onClose,
                   icon: const Icon(Icons.close),
@@ -76,7 +77,8 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
             ],
           ),
         ),
-        if (state.loading || state.saving) const LinearProgressIndicator(),
+        if (state.loading || state.saving)
+          const Center(child: GitPulseProgressInline()),
         Divider(
           height: GitPulseStroke.hairline,
           thickness: GitPulseStroke.hairline,
@@ -110,9 +112,9 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: releaseFollowsPadding,
                                 ),
-                                child: TextButton(
+                                child: GitPulseButton(
+                                  label: l10n.timelineRetry,
                                   onPressed: disabled ? null : facade.reload,
-                                  child: Text(l10n.timelineRetry),
                                 ),
                               ),
                           ],
@@ -183,9 +185,10 @@ class _FollowedLoadFailure extends StatelessWidget {
       tone: followProblemTone(problem),
       title: followProblemLabel(l10n, problem),
       liveRegion: true,
-      action: FilledButton.tonal(
+      action: GitPulseButton(
+        label: l10n.timelineRetry,
+        variant: GitPulseButtonVariant.tonal,
         onPressed: onRetry,
-        child: Text(l10n.timelineRetry),
       ),
     );
   }
@@ -200,8 +203,9 @@ class _FollowedViewIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurface;
+    // The mark takes the ink of whatever control holds it; a control that sets
+    // no icon theme at all still gets the app's own text tone.
+    final color = IconTheme.of(context).color ?? toneText(context);
     return CustomPaint(
       size: const Size(24, 24),
       painter: _FollowedViewIconPainter(color: color, detailed: detailed),

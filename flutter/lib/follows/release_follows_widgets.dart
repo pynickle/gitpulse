@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
-import '../presentation/gitpulse_icon_action.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -83,11 +83,7 @@ class _RepositoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final meta = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
+    final meta = gitPulseTypeMetaTight(context);
     final count = stars == null
         ? null
         : gitPulseLocaleCompactCount(context, stars!);
@@ -95,7 +91,7 @@ class _RepositoryRow extends StatelessWidget {
         language != null || count != null || unavailableLabel != null;
 
     return Material(
-      color: Colors.transparent,
+      color: GitPulsePaint.none,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -119,7 +115,7 @@ class _RepositoryRow extends StatelessWidget {
                             child: Icon(
                               Icons.error_outline,
                               size: GitPulseIconSize.fact,
-                              color: scheme.error,
+                              color: toneDanger(context),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -129,9 +125,7 @@ class _RepositoryRow extends StatelessWidget {
                             name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: gitPulseTypeRowLabel(context),
                           ),
                         ),
                       ],
@@ -142,9 +136,7 @@ class _RepositoryRow extends StatelessWidget {
                         description!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                        style: gitPulseTypeMeta(context),
                       ),
                     ],
                     if (hasMeta) ...[
@@ -195,7 +187,6 @@ class _MetaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final swatch = language == null
         ? const SizedBox.shrink()
         : Row(
@@ -229,7 +220,7 @@ class _MetaLine extends StatelessWidget {
               unavailableLabel!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: style?.copyWith(color: scheme.error),
+              style: style?.copyWith(color: toneDanger(context)),
             ),
           ),
         if (count != null) ...[
@@ -242,7 +233,7 @@ class _MetaLine extends StatelessWidget {
                   child: Icon(
                     Icons.star_border,
                     size: _starGlyph,
-                    color: scheme.onSurfaceVariant,
+                    color: toneTextMuted(context),
                   ),
                 ),
                 const SizedBox(width: _starGap),
@@ -293,9 +284,9 @@ class FollowRepositoryCard extends StatelessWidget {
         releases: false,
       )),
       actions: [
-        _FollowAction(
+        GitPulseIconButton(
           tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
-          icon: followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+          icon: Icon(followed ? Icons.bookmark : Icons.bookmark_add_outlined),
           emphasized: followed,
           onPressed: onToggle,
         ),
@@ -348,46 +339,19 @@ class FollowedRepositoryCard extends StatelessWidget {
             )),
       actions: [
         if (transient)
-          _FollowAction(
+          GitPulseIconButton(
             tooltip: l10n.followsRetryMetadata(repository.fullName),
-            icon: Icons.refresh,
+            icon: const Icon(Icons.refresh),
             onPressed: enabled ? onRetry : null,
           ),
-        _FollowAction(
+        GitPulseIconButton(
           tooltip: l10n.followsUnfollow,
-          icon: Icons.bookmark_remove_outlined,
+          icon: const Icon(Icons.bookmark_remove_outlined),
           onPressed: enabled ? onUnfollow : null,
         ),
       ],
     );
   }
-}
-
-/// A row's single action.
-///
-/// A followed repository carries a filled mark in the accent colour, so the
-/// list answers "what am I already following" before a row is read; everything
-/// else stays muted so the action never competes with the repository's name.
-class _FollowAction extends StatelessWidget {
-  const _FollowAction({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-    this.emphasized = false,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) => GitPulseIconAction(
-    tooltip: tooltip,
-    icon: icon,
-    onPressed: onPressed,
-    emphasized: emphasized,
-  );
 }
 
 /// The hairline between two repositories, inset to the text gutter so the list
@@ -422,7 +386,6 @@ class FollowProblemNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Semantics(
       liveRegion: true,
       child: Padding(
@@ -434,10 +397,10 @@ class FollowProblemNotice extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: gitPulseTypeMeta(context)?.copyWith(
             color: tone == GitPulseMessageTone.error
-                ? theme.colorScheme.error
-                : theme.colorScheme.onSurfaceVariant,
+                ? toneDanger(context)
+                : toneTextMuted(context),
           ),
         ),
       ),

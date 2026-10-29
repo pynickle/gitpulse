@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_progress.dart';
 import 'gitpulse_tokens.dart';
 
 /// A page that has nothing to show yet: one progress indicator announced to
@@ -10,13 +11,8 @@ class GitPulseLoadingView extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Semantics(
-      label: label,
-      liveRegion: true,
-      child: const CircularProgressIndicator(),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      Center(child: GitPulseProgressPage(label: label));
 }
 
 /// Whether a [GitPulseMessageView] reports a failure or an ordinary empty page.
@@ -54,13 +50,14 @@ class GitPulseMessageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
+    final detailStyle = gitPulseTypeDescription(context);
     Widget? detail;
     if (description case final description?) {
-      final text = Text(description, textAlign: TextAlign.center, style: muted);
+      final text = Text(
+        description,
+        textAlign: TextAlign.center,
+        style: detailStyle,
+      );
       detail = liveRegion ? Semantics(liveRegion: true, child: text) : text;
     }
     final content = Column(
@@ -69,21 +66,23 @@ class GitPulseMessageView extends StatelessWidget {
         Icon(
           icon,
           size: GitPulseIconSize.page,
+          // A failure is the danger tone; an empty page is nobody's status at all, so its glyph
+          // is a noun painted in the tone a supporting line is set in. The Accent is not a
+          // decoration: it means the app is acting, and a page that found nothing is not acting
+          // (CONTEXT.md, ADR 0031).
           color: tone == GitPulseMessageTone.error
-              ? theme.colorScheme.error
-              : theme.colorScheme.primary,
+              ? toneDanger(context)
+              : toneTextMuted(context),
         ),
         const SizedBox(height: 12),
-        Text(title, style: theme.textTheme.titleMedium),
+        Text(title, style: gitPulseTypeSurfaceTitle(context)),
         if (detail != null) ...[const SizedBox(height: 6), detail],
         if (hint case final hint?) ...[
           const SizedBox(height: 6),
           Text(
             hint,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+            style: gitPulseTypeMeta(context),
           ),
         ],
         if (action case final action?) ...[const SizedBox(height: 12), action],

@@ -1,8 +1,14 @@
 ---
-status: accepted
+status: superseded
+superseded-by: 0032-flutter-control-layer.md
 ---
 
 # A press leaves no background, and hover and focus keep the only tint
+
+> The rule itself — a press paints nothing, hover and keyboard focus paint the one half-strength
+> tint, and a filled or tonal surface keeps an answer to a press — is now stated and owned by ADR
+> 0032, which restates it for the app's own control faces. The reasons below still describe why it
+> is the rule, and the behaviours it lists are still in force.
 
 The Flutter client answers a press with **no background change at all**. `gitPulseTheme` sets the
 Material ink response's highlight and splash colour to transparent, and the `IconButton`,

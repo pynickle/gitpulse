@@ -19,9 +19,12 @@ Root `bun run lint` / `fmt:check` skip this tree (the `flutter/` ignore in `pack
   it starts; `--timeout 30s` makes a hang fail on a line.
 
 Committed codegen, regenerated in the change that causes it: `dart run build_runner build` after any
-`@JsonSerializable` DTO or `timeline_cache.drift` edit, and `flutter gen-l10n` after every
-`lib/l10n/*.arb` edit. New page copy goes into both ARB files, and a count placeholder carries
-`"format": "decimalPattern"` in the ARB so intl localizes it.
+`@JsonSerializable` DTO or `timeline_cache.drift` edit, `flutter gen-l10n` after every
+`lib/l10n/*.arb` edit, and `dart run tool/generate_theme_palette.dart` after any
+`../shared/data/theme-palette.json` edit — that file is the palette both clients present, and
+`lib/presentation/gitpulse_palette.g.dart` is its committed Dart form. New page copy goes into both
+ARB files, and a count placeholder carries `"format": "decimalPattern"` in the ARB so intl localizes
+it.
 
 ## UI — tokens first
 
@@ -29,6 +32,36 @@ Read `lib/presentation/gitpulse_tokens.dart` before changing any widget, layout,
 spacing or interaction state. `gitPulseTheme` is the single theme source; a distance or tone no token
 names is an ADR rather than a literal, and a visual choice that contradicts a registered rule needs
 one too (`../docs/adr/`).
+
+- **The theme is a Theme Preset, not a seed** (ADR 0031): `gitPulsePreset`
+  (`lib/presentation/gitpulse_preset.dart`) carries the light and dark palettes and the one type
+  table; `gitPulseColorScheme` and the table fill Material's `ColorScheme` and `TextTheme` so a
+  retained Material control still receives coherent values. There is no `ColorScheme.fromSeed` and no
+  second preset to choose from — a second one is data, not a code path.
+- **Colours are read as tones, type as helpers**: `tone…(context)` functions in
+  `gitpulse_tokens.dart` (`tonePage`, `toneShell`, `toneSurface`, `toneTextMuted`, `toneTextStrong`,
+  `toneAccent`, `toneDanger`, `toneDangerSoft`…) are the app's colour vocabulary, and
+  `gitPulseType…(context)` are its type. A widget that reads `colorScheme.<role>` or
+  `theme.textTheme.<role>`, or invents a `fontSize`, is out of spec; a new tone or type size is a row
+  in the preset, never a literal in a widget. The type helpers resolve their metrics from the
+  preset's **type table** (`gitPulseTypeTableOf`) rather than from whatever `TextTheme` the context
+  carries, so a subtree that installs a theme of its own cannot redefine the app's rhythm inside
+  itself; a themed widget and a helper still agree because the theme's `TextTheme` is built from the
+  same rows, and `test/presentation/gitpulse_theme_preset_test.dart` asserts both halves. Outside
+  `gitpulse_tokens.dart`, `gitpulse_preset.dart`, the generated palette and `gitpulse_theme.dart`,
+  no file names a colour literal either — `Colors.<name>` and `Color(0x…)` live only there, and a
+  surface that shows the ink beneath it says `GitPulsePaint.none`. A file that needs a scheme hands
+  the whole object to `toneEdge`/`toneRule`/`gitPulseInkOverlay`; it never takes a role off it. The
+  one recorded exemption is `gitpulse_language_colors.dart`, a pre-existing copy of the web's
+  language colours (ADR 0032).
+- **The page, the well and the wash are the shared data's values**: `tonePage` is the canvas every
+  screen stands on (the theme's `scaffoldBackgroundColor`), `toneShell` is a step *within* a surface
+  (a field's fill, an avatar's disc, a floating action's ground), and `toneDangerSoft` is the failure
+  wash the web app paints too. Do not derive a wash by alpha-blending a tone at a call site: the
+  app's washes are named constants (`gitPulseHoverTintAlpha`, `gitPulseFilledPressAlpha`,
+  `gitPulseDialogBarrierAlpha`). Four palette tones have no reader because the client paints no
+  surface of that job — `surface-raised`, `surface-hover`, `success-solid`, `danger-solid` — and they
+  stay as data both clients may present; the theme test names that set.
 
 - **Repository detail page**: Release List, Release Follow and Share stay on one row at every width
   (`lib/repositories/repository_screen.dart`). A two-row fallback was tried and rejected — the row's
@@ -38,7 +71,53 @@ one too (`../docs/adr/`).
 - **Sheets** — the Release Drawer and the Release Timeline Filter Panel — open only through
   `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`), which owns the route, entry, rounded
   surface and Escape dismissal (ADR 0029). Do not open a second `showGeneralDialog` sheet; pass a
-  body that decides its own content and height.
+  body that decides its own content and height. **Dialogs** open only through `showGitPulseDialog`
+  (`lib/presentation/gitpulse_dialog.dart`) for the same reason (ADR 0032): pass a `GitPulseDialog`
+  body that decides its title, content and actions. The entry point names its own barrier with the
+  platform's `modalBarrierDismissLabel`, so a call site passes nothing for it.
+- **Controls are GitPulse's own — seven faces** (ADR 0032): the bottom navigation bar
+  (`GitPulseNavigationBar`), the button family (`GitPulseButton`'s four variants and
+  `GitPulseIconButton`), the switch and the checkbox (`GitPulseSwitch`, `GitPulseCheckbox`, in
+  `lib/presentation/gitpulse_toggles.dart`), the row and page indicators (`GitPulseProgressInline`,
+  `GitPulseProgressPage`) and the dialog entry point (`showGitPulseDialog` + `GitPulseDialog`). They
+  replace Material's `NavigationBar`, its five button widgets, `Switch`/`Checkbox`, its spinner and
+  its `AlertDialog`. A migrated screen mounts none of those faces, and its widget test asserts they
+  are absent from its rendered tree with `expectNoReplacedMaterialFaces` from
+  `test/support/material_faces.dart` — one list and one set of exception carve-outs for every screen
+  test and for `test/presentation/app_faces_test.dart`, which asserts it for the whole client (the
+  three destinations, the Connection page, the Repository page and the release surfaces).
+  `GitPulseIconButton` has six arguments that are decisions rather than knobs: `size` is the mark's
+  own measure, by the job it does; `dimension` is the touch target the _surface_ states — the
+  platform's `GitPulseHeight.standard` square on a page, the control's own height inside one, and one
+  cell of the page pill's recorded geometry (ADR 0026), which is why the pill's step is a flat 32dp
+  cell rather than a full-height square; `floating` is a shell-toned disc inside one hairline for an
+  action standing over content; `emphasized` paints the mark in the Accent for "this is already
+  applied"; `selected` is the same paint for a mode the reader turned on **and** the semantics flag
+  that says so, so a surface never writes `Semantics(selected:)` around the face; `autofocus` gives a
+  sheet's close the keyboard focus, so the Escape key it answers has a focused subtree to arrive in.
+  A surface passes the measure it decided; the action never picks one.
+  `GitPulseButton` owns its icon's tone for the same reason, and the single exception is
+  `statusMarkTone`: pass it only when the mark **is** the status the action reports and no line of
+  text carries it (a Follow the app could not save, a clear that landed), with `toneDanger` or
+  `toneSuccess` and never the Accent.
+  The interaction contract is one rule and lives in `gitpulse_theme.dart`: `gitPulseInkOverlay` for
+  a control with no fill (nothing on press, the one half-strength tint on hover and focus) and
+  `gitPulseFilledInkOverlay` for a filled or tonal one (its own foreground while pressed). A control
+  that paints a fill paints it through its own `Material`, never above the ink.
+- **The theme installs only what the app believes in.** There is no `checkboxTheme`, no
+  `switchTheme`, no `outlinedButtonTheme` and no `dialogTheme`: the client draws no Material
+  checkbox, switch, `OutlinedButton` or dialog, so such an entry would be an override with nothing to
+  override. What is installed — the Foundation Layer, the plain ink, `appBarTheme`,
+  `datePickerTheme`, and the `iconButtonTheme`/`textButtonTheme` pair a retained face still draws —
+  each serves a named consumer, listed in ADR 0032. A new entry needs a consumer in the same change.
+- **Platform Dialect Exceptions** are the controls that stay Material's on purpose. The list and each
+  reason live in ADR 0032: text input and its IME/selection/magnifier/autofill, the date picker's
+  calendar, the `AppBar` (skinned through the theme, its behaviour the platform's), the Follows sort
+  control (`SegmentedButton`, handed the app's ink at its call site because its own
+  `TextButtonTheme` shadows the theme's), the choice chip, tooltips, pull-to-refresh, the snackbar
+  (skinned, not replaced), tabs, the Material icon glyphs, and the platform's page transitions and
+  back affordance. Adding a Material face a reader operates means amending that record, not just
+  mounting the widget; a face in neither list is an oversight, not a decision.
 - **Documents** — a release's notes and a repository README — render only through
   `tool/document_viewer` (ADR 0028). Fix a rendering gap there; a second Markdown-to-widget path is
   never the answer.

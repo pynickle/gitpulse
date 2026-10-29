@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
+import 'package:gitpulse/presentation/gitpulse_toggles.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
@@ -88,12 +90,12 @@ Map<String, Object?> baselineRefresh(String baseline) => {
 /// The box at one repository row's end: the panel's own statement of selection.
 Finder rowCheckbox(String repositoryId) => find.descendant(
   of: find.byKey(ValueKey('filter-repository-$repositoryId')),
-  matching: find.byType(Checkbox),
+  matching: find.byType(GitPulseCheckbox),
 );
 
 /// Whether one repository row reads as selected.
 bool? rowChecked(WidgetTester tester, String repositoryId) =>
-    tester.widget<Checkbox>(rowCheckbox(repositoryId)).value;
+    tester.widget<GitPulseCheckbox>(rowCheckbox(repositoryId)).value;
 
 void main() {
   testWidgets(
@@ -387,16 +389,19 @@ void main() {
       // Every row carries its box, unselected ones included, so the list says
       // how a repository is chosen instead of growing a mark once it is.
       expect(
-        find.descendant(of: panel, matching: find.byType(Checkbox)),
+        find.descendant(of: panel, matching: find.byType(GitPulseCheckbox)),
         findsNWidgets(9),
       );
       expect(rowChecked(tester, 'R_3'), isFalse);
-      // A row still clears the smallest a clickable row may stand.
+      // A row still stands at the height the panel gave it: the box is drawn in
+      // the row's own square rather than in one of its own, so the list keeps
+      // its rhythm and a row still clears the smallest a clickable row may
+      // stand.
       expect(
         tester
             .getSize(find.byKey(const ValueKey('filter-repository-R_3')))
             .height,
-        greaterThanOrEqualTo(GitPulseHeight.rowMin),
+        GitPulseHeight.rowMin,
       );
       final list = find.descendant(of: panel, matching: find.byType(ListView));
       // The panel's height belongs to the panel, not to the number of rows in
@@ -641,7 +646,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.widgetWithText(FilledButton, l10n.timelineLoadOlder),
+        find.widgetWithText(GitPulseButton, l10n.timelineLoadOlder),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -714,7 +719,9 @@ void main() {
     expect(find.text(l10n.timelineFilteredEmptyTitle), findsOneWidget);
     expect(find.text('Recent release'), findsNothing);
 
-    await tester.tap(find.widgetWithText(FilledButton, l10n.timelineLoadOlder));
+    await tester.tap(
+      find.widgetWithText(GitPulseButton, l10n.timelineLoadOlder),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 

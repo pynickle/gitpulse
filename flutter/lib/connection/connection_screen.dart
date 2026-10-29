@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
+import '../presentation/gitpulse_dialog.dart';
 import '../presentation/gitpulse_state_views.dart';
+import '../presentation/gitpulse_tokens.dart';
 import '../settings/device_settings.dart';
 import 'backend_service.dart';
 import 'connection_controller.dart';
@@ -31,7 +34,10 @@ class ConnectionScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('GitPulse'),
         actions: [
-          IconButton(
+          // The device settings are reachable before the Settings destination
+          // is: this page is the first one a reader meets, and the way into the
+          // app's own choices is drawn with the app's own action.
+          GitPulseIconButton(
             tooltip: l10n.presentationSettings,
             onPressed: () => showDeviceSettingsDialog(context),
             icon: const Icon(Icons.tune),
@@ -44,9 +50,9 @@ class ConnectionScreen extends ConsumerWidget {
           icon: Icons.error_outline,
           tone: GitPulseMessageTone.error,
           title: l10n.unreachable,
-          action: TextButton(
+          action: GitPulseButton(
+            label: l10n.connect,
             onPressed: () => ref.invalidate(connectionControllerProvider),
-            child: Text(l10n.connect),
           ),
         ),
         data: (state) => _ConnectionForm(
@@ -58,11 +64,16 @@ class ConnectionScreen extends ConsumerWidget {
   }
 }
 
+/// The one dialog this page opens: the address this installation points at.
+///
+/// It is the app's dialog, opened through the app's one entry point (ADR 0032).
+/// The field inside it stays the platform's own input, so typing, selecting and
+/// pasting an address work exactly as they did.
 Future<String?> showBackendAddressEditor(
   BuildContext context,
   String address,
-) => showDialog<String>(
-  context: context,
+) => showGitPulseDialog<String>(
+  context,
   builder: (_) => _BackendAddressEditor(address: address),
 );
 
@@ -97,30 +108,33 @@ class _BackendAddressEditorState extends State<_BackendAddressEditor> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return GitPulseDialog(
       title: Text(l10n.changeBackend),
-      content: SizedBox(
-        width: 400,
-        child: TextField(
-          controller: _address,
-          autofocus: true,
-          keyboardType: TextInputType.url,
-          autocorrect: false,
-          textInputAction: TextInputAction.go,
-          decoration: InputDecoration(
-            labelText: l10n.backendAddress,
-            errorText: _invalid ? l10n.invalidAddress : null,
-            errorMaxLines: 3,
-          ),
-          onSubmitted: (_) => _submit(),
+      content: TextField(
+        controller: _address,
+        autofocus: true,
+        keyboardType: TextInputType.url,
+        autocorrect: false,
+        textInputAction: TextInputAction.go,
+        style: gitPulseTypeFieldText(context),
+        decoration: InputDecoration(
+          labelText: l10n.backendAddress,
+          errorText: _invalid ? l10n.invalidAddress : null,
+          errorMaxLines: 3,
         ),
+        onSubmitted: (_) => _submit(),
       ),
       actions: [
-        TextButton(
+        GitPulseButton(
+          label: MaterialLocalizations.of(context).cancelButtonLabel,
+          variant: GitPulseButtonVariant.text,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
-        FilledButton(onPressed: _submit, child: Text(l10n.connect)),
+        GitPulseButton(
+          label: l10n.connect,
+          variant: GitPulseButtonVariant.filled,
+          onPressed: _submit,
+        ),
       ],
     );
   }
@@ -161,10 +175,7 @@ class _ConnectionFormState extends ConsumerState<_ConnectionForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                l10n.connectTitle,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
+              Text(l10n.connectTitle, style: gitPulseTypePageHeadline(context)),
               const SizedBox(height: 12),
               Text(l10n.connectDescription),
               const SizedBox(height: 24),
@@ -174,6 +185,7 @@ class _ConnectionFormState extends ConsumerState<_ConnectionForm> {
                 keyboardType: TextInputType.url,
                 autocorrect: false,
                 textInputAction: TextInputAction.go,
+                style: gitPulseTypeFieldText(context),
                 decoration: InputDecoration(
                   labelText: l10n.backendAddress,
                   hintText: 'https://your-gitpulse.example',
@@ -185,13 +197,19 @@ class _ConnectionFormState extends ConsumerState<_ConnectionForm> {
                 const SizedBox(height: 16),
                 Semantics(
                   liveRegion: true,
-                  child: Text(connectionProblemLabel(l10n, problem)),
+                  child: Text(
+                    connectionProblemLabel(l10n, problem),
+                    style: gitPulseTypeMeta(context)
+                        ?.copyWith(color: toneDanger(context)),
+                  ),
                 ),
               ],
               const SizedBox(height: 24),
-              FilledButton(
+              GitPulseButton(
+                label: state.connecting ? l10n.connecting : l10n.connect,
+                variant: GitPulseButtonVariant.filled,
+                expand: true,
                 onPressed: state.connecting ? null : _connect,
-                child: Text(state.connecting ? l10n.connecting : l10n.connect),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -206,7 +207,7 @@ void main() {
         (w) => w is ReleaseTimelineCard && w.item.key == key,
       );
       final before = tester.getTopLeft(anchor).dy;
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Retry').first);
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry').first);
       await tester.pumpAndSettle();
       expect(
         find.text('Some Followed Repositories failed to load'),

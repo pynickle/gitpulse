@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 
@@ -90,7 +92,7 @@ void main() {
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
       await openRepositoryReleases(tester, settle: false);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       pending.complete(
         BackendResult(
           statusCode: 200,
@@ -114,6 +116,9 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The failed band's one action is the app's own button, not Material's.
+      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.widgetWithText(GitPulseButton, 'Retry'), findsOneWidget);
       mounted
               .session
               .handlers['GET api/releases/canonical/project?page=2&per_page=20'] =
@@ -168,7 +173,7 @@ void main() {
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
       await openRepositoryReleases(tester, settle: false);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       mounted
@@ -357,7 +362,7 @@ void main() {
       await tester.tap(find.byTooltip('Return to Entry Release'));
       await tester.pump();
       expect(find.text('Entry notes'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(GitPulseProgressPage), findsNothing);
       expect(
         mounted.session.requests.where(
           (path) => path == 'GET api/releases/octo/app/42',
@@ -370,7 +375,7 @@ void main() {
       await tester.tap(find.text('older-stable'));
       await tester.pump();
       expect(find.text('Other notes'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(GitPulseProgressPage), findsNothing);
       expect(
         mounted.session.requests.where(
           (path) => path == 'GET api/releases/canonical/project/45',
@@ -382,7 +387,7 @@ void main() {
       );
       await tester.pump();
       expect(find.text('Another repository notes'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(GitPulseProgressPage), findsNothing);
       expect(
         mounted.session.requests.where(
           (path) => path == 'GET api/releases/other/tool/by-tag?tag=v1',
@@ -511,7 +516,7 @@ void main() {
       await tester.tap(find.text('Retry'));
       await tester.pump();
       // This must replace the error rather than keep stale data during retry.
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       mounted.session.emit(
         SessionState(
           phase: SessionPhase.signedIn,
@@ -774,7 +779,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
       expect(find.byKey(const Key('release-drawer')), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       response.complete(
         BackendResult(
           statusCode: 200,
@@ -820,14 +825,14 @@ void main() {
       await tester.tap(find.byType(ReleaseTimelineCard));
       await tester.pumpAndSettle();
       await openRepositoryReleases(tester, settle: false);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       // The filter row is already in place while the page loads.
       expect(find.text('All').hitTestable(), findsOneWidget);
       final before = tester
           .getRect(find.byKey(const Key('release-drawer')))
           .top;
       await tester.drag(
-        find.byType(CircularProgressIndicator),
+        find.byType(GitPulseProgressPage),
         const Offset(0, -300),
       );
       await tester.pump();
@@ -928,6 +933,49 @@ void main() {
       expect(tester.getTopLeft(find.text('All')), filters);
       expect(tester.getBottomLeft(find.byTooltip('Next page')), pager);
       expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the Release Drawer renders on the app’s faces and none of the replaced ones',
+    (tester) async {
+      await openReleaseDrawer(tester, size: const Size(390, 844));
+
+      final drawer = find.byKey(const Key('release-drawer'));
+      expect(drawer, findsOneWidget);
+      // The chrome line is the app's own actions…
+      expect(
+        find.descendant(of: drawer, matching: find.byType(GitPulseIconButton)),
+        findsWidgets,
+      );
+      for (final tooltip in [
+        'Repository releases',
+        'Open on GitHub',
+        'Close release details',
+      ]) {
+        expect(find.byTooltip(tooltip), findsOneWidget, reason: tooltip);
+      }
+      // …and none of the Material faces this change replaced is left in it.
+      for (final replaced in <Type>[
+        FilledButton,
+        OutlinedButton,
+        TextButton,
+        IconButton,
+        CircularProgressIndicator,
+        LinearProgressIndicator,
+        AlertDialog,
+        Dialog,
+      ]) {
+        expect(
+          find.descendant(of: drawer, matching: find.byType(replaced)),
+          findsNothing,
+          reason: '$replaced',
+        );
+      }
+      // The notes are still shown by the document host's platform view, whose
+      // boundary this change does not touch.
+      expect(find.byKey(const Key('release-assets')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_filters.dart';
 import 'package:gitpulse/timeline/timeline_state.dart';
@@ -105,16 +107,18 @@ void main() {
         await tester.pump();
         expect(
           tester
-              .widget<IconButton>(
+              .widget<GitPulseIconButton>(
                 find.ancestor(
                   of: find.byTooltip(l10n.timelineReload),
-                  matching: find.byType(IconButton),
+                  matching: find.byType(GitPulseIconButton),
                 ),
               )
               .onPressed,
           isNull,
         );
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        // The round the button is reading is the app's own indicator.
+        expect(find.byType(GitPulseProgressInline), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(tester.takeException(), isNull);
       });
     }
@@ -254,18 +258,18 @@ void main() {
     final l10n = _l10n(tester);
     final button = find.ancestor(
       of: find.byTooltip(l10n.timelineReload),
-      matching: find.byType(IconButton),
+      matching: find.byType(GitPulseIconButton),
     );
-    expect(tester.widget<IconButton>(button).onPressed, isNull);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(tester.widget<GitPulseIconButton>(button).onPressed, isNull);
+    expect(find.byType(GitPulseProgressInline), findsOneWidget);
 
     await _pumpToolbar(
       tester,
       state: const TimelineViewState(loading: true),
       pullRefreshing: true,
     );
-    expect(tester.widget<IconButton>(button).onPressed, isNull);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(tester.widget<GitPulseIconButton>(button).onPressed, isNull);
+    expect(find.byType(GitPulseProgressInline), findsNothing);
     expect(find.byIcon(Icons.refresh), findsOneWidget);
   });
 
@@ -304,13 +308,19 @@ void main() {
       onFiltersChanged: changes.add,
     );
     final l10n = _l10n(tester);
-    final notes = tester.widget<IconButton>(
+    // An applied mode is the app's emphasized action, and it says so to a
+    // screen reader as a selected control.
+    final notes = tester.widget<GitPulseIconButton>(
       find.ancestor(
         of: find.byTooltip(l10n.timelineIncludeNotes),
-        matching: find.byType(IconButton),
+        matching: find.byType(GitPulseIconButton),
       ),
     );
-    expect(notes.isSelected, isTrue);
+    expect(notes.selected, isTrue);
+    expect(
+      tester.getSemantics(find.byTooltip(l10n.timelineIncludeNotes)),
+      isSemantics(isSelected: true),
+    );
 
     await tester.enterText(find.byType(TextField), 'v1');
     await tester.pump();
@@ -340,13 +350,13 @@ void main() {
       onOpenFilters: () => opened++,
     );
     final l10n = _l10n(tester);
-    final filter = tester.widget<IconButton>(
+    final filter = tester.widget<GitPulseIconButton>(
       find.ancestor(
         of: find.byTooltip(l10n.timelineFilters),
-        matching: find.byType(IconButton),
+        matching: find.byType(GitPulseIconButton),
       ),
     );
-    expect(filter.isSelected, isTrue);
+    expect(filter.selected, isTrue);
     await tester.tap(find.byTooltip(l10n.timelineFilters));
     expect(opened, 1);
   });

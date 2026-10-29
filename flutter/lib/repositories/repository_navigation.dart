@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../releases/document_content.dart';
 import '../releases/release_drawer.dart';
 import '../releases/repository_releases_screen.dart';
@@ -122,7 +123,9 @@ class RepositoryPageAppBar extends StatelessWidget
       },
     ),
     actions: [
-      IconButton(
+      // Home is the app's own action; Back above it stays the platform's own
+      // affordance, which is a registered Platform Dialect Exception.
+      GitPulseIconButton(
         tooltip: AppLocalizations.of(context).navigationHome,
         icon: const Icon(Icons.home_outlined),
         onPressed: () {

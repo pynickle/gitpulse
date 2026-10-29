@@ -6,15 +6,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_avatar.dart';
+import 'package:gitpulse/presentation/gitpulse_preset.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
-import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 import 'package:gitpulse/repositories/repository_share.dart';
 import 'package:gitpulse/releases/document_web_view.dart';
 
 import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
 
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
@@ -324,7 +327,7 @@ void main() {
       session.handlers['GET api/repos/octo/app'] = () => pending.future;
       await tester.tap(find.text('Retry'));
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       pending.complete(BackendResult(statusCode: 200, data: repositoryJson()));
       await tester.pumpAndSettle();
       expect(find.text('A useful project'), findsOneWidget);
@@ -385,7 +388,7 @@ void main() {
           () => pending.future;
       await tester.tap(find.text('Retry'));
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       expect(find.text('A useful project'), findsOneWidget);
       pending.complete(
         const BackendResult(
@@ -441,7 +444,14 @@ void main() {
   testWidgets(
     'the owner line, the repository name and the description are set apart',
     (tester) async {
-      await pumpRepository(tester, size: const Size(390, 844));
+      // The app's own theme: the page's type is the preset's type table, so a
+      // screen judged under a bare Material theme would be measured against
+      // Material's sizes instead of GitPulse's.
+      await pumpRepository(
+        tester,
+        size: const Size(390, 844),
+        theme: gitPulseTheme(Brightness.light),
+      );
       final owner = tester.getRect(find.byKey(_ownerKey));
       final name = tester.getRect(find.byKey(_nameKey));
       final description = tester.getRect(find.byKey(_descriptionKey));
@@ -453,7 +463,7 @@ void main() {
       // 14 for who owns it, 22 half-bold for which repository, 14 for what it is.
       expect(tester.widget<Text>(find.byKey(_ownerKey)).style?.fontSize, 14);
       final title = tester.widget<SelectableText>(find.byKey(_nameKey));
-      expect(title.style?.fontSize, GitPulseType.pageTitleSize);
+      expect(title.style?.fontSize, gitPulseTypeTable.headlineSmall.size);
       expect(title.style?.fontSize, 22);
       expect(title.style?.fontWeight, FontWeight.w600);
       expect(
@@ -471,16 +481,17 @@ void main() {
       tester,
       size: const Size(360, 740),
       repository: {'name': longName},
+      theme: gitPulseTheme(Brightness.light),
     );
     expect(find.text(longName), findsOneWidget);
     final title = tester.widget<SelectableText>(find.byKey(_nameKey));
     // Nothing is dropped and nothing is scaled down to fit: the name takes the
     // lines it needs.
     expect(title.maxLines, isNull);
-    expect(title.style?.fontSize, GitPulseType.pageTitleSize);
+    expect(title.style?.fontSize, gitPulseTypeTable.headlineSmall.size);
     expect(
       tester.getSize(find.byKey(_nameKey)).height,
-      greaterThan(GitPulseType.pageTitleSize * 1.5),
+      greaterThan(gitPulseTypeTable.headlineSmall.size * 1.5),
     );
     expect(tester.takeException(), isNull);
   });
@@ -769,6 +780,42 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(card), position);
+    },
+  );
+
+  testWidgets(
+    'the Repository page renders on the app’s faces and none of the replaced '
+    'ones',
+    (tester) async {
+      await pumpRepository(tester, size: const Size(390, 844));
+
+      final page = find.byType(RepositoryScreen);
+      expect(page, findsOneWidget);
+      // The action row is the app's own controls…
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseButton)),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseIconButton)),
+        findsWidgets,
+      );
+      // …and none of the Material faces this change replaced is left in it.
+      expectNoReplacedMaterialFaces(page);
+      // The one Material icon button left in the page is the platform's own
+      // back affordance, which the app keeps as a Platform Dialect Exception.
+      expect(
+        find.descendant(of: page, matching: find.byType(IconButton)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(BackButton),
+          matching: find.byType(IconButton),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }

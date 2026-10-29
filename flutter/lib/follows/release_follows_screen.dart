@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
+import '../presentation/gitpulse_progress.dart';
 import '../presentation/gitpulse_pull_to_refresh.dart';
+import '../presentation/gitpulse_sheet.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -99,15 +102,19 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
 
   Future<void> _showFollowed() async {
     FocusScope.of(context).unfocus();
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (context) => FractionallySizedBox(
-        heightFactor: 0.85,
-        child: FollowedRepositoriesPanel(
-          onClose: () => Navigator.of(context).pop(),
+    // The app's own sheet, like every other sheet in the client (ADR 0029 /
+    // ADR 0032): the route, the surface and the Escape key are decided by
+    // `showGitPulseSheet`, and the panel decides only its content and height.
+    await showGitPulseSheet(
+      context,
+      barrierLabel: AppLocalizations.of(context).followsClose,
+      builder: (context) => SafeArea(
+        top: false,
+        child: FractionallySizedBox(
+          heightFactor: 0.85,
+          child: FollowedRepositoriesPanel(
+            onClose: () => Navigator.of(context).pop(),
+          ),
         ),
       ),
     );
@@ -179,7 +186,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                     indicatorSize: TabBarIndicatorSize.tab,
                     indicator: UnderlineTabIndicator(
                       borderSide: BorderSide(
-                        color: theme.colorScheme.primary,
+                        color: toneAccent(context),
                         width: GitPulseStroke.hairline,
                       ),
                     ),
@@ -232,21 +239,19 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                       textInputAction: TextInputAction.search,
                       onSubmitted: (_) => _search(submit: true),
                       onChanged: _changeQuery,
-                      style: theme.textTheme.bodyMedium,
+                      style: gitPulseTypeFieldText(context),
                       decoration: InputDecoration(
                         labelText: l10n.followsSearchLabel,
                         isDense: true,
                         // The label is a label, not a heading: the
                         // field keeps body-sized type whether the
                         // label rests inside it or floats.
-                        labelStyle: theme.textTheme.bodyMedium,
-                        floatingLabelStyle: theme.textTheme.bodySmall,
+                        labelStyle: gitPulseTypeFieldText(context),
+                        floatingLabelStyle: gitPulseTypeMeta(context),
                         border: _searchBorder,
                         enabledBorder: _searchBorder,
                         focusedBorder: _searchBorder.copyWith(
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.primary,
-                          ),
+                          borderSide: BorderSide(color: toneAccent(context)),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -256,28 +261,21 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (_query.text.isNotEmpty)
-                              IconButton(
+                              GitPulseIconButton(
                                 tooltip: l10n.followsClearSearch,
-                                style: IconButton.styleFrom(
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
+                                size: GitPulseIconSize.inControl,
                                 onPressed: () {
                                   _query.clear();
                                   _changeQuery('');
                                 },
-                                iconSize: GitPulseIconSize.inControl,
                                 icon: const Icon(Icons.close),
                               ),
-                            IconButton(
+                            GitPulseIconButton(
                               tooltip: l10n.followsSearch,
-                              style: IconButton.styleFrom(
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
+                              size: GitPulseIconSize.inControl,
                               onPressed: _query.text.trim().isEmpty
                                   ? null
                                   : () => _search(submit: true),
-                              iconSize: GitPulseIconSize.inControl,
                               icon: const Icon(Icons.search),
                             ),
                           ],
@@ -296,7 +294,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
             // where it can be undone: a page turn fills the list's
             // place, and the page already on screen is re-read by the
             // pull that asked for it.
-            if (state.saving) const LinearProgressIndicator(),
+            if (state.saving) const Center(child: GitPulseProgressInline()),
             Divider(
               height: GitPulseStroke.hairline,
               thickness: GitPulseStroke.hairline,
@@ -349,26 +347,19 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                       const SizedBox(width: GitPulseSpace.inline),
                       Tooltip(
                         message: l10n.followsManage(state.repositories.length),
-                        child: FilledButton.tonalIcon(
+                        child: GitPulseButton(
                           key: const ValueKey('manage-follows'),
+                          label: MaterialLocalizations.of(context)
+                              .formatDecimal(state.repositories.length),
+                          variant: GitPulseButtonVariant.tonal,
                           onPressed: _showFollowed,
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, GitPulseHeight.compact),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: GitPulseSpace.inline,
-                            ),
-                          ),
-                          icon: Icon(
-                            Icons.bookmarks_outlined,
-                            size: GitPulseIconSize.inControl,
-                            color: state.problem == null
-                                ? null
-                                : theme.colorScheme.error,
-                          ),
-                          label: Text(
-                            MaterialLocalizations.of(context)
-                                .formatDecimal(state.repositories.length),
-                          ),
+                          icon: const Icon(Icons.bookmarks_outlined),
+                          // A follow set the app could not read or save is reported by
+                          // the mark as well as by the line under the page: the one job
+                          // where a button's mark is a status rather than a picture.
+                          statusMarkTone: state.problem == null
+                              ? null
+                              : toneDanger(context),
                         ),
                       ),
                     ],
@@ -422,9 +413,10 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
         // keep the error tone so a real fault still reads as one.
         tone: followProblemTone(problem),
         liveRegion: true,
-        action: FilledButton.tonal(
+        action: GitPulseButton(
+          label: l10n.timelineRetry,
+          variant: GitPulseButtonVariant.tonal,
           onPressed: loading ? null : retry,
-          child: Text(l10n.timelineRetry),
         ),
       );
     }
@@ -499,12 +491,21 @@ class _SortControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Row(
       children: [
         Expanded(
           child: SegmentedButton<StarredRepositorySort>(
             expandedInsets: EdgeInsets.zero,
             showSelectedIcon: false,
+            // The sort control is Material's — a Platform Dialect Exception, because a
+            // segmented choice is the platform's grammar (ADR 0032) — and it draws its
+            // segments as `TextButton`s inside a `TextButtonTheme` of its own, which
+            // shadows the app's. So the app's one ink rule is handed to it the way the
+            // TabBar above it takes it: no press wash, the one hover and focus tint.
+            style: ButtonStyle(
+              overlayColor: gitPulseInkOverlay(theme.colorScheme),
+            ),
             segments: [
               ButtonSegment(
                 value: StarredRepositorySort.created,
@@ -521,10 +522,9 @@ class _SortControls extends StatelessWidget {
                 : null,
           ),
         ),
-        IconButton(
+        GitPulseIconButton(
           tooltip: ascending ? l10n.followsAscending : l10n.followsDescending,
           onPressed: enabled ? onToggleDirection : null,
-          iconSize: GitPulseIconSize.action,
           icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
         ),
       ],

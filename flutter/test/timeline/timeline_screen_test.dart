@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
+import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -17,6 +20,7 @@ import 'package:intl/intl.dart';
 
 import '../support/app_overrides.dart';
 import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
 import 'timeline_test_support.dart';
 
 class MountedTimeline {
@@ -367,7 +371,34 @@ void main() {
       expect(find.text('v1.1'), findsOneWidget);
       expect(find.text('Partial timeline coverage'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Retry').first);
+      // The banner's outline is an outline: the fill is the shared danger wash and the boundary
+      // is the app's own edge tone, so the edge is visible against the page instead of being drawn
+      // in the same ink as the fill it bounds.
+      final bannerTitle = find.text(
+        'Some Followed Repositories failed to load',
+      );
+      expect(bannerTitle, findsOneWidget);
+      final context = tester.element(bannerTitle);
+      final decoration =
+          tester
+                  .widget<Container>(
+                    find
+                        .ancestor(
+                          of: bannerTitle,
+                          matching: find.byType(Container),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      expect(decoration.color, toneDangerSoft(context));
+      expect(
+        decoration.border!.top.color,
+        toneEdge(Theme.of(context).colorScheme),
+        reason: 'a surface boundary, not a second wash',
+      );
+
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -428,7 +459,7 @@ void main() {
       expect(find.textContaining('Could not reach'), findsOneWidget);
 
       failing = false;
-      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -452,7 +483,7 @@ void main() {
       },
     );
 
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(GitPulseProgressPage), findsWidgets);
 
     held.complete(
       BackendResult(
@@ -548,10 +579,10 @@ void main() {
       // keep its retry instead of the no-follows empty state.
       expect(find.text('Failed to load the Release Timeline.'), findsOneWidget);
       expect(find.text('No Followed Repositories'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+      expect(find.widgetWithText(GitPulseButton, 'Retry'), findsOneWidget);
 
       failing = false;
-      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -559,4 +590,35 @@ void main() {
       expect(find.text('v1.1'), findsOneWidget);
     },
   );
+  testWidgets('the Timeline renders none of the Material faces this client '
+      'replaced', (tester) async {
+    await pumpTimelineScreen(
+      tester,
+      size: const Size(390, 844),
+      handlers: {
+        'GET api/settings': () => BackendResult(
+          statusCode: 200,
+          data: settingsJson([followJson('R_alpha', 'octo', 'alpha')]),
+        ),
+        'POST api/release-timeline/refresh': () => BackendResult(
+          statusCode: 200,
+          data: roundJson(
+            pages: {
+              'R_alpha': pageJson('octo', 'alpha', [
+                releaseJson(12, 'v1.2', '2026-10-04T12:00:00Z'),
+              ]),
+            },
+            refresh: baselineRefresh('2026-10-01T00:00:00.000Z'),
+          ),
+        ),
+      },
+    );
+
+    expect(find.byType(ReleaseTimelineCard), findsWidgets);
+    // The field a reader searches in stays the platform's own — a registered
+    // exception (ADR 0032) — and nothing of Material's control layer is left.
+    expect(find.byType(TextField), findsOneWidget);
+    expectNoReplacedMaterialFaces(find.byType(TimelineScreen));
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../device/device_preferences.dart';
 import '../device/device_preferences_controller.dart';
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
+import '../presentation/gitpulse_dialog.dart';
 import '../presentation/gitpulse_setting_rows.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../timeline/timeline_session.dart';
@@ -211,8 +213,6 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final days = ref.watch(
       devicePreferencesStateProvider.select(
         (state) => state.preferences.resolvedRetentionDays,
@@ -241,11 +241,10 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
       required IconData icon,
       required bool enabled,
       required int delta,
-    }) => IconButton(
+    }) => GitPulseIconButton(
       tooltip: tooltip,
       onPressed: !locked && enabled ? () => _step(delta) : null,
-      iconSize: GitPulseIconSize.inControl,
-      color: scheme.onSurfaceVariant,
+      size: GitPulseIconSize.inControl,
       icon: Icon(icon),
     );
 
@@ -257,7 +256,8 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
               liveRegion: true,
               child: Text(
                 l10n.retentionRejected,
-                style: theme.textTheme.bodySmall?.copyWith(color: scheme.error),
+                style: gitPulseTypeMeta(context)
+                    ?.copyWith(color: toneDanger(context)),
               ),
             )
           : null,
@@ -282,15 +282,17 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
               keyboardType: TextInputType.number,
               textInputAction: TextInputAction.done,
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: gitPulseTypeFieldText(
+                context,
+              )?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               onSubmitted: (_) => _focus.unfocus(),
               onTapOutside: (_) => _focus.unfocus(),
+              // The input itself stays the platform's own (ADR 0032): the app
+              // supplies the decoration around it and nothing about typing.
               decoration: InputDecoration(
                 isDense: true,
                 filled: true,
-                fillColor: scheme.surfaceContainerHigh,
+                fillColor: toneShell(context),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: GitPulseSpace.inline,
                   vertical: GitPulseSpace.meta,
@@ -301,7 +303,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
                 border: border,
                 enabledBorder: border,
                 focusedBorder: border.copyWith(
-                  borderSide: BorderSide(color: scheme.primary),
+                  borderSide: BorderSide(color: toneAccent(context)),
                 ),
               ),
             ),
@@ -316,9 +318,7 @@ class _RetentionRowState extends ConsumerState<_RetentionRow> {
           // the two words instead of a plural that would print the number twice.
           Text(
             days == 1 ? l10n.settingsUnitDay : l10n.settingsUnitDays,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: gitPulseTypeMeta(context),
           ),
         ],
       ),
@@ -363,11 +363,13 @@ class _Choices<T> extends StatelessWidget {
 /// are reached before the Settings destination is available.
 ///
 /// The retention window is not offered here: it prunes saved history, which the
-/// connection screen has none of.
-Future<void> showDeviceSettingsDialog(BuildContext context) => showDialog<void>(
-  context: context,
-  builder: (_) => const _DeviceSettingsDialog(),
-);
+/// connection screen has none of. The dialog is the app's own overlay, opened
+/// through the one function that opens them (ADR 0032).
+Future<void> showDeviceSettingsDialog(BuildContext context) =>
+    showGitPulseDialog<void>(
+      context,
+      builder: (_) => const _DeviceSettingsDialog(),
+    );
 
 class _DeviceSettingsDialog extends ConsumerWidget {
   const _DeviceSettingsDialog();
@@ -378,34 +380,30 @@ class _DeviceSettingsDialog extends ConsumerWidget {
     final rememberFailed = ref.watch(
       devicePreferencesStateProvider.select((state) => state.rememberFailed),
     );
-    return AlertDialog(
+    return GitPulseDialog(
       title: Text(l10n.presentationSettings),
-      content: SizedBox(
-        width: 420,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const _LanguageRow(),
-              const SizedBox(height: GitPulseSpace.bandGap),
-              const _AppearanceRow(),
-              // A choice that could not be remembered is reported here too: the
-              // reader made it in this dialog.
-              if (rememberFailed) ...[
-                const SizedBox(height: GitPulseSpace.tight),
-                GitPulseSettingNote(
-                  l10n.presentationRememberFailed,
-                  liveRegion: true,
-                ),
-              ],
-            ],
-          ),
-        ),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _LanguageRow(),
+          const SizedBox(height: GitPulseSpace.bandGap),
+          const _AppearanceRow(),
+          // A choice that could not be remembered is reported here too: the
+          // reader made it in this dialog.
+          if (rememberFailed) ...[
+            const SizedBox(height: GitPulseSpace.tight),
+            GitPulseSettingNote(
+              l10n.presentationRememberFailed,
+              liveRegion: true,
+            ),
+          ],
+        ],
       ),
       actions: [
-        TextButton(
+        GitPulseButton(
+          label: MaterialLocalizations.of(context).closeButtonLabel,
+          variant: GitPulseButtonVariant.text,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(MaterialLocalizations.of(context).closeButtonLabel),
         ),
       ],
     );

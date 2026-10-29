@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../presentation/gitpulse_preset.dart';
+import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
 import 'document_viewer_assets.dart';
 
@@ -39,6 +41,7 @@ class DocumentViewerStyle {
     required this.codeBackground,
     required this.inlineCodeBackground,
     required this.textScale,
+    this.type = gitPulseTypeTable,
     this.bottomInset = 0,
   });
 
@@ -47,17 +50,20 @@ class DocumentViewerStyle {
     double bottomInset = 0,
   }) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return DocumentViewerStyle(
       dark: theme.brightness == Brightness.dark,
-      foreground: scheme.onSurface,
-      background: scheme.surface,
-      muted: scheme.onSurfaceVariant,
-      rule: toneRule(scheme),
-      accent: scheme.primary,
-      codeBackground: scheme.surfaceContainer,
-      inlineCodeBackground: scheme.surfaceContainerHighest,
+      // Every tone the document paints is the app's own, read by the job it
+      // does rather than by a Material role's name: a README is part of the app,
+      // not a page dropped into it.
+      foreground: toneText(context),
+      background: toneSurface(context),
+      muted: toneTextMuted(context),
+      rule: toneRule(theme.colorScheme),
+      accent: toneAccent(context),
+      codeBackground: toneSurfaceMuted(context),
+      inlineCodeBackground: toneSurfaceActive(context),
       textScale: MediaQuery.textScalerOf(context),
+      type: gitPulseTypeTableOf(context),
       bottomInset: bottomInset,
     );
   }
@@ -76,15 +82,19 @@ class DocumentViewerStyle {
   /// the rest of the app.
   final TextScaler textScale;
 
+  /// The Theme Preset's type table, whose reading rows this document is set in:
+  /// the body's 15 on a 24 line and the three heading tiers are rows of the same
+  /// table the chrome takes its type from (ADR 0031).
+  final GitPulseTypeTable type;
+
   /// Room under the last line, inside the page's own scroll: a reading surface
   /// that ends flush with the window edge reads as clipped.
   final double bottomInset;
 
   String get cssVariables {
     String px(double value) => '${value.toStringAsFixed(2)}px';
-    final body = textScale.scale(GitPulseType.readingBodySize);
-    final lineHeight =
-        GitPulseType.readingBodyLineHeight / GitPulseType.readingBodySize;
+    final body = textScale.scale(type.readingBody.size);
+    final lineHeight = type.readingBody.height;
     return ':root{'
         '--gp-fg:${_hex(foreground)};'
         '--gp-bg:${_hex(background)};'
@@ -95,11 +105,11 @@ class DocumentViewerStyle {
         '--gp-inline-code-bg:${_hex(inlineCodeBackground)};'
         '--gp-font-size:${px(body)};'
         '--gp-line-height:${lineHeight.toStringAsFixed(2)};'
-        '--gp-heading-1:${px(textScale.scale(GitPulseType.readingHeading1Size))};'
-        '--gp-heading-2:${px(textScale.scale(GitPulseType.readingHeading2Size))};'
-        '--gp-heading-3:${px(textScale.scale(GitPulseType.readingHeading3Size))};'
-        '--gp-list-indent:${px(textScale.scale(GitPulseType.readingListIndent))};'
-        '--gp-quote-indent:${px(textScale.scale(GitPulseType.readingQuoteIndent))};'
+        '--gp-heading-1:${px(textScale.scale(type.readingHeading1.size))};'
+        '--gp-heading-2:${px(textScale.scale(type.readingHeading2.size))};'
+        '--gp-heading-3:${px(textScale.scale(type.readingHeading3.size))};'
+        '--gp-list-indent:${px(textScale.scale(GitPulseSpace.readingListIndent))};'
+        '--gp-quote-indent:${px(textScale.scale(GitPulseSpace.readingQuoteIndent))};'
         '--gp-code-font-size:${px(textScale.scale(13))};'
         '--gp-radius:${px(GitPulseRadius.row)};'
         '--gp-bottom-inset:${px(textScale.scale(bottomInset))};'
