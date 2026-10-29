@@ -20,7 +20,6 @@ void main() {
   }) async {
     openDialog() => showGitPulseDialog<int>(
       tester.element(find.byType(GitPulseButton)),
-      barrierLabel: 'Dismiss',
       builder: (context) => GitPulseDialog(
         title: const Text('Clear the timeline cache?'),
         content: withContent ? const Text('Saved releases only') : null,
@@ -83,6 +82,26 @@ void main() {
     // corner rather than at a shape of the platform's.
     expect(surface.color, toneSurface(context));
     expect(surface.borderRadius, BorderRadius.circular(GitPulseRadius.surface));
+  });
+
+  testWidgets('the barrier is named by the platform’s own words, so a caller '
+      'never has to repeat them', (tester) async {
+    await pumpOpener(tester);
+    await open(tester);
+
+    // Every call site used to pass the same localised string, which is a rule the entry point can
+    // hold itself: the barrier a reader taps away is named by the platform's own label, and a
+    // caller that supplies nothing still hands a screen reader a name for it.
+    final context = tester.element(find.byType(GitPulseDialog));
+    final label = MaterialLocalizations.of(context).modalBarrierDismissLabel;
+    final barriers = tester.widgetList<ModalBarrier>(
+      find.byType(ModalBarrier, skipOffstage: false),
+    );
+    expect(
+      barriers.map((barrier) => barrier.semanticsLabel),
+      contains(label),
+      reason: 'the dialog ‘s barrier is named without the caller saying so',
+    );
   });
 
   testWidgets('an action closes the dialog with its answer', (tester) async {

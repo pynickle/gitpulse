@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
@@ -9,11 +12,17 @@ import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
+import 'package:gitpulse/repositories/repository_screen.dart';
 import 'package:gitpulse/settings/settings_screen.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
+import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 
+import '../releases/release_drawer_test.dart' show browsingHandlers;
+import '../repositories/repository_screen_test.dart' show repositoryJson;
+import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
 import '../support/presentation_harness.dart';
 import '../timeline/timeline_filter_controls_test.dart' show pumpTimeline;
 import '../timeline/timeline_test_support.dart';
@@ -21,85 +30,22 @@ import '../timeline/timeline_test_support.dart';
 /// The whole client, on the app's own control layer (ADR 0032).
 ///
 /// The per-screen tests each guard their own surface; this one is the client's
-/// own statement of the settlement — the shell's three destinations and the
-/// connection page a reader meets first, mounted as the real app through the
-/// presentation harness, and read for the Material faces this work replaced.
-/// Nothing here reads source text: every assertion is about what rendered.
+/// own statement of the settlement — the shell's three destinations, the
+/// connection page a reader meets first, the Repository page and the release
+/// surfaces — mounted as the real app through the presentation harness, and read
+/// for the Material faces this work replaced. [expectNoReplacedMaterialFaces]
+/// holds the rule and the exception carve-outs, so this file and every screen's
+/// own test assert one list rather than a copy of it. Nothing here reads source
+/// text: every assertion is about what rendered.
 void main() {
-  /// The Material faces the Control Layer replaced, by the widget type a screen
-  /// would mount to draw one.
-  const replacedFaces = <Type>[
-    FilledButton,
-    ElevatedButton,
-    OutlinedButton,
-    TextButton,
-    IconButton,
-    NavigationBar,
-    NavigationDestination,
-    Checkbox,
-    Switch,
-    AlertDialog,
-    Dialog,
-    LinearProgressIndicator,
-  ];
-
-  /// The faces a registered Platform Dialect Exception (ADR 0032) still draws
-  /// with Material's own children. They are the exception's drawing rather than
-  /// a screen's control, so an occurrence underneath one is not a violation —
-  /// but the list may not grow silently, and each entry here is named in that
-  /// record.
-  final exceptionHosts = <bool Function(Widget)>[
-    // The repository pages' bar: its back affordance stays the platform's.
-    (widget) => widget is AppBar,
-    // The Follows sort control: a segmented choice is the platform's grammar,
-    // and Material builds its segments out of `TextButton`s.
-    (widget) => widget is SegmentedButton,
-  ];
-
-  bool insideRegisteredException(Element element) {
-    var inside = false;
-    element.visitAncestorElements((ancestor) {
-      if (exceptionHosts.any((host) => host(ancestor.widget))) {
-        inside = true;
-        return false;
-      }
-      return true;
-    });
-    return inside;
-  }
-
-  /// Asserts that [scope] draws none of the replaced faces, and no Material
-  /// progress at all.
-  ///
-  /// The progress assertion is by subtype rather than by type on purpose: the
-  /// pull-to-refresh indicator, a registered exception, is a
-  /// `CircularProgressIndicator`, so a pull in flight legitimately draws one.
-  /// Every call below runs on a settled tree with no pull in flight, which is
-  /// where the assertion is deterministic.
-  void expectNoReplacedFaces(Finder scope) {
-    for (final face in replacedFaces) {
-      final strays = find
-          .descendant(of: scope, matching: find.byType(face))
-          .evaluate()
-          .where((element) => !insideRegisteredException(element))
-          .toList();
-      expect(strays, isEmpty, reason: '$face is not GitPulse’s any more');
-    }
-    expect(
-      find.descendant(
-        of: scope,
-        matching: find.byWidgetPredicate(
-          (widget) => widget is CircularProgressIndicator,
-        ),
-      ),
-      findsNothing,
-      reason: 'progress is the app’s own indicator',
-    );
-  }
-
   /// One signed-in installation, with the three destinations' first reads
   /// answered so each destination renders its own content.
-  Future<void> openApp(WidgetTester tester, {bool signedIn = true}) async {
+  Future<void> openApp(
+    WidgetTester tester, {
+    bool signedIn = true,
+    Map<String, FutureOr<BackendResult> Function()> handlers = const {},
+    List<Override> overrides = const [],
+  }) async {
     final harness = harnessFor(
       tester,
       connection: signedIn
@@ -111,6 +57,7 @@ void main() {
               identity: signedInIdentity(),
             )
           : null,
+      overrides: overrides,
       handlers: {
         'GET api/settings': () =>
             BackendResult(statusCode: 200, data: settingsJson(const [])),
@@ -135,6 +82,7 @@ void main() {
             },
           ),
         ),
+        ...handlers,
       },
     );
     await tester.runAsync(harness.open);
@@ -170,7 +118,7 @@ void main() {
   /// and it is a registered Platform Dialect Exception rather than a gap: a
   /// segmented choice is the platform's grammar (ADR 0032).
   ///
-  /// It is also why [expectNoReplacedFaces] lets an occurrence under a
+  /// It is also why [expectNoReplacedMaterialFaces] lets an occurrence under a
   /// `SegmentedButton` through — Material builds its segments out of
   /// `TextButton`s — and it shows that the exception does not cost the reader the
   /// app's ink: the control is handed it at its call site, because the
@@ -209,7 +157,7 @@ void main() {
       // The destination is really the one on screen, so the faces read below
       // are that destination's and not the one before it.
       expect(find.byType(screen), findsOneWidget, reason: label);
-      expectNoReplacedFaces(find.byType(GitPulseApp));
+      expectNoReplacedMaterialFaces(find.byType(GitPulseApp));
       expect(tester.takeException(), isNull, reason: label);
       if (screen == ReleaseFollowsScreen) expectFollowsSortControl(tester);
     }
@@ -258,7 +206,50 @@ void main() {
     );
     expect(title.text.style?.color, toneTextStrong(context));
 
-    expectNoReplacedFaces(find.byType(GitPulseApp));
+    expectNoReplacedMaterialFaces(find.byType(GitPulseApp));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the Repository page and the release surfaces render on the '
+      'app’s own faces', (tester) async {
+    // Two surfaces a reader reaches from the shell rather than from a
+    // destination tab: the Release Drawer a Timeline card opens, and the
+    // Repository page its chrome line targets. They carry the release's notes
+    // and assets, the asset rows, the repository's bands and its README, so
+    // they are where a stray Material face would survive longest.
+    useWindow(tester, const Size(390, 844));
+    await openApp(
+      tester,
+      overrides: documentViewerOverrides(),
+      handlers: {
+        ...browsingHandlers(),
+        // The drawer's chrome names the release it actually loaded, so the page
+        // it targets is the one the fixture's release detail describes.
+        'GET api/repos/canonical/project': () =>
+            BackendResult(statusCode: 200, data: repositoryJson()),
+        'GET api/repos/canonical/project/readme?ref=main': () =>
+            const BackendResult(
+              statusCode: 200,
+              data: {'content': '# Project guide', 'path': 'docs/README.md'},
+            ),
+      },
+    );
+
+    await tester.tap(find.byType(ReleaseTimelineCard).hitTestable().first);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('release-drawer')), findsOneWidget);
+    expectNoReplacedMaterialFaces(find.byType(GitPulseApp));
+
+    // The drawer's chrome line names the repository and targets its page.
+    final drawerName = find.descendant(
+      of: find.byKey(const Key('release-drawer')),
+      matching: find.text('canonical/project'),
+    );
+    expect(drawerName, findsOneWidget);
+    await tester.tap(drawerName);
+    await tester.pumpAndSettle();
+    expect(find.byType(RepositoryScreen), findsOneWidget);
+    expectNoReplacedMaterialFaces(find.byType(GitPulseApp));
     expect(tester.takeException(), isNull);
   });
 

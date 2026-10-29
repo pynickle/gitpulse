@@ -368,7 +368,6 @@ class _Choices<T> extends StatelessWidget {
 Future<void> showDeviceSettingsDialog(BuildContext context) =>
     showGitPulseDialog<void>(
       context,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       builder: (_) => const _DeviceSettingsDialog(),
     );
 

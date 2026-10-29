@@ -23,15 +23,23 @@ const gitPulseDialogBarrierAlpha = 0.54;
 ///
 /// The returned future completes with the value the body pops, and with null
 /// when the reader dismisses it by the barrier or the key.
+///
+/// [barrierLabel] is the name a screen reader is given for the tapped-away page,
+/// and the entry point supplies the platform's own words for it: every call site
+/// used to pass `MaterialLocalizations.of(context).modalBarrierDismissLabel`,
+/// which is a rule rather than a decision, so it is held here. A caller overrides
+/// it only if a dialog's barrier means something other than "dismiss".
 Future<T?> showGitPulseDialog<T>(
   BuildContext context, {
-  required String barrierLabel,
+  String? barrierLabel,
   required WidgetBuilder builder,
 }) {
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,
-    barrierLabel: barrierLabel,
+    barrierLabel:
+        barrierLabel ??
+        MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: toneScrim(context)
         .withValues(alpha: gitPulseDialogBarrierAlpha),
     requestFocus: true,

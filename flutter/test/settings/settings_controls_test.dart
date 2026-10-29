@@ -181,10 +181,12 @@ void main() {
     expect(find.byType(GitPulseProgressInline), findsNothing);
 
     // A clear that landed is reported in the success tone — the one tone that
-    // means "this worked" — and never in the Accent (ADR 0031).
-    final check = tester.widget<Icon>(find.byIcon(Icons.check));
-    expect(check.color, toneSuccess(context));
-    expect(check.color, isNot(toneAccent(context)));
+    // means "this worked" — and never in the Accent (ADR 0031). The mark's tone
+    // is the control's to paint, so it is read where the framework resolves it.
+    final check = find.byIcon(Icons.check);
+    final markInk = IconTheme.of(tester.element(check)).color;
+    expect(markInk, toneSuccess(context));
+    expect(markInk, isNot(toneAccent(context)));
     expect(tester.takeException(), isNull);
   });
 }

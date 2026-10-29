@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
-import '../presentation/gitpulse_icon_action.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -284,9 +284,9 @@ class FollowRepositoryCard extends StatelessWidget {
         releases: false,
       )),
       actions: [
-        _FollowAction(
+        GitPulseIconButton(
           tooltip: followed ? l10n.followsUnfollow : l10n.followsFollow,
-          icon: followed ? Icons.bookmark : Icons.bookmark_add_outlined,
+          icon: Icon(followed ? Icons.bookmark : Icons.bookmark_add_outlined),
           emphasized: followed,
           onPressed: onToggle,
         ),
@@ -339,46 +339,19 @@ class FollowedRepositoryCard extends StatelessWidget {
             )),
       actions: [
         if (transient)
-          _FollowAction(
+          GitPulseIconButton(
             tooltip: l10n.followsRetryMetadata(repository.fullName),
-            icon: Icons.refresh,
+            icon: const Icon(Icons.refresh),
             onPressed: enabled ? onRetry : null,
           ),
-        _FollowAction(
+        GitPulseIconButton(
           tooltip: l10n.followsUnfollow,
-          icon: Icons.bookmark_remove_outlined,
+          icon: const Icon(Icons.bookmark_remove_outlined),
           onPressed: enabled ? onUnfollow : null,
         ),
       ],
     );
   }
-}
-
-/// A row's single action.
-///
-/// A followed repository carries a filled mark in the accent colour, so the
-/// list answers "what am I already following" before a row is read; everything
-/// else stays muted so the action never competes with the repository's name.
-class _FollowAction extends StatelessWidget {
-  const _FollowAction({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-    this.emphasized = false,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) => GitPulseIconAction(
-    tooltip: tooltip,
-    icon: icon,
-    onPressed: onPressed,
-    emphasized: emphasized,
-  );
 }
 
 /// The hairline between two repositories, inset to the text gutter so the list

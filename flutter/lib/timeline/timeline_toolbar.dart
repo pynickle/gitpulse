@@ -162,16 +162,13 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                   },
                 ),
               ),
-              Semantics(
+              GitPulseIconButton(
+                tooltip: l10n.timelineIncludeNotes,
+                icon: Icon(notes ? Icons.article : Icons.article_outlined),
                 selected: notes,
-                child: GitPulseIconButton(
-                  tooltip: l10n.timelineIncludeNotes,
-                  icon: Icon(notes ? Icons.article : Icons.article_outlined),
-                  emphasized: notes,
-                  onPressed: () => _change(
-                    (filters) => filters.copyWith(
-                      includeReleaseNotes: !filters.includeReleaseNotes,
-                    ),
+                onPressed: () => _change(
+                  (filters) => filters.copyWith(
+                    includeReleaseNotes: !filters.includeReleaseNotes,
                   ),
                 ),
               ),
@@ -198,14 +195,11 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                   localDateKey: localDateKey,
                 ),
               ),
-              Semantics(
+              GitPulseIconButton(
+                tooltip: l10n.timelineFilters,
+                icon: const Icon(Icons.filter_list),
                 selected: filtering,
-                child: GitPulseIconButton(
-                  tooltip: l10n.timelineFilters,
-                  icon: const Icon(Icons.filter_list),
-                  emphasized: filtering,
-                  onPressed: widget.onOpenFilters,
-                ),
+                onPressed: widget.onOpenFilters,
               ),
             ],
           ),

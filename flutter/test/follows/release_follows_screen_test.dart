@@ -9,13 +9,13 @@ import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/follows/repository_pagination.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
-import 'package:gitpulse/presentation/gitpulse_icon_action.dart';
 import 'package:gitpulse/presentation/gitpulse_pill.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 
 import '../session_flow_test.dart' as auth;
+import '../support/material_faces.dart';
 import '../timeline/timeline_test_support.dart';
 import 'follows_test_support.dart';
 
@@ -1232,13 +1232,16 @@ void main() {
     expect(find.text(saveFailed), findsNothing);
     expect((server.settings['followedRepositories'] as List), isEmpty);
     final manage = find.byKey(const ValueKey('manage-follows'));
-    final icon = tester.widget<Icon>(
-      find.descendant(
-        of: manage,
-        matching: find.byIcon(Icons.bookmarks_outlined),
-      ),
+    // The mark's tone is the control's to paint rather than the icon's to state, so it is read
+    // where the framework resolves it: the status the follow set reports, in the danger tone.
+    final icon = find.descendant(
+      of: manage,
+      matching: find.byIcon(Icons.bookmarks_outlined),
     );
-    expect(icon.color, Theme.of(tester.element(manage)).colorScheme.error);
+    expect(
+      IconTheme.of(tester.element(icon)).color,
+      Theme.of(tester.element(manage)).colorScheme.error,
+    );
     expect(find.byTooltip('0 followed'), findsOneWidget);
     expect(
       find.descendant(of: manage, matching: find.text('0')),
@@ -1269,25 +1272,11 @@ void main() {
         findsWidgets,
       );
       expect(
-        find.descendant(of: page, matching: find.byType(GitPulseIconAction)),
+        find.descendant(of: page, matching: find.byType(GitPulseIconButton)),
         findsWidgets,
       );
       // …and none of the Material faces this change replaced is left in it.
-      for (final replaced in <Type>[
-        FilledButton,
-        OutlinedButton,
-        IconButton,
-        CircularProgressIndicator,
-        LinearProgressIndicator,
-        AlertDialog,
-        Dialog,
-      ]) {
-        expect(
-          find.descendant(of: page, matching: find.byType(replaced)),
-          findsNothing,
-          reason: '$replaced',
-        );
-      }
+      expectNoReplacedMaterialFaces(page);
       // The only Material button family left on the page is inside the sort
       // control: it is the selection control the app keeps as Material's own,
       // the way it keeps the choice chip (ADR 0023 records it, ADR 0032 names
@@ -1342,20 +1331,7 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
       // Its header actions are the app's own, and none of the replaced faces is
       // left in it.
-      for (final replaced in <Type>[
-        IconButton,
-        TextButton,
-        FilledButton,
-        OutlinedButton,
-        CircularProgressIndicator,
-        LinearProgressIndicator,
-      ]) {
-        expect(
-          find.descendant(of: panel, matching: find.byType(replaced)),
-          findsNothing,
-          reason: '$replaced',
-        );
-      }
+      expectNoReplacedMaterialFaces(panel);
       for (final tooltip in [
         'Compact',
         'Reload follows',

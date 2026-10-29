@@ -146,6 +146,80 @@ void main() {
     }
   });
 
+  testWidgets('a status mark is the one mark a caller may tone, and the rest '
+      'take the variant’s ink', (tester) async {
+    // An ordinary action hands its mark no colour at all: the control decides, so a button
+    // reads as one control in whichever standing it is drawn (ADR 0032).
+    await pumpThemed(
+      tester,
+      GitPulseButton(
+        label: 'Manage',
+        onPressed: () {},
+        variant: GitPulseButtonVariant.tonal,
+        icon: const Icon(Icons.bookmarks_outlined),
+      ),
+    );
+    var icon = find.descendant(
+      of: find.byType(GitPulseButton),
+      matching: find.byType(Icon),
+    );
+    expect(
+      IconTheme.of(tester.element(icon)).color,
+      toneAccent(tester.element(find.byType(GitPulseButton))),
+      reason: 'the control owns its mark’s tone',
+    );
+
+    // A mark that *is* the status — the one case where the status is the whole point and no line
+    // of text says it — reads the status tone the caller names.
+    final danger = toneDanger(tester.element(find.byType(GitPulseButton)));
+    await pumpThemed(
+      tester,
+      GitPulseButton(
+        label: 'Manage',
+        onPressed: () {},
+        variant: GitPulseButtonVariant.tonal,
+        icon: const Icon(Icons.bookmarks_outlined),
+        statusMarkTone: danger,
+      ),
+    );
+    icon = find.descendant(
+      of: find.byType(GitPulseButton),
+      matching: find.byType(Icon),
+    );
+    expect(IconTheme.of(tester.element(icon)).color, danger);
+  });
+
+  testWidgets('a disabled action quiets its status mark with the rest of it', (
+    tester,
+  ) async {
+    // A first pump hands the test the theme's own tones to compare against.
+    await pumpThemed(tester, textButton());
+    final context = tester.element(find.byType(GitPulseButton));
+
+    await pumpThemed(
+      tester,
+      GitPulseButton(
+        label: 'Clear',
+        onPressed: null,
+        variant: GitPulseButtonVariant.outlined,
+        icon: const Icon(Icons.check),
+        statusMarkTone: toneSuccess(context),
+      ),
+    );
+    expect(
+      IconTheme.of(
+        tester.element(
+          find.descendant(
+            of: find.byType(GitPulseButton),
+            matching: find.byType(Icon),
+          ),
+        ),
+      ).color,
+      toneTextSubtle(context),
+      reason: 'a status the action can no longer report is not painted',
+    );
+  });
+
   testWidgets('a button’s label is the table’s control role', (tester) async {
     await pumpThemed(tester, textButton());
     final style = tester

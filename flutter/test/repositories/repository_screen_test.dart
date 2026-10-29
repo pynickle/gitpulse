@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
-import 'package:gitpulse/presentation/gitpulse_icon_action.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_avatar.dart';
@@ -18,6 +17,7 @@ import 'package:gitpulse/repositories/repository_share.dart';
 import 'package:gitpulse/releases/document_web_view.dart';
 
 import '../support/document_viewer.dart';
+import '../support/material_faces.dart';
 
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
@@ -797,25 +797,11 @@ void main() {
         findsWidgets,
       );
       expect(
-        find.descendant(of: page, matching: find.byType(GitPulseIconAction)),
+        find.descendant(of: page, matching: find.byType(GitPulseIconButton)),
         findsWidgets,
       );
       // …and none of the Material faces this change replaced is left in it.
-      for (final replaced in <Type>[
-        FilledButton,
-        OutlinedButton,
-        TextButton,
-        CircularProgressIndicator,
-        LinearProgressIndicator,
-        AlertDialog,
-        Dialog,
-      ]) {
-        expect(
-          find.descendant(of: page, matching: find.byType(replaced)),
-          findsNothing,
-          reason: '$replaced',
-        );
-      }
+      expectNoReplacedMaterialFaces(page);
       // The one Material icon button left in the page is the platform's own
       // back affordance, which the app keeps as a Platform Dialect Exception.
       expect(
