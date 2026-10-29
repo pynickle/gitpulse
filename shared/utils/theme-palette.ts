@@ -9,10 +9,15 @@ import paletteData from '../data/theme-palette.json';
  * clients, which is the whole point of the file.
  *
  * The tone names are the design's own and neither client renames them. A presentation carries the
- * semantic ramp the Content Layer sits on, the Accent, and the two status families: `success` and
- * `danger` are the tones read as text, and their `-solid` variants are the fills a status chip
- * paints. A tone's `-hover`/`-soft` derivations stay in the stylesheet, which is where a
- * presentation detail of one client belongs.
+ * semantic ramp the Content Layer sits on — from `page-bg`, the canvas a page stands on, through
+ * the shell and the surface steps — the Accent, and the two status families: `success` and `danger`
+ * are the tones read as text, their `-solid` variants are the fills a status chip paints, and
+ * `danger-soft` is the wash a failure is reported on. A wash a client paints is data for that
+ * reason: a strength each client derived for itself is a wash that drifts between them.
+ *
+ * What stays in the stylesheet is what only the web app has a surface for — the `-hover` step of a
+ * link or a solid fill, and the tones a web-only component names. Nothing there is a value the
+ * other client would have to agree with.
  */
 export const themePalettePresentations = ['light', 'dark'] as const;
 
@@ -39,12 +44,9 @@ export function themePaletteCustomProperty(tone: ThemePaletteTone): string {
 }
 
 /** The custom properties one presentation declares, ready to sit inside a rule block. */
-export function resolveThemePaletteDeclarations(
-  palette: ThemePalette,
-  presentation: ThemePalettePresentation
-): string {
+function paletteDeclarations(presentation: ThemePalettePresentation): string {
   return themePaletteTones
-    .map((tone) => `${themePaletteCustomProperty(tone)}:${palette[presentation][tone]};`)
+    .map((tone) => `${themePaletteCustomProperty(tone)}:${themePalette[presentation][tone]};`)
     .join('');
 }
 
@@ -56,9 +58,4 @@ export function resolveThemePaletteDeclarations(
  * so the server-rendered page paints the palette it was rendered for and no reload or flash sits
  * between the two.
  */
-export function resolveThemePaletteStyleSheet(palette: ThemePalette = themePalette): string {
-  return `:root{${resolveThemePaletteDeclarations(palette, 'light')}}html.dark{${resolveThemePaletteDeclarations(palette, 'dark')}}`;
-}
-
-/** [resolveThemePaletteStyleSheet] for the shared palette. */
-export const themePaletteStyleSheet = resolveThemePaletteStyleSheet();
+export const themePaletteStyleSheet = `:root{${paletteDeclarations('light')}}html.dark{${paletteDeclarations('dark')}}`;

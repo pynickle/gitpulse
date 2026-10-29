@@ -60,7 +60,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
                         item.repository.fullName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: gitPulseTypeBrandName(context),
+                        style: gitPulseTypeRepositoryName(context),
                       ),
                     ),
                     const SizedBox(width: GitPulseSpace.inline),

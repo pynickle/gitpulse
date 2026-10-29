@@ -45,9 +45,9 @@ textarea,
   --gitpulse-scrollbar-thumb-inset: 2px;
   --gitpulse-scrollbar-thumb-radius: 999px;
 
-  --gitpulse-page-bg: #f8fafc;
-  /* The semantic palette — shell, surface, border, text, accent and the status tones — is injected
-     at startup from shared/data/theme-palette.json, the data the Flutter client reads too. */
+  /* The semantic palette — the page canvas, the shell, surface, border, text, accent and the
+     status tones — is injected at startup from shared/data/theme-palette.json, the data the
+     Flutter client reads too. */
   --gitpulse-overlay-bg: rgba(15, 23, 42, 0.68);
   --gitpulse-accent-hover: #4338ca;
   --gitpulse-primary-solid: #4f46e5;
@@ -58,7 +58,6 @@ textarea,
   --gitpulse-success-solid-hover: #16642d;
   --gitpulse-success-soft: rgba(34, 197, 94, 0.12);
   --gitpulse-danger-solid-hover: #ad1a24;
-  --gitpulse-danger-soft: rgba(248, 81, 73, 0.1);
   --gitpulse-warning: #bf8700;
   --gitpulse-warning-solid: #bf8700;
   --gitpulse-warning-solid-hover: #a77200;
@@ -167,7 +166,6 @@ html.dark {
   --gitpulse-radius-lg: 8px;
   --gitpulse-radius-xl: 12px;
 
-  --gitpulse-page-bg: #111318;
   /* The semantic palette comes from the startup injection (shared/data/theme-palette.json). */
   --gitpulse-overlay-bg: rgba(5, 7, 12, 0.78);
   --gitpulse-accent-hover: #c4b5fd;
@@ -179,7 +177,6 @@ html.dark {
   --gitpulse-success-solid-hover: #1f7a31;
   --gitpulse-success-soft: rgba(126, 231, 135, 0.14);
   --gitpulse-danger-solid-hover: #b62324;
-  --gitpulse-danger-soft: rgba(255, 123, 114, 0.14);
   --gitpulse-warning: #f2cc60;
   --gitpulse-warning-solid: #9a6700;
   --gitpulse-warning-solid-hover: #845900;

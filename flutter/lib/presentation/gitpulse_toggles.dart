@@ -23,10 +23,6 @@ const gitPulseSwitchThumb = 24.0;
 /// the eye can follow the mark from one place to the other.
 const gitPulseToggleTurn = Duration(milliseconds: 180);
 
-/// The line a toggle's mark is drawn with: the check inside a box, and the dash
-/// of a mixed one.
-const gitPulseToggleMarkStroke = 2.0;
-
 /// The app's switch.
 ///
 /// It replaces Material's (ADR 0032) and carries what that control carried: the
@@ -319,7 +315,7 @@ class _GitPulseMark extends CustomPainter {
     if (progress <= 0) return;
     final paint = Paint()
       ..color = color
-      ..strokeWidth = gitPulseToggleMarkStroke
+      ..strokeWidth = GitPulseStroke.toggleMark
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
