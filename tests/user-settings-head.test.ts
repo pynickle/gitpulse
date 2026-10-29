@@ -1,11 +1,14 @@
-import { expect, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 
 import { useHead } from '@unhead/vue';
 import { createHead as createClientHead, renderDOMHead } from '@unhead/vue/client';
 import { createHead as createServerHead, renderSSRHead } from '@unhead/vue/server';
 import { effectScope, nextTick, shallowRef, watch } from 'vue';
 
+import * as themePaletteModule from '../shared/utils/theme-palette';
 import { createVueDom } from './helpers/vue-dom';
+
+mock.module('#shared/utils/theme-palette', () => themePaletteModule);
 
 test.each(['server', 'client'] as const)(
   '%s font settings render as root styles above stylesheet defaults',

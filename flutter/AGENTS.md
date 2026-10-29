@@ -19,9 +19,12 @@ Root `bun run lint` / `fmt:check` skip this tree (the `flutter/` ignore in `pack
   it starts; `--timeout 30s` makes a hang fail on a line.
 
 Committed codegen, regenerated in the change that causes it: `dart run build_runner build` after any
-`@JsonSerializable` DTO or `timeline_cache.drift` edit, and `flutter gen-l10n` after every
-`lib/l10n/*.arb` edit. New page copy goes into both ARB files, and a count placeholder carries
-`"format": "decimalPattern"` in the ARB so intl localizes it.
+`@JsonSerializable` DTO or `timeline_cache.drift` edit, `flutter gen-l10n` after every
+`lib/l10n/*.arb` edit, and `dart run tool/generate_theme_palette.dart` after any
+`../shared/data/theme-palette.json` edit — that file is the palette both clients present, and
+`lib/presentation/gitpulse_palette.g.dart` is its committed Dart form. New page copy goes into both
+ARB files, and a count placeholder carries `"format": "decimalPattern"` in the ARB so intl localizes
+it.
 
 ## UI — tokens first
 
