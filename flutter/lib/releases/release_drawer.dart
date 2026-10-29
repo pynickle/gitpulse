@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_sheet.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -26,7 +27,7 @@ Widget _chromeAction({
   required IconData icon,
   required VoidCallback onPressed,
   bool autofocus = false,
-}) => IconButton(
+}) => GitPulseIconButton(
   tooltip: tooltip,
   autofocus: autofocus,
   onPressed: onPressed,
@@ -306,7 +307,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                                       tag,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.titleSmall,
+                                      style: gitPulseTypeRowLabel(context),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -316,8 +317,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                                     '$owner/$repository',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                    style: gitPulseTypeMeta(context)?.copyWith(
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
@@ -491,7 +491,11 @@ class _ReleaseFailure extends StatelessWidget {
           _ => l10n.releaseFailed,
         }),
         const SizedBox(height: 12),
-        OutlinedButton(onPressed: onRetry, child: Text(l10n.timelineRetry)),
+        GitPulseButton(
+          label: l10n.timelineRetry,
+          variant: GitPulseButtonVariant.outlined,
+          onPressed: onRetry,
+        ),
       ],
     );
   }

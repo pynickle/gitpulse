@@ -344,7 +344,7 @@ class _RepositorySearch extends StatelessWidget {
                 size: GitPulseIconSize.inControl,
                 // The field's own height, so the mark never grows the field it
                 // appears in.
-                target: GitPulseHeight.compact,
+                dimension: GitPulseHeight.compact,
                 onPressed: onClear,
                 icon: const Icon(Icons.close),
               ),
@@ -416,7 +416,7 @@ class _RepositoryRow extends StatelessWidget {
                 // The row is already the target, so the box takes the square
                 // the row has left rather than a 48dp one of its own beside
                 // every name.
-                target: _box,
+                dimension: _box,
               ),
             ),
           ],
@@ -516,7 +516,7 @@ class _DateRange extends StatelessWidget {
           GitPulseIconButton(
             tooltip: l10n.timelineFilterClearDates,
             size: GitPulseIconSize.inControl,
-            target: GitPulseHeight.compact,
+            dimension: GitPulseHeight.compact,
             onPressed: onClear,
             icon: const Icon(Icons.event_busy_outlined),
           )

@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_icon_action.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_avatar.dart';
@@ -778,6 +780,56 @@ void main() {
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(card), position);
+    },
+  );
+
+  testWidgets(
+    'the Repository page renders on the app’s faces and none of the replaced '
+    'ones',
+    (tester) async {
+      await pumpRepository(tester, size: const Size(390, 844));
+
+      final page = find.byType(RepositoryScreen);
+      expect(page, findsOneWidget);
+      // The action row is the app's own controls…
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseButton)),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: page, matching: find.byType(GitPulseIconAction)),
+        findsWidgets,
+      );
+      // …and none of the Material faces this change replaced is left in it.
+      for (final replaced in <Type>[
+        FilledButton,
+        OutlinedButton,
+        TextButton,
+        CircularProgressIndicator,
+        LinearProgressIndicator,
+        AlertDialog,
+        Dialog,
+      ]) {
+        expect(
+          find.descendant(of: page, matching: find.byType(replaced)),
+          findsNothing,
+          reason: '$replaced',
+        );
+      }
+      // The one Material icon button left in the page is the platform's own
+      // back affordance, which the app keeps as a Platform Dialect Exception.
+      expect(
+        find.descendant(of: page, matching: find.byType(IconButton)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(BackButton),
+          matching: find.byType(IconButton),
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }

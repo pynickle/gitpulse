@@ -44,6 +44,7 @@ class GitPulseButton extends StatelessWidget {
     this.variant = GitPulseButtonVariant.text,
     this.icon,
     this.expand = false,
+    this.semanticsLabel,
   });
 
   /// The action, in the reader's language.
@@ -59,6 +60,14 @@ class GitPulseButton extends StatelessWidget {
 
   /// Fills the width it is given, for an action that owns the end of a row.
   final bool expand;
+
+  /// The action's whole name, when [label] is the shortening its ink has room
+  /// for rather than the name itself.
+  ///
+  /// Only a destination whose own name does not fit passes one: a screen reader
+  /// then hears what the action does, and a reader who can see the button keeps
+  /// reading the short word. Every other button is named by its label.
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -143,11 +152,28 @@ class GitPulseButton extends StatelessWidget {
                           const SizedBox(width: GitPulseSpace.inline),
                         ],
                         Flexible(
-                          child: Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            style: gitPulseTypeControlLabel(context, ink),
-                          ),
+                          child: semanticsLabel == null
+                              ? Text(
+                                  label,
+                                  textAlign: TextAlign.center,
+                                  style: gitPulseTypeControlLabel(context, ink),
+                                )
+                              // The short word stays the ink; the whole name is
+                              // what a screen reader is given, so shortening a
+                              // destination costs nothing but letters.
+                              : Semantics(
+                                  label: semanticsLabel,
+                                  child: ExcludeSemantics(
+                                    child: Text(
+                                      label,
+                                      textAlign: TextAlign.center,
+                                      style: gitPulseTypeControlLabel(
+                                        context,
+                                        ink,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -173,7 +199,7 @@ class GitPulseButton extends StatelessWidget {
 ///
 /// The face has three standings and knows all of them. An action standing on the
 /// page is a mark on that page; an action inside a control stands at the
-/// control's own height ([target]), so a clear mark never grows the field it
+/// control's own measure ([dimension]), so a clear mark never grows the field it
 /// sits in; and an action that [floats] over content is a shell-toned disc inside
 /// one hairline, which is how it is read as above the list rather than as part of
 /// it — the app raises a surface with a boundary, never with a shadow.
@@ -185,7 +211,8 @@ class GitPulseIconButton extends StatelessWidget {
     required this.onPressed,
     this.size = GitPulseIconSize.action,
     this.emphasized = false,
-    this.target = GitPulseHeight.standard,
+    this.autofocus = false,
+    this.dimension = GitPulseHeight.standard,
     this.floating = false,
   });
 
@@ -198,9 +225,23 @@ class GitPulseIconButton extends StatelessWidget {
 
   final bool emphasized;
 
-  /// The square the action is operated in: the platform's own for an action that
-  /// stands alone, the control's own height for one drawn inside a control.
-  final double target;
+  /// Takes the keyboard focus when it appears.
+  ///
+  /// A surface that opens with one action — a sheet's close — passes this so
+  /// the keyboard has somewhere to be, and the Escape key the surface answers
+  /// has a focused subtree to arrive in.
+  final bool autofocus;
+
+  /// The touch target's own measure: the app's 48dp action, the cell a flat
+  /// control gives its step, or the control's own height when the action is
+  /// drawn inside one.
+  ///
+  /// It is stated by the surface the action sits in, never chosen by the action:
+  /// a page pill's step is one cell of the pill's recorded geometry (ADR 0026),
+  /// and a full-height square there would be taller than the pill it belongs to.
+  /// A parent that lays the control out shorter than this still decides the
+  /// height — the measure is what the control asks for, not what it forces.
+  final double dimension;
 
   /// Whether the action stands over content rather than on it.
   final bool floating;
@@ -229,7 +270,7 @@ class GitPulseIconButton extends StatelessWidget {
           )
         : null;
     final rounded = BorderRadius.circular(
-      floating ? target / 2 : GitPulseRadius.row,
+      floating ? dimension / 2 : GitPulseRadius.row,
     );
 
     // The tooltip sits inside the button's own semantics node, so the words a
@@ -241,7 +282,7 @@ class GitPulseIconButton extends StatelessWidget {
       child: Tooltip(
         message: tooltip,
         child: SizedBox.square(
-          dimension: target,
+          dimension: dimension,
           child: Material(
             type: fill == null
                 ? MaterialType.transparency
@@ -251,6 +292,7 @@ class GitPulseIconButton extends StatelessWidget {
             clipBehavior: fill == null ? Clip.none : Clip.antiAlias,
             child: InkWell(
               onTap: onPressed,
+              autofocus: autofocus,
               customBorder:
                   shape ?? RoundedRectangleBorder(borderRadius: rounded),
               overlayColor: gitPulseInkOverlay(scheme),

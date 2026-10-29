@@ -59,7 +59,7 @@ table. Concretely:
   `GitPulseHeight.compact` at its floor; an icon action is a `GitPulseHeight.standard` square, which
   is the target Material's `IconButton` gave it, and the control owns its mark's tone and measure.
   That face has three standings and knows all of them: on the page (the platform's square, a quiet
-  mark), inside a control (`target: GitPulseHeight.compact` for a field's clear mark, so the mark
+  mark), inside a control (`dimension: GitPulseHeight.compact` for a field's clear mark, so the mark
   never grows the field it sits in), and floating over content (`floating: true`, a shell-toned disc
   inside one hairline — the app raises a surface with a boundary, never with a shadow).
 - **The switch** is a `gitPulseSwitchTrack` (52 × 32) pill inside a `GitPulseHeight.standard` target.
@@ -71,7 +71,7 @@ table. Concretely:
 - **The checkbox** is a `GitPulseIconSize.inControl` (18dp) box at `GitPulseRadius.bar`: a
   `toneBorderStrong` hairline with no fill while it is clear, the Accent with a `toneOnAccent` mark
   while it is chosen, and the dash of the same mark when a tristate value is mixed. The mark is a
-  drawn path that fills in over `gitPulseToggleTurn`, not a Material glyph. `target` is the square it
+  drawn path that fills in over `gitPulseToggleTurn`, not a Material glyph. `dimension` is the square it
   answers a finger in; a box drawn at the end of a row takes the row's own remaining square (the
   Timeline's Filter Panel passes `GitPulseHeight.rowMin` less its two insets), because there the row —
   not the box — is the target, and the row keeps the rhythm it already had.

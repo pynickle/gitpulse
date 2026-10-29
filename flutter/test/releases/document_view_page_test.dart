@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/presentation/gitpulse_preset.dart';
+import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/document_view_page.dart';
 import 'package:gitpulse/releases/document_viewer_assets.dart';
@@ -204,5 +205,38 @@ void main() {
       32,
     );
     expect(_cssPx(_page(), 'gp-bottom-inset'), 0);
+  });
+
+  testWidgets('the document is painted with the app’s own tones', (
+    tester,
+  ) async {
+    // The reading surface is part of the app's presentation, so a README is not
+    // a white card dropped into a dark client: every tone it paints comes from
+    // the Theme Preset, in the presentation the reader is in.
+    late DocumentViewerStyle style;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: gitPulseTheme(Brightness.dark),
+        home: Builder(
+          builder: (context) {
+            style = DocumentViewerStyle.of(context);
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+    final context = tester.element(find.byType(SizedBox).first);
+
+    expect(style.dark, isTrue);
+    expect(style.foreground, toneText(context));
+    expect(style.background, toneSurface(context));
+    expect(style.muted, toneTextMuted(context));
+    expect(style.accent, toneAccent(context));
+    expect(style.rule, toneRule(Theme.of(context).colorScheme));
+    expect(style.codeBackground, toneSurfaceMuted(context));
+    expect(style.inlineCodeBackground, toneSurfaceActive(context));
+    // The reading scale is the type table's, so the document grows with the
+    // same rows the chrome is set in.
+    expect(style.type, gitPulseTypeTableOf(context));
   });
 }

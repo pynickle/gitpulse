@@ -256,13 +256,13 @@ void main() {
       bool? value = false,
       ValueChanged<bool?>? onChanged,
       bool tristate = false,
-      double? target,
+      double? dimension,
     }) => GitPulseCheckbox(
       value: value,
       onChanged: onChanged ?? (_) {},
       tristate: tristate,
       label: 'octo/alpha',
-      target: target ?? GitPulseHeight.standard,
+      dimension: dimension ?? GitPulseHeight.standard,
     );
 
     testWidgets('a tap asks for the other value', (tester) async {
@@ -424,7 +424,7 @@ void main() {
       expect(crossing, isNot(chosen));
     });
 
-    testWidgets('the box stands in the target its caller gives it', (
+    testWidgets('the box stands in the square its caller gives it', (
       tester,
     ) async {
       await pumpThemed(tester, box());
@@ -435,7 +435,7 @@ void main() {
 
       // A row that is the tap target itself gives the box the room it has left,
       // so the row keeps the height it already had.
-      await pumpThemed(tester, box(target: GitPulseHeight.rowMin - 12));
+      await pumpThemed(tester, box(dimension: GitPulseHeight.rowMin - 12));
       expect(
         tester.getSize(find.byType(GitPulseCheckbox)),
         const Size.square(GitPulseHeight.rowMin - 12),

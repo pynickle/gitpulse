@@ -311,7 +311,7 @@ void main() {
   });
 
   testWidgets('an icon action inside a control stands at the control’s own '
-      'height', (tester) async {
+      'measure', (tester) async {
     await pumpThemed(
       tester,
       GitPulseIconButton(
@@ -319,7 +319,7 @@ void main() {
         icon: const Icon(Icons.close),
         onPressed: () {},
         size: GitPulseIconSize.inControl,
-        target: GitPulseHeight.compact,
+        dimension: GitPulseHeight.compact,
       ),
     );
 
@@ -333,6 +333,62 @@ void main() {
     expect(
       IconTheme.of(tester.element(find.byIcon(Icons.close))).size,
       GitPulseIconSize.inControl,
+    );
+  });
+
+  testWidgets('a button can keep its whole name for a screen reader', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    // The Repository page's primary action shortens its label to the ink it has
+    // room for; the destination's whole name still reaches a reader who cannot
+    // see the shortening.
+    await pumpThemed(
+      tester,
+      GitPulseButton(
+        label: 'Releases',
+        semanticsLabel: 'Repository releases',
+        variant: GitPulseButtonVariant.tonal,
+        onPressed: () {},
+      ),
+    );
+
+    expect(find.text('Releases'), findsOneWidget);
+    expect(find.bySemanticsLabel('Repository releases'), findsOneWidget);
+    expect(find.bySemanticsLabel('Releases'), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('an icon button can arrive with the keyboard focus', (
+    tester,
+  ) async {
+    await pumpThemed(
+      tester,
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GitPulseIconButton(
+            tooltip: 'Close',
+            icon: const Icon(Icons.close),
+            onPressed: () {},
+            autofocus: true,
+          ),
+          GitPulseIconButton(
+            tooltip: 'Reload',
+            icon: const Icon(Icons.refresh),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+
+    // The surface that opens with one action — a sheet's close — puts the
+    // keyboard on it, so Escape and the focus ring both have somewhere to be.
+    final focus = tester.binding.focusManager.primaryFocus;
+    expect(focus, isNotNull);
+    expect(
+      focus!.context?.findAncestorWidgetOfExactType<GitPulseIconButton>(),
+      isNotNull,
     );
   });
 

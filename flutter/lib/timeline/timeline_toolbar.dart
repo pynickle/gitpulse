@@ -130,7 +130,7 @@ class _TimelineToolbarState extends ConsumerState<TimelineToolbar> {
                             size: GitPulseIconSize.inControl,
                             // The field's own height, so the mark never grows
                             // the field it appears in.
-                            target: GitPulseHeight.compact,
+                            dimension: GitPulseHeight.compact,
                             onPressed: () {
                               _query.clear();
                               setState(() {});

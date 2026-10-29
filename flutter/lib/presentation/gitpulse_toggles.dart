@@ -166,7 +166,7 @@ class GitPulseSwitch extends StatelessWidget {
 /// says neither, a disabled box that quiets and refuses, and a screen reader
 /// told the role, the state — chosen, clear or mixed — and the name.
 ///
-/// [target] is the square the box answers a finger in. It is a parameter rather
+/// [dimension] is the square the box answers a finger in. It is a parameter rather
 /// than a fixed measure because a box that stands at the end of a row is drawn
 /// inside a row that is already the target: there, the row's own height decides,
 /// and the box takes the room it has left instead of growing the row.
@@ -177,7 +177,7 @@ class GitPulseCheckbox extends StatelessWidget {
     required this.onChanged,
     this.tristate = false,
     this.label,
-    this.target = GitPulseHeight.standard,
+    this.dimension = GitPulseHeight.standard,
   });
 
   /// Whether the box is chosen. Null is the mixed state, which only [tristate]
@@ -194,7 +194,7 @@ class GitPulseCheckbox extends StatelessWidget {
   final String? label;
 
   /// The square the box is operated in.
-  final double target;
+  final double dimension;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +220,7 @@ class GitPulseCheckbox extends StatelessWidget {
           borderRadius: radius,
           overlayColor: gitPulseInkOverlay(scheme),
           child: SizedBox.square(
-            dimension: target,
+            dimension: dimension,
             child: Center(
               child: SizedBox.square(
                 dimension: box,
