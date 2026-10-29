@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -122,10 +123,12 @@ void main() {
     expect(appearanceChoice.left, languageChoice.left);
     final name = tester.getRect(find.text('octocat'));
     final signOut = tester.getRect(find.byTooltip('Sign out'));
-    // The name and sign-out stay above the backend card, on one line.
+    // The name and sign-out stay above the backend card, on one line. The
+    // action is the app's own full touch target, so it begins where the name's
+    // line ends rather than leaving a margin of its own.
     expect(name.bottom, lessThan(tester.getRect(find.text('Backend')).top));
     expect(name.bottom, lessThan(languageLabel.top));
-    expect(signOut.left, greaterThan(name.right));
+    expect(signOut.left, greaterThanOrEqualTo(name.right));
     expect((signOut.center.dy - name.center.dy).abs(), lessThan(24));
     await tester.scrollUntilVisible(
       find.text('Timeline cache'),
@@ -134,7 +137,7 @@ void main() {
     );
     _expectCard(tester, 'Timeline cache', Icons.storage_outlined);
     final cacheTitle = tester.getRect(find.text('Timeline cache'));
-    final clear = tester.getRect(find.widgetWithText(OutlinedButton, 'Clear'));
+    final clear = tester.getRect(find.widgetWithText(GitPulseButton, 'Clear'));
     expect(clear.left, greaterThan(cacheTitle.right));
     expect((clear.center.dy - cacheTitle.center.dy).abs(), lessThan(24));
     expect(tester.takeException(), isNull);

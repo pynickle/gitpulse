@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
@@ -239,7 +240,7 @@ void main() {
     );
     expect(find.byType(GitPulseLoadingView), findsOneWidget);
     expect(fieldLabeled('Password'), findsNothing);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(GitPulseNavigationBar), findsNothing);
 
     storage.held.complete();
     await tester.pumpAndSettle();

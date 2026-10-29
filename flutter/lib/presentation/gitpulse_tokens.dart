@@ -159,6 +159,15 @@ Color toneAccent(BuildContext context) => gitPulseTonesOf(context).accent;
 Color toneAccentSoft(BuildContext context) =>
     gitPulseTonesOf(context).accentSoft;
 
+/// The tone that reads on the Accent: a filled button's label, a filled badge's
+/// text, the check on a filled control.
+///
+/// It is the pairing the theme states for every filled role rather than a tone
+/// of its own — the surface under a light Accent and the shell under a dark one —
+/// so a filled control never chooses a foreground for itself.
+Color toneOnAccent(BuildContext context) =>
+    gitPulseOnFill(gitPulseTonesOf(context), Theme.of(context).brightness);
+
 /// The success tone, read as text: "this succeeded", and nothing else.
 Color toneSuccess(BuildContext context) => gitPulseTonesOf(context).success;
 
@@ -281,6 +290,13 @@ abstract final class GitPulseWidth {
   /// The scanning ceiling of the Settings cards. Past this width the eye has
   /// to travel too far from a card's title to its control.
   static const settingsTable = 1120.0;
+
+  /// A dialog's own measure: the width past which an overlay stops reading as a
+  /// surface over the page and starts reading as a page of its own.
+  ///
+  /// It is the ceiling the app's account gate already holds its form to, named
+  /// here because the dialog entry point owns it for every dialog.
+  static const dialog = 420.0;
 }
 
 /// A page's own name: a Repository page's identity, at the emphasis of a
@@ -359,6 +375,18 @@ TextStyle? gitPulseTypeMetaTight(BuildContext context) {
       ?.copyWith(fontWeight: FontWeight.w400, color: toneTextMuted(context));
 }
 
+/// The label of a control: a button's text, a dialog's action, a navigation
+/// destination.
+///
+/// It takes its ink as an argument because it is the one helper that serves
+/// several tones at once — a variant reads the Accent, the tone that sits on the
+/// Accent, or the surface's own text — and emphasis comes from that tone rather
+/// than from a larger size. Everything else about the label is the type table's
+/// control role, so a control cannot invent a size of its own.
+TextStyle? gitPulseTypeControlLabel(BuildContext context, Color color) {
+  return Theme.of(context).textTheme.labelMedium?.copyWith(color: color);
+}
+
 /// A repository's description: prose, but still part of a page that is scanned.
 ///
 /// It sits at the body role rather than at the reading body's roomier line,
@@ -367,6 +395,16 @@ TextStyle? gitPulseTypeMetaTight(BuildContext context) {
 TextStyle? gitPulseTypeDescription(BuildContext context) {
   return Theme.of(context).textTheme.bodyMedium
       ?.copyWith(color: toneTextMuted(context));
+}
+
+/// What a field holds: the value a reader typed, or the number one is showing.
+///
+/// It is the body role in the tone prose is set in — a field is read, not
+/// announced — so the platform's own text input keeps the app's type instead of
+/// the type the platform would have given it.
+TextStyle? gitPulseTypeFieldText(BuildContext context) {
+  return Theme.of(context).textTheme.bodyMedium
+      ?.copyWith(color: toneText(context));
 }
 
 /// The reading body of a notes or README document.

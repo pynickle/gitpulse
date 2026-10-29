@@ -1,8 +1,14 @@
 ---
-status: accepted
+status: superseded
+superseded-by: 0032-flutter-control-layer.md
 ---
 
 # Flutter surfaces answer a tap with a tonal shift, and Release Assets read as their own module
+
+> The tonal tint this record introduced, and the ink rule around it, are now owned by ADR 0032
+> (which supersedes ADR 0023 as well). Everything else below still governs: the ink-below-content
+> failure, the Release Asset rows opening a download, the notes/assets boundary and the humanised
+> download sizes.
 
 Press and hover feedback is one theme-level decision, not a per-surface style. `gitPulseTheme`
 sets the Material ink response's pressed and splash tint to the scheme's highest surface container

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -452,7 +453,7 @@ void main() {
       },
     );
 
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(GitPulseProgressPage), findsWidgets);
 
     held.complete(
       BackendResult(

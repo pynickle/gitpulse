@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/device/device_preferences_controller.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_dialog.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
@@ -248,12 +250,17 @@ void main() {
           reason: 'release the SQLite transaction',
         );
       });
-      final clear = find.widgetWithText(OutlinedButton, 'Clear');
+      final clear = find.widgetWithText(GitPulseButton, 'Clear');
       await tester.ensureVisible(clear);
       await tester.tap(clear);
       await tester.pump();
       await tester.runAsync(
-        () => tester.tap(find.widgetWithText(TextButton, 'Clear')),
+        () => tester.tap(
+          find.descendant(
+            of: find.byType(GitPulseDialog),
+            matching: find.widgetWithText(GitPulseButton, 'Clear'),
+          ),
+        ),
       );
       await tester.pump();
       expect(
@@ -345,12 +352,17 @@ void main() {
         await held.future.timeout(const Duration(seconds: 5));
       });
       await tester.pump();
-      final clear = find.widgetWithText(OutlinedButton, 'Clear');
+      final clear = find.widgetWithText(GitPulseButton, 'Clear');
       await tester.ensureVisible(clear);
       await tester.tap(clear);
       await tester.pump();
       await tester.runAsync(
-        () => tester.tap(find.widgetWithText(TextButton, 'Clear')),
+        () => tester.tap(
+          find.descendant(
+            of: find.byType(GitPulseDialog),
+            matching: find.widgetWithText(GitPulseButton, 'Clear'),
+          ),
+        ),
       );
       await settle(tester, app);
       expect(app.releases, isEmpty);

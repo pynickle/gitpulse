@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_avatar.dart';
 import 'package:gitpulse/presentation/gitpulse_preset.dart';
@@ -324,7 +325,7 @@ void main() {
       session.handlers['GET api/repos/octo/app'] = () => pending.future;
       await tester.tap(find.text('Retry'));
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       pending.complete(BackendResult(statusCode: 200, data: repositoryJson()));
       await tester.pumpAndSettle();
       expect(find.text('A useful project'), findsOneWidget);
@@ -385,7 +386,7 @@ void main() {
           () => pending.future;
       await tester.tap(find.text('Retry'));
       await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(GitPulseProgressPage), findsOneWidget);
       expect(find.text('A useful project'), findsOneWidget);
       pending.complete(
         const BackendResult(
