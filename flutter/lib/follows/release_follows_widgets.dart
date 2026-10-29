@@ -83,11 +83,7 @@ class _RepositoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final meta = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
+    final meta = gitPulseTypeMetaTight(context);
     final count = stars == null
         ? null
         : gitPulseLocaleCompactCount(context, stars!);
@@ -119,7 +115,7 @@ class _RepositoryRow extends StatelessWidget {
                             child: Icon(
                               Icons.error_outline,
                               size: GitPulseIconSize.fact,
-                              color: scheme.error,
+                              color: toneDanger(context),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -129,9 +125,7 @@ class _RepositoryRow extends StatelessWidget {
                             name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: gitPulseTypeRowLabel(context),
                           ),
                         ),
                       ],
@@ -142,9 +136,7 @@ class _RepositoryRow extends StatelessWidget {
                         description!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                        style: gitPulseTypeMeta(context),
                       ),
                     ],
                     if (hasMeta) ...[
@@ -195,7 +187,6 @@ class _MetaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final swatch = language == null
         ? const SizedBox.shrink()
         : Row(
@@ -229,7 +220,7 @@ class _MetaLine extends StatelessWidget {
               unavailableLabel!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: style?.copyWith(color: scheme.error),
+              style: style?.copyWith(color: toneDanger(context)),
             ),
           ),
         if (count != null) ...[
@@ -242,7 +233,7 @@ class _MetaLine extends StatelessWidget {
                   child: Icon(
                     Icons.star_border,
                     size: _starGlyph,
-                    color: scheme.onSurfaceVariant,
+                    color: toneTextMuted(context),
                   ),
                 ),
                 const SizedBox(width: _starGap),
@@ -422,7 +413,6 @@ class FollowProblemNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Semantics(
       liveRegion: true,
       child: Padding(
@@ -434,10 +424,10 @@ class FollowProblemNotice extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: theme.textTheme.bodySmall?.copyWith(
+          style: gitPulseTypeMeta(context)?.copyWith(
             color: tone == GitPulseMessageTone.error
-                ? theme.colorScheme.error
-                : theme.colorScheme.onSurfaceVariant,
+                ? toneDanger(context)
+                : toneTextMuted(context),
           ),
         ),
       ),
