@@ -95,10 +95,13 @@ table. Concretely:
   spinner a Flutter upgrade can redraw — the M3 indicator has already changed shape once — so the
   face is the app's own and only the animation stays the framework's.
 - **The dialog** is one function, the way `showGitPulseSheet` already owns every sheet: the route,
-  the barrier, the scrim, the surface tone, the shape, the measure and the Escape key are decided in
-  one place, and a body (`GitPulseDialog`) decides only its title, content and actions. The surface
-  is `toneSurface` at `GitPulseRadius.surface`; the measure is `GitPulseWidth.dialog` (420dp), taken
-  out of the page by the gutter, so a confirmation and a form arrive the same size; the barrier is
+  the barrier, the scrim, the surface tone, the shape, the measure, the space it is placed in and the
+  Escape key are decided in one place, and a body (`GitPulseDialog`) decides only its title, content
+  and actions. The surface is `toneSurface` at `GitPulseRadius.surface`; the measure is
+  `GitPulseWidth.dialog` (420dp), taken out of the page by the gutter, so a confirmation and a form
+  arrive the same size; the space it is placed in is what the keyboard leaves, because a body may
+  hold a field and a dialog centred on the whole screen answers a raised keyboard by standing half
+  behind it; the barrier is
   `toneScrim` — the scheme's own darkest ink, `scrim` — at `gitPulseDialogBarrierAlpha` (0.54, the
   strength Material's dialogs already had). A dialog keeps a barrier the sheets do not: a sheet is
   pulled away, a dialog is tapped away, and the page under a tap has to read as covered. Escape

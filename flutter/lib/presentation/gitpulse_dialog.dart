@@ -17,9 +17,9 @@ const gitPulseDialogBarrierAlpha = 0.54;
 ///
 /// Every dialog the app opens is this one presentation, the way every sheet is
 /// `showGitPulseSheet`'s (ADR 0032): the route, its barrier, the surface tone
-/// the dialog is drawn on, its shape, its measure and the Escape key are decided
-/// here. A dialog body therefore decides only its content, and nothing about how
-/// it arrives or where it sits.
+/// the dialog is drawn on, its shape, its measure, the space it is placed in
+/// and the Escape key are decided here. A dialog body therefore decides only
+/// its content, and nothing about how it arrives or where it sits.
 ///
 /// The returned future completes with the value the body pops, and with null
 /// when the reader dismisses it by the barrier or the key.
@@ -117,7 +117,8 @@ class GitPulseDialog extends StatelessWidget {
   }
 }
 
-/// The surface a dialog body stands on, and the key that dismisses it.
+/// The surface a dialog body stands on, the space it is placed in, and the key
+/// that dismisses it.
 ///
 /// Escape is not a desktop affordance here: a hardware keyboard is an ordinary
 /// Android input device, so a dialog that the barrier dismisses is dismissed by
@@ -142,29 +143,43 @@ class _DialogSurface extends StatelessWidget {
             },
           ),
         },
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(GitPulseSpace.gutter),
-            child: Center(
-              // A dialog whose content outgrows the phone scrolls rather than
-              // clipping: a body is content, and content does not get cut.
-              child: SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: GitPulseWidth.dialog,
-                  ),
-                  // One measure for every dialog, taken from the page by the
-                  // gutter rather than by the dialog's own content: a
-                  // confirmation and a form arrive the same size.
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Material(
-                      color: toneSurface(context),
-                      borderRadius: BorderRadius.circular(
-                        GitPulseRadius.surface,
+        child: Padding(
+          // The keys take the space they cover away from the dialog as they
+          // take it away from the page, and the dialog is placed in what is
+          // left: a body may hold a field, and a dialog centred on the whole
+          // screen answers a raised keyboard by standing half behind it. The
+          // move itself is not animated — the surface stands where the keyboard
+          // leaves it, and the arrival the route already animates is left
+          // alone. The safe area below does not count the keys twice: the
+          // platform has already taken them out of `MediaQuery.padding`'s
+          // bottom.
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(GitPulseSpace.gutter),
+              child: Center(
+                // A dialog whose content outgrows the phone scrolls rather than
+                // clipping: a body is content, and content does not get cut.
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: GitPulseWidth.dialog,
+                    ),
+                    // One measure for every dialog, taken from the page by the
+                    // gutter rather than by the dialog's own content: a
+                    // confirmation and a form arrive the same size.
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Material(
+                        color: toneSurface(context),
+                        borderRadius: BorderRadius.circular(
+                          GitPulseRadius.surface,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: child,
                       ),
-                      clipBehavior: Clip.antiAlias,
-                      child: child,
                     ),
                   ),
                 ),

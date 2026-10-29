@@ -7,22 +7,22 @@ import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 
 /// One function opens the app's dialogs (ADR 0032), the way one function opens
-/// its sheets. It owns the route, the barrier, the surface and the Escape key; a
-/// body decides only its content. These tests drive the real overlay and assert
-/// what a reader gets.
+/// its sheets. It owns the route, the barrier, the surface, the space the dialog
+/// stands in and the Escape key; a body decides only its content. These tests
+/// drive the real overlay and assert what a reader gets.
 void main() {
   late Future<int?>? opened;
 
   Future<void> pumpOpener(
     WidgetTester tester, {
     Brightness brightness = Brightness.light,
-    bool withContent = false,
+    Widget? content,
   }) async {
     openDialog() => showGitPulseDialog<int>(
       tester.element(find.byType(GitPulseButton)),
       builder: (context) => GitPulseDialog(
         title: const Text('Clear the timeline cache?'),
-        content: withContent ? const Text('Saved releases only') : null,
+        content: content,
         actions: [
           GitPulseButton(
             label: 'Cancel',
@@ -84,6 +84,105 @@ void main() {
     expect(surface.borderRadius, BorderRadius.circular(GitPulseRadius.surface));
   });
 
+  testWidgets('a dialog stands in what the keyboard leaves', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    // The status bar is drawn over the top of the page on a phone, and the
+    // dialog stands between it and the keys rather than under either.
+    tester.view.padding = const FakeViewPadding(top: 24);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewInsets);
+
+    await pumpOpener(tester, content: const Text('Saved releases only'));
+    await open(tester);
+    final before = tester.getRect(find.byType(GitPulseDialog));
+
+    // A body may hold a field, and the keyboard a field raises is answered by
+    // moving the dialog, not by standing across it.
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+    await tester.pumpAndSettle();
+
+    const statusBar = 24.0;
+    const keyboardTop = 844.0 - 320;
+    final after = tester.getRect(find.byType(GitPulseDialog));
+    expect(
+      after.height,
+      moreOrLessEquals(before.height, epsilon: 1),
+      reason: 'the dialog moves; its body is content and is not squashed',
+    );
+    expect(
+      after.center.dy,
+      moreOrLessEquals((statusBar + keyboardTop) / 2, epsilon: 1),
+      reason: 'it stays vertically centred in what the keyboard left',
+    );
+    expect(after.bottom, lessThanOrEqualTo(keyboardTop));
+  });
+
+  testWidgets('a dialog opened with the keyboard already up arrives where it '
+      'leaves, not behind it', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    // The page behind may already have answered a field of its own, so the
+    // dialog is placed in the room the keys have already taken — it does not
+    // arrive centred and climb.
+    tester.view.viewInsets = const FakeViewPadding(bottom: 320);
+    await pumpOpener(tester);
+    await open(tester);
+
+    const keyboardTop = 844.0 - 320;
+    expect(
+      tester.getRect(find.byType(GitPulseDialog)).center.dy,
+      moreOrLessEquals(keyboardTop / 2, epsilon: 1),
+    );
+  });
+
+  testWidgets('a small phone with the keyboard up gets a dialog that scrolls, '
+      'not one that is cut', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    await pumpOpener(
+      tester,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var line = 0; line < 12; line++) Text('Saved release $line'),
+        ],
+      ),
+    );
+    await open(tester);
+
+    tester.view.viewInsets = const FakeViewPadding(bottom: 360);
+    await tester.pumpAndSettle();
+
+    // The room a keyboard leaves on the smallest phone is less than this body
+    // needs, so the body gives way by scrolling inside the dialog: its title
+    // still stands above the keys, and its actions are reached by scrolling to
+    // them rather than being cut off or overflowing the surface.
+    const keyboardTop = 640.0 - 360;
+    expect(
+      tester.getRect(find.text('Clear the timeline cache?')).bottom,
+      lessThanOrEqualTo(keyboardTop),
+    );
+    expect(find.text('Clear').hitTestable(), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Clear'),
+      80,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('Clear').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('the barrier is named by the platform’s own words, so a caller '
       'never has to repeat them', (tester) async {
     await pumpOpener(tester);
@@ -140,7 +239,7 @@ void main() {
   testWidgets('a dialog body is content, and keeps its own height', (
     tester,
   ) async {
-    await pumpOpener(tester, withContent: true);
+    await pumpOpener(tester, content: const Text('Saved releases only'));
     await open(tester);
 
     expect(find.text('Saved releases only'), findsOneWidget);
