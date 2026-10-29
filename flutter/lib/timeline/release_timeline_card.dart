@@ -24,7 +24,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
     final meta = gitPulseTypeMeta(context);
 
     return Material(
-      color: Colors.transparent,
+      color: GitPulsePaint.none,
       child: InkWell(
         borderRadius: BorderRadius.circular(GitPulseRadius.surface),
         onTap: () => showReleaseDrawer(context, (

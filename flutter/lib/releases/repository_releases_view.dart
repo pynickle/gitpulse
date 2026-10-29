@@ -236,7 +236,7 @@ class _FilterPill extends StatelessWidget {
           // A chosen chip keeps the active step of the palette, and its label
           // reads back in the Accent — the same pairing the app states for a
           // selected row (ADR 0031).
-          color: selected ? toneSurfaceActive(context) : Colors.transparent,
+          color: selected ? toneSurfaceActive(context) : GitPulsePaint.none,
           shape: const StadiumBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(

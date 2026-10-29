@@ -101,6 +101,19 @@ abstract final class GitPulseStroke {
   static const hairline = 1.0;
 }
 
+/// What the app paints when a surface shows the ink beneath it rather than a
+/// fill of its own.
+///
+/// It is not a tone: it is the app's one word for "this surface has no colour",
+/// so a surface that stands transparent over the ink — an asset row, a chip that
+/// is not chosen, the card a press is answered on — reads this instead of naming
+/// a colour literal of its own (ADR 0032). The app's press rule is the same
+/// statement: a press paints [none].
+abstract final class GitPulsePaint {
+  /// No colour at all: the surface under this one shows through.
+  static const none = Colors.transparent;
+}
+
 /// The tones the app's own surfaces are painted with, read by the job each one does.
 ///
 /// These are the Theme Preset's semantic tones (ADR 0031): the names the shared palette data
@@ -191,6 +204,16 @@ Color toneDangerSolid(BuildContext context) =>
 /// the same tone. It is a tone the app reads, not a colour a surface mixes for itself.
 Color toneDangerSoft(BuildContext context) =>
     toneDanger(context).withValues(alpha: gitPulseStatusWashAlpha);
+
+/// The tone a modal barrier is drawn in: the darkest ink the presentation has.
+///
+/// It is the one Material role the app still reads, and it is read here rather than in a
+/// widget, because this module is the place that speaks Material's colour vocabulary (ADR
+/// 0032). A barrier's value is not a palette step — it is "whatever this presentation's
+/// darkest ink is", which is black on both presentations — so it is not a row of the shared
+/// data; the strength it is laid on at belongs to the dialog entry point that draws it
+/// (`gitPulseDialogBarrierAlpha`).
+Color toneScrim(BuildContext context) => Theme.of(context).colorScheme.scrim;
 
 /// The tone of a surface's outer boundary: a card's border, an input's outline,
 /// a sheet's edge.

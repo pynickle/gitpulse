@@ -91,7 +91,7 @@ class _RepositoryRow extends StatelessWidget {
         language != null || count != null || unavailableLabel != null;
 
     return Material(
-      color: Colors.transparent,
+      color: GitPulsePaint.none,
       child: InkWell(
         onTap: onTap,
         child: Padding(
