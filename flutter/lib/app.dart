@@ -6,6 +6,7 @@ import 'connection/connection_controller.dart';
 import 'connection/connection_screen.dart';
 import 'device/device_preferences_controller.dart';
 import 'l10n/generated/app_localizations.dart';
+import 'presentation/gitpulse_navigation_bar.dart';
 import 'presentation/gitpulse_theme.dart';
 import 'presentation/gitpulse_state_views.dart';
 import 'session/session_controller.dart';
@@ -164,12 +165,14 @@ class _AppShell extends ConsumerWidget {
           signedIn: session.phase == SessionPhase.signedIn,
         ),
       ),
-      bottomNavigationBar: NavigationBar(
+      // The shell's three places, in the app's own bar (ADR 0032): one
+      // destination per label, the current one filled with the active step.
+      bottomNavigationBar: GitPulseNavigationBar(
         selectedIndex: index,
         onDestinationSelected: navigate,
         destinations: [
           for (var i = 0; i < labels.length; i++)
-            NavigationDestination(icon: Icon(icons[i]), label: labels[i]),
+            GitPulseNavigationDestination(icon: icons[i], label: labels[i]),
         ],
       ),
     );

@@ -121,6 +121,45 @@ WidgetStateProperty<Color?> gitPulseInkOverlay(ColorScheme scheme) {
   );
 }
 
+/// The proportion a filled or tonal surface lays its own foreground on while it is pressed.
+///
+/// ADR 0023's rule — a press paints nothing at all — is the app's rule, and it holds on every
+/// surface that has no fill of its own. A control that already paints the Accent keeps an answer
+/// to a press instead, because a coloured surface that did nothing at all under the finger would
+/// read as broken rather than as calm (ADR 0032). One tenth is the strength Material's own filled
+/// overlay used, so the answer is the one readers already know.
+const gitPulseFilledPressAlpha = 0.10;
+
+/// The ink a filled or tonal control paints: its own foreground while pressed, and the app's one
+/// tint while hovered or focused.
+///
+/// The hover and focus half is [gitPulseInkOverlay]'s, unchanged: there is one tint in the app
+/// whether or not the surface under it is coloured.
+WidgetStateProperty<Color?> gitPulseFilledInkOverlay(
+  ColorScheme scheme,
+  Color foreground,
+) {
+  final tint = gitPulseHoverTint(scheme);
+  return WidgetStateProperty.resolveWith(
+    (states) => switch (states) {
+      _ when states.contains(WidgetState.pressed) => foreground.withValues(
+        alpha: gitPulseFilledPressAlpha,
+      ),
+      _ when states.contains(WidgetState.hovered) => tint,
+      _ when states.contains(WidgetState.focused) => tint,
+      _ => null,
+    },
+  );
+}
+
+/// The tone that reads on a filled role: the surface under a light Accent, the shell under a dark
+/// one.
+///
+/// It is stated once, because every filled role the scheme carries — `onPrimary`, `onError` — and
+/// every filled control the app draws has to agree about what sits on a coloured fill.
+Color gitPulseOnFill(GitPulsePaletteTones tones, Brightness brightness) =>
+    brightness == Brightness.light ? tones.surface : tones.shellBg;
+
 /// The proportion a status tone is laid on at when it is used as a wash rather than as ink:
 /// the ground of a banner that reports a failure.
 ///
@@ -148,7 +187,7 @@ ColorScheme gitPulseColorScheme(
   final tones = preset.paletteFor(brightness);
   // The tone that reads on the Accent and on the danger fill: the white surface under a light
   // Accent, the shell under a dark one.
-  final onFill = brightness == Brightness.light ? tones.surface : tones.shellBg;
+  final onFill = gitPulseOnFill(tones, brightness);
   // The soft danger wash the app's own banner paints, derived from the danger tone the way
   // the web app derives its danger-soft from the same tone.
   final dangerSoft = tones.danger.withValues(alpha: gitPulseStatusWashAlpha);

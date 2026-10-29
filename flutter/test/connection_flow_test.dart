@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
+import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 
 import 'support/app_overrides.dart';
 
@@ -108,7 +109,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await mountApp(tester, CapabilityServer());
       await connectTo(tester, 'https://phone.example');
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(GitPulseNavigationBar), findsOneWidget);
       await tester.tap(find.text('Follows'));
       await tester.pumpAndSettle();
       expect(find.text('Password'), findsOneWidget);

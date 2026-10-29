@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_progress.dart';
 import 'gitpulse_tokens.dart';
 
 /// A page that has nothing to show yet: one progress indicator announced to
@@ -10,13 +11,8 @@ class GitPulseLoadingView extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Semantics(
-      label: label,
-      liveRegion: true,
-      child: const CircularProgressIndicator(),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      Center(child: GitPulseProgressPage(label: label));
 }
 
 /// Whether a [GitPulseMessageView] reports a failure or an ordinary empty page.
