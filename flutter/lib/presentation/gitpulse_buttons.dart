@@ -170,6 +170,13 @@ class GitPulseButton extends StatelessWidget {
 /// the mark and the words the platform presents (ADR 0032). [emphasized] paints
 /// the mark in the Accent, which is how a row says "this is already applied"
 /// before it is read.
+///
+/// The face has three standings and knows all of them. An action standing on the
+/// page is a mark on that page; an action inside a control stands at the
+/// control's own height ([target]), so a clear mark never grows the field it
+/// sits in; and an action that [floats] over content is a shell-toned disc inside
+/// one hairline, which is how it is read as above the list rather than as part of
+/// it — the app raises a surface with a boundary, never with a shadow.
 class GitPulseIconButton extends StatelessWidget {
   const GitPulseIconButton({
     super.key,
@@ -178,6 +185,8 @@ class GitPulseIconButton extends StatelessWidget {
     required this.onPressed,
     this.size = GitPulseIconSize.action,
     this.emphasized = false,
+    this.target = GitPulseHeight.standard,
+    this.floating = false,
   });
 
   final String tooltip;
@@ -189,6 +198,13 @@ class GitPulseIconButton extends StatelessWidget {
 
   final bool emphasized;
 
+  /// The square the action is operated in: the platform's own for an action that
+  /// stands alone, the control's own height for one drawn inside a control.
+  final double target;
+
+  /// Whether the action stands over content rather than on it.
+  final bool floating;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -197,21 +213,46 @@ class GitPulseIconButton extends StatelessWidget {
         ? toneTextSubtle(context)
         : emphasized
         ? toneAccent(context)
+        // A floating action sits on a surface of its own, so its mark is as
+        // strong as that surface's text; one standing on the page is a quiet
+        // mark beside the thing it acts on.
+        : floating
+        ? toneText(context)
         : toneTextMuted(context);
-    final rounded = BorderRadius.circular(GitPulseRadius.row);
+    final fill = floating ? toneShell(context) : null;
+    final shape = floating
+        ? CircleBorder(
+            side: BorderSide(
+              color: toneEdge(scheme),
+              width: GitPulseStroke.hairline,
+            ),
+          )
+        : null;
+    final rounded = BorderRadius.circular(
+      floating ? target / 2 : GitPulseRadius.row,
+    );
 
-    return Tooltip(
-      message: tooltip,
-      child: Semantics(
-        button: true,
-        enabled: enabled,
+    // The tooltip sits inside the button's own semantics node, so the words a
+    // pointer is shown are the words a screen reader is told, on the control
+    // itself rather than on a node beside it.
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      child: Tooltip(
+        message: tooltip,
         child: SizedBox.square(
-          dimension: GitPulseHeight.standard,
+          dimension: target,
           child: Material(
-            type: MaterialType.transparency,
+            type: fill == null
+                ? MaterialType.transparency
+                : MaterialType.canvas,
+            color: fill,
+            shape: shape,
+            clipBehavior: fill == null ? Clip.none : Clip.antiAlias,
             child: InkWell(
               onTap: onPressed,
-              borderRadius: rounded,
+              customBorder:
+                  shape ?? RoundedRectangleBorder(borderRadius: rounded),
               overlayColor: gitPulseInkOverlay(scheme),
               child: Center(
                 child: IconTheme(

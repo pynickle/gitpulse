@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
+import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_sheet.dart';
-import '../presentation/gitpulse_theme.dart';
 import '../presentation/gitpulse_tokens.dart';
+import '../presentation/gitpulse_toggles.dart';
 import 'timeline_cache.dart';
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
@@ -191,14 +192,14 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
                   Expanded(
                     child: Text(
                       l10n.timelineFilterPanelTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: gitPulseTypeSurfaceTitle(context),
                     ),
                   ),
-                  TextButton(
+                  GitPulseButton(
+                    label: l10n.timelineFilterClearAll,
                     onPressed: filters.hasActiveTimelineFilter
                         ? clearAll
                         : null,
-                    child: Text(l10n.timelineFilterClearAll),
                   ),
                 ],
               ),
@@ -284,9 +285,10 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
             band(
               Align(
                 alignment: AlignmentDirectional.centerEnd,
-                child: FilledButton.tonal(
+                child: GitPulseButton(
+                  label: l10n.timelineFilterDone,
+                  variant: GitPulseButtonVariant.tonal,
                   onPressed: () => Navigator.of(context).maybePop(),
-                  child: Text(l10n.timelineFilterDone),
                 ),
               ),
             ),
@@ -313,8 +315,6 @@ class _RepositorySearch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(GitPulseRadius.row),
       borderSide: BorderSide.none,
@@ -323,13 +323,13 @@ class _RepositorySearch extends StatelessWidget {
       key: const ValueKey('filter-search-repositories'),
       controller: controller,
       maxLines: 1,
-      style: theme.textTheme.bodyMedium,
+      style: gitPulseTypeFieldText(context),
       textInputAction: TextInputAction.search,
       onChanged: (_) => onChanged(),
       decoration: InputDecoration(
         isDense: true,
         filled: true,
-        fillColor: scheme.surfaceContainerHigh,
+        fillColor: toneShell(context),
         hintText: l10n.timelineFilterSearchRepositories,
         hintMaxLines: 1,
         prefixIcon: const Icon(Icons.search, size: GitPulseIconSize.inControl),
@@ -339,13 +339,13 @@ class _RepositorySearch extends StatelessWidget {
         ),
         suffixIcon: controller.text.isEmpty
             ? null
-            : IconButton(
+            : GitPulseIconButton(
                 tooltip: l10n.timelineSearchClear,
-                style: IconButton.styleFrom(
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
+                size: GitPulseIconSize.inControl,
+                // The field's own height, so the mark never grows the field it
+                // appears in.
+                target: GitPulseHeight.compact,
                 onPressed: onClear,
-                iconSize: GitPulseIconSize.inControl,
                 icon: const Icon(Icons.close),
               ),
         suffixIconConstraints: const BoxConstraints(
@@ -357,7 +357,7 @@ class _RepositorySearch extends StatelessWidget {
         border: border,
         enabledBorder: border,
         focusedBorder: border.copyWith(
-          borderSide: BorderSide(color: scheme.primary),
+          borderSide: BorderSide(color: toneAccent(context)),
         ),
       ),
     );
@@ -382,15 +382,17 @@ class _RepositoryRow extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  /// The box carries the row's height, so the vertical inset is only the
-  /// difference to the smallest a clickable row may stand: 6 + 32 + 6 is
+  /// The vertical inset, and the square the box answers a finger in: the box
+  /// carries the row's height, so the inset is only the difference to the
+  /// smallest a clickable row may stand — 6 + 32 + 6 is
   /// [GitPulseHeight.rowMin]. The name lands on the same gutter as the rest of
   /// the panel's text, and the box takes the space a trailing control takes.
-  static const _padding = EdgeInsets.fromLTRB(12, 6, 4, 6);
+  static const _inset = GitPulseSpace.tight;
+  static const _box = GitPulseHeight.rowMin - _inset * 2;
+  static const _padding = EdgeInsets.fromLTRB(12, _inset, 4, _inset);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return MergeSemantics(
       child: _TappableRow(
         onTap: onTap,
@@ -402,19 +404,19 @@ class _RepositoryRow extends StatelessWidget {
                 repository.fullName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
+                style: gitPulseTypeRowLabel(context),
               ),
             ),
             // The row is the focus stop, not the box: one Tab lands on the
             // repository, and the box is the state that row reports.
             ExcludeFocus(
-              child: Checkbox(
+              child: GitPulseCheckbox(
                 value: selected,
                 onChanged: (_) => onTap(),
-                // Shrunk to the row's own target, so the box does not claim a
-                // 48dp square of its own beside every name.
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
+                // The row is already the target, so the box takes the square
+                // the row has left rather than a 48dp one of its own beside
+                // every name.
+                target: _box,
               ),
             ),
           ],
@@ -486,49 +488,40 @@ class _DateRange extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return Row(
       children: [
         ExcludeSemantics(
           child: Icon(
             Icons.event_outlined,
             size: GitPulseIconSize.inline,
-            color: scheme.onSurfaceVariant,
+            color: toneTextMuted(context),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: GitPulseSpace.tight),
         Flexible(
           child: _DateBound(label: from, tooltip: fromTooltip, onTap: onFrom),
         ),
         ExcludeSemantics(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '–',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: GitPulseSpace.glyphGap,
             ),
+            child: Text('–', style: gitPulseTypeMeta(context)),
           ),
         ),
         Flexible(
           child: _DateBound(label: to, tooltip: toTooltip, onTap: onTo),
         ),
         if (clearable)
-          IconButton(
+          GitPulseIconButton(
             tooltip: l10n.timelineFilterClearDates,
+            size: GitPulseIconSize.inControl,
+            target: GitPulseHeight.compact,
             onPressed: onClear,
-            iconSize: GitPulseIconSize.inControl,
-            visualDensity: VisualDensity.compact,
-            constraints: const BoxConstraints(
-              minWidth: 40,
-              minHeight: GitPulseHeight.compact,
-            ),
             icon: const Icon(Icons.event_busy_outlined),
           )
         else
-          const SizedBox(width: 4),
+          const SizedBox(width: GitPulseSpace.glyphGap),
       ],
     );
   }
@@ -549,22 +542,12 @@ class _DateBound extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return Tooltip(
       message: tooltip,
-      child: OutlinedButton(
+      child: GitPulseButton(
+        label: label,
+        variant: GitPulseButtonVariant.outlined,
         onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 32),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          foregroundColor: scheme.onSurface,
-          side: BorderSide(color: scheme.outlineVariant),
-          textStyle: theme.textTheme.bodyMedium,
-        ).copyWith(overlayColor: gitPulseInkOverlay(scheme)),
-        child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
     );
   }
@@ -586,14 +569,13 @@ class _PrereleaseSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return _TappableRow(
       onTap: () => onChanged(!value),
       padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: theme.textTheme.bodyMedium)),
-          Switch(value: value, onChanged: onChanged),
+          Expanded(child: Text(label, style: gitPulseTypeRowLabel(context))),
+          GitPulseSwitch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -609,15 +591,9 @@ class _Note extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: GitPulseSpace.inline),
+      child: Text(text, style: gitPulseTypeMeta(context)),
     );
   }
 }

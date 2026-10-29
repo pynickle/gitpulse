@@ -309,4 +309,68 @@ void main() {
       toneTextMuted(context),
     );
   });
+
+  testWidgets('an icon action inside a control stands at the control’s own '
+      'height', (tester) async {
+    await pumpThemed(
+      tester,
+      GitPulseIconButton(
+        tooltip: 'Clear',
+        icon: const Icon(Icons.close),
+        onPressed: () {},
+        size: GitPulseIconSize.inControl,
+        target: GitPulseHeight.compact,
+      ),
+    );
+
+    // A clear mark drawn inside a field stands in the field's own square, so the
+    // mark never grows the field it sits in; its glyph keeps the in-control
+    // measure rather than the action's.
+    expect(
+      tester.getSize(find.byType(GitPulseIconButton)),
+      const Size.square(GitPulseHeight.compact),
+    );
+    expect(
+      IconTheme.of(tester.element(find.byIcon(Icons.close))).size,
+      GitPulseIconSize.inControl,
+    );
+  });
+
+  testWidgets('a floating icon action is a disc inside one hairline', (
+    tester,
+  ) async {
+    await pumpThemed(
+      tester,
+      GitPulseIconButton(
+        tooltip: 'Back to top',
+        icon: const Icon(Icons.arrow_upward),
+        onPressed: () {},
+        floating: true,
+      ),
+    );
+    final context = tester.element(find.byType(GitPulseIconButton));
+    final material = tester.widget<Material>(
+      find
+          .descendant(
+            of: find.byType(GitPulseIconButton),
+            matching: find.byType(Material),
+          )
+          .first,
+    );
+    final shape = material.shape! as CircleBorder;
+
+    // The action stands over the list on a surface of its own, told apart from
+    // the cards beneath it by a boundary — the app raises nothing with a shadow.
+    expect(material.color, toneShell(context));
+    expect(shape.side.color, toneEdge(Theme.of(context).colorScheme));
+    expect(shape.side.width, GitPulseStroke.hairline);
+    expect(
+      IconTheme.of(tester.element(find.byIcon(Icons.arrow_upward))).color,
+      toneText(context),
+    );
+    expect(
+      tester.getSize(find.byType(GitPulseIconButton)),
+      const Size.square(GitPulseHeight.standard),
+    );
+  });
 }

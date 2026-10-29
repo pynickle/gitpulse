@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'gitpulse_tokens.dart';
+
 /// The app's one pull-to-refresh surface.
 ///
 /// It is the standard Material gesture with one look: the search and refresh
@@ -19,12 +21,14 @@ class GitPulsePullToRefresh extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: scheme.primary,
-      // A tonal surface step, never a shadow.
-      backgroundColor: scheme.surfaceContainerHigh,
+      // The gesture, its physics and how it hangs off the scroll are the
+      // platform's — a Platform Dialect Exception (ADR 0032). The two tones it
+      // is painted in are the app's: the Accent while it turns, and the page's
+      // own tone behind it, the step a surface cuts a well into.
+      color: toneAccent(context),
+      backgroundColor: toneShell(context),
       elevation: 0,
       child: child,
     );

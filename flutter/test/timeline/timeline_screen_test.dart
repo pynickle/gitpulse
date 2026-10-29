@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
@@ -368,7 +369,7 @@ void main() {
       expect(find.text('v1.1'), findsOneWidget);
       expect(find.text('Partial timeline coverage'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Retry').first);
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -429,7 +430,7 @@ void main() {
       expect(find.textContaining('Could not reach'), findsOneWidget);
 
       failing = false;
-      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
@@ -549,10 +550,10 @@ void main() {
       // keep its retry instead of the no-follows empty state.
       expect(find.text('Failed to load the Release Timeline.'), findsOneWidget);
       expect(find.text('No Followed Repositories'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Retry'), findsOneWidget);
+      expect(find.widgetWithText(GitPulseButton, 'Retry'), findsOneWidget);
 
       failing = false;
-      await tester.tap(find.widgetWithText(FilledButton, 'Retry'));
+      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 

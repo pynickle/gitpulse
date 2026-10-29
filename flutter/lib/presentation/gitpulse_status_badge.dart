@@ -51,7 +51,7 @@ class GitPulseStatusBadge extends StatelessWidget {
               child: Icon(
                 icon,
                 size: GitPulseIconSize.fact,
-                color: scheme.onSurfaceVariant,
+                color: toneTextMuted(context),
               ),
             ),
             const SizedBox(width: GitPulseSpace.nudge),
