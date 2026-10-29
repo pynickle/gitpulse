@@ -9,11 +9,11 @@ const gitPulseSheetTransition = Duration(milliseconds: 180);
 /// Shows [builder]'s content as the app's bottom sheet.
 ///
 /// Every sheet the app opens is this one presentation: the route, its barrier,
-/// the entry from the bottom edge, the rounded surface it is drawn on and the
+/// the slide from the bottom edge, the rounded surface it is drawn on and the
 /// Escape key are decided here (ADR 0029). A sheet body therefore decides only
-/// its own content and height, and nothing about how it arrives — which is what
-/// stops the Release Drawer and the Release Timeline Filter Panel from drifting
-/// into two different sheet implementations.
+/// its own content and height, and nothing about how it arrives or leaves —
+/// which is what stops the Release Drawer and the Release Timeline Filter Panel
+/// from drifting into two different sheet implementations.
 Future<void> showGitPulseSheet(
   BuildContext context, {
   required String barrierLabel,
@@ -26,23 +26,11 @@ Future<void> showGitPulseSheet(
     requestFocus: true,
     transitionDuration: gitPulseSheetTransition,
     pageBuilder: (context, animation, secondaryAnimation) =>
-        _SheetSurface(child: builder(context)),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-      );
-      return FadeTransition(
-        opacity: curved,
-        child: SlideTransition(
-          position: Tween(
-            begin: const Offset(0, .08),
-            end: Offset.zero,
-          ).animate(curved),
-          child: child,
-        ),
-      );
-    },
+        _SheetSurface(animation: animation, child: builder(context)),
+    // The route's own default transition fades the page it holds, which is the
+    // one thing a sheet must not do (see [_SheetSurface]): the slide is the
+    // surface's own, so the route passes its progress through untouched.
+    transitionBuilder: (context, animation, secondaryAnimation, child) => child,
   );
 }
 
@@ -52,7 +40,11 @@ Future<void> showGitPulseSheet(
 /// Android input device, so a sheet that can be dismissed by dragging is also
 /// dismissed by the key a keyboard offers.
 class _SheetSurface extends StatelessWidget {
-  const _SheetSurface({required this.child});
+  const _SheetSurface({required this.animation, required this.child});
+
+  /// The route's own progress: the sheet is this far into standing on the
+  /// bottom edge, so the same number places it on the way in and on the way out.
+  final Animation<double> animation;
 
   final Widget child;
 
@@ -74,13 +66,29 @@ class _SheetSurface extends StatelessWidget {
         },
         child: Align(
           alignment: Alignment.bottomCenter,
-          child: Material(
-            color: scheme.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(GitPulseRadius.sheetTop),
+          child: SlideTransition(
+            // A sheet arrives and leaves by moving, never by fading. A
+            // release's notes are drawn by a platform view, which keeps its own
+            // opacity: a faded sheet would carry its chrome and its barrier
+            // away while the notes stayed lit, and the frame the route is
+            // removed on would show the whole sheet at full strength again — a
+            // flash the reader sees as the drawer shuts. One sheet's own height
+            // is also the distance it travels, so a short panel and a tall
+            // drawer each leave the screen in the same time.
+            position: animation.drive(
+              Tween(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).chain(CurveTween(curve: Curves.easeOutCubic)),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: child,
+            child: Material(
+              color: scheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(GitPulseRadius.sheetTop),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: child,
+            ),
           ),
         ),
       ),

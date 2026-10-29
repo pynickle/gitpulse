@@ -32,12 +32,21 @@ Android and iOS the platform's own typeface already carries the chosen language.
 
 **One sheet presentation.** Both overlays are now the same surface, so the presentation itself became
 a module: `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`) owns the route, its barrier,
-the slide-and-fade entry, the rounded sheet surface and the Escape key, and a sheet body decides only
-its content and height. Two copies of that scaffold could disagree — the drawers' copy had no entry
-animation and the filter panel's copy re-declared the surface — and the deletion test settles the
-shape: removing the module puts five decisions back into every overlay. As one surface, the filter
-sheet takes `GitPulseRadius.sheetTop` like the release sheet, where ADR 0019 had named 12dp for a
-panel that also opened at the window's right edge.
+the slide it makes from and back to the bottom edge, the rounded sheet surface and the Escape key, and
+a sheet body decides only its content and height. Two copies of that scaffold could disagree — the
+drawers' copy had no entry animation and the filter panel's copy re-declared the surface — and the
+deletion test settles the shape: removing the module puts five decisions back into every overlay. As
+one surface, the filter sheet takes `GitPulseRadius.sheetTop` like the release sheet, where ADR 0019
+had named 12dp for a panel that also opened at the window's right edge.
+
+**A sheet moves; it never fades.** Arriving and leaving are one translation of the sheet by its own
+height over `gitPulseSheetTransition`; the barrier still fades, but nothing on the sheet does, and the
+route's own default transition (which fades the page it holds) is passed through untouched. A
+release's notes are drawn by a platform view, and a platform view keeps its own opacity: the sheet
+used to fade, so its chrome and its barrier went while the notes stayed lit at full strength, and the
+frame the route was removed on could be presented with the whole sheet back at its opening size — a
+flash the reader saw as the drawer shut. For the same reason a sheet body is never wrapped in an
+`Opacity` or an alpha-blended `AnimatedOpacity`, and a future reader should not re-add the fade.
 
 **What this does not change.** Auth, cache, retention, documents, follow semantics and the sheet
 geometry ADR 0010 and ADR 0018 fix are untouched. A page-level _ceiling_ is not a wide-screen branch

@@ -70,9 +70,10 @@ one too (`../docs/adr/`).
 - Star counts use `gitPulseLocaleCompactCount` (locale `K` / `万`); download counts use
   `gitPulseCompactCount`, which appends `k` / `m` in every language.
 - **Sheets** — the Release Drawer and the Release Timeline Filter Panel — open only through
-  `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`), which owns the route, entry, rounded
-  surface and Escape dismissal (ADR 0029). Do not open a second `showGeneralDialog` sheet; pass a
-  body that decides its own content and height. **Dialogs** open only through `showGitPulseDialog`
+  `showGitPulseSheet` (`lib/presentation/gitpulse_sheet.dart`), which owns the route, the slide in and
+  out, the rounded surface and Escape dismissal (ADR 0029). Do not open a second `showGeneralDialog`
+  sheet, and never fade a sheet — a release's notes are a platform view and keep their own opacity;
+  pass a body that decides its own content and height. **Dialogs** open only through `showGitPulseDialog`
   (`lib/presentation/gitpulse_dialog.dart`) for the same reason (ADR 0032): pass a `GitPulseDialog`
   body that decides its title, content and actions. The entry point names its own barrier with the
   platform's `modalBarrierDismissLabel`, so a call site passes nothing for it.
