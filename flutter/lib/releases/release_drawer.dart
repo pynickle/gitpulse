@@ -58,6 +58,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   final _visitedLists = <RepositoryReleasesScope>{};
   RepositoryReleasesScope? _listScope;
   bool _showList = false;
+  bool _closing = false;
   ReleaseTarget? _entryIdentity;
   late final _identity = ref.read(sessionControllerProvider).identity;
   final _sheetController = DraggableScrollableController();
@@ -69,7 +70,7 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   }
 
   void _snapSheet(double extent) {
-    if (!_sheetController.isAttached) return;
+    if (_closing || !_sheetController.isAttached) return;
     _sheetController.animateTo(
       extent,
       duration: const Duration(milliseconds: 180),
@@ -84,20 +85,16 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   /// beneath it owns the reading gesture. Without that attachment the grab handle
   /// would have nothing to resize.
   Widget _documentBody({
-    required ScrollController controller,
+    required ScrollController? controller,
     required Widget child,
   }) => LayoutBuilder(
     builder: (context, constraints) => ListView(
       key: ValueKey(_target),
       controller: controller,
+      primary: false,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      children: [
-        SizedBox(
-          height: constraints.maxHeight,
-          child: Padding(padding: const EdgeInsets.all(20), child: child),
-        ),
-      ],
+      children: [SizedBox(height: constraints.maxHeight, child: child)],
     ),
   );
 
@@ -105,11 +102,12 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
   /// sheet's own controller, so a drag on it still moves the sheet; a document
   /// replaces it with the notes' own scroll owner.
   Widget _scrollableBody({
-    required ScrollController controller,
+    required ScrollController? controller,
     required Widget child,
   }) => SingleChildScrollView(
     key: ValueKey(_target),
     controller: controller,
+    primary: false,
     padding: const EdgeInsets.all(20),
     child: child,
   );
@@ -226,156 +224,218 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
           ? release?.dto.htmlUrl
           : Uri.https('github.com', '/$owner/$repository/releases').toString();
 
+      Widget dragRegion(Widget child) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onVerticalDragUpdate: (details) {
+          if (!_closing && _sheetController.isAttached) {
+            _sheetController.jumpTo(
+              (_sheetController.size - details.delta.dy / availableHeight)
+                  .clamp(.4, 1),
+            );
+          }
+        },
+        onVerticalDragEnd: (_) {
+          if (_sheetController.isAttached) {
+            _snapSheet(_sheetController.size > .85 ? 1 : .7);
+          }
+        },
+        child: child,
+      );
+
       // The sheet's top edge sits in the middle of the screen, so the status bar
       // inset above it is screen the notes could be using.
       return SafeArea(
         top: false,
         child: Column(
           children: [
-            Semantics(
-              button: true,
-              label: l10n.releaseResizeSheet,
-              child: GestureDetector(
-                key: const Key('release-sheet-handle'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _snapSheet(_sheetController.size < .85 ? 1 : .7),
-                onVerticalDragUpdate: (details) {
-                  if (_sheetController.isAttached) {
-                    _sheetController.jumpTo(
-                      (_sheetController.size -
-                              details.delta.dy / availableHeight)
-                          .clamp(.4, 1),
-                    );
-                  }
-                },
-                onVerticalDragEnd: (_) {
-                  if (_sheetController.isAttached) {
-                    _snapSheet(_sheetController.size > .85 ? 1 : .7);
-                  }
-                },
-                child: SizedBox(
-                  height: 28,
-                  width: double.infinity,
-                  child: Center(
-                    child: SizedBox(
-                      width: 40,
-                      // The sheet's grab affordance rather than a rule: it
-                      // is toned as a line inside the sheet so it is the
-                      // app's one tone and not a theme default.
-                      child: Divider(
-                        thickness: _sheetGrabThickness,
-                        color: toneRule(theme.colorScheme),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(
-              height: GitPulseHeight.standard,
-              child: Row(
+            dragRegion(
+              Column(
                 children: [
-                  Expanded(
-                    // The row targets the repository page, and the permanent
-                    // underline on the repository name is what says so without
-                    // relying on colour. Its ink is clipped to a rounded shape
-                    // and inset a little, so a press is a tonal shift inside
-                    // the row rather than a rectangle across the panel.
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(GitPulseRadius.row),
-                        onTap: () => _openLink(
-                          Uri.https(
-                            'github.com',
-                            '/$owner/$repository',
-                          ).toString(),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 12, right: 4),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) => Row(
-                              children: [
-                                if (tag != null) ...[
-                                  ConstrainedBox(
-                                    // The repository name keeps most of the
-                                    // line; a long tag ellipsizes instead.
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * .4,
-                                    ),
-                                    child: Text(
-                                      tag,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: gitPulseTypeRowLabel(context),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    '$owner/$repository',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: gitPulseTypeMeta(context)?.copyWith(
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                  Semantics(
+                    button: true,
+                    label: l10n.releaseResizeSheet,
+                    child: GestureDetector(
+                      key: const Key('release-sheet-handle'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () =>
+                          _snapSheet(_sheetController.size < .85 ? 1 : .7),
+                      child: SizedBox(
+                        height: 28,
+                        width: double.infinity,
+                        child: Center(
+                          child: SizedBox(
+                            width: 40,
+                            // The sheet's grab affordance rather than a rule: it
+                            // is toned as a line inside the sheet so it is the
+                            // app's one tone and not a theme default.
+                            child: Divider(
+                              thickness: _sheetGrabThickness,
+                              color: toneRule(theme.colorScheme),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  if (!_showList && showingOtherRelease()) entryButton(),
-                  if (_showList)
-                    entryButton()
-                  else if (release != null)
-                    _chromeAction(
-                      tooltip: l10n.repositoryReleasesTitle,
-                      icon: Icons.list_alt,
-                      onPressed: () => setState(() {
-                        _listScope = (
-                          owner: release.owner,
-                          repository: release.repository,
-                          opening: _opening,
-                        );
-                        _visitedLists.add(_listScope!);
-                        _showList = true;
-                      }),
+                  SizedBox(
+                    height: GitPulseHeight.standard,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          // The row targets the repository page, and the permanent
+                          // underline on the repository name is what says so without
+                          // relying on colour. Its ink is clipped to a rounded shape
+                          // and inset a little, so a press is a tonal shift inside
+                          // the row rather than a rectangle across the panel.
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(
+                                GitPulseRadius.row,
+                              ),
+                              onTap: () => _openLink(
+                                Uri.https(
+                                  'github.com',
+                                  '/$owner/$repository',
+                                ).toString(),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 12,
+                                  right: 4,
+                                ),
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) => Row(
+                                    children: [
+                                      if (tag != null) ...[
+                                        ConstrainedBox(
+                                          // The repository name keeps most of the
+                                          // line; a long tag ellipsizes instead.
+                                          constraints: BoxConstraints(
+                                            maxWidth: constraints.maxWidth * .4,
+                                          ),
+                                          child: Text(
+                                            tag,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: gitPulseTypeRowLabel(
+                                              context,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                      ],
+                                      Expanded(
+                                        child: Text(
+                                          '$owner/$repository',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: gitPulseTypeMeta(context)
+                                              ?.copyWith(
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (!_showList && showingOtherRelease()) entryButton(),
+                        if (_showList)
+                          entryButton()
+                        else if (release != null)
+                          _chromeAction(
+                            tooltip: l10n.repositoryReleasesTitle,
+                            icon: Icons.list_alt,
+                            onPressed: () => setState(() {
+                              _listScope = (
+                                owner: release.owner,
+                                repository: release.repository,
+                                opening: _opening,
+                              );
+                              _visitedLists.add(_listScope!);
+                              _showList = true;
+                            }),
+                          ),
+                        // Leaving for GitHub keeps one slot whether a release or
+                        // that repository's release list is open, so it is never
+                        // reached by scrolling past the notes.
+                        if (githubUrl != null)
+                          _chromeAction(
+                            tooltip: l10n.releaseOpenOnGitHub,
+                            icon: Icons.open_in_new,
+                            onPressed: () =>
+                                _openLink(githubUrl, external: true),
+                          ),
+                        _chromeAction(
+                          tooltip: l10n.releaseClose,
+                          icon: Icons.close,
+                          autofocus: true,
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
                     ),
-                  // Leaving for GitHub keeps one slot whether a release or
-                  // that repository's release list is open, so it is never
-                  // reached by scrolling past the notes.
-                  if (githubUrl != null)
-                    _chromeAction(
-                      tooltip: l10n.releaseOpenOnGitHub,
-                      icon: Icons.open_in_new,
-                      onPressed: () => _openLink(githubUrl, external: true),
-                    ),
-                  _chromeAction(
-                    tooltip: l10n.releaseClose,
-                    icon: Icons.close,
-                    autofocus: true,
-                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  Divider(
+                    height: GitPulseStroke.hairline,
+                    thickness: GitPulseStroke.hairline,
+                    color: toneRule(theme.colorScheme),
                   ),
                 ],
               ),
             ),
-            Divider(
-              height: GitPulseStroke.hairline,
-              thickness: GitPulseStroke.hairline,
-              color: toneRule(theme.colorScheme),
-            ),
             Expanded(
-              // The Repository Release List owns its own bands and scrolls
-              // inside itself, so the filter bar and pager stay put; the
-              // sheet's controller still reaches it, so a drag on the rows
-              // moves the sheet exactly as a drag on the notes does.
-              child: _showList && listState != null
-                  ? RepositoryReleasesView(
+              // Keep the current document mounted behind the list so returning
+              // does not restart its WebView or lose its reading position. Only
+              // the visible body attaches to the sheet's scroll controller.
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Offstage(
+                    offstage: _showList,
+                    child: result.when(
+                      skipLoadingOnRefresh: false,
+                      loading: () => _scrollableBody(
+                        controller: _showList ? null : controller,
+                        child: GitPulseLoadingView(label: l10n.releaseLoading),
+                      ),
+                      error: (error, stack) => _scrollableBody(
+                        controller: _showList ? null : controller,
+                        child: _ReleaseFailure(
+                          failure: ReleaseDetailFailure.server,
+                          onRetry: () =>
+                              ref.invalidate(releaseDetailProvider(_target)),
+                        ),
+                      ),
+                      data: (data) => data.release == null
+                          ? _scrollableBody(
+                              controller: _showList ? null : controller,
+                              child: _ReleaseFailure(
+                                failure: data.failure!,
+                                onRetry: () => ref.invalidate(
+                                  releaseDetailProvider(_target),
+                                ),
+                              ),
+                            )
+                          : _documentBody(
+                              controller: _showList ? null : controller,
+                              child: ReleaseDetailsView(
+                                key: ValueKey(_target),
+                                release: data.release!,
+                                headerBuilder: dragRegion,
+                                onTapUrl: _openLink,
+                                onOpenExternal: (url) =>
+                                    _openLink(url, external: true),
+                              ),
+                            ),
+                    ),
+                  ),
+                  if (_showList && listState != null)
+                    RepositoryReleasesView(
                       key: ValueKey(_listScope),
                       state: listState,
                       scrollController: controller,
@@ -398,46 +458,9 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
                         );
                         _showList = false;
                       }),
-                    )
-                  : result.when(
-                      skipLoadingOnRefresh: false,
-                      loading: () => _scrollableBody(
-                        controller: controller,
-                        child: GitPulseLoadingView(label: l10n.releaseLoading),
-                      ),
-                      error: (error, stack) => _scrollableBody(
-                        controller: controller,
-                        child: _ReleaseFailure(
-                          failure: ReleaseDetailFailure.server,
-                          onRetry: () =>
-                              ref.invalidate(releaseDetailProvider(_target)),
-                        ),
-                      ),
-                      data: (data) => data.release == null
-                          ? _scrollableBody(
-                              controller: controller,
-                              child: _ReleaseFailure(
-                                failure: data.failure!,
-                                onRetry: () => ref.invalidate(
-                                  releaseDetailProvider(_target),
-                                ),
-                              ),
-                            )
-                          // The notes are the body's only scroller. A document
-                          // is a platform view, so it keeps the gestures that
-                          // land on it; the drawer's own chrome and the
-                          // Release Assets row sit outside it.
-                          : _documentBody(
-                              controller: controller,
-                              child: ReleaseDetailsView(
-                                key: ValueKey(_target),
-                                release: data.release!,
-                                onTapUrl: _openLink,
-                                onOpenExternal: (url) =>
-                                    _openLink(url, external: true),
-                              ),
-                            ),
                     ),
+                ],
+              ),
             ),
           ],
         ),
@@ -452,7 +475,9 @@ class _ReleaseDrawerState extends ConsumerState<ReleaseDrawer> {
       child: NotificationListener<DraggableScrollableNotification>(
         onNotification: (notification) {
           if (notification.extent <= notification.minExtent &&
-              notification.shouldCloseOnMinExtent) {
+              notification.shouldCloseOnMinExtent &&
+              !_closing) {
+            _closing = true;
             Navigator.of(context).pop();
           }
           return false;

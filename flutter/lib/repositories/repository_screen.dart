@@ -565,6 +565,7 @@ class _DocumentBand extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: _gutter),
             child: ReleaseDocument(
               source: content,
+              background: tonePage(context),
               document: RepositoryDocumentContext(
                 owner: repository.owner.login,
                 repository: repository.name,

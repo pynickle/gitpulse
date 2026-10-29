@@ -29,6 +29,7 @@ class ReleaseDocument extends ConsumerWidget {
     required this.onTapUrl,
     this.bottomInset = 0,
     this.documentIdentity,
+    this.background,
   });
 
   /// The document's Markdown, exactly as the author wrote it.
@@ -47,12 +48,19 @@ class ReleaseDocument extends ConsumerWidget {
   /// Room under the last line, inside the document's own scroll.
   final double bottomInset;
 
+  /// The host's reading surface; sheets use the default surface tone.
+  final Color? background;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final assets = ref.watch(documentViewerAssetsProvider);
     final builder = ref.watch(documentWebViewBuilderProvider);
-    final style = DocumentViewerStyle.of(context, bottomInset: bottomInset);
+    final style = DocumentViewerStyle.of(
+      context,
+      bottomInset: bottomInset,
+      background: background,
+    );
     return assets.when(
       // The renderer is a bundled asset: this is one frame, not a network wait.
       loading: () => const SizedBox.shrink(),

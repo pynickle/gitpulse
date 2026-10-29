@@ -71,6 +71,48 @@ double _cssNumber(DocumentViewPage page, String name) {
 }
 
 void main() {
+  testWidgets('a document can match its page host in either appearance', (
+    tester,
+  ) async {
+    final probe = DocumentViewerProbe();
+    for (final brightness in Brightness.values) {
+      late Color background;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: documentViewerOverrides(engine: probe.call),
+          child: MaterialApp(
+            theme: gitPulseTheme(brightness),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  background = tonePage(context);
+                  return ReleaseDocument(
+                    source: 'Reading',
+                    background: background,
+                    document: RepositoryDocumentContext(
+                      owner: 'octo',
+                      repository: 'app',
+                      ref: 'main',
+                    ),
+                    onTapUrl: _ignoreUrl,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(probe.last!.background, background);
+      final hex = (background.toARGB32() & 0xffffff)
+          .toRadixString(16)
+          .padLeft(6, '0');
+      expect(probe.last!.page.renderScript, contains('--gp-bg:#$hex;'));
+    }
+  });
+
   test('the reading scale reaches the page as the type table registers it', () {
     final page = _page();
     final type = gitPulseTypeTable;

@@ -375,5 +375,20 @@ await acheck('rejected address calls recover automatically and image recovery pr
     assert.equal(attempts, 2);
   } finally {window.Element.prototype.getBoundingClientRect = original;}
 });
+await acheck('host palette overrides bundled light and dark defaults', async () => {
+  const stylesheet = document.createElement('style');
+  stylesheet.textContent = await readFile(join(here, '..', '..', 'assets', 'document_viewer', 'viewer.css'), 'utf8');
+  document.head.prepend(stylesheet);
+  for (const dark of [false, true, false]) {
+    await window.gitpulseDocument.render({
+      source: 'Reading', identity: 'palette', base: BASE, dark,
+      css: ':root{--gp-bg:#fafafa;--gp-fg:#112233;--gp-code-bg:#f2f2f2;}',
+    });
+    const style = window.getComputedStyle(document.documentElement);
+    assert.equal(style.getPropertyValue('--gp-bg').trim(), '#fafafa');
+    assert.equal(style.getPropertyValue('--gp-fg').trim(), '#112233');
+    assert.equal(style.getPropertyValue('--gp-code-bg').trim(), '#f2f2f2');
+  }
+});
 console.log(checks.join('\n'));
 window.close();

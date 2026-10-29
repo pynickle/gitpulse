@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
+import 'package:gitpulse/releases/release_document.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 
@@ -71,6 +72,166 @@ Future<Material> openReleaseDrawer(
 }
 
 void main() {
+  testWidgets('toolbar controls, metadata and header gaps all drag the sheet', (
+    tester,
+  ) async {
+    final launched = <Uri>[];
+    await pumpTimelineScreen(
+      tester,
+      size: const Size(390, 844),
+      launchBrowser: (uri) async {
+        launched.add(uri);
+        return true;
+      },
+      handlers: {
+        ...browsingHandlers(),
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: {
+            ...releaseDetailJson(),
+            'name': 'Entry notes',
+            'author': {'login': 'octocat'},
+          },
+        ),
+      },
+    );
+    await tester.tap(find.byType(ReleaseTimelineCard));
+    await tester.pumpAndSettle();
+    final drawer = find.byKey(const Key('release-drawer'));
+    final starts = <String, Offset Function()>{
+      'repository': () => tester.getCenter(find.text('canonical/project')),
+      'list': () => tester.getCenter(find.byTooltip('Repository releases')),
+      'external': () => tester.getCenter(find.byTooltip('Open on GitHub')),
+      'close': () => tester.getCenter(find.byTooltip('Close release details')),
+      'metadata': () => tester.getCenter(find.textContaining('octocat')),
+      'top padding': () =>
+          tester.getTopLeft(find.text('Entry notes')) - const Offset(0, 10),
+      'side padding': () =>
+          Offset(6, tester.getCenter(find.text('Entry notes')).dy),
+      'divider gap': () =>
+          tester.getBottomLeft(find.textContaining('octocat')) +
+          const Offset(0, 10),
+    };
+    for (final entry in starts.entries) {
+      await tester.dragFrom(entry.value(), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(drawer).top, 0, reason: entry.key);
+      expect(find.text('Entry notes'), findsOneWidget, reason: entry.key);
+      expect(launched, isEmpty, reason: entry.key);
+      await tester.tap(find.byKey(const Key('release-sheet-handle')));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(drawer).top, closeTo(253.2, .01));
+    }
+  });
+
+  testWidgets(
+    'long pressing the title selects text and tapping close dismisses',
+    (tester) async {
+      await openReleaseDrawer(tester, size: const Size(390, 844));
+      final title = find.byType(SelectableText);
+      await tester.longPress(title);
+      await tester.pumpAndSettle();
+      final editable = tester.widget<EditableText>(
+        find.descendant(of: title, matching: find.byType(EditableText)),
+      );
+      expect(
+        editable.controller.selection.textInside(editable.controller.text),
+        isNotEmpty,
+      );
+      expect(
+        tester.getRect(find.byKey(const Key('release-drawer'))).top,
+        closeTo(253.2, .01),
+      );
+      await tester.tap(find.byTooltip('Close release details'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('release-drawer')), findsNothing);
+    },
+  );
+
+  testWidgets('returning from the release list keeps the mounted document', (
+    tester,
+  ) async {
+    await pumpTimelineScreen(
+      tester,
+      size: const Size(390, 844),
+      handlers: {
+        ...browsingHandlers(),
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: {
+            ...releaseDetailJson(),
+            'name': 'Entry notes',
+            'body': List.generate(
+              100,
+              (index) => 'Paragraph $index',
+            ).join('\n\n'),
+          },
+        ),
+        'GET api/releases/canonical/project?page=1&per_page=20': () =>
+            BackendResult(
+              statusCode: 200,
+              data: releaseListJson([listReleaseJson(42, 'v2/rc')]),
+            ),
+      },
+    );
+    await tester.tap(find.byType(ReleaseTimelineCard));
+    await tester.pumpAndSettle();
+    final document = tester.element(find.byType(ReleaseDocument));
+    final scroll = find.descendant(
+      of: find.byType(ReleaseDocument),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(find.byType(ReleaseDocument), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    final offset = tester.state<ScrollableState>(scroll).position.pixels;
+    expect(offset, greaterThan(0));
+    expect(
+      tester.getRect(find.byKey(const Key('release-drawer'))).top,
+      closeTo(253.2, .01),
+    );
+    await openRepositoryReleases(tester);
+    expect(document.mounted, isTrue);
+    await tester.tap(find.byTooltip('Return to Entry Release'));
+    await tester.pumpAndSettle();
+    expect(tester.element(find.byType(ReleaseDocument)), same(document));
+    expect(tester.state<ScrollableState>(scroll).position.pixels, offset);
+  });
+
+  testWidgets('the release title can drag the sheet to full height', (
+    tester,
+  ) async {
+    await openReleaseDrawer(tester, size: const Size(390, 844));
+    await tester.drag(find.text('Entry notes'), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byKey(const Key('release-drawer'))).top, 0);
+    expect(find.text('Entry notes'), findsOneWidget);
+  });
+
+  testWidgets('drag dismissal never rebounds upward before closing', (
+    tester,
+  ) async {
+    await openReleaseDrawer(tester, size: const Size(390, 844));
+    final drawer = find.byKey(const Key('release-drawer'));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(const Key('release-sheet-handle'))),
+    );
+    await gesture.moveBy(const Offset(0, 40));
+    await gesture.moveBy(const Offset(0, 300));
+    await tester.pump();
+    var previousTop = tester.getTopLeft(drawer).dy;
+    await gesture.up();
+    for (var frame = 0; frame < 8; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      if (drawer.evaluate().isEmpty) break;
+      final top = tester.getTopLeft(drawer).dy;
+      expect(top, greaterThanOrEqualTo(previousTop));
+      previousTop = top;
+    }
+    await tester.pumpAndSettle();
+    expect(drawer, findsNothing);
+    expect(find.byType(ReleaseTimelineCard), findsOneWidget);
+  });
+
   testWidgets(
     'a phone list retries the requested page and can advance past an empty page',
     (tester) async {

@@ -25,11 +25,13 @@ class ReleaseDetailsView extends StatefulWidget {
     required this.release,
     required this.onTapUrl,
     required this.onOpenExternal,
+    this.headerBuilder,
   });
 
   final ReleaseDetail release;
   final Future<bool> Function(String) onTapUrl;
   final Future<bool> Function(String) onOpenExternal;
+  final Widget Function(Widget child)? headerBuilder;
 
   @override
   State<ReleaseDetailsView> createState() => _ReleaseDetailsViewState();
@@ -63,64 +65,80 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
             ),
             onTapUrl: widget.onTapUrl,
           );
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (release.offline)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.releaseOfflineBody),
+                  if (release.savedAt case final savedAt?)
+                    Text(
+                      l10n.timelineSavedAt(
+                        gitPulseDateTime(context, savedAt.toLocal()),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          // The release's name and its meta line are one tightly grouped block:
+          // they are the app's header, not part of the author's markdown. The
+          // name stays even when it repeats the tag, because it is the release's
+          // own title rather than the chrome line's identity.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                release.title,
+                style: gitPulseTypeSurfaceTitle(context),
+              ),
+              if (meta.isNotEmpty) const SizedBox(height: 4),
+              if (meta.isNotEmpty) Text(meta, style: gitPulseTypeMeta(context)),
+            ],
+          ),
+          // A rule separates that header from the notes, so a changelog's own
+          // first heading cannot read as a continuation of the release name.
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Divider(
+              height: GitPulseStroke.hairline,
+              thickness: GitPulseStroke.hairline,
+              color: toneRule(theme.colorScheme),
+            ),
+          ),
+        ],
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (release.offline)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.releaseOfflineBody),
-                if (release.savedAt case final savedAt?)
-                  Text(
-                    l10n.timelineSavedAt(
-                      gitPulseDateTime(context, savedAt.toLocal()),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        // The release's name and its meta line are one tightly grouped block:
-        // they are the app's header, not part of the author's markdown. The
-        // name stays even when it repeats the tag, because it is the release's
-        // own title rather than the chrome line's identity.
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SelectableText(
-              release.title,
-              style: gitPulseTypeSurfaceTitle(context),
-            ),
-            if (meta.isNotEmpty) const SizedBox(height: 4),
-            if (meta.isNotEmpty) Text(meta, style: gitPulseTypeMeta(context)),
-          ],
-        ),
-        // A rule separates that header from the notes, so a changelog's own
-        // first heading cannot read as a continuation of the release name.
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Divider(
-            height: GitPulseStroke.hairline,
-            thickness: GitPulseStroke.hairline,
-            color: toneRule(theme.colorScheme),
-          ),
-        ),
+        widget.headerBuilder?.call(header) ?? header,
         Expanded(
-          child: _showingAssets && release.assets.isNotEmpty
-              ? _ReleaseAssetList(
-                  assets: release.assets,
-                  onOpenExternal: widget.onOpenExternal,
-                )
-              : reading,
-        ),
-        if (release.assets.isNotEmpty)
-          _ReleaseAssetsToggle(
-            assets: release.assets,
-            expanded: _showingAssets,
-            onTap: () => setState(() => _showingAssets = !_showingAssets),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _showingAssets && release.assets.isNotEmpty
+                ? _ReleaseAssetList(
+                    assets: release.assets,
+                    onOpenExternal: widget.onOpenExternal,
+                  )
+                : reading,
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: release.assets.isNotEmpty
+              ? _ReleaseAssetsToggle(
+                  assets: release.assets,
+                  expanded: _showingAssets,
+                  onTap: () => setState(() => _showingAssets = !_showingAssets),
+                )
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }

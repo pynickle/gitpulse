@@ -48,6 +48,7 @@ class DocumentViewerStyle {
   factory DocumentViewerStyle.of(
     BuildContext context, {
     double bottomInset = 0,
+    Color? background,
   }) {
     final theme = Theme.of(context);
     return DocumentViewerStyle(
@@ -56,7 +57,7 @@ class DocumentViewerStyle {
       // does rather than by a Material role's name: a README is part of the app,
       // not a page dropped into it.
       foreground: toneText(context),
-      background: toneSurface(context),
+      background: background ?? toneSurface(context),
       muted: toneTextMuted(context),
       rule: toneRule(theme.colorScheme),
       accent: toneAccent(context),

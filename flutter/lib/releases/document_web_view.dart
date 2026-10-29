@@ -191,6 +191,7 @@ Widget _buildEngine(BuildContext context, DocumentEngineRequest request) =>
         baseUrl: WebUri(request.page.baseUrl),
       ),
       initialSettings: InAppWebViewSettings(
+        transparentBackground: true,
         javaScriptEnabled: true,
         javaScriptCanOpenWindowsAutomatically: false,
         supportMultipleWindows: false,

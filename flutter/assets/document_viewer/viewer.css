@@ -44,7 +44,8 @@
   --hl-meta: #6e7781;
 }
 
-:root[data-appearance='dark'] {
+/* Match :root's specificity so the host's later theme variables win. */
+:root:where([data-appearance='dark']) {
   --gp-fg: #e6edf3;
   --gp-bg: #0d1117;
   --gp-muted: #9198a1;
