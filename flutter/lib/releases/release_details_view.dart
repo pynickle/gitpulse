@@ -89,15 +89,12 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SelectableText(release.title, style: theme.textTheme.titleMedium),
+            SelectableText(
+              release.title,
+              style: gitPulseTypeSurfaceTitle(context),
+            ),
             if (meta.isNotEmpty) const SizedBox(height: 4),
-            if (meta.isNotEmpty)
-              Text(
-                meta,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+            if (meta.isNotEmpty) Text(meta, style: gitPulseTypeMeta(context)),
           ],
         ),
         // A rule separates that header from the notes, so a changelog's own
@@ -149,8 +146,6 @@ class _ReleaseAssetsToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     // An unknown size is reported as zero and contributes nothing to the total,
     // and a total of nothing leaves the fold row its count alone.
     final totalSize = gitPulseByteSize(
@@ -167,7 +162,7 @@ class _ReleaseAssetsToggle extends StatelessWidget {
           child: Divider(
             height: GitPulseStroke.hairline,
             thickness: GitPulseStroke.hairline,
-            color: toneRule(scheme),
+            color: toneRule(Theme.of(context).colorScheme),
           ),
         ),
         MergeSemantics(
@@ -185,7 +180,7 @@ class _ReleaseAssetsToggle extends StatelessWidget {
                     Icon(
                       Icons.attach_file,
                       size: GitPulseIconSize.inline,
-                      color: scheme.onSurfaceVariant,
+                      color: toneTextMuted(context),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -196,11 +191,7 @@ class _ReleaseAssetsToggle extends StatelessWidget {
                                 assets.length,
                                 totalSize,
                               ),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.6,
-                        ),
+                        style: gitPulseTypeSectionLabel(context),
                       ),
                     ),
                     AnimatedRotation(
@@ -209,7 +200,7 @@ class _ReleaseAssetsToggle extends StatelessWidget {
                       child: Icon(
                         Icons.expand_more,
                         size: GitPulseIconSize.inControl,
-                        color: scheme.onSurfaceVariant,
+                        color: toneTextMuted(context),
                       ),
                     ),
                   ],
@@ -255,8 +246,6 @@ class _ReleaseAssetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final size = gitPulseByteSize(context, asset.size);
     // A row whose download address is not safe keeps its text but offers no
     // action, so it never announces a download it cannot start.
@@ -281,7 +270,7 @@ class _ReleaseAssetRow extends StatelessWidget {
                   child: Icon(
                     _releaseAssetGlyph(asset.name),
                     size: GitPulseIconSize.inline,
-                    color: scheme.onSurfaceVariant,
+                    color: toneTextMuted(context),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -295,8 +284,8 @@ class _ReleaseAssetRow extends StatelessWidget {
                       // for. Do not add a line limit or an overflow here.
                       Text(
                         asset.name,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurface,
+                        style: gitPulseTypeMeta(context)?.copyWith(
+                          color: toneText(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -306,9 +295,7 @@ class _ReleaseAssetRow extends StatelessWidget {
                           ?size,
                           l10n.releaseAssetDownloads(asset.downloadCount),
                         ].join(' · '),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                        style: gitPulseTypeMetaTight(context),
                       ),
                     ],
                   ),

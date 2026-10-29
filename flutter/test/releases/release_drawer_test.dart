@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
+import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
@@ -115,6 +116,9 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The failed band's one action is the app's own button, not Material's.
+      expect(find.byType(OutlinedButton), findsNothing);
+      expect(find.widgetWithText(GitPulseButton, 'Retry'), findsOneWidget);
       mounted
               .session
               .handlers['GET api/releases/canonical/project?page=2&per_page=20'] =
@@ -929,6 +933,49 @@ void main() {
       expect(tester.getTopLeft(find.text('All')), filters);
       expect(tester.getBottomLeft(find.byTooltip('Next page')), pager);
       expect(find.byTooltip('Next page').hitTestable(), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the Release Drawer renders on the app’s faces and none of the replaced ones',
+    (tester) async {
+      await openReleaseDrawer(tester, size: const Size(390, 844));
+
+      final drawer = find.byKey(const Key('release-drawer'));
+      expect(drawer, findsOneWidget);
+      // The chrome line is the app's own actions…
+      expect(
+        find.descendant(of: drawer, matching: find.byType(GitPulseIconButton)),
+        findsWidgets,
+      );
+      for (final tooltip in [
+        'Repository releases',
+        'Open on GitHub',
+        'Close release details',
+      ]) {
+        expect(find.byTooltip(tooltip), findsOneWidget, reason: tooltip);
+      }
+      // …and none of the Material faces this change replaced is left in it.
+      for (final replaced in <Type>[
+        FilledButton,
+        OutlinedButton,
+        TextButton,
+        IconButton,
+        CircularProgressIndicator,
+        LinearProgressIndicator,
+        AlertDialog,
+        Dialog,
+      ]) {
+        expect(
+          find.descendant(of: drawer, matching: find.byType(replaced)),
+          findsNothing,
+          reason: '$replaced',
+        );
+      }
+      // The notes are still shown by the document host's platform view, whose
+      // boundary this change does not touch.
+      expect(find.byKey(const Key('release-assets')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     },
   );
 }
