@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/repositories/repository_models.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_filters.dart';
@@ -291,6 +292,35 @@ void main() {
     expect(count(), 2);
   });
 
+  test(
+    'follow removals update filtered releases, counts and baseline together',
+    () async {
+      facade().applyFilters(const TimelineFilterState(query: 'alpha'));
+      expect(visibleKeys(harness), ['R_alpha:1', 'R_alpha:2']);
+      expect(readState(harness.container).loadedNewCount, 2);
+      expect(readState(harness.container).baselineExposed, isTrue);
+      final requests = List.of(harness.session.requests);
+
+      await facade().applyFollows([
+        const RepositoryReference(id: 'R_api', owner: 'acme', name: 'api'),
+      ]);
+      expect(keys(harness.container), ['R_api:3', 'R_api:4']);
+      expect(visibleKeys(harness), isEmpty);
+      expect(readState(harness.container).filteredEmpty, isTrue);
+      expect(readState(harness.container).loadedNewCount, 0);
+      expect(readState(harness.container).baselineExposed, isTrue);
+
+      await facade().applyFollows([]);
+      final empty = readState(harness.container);
+      expect(empty.groups, isEmpty);
+      expect(empty.visibleGroups, isEmpty);
+      expect(empty.loadedNewCount, 0);
+      expect(empty.baselineExposed, isFalse);
+      expect(empty.previousBaseline, '2026-10-11T00:00:00.000Z');
+      expect(harness.session.requests, requests);
+    },
+  );
+
   test('filtering never requests releases and older loading still works when the filter hides every card', () async {
     harness.session.handlers['POST api/release-timeline/refresh'] = () =>
         BackendResult(
@@ -457,6 +487,7 @@ void main() {
         const BackendResult(problem: BackendProblem.network);
     await settle(offline.container);
     expect(keys(offline.container), ['R_a:60', 'R_a:61']);
+    expect(readState(offline.container).baselineExposed, isTrue);
     final requests = List.of(offline.session.requests);
     final facade = offline.container.read(
       releaseTimelineSessionProvider.notifier,
@@ -470,6 +501,9 @@ void main() {
     );
     expect(visibleKeys(offline), ['R_a:60']);
     expect(readState(offline.container).loadedNewCount, 1);
+    // Filtering out the older card does not shrink the restored window or lose
+    // its boundary when the live pagination cycle is still empty.
+    expect(readState(offline.container).baselineExposed, isTrue);
 
     facade.applyFilters(const TimelineFilterState(query: 'old saved'));
     expect(visibleKeys(offline), ['R_a:61']);
@@ -477,6 +511,8 @@ void main() {
 
     facade.applyFilters(const TimelineFilterState(query: 'never saved'));
     expect(visibleKeys(offline), isEmpty);
+    expect(readState(offline.container).loadedNewCount, 0);
+    expect(readState(offline.container).baselineExposed, isTrue);
     expect(offline.session.requests, requests);
   });
 

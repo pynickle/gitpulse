@@ -4,8 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
+import 'package:gitpulse/repositories/repository_models.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_filters.dart';
+import 'package:gitpulse/timeline/timeline_models.dart';
+import 'package:gitpulse/timeline/timeline_projection.dart';
 import 'package:gitpulse/timeline/timeline_state.dart';
 import 'package:gitpulse/timeline/timeline_toolbar.dart';
 
@@ -22,6 +25,10 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         var refreshes = 0;
         var loading = false;
+        final projection = _projectionWithNewReleases(
+          12345,
+          '2026-10-18T14:43:00.000Z',
+        );
         Future<void> mount() => tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
@@ -38,8 +45,7 @@ void main() {
                   alignment: Alignment.topCenter,
                   child: TimelineToolbar(
                     state: TimelineViewState(
-                      previousBaseline: '2026-10-18T14:43:00.000Z',
-                      loadedNewCount: 12345,
+                      projection: projection,
                       cacheFailed: true,
                       savedAt: DateTime.utc(2026, 10, 19, 12),
                       loading: loading,
@@ -146,7 +152,9 @@ void main() {
           locale: locale,
           now: () => DateTime(2026, 10, 22, 16),
           state: TimelineViewState(
-            previousBaseline: entry.key.toUtc().toIso8601String(),
+            projection: TimelineProjection(
+              previousBaseline: entry.key.toUtc().toIso8601String(),
+            ),
           ),
         );
         expect(find.text(entry.value), findsOneWidget);
@@ -180,14 +188,10 @@ void main() {
         now: () => DateTime(2026, 10, 19, 21),
         state: TimelineViewState(
           offline: true,
-          previousBaseline: DateTime.utc(
-            2026,
-            10,
-            18,
-            14,
-            43,
-          ).toIso8601String(),
-          loadedNewCount: 7,
+          projection: _projectionWithNewReleases(
+            7,
+            DateTime.utc(2026, 10, 18, 14, 43).toIso8601String(),
+          ),
           // A local instant, so the toolbar renders the clock its own calendar
           // reads and the assertion holds in any display zone.
           savedAt: DateTime(2026, 10, 19, 12),
@@ -229,8 +233,10 @@ void main() {
       tester,
       now: () => DateTime(2026, 10, 22, 16),
       state: TimelineViewState(
-        previousBaseline: DateTime.utc(2026, 10, 22, 14, 43).toIso8601String(),
-        loadedNewCount: 7,
+        projection: _projectionWithNewReleases(
+          7,
+          DateTime.utc(2026, 10, 22, 14, 43).toIso8601String(),
+        ),
       ),
     );
     final l10n = _l10n(tester);
@@ -298,8 +304,10 @@ void main() {
     final changes = <TimelineFilterState>[];
     await _pumpToolbar(
       tester,
-      state: const TimelineViewState(
-        filters: TimelineFilterState(includeReleaseNotes: true),
+      state: TimelineViewState(
+        projection: TimelineProjection(
+          filters: const TimelineFilterState(includeReleaseNotes: true),
+        ),
       ),
       onFiltersChanged: changes.add,
     );
@@ -337,8 +345,10 @@ void main() {
     var opened = 0;
     await _pumpToolbar(
       tester,
-      state: const TimelineViewState(
-        filters: TimelineFilterState(hidePrereleases: true),
+      state: TimelineViewState(
+        projection: TimelineProjection(
+          filters: const TimelineFilterState(hidePrereleases: true),
+        ),
       ),
       onOpenFilters: () => opened++,
     );
@@ -354,6 +364,39 @@ void main() {
 
 bool _overlapsVertically(Rect left, Rect right) =>
     left.top < right.bottom && right.top < left.bottom;
+
+TimelineProjection _projectionWithNewReleases(int count, String baseline) =>
+    TimelineProjection(
+      previousBaseline: baseline,
+      windowLowerBound: DateTime.utc(2026, 10, 17).millisecondsSinceEpoch,
+      groups: [
+        TimelineGroup(
+          date: '2026-10-23',
+          items: List.generate(
+            count,
+            (id) => TimelineRelease(
+              repository: const RepositoryReference(
+                id: 'R_alpha',
+                owner: 'octo',
+                name: 'alpha',
+              ),
+              id: id,
+              tagName: 'v$id',
+              title: 'Release $id',
+              publishedAt: DateTime.utc(2026, 10, 23),
+              notes: '',
+              notesSearchText: '',
+              changelog: '',
+              changelogTruncated: false,
+              assetCount: 0,
+              isPrerelease: false,
+              isOldestShown: false,
+              htmlUrl: null,
+            ),
+          ),
+        ),
+      ],
+    );
 
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(TimelineToolbar)));

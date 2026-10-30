@@ -1,5 +1,6 @@
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
+import 'timeline_projection.dart';
 import '../repositories/repository_models.dart';
 
 /// Why a Timeline round could not be read.
@@ -58,14 +59,9 @@ class TimelineViewState {
     this.active = false,
     this.loading = false,
     this.hasFollows = false,
-    this.groups = const [],
-    this.visibleGroups = const [],
-    this.filters = const TimelineFilterState(),
+    this.projection = const TimelineProjection.empty(),
     this.unavailableRepositories = const [],
     this.transientRepositories = const [],
-    this.previousBaseline,
-    this.baselineExposed = false,
-    this.loadedNewCount = 0,
     this.partial = false,
     this.canRetry = false,
     this.canLoadOlder = false,
@@ -94,17 +90,20 @@ class TimelineViewState {
   /// Whether the account follows any repository.
   final bool hasFollows;
 
+  /// The window inputs and their presentation change as one immutable value.
+  final TimelineProjection projection;
+
   /// The exposed Shared Timeline Window, before the Active Timeline Filter.
-  final List<TimelineGroup> groups;
+  List<TimelineGroup> get groups => projection.groups;
 
   /// The exposed groups after the Release Timeline Filter and Search.
   ///
   /// These are the only releases widgets display or count, so retained records
   /// outside the exposed window can never appear in a result.
-  final List<TimelineGroup> visibleGroups;
+  List<TimelineGroup> get visibleGroups => projection.visibleGroups;
 
   /// The Active Timeline Filter and Release Timeline Search.
-  final TimelineFilterState filters;
+  TimelineFilterState get filters => projection.filters;
 
   /// Followed Repositories GitHub reports as missing, and the ones that failed
   /// to load and can be retried.
@@ -112,13 +111,13 @@ class TimelineViewState {
   final List<RepositoryReference> transientRepositories;
 
   /// The cycle's captured Timeline Refresh Baseline, fixed while reading.
-  final String? previousBaseline;
+  String? get previousBaseline => projection.previousBaseline;
 
   /// Whether the baseline's publication-time position is inside the window.
-  final bool baselineExposed;
+  bool get baselineExposed => projection.baselineExposed;
 
   /// Releases newer than the captured baseline, after the current filters.
-  final int loadedNewCount;
+  int get loadedNewCount => projection.loadedNewCount;
 
   /// Whether the Shared Timeline Window is a Partial Timeline Window.
   final bool partial;
@@ -160,15 +159,9 @@ class TimelineViewState {
     bool? active,
     bool? loading,
     bool? hasFollows,
-    List<TimelineGroup>? groups,
-    List<TimelineGroup>? visibleGroups,
-    TimelineFilterState? filters,
+    TimelineProjection? projection,
     List<RepositoryReference>? unavailableRepositories,
     List<RepositoryReference>? transientRepositories,
-    String? previousBaseline,
-    bool clearPreviousBaseline = false,
-    bool? baselineExposed,
-    int? loadedNewCount,
     bool? partial,
     bool? canRetry,
     bool? canLoadOlder,
@@ -189,18 +182,11 @@ class TimelineViewState {
       active: active ?? this.active,
       loading: loading ?? this.loading,
       hasFollows: hasFollows ?? this.hasFollows,
-      groups: groups ?? this.groups,
-      visibleGroups: visibleGroups ?? this.visibleGroups,
-      filters: filters ?? this.filters,
+      projection: projection ?? this.projection,
       unavailableRepositories:
           unavailableRepositories ?? this.unavailableRepositories,
       transientRepositories:
           transientRepositories ?? this.transientRepositories,
-      previousBaseline: clearPreviousBaseline
-          ? null
-          : previousBaseline ?? this.previousBaseline,
-      baselineExposed: baselineExposed ?? this.baselineExposed,
-      loadedNewCount: loadedNewCount ?? this.loadedNewCount,
       partial: partial ?? this.partial,
       canRetry: canRetry ?? this.canRetry,
       canLoadOlder: canLoadOlder ?? this.canLoadOlder,

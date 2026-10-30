@@ -12,6 +12,7 @@ import '../session/session_controller.dart';
 import 'timeline_dto.dart';
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
+import 'timeline_projection.dart';
 import 'timeline_service.dart';
 import 'timeline_state.dart';
 import 'timeline_cache.dart';
@@ -29,9 +30,9 @@ final timelineEnvironmentProvider = Provider<TimelineEnvironment>(
 
 /// The app-facing Release Timeline session.
 ///
-/// It owns the refresh cycle, the exposed Shared Timeline Window, the captured
-/// Timeline Refresh Baseline, and the loaded-new count. Widgets read its
-/// immutable state and never coordinate rounds themselves.
+/// It coordinates refresh, history and persistence, publishing each exposed
+/// Shared Timeline Window through its immutable projection. Widgets read the
+/// state and never coordinate rounds themselves.
 final releaseTimelineSessionProvider =
     NotifierProvider<ReleaseTimelineSession, TimelineViewState>(
       ReleaseTimelineSession.new,
@@ -89,9 +90,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   int _persistedPageCount = 0;
   bool _currentSaveIncomplete = false;
   bool _cacheSynchronized = false;
-  TimelineFilterState _filters = const TimelineFilterState();
-  List<TimelineGroup>? _preparedForGroups;
-  PreparedTimelineSearch? _preparedSearch;
 
   /// How many days of published releases this installation keeps.
   ///
@@ -261,7 +259,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         active: true,
         loading: true,
         hasFollows: true,
-        filters: _filters,
+        projection: TimelineProjection(filters: state.filters),
         cacheActions: state.cacheActions,
         cacheFailed: state.cacheFailed,
         cacheCorrupted: state.cacheCorrupted,
@@ -307,7 +305,16 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
             ],
           ),
     ];
-    state = _withGroups(state, groups, state.previousBaseline);
+    state = state.copyWith(
+      projection: TimelineProjection(
+        groups: groups,
+        filters: state.filters,
+        previousBaseline: state.previousBaseline,
+        windowLowerBound: repositories.isEmpty
+            ? null
+            : state.projection.windowLowerBound,
+      ),
+    );
   }
 
   Future<void> _applyFollowsLocally(
@@ -331,7 +338,14 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         environment: ref.read(timelineEnvironmentProvider),
       );
       _cycle = result.cycle;
-      state = _withGroups(state, result.groups, state.previousBaseline);
+      state = state.copyWith(
+        projection: TimelineProjection(
+          groups: result.groups,
+          filters: state.filters,
+          previousBaseline: state.previousBaseline,
+          windowLowerBound: _cycle.windowLowerBound,
+        ),
+      );
     }
     state = state.copyWith(
       loading: preserveLoading ? null : true,
@@ -348,9 +362,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       canRetry: _cycle.failedIds.isNotEmpty,
       canLoadOlder: _canLoadOlder,
       clearFailure: _cycle.failedIds.isEmpty,
-      baselineExposed: _cycle.pages.isNotEmpty
-          ? isBaselineExposed(state.previousBaseline, _cycle.windowLowerBound)
-          : state.baselineExposed && repositories.isNotEmpty,
       cacheConnection: _cacheConnection,
       waitingRepositories: _repositoriesFor(
         _history.waitingRepositories.toList(),
@@ -377,50 +388,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// exposed window. This never requests releases: offline filter changes stay
   /// within the Saved Visible Timeline.
   void applyFilters(TimelineFilterState filters) {
-    if (filters == _filters) return;
-    _filters = filters;
-    state = _withGroups(
-      state,
-      state.groups,
-      state.previousBaseline,
-    ).copyWith(filters: filters);
-  }
-
-  /// Replaces the exposed window, keeping its filtered view and loaded-new
-  /// count in step. Every `groups` write goes through here or through an
-  /// equivalent constructor pair.
-  TimelineViewState _withGroups(
-    TimelineViewState base,
-    List<TimelineGroup> groups,
-    String? previousBaseline,
-  ) {
-    final view = _visibleIn(groups, previousBaseline);
-    return base.copyWith(
-      groups: groups,
-      visibleGroups: view.groups,
-      loadedNewCount: view.loadedNewCount,
-    );
-  }
-
-  /// The visible groups and loaded-new count of one exposed window under the
-  /// current filters.
-  ({List<TimelineGroup> groups, int loadedNewCount}) _visibleIn(
-    List<TimelineGroup> exposed,
-    String? previousBaseline,
-  ) {
-    PreparedTimelineSearch? prepared;
-    if (_filters.query.trim().isNotEmpty) {
-      if (_preparedSearch == null || !identical(_preparedForGroups, exposed)) {
-        _preparedForGroups = exposed;
-        _preparedSearch = PreparedTimelineSearch.fromGroups(exposed);
-      }
-      prepared = _preparedSearch;
-    }
-    final groups = filterTimelineGroups(exposed, _filters, prepared: prepared);
-    return (
-      groups: groups,
-      loadedNewCount: countLoadedNewReleases(groups, previousBaseline),
-    );
+    if (filters == state.filters) return;
+    state = state.copyWith(projection: state.projection.withFilters(filters));
   }
 
   /// Advances successful, non-exhausted repositories by one coordinated round.
@@ -500,7 +469,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       _failures.clear();
       _firstPageRetries.clear();
       _cacheSynchronized = false;
-      _resetFilters();
       state = const TimelineViewState.inactive();
       return;
     }
@@ -514,20 +482,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _failures.clear();
     _firstPageRetries.clear();
     _cacheSynchronized = false;
-    _resetFilters();
     state = const TimelineViewState.activeLoading();
     _retentionWindow = null;
     final ticket = ++_generation;
     _synchronizingFollows = ticket;
     unawaited(_restoreAndStart(ticket));
-  }
-
-  /// Display conditions belong to one identity's session, so another account
-  /// never inherits a filter that would hide its releases.
-  void _resetFilters() {
-    _filters = const TimelineFilterState();
-    _preparedForGroups = null;
-    _preparedSearch = null;
   }
 
   /// The signed-in account and its backend, which scope every stored rule.
@@ -618,21 +577,17 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           _loadedVisible = saved;
           _cacheSynchronized = true;
           _followedRepositories = saved.repositories;
-          final view = _visibleIn(saved.groups, saved.baseline);
           state = TimelineViewState(
             active: true,
             loading: true,
             cacheActions: state.cacheActions,
             hasFollows: saved.repositories.isNotEmpty,
-            groups: saved.groups,
-            visibleGroups: view.groups,
-            filters: _filters,
-            previousBaseline: saved.baseline,
-            baselineExposed: isBaselineExposed(
-              saved.baseline,
-              saved.lowerBound,
+            projection: TimelineProjection(
+              groups: saved.groups,
+              filters: state.filters,
+              previousBaseline: saved.baseline,
+              windowLowerBound: saved.lowerBound,
             ),
-            loadedNewCount: view.loadedNewCount,
             partial: saved.partial,
             savedAt: saved.savedAt,
             restored: true,
@@ -703,9 +658,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         state.restored &&
         saved != null &&
         _cacheSynchronized) {
+      // The projection owns a frozen copy; compare the saved source windows to
+      // retain an unchanged projection and its prepared search data.
+      final groupsChanged = !identical(_loadedVisible?.groups, saved.groups);
       _loadedVisible = saved;
-      if (!identical(state.groups, saved.groups)) {
-        state = _withGroups(state, saved.groups, saved.baseline);
+      if (groupsChanged) {
+        state = state.copyWith(
+          projection: TimelineProjection(
+            groups: saved.groups,
+            filters: state.filters,
+            previousBaseline: saved.baseline,
+            windowLowerBound: state.projection.windowLowerBound,
+          ),
+        );
       }
     }
   }
@@ -913,21 +878,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         environment: ref.read(timelineEnvironmentProvider),
       );
       _cycle = recovered.cycle;
-      final baseline = state.previousBaseline;
-      state = _withGroups(
-        state.copyWith(
-          cacheFailed: false,
-          cacheCorrupted: false,
-          restored: false,
-          partial: _cycle.partial,
-          clearSavedAt: true,
-          cacheConnection: TimelineCacheConnection.none,
-          waitingRepositories: const [],
-          canLoadOlder: _canLoadOlder,
-          baselineExposed: isBaselineExposed(baseline, _cycle.windowLowerBound),
+      state = state.copyWith(
+        projection: TimelineProjection(
+          groups: recovered.groups,
+          filters: state.filters,
+          previousBaseline: state.previousBaseline,
+          windowLowerBound: _cycle.windowLowerBound,
         ),
-        recovered.groups,
-        baseline,
+        cacheFailed: false,
+        cacheCorrupted: false,
+        restored: false,
+        partial: _cycle.partial,
+        clearSavedAt: true,
+        cacheConnection: TimelineCacheConnection.none,
+        waitingRepositories: const [],
+        canLoadOlder: _canLoadOlder,
       );
       if (_cyclePages.isNotEmpty) await _persistCurrent(ticket);
     } catch (error) {
@@ -989,7 +954,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     state = TimelineViewState(
       active: true,
       hasFollows: _followedRepositories.isNotEmpty,
-      filters: _filters,
+      projection: TimelineProjection(filters: state.filters),
       cacheCorrupted: state.cacheCorrupted,
       cacheActions: state.cacheActions.copyWith(
         clearing: true,
@@ -1096,7 +1061,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       state = TimelineViewState(
         active: true,
         hasFollows: false,
-        filters: _filters,
+        projection: TimelineProjection(filters: state.filters),
         cacheActions: state.cacheActions,
         cacheFailed: state.cacheFailed,
         cacheCorrupted: state.cacheCorrupted,
@@ -1293,21 +1258,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     final baseline = _cycle.previousBaseline;
     final unavailable = _failedRepositories(RepositoryQueryStatus.unavailable);
     final transient = _failedRepositories(RepositoryQueryStatus.transient);
-    final view = _visibleIn(result.groups, baseline);
-
     state = TimelineViewState(
       active: true,
       loading: true,
       cacheActions: state.cacheActions,
       hasFollows: true,
-      groups: result.groups,
-      visibleGroups: view.groups,
-      filters: _filters,
+      projection: TimelineProjection(
+        groups: result.groups,
+        filters: state.filters,
+        previousBaseline: baseline,
+        windowLowerBound: _cycle.windowLowerBound,
+      ),
       unavailableRepositories: unavailable,
       transientRepositories: transient,
-      previousBaseline: baseline,
-      baselineExposed: isBaselineExposed(baseline, _cycle.windowLowerBound),
-      loadedNewCount: view.loadedNewCount,
       partial: _cycle.partial || unavailable.isNotEmpty || transient.isNotEmpty,
       canRetry: _cycle.failedIds.isNotEmpty,
       canLoadOlder: _canLoadOlder,
@@ -1433,7 +1396,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
         requestedIds ?? [for (final follow in _followedRepositories) follow.id];
     _cycle = _cycle.withFailed(ids);
     _recordFailures(ids, pages);
-    final baseline = _cycle.previousBaseline;
     state = state.copyWith(
       active: true,
       loading: false,
@@ -1449,9 +1411,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       canLoadOlder: _canLoadOlder,
       failure:
           failure ?? const TimelineFailure(TimelineFailureKind.invalidResponse),
-      baselineExposed: state.restored
-          ? state.baselineExposed
-          : isBaselineExposed(baseline, _cycle.windowLowerBound),
       offline: failure?.kind == TimelineFailureKind.network,
       cacheConnection: _cacheConnection,
       waitingRepositories: _repositoriesFor(
