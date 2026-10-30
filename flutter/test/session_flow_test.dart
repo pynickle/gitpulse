@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
+import 'package:gitpulse/follows/release_follows_session.dart';
+import 'package:gitpulse/follows/repository_discovery_session.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
@@ -107,7 +109,9 @@ class AuthServer implements HttpClientAdapter {
   String sessionValue = 'sealed-session-value';
   String sessionAttributes = 'Path=/; HttpOnly; SameSite=Lax';
   bool expireSessionImmediately = false;
-  bool includeGithubId = false;
+  bool includeGithubId = true;
+  String? responseLogin;
+  int? responseGithubId;
   final requests = <RecordedRequest>[];
   Future<void>? hold;
   bool holding = false;
@@ -317,8 +321,8 @@ class AuthServer implements HttpClientAdapter {
   }
 
   Map<String, Object> _user(String login) => {
-    if (includeGithubId) 'id': login == 'hubot' ? 2 : 1,
-    'login': login,
+    if (includeGithubId) 'id': responseGithubId ?? (login == 'hubot' ? 2 : 1),
+    'login': responseLogin ?? login,
     'name': login == 'hubot' ? 'Hubot' : 'Octocat',
     'avatar_url': '',
   };
@@ -443,6 +447,152 @@ void expectIdentity(WidgetTester tester, String login) {
 }
 
 void main() {
+  testWidgets(
+    'same login with a different ID clears the previous account first',
+    (tester) async {
+      final server = AuthServer();
+      final container = await mountApp(tester, server);
+      final session = container.read(sessionControllerProvider.notifier);
+      await pumped(tester, session.unlock('correct-horse'));
+      await tester.pumpAndSettle();
+      String? idAtSwitch;
+      final subscription = session.transitions.listen((event) {
+        if (event is IdentityCleared) {
+          idAtSwitch = container
+              .read(sessionControllerProvider)
+              .identity
+              ?.githubId;
+        }
+      });
+      server.responseGithubId = 2;
+      await pumped(tester, session.unlock('correct-horse'));
+      await settleUi(tester);
+      await tester.runAsync(subscription.cancel);
+      expect(idAtSwitch, '1');
+      expect(
+        session.transitionLog.whereType<IdentityCleared>().single.reason,
+        IdentityClearReason.accountSwitch,
+      );
+      expect(container.read(sessionControllerProvider).identity?.githubId, '2');
+      expect(session.transitionLog.whereType<IdentityRestored>(), isEmpty);
+    },
+  );
+
+  for (final provider in ['password', 'pat', 'browser']) {
+    testWidgets(
+      '$provider sign-in rejects an identity without a numeric ID and deletes its cookie',
+      (tester) async {
+        final server = AuthServer()
+          ..includeGithubId = false
+          ..handoffEnabled = provider == 'browser';
+        if (provider == 'browser') {
+          server.providers = {
+            'personalMode': false,
+            'patEnabled': false,
+            'oauthEnabled': true,
+            'mode': 'oauth-only',
+          };
+        }
+        final container = await mountApp(
+          tester,
+          server,
+          launchBrowser: (_) async => true,
+        );
+        final session = container.read(sessionControllerProvider.notifier);
+        switch (provider) {
+          case 'password':
+            await pumped(tester, session.unlock('correct-horse'));
+          case 'pat':
+            await pumped(tester, session.signInWithToken('ghp_octocat'));
+          case 'browser':
+            await pumped(tester, session.startBrowserSignIn());
+            await tester.pumpAndSettle();
+            server.handoffStatus = 'approved';
+            await pumped(tester, session.pollBrowserSignIn());
+        }
+        await tester.pumpAndSettle();
+        expect(
+          container.read(sessionControllerProvider).phase,
+          SessionPhase.signedOut,
+        );
+        expect(container.read(sessionControllerProvider).identity, isNull);
+        expect(
+          container.read(sessionControllerProvider).failure,
+          SignInFailure.incompleteIdentity,
+        );
+        expect(
+          find.text('The backend returned an incomplete account identity.'),
+          findsOneWidget,
+        );
+        final cookies = await container
+            .read(cookieJarProvider)
+            .loadForRequest(
+              container
+                  .read(connectionControllerProvider)
+                  .value!
+                  .backend!
+                  .address
+                  .resolve('api/_auth/session'),
+            );
+        expect(
+          cookies.where((cookie) => cookie.name == sessionCookieName),
+          isEmpty,
+        );
+        expect(
+          await const FlutterSecureStorage().read(
+            key: 'authenticated_identity',
+          ),
+          isNull,
+        );
+        final stored = await const FlutterSecureStorage().readAll();
+        expect(stored.values.join(), isNot(contains(server.sessionValue)));
+      },
+    );
+  }
+
+  testWidgets('same ID reauthentication preserves identity through a rename', (
+    tester,
+  ) async {
+    final server = AuthServer()..includeGithubId = true;
+    final container = await mountApp(tester, server);
+    final session = container.read(sessionControllerProvider.notifier);
+    await pumped(tester, session.unlock('correct-horse'));
+    await tester.pumpAndSettle();
+    container
+        .read(repositoryDiscoverySessionProvider.notifier)
+        .updateQuery('retained search');
+    final follows = container.read(releaseFollowsSessionProvider);
+    final settingsReads = server.requests
+        .where((request) => request.uri.path.endsWith('/api/settings'))
+        .length;
+    for (final login in ['OctoCat', 'renamed-account']) {
+      server.responseLogin = login;
+      await pumped(tester, session.unlock('correct-horse'));
+      await tester.pumpAndSettle();
+      expect(container.read(sessionControllerProvider).identity?.login, login);
+      expect(session.transitionLog.whereType<IdentityCleared>(), isEmpty);
+      expect(
+        container.read(releaseFollowsSessionProvider).loaded,
+        follows.loaded,
+      );
+      expect(
+        container.read(releaseFollowsSessionProvider).repositories,
+        follows.repositories,
+      );
+      expect(
+        container.read(repositoryDiscoverySessionProvider).query,
+        'retained search',
+      );
+      expect(
+        server.requests.where(
+          (request) => request.uri.path.endsWith('/api/settings'),
+        ),
+        hasLength(settingsReads),
+      );
+    }
+    expect(session.transitionLog.whereType<IdentityRestored>(), hasLength(2));
+  });
+
   testWidgets(
     'opening, cancelling, or submitting an invalid backend keeps the session',
     (tester) async {

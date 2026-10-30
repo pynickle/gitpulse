@@ -113,10 +113,7 @@ class RepositoryDiscoverySession extends Notifier<RepositoryDiscoveryState> {
       sessionControllerProvider.select((session) {
         final identity = session.identity;
         return session.phase == SessionPhase.signedIn && identity != null
-            ? (
-                identity.backend,
-                identity.githubId ?? identity.login.toLowerCase(),
-              )
+            ? identity.account
             : null;
       }),
     );

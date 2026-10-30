@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../session/session_controller.dart';
+import '../session/account_identity.dart';
 import '../timeline/timeline_models.dart';
 import '../timeline/timeline_dto.dart';
 import '../timeline/timeline_service.dart';
@@ -21,7 +22,7 @@ final releaseFollowsSessionProvider =
 class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   int _generation = 0;
   int _metadataTicket = 0;
-  String? _context;
+  AccountIdentity? _context;
   Future<TimelineResult<UserSettingsDto>>? _settingsRead;
   TimelineFailure? _readFailure;
   Completer<void>? _edit;
@@ -63,11 +64,11 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     return ReleaseFollowsState(active: _context != null);
   }
 
-  String? _sessionContext() {
+  AccountIdentity? _sessionContext() {
     final session = ref.read(sessionControllerProvider);
     final identity = session.identity;
     return session.phase == SessionPhase.signedIn && identity != null
-        ? '${identity.backend}|${identity.githubId ?? identity.login.toLowerCase()}'
+        ? identity.account
         : null;
   }
 

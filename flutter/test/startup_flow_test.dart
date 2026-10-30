@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,68 @@ class HeldStorage extends FlutterSecureStorage {
 }
 
 void main() {
+  testWidgets(
+    'a saved identity without an ID is cleared locally without cookie repair',
+    (tester) async {
+      final server = AuthServer();
+      await mountApp(tester, server);
+      await submitField(
+        tester,
+        label: 'Password',
+        value: 'correct-horse',
+        action: 'Unlock',
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      const storage = FlutterSecureStorage();
+      final saved = jsonDecode(
+        (await storage.read(key: 'authenticated_identity'))!,
+      ) as Map<String, dynamic>;
+      saved.remove('githubId');
+      await storage.write(
+        key: 'authenticated_identity',
+        value: jsonEncode(saved),
+      );
+      final before = await storage.readAll();
+      server.requests.clear();
+      final container = await mountApp(tester, server, resetStorage: false);
+      expect(
+        container.read(sessionControllerProvider).phase,
+        SessionPhase.signedOut,
+      );
+      expect(fieldLabeled('Password'), findsOneWidget);
+      expect(
+        container
+            .read(connectionControllerProvider)
+            .value
+            ?.backend
+            ?.address
+            .toString(),
+        saved['backend'],
+      );
+      expect(
+        server.requests.where(
+          (request) =>
+              request.uri.path.endsWith('/api/_auth/session') ||
+              request.uri.path.endsWith('/auth/logout'),
+        ),
+        isEmpty,
+      );
+      expect(await storage.read(key: 'authenticated_identity'), isNull);
+      final after = await storage.readAll();
+      expect(after.values.join(), isNot(contains(server.sessionValue)));
+      for (final key in before.keys.where(
+        (key) => key != 'authenticated_identity' && !key.startsWith('cookie.'),
+      )) {
+        expect(after[key], before[key]);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      await mountApp(tester, server, resetStorage: false);
+      expect(fieldLabeled('Password'), findsOneWidget);
+    },
+  );
+
   for (final leaveBackend in [false, true]) {
     testWidgets(
       'leaving a restored session ignores late startup work: $leaveBackend',
@@ -110,7 +173,14 @@ void main() {
     );
   }
 
-  for (final outcome in ['valid', 'offline', 'expired', 'empty session']) {
+  for (final outcome in [
+    'valid',
+    'offline',
+    'expired',
+    'empty session',
+    'incomplete identity',
+    'legacy identity',
+  ]) {
     testWidgets(
       'saved releases appear before startup requests finish: $outcome',
       (tester) async {
@@ -152,7 +222,7 @@ void main() {
           ],
         );
         await tester.runAsync(() async {
-          final scope = TimelineCache.scopeOf(identity)!;
+          final scope = identity.account.scope;
           await cache.synchronize(
             scope: scope,
             retentionDays: 30,
@@ -174,6 +244,17 @@ void main() {
             isCurrent: () => true,
           );
         });
+        if (outcome == 'legacy identity') {
+          const storage = FlutterSecureStorage();
+          final saved = jsonDecode(
+            (await storage.read(key: 'authenticated_identity'))!,
+          ) as Map<String, dynamic>;
+          saved.remove('githubId');
+          await storage.write(
+            key: 'authenticated_identity',
+            value: jsonEncode(saved),
+          );
+        }
         final held = Completer<void>();
         addTearDown(() {
           if (!held.isCompleted) held.complete();
@@ -192,11 +273,17 @@ void main() {
         );
         await pumpUntil(
           tester,
-          () => find.text('Saved release').evaluate().isNotEmpty,
+          () => outcome == 'legacy identity'
+              ? fieldLabeled('Password').evaluate().isNotEmpty
+              : find.text('Saved release').evaluate().isNotEmpty,
           reason: 'saved content must not wait for capabilities or session validation',
         );
-        expect(server.holding, isTrue);
-        expect(fieldLabeled('Password'), findsNothing);
+        if (outcome == 'legacy identity') {
+          expect(find.text('Saved release'), findsNothing);
+        } else {
+          expect(server.holding, isTrue);
+          expect(fieldLabeled('Password'), findsNothing);
+        }
         expect(
           server.requests.where(
             (request) => request.uri.path.endsWith('/api/settings'),
@@ -206,11 +293,22 @@ void main() {
         if (outcome == 'offline') server.offline = true;
         if (outcome == 'expired') server.sessionStatus = 401;
         if (outcome == 'empty session') server.acceptedLogin = null;
+        if (outcome == 'incomplete identity') server.includeGithubId = false;
         held.complete();
         await settleUi(tester);
-        if (outcome == 'expired' || outcome == 'empty session') {
+        if (outcome == 'expired' ||
+            outcome == 'empty session' ||
+            outcome == 'incomplete identity' ||
+            outcome == 'legacy identity') {
           expect(fieldLabeled('Password'), findsOneWidget);
           expect(find.text('Saved release'), findsNothing);
+          if (outcome == 'incomplete identity' ||
+              outcome == 'legacy identity') {
+            expect(
+              find.text('The backend returned an incomplete account identity.'),
+              findsOneWidget,
+            );
+          }
         } else {
           expectIdentity(tester, 'octocat');
           expect(fieldLabeled('Password'), findsNothing);
@@ -220,6 +318,25 @@ void main() {
         }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
+        if (outcome == 'incomplete identity' || outcome == 'legacy identity') {
+          expect(find.text('Saved release'), findsNothing);
+          expect(
+            await const FlutterSecureStorage().read(
+              key: 'authenticated_identity',
+            ),
+            isNull,
+          );
+          final stored = await const FlutterSecureStorage().readAll();
+          expect(stored.values.join(), isNot(contains(server.sessionValue)));
+          final restored = await tester.runAsync(
+            () => cache.restore(
+              scope: identity.account.scope,
+              now: now,
+              environment: TimelineEnvironment(localDateKey: utcPlusEight),
+            ),
+          );
+          expect(restored, isNull);
+        }
         await tester.runAsync(cache.close);
       },
     );

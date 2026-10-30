@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/device/device_preferences.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import '../support/device_preferences_support.dart';
@@ -46,7 +45,7 @@ void main() {
           ),
         ],
       );
-      final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+      final scope = h.session.state.identity!.account.scope;
       // Let the startup cycle reach the device read it is waiting on.
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
@@ -102,7 +101,7 @@ void main() {
       expect(h.session.requests.length, requests);
       expect(h.device.value.retentionDays, 1);
       final saved = await disk.cache!.restore(
-        scope: TimelineCache.scopeOf(h.session.state.identity!)!,
+        scope: h.session.state.identity!.account.scope,
         now: disk.now,
         environment: h.container.read(timelineEnvironmentProvider),
       );
@@ -129,7 +128,7 @@ void main() {
         ),
       ],
     );
-    final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+    final scope = h.session.state.identity!.account.scope;
     await Future<void>.delayed(const Duration(milliseconds: 20));
 
     // The window is still unresolved, so a round started by the reader must not
@@ -164,7 +163,7 @@ void main() {
       ],
     );
     await settle(h.container);
-    final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+    final scope = h.session.state.identity!.account.scope;
     expect(await disk.cache!.lastSavedRetentionDays(scope: scope), 30);
 
     // The session is rejected: this session no longer owns the follow set, so a

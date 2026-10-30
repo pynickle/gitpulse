@@ -24,9 +24,15 @@ enum SignInFailure {
   browserLaunch,
   expired,
   cancelled,
+  incompleteIdentity,
 }
 
-enum IdentityClearReason { signOut, backendChange, accountSwitch }
+enum IdentityClearReason {
+  signOut,
+  backendChange,
+  accountSwitch,
+  invalidIdentity,
+}
 
 sealed class IdentityTransition {
   const IdentityTransition();
@@ -352,12 +358,14 @@ class SessionController extends Notifier<SessionState> {
       }
       if (!ref.mounted) return;
       if (backend != null) {
-        final result = await _send(
-          method: 'POST',
-          backend: backend.address,
-          path: 'auth/logout',
-        );
-        storageFailed |= result.problem == BackendProblem.storage;
+        if (reason != IdentityClearReason.invalidIdentity) {
+          final result = await _send(
+            method: 'POST',
+            backend: backend.address,
+            path: 'auth/logout',
+          );
+          storageFailed |= result.problem == BackendProblem.storage;
+        }
         if (!ref.mounted) return;
         try {
           await ref.read(cookieJarProvider).delete(backend.address, true);
@@ -367,7 +375,11 @@ class SessionController extends Notifier<SessionState> {
       }
       if (!ref.mounted) return;
       state = SessionState(
-        failure: storageFailed ? SignInFailure.storage : null,
+        failure: storageFailed
+            ? SignInFailure.storage
+            : reason == IdentityClearReason.invalidIdentity
+            ? SignInFailure.incompleteIdentity
+            : null,
       );
       if (!storageFailed && reason == IdentityClearReason.backendChange) {
         ref.read(connectionControllerProvider.notifier).changeBackend();
@@ -460,9 +472,7 @@ class SessionController extends Notifier<SessionState> {
     }
     final user = readSessionUser(result.data, backend.address);
     if (result.problem == null && user != null) {
-      final switched =
-          previous != null &&
-          (previous.login != user.login || previous.backend != user.backend);
+      final switched = previous != null && !previous.sameAccount(user);
       if (switched) {
         // Tell listeners before the new identity is visible.
         _emit(IdentityCleared(previous, IdentityClearReason.accountSwitch));
@@ -478,6 +488,10 @@ class SessionController extends Notifier<SessionState> {
         identity: user,
         failure: stored ? null : SignInFailure.storage,
       );
+      return;
+    }
+    if (result.problem == null) {
+      await _clearIdentity(IdentityClearReason.invalidIdentity);
       return;
     }
     state = SessionState(
@@ -518,6 +532,10 @@ class SessionController extends Notifier<SessionState> {
       hasSession = cookies.any(
         (cookie) => cookie.name == sessionCookieName && cookie.value.isNotEmpty,
       );
+    } on FormatException {
+      if (stale()) return;
+      await _clearIdentity(IdentityClearReason.invalidIdentity);
+      return;
     } catch (_) {
       if (stale()) return;
       state = const SessionState(failure: SignInFailure.storage);
@@ -559,6 +577,12 @@ class SessionController extends Notifier<SessionState> {
         identity: user,
         failure: stored ? null : SignInFailure.storage,
       );
+      return;
+    }
+    if (result.problem == null &&
+        result.data is Map &&
+        (result.data as Map)['user'] is Map) {
+      await _clearIdentity(IdentityClearReason.invalidIdentity);
       return;
     }
     final rejected =
@@ -676,13 +700,17 @@ class SessionController extends Notifier<SessionState> {
     final decoded = jsonDecode(raw);
     if (decoded is! Map) return null;
     final backend = decoded['backend'];
+    final githubId = decoded['githubId'];
+    if (githubId is! String || (int.tryParse(githubId) ?? 0) <= 0) {
+      throw const FormatException('Incomplete account identity');
+    }
     final login = decoded['login'];
     final name = decoded['name'];
     final avatar = decoded['avatarUrl'];
     final uri = backend is String ? Uri.tryParse(backend) : null;
     if (uri == null || login is! String || login.isEmpty) return null;
     return AuthenticatedIdentity(
-      githubId: decoded['githubId'] as String?,
+      githubId: githubId,
       backend: uri,
       login: login,
       name: name is String && name.isNotEmpty ? name : login,

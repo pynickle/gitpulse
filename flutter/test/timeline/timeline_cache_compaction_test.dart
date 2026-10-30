@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
-import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import 'timeline_cache_test_support.dart';
@@ -33,7 +32,7 @@ void main() {
       await h.container.read(releaseTimelineSessionProvider.notifier).refresh();
     }
     final history = await disk.cache!.readHistory(
-      scope: TimelineCache.scopeOf(h.session.state.identity!)!,
+      scope: h.session.state.identity!.account.scope,
       now: disk.now,
     );
     expect(history.repositories['R_a']!.pages, hasLength(1));

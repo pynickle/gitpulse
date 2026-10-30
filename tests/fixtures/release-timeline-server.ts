@@ -110,7 +110,7 @@ export async function createReleaseTimelineTestHandler(baseURL = '/') {
       const login = body?.login ?? 'octocat';
       const { establishGitHubSession } = await import('../../server/utils/auth-session-utils');
       await establishGitHubSession(event, 'personal', 'fixture-server-token', {
-        ...(body?.githubId ? { id: body.githubId } : {}),
+        id: body?.githubId ?? (login === 'hubot' ? 2 : 1),
         login,
         name: login === 'hubot' ? 'Hubot' : 'The Octocat',
         avatar_url: 'https://github.test/avatar',

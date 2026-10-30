@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'lifetime_cookie_jar.dart';
 import 'secure_cookie_storage.dart';
 import 'secure_storage.dart';
+import 'account_identity.dart';
 
 const csrfCookieName = 'gitpulse_csrf';
 const csrfHeaderName = 'x-csrf-token';
@@ -42,7 +43,7 @@ class BackendResult {
 
 class AuthenticatedIdentity {
   const AuthenticatedIdentity({
-    this.githubId,
+    required this.githubId,
     required this.backend,
     required this.login,
     required this.name,
@@ -50,16 +51,15 @@ class AuthenticatedIdentity {
   });
 
   final Uri backend;
-  final String? githubId;
+  final String githubId;
   final String login;
   final String name;
   final String avatarUrl;
 
-  bool sameAccount(AuthenticatedIdentity other) =>
-      backend == other.backend &&
-      (githubId != null && other.githubId != null
-          ? githubId == other.githubId
-          : login.toLowerCase() == other.login.toLowerCase());
+  AccountIdentity get account =>
+      AccountIdentity(backend: backend, githubId: githubId);
+
+  bool sameAccount(AuthenticatedIdentity other) => account == other.account;
 }
 
 final cookieJarProvider = Provider<CookieJar>(
@@ -158,11 +158,13 @@ AuthenticatedIdentity? readSessionUser(Object? data, Uri backend) {
   if (user is! Map) return null;
   final login = user['login'];
   if (login is! String || login.trim().isEmpty) return null;
+  final id = user['id'];
+  if (id is! int || id <= 0) return null;
   final name = user['name'];
   final avatar = user['avatar_url'];
   final normalizedLogin = login.trim();
   return AuthenticatedIdentity(
-    githubId: user['id'] is int ? user['id'].toString() : null,
+    githubId: id.toString(),
     backend: backend,
     login: normalizedLogin,
     name: name is String && name.trim().isNotEmpty

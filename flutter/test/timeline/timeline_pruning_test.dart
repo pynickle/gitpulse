@@ -56,7 +56,7 @@ void main() {
     expect(readState(h.container), same(before));
     expect(h.session.requests, requests);
     final saved = await cache.restore(
-      scope: TimelineCache.scopeOf(h.session.state.identity!)!,
+      scope: h.session.state.identity!.account.scope,
       now: now,
       environment: TimelineEnvironment(localDateKey: utcPlusEight),
     );
@@ -138,7 +138,7 @@ void main() {
         releases: [releaseJson(1, 'old account', '2026-10-18T12:00:00Z')],
       );
       await settle(h.container);
-      final oldScope = TimelineCache.scopeOf(h.session.state.identity!)!;
+      final oldScope = h.session.state.identity!.account.scope;
       final held = queries.pauseNextRetentionRead();
       final pruning = h.container
           .read(releaseTimelineSessionProvider.notifier)
@@ -166,7 +166,7 @@ void main() {
         isCurrent: () => true,
       );
       final saved = await cache.restore(
-        scope: TimelineCache.scopeOf(identity)!,
+        scope: identity.account.scope,
         now: now,
         environment: TimelineEnvironment(localDateKey: utcPlusEight),
       );
@@ -190,7 +190,7 @@ void main() {
       final h = createHarness(cache: cache, now: () => now);
       configure(h, releases: [releaseJson(1, 'saved', '2026-10-18T12:00:00Z')]);
       await settle(h.container);
-      final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+      final scope = h.session.state.identity!.account.scope;
       var current = true;
       final held = queries.pauseNextRetentionRead();
       final pruning = cache.prune(
@@ -226,7 +226,7 @@ void main() {
       final h = createHarness(cache: cache, now: () => now);
       configure(h, releases: [releaseJson(1, 'saved', '2026-10-18T12:00:00Z')]);
       await settle(h.container);
-      final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+      final scope = h.session.state.identity!.account.scope;
       await cache.customStatement(
         "CREATE TEMP TRIGGER fail_cleanup BEFORE DELETE ON cache_releases BEGIN SELECT RAISE(ABORT, 'disk full'); END",
       );

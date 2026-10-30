@@ -1,5 +1,6 @@
 {
   "@@locale": "en",
+  "incompleteAccountIdentity": "The backend returned an incomplete account identity.",
   "settingsKeepReleases": "Keep releases for",
   "settingsUnitDay": "day",
   "settingsUnitDays": "days",

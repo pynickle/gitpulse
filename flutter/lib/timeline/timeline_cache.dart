@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/common.dart';
 
-import '../session/gitpulse_http.dart';
 import 'timeline_dto.dart';
 import 'timeline_models.dart';
 import 'timeline_history.dart';
@@ -148,11 +147,6 @@ class TimelineCache extends _$TimelineCache {
       }),
     );
   }
-
-  static String? scopeOf(AuthenticatedIdentity identity) =>
-      identity.githubId == null
-      ? null
-      : jsonEncode([identity.backend.toString(), identity.githubId]);
 
   Future<void> clear() {
     _revision++;

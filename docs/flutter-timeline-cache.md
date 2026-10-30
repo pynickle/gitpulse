@@ -12,9 +12,13 @@ The installation's `release_timeline` Drift/SQLite database stores current relea
 content once per stable repository/release identity. Separate tables record page
 cursors, per-cycle segments, page membership, and membership of the Saved Visible
 Timeline before display filters. A canonical backend base URL and numeric GitHub
-account identity scope the database. Session creation now includes that identity;
-sessions issued before this capability was introduced need a new sign-in before
-durable caching is available. Passwords and PATs are never written to this cache.
+account identity scope the database. The accepted identity contract requires that
+ID for every session; sessions without it are unsupported rather than usable
+without durable caching. Startup clears a saved identity without the ID, that
+backend's local session credentials and account cache, and requires sign-in without
+attempting automatic repair. Device preferences and backend configuration survive.
+See [ADR 0037](adr/0037-flutter-account-identity.md) for this decision.
+Passwords and PATs are never written to this cache.
 
 Eligibility uses publication time at or after the current UTC instant minus the
 installation's window in 24-hour days, including the exact cutoff. Local date
@@ -128,7 +132,10 @@ check; local restoration uses a single loading surface rather than the sign-in
 form. See [startup behavior](flutter-startup-spec.md). Explicit rejection
 hides the timeline; same-account reauthentication may restore it. Explicit logout
 and backend/account changes clear local timeline data and invalidate outstanding
-writes. Database writes and exposed membership updates commit transactionally;
+writes. Under ADR 0037, a successful session-validation response containing a user
+without a numeric ID instead clears local credentials and account cache and offers
+sign-in with an incomplete-identity error. Network failure alone does not invoke
+this cleanup. Database writes and exposed membership updates commit transactionally;
 failed writes leave fresh results readable with a cache-error indication.
 
 Refresh and load-older wait for the local save attempt before clearing loading.

@@ -46,11 +46,7 @@ const _cardSpacing = 12.0;
 final _readingPositionProvider = Provider((ref) {
   ref.watch(
     sessionControllerProvider.select(
-      (state) => (
-        state.phase,
-        state.identity?.backend,
-        state.identity?.githubId ?? state.identity?.login,
-      ),
+      (state) => (state.phase, state.identity?.account),
     ),
   );
   return _TimelineReadingPosition();

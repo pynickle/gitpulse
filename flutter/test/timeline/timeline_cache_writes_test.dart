@@ -72,7 +72,7 @@ void main() {
         expect(readState(h.container).cacheFailed, isFalse);
         expect(readState(h.container).savedAt, now);
         // A display filter never narrows the durable saved membership.
-        final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+        final scope = h.session.state.identity!.account.scope;
         h.container.dispose();
         await disk.reopen();
         final saved = (await disk.cache.restore(
@@ -119,7 +119,7 @@ void main() {
       await disk.cache.customStatement('DROP TRIGGER fail_page');
       await timeline.loadOlder();
       expect(readState(h.container).cacheFailed, isFalse);
-      final scope = TimelineCache.scopeOf(h.session.state.identity!)!;
+      final scope = h.session.state.identity!.account.scope;
       h.container.dispose();
       await disk.reopen();
       final saved = (await disk.cache.restore(

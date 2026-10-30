@@ -1,5 +1,6 @@
 {
   "@@locale": "zh",
+  "incompleteAccountIdentity": "后端返回的账号身份不完整。",
   "settingsKeepReleases": "保留发布记录",
   "settingsUnitDay": "天",
   "settingsUnitDays": "天",

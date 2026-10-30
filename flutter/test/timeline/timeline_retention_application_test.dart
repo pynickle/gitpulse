@@ -306,7 +306,7 @@ void main() {
     expect(h.device.value.retentionDays, 30);
     expect(
       await fixture.disk.cache!.lastSavedRetentionDays(
-        scope: TimelineCache.scopeOf(h.session.state.identity!)!,
+        scope: h.session.state.identity!.account.scope,
       ),
       30,
     );
@@ -332,7 +332,7 @@ void main() {
       expect(fixture.h.device.value.retentionDays, 30);
       expect(
         await fixture.disk.cache!.lastSavedRetentionDays(
-          scope: TimelineCache.scopeOf(fixture.h.session.state.identity!)!,
+          scope: fixture.h.session.state.identity!.account.scope,
         ),
         30,
       );
@@ -384,7 +384,7 @@ void main() {
     await controller.refresh();
     expect(
       await disk.cache!.lastSavedRetentionDays(
-        scope: TimelineCache.scopeOf(h.session.state.identity!)!,
+        scope: h.session.state.identity!.account.scope,
       ),
       7,
     );
@@ -449,7 +449,7 @@ void main() {
         expect(h.device.value.retentionDays, 30);
         expect(
           await fixture.disk.cache!.lastSavedRetentionDays(
-            scope: TimelineCache.scopeOf(identity)!,
+            scope: identity.account.scope,
           ),
           30,
         );

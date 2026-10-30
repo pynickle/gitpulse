@@ -622,7 +622,7 @@ void main() {
     harness.session.emit(
       SessionState(
         phase: SessionPhase.signedIn,
-        identity: signedInIdentity(login: 'hubot'),
+        identity: signedInIdentity(login: 'hubot', githubId: '2'),
       ),
     );
     await pumpEventQueue(times: 50);

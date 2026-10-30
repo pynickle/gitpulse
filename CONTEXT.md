@@ -52,6 +52,10 @@ A control whose behaviour and appearance both stay the platform's own by an expl
 
 ## Integration
 
+**Account Identity**:
+A GitHub account within one connected GitPulse backend. Renaming the account or changing the capitalization of its login preserves its identity; the same GitHub account connected through a different backend has a separate identity in GitPulse.
+_Avoid_: login, username when referring to account identity
+
 **Browser Launch Link**:
 A URL that asks GitPulse to open a supported GitHub page and resolve it into the matching GitPulse
 surface after authentication.

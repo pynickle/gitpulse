@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
@@ -167,7 +166,7 @@ void main() {
     await timeline.retryFailed();
     expect(keys(h.container), ['R_a:8']);
     final history = await disk.cache!.readHistory(
-      scope: TimelineCache.scopeOf(h.session.state.identity!)!,
+      scope: h.session.state.identity!.account.scope,
       now: disk.now,
     );
     expect(history.repositories['R_a']!.releases.keys, [8]);

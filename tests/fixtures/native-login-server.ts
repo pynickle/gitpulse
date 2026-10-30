@@ -75,6 +75,7 @@ export async function createNativeLoginTestHandler(baseURL = '/') {
       defineEventHandler(async (event) => {
         const { establishGitHubSession } = await import('../../server/utils/auth-session-utils');
         await establishGitHubSession(event, provider, 'github-token-never-in-urls', {
+          id: 1,
           login: 'octocat',
           name: 'The Octocat',
           avatar_url: 'https://github.test/avatar',

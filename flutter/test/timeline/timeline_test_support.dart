@@ -56,7 +56,7 @@ class FakeSessionController extends SessionController {
 
 AuthenticatedIdentity signedInIdentity({
   String login = 'octocat',
-  String? githubId,
+  String githubId = '1',
 }) => AuthenticatedIdentity(
   githubId: githubId,
   backend: Uri.parse('https://gitpulse.example/'),
@@ -176,7 +176,10 @@ TimelineHarness createHarness({
   if (cache == null && history != null) addTearDown(history.close);
   final container = ProviderContainer(
     overrides: [
-      ...gitPulseHarnessOverrides(deviceStore: deviceStore),
+      ...gitPulseHarnessOverrides(
+        deviceStore: deviceStore,
+        overrideTimelineCache: false,
+      ),
       if (cacheFile == null)
         timelineCacheProvider.overrideWithValue(history!)
       else ...[

@@ -355,7 +355,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       ),
     );
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     try {
       if (scope != null) {
         await _synchronizeCache(scope, ticket);
@@ -534,8 +534,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (session.phase != SessionPhase.signedIn) return null;
     final identity = session.identity;
     if (identity == null) return null;
-    return TimelineCache.scopeOf(identity) ??
-        '${identity.backend}|${identity.githubId ?? identity.login.toLowerCase()}';
+    return identity.account.scope;
   }
 
   Future<void> _restoreAndStart(int ticket) async {
@@ -600,7 +599,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> _restoreCachedWindow(int ticket) async {
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     if (scope != null) {
       try {
         final saved = await ref
@@ -664,7 +663,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> pruneRetainedHistory() async {
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     if (scope == null) return;
     final ticket = _generation;
     try {
@@ -846,18 +845,16 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     state = state.copyWith(loading: true);
     if (!_cacheSynchronized) {
       final identity = ref.read(sessionControllerProvider).identity!;
-      final scope = TimelineCache.scopeOf(identity);
-      if (scope != null) {
-        try {
-          await _synchronizeCache(scope, ticket);
-          if (!_isCurrent(ticket)) return;
-        } catch (error) {
-          if (_isCurrent(ticket)) {
-            _cacheFailure(error);
-            state = state.copyWith(loading: false);
-          }
-          return;
+      final scope = identity.account.scope;
+      try {
+        await _synchronizeCache(scope, ticket);
+        if (!_isCurrent(ticket)) return;
+      } catch (error) {
+        if (_isCurrent(ticket)) {
+          _cacheFailure(error);
+          state = state.copyWith(loading: false);
         }
+        return;
       }
     }
     if (_cyclePages.isNotEmpty) {
@@ -870,7 +867,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> rebuildCache() => _runCacheAction(() async {
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     if (_sessionContext() == null || scope == null) return;
     final ticket = ++_generation;
     state = state.copyWith(
@@ -1075,7 +1072,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _setFollowedRepositories(follows);
     _followsKnown = true;
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     if (scope != null) {
       try {
         await _synchronizeCache(scope, ticket);
@@ -1115,7 +1112,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     bool propagateFailure = false,
   }) async {
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     if (scope == null ||
         _retentionWindow == null ||
         !_cacheSynchronized ||
@@ -1331,7 +1328,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     bool propagateFailure = false,
   }) async {
     final identity = ref.read(sessionControllerProvider).identity;
-    final scope = identity == null ? null : TimelineCache.scopeOf(identity);
+    final scope = identity?.account.scope;
     // Durable history also needs a confirmed follow set: without one the cache
     // does not know which repositories this account keeps.
     if (scope != null &&
@@ -1376,7 +1373,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// The cache scope of the signed-in session, or null when there is none.
   String? _scopeOfSession() {
     final identity = ref.read(sessionControllerProvider).identity;
-    return identity == null ? null : TimelineCache.scopeOf(identity);
+    return identity?.account.scope;
   }
 
   TimelineCacheConnection get _cacheConnection => !_history.hasRetainedHistory

@@ -77,4 +77,5 @@ String signInFailureLabel(
   SignInFailure.browserLaunch => l10n.browserLaunchFailed,
   SignInFailure.expired => l10n.browserSignInExpired,
   SignInFailure.cancelled => l10n.browserSignInCancelled,
+  SignInFailure.incompleteIdentity => l10n.incompleteAccountIdentity,
 };

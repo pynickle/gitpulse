@@ -14,7 +14,6 @@ import 'package:gitpulse/presentation/gitpulse_dialog.dart';
 import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import 'package:gitpulse/settings/settings_screen.dart';
@@ -103,7 +102,7 @@ GitPulseIconButton retentionStep(WidgetTester tester, String name) =>
 Future<List<String>> savedHistory(PresentationHarness harness) async {
   final identity = harness.container.read(sessionControllerProvider).identity!;
   final saved = await harness.cache.restore(
-    scope: TimelineCache.scopeOf(identity)!,
+    scope: identity.account.scope,
     now: DateTime.now().toUtc(),
     environment: harness.container.read(timelineEnvironmentProvider),
   );

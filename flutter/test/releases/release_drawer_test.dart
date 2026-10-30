@@ -528,7 +528,7 @@ void main() {
       mounted.session.emit(
         SessionState(
           phase: SessionPhase.signedIn,
-          identity: signedInIdentity(login: 'another-user'),
+          identity: signedInIdentity(login: 'another-user', githubId: '2'),
         ),
       );
       await tester.pumpAndSettle();
@@ -839,7 +839,7 @@ void main() {
       mounted.session.emit(
         SessionState(
           phase: SessionPhase.signedIn,
-          identity: signedInIdentity(login: 'another-user'),
+          identity: signedInIdentity(login: 'another-user', githubId: '2'),
         ),
       );
       await tester.pumpAndSettle();
