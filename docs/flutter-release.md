@@ -113,7 +113,8 @@ Neither action is performed as part of this implementation.
 The Android job waits for the shared Flutter checks, and a failed job means that
 run has not delivered the formal artifacts, so the draft Release is not created.
 A manual **Flutter Release** run uploads Actions artifacts only. A tag
-push attaches the three ABI APKs and their `.sha256` files to the draft Release.
+push attaches the three ABI APKs, a Dart debug-symbol archive and their `.sha256`
+files to the draft Release.
 The draft body keeps the generated notes and adds a download block for those
 files. Publish that draft after acceptance. Verify the checksums before
 installation.
@@ -121,7 +122,7 @@ installation.
 ### Android
 
 Use Android SDK platform 36, build-tools 36.0.0, NDK 28.2.13676358 and Java 25
-with the committed Gradle wrapper (9.8.2), AGP 9.1.0 and Kotlin 2.4.21.
+with the committed Gradle wrapper (9.8.2), AGP 9.4.1 and Kotlin 2.4.21.
 Flutter's pinned SDK supplies minSdk 24 and target/compile SDK 36. Accept the
 SDK licenses on the build host. Keep `kotlin.incremental=false`; Windows Pub
 cache and checkout paths on different drives otherwise break plugin compilation.
@@ -129,7 +130,7 @@ cache and checkout paths on different drives otherwise break plugin compilation.
 With the intended signing configuration available:
 
 ```sh
-flutter build apk --release --split-per-abi --no-pub
+flutter build apk --release --split-per-abi --no-pub --split-debug-info=build/symbols
 ```
 
 This produces three APKs and no universal APK:
@@ -157,6 +158,34 @@ Without a release key, `flutter build apk --debug --no-pub` can check native
 compilation only. Its output `app-debug.apk` is explicitly a development artifact
 and is never uploaded by the release workflow.
 
+### Dart debug symbols
+
+Release builds split Dart debug information into `build/symbols/` without
+enabling obfuscation. The workflow requires a nonempty symbols file for each
+ABI and packages them as `GitPulse-flutter-vX.Y.Z-android-symbols.zip`, alongside
+the verified APKs. The archive includes a `manifest.json` recording the version,
+build number, source commit, workflow run/attempt, and each APK's and symbols
+file's SHA-256. A missing symbols file fails the distribution job.
+
+The existing tag workflow attaches this archive and its checksum to the draft
+GitHub Release, preserving symbols beyond Actions artifact expiry. Manual runs
+upload the same archive as an Actions artifact; download and retain it before
+that artifact expires if the candidate APK is distributed. Keep symbols for as
+long as their corresponding build may still be used. Symbols belong outside
+the APK and are not installers.
+
+To diagnose a Dart crash, download the archive from the exact build, check its
+manifest against the APK checksum and extract the matching ABI's symbols:
+
+```sh
+flutter symbolize -i stack-trace.txt -d app.android-arm64.symbols
+```
+
+The other filenames are `app.android-arm.symbols` for armeabi-v7a and
+`app.android-x64.symbols` for x86_64. A rebuilt APK with the same version label
+can require different symbols; use the manifest's APK hash and workflow run to
+identify the matching archive.
+
 ## Platform configuration audit
 
 | Platform | Configuration and prerequisites                                                                                                                                                                                                                                                | Verification boundary                                                                                                                                  |
@@ -173,7 +202,7 @@ to the app and assets open externally.
 
 The selected native plugins are `flutter_secure_storage` 11.2.0 (Android Keystore,
 Darwin Keychain), `url_launcher` 6.3.3, `path_provider` 2.1.6, and
-Drift/SQLite 2.35.2 / 3.7.1. SQLite is bundled via native assets rather than a
+Drift/SQLite 2.35.3 / 3.8.0. SQLite is bundled via native assets rather than a
 separately installed database. Repository documents are drawn by
 `flutter_inappwebview` 6.2.0-beta.3 in the platform browser engine — the system
 WebView on Android, WKWebView on iOS — running the

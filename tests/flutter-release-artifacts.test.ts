@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -115,7 +115,7 @@ describe('Android signing properties', () => {
 });
 
 describe('Flutter release assets', () => {
-  test('requires the three split APKs and their matching checksums', () => {
+  test('requires the three split APKs, symbol archive and their matching checksums', () => {
     const root = mkdtempSync(join(tmpdir(), 'gitpulse-release-assets-'));
     const directory = join(root, 'distributions');
     const created = runPython(
@@ -127,7 +127,7 @@ describe('Flutter release assets', () => {
           'import package_android',
           'directory = Path(sys.argv[1])',
           'directory.mkdir()',
-          'for name in package_android.release_binary_names("1.2.3"):',
+          'for name in [*package_android.release_binary_names("1.2.3"), package_android.symbols_archive_name("1.2.3")]:',
           '    path = directory / name',
           '    path.write_bytes(name.encode())',
           '    package_android.write_checksum(path)',
@@ -184,6 +184,138 @@ describe('Flutter release assets', () => {
     expect(result.status).toBe(0);
     expect(result.stdout.trim()).toBe('arm64-v8a');
     rmSync(root, { recursive: true });
+  });
+});
+
+describe('Flutter Dart debug symbol archive', () => {
+  function fixture() {
+    const root = mkdtempSync(join(tmpdir(), 'gitpulse-dart-symbols-'));
+    const created = runPython(
+      [
+        '-c',
+        [
+          'import sys',
+          'from pathlib import Path',
+          'import package_android as p',
+          'root = Path(sys.argv[1])',
+          '(root / "pubspec.yaml").write_text("version: 1.2.3+9\\n")',
+          'dist = root / "build" / "distributions"',
+          'symbols = root / "build" / "symbols"',
+          'dist.mkdir(parents=True)',
+          'symbols.mkdir()',
+          'for abi, platform in p.SYMBOL_PLATFORMS.items():',
+          '    apk = dist / f"GitPulse-flutter-v1.2.3-android-{abi}.apk"',
+          '    apk.write_bytes(abi.encode())',
+          '    p.write_checksum(apk)',
+          '    (symbols / f"app.{platform}.symbols").write_bytes(f"symbols-{abi}".encode())',
+        ].join('\n'),
+        root,
+      ],
+      { cwd: toolDir }
+    );
+    expect(created.status).toBe(0);
+    return root;
+  }
+
+  function packageSymbols(root: string) {
+    return runPython([packageAndroid, '--root', root, 'package-symbols'], {
+      env: {
+        ...process.env,
+        GITHUB_SHA: 'a'.repeat(40),
+        GITHUB_RUN_ID: '12345',
+        GITHUB_RUN_ATTEMPT: '2',
+      },
+    });
+  }
+
+  test('archives all ABI symbols with build identity and hashes of the matching APKs', () => {
+    const root = fixture();
+    try {
+      const packaged = packageSymbols(root);
+      expect(packaged.status).toBe(0);
+      const directory = join(root, 'build', 'distributions');
+      const archive = join(directory, 'GitPulse-flutter-v1.2.3-android-symbols.zip');
+      const inspected = runPython([
+        '-c',
+        [
+          'import sys, json, zipfile',
+          'with zipfile.ZipFile(sys.argv[1]) as z:',
+          '    print(json.dumps({"manifest": json.loads(z.read("manifest.json")), "files": {n: z.read(n).decode() for n in z.namelist() if n != "manifest.json"}}))',
+        ].join('\n'),
+        archive,
+      ]);
+      expect(inspected.status).toBe(0);
+      const { manifest, files } = JSON.parse(inspected.stdout);
+      expect(manifest).toMatchObject({
+        version: '1.2.3',
+        build_number: 9,
+        commit: 'a'.repeat(40),
+        run_id: '12345',
+        run_attempt: '2',
+      });
+      const platforms = {
+        'arm64-v8a': 'android-arm64',
+        'armeabi-v7a': 'android-arm',
+        x86_64: 'android-x64',
+      };
+      expect(Object.keys(manifest.abis).sort()).toEqual(Object.keys(platforms).sort());
+      expect(Object.keys(files)).toHaveLength(3);
+      for (const [abi, platform] of Object.entries(platforms)) {
+        const name = `app.${platform}.symbols`;
+        expect(files[name]).toBe(`symbols-${abi}`);
+        expect(manifest.abis[abi]).toEqual({
+          apk: `GitPulse-flutter-v1.2.3-android-${abi}.apk`,
+          apk_sha256: new Bun.CryptoHasher('sha256').update(abi).digest('hex'),
+          symbols: name,
+          symbols_sha256: new Bun.CryptoHasher('sha256').update(`symbols-${abi}`).digest('hex'),
+        });
+      }
+      const accepted = runPython([
+        packageAndroid,
+        'assert-assets',
+        '--dir',
+        directory,
+        '--version',
+        '1.2.3',
+      ]);
+      expect(accepted.status).toBe(0);
+
+      // The release validator must reject a corrupt diagnostic archive too.
+      writeFileSync(archive, 'corrupt');
+      const rejected = runPython([
+        packageAndroid,
+        'assert-assets',
+        '--dir',
+        directory,
+        '--version',
+        '1.2.3',
+      ]);
+      expect(rejected.status).not.toBe(0);
+      expect(rejected.stderr).toContain('Checksum does not match');
+    } finally {
+      rmSync(root, { recursive: true });
+    }
+  });
+
+  test.each(['missing', 'empty'])('rejects %s symbols before creating an archive', (state) => {
+    const root = fixture();
+    try {
+      const symbol = join(root, 'build', 'symbols', 'app.android-arm.symbols');
+      if (state === 'missing') rmSync(symbol);
+      else writeFileSync(symbol, '');
+      const rejected = packageSymbols(root);
+      expect(rejected.status).not.toBe(0);
+      expect(rejected.stderr).toContain(
+        'Missing or empty Dart debug symbols: app.android-arm.symbols'
+      );
+      expect(
+        existsSync(
+          join(root, 'build', 'distributions', 'GitPulse-flutter-v1.2.3-android-symbols.zip')
+        )
+      ).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true });
+    }
   });
 });
 

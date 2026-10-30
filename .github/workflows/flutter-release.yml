@@ -75,7 +75,7 @@ jobs:
           # flutter build replaces the Gradle environment with JAVA_HOME and PATH,
           # so the GITPULSE_ANDROID_* variables never reach the signing config.
           python3 tool/package_android.py write-signing
-          flutter build apk --release --split-per-abi --no-pub
+          flutter build apk --release --split-per-abi --no-pub --split-debug-info=build/symbols
 
       - name: Verify each split APK
         env:
@@ -83,6 +83,9 @@ jobs:
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
           RELEASE_BUILD_NUMBER: ${{ needs.validate.outputs.build_number }}
         run: python3 tool/package_android.py verify-splits
+
+      - name: Archive matching Dart debug symbols
+        run: python3 tool/package_android.py package-symbols
 
       - name: Remove the temporary signing key
         if: always()
@@ -97,6 +100,7 @@ jobs:
           name: gitpulse-flutter-v${{ needs.validate.outputs.version }}-android
           path: |
             flutter/build/distributions/*.apk
+            flutter/build/distributions/*-symbols.zip
             flutter/build/distributions/*.sha256
           if-no-files-found: error
 

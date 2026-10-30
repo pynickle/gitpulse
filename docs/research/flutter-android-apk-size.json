@@ -1,0 +1,714 @@
+{
+  "measuredOn": "2026-10-30",
+  "sourceCommit": "eb762e753a92d800ac3ea8e0e2ccf3d58b85ee11",
+  "toolchain": {
+    "host": "Windows x64",
+    "flutter": "3.47.8",
+    "dart": "3.13.7",
+    "frameworkRevision": "737ba8f885",
+    "engineRevision": "cf636b1dfb",
+    "ndk": "28.2.13676358",
+    "snapshotAnalysis": "0.7.6"
+  },
+  "method": "Same release android-arm64 kernel, deterministic gen_snapshot, both stripped using llvm-strip --strip-unneeded. Split adds dwarf-stack-traces, resolve-dwarf-paths and save-debugging-info. No obfuscation or APK signing.",
+  "inputApk": {
+    "file": "GitPulse-flutter-v0.1.0-android-arm64-v8a.apk",
+    "bytes": 23712366,
+    "sha256": "18a0f239279059307bd2289d290680771bbf11af5535b16fd725ad3db8b767f1",
+    "libappBytes": 8586120,
+    "libappSha256": "aa875dea79bb42ecde8eaae3e4b194ba31417bbdbb5aab61421ca7d995d1277d",
+    "nativeLibraries": [
+      {
+        "path": "lib/arm64-v8a/libapp.so",
+        "bytes": 8586120,
+        "storedBytes": 8586120,
+        "compressionMethod": 0
+      },
+      {
+        "path": "lib/arm64-v8a/libdartjni.so",
+        "bytes": 131248,
+        "storedBytes": 131248,
+        "compressionMethod": 0
+      },
+      {
+        "path": "lib/arm64-v8a/libflutter.so",
+        "bytes": 11763360,
+        "storedBytes": 11763360,
+        "compressionMethod": 0
+      },
+      {
+        "path": "lib/arm64-v8a/libsqlite3.so",
+        "bytes": 1749200,
+        "storedBytes": 1749200,
+        "compressionMethod": 0
+      }
+    ]
+  },
+  "localBaseline": {
+    "libappBytes": 8586120,
+    "libappSha256": "adc9fdd8c7a9a3df38655503f564468ad4315791beb805ddbccd1f3a7619ffe8",
+    "unstrippedBytes": 12462584,
+    "snapshotAccountedBytes": 8510592
+  },
+  "localSplit": {
+    "libappBytes": 7340936,
+    "libappSha256": "6eed95bbd0d41f46f7d3d46788f4dbe58b57653ab7028d958f42d2816fee2f60",
+    "unstrippedBytes": 11465664,
+    "snapshotAccountedBytes": 7265984,
+    "externalSymbolsBytes": 4191160
+  },
+  "comparison": {
+    "libappSavingBytes": 1245184,
+    "libappSavingPercent": 14.502289742048795,
+    "projectedApkBytes": 22467182,
+    "projectedApkSavingPercent": 5.251200997825354,
+    "signedApkBuilt": false,
+    "installedSizeMeasured": false,
+    "runtimeAcceptanceRun": false,
+    "baselineByteIdenticalToInput": false
+  },
+  "attributionCaveat": "Snapshot ownership attribution is approximate, includes data and code, and excludes ELF overhead. Shared bytes are separate; package bytes are not guaranteed removal savings.",
+  "rootSharedBytes": {
+    "baseline": 201355,
+    "split": 188133
+  },
+  "packages": [
+    {
+      "name": "package:flutter",
+      "baselineBytes": 3216561,
+      "splitBytes": 2654416
+    },
+    {
+      "name": "@unknown",
+      "baselineBytes": 785331,
+      "splitBytes": 774179
+    },
+    {
+      "name": "package:gitpulse",
+      "baselineBytes": 683055,
+      "splitBytes": 590281
+    },
+    {
+      "name": "dart:mixin_deduplication",
+      "baselineBytes": 392649,
+      "splitBytes": 327987
+    },
+    {
+      "name": "dart:core",
+      "baselineBytes": 324024,
+      "splitBytes": 279904
+    },
+    {
+      "name": "dart:ui",
+      "baselineBytes": 239594,
+      "splitBytes": 197711
+    },
+    {
+      "name": "package:flutter_localizations",
+      "baselineBytes": 240115,
+      "splitBytes": 169338
+    },
+    {
+      "name": "dart:typed_data",
+      "baselineBytes": 196336,
+      "splitBytes": 167625
+    },
+    {
+      "name": "@stubs",
+      "baselineBytes": 164902,
+      "splitBytes": 164902
+    },
+    {
+      "name": "dart:async",
+      "baselineBytes": 146695,
+      "splitBytes": 120491
+    },
+    {
+      "name": "package:material_ui",
+      "baselineBytes": 129639,
+      "splitBytes": 117367
+    },
+    {
+      "name": "dart:io",
+      "baselineBytes": 131830,
+      "splitBytes": 110230
+    },
+    {
+      "name": "package:drift",
+      "baselineBytes": 131259,
+      "splitBytes": 108674
+    },
+    {
+      "name": "dart:_http",
+      "baselineBytes": 124515,
+      "splitBytes": 103175
+    },
+    {
+      "name": "package:riverpod",
+      "baselineBytes": 121730,
+      "splitBytes": 102070
+    },
+    {
+      "name": "package:intl",
+      "baselineBytes": 114535,
+      "splitBytes": 98698
+    },
+    {
+      "name": "dart:collection",
+      "baselineBytes": 103534,
+      "splitBytes": 85255
+    },
+    {
+      "name": "dart:_internal",
+      "baselineBytes": 88439,
+      "splitBytes": 75256
+    },
+    {
+      "name": "package:flutter_inappwebview_platform_interface",
+      "baselineBytes": 81647,
+      "splitBytes": 74357
+    },
+    {
+      "name": "dart:convert",
+      "baselineBytes": 78232,
+      "splitBytes": 66005
+    },
+    {
+      "name": "package:go_router",
+      "baselineBytes": 80234,
+      "splitBytes": 65362
+    },
+    {
+      "name": "package:material_color_utilities",
+      "baselineBytes": 72440,
+      "splitBytes": 63937
+    },
+    {
+      "name": "dart:_compact_hash",
+      "baselineBytes": 64935,
+      "splitBytes": 54962
+    },
+    {
+      "name": "package:dio",
+      "baselineBytes": 58095,
+      "splitBytes": 50052
+    },
+    {
+      "name": "package:sqlite3",
+      "baselineBytes": 55555,
+      "splitBytes": 44637
+    },
+    {
+      "name": "package:source_span",
+      "baselineBytes": 43657,
+      "splitBytes": 36312
+    },
+    {
+      "name": "package:characters",
+      "baselineBytes": 37568,
+      "splitBytes": 35136
+    },
+    {
+      "name": "package:collection",
+      "baselineBytes": 37646,
+      "splitBytes": 32501
+    },
+    {
+      "name": "package:vector_math",
+      "baselineBytes": 37751,
+      "splitBytes": 31924
+    },
+    {
+      "name": "package:jni",
+      "baselineBytes": 37438,
+      "splitBytes": 30764
+    },
+    {
+      "name": "package:path",
+      "baselineBytes": 29633,
+      "splitBytes": 25060
+    },
+    {
+      "name": "dart:isolate",
+      "baselineBytes": 27992,
+      "splitBytes": 23349
+    },
+    {
+      "name": "package:stack_trace",
+      "baselineBytes": 24837,
+      "splitBytes": 20810
+    },
+    {
+      "name": "package:cupertino_ui",
+      "baselineBytes": 20693,
+      "splitBytes": 18060
+    },
+    {
+      "name": "dart:ffi",
+      "baselineBytes": 17919,
+      "splitBytes": 16090
+    },
+    {
+      "name": "package:flutter_inappwebview_android",
+      "baselineBytes": 17196,
+      "splitBytes": 14585
+    },
+    {
+      "name": "package:cookie_jar",
+      "baselineBytes": 15098,
+      "splitBytes": 12811
+    },
+    {
+      "name": "package:flutter_riverpod",
+      "baselineBytes": 13678,
+      "splitBytes": 11290
+    },
+    {
+      "name": "package:url_launcher_android",
+      "baselineBytes": 12175,
+      "splitBytes": 10553
+    },
+    {
+      "name": "package:async",
+      "baselineBytes": 13330,
+      "splitBytes": 10494
+    },
+    {
+      "name": "package:crypto",
+      "baselineBytes": 9308,
+      "splitBytes": 7942
+    },
+    {
+      "name": "package:stream_channel",
+      "baselineBytes": 7650,
+      "splitBytes": 6182
+    },
+    {
+      "name": "package:json_annotation",
+      "baselineBytes": 7157,
+      "splitBytes": 6118
+    },
+    {
+      "name": "package:http_parser",
+      "baselineBytes": 7268,
+      "splitBytes": 6079
+    },
+    {
+      "name": "dart:math",
+      "baselineBytes": 6571,
+      "splitBytes": 5479
+    },
+    {
+      "name": "package:dio_cookie_manager",
+      "baselineBytes": 6223,
+      "splitBytes": 5357
+    },
+    {
+      "name": "package:ffi",
+      "baselineBytes": 5934,
+      "splitBytes": 4771
+    },
+    {
+      "name": "package:path_provider_android",
+      "baselineBytes": 5033,
+      "splitBytes": 4187
+    },
+    {
+      "name": "package:uuid",
+      "baselineBytes": 4380,
+      "splitBytes": 3861
+    },
+    {
+      "name": "package:flutter_secure_storage",
+      "baselineBytes": 4218,
+      "splitBytes": 3747
+    },
+    {
+      "name": "dart:developer",
+      "baselineBytes": 3849,
+      "splitBytes": 3281
+    },
+    {
+      "name": "package:url_launcher_platform_interface",
+      "baselineBytes": 2622,
+      "splitBytes": 2301
+    },
+    {
+      "name": "package:share_plus_platform_interface",
+      "baselineBytes": 2562,
+      "splitBytes": 2127
+    },
+    {
+      "name": "package:flutter_inappwebview",
+      "baselineBytes": 2598,
+      "splitBytes": 2108
+    },
+    {
+      "name": "package:string_scanner",
+      "baselineBytes": 2631,
+      "splitBytes": 2000
+    },
+    {
+      "name": "dart:_vm",
+      "baselineBytes": 2201,
+      "splitBytes": 1972
+    },
+    {
+      "name": "package:flutter_secure_storage_platform_interface",
+      "baselineBytes": 1744,
+      "splitBytes": 1438
+    },
+    {
+      "name": "package:jni_flutter",
+      "baselineBytes": 1636,
+      "splitBytes": 1269
+    },
+    {
+      "name": "package:term_glyph",
+      "baselineBytes": 1785,
+      "splitBytes": 1216
+    },
+    {
+      "name": "package:path_provider",
+      "baselineBytes": 1259,
+      "splitBytes": 1063
+    },
+    {
+      "name": "dart:mirrors",
+      "baselineBytes": 1122,
+      "splitBytes": 1049
+    },
+    {
+      "name": "package:drift_flutter",
+      "baselineBytes": 1320,
+      "splitBytes": 1038
+    },
+    {
+      "name": "package:path_provider_platform_interface",
+      "baselineBytes": 1193,
+      "splitBytes": 951
+    },
+    {
+      "name": "file:///D:/GitHub/gitpulse/flutter/.dart_tool/flutter_build/dart_plugin_registrant.dart",
+      "baselineBytes": 893,
+      "splitBytes": 830
+    },
+    {
+      "name": "package:clock",
+      "baselineBytes": 848,
+      "splitBytes": 753
+    },
+    {
+      "name": "package:plugin_platform_interface",
+      "baselineBytes": 844,
+      "splitBytes": 693
+    },
+    {
+      "name": "package:share_plus",
+      "baselineBytes": 576,
+      "splitBytes": 514
+    },
+    {
+      "name": "dart:concurrent",
+      "baselineBytes": 457,
+      "splitBytes": 454
+    },
+    {
+      "name": "package:url_launcher",
+      "baselineBytes": 732,
+      "splitBytes": 347
+    },
+    {
+      "name": "dart:nativewrappers",
+      "baselineBytes": 172,
+      "splitBytes": 172
+    },
+    {
+      "name": "package:meta",
+      "baselineBytes": 171,
+      "splitBytes": 169
+    },
+    {
+      "name": "dart:vmservice_io",
+      "baselineBytes": 107,
+      "splitBytes": 108
+    },
+    {
+      "name": "dart:_vmservice",
+      "baselineBytes": 108,
+      "splitBytes": 107
+    },
+    {
+      "name": "void",
+      "baselineBytes": 78,
+      "splitBytes": 77
+    },
+    {
+      "name": "WeakSerializationReference",
+      "baselineBytes": 51,
+      "splitBytes": 51
+    },
+    {
+      "name": "MonomorphicSmiableCall",
+      "baselineBytes": 47,
+      "splitBytes": 46
+    },
+    {
+      "name": "LocalVarDescriptors",
+      "baselineBytes": 43,
+      "splitBytes": 44
+    },
+    {
+      "name": "CompressedStackMaps",
+      "baselineBytes": 43,
+      "splitBytes": 43
+    },
+    {
+      "name": "InstructionsSection",
+      "baselineBytes": 43,
+      "splitBytes": 43
+    },
+    {
+      "name": "SingleTargetCache",
+      "baselineBytes": 41,
+      "splitBytes": 42
+    },
+    {
+      "name": "UnhandledException",
+      "baselineBytes": 43,
+      "splitBytes": 42
+    },
+    {
+      "name": "FfiTrampolineData",
+      "baselineBytes": 42,
+      "splitBytes": 42
+    },
+    {
+      "name": "InstructionsTable",
+      "baselineBytes": 42,
+      "splitBytes": 42
+    },
+    {
+      "name": "TypeArguments",
+      "baselineBytes": 40,
+      "splitBytes": 41
+    },
+    {
+      "name": "KernelProgramInfo",
+      "baselineBytes": 42,
+      "splitBytes": 41
+    },
+    {
+      "name": "ExceptionHandlers",
+      "baselineBytes": 42,
+      "splitBytes": 41
+    },
+    {
+      "name": "SubtypeTestCache",
+      "baselineBytes": 40,
+      "splitBytes": 40
+    },
+    {
+      "name": "MegamorphicCache",
+      "baselineBytes": 41,
+      "splitBytes": 40
+    },
+    {
+      "name": "TypeParameters",
+      "baselineBytes": 39,
+      "splitBytes": 38
+    },
+    {
+      "name": "LanguageError",
+      "baselineBytes": 38,
+      "splitBytes": 38
+    },
+    {
+      "name": "PcDescriptors",
+      "baselineBytes": 38,
+      "splitBytes": 37
+    },
+    {
+      "name": "CodeSourceMap",
+      "baselineBytes": 37,
+      "splitBytes": 37
+    },
+    {
+      "name": "UnlinkedCall",
+      "baselineBytes": 37,
+      "splitBytes": 36
+    },
+    {
+      "name": "Instructions",
+      "baselineBytes": 36,
+      "splitBytes": 36
+    },
+    {
+      "name": "ContextScope",
+      "baselineBytes": 36,
+      "splitBytes": 36
+    },
+    {
+      "name": "LoadingUnit",
+      "baselineBytes": 36,
+      "splitBytes": 35
+    },
+    {
+      "name": "ClosureData",
+      "baselineBytes": 36,
+      "splitBytes": 35
+    },
+    {
+      "name": "UnwindError",
+      "baselineBytes": 36,
+      "splitBytes": 35
+    },
+    {
+      "name": "Sentinel",
+      "baselineBytes": 35,
+      "splitBytes": 35
+    },
+    {
+      "name": "PatchClass",
+      "baselineBytes": 34,
+      "splitBytes": 34
+    },
+    {
+      "name": "ObjectPool",
+      "baselineBytes": 35,
+      "splitBytes": 34
+    },
+    {
+      "name": "WeakArray",
+      "baselineBytes": 33,
+      "splitBytes": 33
+    },
+    {
+      "name": "Namespace",
+      "baselineBytes": 33,
+      "splitBytes": 33
+    },
+    {
+      "name": "dynamic",
+      "baselineBytes": 34,
+      "splitBytes": 33
+    },
+    {
+      "name": "Never",
+      "baselineBytes": 33,
+      "splitBytes": 32
+    },
+    {
+      "name": "Bytecode",
+      "baselineBytes": 33,
+      "splitBytes": 32
+    },
+    {
+      "name": "ApiError",
+      "baselineBytes": 32,
+      "splitBytes": 32
+    },
+    {
+      "name": "Library",
+      "baselineBytes": 31,
+      "splitBytes": 31
+    },
+    {
+      "name": "ICData",
+      "baselineBytes": 30,
+      "splitBytes": 30
+    },
+    {
+      "name": "Script",
+      "baselineBytes": 30,
+      "splitBytes": 30
+    },
+    {
+      "name": "Field",
+      "baselineBytes": 30,
+      "splitBytes": 29
+    },
+    {
+      "name": "Class",
+      "baselineBytes": 30,
+      "splitBytes": 29
+    },
+    {
+      "name": "Code",
+      "baselineBytes": 28,
+      "splitBytes": 28
+    },
+    {
+      "name": "Function",
+      "baselineBytes": 22,
+      "splitBytes": 23
+    },
+    {
+      "name": "Context",
+      "baselineBytes": 23,
+      "splitBytes": 22
+    }
+  ],
+  "largestSplitApplicationLibraries": [
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/timeline/timeline_cache.dart",
+      "bytes": 49521
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/timeline/timeline_session.dart",
+      "bytes": 46090
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/timeline/timeline_screen.dart",
+      "bytes": 31896
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/session/session_controller.dart",
+      "bytes": 23954
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/releases/release_drawer.dart",
+      "bytes": 21401
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/follows/release_follows_session.dart",
+      "bytes": 17645
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/follows/release_follows_screen.dart",
+      "bytes": 14550
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/repositories/repository_screen.dart",
+      "bytes": 14391
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/timeline/timeline_filter_panel.dart",
+      "bytes": 14357
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/releases/repository_releases_view.dart",
+      "bytes": 14143
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/presentation/gitpulse_formatting.dart",
+      "bytes": 13424
+    },
+    {
+      "package": "package:gitpulse",
+      "library": "package:gitpulse/timeline/timeline_history.dart",
+      "bytes": 12654
+    }
+  ]
+}

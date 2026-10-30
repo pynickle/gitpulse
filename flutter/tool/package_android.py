@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import json
 import os
 import re
 import stat
@@ -31,6 +32,11 @@ ABI_VERSION = {
     "x86_64": 4,
 }
 SPLIT_ABIS = ("arm64-v8a", "armeabi-v7a", "x86_64")
+SYMBOL_PLATFORMS = {
+    "arm64-v8a": "android-arm64",
+    "armeabi-v7a": "android-arm",
+    "x86_64": "android-x64",
+}
 PUBSPEC_VERSION = re.compile(r"^version: (\d+\.\d+\.\d+)\+([1-9]\d*)\s*$", re.M)
 
 
@@ -87,6 +93,10 @@ def android_apk_names(version: str) -> list[str]:
 
 def release_binary_names(version: str) -> list[str]:
     return android_apk_names(version)
+
+
+def symbols_archive_name(version: str) -> str:
+    return f"GitPulse-flutter-v{version}-android-symbols.zip"
 
 
 def checksum_name(binary_name: str) -> str:
@@ -259,16 +269,51 @@ def verify_checksum_file(directory: Path, binary_name: str) -> None:
         raise SystemExit(f"Checksum does not match {binary_name}.")
 
 
+def package_symbols(root: Path) -> None:
+    version, build_number = read_pubspec_version(root)
+    env = _require_env(["GITHUB_SHA", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT"])
+    distributions = root / "build" / "distributions"
+    symbols = root / "build" / "symbols"
+    manifest = {
+        "version": version,
+        "build_number": build_number,
+        "commit": env["GITHUB_SHA"],
+        "run_id": env["GITHUB_RUN_ID"],
+        "run_attempt": env["GITHUB_RUN_ATTEMPT"],
+        "abis": {},
+    }
+    for abi, platform in SYMBOL_PLATFORMS.items():
+        apk_name = f"GitPulse-flutter-v{version}-android-{abi}.apk"
+        verify_checksum_file(distributions, apk_name)
+        symbol_name = f"app.{platform}.symbols"
+        symbol = symbols / symbol_name
+        if not symbol.is_file() or symbol.stat().st_size == 0:
+            raise SystemExit(f"Missing or empty Dart debug symbols: {symbol_name}")
+        manifest["abis"][abi] = {
+            "apk": apk_name,
+            "apk_sha256": sha256_file(distributions / apk_name),
+            "symbols": symbol_name,
+            "symbols_sha256": sha256_file(symbol),
+        }
+    archive = distributions / symbols_archive_name(version)
+    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as output:
+        output.writestr("manifest.json", json.dumps(manifest, indent=2) + "\n")
+        for entry in manifest["abis"].values():
+            output.write(symbols / entry["symbols"], entry["symbols"])
+    write_checksum(archive)
+    print(f"Archived {archive.name}; commit {env['GITHUB_SHA']}")
+
+
 def assert_release_assets(directory: Path, version: str) -> None:
     expected = []
-    for binary_name in release_binary_names(version):
+    for binary_name in [*release_binary_names(version), symbols_archive_name(version)]:
         verify_checksum_file(directory, binary_name)
         expected.extend([binary_name, checksum_name(binary_name)])
     found = sorted(path.name for path in directory.iterdir() if path.is_file())
     if found != sorted(expected):
         raise SystemExit(
-            "Release directory does not contain exactly the split Android APKs "
-            "and their checksums.\n"
+            "Release directory does not contain exactly the split Android APKs, "
+            "Dart symbol archive and their checksums.\n"
             f"Expected: {sorted(expected)}\nFound: {found}"
         )
 
@@ -298,6 +343,7 @@ def main(argv: list[str] | None = None) -> None:
     subcommands.add_parser("validate-version")
     subcommands.add_parser("write-signing")
     subcommands.add_parser("verify-splits")
+    subcommands.add_parser("package-symbols")
     version_code = subcommands.add_parser("version-code")
     version_code.add_argument("--build-number", type=int, required=True)
     assets = subcommands.add_parser("assert-assets")
@@ -311,9 +357,9 @@ def main(argv: list[str] | None = None) -> None:
         write_signing(_root(args))
     elif args.command == "verify-splits":
         verify_splits(_root(args))
+    elif args.command == "package-symbols":
+        package_symbols(_root(args))
     elif args.command == "version-code":
-        import json
-
         print(
             json.dumps(
                 {abi: split_version_code(abi, args.build_number) for abi in SPLIT_ABIS},
