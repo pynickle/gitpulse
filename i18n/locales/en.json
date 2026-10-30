@@ -18,6 +18,9 @@
     "light": "Use light mode",
     "dark": "Use dark mode"
   },
+  "language": {
+    "label": "Language"
+  },
   "landing": {
     "heroEyebrow": "Choose your GitHub access path",
     "heroDescription": "Track notifications, issues, pull requests, and repositories from one focused workspace. Sign in with a GitHub token or via GitHub OAuth.",

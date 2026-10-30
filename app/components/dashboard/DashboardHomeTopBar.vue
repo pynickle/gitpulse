@@ -34,9 +34,7 @@ const { t } = useI18n();
 const accountRootRef = useTemplateRef<HTMLElement>('accountRoot');
 
 const isAccountMenuPointerTarget = (target: EventTarget | null) => {
-  if (!(target instanceof Element)) return false;
-  if (accountRootRef.value?.contains(target)) return true;
-  return Boolean(target.closest('.filter-dropdown-panel'));
+  return target instanceof Node && Boolean(accountRootRef.value?.contains(target));
 };
 
 const handleAccountPointerDown = (event: PointerEvent) => {

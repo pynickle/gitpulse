@@ -83,7 +83,7 @@
           <Transition name="dashboard-top-header-more-menu">
             <div v-if="isMoreMenuOpen" class="dashboard-top-header__more-menu" role="menu">
               <div class="dashboard-top-header__more-menu-row" role="none">
-                <LanguageSwitcher />
+                <LanguageSwitcher @before-switch="armMoreMenuForLocaleChange" />
               </div>
               <div class="dashboard-top-header__more-menu-row" role="none">
                 <span class="dashboard-top-header__more-menu-label">
@@ -110,7 +110,7 @@ import {
   PanelRightCloseIcon,
   PanelRightOpenIcon,
 } from '@lucide/vue';
-import { type Component, computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { type Component, computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
@@ -208,15 +208,22 @@ const isDetailSummaryVisible = computed(() => {
 /*
  * Mobile "more" menu (<=860px): hosts the language switcher and color mode
  * toggle so the toolbar stays on one row. The menu closes on outside clicks,
- * on Escape, on any overlay scroll (the floating panel is absolute inside a
- * sticky header — it would not follow the content), and after picking a
- * language.
+ * on Escape, and on overlay scroll. Locale choices stay in the menu. The
+ * locale URL recreates the page, so the open menu is restored once;
+ * the scroll from that navigation does not count as a dismissal.
  */
-const isMoreMenuOpen = ref(false);
+const restoredMoreMenu = holdDashboardMoreMenu.take();
+const isMoreMenuOpen = ref(restoredMoreMenu);
+let ignoreScrollClose = restoredMoreMenu;
 const moreMenuRef = ref<HTMLElement | null>(null);
+
+const armMoreMenuForLocaleChange = () => {
+  holdDashboardMoreMenu.arm();
+};
 
 const closeMoreMenu = () => {
   isMoreMenuOpen.value = false;
+  ignoreScrollClose = false;
 };
 
 const toggleMoreMenu = () => {
@@ -234,12 +241,26 @@ const onMoreMenuKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') closeMoreMenu();
 };
 
-const onMoreMenuScroll = () => closeMoreMenu();
+const onMoreMenuScroll = () => {
+  if (ignoreScrollClose) return;
+  closeMoreMenu();
+};
 
 onMounted(() => {
   document.addEventListener('click', onMoreMenuDocumentClick, true);
   document.addEventListener('keydown', onMoreMenuKeydown);
   document.addEventListener('scroll', onMoreMenuScroll, true);
+
+  if (!ignoreScrollClose) return;
+
+  // Nuxt scrolls to the top on the frame after this page finishes loading.
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ignoreScrollClose = false;
+      });
+    });
+  });
 });
 
 onBeforeUnmount(() => {
