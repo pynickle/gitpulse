@@ -5,7 +5,7 @@ version: 0.1.0+1
 
 environment:
   sdk: ^3.13.5
-  flutter: 3.47.8
+  flutter: 3.47.9
 
 dependencies:
   cookie_jar: ^4.0.9

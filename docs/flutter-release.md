@@ -18,6 +18,8 @@ Run Flutter commands from `flutter/`. The exact stable Flutter SDK is recorded i
 Dart SDK and commit `pubspec.lock`. Flutter does not participate in the Bun
 workspace or Nuxt discovery. The root web checks still run independently.
 
+The current pin is Flutter 3.47.9 stable with its bundled Dart 3.13.7.
+
 Android uses AGP 9.4.1, Gradle 9.8.2, and built-in Kotlin. The Kotlin compiler
 stays pinned to 2.4.21 to satisfy Flutter's minimum version and the JVM 25 target;
 the Kotlin Android plugin is declared with `apply false` and is not applied.
