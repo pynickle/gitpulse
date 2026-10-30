@@ -4,10 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../session/session_controller.dart';
 import '../session/account_identity.dart';
-import '../timeline/timeline_models.dart';
-import '../timeline/timeline_dto.dart';
-import '../timeline/timeline_service.dart';
-import '../timeline/timeline_state.dart';
+import '../repositories/repository_models.dart';
 import 'followed_repository_view.dart';
 import 'release_follows_service.dart';
 import 'release_follows_dto.dart';
@@ -23,9 +20,10 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   int _generation = 0;
   int _metadataTicket = 0;
   AccountIdentity? _context;
-  Future<TimelineResult<UserSettingsDto>>? _settingsRead;
-  TimelineFailure? _readFailure;
-  Completer<void>? _edit;
+  Future<FollowCollectionResult>? _settingsRead;
+  FollowProblem? _readFailure;
+  Completer<FollowCollectionResult>? _edit;
+  Future<FollowCollectionResult>? _lastEdit;
   final Map<String, Object> _members = {};
   final Map<String, Object> _metadataRequests = {};
   final Map<String, int> _nameVersions = {};
@@ -51,6 +49,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       _metadataRequests.clear();
       _nameVersions.clear();
       _edit = null;
+      _lastEdit = null;
       state = ReleaseFollowsState(active: context != null);
       if (context != null) unawaited(reload());
     });
@@ -79,33 +78,27 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     await synchronize(refresh: true);
   }
 
-  /// Shares compatible collection reads with Timeline. Ordinary navigation reuses
-  /// the last confirmation; edits invalidate reads begun before their save.
-  Future<TimelineResult<UserSettingsDto>> synchronize({
-    bool refresh = false,
-  }) async {
+  /// Confirms the account's collection, sharing overlapping reads.
+  ///
+  /// Ordinary navigation reuses the last confirmation. A refresh reads remotely
+  /// unless an overlapping edit supplies its outcome instead: synchronization
+  /// waits for that edit, then returns its confirmed collection or failure
+  /// without another read.
+  Future<FollowCollectionResult> synchronize({bool refresh = false}) async {
     final context = _context;
     if (!state.active) {
-      return const TimelineResult.failed(
-        TimelineFailure(TimelineFailureKind.cancelled),
-      );
+      return const FollowCollectionResult.failed(FollowProblem.cancelled);
     }
     final edit = _edit;
     if (edit != null) {
-      await edit.future;
-      if (!ref.mounted || context != _context) {
-        return const TimelineResult.failed(
-          TimelineFailure(TimelineFailureKind.cancelled),
-        );
-      }
-      return synchronize(refresh: refresh);
+      return _afterEdit(edit.future, context);
     }
     if (_settingsRead != null) return _settingsRead!;
     if (!refresh && state.loaded) {
-      return TimelineResult.data(_confirmedSettings);
+      return FollowCollectionResult.confirmed(state.repositories);
     }
     if (!refresh && _readFailure != null) {
-      return TimelineResult.failed(_readFailure!);
+      return FollowCollectionResult.failed(_readFailure!);
     }
     final ticket = _generation;
     // A failed collection read owns the followed list until this read finishes.
@@ -126,54 +119,48 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     }
   }
 
-  UserSettingsDto get _confirmedSettings => UserSettingsDto(
-    followedRepositories: [
-      for (final repo in state.repositories)
-        FollowedRepositoryDto(id: repo.id, owner: repo.owner, name: repo.name),
-    ],
-  );
+  Future<FollowCollectionResult> _afterEdit(
+    Future<FollowCollectionResult> edit,
+    AccountIdentity? context,
+  ) async {
+    final result = await edit;
+    if (!ref.mounted || context != _context || !state.active) {
+      return const FollowCollectionResult.failed(FollowProblem.cancelled);
+    }
+    return result.problem == null
+        ? FollowCollectionResult.confirmed(state.repositories)
+        : result;
+  }
 
-  Future<TimelineResult<UserSettingsDto>> _readSettings(int ticket) async {
+  Future<FollowCollectionResult> _readSettings(int ticket) async {
     final context = _context;
     final names = Map.of(_nameVersions);
-    final response = await ref
-        .read(releaseTimelineServiceProvider)
-        .readSettings();
+    List<RepositoryReference>? repositories;
+    FollowProblem? problem;
+    try {
+      repositories = await _service.readFollows();
+    } on FollowRequestFailure catch (error) {
+      problem = error.problem;
+    }
     if (!_current(ticket)) {
-      if (ref.mounted && context == _context && state.active && state.loaded) {
-        return TimelineResult.data(_confirmedSettings);
+      if (ref.mounted && context == _context && _lastEdit != null) {
+        return _afterEdit(_lastEdit!, context);
       }
-      return const TimelineResult.failed(
-        TimelineFailure(TimelineFailureKind.cancelled),
-      );
+      return const FollowCollectionResult.failed(FollowProblem.cancelled);
     }
-    final settings = response.data;
-    if (settings == null || settings.followedRepositories == null) {
-      final failure =
-          response.failure ??
-          const TimelineFailure(TimelineFailureKind.invalidResponse);
+    if (repositories == null) {
+      final failure = problem ?? FollowProblem.invalidResponse;
       _readFailure = failure;
-      state = state.copyWith(
-        loading: false,
-        problem: switch (failure.kind) {
-          TimelineFailureKind.network => FollowProblem.network,
-          TimelineFailureKind.rateLimited => FollowProblem.rateLimited,
-          TimelineFailureKind.invalidResponse => FollowProblem.invalidResponse,
-          TimelineFailureKind.cancelled => FollowProblem.cancelled,
-          _ => FollowProblem.server,
-        },
-      );
-      return TimelineResult.failed(failure);
+      state = state.copyWith(loading: false, problem: failure);
+      return FollowCollectionResult.failed(failure);
     }
-    _publishConfirmed(
-      _preserveNewerNames(mapFollowedRepositories(settings), names),
-    );
+    _publishConfirmed(_preserveNewerNames(repositories, names));
     if (_detailed) unawaited(loadMetadata());
-    return TimelineResult.data(_confirmedSettings);
+    return FollowCollectionResult.confirmed(state.repositories);
   }
 
   /// Adds a Release Follow after checking the latest shared list and limits.
-  Future<void> follow(TimelineRepository repository) async {
+  Future<void> follow(RepositoryReference repository) async {
     if (!state.active || state.editBlocked) {
       return;
     }
@@ -205,7 +192,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
               .where(
                 (repo) =>
                     metadata?.repositories[repo.id]?.status !=
-                    RepositoryPageStatus.unavailable,
+                    RepositoryQueryStatus.unavailable,
               )
               .length >=
           100) {
@@ -231,7 +218,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
   });
 
   Future<void> _saveEdit(
-    Future<List<TimelineRepository>?> Function(
+    Future<List<RepositoryReference>?> Function(
       int ticket,
       Map<String, int> names,
     )
@@ -243,7 +230,9 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     final ticket = ++_generation;
     final names = Map.of(_nameVersions);
     _settingsRead = null;
-    final edit = _edit = Completer<void>();
+    final edit = _edit = Completer<FollowCollectionResult>();
+    _lastEdit = edit.future;
+    var result = const FollowCollectionResult.failed(FollowProblem.cancelled);
     state = state.copyWith(
       saving: true,
       loading: false,
@@ -254,8 +243,10 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       final saved = await save(ticket, names);
       if (!_current(ticket) || saved == null) return;
       _publishConfirmed(_preserveNewerNames(saved, names));
+      result = FollowCollectionResult.confirmed(state.repositories);
       if (_detailed) unawaited(loadMetadata());
     } on FollowRequestFailure catch (error) {
+      result = FollowCollectionResult.failed(error.problem);
       if (_current(ticket)) {
         state = state.copyWith(
           saving: false,
@@ -265,12 +256,12 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       }
     } finally {
       if (identical(_edit, edit)) _edit = null;
-      edit.complete();
+      edit.complete(result);
     }
   }
 
-  List<TimelineRepository> _preserveNewerNames(
-    List<TimelineRepository> repositories,
+  List<RepositoryReference> _preserveNewerNames(
+    List<RepositoryReference> repositories,
     Map<String, int> versions,
   ) {
     final current = {for (final repo in state.repositories) repo.id: repo};
@@ -284,7 +275,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     ];
   }
 
-  void _publishConfirmed(List<TimelineRepository> repositories) {
+  void _publishConfirmed(List<RepositoryReference> repositories) {
     _readFailure = null;
     _metadataRequests.clear();
     final previous = {for (final repo in state.repositories) repo.id: repo};
@@ -324,17 +315,17 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
 
   bool get synchronizationFailed => _readFailure != null;
 
-  TimelineRepository _renamed(
-    TimelineRepository repo,
+  RepositoryReference _renamed(
+    RepositoryReference repo,
     FollowMetadataDto? lookup,
   ) {
-    if (lookup?.status != RepositoryPageStatus.available ||
+    if (lookup?.status != RepositoryQueryStatus.available ||
         lookup?.owner == null ||
         lookup?.name == null ||
         !validRepositoryName(lookup!.owner!, lookup.name!)) {
       return repo;
     }
-    return TimelineRepository(
+    return RepositoryReference(
       id: repo.id,
       owner: lookup.owner!,
       name: lookup.name!,
@@ -374,7 +365,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     final details = Map.of(state.details);
     final previousNames = Map.of(state.previousNames);
     var renamed = false;
-    final repositories = <TimelineRepository>[];
+    final repositories = <RepositoryReference>[];
     for (final repo in state.repositories) {
       if (!eligible(repo.id)) {
         repositories.add(repo);
@@ -382,9 +373,9 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       }
       _metadataRequests.remove(repo.id);
       final lookup = response?.repositories[repo.id];
-      statuses[repo.id] = lookup?.status ?? RepositoryPageStatus.transient;
+      statuses[repo.id] = lookup?.status ?? RepositoryQueryStatus.transient;
       final updated = _renamed(repo, lookup);
-      if (lookup?.status == RepositoryPageStatus.available &&
+      if (lookup?.status == RepositoryQueryStatus.available &&
           lookup?.owner != null &&
           lookup?.name != null &&
           validRepositoryName(lookup!.owner!, lookup.name!)) {

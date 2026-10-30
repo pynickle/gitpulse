@@ -9,6 +9,8 @@ import 'package:path/path.dart' as p;
 
 import 'timeline_test_support.dart';
 
+import 'package:gitpulse/repositories/repository_models.dart';
+
 void main() {
   final environment = TimelineEnvironment(localDateKey: utcPlusEight);
   const scope = 'restore-test';
@@ -26,9 +28,9 @@ void main() {
       await directory.delete(recursive: true);
     });
     const repositories = [
-      TimelineRepository(id: 'R_b', owner: 'other', name: 'beta'),
-      TimelineRepository(id: 'R_empty', owner: 'octo', name: 'empty'),
-      TimelineRepository(id: 'R_a', owner: 'renamed', name: 'alpha'),
+      RepositoryReference(id: 'R_b', owner: 'other', name: 'beta'),
+      RepositoryReference(id: 'R_empty', owner: 'octo', name: 'empty'),
+      RepositoryReference(id: 'R_a', owner: 'renamed', name: 'alpha'),
     ];
     final notes = 'Full release notes. ' * 60;
     final visiblePages = {
@@ -56,7 +58,7 @@ void main() {
     final pages = {
       ...visiblePages,
       'R_a': RepositoryPage(
-        status: RepositoryPageStatus.available,
+        status: RepositoryQueryStatus.available,
         owner: 'renamed',
         name: 'alpha',
         hasOlderReleases: true,
@@ -180,9 +182,9 @@ void main() {
     final cache = TimelineCache(NativeDatabase.memory());
     addTearDown(cache.close);
     const repositories = [
-      TimelineRepository(id: 'R_a', owner: 'octo', name: 'alpha'),
-      TimelineRepository(id: 'R_b', owner: 'octo', name: 'beta'),
-      TimelineRepository(id: 'R_empty', owner: 'octo', name: 'empty'),
+      RepositoryReference(id: 'R_a', owner: 'octo', name: 'alpha'),
+      RepositoryReference(id: 'R_b', owner: 'octo', name: 'beta'),
+      RepositoryReference(id: 'R_empty', owner: 'octo', name: 'empty'),
     ];
     final pages = {
       'R_a': _page('octo', 'alpha', [
@@ -252,7 +254,7 @@ RepositoryPage _page(
   List<Map<String, Object?>> releases, {
   bool hasOlderReleases = false,
 }) => RepositoryPage(
-  status: RepositoryPageStatus.available,
+  status: RepositoryQueryStatus.available,
   owner: owner,
   name: name,
   hasOlderReleases: hasOlderReleases,

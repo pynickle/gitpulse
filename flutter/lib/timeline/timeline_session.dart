@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import '../device/device_preferences.dart';
 import '../device/device_preferences_controller.dart';
 import '../follows/release_follows_session.dart';
+import '../follows/release_follows_state.dart';
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import 'timeline_dto.dart';
@@ -16,6 +17,7 @@ import 'timeline_state.dart';
 import 'timeline_cache.dart';
 import 'timeline_cache_lifecycle.dart';
 import 'timeline_history.dart';
+import '../repositories/repository_models.dart';
 
 export 'timeline_service.dart'
     show timelineTransportProvider, releaseTimelineServiceProvider;
@@ -71,7 +73,7 @@ class RetentionChoiceResult {
 }
 
 class ReleaseTimelineSession extends Notifier<TimelineViewState> {
-  List<TimelineRepository> _followedRepositories = const [];
+  List<RepositoryReference> _followedRepositories = const [];
   TimelineCycle _cycle = TimelineCycle.empty;
   String? _context;
   int _generation = 0;
@@ -101,7 +103,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   TimelineHistoryConnection _history = TimelineHistoryConnection(
     const RetainedTimelineHistory(),
   );
-  final Map<String, RepositoryPageStatus> _failures = {};
+  final Map<String, RepositoryQueryStatus> _failures = {};
   final Set<String> _firstPageRetries = {};
   final _followRemovals = StreamController<TimelineFollowRemoval>.broadcast(
     sync: true,
@@ -189,7 +191,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   ///
   /// Additions invalidate all history and start at page one. Removals and
   /// metadata changes keep the surviving window without a release request.
-  Future<void> applyFollows(List<TimelineRepository> repositories) async {
+  Future<void> applyFollows(List<RepositoryReference> repositories) async {
     final context = _sessionContext();
     if (context == null) return;
     while (_cacheAction != null) {
@@ -230,10 +232,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   /// The account's currently confirmed Followed Repositories, which the filter
   /// controls offer as options.
-  List<TimelineRepository> get followedRepositories =>
+  List<RepositoryReference> get followedRepositories =>
       List.unmodifiable(_followedRepositories);
 
-  void _setFollowedRepositories(List<TimelineRepository> repositories) {
+  void _setFollowedRepositories(List<RepositoryReference> repositories) {
     final previousIds = _followedRepositories.map((item) => item.id).toSet();
     final byId = {
       for (final repository in repositories) repository.id: repository,
@@ -310,7 +312,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> _applyFollowsLocally(
     int ticket,
-    List<TimelineRepository> repositories, {
+    List<RepositoryReference> repositories, {
     bool preserveLoading = false,
   }) async {
     _setFollowedRepositories(repositories);
@@ -338,10 +340,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           ? _cycle.partial
           : state.partial && repositories.isNotEmpty,
       unavailableRepositories: _failedRepositories(
-        RepositoryPageStatus.unavailable,
+        RepositoryQueryStatus.unavailable,
       ),
       transientRepositories: _failedRepositories(
-        RepositoryPageStatus.transient,
+        RepositoryQueryStatus.transient,
       ),
       canRetry: _cycle.failedIds.isNotEmpty,
       canLoadOlder: _canLoadOlder,
@@ -1019,7 +1021,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   Future<void> _startCycle(
     int ticket, {
-    List<TimelineRepository>? confirmedFollows,
+    List<RepositoryReference>? confirmedFollows,
     bool synchronize = true,
   }) async {
     if (!_isCurrent(ticket)) return;
@@ -1035,11 +1037,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       persistenceFailed: false,
     );
 
-    TimelineResult<UserSettingsDto>? settings;
+    FollowCollectionResult? confirmation;
     if (confirmedFollows == null) {
       _synchronizingFollows = ticket;
       try {
-        settings = await ref
+        confirmation = await ref
             .read(releaseFollowsSessionProvider.notifier)
             .synchronize(refresh: synchronize);
       } finally {
@@ -1053,22 +1055,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _awaitingFreshWindow = true;
     _history = TimelineHistoryConnection(const RetainedTimelineHistory());
 
-    if (confirmedFollows == null && settings?.data == null) {
+    if (confirmedFollows == null && confirmation?.repositories == null) {
       _followsKnown = ref.read(releaseFollowsSessionProvider).loaded;
-      if (settings?.failure?.kind != TimelineFailureKind.session) {
+      final failure = _followFailure(confirmation?.problem);
+      if (failure.kind != TimelineFailureKind.session) {
         await _loadHistory(ticket);
         if (!_isCurrent(ticket)) return;
         await _runRound(ticket, inferFollows: _followedRepositories.isEmpty);
         if (_isCurrent(ticket)) state = state.copyWith(canRetry: true);
         return;
       }
-      _fail(ticket, settings?.failure);
+      _fail(ticket, failure);
       return;
     }
 
-    final follows =
-        confirmedFollows ??
-        ref.read(releaseFollowsSessionProvider).repositories;
+    final follows = confirmedFollows ?? confirmation!.repositories!;
     _setFollowedRepositories(follows);
     _followsKnown = true;
     final identity = ref.read(sessionControllerProvider).identity;
@@ -1105,6 +1106,16 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
     await _runRound(ticket);
   }
+
+  TimelineFailure _followFailure(FollowProblem? problem) =>
+      TimelineFailure(switch (problem) {
+        FollowProblem.network => TimelineFailureKind.network,
+        FollowProblem.rateLimited => TimelineFailureKind.rateLimited,
+        FollowProblem.session => TimelineFailureKind.session,
+        FollowProblem.invalidResponse => TimelineFailureKind.invalidResponse,
+        FollowProblem.cancelled => TimelineFailureKind.cancelled,
+        _ => TimelineFailureKind.server,
+      });
 
   Future<void> _loadHistory(
     int ticket, {
@@ -1163,7 +1174,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           if (entry.value.isAvailable &&
               entry.value.owner.isNotEmpty &&
               entry.value.name.isNotEmpty)
-            TimelineRepository(
+            RepositoryReference(
               id: entry.key,
               owner: entry.value.owner,
               name: entry.value.name,
@@ -1280,8 +1291,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     }
 
     final baseline = _cycle.previousBaseline;
-    final unavailable = _failedRepositories(RepositoryPageStatus.unavailable);
-    final transient = _failedRepositories(RepositoryPageStatus.transient);
+    final unavailable = _failedRepositories(RepositoryQueryStatus.unavailable);
+    final transient = _failedRepositories(RepositoryQueryStatus.transient);
     final view = _visibleIn(result.groups, baseline);
 
     state = TimelineViewState(
@@ -1386,22 +1397,22 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     for (final id in ids) {
       final page = pages[id];
       if (page == null || !page.isAvailable || page.incomplete) {
-        _failures[id] = page?.status == RepositoryPageStatus.unavailable
-            ? RepositoryPageStatus.unavailable
-            : RepositoryPageStatus.transient;
+        _failures[id] = page?.status == RepositoryQueryStatus.unavailable
+            ? RepositoryQueryStatus.unavailable
+            : RepositoryQueryStatus.transient;
       } else {
         _failures.remove(id);
       }
     }
   }
 
-  List<TimelineRepository> _failedRepositories(RepositoryPageStatus status) =>
+  List<RepositoryReference> _failedRepositories(RepositoryQueryStatus status) =>
       _repositoriesFor([
         for (final entry in _failures.entries)
           if (entry.value == status) entry.key,
       ]);
 
-  List<TimelineRepository> _repositoriesFor(List<String> ids) {
+  List<RepositoryReference> _repositoriesFor(List<String> ids) {
     final byId = {
       for (final follow in _followedRepositories) follow.id: follow,
     };
@@ -1428,10 +1439,10 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       loading: false,
       hasFollows: _followedRepositories.isNotEmpty,
       unavailableRepositories: _failedRepositories(
-        RepositoryPageStatus.unavailable,
+        RepositoryQueryStatus.unavailable,
       ),
       transientRepositories: _failedRepositories(
-        RepositoryPageStatus.transient,
+        RepositoryQueryStatus.transient,
       ),
       partial: true,
       canRetry: true,

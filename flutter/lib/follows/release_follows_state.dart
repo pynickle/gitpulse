@@ -1,8 +1,9 @@
-import '../timeline/timeline_models.dart';
+import '../repositories/repository_models.dart';
 
 enum FollowProblem {
   network,
   rateLimited,
+  session,
   server,
   invalidResponse,
   cancelled,
@@ -14,6 +15,19 @@ enum FollowProblem {
 }
 
 enum StarredRepositorySort { created, updated }
+
+/// The account's confirmed Release Follows, or why confirmation failed.
+class FollowCollectionResult {
+  const FollowCollectionResult.confirmed(
+    List<RepositoryReference> this.repositories,
+  ) : problem = null;
+
+  const FollowCollectionResult.failed(FollowProblem this.problem)
+    : repositories = null;
+
+  final List<RepositoryReference>? repositories;
+  final FollowProblem? problem;
+}
 
 /// Recognition details for one Followed Repository after a metadata read.
 class FollowedRepositoryDetails {
@@ -48,8 +62,8 @@ class ReleaseFollowsState {
   final bool loading;
   final bool saving;
   final bool saveFailed;
-  final List<TimelineRepository> repositories;
-  final Map<String, RepositoryPageStatus> statuses;
+  final List<RepositoryReference> repositories;
+  final Map<String, RepositoryQueryStatus> statuses;
   final Map<String, String> previousNames;
   final Map<String, FollowedRepositoryDetails> details;
   final FollowProblem? metadataProblem;
@@ -66,8 +80,8 @@ class ReleaseFollowsState {
     bool? loading,
     bool? saving,
     bool? saveFailed,
-    List<TimelineRepository>? repositories,
-    Map<String, RepositoryPageStatus>? statuses,
+    List<RepositoryReference>? repositories,
+    Map<String, RepositoryQueryStatus>? statuses,
     Map<String, String>? previousNames,
     Map<String, FollowedRepositoryDetails>? details,
     FollowProblem? metadataProblem,

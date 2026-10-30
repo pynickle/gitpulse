@@ -10,7 +10,6 @@ import 'package:gitpulse/follows/followed_repository_view.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/device/device_preferences_controller.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
-import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/session/session_controller.dart';
 
@@ -21,6 +20,8 @@ import '../support/settling.dart';
 import '../support/follows_session_harness.dart';
 import '../support/named_actions.dart';
 import '../support/provider_wait.dart';
+
+import 'package:gitpulse/repositories/repository_models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +41,7 @@ void main() {
         final saveStarted = server.nextRequest('PUT', '/api/settings');
         final saving = edit == 'follow'
             ? follows.follow(
-                const TimelineRepository(
+                const RepositoryReference(
                   id: 'R_beta',
                   owner: 'octo',
                   name: 'beta',
@@ -299,7 +300,7 @@ void main() {
         'name': 'alpha',
       };
       await follows.follow(
-        const TimelineRepository(id: 'R_beta', owner: 'octo', name: 'beta'),
+        const RepositoryReference(id: 'R_beta', owner: 'octo', name: 'beta'),
       );
       hold.complete();
       await metadata;
@@ -647,7 +648,7 @@ void main() {
         'name': 'current',
       };
       await follows.follow(
-        const TimelineRepository(
+        const RepositoryReference(
           id: 'R_alpha',
           owner: 'new-owner',
           name: 'current',
@@ -793,7 +794,7 @@ void main() {
         await (initiallyFollowed
             ? follows.unfollow('R_alpha')
             : follows.follow(
-                const TimelineRepository(
+                const RepositoryReference(
                   id: 'R_alpha',
                   owner: 'octo',
                   name: 'alpha',

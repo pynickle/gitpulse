@@ -1,5 +1,6 @@
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
+import '../repositories/repository_models.dart';
 
 /// Why a Timeline round could not be read.
 enum TimelineFailureKind {
@@ -107,8 +108,8 @@ class TimelineViewState {
 
   /// Followed Repositories GitHub reports as missing, and the ones that failed
   /// to load and can be retried.
-  final List<TimelineRepository> unavailableRepositories;
-  final List<TimelineRepository> transientRepositories;
+  final List<RepositoryReference> unavailableRepositories;
+  final List<RepositoryReference> transientRepositories;
 
   /// The cycle's captured Timeline Refresh Baseline, fixed while reading.
   final String? previousBaseline;
@@ -139,7 +140,7 @@ class TimelineViewState {
   final bool restored;
   final DateTime? savedAt;
   final TimelineCacheConnection cacheConnection;
-  final List<TimelineRepository> waitingRepositories;
+  final List<RepositoryReference> waitingRepositories;
   final TimelineCacheActions cacheActions;
 
   bool get hasReleases => visibleGroups.isNotEmpty;
@@ -162,8 +163,8 @@ class TimelineViewState {
     List<TimelineGroup>? groups,
     List<TimelineGroup>? visibleGroups,
     TimelineFilterState? filters,
-    List<TimelineRepository>? unavailableRepositories,
-    List<TimelineRepository>? transientRepositories,
+    List<RepositoryReference>? unavailableRepositories,
+    List<RepositoryReference>? transientRepositories,
     String? previousBaseline,
     bool clearPreviousBaseline = false,
     bool? baselineExposed,
@@ -181,7 +182,7 @@ class TimelineViewState {
     DateTime? savedAt,
     bool clearSavedAt = false,
     TimelineCacheConnection? cacheConnection,
-    List<TimelineRepository>? waitingRepositories,
+    List<RepositoryReference>? waitingRepositories,
     TimelineCacheActions? cacheActions,
   }) {
     return TimelineViewState(

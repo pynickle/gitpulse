@@ -1,43 +1,9 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'timeline_models.dart';
+import '../repositories/repository_models.dart';
 
 part 'timeline_dto.g.dart';
-
-/// The typed view of the account settings the Timeline needs. Unrelated
-/// preferences stay untouched and unread.
-///
-/// How much history this installation keeps is not an account setting: it is a
-/// device choice, so nothing here asks the server for it.
-@JsonSerializable(checked: true, createToJson: false)
-class UserSettingsDto {
-  const UserSettingsDto({this.followedRepositories});
-
-  factory UserSettingsDto.fromJson(Map<String, dynamic> json) =>
-      _$UserSettingsDtoFromJson(json);
-
-  final List<FollowedRepositoryDto>? followedRepositories;
-}
-
-/// A Followed Repository as the account stores it.
-@JsonSerializable(checked: true, createToJson: false)
-class FollowedRepositoryDto {
-  const FollowedRepositoryDto({
-    required this.id,
-    required this.owner,
-    required this.name,
-  });
-
-  factory FollowedRepositoryDto.fromJson(Map<String, dynamic> json) =>
-      _$FollowedRepositoryDtoFromJson(json);
-
-  final String id;
-  final String owner;
-  final String name;
-
-  TimelineRepository toDomain() =>
-      TimelineRepository(id: id, owner: owner, name: name);
-}
 
 /// One `ReleaseTimelinePage` response: the per-repository pages of this round,
 /// the refresh bookmark, and any reported failures.
@@ -104,9 +70,9 @@ class RepositoryPageDto {
 
   RepositoryPage toDomain() => RepositoryPage(
     status: switch (status) {
-      'available' => RepositoryPageStatus.available,
-      'unavailable' => RepositoryPageStatus.unavailable,
-      _ => RepositoryPageStatus.transient,
+      'available' => RepositoryQueryStatus.available,
+      'unavailable' => RepositoryQueryStatus.unavailable,
+      _ => RepositoryQueryStatus.transient,
     },
     owner: owner ?? '',
     name: name ?? '',
@@ -166,9 +132,3 @@ class ReleaseItemDto {
     htmlUrl: htmlUrl,
   );
 }
-
-List<TimelineRepository> mapFollowedRepositories(UserSettingsDto settings) => [
-  for (final follow
-      in settings.followedRepositories ?? const <FollowedRepositoryDto>[])
-    follow.toDomain(),
-];

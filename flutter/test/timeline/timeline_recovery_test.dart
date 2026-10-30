@@ -9,12 +9,13 @@ import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
-import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_state.dart';
 import 'package:path/path.dart' as p;
 
 import 'timeline_cache_test_support.dart';
 import 'timeline_test_support.dart';
+
+import 'package:gitpulse/repositories/repository_models.dart';
 
 void main() {
   test('clearing malformed cached content re-enables saving and offline restoration', () async {
@@ -233,7 +234,7 @@ void main() {
             await timeline.refresh();
             expected = ['R_a:20'];
           case 'unfollow':
-            await timeline.applyFollows(const <TimelineRepository>[]);
+            await timeline.applyFollows(const <RepositoryReference>[]);
           case 'clear':
             await timeline.clearCache();
           case 'logout':

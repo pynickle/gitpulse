@@ -1,8 +1,43 @@
 import 'package:json_annotation/json_annotation.dart';
 
-import '../timeline/timeline_models.dart';
+import '../repositories/repository_models.dart';
 
 part 'release_follows_dto.g.dart';
+
+/// The Release Follows collection within the account settings response.
+@JsonSerializable(checked: true, createToJson: false)
+class FollowCollectionDto {
+  const FollowCollectionDto({required this.followedRepositories});
+
+  factory FollowCollectionDto.fromJson(Map<String, dynamic> json) =>
+      _$FollowCollectionDtoFromJson(json);
+
+  final List<FollowedRepositoryDto> followedRepositories;
+
+  List<RepositoryReference> toDomain() => [
+    for (final follow in followedRepositories) follow.toDomain(),
+  ];
+}
+
+/// A Followed Repository as the account stores it.
+@JsonSerializable(checked: true, createToJson: false)
+class FollowedRepositoryDto {
+  const FollowedRepositoryDto({
+    required this.id,
+    required this.owner,
+    required this.name,
+  });
+
+  factory FollowedRepositoryDto.fromJson(Map<String, dynamic> json) =>
+      _$FollowedRepositoryDtoFromJson(json);
+
+  final String id;
+  final String owner;
+  final String name;
+
+  RepositoryReference toDomain() =>
+      RepositoryReference(id: id, owner: owner, name: name);
+}
 
 @JsonSerializable(checked: true, createToJson: false)
 class FollowMetadataResponseDto {
@@ -28,7 +63,7 @@ class FollowMetadataDto {
   factory FollowMetadataDto.fromJson(Map<String, dynamic> json) =>
       _$FollowMetadataDtoFromJson(json);
 
-  final RepositoryPageStatus status;
+  final RepositoryQueryStatus status;
   final String? owner;
   final String? name;
   final String? description;
@@ -92,8 +127,8 @@ class RepositoryCandidateDto {
   @JsonKey(name: 'stargazers_count')
   final int stargazersCount;
 
-  TimelineRepository get repository =>
-      TimelineRepository(id: nodeId, owner: owner.login, name: name);
+  RepositoryReference get repository =>
+      RepositoryReference(id: nodeId, owner: owner.login, name: name);
 }
 
 @JsonSerializable(checked: true, createToJson: false)

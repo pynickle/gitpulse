@@ -9,9 +9,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/common.dart';
 
+import '../follows/release_follows_dto.dart';
 import 'timeline_dto.dart';
 import 'timeline_models.dart';
 import 'timeline_history.dart';
+import '../repositories/repository_models.dart';
 
 part 'timeline_cache.g.dart';
 
@@ -310,7 +312,7 @@ class TimelineCache extends _$TimelineCache {
         for (final repository in repositories) {
           final records = rowsByRepository[repository.id] ?? const <QueryRow>[];
           pages[repository.id] = RepositoryPage(
-            status: RepositoryPageStatus.available,
+            status: RepositoryQueryStatus.available,
             owner: repository.owner,
             name: repository.name,
             hasOlderReleases: records.any(
@@ -345,11 +347,11 @@ class TimelineCache extends _$TimelineCache {
     }),
   );
 
-  Future<List<TimelineRepository>> _repositories() async => [
+  Future<List<RepositoryReference>> _repositories() async => [
     for (final row in await customSelect(
       'SELECT * FROM cache_repositories ORDER BY id',
     ).get())
-      TimelineRepository(
+      RepositoryReference(
         id: row.read<String>('id'),
         owner: row.read<String>('owner'),
         name: row.read<String>('name'),
@@ -359,7 +361,7 @@ class TimelineCache extends _$TimelineCache {
   Future<void> synchronize({
     required String scope,
     required int? retentionDays,
-    required List<TimelineRepository> repositories,
+    required List<RepositoryReference> repositories,
     required DateTime now,
     required bool Function() isCurrent,
   }) {
@@ -770,7 +772,7 @@ class SavedTimeline {
   });
 
   final String? visibleFingerprint;
-  final List<TimelineRepository> repositories;
+  final List<RepositoryReference> repositories;
   final List<TimelineGroup> groups;
   final int retentionDays;
   final DateTime? savedAt;

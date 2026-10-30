@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import 'timeline_dto.dart';
-import 'timeline_models.dart';
 import 'timeline_state.dart';
 
 final timelineTransportProvider = Provider<TimelineTransport>(
@@ -62,27 +61,13 @@ class TimelineResult<T> {
   final TimelineFailure? failure;
 }
 
-/// Reads the account's Release Follows and one coordinated timeline round.
+/// Reads coordinated timeline rounds and repository-page continuations.
 class ReleaseTimelineService {
   const ReleaseTimelineService(this._transport);
 
-  static const settingsPath = 'api/settings';
   static const refreshPath = 'api/release-timeline/refresh';
 
   final TimelineTransport _transport;
-
-  Future<TimelineResult<UserSettingsDto>> readSettings() =>
-      _read('GET', settingsPath, UserSettingsDto.fromJson);
-
-  Future<TimelineResult<List<TimelineRepository>>>
-  readFollowedRepositories() async {
-    final response = await _read('GET', settingsPath, UserSettingsDto.fromJson);
-    final settings = response.data;
-    if (settings == null) {
-      return TimelineResult.failed(response.failure!);
-    }
-    return TimelineResult.data(mapFollowedRepositories(settings));
-  }
 
   /// A refresh restarts pagination for every Followed Repository and can
   /// advance the account's shared Timeline Refresh Baseline.

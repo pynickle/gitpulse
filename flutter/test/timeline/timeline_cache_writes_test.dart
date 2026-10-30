@@ -14,8 +14,10 @@ import 'package:path/path.dart' as p;
 import 'timeline_cache_test_support.dart';
 import 'timeline_test_support.dart';
 
+import 'package:gitpulse/repositories/repository_models.dart';
+
 const _scope = 'write-test';
-const _repo = TimelineRepository(id: 'R_a', owner: 'octo', name: 'alpha');
+const _repo = RepositoryReference(id: 'R_a', owner: 'octo', name: 'alpha');
 final _now = DateTime.utc(2026, 10, 25, 12);
 final _environment = TimelineEnvironment(localDateKey: systemLocalDateKey);
 
@@ -409,7 +411,7 @@ ReleaseItem _release(
 
 RepositoryPage _page(List<ReleaseItem> items, {String? next = 'next'}) =>
     RepositoryPage(
-      status: RepositoryPageStatus.available,
+      status: RepositoryQueryStatus.available,
       owner: 'octo',
       name: 'alpha',
       releases: items,

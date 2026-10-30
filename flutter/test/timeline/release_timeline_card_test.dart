@@ -12,6 +12,8 @@ import 'package:gitpulse/timeline/timeline_models.dart';
 
 import 'timeline_test_support.dart';
 
+import 'package:gitpulse/repositories/repository_models.dart';
+
 final _clock = DateTime(2026, 10, 22, 12);
 
 TimelineRelease _release({
@@ -21,7 +23,7 @@ TimelineRelease _release({
   bool oldest = false,
   String title = 'One',
 }) => TimelineRelease(
-  repository: const TimelineRepository(id: 'R', owner: 'octo', name: 'app'),
+  repository: const RepositoryReference(id: 'R', owner: 'octo', name: 'app'),
   id: 1,
   tagName: 'v1.0.0',
   title: title,

@@ -6,6 +6,33 @@ part of 'release_follows_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+FollowCollectionDto _$FollowCollectionDtoFromJson(Map<String, dynamic> json) =>
+    $checkedCreate('FollowCollectionDto', json, ($checkedConvert) {
+      final val = FollowCollectionDto(
+        followedRepositories: $checkedConvert(
+          'followedRepositories',
+          (v) => (v as List<dynamic>)
+              .map(
+                (e) =>
+                    FollowedRepositoryDto.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
+        ),
+      );
+      return val;
+    });
+
+FollowedRepositoryDto _$FollowedRepositoryDtoFromJson(
+  Map<String, dynamic> json,
+) => $checkedCreate('FollowedRepositoryDto', json, ($checkedConvert) {
+  final val = FollowedRepositoryDto(
+    id: $checkedConvert('id', (v) => v as String),
+    owner: $checkedConvert('owner', (v) => v as String),
+    name: $checkedConvert('name', (v) => v as String),
+  );
+  return val;
+});
+
 FollowMetadataResponseDto _$FollowMetadataResponseDtoFromJson(
   Map<String, dynamic> json,
 ) => $checkedCreate('FollowMetadataResponseDto', json, ($checkedConvert) {
@@ -26,7 +53,7 @@ FollowMetadataDto _$FollowMetadataDtoFromJson(Map<String, dynamic> json) =>
       final val = FollowMetadataDto(
         status: $checkedConvert(
           'status',
-          (v) => $enumDecode(_$RepositoryPageStatusEnumMap, v),
+          (v) => $enumDecode(_$RepositoryQueryStatusEnumMap, v),
         ),
         owner: $checkedConvert('owner', (v) => v as String?),
         name: $checkedConvert('name', (v) => v as String?),
@@ -40,10 +67,10 @@ FollowMetadataDto _$FollowMetadataDtoFromJson(Map<String, dynamic> json) =>
       return val;
     });
 
-const _$RepositoryPageStatusEnumMap = {
-  RepositoryPageStatus.available: 'available',
-  RepositoryPageStatus.unavailable: 'unavailable',
-  RepositoryPageStatus.transient: 'transient',
+const _$RepositoryQueryStatusEnumMap = {
+  RepositoryQueryStatus.available: 'available',
+  RepositoryQueryStatus.unavailable: 'unavailable',
+  RepositoryQueryStatus.transient: 'transient',
 };
 
 RepositorySearchDto _$RepositorySearchDtoFromJson(Map<String, dynamic> json) =>

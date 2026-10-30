@@ -18,7 +18,7 @@ import '../releases/release_document.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
 import '../settings/account_gate.dart';
-import '../timeline/timeline_models.dart';
+import 'repository_models.dart';
 import 'repository_dto.dart';
 import 'repository_navigation.dart';
 import 'repository_service.dart';
@@ -293,7 +293,7 @@ class _Actions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final follows = ref.watch(releaseFollowsSessionProvider);
-    final identity = TimelineRepository(
+    final identity = RepositoryReference(
       id: repository.nodeId,
       owner: repository.owner.login,
       name: repository.name,

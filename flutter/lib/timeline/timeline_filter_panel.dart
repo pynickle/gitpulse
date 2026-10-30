@@ -10,6 +10,7 @@ import 'timeline_cache.dart';
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
 import 'timeline_session.dart';
+import '../repositories/repository_models.dart';
 
 /// Shows the Release Timeline Filter Panel as the app's bottom sheet.
 ///
@@ -90,7 +91,7 @@ class _TimelineFilterPanelState extends ConsumerState<TimelineFilterPanel> {
         _query.text.trim().isNotEmpty ||
         repositories.length > _repositorySearchThreshold;
 
-    void toggle(TimelineRepository repository) {
+    void toggle(RepositoryReference repository) {
       final wasSelected = filters.repositoryIds.contains(repository.id);
       update(
         filters.copyWith(
@@ -378,7 +379,7 @@ class _RepositoryRow extends StatelessWidget {
     required this.onTap,
   });
 
-  final TimelineRepository repository;
+  final RepositoryReference repository;
   final bool selected;
   final VoidCallback onTap;
 
@@ -583,8 +584,8 @@ class _Note extends StatelessWidget {
   }
 }
 
-List<TimelineRepository> _sortedRepositories(
-  List<TimelineRepository> repositories,
+List<RepositoryReference> _sortedRepositories(
+  List<RepositoryReference> repositories,
 ) {
   final sorted = [...repositories];
   sorted.sort(

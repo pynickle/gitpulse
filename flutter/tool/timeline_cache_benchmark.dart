@@ -10,9 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:path/path.dart' as p;
+import 'package:gitpulse/repositories/repository_models.dart';
 
 const _scope = 'benchmark';
-const _repo = TimelineRepository(id: 'R_a', owner: 'octo', name: 'alpha');
+const _repo = RepositoryReference(id: 'R_a', owner: 'octo', name: 'alpha');
 final _now = DateTime.utc(2026, 10, 25, 12);
 final _environment = TimelineEnvironment(localDateKey: systemLocalDateKey);
 
@@ -29,7 +30,7 @@ void main() {
             [_repo],
             {
               _repo.id: RepositoryPage(
-                status: RepositoryPageStatus.available,
+                status: RepositoryQueryStatus.available,
                 releases: fixture
                     .expand((entry) => entry.page.releases)
                     .toList(),
@@ -43,7 +44,7 @@ void main() {
             [_repo],
             {
               _repo.id: RepositoryPage(
-                status: RepositoryPageStatus.available,
+                status: RepositoryQueryStatus.available,
                 releases: [
                   ...fixture.expand((entry) => entry.page.releases),
                   ...continued.releases,
@@ -212,7 +213,7 @@ List<TimelineCachePage> _fixture(int size, int expiredPercent) => [
 
 RepositoryPage _page(int offset, int count, {required int expiredPercent}) =>
     RepositoryPage(
-      status: RepositoryPageStatus.available,
+      status: RepositoryQueryStatus.available,
       owner: 'octo',
       name: 'alpha',
       hasOlderReleases: true,

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import '../repositories/repository_models.dart';
+
 /// Changelog characters kept on a timeline card; the full notes stay available.
 const releaseTimelineChangelogMaxLength = 500;
 
@@ -23,34 +25,6 @@ String systemLocalDateKey(DateTime instant) {
   return '${local.year.toString().padLeft(4, '0')}-'
       '${local.month.toString().padLeft(2, '0')}-'
       '${local.day.toString().padLeft(2, '0')}';
-}
-
-/// A Followed Repository. [id] is GitHub's node id, which survives renames, so
-/// display names never become cache or comparison identities.
-class TimelineRepository {
-  const TimelineRepository({
-    required this.id,
-    required this.owner,
-    required this.name,
-  });
-
-  final String id;
-  final String owner;
-  final String name;
-
-  String get fullName => '$owner/$name';
-
-  /// Followed Repository identity is the stable GitHub node id alone, so a
-  /// rename never reads as a different repository.
-  @override
-  bool operator ==(Object other) =>
-      other is TimelineRepository && other.id == id;
-
-  @override
-  int get hashCode => id.hashCode;
-
-  @override
-  String toString() => 'TimelineRepository($id, $fullName)';
 }
 
 /// One release as a repository page returns it, before its Followed Repository
@@ -107,7 +81,7 @@ class TimelineRelease {
     required this.htmlUrl,
   });
 
-  final TimelineRepository repository;
+  final RepositoryReference repository;
   final int id;
   final String tagName;
   final String title;
@@ -129,7 +103,7 @@ class TimelineRelease {
 
   String get key => '${repository.id}:$id';
 
-  TimelineRelease withRepository(TimelineRepository repository) =>
+  TimelineRelease withRepository(RepositoryReference repository) =>
       TimelineRelease(
         repository: repository,
         id: id,
@@ -158,8 +132,6 @@ class TimelineGroup {
   final List<TimelineRelease> items;
 }
 
-enum RepositoryPageStatus { available, unavailable, transient }
-
 /// One Followed Repository's participation in a Timeline round.
 class RepositoryPage {
   const RepositoryPage({
@@ -172,7 +144,7 @@ class RepositoryPage {
     this.releases = const [],
   });
 
-  final RepositoryPageStatus status;
+  final RepositoryQueryStatus status;
 
   /// The repository's current identity, which replaces a stale Follow name.
   final String owner;
@@ -186,14 +158,14 @@ class RepositoryPage {
   final bool incomplete;
   final List<ReleaseItem> releases;
 
-  bool get isAvailable => status == RepositoryPageStatus.available;
+  bool get isAvailable => status == RepositoryQueryStatus.available;
 
   /// Whether this page alone makes the round's results usable.
   bool get isUsable => isAvailable && (!incomplete || hasPublishedReleases);
 
   bool get hasPublishedReleases => releases.any((item) => item.isPublished);
 
-  RepositoryPage withRepository(TimelineRepository repository) =>
+  RepositoryPage withRepository(RepositoryReference repository) =>
       RepositoryPage(
         status: status,
         owner: repository.owner,
@@ -272,7 +244,7 @@ int compareTimelineReleases(TimelineRelease left, TimelineRelease right) {
 /// Assembles published releases from every available page, newest first by
 /// publication time, grouped into consecutive display-time-zone dates.
 List<TimelineGroup> assembleTimelineGroups(
-  List<TimelineRepository> followedRepositories,
+  List<RepositoryReference> followedRepositories,
   Map<String, RepositoryPage> pages,
   TimelineEnvironment environment,
 ) {
@@ -282,7 +254,7 @@ List<TimelineGroup> assembleTimelineGroups(
     final page = pages[followed.id];
     if (page == null || !page.isAvailable) continue;
 
-    final repository = TimelineRepository(
+    final repository = RepositoryReference(
       id: followed.id,
       owner: page.owner.isNotEmpty ? page.owner : followed.owner,
       name: page.name.isNotEmpty ? page.name : followed.name,
@@ -339,7 +311,7 @@ List<TimelineGroup> assembleTimelineGroups(
 /// repositories into the cycle that is already being read.
 TimelineRound mergeTimelineRound({
   required TimelineCycle cycle,
-  required List<TimelineRepository> followedRepositories,
+  required List<RepositoryReference> followedRepositories,
   required Map<String, RepositoryPage> pages,
   required List<String> requestedIds,
   required bool refresh,
@@ -374,7 +346,7 @@ TimelineRound mergeTimelineRound({
       records[item.id] = item;
     }
     nextPages[id] = RepositoryPage(
-      status: RepositoryPageStatus.available,
+      status: RepositoryQueryStatus.available,
       owner: page.owner,
       name: page.name,
       // A partially failed page keeps its previous continuation state.

@@ -6,33 +6,6 @@ part of 'timeline_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-UserSettingsDto _$UserSettingsDtoFromJson(Map<String, dynamic> json) =>
-    $checkedCreate('UserSettingsDto', json, ($checkedConvert) {
-      final val = UserSettingsDto(
-        followedRepositories: $checkedConvert(
-          'followedRepositories',
-          (v) => (v as List<dynamic>?)
-              ?.map(
-                (e) =>
-                    FollowedRepositoryDto.fromJson(e as Map<String, dynamic>),
-              )
-              .toList(),
-        ),
-      );
-      return val;
-    });
-
-FollowedRepositoryDto _$FollowedRepositoryDtoFromJson(
-  Map<String, dynamic> json,
-) => $checkedCreate('FollowedRepositoryDto', json, ($checkedConvert) {
-  final val = FollowedRepositoryDto(
-    id: $checkedConvert('id', (v) => v as String),
-    owner: $checkedConvert('owner', (v) => v as String),
-    name: $checkedConvert('name', (v) => v as String),
-  );
-  return val;
-});
-
 TimelineRoundDto _$TimelineRoundDtoFromJson(
   Map<String, dynamic> json,
 ) => $checkedCreate('TimelineRoundDto', json, ($checkedConvert) {

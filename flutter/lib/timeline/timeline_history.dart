@@ -1,4 +1,5 @@
 import 'timeline_models.dart';
+import '../repositories/repository_models.dart';
 
 /// Retained page provenance captured before a refresh writes any new records.
 class RetainedTimelineHistory {
@@ -97,7 +98,7 @@ class TimelineHistoryConnection {
   }) {
     for (final entry in pages.entries) {
       final page = entry.value;
-      if (page.status == RepositoryPageStatus.unavailable) {
+      if (page.status == RepositoryQueryStatus.unavailable) {
         _unavailable.add(entry.key);
       } else if (page.isAvailable && !page.incomplete) {
         _unavailable.remove(entry.key);

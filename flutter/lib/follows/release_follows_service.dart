@@ -2,8 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
-import '../timeline/timeline_dto.dart';
-import '../timeline/timeline_models.dart';
+import '../repositories/repository_models.dart';
 import 'release_follows_dto.dart';
 import 'release_follows_state.dart';
 
@@ -44,10 +43,14 @@ class ReleaseFollowsService {
     Object? body,
   }) async {
     final response = await _request(method: method, path: path, body: body);
-    if (response.cancelled || response.problem != null) {
+    if (response.cancelled) {
+      throw const FollowRequestFailure(FollowProblem.cancelled);
+    }
+    if (response.problem != null) {
       throw FollowRequestFailure(switch (response.problem) {
         BackendProblem.network => FollowProblem.network,
         BackendProblem.rateLimited => FollowProblem.rateLimited,
+        BackendProblem.authenticationRejected => FollowProblem.session,
         BackendProblem.cancelled => FollowProblem.cancelled,
         _ =>
           response.statusCode == 404
@@ -62,11 +65,11 @@ class ReleaseFollowsService {
     }
   }
 
-  Future<List<TimelineRepository>> readFollows() =>
+  Future<List<RepositoryReference>> readFollows() =>
       _read('GET', 'api/settings', _parseFollows);
 
-  Future<List<TimelineRepository>> saveFollows(
-    List<TimelineRepository> repositories,
+  Future<List<RepositoryReference>> saveFollows(
+    List<RepositoryReference> repositories,
   ) => _read(
     'PUT',
     'api/settings',
@@ -89,15 +92,15 @@ class ReleaseFollowsService {
     },
   );
 
-  List<TimelineRepository> _parseFollows(Map<String, dynamic> json) {
+  List<RepositoryReference> _parseFollows(Map<String, dynamic> json) {
     if (json['followedRepositories'] is! List) {
       throw const FormatException('Missing followedRepositories');
     }
-    return mapFollowedRepositories(UserSettingsDto.fromJson(json));
+    return FollowCollectionDto.fromJson(json).toDomain();
   }
 
   Future<FollowMetadataResponseDto> readMetadata(
-    List<TimelineRepository> repositories,
+    List<RepositoryReference> repositories,
   ) => _read(
     'POST',
     'api/release-follows/metadata',

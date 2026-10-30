@@ -3,14 +3,15 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import 'timeline_cache_test_support.dart';
 import 'timeline_test_support.dart';
 
-const alpha = TimelineRepository(id: 'R_a', owner: 'octo', name: 'alpha');
-const beta = TimelineRepository(id: 'R_b', owner: 'octo', name: 'beta');
+import 'package:gitpulse/repositories/repository_models.dart';
+
+const alpha = RepositoryReference(id: 'R_a', owner: 'octo', name: 'alpha');
+const beta = RepositoryReference(id: 'R_b', owner: 'octo', name: 'beta');
 
 void goOffline(Harness h) {
   h.session.handlers['GET api/settings'] = () =>
@@ -268,7 +269,7 @@ void main() {
     var h = disk.open();
     configureTwo(h);
     await settle(h.container);
-    const renamed = TimelineRepository(
+    const renamed = RepositoryReference(
       id: 'R_a',
       owner: 'new-owner',
       name: 'renamed',
@@ -405,7 +406,7 @@ void main() {
         configureTwo(h);
         await settle(h.container);
         goOffline(h);
-        const gamma = TimelineRepository(
+        const gamma = RepositoryReference(
           id: 'R_c',
           owner: 'octo',
           name: 'gamma',

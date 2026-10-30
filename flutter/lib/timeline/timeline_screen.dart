@@ -13,10 +13,10 @@ import 'timeline_cache.dart';
 import 'timeline_filter_panel.dart';
 import 'timeline_filters.dart';
 import 'timeline_layout.dart';
-import 'timeline_models.dart';
 import 'timeline_session.dart';
 import 'timeline_state.dart';
 import 'timeline_toolbar.dart';
+import '../repositories/repository_models.dart';
 
 /// How long the return-to-top button takes to appear or disappear.
 const _returnToTopFade = Duration(milliseconds: 120);
@@ -333,7 +333,7 @@ class _LookupFailureBanner extends StatelessWidget {
   final TimelineViewState state;
   final Future<void> Function() onRetry;
 
-  static String _names(List<TimelineRepository> repositories) =>
+  static String _names(List<RepositoryReference> repositories) =>
       repositories.map((repository) => repository.fullName).join(', ');
 
   @override

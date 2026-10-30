@@ -19,6 +19,8 @@ import 'session_flow_test.dart';
 import 'support/settling.dart';
 import 'timeline/timeline_test_support.dart' show releaseJson, utcPlusEight;
 
+import 'package:gitpulse/repositories/repository_models.dart';
+
 class HeldStorage extends FlutterSecureStorage {
   final held = Completer<void>();
   bool reading = false;
@@ -200,13 +202,13 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
 
-        const repository = TimelineRepository(
+        const repository = RepositoryReference(
           id: 'R_a',
           owner: 'octo',
           name: 'app',
         );
         final page = RepositoryPage(
-          status: RepositoryPageStatus.available,
+          status: RepositoryQueryStatus.available,
           owner: 'octo',
           name: 'app',
           hasOlderReleases: false,

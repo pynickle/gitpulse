@@ -6,13 +6,14 @@ import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/follows/repository_discovery_session.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
 import '../support/follows_session_harness.dart';
 import '../support/provider_wait.dart';
 import 'follows_test_support.dart';
 import '../timeline/timeline_test_support.dart';
+
+import 'package:gitpulse/repositories/repository_models.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -171,7 +172,7 @@ void main() {
     );
     expect(search.uri.queryParameters['q'], 'alpha');
     await facade.follow(
-      const TimelineRepository(id: '', owner: 'octo', name: 'alpha'),
+      const RepositoryReference(id: '', owner: 'octo', name: 'alpha'),
     );
     state = container.read(releaseFollowsSessionProvider);
     expect(state.problem, FollowProblem.invalidRepository);
@@ -235,7 +236,7 @@ void main() {
     );
     final facade = container.read(releaseFollowsSessionProvider.notifier);
     await facade.reload();
-    const alpha = TimelineRepository(
+    const alpha = RepositoryReference(
       id: 'R_alpha',
       owner: 'octo',
       name: 'alpha',
@@ -253,7 +254,7 @@ void main() {
       isEmpty,
     );
     await facade.follow(
-      const TimelineRepository(id: '', owner: 'octo', name: 'alpha'),
+      const RepositoryReference(id: '', owner: 'octo', name: 'alpha'),
     );
     expect(
       container.read(releaseFollowsSessionProvider).problem,
@@ -393,7 +394,7 @@ void main() {
       ]),
     };
     await follows.follow(
-      const TimelineRepository(id: 'R_beta', owner: 'octo', name: 'beta'),
+      const RepositoryReference(id: 'R_beta', owner: 'octo', name: 'beta'),
     );
     await waitForProvider(
       container,
@@ -500,7 +501,7 @@ void main() {
       await facade.reload();
       server.malformedSave = true;
       await facade.follow(
-        const TimelineRepository(id: 'R_alpha', owner: 'octo', name: 'alpha'),
+        const RepositoryReference(id: 'R_alpha', owner: 'octo', name: 'alpha'),
       );
       expect(
         container.read(releaseFollowsSessionProvider).problem,
@@ -531,7 +532,7 @@ void main() {
         .read(repositoryDiscoverySessionProvider.notifier)
         .search('alpha');
     final save = facade.follow(
-      const TimelineRepository(id: 'R_alpha', owner: 'octo', name: 'alpha'),
+      const RepositoryReference(id: 'R_alpha', owner: 'octo', name: 'alpha'),
     );
     await Future.wait([searchStarted, saveStarted]);
     await container.read(sessionControllerProvider.notifier).signOut();

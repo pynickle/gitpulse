@@ -7,7 +7,7 @@ import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
 import '../repositories/repository_navigation.dart';
-import '../timeline/timeline_models.dart';
+import '../repositories/repository_models.dart';
 import 'release_follows_dto.dart';
 import 'release_follows_state.dart';
 
@@ -309,9 +309,9 @@ class FollowedRepositoryCard extends StatelessWidget {
     required this.onRetry,
   });
 
-  final TimelineRepository repository;
+  final RepositoryReference repository;
   final bool detailed;
-  final RepositoryPageStatus? status;
+  final RepositoryQueryStatus? status;
   final FollowedRepositoryDetails? details;
   final bool enabled;
   final VoidCallback onUnfollow;
@@ -320,8 +320,8 @@ class FollowedRepositoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final unavailable = status == RepositoryPageStatus.unavailable;
-    final transient = status == RepositoryPageStatus.transient;
+    final unavailable = status == RepositoryQueryStatus.unavailable;
+    final transient = status == RepositoryQueryStatus.transient;
     final known = detailed && !unavailable && !transient;
     return _RepositoryRow(
       name: repository.fullName,
