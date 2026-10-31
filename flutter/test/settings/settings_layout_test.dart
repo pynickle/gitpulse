@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_dialog.dart';
+import 'package:gitpulse/presentation/gitpulse_status_badge.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -103,7 +104,10 @@ void _expectSettingCards(WidgetTester tester) {
 }
 
 void main() {
-  for (final height in [600.0, 900.0]) {
+  // Both heights still leave the page longer than its window: a preserved scroll
+  // position needs a scroll to preserve, and the shorter backend card is what
+  // took a taller window out of that set.
+  for (final height in [600.0, 720.0]) {
     testWidgets(
       'confirming cache clear preserves the settings scroll position at $height',
       (tester) async {
@@ -250,15 +254,45 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the backend card shows its status and copies the address', (
-    tester,
-  ) async {
+  testWidgets('the backend card states the address with the two actions that '
+      'act on it, and no word about a backend that answers', (tester) async {
     _useWindow(tester, const Size(390, 844));
     await _openSettings(tester);
-    expect(find.text('Connected'), findsOneWidget);
-    // The state is a glyph and a word, not a word alone.
-    expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
+
+    // Answering is the ordinary case: the card does not say so, in a pill or
+    // anywhere else.
+    expect(find.text('Connected'), findsNothing);
+    expect(find.byType(GitPulseStatusBadge), findsNothing);
+
+    // It carries the name, the address under it, and one action for each thing
+    // a reader can do with that address.
     expect(find.text('https://gitpulse.example/'), findsOneWidget);
+    final card = find.ancestor(
+      of: find.text('Backend'),
+      matching: find.byWidgetPredicate(_isSettingCard),
+    );
+    for (final action in ['Copy backend address', 'Change backend']) {
+      expect(
+        find.descendant(of: card, matching: findNamedAction(action)),
+        findsOneWidget,
+        reason: action,
+      );
+    }
+
+    // Both stand on the name's line, so the card is the address and the actions
+    // above it rather than a third band of its own.
+    final name = tester.getRect(find.text('Backend'));
+    final address = tester.getRect(find.text('https://gitpulse.example/'));
+    for (final action in [
+      findNamedAction('Copy backend address'),
+      findNamedAction('Change backend'),
+    ]) {
+      expect(
+        (tester.getRect(action).center.dy - name.center.dy).abs(),
+        lessThan(12),
+      );
+    }
+    expect(address.top, greaterThan(name.bottom));
 
     String? copied;
     final messenger = tester.binding.defaultBinaryMessenger;
@@ -280,6 +314,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.check), findsNothing);
     expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('reading saved history states the offline window under the '
+      'address, not beside the name', (tester) async {
+    _useWindow(tester, const Size(390, 844));
+    final harness = harnessFor(
+      tester,
+      session: SessionState(
+        phase: SessionPhase.signedIn,
+        identity: signedInIdentity(),
+        offline: true,
+      ),
+      handlers: {
+        'GET api/settings': () =>
+            BackendResult(statusCode: 200, data: settingsJson(const [])),
+      },
+    );
+    await tester.runAsync(harness.open);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: harness.container,
+        child: const GitPulseApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+
+    // The one state the backend block still states is the one that is not
+    // ordinary, and it is stated as a line under the address it belongs to.
+    expect(find.text('Offline'), findsOneWidget);
+    expect(find.byType(GitPulseStatusBadge), findsNothing);
+    expect(
+      tester.getRect(find.text('Offline')).top,
+      greaterThan(
+        tester.getRect(find.text('https://gitpulse.example/')).bottom,
+      ),
+    );
     expect(tester.takeException(), isNull);
   });
 

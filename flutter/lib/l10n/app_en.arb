@@ -8,7 +8,6 @@
   "decreaseRetention": "Decrease retention",
   "increaseRetention": "Increase retention",
   "backend": "Backend",
-  "backendConnected": "Connected",
   "copyBackendAddress": "Copy backend address",
   "settingsTimelineCache": "Timeline cache",
   "settingsClear": "Clear",

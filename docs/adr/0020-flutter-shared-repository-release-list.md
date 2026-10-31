@@ -23,8 +23,9 @@ units. An Entry Release is marked by a 4dp accent bar on the leading edge carryi
 never by a third line of text.
 
 A release's **Release State** is one badge beside the name: `GitPulseStatusBadge` from the shared
-presentation layer, the same pill the Settings backend card draws — a hairline outline, no fill, a
-14dp glyph and the state's own word. A draft reads as Draft even when GitHub also marks it a
+presentation layer — a hairline outline, no fill, a 14dp glyph and the state's own word. (It was
+introduced beside the Settings backend card's pill; ADR 0040 retired that instance, and a release's
+state is now the badge's only job.) A draft reads as Draft even when GitHub also marks it a
 prerelease, because this list's filter never files a draft under prereleases and a row must not
 contradict the filter that produced it. The badge keeps its own width and the name yields to it, so a
 row at any text scale loses characters of the name rather than its state or its way forward; the pill

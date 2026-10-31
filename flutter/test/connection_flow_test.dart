@@ -19,6 +19,7 @@ import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 
 import 'support/app_overrides.dart';
+import 'support/named_actions.dart';
 import 'support/presentation_harness.dart';
 
 class CapabilityServer implements HttpClientAdapter {
@@ -87,12 +88,31 @@ Future<void> connectTo(WidgetTester tester, String address) async {
         widget is TextField &&
         widget.decoration?.labelText == 'Backend address',
   );
-  if (field.evaluate().isEmpty) {
-    await tester.tap(find.text('Change backend'));
+  final fromSettings = field.evaluate().isEmpty;
+  if (fromSettings) {
+    // The backend is the Settings card's to change: the sign-in page states no
+    // server of its own, so a reader who wants another one goes where it lives.
+    await tester.tap(find.text('Settings').last);
+    await tester.pumpAndSettle();
+    await tester.tap(findNamedAction('Change backend'));
     await tester.pumpAndSettle();
   }
   await tester.enterText(field, address);
   await tester.tap(find.text('Connect'));
+  await tester.pumpAndSettle();
+  // Connecting from the card leaves the reader on that page — the editor closed
+  // is how a connection that succeeded says so — while the ways in are the
+  // Timeline destination a signed-out reader lands on.
+  if (fromSettings && find.byType(GitPulseDialog).evaluate().isEmpty) {
+    await showWaysIn(tester);
+  }
+}
+
+/// Returns to the ways in after the backend card has finished a connection: that
+/// card is where the reader changed the server, and the ways into the new one are
+/// the Timeline destination a signed-out reader lands on.
+Future<void> showWaysIn(WidgetTester tester) async {
+  await tester.tap(find.text('Timeline').first);
   await tester.pumpAndSettle();
 }
 
@@ -267,7 +287,10 @@ void main() {
       ]);
       expect(find.text('Password'), findsOneWidget);
       expect(find.text('Connect to GitPulse'), findsNothing);
-      expect(find.text('Change backend'), findsOneWidget);
+      // The gate is the ways in: which server those ways lead to is stated on
+      // the Settings page, not above the cards.
+      expect(find.text('https://gitpulse.euphony.ink/'), findsNothing);
+      expect(findNamedAction('Change backend'), findsNothing);
     },
   );
 
@@ -287,7 +310,7 @@ void main() {
       expect(find.text('Password'), findsOneWidget);
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
-      expect(find.text('Change backend'), findsOneWidget);
+      expect(findNamedAction('Change backend'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -333,10 +356,11 @@ void main() {
       server.offline = false;
       await tester.tap(find.text('Connect'));
       await tester.pumpAndSettle();
+      await showWaysIn(tester);
       expect(find.text('Password'), findsOneWidget);
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Change backend'));
+      await tester.tap(findNamedAction('Change backend'));
       await tester.pumpAndSettle();
       server.offline = true;
       await connectTo(tester, 'https://failed.example');
@@ -525,7 +549,11 @@ void main() {
       addTearDown(tester.platformDispatcher.clearLocalesTestValue);
       final server = CapabilityServer();
       await mountApp(tester, server);
-      await tester.tap(find.text('更换后端'));
+      // The address is changed on the page that owns the backend, in the
+      // reader's own language like everything else.
+      await tester.tap(find.text('设置').last);
+      await tester.pumpAndSettle();
+      await tester.tap(findNamedAction('更换后端'));
       await tester.pumpAndSettle();
       for (final address in [
         '',

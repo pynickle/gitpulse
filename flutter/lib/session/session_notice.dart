@@ -40,9 +40,7 @@ class SessionNotice extends ConsumerWidget {
         ?.capabilities
         .providers;
     final failure = session.failure;
-    if (failure == null ||
-        (failure == SignInFailure.network &&
-            session.phase == SessionPhase.signedIn)) {
+    if (failure == null || !session.hasNotice) {
       return const SizedBox.shrink();
     }
     return Padding(

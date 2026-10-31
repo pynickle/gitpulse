@@ -608,7 +608,7 @@ void main() {
       await tester.pumpAndSettle();
       final storage = await const FlutterSecureStorage().readAll();
       final before = server.requests.length;
-      await tester.tap(find.text('Change backend'));
+      await tester.tap(findNamedAction('Change backend'));
       await tester.pumpAndSettle();
       await tester.enterText(
         fieldLabeled('Backend address'),
@@ -668,7 +668,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('octocat'), findsOneWidget);
       expect(findNamedAction('Sign out'), findsOneWidget);
-      expect(find.text('Change backend'), findsOneWidget);
+      expect(findNamedAction('Change backend'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
@@ -1649,7 +1649,7 @@ void main() {
       }
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Change backend'));
+      await tester.tap(findNamedAction('Change backend'));
       await tester.pumpAndSettle();
       expectIdentity(tester, 'octocat');
       expect(notifier.transitionLog.whereType<IdentityCleared>(), isEmpty);

@@ -8,7 +8,6 @@
   "decreaseRetention": "减少一天",
   "increaseRetention": "增加一天",
   "backend": "后端",
-  "backendConnected": "连接正常",
   "copyBackendAddress": "复制后端地址",
   "settingsTimelineCache": "时间线缓存",
   "settingsClear": "清除",

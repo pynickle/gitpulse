@@ -74,6 +74,17 @@ class SessionState {
   final bool offline;
   final String? browserSignInCode;
 
+  /// Whether there is a sign-in that did not finish to report.
+  ///
+  /// A lost network while already signed in is offline reading rather than a
+  /// failed sign-in: that condition is the reading surface's to state, where the
+  /// saved history it affects is shown, and not a sentence for the sign-in form.
+  /// A surface that stacks several state lines asks this before it makes room for
+  /// any of them, because an empty notice is not ink and must not be a line.
+  bool get hasNotice =>
+      failure != null &&
+      !(failure == SignInFailure.network && phase == SessionPhase.signedIn);
+
   SessionState copyWith({
     SessionPhase? phase,
     AuthenticatedIdentity? identity,

@@ -91,7 +91,9 @@ The user accepted recommendations for Q34–Q40 and Q42. Q41 was reopened for fu
 Issue #95 now requires automatic first-launch connection to
 `https://gitpulse.euphony.ink` and automatic reconnection to the last saved
 successful backend on later launches, including normal secure-session restoration.
-Users can change servers in Settings and before sign-in. Connection errors retain
+Users can change servers in Settings, before or after signing in: the Settings
+destination is always reachable, and it is the one entry to the server — the
+sign-in page states no backend of its own (ADR 0040). Connection errors retain
 the saved address and identity data and offer retry/editing. Opening or cancelling
 the server editor does not clear the session; confirming a backend change retains
 the existing identity/cache-clearing boundary.

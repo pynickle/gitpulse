@@ -64,9 +64,7 @@ class AccountPanel extends ConsumerWidget {
           ),
           const SizedBox(height: GitPulseSpace.inline),
         ],
-        const GitPulseSettingSurface(
-          child: BackendDetails(layout: BackendDetailsLayout.card),
-        ),
+        const GitPulseSettingSurface(child: BackendDetails()),
       ],
     );
   }

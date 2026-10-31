@@ -7,9 +7,12 @@ import 'package:gitpulse/connection/connection_controller.dart';
 import 'package:gitpulse/connection/native_capabilities.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_setting_rows.dart';
+import 'package:gitpulse/presentation/gitpulse_status_badge.dart';
 import 'package:gitpulse/settings/account_gate.dart';
+import 'package:gitpulse/settings/backend_details.dart';
 
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 import '../support/presentation_harness.dart';
 
 /// A backend that offers both kinds of sign-in, which is the only shape that
@@ -94,27 +97,19 @@ void main() {
     await _openGate(tester);
     expect(find.byType(AccountGate), findsOneWidget);
 
-    // The backend opens the page instead of framing it: its own header, its
-    // address, and the action that leaves it, none of them inside a card.
-    expect(find.text('Backend'), findsOneWidget);
-    expect(find.text('Connected'), findsOneWidget);
-    expect(find.text('https://gitpulse.example/'), findsOneWidget);
-    expect(
-      find.ancestor(
-        of: find.text('Backend'),
-        matching: find.byType(GitPulseSettingSurface),
-      ),
-      findsNothing,
-    );
-    expect(
-      find.widgetWithText(GitPulseButton, 'Change backend'),
-      findsOneWidget,
-    );
-    // The header is centred on the page rather than pinned to a leading edge.
-    final change = tester.getRect(
-      find.widgetWithText(GitPulseButton, 'Change backend'),
-    );
-    expect(change.center.dx, closeTo(390 / 2, 1));
+    // The page is its ways in and nothing else: the backend is the Settings
+    // destination's to state, copy and change, and none of it is repeated here
+    // — not its address, not a word for its health, and not a second way to
+    // point the app at another server.
+    expect(find.text('https://gitpulse.example/'), findsNothing);
+    expect(find.text('Backend'), findsNothing);
+    expect(find.text('Connected'), findsNothing);
+    expect(find.byType(GitPulseStatusBadge), findsNothing);
+    expect(findNamedAction('Copy backend address'), findsNothing);
+    expect(findNamedAction('Change backend'), findsNothing);
+    // A session with nothing to report draws no line above the cards either:
+    // the page's first ink is a way in.
+    expect(tester.getSize(find.byType(BackendStateNotes)).height, 0);
 
     // Two cards, one per method, each carrying its own mark and the line that
     // says what it will ask for…
@@ -190,11 +185,6 @@ void main() {
     expect(_cardOf('Sign in with a token'), findsOneWidget);
     expect(find.text('Sign in with GitPulse'), findsNothing);
     expect(find.text('Or'), findsNothing);
-    // The address is still the page's header, above the card.
-    expect(
-      tester.getRect(find.text('Backend')).bottom,
-      lessThan(tester.getRect(find.text('Sign in with a token')).top),
-    );
     expect(tester.takeException(), isNull);
   });
 
