@@ -62,9 +62,17 @@ class RepositoryScreen extends ConsumerStatefulWidget {
     super.key,
     required this.owner,
     required this.repository,
+    this.openedFromRelease = false,
   });
   final String owner;
   final String repository;
+
+  /// Whether this page was opened from a release rather than from the shell.
+  ///
+  /// It decides what Back means and nothing else: a repository a reader reached
+  /// from a release returns to that release, and one reached from the Timeline
+  /// returns to the Timeline. The page itself is the same either way.
+  final bool openedFromRelease;
   @override
   ConsumerState<RepositoryScreen> createState() => _RepositoryScreenState();
 }
@@ -85,8 +93,13 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
     void retry() => ref.invalidate(repositoryProvider(scope));
     return Scaffold(
       // The identity band opens with the repository's name, so the bar above it
-      // carries navigation alone.
-      appBar: const RepositoryPageAppBar(),
+      // carries navigation alone. A page a reader reached from a release keeps
+      // the platform's Back affordance rather than the app's Home: the step back
+      // is the release they were reading, which is a place they are going
+      // (ADR 0032's Platform Dialect Exception).
+      appBar: widget.openedFromRelease
+          ? RepositoryPageAppBar(onBack: () => Navigator.of(context).maybePop())
+          : const RepositoryPageAppBar(),
       body: SafeArea(
         child: Column(
           children: [

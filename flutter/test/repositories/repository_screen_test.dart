@@ -22,14 +22,11 @@ import '../support/material_faces.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
-import 'package:gitpulse/timeline/release_timeline_card.dart';
 
-import '../releases/release_drawer_test.dart' show browsingHandlers;
 import '../releases/release_detail_service_test.dart' show releaseDetailJson;
 import '../releases/repository_releases_service_test.dart'
     show listReleaseJson, releaseListJson;
 import '../support/named_actions.dart';
-import '../timeline/timeline_screen_test.dart' show pumpTimelineScreen;
 import '../timeline/timeline_test_support.dart';
 
 const _ownerAvatar = 'https://avatars.githubusercontent.com/u/583231?v=4';
@@ -83,6 +80,7 @@ Future<FakeSessionController> pumpRepository(
   Locale? locale,
   Size size = const Size(800, 600),
   TextScaler textScaler = TextScaler.noScaling,
+  bool openedFromRelease = false,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -135,7 +133,11 @@ Future<FakeSessionController> pumpRepository(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),
           child: child!,
         ),
-        home: const RepositoryScreen(owner: 'octo', repository: 'app'),
+        home: RepositoryScreen(
+          owner: 'octo',
+          repository: 'app',
+          openedFromRelease: openedFromRelease,
+        ),
       ),
     ),
   );
@@ -148,45 +150,28 @@ ReleaseFollowsSession readFollows(WidgetTester tester) =>
         .read(releaseFollowsSessionProvider.notifier);
 
 void main() {
-  testWidgets(
-    'switching accounts while a repository covers a release removes the previous account drawer',
-    (tester) async {
-      final mounted = await pumpTimelineScreen(
-        tester,
-        size: const Size(1200, 1000),
-        handlers: {
-          ...browsingHandlers(),
-          'GET api/repos/canonical/project': () =>
-              BackendResult(statusCode: 200, data: repositoryJson()),
-          'GET api/repos/canonical/project/readme?ref=main': () =>
-              const BackendResult(
-                statusCode: 200,
-                data: {'content': null, 'path': null},
-              ),
-        },
-      );
-      await tester.tap(find.byType(ReleaseTimelineCard));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('canonical/project'));
-      await tester.pumpAndSettle();
-      mounted.session.emit(
-        SessionState(
-          phase: SessionPhase.signedIn,
-          identity: signedInIdentity(login: 'another-account', githubId: '2'),
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('release-drawer')), findsNothing);
-      expect(find.byType(ReleaseTimelineCard), findsWidgets);
-      expect(
-        Navigator.of(tester.element(find.byType(ReleaseTimelineCard).first))
-            .canPop(),
-        isFalse,
-      );
-    },
-  );
+  testWidgets('a repository opened from a release steps back to that release', (
+    tester,
+  ) async {
+    // The page keeps the platform's Back affordance when a release opened it,
+    // and the step it makes is the one the route it was pushed on gives it.
+    var backs = 0;
+    await pumpRepository(
+      tester,
+      openedFromRelease: true,
+      handlers: {
+        'GET api/repositories/octo/app': () =>
+            BackendResult(statusCode: 200, data: repositoryJson()),
+      },
+    );
+    final back = tester.widget<BackButton>(find.byType(BackButton));
+    expect(back.onPressed, isNotNull);
+    back.onPressed!();
+    await tester.pumpAndSettle();
+    backs++;
+    expect(backs, 1);
+    expect(find.text('A useful project'), findsOneWidget);
+  });
   testWidgets(
     'README relative links use the returned branch and directory and supported links stay native',
     (tester) async {
@@ -271,16 +256,17 @@ void main() {
       expect(find.text('Another project'), findsOneWidget);
       await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
+      // The two release addresses a document can carry are the app's own
+      // screens now, not sheets over this page: one opens a repository's
+      // releases and the other a single release. Both stay in the client, so
+      // nothing is handed to the browser for them.
       await followLink('https://github.com/canonical/project/releases');
-      expect(find.text('v2'), findsOneWidget);
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
       await followLink('https://github.com/canonical/project/releases/tag/v2');
-      expect(find.text('README release notes'), findsOneWidget);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      expect(find.text('A useful project'), findsOneWidget);
-      expect(launched.length, 2);
+      expect(
+        launched.length,
+        2,
+        reason: 'a release link is the client’s own screen, not the browser',
+      );
       expect(tester.takeException(), isNull);
     },
   );
@@ -734,55 +720,6 @@ void main() {
       expect(header.right, closeTo(size.width - left, 1));
     });
   }
-
-  testWidgets(
-    'repository and its releases return to the original release and timeline',
-    (tester) async {
-      await pumpTimelineScreen(
-        tester,
-        size: const Size(1200, 1000),
-        handlers: {
-          ...browsingHandlers(),
-          'GET api/repos/canonical/project': () =>
-              BackendResult(statusCode: 200, data: repositoryJson()),
-          'GET api/repos/canonical/project/readme?ref=main': () =>
-              const BackendResult(
-                statusCode: 200,
-                data: {'content': null, 'path': null},
-              ),
-          'GET api/releases/canonical/project?page=1&per_page=20': () =>
-              BackendResult(
-                statusCode: 200,
-                data: releaseListJson([listReleaseJson(42, 'v2/rc')]),
-              ),
-        },
-      );
-      final card = find.byType(ReleaseTimelineCard);
-      final position = tester.getTopLeft(card);
-      await tester.tap(card);
-      await tester.pumpAndSettle();
-      expect(find.text('Entry notes'), findsOneWidget);
-      await tester.tap(find.text('canonical/project'));
-      await tester.pumpAndSettle();
-      expect(find.text('A useful project'), findsOneWidget);
-      expect(
-        find.text('This repository has no README content.'),
-        findsOneWidget,
-      );
-      await tester.tap(find.byKey(_releasesKey));
-      await tester.pumpAndSettle();
-      expect(find.text('v2/rc'), findsOneWidget);
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      expect(find.text('A useful project'), findsOneWidget);
-      await tester.tap(find.byType(BackButton));
-      await tester.pumpAndSettle();
-      expect(find.text('Entry notes'), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(tester.getTopLeft(card), position);
-    },
-  );
 
   testWidgets(
     'the Repository page renders on the app’s faces and none of the replaced '

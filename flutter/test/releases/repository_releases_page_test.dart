@@ -1,17 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
-import 'package:gitpulse/releases/repository_releases_screen.dart';
+import 'package:gitpulse/releases/release_screen.dart';
+import 'package:gitpulse/releases/repository_releases_page.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:intl/intl.dart';
 
+import '../support/document_viewer.dart';
 import '../support/material_faces.dart';
 import '../support/named_actions.dart';
 import '../timeline/timeline_test_support.dart';
@@ -19,8 +20,8 @@ import 'release_detail_service_test.dart' show releaseDetailJson;
 import 'repository_releases_service_test.dart'
     show listReleaseJson, releaseListJson;
 
-/// Drives the fullscreen Repository Release List through a real route, with the
-/// fake session answering the list requests from [handlers].
+/// Drives the Repository Release List through the routes the app installs for
+/// it, with the fake session answering the list requests from [handlers].
 Future<({FakeSessionController session, GoRouter router})> pumpReleasesPage(
   WidgetTester tester, {
   required Map<String, FutureOr<BackendResult> Function()> handlers,
@@ -35,17 +36,25 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleasesPage(
     SessionState(phase: SessionPhase.signedIn, identity: signedInIdentity()),
   )..handlers.addAll(handlers);
   final router = GoRouter(
-    initialLocation: '/repositories/octo/app/releases',
+    initialLocation: '/releases/octo/app',
     routes: [
       GoRoute(
         path: '/timeline',
         builder: (_, _) => const Scaffold(body: Text('Timeline destination')),
       ),
       GoRoute(
-        path: '/repositories/:owner/:repository/releases',
-        builder: (_, state) => RepositoryReleasesScreen(
+        path: '/releases/:owner/:repository',
+        builder: (_, state) => RepositoryReleasesPage(
           owner: state.pathParameters['owner']!,
           repository: state.pathParameters['repository']!,
+        ),
+      ),
+      GoRoute(
+        path: '/releases/:owner/:repository/:id',
+        builder: (_, state) => ReleaseScreen(
+          owner: state.pathParameters['owner']!,
+          repository: state.pathParameters['repository']!,
+          id: int.tryParse(state.pathParameters['id']!),
         ),
       ),
     ],
@@ -53,7 +62,10 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleasesPage(
   addTearDown(router.dispose);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [sessionControllerProvider.overrideWith(() => session)],
+      overrides: [
+        ...documentViewerOverrides(),
+        sessionControllerProvider.overrideWith(() => session),
+      ],
       child: MaterialApp.router(
         routerConfig: router,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -67,7 +79,7 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleasesPage(
 
 void main() {
   testWidgets(
-    'routed repository releases open consistent details and preserve their filter on dismissal',
+    'a row opens the release as its own screen, and closing leaves releases',
     (tester) async {
       final page = await pumpReleasesPage(
         tester,
@@ -90,19 +102,18 @@ void main() {
       expect(find.text('preview-release'), findsNothing);
       await tester.tap(find.text('stable-release'));
       await tester.pumpAndSettle();
+      // The release replaces the list as a screen of its own.
       expect(find.text('Routed release notes'), findsOneWidget);
-      // The drawer reads over the list without leaving its route.
       expect(
         page.router.routeInformationProvider.value.uri.path,
-        '/repositories/octo/app/releases',
+        '/releases/octo/app/42',
       );
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      expect(find.text('preview-release'), findsNothing);
-      expect(find.text('stable-release'), findsOneWidget);
-      await tester.tap(find.byType(BackButton));
+      // Closing it — the app's Home, or the system's back gesture — leaves
+      // releases rather than stepping back into the list it came from.
+      await tester.tap(findNamedAction('Home'));
       await tester.pumpAndSettle();
       expect(find.text('Timeline destination'), findsOneWidget);
+      expect(find.text('stable-release'), findsNothing);
     },
   );
 
@@ -140,7 +151,7 @@ void main() {
           ),
         },
       );
-      // The fullscreen host owns the repository name; the list never repeats it.
+      // The host owns the repository name; the list never repeats it.
       expect(find.text('octo/app'), findsOneWidget);
       expect(find.text('Repository releases'), findsNothing);
 
@@ -308,13 +319,6 @@ void main() {
         ),
       );
       semantics.dispose();
-      // That filtering is page-scoped is stated nowhere on screen.
-      expect(
-        find.text(
-          'Filters apply to this page only. Draft visibility depends on repository permissions.',
-        ),
-        findsNothing,
-      );
       await tester.ensureVisible(find.byKey(const ValueKey('draft')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('draft')));
@@ -434,7 +438,7 @@ void main() {
   );
 
   testWidgets(
-    'the repository release list renders on the app’s faces and none of the '
+    'the Repository Release List renders on the app’s faces and none of the '
     'replaced ones',
     (tester) async {
       await pumpReleasesPage(
@@ -450,7 +454,7 @@ void main() {
         },
       );
 
-      final page = find.byType(RepositoryReleasesScreen);
+      final page = find.byType(RepositoryReleasesPage);
       expect(page, findsOneWidget);
       // The pager is the app's own action, and the filter row is the app's own
       // pill…
@@ -460,19 +464,6 @@ void main() {
       );
       // …and none of the Material faces this change replaced is left in it.
       expectNoReplacedMaterialFaces(page);
-      // The one Material icon button left in the page is the platform's own
-      // back affordance, which the app keeps as a Platform Dialect Exception.
-      expect(
-        find.descendant(of: page, matching: find.byType(IconButton)),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: find.byType(BackButton),
-          matching: find.byType(IconButton),
-        ),
-        findsOneWidget,
-      );
       expect(tester.takeException(), isNull);
     },
   );

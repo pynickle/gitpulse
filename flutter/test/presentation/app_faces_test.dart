@@ -12,6 +12,7 @@ import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
+import 'package:gitpulse/releases/release_screen.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
 import 'package:gitpulse/settings/settings_screen.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
@@ -19,12 +20,13 @@ import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
 
-import '../releases/release_drawer_test.dart' show browsingHandlers;
+import '../releases/release_detail_service_test.dart' show releaseDetailJson;
 import '../repositories/repository_screen_test.dart' show repositoryJson;
 import '../support/document_viewer.dart';
 import '../support/material_faces.dart';
 import '../support/named_actions.dart';
 import '../support/presentation_harness.dart';
+import '../support/release_browsing.dart' show releaseBrowsingHandlers;
 import '../timeline/timeline_filter_controls_test.dart' show pumpTimeline;
 import '../timeline/timeline_test_support.dart';
 
@@ -214,18 +216,20 @@ void main() {
   testWidgets('the Repository page and the release surfaces render on the '
       'app’s own faces', (tester) async {
     // Two surfaces a reader reaches from the shell rather than from a
-    // destination tab: the Release Drawer a Timeline card opens, and the
-    // Repository page its chrome line targets. They carry the release's notes
-    // and assets, the asset rows, the repository's bands and its README, so
-    // they are where a stray Material face would survive longest.
+    // destination tab: the release screen a Timeline card opens, and the
+    // Repository page that screen's title targets. They carry the release's
+    // notes and assets, the asset rows, the repository's bands and its README,
+    // so they are where a stray Material face would survive longest.
     useWindow(tester, const Size(390, 844));
     await openApp(
       tester,
       overrides: documentViewerOverrides(),
       handlers: {
-        ...browsingHandlers(),
-        // The drawer's chrome names the release it actually loaded, so the page
-        // it targets is the one the fixture's release detail describes.
+        ...releaseBrowsingHandlers(),
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: {...releaseDetailJson(), 'name': 'canonical/project notes'},
+        ),
         'GET api/repos/canonical/project': () =>
             BackendResult(statusCode: 200, data: repositoryJson()),
         'GET api/repos/canonical/project/readme?ref=main': () =>
@@ -238,16 +242,11 @@ void main() {
 
     await tester.tap(find.byType(ReleaseTimelineCard).hitTestable().first);
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('release-drawer')), findsOneWidget);
+    expect(find.byType(ReleaseScreen), findsOneWidget);
     expectNoReplacedMaterialFaces(find.byType(GitPulseApp));
 
-    // The drawer's chrome line names the repository and targets its page.
-    final drawerName = find.descendant(
-      of: find.byKey(const Key('release-drawer')),
-      matching: find.text('canonical/project'),
-    );
-    expect(drawerName, findsOneWidget);
-    await tester.tap(drawerName);
+    // The release's title leads to the repository it belongs to.
+    await tester.tap(find.byKey(const Key('release-repository')));
     await tester.pumpAndSettle();
     expect(find.byType(RepositoryScreen), findsOneWidget);
     expectNoReplacedMaterialFaces(find.byType(GitPulseApp));

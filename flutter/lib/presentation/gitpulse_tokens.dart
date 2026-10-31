@@ -3,18 +3,11 @@ import 'package:flutter/material.dart';
 import 'gitpulse_preset.dart';
 import 'gitpulse_theme.dart';
 
-/// Small content movements that accompany navigation or a module arriving,
-/// separate from layout.
+/// Small content movements that accompany navigation, separate from layout.
 abstract final class GitPulseMotion {
   /// The Release Timeline's distant return, hidden between its two positions.
   /// Registered in ADR 0030; this is a paint offset, never layout spacing.
   static const timelineReturnShift = 12.0;
-
-  /// How far the Release Assets module rises off the fold row that opened it
-  /// before it stands on the reading area, and the distance it settles back
-  /// over. Registered in ADR 0035; paint-only, like [timelineReturnShift], so
-  /// the notes beneath are never re-laid out by it.
-  static const assetsRevealShift = 16.0;
 }
 
 /// The distances every GitPulse surface is laid out on, named by the job each
@@ -31,6 +24,13 @@ abstract final class GitPulseSpace {
   /// Between two lines of one block: a card's two rows, a control and its
   /// note.
   static const tight = 6.0;
+
+  /// Between two parts of one line that are not separate items: the avatar, a
+  /// name and its date in a release's signing line.
+  ///
+  /// Narrower than [inline] because nothing between them is a control: the gaps
+  /// are the words' own spacing, not the room a finger needs.
+  static const dense = 6.0;
 
   /// Between side-by-side items of one row: chips, an icon group, the label
   /// above a control.
@@ -304,6 +304,13 @@ abstract final class GitPulseAvatarSize {
   /// The signed-in account beside its name in Settings.
   static const account = 32.0;
 
+  /// A release's author in the line that signs it.
+  ///
+  /// A picture the size of a run of small text: larger than the words it stands
+  /// beside and smaller than the account it would be if it were a row, because
+  /// this one introduces a sentence rather than a menu.
+  static const artist = 20.0;
+
   /// A repository's owner, introducing the page that is about that repository.
   ///
   /// Larger than [account] because it stands beside the page's own name rather
@@ -451,6 +458,19 @@ TextStyle? gitPulseTypeMeta(BuildContext context) => _typeRow(
   context,
   (table) => table.bodySmall,
   color: toneTextMuted(context),
+);
+
+/// The quiet line above a title: the tag a release is named by, before the
+/// release's own name.
+///
+/// It is set small and heavy like a block's label, but it carries a value rather
+/// than a heading of the surface, so it reads as the name's caption and never
+/// as the name's equal.
+TextStyle? gitPulseTypeEyebrow(BuildContext context) => _typeRow(
+  context,
+  (table) => table.labelSmall,
+  color: toneTextMuted(context),
+  weight: FontWeight.w600,
 );
 
 /// The tightest meta there is: a card's timestamp, an asset's size and download

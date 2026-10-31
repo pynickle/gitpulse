@@ -108,7 +108,6 @@ void main() {
   ) async {
     final at = _clock.subtract(const Duration(days: 3));
     await _pumpCard(tester, _release(publishedAt: at), signedIn: true);
-    expect(find.byKey(const Key('release-drawer')), findsNothing);
 
     // The card states how long ago the release landed. The instant it landed at
     // is the one fact those words leave out, and both reach a screen reader
@@ -120,10 +119,8 @@ void main() {
     expect(find.text(instant), findsNothing);
 
     // A resting finger raises nothing: the card is a pressable like any other,
-    // so a long press only opens the release drawer a tap opens.
-    await tester.longPress(find.text('3 days ago'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('release-drawer')), findsOneWidget);
+    // and the words it carries are drawn on the card rather than in a bubble.
+    expect(find.byType(Tooltip), findsNothing);
   });
 
   testWidgets('the asset count keeps a paper-clip and its words', (

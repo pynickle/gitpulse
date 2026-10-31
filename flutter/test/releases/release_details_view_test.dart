@@ -11,12 +11,15 @@ import 'package:gitpulse/releases/release_details_view.dart';
 
 import '../support/document_viewer.dart';
 import '../support/material_faces.dart';
+import '../support/named_actions.dart';
 
 ReleaseDetail releaseWith({
   String? name,
   String tag = 'v2.0.0',
   String body = 'Release notes body',
   List<ReleaseAssetDto> assets = const [],
+  String? author,
+  DateTime? publishedAt,
 }) => ReleaseDetail(
   ReleaseDetailDto(
     id: 1,
@@ -27,6 +30,8 @@ ReleaseDetail releaseWith({
     assets: assets,
     draft: false,
     prerelease: false,
+    author: author == null ? null : ReleaseAuthorDto(login: author),
+    publishedAt: publishedAt,
   ),
   'octo',
   'app',
@@ -53,13 +58,14 @@ ReleaseAssetDto asset({
   updatedAt: updatedAt ?? DateTime.utc(2026, 10, 20),
 );
 
-/// Pumps the reading body, collecting every browser launch it asks for.
+/// Pumps the reading body, collecting every browser launch it asks for and
+/// counting the times its host is asked to open the Release Assets.
 Future<List<Uri>> pumpDetails(
   WidgetTester tester,
   ReleaseDetail release, {
   double width = 420,
   ThemeData? theme,
-  bool reduceMotion = false,
+  VoidCallback? onViewAllAssets,
 }) async {
   final launched = <Uri>[];
   await tester.pumpWidget(
@@ -69,17 +75,11 @@ Future<List<Uri>> pumpDetails(
         theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        builder: (context, child) => reduceMotion
-            ? MediaQuery(
-                data: MediaQuery.of(context).copyWith(disableAnimations: true),
-                child: child!,
-              )
-            : child!,
         home: Scaffold(
           body: Align(
             alignment: Alignment.topLeft,
             // The notes own their own scroll, so the body is given the height a
-            // drawer gives it rather than an unbounded scroll parent.
+            // page gives it rather than an unbounded scroll parent.
             child: SizedBox(
               width: width,
               height: 600,
@@ -90,6 +90,12 @@ Future<List<Uri>> pumpDetails(
                   launched.add(Uri.parse(url));
                   return true;
                 },
+                // The host's scroll view is the release page's; this body is
+                // read on its own here, so the header and the Release Assets row
+                // stand where the page puts them.
+                headerBuilder: (header) => header,
+                footerBuilder: (footer) => footer,
+                onViewAllAssets: onViewAllAssets ?? () {},
               ),
             ),
           ),
@@ -101,17 +107,15 @@ Future<List<Uri>> pumpDetails(
   return launched;
 }
 
-Future<void> openAssets(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('release-assets')));
-  await tester.pumpAndSettle();
-}
-
 void main() {
   testWidgets('the release name is shown even when it repeats the tag', (
     tester,
   ) async {
     await pumpDetails(tester, releaseWith(name: 'v2.0.0'));
-    expect(find.text('v2.0.0'), findsOneWidget);
+    // The tag line says which version this is and the name says what it is
+    // called; a release whose name is its tag says it in both places, the way
+    // the web Release Drawer does.
+    expect(find.text('v2.0.0'), findsNWidgets(2));
     expect(
       find.textContaining('Release notes body', findRichText: true),
       findsOneWidget,
@@ -123,10 +127,75 @@ void main() {
   ) async {
     await pumpDetails(tester, releaseWith(name: 'The big one'));
     expect(find.text('The big one'), findsOneWidget);
-    expect(find.text('v2.0.0'), findsNothing);
+    expect(find.text('v2.0.0'), findsOneWidget);
   });
 
-  testWidgets('the fold row states how many assets there are and their total', (
+  testWidgets('the tag line reads as GitHub’s tag glyph and the tag', (
+    tester,
+  ) async {
+    await pumpDetails(tester, releaseWith(name: 'The big one'));
+    expect(find.byIcon(Icons.sell_outlined), findsOneWidget);
+    // The tag is a name rather than a word of a sentence: a screen reader hears
+    // the whole line from the glyph, and the words are never drawn.
+    final tagLine = tester.getSemantics(find.text('v2.0.0'));
+    expect(tagLine.label, contains('Tagged v2.0.0'));
+  });
+
+  testWidgets('a release is signed with its author and how long ago', (
+    tester,
+  ) async {
+    await pumpDetails(
+      tester,
+      releaseWith(
+        name: 'The big one',
+        author: 'octocat',
+        publishedAt: DateTime.now().subtract(const Duration(hours: 3)),
+      ),
+    );
+    // One sentence, not a key-value row: the handle and the date share it, and
+    // the date is the part that gives way.
+    final handle = tester.getCenter(find.text('octocat'));
+    final date = tester.getCenter(find.text('3 hours ago'));
+    expect(date.dy, closeTo(handle.dy, 1));
+    expect(date.dx, greaterThan(handle.dx));
+    // The way out to GitHub is the same line's last word.
+    expect(findNamedAction('Open on GitHub'), findsOneWidget);
+    expect(
+      tester.getCenter(findNamedAction('Open on GitHub')).dy,
+      closeTo(handle.dy, 4),
+    );
+  });
+
+  testWidgets('the way out to GitHub opens the release being read', (
+    tester,
+  ) async {
+    final launched = await pumpDetails(
+      tester,
+      releaseWith(name: 'The big one', author: 'octocat'),
+    );
+    await tester.tap(findNamedAction('Open on GitHub'));
+    await tester.pumpAndSettle();
+    expect(
+      launched.single.toString(),
+      'https://github.com/octo/app/releases/tag/v2.0.0',
+    );
+  });
+
+  testWidgets('a release with no author still says when it was published', (
+    tester,
+  ) async {
+    await pumpDetails(
+      tester,
+      releaseWith(
+        name: 'The big one',
+        publishedAt: DateTime.now().subtract(const Duration(days: 2)),
+      ),
+    );
+    expect(find.text('Published 2 days ago'), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
+  });
+
+  testWidgets('the assets row states how many there are and their total', (
     tester,
   ) async {
     await pumpDetails(
@@ -139,274 +208,57 @@ void main() {
       ),
     );
     expect(find.text('2 assets · 1.5 MB'), findsOneWidget);
-    // Nothing is listed until the reader opens the module.
+    // The row is a way in, not a list: the files are on the screen it opens.
     expect(find.text('linux.zip'), findsNothing);
     expect(find.text('windows.zip'), findsNothing);
   });
 
-  testWidgets('the asset section opens below a boundary after the notes', (
+  testWidgets('the assets row opens below a boundary after the notes', (
     tester,
   ) async {
     await pumpDetails(tester, releaseWith(assets: [asset()]));
     final notes = find.textContaining('Release notes body', findRichText: true);
-    final fold = find.byKey(const Key('release-assets'));
+    final row = find.byKey(const Key('release-assets'));
     // Breathing room, a hairline rule, then more room: the notes have visibly
-    // ended rather than the fold row reading as their last paragraph.
+    // ended rather than the row reading as their last paragraph.
     expect(
-      tester.getTopLeft(fold).dy - tester.getBottomLeft(notes).dy,
+      tester.getTopLeft(row).dy - tester.getBottomLeft(notes).dy,
       greaterThan(24),
     );
   });
 
-  testWidgets('opening the module reveals one row per Release Asset', (
+  testWidgets('the assets row asks its host to open the assets', (
     tester,
   ) async {
-    await pumpDetails(
-      tester,
-      releaseWith(
-        assets: [
-          asset(name: 'linux.zip'),
-          asset(name: 'windows.zip'),
-          asset(name: 'app.zip.minisig', size: 512),
-        ],
-      ),
-    );
-    await openAssets(tester);
-    expect(find.text('linux.zip'), findsOneWidget);
-    expect(find.text('windows.zip'), findsOneWidget);
-    expect(find.text('app.zip.minisig'), findsOneWidget);
-  });
-
-  testWidgets('the module rises onto the reading area rather than appearing', (
-    tester,
-  ) async {
-    await pumpDetails(tester, releaseWith(assets: [asset()]));
-    await tester.tap(find.byKey(const Key('release-assets')));
-    // The first frame after the tap: the module is already mounted and still
-    // the registered rise below the place it comes to rest.
-    await tester.pump();
-    final row = find.text('app.zip');
-    expect(row, findsOneWidget);
-    final arriving = tester.getTopLeft(row).dy;
-    await tester.pumpAndSettle();
-    expect(
-      arriving - tester.getTopLeft(row).dy,
-      moreOrLessEquals(GitPulseMotion.assetsRevealShift),
-    );
-  });
-
-  testWidgets('the notes stay mounted under the module and come back to it', (
-    tester,
-  ) async {
-    await pumpDetails(tester, releaseWith(assets: [asset()]));
-    final notes = find.textContaining('Release notes body', findRichText: true);
-    final document = tester.element(notes);
-    await openAssets(tester);
-    expect(find.text('app.zip'), findsOneWidget);
-    // The notes are covered, not thrown away: the element the renderer lives in
-    // is the same one, so folding the module away returns to the page the
-    // reader left instead of rendering the document again.
-    expect(identical(tester.element(notes), document), isTrue);
-    await tester.tap(find.byKey(const Key('release-assets')));
-    await tester.pump();
-    // Covered on the way out too, so the notes never show through a leaving
-    // list.
-    expect(find.text('app.zip'), findsOneWidget);
-    await tester.pumpAndSettle();
-    expect(find.text('app.zip'), findsNothing);
-    expect(identical(tester.element(notes), document), isTrue);
-  });
-
-  testWidgets('the module folds away faster than it arrives', (tester) async {
-    await pumpDetails(tester, releaseWith(assets: [asset()]));
-    await openAssets(tester);
-    await tester.tap(find.byKey(const Key('release-assets')));
-    await tester.pump();
-    // Still on screen on the frame the tap lands, and still leaving halfway
-    // through the fold...
-    final row = find.text('app.zip');
-    expect(row, findsOneWidget);
-    await tester.pump(gitPulseAssetsFold ~/ 2);
-    expect(row, findsOneWidget);
-    // ...then gone, inside a fold — sooner than the notes took to be covered.
-    await tester.pump(gitPulseAssetsFold);
-    expect(row, findsNothing);
-    expect(gitPulseAssetsFold, lessThan(gitPulseAssetsReveal));
-  });
-
-  testWidgets('a row answers a tap only once the module has come to rest', (
-    tester,
-  ) async {
-    final launched = await pumpDetails(tester, releaseWith(assets: [asset()]));
-    await tester.tap(find.byKey(const Key('release-assets')));
-    await tester.pump();
-    final row = find.text('app.zip');
-    await tester.pump(gitPulseAssetsReveal ~/ 2);
-    // Halfway in the row is already where the reader can see it, but it is
-    // still arriving: a tap there must not start a download from a list that
-    // has not landed yet.
-    await tester.tapAt(tester.getCenter(row));
-    await tester.pumpAndSettle();
-    expect(launched, isEmpty);
-    // At rest, the same row is the download it looks like.
-    await tester.tapAt(tester.getCenter(row));
-    await tester.pumpAndSettle();
-    expect(launched, hasLength(1));
-  });
-  testWidgets('reduced motion puts the module in place without travelling', (
-    tester,
-  ) async {
+    var opened = 0;
     await pumpDetails(
       tester,
       releaseWith(assets: [asset()]),
-      reduceMotion: true,
+      onViewAllAssets: () => opened++,
     );
     await tester.tap(find.byKey(const Key('release-assets')));
-    await tester.pump();
-    final row = find.text('app.zip');
-    final placed = tester.getTopLeft(row).dy;
     await tester.pumpAndSettle();
-    expect(tester.getTopLeft(row).dy, placed);
-    // And it folds away in the same tap rather than fading out.
-    await tester.tap(find.byKey(const Key('release-assets')));
-    await tester.pumpAndSettle();
-    expect(find.text('app.zip'), findsNothing);
+    expect(opened, 1);
   });
 
-  testWidgets('the module covers the notes for a screen reader too', (
-    tester,
-  ) async {
-    final semantics = tester.ensureSemantics();
+  testWidgets('the assets row is announced by what it shows', (tester) async {
     await pumpDetails(tester, releaseWith(assets: [asset()]));
-    expect(announces(tester, 'Release notes body'), isTrue);
-    await openAssets(tester);
-    // What the reader cannot see is not read out beside the module.
-    expect(announces(tester, 'Release notes body'), isFalse);
-    expect(announces(tester, 'app.zip'), isTrue);
-    semantics.dispose();
+    // The words on the row are the count and the total; the control's name is
+    // what a reader is being offered. Merged, they are one control rather than a
+    // number floating beside a button.
+    final row = tester.getSemantics(find.byKey(const Key('release-assets')));
+    expect(row, isSemantics(isButton: true, hasTapAction: true));
+    expect(row.label, contains('View all assets'));
+    expect(row.label, contains('1 asset · 2 KB'));
   });
 
-  testWidgets(
-    'an asset row carries its size and download count and nothing else',
-    (tester) async {
-      final launched = await pumpDetails(
-        tester,
-        releaseWith(
-          assets: [
-            asset(
-              name: 'app.zip',
-              size: 22740992,
-              downloadCount: 1237,
-              label: 'Desktop build',
-              contentType: 'application/x-msdownload',
-              updatedAt: DateTime.utc(2026, 10, 20),
-            ),
-          ],
-        ),
-      );
-      await openAssets(tester);
-      expect(find.text('21.7 MB · 1,237 downloads'), findsOneWidget);
-      // Everything that does not help a reader choose is gone: the MIME type,
-      // the per-asset date, the deprecated label and the per-request footnote.
-      expect(find.textContaining('application/x-msdownload'), findsNothing);
-      expect(find.textContaining('Oct 20, 2026'), findsNothing);
-      expect(find.textContaining('Desktop build'), findsNothing);
-      expect(find.textContaining('this request'), findsNothing);
-      expect(launched, isEmpty);
-    },
-  );
-
-  testWidgets('an asset of unknown size shows its download count alone', (
-    tester,
-  ) async {
-    await pumpDetails(
-      tester,
-      releaseWith(assets: [asset(name: 'app.zip', size: 0, downloadCount: 5)]),
-    );
-    await openAssets(tester);
-    expect(find.text('5 downloads'), findsOneWidget);
-    expect(find.textContaining('0 B'), findsNothing);
-    // A single asset with no known size leaves the fold row its count.
-    expect(find.textContaining('1 asset'), findsOneWidget);
-  });
-
-  testWidgets('a long filename is shown in full rather than cut short', (
-    tester,
-  ) async {
-    const name = 'gitpulse-0.9.0-x86_64-unknown-linux-gnu.tar.gz.minisig';
-    await pumpDetails(tester, releaseWith(assets: [asset(name: name)]));
-    await openAssets(tester);
-    final filename = find.text(name);
-    expect(filename, findsOneWidget);
-    // It wraps over more than one line instead of losing its distinguishing
-    // suffix to an ellipsis.
-    expect(tester.getSize(filename).height, greaterThan(24));
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('a release with no assets shows no asset section at all', (
+  testWidgets('a release with no assets shows no assets row at all', (
     tester,
   ) async {
     await pumpDetails(tester, releaseWith());
     expect(find.byKey(const Key('release-assets')), findsNothing);
     expect(find.textContaining('assets'), findsNothing);
   });
-
-  testWidgets('the fold row is announced as a button reporting its state', (
-    tester,
-  ) async {
-    await pumpDetails(tester, releaseWith(assets: [asset()]));
-    expect(
-      tester.getSemantics(find.byKey(const Key('release-assets'))),
-      isSemantics(
-        label: '1 asset · 2 KB',
-        isButton: true,
-        hasExpandedState: true,
-        isExpanded: false,
-        hasTapAction: true,
-      ),
-    );
-    await openAssets(tester);
-    expect(
-      tester.getSemantics(find.byKey(const Key('release-assets'))),
-      isSemantics(isExpanded: true),
-    );
-  });
-
-  testWidgets(
-    'an asset row is announced with its name and its download action',
-    (tester) async {
-      await pumpDetails(tester, releaseWith(assets: [asset()]));
-      await openAssets(tester);
-      final semantics = tester.getSemantics(find.text('app.zip'));
-      expect(semantics.label, contains('app.zip'));
-      expect(semantics.label, contains('2 KB · 7 downloads'));
-      expect(semantics, isSemantics(hasTapAction: true, isButton: true));
-      expect(semantics.hint, 'Download in browser');
-    },
-  );
-
-  testWidgets('an asset with no safe download address offers no action', (
-    tester,
-  ) async {
-    final launched = await pumpDetails(
-      tester,
-      releaseWith(
-        assets: [
-          asset(name: 'app.zip', browserDownloadUrl: 'javascript:alert(1)'),
-        ],
-      ),
-    );
-    await openAssets(tester);
-    expect(find.text('app.zip'), findsOneWidget);
-    final semantics = tester.getSemantics(find.text('app.zip'));
-    expect(semantics, isSemantics(hasTapAction: false));
-    expect(semantics.hint, isEmpty);
-    await tester.tap(find.text('app.zip'));
-    await tester.pumpAndSettle();
-    expect(launched, isEmpty);
-  });
-
   testWidgets('an offline copy still says when it was saved', (tester) async {
     final savedAt = DateTime(2026, 10, 19, 12, 30);
     final publishedAt = DateTime(2026, 10, 18, 14, 43);
@@ -436,7 +288,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('Saved'), findsOneWidget);
-    expect(find.textContaining('Oct 18, 2026'), findsWidgets);
+    // A saved copy has no author line, so the instant the release landed is
+    // stated by the notice rather than lost with the account's session.
+    expect(find.textContaining('Published Oct 18, 2026'), findsOneWidget);
   });
 
   testWidgets('the release body is the app’s surface, not Material’s faces', (
@@ -449,13 +303,14 @@ void main() {
     );
 
     final view = find.byType(ReleaseDetailsView);
-    // The release's name is a surface's title and the assets fold is a section
-    // label: both are rows of the type table, in the app's own tones.
+    // The release's name is set at the role a page's title takes, and the
+    // assets row's label at a section label's: both are rows of the type table,
+    // in the app's own tones.
     final context = tester.element(view);
     final title = tester.widget<SelectableText>(find.byType(SelectableText));
     expect(
       title.style?.fontSize,
-      gitPulseTypeTableOf(context).titleMedium.size,
+      gitPulseTypeTableOf(context).headlineSmall.size,
     );
     expect(title.style?.color, toneTextStrong(context));
     final fold = tester.widget<Text>(find.textContaining('asset'));

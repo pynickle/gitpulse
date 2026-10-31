@@ -17,7 +17,10 @@ import 'settings/settings_screen.dart';
 import 'timeline/timeline_screen.dart';
 import 'timeline/timeline_cache_lifecycle.dart';
 import 'follows/release_follows_screen.dart';
-import 'releases/repository_releases_screen.dart';
+import 'releases/release_assets_screen.dart';
+import 'releases/release_navigation.dart';
+import 'releases/release_screen.dart';
+import 'releases/repository_releases_page.dart';
 import 'repositories/repository_screen.dart';
 
 /// The shell destinations, in bottom-bar order.
@@ -85,10 +88,53 @@ final _routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/repositories/:owner/:repository/releases',
-        builder: (context, state) => RepositoryReleasesScreen(
+        builder: (context, state) => RepositoryReleasesPage(
           owner: state.pathParameters['owner']!,
           repository: state.pathParameters['repository']!,
         ),
+      ),
+      // A release is a page of its own rather than a sheet over the Timeline
+      // (ADR 0039). It is pushed above the destination that opened it, so the
+      // way in is a tap and the way out is the app's Home; it lives outside the
+      // shell because a release is read, not switched to.
+      GoRoute(
+        path: '$releaseRoutePrefix/:owner/:repository',
+        builder: (context, state) => RepositoryReleasesPage(
+          owner: state.pathParameters['owner']!,
+          repository: state.pathParameters['repository']!,
+        ),
+      ),
+      GoRoute(
+        path: '$releaseRoutePrefix/:owner/:repository/:id',
+        builder: (context, state) => ReleaseScreen(
+          owner: state.pathParameters['owner']!,
+          repository: state.pathParameters['repository']!,
+          id: int.tryParse(state.pathParameters['id']!),
+        ),
+        routes: [
+          // A release's files are their own screen rather than a list stacked
+          // under its notes: two scrollers in one reading area is a gesture the
+          // reader has to aim (ADR 0039).
+          GoRoute(
+            path: 'assets',
+            builder: (context, state) => ReleaseAssetsScreen(
+              owner: state.pathParameters['owner']!,
+              repository: state.pathParameters['repository']!,
+              id: int.tryParse(state.pathParameters['id']!),
+            ),
+          ),
+          // The release's title leads to the repository it belongs to, and this
+          // route is what says the reader came from the release: Back on the
+          // repository returns to those notes rather than closing the release.
+          GoRoute(
+            path: 'repository',
+            builder: (context, state) => RepositoryScreen(
+              owner: state.pathParameters['owner']!,
+              repository: state.pathParameters['repository']!,
+              openedFromRelease: true,
+            ),
+          ),
+        ],
       ),
       // The three places the bar offers are the shell's children rather than
       // pages of their own: the bar belongs to the shell, so it survives the

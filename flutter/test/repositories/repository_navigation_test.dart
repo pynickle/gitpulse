@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/app.dart';
 import 'package:gitpulse/connection/connection_controller.dart';
+import 'package:gitpulse/releases/release_screen.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
@@ -51,9 +52,9 @@ void main() {
                     },
                   ),
                 ),
-                'GET api/repos/canonical/project': () =>
+                'GET api/repos/octo/app': () =>
                     BackendResult(statusCode: 200, data: repositoryJson()),
-                'GET api/repos/canonical/project/readme?ref=main': () =>
+                'GET api/repos/octo/app/readme?ref=main': () =>
                     const BackendResult(
                       statusCode: 200,
                       data: {'content': null, 'path': null},
@@ -90,14 +91,19 @@ void main() {
             );
         await tester.tap(card);
         await tester.pumpAndSettle();
-        await tester.tap(find.text('canonical/project'));
+        // The release's title leads to its repository, and the repository's
+        // Releases action to that repository's list. Home from the list leaves
+        // releases altogether and puts the reader back on the Timeline at the
+        // place they left.
+        await tester.tap(find.byKey(const Key('release-repository')));
         await tester.pumpAndSettle();
         expect(find.text('A useful project'), findsOneWidget);
-        await tester.tap(find.text('Releases'));
+        await tester.tap(find.byType(BackButton));
         await tester.pumpAndSettle();
+        expect(find.byType(ReleaseScreen), findsOneWidget);
         await tester.tap(findNamedAction('Home'));
         await tester.pumpAndSettle();
-        expect(find.byKey(const Key('release-drawer')), findsNothing);
+        expect(find.byType(ReleaseScreen), findsNothing);
         expect(tester.getTopLeft(card), position);
         expect(router.routeInformationProvider.value.uri.path, '/timeline');
 

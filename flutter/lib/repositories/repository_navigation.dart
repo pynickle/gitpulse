@@ -5,9 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_buttons.dart';
 import '../releases/document_content.dart';
-import '../releases/release_drawer.dart';
-import '../releases/repository_releases_screen.dart';
-import '../session/native_login_handoff.dart';
+import '../releases/release_link.dart';
+import '../releases/repository_releases_page.dart';
 import 'repository_screen.dart';
 import 'repository_service.dart';
 
@@ -47,12 +46,12 @@ Future<void> openRepositoryPage(
   BuildContext context,
   RepositoryLinkTarget target,
 ) {
-  // A pageless route sits above the existing drawer instead of replacing its
-  // GoRouter page. Back restores the same Entry Release and timeline scroll.
+  // A route sits above the page that opened it instead of replacing it, so
+  // Back restores the same scroll, filter and list position.
   return Navigator.of(context).push<void>(
     MaterialPageRoute(
       builder: (_) => target.releases
-          ? RepositoryReleasesScreen(
+          ? RepositoryReleasesPage(
               owner: target.owner,
               repository: target.repository,
             )
@@ -69,33 +68,7 @@ Future<bool> openNativeContentLink(
   WidgetRef ref,
   String value, {
   bool external = false,
-}) async {
-  final uri = safeContentUri(value);
-  if (uri == null) return true;
-  if (!external) {
-    final repository = repositoryTargetFromUri(uri);
-    if (repository != null) {
-      await openRepositoryPage(context, repository);
-      return true;
-    }
-    final release = releaseTargetFromUri(uri);
-    if (release != null) {
-      await showReleaseDrawer(context, release);
-      return true;
-    }
-  }
-  try {
-    if (await ref.read(browserLauncherProvider)(uri)) return true;
-  } catch (_) {
-    // Failed external launches stay local to the content surface.
-  }
-  if (context.mounted) {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context).releaseLinkFailed)),
-    );
-  }
-  return true;
-}
+}) => openReleaseLink(context, ref, value, external: external);
 
 /// The navigation bar every Repository page shares: Back to whatever opened the
 /// page, and Home to the Timeline.
@@ -103,10 +76,16 @@ Future<bool> openNativeContentLink(
 /// [title] stays optional because a page whose own content already names itself
 /// — the repository detail, which opens with the repository's identity — must
 /// not print that name a second time a few pixels above it.
+///
+/// [onBack] is the page's own step back, when it has one: a repository opened
+/// from a release returns to that release, and the repository screen passes the
+/// navigation its route came from. Every other page pops, and the Timeline is
+/// what a page with nothing left to pop to returns to.
 class RepositoryPageAppBar extends StatelessWidget
     implements PreferredSizeWidget {
-  const RepositoryPageAppBar({super.key, this.title});
+  const RepositoryPageAppBar({super.key, this.title, this.onBack});
   final String? title;
+  final VoidCallback? onBack;
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
@@ -114,13 +93,15 @@ class RepositoryPageAppBar extends StatelessWidget
   Widget build(BuildContext context) => AppBar(
     title: title == null ? null : Text(title!),
     leading: BackButton(
-      onPressed: () {
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        } else {
-          GoRouter.maybeOf(context)?.go('/timeline');
-        }
-      },
+      onPressed:
+          onBack ??
+          () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              GoRouter.maybeOf(context)?.go('/timeline');
+            }
+          },
     ),
     actions: [
       // Home is the app's own action; Back above it stays the platform's own

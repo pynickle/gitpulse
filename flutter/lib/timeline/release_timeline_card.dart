@@ -5,7 +5,7 @@ import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_status_badge.dart';
 import '../presentation/gitpulse_tokens.dart';
-import '../releases/release_drawer.dart';
+import '../releases/release_navigation.dart';
 import 'timeline_cache.dart';
 import 'timeline_models.dart';
 
@@ -28,7 +28,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
       color: GitPulsePaint.none,
       child: InkWell(
         borderRadius: BorderRadius.circular(GitPulseRadius.surface),
-        onTap: () => showReleaseDrawer(context, (
+        onTap: () => openRelease(context, (
           owner: item.repository.owner,
           repository: item.repository.name,
           id: item.id,
