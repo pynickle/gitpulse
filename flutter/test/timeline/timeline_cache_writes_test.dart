@@ -60,11 +60,19 @@ void main() {
         expect(keys(h.container), contains('R_a:2'));
         expect(readState(h.container).visibleGroups, isEmpty);
         expect(readState(h.container).savedAt, savedAt);
+        timeline.applyFilters(const TimelineFilterState(query: 'v2'));
+        expect(
+          readState(h.container).visibleGroups
+              .expand((group) => group.items)
+              .map((item) => item.id),
+          [2],
+        );
         held.release();
         await saving;
         expect(readState(h.container).loading, isFalse);
         expect(readState(h.container).cacheFailed, isTrue);
         expect(readState(h.container).savedAt, savedAt);
+        expect(readState(h.container).filters.query, 'v2');
         final requests = h.session.requests.toList();
         final baseline = readState(h.container).previousBaseline;
         await disk.cache.customStatement('DROP TRIGGER fail_visible');
@@ -73,6 +81,7 @@ void main() {
         expect(readState(h.container).previousBaseline, baseline);
         expect(readState(h.container).cacheFailed, isFalse);
         expect(readState(h.container).savedAt, now);
+        expect(readState(h.container).filters.query, 'v2');
         // A display filter never narrows the durable saved membership.
         final scope = h.session.state.identity!.account.scope;
         h.container.dispose();

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,7 @@ import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
 import 'package:gitpulse/timeline/timeline_screen.dart';
+import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
 import '../follows/follows_test_support.dart';
@@ -121,6 +123,16 @@ Future<_Timeline> _openTimeline(
     value: 'correct-horse',
     action: preferences['language'] == 'zh' ? '解锁' : 'Unlock',
   );
+  await pumpUntil(tester, () {
+    final screen = find.byType(TimelineScreen);
+    if (screen.evaluate().isEmpty) return false;
+    final container = ProviderScope.containerOf(
+      tester.element(screen),
+      listen: false,
+    );
+    final state = container.read(releaseTimelineSessionProvider);
+    return state.active && !state.loading;
+  }, reason: 'finish timeline startup and saving');
   await settleUi(tester);
   return _Timeline(server);
 }

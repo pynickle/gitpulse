@@ -303,6 +303,34 @@ void main() {
         isFalse,
       );
       expect(app.releases, isEmpty);
+      await pumpOperation(tester, () async {
+        final facade = app.container.read(
+          releaseTimelineSessionProvider.notifier,
+        );
+        final release = Completer<void>();
+        final locked = Completer<void>();
+        final storage = app.cache.transaction(() async {
+          await app.cache.customSelect('SELECT 1').get();
+          locked.complete();
+          await release.future;
+        });
+        await locked.future;
+        final firstClear = facade.clearCache();
+        final reload = facade.reloadFollows();
+        final nextClear = firstClear.then((_) => facade.clearCache());
+        release.complete();
+        await storage;
+        await Future.wait([reload, nextClear]);
+      }, reason: 'preserve waiting reload order across consecutive clears');
+      expect(
+        app.container
+            .read(releaseTimelineSessionProvider)
+            .cacheActions
+            .clearing,
+        isFalse,
+      );
+      // The original waiting order lets the reload refill after both clears.
+      expect(app.releases, ['R_alpha:3', 'R_alpha:2', 'R_alpha:1']);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );

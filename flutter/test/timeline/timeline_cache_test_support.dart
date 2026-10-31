@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/device/device_preferences.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/timeline_cache.dart';
+import 'package:gitpulse/timeline/timeline_session.dart';
 import 'package:path/path.dart' as p;
 
 import '../support/device_preferences_support.dart';
+import '../support/provider_wait.dart';
 import 'timeline_test_support.dart';
 
 typedef Harness = TimelineHarness;
@@ -92,13 +94,11 @@ class DiskTimeline {
   }
 }
 
-Future<void> settle(ProviderContainer container) async {
-  for (var i = 0; i < 100; i++) {
-    await Future<void>.delayed(const Duration(milliseconds: 5));
-    if (!readState(container).loading && readState(container).active) return;
-  }
-  fail('timeline did not settle');
-}
+Future<void> settle(ProviderContainer container) => waitForProvider(
+  container,
+  releaseTimelineSessionProvider,
+  (state) => state.active && !state.loading,
+);
 
 List<String> keys(ProviderContainer container) =>
     readState(container).groups

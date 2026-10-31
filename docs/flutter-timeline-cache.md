@@ -152,10 +152,21 @@ earlier failed write. Retrying a known local write does not fetch releases or
 advance the shared refresh baseline. Failed cache clearing remains pending:
 subsequent reads must complete it before any saved history can be restored.
 
-The timeline session owns the current cycle's fetched-page journal, commit
-acknowledgement and retry/rebuild orchestration. The cache module owns SQL,
-transaction ordering, pruning and account isolation. Write-path optimizations
-remain behind that module's existing interface.
+The timeline session delegates the unfiltered current window, fetched-page
+journal, commit acknowledgement, cached-history connection and local recovery
+orchestration to `TimelineContentController`. Its private journal owns page
+append, commit progress, repository retention and replay; saved cached extensions
+never become fetched pages. The app-facing session keeps account/network lifecycle
+and derives the display projection with the user's current filters. Device choices
+and their ordered choose-and-apply facade remain outside the content module.
+The cache module owns SQL, transaction ordering, pruning and account isolation.
+Write-path optimizations remain behind that module's existing interface.
+See [ADR 0038](adr/0038-flutter-timeline-content-and-recovery-ownership.md).
+
+Known local save retries do not fetch. The existing exceptional retry path before
+the retention window is resolved still asks the facade to initialize through a
+refresh, holding cache-action admission until it finishes. This does not give the
+local content module a remote transport dependency.
 
 Damaged SQLite files and malformed cached content show a separate **Rebuild
 cache** action. Rebuilding closes the old database, removes only the timeline
