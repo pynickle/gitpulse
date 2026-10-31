@@ -6,7 +6,7 @@ browser. The app receives its own Nitro Cookie session through
 browser URLs, and the app never imports browser cookies.
 
 Enable GitHub OAuth through the existing provider configuration and set a strong
-`NUXT_SESSION_PASSWORD` (at least 32 characters). Discovery advertises
+`NUXT_APP_SECRET` (at least 32 characters). Discovery advertises
 `native-login-handoff` only outside personal mode, with usable OAuth configuration,
 a session encryption key, and an `fs`, `redis`, or `upstash` storage driver.
 `resolveAuthProviderState()` remains the provider authority. Password/PAT login

@@ -9,6 +9,7 @@ import { open, mkdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { createError, getRequestURL, setHeader, type H3Event } from 'h3';
+import { deriveSecret } from 'nuxt/server';
 import * as z from 'zod';
 
 import { withAppBase } from '#shared/utils/auth-return-route';
@@ -17,6 +18,7 @@ import {
   normalizeUserSettingsStorageDriver,
 } from '#shared/utils/user-settings-storage-env';
 
+import { MIN_APP_SECRET_LENGTH } from './app-secret-utils';
 import { resolveAuthProviderState } from './auth-providers';
 import {
   getUserSettingsItemKey,
@@ -49,26 +51,32 @@ interface Transaction {
   grant?: string;
 }
 
-function sessionPassword(event: H3Event) {
-  const config = useRuntimeConfig(event);
-  return (
-    process.env[`${config.nitro?.envPrefix || 'NUXT_'}SESSION_PASSWORD`] ||
-    config.session?.password ||
-    ''
-  );
+function sessionSecret(event: H3Event) {
+  return useRuntimeConfig(event).appSecret || '';
+}
+
+// `deriveSecret` is Nuxt's HKDF-SHA256 helper: one `appSecret` root yields an
+// independent key per purpose. The grant gets its own purpose, so it is never
+// sealed with the session key and a grant can never be mistaken for a session
+// cookie. It throws when `appSecret` is unset or short; every handoff route
+// calls `assertNativeLoginHandoffAvailable` first, which rejects that case.
+async function handoffKey() {
+  return createHash('sha256')
+    .update(await deriveSecret('gitpulse:native-login-handoff'))
+    .digest();
 }
 
 export function nativeLoginHandoffAvailable(event: H3Event) {
   const providers = resolveAuthProviderState(event);
-  const password = sessionPassword(event);
+  const secret = sessionSecret(event);
   return (
     !providers.personalMode &&
     providers.oauthEnabled &&
     ['fs', 'redis', 'upstash'].includes(
       normalizeUserSettingsStorageDriver(process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER)
     ) &&
-    typeof password === 'string' &&
-    password.length >= 32
+    typeof secret === 'string' &&
+    secret.length >= MIN_APP_SECRET_LENGTH
   );
 }
 
@@ -94,22 +102,16 @@ function matches(left: string, right: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function seal(grant: Grant, event: H3Event) {
+async function seal(grant: Grant) {
   const iv = randomBytes(12);
-  const key = createHash('sha256')
-    .update(`gitpulse-native-handoff:${sessionPassword(event)}`)
-    .digest();
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const cipher = createCipheriv('aes-256-gcm', await handoffKey(), iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(grant), 'utf8'), cipher.final()]);
   return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64url');
 }
 
-function unseal(value: string, event: H3Event): Grant {
+async function unseal(value: string): Promise<Grant> {
   const bytes = Buffer.from(value, 'base64url');
-  const key = createHash('sha256')
-    .update(`gitpulse-native-handoff:${sessionPassword(event)}`)
-    .digest();
-  const decipher = createDecipheriv('aes-256-gcm', key, bytes.subarray(0, 12));
+  const decipher = createDecipheriv('aes-256-gcm', await handoffKey(), bytes.subarray(0, 12));
   decipher.setAuthTag(bytes.subarray(12, 28));
   return JSON.parse(
     Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString('utf8')
@@ -151,18 +153,23 @@ async function withTransactionLock<T>(id: string, action: () => Promise<T>): Pro
   }
 }
 
-async function update<T>(id: string, action: (transaction: Transaction) => T): Promise<T> {
+async function update<T>(
+  id: string,
+  action: (transaction: Transaction) => T | Promise<T>
+): Promise<T> {
   return withTransactionLock(id, async () => {
     let result!: T;
     let expired = false;
-    await getUserSettingsStorageAdapter<Transaction>(COLLECTION).update(id, (current) => {
+    await getUserSettingsStorageAdapter<Transaction>(COLLECTION).update(id, async (current) => {
       if (!current)
         throw createError({ statusCode: 404, statusMessage: 'Unknown sign-in attempt' });
       if (current.expiresAt <= Date.now()) {
         expired = true;
         return { ...current, status: 'expired', grant: undefined };
       }
-      result = action(current);
+      // The action mutates `current` in place and may await; its result is
+      // returned to the caller, while `current` is what gets persisted.
+      result = await action(current);
       return current;
     });
     if (expired) throw createError({ statusCode: 410, statusMessage: 'Sign-in attempt expired' });
@@ -260,7 +267,7 @@ export async function approveNativeLoginHandoff(event: H3Event, body: unknown) {
       statusMessage: 'Sign in to GitPulse in this browser first',
     });
   }
-  const grant = seal(session, event);
+  const grant = await seal(session);
   return update(browser.id, (transaction) => {
     assertTransactionStatus(transaction, 'pending');
     transaction.status = 'approved';
@@ -277,7 +284,7 @@ export async function useNativeLoginHandoff(
   assertNativeLoginHandoffAvailable(event);
   const proof = parseZodRequestBody(proofSchema, input, 'Invalid app sign-in proof');
   requireOrigin(event, proof.origin);
-  return update(proof.id, (transaction) => {
+  return update(proof.id, async (transaction) => {
     requireOrigin(event, transaction.origin);
     if (
       transaction.origin !== proof.origin ||
@@ -296,7 +303,7 @@ export async function useNativeLoginHandoff(
       return { status: 'cancelled' };
     }
     assertTransactionStatus(transaction, 'approved');
-    const grant = unseal(transaction.grant!, event);
+    const grant = await unseal(transaction.grant!);
     transaction.status = 'redeemed';
     delete transaction.grant;
     return grant;

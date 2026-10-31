@@ -22,18 +22,20 @@ Pre-built Docker images are published to GitHub Container Registry and Docker Hu
 
 GitPulse has two deployment modes, controlled by environment variables. At least one must be enabled, or the app refuses to start.
 
+Both modes seal the login session with `NUXT_APP_SECRET`, at least 32 characters (`openssl rand -base64 32`). Nuxt generates one automatically in development; a production build never does, so set it there.
+
 ### Non-personal Mode (multi-user)
 
 Users sign in by pasting a GitHub token or via GitHub OAuth. Suitable for teams or hosted deployments.
 
-| Environment Variable              | Required | Default | Description                            |
-| --------------------------------- | -------- | ------- | -------------------------------------- |
-| `NUXT_SESSION_PASSWORD`           | **Yes**  | —       | 32-byte hex key for session encryption |
-| `NUXT_AUTH_PERSONAL_MODE_ENABLED` | **Yes**  | `true`  | Set `false` for multi-user mode        |
-| `NUXT_AUTH_PAT_ENABLED`           | No       | `true`  | Allow token-based login                |
-| `NUXT_AUTH_GITHUB_OAUTH_ENABLED`  | No       | `true`  | Allow OAuth login                      |
-| `NUXT_OAUTH_GITHUB_CLIENT_ID`     | If OAuth | —       | GitHub OAuth app client ID             |
-| `NUXT_OAUTH_GITHUB_CLIENT_SECRET` | If OAuth | —       | GitHub OAuth app secret                |
+| Environment Variable              | Required | Default | Description                     |
+| --------------------------------- | -------- | ------- | ------------------------------- |
+| `NUXT_APP_SECRET`                 | **Yes**  | —       | ≥32-char session encryption key |
+| `NUXT_AUTH_PERSONAL_MODE_ENABLED` | **Yes**  | `true`  | Set `false` for multi-user mode |
+| `NUXT_AUTH_PAT_ENABLED`           | No       | `true`  | Allow token-based login         |
+| `NUXT_AUTH_GITHUB_OAUTH_ENABLED`  | No       | `true`  | Allow OAuth login               |
+| `NUXT_OAUTH_GITHUB_CLIENT_ID`     | If OAuth | —       | GitHub OAuth app client ID      |
+| `NUXT_OAUTH_GITHUB_CLIENT_SECRET` | If OAuth | —       | GitHub OAuth app secret         |
 
 ### Personal Mode (single-user, self-hosted)
 

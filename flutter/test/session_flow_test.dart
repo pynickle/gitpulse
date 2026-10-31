@@ -218,7 +218,7 @@ class AuthServer implements HttpClientAdapter {
       return _json(
         200,
         {'user': _user('octocat')},
-        cookies: ['nuxt-session=$sessionValue; $sessionAttributes'],
+        cookies: ['nuxt-auth-session=$sessionValue; $sessionAttributes'],
       );
     }
     if (path.endsWith('/auth/native/cancel')) {
@@ -240,7 +240,7 @@ class AuthServer implements HttpClientAdapter {
       return _json(
         200,
         {'ok': true},
-        cookies: ['nuxt-session=; Path=/; Max-Age=0'],
+        cookies: ['nuxt-auth-session=; Path=/; Max-Age=0'],
       );
     }
     if (path.endsWith('/api/_auth/session')) {
@@ -249,7 +249,7 @@ class AuthServer implements HttpClientAdapter {
       }
       final cookie = headers['cookie'] ?? '';
       if (acceptedLogin != null &&
-          cookie.contains('nuxt-session=$sessionValue')) {
+          cookie.contains('nuxt-auth-session=$sessionValue')) {
         return _json(200, {'user': _user(acceptedLogin!)});
       }
       return _json(200, {'id': 'empty'});
@@ -316,7 +316,7 @@ class AuthServer implements HttpClientAdapter {
     return _json(
       200,
       {'ok': true, 'user': _user(login)},
-      cookies: ['nuxt-session=$sessionValue; $attributes'],
+      cookies: ['nuxt-auth-session=$sessionValue; $attributes'],
     );
   }
 
@@ -822,7 +822,7 @@ void main() {
         (request) => request.uri.path.endsWith('/auth/native/redeem'),
       );
       expect(redeem.headers['x-csrf-token'], server.csrf);
-      expect(redeem.headers['cookie'], isNot(contains('nuxt-session=')));
+      expect(redeem.headers['cookie'], isNot(contains('nuxt-auth-session=')));
       expect(
         launched.toString(),
         isNot(contains(jsonDecode(redeem.body)['verifier'] as String)),
@@ -1413,7 +1413,7 @@ void main() {
           .last;
       expect(
         probe.headers['cookie'],
-        contains('nuxt-session=${server.sessionValue}'),
+        contains('nuxt-auth-session=${server.sessionValue}'),
       );
     },
   );
@@ -1508,7 +1508,10 @@ void main() {
     final timeline = server.requests
         .where((request) => request.uri.path.endsWith('/api/release-timeline'))
         .single;
-    expect(timeline.headers['cookie'] ?? '', isNot(contains('nuxt-session=')));
+    expect(
+      timeline.headers['cookie'] ?? '',
+      isNot(contains('nuxt-auth-session=')),
+    );
     expect(find.textContaining('Your session ended'), findsOneWidget);
     expect(find.byType(TimelineScreen), findsNothing);
   });
@@ -1612,7 +1615,7 @@ void main() {
       expect(logout.headers['x-csrf-token'], server.csrf);
       expect(
         logout.headers['cookie'],
-        contains('nuxt-session=${server.sessionValue}'),
+        contains('nuxt-auth-session=${server.sessionValue}'),
       );
       final stored = await const FlutterSecureStorage().readAll();
       final blob = stored.values.join('\n');

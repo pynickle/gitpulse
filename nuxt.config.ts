@@ -166,8 +166,9 @@ export default defineNuxtConfig({
   ],
 
   runtimeConfig: {
+    // nuxt-auth-utils seals the session with a secret derived from `appSecret`
+    // (`NUXT_APP_SECRET`); `session.password` no longer exists.
     session: {
-      password: '',
       cookie: {
         secure: process.env.NODE_ENV === 'production',
       },

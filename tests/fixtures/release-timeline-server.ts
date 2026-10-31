@@ -26,6 +26,13 @@ import * as env from '../../shared/utils/user-settings-storage-env';
 mock.module('#shared/utils/auth-return-route', () => authReturn);
 mock.module('#shared/utils/user-settings-storage-env', () => env);
 mock.module('#shared/utils/release-note-search-text', () => searchText);
+// `deriveSecret` from `nuxt/server` reads `appSecret` through this module, which a
+// real build replaces with the configured runtime config. Defer to the `useRuntimeConfig`
+// this harness installs on `globalThis` so the sealed session and the handoff grant key
+// agree on one secret.
+mock.module('nuxt/internal/server-runtime-config', () => ({
+  useRuntimeConfig: () => globalThis.useRuntimeConfig(),
+}));
 
 type FixtureRepository = { id: string; owner: string; name: string };
 type FixturePage = Record<string, unknown>;
@@ -184,7 +191,7 @@ if (import.meta.main) {
   process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER = 'fs';
   process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE = directory;
   const password = 'release-timeline-test-session-password-32-characters';
-  process.env.NUXT_SESSION_PASSWORD = password;
+  process.env.NUXT_APP_SECRET = password;
   const storage = createStorage({ driver: fsDriver({ base: directory }) });
   Object.assign(globalThis, {
     createError,
@@ -193,7 +200,7 @@ if (import.meta.main) {
     useStorage: () => storage,
     useRuntimeConfig: () => ({
       app: { baseURL: '/pulse/' },
-      session: { password },
+      appSecret: password,
       gitpulseAuth: {
         personalModeEnabled: true,
         tokenEnabled: false,
@@ -205,7 +212,7 @@ if (import.meta.main) {
     }),
     getUserSession: async (event: Parameters<typeof useSession>[0]) => {
       const session = await useSession(event, {
-        name: 'nuxt-session',
+        name: 'nuxt-auth-session',
         password,
         cookie: { secure: false },
       });
@@ -217,7 +224,7 @@ if (import.meta.main) {
       config?: { maxAge?: number }
     ) => {
       const session = await useSession(event, {
-        name: 'nuxt-session',
+        name: 'nuxt-auth-session',
         password,
         cookie: { secure: false },
         ...config,

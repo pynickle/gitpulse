@@ -1,4 +1,5 @@
 import { deleteCookie, getCookie, getQuery, setCookie } from 'h3';
+import type { RequestEvent } from 'nuxt/server';
 
 import {
   DEFAULT_AUTH_RETURN_PATH,
@@ -72,5 +73,8 @@ export default defineEventHandler(async (event) => {
     },
   });
 
-  return githubOAuthHandler(event);
+  // nuxt-auth-utils types its OAuth handler against the portable `nuxt/server`
+  // event, while this handler is defined with h3. Nitro hands the very same
+  // request event to it, so the bridge is type-level only.
+  return githubOAuthHandler(event as unknown as RequestEvent);
 });

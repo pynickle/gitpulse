@@ -1,6 +1,16 @@
-import type { H3Event } from 'h3';
+import type { LegacyH3Event, RequestEvent } from '#auth-utils';
 
 type GitHubAuthProvider = 'github' | 'pat';
+
+/**
+ * The session utils accept both the portable `nuxt/server` event and the h3
+ * event a Nuxt 4 route handler receives, so auth routes can stay on either.
+ *
+ * `LegacyH3Event` is deprecated upstream (`@deprecated Use `defineEventHandler`
+ * from `nuxt/server`. Removed with Nuxt 5 support.`), so it must not spread
+ * past this alias: new call sites should pass a `RequestEvent`.
+ */
+type SessionWriteEvent = RequestEvent | LegacyH3Event;
 
 export const PERSISTENT_AUTH_SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
@@ -12,7 +22,7 @@ interface GitHubIdentity {
 }
 
 export async function establishGitHubSession(
-  event: H3Event,
+  event: SessionWriteEvent,
   provider: GitHubAuthProvider,
   accessToken: string,
   user: GitHubIdentity,

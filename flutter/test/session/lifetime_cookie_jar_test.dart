@@ -43,7 +43,7 @@ void main() {
     final jar = LifetimeCookieJar(storage: storage);
     final uri = Uri.parse('https://gitpulse.example/api/_auth/session');
     final saving = jar.saveFromResponse(uri, [
-      Cookie('nuxt-session', 'old-session')
+      Cookie('nuxt-auth-session', 'old-session')
         ..domain = 'gitpulse.example'
         ..path = '/',
     ]);

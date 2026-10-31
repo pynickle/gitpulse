@@ -9,7 +9,7 @@ environment:
 
 dependencies:
   cookie_jar: ^4.0.9
-  crypto: ^3.0.7
+  crypto: ^3.0.8
   dio: ^5.11.1
   dio_cookie_manager: ^3.5.0
   drift: ^2.35.3
@@ -26,7 +26,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^3.4.3
   flutter_secure_storage: ^11.2.0
-  go_router: ^18.1.1
+  go_router: ^18.1.2
   intl: ^0.20.3
   json_annotation: ^4.12.0
   marionette_flutter: ^0.7.0
@@ -43,7 +43,7 @@ dev_dependencies:
   path_provider_platform_interface: ^2.1.0
   drift_dev: ^2.35.2
   json_serializable: ^6.15.2
-  build_runner: ^2.16.2
+  build_runner: ^2.17.1
   flutter_launcher_icons: 0.14.4
   image: ^4.12.0
 flutter:

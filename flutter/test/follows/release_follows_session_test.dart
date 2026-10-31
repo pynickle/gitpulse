@@ -159,7 +159,7 @@ void main() {
       (request) => request.method == 'PUT',
     );
     expect(save.headers['x-csrf-token'], server.csrf);
-    expect(save.headers['cookie'], contains('nuxt-session='));
+    expect(save.headers['cookie'], contains('nuxt-auth-session='));
     expect(jsonDecode(save.body), {
       'followedRepositories': [
         {'id': 'R_alpha', 'owner': 'octo', 'name': 'alpha'},

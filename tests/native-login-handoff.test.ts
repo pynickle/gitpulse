@@ -18,7 +18,7 @@ mock.module('#shared/utils/auth-return-route', () => authReturn);
 const { clearCachedUserSettingsStorageAdapterForTesting } =
   await import('../server/utils/user-settings-storage-utils');
 
-const password = 'native-test-session-password-at-least-32-characters';
+const sessionSecret = 'native-test-app-secret-at-least-32-characters';
 const origin = 'https://gitpulse.test';
 const verifier = 'a'.repeat(43);
 const original = {
@@ -32,27 +32,27 @@ let handle: ReturnType<typeof toWebHandler>;
 let directory: string;
 const originalBase = process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE;
 const originalDriver = process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER;
-const originalPassword = process.env.NUXT_SESSION_PASSWORD;
+const originalAppSecret = process.env.NUXT_APP_SECRET;
 
 beforeEach(async () => {
   globalThis.createError = createError;
   directory = await mkdtemp(join(tmpdir(), 'gitpulse-native-login-'));
   process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER = 'fs';
   process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE = directory;
-  process.env.NUXT_SESSION_PASSWORD = password;
+  process.env.NUXT_APP_SECRET = sessionSecret;
   const storage = createStorage({ driver: fsDriver({ base: directory }) });
   globalThis.useStorage = (() => storage) as typeof useStorage;
   globalThis.useRuntimeConfig = (() => ({
     app: { baseURL: '/' },
-    session: { password },
+    appSecret: sessionSecret,
     gitpulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: true },
   })) as typeof useRuntimeConfig;
   globalThis.getUserSession = (async (event) => {
-    const session = await useSession(event, { password });
+    const session = await useSession(event, { password: sessionSecret });
     return { ...session.data, id: session.id };
   }) as typeof getUserSession;
   globalThis.setUserSession = (async (event, data, config) => {
-    const session = await useSession(event, { password, ...config });
+    const session = await useSession(event, { password: sessionSecret, ...config });
     await session.update(data);
     return session.data;
   }) as typeof setUserSession;
@@ -67,8 +67,8 @@ afterEach(async () => {
   else process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE = originalBase;
   if (originalDriver === undefined) delete process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER;
   else process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_DRIVER = originalDriver;
-  if (originalPassword === undefined) delete process.env.NUXT_SESSION_PASSWORD;
-  else process.env.NUXT_SESSION_PASSWORD = originalPassword;
+  if (originalAppSecret === undefined) delete process.env.NUXT_APP_SECRET;
+  else process.env.NUXT_APP_SECRET = originalAppSecret;
   await rm(directory, { recursive: true, force: true });
 });
 
@@ -300,6 +300,43 @@ test('simultaneous redemption mints exactly one session, including after adapter
   expect(responses.filter((response) => response.headers.getSetCookie().length > 0)).toHaveLength(
     1
   );
+});
+
+test('the grant sealed on approval is unsealed by a later request that derives the same key', async () => {
+  const attempt = await createAttempt();
+  await approveAttempt(attempt);
+  const response = await request('/auth/native/redeem', { id: attempt.id, verifier, origin });
+  expect(response.status, await response.clone().text()).toBe(200);
+});
+
+test('a grant sealed under one appSecret cannot be redeemed after the secret changes', async () => {
+  const attempt = await createAttempt();
+  await approveAttempt(attempt);
+  // A rotated secret must invalidate grants sealed under the previous root, so
+  // the derived key has to depend on `appSecret` rather than on the cookie name.
+  process.env.NUXT_APP_SECRET = 'native-test-rotated-app-secret-32-characters';
+  globalThis.useRuntimeConfig = (() => ({
+    app: { baseURL: '/' },
+    appSecret: process.env.NUXT_APP_SECRET,
+    gitpulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: true },
+  })) as typeof useRuntimeConfig;
+  const response = await request('/auth/native/redeem', { id: attempt.id, verifier, origin });
+  expect(response.status).toBe(500);
+  expect(response.headers.getSetCookie()).toEqual([]);
+});
+
+test('a missing appSecret disables the handoff instead of redeeming an unsealed grant', async () => {
+  const attempt = await createAttempt();
+  await approveAttempt(attempt);
+  process.env.NUXT_APP_SECRET = '';
+  globalThis.useRuntimeConfig = (() => ({
+    app: { baseURL: '/' },
+    appSecret: '',
+    gitpulseAuth: { personalModeEnabled: false, githubOAuthEnabled: true, tokenEnabled: true },
+  })) as typeof useRuntimeConfig;
+  const response = await request('/auth/native/redeem', { id: attempt.id, verifier, origin });
+  expect(response.status).toBe(503);
+  expect(response.headers.getSetCookie()).toEqual([]);
 });
 
 test('all mutations require CSRF and browser approval requires its own GitHub session and browser proof', async () => {

@@ -87,13 +87,13 @@ and `gitpulse_theme.dart`; a surface that shows the ink beneath it says `GitPuls
 - OAuth is an external-browser flow on every platform: no callback link, no background service. The
   app polls and redeems a single-use approval, bound and consumed by the root app
   (`server/utils/native-login-handoff.ts`, `../docs/native-login-handoff.md`).
-- The `nuxt-session` cookie in `flutter_secure_storage` **is** the session. The password and PAT are
+- The `nuxt-auth-session` cookie in `flutter_secure_storage` **is** the session. The password and PAT are
   never stored.
 
 ## Traps
 
-- Stay on `build_runner` 2.16.x; 2.17.x needs `build` / `build_config` versions the selected
-  generators cannot resolve.
+- `build_runner` 2.17.x resolves `build` 5 / `build_config` 1.4 and the pinned generators run on it
+  (`dart run build_runner build` writes all outputs); the previous 2.16.x pin is no longer needed.
 - Android release builds need the private release identity, which is deliberately absent from the
   repo. Debug signing is never a release fallback.
 - Touching `tool/document_viewer/src/` or its pins means rebuilding and committing

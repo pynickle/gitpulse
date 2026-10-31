@@ -10,7 +10,7 @@ import 'account_identity.dart';
 
 const csrfCookieName = 'gitpulse_csrf';
 const csrfHeaderName = 'x-csrf-token';
-const sessionCookieName = 'nuxt-session';
+const sessionCookieName = 'nuxt-auth-session';
 
 const _mutatingMethods = {'POST', 'PUT', 'PATCH', 'DELETE'};
 

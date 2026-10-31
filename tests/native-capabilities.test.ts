@@ -22,7 +22,7 @@ function configureProviders(personal: boolean, pat = true, oauth = true) {
       personalPassword: 'server-only-password',
       personalCookieSecret: 'server-only-secret',
     },
-    session: { password: 'native-capabilities-session-password-32-characters' },
+    appSecret: 'native-capabilities-app-secret-at-least-32-characters',
   })) as typeof useRuntimeConfig;
 }
 
@@ -46,7 +46,7 @@ describe('public native connection contract', () => {
         tokenEnabled: getHeader(event!, 'x-test-provider') === 'pat',
         githubOAuthEnabled: getHeader(event!, 'x-test-provider') === 'oauth',
       },
-      session: { password: 'request-scoped-session-password-32-characters' },
+      appSecret: 'request-scoped-app-secret-at-least-32-characters',
     })) as typeof useRuntimeConfig;
     const handler = (await import('../server/api/native/capabilities.get')).default;
     const app = createApp().use('/api/native/capabilities', handler);
