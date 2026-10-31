@@ -27,6 +27,7 @@ class ReleaseDocument extends ConsumerWidget {
     required this.source,
     required this.document,
     required this.onTapUrl,
+    this.onSwipe,
     this.bottomInset = 0,
     this.documentIdentity,
     this.background,
@@ -44,6 +45,10 @@ class ReleaseDocument extends ConsumerWidget {
 
   /// Where a link the reader taps goes. The page never navigates itself.
   final Future<bool> Function(String url) onTapUrl;
+
+  /// A sideways flick the document read for itself. The page owns its scrolling,
+  /// so this is its report rather than a gesture wrapped around it.
+  final void Function(bool left)? onSwipe;
 
   /// Room under the last line, inside the document's own scroll.
   final double bottomInset;
@@ -70,6 +75,7 @@ class ReleaseDocument extends ConsumerWidget {
         source: source,
         document: document,
         onTapUrl: onTapUrl,
+        onSwipe: onSwipe,
         background: style.background,
         page: buildDocumentViewPage(
           assets: assets,
@@ -98,6 +104,7 @@ class _DocumentSurface extends StatefulWidget {
     required this.source,
     required this.document,
     required this.onTapUrl,
+    required this.onSwipe,
     required this.background,
   });
 
@@ -106,6 +113,7 @@ class _DocumentSurface extends StatefulWidget {
   final String source;
   final RepositoryDocumentContext document;
   final Future<bool> Function(String url) onTapUrl;
+  final void Function(bool left)? onSwipe;
   final Color background;
 
   @override
@@ -144,6 +152,7 @@ class _DocumentSurfaceState extends State<_DocumentSurface> {
             await widget.onTapUrl(url);
           },
           copy: writeDocumentClipboard,
+          swipe: (left) => widget.onSwipe?.call(left),
           failed: (message) {
             if (!mounted) return;
             setState(() => _unrendered = true);

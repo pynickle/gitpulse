@@ -28,7 +28,7 @@ class ReleaseTimelineCard extends ConsumerWidget {
       color: GitPulsePaint.none,
       child: InkWell(
         borderRadius: BorderRadius.circular(GitPulseRadius.surface),
-        onTap: () => openRelease(context, (
+        onTap: () => openRelease(context, ref, (
           owner: item.repository.owner,
           repository: item.repository.name,
           id: item.id,

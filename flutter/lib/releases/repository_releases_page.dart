@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_buttons.dart';
-import '../presentation/gitpulse_swipe.dart';
 import '../session/session_controller.dart';
 import '../session/session_notice.dart';
 import '../settings/account_gate.dart';
+import 'release_detail_service.dart';
 import 'release_navigation.dart';
 import 'repository_releases_controller.dart';
 import 'repository_releases_dto.dart';
@@ -43,7 +43,24 @@ class _RepositoryReleasesPageState
     extends ConsumerState<RepositoryReleasesPage> {
   final _opening = Object();
 
-  void _leave() => closeReleases(context);
+  /// The release the reader entered through, when the list was opened from one.
+  ///
+  /// The list is a step out of the release it was swiped from, not out of the
+  /// release surfaces altogether: leaving it returns to that Entry Release. It
+  /// only goes home when there is no release to return to — the list opened from
+  /// a repository page, which belongs to no release opening.
+  ReleaseTarget? get _entryRelease => ref.read(releaseOpeningProvider)?.entry;
+
+  bool get _returnsToEntryRelease => _entryRelease != null;
+
+  void _leave() {
+    final entry = _entryRelease;
+    if (entry == null) {
+      closeReleases(context, ref);
+      return;
+    }
+    backToEntryRelease(context, ref, entry);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +76,9 @@ class _RepositoryReleasesPageState
     );
     final l10n = AppLocalizations.of(context);
     return PopScope(
-      // Every way out of the list leaves releases rather than stepping back
-      // into the release the reader swiped from.
+      // Leaving the list steps back to the release the reader swiped from, and
+      // only goes home when the list was opened from a repository page — which
+      // belongs to no release opening.
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _leave();
@@ -70,15 +88,18 @@ class _RepositoryReleasesPageState
           // The page names the repository it lists, as every list page does; the
           // list itself never repeats it (ADR 0020).
           title: Text('${widget.owner}/${widget.repository}'),
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: _returnsToEntryRelease,
+          leading: _returnsToEntryRelease
+              ? BackButton(onPressed: _leave)
+              : null,
           actions: [
-            // One way out, and it leaves releases altogether: the reader came
-            // here to browse a repository's history, so Back into the release
-            // they swiped from is not a place they are going.
+            // One way out, and it leaves releases altogether. The step back to
+            // the Entry Release is the platform's own affordance on the left,
+            // because that is the step the reader already knows.
             GitPulseIconButton(
               label: l10n.navigationHome,
               icon: const Icon(Icons.home_outlined),
-              onPressed: _leave,
+              onPressed: () => closeReleases(context, ref),
             ),
           ],
         ),
@@ -88,18 +109,16 @@ class _RepositoryReleasesPageState
                   children: [
                     const SessionNotice(),
                     Expanded(
-                      // Swiping back on the rows is the same shortcut in
-                      // reverse: the reader already knows where they came from,
-                      // and the gesture is offered to the list first, so a drag
-                      // a row or the pager claims never reaches it.
-                      child: GitPulseSwipe(
-                        onSwipeLeft: _leave,
-                        child: RepositoryReleasesView(
-                          state: state,
-                          onPage: controller.loadPage,
-                          onFilter: controller.setFilter,
-                          onRelease: _open,
-                        ),
+                      // The list answers no swipe. Its rows scroll, its filter
+                      // bar scrolls and its pager is tapped; a sideways gesture
+                      // over a list of rows the reader is choosing between is
+                      // more likely to be aimed at a row than at leaving, so the
+                      // way out is the bar's Back and Home.
+                      child: RepositoryReleasesView(
+                        state: state,
+                        onPage: controller.loadPage,
+                        onFilter: controller.setFilter,
+                        onRelease: _open,
                       ),
                     ),
                   ],
@@ -110,7 +129,7 @@ class _RepositoryReleasesPageState
     );
   }
 
-  void _open(RepositoryReleaseDto release) => showReleaseInPlace(context, (
+  void _open(RepositoryReleaseDto release) => showReleaseInPlace(context, ref, (
     owner: widget.owner,
     repository: widget.repository,
     id: release.id,

@@ -97,6 +97,10 @@ final _routerProvider = Provider<GoRouter>((ref) {
       // (ADR 0039). It is pushed above the destination that opened it, so the
       // way in is a tap and the way out is the app's Home; it lives outside the
       // shell because a release is read, not switched to.
+      //
+      // The release's own segment is either its numeric id or the tag a link
+      // carries — `?tag=` — because a document, a notification and a list row
+      // each name a release the way they know it, and all three land here.
       GoRoute(
         path: '$releaseRoutePrefix/:owner/:repository',
         builder: (context, state) => RepositoryReleasesPage(
@@ -110,6 +114,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
           owner: state.pathParameters['owner']!,
           repository: state.pathParameters['repository']!,
           id: int.tryParse(state.pathParameters['id']!),
+          tag: state.uri.queryParameters['tag'],
         ),
         routes: [
           // A release's files are their own screen rather than a list stacked
@@ -121,6 +126,7 @@ final _routerProvider = Provider<GoRouter>((ref) {
               owner: state.pathParameters['owner']!,
               repository: state.pathParameters['repository']!,
               id: int.tryParse(state.pathParameters['id']!),
+              tag: state.uri.queryParameters['tag'],
             ),
           ),
           // The release's title leads to the repository it belongs to, and this

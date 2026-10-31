@@ -47,7 +47,7 @@ class ReleaseAssetsScreen extends ConsumerWidget {
     final result = ref.watch(releaseDetailProvider(target));
     if (session.phase != SessionPhase.signedIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) closeReleases(context);
+        if (context.mounted) closeReleases(context, ref);
       });
       return const SizedBox.shrink();
     }
@@ -75,7 +75,7 @@ class ReleaseAssetsScreen extends ConsumerWidget {
             GitPulseIconButton(
               label: l10n.navigationHome,
               icon: const Icon(Icons.home_outlined),
-              onPressed: () => closeReleases(context),
+              onPressed: () => closeReleases(context, ref),
             ),
           ],
         ),

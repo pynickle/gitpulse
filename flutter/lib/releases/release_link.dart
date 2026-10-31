@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,19 +31,24 @@ Future<bool> openReleaseLink(
   if (!external) {
     final release = releaseTargetFromUri(uri);
     if (release != null) {
-      await showReleaseInPlace(context, release);
+      // The navigation is started, not awaited: a push returns a future that
+      // completes when the pushed screen is popped, and a document's link
+      // handler must report what it did now, not when the reader leaves.
+      unawaited(showReleaseInPlace(context, ref, release));
       return true;
     }
     final repository = repositoryTargetFromUri(uri);
     if (repository != null) {
       if (repository.releases) {
-        await openRepositoryReleases(
-          context,
-          owner: repository.owner,
-          repository: repository.repository,
+        unawaited(
+          openRepositoryReleases(
+            context,
+            owner: repository.owner,
+            repository: repository.repository,
+          ),
         );
       } else {
-        await openRepositoryPage(context, repository);
+        unawaited(openRepositoryPage(context, repository));
       }
       return true;
     }

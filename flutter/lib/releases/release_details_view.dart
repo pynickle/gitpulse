@@ -36,6 +36,7 @@ class ReleaseDetailsView extends StatefulWidget {
     required this.release,
     required this.onTapUrl,
     required this.onOpenExternal,
+    required this.onSwipeNotes,
     required this.headerBuilder,
     required this.footerBuilder,
     required this.onViewAllAssets,
@@ -44,6 +45,10 @@ class ReleaseDetailsView extends StatefulWidget {
   final ReleaseDetail release;
   final Future<bool> Function(String) onTapUrl;
   final Future<bool> Function(String) onOpenExternal;
+
+  /// A sideways flick the notes read for themselves: the page owns its own
+  /// scrolling, so the document reports what it saw rather than being wrapped.
+  final void Function(bool left) onSwipeNotes;
 
   /// Places the release header in the host's scroll view.
   final Widget Function(Widget header) headerBuilder;
@@ -76,6 +81,7 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
               ref: release.tag,
             ),
             onTapUrl: widget.onTapUrl,
+            onSwipe: widget.onSwipeNotes,
           );
     final header = Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -112,7 +118,11 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
             onOpenGitHub: () => widget.onOpenExternal(release.dto.htmlUrl),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 16),
+            // The rule is the header's own last line: 16 of air above it, and
+            // the notes' padding is what stands under it. Nothing on this side
+            // of the rule, so the line divides the header from the notes rather
+            // than opening a band of page.
+            padding: const EdgeInsets.only(top: GitPulseSpace.gutter),
             child: Divider(
               height: GitPulseStroke.hairline,
               thickness: GitPulseStroke.hairline,
@@ -138,7 +148,12 @@ class _ReleaseDetailsViewState extends State<ReleaseDetailsView> {
         widget.headerBuilder(header),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            // The notes' first line starts just under the rule. The document
+            // itself carries no top inset (its stylesheet zeroes it), so the
+            // distance between the boundary and the prose is stated here — a
+            // hairline followed immediately by the changelog, rather than a
+            // band of empty page between the two.
+            padding: const EdgeInsets.fromLTRB(20, GitPulseSpace.inline, 20, 0),
             child: reading,
           ),
         ),

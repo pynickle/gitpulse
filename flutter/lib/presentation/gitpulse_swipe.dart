@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 const gitPulseSwipeVelocity = 320.0;
 
 /// Reports a deliberate sideways swipe over [child], and leaves every other
-/// gesture — a tap, a list's scrolling, a selectable line's own dragging — to
-/// the thing beneath it.
+/// gesture — a tap, a list's scrolling, a selectable line's own dragging, a
+/// document's own panning — to the thing beneath it.
 ///
 /// This is a shortcut, not a pager: nothing on screen moves and nothing is left
 /// halfway. A page that travels under the finger needs a controller, a stack of
@@ -15,13 +15,18 @@ const gitPulseSwipeVelocity = 320.0;
 /// reader already knows leads, so a reader who knows where they are going skips
 /// the chrome (ADR 0039).
 ///
-/// The gesture arena is what makes that possible: the recognizer claims the
-/// arena from `isPointerAllowed` — the dispatch that happens as the finger lands,
-/// before the tap's own recognizer has spoken — and gives it back the moment it
-/// sees this is not the gesture that was meant. A finger that lifts without
-/// moving, and a drag that is going up or down, are then wholly the surface's.
-/// A selectable line beneath answers the drag itself, so the surface it stands
-/// on catches no swipes; a header is therefore the place a shortcut belongs.
+/// The gesture arena is what makes that possible: the recognizer claims it from
+/// `isPointerAllowed` — the dispatch that happens as the finger lands, before
+/// the tap's own recognizer speaks — and gives it back the moment it sees this
+/// is not the gesture that was meant. A finger that lifts without moving, and a
+/// drag that is going up or down, are then wholly the surface's.
+///
+/// A platform view is not in this arena at all: a document reports the pointers
+/// it receives and hands none of them on, and nothing drawn over it could change
+/// that without also taking the document's own scrolling. So a swipe is offered
+/// where the app draws — the header above the notes, the page around them — and
+/// the notes keep every gesture of their own. A labelled action on the page is
+/// what a reader uses instead of a gesture over the document.
 class GitPulseSwipe extends StatelessWidget {
   const GitPulseSwipe({
     super.key,
@@ -75,10 +80,6 @@ class _SwipeGestureRecognizer extends HorizontalDragGestureRecognizer {
   VoidCallback? onSwipeRight;
 
   /// Whether this recognizer is holding the arena and still deciding.
-  ///
-  /// A drag the framework already handed here — because nothing beneath wanted
-  /// the gesture — is not given back: only a claim made here, before anyone else
-  /// spoke, has to be released again.
   bool _holding = false;
   Offset _travel = Offset.zero;
 
@@ -106,18 +107,14 @@ class _SwipeGestureRecognizer extends HorizontalDragGestureRecognizer {
     super.rejectGesture(pointer);
   }
 
-  /// The drag has started: this one now owns the moves that follow.
   void begin() {
     _holding = false;
     _travel = Offset.zero;
   }
 
-  /// Reads a move while the recognizer is still deciding.
-  ///
-  /// A drag that is not going sideways belongs to the scroller, and this
-  /// recognizer says so on the first frame that shows it. Nothing is resolved
-  /// before the drag has moved, so a finger that lands and lifts is still wholly
-  /// the tap's.
+  /// Reads a move while the recognizer is still deciding: a drag that is not
+  /// going sideways belongs to the scroller, and this one says so on the first
+  /// frame that shows it.
   void travel(Offset delta) {
     if (!_holding) return;
     _travel += delta;
@@ -129,13 +126,9 @@ class _SwipeGestureRecognizer extends HorizontalDragGestureRecognizer {
 
   /// Answers the release of a drag with the direction it was thrown in.
   ///
-  /// Releasing without a throw is the finger giving the surface back: what it
-  /// holds — a selectable line that was pressed, a row that was touched — is
-  /// released to finish, or a tap under this recognizer could never land.
-  ///
-  /// The direction is read from the end's own velocity rather than from the
-  /// last frame's, so a drag that stopped before it was released has thrown
-  /// nothing anywhere and answers nothing.
+  /// Releasing without a throw gives the surface back: what it holds — a
+  /// selectable line, a row, a chip — is released to finish, or a tap under this
+  /// recognizer could never land.
   void report(Velocity velocity) {
     if (_holding) {
       _holding = false;

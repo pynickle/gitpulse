@@ -57,7 +57,12 @@ class DocumentViewerStyle {
       // does rather than by a Material role's name: a README is part of the app,
       // not a page dropped into it.
       foreground: toneText(context),
-      background: background ?? toneSurface(context),
+      // The page a document is read on is the app's own page, not a card
+      // dropped into it: the notes fill the screen the release opened, and a
+      // surface tone here would draw a lighter rectangle inside the very page
+      // the reader is on. The Release Assets screen's cards are what stand on a
+      // surface; a document is the page itself.
+      background: background ?? tonePage(context),
       muted: toneTextMuted(context),
       rule: toneRule(theme.colorScheme),
       accent: toneAccent(context),
@@ -203,6 +208,7 @@ DocumentViewPage buildDocumentViewPage({
 <body>
 <article id="document" class="markdown-body" aria-busy="true"></article>
 <script>${assets.script}</script>
+<script>$_swipeScript</script>
 </body>
 </html>
 ''';
@@ -218,3 +224,47 @@ DocumentViewPage buildDocumentViewPage({
 /// lands in an attribute, so nothing else may reach it.
 String _languageTag(String value) =>
     value.replaceAll(RegExp('[^A-Za-z0-9-]'), '');
+
+/// The page's report of a horizontal flick.
+///
+/// A document is a platform view: it receives every pointer that lands on it and
+/// hands none into the app's gesture arena, which is what lets it scroll the way
+/// a web page does. So the gesture is read where the gesture actually happens —
+/// in the page — and only its *result* is reported to the app. A vertical drag
+/// is never touched, a tap is never touched, and a horizontal drag is only
+/// reported once it is clearly sideways, so a wide table's own scrolling still
+/// wins.
+///
+/// Passive listeners throughout: the page's scrolling is never delayed or
+/// cancelled by this script.
+const _swipeScript = r'''
+(function () {
+  var startX = 0, startY = 0, startedAt = 0, tracking = false;
+  function report(dx) {
+    if (!window.flutter_inappwebview) return;
+    window.flutter_inappwebview
+      .callHandler('documentSwipe', dx < 0 ? 'left' : 'right');
+  }
+  document.addEventListener('touchstart', function (event) {
+    if (event.touches.length !== 1) return;
+    var touch = event.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    startedAt = Date.now();
+    tracking = true;
+  }, { passive: true });
+  document.addEventListener('touchcancel', function () { tracking = false; }, { passive: true });
+  document.addEventListener('touchend', function (event) {
+    if (!tracking) return;
+    tracking = false;
+    var touch = event.changedTouches[0];
+    if (!touch) return;
+    var dx = touch.clientX - startX;
+    var dy = touch.clientY - startY;
+    if (Math.abs(dx) <= Math.abs(dy)) return;
+    if (Math.abs(dx) < 80) return;
+    if (Date.now() - startedAt > 600) return;
+    report(dx);
+  }, { passive: true });
+})();
+''';

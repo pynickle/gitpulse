@@ -185,9 +185,11 @@ void main() {
 
   test('the document travels as data and never as markup', () {
     final page = _page(source: '# Title\n\n<script>alert(1)</script>\n\nDone.');
-    // The page owns one script element — the renderer. This document's own
-    // statement is run by the app after the page has loaded.
-    expect(RegExp('</script>').allMatches(page.html).length, 1);
+    // The page owns exactly the app's own scripts — the renderer and the swipe
+    // reader — and nothing this document contributed. Its own statement is run
+    // by the app after the page has loaded.
+    expect(RegExp('</script>').allMatches(page.html).length, 2);
+    expect(page.html, isNot(contains('alert(1)')));
     expect(page.renderScript, startsWith('window.gitpulseDocument.render('));
     expect(page.renderScript, contains(r'<\/script>'));
     expect(page.renderScript, contains(r'"source":"# Title'));
@@ -273,7 +275,9 @@ void main() {
 
     expect(style.dark, isTrue);
     expect(style.foreground, toneText(context));
-    expect(style.background, toneSurface(context));
+    // A document is read on the page the release opened, not on a surface
+    // standing in it: its background is the app's page tone.
+    expect(style.background, tonePage(context));
     expect(style.muted, toneTextMuted(context));
     expect(style.accent, toneAccent(context));
     expect(style.rule, toneRule(Theme.of(context).colorScheme));

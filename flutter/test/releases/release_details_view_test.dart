@@ -95,6 +95,7 @@ Future<List<Uri>> pumpDetails(
                 // stand where the page puts them.
                 headerBuilder: (header) => header,
                 footerBuilder: (footer) => footer,
+                onSwipeNotes: (_) {},
                 onViewAllAssets: onViewAllAssets ?? () {},
               ),
             ),

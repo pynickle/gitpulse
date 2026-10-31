@@ -7,8 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/presentation/gitpulse_swipe.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/releases/release_assets_screen.dart';
+import 'package:gitpulse/releases/release_navigation.dart';
 import 'package:gitpulse/releases/release_screen.dart';
 import 'package:gitpulse/releases/repository_releases_page.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
@@ -61,10 +63,16 @@ Map<String, Object?> assetJson(
 
 /// Mounts the release routes the app installs, with the fake session answering
 /// from [handlers], and hands back the router so a test can read where it is.
+///
+/// The mount starts on the Timeline stand-in and enters the release through the
+/// same call the shell makes, because a release opening begins at that step: a
+/// test that landed on a release screen directly would be testing a state the
+/// app never produces. [initialLocation] overrides that for the screens that are
+/// reached some other way — a release's files opened by address, say.
 Future<({FakeSessionController session, GoRouter router})> pumpReleaseRoutes(
   WidgetTester tester, {
   required Map<String, FutureOr<BackendResult> Function()> handlers,
-  String initialLocation = '/releases/octo/app/42',
+  String? initialLocation,
   Future<bool> Function(Uri)? launchBrowser,
 }) async {
   tester.view.physicalSize = const Size(390, 844);
@@ -74,7 +82,7 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleaseRoutes(
     SessionState(phase: SessionPhase.signedIn, identity: signedInIdentity()),
   )..handlers.addAll(handlers);
   final router = GoRouter(
-    initialLocation: initialLocation,
+    initialLocation: initialLocation ?? '/releases/octo/app/42',
     routes: [
       GoRoute(
         path: '/timeline',
@@ -93,6 +101,7 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleaseRoutes(
           owner: state.pathParameters['owner']!,
           repository: state.pathParameters['repository']!,
           id: int.tryParse(state.pathParameters['id']!),
+          tag: state.uri.queryParameters['tag'],
         ),
         routes: [
           GoRoute(
@@ -101,6 +110,7 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleaseRoutes(
               owner: state.pathParameters['owner']!,
               repository: state.pathParameters['repository']!,
               id: int.tryParse(state.pathParameters['id']!),
+              tag: state.uri.queryParameters['tag'],
             ),
           ),
           GoRoute(
@@ -132,6 +142,20 @@ Future<({FakeSessionController session, GoRouter router})> pumpReleaseRoutes(
     ),
   );
   await tester.pumpAndSettle();
+  if (initialLocation == null) {
+    // Enter the release the way the shell does, so the opening this feature
+    // keeps has an entry release to step back to.
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(ReleaseScreen)),
+    );
+    container.read(releaseOpeningProvider.notifier).start((
+      owner: 'octo',
+      repository: 'app',
+      id: 42,
+      tag: null,
+    ));
+    await tester.pumpAndSettle();
+  }
   return (session: session, router: router);
 }
 
@@ -139,6 +163,10 @@ String locationOf(GoRouter router) =>
     Uri.decodeFull(router.state.uri.toString());
 
 void main() {
+  // The probe is shared between tests: a document mounted by one case would
+  // answer a link opened by the next one. Each case starts from none.
+  setUp(() => mountedDocument = null);
+
   testWidgets('a release is a page with the web drawer’s header', (
     tester,
   ) async {
@@ -205,7 +233,7 @@ void main() {
     );
   });
 
-  testWidgets('a swipe across the header opens the repository’s releases', (
+  testWidgets('a swipe over the release opens the repository’s releases', (
     tester,
   ) async {
     final page = await pumpReleaseRoutes(
@@ -224,17 +252,217 @@ void main() {
         ),
       },
     );
-    // The gesture is offered over the header: the notes belong to the document's
-    // own renderer, and nothing this page does moves them.
+    // The gesture is offered over the header, and the notes report their own
+    // flick rather than being covered: a layer over the document would take its
+    // own scrolling with it. What the page owes is both wires.
+    expect(find.byType(GitPulseSwipe), findsOneWidget);
     await tester.fling(find.text('octocat'), const Offset(-300, 0), 1000);
     await tester.pumpAndSettle();
     expect(find.byType(RepositoryReleasesPage), findsOneWidget);
     expect(locationOf(page.router), '/releases/octo/app');
+  });
 
-    // A row opens that release at the list's own address.
+  testWidgets('a flick the notes report opens the repository’s releases', (
+    tester,
+  ) async {
+    final page = await pumpReleaseRoutes(
+      tester,
+      handlers: {
+        'GET api/releases/octo/app?page=1&per_page=20': () => BackendResult(
+          statusCode: 200,
+          data: releaseListJson([listReleaseJson(42, 'v1.0.0')]),
+        ),
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: releaseJson(body: 'Ready to use.'),
+        ),
+      },
+    );
+    // The document is a platform view, so it reads the flick itself and reports
+    // it. This is the report, arriving through the same bridge a link does.
+    mountedDocument!.bridge.swipe(true);
+    await tester.pumpAndSettle();
+    expect(find.byType(RepositoryReleasesPage), findsOneWidget);
+    expect(locationOf(page.router), '/releases/octo/app');
+  });
+
+  testWidgets('the list has a labelled action of its own', (tester) async {
+    final page = await pumpReleaseRoutes(
+      tester,
+      handlers: {
+        'GET api/releases/octo/app?page=1&per_page=20': () => BackendResult(
+          statusCode: 200,
+          data: releaseListJson([listReleaseJson(42, 'v1.0.0')]),
+        ),
+        'GET api/releases/octo/app/42': () =>
+            BackendResult(statusCode: 200, data: releaseJson()),
+      },
+    );
+    // The swipe is a shortcut, never the only way: the bar names the same
+    // destination in words.
+    await tester.tap(find.byKey(const Key('release-open-list')));
+    await tester.pumpAndSettle();
+    expect(find.byType(RepositoryReleasesPage), findsOneWidget);
+    expect(locationOf(page.router), '/releases/octo/app');
+  });
+
+  testWidgets('a link to another release steps back to the Entry Release', (
+    tester,
+  ) async {
+    final page = await pumpReleaseRoutes(
+      tester,
+      handlers: {
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: releaseJson(name: 'Entry notes', body: 'Entry body'),
+        ),
+        'GET api/releases/octo/app/by-tag?tag=v2%2Frc': () => BackendResult(
+          statusCode: 200,
+          data: {
+            ...releaseJson(
+              name: 'Other notes',
+              body: 'Other body',
+              tag: 'v2/rc',
+            ),
+            'id': 43,
+            'html_url': 'https://github.com/octo/app/releases/tag/v2/rc',
+          },
+        ),
+      },
+    );
+    await mountedDocument!.bridge.open(
+      'https://github.com/octo/app/releases/tag/v2/rc',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Other notes'), findsOneWidget);
+    // A release named by its tag still takes a segment of its own: the list
+    // address is `/releases/:owner/:repository`, so a tag in the query alone
+    // would land on the list.
+    expect(locationOf(page.router), '/releases/octo/app/v2/rc?tag=v2/rc');
+
+    // A release the reader reached from another one steps back to the release
+    // they entered through, not to the Timeline and not to a ladder of every
+    // release they glanced at.
+    expect(find.byKey(const Key('release-back-to-entry')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('release-back-to-entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('Entry notes'), findsOneWidget);
+    expect(locationOf(page.router), '/releases/octo/app/42');
+    expect(find.byKey(const Key('release-back-to-entry')), findsNothing);
+  });
+
+  testWidgets('Back on another release returns to the Entry Release first', (
+    tester,
+  ) async {
+    final page = await pumpReleaseRoutes(
+      tester,
+      handlers: {
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: releaseJson(name: 'Entry notes'),
+        ),
+        'GET api/releases/octo/app/by-tag?tag=v2%2Frc': () => BackendResult(
+          statusCode: 200,
+          data: {
+            ...releaseJson(name: 'Other notes', tag: 'v2/rc'),
+            'id': 43,
+            'html_url': 'https://github.com/octo/app/releases/tag/v2/rc',
+          },
+        ),
+      },
+    );
+    await mountedDocument!.bridge.open(
+      'https://github.com/octo/app/releases/tag/v2/rc',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Other notes'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(locationOf(page.router), '/releases/octo/app/42');
+    expect(find.text('Entry notes'), findsOneWidget);
+
+    // The entry release is the one place closing leaves releases altogether.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(locationOf(page.router), '/timeline');
+  });
+
+  testWidgets('the list steps back to the Entry Release, not the Timeline', (
+    tester,
+  ) async {
+    final page = await pumpReleaseRoutes(
+      tester,
+      handlers: {
+        'GET api/releases/octo/app?page=1&per_page=20': () => BackendResult(
+          statusCode: 200,
+          data: releaseListJson([listReleaseJson(42, 'v1.0.0')]),
+        ),
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: releaseJson(name: 'Entry notes', author: {'login': 'octocat'}),
+        ),
+      },
+    );
+    await tester.fling(find.text('octocat'), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.byType(RepositoryReleasesPage), findsOneWidget);
+
+    // The list was reached from a release, so leaving it is a step back to that
+    // release — and only leaving the release itself goes home.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Entry notes'), findsOneWidget);
+    expect(locationOf(page.router), '/releases/octo/app/42');
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(locationOf(page.router), '/timeline');
+  });
+
+  testWidgets('a release opened from the list keeps the list’s entry release', (
+    tester,
+  ) async {
+    final page = await pumpReleaseRoutes(
+      tester,
+      handlers: {
+        'GET api/releases/octo/app?page=1&per_page=20': () => BackendResult(
+          statusCode: 200,
+          data: releaseListJson([
+            listReleaseJson(42, 'v1.0.0'),
+            listReleaseJson(43, 'v0.9.0'),
+          ]),
+        ),
+        'GET api/releases/octo/app/42': () => BackendResult(
+          statusCode: 200,
+          data: releaseJson(name: 'Entry notes', author: {'login': 'octocat'}),
+        ),
+        'GET api/releases/octo/app/43': () => BackendResult(
+          statusCode: 200,
+          data: {
+            // The list row names release 43; the detail the app loads back must
+            // be the same release, or the screen rejects it as a mismatch.
+            ...releaseJson(name: 'Other notes'),
+            'id': 43,
+            'html_url': 'https://github.com/octo/app/releases/tag/v1.0.0',
+          },
+        ),
+      },
+    );
+    await tester.fling(find.text('octocat'), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('v0.9.0'));
     await tester.pumpAndSettle();
-    expect(locationOf(page.router), '/releases/octo/app/43');
+    expect(find.text('Other notes'), findsOneWidget);
+
+    // A release opened from the list is another release of the same opening: the
+    // screen offers the step back to the Entry Release the reader came in
+    // through, and the list is not where that step leads.
+    expect(find.byKey(const Key('release-back-to-entry')), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Entry notes'), findsOneWidget);
+    expect(locationOf(page.router), '/releases/octo/app/42');
   });
 
   testWidgets(

@@ -26,6 +26,7 @@ class DocumentWebViewBridge {
     required this.open,
     required this.copy,
     required this.failed,
+    required this.swipe,
   });
 
   /// Resolves a document's links and resources, in order. A null answer drops
@@ -40,6 +41,11 @@ class DocumentWebViewBridge {
 
   /// The page could not render the document.
   final void Function(String message) failed;
+
+  /// A horizontal flick the page read itself: true for a swipe toward the left
+  /// edge. The page keeps its own scrolling; this is only its report of a
+  /// gesture the app's arena cannot see.
+  final void Function(bool left) swipe;
 }
 
 /// Everything a platform view needs to show one document.
@@ -158,6 +164,9 @@ class _InAppWebViewDocumentState extends ConsumerState<_InAppWebViewDocument> {
         if (raw is String) bridge.open(raw).ignore();
       case 'copyDocumentCode':
         if (raw is String) bridge.copy(raw);
+      case 'documentSwipe':
+        if (raw == 'left') bridge.swipe(true);
+        if (raw == 'right') bridge.swipe(false);
       case 'documentFailed':
         bridge.failed(raw is String ? raw : '');
     }
@@ -224,6 +233,7 @@ Widget _buildEngine(BuildContext context, DocumentEngineRequest request) =>
           'resolveDocumentUrls',
           'openDocumentUrl',
           'copyDocumentCode',
+          'documentSwipe',
           'documentFailed',
         ]) {
           controller.addJavaScriptHandler(
