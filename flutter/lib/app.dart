@@ -25,6 +25,11 @@ import 'repositories/repository_screen.dart';
 
 /// The shell destinations, in bottom-bar order.
 const _destinationPaths = ['/timeline', '/follows', '/settings'];
+
+/// Follows lays out every repository on the page, so the shell lets the
+/// keyboard cover that destination instead of shrinking it on each IME frame.
+/// The page hides its own footer while the keyboard is up.
+const _keyboardCoversFollows = '/follows';
 const _settingsDestination = 2;
 
 /// The destination a location stands on, or the first one for a location the bar
@@ -275,6 +280,8 @@ class _AppShell extends ConsumerWidget {
     void navigate(int index) => context.go(_destinationPaths[index]);
 
     return Scaffold(
+      resizeToAvoidBottomInset:
+          GoRouterState.of(context).uri.path != _keyboardCoversFollows,
       body: SafeArea(bottom: false, child: child),
       // The shell's three places, in the app's own bar (ADR 0032): one
       // destination per label, and one step that stands over the current one.

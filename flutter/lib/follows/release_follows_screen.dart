@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show FlutterView;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,16 +41,14 @@ class ReleaseFollowsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin {
   late final TextEditingController _query;
   late final TabController _sourceTabs;
   Timer? _debounce;
-  bool _footerFocused = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     final state = ref.read(repositoryDiscoverySessionProvider);
     _query = TextEditingController(text: state.query);
     _sourceTabs = TabController(
@@ -68,18 +67,10 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
     _sourceTabs.dispose();
     _query.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeMetrics() {
-    // The Scaffold removes keyboard insets from this body's MediaQuery, so
-    // reading View.viewInsets below also needs its own metrics notification.
-    setState(() {});
   }
 
   void _search({bool submit = false}) {
@@ -145,8 +136,6 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
     final pagination = page.pagination;
     final problem = page.problem;
 
-    // Scaffold removes the keyboard inset from the body's MediaQuery.
-    final keyboardVisible = View.of(context).viewInsets.bottom > 0;
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
@@ -281,62 +270,56 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
               color: toneRule(Theme.of(context).colorScheme),
             ),
             Expanded(child: _discovery(state, discovery)),
-            if (!keyboardVisible || _footerFocused)
-              Padding(
+            _KeyboardAwareFooter(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: GitPulseSpace.gutter,
                   vertical: GitPulseSpace.inline,
                 ),
-                child: Focus(
-                  onFocusChange: (focused) {
-                    if (mounted) {
-                      setState(() => _footerFocused = focused);
-                    }
-                  },
-                  child: Row(
-                    children: [
-                      Expanded(
-                        // A page that failed has no page to name:
-                        // the error states the one thing left to do
-                        // with it, and the footer keeps the way into
-                        // Followed Repositories.
-                        child: pagination == null || problem != null
-                            ? const SizedBox.shrink()
-                            : RepositoryPagination(
-                                pagination: pagination,
-                                loading: loading,
-                                key: ValueKey(discovery.source),
-                                page: page.requestedPage,
-                                onPage: (target) {
-                                  _debounce?.cancel();
-                                  unawaited(discoveryFacade.goToPage(target));
-                                },
-                              ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      // A page that failed has no page to name:
+                      // the error states the one thing left to do
+                      // with it, and the footer keeps the way into
+                      // Followed Repositories.
+                      child: pagination == null || problem != null
+                          ? const SizedBox.shrink()
+                          : RepositoryPagination(
+                              pagination: pagination,
+                              loading: loading,
+                              key: ValueKey(discovery.source),
+                              page: page.requestedPage,
+                              onPage: (target) {
+                                _debounce?.cancel();
+                                unawaited(discoveryFacade.goToPage(target));
+                              },
+                            ),
+                    ),
+                    const SizedBox(width: GitPulseSpace.inline),
+                    GitPulseButton(
+                      key: const ValueKey('manage-follows'),
+                      label: MaterialLocalizations.of(context)
+                          .formatDecimal(state.repositories.length),
+                      // The number is the ink; the words that count for a
+                      // screen reader are the control's name.
+                      semanticsLabel: l10n.followsManage(
+                        state.repositories.length,
                       ),
-                      const SizedBox(width: GitPulseSpace.inline),
-                      GitPulseButton(
-                        key: const ValueKey('manage-follows'),
-                        label: MaterialLocalizations.of(context)
-                            .formatDecimal(state.repositories.length),
-                        // The number is the ink; the words that count for a
-                        // screen reader are the control's name.
-                        semanticsLabel: l10n.followsManage(
-                          state.repositories.length,
-                        ),
-                        variant: GitPulseButtonVariant.tonal,
-                        onPressed: _showFollowed,
-                        icon: const Icon(Icons.bookmarks_outlined),
-                        // A follow set the app could not read or save is reported by
-                        // the mark as well as by the line under the page: the one job
-                        // where a button's mark is a status rather than a picture.
-                        statusMarkTone: state.problem == null
-                            ? null
-                            : toneDanger(context),
-                      ),
-                    ],
-                  ),
+                      variant: GitPulseButtonVariant.tonal,
+                      onPressed: _showFollowed,
+                      icon: const Icon(Icons.bookmarks_outlined),
+                      // A follow set the app could not read or save is reported by
+                      // the mark as well as by the line under the page: the one job
+                      // where a button's mark is a status rather than a picture.
+                      statusMarkTone: state.problem == null
+                          ? null
+                          : toneDanger(context),
+                    ),
+                  ],
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -413,6 +396,65 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                     : facade.follow(item.repository),
         );
       },
+    );
+  }
+}
+
+/// Shows or hides the discovery footer without rebuilding the page.
+///
+/// The shell keeps this destination the size it had before the keyboard opened.
+/// This footer is what answers the keyboard: it stays while the page number is
+/// being edited, and it leaves while another field has the keyboard.
+class _KeyboardAwareFooter extends StatefulWidget {
+  const _KeyboardAwareFooter({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_KeyboardAwareFooter> createState() => _KeyboardAwareFooterState();
+}
+
+class _KeyboardAwareFooterState extends State<_KeyboardAwareFooter>
+    with WidgetsBindingObserver {
+  FlutterView? _view;
+  bool _keyboardVisible = false;
+  bool _footerFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _view = View.of(context);
+    _keyboardVisible = _view!.viewInsets.bottom > 0;
+  }
+
+  @override
+  void didChangeMetrics() {
+    final visible = (_view?.viewInsets.bottom ?? 0) > 0;
+    if (visible == _keyboardVisible || !mounted) return;
+    setState(() => _keyboardVisible = visible);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = !_keyboardVisible || _footerFocused;
+    return Focus(
+      onFocusChange: (focused) {
+        if (_footerFocused == focused) return;
+        setState(() => _footerFocused = focused);
+      },
+      child: visible ? widget.child : const SizedBox.shrink(),
     );
   }
 }

@@ -129,6 +129,71 @@ Finder _pageLabel(int page) => find.descendant(
 
 void main() {
   testWidgets(
+    'opening the page editor keeps repository rows through the keyboard animation',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetViewInsets);
+      final server = FollowsServer()
+        ..starredRepositories = [
+          for (var i = 0; i < 30; i++)
+            repositoryJson(id: 'R_$i', name: 'project-$i'),
+        ]
+        ..starredHasMore = true
+        ..starredTotalPages = 4;
+      await _openFollows(tester, server);
+      final requests = server.featureRequests.length;
+      final indicator = find.byKey(const ValueKey('repository-page'));
+      final firstRow = tester.getTopLeft(find.text('octo/project-0'));
+      await tester.tap(indicator);
+      await tester.pump();
+      final page = tester.getSize(find.byType(ReleaseFollowsScreen));
+      // An IME reports a new inset on each animation frame. The page keeps
+      // the size it had, so the repositories stay where the reader left them.
+      for (final bottom in [40.0, 120.0, 220.0, 300.0]) {
+        tester.view.viewInsets = FakeViewPadding(bottom: bottom);
+        await tester.pump();
+        expect(
+          tester.getSize(find.byType(ReleaseFollowsScreen)),
+          page,
+          reason: 'keyboard frame $bottom',
+        );
+        expect(
+          tester.getTopLeft(find.text('octo/project-0')),
+          firstRow,
+          reason: 'keyboard frame $bottom',
+        );
+      }
+      expect(
+        find.byKey(const ValueKey('repository-page-editor')).hitTestable(),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('manage-follows')).hitTestable(),
+        findsOneWidget,
+      );
+
+      tester.binding.focusManager.primaryFocus?.unfocus();
+      await tester.pump();
+      for (final bottom in [220.0, 120.0, 40.0, 0.0]) {
+        tester.view.viewInsets = FakeViewPadding(bottom: bottom);
+        await tester.pump();
+        expect(
+          tester.getSize(find.byType(ReleaseFollowsScreen)),
+          page,
+          reason: 'keyboard frame $bottom',
+        );
+      }
+      expect(_pageLabel(1).hitTestable(), findsOneWidget);
+      expect(findNamedAction('First page').hitTestable(), findsOneWidget);
+      expect(server.featureRequests.length, requests);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'submitting unchanged or cached pages restores the whole footer',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
