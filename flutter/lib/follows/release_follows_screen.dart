@@ -402,9 +402,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
 
 /// Shows or hides the discovery footer without rebuilding the page.
 ///
-/// The shell keeps this destination the size it had before the keyboard opened.
-/// This footer is what answers the keyboard: it stays while the page number is
-/// being edited, and it leaves while another field has the keyboard.
+/// The shell gives the keyboard room by shortening the repository list. The
+/// header stays where it is, and this footer stays on the bottom edge of that
+/// shorter page. Once the page number is submitted, the footer stays through
+/// the keyboard closing instead of vanishing and returning. It still leaves
+/// while another field has the keyboard.
 class _KeyboardAwareFooter extends StatefulWidget {
   const _KeyboardAwareFooter({required this.child});
 
@@ -420,6 +422,10 @@ class _KeyboardAwareFooterState extends State<_KeyboardAwareFooter>
   bool _keyboardVisible = false;
   bool _footerFocused = false;
 
+  /// The page number was just submitted and the keyboard has not finished
+  /// closing. The footer stays so the page number does not vanish and return.
+  bool _holdUntilKeyboardCloses = false;
+
   @override
   void initState() {
     super.initState();
@@ -429,15 +435,44 @@ class _KeyboardAwareFooterState extends State<_KeyboardAwareFooter>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _view = View.of(context);
-    _keyboardVisible = _view!.viewInsets.bottom > 0;
+    final view = View.of(context);
+    if (identical(view, _view)) return;
+    _view = view;
+    _keyboardVisible = view.viewInsets.bottom > 0;
+    if (!_keyboardVisible) _holdUntilKeyboardCloses = false;
   }
 
   @override
   void didChangeMetrics() {
-    final visible = (_view?.viewInsets.bottom ?? 0) > 0;
-    if (visible == _keyboardVisible || !mounted) return;
-    setState(() => _keyboardVisible = visible);
+    final open = (_view?.viewInsets.bottom ?? 0) > 0;
+    final hold = open && _holdUntilKeyboardCloses;
+    if (!mounted ||
+        open == _keyboardVisible && hold == _holdUntilKeyboardCloses) {
+      return;
+    }
+    setState(() {
+      _keyboardVisible = open;
+      _holdUntilKeyboardCloses = hold;
+    });
+  }
+
+  bool _otherFieldHasFocus() {
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (focusContext == null || !focusContext.mounted) return false;
+    if (focusContext.findAncestorStateOfType<_KeyboardAwareFooterState>() ==
+        this) {
+      return false;
+    }
+    return focusContext.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
+  void _onFooterFocus(bool focused) {
+    final hold = !focused && _keyboardVisible && !_otherFieldHasFocus();
+    if (_footerFocused == focused && _holdUntilKeyboardCloses == hold) return;
+    setState(() {
+      _footerFocused = focused;
+      _holdUntilKeyboardCloses = hold;
+    });
   }
 
   @override
@@ -448,12 +483,10 @@ class _KeyboardAwareFooterState extends State<_KeyboardAwareFooter>
 
   @override
   Widget build(BuildContext context) {
-    final visible = !_keyboardVisible || _footerFocused;
+    final visible =
+        !_keyboardVisible || _footerFocused || _holdUntilKeyboardCloses;
     return Focus(
-      onFocusChange: (focused) {
-        if (_footerFocused == focused) return;
-        setState(() => _footerFocused = focused);
-      },
+      onFocusChange: _onFooterFocus,
       child: visible ? widget.child : const SizedBox.shrink(),
     );
   }

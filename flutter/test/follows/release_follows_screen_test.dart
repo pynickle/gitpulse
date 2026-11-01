@@ -146,18 +146,24 @@ void main() {
       await _openFollows(tester, server);
       final requests = server.featureRequests.length;
       final indicator = find.byKey(const ValueKey('repository-page'));
+      final header = tester.getTopLeft(find.text('Starred'));
       final firstRow = tester.getTopLeft(find.text('octo/project-0'));
       await tester.tap(indicator);
       await tester.pump();
-      final page = tester.getSize(find.byType(ReleaseFollowsScreen));
-      // An IME reports a new inset on each animation frame. The page keeps
-      // the size it had, so the repositories stay where the reader left them.
+      final editor = find.byKey(const ValueKey('repository-page-editor'));
+      final restingGap = tester.getTopLeft(editor).dy - firstRow.dy;
+      // An IME reports a new inset on each animation frame. The header and the
+      // rows stay put; the list gives up the height and the field stays above
+      // the keys.
       for (final bottom in [40.0, 120.0, 220.0, 300.0]) {
         tester.view.viewInsets = FakeViewPadding(bottom: bottom);
         await tester.pump();
+        final keyboardTop =
+            tester.view.physicalSize.height / tester.view.devicePixelRatio -
+            bottom;
         expect(
-          tester.getSize(find.byType(ReleaseFollowsScreen)),
-          page,
+          tester.getTopLeft(find.text('Starred')),
+          header,
           reason: 'keyboard frame $bottom',
         );
         expect(
@@ -165,7 +171,13 @@ void main() {
           firstRow,
           reason: 'keyboard frame $bottom',
         );
+        expect(
+          tester.getRect(editor).bottom,
+          lessThanOrEqualTo(keyboardTop),
+          reason: 'keyboard frame $bottom',
+        );
       }
+      expect(tester.getTopLeft(editor).dy - firstRow.dy, lessThan(restingGap));
       expect(
         find.byKey(const ValueKey('repository-page-editor')).hitTestable(),
         findsOneWidget,
@@ -181,13 +193,19 @@ void main() {
         tester.view.viewInsets = FakeViewPadding(bottom: bottom);
         await tester.pump();
         expect(
-          tester.getSize(find.byType(ReleaseFollowsScreen)),
-          page,
+          tester.getTopLeft(find.text('Starred')),
+          header,
+          reason: 'keyboard frame $bottom',
+        );
+        expect(
+          tester.getTopLeft(find.text('octo/project-0')),
+          firstRow,
           reason: 'keyboard frame $bottom',
         );
       }
       expect(_pageLabel(1).hitTestable(), findsOneWidget);
       expect(findNamedAction('First page').hitTestable(), findsOneWidget);
+      expect(tester.getTopLeft(find.text('octo/project-0')), firstRow);
       expect(server.featureRequests.length, requests);
       expect(tester.takeException(), isNull);
     },
@@ -221,11 +239,25 @@ void main() {
         tester.view.viewInsets = const FakeViewPadding(bottom: 300);
         await _pumpFrames(tester);
         await tester.testTextInput.receiveAction(TextInputAction.done);
-        // Focus is lost before Android finishes closing the keyboard. Let the
-        // footer react to that state before delivering the final inset change.
-        await _pumpFrames(tester);
-        tester.view.resetViewInsets();
-        await _pumpFrames(tester);
+        // Focus is lost before Android finishes closing the keyboard. The page
+        // number stays where the reader can see it and rides the keyboard down.
+        for (final bottom in [300.0, 180.0, 60.0, 0.0]) {
+          tester.view.viewInsets = FakeViewPadding(bottom: bottom);
+          await tester.pump();
+          final keyboardTop =
+              tester.view.physicalSize.height / tester.view.devicePixelRatio -
+              bottom;
+          expect(
+            _pageLabel(target).hitTestable(),
+            findsOneWidget,
+            reason: 'page number stays through keyboard $bottom',
+          );
+          expect(
+            tester.getRect(_pageLabel(target)).bottom,
+            lessThanOrEqualTo(keyboardTop),
+            reason: 'page number stays above keyboard $bottom',
+          );
+        }
         expect(_pageLabel(target).hitTestable(), findsOneWidget);
         expect(findNamedAction('First page').hitTestable(), findsOneWidget);
         expect(
