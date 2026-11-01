@@ -131,137 +131,130 @@
                 axis="both"
                 content-class="dashboard-list-content"
               >
-                <DashboardLoadingList v-if="dashboardListLoading" :current-tab="currentTab" />
-
-                <NotificationSubjectEnrichmentNotice
-                  v-else-if="notificationSubjectEnrichmentFailed"
-                  :refreshing="notificationSubjectEnrichmentRetrying"
-                  @retry="retryNotificationSubjectEnrichment"
+                <DashboardLoadingList
+                  v-if="dashboardListContentState === 'loading'"
+                  :current-tab="currentTab"
                 />
 
-                <template v-if="!dashboardListLoading && currentTab === 'todos'">
-                  <div v-if="filteredTodoItems.length === 0" class="dashboard-empty-state">
-                    {{ todoEmptyMessage }}
-                  </div>
-                  <div
-                    v-for="todo in filteredTodoItems"
-                    :key="todo.id"
-                    class="mb-4 mr-4 dashboard-list-row"
-                    role="button"
-                    tabindex="0"
-                    @click="handleTodoOpen(todo.notification)"
-                    @keydown="handleListRowKeydown($event, () => handleTodoOpen(todo.notification))"
-                  >
-                    <AsyncNotificationItem
-                      :notification="todo.notification"
-                      :force-read="true"
-                      :show-reason="false"
-                      :show-mark-as-read="false"
-                      todo-action="remove"
-                      @todo-action="removeNotificationTodo(todo.id)"
-                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
-                    />
-                  </div>
-                </template>
+                <template v-else>
+                  <NotificationSubjectEnrichmentNotice
+                    v-if="notificationSubjectEnrichmentFailed"
+                    :refreshing="notificationSubjectEnrichmentRetrying"
+                    @retry="retryNotificationSubjectEnrichment"
+                  />
 
-                <template v-else-if="currentTab === 'notifications'">
-                  <div v-if="filteredNotifications.length === 0" class="dashboard-empty-state">
-                    {{ notificationEmptyMessage }}
+                  <div v-if="dashboardListContentState === 'empty'" class="dashboard-empty-state">
+                    {{ dashboardListEmptyMessage }}
                   </div>
-                  <div
-                    v-for="notification in filteredNotifications"
-                    :key="notification.id"
-                    class="mb-4 mr-4 dashboard-list-row"
-                    role="button"
-                    tabindex="0"
-                    @click="handleNotificationOpen(notification)"
-                    @keydown="
-                      handleListRowKeydown($event, () => handleNotificationOpen(notification))
-                    "
-                  >
-                    <AsyncNotificationItem
-                      :notification="notification"
-                      :mark-as-read="markNotificationAsReadFromDashboard"
-                      :todo-action="isNotificationTodo(notification) ? 'remove' : 'add'"
-                      @todo-action="toggleNotificationTodo"
-                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
-                    />
-                  </div>
-                </template>
 
-                <template v-else-if="selectedCustomTab">
-                  <div v-if="issues.length === 0" class="dashboard-empty-state">
-                    {{ customTabEmptyMessage }}
-                  </div>
-                  <div
-                    v-for="issue in issues"
-                    :key="issue.id"
-                    class="mb-4 mr-4 dashboard-list-row"
-                    role="button"
-                    tabindex="0"
-                    @click="openSearchResult(issue)"
-                    @keydown="handleListRowKeydown($event, () => openSearchResult(issue))"
-                  >
-                    <AsyncIssuePrNotificationItem
-                      v-if="
-                        selectedCustomTab.query.endpoint === 'issues' ||
-                        !selectedCustomTab.query.endpoint
+                  <template v-else-if="currentTab === 'todos'">
+                    <div
+                      v-for="todo in filteredTodoItems"
+                      :key="todo.id"
+                      class="mb-4 mr-4 dashboard-list-row"
+                      role="button"
+                      tabindex="0"
+                      @click="handleTodoOpen(todo.notification)"
+                      @keydown="
+                        handleListRowKeydown($event, () => handleTodoOpen(todo.notification))
                       "
-                      :item="issue"
-                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
-                    />
-                    <AsyncGenericSearchItem
-                      v-else
-                      :item="issue"
-                      :endpoint="selectedCustomTab.query.endpoint"
-                    />
-                  </div>
-                </template>
+                    >
+                      <AsyncNotificationItem
+                        :notification="todo.notification"
+                        :force-read="true"
+                        :show-reason="false"
+                        :show-mark-as-read="false"
+                        todo-action="remove"
+                        @todo-action="removeNotificationTodo(todo.id)"
+                        @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                      />
+                    </div>
+                  </template>
 
-                <template v-else-if="currentTab === 'issues'">
-                  <div v-if="issues.length === 0" class="dashboard-empty-state">
-                    {{ issuesEmptyMessage }}
-                  </div>
-                  <div
-                    v-for="issue in issues"
-                    :key="issue.id"
-                    class="mb-4 mr-4 dashboard-list-row"
-                    role="button"
-                    tabindex="0"
-                    @click="handleIssueOpen(issue)"
-                    @keydown="handleListRowKeydown($event, () => handleIssueOpen(issue))"
-                  >
-                    <AsyncIssuePrNotificationItem
-                      :item="issue"
-                      @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
-                    />
-                  </div>
-                </template>
+                  <template v-else-if="currentTab === 'notifications'">
+                    <div
+                      v-for="notification in filteredNotifications"
+                      :key="notification.id"
+                      class="mb-4 mr-4 dashboard-list-row"
+                      role="button"
+                      tabindex="0"
+                      @click="handleNotificationOpen(notification)"
+                      @keydown="
+                        handleListRowKeydown($event, () => handleNotificationOpen(notification))
+                      "
+                    >
+                      <AsyncNotificationItem
+                        :notification="notification"
+                        :mark-as-read="markNotificationAsReadFromDashboard"
+                        :todo-action="isNotificationTodo(notification) ? 'remove' : 'add'"
+                        @todo-action="toggleNotificationTodo"
+                        @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                      />
+                    </div>
+                  </template>
 
-                <template v-else-if="currentTab === 'pulls'">
-                  <div v-if="pulls.length === 0" class="dashboard-empty-state">
-                    {{ pullsEmptyMessage }}
-                  </div>
-                  <div
-                    v-for="pull in pulls"
-                    :key="pull.id"
-                    class="mb-4 mr-4 dashboard-list-row"
-                    role="button"
-                    tabindex="0"
-                    @click="handlePROpen(pull)"
-                    @keydown="handleListRowKeydown($event, () => handlePROpen(pull))"
-                  >
-                    <AsyncIssuePrNotificationItem :item="pull" />
-                  </div>
-                </template>
+                  <template v-else-if="selectedCustomTab">
+                    <div
+                      v-for="issue in issues"
+                      :key="issue.id"
+                      class="mb-4 mr-4 dashboard-list-row"
+                      role="button"
+                      tabindex="0"
+                      @click="openSearchResult(issue)"
+                      @keydown="handleListRowKeydown($event, () => openSearchResult(issue))"
+                    >
+                      <AsyncIssuePrNotificationItem
+                        v-if="
+                          selectedCustomTab.query.endpoint === 'issues' ||
+                          !selectedCustomTab.query.endpoint
+                        "
+                        :item="issue"
+                        @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                      />
+                      <AsyncGenericSearchItem
+                        v-else
+                        :item="issue"
+                        :endpoint="selectedCustomTab.query.endpoint"
+                      />
+                    </div>
+                  </template>
 
-                <template v-else-if="currentTab === 'repos'">
-                  <div v-if="repos.length === 0" class="dashboard-empty-state">
-                    {{ reposEmptyMessage }}
-                  </div>
-                  <div v-for="repo in repos" class="mb-4 mr-4 dashboard-list-row" :key="repo.id">
-                    <AsyncRepoItem :repo="repo" />
-                  </div>
+                  <template v-else-if="currentTab === 'issues'">
+                    <div
+                      v-for="issue in issues"
+                      :key="issue.id"
+                      class="mb-4 mr-4 dashboard-list-row"
+                      role="button"
+                      tabindex="0"
+                      @click="handleIssueOpen(issue)"
+                      @keydown="handleListRowKeydown($event, () => handleIssueOpen(issue))"
+                    >
+                      <AsyncIssuePrNotificationItem
+                        :item="issue"
+                        @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                      />
+                    </div>
+                  </template>
+
+                  <template v-else-if="currentTab === 'pulls'">
+                    <div
+                      v-for="pull in pulls"
+                      :key="pull.id"
+                      class="mb-4 mr-4 dashboard-list-row"
+                      role="button"
+                      tabindex="0"
+                      @click="handlePROpen(pull)"
+                      @keydown="handleListRowKeydown($event, () => handlePROpen(pull))"
+                    >
+                      <AsyncIssuePrNotificationItem :item="pull" />
+                    </div>
+                  </template>
+
+                  <template v-else-if="currentTab === 'repos'">
+                    <div v-for="repo in repos" class="mb-4 mr-4 dashboard-list-row" :key="repo.id">
+                      <AsyncRepoItem :repo="repo" />
+                    </div>
+                  </template>
                 </template>
               </ScrollArea>
             </div>
@@ -971,40 +964,40 @@ const filteredTodoItems = computed(() => {
     });
 });
 
-const notificationEmptyMessage = computed(() => {
-  return hasActiveVisibleFilters.value
-    ? t('dashboard.notifications.emptyFiltered')
-    : t('dashboard.notifications.empty');
+/** Rows the active tab would render; custom tabs share the `issues` list. */
+const dashboardListRowCount = computed(() => {
+  const rowCounts: Record<DashboardTab, number> = {
+    todos: filteredTodoItems.value.length,
+    notifications: filteredNotifications.value.length,
+    issues: issues.value.length,
+    pulls: pulls.value.length,
+    repos: repos.value.length,
+  };
+
+  return rowCounts[currentTab.value];
 });
 
-const todoEmptyMessage = computed(() => {
-  return hasActiveVisibleFilters.value
-    ? t('dashboard.todos.emptyFiltered')
-    : t('dashboard.todos.empty');
-});
+const dashboardListContentState = computed(() =>
+  resolveDashboardListContentState({
+    loading: dashboardListLoading.value,
+    rowCount: dashboardListRowCount.value,
+  })
+);
 
-const issuesEmptyMessage = computed(() => {
-  return hasActiveVisibleFilters.value
-    ? t('dashboard.issues.emptyFiltered')
-    : t('dashboard.issues.empty');
-});
+const dashboardListEmptyMessage = computed(() => {
+  const filtered = hasActiveVisibleFilters.value;
+  const messages: Record<'customTab' | DashboardTab, string> = {
+    todos: filtered ? t('dashboard.todos.emptyFiltered') : t('dashboard.todos.empty'),
+    notifications: filtered
+      ? t('dashboard.notifications.emptyFiltered')
+      : t('dashboard.notifications.empty'),
+    issues: filtered ? t('dashboard.issues.emptyFiltered') : t('dashboard.issues.empty'),
+    pulls: filtered ? t('dashboard.pulls.emptyFiltered') : t('dashboard.pulls.empty'),
+    repos: filtered ? t('dashboard.repos.emptyFiltered') : t('dashboard.repos.empty'),
+    customTab: filtered ? t('dashboard.customTab.emptyFiltered') : t('dashboard.customTab.empty'),
+  };
 
-const pullsEmptyMessage = computed(() => {
-  return hasActiveVisibleFilters.value
-    ? t('dashboard.pulls.emptyFiltered')
-    : t('dashboard.pulls.empty');
-});
-
-const reposEmptyMessage = computed(() => {
-  return hasActiveVisibleFilters.value
-    ? t('dashboard.repos.emptyFiltered')
-    : t('dashboard.repos.empty');
-});
-
-const customTabEmptyMessage = computed(() => {
-  return hasActiveVisibleFilters.value
-    ? t('dashboard.customTab.emptyFiltered')
-    : t('dashboard.customTab.empty');
+  return messages[selectedCustomTab.value ? 'customTab' : currentTab.value];
 });
 
 /**
