@@ -20,6 +20,7 @@ import {
 
 import { MIN_APP_SECRET_LENGTH } from './app-secret-utils';
 import { resolveAuthProviderState } from './auth-providers';
+import { parseNativeLoginGrant, type NativeLoginGrant } from './native-login-grant-utils';
 import {
   getUserSettingsItemKey,
   getUserSettingsStorageAdapter,
@@ -36,12 +37,6 @@ const proofSchema = idSchema.extend({
 });
 const browserSchema = idSchema.extend({ browserToken: secretSchema });
 type Status = 'pending' | 'approved' | 'cancelled' | 'expired' | 'redeemed';
-type Grant = {
-  // Grants approved before provider preservation was added contain only OAuth credentials.
-  authProvider?: 'github' | 'pat';
-  accessToken: string;
-  user: { id?: number; login: string; name: string; avatar_url: string };
-};
 interface Transaction {
   origin: string;
   challenge: string;
@@ -102,20 +97,28 @@ function matches(left: string, right: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-async function seal(grant: Grant) {
+async function seal(grant: NativeLoginGrant) {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', await handoffKey(), iv);
   const encrypted = Buffer.concat([cipher.update(JSON.stringify(grant), 'utf8'), cipher.final()]);
   return Buffer.concat([iv, cipher.getAuthTag(), encrypted]).toString('base64url');
 }
 
-async function unseal(value: string): Promise<Grant> {
+async function unseal(value: string): Promise<NativeLoginGrant> {
   const bytes = Buffer.from(value, 'base64url');
   const decipher = createDecipheriv('aes-256-gcm', await handoffKey(), bytes.subarray(0, 12));
   decipher.setAuthTag(bytes.subarray(12, 28));
-  return JSON.parse(
-    Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString('utf8')
-  ) as Grant;
+  const decrypted = Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString(
+    'utf8'
+  );
+  const grant = parseNativeLoginGrant(decrypted);
+  // The authentication tag proves the payload came from this server, so a shape
+  // that still does not parse is a storage or key-rotation fault, not a caller
+  // error: fail closed and never write a session from it.
+  if (!grant) {
+    throw createError({ statusCode: 500, statusMessage: 'Approved sign-in is unreadable' });
+  }
+  return grant;
 }
 
 // Redis adapters fence commits with a remote lock. The filesystem adapter also

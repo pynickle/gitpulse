@@ -62,7 +62,10 @@ a WebView, a central callback service, or another session authority.
 Transactions expire after ten minutes. They use the existing configured storage
 adapter in the separate `native-login-handoff` collection, isolated from account
 settings. The browser proof is hashed. Approved grants are authenticated-encrypted
-with a key derived from the session encryption secret; consumption, cancellation,
+with a key derived from the session encryption secret, and their decrypted payload
+is validated against the grant schema on redemption before it can become a session
+(`server/utils/native-login-grant-utils.ts`); a payload that fails validation
+fails closed with no session written. Consumption, cancellation,
 and observed expiry remove the grant. Keep storage access restricted as for
 existing server sessions. Transaction records remain as tombstones; storage
 maintenance may remove records older than their expiry. No long-term credential
