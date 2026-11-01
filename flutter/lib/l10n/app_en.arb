@@ -184,6 +184,7 @@
   "followsAdding": "Adding follow",
   "followsFollowed": "Followed",
   "followsUnfollow": "Unfollow",
+  "followsRemoving": "Removing follow",
   "followsResults": "Search results",
   "followsNoResults": "No repositories found.",
   "followsPreviousPage": "Previous page",

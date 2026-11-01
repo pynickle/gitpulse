@@ -257,22 +257,25 @@ class _MetaLine extends StatelessWidget {
 
 /// The bookmark that adds or removes a Release Follow.
 ///
-/// While an add is in flight the mark is the row's progress, turning in the
-/// Accent, and the control will not take another press. A disabled bookmark
-/// would read as unavailable; the turn is what says the add is being written.
+/// While that write is in flight the mark is the row's progress, turning in
+/// the Accent, and the control will not take another press. A disabled
+/// bookmark would read as unavailable; the turn is what says the follow is
+/// being written.
 class FollowBookmarkButton extends StatelessWidget {
   const FollowBookmarkButton({
     super.key,
     this.buttonKey,
     required this.followed,
-    required this.adding,
+    required this.saving,
     required this.onPressed,
   });
 
   /// The key of the icon control itself, when a page names that control.
   final Key? buttonKey;
   final bool followed;
-  final bool adding;
+
+  /// Whether this follow is the one being added or removed.
+  final bool saving;
   final VoidCallback? onPressed;
 
   @override
@@ -280,16 +283,16 @@ class FollowBookmarkButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return GitPulseIconButton(
       key: buttonKey,
-      label: adding
-          ? l10n.followsAdding
+      label: saving
+          ? (followed ? l10n.followsRemoving : l10n.followsAdding)
           : followed
           ? l10n.followsUnfollow
           : l10n.followsFollow,
-      icon: adding
+      icon: saving
           ? const GitPulseProgressInline()
           : Icon(followed ? Icons.bookmark : Icons.bookmark_add_outlined),
-      emphasized: followed && !adding,
-      onPressed: adding ? null : onPressed,
+      emphasized: followed && !saving,
+      onPressed: saving ? null : onPressed,
     );
   }
 }
@@ -302,13 +305,13 @@ class FollowRepositoryCard extends StatelessWidget {
     super.key,
     required this.candidate,
     required this.followed,
-    required this.adding,
+    required this.saving,
     required this.onToggle,
   });
 
   final RepositoryCandidateDto candidate;
   final bool followed;
-  final bool adding;
+  final bool saving;
   final VoidCallback? onToggle;
 
   @override
@@ -327,7 +330,7 @@ class FollowRepositoryCard extends StatelessWidget {
       actions: [
         FollowBookmarkButton(
           followed: followed,
-          adding: adding,
+          saving: saving,
           onPressed: onToggle,
         ),
       ],
@@ -345,6 +348,7 @@ class FollowedRepositoryCard extends StatelessWidget {
     required this.status,
     required this.details,
     required this.enabled,
+    required this.saving,
     required this.onUnfollow,
     required this.onRetry,
   });
@@ -354,6 +358,9 @@ class FollowedRepositoryCard extends StatelessWidget {
   final RepositoryQueryStatus? status;
   final FollowedRepositoryDetails? details;
   final bool enabled;
+
+  /// Whether this follow is the one being removed.
+  final bool saving;
   final VoidCallback onUnfollow;
   final VoidCallback onRetry;
 
@@ -385,9 +392,11 @@ class FollowedRepositoryCard extends StatelessWidget {
             onPressed: enabled ? onRetry : null,
           ),
         GitPulseIconButton(
-          label: l10n.followsUnfollow,
-          icon: const Icon(Icons.bookmark_remove_outlined),
-          onPressed: enabled ? onUnfollow : null,
+          label: saving ? l10n.followsRemoving : l10n.followsUnfollow,
+          icon: saving
+              ? const GitPulseProgressInline()
+              : const Icon(Icons.bookmark_remove_outlined),
+          onPressed: enabled && !saving ? onUnfollow : null,
         ),
       ],
     );

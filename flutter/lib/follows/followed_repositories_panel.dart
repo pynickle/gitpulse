@@ -77,8 +77,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
             ],
           ),
         ),
-        if (state.loading || state.saving)
-          const Center(child: GitPulseProgressInline()),
+        if (state.loading) const Center(child: GitPulseProgressInline()),
         Divider(
           height: GitPulseStroke.hairline,
           thickness: GitPulseStroke.hairline,
@@ -148,6 +147,7 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                                 status: state.statuses[repo.id],
                                 details: state.details[repo.id],
                                 enabled: !disabled,
+                                saving: state.editing(repo.id),
                                 onUnfollow: () => facade.unfollow(repo.id),
                                 onRetry: () =>
                                     facade.loadMetadata(repositoryId: repo.id),

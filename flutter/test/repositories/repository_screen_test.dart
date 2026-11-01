@@ -612,6 +612,56 @@ void main() {
     },
   );
 
+  testWidgets(
+    'removing a follow turns the bookmark into progress until the save confirms',
+    (tester) async {
+      final session = await pumpRepository(
+        tester,
+        follows: [
+          {'id': 'R_project', 'owner': 'canonical', 'name': 'project'},
+        ],
+      );
+      final pending = Completer<BackendResult>();
+      session.handlers['GET api/settings'] = () => pending.future;
+
+      await tester.tap(find.byKey(_followKey));
+      await tester.pump();
+
+      expect(
+        find.descendant(
+          of: find.byKey(_followKey),
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.bookmark), findsNothing);
+      expect(findNamedAction('Removing follow'), findsOneWidget);
+      expect(findNamedAction('Unfollow'), findsNothing);
+      expect(
+        tester.widget<GitPulseIconButton>(find.byKey(_followKey)).onPressed,
+        isNull,
+      );
+      expect(tester.binding.transientCallbackCount, greaterThan(0));
+
+      pending.complete(
+        BackendResult(
+          statusCode: 200,
+          data: settingsJson([
+            {'id': 'R_project', 'owner': 'canonical', 'name': 'project'},
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(session.requests.where((request) => request.startsWith('PUT')), [
+        'PUT api/settings',
+      ]);
+      expect(find.byType(GitPulseProgressInline), findsNothing);
+      expect(findNamedAction('Follow releases'), findsOneWidget);
+      expect(find.byIcon(Icons.bookmark_add_outlined), findsOneWidget);
+    },
+  );
+
   testWidgets('an already followed repository is unfollowed from the page', (
     tester,
   ) async {

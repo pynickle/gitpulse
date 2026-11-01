@@ -63,11 +63,10 @@ class ReleaseFollowsState {
   final bool loading;
   final bool saving;
 
-  /// The repository a follow add is writing, while [saving] is that add.
+  /// The repository whose follow is being added or removed, while [saving].
   ///
-  /// A removal leaves this empty: the row being removed keeps its mark, and the
-  /// surface that owns the list reports the edit. An add is reported by the
-  /// bookmark itself.
+  /// The bookmark for this repository turns while the write is in flight. Every
+  /// other bookmark stays quiet.
   final String? savingRepositoryId;
   final bool saveFailed;
   final List<RepositoryReference> repositories;
@@ -83,8 +82,8 @@ class ReleaseFollowsState {
   /// when the action is unavailable.
   bool get editBlocked => saving || (!loaded && loading);
 
-  /// Whether [repositoryId] is the follow currently being added.
-  bool adding(String repositoryId) =>
+  /// Whether [repositoryId] is the follow currently being added or removed.
+  bool editing(String repositoryId) =>
       saving && savingRepositoryId == repositoryId;
 
   ReleaseFollowsState copyWith({

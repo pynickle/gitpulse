@@ -204,7 +204,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       ];
       repositories = _preserveNewerNames(repositories, names);
       return _service.saveFollows([repository, ...repositories]);
-    }, addingRepositoryId: repository.id);
+    }, repositoryId: repository.id);
   }
 
   /// Removes a Release Follow after the backend confirms the change.
@@ -215,7 +215,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       for (final repo in repositories)
         if (repo.id != repositoryId) repo,
     ]);
-  });
+  }, repositoryId: repositoryId);
 
   Future<void> _saveEdit(
     Future<List<RepositoryReference>?> Function(
@@ -223,7 +223,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       Map<String, int> names,
     )
     save, {
-    String? addingRepositoryId,
+    required String repositoryId,
   }) async {
     if (!state.active || state.editBlocked) {
       return;
@@ -239,8 +239,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       loading: false,
       saveFailed: false,
       clearProblem: true,
-      savingRepositoryId: addingRepositoryId,
-      clearSavingRepository: addingRepositoryId == null,
+      savingRepositoryId: repositoryId,
     );
     try {
       final saved = await save(ticket, names);

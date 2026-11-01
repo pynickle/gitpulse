@@ -158,6 +158,7 @@
   "followsAdding": "正在关注",
   "followsFollowed": "已关注",
   "followsUnfollow": "取消关注",
+  "followsRemoving": "正在取消关注",
   "followsResults": "搜索结果",
   "followsNoResults": "未找到仓库。",
   "followsPreviousPage": "上一页",

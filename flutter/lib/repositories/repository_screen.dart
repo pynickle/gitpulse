@@ -328,7 +328,7 @@ class _Actions extends ConsumerWidget {
             FollowBookmarkButton(
               buttonKey: const ValueKey('repository-follow'),
               followed: followed,
-              adding: follows.adding(identity.id),
+              saving: follows.editing(identity.id),
               onPressed: follows.editBlocked
                   ? null
                   : () {

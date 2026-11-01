@@ -1080,6 +1080,57 @@ void main() {
   );
 
   testWidgets(
+    'removing a follow turns that bookmark into progress and leaves the others quiet',
+    (tester) async {
+      final held = Completer<void>();
+      final server = FollowsServer()..holdSave = held.future;
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+        followJson('R_gone', 'octo', 'gone'),
+      ];
+      await _openFollows(tester, server);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('followed-R_gone')),
+          matching: findNamedAction('Unfollow'),
+        ),
+      );
+      await _pumpFrames(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('followed-R_gone')),
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsOneWidget,
+      );
+      expect(findNamedAction('Removing follow'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('followed-R_kept')),
+          matching: find.byIcon(Icons.bookmark_remove_outlined),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('followed-R_kept')),
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsNothing,
+      );
+
+      held.complete();
+      await _settleUi(tester);
+      expect(find.text('octo/gone'), findsNothing);
+      expect(find.text('octo/kept'), findsOneWidget);
+      expect(find.byType(GitPulseProgressInline), findsNothing);
+    },
+  );
+
+  testWidgets(
     'adding a follow shows progress on that bookmark and leaves the others quiet',
     (tester) async {
       final held = Completer<void>();
@@ -1105,10 +1156,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      // The page keeps its own indicator, so the save stays visible when that
-      // row is not built. The other bookmark does not pretend to be the one
-      // being written.
-      expect(find.byType(GitPulseProgressInline), findsNWidgets(2));
+      expect(find.byType(GitPulseProgressInline), findsOneWidget);
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('starred-R_other')),
