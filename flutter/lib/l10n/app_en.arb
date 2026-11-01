@@ -181,6 +181,7 @@
   "followsReload": "Reload follows",
   "followsEmpty": "No followed repositories",
   "followsFollow": "Follow releases",
+  "followsAdding": "Adding follow",
   "followsFollowed": "Followed",
   "followsUnfollow": "Unfollow",
   "followsResults": "Search results",

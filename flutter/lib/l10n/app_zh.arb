@@ -155,6 +155,7 @@
   "followsReload": "重新加载关注",
   "followsEmpty": "暂无已关注仓库",
   "followsFollow": "关注 Release",
+  "followsAdding": "正在关注",
   "followsFollowed": "已关注",
   "followsUnfollow": "取消关注",
   "followsResults": "搜索结果",

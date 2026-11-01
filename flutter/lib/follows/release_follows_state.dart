@@ -48,6 +48,7 @@ class ReleaseFollowsState {
     this.loaded = false,
     this.loading = false,
     this.saving = false,
+    this.savingRepositoryId,
     this.saveFailed = false,
     this.repositories = const [],
     this.statuses = const {},
@@ -61,6 +62,13 @@ class ReleaseFollowsState {
   final bool loaded;
   final bool loading;
   final bool saving;
+
+  /// The repository a follow add is writing, while [saving] is that add.
+  ///
+  /// A removal leaves this empty: the row being removed keeps its mark, and the
+  /// surface that owns the list reports the edit. An add is reported by the
+  /// bookmark itself.
+  final String? savingRepositoryId;
   final bool saveFailed;
   final List<RepositoryReference> repositories;
   final Map<String, RepositoryQueryStatus> statuses;
@@ -75,10 +83,16 @@ class ReleaseFollowsState {
   /// when the action is unavailable.
   bool get editBlocked => saving || (!loaded && loading);
 
+  /// Whether [repositoryId] is the follow currently being added.
+  bool adding(String repositoryId) =>
+      saving && savingRepositoryId == repositoryId;
+
   ReleaseFollowsState copyWith({
     bool? loaded,
     bool? loading,
     bool? saving,
+    String? savingRepositoryId,
+    bool clearSavingRepository = false,
     bool? saveFailed,
     List<RepositoryReference>? repositories,
     Map<String, RepositoryQueryStatus>? statuses,
@@ -93,6 +107,9 @@ class ReleaseFollowsState {
     loaded: loaded ?? this.loaded,
     loading: loading ?? this.loading,
     saving: saving ?? this.saving,
+    savingRepositoryId: clearSavingRepository
+        ? null
+        : savingRepositoryId ?? this.savingRepositoryId,
     saveFailed: saveFailed ?? this.saveFailed,
     repositories: repositories ?? this.repositories,
     statuses: statuses ?? this.statuses,

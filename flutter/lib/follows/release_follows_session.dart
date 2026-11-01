@@ -204,7 +204,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       ];
       repositories = _preserveNewerNames(repositories, names);
       return _service.saveFollows([repository, ...repositories]);
-    });
+    }, addingRepositoryId: repository.id);
   }
 
   /// Removes a Release Follow after the backend confirms the change.
@@ -222,8 +222,9 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       int ticket,
       Map<String, int> names,
     )
-    save,
-  ) async {
+    save, {
+    String? addingRepositoryId,
+  }) async {
     if (!state.active || state.editBlocked) {
       return;
     }
@@ -238,6 +239,8 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       loading: false,
       saveFailed: false,
       clearProblem: true,
+      savingRepositoryId: addingRepositoryId,
+      clearSavingRepository: addingRepositoryId == null,
     );
     try {
       final saved = await save(ticket, names);
@@ -250,6 +253,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       if (_current(ticket)) {
         state = state.copyWith(
           saving: false,
+          clearSavingRepository: true,
           saveFailed: true,
           problem: error.problem,
         );
@@ -306,6 +310,7 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       loaded: true,
       loading: false,
       saving: false,
+      clearSavingRepository: true,
     );
   }
 

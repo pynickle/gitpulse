@@ -259,10 +259,11 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
                 ],
               ),
             ),
-            // Only an edit is reported here. A read reports itself
-            // where it can be undone: a page turn fills the list's
-            // place, and the page already on screen is re-read by the
-            // pull that asked for it.
+            // An edit is reported here, including an add whose bookmark is not
+            // on this page. The bookmark being written also turns, when that
+            // row is built. A read reports itself where it can be undone: a
+            // page turn fills the list's place, and the page already on screen
+            // is re-read by the pull that asked for it.
             if (state.saving) const Center(child: GitPulseProgressInline()),
             Divider(
               height: GitPulseStroke.hairline,
@@ -389,6 +390,7 @@ class _ReleaseFollowsScreenState extends ConsumerState<ReleaseFollowsScreen>
           key: ValueKey('${discovery.source.name}-${item.repository.id}'),
           candidate: item,
           followed: followed,
+          adding: state.adding(item.repository.id),
           onToggle: state.editBlocked
               ? null
               : () => followed

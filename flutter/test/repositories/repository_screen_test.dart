@@ -517,6 +517,78 @@ void main() {
   }
 
   testWidgets(
+    'adding a follow turns the bookmark into progress until the save confirms',
+    (tester) async {
+      final session = await pumpRepository(tester);
+      final pending = Completer<BackendResult>();
+      session.handlers['GET api/settings'] = () => pending.future;
+
+      await tester.tap(find.byKey(_followKey));
+      await tester.pump();
+
+      // The mark in flight is the row's own progress, turning, and it is the
+      // only one on the page. The bookmark it is writing is not drawn as a
+      // quiet, disabled action beside it.
+      expect(
+        find.descendant(
+          of: find.byKey(_followKey),
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(GitPulseProgressInline), findsOneWidget);
+      expect(find.byIcon(Icons.bookmark_add_outlined), findsNothing);
+      expect(find.byIcon(Icons.bookmark), findsNothing);
+      expect(findNamedAction('Adding follow'), findsOneWidget);
+      expect(findNamedAction('Follow releases'), findsNothing);
+      expect(
+        tester.widget<GitPulseIconButton>(find.byKey(_followKey)).onPressed,
+        isNull,
+      );
+      expect(tester.binding.transientCallbackCount, greaterThan(0));
+
+      await tester.tap(find.byKey(_followKey));
+      await tester.pump();
+
+      pending.complete(
+        BackendResult(statusCode: 200, data: settingsJson(const [])),
+      );
+      await tester.pumpAndSettle();
+
+      expect(session.requests.where((request) => request.startsWith('PUT')), [
+        'PUT api/settings',
+      ]);
+      expect(find.byType(GitPulseProgressInline), findsNothing);
+      expect(findNamedAction('Unfollow'), findsOneWidget);
+      expect(find.byIcon(Icons.bookmark), findsOneWidget);
+      expect(tester.binding.transientCallbackCount, 0);
+    },
+  );
+
+  testWidgets('a follow that fails leaves the bookmark ready to try again', (
+    tester,
+  ) async {
+    final session = await pumpRepository(tester);
+    final pending = Completer<BackendResult>();
+    session.handlers['GET api/settings'] = () => pending.future;
+    await tester.tap(find.byKey(_followKey));
+    await tester.pump();
+    expect(find.byType(GitPulseProgressInline), findsOneWidget);
+
+    pending.complete(const BackendResult(statusCode: 500));
+    await tester.pumpAndSettle();
+
+    expect(
+      session.requests.where((request) => request.startsWith('PUT')),
+      isEmpty,
+    );
+    expect(readFollows(tester).state.repositories, isEmpty);
+    expect(find.byType(GitPulseProgressInline), findsNothing);
+    expect(findNamedAction('Follow releases'), findsOneWidget);
+    expect(find.byIcon(Icons.bookmark_add_outlined), findsOneWidget);
+  });
+
+  testWidgets(
     'following from the page writes the shared follow set and shows the bookmark',
     (tester) async {
       final session = await pumpRepository(tester);

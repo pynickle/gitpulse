@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/generated/app_localizations.dart';
 import '../presentation/gitpulse_buttons.dart';
 import '../presentation/gitpulse_formatting.dart';
+import '../presentation/gitpulse_progress.dart';
 import '../presentation/gitpulse_language_colors.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_tokens.dart';
@@ -254,6 +255,45 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
+/// The bookmark that adds or removes a Release Follow.
+///
+/// While an add is in flight the mark is the row's progress, turning in the
+/// Accent, and the control will not take another press. A disabled bookmark
+/// would read as unavailable; the turn is what says the add is being written.
+class FollowBookmarkButton extends StatelessWidget {
+  const FollowBookmarkButton({
+    super.key,
+    this.buttonKey,
+    required this.followed,
+    required this.adding,
+    required this.onPressed,
+  });
+
+  /// The key of the icon control itself, when a page names that control.
+  final Key? buttonKey;
+  final bool followed;
+  final bool adding;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return GitPulseIconButton(
+      key: buttonKey,
+      label: adding
+          ? l10n.followsAdding
+          : followed
+          ? l10n.followsUnfollow
+          : l10n.followsFollow,
+      icon: adding
+          ? const GitPulseProgressInline()
+          : Icon(followed ? Icons.bookmark : Icons.bookmark_add_outlined),
+      emphasized: followed && !adding,
+      onPressed: adding ? null : onPressed,
+    );
+  }
+}
+
 /// A repository to follow, found among the account's starred repositories or by
 /// search. Its action toggles the Release Follow without opening the repository
 /// the row itself opens.
@@ -262,16 +302,17 @@ class FollowRepositoryCard extends StatelessWidget {
     super.key,
     required this.candidate,
     required this.followed,
+    required this.adding,
     required this.onToggle,
   });
 
   final RepositoryCandidateDto candidate;
   final bool followed;
+  final bool adding;
   final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final repo = candidate.repository;
     return _RepositoryRow(
       name: repo.fullName,
@@ -284,10 +325,9 @@ class FollowRepositoryCard extends StatelessWidget {
         releases: false,
       )),
       actions: [
-        GitPulseIconButton(
-          label: followed ? l10n.followsUnfollow : l10n.followsFollow,
-          icon: Icon(followed ? Icons.bookmark : Icons.bookmark_add_outlined),
-          emphasized: followed,
+        FollowBookmarkButton(
+          followed: followed,
+          adding: adding,
           onPressed: onToggle,
         ),
       ],

@@ -10,6 +10,7 @@ import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/follows/release_follows_widgets.dart';
 import 'package:gitpulse/follows/repository_pagination.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/repositories/repository_screen.dart';
@@ -1075,6 +1076,69 @@ void main() {
         }
         expect(tester.takeException(), isNull, reason: '$size');
       }
+    },
+  );
+
+  testWidgets(
+    'adding a follow shows progress on that bookmark and leaves the others quiet',
+    (tester) async {
+      final held = Completer<void>();
+      final server = FollowsServer()
+        ..starredRepositories = [
+          repositoryJson(id: 'R_star', name: 'star'),
+          repositoryJson(id: 'R_other', name: 'other'),
+        ]
+        ..holdSave = held.future;
+      await _openFollows(tester, server);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_star')),
+          matching: findNamedAction('Follow releases'),
+        ),
+      );
+      await _pumpFrames(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_star')),
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsOneWidget,
+      );
+      // The page keeps its own indicator, so the save stays visible when that
+      // row is not built. The other bookmark does not pretend to be the one
+      // being written.
+      expect(find.byType(GitPulseProgressInline), findsNWidgets(2));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_other')),
+          matching: find.byIcon(Icons.bookmark_add_outlined),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_other')),
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsNothing,
+      );
+      expect(findNamedAction('Adding follow'), findsOneWidget);
+
+      held.complete();
+      await _settleUi(tester);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('starred-R_star')),
+          matching: findNamedAction('Unfollow'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(GitPulseProgressInline), findsNothing);
+      expect(
+        (server.settings['followedRepositories'] as List).single,
+        followJson('R_star', 'octo', 'star'),
+      );
     },
   );
 

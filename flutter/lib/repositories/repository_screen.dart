@@ -325,13 +325,10 @@ class _Actions extends ConsumerWidget {
           children: [
             Expanded(child: _RepositoryReleasesButton(repository: repository)),
             const SizedBox(width: GitPulseSpace.inline),
-            GitPulseIconButton(
-              key: const ValueKey('repository-follow'),
-              label: followed ? l10n.followsUnfollow : l10n.followsFollow,
-              icon: Icon(
-                followed ? Icons.bookmark : Icons.bookmark_add_outlined,
-              ),
-              emphasized: followed,
+            FollowBookmarkButton(
+              buttonKey: const ValueKey('repository-follow'),
+              followed: followed,
+              adding: follows.adding(identity.id),
               onPressed: follows.editBlocked
                   ? null
                   : () {
