@@ -117,15 +117,19 @@ watch(
 </script>
 
 <template>
-  <div v-if="open" class="dashboard-menu">
+  <Transition name="dashboard-menu-scrim">
     <button
+      v-if="open"
       class="dashboard-menu__scrim"
       type="button"
       :aria-label="t('dashboard.menu.close')"
       tabindex="-1"
       @click="emit('close')"
     ></button>
+  </Transition>
+  <Transition name="dashboard-menu-panel">
     <div
+      v-if="open"
       id="dashboard-menu"
       ref="dashboardMenuPanel"
       class="dashboard-menu__panel"
@@ -157,30 +161,22 @@ watch(
         @manage-tabs="emit('manage-tabs')"
       />
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped lang="scss">
-.dashboard-menu {
-  position: fixed;
-  inset: 0;
-  z-index: 23;
-  pointer-events: none;
-}
-
 .dashboard-menu__scrim {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 23;
   border: 0;
   padding: 0;
   background: color-mix(in srgb, #0f172a 42%, transparent);
   cursor: pointer;
-  pointer-events: auto;
 }
 
 .dashboard-menu__panel {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
@@ -193,10 +189,49 @@ watch(
   box-shadow: 0.5rem 0 1.5rem color-mix(in srgb, #0f172a 16%, transparent);
   overflow: hidden;
   outline: none;
-  pointer-events: auto;
 
   @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
     padding-top: env(safe-area-inset-top);
+  }
+}
+
+// Motion: the panel slides in from the shell edge and the scrim cross-fades.
+// Both properties are compositor-only, so opening and closing stay smooth even
+// while the panel's content mounts.
+.dashboard-menu-panel-enter-active {
+  transition: transform 0.22s cubic-bezier(0.22, 0.82, 0.24, 1);
+  will-change: transform;
+}
+
+.dashboard-menu-panel-leave-active {
+  transition: transform 0.16s cubic-bezier(0.4, 0, 1, 1);
+  will-change: transform;
+}
+
+.dashboard-menu-panel-enter-from,
+.dashboard-menu-panel-leave-to {
+  transform: translate3d(-100%, 0, 0);
+}
+
+.dashboard-menu-scrim-enter-active {
+  transition: opacity 0.22s ease;
+}
+
+.dashboard-menu-scrim-leave-active {
+  transition: opacity 0.16s ease;
+}
+
+.dashboard-menu-scrim-enter-from,
+.dashboard-menu-scrim-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-menu-panel-enter-active,
+  .dashboard-menu-panel-leave-active,
+  .dashboard-menu-scrim-enter-active,
+  .dashboard-menu-scrim-leave-active {
+    transition: none;
   }
 }
 
