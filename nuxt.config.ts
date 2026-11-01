@@ -125,25 +125,6 @@ export default defineNuxtConfig({
     targets: ['claude-code', 'codex'],
   },
 
-  doctor: {
-    rules: {
-      // Named utils and Vue imports also support direct Bun tests without Nuxt transforms.
-      // Keep app composables/default utils auto-imported per AGENTS.md.
-      'nuxt/imports/no-explicit-auto-import': 'off',
-      'nuxt/middleware/no-route-middleware-api-security': [
-        'warn',
-        {
-          guards: [
-            'getAccessToken',
-            'getGitHubClient',
-            'getGitHubRequestContext',
-            'getGitHubSessionContext',
-          ],
-        },
-      ],
-    },
-  },
-
   app: {
     head: {
       // Note: titleTemplate function is set in app.vue to prevent "GitPulse - GitPulse" on homepage
@@ -271,7 +252,6 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxt/fonts',
     'nuxt-skill-hub',
-    'vite-doctor/nuxt',
   ],
 
   fonts: {

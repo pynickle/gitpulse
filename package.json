@@ -5,8 +5,6 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "doctor": "nuxt prepare && vite-doctor . --host-extensions --format agent",
-    "doctor:changed": "bun run doctor --changed",
     "extension:build": "bun run --cwd extension build",
     "extension:build:firefox": "bun run --cwd extension build:firefox",
     "extension:zip": "bun run --cwd extension zip",
@@ -65,7 +63,6 @@
     "oxlint-tsgolint": "^7.0.2005",
     "sass-embedded": "1.100.0",
     "typescript": "^6.0.3",
-    "vite-doctor": "^0.1.1",
     "vue-tsc": "^3.3.14"
   },
   "overrides": {

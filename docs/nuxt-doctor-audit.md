@@ -1,9 +1,10 @@
 # Nuxt Doctor audit
 
-Audited with `vite-doctor@0.1.0` against Nuxt 4.6.2. The source baseline is
-`32e85346bed323d5ae3ab6a8e1414e4e4a8a9b0d`, including the pending Skill Hub and
-Doctor dependency setup. Reproduce with `bun run doctor`; reports include
-framework extensions and scan the whole web application.
+Historical record. The findings below were audited with `vite-doctor@0.1.0`
+against Nuxt 4.6.2 from baseline `32e85346bed323d5ae3ab6a8e1414e4e4a8a9b0d`. Vite
+Doctor is no longer a project dependency, so this document keeps the reasoning —
+which diagnostics were fixed in code, which were project policy decisions, and
+which were retained for review — rather than a way to reproduce the report.
 
 ## Results
 
