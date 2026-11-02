@@ -9,77 +9,82 @@
       </button>
     </div>
 
-    <!-- Group tree -->
-    <div class="tab-sidebar__tree" role="tree" :aria-label="t('dashboard.sidebar.views')">
-      <template v-for="group in displayGroups" :key="group.id">
-        <!-- Group heading -->
-        <button
-          class="tab-sidebar__group"
-          :class="{
-            'tab-sidebar__group--nested': group.depth > 0,
-            'tab-sidebar__group--collapsed': isGroupCollapsed(group),
-          }"
-          :style="getDepthStyle(group.depth)"
-          type="button"
-          role="treeitem"
-          :aria-expanded="group.source === 'system' ? undefined : !isGroupCollapsed(group)"
-          @click="group.source !== 'system' && emit('group-toggle', group.id)"
-        >
-          <span class="tab-sidebar__group-toggle" aria-hidden="true">
-            <PlusIcon v-if="isGroupCollapsed(group)" :size="13" />
-            <MinusIcon v-else :size="13" />
-          </span>
-          <span class="tab-sidebar__group-label">{{ group.name }}</span>
-          <span v-if="getGroupTabCount(group.id) > 0" class="tab-sidebar__group-count">
-            {{ getGroupTabCount(group.id) }}
-          </span>
-        </button>
-
-        <!-- Group children (tabs) -->
-        <div
-          v-if="!isGroupCollapsed(group)"
-          class="tab-sidebar__children"
-          :style="getDepthStyle(group.depth)"
-        >
-          <ul class="tab-sidebar__tab-list" role="group">
-            <li v-for="tab in getTabsForGroup(group.id)" :key="tab.id">
-              <a
-                class="tab-sidebar__tab"
-                :class="{ 'tab-sidebar__tab--active': activeTabId === tab.id }"
-                role="treeitem"
-                :aria-current="activeTabId === tab.id ? 'page' : undefined"
-                href="#"
-                @click.prevent="emit('tab-select', tab.id)"
-              >
-                <span class="icon is-small tab-sidebar__tab-icon">
-                  <component :is="tab.icon" :size="15" />
-                </span>
-                <span class="tab-sidebar__tab-text">
-                  <span class="tab-sidebar__tab-name">{{ tab.name }}</span>
-                  <span v-if="tab.subtitle" class="tab-sidebar__tab-subtitle" :title="tab.subtitle">
-                    {{ tab.subtitle }}
-                  </span>
-                </span>
-                <span v-if="(tab.badgeCount ?? 0) > 0" class="tab-sidebar__tab-badge">
-                  {{ tab.badgeCount }}
-                </span>
-              </a>
-            </li>
-          </ul>
-
-          <!-- Empty group state -->
-          <span
-            v-if="
-              group.source !== 'system' &&
-              !isGroupCollapsed(group) &&
-              getGroupTabCount(group.id) === 0
-            "
-            class="tab-sidebar__empty-inline"
+    <!-- Group list. A plain list, not a `tree`: the sidebar offers no arrow-key navigation,
+         and a tree role without it is a promise assistive tech cannot keep. -->
+    <div class="tab-sidebar__tree">
+      <ul class="tab-sidebar__group-list">
+        <li v-for="group in displayGroups" :key="group.id" class="tab-sidebar__group-item">
+          <!-- Group heading -->
+          <button
+            class="tab-sidebar__group"
+            :class="{
+              'tab-sidebar__group--nested': group.depth > 0,
+              'tab-sidebar__group--collapsed': isGroupCollapsed(group),
+            }"
+            :style="getDepthStyle(group.depth)"
+            type="button"
+            :aria-expanded="group.source === 'system' ? undefined : !isGroupCollapsed(group)"
+            @click="group.source !== 'system' && emit('group-toggle', group.id)"
           >
-            {{ t('dashboard.sidebar.emptyGroup') }}
-          </span>
-        </div>
-      </template>
+            <span class="tab-sidebar__group-toggle" aria-hidden="true">
+              <PlusIcon v-if="isGroupCollapsed(group)" :size="13" />
+              <MinusIcon v-else :size="13" />
+            </span>
+            <span class="tab-sidebar__group-label">{{ group.name }}</span>
+            <span v-if="getGroupTabCount(group.id) > 0" class="tab-sidebar__group-count">
+              {{ getGroupTabCount(group.id) }}
+            </span>
+          </button>
+
+          <!-- Group children (tabs) -->
+          <div
+            v-if="!isGroupCollapsed(group)"
+            class="tab-sidebar__children"
+            :style="getDepthStyle(group.depth)"
+          >
+            <ul class="tab-sidebar__tab-list">
+              <li v-for="tab in getTabsForGroup(group.id)" :key="tab.id">
+                <button
+                  class="tab-sidebar__tab"
+                  :class="{ 'tab-sidebar__tab--active': activeTabId === tab.id }"
+                  type="button"
+                  :aria-current="activeTabId === tab.id ? 'page' : undefined"
+                  @click="emit('tab-select', tab.id)"
+                >
+                  <span class="icon is-small tab-sidebar__tab-icon">
+                    <component :is="tab.icon" :size="15" />
+                  </span>
+                  <span class="tab-sidebar__tab-text">
+                    <span class="tab-sidebar__tab-name">{{ tab.name }}</span>
+                    <span
+                      v-if="tab.subtitle"
+                      class="tab-sidebar__tab-subtitle"
+                      :title="tab.subtitle"
+                    >
+                      {{ tab.subtitle }}
+                    </span>
+                  </span>
+                  <span v-if="(tab.badgeCount ?? 0) > 0" class="tab-sidebar__tab-badge">
+                    {{ tab.badgeCount }}
+                  </span>
+                </button>
+              </li>
+            </ul>
+
+            <!-- Empty group state -->
+            <span
+              v-if="
+                group.source !== 'system' &&
+                !isGroupCollapsed(group) &&
+                getGroupTabCount(group.id) === 0
+              "
+              class="tab-sidebar__empty-inline"
+            >
+              {{ t('dashboard.sidebar.emptyGroup') }}
+            </span>
+          </div>
+        </li>
+      </ul>
     </div>
   </aside>
 </template>
@@ -265,6 +270,16 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   overflow: hidden auto;
 }
 
+.tab-sidebar__group-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tab-sidebar__group-item {
+  min-width: 0;
+}
+
 .tab-sidebar__group {
   display: flex;
   align-items: center;
@@ -378,12 +393,17 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  width: 100%;
   padding: 0.38rem 0.55rem 0.38rem 0.45rem;
+  border: none;
   border-radius: 6px;
+  background: transparent;
   color: var(--bulma-text, #475569);
+  font-family: inherit;
   font-size: 0.79rem;
   font-weight: 500;
-  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
   transition:
     background-color 0.15s ease,
     color 0.15s ease;

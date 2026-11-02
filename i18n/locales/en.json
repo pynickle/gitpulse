@@ -6,7 +6,8 @@
   },
   "app": {
     "title": "GitPulse",
-    "subtitle": "GitHub Work Dashboard"
+    "subtitle": "GitHub Work Dashboard",
+    "skipToContent": "Skip to content"
   },
   "nuxtSiteConfig": {
     "name": "GitPulse",

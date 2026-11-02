@@ -23,7 +23,8 @@ const countLabel = computed(() => {
   return `${view.value.passedCount}/${view.value.totalCount}`;
 });
 
-const accessibleName = computed(() => {
+/** The spoken description of the rollup, without the fraction the chip paints. */
+const checkSummary = computed(() => {
   const { passedCount, totalCount, tone, isTruncated } = view.value;
 
   if (isTruncated) {
@@ -47,6 +48,13 @@ const accessibleName = computed(() => {
   return t('dashboard.checks.chipPassed', { passed: passedCount ?? 0, total: totalCount });
 });
 
+/**
+ * The name a screen reader announces. It leads with the fraction on screen, because a
+ * control's accessible name has to contain its visible label for voice control to reach it
+ * (WCAG 2.5.3 Label in Name).
+ */
+const accessibleName = computed(() => `${countLabel.value} — ${checkSummary.value}`);
+
 const handleClick = (event: MouseEvent) => {
   // Tapping the chip must not trigger the card's own row activation.
   event.stopPropagation();
@@ -65,7 +73,7 @@ const handleKeydown = (event: KeyboardEvent) => {
     class="check-status-chip"
     type="button"
     :class="`check-status-chip--${view.tone}`"
-    :title="accessibleName"
+    :title="checkSummary"
     :aria-label="accessibleName"
     @click="handleClick"
     @keydown="handleKeydown"

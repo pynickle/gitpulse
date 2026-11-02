@@ -461,7 +461,8 @@ onMounted(() => {
         </ScrollArea>
       </ScrollArea>
 
-      <ScrollArea @scroll-element="settingsMainRef = $event" class="settings__main" role="main">
+      <!-- The dashboard layout already owns the `main` landmark; a second one nests inside it. -->
+      <ScrollArea @scroll-element="settingsMainRef = $event" class="settings__main">
         <button
           class="settings__category-back"
           type="button"

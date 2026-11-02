@@ -3,8 +3,28 @@ import * as Vue from 'vue';
 
 // Compile the real SFC (including its template) for the mounted host. Imports are
 // supplied explicitly so tests can isolate child presentation and external data.
-export async function compileVue(path: string, modules: Record<string, unknown> = {}) {
-  const { descriptor } = parse(await Bun.file(path).text(), { filename: path });
+//
+// `autoImports` stands in for what Nuxt's unimport adds: a binding the component uses
+// without importing it, because the framework resolves it by name. It is written into the
+// SFC source before the template is compiled, since that is the pass that decides whether a
+// template identifier is a setup binding or a `_ctx` lookup.
+export async function compileVue(
+  path: string,
+  modules: Record<string, unknown> = {},
+  autoImports: Record<string, string> = {}
+) {
+  const injected = Object.entries(autoImports)
+    .map(([name, moduleName]) => `import { ${name} } from '${moduleName}';`)
+    .join('\n');
+  const source = await Bun.file(path).text();
+  const withAutoImports = injected
+    ? source.replace(/(<script\b[^>]*>)/, `$1\n${injected}`)
+    : source;
+  if (injected && withAutoImports === source) {
+    throw new Error(`${path} has no <script> block to hold the auto-imports: ${injected}`);
+  }
+
+  const { descriptor } = parse(withAutoImports, { filename: path });
   const script = compileScript(descriptor, {
     id: path,
     inlineTemplate: true,

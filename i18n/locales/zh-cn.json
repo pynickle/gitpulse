@@ -6,7 +6,8 @@
   },
   "app": {
     "title": "GitPulse",
-    "subtitle": "GitHub 工作仪表板"
+    "subtitle": "GitHub 工作仪表板",
+    "skipToContent": "跳到主要内容"
   },
   "nuxtSiteConfig": {
     "name": "GitPulse",

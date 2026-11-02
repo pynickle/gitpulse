@@ -33,7 +33,8 @@ watch(
 </script>
 
 <template>
-  <main class="open-page" aria-live="polite">
+  <!-- The landing layout that hosts this page already supplies the `main` landmark. -->
+  <div class="open-page" aria-live="polite">
     <div v-if="destination" aria-busy="true">
       <p>{{ t('launch.opening') }}</p>
     </div>
@@ -44,7 +45,7 @@ watch(
         {{ t('error.cta.dashboard') }}
       </NuxtLinkLocale>
     </div>
-  </main>
+  </div>
 </template>
 
 <style scoped lang="scss">

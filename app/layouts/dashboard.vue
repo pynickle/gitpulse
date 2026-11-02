@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Navbar from '~/components/layouts/Navbar.vue';
+import SkipToContentLink from '~/components/ui/SkipToContentLink.vue';
 
 const route = useRoute();
 const { presentation } = useDashboardHomeChrome();
@@ -21,15 +22,18 @@ const showNavbar = computed(() => {
 
 <template>
   <div class="dashboard-frame" :class="{ 'dashboard-frame--home': isDashboardHome }">
+    <SkipToContentLink />
     <Navbar v-if="showNavbar" />
-    <section
+    <main
+      id="main-content"
+      tabindex="-1"
       class="hero dashboard-shell"
       :class="showNavbar ? 'is-fullheight-with-navbar' : 'is-fullheight'"
     >
       <div class="hero-body dashboard-shell__body">
         <NuxtPage />
       </div>
-    </section>
+    </main>
   </div>
 </template>
 
