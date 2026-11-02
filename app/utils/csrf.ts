@@ -3,6 +3,44 @@ export const CSRF_HEADER_NAME = 'X-CSRF-Token';
 
 export const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
+// SSR event.$fetch copies headers with object spread, which drops a Headers instance.
+export function withCsrfHeader(
+  headers: HeadersInit | undefined,
+  token: string
+): Record<string, string> {
+  const merged = plainHeaders(headers);
+  const headerName = CSRF_HEADER_NAME.toLowerCase();
+
+  for (const key of Object.keys(merged)) {
+    if (key.toLowerCase() === headerName) delete merged[key];
+  }
+
+  merged[CSRF_HEADER_NAME] = token;
+  return merged;
+}
+
+function plainHeaders(headers: HeadersInit | undefined): Record<string, string> {
+  if (!headers) return {};
+
+  if (headers instanceof Headers) {
+    const plain: Record<string, string> = {};
+    headers.forEach((value, key) => {
+      plain[key] = value;
+    });
+    return plain;
+  }
+
+  if (Array.isArray(headers)) {
+    const plain: Record<string, string> = {};
+    for (const [key, value] of headers) {
+      plain[key] = value;
+    }
+    return plain;
+  }
+
+  return { ...headers };
+}
+
 export function normalizeMethod(method: unknown): string {
   return typeof method === 'string' ? method.toUpperCase() : 'GET';
 }
