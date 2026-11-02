@@ -72,8 +72,8 @@ export function usePageMeta(title?: MaybeRef<string | undefined>, meta?: PageMet
     ogDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
     ogType: () => unref(meta?.ogType) ?? 'website',
     // Omit the key when unset: an undefined twitterCard still replaces the global default.
+    // Title and description stay on Open Graph. X reads og:title and og:description;
+    // twitter:title and twitter:description only repeat them and trip Unhead's deprecation check.
     ...(meta?.twitterCard === undefined ? {} : { twitterCard: () => unref(meta.twitterCard) }),
-    twitterTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
-    twitterDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
   });
 }
