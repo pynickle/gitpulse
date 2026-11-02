@@ -141,6 +141,7 @@
     "noCommentBody": "No comment body"
   },
   "reactions": {
+    "reactions": "Reactions",
     "addReaction": "Add reaction",
     "reactionCount": "{reaction}: {count}",
     "loadFailed": "Failed to load reactions",

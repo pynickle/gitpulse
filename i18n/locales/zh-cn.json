@@ -141,6 +141,7 @@
     "noCommentBody": "无评论内容"
   },
   "reactions": {
+    "reactions": "反应",
     "addReaction": "添加表情",
     "reactionCount": "{reaction}: {count}",
     "loadFailed": "加载表情失败",

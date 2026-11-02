@@ -70,8 +70,10 @@ const { t } = useI18n();
             aria-hidden="true"
           />
           <input
+            id="release-timeline-search"
             v-model="searchQuery"
             type="search"
+            name="release-timeline-search"
             class="release-timeline-header__search-input"
             :placeholder="t('releaseTimeline.searchPlaceholder')"
             :aria-label="t('releaseTimeline.searchPlaceholder')"

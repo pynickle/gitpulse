@@ -68,7 +68,7 @@
         <ActivityBar
           :user-avatar="user?.avatar_url"
           :user-name="user?.name"
-          :active-group-id="activeTabId"
+          :active-group-id="currentRouteTabId"
           :groups="activityGroups"
           @avatar-click="handleProfileClick"
           @group-select="handleActivityGroupSelect"
