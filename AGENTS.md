@@ -4,12 +4,7 @@
 
 ## Interface copy (non-negotiable)
 
-**Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.**
-
-Labels and controls carry their own meaning: a settings row, a toolbar state, or a button
-needs no description line beneath it, and a state that the layout already shows is not also
-announced in words. A page-level empty or error surface is the one place a single description
-line belongs, because it is the whole content the reader has.
+Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.
 
 ## Tests (Non-Negotiable)
 
@@ -109,7 +104,6 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Design options
 
-- Present options as compact labeled lists (`A`/`B`/`C` or `1`/`2`/`3`) using symbols, letters, and numbers. Short title plus a few bullets; no generated pictures.
 - Call Imagine / `image_gen` / `image_edit` only when the user explicitly asks for images.
 
 ## Agent harness
