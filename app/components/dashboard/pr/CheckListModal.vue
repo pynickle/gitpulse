@@ -6,7 +6,7 @@ import type { CheckStatusTone, PullRequestChecksView } from '#shared/types/pr-ch
 import { CHECK_ROLLUP_CONTEXT_LIMIT } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import createFocusTrapController from '~/utils/createFocusTrapController';
+import { createFocusTrapController } from '~/utils/createFocusTrapController';
 
 const props = defineProps<{
   isVisible: boolean;

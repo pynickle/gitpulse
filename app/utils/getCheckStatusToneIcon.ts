@@ -7,7 +7,7 @@ import type { CheckStatusTone } from '#shared/types/pr-checks';
  * checks row read identically: a green check only when nothing is failing or
  * pending, a red cross when any check failed, an amber dot while checks run.
  */
-export default function getCheckStatusToneIcon(tone: CheckStatusTone) {
+export function getCheckStatusToneIcon(tone: CheckStatusTone) {
   if (tone === 'danger') return XIcon;
   if (tone === 'warning') return DotIcon;
   return CheckIcon;

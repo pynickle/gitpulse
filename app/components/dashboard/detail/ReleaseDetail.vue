@@ -15,7 +15,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
+import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
 
 const props = defineProps<{
   release: ReleaseDetailPayload;

@@ -2,7 +2,7 @@ import { afterEach, expect, mock, test } from 'bun:test';
 
 import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue';
 
-import formatCompactNumber from '../app/utils/formatCompactNumber';
+import { formatCompactNumber } from '../app/utils/formatCompactNumber';
 import { getLanguageColor } from '../app/utils/languageColors';
 import english from '../i18n/locales/en.json';
 import type { FollowedRepositoryMetadataResult } from '../shared/types/release-follows';

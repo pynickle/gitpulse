@@ -181,7 +181,7 @@ const visualForContentType = (contentType: string | undefined): ReleaseAssetVisu
  * Picks the glyph and colour family for a GitHub release asset from its name,
  * falling back to its content type and then to a plain file.
  */
-export default function getReleaseAssetVisual(
+export function getReleaseAssetVisual(
   asset: Pick<ReleaseAsset, 'name' | 'content_type'>
 ): ReleaseAssetVisual {
   // Ahead of the extension table, which would file `SHA256SUMS.txt` as a document.

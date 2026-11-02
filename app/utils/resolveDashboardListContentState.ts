@@ -12,7 +12,7 @@ export interface DashboardListContentInput {
  * in-flight request has not produced rows yet, so claiming "no results" under
  * the loading skeleton tells the reader something the app does not know.
  */
-export default function resolveDashboardListContentState({
+export function resolveDashboardListContentState({
   loading,
   rowCount,
 }: DashboardListContentInput): DashboardListContentState {

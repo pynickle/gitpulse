@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
+import { parseGitHubNotificationSubjectTarget } from '../app/utils/parseGitHubNotificationSubjectTarget';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
 

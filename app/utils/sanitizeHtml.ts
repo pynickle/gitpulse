@@ -22,5 +22,3 @@ export function sanitizeHtml(dirty: string | null | undefined): string {
     stripIgnoreTagBody: ['script', 'style'],
   });
 }
-
-export default sanitizeHtml;

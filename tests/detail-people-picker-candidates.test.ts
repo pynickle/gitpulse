@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { DetailPeoplePickerCandidate } from '../app/types/detail-people-picker';
-import filterDetailPeoplePickerCandidates from '../app/utils/filterDetailPeoplePickerCandidates';
+import { filterDetailPeoplePickerCandidates } from '../app/utils/filterDetailPeoplePickerCandidates';
 
 const candidates: DetailPeoplePickerCandidate[] = [
   {

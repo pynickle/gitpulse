@@ -24,8 +24,7 @@ import { createVueDom } from './helpers/vue-dom';
 
 mock.module('#shared/utils/release-timeline', () => timelineUtils);
 mock.module('#shared/utils/release-note-search-text', () => searchText);
-const { default: filterReleaseTimelineGroups } =
-  await import('../app/utils/filterReleaseTimelineGroups');
+const { filterReleaseTimelineGroups } = await import('../app/utils/filterReleaseTimelineGroups');
 
 const { createReleaseTimelineSession } =
   await import('../app/composables/release-timeline/session');

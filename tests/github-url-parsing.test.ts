@@ -12,9 +12,9 @@ import {
   parseDashboardUrlTarget,
 } from '../app/utils/dashboardUrlNavigationUtils';
 import { buildRepoRawFileUrl, parseMarkdownRepoResource } from '../app/utils/markdownRepoPathUtils';
-import parseGitHubMarkdownTarget from '../app/utils/parseGitHubMarkdownTarget';
-import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
-import parseGitHubRepoPath from '../app/utils/parseGitHubRepoPath';
+import { parseGitHubMarkdownTarget } from '../app/utils/parseGitHubMarkdownTarget';
+import { parseGitHubNotificationSubjectTarget } from '../app/utils/parseGitHubNotificationSubjectTarget';
+import { parseGitHubRepoPath } from '../app/utils/parseGitHubRepoPath';
 
 describe('parseGitHubRepoPath', () => {
   test('parses GitHub web and API repository URLs', () => {

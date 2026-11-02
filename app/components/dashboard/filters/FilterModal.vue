@@ -15,7 +15,7 @@ import type {
   DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
 import { sourceSupportsDashboardFilter } from '~/composables/useDashboardFilters';
-import createFocusTrapController from '~/utils/createFocusTrapController';
+import { createFocusTrapController } from '~/utils/createFocusTrapController';
 import {
   DASHBOARD_NOTIFICATION_SUBJECT_TYPES,
   getDashboardSubjectTypeVisual,

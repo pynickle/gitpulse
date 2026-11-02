@@ -324,7 +324,7 @@ import {
   getStateReasonClass,
 } from '~/composables/useIssueTimelineEvents';
 import type { TimelineStateChange } from '~/composables/usePRTimelineEvents';
-import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
+import { getTextColorFromBackground } from '~/utils/getTextColorFromBackground';
 
 const props = defineProps<{
   item: ProcessedIssueTimelineItem;

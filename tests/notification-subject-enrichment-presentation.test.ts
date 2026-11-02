@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import getNotificationSubjectEnrichmentPresentation from '../app/utils/getNotificationSubjectEnrichmentPresentation';
+import { getNotificationSubjectEnrichmentPresentation } from '../app/utils/getNotificationSubjectEnrichmentPresentation';
 
 describe('Notification Subject Enrichment presentation', () => {
   test('uses an animated first-load fallback while enrichment is pending', () => {

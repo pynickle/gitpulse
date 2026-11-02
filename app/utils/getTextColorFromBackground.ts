@@ -1,4 +1,4 @@
-export default function (backgroundColor: string): string {
+export function getTextColorFromBackground(backgroundColor: string): string {
   const normalizedColor = backgroundColor.trim().replace(/^#/, '');
 
   if (!/^[\da-f]{6}$/i.test(normalizedColor)) {

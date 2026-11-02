@@ -73,7 +73,7 @@ import { useI18n } from 'vue-i18n';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
   item: IssueTimelineItem;

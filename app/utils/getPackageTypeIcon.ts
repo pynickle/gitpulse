@@ -12,6 +12,6 @@ const PACKAGE_TYPE_ICONS: Record<PackageType, Component> = {
   container: ContainerIcon,
 };
 
-export default function (packageType: PackageType): Component {
+export function getPackageTypeIcon(packageType: PackageType): Component {
   return PACKAGE_TYPE_ICONS[packageType] ?? PackageIcon;
 }

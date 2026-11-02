@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import buildContributorSparkline from '../app/utils/buildContributorSparkline';
+import { buildContributorSparkline } from '../app/utils/buildContributorSparkline';
 
 describe('buildContributorSparkline', () => {
   test('returns empty paths for an empty series', () => {

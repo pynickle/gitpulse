@@ -10,7 +10,7 @@ export interface PendingPaginationPage {
  * as the user picks a page so the current-page highlight (and hasPrev/hasNext)
  * update before the list response arrives.
  */
-export default function withPendingPaginationPage<T extends PendingPaginationPage>(
+export function withPendingPaginationPage<T extends PendingPaginationPage>(
   pagination: T,
   page: number
 ): T {

@@ -5,7 +5,7 @@ import {
   applyLogicalNavigationEvent,
   createLogicalNavigationState,
 } from '../app/utils/navigationEntryRouting';
-import shouldCloseReviewWorkspaceAfterSubmit from '../app/utils/prReviewNavigation';
+import { shouldCloseReviewWorkspaceAfterSubmit } from '../app/utils/prReviewNavigation';
 
 const targetPullRequest = {
   owner: 'acme',

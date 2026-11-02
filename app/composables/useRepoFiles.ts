@@ -2,9 +2,9 @@ import { computed, ref, watch } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import type { RepoBranch } from '#shared/types/repos';
-import getQueryParamValue from '~/utils/getQueryParamValue';
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
-import createSessionLruCache from '~/utils/sessionLruCache';
+import { getQueryParamValue } from '~/utils/getQueryParamValue';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
+import { createSessionLruCache } from '~/utils/sessionLruCache';
 
 export type { RepoBranch } from '#shared/types/repos';
 

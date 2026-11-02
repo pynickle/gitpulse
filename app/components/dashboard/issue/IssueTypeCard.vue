@@ -154,8 +154,8 @@ import { computed, onUnmounted, ref, watch } from 'vue';
 import type { GitHubIssueType } from '#shared/types/issues';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-import resolveIssueTypeColor from '~/utils/issueTypeColor';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
+import { resolveIssueTypeColor } from '~/utils/issueTypeColor';
 
 const props = defineProps<{
   issueType?: GitHubIssueType | null;

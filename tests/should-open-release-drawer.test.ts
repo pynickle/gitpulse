@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import shouldOpenReleaseDrawer from '../app/utils/shouldOpenReleaseDrawer';
+import { shouldOpenReleaseDrawer } from '../app/utils/shouldOpenReleaseDrawer';
 
 const host = (
   ignored: boolean,

@@ -17,7 +17,7 @@ export type ReleaseTimelineGridRow =
   | ReleaseTimelineCardsRow
   | { type: 'baseline'; key: string; timestamp: string };
 
-export default function buildReleaseTimelineGridRows(
+export function buildReleaseTimelineGridRows(
   groups: readonly ReleaseTimelineGroup[],
   columnCount: 1 | 2 | 3,
   baseline?: string | null

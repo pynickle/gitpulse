@@ -235,11 +235,11 @@ import type {
 } from '~/composables/usePRReviewers';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
-import createPullRequestDetailViewModel from '~/utils/createPullRequestDetailViewModel';
-import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-import handleRovingTablistKeydown from '~/utils/handleRovingTablistKeydown';
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import { createPullRequestDetailViewModel } from '~/utils/createPullRequestDetailViewModel';
+import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
+import { handleRovingTablistKeydown } from '~/utils/handleRovingTablistKeydown';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
 type PRDetailPanel = 'conversation' | 'commits';
 

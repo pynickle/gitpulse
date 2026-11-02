@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import groupReleaseAssets from '../app/utils/groupReleaseAssets';
+import { groupReleaseAssets } from '../app/utils/groupReleaseAssets';
 import type { ReleaseAsset } from '../shared/types/releases';
 
 const asset = (name: string): ReleaseAsset => ({

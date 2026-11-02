@@ -1,8 +1,8 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 
 import type { ReactionSummaryItem } from '#shared/types/reactions';
-import parseGitHubMarkdownTarget from '~/utils/parseGitHubMarkdownTarget';
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import { parseGitHubMarkdownTarget } from '~/utils/parseGitHubMarkdownTarget';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
 export interface TimelineActor {
   resourceType?: string;

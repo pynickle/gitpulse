@@ -224,7 +224,7 @@ import TimelineCommentCard from '~/components/dashboard/timeline/TimelineComment
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { PRTimelineItem, TimelineReviewComment } from '~/composables/usePRTimelineEvents';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const props = defineProps<{
   item: PRTimelineItem;

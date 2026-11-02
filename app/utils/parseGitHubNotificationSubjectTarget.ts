@@ -1,5 +1,5 @@
 import { isGitHubApiHost, parseUrl } from './githubUrlUtils';
-import parseGitHubMarkdownTarget, { type GitHubMarkdownTarget } from './parseGitHubMarkdownTarget';
+import { parseGitHubMarkdownTarget, type GitHubMarkdownTarget } from './parseGitHubMarkdownTarget';
 
 export interface GitHubNotificationSubjectTarget {
   owner: string;
@@ -57,7 +57,7 @@ const getRouteType = (
   return 'discussions';
 };
 
-export default function parseGitHubNotificationSubjectTarget(
+export function parseGitHubNotificationSubjectTarget(
   subject?: GitHubNotificationSubjectLike | null
 ): GitHubNotificationSubjectTarget | null {
   if (subject?.type === 'Release') {

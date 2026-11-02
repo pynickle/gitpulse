@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import resolveDetailSidebarHiddenState from '../app/utils/resolveDetailSidebarHiddenState';
-import resolveDetailSidebarSheetOpen from '../app/utils/resolveDetailSidebarSheetOpen';
+import { resolveDetailSidebarHiddenState } from '../app/utils/resolveDetailSidebarHiddenState';
+import { resolveDetailSidebarSheetOpen } from '../app/utils/resolveDetailSidebarSheetOpen';
 
 describe('resolveDetailSidebarHiddenState', () => {
   test('first open resolves to expanded even when the flag is currently hidden', () => {

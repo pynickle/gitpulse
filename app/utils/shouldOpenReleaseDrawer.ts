@@ -23,7 +23,7 @@ const asClosestHost = (target: EventTarget | ClickTarget | null): ClosestHost | 
   return null;
 };
 
-export default function shouldOpenReleaseDrawer(target: EventTarget | ClickTarget | null): boolean {
+export function shouldOpenReleaseDrawer(target: EventTarget | ClickTarget | null): boolean {
   const host = asClosestHost(target);
   if (!host) return false;
   return !host.closest(RELEASE_DRAWER_IGNORE_SELECTOR);

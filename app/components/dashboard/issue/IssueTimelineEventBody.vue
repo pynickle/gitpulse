@@ -51,7 +51,7 @@ import IssueTimelineReferenceEvents from '~/components/dashboard/issue/IssueTime
 import IssueTimelineStateEvents from '~/components/dashboard/issue/IssueTimelineStateEvents.vue';
 import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUnavailableEvent.vue';
 import { type ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const props = defineProps<{
   item: ProcessedIssueTimelineItem;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import createSessionLruCache from '../app/utils/sessionLruCache';
+import { createSessionLruCache } from '../app/utils/sessionLruCache';
 
 describe('createSessionLruCache', () => {
   test('returns undefined for missing keys', () => {

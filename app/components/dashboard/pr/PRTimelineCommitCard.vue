@@ -70,7 +70,7 @@ import { useI18n } from 'vue-i18n';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
   item: PRTimelineItem;

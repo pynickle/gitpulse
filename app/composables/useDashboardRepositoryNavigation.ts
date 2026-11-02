@@ -1,7 +1,7 @@
 import type { LocationQueryRaw } from 'vue-router';
 
 import { createDashboardRepositoryTarget } from '~/utils/dashboardUrlNavigationUtils';
-import getQueryParamValue from '~/utils/getQueryParamValue';
+import { getQueryParamValue } from '~/utils/getQueryParamValue';
 import { resolveNavigationEntryRoute } from '~/utils/navigationEntryRouting';
 
 interface OpenDashboardRepositoryOptions {

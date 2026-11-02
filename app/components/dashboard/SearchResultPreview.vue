@@ -82,7 +82,7 @@ import {
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
-import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
+import { getTextColorFromBackground } from '~/utils/getTextColorFromBackground';
 
 const { locale } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();

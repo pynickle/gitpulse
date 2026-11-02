@@ -2,8 +2,8 @@ import { Window } from 'happy-dom';
 import { createRenderer, nextTick, shallowRef, type Component } from 'vue';
 
 import { useModalState } from '../../app/composables/useModalState';
-import createFocusTrapController from '../../app/utils/createFocusTrapController';
-import resolveReleaseDrawerSheetGesture from '../../app/utils/resolveReleaseDrawerSheetGesture';
+import { createFocusTrapController } from '../../app/utils/createFocusTrapController';
+import { resolveReleaseDrawerSheetGesture } from '../../app/utils/resolveReleaseDrawerSheetGesture';
 
 export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
   const window = new Window({ width: 390, height: 844 });

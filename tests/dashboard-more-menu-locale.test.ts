@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
-import holdDashboardMoreMenu from '../app/utils/holdDashboardMoreMenu';
+import { holdDashboardMoreMenu } from '../app/utils/holdDashboardMoreMenu';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
 

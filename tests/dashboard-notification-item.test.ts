@@ -2,12 +2,13 @@ import { describe, expect, test } from 'bun:test';
 
 import { GitPullRequestDraftIcon, GitPullRequestIcon } from '@lucide/vue';
 
-import getDashboardSubjectStateVisual, {
+import {
+  getDashboardSubjectStateVisual,
   DASHBOARD_NOTIFICATION_SUBJECT_TYPES,
   getDashboardDiscussionStateVisual,
   getDashboardSubjectTypeVisual,
 } from '../app/utils/getDashboardSubjectStateVisual';
-import shouldShowNotificationSubjectNumber from '../app/utils/shouldShowNotificationSubjectNumber';
+import { shouldShowNotificationSubjectNumber } from '../app/utils/shouldShowNotificationSubjectNumber';
 
 describe('dashboard Notification item presentation', () => {
   test('hides release ids from notification metadata', () => {

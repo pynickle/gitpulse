@@ -1,6 +1,6 @@
 import type { DetailPeoplePickerCandidate } from '../types/detail-people-picker';
 
-export default function filterDetailPeoplePickerCandidates(
+export function filterDetailPeoplePickerCandidates(
   candidates: DetailPeoplePickerCandidate[],
   query: string
 ) {

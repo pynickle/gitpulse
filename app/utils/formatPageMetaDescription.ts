@@ -1,4 +1,4 @@
-export default function formatPageMetaDescription(value?: string | null) {
+export function formatPageMetaDescription(value?: string | null) {
   if (!value) return '';
 
   let truncated = value.slice(0, 160);

@@ -46,7 +46,7 @@ import PRTimelineReferenceEvents from '~/components/dashboard/pr/PRTimelineRefer
 import PRTimelineStateEvents from '~/components/dashboard/pr/PRTimelineStateEvents.vue';
 import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUnavailableEvent.vue';
 import { type PRTimelineItem } from '~/composables/usePRTimelineEvents';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const props = defineProps<{
   item: PRTimelineItem;

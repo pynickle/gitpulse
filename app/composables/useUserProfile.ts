@@ -7,7 +7,7 @@ import type {
   UserProfilePayload,
   UserReadmeResponse,
 } from '#shared/types/users';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 interface UseUserProfileState {
   profile: Ref<UserProfilePayload | null>;

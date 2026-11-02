@@ -8,7 +8,7 @@ import {
   parseRepoDetailSection,
   type RepoDetailSection,
 } from '~/utils/dashboardUrlNavigationUtils';
-import getQueryParamValue from '~/utils/getQueryParamValue';
+import { getQueryParamValue } from '~/utils/getQueryParamValue';
 import {
   normalizeRepoIssuePrState,
   type RepoIssuePrKind,

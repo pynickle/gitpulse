@@ -5,8 +5,8 @@ import type {
   RepoCommitListPaginationMeta,
   RepoCommitListResponse,
 } from '#shared/types/repos';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 const DEFAULT_PER_PAGE = 30;
 

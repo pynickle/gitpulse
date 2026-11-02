@@ -63,7 +63,7 @@ export function resolvePullRequestDisplayState(
 }
 
 /** Icon + color for a PR state, including draft. */
-export default function getPullRequestStateVisual(
+export function getPullRequestStateVisual(
   input: PullRequestStateInput | null | undefined
 ): PullRequestStateVisual {
   const state = resolvePullRequestDisplayState(input);

@@ -5,7 +5,7 @@
  * are unreachable by keyboard. Selects the target tab and moves DOM focus to
  * it inside the event's tablist.
  */
-export default function handleRovingTablistKeydown(
+export function handleRovingTablistKeydown(
   event: KeyboardEvent,
   options: {
     itemCount: number;

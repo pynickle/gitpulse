@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import createEmptyRepoPermissions, {
+import {
+  createEmptyRepoPermissions,
   normalizeRepoPermissions,
 } from '../app/utils/createEmptyRepoPermissions';
 

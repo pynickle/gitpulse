@@ -5,10 +5,10 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue';
 import { useAutocompletePanel } from '../app/composables/useAutocompletePanel';
 import { useRefreshableView } from '../app/composables/useRefreshableView';
 import * as dashboardTargets from '../app/utils/dashboardUrlNavigationUtils';
-import getQueryParamValue from '../app/utils/getQueryParamValue';
-import parseGitHubRepoPath from '../app/utils/parseGitHubRepoPath';
-import createSessionLruCache from '../app/utils/sessionLruCache';
-import tokenizeCodeLine from '../app/utils/tokenizeCodeLine';
+import { getQueryParamValue } from '../app/utils/getQueryParamValue';
+import { parseGitHubRepoPath } from '../app/utils/parseGitHubRepoPath';
+import { createSessionLruCache } from '../app/utils/sessionLruCache';
+import { tokenizeCodeLine } from '../app/utils/tokenizeCodeLine';
 import * as composerPresentation from '../shared/utils/composer-presentation';
 import * as mentions from '../shared/utils/markdown-mentions';
 import type { PRReviewDiffRow } from '../shared/utils/pr-review-patch';
@@ -21,9 +21,9 @@ import { createVueDom } from './helpers/vue-dom';
 // Resolve Nuxt's alias to the real shared module for the production composable.
 mock.module('#shared/utils/composer-presentation', () => composerPresentation);
 const { useComposerPresentation } = await import('../app/composables/useComposerPresentation');
-mock.module('~/utils/getQueryParamValue', () => ({ default: getQueryParamValue }));
-mock.module('~/utils/parseGitHubRepoPath', () => ({ default: parseGitHubRepoPath }));
-mock.module('~/utils/sessionLruCache', () => ({ default: createSessionLruCache }));
+mock.module('~/utils/getQueryParamValue', () => ({ getQueryParamValue }));
+mock.module('~/utils/parseGitHubRepoPath', () => ({ parseGitHubRepoPath }));
+mock.module('~/utils/sessionLruCache', () => ({ createSessionLruCache }));
 const { useRepoFiles } = await import('../app/composables/useRepoFiles');
 
 const empty = defineComponent({ setup: () => () => h('span') });
@@ -31,7 +31,7 @@ const i18n = { useI18n: () => ({ t: (key: string) => key }) };
 const Rows = await compileVue('app/components/dashboard/pr/PRReviewVirtualDiffRows.vue', {
   '#shared/utils/pr-review-workspace-presentation': reviewPresentation,
   '#shared/utils/unified-diff-pointer': pointer,
-  '~/utils/tokenizeCodeLine': { default: tokenizeCodeLine },
+  '~/utils/tokenizeCodeLine': { tokenizeCodeLine },
   '~/components/dashboard/pr/PRReviewDiffReviewThreads.vue': { default: empty },
   '~/components/dashboard/pr/PRReviewInlineComment.vue': { default: empty },
   '~/components/ui/ScrollArea.vue': { default: ScrollArea },

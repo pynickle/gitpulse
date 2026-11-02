@@ -31,7 +31,7 @@ interface TextareaCaretAnchorRect {
   height: number;
 }
 
-export default function getTextareaCaretAnchorRect(
+export function getTextareaCaretAnchorRect(
   textarea: HTMLTextAreaElement,
   caretIndex: number
 ): TextareaCaretAnchorRect | null {

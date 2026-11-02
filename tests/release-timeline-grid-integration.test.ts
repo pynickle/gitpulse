@@ -2,11 +2,12 @@ import { expect, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
-import buildReleaseTimelineGridRows from '../app/utils/buildReleaseTimelineGridRows';
-import resolveReleaseTimelineBackToTopFrame, {
+import { buildReleaseTimelineGridRows } from '../app/utils/buildReleaseTimelineGridRows';
+import {
+  resolveReleaseTimelineBackToTopFrame,
   resolveReleaseTimelineBackToTopDurationMs,
 } from '../app/utils/resolveReleaseTimelineBackToTopFrame';
-import resolveReleaseTimelineVisibleRange from '../app/utils/resolveReleaseTimelineVisibleRange';
+import { resolveReleaseTimelineVisibleRange } from '../app/utils/resolveReleaseTimelineVisibleRange';
 import type { TimelineRelease } from '../shared/types/release-follows';
 import { compileVue } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';

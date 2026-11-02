@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { defineComponent, h, shallowRef } from 'vue';
 
-import formatCompactNumber from '../app/utils/formatCompactNumber';
-import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
-import getReleaseAssetVisual from '../app/utils/getReleaseAssetVisual';
-import groupReleaseAssets from '../app/utils/groupReleaseAssets';
+import { formatCompactNumber } from '../app/utils/formatCompactNumber';
+import { formatReleaseAssetSize } from '../app/utils/formatReleaseAssetSize';
+import { getReleaseAssetVisual } from '../app/utils/getReleaseAssetVisual';
+import { groupReleaseAssets } from '../app/utils/groupReleaseAssets';
 import type { ReleaseAsset } from '../shared/types/releases';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';

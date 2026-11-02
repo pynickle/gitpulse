@@ -11,7 +11,7 @@ import {
   type NotificationFilterAdapter,
 } from '~/composables/useDashboardFilters';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 interface DashboardEntity {
   id: PropertyKey;

@@ -140,7 +140,7 @@ import { useI18n } from 'vue-i18n';
 import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 import LockReasonModal from './LockReasonModal.vue';
 

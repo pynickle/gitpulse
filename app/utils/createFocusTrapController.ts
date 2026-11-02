@@ -15,7 +15,7 @@ const getVisibleFocusableElements = (container: HTMLElement) => {
   );
 };
 
-export default function createFocusTrapController() {
+export function createFocusTrapController() {
   let previouslyFocusedElement: HTMLElement | null = null;
 
   const capturePreviousFocus = () => {

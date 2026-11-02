@@ -5,9 +5,9 @@ import type {
   RepoCommitListPaginationMeta,
   RepoCommitListResponse,
 } from '#shared/types/repos';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-import createSessionLruCache from '~/utils/sessionLruCache';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
+import { createSessionLruCache } from '~/utils/sessionLruCache';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 const DEFAULT_PER_PAGE = 20;
 /** Per list query (owner/repo/ref): keep recent pages for instant back-nav. */

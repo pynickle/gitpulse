@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import resolveDashboardListContentState from '../app/utils/resolveDashboardListContentState';
+import { resolveDashboardListContentState } from '../app/utils/resolveDashboardListContentState';
 
 describe('resolveDashboardListContentState', () => {
   test('never reports an empty list while the request is in flight', () => {

@@ -3,7 +3,7 @@ import { XIcon } from '@lucide/vue';
 import { nextTick, ref, watch } from 'vue';
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import createFocusTrapController from '~/utils/createFocusTrapController';
+import { createFocusTrapController } from '~/utils/createFocusTrapController';
 
 const props = defineProps<{
   open: boolean;

@@ -42,9 +42,8 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Imports (Strict)
 
-- `app/utils/*.ts` and `app/composables/*.ts` are auto-imported in app code regardless of export shape — reference them by name. Only tests, `server/`, and `mock.module` stubs import them explicitly; an explicit import in app code is redundant, not wrong.
-- Naming follows the shape, and the shapes are not interchangeable. A **named export** keeps its declared name (the norm here, and what `server/utils/*` does). A **default export** is bound by the file's camelCase basename, never by the function's own name: `dashboardIssuePrCard.ts` provides `dashboardIssuePrCard()`, `resolveGitPulseLaunchRoute.ts` declares an anonymous default. The file name _is_ the API name, so prefer named exports for new modules and keep a default only where the file is one function named after it.
-- A module with no single primary function is named-only (`dashboardUrlNavigationUtils.ts`, `navigationEntryRouting.ts`) — a TypeScript type cannot ride a default-exported value.
+- `app/utils/*.ts` → **named** exports, auto-imported in app code by their declared name — reference them by name. Only tests, `server/`, and `mock.module` stubs import them explicitly; an explicit import in app code is redundant, not wrong.
+- Never give an `app/utils` module a default export. A default binding takes the file's camelCase basename instead of the declared name, so a file rename silently renames every call site, and a TypeScript type cannot ride a default-exported value at all.
 - `server/utils/*.ts` → **named** exports. Import explicitly.
 - Shared: reach through the `#shared/*` alias; `server/utils/` exposes its named exports directly, with no thin re-export wrappers.
 

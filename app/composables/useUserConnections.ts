@@ -5,9 +5,9 @@ import type {
   UserRepositorySummary,
   UserSummary,
 } from '#shared/types/users';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-import createSessionLruCache from '~/utils/sessionLruCache';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
+import { createSessionLruCache } from '~/utils/sessionLruCache';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 export type UserConnectionRelation = 'followers' | 'following';
 

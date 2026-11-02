@@ -93,7 +93,7 @@ function buildMonthLabels(weeks: ContributionWeek[]): ContributionMonthLabel[] {
  * mid-week. Placement is derived from the date itself, not array position, so a
  * short leading/trailing week never shifts the rows.
  */
-export default function buildContributionGrid(weeks: ContributionWeek[]): ContributionGrid {
+export function buildContributionGrid(weeks: ContributionWeek[]): ContributionGrid {
   const weekCount = weeks.length;
   const rows: (ContributionDay | null)[][] = Array.from({ length: 7 }, () =>
     Array.from({ length: weekCount }, () => null)

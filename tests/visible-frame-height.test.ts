@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import resolveVisibleFrameHeight from '../app/utils/resolveVisibleFrameHeight';
+import { resolveVisibleFrameHeight } from '../app/utils/resolveVisibleFrameHeight';
 
 describe('resolveVisibleFrameHeight', () => {
   test('uses the visual viewport when the page is not pinch-zoomed', () => {

@@ -6,7 +6,7 @@ import ProfileView, {
   type ProfilePackageSelection,
   type ProfileTab,
 } from '~/components/dashboard/profile/ProfileView.vue';
-import getQueryParamValue from '~/utils/getQueryParamValue';
+import { getQueryParamValue } from '~/utils/getQueryParamValue';
 
 const { t } = useI18n();
 const localePath = useLocalePath();

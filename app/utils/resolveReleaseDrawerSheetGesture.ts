@@ -4,7 +4,7 @@ export const RELEASE_DRAWER_SHEET_TOGGLE_PX = 48;
 export type ReleaseDrawerSheetGesturePhase = 'move' | 'end';
 export type ReleaseDrawerSheetGestureOutcome = 'hold' | 'dismiss' | 'expand' | 'collapse';
 
-export default function resolveReleaseDrawerSheetGesture(input: {
+export function resolveReleaseDrawerSheetGesture(input: {
   deltaY: number;
   expanded: boolean;
   phase: ReleaseDrawerSheetGesturePhase;

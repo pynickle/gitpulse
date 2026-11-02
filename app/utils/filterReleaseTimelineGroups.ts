@@ -90,7 +90,7 @@ export function hasActiveTimelineFilter(
   );
 }
 
-export default function filterReleaseTimelineGroups(
+export function filterReleaseTimelineGroups(
   groups: ReleaseTimelineGroup[],
   filters: ReleaseTimelineFilterState,
   preparedSearch?: ReadonlyMap<TimelineRelease, SearchFields>

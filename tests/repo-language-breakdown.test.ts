@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import buildRepoLanguageBreakdown from '../app/utils/buildRepoLanguageBreakdown';
+import { buildRepoLanguageBreakdown } from '../app/utils/buildRepoLanguageBreakdown';
 describe('buildRepoLanguageBreakdown', () => {
   test('returns an empty list for missing or empty language maps', () => {
     expect(buildRepoLanguageBreakdown(null)).toEqual([]);

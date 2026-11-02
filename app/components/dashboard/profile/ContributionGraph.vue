@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 
 import type { ContributionCalendar } from '#shared/types/users';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import buildContributionGrid from '~/utils/buildContributionGrid';
+import { buildContributionGrid } from '~/utils/buildContributionGrid';
 
 const props = defineProps<{
   calendar: ContributionCalendar;

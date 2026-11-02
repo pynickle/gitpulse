@@ -8,7 +8,7 @@ import DiscussionReplyList from '~/components/dashboard/discussion/DiscussionRep
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 type DiscussionReplySubmitHandler = (comment: DiscussionComment, body: string) => Promise<void>;
 

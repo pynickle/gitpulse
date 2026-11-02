@@ -11,8 +11,8 @@ import {
   parseRepoDetailSection,
   type DashboardNavigationEntry,
 } from './dashboardUrlNavigationUtils';
-import getQueryParamValue from './getQueryParamValue';
-import parseGitHubRepoPath from './parseGitHubRepoPath';
+import { getQueryParamValue } from './getQueryParamValue';
+import { parseGitHubRepoPath } from './parseGitHubRepoPath';
 
 /**
  * Logical Navigation: route <-> entry derivation plus the sequential event

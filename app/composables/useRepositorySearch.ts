@@ -7,7 +7,7 @@ import {
   buildRepositorySearchRequest,
   normalizeRepositorySearchQuery,
 } from '~/utils/repositorySearchQuery';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 interface RepositorySearchResponse {
   items?: StarredRepo[];

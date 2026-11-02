@@ -1,6 +1,6 @@
 import type { LocationQueryRaw } from 'vue-router';
 
-import getQueryParamValue from '../utils/getQueryParamValue';
+import { getQueryParamValue } from '../utils/getQueryParamValue';
 import { RELEASE_TIMELINE_TAB, type DashboardRootTab, type DashboardTab } from './useDashboardTabs';
 
 export const dashboardTabs: DashboardTab[] = ['todos', 'notifications', 'issues', 'pulls', 'repos'];

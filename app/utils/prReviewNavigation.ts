@@ -7,7 +7,7 @@ interface PRReviewNavigationTarget {
   readonly pullNumber: number;
 }
 
-export default function shouldCloseReviewWorkspaceAfterSubmit({
+export function shouldCloseReviewWorkspaceAfterSubmit({
   previousEntry,
   owner,
   repo,

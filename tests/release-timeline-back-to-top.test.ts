@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 
-import resolveReleaseTimelineBackToTopFrame, {
+import {
+  resolveReleaseTimelineBackToTopFrame,
   resolveReleaseTimelineBackToTopDurationMs,
 } from '../app/utils/resolveReleaseTimelineBackToTopFrame';
-import shouldShowReleaseTimelineBackToTop from '../app/utils/shouldShowReleaseTimelineBackToTop';
+import { shouldShowReleaseTimelineBackToTop } from '../app/utils/shouldShowReleaseTimelineBackToTop';
 
 describe('shouldShowReleaseTimelineBackToTop', () => {
   test('hides the control until the timeline has scrolled about one viewport', () => {

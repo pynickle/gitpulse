@@ -13,7 +13,7 @@
  * `defaultHidden` is `true` in the mobile bottom-sheet viewport (sidebar
  * starts as a closed sheet) and `false` on desktop (sidebar expanded).
  */
-export default function resolveDetailSidebarHiddenState(
+export function resolveDetailSidebarHiddenState(
   previousPaneIdentity: string | null,
   nextPaneIdentity: string | null,
   isDetailSidebarHidden: boolean,

@@ -24,7 +24,7 @@ export interface BuildContributorSparklineOptions {
  * Map a series of non-negative numbers into SVG line/area paths.
  * Empty or all-zero series yield empty path strings and a flat baseline.
  */
-export default function buildContributorSparkline(
+export function buildContributorSparkline(
   values: number[],
   options: BuildContributorSparklineOptions = {}
 ): ContributorSparklinePaths {

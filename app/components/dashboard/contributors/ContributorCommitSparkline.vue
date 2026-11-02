@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 import type { RepoContributorWeek } from '#shared/types/repos';
-import buildContributorSparkline from '~/utils/buildContributorSparkline';
+import { buildContributorSparkline } from '~/utils/buildContributorSparkline';
 
 const props = withDefaults(
   defineProps<{

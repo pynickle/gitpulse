@@ -6,7 +6,7 @@ import {
   createDashboardReleaseTarget,
   type DashboardUrlTarget,
 } from '~/utils/dashboardUrlNavigationUtils';
-import parseGitHubNotificationSubjectTarget from '~/utils/parseGitHubNotificationSubjectTarget';
+import { parseGitHubNotificationSubjectTarget } from '~/utils/parseGitHubNotificationSubjectTarget';
 
 interface NotificationSubject {
   type?: string;

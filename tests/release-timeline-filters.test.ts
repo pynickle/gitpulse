@@ -3,11 +3,8 @@ import { describe, expect, mock, test } from 'bun:test';
 import { EMPTY_DATE_RANGE } from '../app/utils/filterDateRange';
 import * as searchText from '../shared/utils/release-note-search-text';
 mock.module('#shared/utils/release-note-search-text', () => searchText);
-const {
-  hasActiveTimelineFilter,
-  toFollowedRepositoryKey,
-  default: filterReleaseTimelineGroups,
-} = await import('../app/utils/filterReleaseTimelineGroups');
+const { hasActiveTimelineFilter, toFollowedRepositoryKey, filterReleaseTimelineGroups } =
+  await import('../app/utils/filterReleaseTimelineGroups');
 import type { ReleaseTimelineGroup, TimelineRelease } from '../shared/types/release-follows';
 
 const release = (id: number, overrides: Partial<TimelineRelease> = {}): TimelineRelease => ({

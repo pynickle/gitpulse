@@ -4,7 +4,7 @@ import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 
-const { default: getNotificationLinkedPullRequestListSummary } =
+const { getNotificationLinkedPullRequestListSummary } =
   await import('../app/utils/getNotificationLinkedPullRequestListSummary');
 
 describe('Notification Linked Pull Request Count presentation', () => {

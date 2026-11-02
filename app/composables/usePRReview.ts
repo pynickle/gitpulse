@@ -1,7 +1,7 @@
 import { computed, ref, shallowRef, watch } from 'vue';
 
 import { parsePRReviewPatch, type PRReviewDiffRow } from '#shared/utils/pr-review-patch';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 export { parsePRReviewPatch };
 export type { PRReviewDiffRow };

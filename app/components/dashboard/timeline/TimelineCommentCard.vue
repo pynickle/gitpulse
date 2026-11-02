@@ -61,7 +61,7 @@ import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { TimelineActor } from '~/composables/usePRTimelineEvents';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 interface TimelineCommentCardItem {
   id?: string | number;

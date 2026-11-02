@@ -1,6 +1,6 @@
 import type { DashboardNotificationSubject } from '#shared/types/notifications';
 
-export default function getNotificationSubjectEnrichmentPresentation(
+export function getNotificationSubjectEnrichmentPresentation(
   subject?: DashboardNotificationSubject
 ) {
   const isPending = subject?.stateStatus === 'pending';

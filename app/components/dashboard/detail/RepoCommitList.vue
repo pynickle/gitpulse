@@ -5,7 +5,7 @@ import { computed } from 'vue';
 import type { RepoCommitListItemPayload } from '#shared/types/repos';
 import Button from '~/components/ui/Button.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
   items: RepoCommitListItemPayload[];

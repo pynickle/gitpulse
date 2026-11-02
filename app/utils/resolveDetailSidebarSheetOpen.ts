@@ -5,7 +5,7 @@
  * the desktop column drives the sheet, so a hidden sidebar is a closed sheet
  * and the expanded default becomes an open sheet.
  */
-export default function resolveDetailSidebarSheetOpen(
+export function resolveDetailSidebarSheetOpen(
   hasDetailSidebar: boolean,
   isDetailSidebarSheetViewport: boolean,
   isDetailSidebarHidden: boolean

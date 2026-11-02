@@ -16,7 +16,7 @@ export function resolveReleaseTimelineBackToTopDurationMs(
   );
 }
 
-export default function resolveReleaseTimelineBackToTopFrame(input: {
+export function resolveReleaseTimelineBackToTopFrame(input: {
   startScrollTop: number;
   elapsedMs: number;
   durationMs: number;

@@ -6,7 +6,7 @@
  */
 let restoreMenu = false;
 
-const holdDashboardMoreMenu = {
+export const holdDashboardMoreMenu = {
   arm() {
     restoreMenu = true;
   },
@@ -16,5 +16,3 @@ const holdDashboardMoreMenu = {
     return restored;
   },
 };
-
-export default holdDashboardMoreMenu;

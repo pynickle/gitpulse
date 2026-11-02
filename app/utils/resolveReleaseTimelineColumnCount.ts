@@ -5,7 +5,7 @@ export const RELEASE_TIMELINE_TABLET_MEDIA = `(max-width: ${RELEASE_TIMELINE_TAB
 
 export type ReleaseTimelineColumnCount = 1 | 2 | 3;
 
-export default function resolveReleaseTimelineColumnCount(
+export function resolveReleaseTimelineColumnCount(
   viewportWidth: number
 ): ReleaseTimelineColumnCount {
   if (viewportWidth <= RELEASE_TIMELINE_PHONE_MAX_WIDTH) {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import buildContributionGrid, { parseIsoDateParts } from '../app/utils/buildContributionGrid';
+import { buildContributionGrid, parseIsoDateParts } from '../app/utils/buildContributionGrid';
 import type { ContributionWeek } from '../shared/types/users';
 
 const day = (date: string, level = 0) => ({

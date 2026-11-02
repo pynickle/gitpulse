@@ -30,7 +30,7 @@ import PRReviewDiffReviewThreads from '~/components/dashboard/pr/PRReviewDiffRev
 import PRReviewInlineComment from '~/components/dashboard/pr/PRReviewInlineComment.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewCommentThread, PRReviewDiffRow } from '~/composables/usePRReview';
-import tokenizeCodeLine from '~/utils/tokenizeCodeLine';
+import { tokenizeCodeLine } from '~/utils/tokenizeCodeLine';
 
 const VIRTUAL_ROW_THRESHOLD = 120;
 const OVERSCAN_PX = 720;

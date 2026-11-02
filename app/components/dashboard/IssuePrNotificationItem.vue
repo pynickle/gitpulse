@@ -132,8 +132,8 @@ import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import toDashboardIssuePrCard, { type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
-import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
+import { toDashboardIssuePrCard, type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
+import { getDashboardSubjectStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 
 const props = defineProps<{
   item: DashboardIssuePrEntity;

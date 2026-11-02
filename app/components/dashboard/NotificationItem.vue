@@ -199,8 +199,8 @@ import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequ
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
-import getDashboardSubjectStateVisual from '~/utils/getDashboardSubjectStateVisual';
-import shouldShowNotificationSubjectNumber from '~/utils/shouldShowNotificationSubjectNumber';
+import { getDashboardSubjectStateVisual } from '~/utils/getDashboardSubjectStateVisual';
+import { shouldShowNotificationSubjectNumber } from '~/utils/shouldShowNotificationSubjectNumber';
 
 const props = withDefaults(
   defineProps<{

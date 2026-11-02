@@ -33,6 +33,6 @@ export function normalizeRepoPermissions(source: RepoPermissionsSource): RepoPer
   };
 }
 
-export default function createEmptyRepoPermissions(): RepoPermissions {
+export function createEmptyRepoPermissions(): RepoPermissions {
   return normalizeRepoPermissions(null);
 }

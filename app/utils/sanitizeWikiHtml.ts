@@ -69,5 +69,3 @@ export function sanitizeWikiHtml(dirty: string | null | undefined): string {
     stripIgnoreTagBody: ['script', 'style', 'svg'],
   });
 }
-
-export default sanitizeWikiHtml;

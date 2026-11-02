@@ -7,7 +7,7 @@
  * nothing leaves the screen; a release that names files some other way simply
  * matches no prefix and displays in full.
  */
-export default function getReleaseAssetNamePrefix(
+export function getReleaseAssetNamePrefix(
   repositoryName: string,
   tagName: string | null | undefined
 ): string[] {

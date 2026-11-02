@@ -2,7 +2,7 @@
  * Tiny in-memory LRU map for single-page session caches.
  * Not shared across tabs or reloads — lives only as long as the holder does.
  */
-export default function createSessionLruCache<T>(maxEntries: number) {
+export function createSessionLruCache<T>(maxEntries: number) {
   const store = new Map<string, T>();
 
   const get = (key: string): T | undefined => {

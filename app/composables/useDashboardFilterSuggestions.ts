@@ -2,7 +2,7 @@ import { computed, type MaybeRefOrGetter, toValue } from 'vue';
 
 import type { DashboardNotification } from '#shared/types/notifications';
 
-import parseGitHubRepoPath from '../utils/parseGitHubRepoPath';
+import { parseGitHubRepoPath } from '../utils/parseGitHubRepoPath';
 import type { DashboardRouteFilters } from './useDashboardFilters';
 
 export interface DashboardEntity {

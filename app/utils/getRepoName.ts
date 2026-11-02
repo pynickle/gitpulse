@@ -1,6 +1,6 @@
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
-export default function (url: string) {
+export function getRepoName(url: string) {
   const repoPath = parseGitHubRepoPath(url);
   if (repoPath) {
     return repoPath.fullName;

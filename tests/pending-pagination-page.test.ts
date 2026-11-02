@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import withPendingPaginationPage from '../app/utils/withPendingPaginationPage';
+import { withPendingPaginationPage } from '../app/utils/withPendingPaginationPage';
 
 const pagination = (
   page: number,

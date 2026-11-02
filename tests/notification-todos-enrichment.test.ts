@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import { shallowRef } from 'vue';
 
-import parseGitHubNotificationSubjectTarget from '../app/utils/parseGitHubNotificationSubjectTarget';
+import { parseGitHubNotificationSubjectTarget } from '../app/utils/parseGitHubNotificationSubjectTarget';
 import type { DashboardNotification } from '../shared/types/notifications';
 import type { NotificationTodoItem } from '../shared/types/user-settings';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';

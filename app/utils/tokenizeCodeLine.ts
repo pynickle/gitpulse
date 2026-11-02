@@ -180,7 +180,7 @@ const getTokenKind = (content: string, match: string, index: number): CodeTokenK
   return 'plain';
 };
 
-export default function tokenizeCodeLine(content: string, filename: string): CodeToken[] {
+export function tokenizeCodeLine(content: string, filename: string): CodeToken[] {
   const language = getFileLanguage(filename);
   const commentStart = findCommentStart(content, language);
   const codeContent = commentStart >= 0 ? content.slice(0, commentStart) : content;

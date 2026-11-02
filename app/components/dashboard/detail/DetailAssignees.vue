@@ -105,7 +105,7 @@ import type {
   DetailPeoplePickerCandidate,
   DetailPeoplePickerSubmitPayload,
 } from '~/types/detail-people-picker';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 const props = defineProps<{
   assignees: IssueAssigneeUser[];

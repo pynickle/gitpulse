@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import parseGridTemplateColumnWidths from '../app/utils/parseGridTemplateColumnWidths';
+import { parseGridTemplateColumnWidths } from '../app/utils/parseGridTemplateColumnWidths';
 
 describe('parseGridTemplateColumnWidths', () => {
   test('parses resolved pixel track widths', () => {

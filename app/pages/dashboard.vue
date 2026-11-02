@@ -471,8 +471,8 @@ import {
 } from '~/composables/useDashboardRouteState';
 import { RELEASE_TIMELINE_TAB, type DashboardTab } from '~/composables/useDashboardTabs';
 import { buildDashboardTabSwitchQuery } from '~/utils/dashboardUrlNavigationUtils';
-import getQueryParamValue from '~/utils/getQueryParamValue';
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import { getQueryParamValue } from '~/utils/getQueryParamValue';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
 const AsyncNotificationItem = defineAsyncComponent(
   () => import('~/components/dashboard/NotificationItem.vue')

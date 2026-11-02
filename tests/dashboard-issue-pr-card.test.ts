@@ -7,9 +7,9 @@ mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/pr-checks', () => prChecks);
 
 import type { DashboardIssuePrEntity } from '../app/utils/dashboardIssuePrCard';
-import resolveIssueTypeColor from '../app/utils/issueTypeColor';
+import { resolveIssueTypeColor } from '../app/utils/issueTypeColor';
 
-const { default: toDashboardIssuePrCard } = await import('../app/utils/dashboardIssuePrCard');
+const { toDashboardIssuePrCard } = await import('../app/utils/dashboardIssuePrCard');
 
 describe('dashboard issue/PR notification-style cards', () => {
   test('maps an open issue into the notification-style card view model', () => {

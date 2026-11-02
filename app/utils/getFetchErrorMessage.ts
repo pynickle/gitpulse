@@ -1,4 +1,4 @@
-export default function getFetchErrorMessage(error: unknown, fallback: string): string {
+export function getFetchErrorMessage(error: unknown, fallback: string): string {
   if (!error || typeof error !== 'object') {
     return fallback;
   }

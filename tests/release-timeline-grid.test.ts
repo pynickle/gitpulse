@@ -1,12 +1,13 @@
 import { describe, expect, test } from 'bun:test';
 
-import buildReleaseTimelineGridRows from '../app/utils/buildReleaseTimelineGridRows';
-import resolveReleaseTimelineColumnCount, {
+import { buildReleaseTimelineGridRows } from '../app/utils/buildReleaseTimelineGridRows';
+import {
+  resolveReleaseTimelineColumnCount,
   RELEASE_TIMELINE_PHONE_MEDIA,
   RELEASE_TIMELINE_TABLET_MEDIA,
   resolveReleaseTimelineColumnCountFromMedia,
 } from '../app/utils/resolveReleaseTimelineColumnCount';
-import resolveReleaseTimelineVisibleRange from '../app/utils/resolveReleaseTimelineVisibleRange';
+import { resolveReleaseTimelineVisibleRange } from '../app/utils/resolveReleaseTimelineVisibleRange';
 import type { ReleaseTimelineGroup, TimelineRelease } from '../shared/types/release-follows';
 
 const release = (id: number, overrides: Partial<TimelineRelease> = {}): TimelineRelease => ({

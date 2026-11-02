@@ -7,7 +7,8 @@ import {
   GitPullRequestIcon,
 } from '@lucide/vue';
 
-import getPullRequestStateVisual, {
+import {
+  getPullRequestStateVisual,
   getPullRequestStateIcon,
   resolvePullRequestDisplayState,
 } from '../app/utils/getPullRequestStateVisual';

@@ -97,7 +97,7 @@ import type { ReactionSummaryItem } from '#shared/types/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import getPullRequestStateVisual from '~/utils/getPullRequestStateVisual';
+import { getPullRequestStateVisual } from '~/utils/getPullRequestStateVisual';
 
 const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();

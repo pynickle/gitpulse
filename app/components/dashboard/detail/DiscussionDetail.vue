@@ -17,7 +17,7 @@ import DiscussionComments from '~/components/dashboard/discussion/DiscussionComm
 import DiscussionHeader from '~/components/dashboard/discussion/DiscussionHeader.vue';
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 const props = defineProps<{
   discussion: DiscussionDetailPayload;

@@ -10,8 +10,8 @@ import type {
 } from '#shared/types/custom-search';
 import type { DashboardNotification } from '#shared/types/notifications';
 
-import getQueryParamValue from '../utils/getQueryParamValue';
-import parseGitHubRepoPath from '../utils/parseGitHubRepoPath';
+import { getQueryParamValue } from '../utils/getQueryParamValue';
+import { parseGitHubRepoPath } from '../utils/parseGitHubRepoPath';
 import type { DashboardTab } from './useDashboardTabs';
 
 export type DashboardRouteState = 'all' | 'unread' | 'open' | 'closed' | 'merged';

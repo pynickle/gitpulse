@@ -20,7 +20,7 @@ import {
   TabletIcon,
 } from '@lucide/vue';
 
-import getReleaseAssetVisual from '../app/utils/getReleaseAssetVisual';
+import { getReleaseAssetVisual } from '../app/utils/getReleaseAssetVisual';
 
 const asset = (name: string, content_type?: string) => ({ name, content_type });
 

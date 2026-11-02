@@ -6,7 +6,7 @@ dayjs.extend(relativeTime);
 
 type RelativeTimeDate = string | number | Date | null | undefined;
 
-export default function (
+export function formatDurationFromNow(
   date: RelativeTimeDate,
   locale: string = 'en',
   baseDate?: RelativeTimeDate

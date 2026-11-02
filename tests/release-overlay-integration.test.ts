@@ -27,20 +27,20 @@ import { useReleaseOverlaySheet } from '../app/composables/useReleaseOverlayShee
 import { useRepoReleases } from '../app/composables/useRepoReleases';
 import * as dateRange from '../app/utils/filterDateRange';
 import type { ReleaseTimelineFilterState } from '../app/utils/filterReleaseTimelineGroups';
-import formatCompactNumber from '../app/utils/formatCompactNumber';
-import formatDurationFromNow from '../app/utils/formatDurationFromNow';
-import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
-import getFetchErrorMessage from '../app/utils/getFetchErrorMessage';
-import getReleaseAssetNamePrefix from '../app/utils/getReleaseAssetNamePrefix';
-import handleRovingTablistKeydown from '../app/utils/handleRovingTablistKeydown';
-import withPendingPaginationPage from '../app/utils/withPendingPaginationPage';
+import { formatCompactNumber } from '../app/utils/formatCompactNumber';
+import { formatDurationFromNow } from '../app/utils/formatDurationFromNow';
+import { formatReleaseAssetSize } from '../app/utils/formatReleaseAssetSize';
+import { getFetchErrorMessage } from '../app/utils/getFetchErrorMessage';
+import { getReleaseAssetNamePrefix } from '../app/utils/getReleaseAssetNamePrefix';
+import { handleRovingTablistKeydown } from '../app/utils/handleRovingTablistKeydown';
+import { withPendingPaginationPage } from '../app/utils/withPendingPaginationPage';
 import english from '../i18n/locales/en.json';
 import * as searchText from '../shared/utils/release-note-search-text';
 import { compileVue as compileSfc } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
 mock.module('#shared/utils/release-note-search-text', () => searchText);
 const filters = await import('../app/utils/filterReleaseTimelineGroups');
-const { default: filterReleaseTimelineGroups } = filters;
+const { filterReleaseTimelineGroups } = filters;
 const compileVue = (path: string, modules: Record<string, unknown> = {}) =>
   compileSfc(path, { '~/components/ui/ScrollArea.vue': { default: ScrollArea }, ...modules });
 import { createVueDom } from './helpers/vue-dom';

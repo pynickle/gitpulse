@@ -20,7 +20,7 @@ import {
   normalizeUserSettings,
 } from '#shared/utils/user-settings';
 
-import getFetchErrorMessage from '../../utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '../../utils/getFetchErrorMessage';
 import { createUserSettingsApi, type UserSettingsApi } from './api';
 import { getAppFontStack, getCodeFontStack } from './fonts';
 

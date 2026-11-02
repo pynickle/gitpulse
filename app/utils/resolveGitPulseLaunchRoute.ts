@@ -237,7 +237,9 @@ function parseGitHubPageEntry(url: URL): LaunchEntry {
   return parseRepositoryEntry(url, segments);
 }
 
-export default function (value: string | null | undefined): GitPulseLaunchRoute | null {
+export function resolveGitPulseLaunchRoute(
+  value: string | null | undefined
+): GitPulseLaunchRoute | null {
   if (!value) return null;
 
   let url: URL;

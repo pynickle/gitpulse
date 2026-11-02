@@ -8,7 +8,7 @@ const PINCH_SCALE_MAX = 1.01;
  * `visualViewport.height` matches what the user can actually see, but it also
  * shrinks during pinch-zoom — those frames should keep the layout viewport.
  */
-export default function resolveVisibleFrameHeight(input: {
+export function resolveVisibleFrameHeight(input: {
   visualViewportHeight: number | null;
   visualViewportScale: number | null;
   innerHeight: number;

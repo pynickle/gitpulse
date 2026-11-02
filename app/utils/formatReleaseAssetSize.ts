@@ -2,7 +2,7 @@
  * Formats a GitHub release asset byte size for display.
  * Returns null when the size is missing or not a positive finite number.
  */
-export default function formatReleaseAssetSize(size: number): string | null {
+export function formatReleaseAssetSize(size: number): string | null {
   if (!Number.isFinite(size) || size <= 0) return null;
 
   const units = ['B', 'KB', 'MB', 'GB'];

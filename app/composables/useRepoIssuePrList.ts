@@ -1,15 +1,15 @@
 import { computed, ref, shallowRef, watch, type Ref } from 'vue';
 
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 import {
   buildRepoIssuePrSearchQuery,
   normalizeRepoIssuePrState,
   type RepoIssuePrKind,
   type RepoIssuePrState,
 } from '~/utils/repoIssuePrSearchQuery';
-import createSessionLruCache from '~/utils/sessionLruCache';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { createSessionLruCache } from '~/utils/sessionLruCache';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 export interface RepoIssuePrPagination {
   page: number;

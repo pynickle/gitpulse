@@ -10,7 +10,7 @@ const createRepositoryApiUrl = (owner?: string, repo?: string) => {
   return owner && repo ? `https://api.github.com/repos/${owner}/${repo}` : undefined;
 };
 
-export default function createPullRequestDetailViewModel(
+export function createPullRequestDetailViewModel(
   pullRequest: PullRequestDetailResponse,
   options: CreatePullRequestDetailViewModelOptions = {}
 ): PullRequestDetailViewModel {

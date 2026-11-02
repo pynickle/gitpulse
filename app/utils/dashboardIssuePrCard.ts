@@ -9,7 +9,7 @@ import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 import { readPullRequestCheckRollup } from '#shared/utils/pr-checks';
 
-import parseGitHubRepoPath from './parseGitHubRepoPath';
+import { parseGitHubRepoPath } from './parseGitHubRepoPath';
 
 interface DashboardIssuePrLabel {
   id?: number | string;
@@ -93,9 +93,7 @@ const getPullRequestMergedAt = (entity: DashboardIssuePrEntity) => {
   return typeof mergedAt === 'string' && mergedAt.length > 0 ? mergedAt : null;
 };
 
-export default function toDashboardIssuePrCard(
-  entity: DashboardIssuePrEntity
-): DashboardIssuePrCard {
+export function toDashboardIssuePrCard(entity: DashboardIssuePrEntity): DashboardIssuePrCard {
   const isPullRequest = typeof entity.pull_request === 'object' && entity.pull_request !== null;
   const mergedAt = isPullRequest ? getPullRequestMergedAt(entity) : null;
   const state: NotificationSubjectState = mergedAt ? 'merged' : (entity.state ?? 'closed');

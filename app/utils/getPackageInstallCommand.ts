@@ -5,7 +5,7 @@ import type { PackageType } from '#shared/types/packages';
  * snippet GitHub features on its own package pages. Returns null for
  * registries without a meaningful one-liner (maven).
  */
-export default function (
+export function getPackageInstallCommand(
   packageType: PackageType,
   ownerLogin: string | null,
   name: string

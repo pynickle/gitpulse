@@ -1,4 +1,4 @@
-export default function createDashboardDetailPaneLoaders() {
+export function createDashboardDetailPaneLoaders() {
   return {
     loadDiscussionDetail: () => import('~/components/dashboard/detail/DiscussionDetail.vue'),
     loadIssueDetail: () => import('~/components/dashboard/detail/IssueDetail.vue'),

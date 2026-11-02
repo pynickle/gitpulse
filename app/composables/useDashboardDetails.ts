@@ -7,7 +7,7 @@ import type { DashboardNotification } from '#shared/types/notifications';
 import type { PullRequestDetailResponse, PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
-import createPullRequestDetailViewModel from '~/utils/createPullRequestDetailViewModel';
+import { createPullRequestDetailViewModel } from '~/utils/createPullRequestDetailViewModel';
 import {
   DASHBOARD_DETAIL_QUERY_KEYS,
   clearDashboardDetailQuery,
@@ -26,8 +26,8 @@ import {
   type DashboardReleaseTarget,
   type ReleaseDashboardRef,
 } from '~/utils/dashboardUrlNavigationUtils';
-import getQueryParamValue from '~/utils/getQueryParamValue';
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import { getQueryParamValue } from '~/utils/getQueryParamValue';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
 interface DashboardDetailListItem {
   repository_url?: string | null;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import resolveReleaseDrawerSheetGesture from '../app/utils/resolveReleaseDrawerSheetGesture';
+import { resolveReleaseDrawerSheetGesture } from '../app/utils/resolveReleaseDrawerSheetGesture';
 
 describe('resolveReleaseDrawerSheetGesture', () => {
   test('move reports the drag offset and does not settle an outcome', () => {

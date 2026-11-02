@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import formatReleaseAssetSize from '../app/utils/formatReleaseAssetSize';
+import { formatReleaseAssetSize } from '../app/utils/formatReleaseAssetSize';
 
 describe('formatReleaseAssetSize', () => {
   test('returns null for missing or invalid sizes', () => {

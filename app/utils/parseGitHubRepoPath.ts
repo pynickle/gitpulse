@@ -16,7 +16,7 @@ const API_REPO_PATH_PATTERN = /^\/repos\/([^/]+)\/([^/]+)$/;
 const RELATIVE_WEB_REPO_PATH_PATTERN = /^\/?([^/]+)\/([^/]+)$/;
 const RELATIVE_API_REPO_PATH_PATTERN = /^\/?repos\/([^/]+)\/([^/]+)$/;
 
-export default function (url?: string | null): GitHubRepoPath | null {
+export function parseGitHubRepoPath(url?: string | null): GitHubRepoPath | null {
   if (!url) return null;
 
   const match = getRepoPathMatch(url);

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import createFocusTrapController from '../app/utils/createFocusTrapController';
+import { createFocusTrapController } from '../app/utils/createFocusTrapController';
 
 class FakeElement {
   dataset: Record<string, string> = { focusTrapVisible: 'true' };

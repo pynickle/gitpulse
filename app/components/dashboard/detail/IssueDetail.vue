@@ -108,8 +108,8 @@ import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
-import formatPageMetaDescription from '~/utils/formatPageMetaDescription';
-import parseGitHubRepoPath from '~/utils/parseGitHubRepoPath';
+import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
+import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
 const props = defineProps<{
   issue: IssueDetailPayload;

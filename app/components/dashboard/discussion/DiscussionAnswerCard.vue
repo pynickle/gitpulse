@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n';
 import type { DiscussionReply } from '#shared/types/discussions';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
   answer: DiscussionReply;

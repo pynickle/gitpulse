@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import type { DiscussionRepliesPayload } from '#shared/types/discussions';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const props = defineProps<{
   replies: DiscussionRepliesPayload;

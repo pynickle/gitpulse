@@ -134,8 +134,8 @@ import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import getFetchErrorMessage from '~/utils/getFetchErrorMessage';
-import getTextColorFromBackground from '~/utils/getTextColorFromBackground';
+import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
+import { getTextColorFromBackground } from '~/utils/getTextColorFromBackground';
 
 interface DashboardLabel {
   id?: number | string;

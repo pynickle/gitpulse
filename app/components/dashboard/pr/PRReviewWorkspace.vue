@@ -14,7 +14,7 @@ import PRReviewBottomBar from '~/components/dashboard/pr/PRReviewBottomBar.vue';
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
-import shouldCloseReviewWorkspaceAfterSubmit from '~/utils/prReviewNavigation';
+import { shouldCloseReviewWorkspaceAfterSubmit } from '~/utils/prReviewNavigation';
 
 const props = defineProps<{
   owner: string;

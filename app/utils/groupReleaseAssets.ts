@@ -57,7 +57,7 @@ const isSidecarName = (name: string): boolean => {
   );
 };
 
-export default function groupReleaseAssets(assets: readonly ReleaseAsset[]): GroupedReleaseAssets {
+export function groupReleaseAssets(assets: readonly ReleaseAsset[]): GroupedReleaseAssets {
   const primary: ReleaseAsset[] = [];
   const sidecars: ReleaseAsset[] = [];
 

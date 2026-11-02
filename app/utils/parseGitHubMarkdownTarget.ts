@@ -18,9 +18,7 @@ const getDetailType = (type: string): GitHubMarkdownTarget['type'] | null => {
   return null;
 };
 
-export default function parseGitHubMarkdownTarget(
-  href?: string | null
-): GitHubMarkdownTarget | null {
+export function parseGitHubMarkdownTarget(href?: string | null): GitHubMarkdownTarget | null {
   if (!href) return null;
 
   const url = parseUrl(href);

@@ -48,7 +48,7 @@ const findFirstRowStartingAfter = (
   return low;
 };
 
-export default function resolveReleaseTimelineVisibleRange(input: {
+export function resolveReleaseTimelineVisibleRange(input: {
   metrics: readonly ReleaseTimelineRowMetric[];
   viewportTop: number;
   viewportBottom: number;

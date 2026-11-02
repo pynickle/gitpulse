@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 
 import { parseDashboardUrlTarget } from '../app/utils/dashboardUrlNavigationUtils';
 import { resolveNavigationEntryRoute } from '../app/utils/navigationEntryRouting';
-import resolveGitPulseLaunchRoute from '../app/utils/resolveGitPulseLaunchRoute';
+import { resolveGitPulseLaunchRoute } from '../app/utils/resolveGitPulseLaunchRoute';
 
 const globals = globalThis as unknown as Record<string, unknown>;
 const originals = {

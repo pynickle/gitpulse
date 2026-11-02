@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import handleRovingTablistKeydown from '../app/utils/handleRovingTablistKeydown';
+import { handleRovingTablistKeydown } from '../app/utils/handleRovingTablistKeydown';
 
 class FakeTab {
   focused = false;

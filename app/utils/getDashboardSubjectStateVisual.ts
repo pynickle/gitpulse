@@ -14,7 +14,7 @@ import type { Component } from 'vue';
 
 import type { NotificationSubjectState } from '#shared/types/notifications';
 
-import getPullRequestStateVisual from './getPullRequestStateVisual';
+import { getPullRequestStateVisual } from './getPullRequestStateVisual';
 
 interface DashboardSubjectStateVisualOptions {
   isPullRequest: boolean;
@@ -145,7 +145,7 @@ const PULL_REQUEST_STATE_LABELS = {
   closed: 'Closed pull request',
 } as const;
 
-export default function getDashboardSubjectStateVisual({
+export function getDashboardSubjectStateVisual({
   isPullRequest,
   state,
   subjectType,

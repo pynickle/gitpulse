@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import formatCompactNumber from '../app/utils/formatCompactNumber';
+import { formatCompactNumber } from '../app/utils/formatCompactNumber';
 
 describe('formatCompactNumber', () => {
   test('formats thousands compactly in English', () => {

@@ -2,7 +2,7 @@ import type { DashboardNotificationSubject } from '#shared/types/notifications';
 
 type NotificationSubjectNumberCandidate = Pick<DashboardNotificationSubject, 'number' | 'type'>;
 
-export default function shouldShowNotificationSubjectNumber(
+export function shouldShowNotificationSubjectNumber(
   subject?: NotificationSubjectNumberCandidate | null
 ) {
   if (!subject?.number) {

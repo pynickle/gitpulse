@@ -9,7 +9,7 @@ import { computed } from 'vue';
 
 import type { RepoLatestCommitPayload } from '#shared/types/repos';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import formatDurationFromNow from '~/utils/formatDurationFromNow';
+import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const props = defineProps<{
   commit: RepoLatestCommitPayload | null;

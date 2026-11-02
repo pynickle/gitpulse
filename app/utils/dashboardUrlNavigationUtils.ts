@@ -1,6 +1,6 @@
 import type { LocationQueryRaw } from 'vue-router';
 
-import getQueryParamValue from './getQueryParamValue';
+import { getQueryParamValue } from './getQueryParamValue';
 import { isGitHubApiHost, isGitHubWebHost, parseUrl } from './githubUrlUtils';
 import {
   buildRepoFileDashboardQuery,
@@ -8,8 +8,8 @@ import {
   type MarkdownRepoContext,
   type MarkdownRepoResource,
 } from './markdownRepoPathUtils';
-import parseGitHubMarkdownTarget from './parseGitHubMarkdownTarget';
-import parseGitHubRepoPath from './parseGitHubRepoPath';
+import { parseGitHubMarkdownTarget } from './parseGitHubMarkdownTarget';
+import { parseGitHubRepoPath } from './parseGitHubRepoPath';
 
 type PullRequestDashboardView = 'diff';
 export type GitHubFileDashboardView = 'blob' | 'tree';

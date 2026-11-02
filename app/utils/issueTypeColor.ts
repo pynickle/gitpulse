@@ -9,7 +9,7 @@ const issueTypeColors: Record<string, string> = {
   purple: '#8250df',
 };
 
-export default function resolveIssueTypeColor(color?: string | null): string {
+export function resolveIssueTypeColor(color?: string | null): string {
   const normalizedColor = color?.trim().toLowerCase() ?? '';
 
   if (/^#[\da-f]{6}$/i.test(normalizedColor)) return normalizedColor;

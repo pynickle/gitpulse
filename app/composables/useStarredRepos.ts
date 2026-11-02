@@ -3,7 +3,7 @@ import {
   type StarredDirection,
   type StarredSort,
 } from '#shared/utils/starred';
-import withPendingPaginationPage from '~/utils/withPendingPaginationPage';
+import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
 
 export type { StarredDirection, StarredSort };
 

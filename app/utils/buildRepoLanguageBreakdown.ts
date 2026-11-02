@@ -44,7 +44,7 @@ function allocatePercentages(weights: number[], total: number): number[] {
   return units.map((value) => value / 10);
 }
 
-export default function buildRepoLanguageBreakdown(
+export function buildRepoLanguageBreakdown(
   languages: RepoLanguageBytesMap | null | undefined,
   options: {
     getColor?: (language: string) => string;
