@@ -15,13 +15,22 @@ useSeoMeta({
   },
 });
 
-useHead(() => ({
-  htmlAttrs: {
-    'data-color-mode': primerColorMode.value,
-    'data-light-theme': 'light',
-    'data-dark-theme': 'dark',
-  },
-}));
+const i18nHead = useLocaleHead({ seo: true });
+
+useHead(() => {
+  const localeHead = localeAlternateHead(i18nHead.value);
+
+  return {
+    htmlAttrs: {
+      ...i18nHead.value.htmlAttrs,
+      'data-color-mode': primerColorMode.value,
+      'data-light-theme': 'light',
+      'data-dark-theme': 'dark',
+    },
+    link: [...localeHead.link],
+    meta: [...localeHead.meta],
+  };
+});
 </script>
 
 <template>

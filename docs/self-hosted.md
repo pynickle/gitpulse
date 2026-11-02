@@ -16,6 +16,8 @@ Pre-built Docker images are published to GitHub Container Registry and Docker Hu
 - `ghcr.io/pynickle/gitpulse:latest`
 - `docker.io/enceuphony/gitpulse:latest`
 
+The running container needs `NUXT_SITE_URL`. The image build leaves it unset.
+
 ---
 
 ## Configuration
@@ -23,6 +25,18 @@ Pre-built Docker images are published to GitHub Container Registry and Docker Hu
 GitPulse has two deployment modes, controlled by environment variables. At least one must be enabled, or the app refuses to start.
 
 Both modes seal the login session with `NUXT_APP_SECRET`, at least 32 characters (`openssl rand -base64 32`). Nuxt generates one automatically in development; a production build never does, so set it there.
+
+### Canonical origin
+
+Each deployment has one canonical origin: the absolute `http` or `https` origin of this instance, with no path, query, or hash. Canonical links, Open Graph URLs, and locale alternates (`hreflang`, including `x-default`) use it.
+
+Set `NUXT_SITE_URL` on the process that serves the app. A build does not bake it. Development warns when it is missing and continues; production refuses to start.
+
+| Environment Variable | Required              | Default | Description                                                 |
+| -------------------- | --------------------- | ------- | ----------------------------------------------------------- |
+| `NUXT_SITE_URL`      | **Yes** in production | —       | This deployment's origin, for example `https://example.com` |
+
+`NUXT_PUBLIC_SITE_URL` is not read. Production also refuses to start when that name is set.
 
 ### Non-personal Mode (multi-user)
 

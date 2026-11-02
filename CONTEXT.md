@@ -52,6 +52,10 @@ A control whose behaviour and appearance both stay the platform's own by an expl
 
 ## Integration
 
+**Canonical Origin**:
+The absolute origin of one GitPulse deployment, scheme and host only. That deployment's canonical link, Open Graph URL, and locale alternates name this origin.
+_Avoid_: site URL, base URL, GitPulse base URL
+
 **Account Identity**:
 A GitHub account within one connected GitPulse backend. Renaming the account or changing the capitalization of its login preserves its identity; the same GitHub account connected through a different backend has a separate identity in GitPulse.
 _Avoid_: login, username when referring to account identity

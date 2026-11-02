@@ -220,9 +220,10 @@ export default defineNuxtConfig({
     '/**/dashboard/**': { appLayout: 'dashboard' },
   },
 
+  // Canonical origin is NUXT_SITE_URL, applied when the server process starts.
+  // Do not default `site.url` here. A value in this file is fixed at image build.
   site: {
     ...siteConfig(),
-    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://gitpulse.app',
     name: 'GitPulse',
     description:
       'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
@@ -286,7 +287,6 @@ export default defineNuxtConfig({
   },
 
   i18n: {
-    baseUrl: process.env.NUXT_SITE_URL,
     locales: [
       {
         code: 'en',
