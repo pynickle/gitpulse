@@ -42,11 +42,11 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Imports (Strict)
 
-- `app/utils/*.ts` → **default** exports, auto-imported by Nuxt. Reference them by name in SFCs and other app code; Nuxt resolves them with no import statement.
-- Named-export util modules (for example `navigationEntryRouting.ts`) are imported explicitly.
+- `app/utils/*.ts` and `app/composables/*.ts` are auto-imported in app code regardless of export shape — reference them by name. Only tests, `server/`, and `mock.module` stubs import them explicitly; an explicit import in app code is redundant, not wrong.
+- Naming follows the shape, and the shapes are not interchangeable. A **named export** keeps its declared name (the norm here, and what `server/utils/*` does). A **default export** is bound by the file's camelCase basename, never by the function's own name: `dashboardIssuePrCard.ts` provides `dashboardIssuePrCard()`, `resolveGitPulseLaunchRoute.ts` declares an anonymous default. The file name _is_ the API name, so prefer named exports for new modules and keep a default only where the file is one function named after it.
+- A module with no single primary function is named-only (`dashboardUrlNavigationUtils.ts`, `navigationEntryRouting.ts`) — a TypeScript type cannot ride a default-exported value.
 - `server/utils/*.ts` → **named** exports. Import explicitly.
 - Shared: reach through the `#shared/*` alias; `server/utils/` exposes its named exports directly, with no thin re-export wrappers.
-- Auto-imported composables (`~/composables/*`): reference by name, same as the `app/utils/` defaults.
 
 ## Auth & Sessions (Must-Use)
 
@@ -101,7 +101,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - Do not bypass `app/utils/sanitizeHtml.ts`.
 - Do not add mutating `/api` routes without CSRF middleware.
 - Do not scatter auth checks — the global middleware is the only gate.
-- Do not manually import auto-imported `app/utils/` defaults or `app/composables/`.
+- Do not add an import for an auto-imported `app/utils/` or `app/composables/` binding in app code — Nuxt resolves it by name; only tests, `server/`, and `mock.module` stubs import explicitly.
 - Do not write session shape inline in auth routes; keep `shared/types/auth.d.ts` + `establishGitHubSession` in sync.
 - Do not treat `.nuxt/` or `.output/` as source of truth — read `nuxt.config.ts` and the app source.
 - When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.
