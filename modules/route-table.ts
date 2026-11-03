@@ -1,7 +1,13 @@
-import { addTemplate, addTypeTemplate, defineNuxtModule } from '@nuxt/kit';
+import { addTemplate, defineNuxtModule } from '@nuxt/kit';
 import type { NuxtPage } from '@nuxt/schema';
 
 import { appLocales, defaultLocaleCode } from '../shared/utils/app-locales';
+
+// Nitro forbids `#build` in the server bundle. The server imports this virtual
+// instead. Its types point at the written file, with the `.mjs` kept: Nitro 2
+// strips that extension off alias paths, and an extensionless target does not
+// resolve.
+const SERVER_ROUTE_TABLE = 'gitpulse/route-table-paths';
 
 const localePrefixes = appLocales
   .map((locale) => locale.code)
@@ -52,19 +58,40 @@ export default defineNuxtModule({
   meta: { name: 'gitpulse-route-table' },
   setup(_options, nuxt) {
     let paths: string[] = [];
+    const source = () => `export default ${JSON.stringify(paths)}\n`;
+
+    const routeTablePaths = ['./route-table-paths.mjs'];
+    nuxt.hook('prepare:types', ({ tsConfig, nodeTsConfig, serverTsConfig }) => {
+      for (const config of [tsConfig, nodeTsConfig, serverTsConfig]) {
+        config.compilerOptions ??= {};
+        config.compilerOptions.paths ??= {};
+        config.compilerOptions.paths[SERVER_ROUTE_TABLE] = routeTablePaths;
+      }
+    });
+    nuxt.hook('nitro:config', (nitroConfig) => {
+      nitroConfig.virtual ||= {};
+      nitroConfig.virtual[SERVER_ROUTE_TABLE] = () => {
+        if (paths.length === 0) {
+          throw new Error(
+            'GitPulse route table is empty. Page paths must be resolved before the server bundle is created.'
+          );
+        }
+        return source();
+      };
+      nitroConfig.typescript ||= {};
+      nitroConfig.typescript.tsConfig ||= {};
+      nitroConfig.typescript.tsConfig.compilerOptions ||= {};
+      nitroConfig.typescript.tsConfig.compilerOptions.paths ||= {};
+      nitroConfig.typescript.tsConfig.compilerOptions.paths[SERVER_ROUTE_TABLE] = routeTablePaths;
+    });
 
     addTemplate({
       filename: 'route-table-paths.mjs',
       write: true,
-      getContents: () => `export default ${JSON.stringify(paths)}\n`,
-    });
-    addTypeTemplate({
-      filename: 'types/route-table-paths.d.ts',
-      getContents: () =>
-        `declare module '#build/route-table-paths.mjs' {\n  const paths: readonly string[];\n  export default paths;\n}\n`,
+      getContents: source,
     });
 
-    // getContents runs after this hook, while templates are being written.
+    // getContents runs after this hook, while the template is being written.
     nuxt.hook('pages:resolved', (pages) => {
       paths = withLocalePrefixes(collectPagePaths(pages));
     });

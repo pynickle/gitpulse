@@ -1,4 +1,5 @@
-import routeTablePaths from '#build/route-table-paths.mjs';
+import routeTablePaths from 'gitpulse/route-table-paths';
+
 import { DEFAULT_AUTH_RETURN_PATH } from '#shared/utils/auth-return-route';
 import { admitAuthReturnTo } from '#shared/utils/route-admission';
 import { createRouteMatcher } from '#shared/utils/route-matcher';
@@ -10,7 +11,7 @@ function routePaths(value: unknown): readonly string[] {
     value.length === 0
   ) {
     throw new Error(
-      'GitPulse route table is missing. Run nuxt prepare so page paths can be resolved.'
+      'GitPulse route table is missing. Page paths were not collected before the server bundle was created.'
     );
   }
   return value;
