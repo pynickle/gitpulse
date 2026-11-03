@@ -75,7 +75,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   late TimelineContentController _content;
   String? _context;
   int _generation = 0;
-  int? _synchronizingFollows;
+  int? _ownSynchronization;
   Future<void> _retentionChoices = Future.value();
   final _followRemovals = StreamController<TimelineFollowRemoval>.broadcast(
     sync: true,
@@ -93,10 +93,12 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       rebuild: (isCurrent) => ref.read(timelineCacheRebuildProvider)(isCurrent),
       clock: () => ref.read(timelineClockProvider)(),
       environment: () => ref.read(timelineEnvironmentProvider),
-      scope: _sessionContext,
-      generation: () => _generation,
-      invalidate: () => ++_generation,
-      isCurrent: _isCurrent,
+      operations: TimelineOperationContext(
+        scope: _sessionContext,
+        generation: () => _generation,
+        invalidate: () => ++_generation,
+        isCurrent: _isCurrent,
+      ),
       resolveRetention: _resolveRetentionWindow,
       onChanged: _publishContent,
     );
@@ -113,7 +115,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           identical(previous?.repositories, next.repositories)) {
         return;
       }
-      if (_synchronizingFollows == _generation && previous?.saving != true) {
+      if (_ownSynchronization == _generation && previous?.saving != true) {
         return;
       }
       unawaited(applyFollows(next.repositories));
@@ -134,7 +136,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     if (context != null) {
       _context = context;
       final ticket = ++_generation;
-      _synchronizingFollows = ticket;
+      _beginOwnSynchronization(ticket);
       Future<void>.microtask(() => _restoreAndStart(ticket));
     }
     return const TimelineViewState.inactive();
@@ -208,6 +210,19 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       ++_generation,
       confirmedFollows: List.unmodifiable(repositories),
     );
+  }
+
+  /// Marks a follow synchronization this session started itself.
+  ///
+  /// The Follows session publishes the repositories it confirmed, and that
+  /// publish reaches this session as if a reader had edited their follows. A
+  /// first cycle that took that echo would start a second round instead of
+  /// returning early, so the round that asked for the synchronization owns it
+  /// until it ends.
+  void _beginOwnSynchronization(int ticket) => _ownSynchronization = ticket;
+
+  void _endOwnSynchronization(int ticket) {
+    if (_ownSynchronization == ticket) _ownSynchronization = null;
   }
 
   void _notifyRemovals(List<RepositoryReference> repositories) {
@@ -285,7 +300,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _content.reset(active: context != null);
     if (context == null) return;
     final ticket = _generation;
-    _synchronizingFollows = ticket;
+    _beginOwnSynchronization(ticket);
     unawaited(_restoreAndStart(ticket));
   }
 
@@ -444,13 +459,13 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
     _content.beginRefresh();
     FollowCollectionResult? confirmation;
     if (confirmedFollows == null) {
-      _synchronizingFollows = ticket;
+      _beginOwnSynchronization(ticket);
       try {
         confirmation = await ref
             .read(releaseFollowsSessionProvider.notifier)
             .synchronize(refresh: synchronize);
       } finally {
-        if (_synchronizingFollows == ticket) _synchronizingFollows = null;
+        _endOwnSynchronization(ticket);
       }
     }
     if (!_isCurrent(ticket)) return;

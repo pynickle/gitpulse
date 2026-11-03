@@ -31,13 +31,15 @@ void main() {
         rebuild: (_) async {},
         clock: () => _now,
         environment: () => _environment,
-        scope: () {
-          if (disposed) throw StateError('Disposed session');
-          return 'account';
-        },
-        generation: () => generation,
-        invalidate: () => ++generation,
-        isCurrent: (ticket) => !disposed && ticket == generation,
+        operations: TimelineOperationContext(
+          scope: () {
+            if (disposed) throw StateError('Disposed session');
+            return 'account';
+          },
+          generation: () => generation,
+          invalidate: () => ++generation,
+          isCurrent: (ticket) => !disposed && ticket == generation,
+        ),
         resolveRetention: () => policy.future,
       );
       final resolving = content.resolveRetentionWindow();
@@ -59,10 +61,12 @@ void main() {
         rebuild: (_) async {},
         clock: () => _now,
         environment: () => _environment,
-        scope: () => 'account',
-        generation: () => generation,
-        invalidate: () => ++generation,
-        isCurrent: (ticket) => ticket == generation,
+        operations: TimelineOperationContext(
+          scope: () => 'account',
+          generation: () => generation,
+          invalidate: () => ++generation,
+          isCurrent: (ticket) => ticket == generation,
+        ),
         resolveRetention: () async => null,
       );
       final started = Completer<void>();
@@ -92,10 +96,12 @@ void main() {
         rebuild: (_) async {},
         clock: () => _now,
         environment: () => _environment,
-        scope: () => 'account',
-        generation: () => generation,
-        invalidate: () => ++generation,
-        isCurrent: (ticket) => ticket == generation,
+        operations: TimelineOperationContext(
+          scope: () => 'account',
+          generation: () => generation,
+          invalidate: () => ++generation,
+          isCurrent: (ticket) => ticket == generation,
+        ),
         resolveRetention: () async => 30,
       );
       content.confirmFollows([_repo]);
@@ -272,10 +278,12 @@ class _ContentDisk {
       },
       clock: () => _now,
       environment: () => _environment,
-      scope: () => 'account',
-      generation: () => disk.generation,
-      invalidate: () => ++disk.generation,
-      isCurrent: (ticket) => ticket == disk.generation,
+      operations: TimelineOperationContext(
+        scope: () => 'account',
+        generation: () => disk.generation,
+        invalidate: () => ++disk.generation,
+        isCurrent: (ticket) => ticket == disk.generation,
+      ),
       resolveRetention: () async => 30,
     );
     addTearDown(() async {

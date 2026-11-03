@@ -13,6 +13,32 @@ export 'timeline_content_state.dart';
 
 part 'timeline_content_journal.dart';
 
+/// The session's validity for this module's work.
+///
+/// One narrow context rather than the session's own fields: it can say which
+/// cache scope work belongs to, read and advance the generation, and answer
+/// whether a ticket is still current. It cannot reach anything else.
+final class TimelineOperationContext {
+  const TimelineOperationContext({
+    required this.scope,
+    required this.generation,
+    required this.invalidate,
+    required this.isCurrent,
+  });
+
+  /// The account's cache scope, or null when this installation saves nothing.
+  final String? Function() scope;
+
+  /// The session's current generation.
+  final int Function() generation;
+
+  /// Invalidates work admitted under an earlier generation.
+  final int Function() invalidate;
+
+  /// Whether work admitted with this ticket may still commit.
+  final bool Function(int ticket) isCurrent;
+}
+
 /// The account's current unfiltered timeline and its local recovery lifecycle.
 ///
 /// Accepted pages, connected history and commit progress have one owner. Changes
@@ -23,10 +49,7 @@ final class TimelineContentController {
     required this._rebuild,
     required this._clock,
     required this._environment,
-    required this._scope,
-    required this._generation,
-    required this._invalidate,
-    required this._isCurrent,
+    required this._operations,
     required this._resolveRetention,
     this._onChanged,
   });
@@ -35,10 +58,7 @@ final class TimelineContentController {
   final Future<void> Function(bool Function()) _rebuild;
   final DateTime Function() _clock;
   final TimelineEnvironment Function() _environment;
-  final String? Function() _scope;
-  final int Function() _generation;
-  final int Function() _invalidate;
-  final bool Function(int) _isCurrent;
+  final TimelineOperationContext _operations;
   final Future<int?> Function() _resolveRetention;
   final void Function()? _onChanged;
   TimelineContentState _value = const TimelineContentState();
@@ -161,10 +181,12 @@ final class TimelineContentController {
 
   Future<void> resolveRetentionWindow() => _ensureRetentionWindow();
   Future<void> _ensureRetentionWindow() async {
-    final ticket = _generation();
-    final scope = _scope();
+    final ticket = _operations.generation();
+    final scope = _operations.scope();
     final days = await _resolveRetention();
-    if (_isCurrent(ticket) && _scope() == scope) _retentionWindow = days;
+    if (_operations.isCurrent(ticket) && _operations.scope() == scope) {
+      _retentionWindow = days;
+    }
   }
 
   Future<int?> lastSavedRetentionDays(String scope) =>
@@ -176,18 +198,18 @@ final class TimelineContentController {
   Future<void>? get pendingCacheAction => _cacheAction;
 
   Future<void> prepareHistory(int ticket, {bool synchronize = true}) async {
-    final scope = _scope();
+    final scope = _operations.scope();
     if (scope == null) return;
     if (synchronize) {
       try {
         await _synchronizeCache(scope, ticket);
       } catch (error) {
-        if (_isCurrent(ticket)) _cacheFailure(error);
+        if (_operations.isCurrent(ticket)) _cacheFailure(error);
       }
-      if (!_isCurrent(ticket)) return;
+      if (!_operations.isCurrent(ticket)) return;
     }
     await _loadHistory(ticket);
-    if (_isCurrent(ticket) && _state.restored && synchronize) {
+    if (_operations.isCurrent(ticket) && _state.restored && synchronize) {
       await pruneRetainedHistory();
     }
   }
@@ -208,8 +230,12 @@ final class TimelineContentController {
     Future<void> Function()? initialize,
   }) async {
     await _runCacheAction(() async {
-      if (_scope() == null || _state.loading || _state.cacheCorrupted) return;
-      final ticket = _generation();
+      if (_operations.scope() == null ||
+          _state.loading ||
+          _state.cacheCorrupted) {
+        return;
+      }
+      final ticket = _operations.generation();
       if (_retentionIncomplete && _retentionWindow != null) {
         await _applyRetentionWindow(_retentionWindow!, ticket);
         return;
@@ -217,7 +243,9 @@ final class TimelineContentController {
       if (!_journal.hasPages && _state.cacheFailed && !_followsKnown) {
         _state = _state.copyWith(loading: true);
         await restore(ticket, offline: offline);
-        if (_isCurrent(ticket)) _state = _state.copyWith(loading: false);
+        if (_operations.isCurrent(ticket)) {
+          _state = _state.copyWith(loading: false);
+        }
         return;
       }
       if (_retentionWindow == null) {
@@ -227,22 +255,24 @@ final class TimelineContentController {
       _state = _state.copyWith(loading: true);
       if (!_cacheSynchronized) {
         try {
-          await _synchronizeCache(_scope()!, ticket);
+          await _synchronizeCache(_operations.scope()!, ticket);
         } catch (error) {
-          if (_isCurrent(ticket)) {
+          if (_operations.isCurrent(ticket)) {
             _cacheFailure(error);
             _state = _state.copyWith(loading: false);
           }
           return;
         }
-        if (!_isCurrent(ticket)) return;
+        if (!_operations.isCurrent(ticket)) return;
       }
       if (_journal.hasPages) {
         await _persistCurrent(ticket);
-      } else if (_isCurrent(ticket)) {
+      } else if (_operations.isCurrent(ticket)) {
         _state = _state.copyWith(cacheFailed: false);
       }
-      if (_isCurrent(ticket)) _state = _state.copyWith(loading: false);
+      if (_operations.isCurrent(ticket)) {
+        _state = _state.copyWith(loading: false);
+      }
     });
   }
 
@@ -266,7 +296,7 @@ final class TimelineContentController {
             ),
       ];
       await acceptRound(ticket, response, pages.keys.toList(), refresh: true);
-      if (_isCurrent(ticket) &&
+      if (_operations.isCurrent(ticket) &&
           pages.values.any((page) => !page.isAvailable || page.incomplete)) {
         _state = _state.copyWith(partial: true);
       }
@@ -390,24 +420,24 @@ final class TimelineContentController {
         _history.waitingRepositories.toList(),
       ),
     );
-    final scope = _scope();
+    final scope = _operations.scope();
     try {
       if (scope != null) {
         await _synchronizeCache(scope, ticket);
-        if (!_isCurrent(ticket)) return;
+        if (!_operations.isCurrent(ticket)) return;
         _state = _state.copyWith(cacheFailed: false);
         if (_cycle.pages.isNotEmpty) await _persistCurrent(ticket);
       }
     } catch (error) {
-      if (_isCurrent(ticket)) _cacheFailure(error);
+      if (_operations.isCurrent(ticket)) _cacheFailure(error);
     }
-    if (_isCurrent(ticket) && !preserveLoading) {
+    if (_operations.isCurrent(ticket) && !preserveLoading) {
       _state = _state.copyWith(loading: false);
     }
   }
 
   Future<void> restore(int ticket, {bool offline = false}) async {
-    final scope = _scope();
+    final scope = _operations.scope();
     if (scope != null) {
       try {
         final saved = await _cache().restore(
@@ -415,9 +445,9 @@ final class TimelineContentController {
           now: _clock(),
           environment: _environment(),
           retentionDays: _retentionWindow,
-          isCurrent: () => _isCurrent(ticket),
+          isCurrent: () => _operations.isCurrent(ticket),
         );
-        if (!_isCurrent(ticket)) return;
+        if (!_operations.isCurrent(ticket)) return;
         if (saved != null) {
           _loadedVisible = saved;
           _cacheSynchronized = true;
@@ -440,31 +470,31 @@ final class TimelineContentController {
           );
         }
       } catch (error) {
-        if (!_isCurrent(ticket)) return;
+        if (!_operations.isCurrent(ticket)) return;
         _cacheFailure(error);
       }
     }
   }
 
   Future<void> pruneRetainedHistory() async {
-    final scope = _scope();
+    final scope = _operations.scope();
     if (scope == null) return;
-    final ticket = _generation();
+    final ticket = _operations.generation();
     try {
       await _pruneRetainedHistory(ticket);
     } catch (error) {
-      if (_isCurrent(ticket)) _cacheFailure(error);
+      if (_operations.isCurrent(ticket)) _cacheFailure(error);
     }
   }
 
   Future<void> _pruneRetainedHistory(int ticket) async {
-    final scope = _scope();
+    final scope = _operations.scope();
     if (scope == null) return;
     if (!_state.restored || !_cacheSynchronized) {
       await _cache().prune(
         scope: scope,
         now: _clock(),
-        isCurrent: () => _isCurrent(ticket),
+        isCurrent: () => _operations.isCurrent(ticket),
         retentionDays: _retentionWindow,
       );
       return;
@@ -475,9 +505,9 @@ final class TimelineContentController {
       environment: _environment(),
       retentionDays: _retentionWindow,
       previous: _loadedVisible,
-      isCurrent: () => _isCurrent(ticket),
+      isCurrent: () => _operations.isCurrent(ticket),
     );
-    if (_isCurrent(ticket) &&
+    if (_operations.isCurrent(ticket) &&
         _state.restored &&
         saved != null &&
         _cacheSynchronized) {
@@ -511,51 +541,53 @@ final class TimelineContentController {
   }
 
   Future<bool> _applyRetentionWindow(int days, int ticket) async {
-    if (!_isCurrent(ticket) || _scope() == null || !_followsKnown) {
+    if (!_operations.isCurrent(ticket) ||
+        _operations.scope() == null ||
+        !_followsKnown) {
       return false;
     }
     _retentionWindow = days;
     _retentionIncomplete = true;
-    final scope = _scope();
+    final scope = _operations.scope();
     if (scope == null) return false;
     try {
       await _synchronizeCache(scope, ticket);
-      if (!_isCurrent(ticket)) return false;
+      if (!_operations.isCurrent(ticket)) return false;
       if (_journal.needsSaving) {
         await _persistCurrent(ticket, propagateFailure: true);
-        if (!_isCurrent(ticket)) return false;
+        if (!_operations.isCurrent(ticket)) return false;
       }
       await _loadHistory(
         ticket,
         replayCurrentPages: true,
         propagateFailure: true,
       );
-      if (!_isCurrent(ticket)) return false;
+      if (!_operations.isCurrent(ticket)) return false;
       await _pruneRetainedHistory(ticket);
-      if (!_isCurrent(ticket)) return false;
+      if (!_operations.isCurrent(ticket)) return false;
       _retentionIncomplete = false;
       _state = _state.copyWith(cacheFailed: false);
       return true;
     } catch (error) {
-      if (_isCurrent(ticket)) _cacheFailure(error);
+      if (_operations.isCurrent(ticket)) _cacheFailure(error);
       return false;
     }
   }
 
   Future<void> rebuild() => _runCacheAction(() async {
-    final scope = _scope();
-    if (_scope() == null || scope == null) return;
-    final ticket = _invalidate();
+    final scope = _operations.scope();
+    if (_operations.scope() == null || scope == null) return;
+    final ticket = _operations.invalidate();
     _state = _state.copyWith(
       loading: true,
       cacheActions: _state.cacheActions.copyWith(clearing: true),
     );
     _cacheSynchronized = false;
     try {
-      await _rebuild(() => _isCurrent(ticket));
-      if (!_isCurrent(ticket)) return;
+      await _rebuild(() => _operations.isCurrent(ticket));
+      if (!_operations.isCurrent(ticket)) return;
       await _synchronizeCache(scope, ticket);
-      if (!_isCurrent(ticket)) return;
+      if (!_operations.isCurrent(ticket)) return;
       _journal.forgetCommit();
       _history = TimelineHistoryConnection(const RetainedTimelineHistory());
       // Rebuild from the actual fetched pages, excluding the discarded cached
@@ -585,9 +617,9 @@ final class TimelineContentController {
       );
       if (_journal.hasPages) await _persistCurrent(ticket);
     } catch (error) {
-      if (_isCurrent(ticket)) _cacheFailure(error);
+      if (_operations.isCurrent(ticket)) _cacheFailure(error);
     } finally {
-      if (_isCurrent(ticket)) {
+      if (_operations.isCurrent(ticket)) {
         _state = _state.copyWith(
           loading: false,
           cacheActions: _state.cacheActions.copyWith(clearing: false),
@@ -602,7 +634,7 @@ final class TimelineContentController {
     // not name, and nothing may be pruned on a guessed policy. A round that
     // started while the device was still being read waits for it here.
     await _ensureRetentionWindow();
-    if (!_isCurrent(ticket) || _retentionWindow == null) return;
+    if (!_operations.isCurrent(ticket) || _retentionWindow == null) return;
     // Nor before this session has a confirmed follow set: a history keyed to
     // repositories nobody confirmed would be written, and its neighbours deleted.
     if (!_followsKnown) return;
@@ -612,9 +644,9 @@ final class TimelineContentController {
       retentionDays: _retentionWindow,
       repositories: _followedRepositories,
       now: _clock(),
-      isCurrent: () => _isCurrent(ticket),
+      isCurrent: () => _operations.isCurrent(ticket),
     );
-    if (_isCurrent(ticket)) _cacheSynchronized = true;
+    if (_operations.isCurrent(ticket)) _cacheSynchronized = true;
   }
 
   void _cacheFailure(Object error) {
@@ -625,13 +657,14 @@ final class TimelineContentController {
   }
 
   Future<void> _clearCache() async {
-    if (_scope() == null || _state.cacheActions.clearing) {
+    if (_operations.scope() == null || _state.cacheActions.clearing) {
       return;
     }
-    final ticket = _invalidate();
+    final ticket = _operations.invalidate();
     _journal.clear();
     _cycle = TimelineCycle.empty;
-    _cycleId = '${DateTime.now().microsecondsSinceEpoch}:${_generation()}';
+    _cycleId =
+        '${DateTime.now().microsecondsSinceEpoch}:${_operations.generation()}';
     _awaitingFreshWindow = true;
     _history = TimelineHistoryConnection(const RetainedTimelineHistory());
     _failures.clear();
@@ -649,7 +682,7 @@ final class TimelineContentController {
     );
     try {
       await _cache().clearHistory();
-      if (!_isCurrent(ticket)) return;
+      if (!_operations.isCurrent(ticket)) return;
       _state = _state.copyWith(
         cacheCorrupted: false,
         cacheActions: _state.cacheActions.copyWith(
@@ -658,7 +691,7 @@ final class TimelineContentController {
         ),
       );
     } catch (error) {
-      if (!_isCurrent(ticket)) return;
+      if (!_operations.isCurrent(ticket)) return;
       _cacheFailure(error);
       _state = _state.copyWith(
         cacheActions: _state.cacheActions.copyWith(
@@ -674,7 +707,7 @@ final class TimelineContentController {
     bool replayCurrentPages = false,
     bool propagateFailure = false,
   }) async {
-    final scope = _scope();
+    final scope = _operations.scope();
     if (scope == null ||
         _retentionWindow == null ||
         !_cacheSynchronized ||
@@ -684,7 +717,7 @@ final class TimelineContentController {
     }
     try {
       final history = await _cache().readHistory(scope: scope, now: _clock());
-      if (!_isCurrent(ticket)) return;
+      if (!_operations.isCurrent(ticket)) return;
       _history = TimelineHistoryConnection(history);
       if (replayCurrentPages) {
         final cutoff = _clock().toUtc().subtract(
@@ -694,7 +727,7 @@ final class TimelineContentController {
       }
     } catch (error) {
       if (propagateFailure) rethrow;
-      if (_isCurrent(ticket)) _cacheFailure(error);
+      if (_operations.isCurrent(ticket)) _cacheFailure(error);
     }
   }
 
@@ -760,7 +793,8 @@ final class TimelineContentController {
     final startsWindow = refresh || _awaitingFreshWindow;
     if (startsWindow) {
       _journal.clear();
-      _cycleId = '${DateTime.now().microsecondsSinceEpoch}:${_generation()}';
+      _cycleId =
+          '${DateTime.now().microsecondsSinceEpoch}:${_operations.generation()}';
     }
     var result = mergeTimelineRound(
       cycle: _cycle,
@@ -827,14 +861,14 @@ final class TimelineContentController {
     );
     _journal.append(pages, cursors);
     await _persistCurrent(ticket);
-    if (_isCurrent(ticket)) _state = _state.copyWith(loading: false);
+    if (_operations.isCurrent(ticket)) _state = _state.copyWith(loading: false);
   }
 
   Future<void> _persistCurrent(
     int ticket, {
     bool propagateFailure = false,
   }) async {
-    final scope = _scope();
+    final scope = _operations.scope();
     // Durable history also needs a confirmed follow set: without one the cache
     // does not know which repositories this account keeps.
     if (scope != null &&
@@ -851,15 +885,15 @@ final class TimelineContentController {
           groups: _state.groups,
           cycle: _cycle,
           now: now,
-          isCurrent: () => _isCurrent(ticket),
+          isCurrent: () => _operations.isCurrent(ticket),
           obsoleteRepositories: Set.of(_history.obsoleteRepositories),
         );
-        if (_isCurrent(ticket)) {
+        if (_operations.isCurrent(ticket)) {
           _journal.acknowledge();
           _state = _state.copyWith(savedAt: now, cacheFailed: false);
         }
       } catch (error) {
-        if (_isCurrent(ticket)) {
+        if (_operations.isCurrent(ticket)) {
           _journal.failedSaving();
           _cacheFailure(error);
         }
@@ -914,7 +948,7 @@ final class TimelineContentController {
     Map<String, RepositoryPage> pages = const {},
     List<String>? requestedIds,
   }) {
-    if (!_isCurrent(ticket)) return;
+    if (!_operations.isCurrent(ticket)) return;
     final ids =
         requestedIds ?? [for (final follow in _followedRepositories) follow.id];
     _cycle = _cycle.withFailed(ids);
