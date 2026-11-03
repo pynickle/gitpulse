@@ -7,12 +7,11 @@ import '../presentation/gitpulse_formatting.dart';
 import '../presentation/gitpulse_state_views.dart';
 import '../presentation/gitpulse_pull_to_refresh.dart';
 import '../presentation/gitpulse_tokens.dart';
-import '../session/session_controller.dart';
 import 'release_timeline_card.dart';
 import 'timeline_cache.dart';
 import 'timeline_filter_panel.dart';
-import 'timeline_filters.dart';
 import 'timeline_layout.dart';
+import 'timeline_reading_session.dart';
 import 'timeline_session.dart';
 import 'timeline_state.dart';
 import 'timeline_toolbar.dart';
@@ -42,47 +41,6 @@ const _listEndInset = _floatingInset * 2 + GitPulseHeight.standard;
 /// Space between two releases stacked in the Timeline's one column.
 const _cardSpacing = 12.0;
 
-// Kept in memory across destination widgets, independently of cached releases.
-final _readingPositionProvider = Provider((ref) {
-  ref.watch(
-    sessionControllerProvider.select(
-      (state) => (state.phase, state.identity?.account),
-    ),
-  );
-  return _TimelineReadingPosition();
-});
-
-class _TimelineReadingPosition {
-  ({String releaseKey, double offset})? anchor;
-  TimelineFilterState filters = const TimelineFilterState();
-
-  /// Whether a refresh started from this screen is still being read, and
-  /// whether the pull gesture is what started it.
-  ///
-  /// Both outlive the destination widget: leaving the Timeline during a round
-  /// and coming back must finish the same way as staying on it.
-  bool refreshing = false;
-  bool pullRefreshing = false;
-
-  /// How many refreshes have returned usable results. The list reads it to know
-  /// that the release being read must give way to the newest ones.
-  int landedRefreshes = 0;
-
-  /// Ends a refresh that has stopped loading.
-  ///
-  /// Usable results replace the window from the top of the current search and
-  /// filters. A round that completely failed keeps the release being read, and
-  /// the position it was read at, so a slow or failed request never costs the
-  /// reader their place.
-  void settleRefresh({required bool failed}) {
-    refreshing = false;
-    pullRefreshing = false;
-    if (failed) return;
-    anchor = null;
-    landedRefreshes++;
-  }
-}
-
 /// Which entry asked for a round, and so where its progress belongs.
 enum _RefreshOrigin {
   /// The toolbar's refresh button, and the footer's reload: the button itself
@@ -108,14 +66,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(releaseTimelineSessionProvider);
-    final readingPosition = ref.watch(_readingPositionProvider);
-    if (readingPosition.refreshing && !state.loading) {
-      readingPosition.settleRefresh(failed: state.failure != null);
-    }
-    if (readingPosition.filters != state.filters) {
-      readingPosition.anchor = null;
-      readingPosition.filters = state.filters;
-    }
+    final reading = ref.watch(timelineReadingSessionProvider);
+    final readingPosition = ref
+        .read(timelineReadingSessionProvider.notifier)
+        .position;
     final now = ref.watch(timelineClockProvider)();
     final localDateKey = ref.watch(timelineEnvironmentProvider).localDateKey;
 
@@ -127,13 +81,14 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
       if (ref.read(releaseTimelineSessionProvider).loading) {
         return Future<void>.value();
       }
+      final reading = ref.read(timelineReadingSessionProvider.notifier);
+      reading.beginRefresh(pull: origin == _RefreshOrigin.pull);
       final round = ref.read(releaseTimelineSessionProvider.notifier).refresh();
       // The session marks itself loading before its first await, so a round
       // that never started has nothing to settle.
-      if (!ref.read(releaseTimelineSessionProvider).loading) return round;
-      final current = ref.read(_readingPositionProvider);
-      current.refreshing = true;
-      current.pullRefreshing = origin == _RefreshOrigin.pull;
+      if (!ref.read(releaseTimelineSessionProvider).loading) {
+        reading.cancelRefresh();
+      }
       return round;
     }
 
@@ -150,7 +105,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
           TimelineToolbar(
             state: state,
             onRefresh: refresh,
-            pullRefreshing: readingPosition.pullRefreshing,
+            pullRefreshing: reading.pullRefreshing,
             onFiltersChanged: (filters) => ref
                 .read(releaseTimelineSessionProvider.notifier)
                 .applyFilters(filters),
@@ -180,6 +135,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
               key: ValueKey(state.filters),
               state: state,
               readingPosition: readingPosition,
+              landedRefreshes: reading.landedRefreshes,
               now: now,
               localDateKey: localDateKey,
               onRetry: retry,
@@ -199,6 +155,7 @@ class _Body extends StatelessWidget {
     super.key,
     required this.state,
     required this.readingPosition,
+    required this.landedRefreshes,
     required this.now,
     required this.localDateKey,
     required this.onRefresh,
@@ -208,7 +165,8 @@ class _Body extends StatelessWidget {
   });
 
   final TimelineViewState state;
-  final _TimelineReadingPosition readingPosition;
+  final TimelineReadingPosition readingPosition;
+  final int landedRefreshes;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
   final Future<void> Function() onRefresh;
@@ -242,7 +200,7 @@ class _Body extends StatelessWidget {
         readingPosition: readingPosition,
         now: now,
         localDateKey: localDateKey,
-        landedRefreshes: readingPosition.landedRefreshes,
+        landedRefreshes: landedRefreshes,
         onRefresh: onRefresh,
         onPullRefresh: onPullRefresh,
         onRetry: onRetry,
@@ -418,7 +376,7 @@ class _TimelineList extends StatefulWidget {
   });
 
   final TimelineViewState state;
-  final _TimelineReadingPosition readingPosition;
+  final TimelineReadingPosition readingPosition;
   final DateTime now;
   final String Function(DateTime instant) localDateKey;
 
