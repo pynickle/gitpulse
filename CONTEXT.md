@@ -65,6 +65,26 @@ A URL that asks GitPulse to open a supported GitHub page and resolve it into the
 surface after authentication.
 _Avoid_: dashboard deep link when referring to the browser integration contract
 
+**Public Surface**:
+A page rendered without a session. The locale landing pages and the native login page are public surfaces.
+_Avoid_: public route when referring to the Browser Launch Link
+
+**Session Surface**:
+A page that matches a route and requires a session. The Browser Launch Link is a session surface.
+_Avoid_: protected page, private route
+
+**Unknown Path**:
+A URL that matches no page.
+_Avoid_: soft 404, missing page
+
+**Auth Return Target**:
+The in-app path a visitor continues to after signing in. It is a session surface.
+_Avoid_: return URL, redirect URL
+
+**Discovery Document**:
+robots.txt, sitemap.xml, or llms.txt published for one deployment.
+_Avoid_: SEO file, metadata
+
 **Native Login Handoff**:
 A single-use authorization that lets the app which started a browser sign-in receive its own GitPulse session after sign-in completes. It does not transfer the browser's session to the app.
 _Avoid_: OAuth callback when referring to this separate browser-to-app handoff

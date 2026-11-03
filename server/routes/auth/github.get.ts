@@ -1,17 +1,14 @@
 import { deleteCookie, getCookie, getQuery, setCookie } from 'h3';
 import type { RequestEvent } from 'nuxt/server';
 
-import {
-  DEFAULT_AUTH_RETURN_PATH,
-  normalizeAuthReturnTo,
-  withAppBase,
-} from '#shared/utils/auth-return-route';
+import { normalizeAuthReturnTo, withAppBase } from '#shared/utils/auth-return-route';
 
 import { resolveAuthProviderState } from '../../utils/auth-providers';
 import {
   PERSISTENT_AUTH_SESSION_MAX_AGE_SECONDS,
   establishGitHubSession,
 } from '../../utils/auth-session-utils';
+import { resolveSessionReturnPath } from '../../utils/session-return-path';
 
 const RETURN_TO_COOKIE = 'gitpulse_auth_return_to';
 
@@ -19,9 +16,9 @@ export default defineEventHandler(async (event) => {
   const baseUrl = useRuntimeConfig(event).app.baseURL;
   const query = getQuery(event);
   const isCallback = Boolean(query.code || query.error);
-  const returnTo =
-    normalizeAuthReturnTo(isCallback ? getCookie(event, RETURN_TO_COOKIE) : query.returnTo) ??
-    DEFAULT_AUTH_RETURN_PATH;
+  const returnTo = resolveSessionReturnPath(
+    normalizeAuthReturnTo(isCallback ? getCookie(event, RETURN_TO_COOKIE) : query.returnTo)
+  );
 
   if (!isCallback) {
     setCookie(event, RETURN_TO_COOKIE, returnTo, {

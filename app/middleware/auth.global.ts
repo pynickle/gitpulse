@@ -1,20 +1,19 @@
 import { normalizeAuthReturnTo } from '#shared/utils/auth-return-route';
-
-function isNativeLoginPage(path: string) {
-  return path === '/native-login' || path.endsWith('/native-login');
-}
+import { isPublicSurfacePath } from '#shared/utils/route-admission';
 
 export default defineNuxtRouteMiddleware((to) => {
+  // An unmatched path is a 404. Redirecting here writes the 302 before the
+  // router can show the error page, so the landing page is returned as 200.
+  if (to.matched.length === 0 || isPublicSurfacePath(to.path)) return;
+
   const { loggedIn } = useUserSession();
+  if (loggedIn.value) return;
+
   const localePath = useLocalePath();
-  const landingPath = localePath('/');
+  const returnTo = normalizeAuthReturnTo(to.fullPath);
 
-  if (!loggedIn.value && to.path !== landingPath && !isNativeLoginPage(to.path)) {
-    const returnTo = normalizeAuthReturnTo(to.fullPath);
-
-    return navigateTo({
-      path: landingPath,
-      ...(returnTo ? { query: { returnTo } } : {}),
-    });
-  }
+  return navigateTo({
+    path: localePath('/'),
+    ...(returnTo ? { query: { returnTo } } : {}),
+  });
 });

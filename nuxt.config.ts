@@ -1,4 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import {
+  appLocales,
+  defaultLocaleCode,
+  publicSiteDescription,
+  publicSiteName,
+} from './shared/utils/app-locales';
 import { bundledFontFaces, bundledFontWeights } from './shared/utils/bundled-fonts';
 import {
   defaultUserSettingsStorageBase,
@@ -224,10 +230,9 @@ export default defineNuxtConfig({
   // Do not default `site.url` here. A value in this file is fixed at image build.
   site: {
     ...siteConfig(),
-    name: 'GitPulse',
-    description:
-      'Track GitHub notifications, issues, pull requests, and repositories from one focused workspace.',
-    defaultLocale: 'en',
+    name: publicSiteName,
+    description: publicSiteDescription,
+    defaultLocale: defaultLocaleCode,
   },
 
   // Site-wide extras that nuxt-seo-utils does not infer from `site`.
@@ -253,6 +258,7 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxt/fonts',
     'nuxt-skill-hub',
+    './modules/route-table',
   ],
 
   fonts: {
@@ -283,25 +289,17 @@ export default defineNuxtConfig({
   },
 
   robots: {
-    disallow: ['/dashboard', '/dashboard/**', '/api/**', '/auth/**'],
+    disallow: ['/dashboard', '/dashboard/**', '/open', '/api/**', '/auth/**'],
   },
 
   i18n: {
-    locales: [
-      {
-        code: 'en',
-        language: 'en-US',
-        name: 'English',
-        file: 'en.json',
-      },
-      {
-        code: 'zh-cn',
-        language: 'zh-CN',
-        name: '中文',
-        file: 'zh-cn.json',
-      },
-    ],
-    defaultLocale: 'en',
+    locales: appLocales.map((locale) => ({
+      code: locale.code,
+      language: locale.language,
+      name: locale.name,
+      file: locale.file,
+    })),
+    defaultLocale: defaultLocaleCode,
     strategy: 'prefix_except_default',
   },
 

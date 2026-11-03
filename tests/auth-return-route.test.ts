@@ -2,6 +2,8 @@ import { describe, expect, mock, test } from 'bun:test';
 
 const authReturnRoute = await import('../shared/utils/auth-return-route');
 mock.module('#shared/utils/auth-return-route', () => authReturnRoute);
+const routeAdmission = await import('../shared/utils/route-admission');
+mock.module('#shared/utils/route-admission', () => routeAdmission);
 const { normalizeAuthReturnTo, withAppBase } = authReturnRoute;
 
 describe('normalizeAuthReturnTo', () => {
@@ -56,12 +58,20 @@ describe('normalizeAuthReturnTo', () => {
     try {
       const { default: middleware } = await import('../app/middleware/auth.global');
       const fullPath = '/open?url=https%3A%2F%2Fgithub.com%2Fowner%2Frepo%2Fpull%2F7';
-      const result = await (middleware as unknown as (to: unknown) => unknown)({
+      const visit = middleware as unknown as (to: unknown) => unknown;
+      const result = await visit({
         path: '/open',
         fullPath,
+        matched: [{ path: '/open' }],
       });
 
       expect(result).toEqual({ path: '/', query: { returnTo: fullPath } });
+      expect(
+        await visit({ path: '/xyz-nope', fullPath: '/xyz-nope', matched: [] })
+      ).toBeUndefined();
+      expect(
+        await visit({ path: '/zh-cn', fullPath: '/zh-cn', matched: [{ path: '/zh-cn' }] })
+      ).toBeUndefined();
     } finally {
       Object.assign(globals, originals);
     }
@@ -85,10 +95,18 @@ describe('normalizeAuthReturnTo', () => {
       const visit = middleware as unknown as (to: unknown) => unknown;
 
       expect(
-        await visit({ path: '/native-login', fullPath: '/native-login?id=1' })
+        await visit({
+          path: '/native-login',
+          fullPath: '/native-login?id=1',
+          matched: [{ path: '/native-login' }],
+        })
       ).toBeUndefined();
       expect(
-        await visit({ path: '/zh-cn/native-login', fullPath: '/zh-cn/native-login?id=1' })
+        await visit({
+          path: '/zh-cn/native-login',
+          fullPath: '/zh-cn/native-login?id=1',
+          matched: [{ path: '/zh-cn/native-login' }],
+        })
       ).toBeUndefined();
     } finally {
       Object.assign(globals, originals);

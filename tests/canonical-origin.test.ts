@@ -7,7 +7,7 @@ import {
   RETIRED_CANONICAL_ORIGIN_ENV,
   type CanonicalOriginEnv,
   type CanonicalOriginRuntimeConfig,
-} from '../server/utils/canonical-origin';
+} from '../shared/utils/canonical-origin';
 
 const originalWarn = console.warn;
 

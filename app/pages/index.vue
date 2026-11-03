@@ -58,6 +58,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 
+import { parseCanonicalOrigin } from '#shared/utils/canonical-origin';
 import AuthenticatedLandingCard from '~/components/auth/AuthenticatedLandingCard.vue';
 import AuthGateway from '~/components/auth/AuthGateway.vue';
 import PersonalLockForm from '~/components/auth/PersonalLockForm.vue';
@@ -67,12 +68,36 @@ import RoundImg from '~/components/ui/RoundImg.vue';
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
+const localePath = useLocalePath();
+const requestUrl = useRequestURL();
+const runtimeConfig = useRuntimeConfig();
 const { continueToReturnTarget } = useAuthReturnNavigation();
 
 usePageMeta(undefined, {
   description: t('landing.heroDescription'),
 });
 const route = useRoute();
+const installedOrigin = parseCanonicalOrigin(runtimeConfig.public.i18n?.baseUrl);
+
+useHead(() => {
+  const head = landingAuthReturnHead({
+    hasReturnTo: hasAuthReturnQuery(route.query),
+    canonicalHref: landingCanonicalHref({
+      localePath: localePath('/'),
+      canonicalOrigin: installedOrigin.ok ? installedOrigin.origin : undefined,
+      requestOrigin: requestUrl.origin,
+    }),
+  });
+  if (!head) return {};
+
+  return {
+    link: [{ key: 'canonical', rel: 'canonical', href: head.canonicalHref }],
+    meta: [
+      { key: 'robots', name: 'robots', content: head.robots },
+      { key: 'nuxt-seo-utils:og-url', property: 'og:url', content: head.canonicalHref },
+    ],
+  };
+});
 const autoRestoreAttempted = ref(false);
 const autoRestorePending = ref(false);
 

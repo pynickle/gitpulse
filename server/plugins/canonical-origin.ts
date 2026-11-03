@@ -1,4 +1,4 @@
-import { applyCanonicalOrigin, resolveCanonicalOrigin } from '../utils/canonical-origin';
+import { applyCanonicalOrigin, resolveCanonicalOrigin } from '#shared/utils/canonical-origin';
 
 export default defineNitroPlugin((nitroApp) => {
   if (import.meta.prerender) {

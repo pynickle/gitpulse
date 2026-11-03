@@ -92,6 +92,12 @@ const variant = computed<ErrorVariant>(
 );
 const statusCode = computed<number>(() => props.error.status ?? 500);
 
+useHead(() => {
+  const robots = notFoundRobots(statusCode.value);
+  if (!robots) return {};
+  return { meta: [{ key: 'robots', name: 'robots', content: robots }] };
+});
+
 const title = computed(() => t(variant.value.titleKey));
 const description = computed(() => t(variant.value.descriptionKey));
 const primaryLabel = computed(() => t(variant.value.primary.labelKey));
