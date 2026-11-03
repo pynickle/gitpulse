@@ -30,12 +30,16 @@ void main() {
       timeline.publish(
         const TimelineViewState(
           content: TimelineContentState(active: true, loading: true),
+          projection: TimelineProjection.empty(),
         ),
       );
       expect(reading.position.anchor, (releaseKey: 'alpha:7', offset: 120.0));
 
       timeline.publish(
-        const TimelineViewState(content: TimelineContentState(active: true)),
+        const TimelineViewState(
+          content: TimelineContentState(active: true),
+          projection: TimelineProjection.empty(),
+        ),
       );
 
       expect(reading.position.anchor, isNull);
@@ -58,6 +62,7 @@ void main() {
     timeline.publish(
       const TimelineViewState(
         content: TimelineContentState(active: true, loading: true),
+        projection: TimelineProjection.empty(),
       ),
     );
     timeline.publish(
@@ -66,6 +71,7 @@ void main() {
           active: true,
           failure: TimelineFailure(TimelineFailureKind.network),
         ),
+        projection: TimelineProjection.empty(),
       ),
     );
 
@@ -110,7 +116,10 @@ void main() {
     reading.beginRefresh(pull: true);
     reading.cancelRefresh();
     timeline.publish(
-      const TimelineViewState(content: TimelineContentState(active: true)),
+      const TimelineViewState(
+        content: TimelineContentState(active: true),
+        projection: TimelineProjection.empty(),
+      ),
     );
 
     expect(reading.position.anchor, isNull);

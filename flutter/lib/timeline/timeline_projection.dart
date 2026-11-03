@@ -108,8 +108,9 @@ final class TimelineProjection {
   /// of filtering the whole window again.
   TimelineProjection withWindow(TimelineWindow window) {
     if (identical(window, _window)) return this;
-    // A prepared search indexes one window's releases, so another window builds
-    // its own rather than searching the previous one's fields.
+    // A window froze its own groups, and a prepared search indexes the releases
+    // of one window, so another window builds its own rather than searching the
+    // previous one's fields.
     return TimelineProjection._project(
       groups: window.groups,
       filters: filters,

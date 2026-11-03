@@ -13,9 +13,6 @@ class TimelineReadingPosition {
   ({String releaseKey, double offset})? anchor;
 }
 
-/// What the destination must re-render for, and nothing else.
-typedef TimelineReadingState = ({bool pullRefreshing, int landedRefreshes});
-
 /// The reader's place in the Release Timeline, and the refresh that moves it.
 ///
 /// It outlives the destination widget, which the shell builds only while its
@@ -25,11 +22,18 @@ typedef TimelineReadingState = ({bool pullRefreshing, int landedRefreshes});
 /// listener would never fire for a landing that happened while it was gone, and
 /// the round would never settle.
 final timelineReadingSessionProvider =
-    NotifierProvider<TimelineReadingSession, TimelineReadingState>(
+    NotifierProvider<TimelineReadingSession, TimelineRefreshProgress>(
       TimelineReadingSession.new,
     );
 
-class TimelineReadingSession extends Notifier<TimelineReadingState> {
+/// What the destination must re-render for while a round is reading, and
+/// nothing else.
+///
+/// The place the reader stopped at is not here: it changes on every scroll
+/// frame and is held silently on the session instead.
+typedef TimelineRefreshProgress = ({bool pullRefreshing, int landedRefreshes});
+
+class TimelineReadingSession extends Notifier<TimelineRefreshProgress> {
   /// The place the list reads and writes; it publishes nothing.
   final TimelineReadingPosition position = TimelineReadingPosition();
 
@@ -37,7 +41,7 @@ class TimelineReadingSession extends Notifier<TimelineReadingState> {
   bool _reading = false;
 
   @override
-  TimelineReadingState build() {
+  TimelineRefreshProgress build() {
     // The place belongs to one Account Identity, so another account never
     // restores this one's position.
     ref.watch(
@@ -47,6 +51,8 @@ class TimelineReadingSession extends Notifier<TimelineReadingState> {
     );
     _reading = false;
     position.anchor = null;
+    // The landed count restarts with this session: the list compares it within
+    // one account's timeline, and another account's list starts at its top.
     ref.listen(releaseTimelineSessionProvider, _onTimelineChanged);
     ref.listen(
       releaseTimelineSessionProvider.select((state) => state.filters),
@@ -81,7 +87,7 @@ class TimelineReadingSession extends Notifier<TimelineReadingState> {
     if (!_reading || next.loading) return;
     _reading = false;
     final landed = next.failure == null;
-    if (landed) position.anchor = null;
+    if (landed) clearReadingPosition();
     state = (
       pullRefreshing: false,
       landedRefreshes: landed
@@ -90,13 +96,11 @@ class TimelineReadingSession extends Notifier<TimelineReadingState> {
     );
   }
 
+  /// Forgets where the reader stopped, so the next list starts at its top.
+  void clearReadingPosition() => position.anchor = null;
+
   /// Another Active Timeline Filter or Release Timeline Search presents another
   /// list, so an offset into the previous result no longer means anything.
-  void _onFiltersChanged(
-    TimelineFilterState? previous,
-    TimelineFilterState next,
-  ) {
-    if (previous == next) return;
-    position.anchor = null;
-  }
+  void _onFiltersChanged(TimelineFilterState? _, TimelineFilterState _) =>
+      clearReadingPosition();
 }

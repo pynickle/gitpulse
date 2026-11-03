@@ -36,7 +36,10 @@ void main() {
       cacheActions: const TimelineCacheActions(clearing: true),
     );
 
-    final state = TimelineViewState(content: content);
+    final state = TimelineViewState(
+      content: content,
+      projection: const TimelineProjection.empty(),
+    );
 
     expect(identical(state.content, content), isTrue);
     expect(state.active, isTrue);

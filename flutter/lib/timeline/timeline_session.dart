@@ -75,7 +75,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   late TimelineContentController _content;
   String? _context;
   int _generation = 0;
-  int? _ownSynchronization;
+  int? _ownSynchronizationTicket;
   Future<void> _retentionChoices = Future.value();
   final _followRemovals = StreamController<TimelineFollowRemoval>.broadcast(
     sync: true,
@@ -115,7 +115,8 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
           identical(previous?.repositories, next.repositories)) {
         return;
       }
-      if (_ownSynchronization == _generation && previous?.saving != true) {
+      if (_ownSynchronizationTicket == _generation &&
+          previous?.saving != true) {
         return;
       }
       unawaited(applyFollows(next.repositories));
@@ -219,10 +220,11 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   /// first cycle that took that echo would start a second round instead of
   /// returning early, so the round that asked for the synchronization owns it
   /// until it ends.
-  void _beginOwnSynchronization(int ticket) => _ownSynchronization = ticket;
+  void _beginOwnSynchronization(int ticket) =>
+      _ownSynchronizationTicket = ticket;
 
   void _endOwnSynchronization(int ticket) {
-    if (_ownSynchronization == ticket) _ownSynchronization = null;
+    if (_ownSynchronizationTicket == ticket) _ownSynchronizationTicket = null;
   }
 
   void _notifyRemovals(List<RepositoryReference> repositories) {
@@ -312,17 +314,21 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   }
 
   Future<void> _restoreAndStart(int ticket) async {
-    while (_content.pendingCacheAction != null) {
-      await _content.pendingCacheAction;
+    try {
+      while (_content.pendingCacheAction != null) {
+        await _content.pendingCacheAction;
+      }
+      if (!_isCurrent(ticket)) return;
+      await _content.resolveRetentionWindow();
+      if (!_isCurrent(ticket)) return;
+      await _content.restore(
+        ticket,
+        offline: ref.read(sessionControllerProvider).offline,
+      );
+      if (_isCurrent(ticket)) await _startCycle(ticket, synchronize: false);
+    } finally {
+      _endOwnSynchronization(ticket);
     }
-    if (!_isCurrent(ticket)) return;
-    await _content.resolveRetentionWindow();
-    if (!_isCurrent(ticket)) return;
-    await _content.restore(
-      ticket,
-      offline: ref.read(sessionControllerProvider).offline,
-    );
-    if (_isCurrent(ticket)) await _startCycle(ticket, synchronize: false);
   }
 
   Future<int?> _resolveRetentionWindow() async {

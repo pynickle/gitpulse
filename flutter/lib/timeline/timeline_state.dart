@@ -13,18 +13,21 @@ export 'timeline_content_state.dart';
 /// the snapshot, so a field this state does not expose fails to compile rather
 /// than silently reading a default.
 class TimelineViewState {
-  const TimelineViewState({
-    required this.content,
-    this.projection = const TimelineProjection.empty(),
-  });
+  const TimelineViewState({required this.content, required this.projection});
 
   /// Nobody is signed in with a connected backend yet.
   const TimelineViewState.inactive()
-    : this(content: const TimelineContentState.inactive());
+    : this(
+        content: const TimelineContentState.inactive(),
+        projection: const TimelineProjection.empty(),
+      );
 
   /// Signed in, waiting for the first coordinated round.
   const TimelineViewState.activeLoading()
-    : this(content: const TimelineContentState.activeLoading());
+    : this(
+        content: const TimelineContentState.activeLoading(),
+        projection: const TimelineProjection.empty(),
+      );
 
   /// The unfiltered content this view was derived from.
   final TimelineContentState content;

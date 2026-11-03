@@ -227,6 +227,7 @@ void main() {
       tester,
       state: const TimelineViewState(
         content: TimelineContentState(offline: true),
+        projection: TimelineProjection.empty(),
       ),
     );
     final l10n = _l10n(tester);
@@ -274,6 +275,7 @@ void main() {
       tester,
       state: const TimelineViewState(
         content: TimelineContentState(loading: true),
+        projection: TimelineProjection.empty(),
       ),
     );
     final l10n = _l10n(tester);
@@ -285,6 +287,7 @@ void main() {
       tester,
       state: const TimelineViewState(
         content: TimelineContentState(loading: true),
+        projection: TimelineProjection.empty(),
       ),
       pullRefreshing: true,
     );
