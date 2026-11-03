@@ -4,7 +4,6 @@ import type { CustomTabSource, GitHubSearchQuery } from '#shared/types/custom-se
 import type { GitHubIssueType } from '#shared/types/issues';
 import type { DashboardNotification, NotificationSubjectState } from '#shared/types/notifications';
 import { appendCustomTabQueryParams } from '#shared/utils/github-search-query';
-import { getGitHubSearchEndpoint } from '#shared/utils/github-search-query';
 import {
   applyNotificationLocalFilters,
   hasNotificationPageLocalPredicates,
@@ -12,6 +11,12 @@ import {
 } from '~/composables/useDashboardFilters';
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 import { withPendingPaginationPage } from '~/utils/withPendingPaginationPage';
+
+import {
+  buildCustomTabUrl,
+  buildPaginationUrl,
+  dashboardListPageSize,
+} from '../utils/dashboardListRequest';
 
 interface DashboardEntity {
   id: PropertyKey;
@@ -97,7 +102,7 @@ interface ActiveNotificationCacheContext {
   page: number;
 }
 
-const defaultPerPage = 20;
+const defaultPerPage = dashboardListPageSize;
 const notificationApiPerPage = 50;
 const notificationInitialBatchSize = 3;
 const notificationMaxBatchSize = 5;
@@ -128,26 +133,6 @@ const createPageCache = (): DashboardPageCache => ({
   repos: {},
   customTabs: {},
 });
-
-const buildPaginationUrl = (
-  path: string,
-  page: number,
-  perPage = defaultPerPage,
-  params: Record<string, boolean | string | undefined> = {}
-) => {
-  const searchParams = new URLSearchParams({
-    page: String(page),
-    per_page: String(perPage),
-  });
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) {
-      searchParams.set(key, String(value));
-    }
-  }
-
-  return `${path}?${searchParams.toString()}`;
-};
 
 const buildParamQueryKey = (params: Record<string, boolean | string | undefined> = {}) => {
   const searchParams = new URLSearchParams();
@@ -263,16 +248,6 @@ const buildCustomTabQueryKey = (
   }
 
   return searchParams.toString();
-};
-
-const buildCustomTabUrl = (page: number, query: GitHubSearchQuery, perPage = defaultPerPage) => {
-  const searchParams = new URLSearchParams({
-    page: String(page),
-    per_page: String(query.perPage ?? perPage),
-  });
-  appendCustomTabQueryParams(searchParams, query);
-
-  return `/api/search/${getGitHubSearchEndpoint(query)}?${searchParams.toString()}`;
 };
 
 export function useGithubData() {
