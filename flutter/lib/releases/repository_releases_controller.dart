@@ -56,15 +56,12 @@ class RepositoryReleasesController extends Notifier<RepositoryReleasesState> {
 
   @override
   RepositoryReleasesState build() {
-    final identity = ref.watch(
-      sessionControllerProvider.select(
-        (value) =>
-            (value.phase, value.identity?.backend, value.identity?.login),
-      ),
+    final account = ref.watch(
+      sessionControllerProvider.select((state) => state.signedInAccount),
     );
     final generation = ++_generation;
     ref.onDispose(() => _generation++);
-    if (identity.$1 != SessionPhase.signedIn) {
+    if (account == null) {
       return const RepositoryReleasesState(
         loading: false,
         failure: RepositoryReleasesFailure.session,

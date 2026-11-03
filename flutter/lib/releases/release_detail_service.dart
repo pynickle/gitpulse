@@ -72,13 +72,10 @@ final releaseDetailServiceProvider = Provider<ReleaseDetailService>((ref) {
 
 final releaseDetailProvider = FutureProvider.autoDispose
     .family<ReleaseDetailResult, ReleaseTarget>((ref, target) async {
-      final session = ref.watch(
-        sessionControllerProvider.select(
-          (state) =>
-              (state.phase, state.identity?.backend, state.identity?.login),
-        ),
+      final account = ref.watch(
+        sessionControllerProvider.select((state) => state.signedInAccount),
       );
-      if (session.$1 != SessionPhase.signedIn) {
+      if (account == null) {
         return const ReleaseDetailResult.failed(ReleaseDetailFailure.session);
       }
       final result = await ref.watch(releaseDetailServiceProvider).load(target);

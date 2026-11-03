@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../connection/connection_controller.dart';
+import 'account_identity.dart';
 import 'gitpulse_http.dart';
 import 'native_login_handoff.dart';
 import 'secure_storage.dart';
@@ -73,6 +74,14 @@ class SessionState {
   final SignInFailure? failure;
   final bool offline;
   final String? browserSignInCode;
+
+  /// The Account Identity a repository or release read belongs to.
+  ///
+  /// Rejected and restoring sessions can still carry a profile. That profile
+  /// is not an account those reads may use. Login, name, and avatar are not
+  /// part of the value, so a rename leaves the read in place.
+  AccountIdentity? get signedInAccount =>
+      phase == SessionPhase.signedIn ? identity?.account : null;
 
   /// Whether there is a sign-in that did not finish to report.
   ///

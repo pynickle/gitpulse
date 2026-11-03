@@ -42,13 +42,10 @@ final repositoryServiceProvider = Provider(
 
 final repositoryProvider = FutureProvider.autoDispose
     .family<RepositoryResult<RepositoryDto>, RepositoryScope>((ref, scope) {
-      final session = ref.watch(
-        sessionControllerProvider.select(
-          (state) =>
-              (state.phase, state.identity?.backend, state.identity?.login),
-        ),
+      final account = ref.watch(
+        sessionControllerProvider.select((state) => state.signedInAccount),
       );
-      if (session.$1 != SessionPhase.signedIn) {
+      if (account == null) {
         return const RepositoryResult.failed(RepositoryFailure.session);
       }
       return ref
@@ -58,13 +55,10 @@ final repositoryProvider = FutureProvider.autoDispose
 
 final repositoryReadmeProvider = FutureProvider.autoDispose
     .family<RepositoryResult<RepositoryReadmeDto>, ReadmeScope>((ref, scope) {
-      final session = ref.watch(
-        sessionControllerProvider.select(
-          (state) =>
-              (state.phase, state.identity?.backend, state.identity?.login),
-        ),
+      final account = ref.watch(
+        sessionControllerProvider.select((state) => state.signedInAccount),
       );
-      if (session.$1 != SessionPhase.signedIn) {
+      if (account == null) {
         return const RepositoryResult.failed(RepositoryFailure.session);
       }
       return ref

@@ -109,19 +109,14 @@ class RepositoryDiscoverySession extends Notifier<RepositoryDiscoveryState> {
 
   @override
   RepositoryDiscoveryState build() {
-    final identity = ref.watch(
-      sessionControllerProvider.select((session) {
-        final identity = session.identity;
-        return session.phase == SessionPhase.signedIn && identity != null
-            ? identity.account
-            : null;
-      }),
+    final account = ref.watch(
+      sessionControllerProvider.select((state) => state.signedInAccount),
     );
     _epoch++;
     ref.onDispose(() => _epoch++);
     _requests.clear();
     _cache.clear();
-    return RepositoryDiscoveryState(active: identity != null);
+    return RepositoryDiscoveryState(active: account != null);
   }
 
   ReleaseFollowsService get _service => ref.read(releaseFollowsServiceProvider);
