@@ -1,10 +1,49 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/repositories/repository_models.dart';
+import 'package:gitpulse/timeline/timeline_content_state.dart';
 import 'package:gitpulse/timeline/timeline_filters.dart';
 import 'package:gitpulse/timeline/timeline_models.dart';
 import 'package:gitpulse/timeline/timeline_projection.dart';
 
 void main() {
+  test(
+    'a new window re-projects under the current filters, the same one reuses',
+    () {
+      final first = TimelineWindow(
+        groups: [
+          TimelineGroup(date: '2026-10-22', items: [_release(1, _alpha, 22)]),
+        ],
+        previousBaseline: '2026-10-20T00:00:00Z',
+        windowLowerBound: DateTime.utc(2026, 10, 19).millisecondsSinceEpoch,
+      );
+      final projected = const TimelineProjection.empty()
+          .withWindow(first)
+          .withFilters(const TimelineFilterState(repositoryIds: ['alpha']));
+
+      expect(_keys(projected.groups), ['alpha:1']);
+      expect(_keys(projected.visibleGroups), ['alpha:1']);
+      expect(identical(projected.withWindow(first), projected), isTrue);
+
+      final second = TimelineWindow(
+        groups: [
+          TimelineGroup(date: '2026-10-22', items: [_release(2, _beta, 22)]),
+        ],
+        previousBaseline: '2026-10-21T00:00:00Z',
+        windowLowerBound: DateTime.utc(2026, 10, 21).millisecondsSinceEpoch,
+      );
+      final next = projected.withWindow(second);
+
+      expect(_keys(next.groups), ['beta:2']);
+      expect(next.visibleGroups, isEmpty);
+      expect(next.filters.repositoryIds, ['alpha']);
+      expect(next.previousBaseline, '2026-10-21T00:00:00Z');
+      expect(
+        next.windowLowerBound,
+        DateTime.utc(2026, 10, 21).millisecondsSinceEpoch,
+      );
+    },
+  );
+
   test('filter changes keep the window, new count and baseline in step', () {
     final projection = TimelineProjection(
       groups: [

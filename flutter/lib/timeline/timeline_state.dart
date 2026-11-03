@@ -1,97 +1,43 @@
+import '../repositories/repository_models.dart';
+import 'timeline_content_state.dart';
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
 import 'timeline_projection.dart';
-import '../repositories/repository_models.dart';
 
-/// Why a Timeline round could not be read.
-enum TimelineFailureKind {
-  network,
-  rateLimited,
-  session,
-  server,
-  invalidResponse,
-  cancelled,
-}
-
-class TimelineFailure {
-  const TimelineFailure(this.kind);
-
-  final TimelineFailureKind kind;
-
-  /// A rejected session needs sign-in again; a cancelled round needs nothing.
-  bool get retryable =>
-      kind != TimelineFailureKind.session &&
-      kind != TimelineFailureKind.cancelled;
-}
-
-enum TimelineCacheConnection { none, waiting, connected }
-
-/// This installation's local cache actions, exposed to Settings.
-///
-/// The retention window is not here: it belongs to the installation's device
-/// preferences, which the Timeline Session reads and applies, so a Settings row
-/// can hold it without a round trip.
-class TimelineCacheActions {
-  const TimelineCacheActions({
-    this.clearing = false,
-    this.clearFailed = false,
-    this.cleared = false,
-  });
-
-  final bool clearing;
-  final bool clearFailed;
-  final bool cleared;
-
-  TimelineCacheActions copyWith({
-    bool? clearing,
-    bool? clearFailed,
-    bool? cleared,
-  }) => TimelineCacheActions(
-    clearing: clearing ?? this.clearing,
-    clearFailed: clearFailed ?? this.clearFailed,
-    cleared: cleared ?? this.cleared,
-  );
-}
+export 'timeline_content_state.dart';
 
 /// The immutable Release Timeline the widgets read.
+///
+/// It is the content module's snapshot under the reader's current filters, not a
+/// second copy of the content's own fields: every content value is read through
+/// the snapshot, so a field this state does not expose fails to compile rather
+/// than silently reading a default.
 class TimelineViewState {
   const TimelineViewState({
-    this.active = false,
-    this.loading = false,
-    this.hasFollows = false,
+    required this.content,
     this.projection = const TimelineProjection.empty(),
-    this.unavailableRepositories = const [],
-    this.transientRepositories = const [],
-    this.partial = false,
-    this.canRetry = false,
-    this.canLoadOlder = false,
-    this.failure,
-    this.persistenceFailed = false,
-    this.cacheFailed = false,
-    this.cacheCorrupted = false,
-    this.offline = false,
-    this.restored = false,
-    this.savedAt,
-    this.cacheConnection = TimelineCacheConnection.none,
-    this.waitingRepositories = const [],
-    this.cacheActions = const TimelineCacheActions(),
   });
 
   /// Nobody is signed in with a connected backend yet.
-  const TimelineViewState.inactive() : this();
+  const TimelineViewState.inactive()
+    : this(content: const TimelineContentState.inactive());
 
   /// Signed in, waiting for the first coordinated round.
-  const TimelineViewState.activeLoading() : this(active: true, loading: true);
+  const TimelineViewState.activeLoading()
+    : this(content: const TimelineContentState.activeLoading());
+
+  /// The unfiltered content this view was derived from.
+  final TimelineContentState content;
+
+  /// The exposed window as the current filters present it.
+  final TimelineProjection projection;
 
   /// Whether the signed-in account's timeline is being read.
-  final bool active;
-  final bool loading;
+  bool get active => content.active;
+  bool get loading => content.loading;
 
   /// Whether the account follows any repository.
-  final bool hasFollows;
-
-  /// The window inputs and their presentation change as one immutable value.
-  final TimelineProjection projection;
+  bool get hasFollows => content.hasFollows;
 
   /// The exposed Shared Timeline Window, before the Active Timeline Filter.
   List<TimelineGroup> get groups => projection.groups;
@@ -107,8 +53,10 @@ class TimelineViewState {
 
   /// Followed Repositories GitHub reports as missing, and the ones that failed
   /// to load and can be retried.
-  final List<RepositoryReference> unavailableRepositories;
-  final List<RepositoryReference> transientRepositories;
+  List<RepositoryReference> get unavailableRepositories =>
+      content.unavailableRepositories;
+  List<RepositoryReference> get transientRepositories =>
+      content.transientRepositories;
 
   /// The cycle's captured Timeline Refresh Baseline, fixed while reading.
   String? get previousBaseline => projection.previousBaseline;
@@ -120,27 +68,28 @@ class TimelineViewState {
   int get loadedNewCount => projection.loadedNewCount;
 
   /// Whether the Shared Timeline Window is a Partial Timeline Window.
-  final bool partial;
+  bool get partial => content.partial;
 
   /// Whether another round could recover a failed repository.
-  final bool canRetry;
+  bool get canRetry => content.canRetry;
 
   /// Successful repositories still have another page available. Failed pages
   /// are retried explicitly instead of being advanced by Load older.
-  final bool canLoadOlder;
+  bool get canLoadOlder => content.canLoadOlder;
 
-  final TimelineFailure? failure;
+  TimelineFailure? get failure => content.failure;
 
   /// Whether usable results returned while their bookmark could not be saved.
-  final bool persistenceFailed;
-  final bool cacheFailed;
-  final bool cacheCorrupted;
-  final bool offline;
-  final bool restored;
-  final DateTime? savedAt;
-  final TimelineCacheConnection cacheConnection;
-  final List<RepositoryReference> waitingRepositories;
-  final TimelineCacheActions cacheActions;
+  bool get persistenceFailed => content.persistenceFailed;
+  bool get cacheFailed => content.cacheFailed;
+  bool get cacheCorrupted => content.cacheCorrupted;
+  bool get offline => content.offline;
+  bool get restored => content.restored;
+  DateTime? get savedAt => content.savedAt;
+  TimelineCacheConnection get cacheConnection => content.cacheConnection;
+  List<RepositoryReference> get waitingRepositories =>
+      content.waitingRepositories;
+  TimelineCacheActions get cacheActions => content.cacheActions;
 
   bool get hasReleases => visibleGroups.isNotEmpty;
 
@@ -155,51 +104,12 @@ class TimelineViewState {
   bool get hasLookupFailures =>
       unavailableRepositories.isNotEmpty || transientRepositories.isNotEmpty;
 
-  TimelineViewState copyWith({
-    bool? active,
-    bool? loading,
-    bool? hasFollows,
-    TimelineProjection? projection,
-    List<RepositoryReference>? unavailableRepositories,
-    List<RepositoryReference>? transientRepositories,
-    bool? partial,
-    bool? canRetry,
-    bool? canLoadOlder,
-    TimelineFailure? failure,
-    bool clearFailure = false,
-    bool? persistenceFailed,
-    bool? cacheFailed,
-    bool? cacheCorrupted,
-    bool? offline,
-    bool? restored,
-    DateTime? savedAt,
-    bool clearSavedAt = false,
-    TimelineCacheConnection? cacheConnection,
-    List<RepositoryReference>? waitingRepositories,
-    TimelineCacheActions? cacheActions,
-  }) {
-    return TimelineViewState(
-      active: active ?? this.active,
-      loading: loading ?? this.loading,
-      hasFollows: hasFollows ?? this.hasFollows,
-      projection: projection ?? this.projection,
-      unavailableRepositories:
-          unavailableRepositories ?? this.unavailableRepositories,
-      transientRepositories:
-          transientRepositories ?? this.transientRepositories,
-      partial: partial ?? this.partial,
-      canRetry: canRetry ?? this.canRetry,
-      canLoadOlder: canLoadOlder ?? this.canLoadOlder,
-      failure: clearFailure ? null : failure ?? this.failure,
-      persistenceFailed: persistenceFailed ?? this.persistenceFailed,
-      cacheFailed: cacheFailed ?? this.cacheFailed,
-      cacheCorrupted: cacheCorrupted ?? this.cacheCorrupted,
-      offline: offline ?? this.offline,
-      restored: restored ?? this.restored,
-      savedAt: clearSavedAt ? null : savedAt ?? this.savedAt,
-      cacheConnection: cacheConnection ?? this.cacheConnection,
-      waitingRepositories: waitingRepositories ?? this.waitingRepositories,
-      cacheActions: cacheActions ?? this.cacheActions,
-    );
-  }
+  /// The same content under another projection.
+  TimelineViewState withProjection(TimelineProjection projection) =>
+      TimelineViewState(content: content, projection: projection);
+
+  /// The same content under the current window and another Active Timeline
+  /// Filter.
+  TimelineViewState withFilters(TimelineFilterState filters) =>
+      withProjection(projection.withFilters(filters));
 }

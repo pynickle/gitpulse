@@ -1,6 +1,55 @@
 import '../repositories/repository_models.dart';
 import 'timeline_models.dart';
-import 'timeline_state.dart';
+
+/// Why a Timeline round could not be read.
+enum TimelineFailureKind {
+  network,
+  rateLimited,
+  session,
+  server,
+  invalidResponse,
+  cancelled,
+}
+
+class TimelineFailure {
+  const TimelineFailure(this.kind);
+
+  final TimelineFailureKind kind;
+
+  /// A rejected session needs sign-in again; a cancelled round needs nothing.
+  bool get retryable =>
+      kind != TimelineFailureKind.session &&
+      kind != TimelineFailureKind.cancelled;
+}
+
+enum TimelineCacheConnection { none, waiting, connected }
+
+/// This installation's local cache actions, exposed to Settings.
+///
+/// The retention window is not here: it belongs to the installation's device
+/// preferences, which the Timeline Session reads and applies, so a Settings row
+/// can hold it without a round trip.
+class TimelineCacheActions {
+  const TimelineCacheActions({
+    this.clearing = false,
+    this.clearFailed = false,
+    this.cleared = false,
+  });
+
+  final bool clearing;
+  final bool clearFailed;
+  final bool cleared;
+
+  TimelineCacheActions copyWith({
+    bool? clearing,
+    bool? clearFailed,
+    bool? cleared,
+  }) => TimelineCacheActions(
+    clearing: clearing ?? this.clearing,
+    clearFailed: clearFailed ?? this.clearFailed,
+    cleared: cleared ?? this.cleared,
+  );
+}
 
 /// The unfiltered exposed content, independent of presentation choices.
 final class TimelineWindow {

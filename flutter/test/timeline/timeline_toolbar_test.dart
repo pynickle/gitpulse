@@ -45,10 +45,12 @@ void main() {
                   alignment: Alignment.topCenter,
                   child: TimelineToolbar(
                     state: TimelineViewState(
+                      content: TimelineContentState(
+                        cacheFailed: true,
+                        savedAt: DateTime.utc(2026, 10, 19, 12),
+                        loading: loading,
+                      ),
                       projection: projection,
-                      cacheFailed: true,
-                      savedAt: DateTime.utc(2026, 10, 19, 12),
-                      loading: loading,
                     ),
                     onRefresh: () async {
                       refreshes++;
@@ -152,6 +154,7 @@ void main() {
           locale: locale,
           now: () => DateTime(2026, 10, 22, 16),
           state: TimelineViewState(
+            content: const TimelineContentState(),
             projection: TimelineProjection(
               previousBaseline: entry.key.toUtc().toIso8601String(),
             ),
@@ -169,7 +172,7 @@ void main() {
         tester,
         locale: locale,
         now: () => DateTime(2026, 10, 22, 16),
-        state: const TimelineViewState(),
+        state: const TimelineViewState.inactive(),
       );
       final l10n = _l10n(tester);
       expect(
@@ -187,14 +190,16 @@ void main() {
         tester,
         now: () => DateTime(2026, 10, 19, 21),
         state: TimelineViewState(
-          offline: true,
+          // A local instant, so the toolbar renders the clock its own calendar
+          // reads and the assertion holds in any display zone.
+          content: TimelineContentState(
+            offline: true,
+            savedAt: DateTime(2026, 10, 19, 12),
+          ),
           projection: _projectionWithNewReleases(
             7,
             DateTime.utc(2026, 10, 18, 14, 43).toIso8601String(),
           ),
-          // A local instant, so the toolbar renders the clock its own calendar
-          // reads and the assertion holds in any display zone.
-          savedAt: DateTime(2026, 10, 19, 12),
         ),
       );
       final l10n = _l10n(tester);
@@ -218,7 +223,12 @@ void main() {
   testWidgets('offline without a saved instant states offline alone', (
     tester,
   ) async {
-    await _pumpToolbar(tester, state: const TimelineViewState(offline: true));
+    await _pumpToolbar(
+      tester,
+      state: const TimelineViewState(
+        content: TimelineContentState(offline: true),
+      ),
+    );
     final l10n = _l10n(tester);
 
     expect(find.text(l10n.timelineOffline), findsOneWidget);
@@ -233,6 +243,7 @@ void main() {
       tester,
       now: () => DateTime(2026, 10, 22, 16),
       state: TimelineViewState(
+        content: const TimelineContentState(),
         projection: _projectionWithNewReleases(
           7,
           DateTime.utc(2026, 10, 22, 14, 43).toIso8601String(),
@@ -259,7 +270,12 @@ void main() {
   testWidgets('a refresh the pull started shows no progress in the button', (
     tester,
   ) async {
-    await _pumpToolbar(tester, state: const TimelineViewState(loading: true));
+    await _pumpToolbar(
+      tester,
+      state: const TimelineViewState(
+        content: TimelineContentState(loading: true),
+      ),
+    );
     final l10n = _l10n(tester);
     final button = findNamedAction(l10n.timelineReload);
     expect(tester.widget<GitPulseIconButton>(button).onPressed, isNull);
@@ -267,7 +283,9 @@ void main() {
 
     await _pumpToolbar(
       tester,
-      state: const TimelineViewState(loading: true),
+      state: const TimelineViewState(
+        content: TimelineContentState(loading: true),
+      ),
       pullRefreshing: true,
     );
     expect(tester.widget<GitPulseIconButton>(button).onPressed, isNull);
@@ -278,7 +296,7 @@ void main() {
   testWidgets('search stays a short filled field with a centered hint', (
     tester,
   ) async {
-    await _pumpToolbar(tester, state: const TimelineViewState());
+    await _pumpToolbar(tester, state: const TimelineViewState.inactive());
     final l10n = _l10n(tester);
     final field = tester.widget<TextField>(find.byType(TextField));
     final fieldRect = tester.getRect(find.byType(TextField));
@@ -305,6 +323,7 @@ void main() {
     await _pumpToolbar(
       tester,
       state: TimelineViewState(
+        content: const TimelineContentState(),
         projection: TimelineProjection(
           filters: const TimelineFilterState(includeReleaseNotes: true),
         ),
@@ -346,6 +365,7 @@ void main() {
     await _pumpToolbar(
       tester,
       state: TimelineViewState(
+        content: const TimelineContentState(),
         projection: TimelineProjection(
           filters: const TimelineFilterState(hidePrereleases: true),
         ),
@@ -404,7 +424,7 @@ AppLocalizations _l10n(WidgetTester tester) =>
 Future<void> _pumpToolbar(
   WidgetTester tester, {
   Locale locale = const Locale('en'),
-  TimelineViewState state = const TimelineViewState(),
+  TimelineViewState state = const TimelineViewState.inactive(),
   DateTime Function()? now,
   bool pullRefreshing = false,
   ValueChanged<TimelineFilterState>? onFiltersChanged,

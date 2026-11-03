@@ -11,7 +11,6 @@ import '../session/gitpulse_http.dart';
 import '../session/session_controller.dart';
 import 'timeline_filters.dart';
 import 'timeline_models.dart';
-import 'timeline_projection.dart';
 import 'timeline_service.dart';
 import 'timeline_state.dart';
 import 'timeline_cache.dart';
@@ -74,7 +73,6 @@ class RetentionChoiceResult {
 
 class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   late TimelineContentController _content;
-  TimelineWindow? _publishedWindow;
   String? _context;
   int _generation = 0;
   int? _synchronizingFollows;
@@ -102,7 +100,6 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
       resolveRetention: _resolveRetentionWindow,
       onChanged: _publishContent,
     );
-    _publishedWindow = null;
     final lifecycle = AppLifecycleListener(
       onResume: () => unawaited(pruneRetainedHistory()),
     );
@@ -146,35 +143,9 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
   void _publishContent() {
     if (!ref.mounted) return;
     final content = _content.snapshot;
-    final projection = identical(_publishedWindow, content.window)
-        ? state.projection
-        : TimelineProjection(
-            groups: content.groups,
-            filters: state.filters,
-            previousBaseline: content.previousBaseline,
-            windowLowerBound: content.window.windowLowerBound,
-          );
-    _publishedWindow = content.window;
     state = TimelineViewState(
-      active: content.active,
-      loading: content.loading,
-      hasFollows: content.hasFollows,
-      projection: projection,
-      unavailableRepositories: content.unavailableRepositories,
-      transientRepositories: content.transientRepositories,
-      partial: content.partial,
-      canRetry: content.canRetry,
-      canLoadOlder: content.canLoadOlder,
-      failure: content.failure,
-      persistenceFailed: content.persistenceFailed,
-      cacheFailed: content.cacheFailed,
-      cacheCorrupted: content.cacheCorrupted,
-      offline: content.offline,
-      restored: content.restored,
-      savedAt: content.savedAt,
-      cacheConnection: content.cacheConnection,
-      waitingRepositories: content.waitingRepositories,
-      cacheActions: content.cacheActions,
+      content: content,
+      projection: state.projection.withWindow(content.window),
     );
   }
 
@@ -255,7 +226,7 @@ class ReleaseTimelineSession extends Notifier<TimelineViewState> {
 
   void applyFilters(TimelineFilterState filters) {
     if (filters == state.filters) return;
-    state = state.copyWith(projection: state.projection.withFilters(filters));
+    state = state.withFilters(filters);
   }
 
   Future<void> loadOlder() async {
