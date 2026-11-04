@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { ChevronRightIcon } from '@lucide/vue';
 import type { Component } from 'vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch,
+} from 'vue';
 
 type SettingsCategoryNavItem = {
   id: string;
@@ -9,7 +18,7 @@ type SettingsCategoryNavItem = {
   description: string;
 };
 
-defineProps<{
+const props = defineProps<{
   items: SettingsCategoryNavItem[];
   activeId: string;
 }>();
@@ -17,10 +26,88 @@ defineProps<{
 const emit = defineEmits<{
   select: [id: string];
 }>();
+
+const navRef = useTemplateRef<HTMLElement>('nav');
+
+// One accent bar travels between rows instead of a per-row border snapping on and off.
+// Only `transform` is animated, so switching categories never re-runs layout.
+const activeIndicator = shallowRef<{ x: number; y: number; height: number } | null>(null);
+
+const measureActiveIndicator = () => {
+  const nav = navRef.value;
+  const activeItem = nav?.querySelector<HTMLElement>('.settings-category-nav__item.is-active');
+  if (!nav || !activeItem) {
+    activeIndicator.value = null;
+    return;
+  }
+
+  const navRect = nav.getBoundingClientRect();
+  const itemRect = activeItem.getBoundingClientRect();
+  // Integer offsets keep the 2px bar on whole pixels. The height is applied rather than
+  // animated: rows are one line tall, and in the rare case a label wraps, a taller bar
+  // beats scaling a 1px box into a blurry one.
+  const next = {
+    x: Math.round(itemRect.left - navRect.left),
+    y: Math.round(itemRect.top - navRect.top),
+    height: Math.round(itemRect.height),
+  };
+  const current = activeIndicator.value;
+  // A resize can report unchanged geometry; re-rendering for it would only repatch rows.
+  if (current?.x === next.x && current.y === next.y && current.height === next.height) {
+    return;
+  }
+
+  activeIndicator.value = next;
+};
+
+const indicatorStyle = computed(() => {
+  const indicator = activeIndicator.value;
+  if (!indicator) return undefined;
+
+  return {
+    height: `${indicator.height}px`,
+    transform: `translate(${indicator.x}px, ${indicator.y}px)`,
+  };
+});
+
+// Measure once the active row's own render has landed, so the bar never paints on the
+// previous row for a frame after a click. `immediate` covers the first render too: the
+// queued tick runs after mount, when the rows have their geometry.
+watch(
+  () => props.activeId,
+  () => {
+    void nextTick(measureActiveIndicator);
+  },
+  { immediate: true }
+);
+
+let navResizeObserver: ResizeObserver | undefined;
+
+onMounted(() => {
+  const nav = navRef.value;
+  if (typeof ResizeObserver === 'undefined' || !nav) return;
+
+  // Rows move without any prop change when the viewport narrows enough to wrap a label,
+  // or when a swapped app font changes the line box.
+  navResizeObserver = new ResizeObserver(() => measureActiveIndicator());
+  navResizeObserver.observe(nav);
+});
+
+onBeforeUnmount(() => {
+  navResizeObserver?.disconnect();
+  navResizeObserver = undefined;
+});
 </script>
 
 <template>
-  <div class="settings-category-nav">
+  <div ref="nav" class="settings-category-nav">
+    <!-- Decorative: the active row already carries `aria-current`. -->
+    <span
+      v-if="activeIndicator"
+      class="settings-category-nav__indicator"
+      :style="indicatorStyle"
+      aria-hidden="true"
+    />
     <button
       v-for="item in items"
       :key="item.id"
@@ -44,8 +131,19 @@ const emit = defineEmits<{
 
 <style scoped lang="scss">
 .settings-category-nav {
+  position: relative;
   display: flex;
   flex-direction: column;
+}
+
+.settings-category-nav__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  background: var(--gitpulse-accent);
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .settings-category-nav__item {
@@ -57,6 +155,7 @@ const emit = defineEmits<{
   margin-left: 0.25rem;
   border-radius: 0 6px 6px 0;
   border: 0;
+  /* Space only: the travelling indicator paints the accent, so this never changes. */
   border-left: 2px solid transparent;
   background: transparent;
   color: var(--gitpulse-text-muted);
@@ -66,14 +165,13 @@ const emit = defineEmits<{
   text-align: left;
   cursor: pointer;
   transition:
-    color 0.12s ease,
-    border-color 0.12s ease,
-    background 0.12s ease;
+    color 0.18s ease,
+    background 0.18s ease;
 
+  // No font-weight change on the active row: the glyph reflow reads as a jitter
+  // that fights the bar sliding under it.
   &.is-active {
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-left-color: var(--gitpulse-accent);
-    font-weight: 650;
   }
 
   &:focus-visible {
@@ -114,6 +212,11 @@ const emit = defineEmits<{
     background: var(--gitpulse-surface);
   }
 
+  /* The rows are cards here; a left-edge bar has nothing to mark. */
+  .settings-category-nav__indicator {
+    display: none;
+  }
+
   .settings-category-nav__item {
     align-items: flex-start;
     gap: 0.75rem;
@@ -129,12 +232,6 @@ const emit = defineEmits<{
 
     &:last-child {
       border-bottom: 0;
-    }
-
-    &.is-active {
-      border-left-color: transparent;
-      font-weight: 650;
-      background: transparent;
     }
 
     @media (hover: hover) {
@@ -169,6 +266,13 @@ const emit = defineEmits<{
     flex-shrink: 0;
     align-self: center;
     color: var(--gitpulse-text-subtle);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-category-nav__indicator,
+  .settings-category-nav__item {
+    transition: none;
   }
 }
 </style>

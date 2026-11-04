@@ -108,14 +108,24 @@ const isSettingsCategory = (value: string): value is SettingsCategory => {
   return SETTINGS_CATEGORY_IDS.includes(value as SettingsCategory);
 };
 
+const resetSettingsScroll = () => {
+  void nextTick(() => settingsMainRef.value?.scrollTo({ top: 0 }));
+};
+
 const openSettingsCategory = (categoryId: string) => {
   if (!isSettingsCategory(categoryId)) {
     return;
   }
 
+  const switchesCategory = categoryId !== activeSettingsCategory.value;
   activeSettingsCategory.value = categoryId;
   mobileDetailOpen.value = true;
-  void nextTick(() => settingsMainRef.value?.scrollTo({ top: 0 }));
+
+  // A switch scrolls once the incoming panel is mounted; snapping the outgoing one
+  // would yank content the reader is still looking at.
+  if (!switchesCategory) {
+    resetSettingsScroll();
+  }
 };
 
 const closeSettingsCategoryDetail = () => {
@@ -472,318 +482,324 @@ onMounted(() => {
           <ChevronLeftIcon :size="18" aria-hidden="true" />
           <span>{{ t('dashboard.settings.pageTitle') }}</span>
         </button>
-        <div class="settings__content">
-          <div class="settings__header">
-            <div class="settings__header-icon">
-              <component :is="activeSettingsCategoryMeta.icon" :size="20" />
+        <Transition name="settings-panel" mode="out-in" @after-leave="resetSettingsScroll">
+          <div :key="activeSettingsCategory" class="settings__content">
+            <div class="settings__header">
+              <div class="settings__header-icon">
+                <component :is="activeSettingsCategoryMeta.icon" :size="20" />
+              </div>
+              <div>
+                <h1 class="settings__title">{{ t(activeSettingsCategoryMeta.titleKey) }}</h1>
+                <p class="settings__desc">
+                  {{ t(activeSettingsCategoryMeta.descriptionKey) }}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 class="settings__title">{{ t(activeSettingsCategoryMeta.titleKey) }}</h1>
-              <p class="settings__desc">
-                {{ t(activeSettingsCategoryMeta.descriptionKey) }}
-              </p>
-            </div>
-          </div>
 
-          <div v-if="error" class="settings__error">{{ error }}</div>
+            <div v-if="error" class="settings__error">{{ error }}</div>
 
-          <template v-if="activeSettingsCategory === 'appearance'">
-            <!-- App Font -->
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.appFontSection') }}
-              </h2>
-              <div class="settings__font-card">
-                <div class="settings__font-field">
-                  <label class="settings__label">{{ t('dashboard.settings.appFontLabel') }}</label>
-                  <div class="settings__font-input-row">
+            <template v-if="activeSettingsCategory === 'appearance'">
+              <!-- App Font -->
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.appFontSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <div class="settings__font-field">
+                    <label class="settings__label">{{
+                      t('dashboard.settings.appFontLabel')
+                    }}</label>
+                    <div class="settings__font-input-row">
+                      <input
+                        v-if="editingAppFont"
+                        ref="appFontInput"
+                        v-model="appFontInput"
+                        class="settings__font-input"
+                        type="text"
+                        @blur="applyAppFontFromInput"
+                        @keydown="handleAppFontInputKeydown"
+                      />
+                      <span v-else class="settings__font-value" @click="startEditingAppFont">
+                        {{ currentAppFontName }}
+                      </span>
+                      <button
+                        class="settings__font-picker-btn"
+                        type="button"
+                        :aria-label="t('dashboard.settings.selectAppFont')"
+                        @click="showAppFontPicker = true"
+                      >
+                        <SearchIcon :size="14" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Code Font -->
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.codeFontSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <div class="settings__font-field">
+                    <label class="settings__label">{{
+                      t('dashboard.settings.codeFontLabel')
+                    }}</label>
+                    <div class="settings__font-input-row">
+                      <input
+                        v-if="editingCodeFont"
+                        ref="codeFontInput"
+                        v-model="codeFontInput"
+                        class="settings__font-input"
+                        type="text"
+                        @blur="applyCodeFontFromInput"
+                        @keydown="handleCodeFontInputKeydown"
+                      />
+                      <span v-else class="settings__font-value" @click="startEditingCodeFont">
+                        {{ currentCodeFontName }}
+                      </span>
+                      <button
+                        class="settings__font-picker-btn"
+                        type="button"
+                        :aria-label="t('dashboard.settings.selectCodeFont')"
+                        @click="showCodeFontPicker = true"
+                      >
+                        <SearchIcon :size="14" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.prReviewCodeFontSizeLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="String(settings.fonts.prReviewCodeFontSize)"
+                        :options="prReviewCodeFontSizeOptions"
+                        :placeholder="t('dashboard.settings.prReviewCodeFontSizeLabel')"
+                        :aria-label="t('dashboard.settings.prReviewCodeFontSizeLabel')"
+                        @update:model-value="applyPrReviewCodeFontSize"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Code Highlighting -->
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.codeHighlightSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.shikiLightThemeLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.appearance.shikiLightTheme"
+                        :options="shikiLightDropdownOptions"
+                        :placeholder="t('dashboard.settings.shikiLightThemeLabel')"
+                        :aria-label="t('dashboard.settings.shikiLightThemeLabel')"
+                        @update:model-value="applyLightShikiTheme"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.shikiDarkThemeLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.appearance.shikiDarkTheme"
+                        :options="shikiDarkDropdownOptions"
+                        :placeholder="t('dashboard.settings.shikiDarkThemeLabel')"
+                        :aria-label="t('dashboard.settings.shikiDarkThemeLabel')"
+                        @update:model-value="applyDarkShikiTheme"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.composerSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.conversationComposerLayoutLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.composer.conversationDefaultLayout"
+                        :options="composerLayoutOptions"
+                        :placeholder="t('dashboard.settings.conversationComposerLayoutLabel')"
+                        :aria-label="t('dashboard.settings.conversationComposerLayoutLabel')"
+                        @update:model-value="applyConversationComposerLayout"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.reviewInlineComposerLayoutLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.composer.reviewInlineDefaultLayout"
+                        :options="composerLayoutOptions"
+                        :placeholder="t('dashboard.settings.reviewInlineComposerLayoutLabel')"
+                        :aria-label="t('dashboard.settings.reviewInlineComposerLayoutLabel')"
+                        @update:model-value="applyReviewInlineComposerLayout"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="settings__composer-subsection-title">
+                    {{ t('dashboard.settings.composerMobileSection') }}
+                  </div>
+
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.conversationMobileComposerLayoutLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.composer.conversationMobileDefaultLayout"
+                        :options="composerLayoutOptions"
+                        :placeholder="t('dashboard.settings.conversationMobileComposerLayoutLabel')"
+                        :aria-label="t('dashboard.settings.conversationMobileComposerLayoutLabel')"
+                        @update:model-value="applyConversationMobileComposerLayout"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.reviewInlineMobileComposerLayoutLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.composer.reviewInlineMobileDefaultLayout"
+                        :options="composerLayoutOptions"
+                        :placeholder="t('dashboard.settings.reviewInlineMobileComposerLayoutLabel')"
+                        :aria-label="t('dashboard.settings.reviewInlineMobileComposerLayoutLabel')"
+                        @update:model-value="applyReviewInlineMobileComposerLayout"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.releaseTimelineSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <label class="settings__toggle-row">
+                    <span class="settings__option-body">
+                      <span class="settings__option-label">
+                        {{ t('dashboard.settings.releaseTimelineShowReactionsLabel') }}
+                      </span>
+                      <span class="settings__option-desc">
+                        {{ t('dashboard.settings.releaseTimelineShowReactionsDescription') }}
+                      </span>
+                    </span>
                     <input
-                      v-if="editingAppFont"
-                      ref="appFontInput"
-                      v-model="appFontInput"
-                      class="settings__font-input"
-                      type="text"
-                      @blur="applyAppFontFromInput"
-                      @keydown="handleAppFontInputKeydown"
+                      class="settings__toggle-input"
+                      type="checkbox"
+                      :checked="settings.releaseTimeline.showReactions"
+                      :aria-label="t('dashboard.settings.releaseTimelineShowReactionsLabel')"
+                      @change="applyShowReleaseReactions"
                     />
-                    <span v-else class="settings__font-value" @click="startEditingAppFont">
-                      {{ currentAppFontName }}
-                    </span>
-                    <button
-                      class="settings__font-picker-btn"
-                      type="button"
-                      :aria-label="t('dashboard.settings.selectAppFont')"
-                      @click="showAppFontPicker = true"
-                    >
-                      <SearchIcon :size="14" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- Code Font -->
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.codeFontSection') }}
-              </h2>
-              <div class="settings__font-card">
-                <div class="settings__font-field">
-                  <label class="settings__label">{{ t('dashboard.settings.codeFontLabel') }}</label>
-                  <div class="settings__font-input-row">
-                    <input
-                      v-if="editingCodeFont"
-                      ref="codeFontInput"
-                      v-model="codeFontInput"
-                      class="settings__font-input"
-                      type="text"
-                      @blur="applyCodeFontFromInput"
-                      @keydown="handleCodeFontInputKeydown"
-                    />
-                    <span v-else class="settings__font-value" @click="startEditingCodeFont">
-                      {{ currentCodeFontName }}
-                    </span>
-                    <button
-                      class="settings__font-picker-btn"
-                      type="button"
-                      :aria-label="t('dashboard.settings.selectCodeFont')"
-                      @click="showCodeFontPicker = true"
-                    >
-                      <SearchIcon :size="14" />
-                    </button>
-                  </div>
-                </div>
-
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.prReviewCodeFontSizeLabel') }}
+                    <span class="settings__toggle" aria-hidden="true" />
                   </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="String(settings.fonts.prReviewCodeFontSize)"
-                      :options="prReviewCodeFontSizeOptions"
-                      :placeholder="t('dashboard.settings.prReviewCodeFontSizeLabel')"
-                      :aria-label="t('dashboard.settings.prReviewCodeFontSizeLabel')"
-                      @update:model-value="applyPrReviewCodeFontSize"
-                    />
+                </div>
+              </section>
+            </template>
+
+            <template v-else-if="activeSettingsCategory === 'notifications'">
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.notificationReadSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <div class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.notificationReadMarkModeLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="settings.notificationBehavior.readMarkMode"
+                        :options="notificationReadMarkModeOptions"
+                        :placeholder="t('dashboard.settings.notificationReadMarkModeLabel')"
+                        :aria-label="t('dashboard.settings.notificationReadMarkModeLabel')"
+                        @update:model-value="applyNotificationReadMarkMode"
+                      />
+                    </div>
+                  </div>
+
+                  <div v-if="showNotificationReadMarkDelay" class="settings__font-field">
+                    <label class="settings__label">
+                      {{ t('dashboard.settings.notificationReadMarkDelayLabel') }}
+                    </label>
+                    <div class="settings__dropdown-row">
+                      <FilterDropdown
+                        :model-value="String(settings.notificationBehavior.readMarkDelaySeconds)"
+                        :options="notificationReadMarkDelayOptions"
+                        :placeholder="t('dashboard.settings.notificationReadMarkDelayLabel')"
+                        :aria-label="t('dashboard.settings.notificationReadMarkDelayLabel')"
+                        @update:model-value="applyNotificationReadMarkDelay"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+            </template>
 
-            <!-- Code Highlighting -->
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.codeHighlightSection') }}
-              </h2>
-              <div class="settings__font-card">
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.shikiLightThemeLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.appearance.shikiLightTheme"
-                      :options="shikiLightDropdownOptions"
-                      :placeholder="t('dashboard.settings.shikiLightThemeLabel')"
-                      :aria-label="t('dashboard.settings.shikiLightThemeLabel')"
-                      @update:model-value="applyLightShikiTheme"
-                    />
-                  </div>
-                </div>
-
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.shikiDarkThemeLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.appearance.shikiDarkTheme"
-                      :options="shikiDarkDropdownOptions"
-                      :placeholder="t('dashboard.settings.shikiDarkThemeLabel')"
-                      :aria-label="t('dashboard.settings.shikiDarkThemeLabel')"
-                      @update:model-value="applyDarkShikiTheme"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.composerSection') }}
-              </h2>
-              <div class="settings__font-card">
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.conversationComposerLayoutLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.composer.conversationDefaultLayout"
-                      :options="composerLayoutOptions"
-                      :placeholder="t('dashboard.settings.conversationComposerLayoutLabel')"
-                      :aria-label="t('dashboard.settings.conversationComposerLayoutLabel')"
-                      @update:model-value="applyConversationComposerLayout"
-                    />
-                  </div>
-                </div>
-
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.reviewInlineComposerLayoutLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.composer.reviewInlineDefaultLayout"
-                      :options="composerLayoutOptions"
-                      :placeholder="t('dashboard.settings.reviewInlineComposerLayoutLabel')"
-                      :aria-label="t('dashboard.settings.reviewInlineComposerLayoutLabel')"
-                      @update:model-value="applyReviewInlineComposerLayout"
-                    />
-                  </div>
-                </div>
-
-                <div class="settings__composer-subsection-title">
-                  {{ t('dashboard.settings.composerMobileSection') }}
-                </div>
-
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.conversationMobileComposerLayoutLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.composer.conversationMobileDefaultLayout"
-                      :options="composerLayoutOptions"
-                      :placeholder="t('dashboard.settings.conversationMobileComposerLayoutLabel')"
-                      :aria-label="t('dashboard.settings.conversationMobileComposerLayoutLabel')"
-                      @update:model-value="applyConversationMobileComposerLayout"
-                    />
-                  </div>
-                </div>
-
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.reviewInlineMobileComposerLayoutLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.composer.reviewInlineMobileDefaultLayout"
-                      :options="composerLayoutOptions"
-                      :placeholder="t('dashboard.settings.reviewInlineMobileComposerLayoutLabel')"
-                      :aria-label="t('dashboard.settings.reviewInlineMobileComposerLayoutLabel')"
-                      @update:model-value="applyReviewInlineMobileComposerLayout"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.releaseTimelineSection') }}
-              </h2>
-              <div class="settings__font-card">
-                <label class="settings__toggle-row">
-                  <span class="settings__option-body">
-                    <span class="settings__option-label">
-                      {{ t('dashboard.settings.releaseTimelineShowReactionsLabel') }}
-                    </span>
-                    <span class="settings__option-desc">
-                      {{ t('dashboard.settings.releaseTimelineShowReactionsDescription') }}
-                    </span>
-                  </span>
-                  <input
-                    class="settings__toggle-input"
-                    type="checkbox"
-                    :checked="settings.releaseTimeline.showReactions"
-                    :aria-label="t('dashboard.settings.releaseTimelineShowReactionsLabel')"
-                    @change="applyShowReleaseReactions"
-                  />
-                  <span class="settings__toggle" aria-hidden="true" />
-                </label>
-              </div>
-            </section>
-          </template>
-
-          <template v-else-if="activeSettingsCategory === 'notifications'">
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.notificationReadSection') }}
-              </h2>
-              <div class="settings__font-card">
-                <div class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.notificationReadMarkModeLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="settings.notificationBehavior.readMarkMode"
-                      :options="notificationReadMarkModeOptions"
-                      :placeholder="t('dashboard.settings.notificationReadMarkModeLabel')"
-                      :aria-label="t('dashboard.settings.notificationReadMarkModeLabel')"
-                      @update:model-value="applyNotificationReadMarkMode"
-                    />
-                  </div>
-                </div>
-
-                <div v-if="showNotificationReadMarkDelay" class="settings__font-field">
-                  <label class="settings__label">
-                    {{ t('dashboard.settings.notificationReadMarkDelayLabel') }}
-                  </label>
-                  <div class="settings__dropdown-row">
-                    <FilterDropdown
-                      :model-value="String(settings.notificationBehavior.readMarkDelaySeconds)"
-                      :options="notificationReadMarkDelayOptions"
-                      :placeholder="t('dashboard.settings.notificationReadMarkDelayLabel')"
-                      :aria-label="t('dashboard.settings.notificationReadMarkDelayLabel')"
-                      @update:model-value="applyNotificationReadMarkDelay"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-          </template>
-
-          <template v-else>
-            <section class="settings__section">
-              <h2 class="settings__section-title">
-                {{ t('dashboard.settings.linkTargetSection') }}
-              </h2>
-              <div
-                class="settings__option-group"
-                role="radiogroup"
-                :aria-label="t('dashboard.settings.linkTargetSection')"
-              >
-                <label
-                  v-for="option in linkTargetOptions"
-                  :key="option.value"
-                  class="settings__option-card"
-                  :class="{ 'is-selected': settings.navigation.linkTarget === option.value }"
+            <template v-else>
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.linkTargetSection') }}
+                </h2>
+                <div
+                  class="settings__option-group"
+                  role="radiogroup"
+                  :aria-label="t('dashboard.settings.linkTargetSection')"
                 >
-                  <input
-                    class="settings__option-input"
-                    type="radio"
-                    name="linkTarget"
-                    :value="option.value"
-                    :checked="settings.navigation.linkTarget === option.value"
-                    :aria-label="option.label"
-                    @change="applyLinkTarget(option.value)"
-                  />
-                  <span class="settings__option-icon-wrap" aria-hidden="true">
-                    <component :is="option.icon" class="settings__option-icon" />
-                  </span>
-                  <span class="settings__option-body">
-                    <span class="settings__option-label">{{ option.label }}</span>
-                    <span class="settings__option-desc">{{ option.description }}</span>
-                  </span>
-                  <CheckIcon class="settings__option-check" :size="16" aria-hidden="true" />
-                </label>
-              </div>
-            </section>
-          </template>
-        </div>
+                  <label
+                    v-for="option in linkTargetOptions"
+                    :key="option.value"
+                    class="settings__option-card"
+                    :class="{ 'is-selected': settings.navigation.linkTarget === option.value }"
+                  >
+                    <input
+                      class="settings__option-input"
+                      type="radio"
+                      name="linkTarget"
+                      :value="option.value"
+                      :checked="settings.navigation.linkTarget === option.value"
+                      :aria-label="option.label"
+                      @change="applyLinkTarget(option.value)"
+                    />
+                    <span class="settings__option-icon-wrap" aria-hidden="true">
+                      <component :is="option.icon" class="settings__option-icon" />
+                    </span>
+                    <span class="settings__option-body">
+                      <span class="settings__option-label">{{ option.label }}</span>
+                      <span class="settings__option-desc">{{ option.description }}</span>
+                    </span>
+                    <CheckIcon class="settings__option-check" :size="16" aria-hidden="true" />
+                  </label>
+                </div>
+              </section>
+            </template>
+          </div>
+        </Transition>
       </ScrollArea>
     </div>
 
@@ -1213,6 +1229,56 @@ onMounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* The sidebar pick animates the whole panel into place. The staged swap (`out-in`) is what
+   keeps two panels from stacking, and it is also why the leaving panel needs a phone rule
+   below: with no transition to watch, the stage would keep the old category on screen. */
+@media screen and (min-width: 861px) {
+  .settings-panel-enter-active {
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
+    will-change: opacity, transform;
+  }
+
+  .settings-panel-leave-active {
+    transition:
+      opacity 0.1s ease-out,
+      transform 0.1s ease-in;
+    will-change: opacity, transform;
+  }
+
+  .settings-panel-enter-from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+
+  .settings-panel-leave-to {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}
+
+/* On phones the same pick is what reveals the detail pane, so the switch must read as one
+   step: draw nothing of the outgoing category while the swap resolves. */
+@media screen and (max-width: 860px) {
+  .settings-panel-leave-active {
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-panel-enter-active,
+  .settings-panel-leave-active {
+    transition: none;
+  }
+
+  .settings-panel-enter-from,
+  .settings-panel-leave-to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Same breakpoint as dashboard home chrome / overlay padding. */
