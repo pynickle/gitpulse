@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon } from '@lucide/vue';
+import { LoaderCircleIcon } from '@lucide/vue';
 
 import type { FollowAddError, FollowedRepository } from '#shared/types/release-follows';
 import FollowableRepoCard from '~/components/dashboard/release-follows/FollowableRepoCard.vue';
@@ -32,7 +32,7 @@ const emit = defineEmits<{
     </div>
 
     <div v-else-if="loading" class="release-follows-grid__empty" aria-busy="true">
-      <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+      <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
     </div>
 
     <div v-else-if="items.length === 0" class="release-follows-grid__empty">

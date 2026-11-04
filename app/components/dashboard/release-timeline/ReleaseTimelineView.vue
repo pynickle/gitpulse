@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon, RocketIcon } from '@lucide/vue';
+import { LoaderCircleIcon, RocketIcon } from '@lucide/vue';
 import { computed, shallowRef, useTemplateRef } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
@@ -221,7 +221,7 @@ defineExpose({
         :aria-label="t('releaseTimeline.loading')"
         aria-busy="true"
       >
-        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+        <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
       </div>
 
       <div v-else-if="showError" class="release-timeline__status release-timeline__status--error">

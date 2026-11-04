@@ -2,7 +2,7 @@
 import {
   FlaskConicalIcon,
   LayoutGridIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
   PencilLineIcon,
   RocketIcon,
   TagIcon,
@@ -261,7 +261,7 @@ watch(repoFullName, () => {
         </div>
 
         <div v-else-if="loading" class="releases-page__empty" aria-busy="true">
-          <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+          <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
         </div>
 
         <div v-else-if="items.length === 0" class="releases-page__empty">

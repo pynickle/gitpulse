@@ -3,7 +3,7 @@ import {
   ChevronRightIcon,
   ExternalLinkIcon,
   GitCommitHorizontalIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
 } from '@lucide/vue';
 import { computed } from 'vue';
 
@@ -144,7 +144,7 @@ const authorProfileUrl = computed(() => {
         <ExternalLinkIcon :size="12" aria-hidden="true" />
       </a>
 
-      <Loader2Icon
+      <LoaderCircleIcon
         v-if="loading"
         :size="14"
         class="repo-latest-commit-bar__refresh spin-animation"

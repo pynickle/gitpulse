@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon, TagIcon } from '@lucide/vue';
+import { LoaderCircleIcon, TagIcon } from '@lucide/vue';
 import { computed, onMounted, shallowRef } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
@@ -69,7 +69,7 @@ onMounted(() => {
       :aria-label="t('releasesPage.loadingTitle')"
       aria-busy="true"
     >
-      <Loader2Icon :size="22" class="release-drawer-list__spinner" aria-hidden="true" />
+      <LoaderCircleIcon :size="22" class="release-drawer-list__spinner" aria-hidden="true" />
     </div>
     <div
       v-else-if="error"

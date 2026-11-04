@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { RotateCcw as RotateCcwIcon } from '@lucide/vue';
+import { RotateCcwIcon } from '@lucide/vue';
 import { computed, shallowRef, useTemplateRef, watch } from 'vue';
 
 import {

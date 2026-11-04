@@ -4,7 +4,7 @@ import {
   DatabaseIcon,
   DiscIcon,
   FileArchiveIcon,
-  FileAudioIcon,
+  FileHeadphoneIcon,
   FileBoxIcon,
   FileBracesIcon,
   FileCodeIcon,
@@ -12,7 +12,7 @@ import {
   FileImageIcon,
   FileSpreadsheetIcon,
   FileTextIcon,
-  FileVideoIcon,
+  FilePlayIcon,
   MonitorDownIcon,
   PackageOpenIcon,
   ShieldCheckIcon,
@@ -69,8 +69,8 @@ describe('getReleaseAssetVisual', () => {
     expect(shape('release.json')).toEqual({ icon: FileBracesIcon, tone: 'document' });
     expect(shape('install.sh')).toEqual({ icon: FileCodeIcon, tone: 'code' });
     expect(shape('screenshot.png')).toEqual({ icon: FileImageIcon, tone: 'media' });
-    expect(shape('demo.mp4')).toEqual({ icon: FileVideoIcon, tone: 'media' });
-    expect(shape('chime.mp3')).toEqual({ icon: FileAudioIcon, tone: 'media' });
+    expect(shape('demo.mp4')).toEqual({ icon: FilePlayIcon, tone: 'media' });
+    expect(shape('chime.mp3')).toEqual({ icon: FileHeadphoneIcon, tone: 'media' });
     expect(shape('gitpulse.sqlite')).toEqual({ icon: DatabaseIcon, tone: 'archive' });
   });
 

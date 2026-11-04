@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookMarkedIcon, Loader2Icon } from '@lucide/vue';
+import { BookBookmarkIcon, LoaderCircleIcon } from '@lucide/vue';
 import { toRef } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
@@ -28,7 +28,7 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
 
     <template v-else>
       <div v-if="loading" class="profile-repo-list__status">
-        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+        <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
       </div>
 
       <div v-else-if="items.length" class="profile-repo-list__items">
@@ -41,7 +41,7 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
       </div>
 
       <div v-else class="profile-repo-list__status profile-repo-list__status--empty">
-        <BookMarkedIcon :size="26" aria-hidden="true" />
+        <BookBookmarkIcon :size="26" aria-hidden="true" />
         <p>{{ emptyLabel }}</p>
       </div>
 

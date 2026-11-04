@@ -30,7 +30,7 @@
           @click="togglePopover"
         >
           <LoaderCircleIcon v-if="isLoading" :size="14" class="reaction-bar__loading" />
-          <SmilePlusIcon v-else :size="14" aria-hidden="true" />
+          <FaceSlightlySmilingPlusIcon v-else :size="14" aria-hidden="true" />
         </button>
 
         <div v-if="isPopoverOpen" class="reaction-bar__popover" role="menu">
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { LoaderCircleIcon, SmilePlusIcon } from '@lucide/vue';
+import { LoaderCircleIcon, FaceSlightlySmilingPlusIcon } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 

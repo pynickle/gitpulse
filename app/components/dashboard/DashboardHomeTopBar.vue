@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FilterIcon, MenuIcon, RefreshCwIcon, UserIcon } from '@lucide/vue';
+import { FunnelIcon, MenuIcon, RefreshCwIcon, UserIcon } from '@lucide/vue';
 import { useTemplateRef, watch } from 'vue';
 
 import DashboardAccountMenu from '~/components/dashboard/DashboardAccountMenu.vue';
@@ -84,7 +84,7 @@ watch(
       :title="t('dashboard.filters.openDrawer')"
       @click="emit('filter-click')"
     >
-      <FilterIcon :size="18" aria-hidden="true" />
+      <FunnelIcon :size="18" aria-hidden="true" />
     </button>
 
     <button

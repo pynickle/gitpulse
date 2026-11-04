@@ -52,7 +52,7 @@
             </div>
 
             <div v-if="systemFontsLoading" class="font-modal-loading">
-              <Loader2Icon class="spin-animation" :size="18" />
+              <LoaderCircleIcon class="spin-animation" :size="18" />
               <span>{{ t('dashboard.settings.loadingSystemFonts') }}</span>
             </div>
 
@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckIcon, Loader2Icon, SearchIcon, TypeIcon, XIcon } from '@lucide/vue';
+import { CheckIcon, LoaderCircleIcon, SearchIcon, TypeIcon, XIcon } from '@lucide/vue';
 import { computed, nextTick, ref, shallowRef, watch } from 'vue';
 
 import { normalizeSystemFontFamily } from '#shared/utils/user-settings';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileIcon, FolderIcon, Loader2Icon } from '@lucide/vue';
+import { FileIcon, FolderIcon, LoaderCircleIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
@@ -66,7 +66,7 @@ const navigateToItem = async (item: RepoContentItem) => {
       <span>{{ t('repoDetail.files') }}</span>
     </h2>
     <div v-if="loading" class="repo-file-tree__loading">
-      <Loader2Icon :size="20" class="spin-animation" />
+      <LoaderCircleIcon :size="20" class="spin-animation" />
     </div>
     <div v-else-if="error" class="repo-file-tree__error">
       {{ error }}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon } from '@lucide/vue';
+import { LoaderCircleIcon } from '@lucide/vue';
 import { computed, defineAsyncComponent, nextTick, onUnmounted, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -422,7 +422,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
               class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
             >
               <div class="box has-text-centered py-5 px-6 shadow-md detail-loading-box">
-                <Loader2Icon
+                <LoaderCircleIcon
                   class="spin-animation has-text-link mb-3"
                   :size="40"
                   :stroke-width="2.5"
@@ -511,7 +511,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
                   :aria-label="activeDetailPane?.loadingTitle"
                   aria-busy="true"
                 >
-                  <Loader2Icon class="spin-animation" :size="40" aria-hidden="true" />
+                  <LoaderCircleIcon class="spin-animation" :size="40" aria-hidden="true" />
                 </div>
               </template>
             </Suspense>

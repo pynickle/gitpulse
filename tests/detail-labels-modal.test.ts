@@ -44,9 +44,9 @@ const DetailLabels = await compileVue(
   'app/components/dashboard/detail/DetailLabels.vue',
   {
     '@lucide/vue': {
-      AlertCircleIcon: icon,
+      CircleExclamationPointIcon: icon,
       CheckIcon: icon,
-      Loader2Icon: icon,
+      LoaderCircleIcon: icon,
       PencilIcon: icon,
       TagIcon: icon,
       XIcon: icon,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { GitCommitHorizontalIcon, Loader2Icon, SearchIcon, UsersIcon } from '@lucide/vue';
+import { GitCommitHorizontalIcon, LoaderCircleIcon, SearchIcon, UsersIcon } from '@lucide/vue';
 import { computed, onMounted, ref, watch } from 'vue';
 
 import type { RepoContributorWeek } from '#shared/types/repos';
@@ -230,7 +230,7 @@ watch(repoFullName, () => {
       </div>
 
       <div v-if="gridLoadingSoft" class="contributors-page__computing" role="status">
-        <Loader2Icon :size="14" class="spin-animation" aria-hidden="true" />
+        <LoaderCircleIcon :size="14" class="spin-animation" aria-hidden="true" />
         <span>{{ t('contributorsPage.computing') }}</span>
       </div>
 
@@ -335,7 +335,7 @@ watch(repoFullName, () => {
           class="contributors-page__empty contributors-page__empty--computing"
           role="status"
         >
-          <Loader2Icon :size="20" class="spin-animation" aria-hidden="true" />
+          <LoaderCircleIcon :size="20" class="spin-animation" aria-hidden="true" />
           <p>{{ t('contributorsPage.computing') }}</p>
         </div>
       </div>

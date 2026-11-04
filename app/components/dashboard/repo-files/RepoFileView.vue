@@ -7,11 +7,11 @@ import {
   DownloadIcon,
   FileIcon,
   FolderIcon,
-  HomeIcon,
-  Loader2Icon,
+  HouseIcon,
+  LoaderCircleIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
-  WrapTextIcon,
+  TextWrapIcon,
 } from '@lucide/vue';
 import type { HighlighterCore, ThemeRegistration } from 'shiki';
 import type { BundledLanguage } from 'shiki/langs';
@@ -869,7 +869,7 @@ onActivated(() => {
             :title="t('repoFileView.home')"
             @click="goHome"
           >
-            <HomeIcon :size="16" aria-hidden="true" />
+            <HouseIcon :size="16" aria-hidden="true" />
           </button>
         </div>
         <FileIcon
@@ -951,7 +951,7 @@ onActivated(() => {
           </div>
 
           <div v-if="treeLoading" class="repo-file-view__tree-loading">
-            <Loader2Icon :size="16" class="spin-animation" />
+            <LoaderCircleIcon :size="16" class="spin-animation" />
             <span>{{ t('repoFileView.loadingTree') }}</span>
           </div>
 
@@ -1032,7 +1032,7 @@ onActivated(() => {
 
       <div class="repo-file-view__content">
         <div v-if="loading" class="repo-file-view__loading">
-          <Loader2Icon :size="24" class="spin-animation" />
+          <LoaderCircleIcon :size="24" class="spin-animation" />
         </div>
 
         <div v-else-if="error" class="repo-file-view__error">
@@ -1115,7 +1115,7 @@ onActivated(() => {
                 :title="t('repoFileView.toggleWrap')"
                 @click="wordWrap = !wordWrap"
               >
-                <WrapTextIcon :size="14" aria-hidden="true" />
+                <TextWrapIcon :size="14" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -1168,7 +1168,7 @@ onActivated(() => {
             ]"
           >
             <div v-if="highlightLoading" class="repo-file-view__highlight-loading">
-              <Loader2Icon :size="16" class="spin-animation" />
+              <LoaderCircleIcon :size="16" class="spin-animation" />
             </div>
             <!-- doctor-disable-next-line vue/security/restrict-v-html -- Shiki codeToHtml escapes source text and generates the markup. -->
             <div

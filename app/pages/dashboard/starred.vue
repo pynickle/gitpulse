@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowDownIcon, ArrowUpIcon, ClockIcon, Loader2Icon, StarIcon } from '@lucide/vue';
+import { ArrowDownIcon, ArrowUpIcon, ClockIcon, LoaderCircleIcon, StarIcon } from '@lucide/vue';
 import { computed, onMounted, watch } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
@@ -171,7 +171,7 @@ watch(requestedUser, () => {
         </div>
 
         <div v-else-if="loading" class="starred-page__empty" aria-busy="true">
-          <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+          <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
         </div>
 
         <div v-else-if="items.length === 0" class="starred-page__empty">

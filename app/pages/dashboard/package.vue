@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  AlertTriangleIcon,
+  TriangleExclamationPointIcon,
   CalendarIcon,
-  HistoryIcon,
+  RotateCcwClockIcon,
   LayoutGridIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
   TagIcon,
   TerminalIcon,
 } from '@lucide/vue';
@@ -259,7 +259,7 @@ const handleHome = async () => {
       </div>
 
       <div v-else-if="detailError" class="package-page__status package-page__status--error">
-        <AlertTriangleIcon :size="32" aria-hidden="true" />
+        <TriangleExclamationPointIcon :size="32" aria-hidden="true" />
         <p>{{ detailError }}</p>
         <button type="button" class="button is-small is-light" @click="refresh">
           {{ t('packageDetail.retry') }}
@@ -318,7 +318,7 @@ const handleHome = async () => {
             </span>
 
             <span v-if="updatedLabel" class="package-page__meta-entry">
-              <HistoryIcon :size="14" aria-hidden="true" />
+              <RotateCcwClockIcon :size="14" aria-hidden="true" />
               {{ updatedLabel }}
             </span>
 
@@ -386,7 +386,7 @@ const handleHome = async () => {
           </p>
 
           <div v-if="loadingVersions" class="package-page__status">
-            <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+            <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
           </div>
 
           <div v-else-if="versionsError" class="package-page__status package-page__status--error">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon } from '@lucide/vue';
+import { LoaderCircleIcon } from '@lucide/vue';
 import { computed, toRef } from 'vue';
 
 import RepoItem from '~/components/dashboard/RepoItem.vue';
@@ -27,7 +27,7 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
     </header>
 
     <div v-if="loading" class="profile-pinned__status">
-      <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+      <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
     </div>
 
     <div v-else-if="error" class="profile-pinned__status profile-pinned__status--error">

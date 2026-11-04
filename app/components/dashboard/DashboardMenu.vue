@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   BellIcon,
-  BookMarkedIcon,
+  BookBookmarkIcon,
   CircleDotIcon,
   GitPullRequestIcon,
   InboxIcon,
@@ -63,7 +63,7 @@ const iconMap: Record<string, typeof UserIcon> = {
   bell: BellIcon,
   'circle-dot': CircleDotIcon,
   'git-pull-request': GitPullRequestIcon,
-  'book-marked': BookMarkedIcon,
+  'book-marked': BookBookmarkIcon,
   rocket: RocketIcon,
 };
 

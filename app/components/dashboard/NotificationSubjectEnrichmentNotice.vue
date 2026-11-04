@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangleIcon, RefreshCwIcon } from '@lucide/vue';
+import { TriangleExclamationPointIcon, RefreshCwIcon } from '@lucide/vue';
 
 defineProps<{
   refreshing: boolean;
@@ -14,7 +14,7 @@ const { t } = useI18n();
 
 <template>
   <div class="notification-enrichment-notice" role="status" aria-live="polite" aria-atomic="true">
-    <AlertTriangleIcon :size="16" aria-hidden="true" />
+    <TriangleExclamationPointIcon :size="16" aria-hidden="true" />
     <span class="notification-enrichment-notice__message">
       {{ t('dashboard.notificationSubjectEnrichment.failure') }}
     </span>

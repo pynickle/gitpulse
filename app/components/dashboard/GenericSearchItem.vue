@@ -33,10 +33,10 @@
 
 <script setup lang="ts">
 import {
-  BookMarkedIcon,
+  BookBookmarkIcon,
   CircleDotIcon,
-  Code2Icon,
-  GitCommitIcon,
+  CodeXmlIcon,
+  GitCommitHorizontalIcon,
   GitPullRequestIcon,
   TagIcon,
   TagsIcon,
@@ -117,9 +117,9 @@ const icon = computed(() => {
   if (endpoint === 'issues') {
     return item.pull_request ? GitPullRequestIcon : CircleDotIcon;
   }
-  if (endpoint === 'repositories') return BookMarkedIcon;
-  if (endpoint === 'code') return Code2Icon;
-  if (endpoint === 'commits') return GitCommitIcon;
+  if (endpoint === 'repositories') return BookBookmarkIcon;
+  if (endpoint === 'code') return CodeXmlIcon;
+  if (endpoint === 'commits') return GitCommitHorizontalIcon;
   if (endpoint === 'users') return UserIcon;
   if (endpoint === 'topics') return TagsIcon;
   return TagIcon;

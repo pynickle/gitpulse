@@ -7,7 +7,7 @@ import {
   LayoutGridIcon,
   SearchIcon,
   ShieldCheckIcon,
-  UnlockIcon,
+  LockOpenIcon,
 } from '@lucide/vue';
 import { computed, onMounted, ref, watch, type Component } from 'vue';
 
@@ -83,7 +83,7 @@ const filterOptions = computed<BranchFilterOption[]>(() => [
   {
     value: 'unprotected',
     label: t('branchesPage.filterUnprotected'),
-    icon: UnlockIcon,
+    icon: LockOpenIcon,
     color: 'var(--gitpulse-text-muted)',
   },
   {

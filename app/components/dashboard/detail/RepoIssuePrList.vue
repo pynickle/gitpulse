@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangleIcon, Loader2Icon } from '@lucide/vue';
+import { TriangleExclamationPointIcon, LoaderCircleIcon } from '@lucide/vue';
 
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import IssuePrNotificationItem from '~/components/dashboard/IssuePrNotificationItem.vue';
@@ -41,13 +41,13 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
     :aria-label="kind === 'pulls' ? t('repoDetail.pulls') : t('repoDetail.issues')"
   >
     <div v-if="loading" class="repo-issue-pr-list__loading" aria-busy="true">
-      <Loader2Icon :size="20" class="spin-animation" />
+      <LoaderCircleIcon :size="20" class="spin-animation" />
       <span>{{ t('repoDetail.loadingList') }}</span>
     </div>
 
     <div v-else-if="error" class="repo-issue-pr-list__error" role="alert">
       <div class="repo-issue-pr-list__error-icon" aria-hidden="true">
-        <AlertTriangleIcon :size="28" />
+        <TriangleExclamationPointIcon :size="28" />
       </div>
       <p class="repo-issue-pr-list__error-title">{{ t('repoDetail.listErrorTitle') }}</p>
       <p class="repo-issue-pr-list__error-message">{{ error }}</p>

@@ -1,12 +1,12 @@
 import {
-  CheckSquareIcon,
+  SquareCheckBigIcon,
   CircleDotIcon,
   CircleMinusIcon,
-  GitCommitIcon,
+  GitCommitHorizontalIcon,
   GitPullRequestIcon,
   MailIcon,
   MessageSquareIcon,
-  ShieldAlertIcon,
+  ShieldExclamationPointIcon,
   TagIcon,
   WorkflowIcon,
 } from '@lucide/vue';
@@ -72,17 +72,17 @@ const subjectTypeVisuals: Record<string, DashboardSubjectStateVisual> = {
     state: 'release',
   },
   Commit: {
-    icon: GitCommitIcon,
+    icon: GitCommitHorizontalIcon,
     label: 'Commit',
     state: 'commit',
   },
   CheckSuite: {
-    icon: CheckSquareIcon,
+    icon: SquareCheckBigIcon,
     label: 'Check suite',
     state: 'check-suite',
   },
   RepositoryVulnerabilityAlert: {
-    icon: ShieldAlertIcon,
+    icon: ShieldExclamationPointIcon,
     label: 'Security alert',
     state: 'security-alert',
   },

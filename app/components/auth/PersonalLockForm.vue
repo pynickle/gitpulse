@@ -45,7 +45,7 @@
 
         <Button type="submit" class="is-fullwidth is-justify-content-center" :disabled="submitting">
           <LoadingIcon v-if="submitting" class="mr-3" :size="18" />
-          <UnlockIcon v-else class="mr-3" :size="18" />
+          <LockOpenIcon v-else class="mr-3" :size="18" />
           {{ submitting ? t('auth.unlocking') : t('auth.unlock') }}
         </Button>
       </form>
@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { KeyRoundIcon, LockKeyholeIcon, UnlockIcon } from '@lucide/vue';
+import { KeyRoundIcon, LockKeyholeIcon, LockOpenIcon } from '@lucide/vue';
 import { ref } from 'vue';
 
 import Button from '~/components/ui/Button.vue';

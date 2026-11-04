@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeftIcon, GitPullRequestIcon, HomeIcon, MessageSquareIcon } from '@lucide/vue';
+import { ArrowLeftIcon, GitPullRequestIcon, HouseIcon, MessageSquareIcon } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 
 import {
@@ -327,7 +327,7 @@ watch(
             :title="t('repoFileView.home')"
             @click="goHome"
           >
-            <HomeIcon :size="15" aria-hidden="true" />
+            <HouseIcon :size="15" aria-hidden="true" />
           </button>
         </div>
       </div>

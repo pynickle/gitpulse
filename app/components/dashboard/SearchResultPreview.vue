@@ -70,11 +70,11 @@
 
 <script setup lang="ts">
 import {
-  BookMarkedIcon,
+  BookBookmarkIcon,
   CircleDotIcon,
   CircleMinusIcon,
-  Code2Icon,
-  GitCommitIcon,
+  CodeXmlIcon,
+  GitCommitHorizontalIcon,
   TagIcon,
   TagsIcon,
   UserIcon,
@@ -183,10 +183,10 @@ const getStateIcon = (item: SearchResultItem) => {
   if (item.state === 'open' || item.state === 'closed') {
     return item.state === 'open' ? CircleDotIcon : CircleMinusIcon;
   }
-  if (item.commit) return GitCommitIcon;
+  if (item.commit) return GitCommitHorizontalIcon;
   if (item.login) return UserIcon;
-  if (item.full_name) return BookMarkedIcon;
-  if (item.repository) return Code2Icon;
+  if (item.full_name) return BookBookmarkIcon;
+  if (item.repository) return CodeXmlIcon;
   if (item.name && item.description) return TagsIcon;
   return TagIcon;
 };

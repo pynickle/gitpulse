@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {
   BellIcon,
-  BookMarkedIcon,
+  BookBookmarkIcon,
   ChevronDownIcon,
   CircleDotIcon,
   FolderIcon,
@@ -13,7 +13,7 @@ import {
   PlusIcon,
   SearchIcon,
   SparklesIcon,
-  Trash2Icon,
+  TrashIcon,
   XIcon,
 } from '@lucide/vue';
 import { nextTick, onBeforeUnmount, shallowRef, watch } from 'vue';
@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
         <BellIcon v-if="tab.id === 'notifications'" :size="13" />
         <CircleDotIcon v-else-if="tab.id === 'issues'" :size="13" />
         <GitPullRequestIcon v-else-if="tab.id === 'pulls'" :size="13" />
-        <BookMarkedIcon v-else :size="13" />
+        <BookBookmarkIcon v-else :size="13" />
         <span>{{ tab.name }}</span>
       </span>
     </section>
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
                 :aria-label="t('dashboard.tabsSettings.deleteGroupLabel', { group: group.name })"
                 @click="requestDeleteGroup(group.id)"
               >
-                <Trash2Icon :size="14" />
+                <TrashIcon :size="14" />
               </button>
             </div>
           </div>
@@ -383,7 +383,7 @@ onBeforeUnmount(() => {
                       :aria-label="t('dashboard.tabsSettings.confirmDeleteViewButton')"
                       @click="confirmDeleteTab(tab.id)"
                     >
-                      <Trash2Icon :size="14" />
+                      <TrashIcon :size="14" />
                     </button>
                   </div>
                   <button
@@ -393,7 +393,7 @@ onBeforeUnmount(() => {
                     :aria-label="t('dashboard.tabsSettings.deleteViewLabel', { view: tab.name })"
                     @click="requestDeleteTab(tab.id)"
                   >
-                    <Trash2Icon :size="14" />
+                    <TrashIcon :size="14" />
                   </button>
                 </div>
               </div>

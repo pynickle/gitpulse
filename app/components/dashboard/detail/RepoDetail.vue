@@ -5,7 +5,7 @@ import {
   BookOpenIcon,
   CircleDotIcon,
   CircleMinusIcon,
-  Code2Icon,
+  CodeXmlIcon,
   EyeIcon,
   ExternalLinkIcon,
   FileTextIcon,
@@ -17,7 +17,7 @@ import {
   GitForkIcon,
   InfoIcon,
   LayoutGridIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
   StarIcon,
   TagIcon,
   XIcon,
@@ -655,7 +655,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 :disabled="loadingStar"
                 @click="toggleStar"
               >
-                <Loader2Icon v-if="loadingStar" :size="14" class="spin-animation" />
+                <LoaderCircleIcon v-if="loadingStar" :size="14" class="spin-animation" />
                 <StarIcon v-else :size="14" :fill="isStarred ? 'currentColor' : 'none'" />
                 <span>{{ isStarred ? copy.starred : copy.star }}</span>
               </button>
@@ -668,7 +668,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   :disabled="loadingWatch"
                   @click.stop="toggleWatchDropdown"
                 >
-                  <Loader2Icon v-if="loadingWatch" :size="14" class="spin-animation" />
+                  <LoaderCircleIcon v-if="loadingWatch" :size="14" class="spin-animation" />
                   <EyeIcon v-else :size="14" />
                   <span>{{ watchStateLabel }}</span>
                 </button>
@@ -923,7 +923,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   <span>{{ copy.readme }}</span>
                 </h2>
                 <div v-if="loadingReadme" class="repo-readme__loading">
-                  <Loader2Icon :size="20" class="spin-animation" />
+                  <LoaderCircleIcon :size="20" class="spin-animation" />
                 </div>
                 <div v-else-if="readmeContent" class="repo-readme__content content">
                   <MarkdownRenderer
@@ -998,7 +998,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
           <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card mb-4">
             <div class="sidebar-card__header">
               <div class="sidebar-card__header-left">
-                <Code2Icon :size="14" class="sidebar-card__icon" />
+                <CodeXmlIcon :size="14" class="sidebar-card__icon" />
                 <span class="sidebar-card__title">{{ copy.languages }}</span>
               </div>
             </div>
@@ -1007,7 +1007,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 v-if="loadingLanguages && languageShares.length === 0"
                 class="repo-languages__loading"
               >
-                <Loader2Icon :size="16" class="spin-animation" aria-hidden="true" />
+                <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
                 <span class="is-sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
               </div>
               <div v-else class="repo-languages">

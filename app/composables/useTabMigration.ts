@@ -1,6 +1,6 @@
 import {
   BellIcon,
-  BookMarkedIcon,
+  BookBookmarkIcon,
   CircleDotIcon,
   GitPullRequestIcon,
   ListTodoIcon,
@@ -65,7 +65,7 @@ const DEFAULT_TABS: TabItem[] = [
     groupId: BUILTIN_TAB_GROUP_ID,
     name: 'Repositories',
     nameKey: 'dashboard.tabs.repos',
-    icon: BookMarkedIcon,
+    icon: BookBookmarkIcon,
   },
 ];
 

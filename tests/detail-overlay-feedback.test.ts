@@ -24,7 +24,7 @@ const defaultLoaders = () => ({
 });
 type PaneLoaders = Record<keyof ReturnType<typeof defaultLoaders>, () => Promise<Component>>;
 const Host = await compileVue('app/components/dashboard/detail/DetailOverlayHost.vue', {
-  '@lucide/vue': { Loader2Icon: empty },
+  '@lucide/vue': { LoaderCircleIcon: empty },
   'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
   '~/components/dashboard/overlay/DashboardOverlayFrame.vue': { default: frame },
   '~/components/ui/ScrollArea.vue': { default: ScrollArea },

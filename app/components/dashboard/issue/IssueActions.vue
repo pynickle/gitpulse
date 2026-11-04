@@ -26,14 +26,14 @@
       </header>
       <div class="sidebar-section__body">
         <div v-if="lockError" class="sidebar-alert sidebar-alert--error">
-          <AlertCircleIcon :size="14" />
+          <CircleExclamationPointIcon :size="14" />
           <span>{{ lockError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearLockError">
             <XIcon :size="12" />
           </button>
         </div>
         <div v-if="stateError" class="sidebar-alert sidebar-alert--error">
-          <AlertCircleIcon :size="14" />
+          <CircleExclamationPointIcon :size="14" />
           <span>{{ stateError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearStateError">
             <XIcon :size="12" />
@@ -49,7 +49,7 @@
             @click="isClosed ? reopenIssue() : closeIssue()"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
-              <Loader2Icon v-if="loadingState" class="spin-animation" :size="14" />
+              <LoaderCircleIcon v-if="loadingState" class="spin-animation" :size="14" />
               <CircleCheckIcon v-else-if="!isClosed" :size="14" />
               <CircleDotIcon v-else :size="14" />
             </span>
@@ -64,9 +64,9 @@
             @click="isLocked ? unlockIssue() : openLockModal()"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
-              <Loader2Icon v-if="loadingLock" class="spin-animation" :size="14" />
+              <LoaderCircleIcon v-if="loadingLock" class="spin-animation" :size="14" />
               <LockIcon v-else-if="!isLocked" :size="14" />
-              <UnlockIcon v-else :size="14" />
+              <LockOpenIcon v-else :size="14" />
             </span>
             <span>{{ isLocked ? t('issueDetail.unlockIssue') : t('issueDetail.lockIssue') }}</span>
           </button>
@@ -120,7 +120,7 @@
 
 <script setup lang="ts">
 import {
-  AlertCircleIcon,
+  CircleExclamationPointIcon,
   CircleCheckIcon,
   CircleDotIcon,
   ExternalLinkIcon,
@@ -129,9 +129,9 @@ import {
   ListMinusIcon,
   ListPlusIcon,
   LockIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
   Settings2Icon,
-  UnlockIcon,
+  LockOpenIcon,
   XIcon,
 } from '@lucide/vue';
 import { computed, onUnmounted, ref } from 'vue';

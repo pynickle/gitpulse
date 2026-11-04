@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertCircleIcon, ArrowDownIcon, Loader2Icon } from '@lucide/vue';
+import { CircleExclamationPointIcon, ArrowDownIcon, LoaderCircleIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 const { partial, hasMore, canRetry, persistenceError, error } = defineProps<{
@@ -20,11 +20,19 @@ const visible = computed(
   <div v-if="visible" class="timeline-status" aria-live="polite">
     <p v-if="partial" class="timeline-status__meta">{{ t('releaseTimeline.partialWindow') }}</p>
     <p v-if="error" class="timeline-status__alert timeline-status__alert--danger" role="alert">
-      <AlertCircleIcon class="timeline-status__alert-icon" :size="14" aria-hidden="true" />
+      <CircleExclamationPointIcon
+        class="timeline-status__alert-icon"
+        :size="14"
+        aria-hidden="true"
+      />
       <span>{{ t('releaseTimeline.error') }}</span>
     </p>
     <p v-if="persistenceError" class="timeline-status__alert" role="alert">
-      <AlertCircleIcon class="timeline-status__alert-icon" :size="14" aria-hidden="true" />
+      <CircleExclamationPointIcon
+        class="timeline-status__alert-icon"
+        :size="14"
+        aria-hidden="true"
+      />
       <span class="timeline-status__alert-text">{{ t('releaseTimeline.persistenceError') }}</span>
       <button class="timeline-status__retry" type="button" @click="emit('save')">
         {{ t('releaseTimeline.retry') }}
@@ -46,7 +54,7 @@ const visible = computed(
       :disabled="loading"
       @click="emit('older')"
     >
-      <Loader2Icon v-if="loading" :size="14" class="spin-animation" aria-hidden="true" />
+      <LoaderCircleIcon v-if="loading" :size="14" class="spin-animation" aria-hidden="true" />
       <ArrowDownIcon v-else :size="14" aria-hidden="true" />
       <span>{{ t('releaseTimeline.loadOlder') }}</span>
     </button>

@@ -56,7 +56,7 @@
 
             <ScrollArea class="label-editor-content">
               <div v-if="labelError" class="label-editor-error">
-                <AlertCircleIcon :size="14" />
+                <CircleExclamationPointIcon :size="14" />
                 <span>{{ labelError }}</span>
                 <button type="button" class="label-editor-error-dismiss" @click="clearLabelError">
                   <XIcon :size="12" />
@@ -64,7 +64,7 @@
               </div>
 
               <div v-if="loadingLabels" class="label-editor-loading">
-                <Loader2Icon class="spin-animation" :size="18" />
+                <LoaderCircleIcon class="spin-animation" :size="18" />
                 <span>{{ t('detailLabels.loading') }}</span>
               </div>
 
@@ -118,7 +118,7 @@
                 :disabled="loadingLabels || savingLabels"
                 @click="saveLabels"
               >
-                <Loader2Icon v-if="savingLabels" class="spin-animation" :size="14" />
+                <LoaderCircleIcon v-if="savingLabels" class="spin-animation" :size="14" />
                 <span>{{ savingLabels ? t('detailLabels.saving') : t('detailLabels.save') }}</span>
               </button>
             </div>
@@ -130,7 +130,14 @@
 </template>
 
 <script setup lang="ts">
-import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, TagIcon, XIcon } from '@lucide/vue';
+import {
+  CircleExclamationPointIcon,
+  CheckIcon,
+  LoaderCircleIcon,
+  PencilIcon,
+  TagIcon,
+  XIcon,
+} from '@lucide/vue';
 import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 

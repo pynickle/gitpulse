@@ -41,8 +41,8 @@ function translate(key: string, params?: Record<string, unknown>) {
 
 const icon = defineComponent({ setup: () => () => h('span') });
 const icons = {
-  AlertCircleIcon: icon,
-  AlertTriangleIcon: icon,
+  CircleExclamationPointIcon: icon,
+  TriangleExclamationPointIcon: icon,
   ArrowDownIcon: icon,
   ArrowUpIcon: icon,
   ChevronLeftIcon: icon,
@@ -52,7 +52,7 @@ const icons = {
   RocketIcon: icon,
   SearchIcon: icon,
   StarIcon: icon,
-  Trash2Icon: icon,
+  TrashIcon: icon,
   XIcon: icon,
 };
 const GridStub = defineComponent({

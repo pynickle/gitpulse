@@ -32,8 +32,8 @@ function translate(
 const empty = defineComponent({ setup: () => () => h('span') });
 const icons = {
   FileTextIcon: empty,
-  FilterIcon: empty,
-  HistoryIcon: empty,
+  FunnelIcon: empty,
+  RotateCcwClockIcon: empty,
   RefreshCwIcon: empty,
   SearchIcon: empty,
   SlidersHorizontalIcon: empty,

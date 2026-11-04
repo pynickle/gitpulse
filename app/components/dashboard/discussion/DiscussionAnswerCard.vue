@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2Icon } from '@lucide/vue';
+import { CircleCheckIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -22,7 +22,7 @@ const localeCode = computed(() => locale.value);
 <template>
   <section class="discussion-answer">
     <div class="discussion-answer__label">
-      <CheckCircle2Icon :size="16" />
+      <CircleCheckIcon :size="16" />
       <span>{{ t('discussionDetail.acceptedAnswer') }}</span>
     </div>
 

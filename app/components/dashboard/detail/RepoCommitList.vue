@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { AlertTriangleIcon, GitCommitHorizontalIcon, Loader2Icon } from '@lucide/vue';
+import {
+  TriangleExclamationPointIcon,
+  GitCommitHorizontalIcon,
+  LoaderCircleIcon,
+} from '@lucide/vue';
 import { computed } from 'vue';
 
 import type { RepoCommitListItemPayload } from '#shared/types/repos';
@@ -39,13 +43,13 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
 <template>
   <section class="repo-commit-list" :aria-label="t('repoDetail.commits')">
     <div v-if="loading" class="repo-commit-list__loading" aria-busy="true">
-      <Loader2Icon :size="20" class="spin-animation" />
+      <LoaderCircleIcon :size="20" class="spin-animation" />
       <span>{{ t('repoDetail.loadingList') }}</span>
     </div>
 
     <div v-else-if="error" class="repo-commit-list__error" role="alert">
       <div class="repo-commit-list__error-icon" aria-hidden="true">
-        <AlertTriangleIcon :size="28" />
+        <TriangleExclamationPointIcon :size="28" />
       </div>
       <p class="repo-commit-list__error-title">{{ t('repoDetail.listErrorTitle') }}</p>
       <p class="repo-commit-list__error-message">{{ error }}</p>

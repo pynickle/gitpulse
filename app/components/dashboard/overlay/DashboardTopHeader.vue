@@ -12,7 +12,7 @@
           class="button is-light is-small"
           @click="$emit('home')"
         >
-          <HomeIcon :size="18" class="mr-1" />
+          <HouseIcon :size="18" class="mr-1" />
           {{ homeLabel }}
         </button>
       </div>
@@ -78,7 +78,7 @@
             aria-haspopup="menu"
             @click="toggleMoreMenu"
           >
-            <MoreHorizontalIcon :size="16" aria-hidden="true" />
+            <EllipsisIcon :size="16" aria-hidden="true" />
           </button>
           <Transition name="dashboard-top-header-more-menu">
             <div v-if="isMoreMenuOpen" class="dashboard-top-header__more-menu" role="menu">
@@ -104,9 +104,9 @@ import {
   ArrowLeftIcon,
   CircleDotIcon,
   CircleMinusIcon,
-  HomeIcon,
+  HouseIcon,
   MessageSquareIcon,
-  MoreHorizontalIcon,
+  EllipsisIcon,
   PanelRightCloseIcon,
   PanelRightOpenIcon,
 } from '@lucide/vue';

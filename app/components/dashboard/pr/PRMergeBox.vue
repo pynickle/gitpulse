@@ -11,7 +11,7 @@
     </div>
 
     <div v-else-if="showError" class="merge-box__note merge-box__note--danger" role="alert">
-      <AlertCircleIcon :size="14" />
+      <CircleExclamationPointIcon :size="14" />
       <span>{{ error }}</span>
     </div>
 
@@ -118,7 +118,7 @@
 
         <div v-if="status.viewerCanMerge && !status.draft" class="merge-box__actions">
           <div v-if="mergeError" class="merge-box__note merge-box__note--danger" role="alert">
-            <AlertCircleIcon :size="14" />
+            <CircleExclamationPointIcon :size="14" />
             <span>{{ mergeError }}</span>
           </div>
           <div v-if="!showCommitForm" ref="mergeControlsRef" class="merge-box__merge-controls">
@@ -229,7 +229,7 @@
 
       <div v-if="showHeadBranchActions" class="merge-box__branch-actions">
         <div v-if="branchActionError" class="merge-box__note merge-box__note--danger" role="alert">
-          <AlertCircleIcon :size="14" />
+          <CircleExclamationPointIcon :size="14" />
           <span>{{ branchActionError }}</span>
         </div>
 
@@ -254,7 +254,7 @@
               class="merge-box__spinner merge-box__spinner--branch"
               aria-hidden="true"
             />
-            <Trash2Icon v-else-if="headBranchActionMode === 'delete'" :size="13" />
+            <TrashIcon v-else-if="headBranchActionMode === 'delete'" :size="13" />
             <RotateCcwIcon v-else :size="13" />
             <span>{{ headBranchActionLabel }}</span>
           </button>
@@ -266,7 +266,7 @@
 
 <script setup lang="ts">
 import {
-  AlertCircleIcon,
+  CircleExclamationPointIcon,
   CheckIcon,
   ChevronDownIcon,
   GitBranchIcon,
@@ -274,7 +274,7 @@ import {
   GitMergeIcon,
   GitPullRequestClosedIcon,
   RotateCcwIcon,
-  Trash2Icon,
+  TrashIcon,
   XIcon,
 } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
@@ -495,20 +495,20 @@ const mergeabilityRow = computed<MergeBoxRow>(() => {
     case 'behind':
       return {
         tone: 'warning',
-        icon: AlertCircleIcon,
+        icon: CircleExclamationPointIcon,
         title: t('prReview.mergeBox.mergeableBehind'),
       };
     case 'blocked':
       return {
         tone: 'danger',
-        icon: AlertCircleIcon,
+        icon: CircleExclamationPointIcon,
         title: t('prReview.mergeBox.mergeableBlocked'),
       };
     case 'unstable':
     case 'has_hooks':
       return {
         tone: 'muted',
-        icon: AlertCircleIcon,
+        icon: CircleExclamationPointIcon,
         title: t('prReview.mergeBox.mergeableUnstable'),
       };
     default:

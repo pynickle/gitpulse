@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {
   FileTextIcon,
-  FilterIcon,
-  HistoryIcon,
+  FunnelIcon,
+  RotateCcwClockIcon,
   RefreshCwIcon,
   SearchIcon,
   SlidersHorizontalIcon,
@@ -106,7 +106,7 @@ const { t } = useI18n();
         :title="t('releaseTimeline.recoveredEntry', { count: recoveredCount })"
         @click="emit('recovery')"
       >
-        <HistoryIcon :size="18" aria-hidden="true" />
+        <RotateCcwClockIcon :size="18" aria-hidden="true" />
         <span class="release-timeline-header__action-label">
           {{ t('releaseTimeline.recoveredShort') }}
         </span>
@@ -151,7 +151,7 @@ const { t } = useI18n();
         :aria-pressed="filterActive"
         @click="emit('filter-click')"
       >
-        <FilterIcon v-once :size="18" aria-hidden="true" />
+        <FunnelIcon v-once :size="18" aria-hidden="true" />
         <span class="release-timeline-header__action-label">
           {{ t('releaseTimeline.filter') }}
         </span>

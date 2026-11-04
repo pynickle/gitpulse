@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutGridIcon, Loader2Icon, PackageIcon } from '@lucide/vue';
+import { LayoutGridIcon, LoaderCircleIcon, PackageIcon } from '@lucide/vue';
 import { computed, ref, toRef, type Component } from 'vue';
 
 import type { PackageSummary, PackageType, PackageTypeFilter } from '#shared/types/packages';
@@ -122,7 +122,7 @@ const updatedLabel = (pkg: PackageSummary) => {
 
     <template v-else>
       <div v-if="loading" class="profile-package-list__status">
-        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+        <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
       </div>
 
       <div v-else-if="items.length" class="profile-package-list__items">

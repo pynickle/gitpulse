@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import {
-  CheckCircle2Icon,
+  CircleCheckIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MessageSquareIcon,
-  Trash2Icon,
-  XCircleIcon,
+  TrashIcon,
+  CircleXIcon,
 } from '@lucide/vue';
 import { shallowRef } from 'vue';
 
@@ -42,8 +42,8 @@ const expandedSections = shallowRef(new Set(['decision', 'summary', 'drafts']));
 
 const reviewEvents: { value: PRReviewEvent; labelKey: string; icon: typeof MessageSquareIcon }[] = [
   { value: 'COMMENT', labelKey: 'prReview.eventComment', icon: MessageSquareIcon },
-  { value: 'APPROVE', labelKey: 'prReview.eventApprove', icon: CheckCircle2Icon },
-  { value: 'REQUEST_CHANGES', labelKey: 'prReview.eventRequestChanges', icon: XCircleIcon },
+  { value: 'APPROVE', labelKey: 'prReview.eventApprove', icon: CircleCheckIcon },
+  { value: 'REQUEST_CHANGES', labelKey: 'prReview.eventRequestChanges', icon: CircleXIcon },
 ];
 
 const isSectionExpanded = (section: string) => expandedSections.value.has(section);
@@ -210,7 +210,7 @@ const toggleSection = (section: string) => {
                 :disabled="submitting"
                 @click="emit('remove-draft-comment', comment.id)"
               >
-                <Trash2Icon :size="14" aria-hidden="true" />
+                <TrashIcon :size="14" aria-hidden="true" />
               </button>
             </div>
           </div>

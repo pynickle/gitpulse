@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon, UsersIcon } from '@lucide/vue';
+import { LoaderCircleIcon, UsersIcon } from '@lucide/vue';
 import { toRef } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
@@ -35,7 +35,7 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
 
     <template v-else>
       <div v-if="loading" class="user-connection-list__status">
-        <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+        <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
       </div>
 
       <div v-else-if="items.length" class="user-connection-list__items">

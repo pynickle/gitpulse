@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { AlertCircleIcon, GitPullRequestIcon, Loader2Icon, XIcon } from '@lucide/vue';
+import {
+  CircleExclamationPointIcon,
+  GitPullRequestIcon,
+  LoaderCircleIcon,
+  XIcon,
+} from '@lucide/vue';
 import { computed, nextTick, shallowRef, watch } from 'vue';
 
 import type {
@@ -165,12 +170,12 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
 
           <ScrollArea class="linked-pr-picker-content">
             <div v-if="loading" class="linked-pr-picker-status">
-              <Loader2Icon class="spin-animation" :size="18" />
+              <LoaderCircleIcon class="spin-animation" :size="18" />
               <span>{{ t('dashboard.linkedPullRequests.loading') }}</span>
             </div>
 
             <div v-else-if="error" class="linked-pr-picker-error" role="alert">
-              <AlertCircleIcon :size="14" />
+              <CircleExclamationPointIcon :size="14" />
               <span>{{ error }}</span>
             </div>
 

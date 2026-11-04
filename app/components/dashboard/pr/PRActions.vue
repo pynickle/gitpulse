@@ -157,7 +157,7 @@
       </header>
       <div class="sidebar-section__body">
         <div v-if="stateError" class="sidebar-alert sidebar-alert--error">
-          <AlertCircleIcon :size="14" />
+          <CircleExclamationPointIcon :size="14" />
           <span>{{ stateError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearStateError">
             <XIcon :size="12" />
@@ -185,7 +185,7 @@
             @click="isClosed ? updatePullRequestState('open') : updatePullRequestState('closed')"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
-              <Loader2Icon v-if="loadingState" class="spin-animation" :size="14" />
+              <LoaderCircleIcon v-if="loadingState" class="spin-animation" :size="14" />
               <CircleSlashIcon v-else-if="!isClosed" :size="14" />
               <GitPullRequestIcon v-else :size="14" />
             </span>
@@ -236,7 +236,7 @@
 
 <script setup lang="ts">
 import {
-  AlertCircleIcon,
+  CircleExclamationPointIcon,
   CheckIcon,
   ChevronRightIcon,
   CircleSlashIcon,
@@ -248,7 +248,7 @@ import {
   LinkIcon,
   ListMinusIcon,
   ListPlusIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
   MessageSquareIcon,
   PlusIcon,
   RotateCcwIcon,

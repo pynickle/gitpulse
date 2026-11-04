@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-  AlertCircleIcon,
-  AlertTriangleIcon,
+  CircleExclamationPointIcon,
+  TriangleExclamationPointIcon,
   RefreshCwIcon,
   StarIcon,
-  Trash2Icon,
+  TrashIcon,
   XIcon,
 } from '@lucide/vue';
 import { computed, nextTick, ref, shallowRef, useId, watch } from 'vue';
@@ -190,7 +190,7 @@ watch(
             :title="t('releaseFollows.clear')"
             @click="openClearConfirm"
           >
-            <Trash2Icon :size="15" aria-hidden="true" />
+            <TrashIcon :size="15" aria-hidden="true" />
           </button>
 
           <slot name="close" />
@@ -235,7 +235,7 @@ watch(
       @keydown.esc.stop.prevent="cancelClearConfirm"
     >
       <div class="followed-list__confirm-heading">
-        <AlertTriangleIcon :size="15" aria-hidden="true" />
+        <TriangleExclamationPointIcon :size="15" aria-hidden="true" />
         <p :id="confirmTitleId" class="followed-list__confirm-title">
           {{ t('releaseFollows.clearConfirmTitle') }}
         </p>
@@ -253,7 +253,7 @@ watch(
           type="button"
           @click="confirmClear"
         >
-          <Trash2Icon :size="13" aria-hidden="true" />
+          <TrashIcon :size="13" aria-hidden="true" />
           {{ t('releaseFollows.clearConfirmAccept') }}
         </button>
       </div>
@@ -277,7 +277,7 @@ watch(
       >
         <div class="followed-list__main">
           <div class="followed-list__identity">
-            <AlertCircleIcon
+            <CircleExclamationPointIcon
               v-if="isUnavailable(item.id)"
               class="followed-list__status-icon"
               :size="14"

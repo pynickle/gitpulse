@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertCircleIcon, MessageSquareIcon } from '@lucide/vue';
+import { CircleExclamationPointIcon, MessageSquareIcon } from '@lucide/vue';
 
 import type { DiscussionComment } from '#shared/types/discussions';
 import DiscussionCommentCard from '~/components/dashboard/discussion/DiscussionCommentCard.vue';
@@ -43,7 +43,8 @@ const { t } = useI18n();
 
     <div v-if="error" class="notification is-danger is-light py-2 px-3 discussion-comments__error">
       <p class="is-size-7">
-        <AlertCircleIcon :size="14" class="mr-1" style="vertical-align: text-bottom" /> {{ error }}
+        <CircleExclamationPointIcon :size="14" class="mr-1" style="vertical-align: text-bottom" />
+        {{ error }}
       </p>
       <button
         class="button is-danger is-light is-small mt-2"

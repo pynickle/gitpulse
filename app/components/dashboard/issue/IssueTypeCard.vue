@@ -2,7 +2,7 @@
   <div class="sidebar-card mb-4">
     <div class="sidebar-card__header">
       <div class="sidebar-card__header-left">
-        <Tags :size="14" class="sidebar-card__icon" />
+        <TagsIcon :size="14" class="sidebar-card__icon" />
         <span class="sidebar-card__title">{{ t('detailIssueType.title') }}</span>
       </div>
       <button
@@ -46,7 +46,7 @@
 
             <ScrollArea class="label-editor-content">
               <div v-if="issueTypeError" class="label-editor-error">
-                <AlertCircleIcon :size="14" />
+                <CircleExclamationPointIcon :size="14" />
                 <span>{{ issueTypeError }}</span>
                 <button
                   type="button"
@@ -58,7 +58,7 @@
               </div>
 
               <div v-if="loadingIssueTypes" class="label-editor-loading">
-                <Loader2Icon class="spin-animation" :size="18" />
+                <LoaderCircleIcon class="spin-animation" :size="18" />
                 <span>{{ t('detailIssueType.loading') }}</span>
               </div>
 
@@ -134,7 +134,7 @@
                 :disabled="loadingIssueTypes || savingIssueType"
                 @click="saveIssueType"
               >
-                <Loader2Icon v-if="savingIssueType" class="spin-animation" :size="14" />
+                <LoaderCircleIcon v-if="savingIssueType" class="spin-animation" :size="14" />
                 <span>
                   {{ savingIssueType ? t('detailIssueType.saving') : t('detailIssueType.save') }}
                 </span>
@@ -148,7 +148,14 @@
 </template>
 
 <script setup lang="ts">
-import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, Tags, XIcon } from '@lucide/vue';
+import {
+  CircleExclamationPointIcon,
+  CheckIcon,
+  LoaderCircleIcon,
+  PencilIcon,
+  TagsIcon,
+  XIcon,
+} from '@lucide/vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 
 import type { GitHubIssueType } from '#shared/types/issues';

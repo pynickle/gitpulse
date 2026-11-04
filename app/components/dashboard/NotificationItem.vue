@@ -28,7 +28,11 @@
                   'avatar-skeleton--static': enrichmentPresentation.avatarMode === 'static',
                 }"
               >
-                <AlertTriangleIcon v-if="isSubjectStateError" :size="15" aria-hidden="true" />
+                <TriangleExclamationPointIcon
+                  v-if="isSubjectStateError"
+                  :size="15"
+                  aria-hidden="true"
+                />
               </div>
             </Transition>
             <span
@@ -83,7 +87,7 @@
                 v-if="enrichmentPresentation.showsFailureMessage"
                 class="notification-card__subject-error"
               >
-                <AlertTriangleIcon :size="12" aria-hidden="true" />
+                <TriangleExclamationPointIcon :size="12" aria-hidden="true" />
                 <span>{{ t('dashboard.notificationSubjectEnrichment.itemError') }}</span>
               </p>
 
@@ -169,23 +173,23 @@
 <script setup lang="ts">
 import {
   ActivityIcon,
-  AlertTriangleIcon,
+  TriangleExclamationPointIcon,
   AtSignIcon,
   BellIcon,
   BookmarkIcon,
-  CheckCircleIcon,
+  CircleCheckBigIcon,
   CheckIcon,
   EyeIcon,
-  GitCommitIcon,
+  GitCommitHorizontalIcon,
   ListMinusIcon,
   ListPlusIcon,
   MailIcon,
   MessageSquareIcon,
   PenLineIcon,
-  ShieldAlertIcon,
+  ShieldExclamationPointIcon,
   ShieldCheckIcon,
   UserPlusIcon,
-  Users2Icon,
+  UsersRoundIcon,
   UsersIcon,
 } from '@lucide/vue';
 import { ref, computed } from 'vue';
@@ -376,7 +380,7 @@ const handleMarkAsRead = async () => {
 };
 
 const reasonIconMap: Record<string, typeof BellIcon> = {
-  approval_requested: CheckCircleIcon, // Deployment approval requested
+  approval_requested: CircleCheckBigIcon, // Deployment approval requested
   assign: UserPlusIcon, // You were assigned to the issue
   author: PenLineIcon, // You created the thread
   ci_activity: ActivityIcon, // CI workflow activity completed
@@ -387,10 +391,10 @@ const reasonIconMap: Record<string, typeof BellIcon> = {
   mention: AtSignIcon, // You were @mentioned
   review_requested: EyeIcon, // Pull request review requested
   security_advisory_credit: ShieldCheckIcon, // Credited for security advisory contribution
-  security_alert: ShieldAlertIcon, // Security vulnerability alert
-  state_change: GitCommitIcon, // Thread state changed (close / merge / etc.)
+  security_alert: ShieldExclamationPointIcon, // Security vulnerability alert
+  state_change: GitCommitHorizontalIcon, // Thread state changed (close / merge / etc.)
   subscribed: BellIcon, // Watching the repository
-  team_mention: Users2Icon, // Your team was mentioned
+  team_mention: UsersRoundIcon, // Your team was mentioned
 };
 
 const reasonIcon = computed(() => {

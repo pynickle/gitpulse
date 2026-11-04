@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { BookOpenIcon, ExternalLinkIcon, FileTextIcon, ListIcon, Loader2Icon } from '@lucide/vue';
+import {
+  BookOpenIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  ListIcon,
+  LoaderCircleIcon,
+} from '@lucide/vue';
 import {
   computed,
   defineAsyncComponent,
@@ -436,7 +442,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
             </div>
 
             <div v-else-if="pageLoading" class="wiki-page__content-loading">
-              <Loader2Icon :size="20" class="wiki-page__spinner" />
+              <LoaderCircleIcon :size="20" class="wiki-page__spinner" />
             </div>
 
             <template v-else-if="page">

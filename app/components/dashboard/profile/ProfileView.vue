@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AlertTriangleIcon, Loader2Icon } from '@lucide/vue';
+import { TriangleExclamationPointIcon, LoaderCircleIcon } from '@lucide/vue';
 import { computed, toRef } from 'vue';
 
 import type { PackageSummary, PackageType } from '#shared/types/packages';
@@ -89,11 +89,11 @@ const showOverviewSkeleton = computed(
 <template>
   <div class="profile-view">
     <div v-if="loadingProfile" class="profile-view__status">
-      <Loader2Icon :size="28" class="spin-animation" aria-hidden="true" />
+      <LoaderCircleIcon :size="28" class="spin-animation" aria-hidden="true" />
     </div>
 
     <div v-else-if="profileError" class="profile-view__status profile-view__status--error">
-      <AlertTriangleIcon :size="32" aria-hidden="true" />
+      <TriangleExclamationPointIcon :size="32" aria-hidden="true" />
       <p>{{ profileError }}</p>
       <button type="button" class="button is-small is-light" @click="refresh">
         {{ t('profile.retry') }}
@@ -114,7 +114,7 @@ const showOverviewSkeleton = computed(
 
         <div v-if="tab === 'overview'" class="profile-view__overview">
           <div v-if="showOverviewSkeleton" class="profile-view__status">
-            <Loader2Icon :size="24" class="spin-animation" aria-hidden="true" />
+            <LoaderCircleIcon :size="24" class="spin-animation" aria-hidden="true" />
           </div>
 
           <template v-else>

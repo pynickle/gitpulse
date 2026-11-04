@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon, SearchIcon } from '@lucide/vue';
+import { LoaderCircleIcon, SearchIcon } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 
 import type { AutocompleteSuggestion } from '~/components/ui/autocomplete';
@@ -180,7 +180,7 @@ onBeforeUnmount(() => {
         @focus="handleFocus"
         @keydown="handleKeydown"
       />
-      <Loader2Icon v-if="loading" :size="14" class="fa-input-spinner" aria-hidden="true" />
+      <LoaderCircleIcon v-if="loading" :size="14" class="fa-input-spinner" aria-hidden="true" />
     </div>
 
     <AutocompleteMenu

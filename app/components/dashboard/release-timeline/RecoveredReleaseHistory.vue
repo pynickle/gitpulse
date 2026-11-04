@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { HistoryIcon, XIcon } from '@lucide/vue';
+import { RotateCcwClockIcon, XIcon } from '@lucide/vue';
 import { useId, useTemplateRef } from 'vue';
 
 import type { RecoveredRelease } from '#shared/types/timeline-history';
@@ -118,7 +118,7 @@ const {
           </template>
           <div v-else class="recovered-history__empty">
             <div class="recovered-history__empty-icon" aria-hidden="true">
-              <HistoryIcon :size="28" />
+              <RotateCcwClockIcon :size="28" />
             </div>
             <p class="recovered-history__empty-title">{{ t('releaseTimeline.recoveredEmpty') }}</p>
             <p class="recovered-history__empty-description">

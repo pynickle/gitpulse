@@ -14,7 +14,7 @@ const TabSidebarStub = defineComponent({
 const DashboardMenu = await compileVue('app/components/dashboard/DashboardMenu.vue', {
   '@lucide/vue': {
     BellIcon: icon,
-    BookMarkedIcon: icon,
+    BookBookmarkIcon: icon,
     CircleDotIcon: icon,
     GitPullRequestIcon: icon,
     InboxIcon: icon,

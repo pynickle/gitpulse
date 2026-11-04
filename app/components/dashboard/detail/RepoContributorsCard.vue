@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2Icon, UsersIcon } from '@lucide/vue';
+import { LoaderCircleIcon, UsersIcon } from '@lucide/vue';
 import { computed, watch } from 'vue';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -74,7 +74,7 @@ watch(
 
     <div class="sidebar-card__content">
       <div v-if="loading && previewItems.length === 0" class="repo-contributors__loading">
-        <Loader2Icon :size="16" class="spin-animation" aria-hidden="true" />
+        <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
         <span class="is-sr-only">{{ t('repoDetail.loadingContributors') }}</span>
       </div>
 

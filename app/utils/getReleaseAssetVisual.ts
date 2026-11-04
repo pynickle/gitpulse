@@ -2,7 +2,7 @@ import {
   DatabaseIcon,
   DiscIcon,
   FileArchiveIcon,
-  FileAudioIcon,
+  FileHeadphoneIcon,
   FileBoxIcon,
   FileBracesIcon,
   FileCodeIcon,
@@ -10,7 +10,7 @@ import {
   FileImageIcon,
   FileSpreadsheetIcon,
   FileTextIcon,
-  FileVideoIcon,
+  FilePlayIcon,
   MonitorDownIcon,
   PackageOpenIcon,
   ShieldCheckIcon,
@@ -119,8 +119,8 @@ const FAMILIES: readonly ReleaseAssetFamily[] = [
     tone: 'media',
     extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'bmp'],
   },
-  { icon: FileVideoIcon, tone: 'media', extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] },
-  { icon: FileAudioIcon, tone: 'media', extensions: ['mp3', 'wav', 'flac', 'm4a', 'ogg'] },
+  { icon: FilePlayIcon, tone: 'media', extensions: ['mp4', 'webm', 'mov', 'mkv', 'avi'] },
+  { icon: FileHeadphoneIcon, tone: 'media', extensions: ['mp3', 'wav', 'flac', 'm4a', 'ogg'] },
   { icon: ShieldCheckIcon, tone: 'check', extensions: RELEASE_ASSET_SIDECAR_SUFFIXES },
 ];
 
@@ -144,8 +144,8 @@ const CONTENT_TYPE_VISUALS: Readonly<Record<string, ReleaseAssetVisual>> = {
 
 const CONTENT_TYPE_PREFIXES: ReadonlyArray<readonly [string, ReleaseAssetVisual]> = [
   ['image/', { icon: FileImageIcon, tone: 'media' }],
-  ['video/', { icon: FileVideoIcon, tone: 'media' }],
-  ['audio/', { icon: FileAudioIcon, tone: 'media' }],
+  ['video/', { icon: FilePlayIcon, tone: 'media' }],
+  ['audio/', { icon: FileHeadphoneIcon, tone: 'media' }],
   ['text/', { icon: FileTextIcon, tone: 'document' }],
 ];
 

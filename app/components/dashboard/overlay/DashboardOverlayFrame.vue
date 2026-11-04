@@ -21,7 +21,11 @@
           style="z-index: 10"
         >
           <div class="box has-text-centered py-5 px-6 shadow-md" style="min-width: 200px">
-            <Loader2Icon class="spin-animation has-text-link mb-3" :size="40" :stroke-width="2.5" />
+            <LoaderCircleIcon
+              class="spin-animation has-text-link mb-3"
+              :size="40"
+              :stroke-width="2.5"
+            />
 
             <p class="is-size-6 has-text-weight-semibold has-text-grey-dark">
               {{ loadingTitle }}
@@ -43,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { Loader2Icon } from '@lucide/vue';
+import { LoaderCircleIcon } from '@lucide/vue';
 
 import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';

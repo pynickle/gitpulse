@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
-  AlertCircleIcon,
-  AlertTriangleIcon,
+  CircleExclamationPointIcon,
+  TriangleExclamationPointIcon,
   CheckIcon,
-  Loader2Icon,
+  LoaderCircleIcon,
   SearchIcon,
   UserIcon,
   UsersIcon,
@@ -293,7 +293,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
             </form>
 
             <div v-if="error" class="reviewer-modal-error">
-              <AlertCircleIcon :size="14" />
+              <CircleExclamationPointIcon :size="14" />
               <span>{{ error }}</span>
               <button
                 class="reviewer-modal-error-dismiss"
@@ -305,12 +305,12 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
             </div>
 
             <div v-for="warning in warnings" :key="warning.key" class="reviewer-modal-warning">
-              <AlertTriangleIcon :size="14" />
+              <TriangleExclamationPointIcon :size="14" />
               <span>{{ warning.message }}</span>
             </div>
 
             <div v-if="loading" class="reviewer-modal-loading">
-              <Loader2Icon class="spin-animation" :size="18" />
+              <LoaderCircleIcon class="spin-animation" :size="18" />
               <span>{{ loadingLabel }}</span>
             </div>
 
@@ -393,7 +393,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
               :disabled="isSubmitDisabled"
               @click="submitSelection"
             >
-              <Loader2Icon v-if="submitting" class="spin-animation" :size="14" />
+              <LoaderCircleIcon v-if="submitting" class="spin-animation" :size="14" />
               <slot v-else name="submit-icon">
                 <CheckIcon :size="14" />
               </slot>

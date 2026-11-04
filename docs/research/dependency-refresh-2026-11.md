@@ -72,6 +72,39 @@ DOMPurify 升级与本项目直接相关：`app/components/ui/MermaidBlock.vue` 
 
 （各自带 `Icon` 后缀的形式映射相同。）运行时同一性可验证：`AlertCircleIcon === CircleExclamationPointIcon`、`AlertTriangleIcon === TriangleExclamationPointIcon` 均为 `true`。
 
+### 已执行的别名迁移
+
+仓库原先混用了大量遗留别名。本次按"词根用规范名、统一保留 `Icon` 后缀"一次性迁移，覆盖 71 个文件。`X` 与 `XIcon` 在包内是同一个组件对象（实测 2309 组全部配对、无例外），后缀只是避免与普通词冲突的风格选择，因此保留后缀与周边代码一致。
+
+| 旧写法                       | 迁移后                          |
+| ---------------------------- | ------------------------------- |
+| `AlertCircleIcon`            | `CircleExclamationPointIcon`    |
+| `AlertTriangleIcon`          | `TriangleExclamationPointIcon`  |
+| `Loader2Icon`                | `LoaderCircleIcon`              |
+| `CheckCircle2Icon`           | `CircleCheckIcon`               |
+| `CheckCircleIcon`            | `CircleCheckBigIcon`            |
+| `UnlockIcon`                 | `LockOpenIcon`                  |
+| `FilterIcon`                 | `FunnelIcon`                    |
+| `BookMarkedIcon`             | `BookBookmarkIcon`              |
+| `Code2Icon`                  | `CodeXmlIcon`                   |
+| `GitCommitIcon`              | `GitCommitHorizontalIcon`       |
+| `ShieldAlertIcon`            | `ShieldExclamationPointIcon`    |
+| `Users2Icon`                 | `UsersRoundIcon`                |
+| `HomeIcon`                   | `HouseIcon`                     |
+| `MoreHorizontalIcon`         | `EllipsisIcon`                  |
+| `Trash2Icon`                 | `TrashIcon`                     |
+| `XCircleIcon`                | `CircleXIcon`                   |
+| `SmilePlusIcon`              | `FaceSlightlySmilingPlusIcon`   |
+| `HistoryIcon`                | `RotateCcwClockIcon`            |
+| `WrapTextIcon`               | `TextWrapIcon`                  |
+| `CheckSquareIcon`            | `SquareCheckBigIcon`            |
+| `FileAudioIcon`              | `FileHeadphoneIcon`             |
+| `FileVideoIcon`              | `FilePlayIcon`                  |
+| `Tags`                       | `TagsIcon`（仅补后缀）          |
+| `RotateCcw as RotateCcwIcon` | `RotateCcwIcon`（去掉自我别名） |
+
+每组映射都验证了新旧名指向同一组件对象，因此渲染结果不变。测试里按名字 mock `@lucide/vue` 的键同步更新，`bun test --parallel` 1159 项全部通过。
+
 ### @upstash/redis 1.41.0
 
 功能上新增 `s.hybrid()` 与 `$ann`/`$rrf`/`$standard` retriever（本项目只用 `eval`/`get`/`set`）。补丁项把 TypeScript 源码与 Redis SDK 文档打进 npm 包，供离线参考与编码代理使用。
@@ -154,7 +187,7 @@ Finished in 2.1s on 748 files with 0 rules using 16 threads.
 
 **6. `@upstash/redis` 与 `redis` 同时静态导入。** `server/utils/user-settings-storage-utils.ts:1-2` 顶部同时静态导入两个驱动，运行时只用一个。驱动的实际成本取决于部署 preset（node-server 下两者是 external，不进 bundle），所以收益主要在 serverless/edge 构建与冷启动上；若只面向 node 部署，优先级低于第 1、2 项。另一面是 1.41.0 让该包 unpacked 体积近乎翻倍（见上），这是升级已付出的成本，不回退。
 
-**7. Lucide 别名迁移。** `AlertCircleIcon`/`AlertTriangleIcon` 在 1.68.0 仍是别名，但规范名已改为 `*-exclamation-point` 系列。别名是历史兼容层，不是长期契约；可在下次触碰这些组件时顺手迁移，避免未来某个大版本清掉别名时集中爆掉。全仓库 132 处 `@lucide/vue` 导入中涉及旧名的只有少数几个文件。
+**7. Lucide 别名迁移 —— 已执行。** 全仓库共有 23 组遗留写法（不止最初发现的 alert 两个），已在同一个改动里统一迁移为规范名并保留 `Icon` 后缀，明细见上文「已执行的别名迁移」。别名是历史兼容层而非长期契约，位于 `@lucide/vue` 的 `X as Y` 重导出，未来大版本清理时不会产生集中报错。
 
 ### 本轮未处理
 

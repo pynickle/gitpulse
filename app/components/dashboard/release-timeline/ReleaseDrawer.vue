@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeftIcon, ListIcon, Loader2Icon, XIcon } from '@lucide/vue';
+import { ArrowLeftIcon, ListIcon, LoaderCircleIcon, XIcon } from '@lucide/vue';
 import { computed, defineAsyncComponent, useId, useTemplateRef, watch } from 'vue';
 
 import type { TimelineRelease } from '#shared/types/release-follows';
@@ -201,7 +201,7 @@ const handleOpenReleasePage = async () => {
             :aria-label="t('releaseDetail.loading')"
             aria-busy="true"
           >
-            <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+            <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
           </div>
 
           <div v-else-if="error && !detail" class="release-drawer__status">
@@ -230,7 +230,7 @@ const handleOpenReleasePage = async () => {
                 :aria-label="t('releaseDetail.loading')"
                 aria-busy="true"
               >
-                <Loader2Icon :size="22" class="spin-animation" aria-hidden="true" />
+                <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
               </div>
             </template>
           </Suspense>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle2Icon, MessageSquareIcon, MessageSquareReplyIcon } from '@lucide/vue';
+import { CircleCheckIcon, MessageSquareIcon, MessageSquareReplyIcon } from '@lucide/vue';
 import { computed, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -84,7 +84,7 @@ const submitReplyDraft = async (body: string) => {
           {{ formatDurationFromNow(comment.createdAt || '', localeCode, relativeTimeNow) }}
         </span>
         <span v-if="comment.isAnswer" class="tag is-success is-light is-small ml-auto">
-          <CheckCircle2Icon :size="14" />
+          <CircleCheckIcon :size="14" />
           {{ t('discussionDetail.answer') }}
         </span>
       </div>

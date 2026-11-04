@@ -61,10 +61,10 @@ const item: TimelineRelease = {
 };
 const empty = defineComponent({ setup: () => () => h('span') });
 const icons = {
-  Loader2Icon: empty,
+  LoaderCircleIcon: empty,
   RocketIcon: empty,
   XIcon: empty,
-  HistoryIcon: empty,
+  RotateCcwClockIcon: empty,
   ArrowLeftIcon: empty,
   ListIcon: empty,
   CalendarIcon: empty,
@@ -75,7 +75,7 @@ const icons = {
   PencilLineIcon: empty,
   ChevronRightIcon: empty,
   DownloadIcon: empty,
-  FilterIcon: empty,
+  FunnelIcon: empty,
   RefreshCwIcon: empty,
   SearchIcon: empty,
   SlidersHorizontalIcon: empty,
@@ -231,7 +231,13 @@ const Recovery = await compileVue(
 );
 const Status = await compileVue(
   'app/components/dashboard/release-timeline/ReleaseTimelineStatus.vue',
-  { '@lucide/vue': { AlertCircleIcon: empty, ArrowDownIcon: empty, Loader2Icon: empty } }
+  {
+    '@lucide/vue': {
+      CircleExclamationPointIcon: empty,
+      ArrowDownIcon: empty,
+      LoaderCircleIcon: empty,
+    },
+  }
 );
 const Header = defineComponent({
   props: { filterActive: Boolean },

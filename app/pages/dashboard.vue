@@ -262,7 +262,7 @@
             <div v-else class="dashboard-error-state">
               <div class="dashboard-error-state__content">
                 <div class="dashboard-error-state__icon" aria-hidden="true">
-                  <AlertTriangleIcon :size="40" />
+                  <TriangleExclamationPointIcon :size="40" />
                 </div>
                 <p class="dashboard-error-state__title">
                   {{ t('dashboard.error.title') }}
@@ -420,9 +420,9 @@
 
 <script setup lang="ts">
 import {
-  AlertTriangleIcon,
+  TriangleExclamationPointIcon,
   BellIcon,
-  BookMarkedIcon,
+  BookBookmarkIcon,
   CircleDotIcon,
   GitPullRequestIcon,
   ListTodoIcon,
@@ -770,7 +770,7 @@ const sidebarTabs = computed(() => {
     notifications: BellIcon,
     issues: CircleDotIcon,
     pulls: GitPullRequestIcon,
-    repos: BookMarkedIcon,
+    repos: BookBookmarkIcon,
   };
 
   const builtinSidebarTabs = tabs.value.map((tab) => ({

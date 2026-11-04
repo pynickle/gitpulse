@@ -45,7 +45,7 @@
             :disabled="savingAssignees"
             @click="removeAssignee(assignee)"
           >
-            <Loader2Icon
+            <LoaderCircleIcon
               v-if="removingLogin === assignee.login"
               class="spin-animation"
               :size="13"
@@ -90,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { Loader2Icon, PlusIcon, UserRoundIcon, XIcon } from '@lucide/vue';
+import { LoaderCircleIcon, PlusIcon, UserRoundIcon, XIcon } from '@lucide/vue';
 import { computed, onUnmounted, ref, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 

@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { CheckIcon, ChevronDownIcon, GitBranchIcon, Loader2Icon, SearchIcon } from '@lucide/vue';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  GitBranchIcon,
+  LoaderCircleIcon,
+  SearchIcon,
+} from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue';
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
@@ -146,7 +152,7 @@ onBeforeUnmount(() => {
       :aria-label="t('branchSelector.label')"
       @click="open"
     >
-      <Loader2Icon v-if="loading" :size="14" class="branch-selector__spinner" />
+      <LoaderCircleIcon v-if="loading" :size="14" class="branch-selector__spinner" />
       <GitBranchIcon v-else :size="14" aria-hidden="true" />
       <span class="branch-selector__branch-name">{{ currentBranch || '-' }}</span>
       <ChevronDownIcon :size="14" class="branch-selector__chevron" aria-hidden="true" />

@@ -36,7 +36,7 @@
           <div class="info-item">
             <span class="info-item__label">{{ t('discussionDetail.state') }}</span>
             <span class="info-item__value">
-              <CheckCircle2Icon
+              <CircleCheckIcon
                 v-if="discussion.isAnswered"
                 :size="12"
                 class="state-icon state-icon--answered"
@@ -91,7 +91,7 @@
 
 <script setup lang="ts">
 import {
-  CheckCircle2Icon,
+  CircleCheckIcon,
   CircleIcon,
   ExternalLinkIcon,
   ListMinusIcon,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  AlertTriangleIcon,
+  TriangleExclamationPointIcon,
   CoffeeIcon,
   LockKeyholeIcon,
   MapPinOffIcon,
@@ -32,7 +32,7 @@ interface ErrorVariant {
 const fallbackVariant: ErrorVariant = {
   iconBg: 'var(--gitpulse-danger-soft)',
   iconColor: 'var(--gitpulse-danger)',
-  icon: AlertTriangleIcon,
+  icon: TriangleExclamationPointIcon,
   titleKey: 'error.500.title',
   descriptionKey: 'error.500.description',
   primary: { labelKey: 'error.cta.retry', action: 'retry' },
@@ -52,7 +52,7 @@ const variants: Record<number, ErrorVariant> = {
   500: {
     iconBg: 'var(--gitpulse-danger-soft)',
     iconColor: 'var(--gitpulse-danger)',
-    icon: AlertTriangleIcon,
+    icon: TriangleExclamationPointIcon,
     titleKey: 'error.500.title',
     descriptionKey: 'error.500.description',
     primary: { labelKey: 'error.cta.retry', action: 'retry' },
