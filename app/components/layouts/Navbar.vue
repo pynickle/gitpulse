@@ -1,58 +1,48 @@
 <template>
   <nav class="navbar" role="navigation" aria-label="main navigation">
-    <div class="navbar-brand">
-      <NuxtLinkLocale class="navbar-item" to="/">
-        <ColorScheme tag="span">
-          <RoundImg :src="logoSrc" alt="GitPulse Logo" width="28" height="28" />
-
-          <template #placeholder>
-            <RoundImg src="/icon.png" alt="GitPulse Logo" width="28" height="28" />
-          </template>
-        </ColorScheme>
-        <h1 class="title is-4">{{ t('app.title') }}</h1>
-      </NuxtLinkLocale>
-    </div>
-
-    <div class="navbar-menu">
-      <div class="navbar-end">
-        <div class="navbar-item">
-          <LinkIcon to="https://github.com/pynickle/gitpulse">
-            <GitHubIcon class="is-centered" />
-          </LinkIcon>
-        </div>
-        <div class="navbar-item navbar-controls">
-          <LanguageSwitcher />
-          <ColorModeToggle />
-        </div>
+    <div class="navbar-bar">
+      <NavbarBrand :title-tag="variant === 'landing' ? 'span' : 'h1'" />
+      <div
+        class="navbar-bar__actions"
+        :class="{ 'navbar-bar__actions--always': variant === 'landing' }"
+      >
+        <LinkIcon to="https://github.com/pynickle/gitpulse">
+          <GitHubIcon class="is-centered" />
+        </LinkIcon>
+        <LanguageSwitcher />
+        <ColorModeToggle />
       </div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-
+import NavbarBrand from '~/components/layouts/NavbarBrand.vue';
 import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
-import RoundImg from '~/components/ui/RoundImg.vue';
 
-const colorMode = useColorMode();
-const { t } = useI18n();
-
-const logoSrc = computed(() => (colorMode.value === 'dark' ? '/icon-dark.png' : '/icon.png'));
+const { variant = 'app' } = defineProps<{ variant?: 'app' | 'landing' }>();
 </script>
 
 <style scoped lang="scss">
-.navbar-end .navbar-item {
-  &:hover,
-  &:focus {
-    background-color: transparent;
-    color: inherit;
-  }
+.navbar-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1rem;
 }
 
-.navbar-end .navbar-item:first-child a {
+.navbar-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.navbar-bar :deep(a) {
+  display: inline-flex;
   transition: opacity 0.16s ease;
 
   &:hover {
@@ -60,9 +50,21 @@ const logoSrc = computed(() => (colorMode.value === 'dark' ? '/icon-dark.png' : 
   }
 }
 
-.navbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+// App chrome hides its controls on narrow viewports; the landing variant keeps them.
+@media (max-width: 1023px) {
+  .navbar-bar__actions {
+    display: none;
+  }
+
+  .navbar-bar__actions--always {
+    display: flex;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-bar {
+    gap: 0.5rem;
+    padding-inline: 0.75rem;
+  }
 }
 </style>

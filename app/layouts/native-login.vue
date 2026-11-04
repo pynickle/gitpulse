@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import LandingNavbar from '~/components/layouts/LandingNavbar.vue';
+import Navbar from '~/components/layouts/Navbar.vue';
 </script>
 
 <template>
   <div class="native-login-shell">
-    <LandingNavbar />
+    <Navbar variant="landing" />
     <main class="native-login-shell__main">
       <NuxtPage />
     </main>

@@ -12,22 +12,22 @@ const SkipToContentLink = await compileVue('app/components/ui/SkipToContentLink.
 
 // `NuxtPage` is auto-imported in app code, so it reaches the template as unimport would inject it.
 const nuxtPageModule = { NuxtPage: page };
-const layoutModules = (navbarModule: string) => ({
-  [navbarModule]: { default: nav },
+const layoutModules = {
+  '~/components/layouts/Navbar.vue': { default: nav },
   '~/components/ui/SkipToContentLink.vue': { default: SkipToContentLink },
   'virtual:nuxt-page': nuxtPageModule,
-});
+};
 const nuxtPageAutoImport = { NuxtPage: 'virtual:nuxt-page' };
 
 const LandingLayout = await compileVue(
   'app/layouts/landing.vue',
-  layoutModules('~/components/layouts/LandingNavbar.vue'),
+  layoutModules,
   nuxtPageAutoImport
 );
 
 const DashboardLayout = await compileVue(
   'app/layouts/dashboard.vue',
-  layoutModules('~/components/layouts/Navbar.vue'),
+  layoutModules,
   nuxtPageAutoImport
 );
 

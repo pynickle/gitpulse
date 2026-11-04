@@ -9,7 +9,7 @@ import {
 import { computed } from 'vue';
 
 import type { NuxtError } from '#app';
-import LandingNavbar from '~/components/layouts/LandingNavbar.vue';
+import Navbar from '~/components/layouts/Navbar.vue';
 import Button from '~/components/ui/Button.vue';
 
 const { error } = defineProps<{ error: NuxtError }>();
@@ -127,7 +127,7 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
 
 <template>
   <div class="error-page">
-    <LandingNavbar />
+    <Navbar variant="landing" />
     <section class="hero is-fullheight-with-navbar error-page__hero">
       <div class="hero-body error-page__body">
         <div class="container has-text-centered error-page__container">
