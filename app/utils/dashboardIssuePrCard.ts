@@ -43,7 +43,7 @@ export interface DashboardIssuePrEntity {
   linkedPullRequest?: LinkedPullRequestIdentity | null;
   /** Check Rollup attached after the Search GraphQL pass. Pull requests only. */
   checkRollup?: PullRequestCheckRollup | null;
-  pull_request?: DashboardIssuePrPullRequest | unknown;
+  pull_request?: unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
   type?: GitHubIssueType | null;

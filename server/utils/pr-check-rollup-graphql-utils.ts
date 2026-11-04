@@ -16,7 +16,7 @@ import { CHECK_ROLLUP_CONTEXT_LIMIT } from '#shared/utils/pr-checks';
 export const PR_CHECK_ROLLUP_NODE_FIELDS = `statusCheckRollup { state contexts(first: ${CHECK_ROLLUP_CONTEXT_LIMIT}) { totalCount nodes { __typename ... on CheckRun { name status conclusion detailsUrl checkSuite { app { name } } } ... on StatusContext { context state targetUrl creator { login } } } } }`;
 
 interface GraphQLCheckRunNode {
-  __typename?: 'CheckRun' | string | null;
+  __typename?: 'CheckRun' | (string & {}) | null;
   name?: string | null;
   status?: string | null;
   conclusion?: string | null;
@@ -25,7 +25,7 @@ interface GraphQLCheckRunNode {
 }
 
 interface GraphQLStatusContextNode {
-  __typename?: 'StatusContext' | string | null;
+  __typename?: 'StatusContext' | (string & {}) | null;
   context?: string | null;
   state?: string | null;
   targetUrl?: string | null;

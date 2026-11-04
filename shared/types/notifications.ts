@@ -2,7 +2,13 @@ import type { IssueTypeSummary } from './issues';
 import type { LinkedPullRequestIdentity } from './linked-pull-requests';
 import type { PullRequestCheckRollup } from './pr-checks';
 
-export type NotificationSubjectKind = 'Issue' | 'PullRequest' | 'Discussion' | 'Release' | string;
+// Known subject kinds stay listed for autocomplete while GitHub may add more.
+export type NotificationSubjectKind =
+  | 'Issue'
+  | 'PullRequest'
+  | 'Discussion'
+  | 'Release'
+  | (string & {});
 
 export type NotificationSubjectState = 'open' | 'closed' | 'merged';
 
