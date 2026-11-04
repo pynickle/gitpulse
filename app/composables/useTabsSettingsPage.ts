@@ -760,7 +760,7 @@ export const useTabsSettingsPage = () => {
       clearTimeout(previewTimer);
     }
     void loadPreview();
-    nextTick(() => {
+    void nextTick(() => {
       paginationInProgress = false;
     });
   }
