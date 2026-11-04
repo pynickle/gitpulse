@@ -1220,17 +1220,6 @@ onMounted(() => {
   }
 }
 
-/* ── Transitions ── */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 /* The sidebar pick animates the whole panel into place. The staged swap (`out-in`) is what
    keeps two panels from stacking, and it is also why the leaving panel needs a phone rule
    below: with no transition to watch, the stage would keep the old category on screen. */
