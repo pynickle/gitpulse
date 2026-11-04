@@ -696,7 +696,7 @@ test.each([
         if (this.classList.contains('followed-list__item')) {
           const port = this.closest('.simplebar-content-wrapper') as HTMLElement | null;
           let top = -(port?.scrollTop ?? 0);
-          for (const sibling of [...(this.parentElement?.children ?? [])]) {
+          for (const sibling of this.parentElement?.children ?? []) {
             if (sibling === this) break;
             if (!(sibling as HTMLElement).classList.contains('followed-list__item')) continue;
             top += (sibling as HTMLElement).classList.contains('followed-list__item--detailed')
