@@ -1,8 +1,6 @@
 import type {
-  IssueAssigneeCandidate,
   IssueAssigneeCandidatesResponse,
   IssueAssigneeMutationResponse,
-  IssueAssigneeUser,
 } from '#shared/types/assignees';
 
 export type {

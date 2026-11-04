@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
-import { defineComponent, h, shallowRef } from 'vue';
+import { defineComponent, h } from 'vue';
 
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';

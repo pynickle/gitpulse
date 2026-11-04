@@ -77,7 +77,6 @@ export function useDashboardRefreshCoordinator(options: DashboardRefreshCoordina
       return buildSearchFreshnessUrl(customTab.query);
     }
 
-    const filterSourceStates = toValue(options.filterSourceStates);
     const currentTab = toValue(options.currentTab);
     if (currentTab === 'notifications') {
       return notificationFreshnessUrl.value;

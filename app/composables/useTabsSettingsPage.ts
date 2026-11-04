@@ -18,7 +18,6 @@ import {
   buildCustomTabHumanPreview,
   buildCustomTabSearchParts,
   buildCustomTabSearchQuery,
-  buildCustomTabSummary,
   createCustomTabPreviewSearchParams,
   createGitHubCustomTabPreviewUrl,
   customTabEndpointOptions,
@@ -393,10 +392,6 @@ export const useTabsSettingsPage = () => {
   const humanPreview = computed(() => {
     return buildCustomTabHumanPreview(buildCurrentQuery(), t);
   });
-
-  const buildSummaryFromQuery = (query: GitHubSearchQuery) => {
-    return buildCustomTabSummary(query, t);
-  };
 
   const getTabSubtitle = (tab: SettingsTab) => {
     if (tab.subtitleMode === 'none') {

@@ -21,8 +21,6 @@ interface RememberCookiePayload {
 const PERSONAL_REMEMBER_COOKIE = 'gitpulse_personal_remember';
 const REMEMBER_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const REMEMBER_COOKIE_PATH = '/';
-const PERSONAL_MODE_STORAGE_BASE = 'personal-mode';
-const PERSONAL_MODE_IDENTITY_KEY = 'identity';
 
 let personalIdentityCache: PersonalIdentity | null = null;
 
