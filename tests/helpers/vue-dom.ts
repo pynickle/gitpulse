@@ -96,7 +96,7 @@ export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
         },
       };
     },
-    async cleanup() {
+    cleanup: async () => {
       for (const app of apps.splice(0)) app.unmount();
       await nextTick();
       for (const [key, descriptor] of originals) {
