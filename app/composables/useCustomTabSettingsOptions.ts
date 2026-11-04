@@ -88,11 +88,7 @@ function getCustomTabStateSummary(query: GitHubSearchQuery, t: Translate) {
   return t(`dashboard.tabsSettings.options.${state}`);
 }
 
-function buildCustomTabSummaryChunks(
-  query: GitHubSearchQuery,
-  t: Translate,
-  options: { maxLabels?: number } = {}
-) {
+function buildCustomTabSummaryChunks(query: GitHubSearchQuery, t: Translate) {
   const chunks = [getCustomTabEndpointSummary(query, t)];
 
   const syntax = query.syntax?.trim();
@@ -120,7 +116,7 @@ function buildCustomTabSummaryChunks(
     if (value) chunks.push(t(`dashboard.tabsSettings.summary.${labelKey}`, { value }));
   }
 
-  const labels = options.maxLabels ? query.labels?.slice(0, options.maxLabels) : query.labels;
+  const labels = query.labels;
   if (labels && labels.length > 0)
     chunks.push(t('dashboard.tabsSettings.summary.labeled', { value: labels.join(', ') }));
 
@@ -131,12 +127,6 @@ export function buildCustomTabHumanPreview(query: GitHubSearchQuery, t: Translat
   const chunks = buildCustomTabSummaryChunks(query, t);
 
   return t('dashboard.tabsSettings.summary.showing', { value: chunks.join(', ') });
-}
-
-export function buildCustomTabSummary(query: GitHubSearchQuery, t: Translate) {
-  const chunks = buildCustomTabSummaryChunks(query, t, { maxLabels: 2 });
-
-  return t('dashboard.tabsSettings.summary.showing', { value: chunks.slice(0, 4).join(', ') });
 }
 
 function getCustomTabEndpointSummary(query: GitHubSearchQuery, t: Translate) {
