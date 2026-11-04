@@ -1,3 +1,4 @@
+import { stringifyGitHubId } from '#server/utils/github-id-utils';
 import {
   buildReviewThreadStatePayload,
   buildReviewThreadsByCommentId,
@@ -32,27 +33,15 @@ interface PullReviewCommentResponse {
   } | null;
 }
 
-const stringifyId = (value: unknown) => {
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value);
-  }
-
-  return undefined;
-};
-
 type ReviewThreadsByCommentId = ReturnType<typeof buildReviewThreadsByCommentId>;
 
 const normalizeReviewComment = (
   comment: PullReviewCommentResponse,
   reviewThreadsByCommentId: ReviewThreadsByCommentId
 ) => ({
-  id: stringifyId(comment.id ?? comment.node_id) ?? '',
-  pullRequestReviewId: stringifyId(comment.pull_request_review_id),
-  inReplyToId: stringifyId(comment.in_reply_to_id),
+  id: stringifyGitHubId(comment.id ?? comment.node_id) ?? '',
+  pullRequestReviewId: stringifyGitHubId(comment.pull_request_review_id),
+  inReplyToId: stringifyGitHubId(comment.in_reply_to_id),
   body: comment.body ?? '',
   path: comment.path ?? '',
   url: comment.html_url,

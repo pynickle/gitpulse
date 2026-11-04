@@ -4,6 +4,8 @@ import * as z from 'zod';
 import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
 import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
 
+import { stringifyGitHubId } from './github-id-utils';
+
 type GitHubClient = Octokit;
 
 type ReviewerKind = 'user' | 'team';
@@ -173,18 +175,6 @@ const isReviewerRequestPermissionError = (error: unknown) => {
     message.includes('must have push access') ||
     message.includes('push access to view repository collaborators')
   );
-};
-
-const stringifyId = (value: unknown) => {
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value);
-  }
-
-  return undefined;
 };
 
 const userKey = (login: string) => `user:${login.toLowerCase()}`;
@@ -394,7 +384,7 @@ function ensureUserEntry(
   const existing = entries.get(key);
 
   if (existing) {
-    existing.id ??= stringifyId(user.id);
+    existing.id ??= stringifyGitHubId(user.id);
     existing.nodeId ??= user.node_id;
     existing.avatarUrl ??= user.avatar_url;
     existing.url ??= user.html_url ?? user.url;
@@ -404,7 +394,7 @@ function ensureUserEntry(
   const entry: PRReviewerSummaryItem = {
     key,
     kind: 'user',
-    id: stringifyId(user.id),
+    id: stringifyGitHubId(user.id),
     nodeId: user.node_id,
     login,
     name: login,
@@ -431,7 +421,7 @@ function ensureTeamEntry(entries: Map<string, PRReviewerSummaryItem>, team: GitH
   const existing = entries.get(key);
 
   if (existing) {
-    existing.id ??= stringifyId(team.id);
+    existing.id ??= stringifyGitHubId(team.id);
     existing.nodeId ??= team.node_id;
     existing.url ??= team.html_url ?? team.url;
     return existing;
@@ -441,7 +431,7 @@ function ensureTeamEntry(entries: Map<string, PRReviewerSummaryItem>, team: GitH
   const entry: PRReviewerSummaryItem = {
     key,
     kind: 'team',
-    id: stringifyId(team.id),
+    id: stringifyGitHubId(team.id),
     nodeId: team.node_id,
     slug,
     name,
@@ -687,7 +677,7 @@ function mapUserCandidate(
   return {
     key,
     kind: 'user',
-    id: stringifyId(user.id),
+    id: stringifyGitHubId(user.id),
     nodeId: user.node_id,
     login,
     name: login,
@@ -708,7 +698,7 @@ function mapTeamCandidate(
   return {
     key,
     kind: 'team',
-    id: stringifyId(team.id),
+    id: stringifyGitHubId(team.id),
     nodeId: team.node_id,
     slug,
     name: trimString(team.name) || slug,

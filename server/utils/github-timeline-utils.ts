@@ -3,6 +3,7 @@ import type { Octokit } from '@octokit/core';
 import type { ReactionContent, ReactionSummaryItem } from '#shared/types/reactions';
 import { ISSUE_COMMENT_REACTION_CONTENTS } from '#shared/utils/reactions';
 
+import { stringifyGitHubId } from './github-id-utils';
 import { parseLinkHeader } from './github-pagination';
 
 type GitHubClient = Octokit;
@@ -1060,7 +1061,7 @@ export function normalizePRIssueTimelineEvent(
         kind: 'event',
         eventType: eventName,
         review: {
-          id: stringifyId(
+          id: stringifyGitHubId(
             rawEvent.dismissed_review?.review_id ??
               rawEvent.dismissed_review?.review?.id ??
               rawEvent.review?.id
@@ -1189,7 +1190,7 @@ export function normalizePRTimelineEvent(
 }
 
 function normalizePRReviewEvent(review: Record<string, any>): SortableTimelineItem {
-  const reviewId = stringifyId(review.id ?? review.node_id);
+  const reviewId = stringifyGitHubId(review.id ?? review.node_id);
 
   return {
     kind: 'review',
@@ -1220,8 +1221,8 @@ function normalizePRReviewCommentEvents(rawEvent: Record<string, any>): Sortable
         body: rawEvent.body ?? '',
         path: rawEvent.path,
         url: rawEvent.html_url,
-        pullRequestReviewId: stringifyId(rawEvent.pull_request_review_id),
-        inReplyToId: stringifyId(rawEvent.in_reply_to_id),
+        pullRequestReviewId: stringifyGitHubId(rawEvent.pull_request_review_id),
+        inReplyToId: stringifyGitHubId(rawEvent.in_reply_to_id),
         startLine: rawEvent.start_line,
         originalStartLine: rawEvent.original_start_line,
         startSide: rawEvent.start_side,
@@ -1237,7 +1238,7 @@ function normalizePRReviewCommentEvents(rawEvent: Record<string, any>): Sortable
   return comments.map((comment: Record<string, any>) => ({
     kind: 'review-comment',
     eventType: 'line_commented',
-    id: stringifyId(comment.id ?? comment.node_id),
+    id: stringifyGitHubId(comment.id ?? comment.node_id),
     createdAt: comment.created_at ?? rawEvent.created_at,
     actor: mapActor(comment.user ?? rawEvent.actor),
     author: mapActor(comment.user ?? rawEvent.actor),
@@ -1246,8 +1247,8 @@ function normalizePRReviewCommentEvents(rawEvent: Record<string, any>): Sortable
     url: comment.html_url,
     originalUrl: comment.html_url,
     pullRequestReviewUrl: comment.pull_request_review_url,
-    pullRequestReviewId: stringifyId(comment.pull_request_review_id),
-    inReplyToId: stringifyId(comment.in_reply_to_id),
+    pullRequestReviewId: stringifyGitHubId(comment.pull_request_review_id),
+    inReplyToId: stringifyGitHubId(comment.in_reply_to_id),
     diffHunk: comment.diff_hunk,
     startLine: comment.start_line,
     originalStartLine: comment.original_start_line,
@@ -1286,7 +1287,7 @@ function normalizePRCommitCommentEvents(rawEvent: Record<string, any>): Sortable
   return comments.map((comment: Record<string, any>) => ({
     kind: 'review-comment',
     eventType: 'commit_commented',
-    id: stringifyId(comment.id ?? comment.node_id),
+    id: stringifyGitHubId(comment.id ?? comment.node_id),
     createdAt: comment.created_at ?? rawEvent.created_at,
     actor: mapActor(comment.user ?? rawEvent.actor),
     author: mapActor(comment.user ?? rawEvent.actor),
@@ -1387,7 +1388,7 @@ function buildReviewCommentsByReviewId(
   const commentsByReviewId = new Map<string, TimelineReviewCommentPayload[]>();
 
   for (const comment of comments) {
-    const reviewId = stringifyId(comment.pull_request_review_id);
+    const reviewId = stringifyGitHubId(comment.pull_request_review_id);
     if (!reviewId) {
       continue;
     }
@@ -1418,7 +1419,7 @@ export function buildReviewThreadsByCommentId(reviewThreads: TimelineReviewThrea
 
   for (const thread of reviewThreads) {
     for (const comment of thread.comments?.nodes ?? []) {
-      const ids = [comment?.id, stringifyId(comment?.databaseId)].filter((id): id is string =>
+      const ids = [comment?.id, stringifyGitHubId(comment?.databaseId)].filter((id): id is string =>
         Boolean(id)
       );
 
@@ -1436,9 +1437,9 @@ export function getReviewThreadForComment(
   reviewThreadsByCommentId: Map<string, TimelineReviewThreadPayload>
 ) {
   const ids = [
-    stringifyId(comment.id),
-    stringifyId(comment.node_id),
-    stringifyId(comment.databaseId),
+    stringifyGitHubId(comment.id),
+    stringifyGitHubId(comment.node_id),
+    stringifyGitHubId(comment.databaseId),
   ].filter((id): id is string => Boolean(id));
 
   for (const id of ids) {
@@ -1488,7 +1489,7 @@ function buildReviewsById(reviews: Record<string, any>[]) {
   const reviewsById = new Map<string, Record<string, any>>();
 
   for (const review of reviews) {
-    const reviewId = stringifyId(review.id ?? review.node_id);
+    const reviewId = stringifyGitHubId(review.id ?? review.node_id);
     if (reviewId) {
       reviewsById.set(reviewId, review);
     }
@@ -1538,7 +1539,7 @@ function normalizeReviewCommentForReview(
   const thread = getReviewThreadForComment(comment, reviewThreadsByCommentId);
 
   return {
-    id: stringifyId(comment.id ?? comment.node_id),
+    id: stringifyGitHubId(comment.id ?? comment.node_id),
     ...buildReviewThreadStatePayload(thread),
     author: mapActor(comment.user),
     body: comment.body ?? '',
@@ -1546,8 +1547,8 @@ function normalizeReviewCommentForReview(
     path: comment.path,
     url: comment.html_url,
     diffHunk: comment.diff_hunk,
-    pullRequestReviewId: stringifyId(comment.pull_request_review_id),
-    inReplyToId: stringifyId(comment.in_reply_to_id),
+    pullRequestReviewId: stringifyGitHubId(comment.pull_request_review_id),
+    inReplyToId: stringifyGitHubId(comment.in_reply_to_id),
     position: comment.position,
     originalPosition: comment.original_position,
     startLine: comment.start_line,
@@ -1571,7 +1572,7 @@ function normalizePRCommitEvent(commit: Record<string, any>): SortableTimelineIt
   return {
     kind: 'commit',
     eventType: String(commit.event ?? 'committed'),
-    id: stringifyId(commit.sha),
+    id: stringifyGitHubId(commit.sha),
     timelineSource: 'rest.timeline',
     commit: mapCommitPayload(commit),
   };
@@ -1579,7 +1580,7 @@ function normalizePRCommitEvent(commit: Record<string, any>): SortableTimelineIt
 
 function buildBaseTimelineItem(rawEvent: Record<string, any>): BaseTimelineItem {
   return {
-    id: stringifyId(rawEvent.id ?? rawEvent.node_id),
+    id: stringifyGitHubId(rawEvent.id ?? rawEvent.node_id),
     createdAt: rawEvent.created_at,
     actor: mapActor(rawEvent.actor),
     timelineSource: 'rest.timeline',
@@ -1795,12 +1796,6 @@ function parseGitHubWebUrl(value: unknown): URL | null {
   } catch {
     return null;
   }
-}
-
-function stringifyId(value: unknown) {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
-  return undefined;
 }
 
 function getTimelineStatusCode(error: unknown) {
