@@ -2,6 +2,11 @@ const INTERNAL_ORIGIN = 'https://gitpulse.invalid';
 
 const DISALLOWED_PATH_PREFIXES = ['/api', '/auth'];
 
+// Matching control characters is the whole point here: a persisted return target containing them
+// is rejected outright, so the rule's usual "did you mean a printable character" concern is inverted.
+// oxlint-disable-next-line no-control-regex
+const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
+
 export const DEFAULT_AUTH_RETURN_PATH = '/dashboard';
 
 /**
@@ -20,7 +25,7 @@ export function normalizeAuthReturnTo(value: unknown): string | null {
     !rawValue.startsWith('/') ||
     rawValue.startsWith('//') ||
     rawValue.includes('\\') ||
-    /[\u0000-\u001f\u007f]/.test(rawValue)
+    CONTROL_CHARACTER_PATTERN.test(rawValue)
   ) {
     return null;
   }
@@ -44,7 +49,7 @@ export function normalizeAuthReturnTo(value: unknown): string | null {
     url.origin !== INTERNAL_ORIGIN ||
     decodedPath.startsWith('//') ||
     decodedPath.includes('\\') ||
-    /[\u0000-\u001f\u007f]/.test(decodedPath) ||
+    CONTROL_CHARACTER_PATTERN.test(decodedPath) ||
     DISALLOWED_PATH_PREFIXES.some(
       (prefix) => decodedPath === prefix || decodedPath.startsWith(`${prefix}/`)
     )
