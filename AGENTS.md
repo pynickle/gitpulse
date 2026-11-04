@@ -42,6 +42,14 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 - `server/utils/*.ts` → **named** exports. Import explicitly.
 - Shared: reach through the `#shared/*` alias; `server/utils/` exposes its named exports directly, with no thin re-export wrappers.
 
+## Component Props (Vue SFCs)
+
+- Read props through reactive destructure: `const { a, b = 2 } = defineProps<T>()` (stable since Vue 3.5, which is installed). Do not use `withDefaults()` — combined with a destructure it switches reactive destructuring off, and a factory default (`list = () => []`) does not compile. Array/object literals already get their per-instance factory from the compiler.
+- Keep `const props = defineProps<T>()` only when the whole object is handed to a util or composable, or for dynamic access (`props[key]`), and say why in a one-line comment.
+- Defaults must not reference another prop: they move into the hoisted runtime declaration, where the other binding does not exist.
+- `watch(() => x, …)` — a bare `watch(x, …)` is a compile error. A composable that must track a prop takes `toRef(() => x)`, not `x`.
+- After destructuring, a computed that only forwards a prop (`computed(() => props.x)`) is redundant — delete it, and a default belongs in the destructure rather than in a `?? fallback` computed.
+
 ## Auth & Sessions (Must-Use)
 
 - **Every** GitHub auth session write goes through `establishGitHubSession()` from `server/utils/auth-session-utils.ts` — the only writer of `github`/`pat` sessions, and the owner of their shape and cookie wiring.
