@@ -557,6 +557,14 @@ const invalidateReviewerSummaryRequests = () => {
   reviewerSummaryRequestId.value += 1;
 };
 
+/** Apply a response patch to a known-current pull request without replacing it wholesale. */
+const applyPullRequestPatch = (
+  current: PullRequestDetailViewModel,
+  patch: Partial<PullRequestDetailViewModel>
+) => {
+  currentPullRequest.value = { ...current, ...patch };
+};
+
 const loadReviewerSummary = async () => {
   if (!repoInfo.value || !currentPullRequest.value?.number) {
     return;
@@ -579,10 +587,7 @@ const loadReviewerSummary = async () => {
       return;
     }
 
-    currentPullRequest.value = {
-      ...currentPullRequest.value,
-      reviewers,
-    };
+    applyPullRequestPatch(currentPullRequest.value, { reviewers });
   } catch (err: unknown) {
     console.error('Error fetching pull request reviewer summary:', err);
     if (
@@ -590,15 +595,14 @@ const loadReviewerSummary = async () => {
       pullRequestIdentity === getPullRequestIdentity() &&
       currentPullRequest.value
     ) {
-      currentPullRequest.value = {
-        ...currentPullRequest.value,
+      applyPullRequestPatch(currentPullRequest.value, {
         reviewers: createEmptyPRReviewersSummary([
           {
             source: 'reviewer-summary',
             message: getFetchErrorMessage(err, t('prReview.reviewerPicker.summaryLoadFailed')),
           },
         ]),
-      };
+      });
     }
   }
 };
@@ -668,11 +672,10 @@ const requestReviewerSelection = async (payload: PRReviewerMutationPayload) => {
       return;
     }
 
-    currentPullRequest.value = {
-      ...currentPullRequest.value,
+    applyPullRequestPatch(currentPullRequest.value, {
       ...data.pullRequest,
       reviewers: data.reviewers ?? currentPullRequest.value.reviewers,
-    };
+    });
     invalidateReviewerSummaryRequests();
     isReviewerPickerOpen.value = false;
     reviewerCandidates.value = [];
@@ -738,11 +741,10 @@ const removeReviewerRequest = async (reviewer: PRReviewerSummaryItem) => {
       return;
     }
 
-    currentPullRequest.value = {
-      ...currentPullRequest.value,
+    applyPullRequestPatch(currentPullRequest.value, {
       ...data.pullRequest,
       reviewers: data.reviewers ?? currentPullRequest.value.reviewers,
-    };
+    });
     invalidateReviewerSummaryRequests();
     reviewerPickerError.value = '';
   } catch (err: unknown) {
@@ -783,12 +785,11 @@ const updateLabels = (labels: RepositoryLabel[]) => {
 const updateAssignees = (assignees: IssueAssigneeUser[], issue?: IssueAssigneeMutationResponse) => {
   if (!currentPullRequest.value) return;
 
-  currentPullRequest.value = {
-    ...currentPullRequest.value,
+  applyPullRequestPatch(currentPullRequest.value, {
     ...issue,
     assignees,
     assignee: issue?.assignee ?? assignees[0] ?? null,
-  };
+  });
 };
 
 const getPullRequestIdentity = () => {
