@@ -8,6 +8,18 @@ import {
   withCsrfHeader,
 } from '~/utils/csrf';
 
+const describeRequest = (request: FetchRequest): string => {
+  if (typeof request === 'string') {
+    return request;
+  }
+
+  if (request instanceof Request) {
+    return request.url;
+  }
+
+  return '';
+};
+
 export function useGitPulseApiFetch() {
   const requestFetch = useRequestFetch();
   const apiFetch = requestFetch as <T = unknown, R extends ResponseType = 'json'>(
@@ -33,7 +45,7 @@ export function useGitPulseApiFetch() {
 
     const token = csrfCookie.value;
     if (!token) {
-      console.warn(`[csrf] missing client cookie for ${method} ${String(request)}`);
+      console.warn(`[csrf] missing client cookie for ${method} ${describeRequest(request)}`);
       return apiFetch<T, R>(request, options);
     }
 

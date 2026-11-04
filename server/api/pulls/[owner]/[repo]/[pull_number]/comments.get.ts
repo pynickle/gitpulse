@@ -33,11 +33,15 @@ interface PullReviewCommentResponse {
 }
 
 const stringifyId = (value: unknown) => {
-  if (value === undefined || value === null) {
-    return undefined;
+  if (typeof value === 'string') {
+    return value;
   }
 
-  return String(value);
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return undefined;
 };
 
 type ReviewThreadsByCommentId = ReturnType<typeof buildReviewThreadsByCommentId>;

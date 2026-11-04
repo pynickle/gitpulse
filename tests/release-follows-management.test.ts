@@ -36,7 +36,12 @@ function translate(key: string, params?: Record<string, unknown>) {
     return (node as Record<string, unknown>)[part];
   }, english);
   if (typeof value !== 'string') return key;
-  return value.replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name] ?? ''));
+  return value.replace(/\{(\w+)\}/g, (_, name: string) => {
+    const param = params?.[name];
+    if (typeof param === 'string') return param;
+    if (typeof param === 'number' || typeof param === 'boolean') return String(param);
+    return '';
+  });
 }
 
 const icon = defineComponent({ setup: () => () => h('span') });

@@ -35,10 +35,14 @@ export async function loadReleaseTimelineRound(
   const query = getQuery(event);
   let cursors: Record<string, string | null> | undefined;
   if (!refresh && query.cursors !== undefined) {
+    if (typeof query.cursors !== 'string') {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid timeline cursors' });
+    }
+
     try {
       cursors = z
         .record(z.string(), z.string().max(1024).nullable())
-        .parse(JSON.parse(String(query.cursors)));
+        .parse(JSON.parse(query.cursors));
     } catch {
       throw createError({ statusCode: 400, statusMessage: 'Invalid timeline cursors' });
     }
