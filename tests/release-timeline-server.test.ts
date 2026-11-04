@@ -59,7 +59,8 @@ function harness(count = 1) {
     zod: { z },
     h3: {
       getQuery: (event: unknown) => event,
-      createError: (data: { statusMessage: string }) => new Error(data.statusMessage),
+      createError: (data: { statusCode: number; statusMessage: string }) =>
+        Object.assign(new Error(data.statusMessage), { statusCode: data.statusCode }),
     },
     './github-auth-utils': {
       getGitHubSessionContext: async () => ({ octokit: provider, userLogin: 'octo' }),
@@ -82,7 +83,7 @@ function harness(count = 1) {
   // oxlint-disable-next-line no-implied-eval -- evaluates a checked-in fixture against injected mocks
   const load = new Function('modules', `${executable}; return loadReleaseTimelineRound;`)(
     modules
-  ) as (query: Record<string, string>, refresh?: boolean) => Promise<ReleaseTimelinePage>;
+  ) as (query: Record<string, unknown>, refresh?: boolean) => Promise<ReleaseTimelinePage>;
   return {
     load,
     history,
@@ -172,3 +173,17 @@ test.each([true, false])(
     expect(page.releases[1]!.notesSearchText).toBe('');
   }
 );
+
+test('rejects a cursors parameter that is not a single string with a 400', async () => {
+  const app = harness();
+
+  // A repeated `?cursors=` parameter reaches the handler as an array. The payload is
+  // valid JSON, so only the string type check can reject it.
+  const error = await app
+    .load({ cursors: [JSON.stringify({ A: 'cursor' })] })
+    .catch((caught: unknown) => caught);
+
+  expect(error).toBeInstanceOf(Error);
+  expect((error as Error & { statusCode?: number }).statusCode).toBe(400);
+  expect((error as Error).message).toBe('Invalid timeline cursors');
+});
