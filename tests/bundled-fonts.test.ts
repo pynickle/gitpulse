@@ -1,13 +1,20 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import { CODE_FONT_IDS } from '../shared/types/user-settings';
 import * as bundledFonts from '../shared/utils/bundled-fonts';
 import { createDefaultUserSettings } from '../shared/utils/user-settings';
 
 mock.module('#shared/utils/bundled-fonts', () => bundledFonts);
 
-const { getAppFontStack, getCodeFontStack } =
+const { builtinCodeFontOptions, getAppFontStack, getCodeFontStack } =
   await import('../app/composables/user-settings/fonts');
-const { bundledAppFonts, bundledCodeFonts, bundledFontFaces, bundledFontWeights } = bundledFonts;
+const {
+  bundledAppFonts,
+  bundledCodeFonts,
+  bundledFontFaces,
+  bundledFontWeights,
+  CODE_FONT_FALLBACK_STACK,
+} = bundledFonts;
 
 const fonts = createDefaultUserSettings().fonts;
 
@@ -29,9 +36,32 @@ describe('bundled font stacks', () => {
     expect(getCodeFontStack({ ...fonts, codeFont: 'jetbrains-mono' })).toBe(
       '"JetBrains Mono", "Maple Mono", var(--gitpulse-code-font-fallback)'
     );
+    expect(getCodeFontStack({ ...fonts, codeFont: 'geist-mono' })).toBe(
+      '"Geist Mono", "Maple Mono", var(--gitpulse-code-font-fallback)'
+    );
     expect(
       getCodeFontStack({ ...fonts, codeFont: 'system', codeSystemFont: 'Cascadia Mono' })
     ).toBe('"Cascadia Mono", "Maple Mono", var(--gitpulse-code-font-fallback)');
+  });
+});
+
+describe('selectable code fonts', () => {
+  const selectableIds = builtinCodeFontOptions.map((option) => option.id);
+
+  test('the picker offers the bundled code fonts in order with the system face last', () => {
+    expect(selectableIds).toEqual(['maple-mono', 'jetbrains-mono', 'geist-mono']);
+    expect(CODE_FONT_IDS).toEqual([...selectableIds, 'system']);
+  });
+
+  test('every selectable id leads its own stack instead of falling back to the default face', () => {
+    for (const id of selectableIds) {
+      const bundled = bundledCodeFonts.find((font) => font.id === id);
+      const stack = getCodeFontStack({ ...fonts, codeFont: id });
+
+      expect(bundled?.family).toBeTruthy();
+      expect(stack.split(', ')[0]).toBe(`"${bundled?.family}"`);
+      expect(stack.endsWith(CODE_FONT_FALLBACK_STACK)).toBe(true);
+    }
   });
 });
 

@@ -217,6 +217,26 @@ The user setting that seeds Composer Layout when a Conversation Composer opens.
 **Review Inline Composer Default Layout**:
 The user setting that seeds Composer Layout when a Review Inline Composer opens on a wide viewport.
 
+## Fonts
+
+**App Font**:
+The typeface used for interface text outside code surfaces — either a face GitPulse serves or a family installed on the user's device.
+
+**Code Font**:
+The typeface used for code, identifiers, commit SHAs, and other monospace surfaces — either a face GitPulse serves or a family installed on the user's device.
+_Avoid_: monospace font when naming the setting
+
+**Bundled Code Font**:
+A Code Font GitPulse serves itself and offers as a choice in settings, as distinct from a family the user has installed.
+_Avoid_: built-in font, installed font
+
+**Default Code Font**:
+The Code Font a user has when they have never chosen one. A change to it changes what every such user sees, so it is a separate decision from adding a Bundled Code Font.
+
+**Shipped Code Font Fallback**:
+The one Bundled Code Font kept as the fallback for a chosen Code Font, so text still renders when the chosen face does not load. It is not the Default Code Font, even where one face serves both roles today.
+_Avoid_: default font, fallback font
+
 ## Dashboard
 
 **Landing**:

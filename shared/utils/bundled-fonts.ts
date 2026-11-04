@@ -4,6 +4,7 @@ const MAPLE_MONO = 'Maple Mono';
 /** Installed locally by some users. Not part of the files we ship. */
 const MAPLE_MONO_NF_CN = 'Maple Mono NF CN';
 const JETBRAINS_MONO = 'JetBrains Mono';
+const GEIST_MONO = 'Geist Mono';
 
 /** Shipped monospace used when the selected code face does not load. */
 export const SHIPPED_CODE_FONT_FAMILY = MAPLE_MONO;
@@ -44,12 +45,19 @@ export const bundledCodeFonts = [
     family: JETBRAINS_MONO,
     stack: [JETBRAINS_MONO, MAPLE_MONO],
   },
+  {
+    id: 'geist-mono',
+    label: GEIST_MONO,
+    family: GEIST_MONO,
+    stack: [GEIST_MONO, MAPLE_MONO],
+  },
 ] as const;
 
 const HARMONY_SANS_PACKAGE = '@lobehub/webfont-harmony-sans@1.0.0';
-const MISANS_PACKAGE = 'misans@4.1.0';
-const MAPLE_MONO_PACKAGE = '@fontsource/maple-mono@5.2.6';
-const JETBRAINS_MONO_PACKAGE = '@fontsource/jetbrains-mono@5.2.8';
+const MISANS_PACKAGE = 'misans@5.0.0';
+const MAPLE_MONO_PACKAGE = '@fontsource/maple-mono@5.3.0';
+const JETBRAINS_MONO_PACKAGE = '@fontsource/jetbrains-mono@5.3.0';
+const GEIST_MONO_PACKAGE = '@fontsource/geist-mono@5.3.0';
 
 const jsDelivr = (specifier: string) => `https://cdn.jsdelivr.net/npm/${specifier}`;
 
@@ -99,4 +107,5 @@ export const bundledFontFaces: BundledFontFace[] = [
   ...facesFor(MISANS_LATIN, misansLatinFiles),
   ...facesFor(MAPLE_MONO, fontsourceLatin(MAPLE_MONO_PACKAGE, 'maple-mono')),
   ...facesFor(JETBRAINS_MONO, fontsourceLatin(JETBRAINS_MONO_PACKAGE, 'jetbrains-mono')),
+  ...facesFor(GEIST_MONO, fontsourceLatin(GEIST_MONO_PACKAGE, 'geist-mono')),
 ];
