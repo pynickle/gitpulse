@@ -13,16 +13,10 @@
 <script setup lang="ts">
 import { RefreshCwIcon } from '@lucide/vue';
 
-withDefaults(
-  defineProps<{
-    size?: number;
-    strokeWidth?: number;
-  }>(),
-  {
-    size: 16,
-    strokeWidth: 2,
-  }
-);
+const { size = 16, strokeWidth = 2 } = defineProps<{
+  size?: number;
+  strokeWidth?: number;
+}>();
 </script>
 
 <style scoped lang="scss">

@@ -14,22 +14,19 @@ import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.v
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewDraftComment, PRReviewEvent } from '~/composables/usePRReview';
 
-withDefaults(
-  defineProps<{
-    event: PRReviewEvent;
-    body: string;
-    pendingCommentCount: number;
-    draftComments: PRReviewDraftComment[];
-    canSubmit: boolean;
-    submitting: boolean;
-    errorMessage: string;
-    collapsed: boolean;
-    repoOwner: string;
-    repoName: string;
-    variant?: 'column' | 'sheet';
-  }>(),
-  { variant: 'column' }
-);
+const { variant = 'column' } = defineProps<{
+  event: PRReviewEvent;
+  body: string;
+  pendingCommentCount: number;
+  draftComments: PRReviewDraftComment[];
+  canSubmit: boolean;
+  submitting: boolean;
+  errorMessage: string;
+  collapsed: boolean;
+  repoOwner: string;
+  repoName: string;
+  variant?: 'column' | 'sheet';
+}>();
 
 const emit = defineEmits<{
   (e: 'update:event', event: PRReviewEvent): void;

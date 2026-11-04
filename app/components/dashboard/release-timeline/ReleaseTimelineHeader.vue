@@ -10,25 +10,22 @@ import {
 
 import ReleaseTimelineBaselineChip from '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue';
 
-withDefaults(
-  defineProps<{
-    loading: boolean;
-    previousBaseline?: string | null;
-    recoveredCount?: number;
-    newCount?: number;
-    showTitle?: boolean;
-    showReload?: boolean;
-    filterActive?: boolean;
-  }>(),
-  {
-    showTitle: true,
-    showReload: true,
-    filterActive: false,
-    previousBaseline: null,
-    recoveredCount: 0,
-    newCount: 0,
-  }
-);
+const {
+  showTitle = true,
+  showReload = true,
+  filterActive = false,
+  previousBaseline = null,
+  recoveredCount = 0,
+  newCount = 0,
+} = defineProps<{
+  loading: boolean;
+  previousBaseline?: string | null;
+  recoveredCount?: number;
+  newCount?: number;
+  showTitle?: boolean;
+  showReload?: boolean;
+  filterActive?: boolean;
+}>();
 
 const emit = defineEmits<{
   reload: [];

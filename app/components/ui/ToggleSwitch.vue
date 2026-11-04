@@ -1,15 +1,13 @@
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    modelValue: boolean;
-    ariaLabel?: string;
-    disabled?: boolean;
-  }>(),
-  {
-    ariaLabel: undefined,
-    disabled: false,
-  }
-);
+const {
+  modelValue,
+  ariaLabel,
+  disabled = false,
+} = defineProps<{
+  modelValue: boolean;
+  ariaLabel?: string;
+  disabled?: boolean;
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];

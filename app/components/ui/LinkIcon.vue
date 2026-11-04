@@ -1,5 +1,5 @@
 <template>
-  <NuxtLinkLocale :to="target" class="is-flex is-justify-content-center">
+  <NuxtLinkLocale :to="to" class="is-flex is-justify-content-center">
     <slot />
   </NuxtLinkLocale>
 </template>
@@ -8,8 +8,6 @@
 const { to } = defineProps<{
   to?: string;
 }>();
-
-const target = computed(() => to);
 </script>
 
 <style scoped lang="scss">

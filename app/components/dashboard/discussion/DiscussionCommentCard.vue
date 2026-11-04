@@ -36,8 +36,6 @@ const relativeTimeNow = useRelativeTimeNow();
 const localeCode = computed(() => locale.value);
 const showReplies = shallowRef(false);
 
-const isReplying = computed(() => isEditorActive);
-
 const expandReplyEditor = () => {
   emit('reply-editor-toggled', comment.id, true);
 };
@@ -129,7 +127,7 @@ const submitReplyDraft = async (body: string) => {
 
       <div v-if="canReply" class="discussion-comment__reply-entry mt-3">
         <button
-          v-if="!isReplying"
+          v-if="!isEditorActive"
           class="discussion-comment__reply-capsule button is-light"
           type="button"
           @click="expandReplyEditor"

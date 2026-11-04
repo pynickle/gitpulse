@@ -110,7 +110,7 @@ interface Group {
   icon?: string;
 }
 
-const { groups } = defineProps<{
+const { groups = [] } = defineProps<{
   userAvatar?: string;
   userName?: string;
   activeGroupId?: string;
@@ -127,9 +127,8 @@ defineEmits<{
 
 const { t } = useI18n();
 
-const activityGroups = computed(() => groups ?? []);
-const primaryGroups = computed(() => activityGroups.value.filter((group) => group.id === 'todos'));
-const mainGroups = computed(() => activityGroups.value.filter((group) => group.id !== 'todos'));
+const primaryGroups = computed(() => groups.filter((group) => group.id === 'todos'));
+const mainGroups = computed(() => groups.filter((group) => group.id !== 'todos'));
 
 const iconMap: Record<string, typeof UserIcon> = {
   'list-todo': ListTodoIcon,
