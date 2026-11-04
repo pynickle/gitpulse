@@ -137,7 +137,10 @@ describe('listPackagesAcrossTypes', () => {
     const { items, truncated } = await listPackagesAcrossTypes(octokit, 'user', 'octocat');
 
     expect(truncated).toBe(false);
-    expect(items.map((item) => item.name).sort()).toEqual(['img-b', 'pkg-a']);
+    expect(items.map((item) => item.name).sort((a, b) => a.localeCompare(b))).toEqual([
+      'img-b',
+      'pkg-a',
+    ]);
   });
 
   test('rethrows the first error when every type fails', async () => {

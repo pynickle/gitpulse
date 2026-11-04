@@ -49,6 +49,7 @@ export async function compileVue(
     )
     .replaceAll('import.meta.client', 'true')
     .replaceAll('import.meta.server', 'false');
+  // oxlint-disable-next-line no-implied-eval -- compiles a checked-in fixture; evaluating generated code is the point
   return new Function('modules', `${executable}\nreturn __component;`)({
     vue: Vue,
     ...modules,

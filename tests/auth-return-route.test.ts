@@ -29,6 +29,23 @@ describe('normalizeAuthReturnTo', () => {
     expect(normalizeAuthReturnTo('/api/settings')).toBeNull();
   });
 
+  test('rejects return targets containing control characters', () => {
+    // Surrounding whitespace is trimmed before the check, so only interior control characters
+    // reach the pattern; these are the cases that must be rejected outright.
+    expect(normalizeAuthReturnTo('/dash\nboard')).toBeNull();
+    expect(normalizeAuthReturnTo('/dashboard\u0000')).toBeNull();
+    expect(normalizeAuthReturnTo('/dash\u001fboard')).toBeNull();
+    expect(normalizeAuthReturnTo('/dashboard\u007f')).toBeNull();
+    expect(normalizeAuthReturnTo('/dash%00board')).toBeNull();
+    expect(normalizeAuthReturnTo('/dash%0Aboard')).toBeNull();
+    expect(normalizeAuthReturnTo('/dash%7Fboard')).toBeNull();
+  });
+
+  test('normalizes surrounding whitespace instead of rejecting it', () => {
+    expect(normalizeAuthReturnTo('/dashboard\n')).toBe('/dashboard');
+    expect(normalizeAuthReturnTo('  /dashboard  ')).toBe('/dashboard');
+  });
+
   test('rejects encoded external paths and malformed values without throwing', () => {
     expect(normalizeAuthReturnTo('/%2fexample.com')).toBeNull();
     expect(normalizeAuthReturnTo('/%5cexample.com')).toBeNull();

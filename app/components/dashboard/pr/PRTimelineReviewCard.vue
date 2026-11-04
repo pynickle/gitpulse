@@ -376,7 +376,7 @@ const toggleReviewThread = (comment: TimelineReviewComment) => {
 
   emit('toggle-review-thread', {
     threadId: comment.threadId,
-    resolved: !Boolean(comment.isResolved),
+    resolved: !comment.isResolved,
   });
 };
 

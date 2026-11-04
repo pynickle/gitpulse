@@ -44,6 +44,9 @@ logs
 .unlighthouse/
 /tmp/
 
+# === Local agent scratch (specs, tickets, diagnostics dumps) ===
+.scratch/
+
 # === Generated release notes (manual skill output) ===
 release-notes/
 

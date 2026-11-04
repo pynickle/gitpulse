@@ -280,7 +280,7 @@ describe('fetchFollowedRepositoryIdentityLookups', () => {
     const mixed = await fetchFollowedRepositoryIdentityLookups(
       {
         graphql: async (_query, variables) => ({
-          nodes: (variables?.ids as string[]).map((id) => {
+          nodes: ((variables?.ids ?? []) as string[]).map((id) => {
             if (id === 'R_gone') return null;
             if (id === 'R_live') {
               return {

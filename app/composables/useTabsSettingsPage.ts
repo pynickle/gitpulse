@@ -18,7 +18,6 @@ import {
   buildCustomTabHumanPreview,
   buildCustomTabSearchParts,
   buildCustomTabSearchQuery,
-  buildCustomTabSummary,
   createCustomTabPreviewSearchParams,
   createGitHubCustomTabPreviewUrl,
   customTabEndpointOptions,
@@ -394,10 +393,6 @@ export const useTabsSettingsPage = () => {
     return buildCustomTabHumanPreview(buildCurrentQuery(), t);
   });
 
-  const buildSummaryFromQuery = (query: GitHubSearchQuery) => {
-    return buildCustomTabSummary(query, t);
-  };
-
   const getTabSubtitle = (tab: SettingsTab) => {
     if (tab.subtitleMode === 'none') {
       return '';
@@ -765,7 +760,7 @@ export const useTabsSettingsPage = () => {
       clearTimeout(previewTimer);
     }
     void loadPreview();
-    nextTick(() => {
+    void nextTick(() => {
       paginationInProgress = false;
     });
   }

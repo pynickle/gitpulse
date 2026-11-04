@@ -84,7 +84,7 @@ export default function useDetailCompactHeader({
 
   const reset = () => {
     isCompactHeaderVisible.value = false;
-    nextTick(() => queueVisibilityUpdate());
+    void nextTick(() => queueVisibilityUpdate());
   };
 
   const onResize = () => queueVisibilityUpdate();

@@ -1,23 +1,10 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [],
+  "plugins": ["unicorn", "typescript", "oxc"],
   "categories": {
-    "correctness": "off"
+    "correctness": "deny"
   },
   "env": {
     "builtin": true
-  },
-  "overrides": [
-    {
-      "files": ["app/**/*.ts", "app/**/*.vue", "server/**/*.ts", "shared/**/*.ts"],
-      "rules": {
-        "curly": "off",
-        "no-unexpected-multiline": "off",
-        "unicorn/empty-brace-spaces": "off",
-        "unicorn/no-nested-ternary": "off",
-        "unicorn/number-literal-case": "off"
-      },
-      "plugins": ["unicorn"]
-    }
-  ]
+  }
 }

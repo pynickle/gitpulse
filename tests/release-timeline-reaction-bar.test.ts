@@ -26,7 +26,12 @@ function translate(
   if (typeof value !== 'string') {
     throw new Error(`Missing translation ${key}`);
   }
-  return value.replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name] ?? ''));
+  return value.replace(/\{(\w+)\}/g, (_, name: string) => {
+    const param = params?.[name];
+    if (typeof param === 'string') return param;
+    if (typeof param === 'number' || typeof param === 'boolean') return String(param);
+    return '';
+  });
 }
 
 const empty = defineComponent({ setup: () => () => h('span') });

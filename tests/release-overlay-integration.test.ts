@@ -433,7 +433,8 @@ beforeEach(() => {
   Object.defineProperty(dom.window.HTMLElement.prototype, 'offsetParent', {
     configurable: true,
     get() {
-      let ancestor: HTMLElement | null = this;
+      if (this.style.display === 'none') return null;
+      let ancestor = this.parentElement;
       while (ancestor) {
         if (ancestor.style.display === 'none') return null;
         ancestor = ancestor.parentElement;

@@ -2,15 +2,14 @@ import { afterEach, expect, mock, test } from 'bun:test';
 
 import { computed, defineComponent, getCurrentInstance, h, nextTick, shallowRef } from 'vue';
 
+import { createFollowedRepositoryHttpAdapter } from '../app/composables/followed-repositories/httpAdapter';
+import { getFollowedRepositoryQueries } from '../app/composables/followed-repositories/queries';
+import type { ReleaseTimelineSessionEntry } from '../app/composables/release-timeline/session';
 import type {
   FollowedRepository,
   LookupClassification,
   ReleaseTimeline,
-} from '#shared/types/release-follows';
-
-import { createFollowedRepositoryHttpAdapter } from '../app/composables/followed-repositories/httpAdapter';
-import { getFollowedRepositoryQueries } from '../app/composables/followed-repositories/queries';
-import type { ReleaseTimelineSessionEntry } from '../app/composables/release-timeline/session';
+} from '../shared/types/release-follows';
 import * as searchText from '../shared/utils/release-note-search-text';
 import * as timelineUtils from '../shared/utils/release-timeline';
 mock.module('#shared/utils/release-timeline', () => timelineUtils);

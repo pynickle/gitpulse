@@ -21,8 +21,8 @@ interface PullReviewCommentResponse {
   original_start_line?: number | null;
   line?: number | null;
   original_line?: number | null;
-  start_side?: 'LEFT' | 'RIGHT' | string | null;
-  side?: 'LEFT' | 'RIGHT' | string | null;
+  start_side?: string | null;
+  side?: string | null;
   created_at?: string;
   updated_at?: string;
   user?: {
@@ -33,11 +33,15 @@ interface PullReviewCommentResponse {
 }
 
 const stringifyId = (value: unknown) => {
-  if (value === undefined || value === null) {
-    return undefined;
+  if (typeof value === 'string') {
+    return value;
   }
 
-  return String(value);
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return undefined;
 };
 
 type ReviewThreadsByCommentId = ReturnType<typeof buildReviewThreadsByCommentId>;

@@ -38,7 +38,12 @@ const normalizeSignatureValue = (value: unknown): FreshnessValue => {
     );
   }
 
-  return String(value);
+  if (typeof value === 'symbol' || typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  // Functions carry no signature.
+  return '';
 };
 
 export const createFreshnessSignature = (value: unknown) => {

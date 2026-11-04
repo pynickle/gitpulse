@@ -79,6 +79,7 @@ function harness(count = 1) {
     '#shared/utils/release-follows': follows,
     '#shared/utils/release-timeline': timeline,
   };
+  // oxlint-disable-next-line no-implied-eval -- evaluates a checked-in fixture against injected mocks
   const load = new Function('modules', `${executable}; return loadReleaseTimelineRound;`)(
     modules
   ) as (query: Record<string, string>, refresh?: boolean) => Promise<ReleaseTimelinePage>;

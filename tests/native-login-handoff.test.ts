@@ -482,7 +482,7 @@ test('two Nitro workers sharing filesystem storage cannot redeem case variants o
         })
       )
     );
-    expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    expect(responses.map((response) => response.status).sort((a, b) => a - b)).toEqual([200, 409]);
     expect(responses.filter((response) => response.headers.getSetCookie().length > 0)).toHaveLength(
       1
     );

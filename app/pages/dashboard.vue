@@ -787,7 +787,7 @@ const sidebarTabs = computed(() => {
       ? tab.groupId
       : fallbackCustomGroupId.value,
     name: tab.name,
-    subtitle: resolveCustomTabSubtitle(tab, t),
+    subtitle: resolveCustomTabSubtitle(tab),
     icon: SearchIcon,
   }));
 
@@ -866,7 +866,7 @@ const currentTabTitle = computed(() => {
 const currentTabSubtitle = computed(() => {
   const customTab = selectedCustomTab.value;
   if (!customTab) return '';
-  return resolveCustomTabSubtitle(customTab, t) ?? '';
+  return resolveCustomTabSubtitle(customTab) ?? '';
 });
 
 const { presentation: dashboardHomeChrome, dispatch: dispatchDashboardHomeChrome } =

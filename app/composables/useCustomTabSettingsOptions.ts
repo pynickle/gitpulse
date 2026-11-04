@@ -143,7 +143,7 @@ function getCustomTabEndpointSummary(query: GitHubSearchQuery, t: Translate) {
   return t(`dashboard.tabsSettings.endpoint.${getGitHubSearchEndpoint(query)}`);
 }
 
-export function resolveCustomTabSubtitle(tab: CustomTab, t: Translate) {
+export function resolveCustomTabSubtitle(tab: CustomTab) {
   if (tab.subtitleMode === 'none') {
     return undefined;
   }

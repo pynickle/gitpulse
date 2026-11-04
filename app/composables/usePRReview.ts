@@ -497,7 +497,7 @@ export function usePRReview(options: UsePRReviewOptions) {
       return;
     }
 
-    loadFiles(pagination.value.page + 1);
+    void loadFiles(pagination.value.page + 1);
   };
 
   const selectFile = (filename: string) => {
@@ -647,7 +647,7 @@ export function usePRReview(options: UsePRReviewOptions) {
       requestId.value += 1;
       resetFiles();
       resetDrafts();
-      loadFiles(1);
+      void loadFiles(1);
     },
     { immediate: true }
   );

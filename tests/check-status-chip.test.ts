@@ -24,7 +24,12 @@ const messages: Record<string, string> = {
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
-  (messages[key] ?? key).replace(/\{(\w+)\}/g, (_, name: string) => String(params?.[name] ?? ''));
+  (messages[key] ?? key).replace(/\{(\w+)\}/g, (_, name: string) => {
+    const param = params?.[name];
+    if (typeof param === 'string') return param;
+    if (typeof param === 'number' || typeof param === 'boolean') return String(param);
+    return '';
+  });
 
 /** Three completed contexts, all green: the chip reads "3/3". */
 const passingRollup = {
