@@ -51,7 +51,7 @@ interface RepoStateFilterOption {
   color: string;
 }
 
-const props = defineProps<{
+const { repository, owner, repo } = defineProps<{
   repository: RepositoryDetailPayload;
   owner: string;
   repo: string;
@@ -113,9 +113,9 @@ const {
   languageBytes,
   loadingLanguages,
 } = useRepoDetailSession({
-  owner: () => props.owner,
-  repo: () => props.repo,
-  repository: () => props.repository,
+  owner: () => owner,
+  repo: () => repo,
+  repository: () => repository,
 });
 
 interface AboutItem {
@@ -288,20 +288,20 @@ const relativeTimeNow = useRelativeTimeNow();
 
 const isStarred = ref(false);
 const loadingStar = ref(false);
-const starCount = ref(props.repository.stargazers_count ?? 0);
+const starCount = ref(repository.stargazers_count ?? 0);
 
 type WatchState = 'all' | 'default' | 'ignore';
 const watchState = ref<WatchState | null>(null);
 const loadingWatch = ref(false);
 const showWatchDropdown = ref(false);
-const watchCount = ref(props.repository.subscribers_count ?? 0);
+const watchCount = ref(repository.subscribers_count ?? 0);
 
 const formatLanguagePercentage = (value: number) => {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? `${rounded}%` : `${rounded.toFixed(1)}%`;
 };
 
-const languageColor = computed(() => getLanguageColor(props.repository.language));
+const languageColor = computed(() => getLanguageColor(repository.language));
 const languageShares = computed(() =>
   buildRepoLanguageBreakdown(languageBytes.value, { getColor: getLanguageColor })
 );
@@ -314,21 +314,19 @@ const languageBarAriaLabel = computed(() => {
 
 // SEO: dynamic title based on repository
 usePageMeta(
-  computed(() => props.repository?.name),
+  computed(() => repository?.name),
   {
-    description: computed(() => props.repository?.description ?? ''),
+    description: computed(() => repository?.description ?? ''),
   }
 );
 
-const visibility = computed(() =>
-  props.repository.private ? copy.value.private : copy.value.public
-);
+const visibility = computed(() => (repository.private ? copy.value.private : copy.value.public));
 
 /** Immediate parent repository when the current repo is a fork. */
 const forkedFrom = computed(() => {
-  if (!props.repository.fork) return null;
+  if (!repository.fork) return null;
 
-  const parent = props.repository.parent;
+  const parent = repository.parent;
   if (!parent) return null;
 
   const fullName = typeof parent.full_name === 'string' ? parent.full_name.trim() : '';
@@ -361,16 +359,16 @@ const repoBadges = computed(() => {
     {
       icon: GitHubIcon,
       label: visibility.value,
-      tone: props.repository.private ? 'muted' : 'neutral',
+      tone: repository.private ? 'muted' : 'neutral',
     },
   ];
 
   // When parent is known, "Forked from …" already conveys fork status — skip the badge.
-  if (props.repository.fork && !forkedFrom.value) {
+  if (repository.fork && !forkedFrom.value) {
     badges.push({ icon: GitForkIcon, label: copy.value.fork, tone: 'neutral' });
   }
 
-  if (props.repository.archived) {
+  if (repository.archived) {
     badges.push({ icon: ArchiveIcon, label: copy.value.archived, tone: 'muted' });
   }
 
@@ -386,7 +384,7 @@ const watchStateLabel = computed(() => {
 const isSubscribedWatchState = (state: WatchState | null) => state === 'all' || state === 'ignore';
 
 const buildRepoFileQuery = (path: string): LocationQueryRaw => ({
-  repo: `${props.owner}/${props.repo}`,
+  repo: `${owner}/${repo}`,
   path,
   branch: currentBranchQueryValue.value,
 });
@@ -399,7 +397,7 @@ const buildRepoFileTo = (path: string) => {
 };
 
 const buildRepoFileNavigation = (path: string) => {
-  const target = createDashboardFileTarget(props.owner, props.repo, path, {
+  const target = createDashboardFileTarget(owner, repo, path, {
     branch: canonicalBranch.value,
   });
 
@@ -417,13 +415,13 @@ const buildRepoFileNavigation = (path: string) => {
 const aboutItems = computed(() => {
   const items: AboutItem[] = [];
 
-  if (props.repository.homepage) {
-    const url = props.repository.homepage.startsWith('http')
-      ? props.repository.homepage
-      : `https://${props.repository.homepage}`;
+  if (repository.homepage) {
+    const url = repository.homepage.startsWith('http')
+      ? repository.homepage
+      : `https://${repository.homepage}`;
     items.push({
       label: copy.value.homepage,
-      value: props.repository.homepage,
+      value: repository.homepage,
       href: url,
       icon: GlobeIcon,
     });
@@ -445,43 +443,43 @@ const aboutItems = computed(() => {
     icon: TagIcon,
     to: localePath({
       path: '/dashboard/releases',
-      query: { repo: `${props.owner}/${props.repo}` },
+      query: { repo: `${owner}/${repo}` },
     }),
   });
 
   // Only public wikis are readable: there is no wiki REST API, so the wiki
   // page scrapes the public wiki HTML and raw wiki host.
-  if (props.repository.has_wiki && !props.repository.private) {
+  if (repository.has_wiki && !repository.private) {
     items.push({
       label: copy.value.wiki,
       value: t('wikiPage.viewWiki'),
       icon: BookOpenIcon,
       to: localePath({
         path: '/dashboard/wiki',
-        query: { repo: `${props.owner}/${props.repo}` },
+        query: { repo: `${owner}/${repo}` },
       }),
     });
   }
 
   items.push({
     label: copy.value.branch,
-    value: props.repository.default_branch || t('branchesPage.viewBranches'),
+    value: repository.default_branch || t('branchesPage.viewBranches'),
     icon: GitBranchIcon,
     to: localePath({
       path: '/dashboard/branches',
-      query: { repo: `${props.owner}/${props.repo}` },
+      query: { repo: `${owner}/${repo}` },
     }),
   });
 
   items.push({
     label: copy.value.created,
-    value: formatDate(props.repository.created_at),
+    value: formatDate(repository.created_at),
     icon: BookmarkIcon,
   });
 
   items.push({
     label: copy.value.updated,
-    value: formatDate(props.repository.updated_at),
+    value: formatDate(repository.updated_at),
     icon: BookmarkIcon,
   });
 
@@ -493,13 +491,13 @@ const stats = computed(() => [
   { label: copy.value.watchers, value: watchCount.value, icon: EyeIcon, color: '#3b82f6' },
   {
     label: copy.value.forks,
-    value: props.repository.forks_count ?? 0,
+    value: repository.forks_count ?? 0,
     icon: GitForkIcon,
     color: '#10b981',
   },
   {
     label: copy.value.issues,
-    value: props.repository.open_issues_count ?? 0,
+    value: repository.open_issues_count ?? 0,
     icon: InfoIcon,
     color: '#8b5cf6',
   },
@@ -541,11 +539,11 @@ const toggleStar = async () => {
     if (isStarred.value) {
       isStarred.value = false;
       starCount.value = Math.max(0, starCount.value - 1);
-      await apiFetch(`/api/repos/${props.owner}/${props.repo}/star`, { method: 'DELETE' });
+      await apiFetch(`/api/repos/${owner}/${repo}/star`, { method: 'DELETE' });
     } else {
       isStarred.value = true;
       starCount.value = starCount.value + 1;
-      await apiFetch(`/api/repos/${props.owner}/${props.repo}/star`, { method: 'PUT' });
+      await apiFetch(`/api/repos/${owner}/${repo}/star`, { method: 'PUT' });
     }
   } catch (err) {
     isStarred.value = previousState;
@@ -566,9 +564,9 @@ const setWatchState = async (state: WatchState) => {
 
   try {
     if (state === 'default') {
-      await apiFetch(`/api/repos/${props.owner}/${props.repo}/subscription`, { method: 'DELETE' });
+      await apiFetch(`/api/repos/${owner}/${repo}/subscription`, { method: 'DELETE' });
     } else {
-      await apiFetch(`/api/repos/${props.owner}/${props.repo}/subscription`, {
+      await apiFetch(`/api/repos/${owner}/${repo}/subscription`, {
         method: 'PUT',
         body: { subscribed: state === 'all', ignored: state === 'ignore' },
       });
@@ -600,9 +598,7 @@ const closeWatchDropdown = () => {
 
 const fetchStarState = async () => {
   try {
-    const data = await apiFetch<{ starred: boolean }>(
-      `/api/repos/${props.owner}/${props.repo}/star`
-    );
+    const data = await apiFetch<{ starred: boolean }>(`/api/repos/${owner}/${repo}/star`);
     isStarred.value = data.starred;
   } catch {
     // Silently fail - default to unstarred
@@ -612,7 +608,7 @@ const fetchStarState = async () => {
 const fetchWatchState = async () => {
   try {
     const data = await apiFetch<{ subscribed: boolean; ignored: boolean }>(
-      `/api/repos/${props.owner}/${props.repo}/subscription`
+      `/api/repos/${owner}/${repo}/subscription`
     );
     if (data.subscribed) {
       watchState.value = 'all';

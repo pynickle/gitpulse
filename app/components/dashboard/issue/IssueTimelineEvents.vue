@@ -91,7 +91,7 @@ import {
 
 const { t } = useI18n();
 
-const props = defineProps<{
+const { timeline, repoOwner, repoName, issueNumber } = defineProps<{
   timeline: IssueTimelineItem[];
   loading: boolean;
   repoOwner: string;
@@ -109,11 +109,11 @@ const emit = defineEmits<{
 }>();
 
 const { processedTimeline } = useIssueTimelineEvents(
-  () => props.timeline,
+  () => timeline,
   () => ({
-    repoOwner: props.repoOwner,
-    repoName: props.repoName,
-    issueNumber: props.issueNumber,
+    repoOwner: repoOwner,
+    repoName: repoName,
+    issueNumber: issueNumber,
   })
 );
 

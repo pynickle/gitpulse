@@ -9,7 +9,7 @@ export interface RepoPanelNavTab<V extends string = string> {
   icon: Component;
 }
 
-const props = defineProps<{
+const { tabs, modelValue } = defineProps<{
   tabs: RepoPanelNavTab[];
   modelValue: string;
   /** Accessible name for the tablist / dropdown control group. */
@@ -20,22 +20,22 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
 
-const activeIndex = computed(() => props.tabs.findIndex((tab) => tab.value === props.modelValue));
+const activeIndex = computed(() => tabs.findIndex((tab) => tab.value === modelValue));
 
 /* Below 1024px the tab strip collapses to a dropdown, mirroring the profile
    page tab nav: four icon tabs overflow a phone-width pane otherwise. */
 const dropdownOptions = computed<FilterOption[]>(() =>
-  props.tabs.map((tab) => ({ value: tab.value, label: tab.label, icon: tab.icon }))
+  tabs.map((tab) => ({ value: tab.value, label: tab.label, icon: tab.icon }))
 );
 
 const selectByIndex = (index: number) => {
-  const tab = props.tabs[index];
+  const tab = tabs[index];
   if (tab) emit('update:modelValue', tab.value);
 };
 
 const handleTablistKeydown = (event: KeyboardEvent) => {
   handleRovingTablistKeydown(event, {
-    itemCount: props.tabs.length,
+    itemCount: tabs.length,
     activeIndex: activeIndex.value,
     onSelect: selectByIndex,
   });

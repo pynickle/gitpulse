@@ -38,30 +38,30 @@ import type {
   GitHubSearchSyntaxDiagnostic,
 } from '#shared/utils/github-search-syntax';
 
-const props = defineProps<{
+const { ast, operatorWarningMessage, t } = defineProps<{
   ast: GitHubSearchSyntaxAst;
   operatorWarningMessage: string;
   t: (key: string, params?: Record<string, string>) => string;
 }>();
 
 const visibleDiagnostics = computed(() => {
-  if (props.operatorWarningMessage) {
+  if (operatorWarningMessage) {
     return [];
   }
 
-  return props.ast.diagnostics.filter((diagnostic) => diagnostic.code !== 'unsupported-operator');
+  return ast.diagnostics.filter((diagnostic) => diagnostic.code !== 'unsupported-operator');
 });
 
 const hasFeedback = computed(() => {
   return (
-    props.operatorWarningMessage.length > 0 ||
+    operatorWarningMessage.length > 0 ||
     visibleDiagnostics.value.length > 0 ||
-    props.ast.qualifiers.length > 0
+    ast.qualifiers.length > 0
   );
 });
 
 const getDiagnosticMessage = (code: GitHubSearchSyntaxDiagnostic['code']) => {
-  return props.t(`dashboard.tabsSettings.syntaxDiagnostic.${code}`);
+  return t(`dashboard.tabsSettings.syntaxDiagnostic.${code}`);
 };
 </script>
 

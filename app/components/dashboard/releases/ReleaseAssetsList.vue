@@ -4,7 +4,7 @@ import { computed } from 'vue';
 
 import type { ReleaseAsset } from '#shared/types/releases';
 
-const props = defineProps<{
+const { assets, namePrefix } = defineProps<{
   assets: readonly ReleaseAsset[];
   /**
    * Prefixes every asset name repeats, such as `OpenLogi-v0.8.17`. Stripped from
@@ -17,7 +17,7 @@ const props = defineProps<{
 const { locale, t } = useI18n();
 
 const sections = computed(() => {
-  const { primary, sidecars } = groupReleaseAssets(props.assets);
+  const { primary, sidecars } = groupReleaseAssets(assets);
   return [
     { kind: 'primary' as const, assets: primary, separated: false },
     // Nothing to separate from when a release ships only signatures.
@@ -25,7 +25,7 @@ const sections = computed(() => {
   ].filter((section) => section.assets.length > 0);
 });
 
-const namePrefixes = computed(() => (props.namePrefix ?? []).map((prefix) => prefix.toLowerCase()));
+const namePrefixes = computed(() => (namePrefix ?? []).map((prefix) => prefix.toLowerCase()));
 
 const assetSizeLabel = (size: number) =>
   formatReleaseAssetSize(size) ?? t('releaseDetail.sizeUnknown');

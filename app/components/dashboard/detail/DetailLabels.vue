@@ -137,7 +137,7 @@ import { useI18n } from 'vue-i18n';
 import type { RepositoryLabel } from '#shared/types/labels';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = defineProps<{
+const { labels, canEditLabels, repoInfo, number } = defineProps<{
   labels: RepositoryLabel[];
   canEditLabels: boolean;
   repoInfo: { owner: string; repo: string } | null;
@@ -181,7 +181,7 @@ const scheduleLabelErrorClear = () => {
 };
 
 watch(
-  () => props.labels,
+  () => labels,
   (newLabels) => {
     selectedLabels.value = newLabels.map((label) => label.name);
   },
@@ -189,7 +189,7 @@ watch(
 );
 
 const toggleLabelEditor = async () => {
-  if (!props.canEditLabels) return;
+  if (!canEditLabels) return;
 
   const willBeVisible = !isLabelEditorVisible.value;
   isLabelEditorVisible.value = willBeVisible;
@@ -211,20 +211,20 @@ onUnmounted(() => {
 });
 
 const fetchRepoLabels = async () => {
-  if (!props.repoInfo || !props.number) return;
+  if (!repoInfo || !number) return;
 
   loadingLabels.value = true;
   selectedLabels.value = [];
 
   try {
-    const { owner, repo } = props.repoInfo;
+    const { owner, repo } = repoInfo;
 
     const data = await $fetch<RepositoryLabel[]>(`/api/repos/${owner}/${repo}/labels`, {
       method: 'GET',
     });
 
     repoLabels.value = data || [];
-    selectedLabels.value = props.labels.map((label) => label.name);
+    selectedLabels.value = labels.map((label) => label.name);
   } catch (err) {
     console.error('Error fetching repository labels:', err);
   } finally {
@@ -242,15 +242,15 @@ const toggleLabel = (labelName: string) => {
 };
 
 const saveLabels = async () => {
-  if (!props.repoInfo) return;
+  if (!repoInfo) return;
 
   savingLabels.value = true;
   clearLabelError();
 
   try {
-    const { owner, repo } = props.repoInfo;
+    const { owner, repo } = repoInfo;
     const data = await apiFetch<RepositoryLabel[]>(
-      `/api/repos/${owner}/${repo}/issues/${props.number}/labels`,
+      `/api/repos/${owner}/${repo}/issues/${number}/labels`,
       {
         method: 'PUT',
         body: {

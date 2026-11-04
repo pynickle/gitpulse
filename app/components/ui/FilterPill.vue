@@ -43,21 +43,18 @@
 import { ChevronDownIcon } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 
-const props = withDefaults(
-  defineProps<{
-    label: string;
-    value?: string;
-    placeholder?: string;
-    disabled?: boolean;
-    active?: boolean;
-  }>(),
-  {
-    value: '',
-    placeholder: 'Any',
-    disabled: false,
-    active: false,
-  }
-);
+const {
+  value = '',
+  placeholder = 'Any',
+  disabled = false,
+  active = false,
+} = defineProps<{
+  label: string;
+  value?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  active?: boolean;
+}>();
 
 const isOpen = shallowRef(false);
 
@@ -68,8 +65,8 @@ const panelRef = ref<HTMLDivElement | null>(null);
 const panelStyle = shallowRef<Record<string, string>>({});
 
 const classes = computed(() => ({
-  'filter-pill--active': props.active,
-  'filter-pill--disabled': props.disabled,
+  'filter-pill--active': active,
+  'filter-pill--disabled': disabled,
   'filter-pill--open': isOpen.value,
 }));
 
@@ -87,7 +84,7 @@ function updatePanelPosition() {
 }
 
 function open() {
-  if (props.disabled) return;
+  if (disabled) return;
   updatePanelPosition();
   isOpen.value = true;
 }
@@ -97,7 +94,7 @@ function close() {
 }
 
 function toggle() {
-  if (props.disabled) return;
+  if (disabled) return;
   if (isOpen.value) close();
   else open();
 }

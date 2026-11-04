@@ -12,7 +12,7 @@ import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 type DiscussionReplySubmitHandler = (comment: DiscussionComment, body: string) => Promise<void>;
 
-const props = defineProps<{
+const { comment, submitReply, isEditorActive } = defineProps<{
   comment: DiscussionComment;
   repoOwner: string;
   repoName: string;
@@ -36,19 +36,19 @@ const relativeTimeNow = useRelativeTimeNow();
 const localeCode = computed(() => locale.value);
 const showReplies = shallowRef(false);
 
-const isReplying = computed(() => props.isEditorActive);
+const isReplying = computed(() => isEditorActive);
 
 const expandReplyEditor = () => {
-  emit('reply-editor-toggled', props.comment.id, true);
+  emit('reply-editor-toggled', comment.id, true);
 };
 
 const collapseReplyEditor = () => {
-  emit('reply-editor-toggled', props.comment.id, false);
+  emit('reply-editor-toggled', comment.id, false);
 };
 
 const submitReplyDraft = async (body: string) => {
-  await props.submitReply(props.comment, body);
-  emit('reply-draft-updated', props.comment.id, '');
+  await submitReply(comment, body);
+  emit('reply-draft-updated', comment.id, '');
   collapseReplyEditor();
 };
 </script>

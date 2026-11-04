@@ -6,7 +6,7 @@ import DashboardPagination from '~/components/dashboard/DashboardPagination.vue'
 import RepoItem from '~/components/dashboard/RepoItem.vue';
 import { useUserRepositories } from '~/composables/useUserConnections';
 
-const props = defineProps<{
+const { username } = defineProps<{
   username: string;
   emptyLabel: string;
 }>();
@@ -14,7 +14,7 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const { items, loading, error, pagination, showPagination, goToPage, refresh } =
-  useUserRepositories(toRef(props, 'username'));
+  useUserRepositories(toRef(() => username));
 </script>
 
 <template>

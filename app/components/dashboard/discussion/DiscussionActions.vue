@@ -106,7 +106,7 @@ import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
-const props = defineProps<{
+const { discussion, sourceNotification } = defineProps<{
   discussion: DiscussionDetailPayload;
   sourceNotification?: DashboardNotification | null;
 }>();
@@ -117,7 +117,7 @@ const localeCode = computed(() => locale.value);
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 
 const isTodo = computed(() =>
-  props.sourceNotification ? isNotificationTodo(props.sourceNotification) : false
+  sourceNotification ? isNotificationTodo(sourceNotification) : false
 );
 
 const todoLabel = computed(() =>
@@ -125,20 +125,20 @@ const todoLabel = computed(() =>
 );
 
 const handleToggleTodo = () => {
-  if (props.sourceNotification) {
-    toggleNotificationTodo(props.sourceNotification);
+  if (sourceNotification) {
+    toggleNotificationTodo(sourceNotification);
   }
 };
 
 const createdAtLabel = computed(() =>
-  props.discussion.createdAt
-    ? formatDurationFromNow(props.discussion.createdAt, localeCode.value, relativeTimeNow.value)
+  discussion.createdAt
+    ? formatDurationFromNow(discussion.createdAt, localeCode.value, relativeTimeNow.value)
     : t('discussionDetail.notAvailable')
 );
 
 const updatedAtLabel = computed(() =>
-  props.discussion.updatedAt
-    ? formatDurationFromNow(props.discussion.updatedAt, localeCode.value, relativeTimeNow.value)
+  discussion.updatedAt
+    ? formatDurationFromNow(discussion.updatedAt, localeCode.value, relativeTimeNow.value)
     : t('discussionDetail.notAvailable')
 );
 </script>

@@ -116,7 +116,7 @@ interface SearchResultItem {
   [key: string]: unknown;
 }
 
-const props = defineProps<{
+defineProps<{
   items: SearchResultItem[] | null | undefined;
   loading: boolean;
   error: string | null;

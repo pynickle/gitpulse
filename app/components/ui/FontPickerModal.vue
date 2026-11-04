@@ -157,7 +157,7 @@ interface LocalFontWindow extends Window {
 
 const { t } = useI18n();
 
-const props = defineProps<{
+const { isVisible, bundledFonts } = defineProps<{
   isVisible: boolean;
   title: string;
   modelValue: string;
@@ -190,7 +190,7 @@ const canLoadMoreSystemFonts = computed(() => {
 
 const allFonts = computed<FontOption[]>(() => {
   return [
-    ...props.bundledFonts,
+    ...bundledFonts,
     ...systemFonts.value.map((f) => ({
       id: `system:${f}`,
       label: f,
@@ -265,7 +265,7 @@ const loadSystemFonts = async () => {
 };
 
 watch(
-  () => props.isVisible,
+  () => isVisible,
   async (isVisible) => {
     if (isVisible) {
       if (import.meta.client) focusTrap.capturePreviousFocus();

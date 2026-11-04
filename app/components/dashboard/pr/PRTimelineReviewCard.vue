@@ -226,7 +226,7 @@ import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { PRTimelineItem, TimelineReviewComment } from '~/composables/usePRTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const props = defineProps<{
+const { item, resolvingReviewThreadId } = defineProps<{
   item: PRTimelineItem;
   repoOwner: string;
   repoName: string;
@@ -243,7 +243,7 @@ const PRTimelineReviewDiff = defineAsyncComponent(
 const { t, locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
-const hasReviewComments = computed(() => Boolean(props.item.reviewComments?.length));
+const hasReviewComments = computed(() => Boolean(item.reviewComments?.length));
 const expandedFiles = ref(new Set<string>());
 
 interface ReviewCommentGroup {
@@ -269,7 +269,7 @@ interface SuggestionDiffLine {
 const reviewCommentGroups = computed<ReviewCommentGroup[]>(() => {
   const groups = new Map<string, TimelineReviewComment[]>();
 
-  for (const comment of props.item.reviewComments ?? []) {
+  for (const comment of item.reviewComments ?? []) {
     const path = comment.path ?? 'file';
     const comments = groups.get(path) ?? [];
     comments.push(comment);
@@ -280,12 +280,12 @@ const reviewCommentGroups = computed<ReviewCommentGroup[]>(() => {
 });
 
 const isPlainComment = computed(() => {
-  const state = props.item.state;
-  return !state || (state === 'commented' && !hasReviewComments.value && !props.item.dismissal);
+  const state = item.state;
+  return !state || (state === 'commented' && !hasReviewComments.value && !item.dismissal);
 });
 
 const stateModifier = computed(() => {
-  switch (props.item.state) {
+  switch (item.state) {
     case 'approved':
       return 'approved';
     case 'changes_requested':
@@ -302,7 +302,7 @@ const stateModifier = computed(() => {
 });
 
 const stateAction = computed(() => {
-  switch (props.item.state) {
+  switch (item.state) {
     case 'approved':
       return t('prReview.timelineApprovedChanges');
     case 'changes_requested':
@@ -361,7 +361,7 @@ const toggleFile = (path: string) => {
 };
 
 const isReviewThreadResolving = (comment: TimelineReviewComment) =>
-  Boolean(comment.threadId && props.resolvingReviewThreadId === comment.threadId);
+  Boolean(comment.threadId && resolvingReviewThreadId === comment.threadId);
 
 const reviewThreadActionLabel = (comment: TimelineReviewComment) =>
   comment.isResolved ? t('prReview.unresolveThread') : t('prReview.resolveThread');

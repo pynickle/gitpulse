@@ -5,7 +5,7 @@ import { computed } from 'vue';
 import type { TimelineRelease } from '#shared/types/release-follows';
 import ReleaseTimelineReactionBar from '~/components/dashboard/release-timeline/ReleaseTimelineReactionBar.vue';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: TimelineRelease;
 }>();
 
@@ -17,21 +17,19 @@ const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 const { openRepository } = useDashboardRepositoryNavigation();
 
-const repoFullName = computed(() => `${props.item.repository.owner}/${props.item.repository.name}`);
+const repoFullName = computed(() => `${item.repository.owner}/${item.repository.name}`);
 const releasedAtLabel = computed(() =>
-  formatDurationFromNow(props.item.publishedAt, locale.value, relativeTimeNow.value)
+  formatDurationFromNow(item.publishedAt, locale.value, relativeTimeNow.value)
 );
-const assetsCountLabel = computed(() =>
-  t('releaseDetail.assetCount', { count: props.item.assetCount })
-);
-const showSummary = computed(() => Boolean(props.item.changelog));
+const assetsCountLabel = computed(() => t('releaseDetail.assetCount', { count: item.assetCount }));
+const showSummary = computed(() => Boolean(item.changelog));
 
 const handleOpenRepo = async () => {
-  await openRepository(props.item.repository.owner, props.item.repository.name);
+  await openRepository(item.repository.owner, item.repository.name);
 };
 
 const handleOpenDrawer = () => {
-  emit('open', props.item);
+  emit('open', item);
 };
 
 const handleCardClick = (event: MouseEvent) => {

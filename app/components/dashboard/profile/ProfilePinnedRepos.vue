@@ -4,13 +4,13 @@ import { computed, toRef } from 'vue';
 
 import RepoItem from '~/components/dashboard/RepoItem.vue';
 
-const props = defineProps<{
+const { username } = defineProps<{
   username: string;
 }>();
 
 const { t } = useI18n();
 
-const { items, source, loading, error, refresh } = useProfilePinnedRepos(toRef(props, 'username'));
+const { items, source, loading, error, refresh } = useProfilePinnedRepos(toRef(() => username));
 
 const title = computed(() =>
   source.value === 'popular' ? t('profile.pinned.popularTitle') : t('profile.pinned.title')

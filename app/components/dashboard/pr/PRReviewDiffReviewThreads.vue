@@ -6,7 +6,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { PRReviewCommentThread } from '~/composables/usePRReview';
 
-const props = defineProps<{
+const { resolvingReviewThreadId } = defineProps<{
   threads: PRReviewCommentThread[];
   repoOwner: string;
   repoName: string;
@@ -22,7 +22,7 @@ const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
 const isReviewThreadResolving = (thread: PRReviewCommentThread) =>
-  Boolean(thread.threadId && props.resolvingReviewThreadId === thread.threadId);
+  Boolean(thread.threadId && resolvingReviewThreadId === thread.threadId);
 
 const reviewThreadActionLabel = (thread: PRReviewCommentThread) =>
   thread.isResolved ? t('prReview.unresolveThread') : t('prReview.resolveThread');

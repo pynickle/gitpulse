@@ -6,7 +6,7 @@ import type { LocationQueryRaw } from 'vue-router';
 import type { RepoContentItem } from '~/composables/useRepoFiles';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
 
-const props = defineProps<{
+const { owner, repo, items, currentBranch, defaultBranch } = defineProps<{
   owner: string;
   repo: string;
   items: RepoContentItem[];
@@ -22,11 +22,11 @@ const router = useRouter();
 const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
 
 const sortedItems = computed(() => {
-  const dirs = props.items
+  const dirs = items
     .filter((item) => item.type === 'dir')
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const files = props.items
+  const files = items
     .filter((item) => item.type === 'file')
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -34,16 +34,14 @@ const sortedItems = computed(() => {
 });
 
 const currentBranchQueryValue = computed(() => {
-  return props.currentBranch && props.currentBranch !== props.defaultBranch
-    ? props.currentBranch
-    : undefined;
+  return currentBranch && currentBranch !== defaultBranch ? currentBranch : undefined;
 });
-const canonicalBranch = computed(() => props.currentBranch || props.defaultBranch || undefined);
+const canonicalBranch = computed(() => currentBranch || defaultBranch || undefined);
 
 const navigateToItem = async (item: RepoContentItem) => {
   if (opensGitHubLinks.value) {
     openGitHubTarget(
-      createDashboardFileTarget(props.owner, props.repo, item.path, {
+      createDashboardFileTarget(owner, repo, item.path, {
         branch: canonicalBranch.value,
         view: item.type === 'dir' ? 'tree' : undefined,
       })
@@ -52,7 +50,7 @@ const navigateToItem = async (item: RepoContentItem) => {
   }
 
   const query: LocationQueryRaw = {
-    repo: `${props.owner}/${props.repo}`,
+    repo: `${owner}/${repo}`,
     path: item.path,
     branch: currentBranchQueryValue.value,
   };

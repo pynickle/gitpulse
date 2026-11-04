@@ -18,7 +18,7 @@ import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
 
-const props = defineProps<{
+const { model } = defineProps<{
   model: TabsSettingsPageState;
 }>();
 
@@ -49,7 +49,7 @@ const {
   closeEditor,
   handleSaveTab,
   goToPreviewPage,
-} = props.model;
+} = model;
 </script>
 <template>
   <aside

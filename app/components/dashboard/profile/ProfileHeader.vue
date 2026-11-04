@@ -18,15 +18,10 @@ import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 
 type ProfileConnectionTab = 'followers' | 'following';
 
-const props = withDefaults(
-  defineProps<{
-    profile: UserProfilePayload;
-    organizations?: UserOrganizationSummary[];
-  }>(),
-  {
-    organizations: () => [],
-  }
-);
+const { profile, organizations = [] } = defineProps<{
+  profile: UserProfilePayload;
+  organizations?: UserOrganizationSummary[];
+}>();
 
 const emit = defineEmits<{
   (e: 'show-connections', tab: ProfileConnectionTab): void;
@@ -34,14 +29,14 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 
-const displayName = computed(() => props.profile.name?.trim() || props.profile.login);
-const showSecondaryLogin = computed(() => Boolean(props.profile.name?.trim()));
+const displayName = computed(() => profile.name?.trim() || profile.login);
+const showSecondaryLogin = computed(() => Boolean(profile.name?.trim()));
 
 const joinedLabel = computed(() => {
-  if (!props.profile.createdAt) {
+  if (!profile.createdAt) {
     return '';
   }
-  const parsed = new Date(props.profile.createdAt);
+  const parsed = new Date(profile.createdAt);
   if (Number.isNaN(parsed.getTime())) {
     return '';
   }
@@ -53,19 +48,19 @@ const joinedLabel = computed(() => {
 });
 
 const blogHref = computed(() => {
-  const blog = props.profile.blog?.trim();
+  const blog = profile.blog?.trim();
   if (!blog) {
     return null;
   }
   return /^https?:\/\//i.test(blog) ? blog : `https://${blog}`;
 });
 
-const followerCount = computed(() => props.profile.followers);
-const followingCount = computed(() => props.profile.following);
+const followerCount = computed(() => profile.followers);
+const followingCount = computed(() => profile.following);
 
 const starredTo = computed(() => ({
   path: '/dashboard/starred',
-  query: { user: props.profile.login },
+  query: { user: profile.login },
 }));
 </script>
 

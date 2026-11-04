@@ -7,44 +7,44 @@
         class="comment-item__avatar"
         width="32"
         height="32"
-        :src="props.item.author?.avatarUrl || ''"
-        :alt="props.item.author?.login || ''"
+        :src="item.author?.avatarUrl || ''"
+        :alt="item.author?.login || ''"
       />
       <div class="comment-item__meta">
         <a
-          :href="props.item.author?.url"
+          :href="item.author?.url"
           target="_blank"
           rel="noopener"
           class="comment-item__author is-size-6 has-text-weight-medium has-text-link"
         >
-          {{ props.item.author?.login }}
+          {{ item.author?.login }}
         </a>
         <slot name="meta">
           <span class="comment-item__time is-size-7 has-text-grey">
-            {{ formatDurationFromNow(props.item.createdAt || '', localeCode, relativeTimeNow) }}
+            {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
           </span>
         </slot>
       </div>
     </header>
     <div class="comment-item__body content">
       <MarkdownRenderer
-        v-if="props.item.body"
-        :value="props.item.body"
-        :repo-owner="props.repoOwner"
-        :repo-name="props.repoName"
+        v-if="item.body"
+        :value="item.body"
+        :repo-owner="repoOwner"
+        :repo-name="repoName"
       />
       <p v-else class="has-text-grey is-size-7">
-        {{ props.emptyText ?? t('detailTimeline.noCommentBody') }}
+        {{ emptyText ?? t('detailTimeline.noCommentBody') }}
       </p>
     </div>
     <ReactionBar
       v-if="canShowReactions"
       class="comment-item__reactions"
       :target-kind="reactionTargetKind"
-      :owner="props.repoOwner || ''"
-      :repo="props.repoName || ''"
+      :owner="repoOwner || ''"
+      :repo="repoName || ''"
       :target-id="reactionTargetId"
-      :initial-items="props.item.reactions"
+      :initial-items="item.reactions"
       defer-viewer-state
     />
   </article>
@@ -72,7 +72,14 @@ interface TimelineCommentCardItem {
   reactions?: ReactionSummaryItem[];
 }
 
-const props = defineProps<{
+const {
+  item,
+  emptyText,
+  repoOwner,
+  repoName,
+  enableReactions,
+  reactionTargetKind = 'issue-comment',
+} = defineProps<{
   item: TimelineCommentCardItem;
   emptyText?: string;
   repoOwner?: string;
@@ -84,14 +91,9 @@ const props = defineProps<{
 const { locale, t } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
-const reactionTargetId = computed(
-  () => extractCommentIdFromUrl(props.item.url) || String(props.item.id ?? '')
-);
-const reactionTargetKind = computed(() => props.reactionTargetKind ?? 'issue-comment');
+const reactionTargetId = computed(() => extractCommentIdFromUrl(item.url) || String(item.id ?? ''));
 const canShowReactions = computed(
-  () =>
-    props.enableReactions !== false &&
-    Boolean(props.repoOwner && props.repoName && reactionTargetId.value)
+  () => enableReactions !== false && Boolean(repoOwner && repoName && reactionTargetId.value)
 );
 </script>
 

@@ -5,13 +5,13 @@ import type { ContributionCalendar } from '#shared/types/users';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { buildContributionGrid } from '~/utils/buildContributionGrid';
 
-const props = defineProps<{
+const { calendar } = defineProps<{
   calendar: ContributionCalendar;
 }>();
 
 const { t, locale } = useI18n();
 
-const grid = computed(() => buildContributionGrid(props.calendar.weeks));
+const grid = computed(() => buildContributionGrid(calendar.weeks));
 
 /** Flattened cells in row-major order (all of row 0, then row 1, …) for a single CSS grid. */
 const flatCells = computed(() => grid.value.rows.flat());

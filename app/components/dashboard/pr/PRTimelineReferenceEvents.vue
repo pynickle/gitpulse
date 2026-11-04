@@ -88,7 +88,7 @@ import {
   type TimelineReference,
 } from '~/composables/usePRTimelineEvents';
 
-const props = defineProps<{
+const { item, repoFullName } = defineProps<{
   item: PRTimelineItem;
   repoFullName: string;
 }>();
@@ -101,7 +101,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const sourceReferencePrefix = computed(() => {
-  switch (props.item.eventType) {
+  switch (item.eventType) {
     case 'connected':
       return 'connected this PR to';
     case 'disconnected':
@@ -114,13 +114,13 @@ const sourceReferencePrefix = computed(() => {
 });
 
 const isSourceReferenceEvent = computed(() =>
-  ['connected', 'disconnected', 'cross-referenced'].includes(props.item.eventType ?? '')
+  ['connected', 'disconnected', 'cross-referenced'].includes(item.eventType ?? '')
 );
 
 const switchToIssueOrPR = (reference?: TimelineReference) => {
   if (!reference?.number) return;
 
-  const repoNameWithOwner = reference.repository?.nameWithOwner || props.repoFullName;
+  const repoNameWithOwner = reference.repository?.nameWithOwner || repoFullName;
   const parsed = parseRepoFullName(repoNameWithOwner);
   if (!parsed) return;
 

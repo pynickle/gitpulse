@@ -11,7 +11,7 @@ import ReleaseDrawerReleaseFilters, {
 import ReleaseDrawerReleaseRows from '~/components/dashboard/release-timeline/ReleaseDrawerReleaseRows.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = defineProps<{ entry: TimelineRelease }>();
+const { entry } = defineProps<{ entry: TimelineRelease }>();
 const emit = defineEmits<{ select: [release: ReleaseListItem] }>();
 const { t } = useI18n();
 const scroller = shallowRef<HTMLElement | null>(null);
@@ -41,8 +41,7 @@ const latestId = computed(() =>
 const emptyMessage = computed(() =>
   t(items.value.length ? 'releasesPage.emptyFiltered' : 'releasesPage.empty')
 );
-const loadPage = (page: number) =>
-  fetchPage(props.entry.repository.owner, props.entry.repository.name, page);
+const loadPage = (page: number) => fetchPage(entry.repository.owner, entry.repository.name, page);
 const changePage = (page: number) => {
   if (loading.value) return;
   if (scroller.value) scroller.value.scrollTop = 0;

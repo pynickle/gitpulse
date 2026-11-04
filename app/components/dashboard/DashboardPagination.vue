@@ -63,17 +63,15 @@ interface PaginationPageItem {
   page: number;
 }
 
-const props = withDefaults(
-  defineProps<{
-    pagination: PaginationMeta;
-    currentPageOnly?: boolean;
-    comfortableHitTargets?: boolean;
-  }>(),
-  {
-    currentPageOnly: false,
-    comfortableHitTargets: false,
-  }
-);
+const {
+  pagination,
+  currentPageOnly = false,
+  comfortableHitTargets = false,
+} = defineProps<{
+  pagination: PaginationMeta;
+  currentPageOnly?: boolean;
+  comfortableHitTargets?: boolean;
+}>();
 
 const emit = defineEmits<{
   (e: 'change', page: number): void;
@@ -81,8 +79,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const canGoPrev = computed(() => props.pagination.hasPrev);
-const canGoNext = computed(() => props.pagination.hasNext);
+const canGoPrev = computed(() => pagination.hasPrev);
+const canGoNext = computed(() => pagination.hasNext);
 
 const buildKnownPageItems = (totalPages: number, currentPage: number) => {
   const pages = new Set<number>([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
@@ -114,12 +112,12 @@ const buildKnownPageItems = (totalPages: number, currentPage: number) => {
 };
 
 const pageItems = computed(() => {
-  const { page, totalPages, hasNext } = props.pagination;
+  const { page, totalPages, hasNext } = pagination;
 
   if (!totalPages) {
     return [
       { key: `page-${page}`, type: 'page' as const, page },
-      ...(hasNext && !props.currentPageOnly
+      ...(hasNext && !currentPageOnly
         ? [{ key: `page-${page + 1}`, type: 'page' as const, page: page + 1 }]
         : []),
     ];

@@ -11,7 +11,7 @@ export type ProfileTabItem = {
   count?: number;
 };
 
-const props = defineProps<{
+const { tabs } = defineProps<{
   tabs: ProfileTabItem[];
 }>();
 
@@ -20,14 +20,14 @@ const tab = defineModel<ProfileTab>({ required: true });
 const { t } = useI18n();
 
 const dropdownOptions = computed<FilterOption[]>(() =>
-  props.tabs.map((item) => ({
+  tabs.map((item) => ({
     value: item.id,
     label: typeof item.count === 'number' ? `${item.label} (${item.count})` : item.label,
   }))
 );
 
 const onSelectTab = (value: string) => {
-  const next = props.tabs.find((item) => item.id === value);
+  const next = tabs.find((item) => item.id === value);
   if (next) {
     tab.value = next.id;
   }

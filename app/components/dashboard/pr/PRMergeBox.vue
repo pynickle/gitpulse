@@ -286,7 +286,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
 
-const props = defineProps<{
+const { owner, repo, pullNumber, prTitle, headLabel, initialStatus } = defineProps<{
   owner: string;
   repo: string;
   pullNumber: number;
@@ -573,12 +573,12 @@ const showCommitForm = computed(() => confirming.value && selectedMethod.value !
 
 const defaultCommitTitle = (method: PRMergeMethod) => {
   if (method === 'squash') {
-    return props.prTitle ? `${props.prTitle} (#${props.pullNumber})` : '';
+    return prTitle ? `${prTitle} (#${pullNumber})` : '';
   }
 
-  return props.headLabel
-    ? `Merge pull request #${props.pullNumber} from ${props.headLabel}`
-    : `Merge pull request #${props.pullNumber}`;
+  return headLabel
+    ? `Merge pull request #${pullNumber} from ${headLabel}`
+    : `Merge pull request #${pullNumber}`;
 };
 
 const prefillCommitForm = () => {
@@ -610,7 +610,7 @@ const performMerge = async () => {
 
   merging.value = true;
   try {
-    const succeeded = await mergePullRequest(props.owner, props.repo, props.pullNumber, {
+    const succeeded = await mergePullRequest(owner, repo, pullNumber, {
       method: selectedMethod.value,
       ...(title ? { commitTitle: title } : {}),
       ...(message ? { commitMessage: message } : {}),
@@ -635,8 +635,8 @@ const performHeadBranchAction = async () => {
   try {
     const succeeded =
       action === 'delete'
-        ? await deleteHeadBranch(props.owner, props.repo, props.pullNumber)
-        : await restoreHeadBranch(props.owner, props.repo, props.pullNumber);
+        ? await deleteHeadBranch(owner, repo, pullNumber)
+        : await restoreHeadBranch(owner, repo, pullNumber);
 
     if (succeeded) {
       emit('headBranchUpdated');
@@ -707,7 +707,7 @@ watch(
 
     mergeabilityPollTimer = setTimeout(() => {
       mergeabilityPollAttempts += 1;
-      fetchMergeStatus(props.owner, props.repo, props.pullNumber);
+      fetchMergeStatus(owner, repo, pullNumber);
     }, MERGEABILITY_POLL_DELAY_MS);
   }
 );
@@ -722,7 +722,7 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [props.owner, props.repo, props.pullNumber, props.initialStatus] as const,
+  () => [owner, repo, pullNumber, initialStatus] as const,
   ([owner, repo, pullNumber, initialStatus]) => {
     dropdownOpen.value = false;
     confirming.value = false;

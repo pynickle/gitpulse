@@ -131,7 +131,7 @@ interface DetailSummary {
   visible?: boolean;
 }
 
-const props = defineProps<{
+const { detailSummary, detailSidebarHidden } = defineProps<{
   backLabel: string;
   homeLabel: string;
   showHomeButton: boolean;
@@ -150,23 +150,23 @@ const { t } = useI18n();
 const { isDetailSidebarSheetViewport } = useDetailSidebarViewport();
 
 const detailSidebarToggleLabel = computed(() => {
-  return props.detailSidebarHidden
+  return detailSidebarHidden
     ? t('detailOverlay.showDetailSidebar')
     : t('detailOverlay.hideDetailSidebar');
 });
 
-const detailTitle = computed(() => props.detailSummary?.title?.trim() ?? '');
+const detailTitle = computed(() => detailSummary?.title?.trim() ?? '');
 
-const detailState = computed(() => props.detailSummary?.state?.trim() ?? '');
+const detailState = computed(() => detailSummary?.state?.trim() ?? '');
 
 const detailStateClass = computed(() => {
-  const tone = props.detailSummary?.stateTone ?? 'closed';
+  const tone = detailSummary?.stateTone ?? 'closed';
   return `is-${tone}`;
 });
 
 const detailStateIcon = computed<Component | null>(() => {
-  const subjectType = props.detailSummary?.subjectType;
-  const stateTone = props.detailSummary?.stateTone;
+  const subjectType = detailSummary?.subjectType;
+  const stateTone = detailSummary?.stateTone;
   const state = detailState.value;
 
   if (subjectType === 'pull-request') {
@@ -187,7 +187,7 @@ const detailStateIcon = computed<Component | null>(() => {
 });
 
 const detailNumberLabel = computed(() => {
-  const rawNumber = props.detailSummary?.number;
+  const rawNumber = detailSummary?.number;
 
   if (rawNumber === undefined || rawNumber === null || rawNumber === '') {
     return '';
@@ -199,8 +199,7 @@ const detailNumberLabel = computed(() => {
 
 const isDetailSummaryVisible = computed(() => {
   return Boolean(
-    props.detailSummary?.visible &&
-    (detailTitle.value || detailState.value || detailNumberLabel.value)
+    detailSummary?.visible && (detailTitle.value || detailState.value || detailNumberLabel.value)
   );
 });
 

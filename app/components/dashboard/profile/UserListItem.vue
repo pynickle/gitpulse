@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import type { UserSummary } from '#shared/types/users';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
-const props = defineProps<{
+const { user } = defineProps<{
   user: UserSummary;
 }>();
 
@@ -12,9 +12,9 @@ const emit = defineEmits<{
   (e: 'select', login: string): void;
 }>();
 
-const displayName = computed(() => props.user.name?.trim() || props.user.login);
+const displayName = computed(() => user.name?.trim() || user.login);
 const showSecondaryLogin = computed(
-  () => Boolean(props.user.name?.trim()) && props.user.name?.trim() !== props.user.login
+  () => Boolean(user.name?.trim()) && user.name?.trim() !== user.login
 );
 </script>
 

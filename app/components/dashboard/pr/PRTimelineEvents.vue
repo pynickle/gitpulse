@@ -95,7 +95,7 @@ import TimelineEventActorRow from '~/components/dashboard/timeline/TimelineEvent
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import { usePRTimelineEvents, type PRTimelineItem } from '~/composables/usePRTimelineEvents';
 
-const props = defineProps<{
+const { timeline } = defineProps<{
   timeline: PRTimelineItem[];
   loading: boolean;
   repoOwner: string;
@@ -115,7 +115,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { processedTimeline } = usePRTimelineEvents(() => props.timeline);
+const { processedTimeline } = usePRTimelineEvents(() => timeline);
 
 const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);

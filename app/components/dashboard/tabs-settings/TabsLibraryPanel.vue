@@ -22,7 +22,7 @@ import { VueDraggable } from 'vue-draggable-plus';
 
 import type { SettingsTab, TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
 
-const props = defineProps<{
+const { model } = defineProps<{
   model: TabsSettingsPageState;
 }>();
 
@@ -65,7 +65,7 @@ const {
   handleCancelChildGroup,
   handleCreateChildGroup,
   startNewTabInGroup,
-} = props.model;
+} = model;
 
 const subtitleInputRef = shallowRef<HTMLInputElement | null>(null);
 let suppressNextRowSelection = false;
@@ -116,7 +116,7 @@ const selectTabFromRow = (tab: SettingsTab) => {
     return;
   }
 
-  props.model.selectTabForEdit(tab);
+  model.selectTabForEdit(tab);
 };
 
 const saveSubtitleFromInput = (tab: SettingsTab, suppressRowSelection = false) => {

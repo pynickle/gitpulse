@@ -135,7 +135,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import { toDashboardIssuePrCard, type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { getDashboardSubjectStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: DashboardIssuePrEntity;
 }>();
 
@@ -148,7 +148,7 @@ const { open: openCheckList } = useCheckListModal();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
-const card = computed(() => toDashboardIssuePrCard(props.item));
+const card = computed(() => toDashboardIssuePrCard(item));
 
 const commentsLabel = computed(() => {
   if (card.value.comments === null) return '';
@@ -168,11 +168,11 @@ const showLinkedPullRequestCount = computed(() => {
   return typeof count === 'number' && count > 0;
 });
 const linkedPullRequestIssue = computed(() => {
-  const repoPath = parseGitHubRepoPath(props.item.repository_url);
+  const repoPath = parseGitHubRepoPath(item.repository_url);
   return toLinkedPullRequestIdentity({
     owner: repoPath?.owner,
     repo: repoPath?.repo,
-    number: props.item.number,
+    number: item.number,
   });
 });
 const handleLinkedPullRequestCountClick = () => {

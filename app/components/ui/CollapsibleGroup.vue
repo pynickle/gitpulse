@@ -37,14 +37,11 @@ interface Props {
   count?: number;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  defaultCollapsed: false,
-  count: undefined,
-});
+const { id, defaultCollapsed = false, count } = defineProps<Props>();
 
-const isCollapsed = ref(props.defaultCollapsed);
+const isCollapsed = ref(defaultCollapsed);
 
-const contentId = computed(() => `collapsible-content-${props.id}`);
+const contentId = computed(() => `collapsible-content-${id}`);
 
 const toggle = () => {
   isCollapsed.value = !isCollapsed.value;

@@ -109,7 +109,7 @@ import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
 import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
 import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
-const props = defineProps<{
+const { issue } = defineProps<{
   issue: IssueDetailPayload;
   detailSidebarHidden?: boolean;
   sourceNotification?: DashboardNotification | null;
@@ -123,9 +123,9 @@ const emit = defineEmits<{
 
 const loadingTimeline = ref(false);
 const loadingPermission = ref(false);
-const currentIssue = ref(props.issue);
+const currentIssue = ref(issue);
 const repoPermissions = ref(createEmptyRepoPermissions());
-const isLocked = ref(props.issue?.locked || false);
+const isLocked = ref(issue?.locked || false);
 const timeline = ref<IssueTimelineItem[]>([]);
 const timelineRequestId = ref(0);
 const permissionRequestId = ref(0);
@@ -388,7 +388,7 @@ watch(
 );
 
 watch(
-  () => props.issue,
+  () => issue,
   (newIssue) => {
     timelineRequestId.value += 1;
     permissionRequestId.value += 1;

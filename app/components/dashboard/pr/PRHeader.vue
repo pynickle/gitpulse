@@ -122,31 +122,31 @@ interface PullRequestHeaderPullRequest {
   reactions?: ReactionSummaryItem[];
 }
 
-const props = defineProps<{
+const { pullRequest, repoOwner, repoName } = defineProps<{
   pullRequest?: PullRequestHeaderPullRequest | null;
   repoOwner: string;
   repoName: string;
 }>();
 
-const stateVisual = computed(() => getPullRequestStateVisual(props.pullRequest));
+const stateVisual = computed(() => getPullRequestStateVisual(pullRequest));
 const displayState = computed(() => stateVisual.value.state);
 const stateIcon = computed(() => stateVisual.value.icon);
 const stateColor = computed(() => ({ color: stateVisual.value.color }));
 
 const updatedAtLabel = computed(() => {
-  return props.pullRequest?.updated_at
-    ? formatDurationFromNow(props.pullRequest.updated_at, localeCode.value, relativeTimeNow.value)
+  return pullRequest?.updated_at
+    ? formatDurationFromNow(pullRequest.updated_at, localeCode.value, relativeTimeNow.value)
     : '-';
 });
 
 const createdAtLabel = computed(() => {
-  return props.pullRequest?.created_at
-    ? formatDurationFromNow(props.pullRequest.created_at, localeCode.value, relativeTimeNow.value)
+  return pullRequest?.created_at
+    ? formatDurationFromNow(pullRequest.created_at, localeCode.value, relativeTimeNow.value)
     : '-';
 });
 
 const handleRepoClick = async () => {
-  await openRepository(props.repoOwner, props.repoName);
+  await openRepository(repoOwner, repoName);
 };
 </script>
 

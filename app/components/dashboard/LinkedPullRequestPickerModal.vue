@@ -19,7 +19,7 @@ interface PickerResponse {
   nodes: LinkedPullRequestConnection['nodes'];
 }
 
-const props = defineProps<{
+const { isVisible, owner, repo, number } = defineProps<{
   isVisible: boolean;
   owner: string;
   repo: string;
@@ -45,8 +45,8 @@ let requestId = 0;
 const pickerModel = computed(() => {
   if (!connection.value) return null;
   return toLinkedPullRequestPickerModel(connection.value, {
-    owner: props.owner,
-    repo: props.repo,
+    owner: owner,
+    repo: repo,
   });
 });
 
@@ -66,7 +66,7 @@ const load = async () => {
 
   try {
     const response = await apiFetch<PickerResponse>(
-      `/api/issues/${props.owner}/${props.repo}/${props.number}/linked-pull-requests`
+      `/api/issues/${owner}/${repo}/${number}/linked-pull-requests`
     );
 
     if (nextRequestId !== requestId) return;
@@ -86,7 +86,7 @@ const load = async () => {
 };
 
 watch(
-  () => [props.isVisible, props.owner, props.repo, props.number] as const,
+  () => [isVisible, owner, repo, number] as const,
   async ([isVisible]) => {
     if (!isVisible) {
       reset();

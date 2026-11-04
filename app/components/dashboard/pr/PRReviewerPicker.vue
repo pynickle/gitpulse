@@ -99,7 +99,7 @@ import type {
   PRReviewerMutationPayload,
 } from '~/composables/usePRReviewers';
 
-const props = defineProps<{
+const { candidates } = defineProps<{
   candidates: PRReviewerCandidate[];
   warnings: PRReviewerCandidateWarning[];
   loading: boolean;
@@ -118,9 +118,7 @@ const searchQuery = shallowRef('');
 const selectedKeys = shallowRef(new Set<string>());
 
 const selectedCandidates = computed(() =>
-  props.candidates.filter(
-    (candidate) => selectedKeys.value.has(candidate.key) && !candidate.requested
-  )
+  candidates.filter((candidate) => selectedKeys.value.has(candidate.key) && !candidate.requested)
 );
 
 const getCandidateKindLabel = (kind: PRReviewerCandidate['kind']) =>
@@ -168,7 +166,7 @@ const submitSelection = () => {
 };
 
 watch(
-  () => props.candidates,
+  () => candidates,
   (candidates) => {
     const availableKeys = new Set(
       candidates.filter((candidate) => !candidate.requested).map((candidate) => candidate.key)

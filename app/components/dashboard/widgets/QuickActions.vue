@@ -31,7 +31,7 @@ import { computed } from 'vue';
 
 const { t } = useI18n();
 
-const props = defineProps<{
+const { currentTab } = defineProps<{
   currentTab: string;
 }>();
 
@@ -93,7 +93,7 @@ const currentConfig = computed<GuideConfig>(() => {
     },
   };
 
-  return configs[props.currentTab] ?? fallbackConfig;
+  return configs[currentTab] ?? fallbackConfig;
 });
 </script>
 

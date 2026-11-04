@@ -15,7 +15,7 @@ interface TimelineDiffLine {
   content: string;
 }
 
-const props = defineProps<{
+const { patch, lines } = defineProps<{
   filename: string;
   patch?: string;
   lines?: TimelineDiffLine[];
@@ -96,8 +96,8 @@ const rowToLines = (row: PRReviewDiffRow): TimelineDiffLine[] => {
 };
 
 const diffLines = computed(() => {
-  if (props.lines) return props.lines;
-  return parsePRReviewPatch(props.patch).flatMap(rowToLines);
+  if (lines) return lines;
+  return parsePRReviewPatch(patch).flatMap(rowToLines);
 });
 </script>
 

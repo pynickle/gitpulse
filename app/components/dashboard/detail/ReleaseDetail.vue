@@ -17,7 +17,7 @@ import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
 
-const props = defineProps<{
+const { release } = defineProps<{
   release: ReleaseDetailPayload;
   detailSidebarHidden?: boolean;
 }>();
@@ -26,15 +26,15 @@ const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();
 const relativeTimeNow = useRelativeTimeNow();
 
-const repoInfo = computed(() => parseGitHubRepoPath(props.release.repository_url));
+const repoInfo = computed(() => parseGitHubRepoPath(release.repository_url));
 const repoOwner = computed(() => repoInfo.value?.owner ?? '');
 const repoName = computed(() => repoInfo.value?.repo ?? '');
 
 const releaseTitle = computed(() => {
-  return props.release.name?.trim() || props.release.tag_name || t('releaseDetail.untitled');
+  return release.name?.trim() || release.tag_name || t('releaseDetail.untitled');
 });
 
-const releasedAt = computed(() => props.release.published_at || props.release.created_at || '');
+const releasedAt = computed(() => release.published_at || release.created_at || '');
 
 const releasedAtLabel = computed(() => {
   return releasedAt.value
@@ -42,26 +42,24 @@ const releasedAtLabel = computed(() => {
     : t('releaseDetail.unpublished');
 });
 
-const body = computed(() => props.release.body?.trim() || '');
+const body = computed(() => release.body?.trim() || '');
 
-const assets = computed<ReleaseAsset[]>(() => props.release.assets ?? []);
+const assets = computed<ReleaseAsset[]>(() => release.assets ?? []);
 
 // The header above already names the tag, so asset names can shed the prefix
 // they all repeat and leave the part that actually tells them apart.
-const assetNamePrefix = computed(() =>
-  getReleaseAssetNamePrefix(repoName.value, props.release.tag_name)
-);
+const assetNamePrefix = computed(() => getReleaseAssetNamePrefix(repoName.value, release.tag_name));
 
 const archiveLinks = computed(() =>
   [
     {
       label: t('releaseDetail.sourceZip'),
-      href: props.release.zipball_url,
+      href: release.zipball_url,
       icon: FileArchiveIcon,
     },
     {
       label: t('releaseDetail.sourceTar'),
-      href: props.release.tarball_url,
+      href: release.tarball_url,
       icon: FileArchiveIcon,
     },
   ].filter((item): item is { label: string; href: string; icon: typeof FileArchiveIcon } =>

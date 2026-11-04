@@ -393,18 +393,18 @@ import {
 } from '~/composables/usePRTimelineEvents';
 import { getTextColorFromBackground } from '~/utils/getTextColorFromBackground';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: PRTimelineItem;
 }>();
 
 const { t } = useI18n();
-const reviewerUrl = computed(() => getRequestedReviewerUrl(props.item.requestedReviewer));
-const reviewerLabel = computed(() => getRequestedReviewerLabel(props.item.requestedReviewer));
-const assigneeChanges = computed(() => props.item.assigneeChanges ?? []);
-const labelChanges = computed(() => props.item.labelChanges ?? []);
+const reviewerUrl = computed(() => getRequestedReviewerUrl(item.requestedReviewer));
+const reviewerLabel = computed(() => getRequestedReviewerLabel(item.requestedReviewer));
+const assigneeChanges = computed(() => item.assigneeChanges ?? []);
+const labelChanges = computed(() => item.labelChanges ?? []);
 
 const issueFieldPrefix = computed(() => {
-  switch (props.item.eventType) {
+  switch (item.eventType) {
     case 'issue_field_added':
       return 'added a project field value';
     case 'issue_field_changed':
@@ -414,16 +414,14 @@ const issueFieldPrefix = computed(() => {
   }
 });
 
-const assigneePrefix = computed(() =>
-  props.item.eventType === 'assigned' ? 'assigned' : 'unassigned'
-);
+const assigneePrefix = computed(() => (item.eventType === 'assigned' ? 'assigned' : 'unassigned'));
 
 const threadPrefix = computed(() => {
-  if (props.item.eventType === 'commit_commented') {
+  if (item.eventType === 'commit_commented') {
     return 'commented on a commit thread';
   }
 
-  return `${props.item.isResolved ? 'resolved' : 'unresolved'} a review thread`;
+  return `${item.isResolved ? 'resolved' : 'unresolved'} a review thread`;
 });
 
 const labelStyle = (color?: string) => {

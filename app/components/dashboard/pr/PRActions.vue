@@ -97,8 +97,8 @@
             {{ warning.message }}
           </p>
         </div>
-        <p v-if="reviewerError" class="sidebar-section__error">
-          {{ reviewerError }}
+        <p v-if="reviewerErrorText" class="sidebar-section__error">
+          {{ reviewerErrorText }}
         </p>
       </div>
     </section>
@@ -287,7 +287,18 @@ interface PullRequestTeamSummary {
   url?: string | null;
 }
 
-const props = defineProps<{
+const {
+  requestedReviewers,
+  requestedTeams,
+  reviewers,
+  reviewerError,
+  sourceNotification,
+  prState,
+  merged,
+  canManageState,
+  repoInfo,
+  prNumber,
+} = defineProps<{
   requestedReviewers: PullRequestUserSummary[];
   requestedTeams: PullRequestTeamSummary[];
   reviewers?: PRReviewersSummary;
@@ -321,10 +332,10 @@ const emit = defineEmits<{
 
 const apiFetch = useGitPulseApiFetch();
 
-const isClosed = computed(() => props.prState === 'closed');
+const isClosed = computed(() => prState === 'closed');
 
 // Merged pull requests can never be reopened or closed again.
-const showManageActions = computed(() => props.canManageState && !props.merged);
+const showManageActions = computed(() => canManageState && !merged);
 
 const loadingState = ref(false);
 const stateError = ref('');
@@ -346,14 +357,14 @@ onUnmounted(() => {
 });
 
 const updatePullRequestState = async (state: 'open' | 'closed') => {
-  if (!showManageActions.value || !props.repoInfo || !props.prNumber) return;
+  if (!showManageActions.value || !repoInfo || !prNumber) return;
 
   loadingState.value = true;
   clearStateError();
 
   try {
-    const { owner, repo } = props.repoInfo;
-    await apiFetch(`/api/repos/${owner}/${repo}/pulls/${props.prNumber}/state`, {
+    const { owner, repo } = repoInfo;
+    await apiFetch(`/api/repos/${owner}/${repo}/pulls/${prNumber}/state`, {
       method: 'PATCH',
       body: { state },
     });
@@ -379,7 +390,7 @@ const updatePullRequestState = async (state: 'open' | 'closed') => {
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 
 const isTodo = computed(() =>
-  props.sourceNotification ? isNotificationTodo(props.sourceNotification) : false
+  sourceNotification ? isNotificationTodo(sourceNotification) : false
 );
 
 const todoLabel = computed(() =>
@@ -387,17 +398,17 @@ const todoLabel = computed(() =>
 );
 
 const handleToggleTodo = () => {
-  if (props.sourceNotification) {
-    toggleNotificationTodo(props.sourceNotification);
+  if (sourceNotification) {
+    toggleNotificationTodo(sourceNotification);
   }
 };
 
 const reviewerItems = computed<PRReviewerSummaryItem[]>(() => {
-  if (props.reviewers?.items?.length) {
-    return props.reviewers.items;
+  if (reviewers?.items?.length) {
+    return reviewers.items;
   }
 
-  const requestedUsers = props.requestedReviewers.flatMap((reviewer) => {
+  const requestedUsers = requestedReviewers.flatMap((reviewer) => {
     const login = reviewer.login?.trim();
     if (!login) return [];
 
@@ -418,7 +429,7 @@ const reviewerItems = computed<PRReviewerSummaryItem[]>(() => {
     ];
   });
 
-  const requestedTeams = props.requestedTeams.flatMap((team) => {
+  const requestedTeamItems = requestedTeams.flatMap((team) => {
     const slug = team.slug?.trim();
     if (!slug) return [];
 
@@ -441,11 +452,11 @@ const reviewerItems = computed<PRReviewerSummaryItem[]>(() => {
     ];
   });
 
-  return [...requestedUsers, ...requestedTeams];
+  return [...requestedUsers, ...requestedTeamItems];
 });
 
-const reviewerWarnings = computed(() => props.reviewers?.warnings ?? []);
-const reviewerError = computed(() => props.reviewerError?.trim() || '');
+const reviewerWarnings = computed(() => reviewers?.warnings ?? []);
+const reviewerErrorText = computed(() => reviewerError?.trim() || '');
 
 const canRerequestReviewer = (reviewer: PRReviewerSummaryItem) => {
   if (reviewer.requested || reviewer.removable) return false;

@@ -157,7 +157,7 @@ import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 import { resolveIssueTypeColor } from '~/utils/issueTypeColor';
 
-const props = defineProps<{
+const { issueType, canEditIssueType, repoInfo, issueNumber } = defineProps<{
   issueType?: GitHubIssueType | null;
   canEditIssueType: boolean;
   repoInfo: { owner: string; repo: string } | null;
@@ -181,11 +181,11 @@ let issueTypeErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
 const selectableIssueTypes = computed(() => {
   const enabledTypes = repoIssueTypes.value.filter((type) => type.is_enabled !== false);
-  if (!props.issueType || enabledTypes.some((type) => type.name === props.issueType?.name)) {
+  if (!issueType || enabledTypes.some((type) => type.name === issueType?.name)) {
     return enabledTypes;
   }
 
-  return [props.issueType, ...enabledTypes];
+  return [issueType, ...enabledTypes];
 });
 
 const clearIssueTypeErrorTimer = () => {
@@ -208,16 +208,16 @@ const scheduleIssueTypeErrorClear = () => {
 };
 
 const fetchIssueTypes = async () => {
-  if (!props.repoInfo) return;
+  if (!repoInfo) return;
 
   loadingIssueTypes.value = true;
   clearIssueTypeError();
   try {
-    const { owner, repo } = props.repoInfo;
+    const { owner, repo } = repoInfo;
     repoIssueTypes.value = await apiFetch<GitHubIssueType[]>(
       `/api/repos/${owner}/${repo}/issue-types`
     );
-    selectedTypeName.value = props.issueType?.name ?? '';
+    selectedTypeName.value = issueType?.name ?? '';
   } catch (error: unknown) {
     issueTypeError.value = getFetchErrorMessage(error, t('detailIssueType.loadFailed'));
     scheduleIssueTypeErrorClear();
@@ -227,18 +227,18 @@ const fetchIssueTypes = async () => {
 };
 
 const toggleIssueTypeEditor = async () => {
-  if (!props.canEditIssueType || savingIssueType.value) return;
+  if (!canEditIssueType || savingIssueType.value) return;
 
   const willBeVisible = !isIssueTypeEditorVisible.value;
   isIssueTypeEditorVisible.value = willBeVisible;
   if (willBeVisible) {
-    selectedTypeName.value = props.issueType?.name ?? '';
+    selectedTypeName.value = issueType?.name ?? '';
     openModal();
     await fetchIssueTypes();
     return;
   }
 
-  selectedTypeName.value = props.issueType?.name ?? '';
+  selectedTypeName.value = issueType?.name ?? '';
   clearIssueTypeError();
   closeModal();
 };
@@ -253,14 +253,14 @@ const issueTypeBarStyle = (type: GitHubIssueType) => ({
 });
 
 const saveIssueType = async () => {
-  if (!props.repoInfo || !props.issueNumber) return;
+  if (!repoInfo || !issueNumber) return;
 
   savingIssueType.value = true;
   clearIssueTypeError();
   try {
-    const { owner, repo } = props.repoInfo;
+    const { owner, repo } = repoInfo;
     const updatedIssueType = await apiFetch<GitHubIssueType | null>(
-      `/api/repos/${owner}/${repo}/issues/${props.issueNumber}/type`,
+      `/api/repos/${owner}/${repo}/issues/${issueNumber}/type`,
       {
         method: 'PATCH',
         body: { type: selectedTypeName.value || null },
@@ -278,7 +278,7 @@ const saveIssueType = async () => {
 };
 
 watch(
-  () => props.issueType,
+  () => issueType,
   (issueType) => {
     if (!isIssueTypeEditorVisible.value) selectedTypeName.value = issueType?.name ?? '';
   },

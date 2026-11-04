@@ -108,25 +108,24 @@ interface IssueHeaderIssue {
   reactions?: ReactionSummaryItem[];
 }
 
-const props = defineProps<{
+const { issue, repoOwner, repoName } = defineProps<{
   issue?: IssueHeaderIssue | null;
   repoOwner: string;
   repoName: string;
 }>();
 
 const stateIcon = computed(() => {
-  return props.issue?.state === 'open' ? CircleDotIcon : CircleMinusIcon;
+  return issue?.state === 'open' ? CircleDotIcon : CircleMinusIcon;
 });
 
 const stateColor = computed(() => {
   return {
-    color:
-      props.issue?.state === 'open' ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
+    color: issue?.state === 'open' ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
   };
 });
 
 const handleRepoClick = async () => {
-  await openRepository(props.repoOwner, props.repoName);
+  await openRepository(repoOwner, repoName);
 };
 </script>
 

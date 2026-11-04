@@ -5,7 +5,7 @@ import { nextTick, ref, watch } from 'vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { createFocusTrapController } from '~/utils/createFocusTrapController';
 
-const props = defineProps<{
+const { open } = defineProps<{
   open: boolean;
 }>();
 
@@ -18,7 +18,7 @@ const panelElement = ref<HTMLElement | null>(null);
 const focusTrap = createFocusTrapController();
 
 watch(
-  () => props.open,
+  () => open,
   async (open) => {
     if (!import.meta.client) return;
 

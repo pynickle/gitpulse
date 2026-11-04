@@ -25,7 +25,7 @@ import {
   sourceUsesDashboardTodoSortControls,
 } from '~/composables/useDashboardFilters';
 
-const props = defineProps<{
+const { currentTab, filters } = defineProps<{
   currentTab: DashboardFilterSource;
   filters: DashboardRouteFilters;
 }>();
@@ -38,7 +38,7 @@ const { t } = useI18n();
 
 // ─── State pill (segmented control) ────────────────────────────
 const stateOptions = computed<SegmentedOption[]>(() => {
-  if (props.currentTab === 'notifications') {
+  if (currentTab === 'notifications') {
     return [
       {
         value: '',
@@ -55,7 +55,7 @@ const stateOptions = computed<SegmentedOption[]>(() => {
     ];
   }
 
-  if (props.currentTab === 'pulls') {
+  if (currentTab === 'pulls') {
     return [
       {
         value: '',
@@ -84,7 +84,7 @@ const stateOptions = computed<SegmentedOption[]>(() => {
     ];
   }
 
-  if (props.currentTab === 'issues') {
+  if (currentTab === 'issues') {
     return [
       {
         value: '',
@@ -110,9 +110,7 @@ const stateOptions = computed<SegmentedOption[]>(() => {
   return [];
 });
 
-const selectedState = computed(() =>
-  props.filters.state === 'open' ? '' : (props.filters.state ?? '')
-);
+const selectedState = computed(() => (filters.state === 'open' ? '' : (filters.state ?? '')));
 
 const handleStateChange = (value: string) => {
   emit('update', { state: (value || undefined) as DashboardRouteState | undefined });
@@ -148,8 +146,8 @@ const todoOrderOptions = computed<SegmentedOption[]>(() => [
   },
 ]);
 
-const selectedTodoSort = computed(() => (props.filters.sort === 'updated' ? 'updated' : 'added'));
-const selectedTodoOrder = computed(() => props.filters.order ?? 'desc');
+const selectedTodoSort = computed(() => (filters.sort === 'updated' ? 'updated' : 'added'));
+const selectedTodoOrder = computed(() => filters.order ?? 'desc');
 
 const handleTodoSortChange = (value: string) => {
   emit('update', { sort: value as DashboardRouteSort });
@@ -160,11 +158,11 @@ const handleTodoOrderChange = (value: string) => {
 };
 
 const supportsFilter = (key: keyof DashboardRouteFilters) =>
-  sourceSupportsDashboardFilter(props.currentTab, key);
+  sourceSupportsDashboardFilter(currentTab, key);
 const showPills = computed(
-  () => supportsFilter('state') || sourceUsesDashboardTodoSortControls(props.currentTab)
+  () => supportsFilter('state') || sourceUsesDashboardTodoSortControls(currentTab)
 );
-const showTodoControls = computed(() => sourceUsesDashboardTodoSortControls(props.currentTab));
+const showTodoControls = computed(() => sourceUsesDashboardTodoSortControls(currentTab));
 </script>
 
 <template>

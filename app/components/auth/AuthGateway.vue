@@ -77,7 +77,7 @@ import Button from '~/components/ui/Button.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 
-const props = defineProps<{
+const { providers } = defineProps<{
   providers: AuthProviderState;
 }>();
 
@@ -114,7 +114,7 @@ const getTokenLoginErrorMessage = (error: unknown) => {
 };
 
 watch(
-  () => props.providers,
+  () => providers,
   (_) => {
     tokenError.value = '';
     token.value = '';
@@ -123,7 +123,7 @@ watch(
 );
 
 const modeLabel = computed(() => {
-  switch (props.providers.mode) {
+  switch (providers.mode) {
     case 'hybrid':
       return t('landing.authStatusHybrid');
     case 'oauth-only':
@@ -133,8 +133,8 @@ const modeLabel = computed(() => {
   }
 });
 
-const showDivider = computed(() => props.providers.oauthEnabled && props.providers.patEnabled);
-const showPatSection = computed(() => props.providers.patEnabled);
+const showDivider = computed(() => providers.oauthEnabled && providers.patEnabled);
+const showPatSection = computed(() => providers.patEnabled);
 
 const handlePatSubmit = async () => {
   const normalizedToken = token.value.trim();

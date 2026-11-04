@@ -22,7 +22,7 @@ export interface ProfilePackageSelection {
   isOrganization: boolean;
 }
 
-const props = defineProps<{
+const { username } = defineProps<{
   username: string;
 }>();
 
@@ -46,7 +46,7 @@ const {
   profileError,
   contributionsError,
   refresh,
-} = useUserProfile(toRef(props, 'username'));
+} = useUserProfile(toRef(() => username));
 
 const tabs = computed(() => [
   { id: 'overview' as const, label: t('profile.tabs.overview') },

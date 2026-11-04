@@ -15,29 +15,31 @@ type GitHubAvatarFetchPriority = 'high' | 'low' | 'auto';
 type GitHubAvatarPreload = boolean | { fetchPriority?: GitHubAvatarFetchPriority };
 type NuxtImagePreload = boolean | { fetchPriority: GitHubAvatarFetchPriority };
 
-const props = withDefaults(
-  defineProps<{
-    src?: string | null;
-    alt?: string | null;
-    size?: number | string;
-    width?: number | string;
-    height?: number | string;
-    /** Skip inline width/height so CSS can size the box. `size` still drives the image URL. */
-    fluid?: boolean;
-    loading?: GitHubAvatarLoading;
-    fetchPriority?: GitHubAvatarFetchPriority;
-    preload?: GitHubAvatarPreload;
-    variant?: GitHubAvatarVariant;
-    interactive?: boolean;
-  }>(),
-  {
-    alt: '',
-    loading: 'lazy',
-    fluid: false,
-    variant: 'plain',
-    interactive: false,
-  }
-);
+const {
+  src,
+  alt = '',
+  size,
+  width,
+  height,
+  fluid = false,
+  loading = 'lazy',
+  preload,
+  variant = 'plain',
+  interactive = false,
+} = defineProps<{
+  src?: string | null;
+  alt?: string | null;
+  size?: number | string;
+  width?: number | string;
+  height?: number | string;
+  /** Skip inline width/height so CSS can size the box. `size` still drives the image URL. */
+  fluid?: boolean;
+  loading?: GitHubAvatarLoading;
+  fetchPriority?: GitHubAvatarFetchPriority;
+  preload?: GitHubAvatarPreload;
+  variant?: GitHubAvatarVariant;
+  interactive?: boolean;
+}>();
 
 const toCssSize = (value: number | string | undefined) => {
   if (value === undefined || value === '') return undefined;
@@ -45,12 +47,12 @@ const toCssSize = (value: number | string | undefined) => {
   return /^\d+$/.test(value) ? `${value}px` : value;
 };
 
-const resolvedWidth = computed(() => toCssSize(props.width ?? props.size));
-const resolvedHeight = computed(() => toCssSize(props.height ?? props.size));
+const resolvedWidth = computed(() => toCssSize(width ?? size));
+const resolvedHeight = computed(() => toCssSize(height ?? size));
 const avatarElement = ref<HTMLElement | null>(null);
 
 const avatarStyle = computed(() => {
-  if (props.fluid) {
+  if (fluid) {
     return undefined;
   }
 
@@ -60,21 +62,21 @@ const avatarStyle = computed(() => {
   };
 });
 
-const imageWidth = computed(() => props.width ?? props.size);
-const imageHeight = computed(() => props.height ?? props.size);
+const imageWidth = computed(() => width ?? size);
+const imageHeight = computed(() => height ?? size);
 const imageDisplaySize = computed(() =>
   resolveGitHubAvatarDisplaySize(imageWidth.value, imageHeight.value)
 );
 const imageSrc = computed(
-  () => createSizedGitHubAvatarUrl(props.src, imageDisplaySize.value) ?? undefined
+  () => createSizedGitHubAvatarUrl(src, imageDisplaySize.value) ?? undefined
 );
-const shouldDeferImage = computed(() => props.loading !== 'eager');
+const shouldDeferImage = computed(() => loading !== 'eager');
 const imageShouldLoad = useDeferredElementLoad(avatarElement, shouldDeferImage, imageSrc);
-const fallbackLabel = computed(() => props.alt?.trim() || 'GitHub avatar');
+const fallbackLabel = computed(() => alt?.trim() || 'GitHub avatar');
 const resolvedPreload = computed<NuxtImagePreload | undefined>(() => {
-  if (props.preload === undefined || typeof props.preload === 'boolean') return props.preload;
-  if (!props.preload.fetchPriority) return undefined;
-  return { fetchPriority: props.preload.fetchPriority };
+  if (preload === undefined || typeof preload === 'boolean') return preload;
+  if (!preload.fetchPriority) return undefined;
+  return { fetchPriority: preload.fetchPriority };
 });
 </script>
 

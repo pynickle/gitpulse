@@ -7,20 +7,19 @@ import AutocompleteMenu from '~/components/ui/AutocompleteMenu.vue';
 
 export type { AutocompleteSuggestion } from '~/components/ui/autocomplete';
 
-const props = withDefaults(
-  defineProps<{
-    suggestions: AutocompleteSuggestion[];
-    modelValue: string;
-    placeholder?: string;
-    loading?: boolean;
-    emptyMessage?: string;
-  }>(),
-  {
-    placeholder: '',
-    loading: false,
-    emptyMessage: 'No results found',
-  }
-);
+const {
+  suggestions,
+  modelValue,
+  placeholder = '',
+  loading = false,
+  emptyMessage = 'No results found',
+} = defineProps<{
+  suggestions: AutocompleteSuggestion[];
+  modelValue: string;
+  placeholder?: string;
+  loading?: boolean;
+  emptyMessage?: string;
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
@@ -32,7 +31,7 @@ const listboxId = `${componentId}-listbox`;
 
 const isOpen = shallowRef(false);
 const activeIndex = shallowRef(-1);
-const inputValue = shallowRef(props.modelValue);
+const inputValue = shallowRef(modelValue);
 
 const inputRef = useTemplateRef<HTMLInputElement>('inputEl');
 const containerRef = useTemplateRef<HTMLElement>('containerEl');
@@ -41,8 +40,8 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const filteredSuggestions = computed(() => {
   const query = inputValue.value.trim().toLowerCase();
-  if (!query) return props.suggestions;
-  return props.suggestions.filter(
+  if (!query) return suggestions;
+  return suggestions.filter(
     (s) => s.value.toLowerCase().includes(query) || s.label?.toLowerCase().includes(query)
   );
 });
@@ -148,7 +147,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 };
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (val) => {
     if (val !== inputValue.value) {
       inputValue.value = val;

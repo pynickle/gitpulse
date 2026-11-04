@@ -6,7 +6,7 @@ import DashboardPagination from '~/components/dashboard/DashboardPagination.vue'
 import UserListItem from '~/components/dashboard/profile/UserListItem.vue';
 import { useUserConnections, type UserConnectionRelation } from '~/composables/useUserConnections';
 
-const props = defineProps<{
+const { username, relation } = defineProps<{
   username: string;
   relation: UserConnectionRelation;
   emptyLabel: string;
@@ -19,8 +19,8 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const { items, loading, error, pagination, showPagination, goToPage, refresh } = useUserConnections(
-  toRef(props, 'username'),
-  toRef(props, 'relation')
+  toRef(() => username),
+  toRef(() => relation)
 );
 </script>
 

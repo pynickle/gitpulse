@@ -13,7 +13,7 @@ import { InfoIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const props = defineProps<{
+const { eventType, reasonCode, scope } = defineProps<{
   eventType: string;
   reasonCode: string;
   scope: 'issue' | 'pull';
@@ -22,8 +22,8 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const eventLabel = computed(() => {
-  const scopeSuffix = props.scope === 'pull' ? 'PR' : 'issue';
-  switch (props.eventType) {
+  const scopeSuffix = scope === 'pull' ? 'PR' : 'issue';
+  switch (eventType) {
     case 'mentioned':
       return `mentioned this ${scopeSuffix}`;
     case 'blocking_added':
@@ -35,11 +35,11 @@ const eventLabel = computed(() => {
     case 'blocked_by_removed':
       return 'was unmarked as blocked by another issue';
     default:
-      return props.eventType.replace(/_/g, ' ');
+      return eventType.replace(/_/g, ' ');
   }
 });
 
-const reasonText = computed(() => t(`timeline.unavailableReason_${props.reasonCode}`));
+const reasonText = computed(() => t(`timeline.unavailableReason_${reasonCode}`));
 </script>
 
 <style scoped lang="scss">

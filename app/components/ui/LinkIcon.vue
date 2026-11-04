@@ -5,11 +5,11 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+const { to } = defineProps<{
   to?: string;
 }>();
 
-const target = computed(() => props.to);
+const target = computed(() => to);
 </script>
 
 <style scoped lang="scss">

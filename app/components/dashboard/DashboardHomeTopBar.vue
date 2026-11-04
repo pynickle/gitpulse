@@ -5,7 +5,7 @@ import { useTemplateRef, watch } from 'vue';
 import DashboardAccountMenu from '~/components/dashboard/DashboardAccountMenu.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
-const props = defineProps<{
+const { accountMenuOpen } = defineProps<{
   title: string;
   showFilterButton: boolean;
   filterActive?: boolean;
@@ -43,7 +43,7 @@ const handleAccountPointerDown = (event: PointerEvent) => {
 };
 
 watch(
-  () => props.accountMenuOpen,
+  () => accountMenuOpen,
   (open, _previous, onCleanup) => {
     if (!import.meta.client || !open) return;
     document.addEventListener('pointerdown', handleAccountPointerDown);

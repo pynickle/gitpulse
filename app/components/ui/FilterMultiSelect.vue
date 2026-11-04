@@ -18,22 +18,20 @@ export interface FilterMultiSelectOption {
   label?: string;
 }
 
-const props = withDefaults(
-  defineProps<{
-    suggestions: FilterMultiSelectOption[];
-    modelValue: string[];
-    placeholder?: string;
-    emptyMessage?: string;
-    ariaLabel?: string;
-    removeLabel?: string;
-  }>(),
-  {
-    placeholder: '',
-    emptyMessage: 'No results found',
-    ariaLabel: undefined,
-    removeLabel: 'Remove',
-  }
-);
+const {
+  suggestions,
+  modelValue,
+  placeholder = '',
+  emptyMessage = 'No results found',
+  removeLabel = 'Remove',
+} = defineProps<{
+  suggestions: FilterMultiSelectOption[];
+  modelValue: string[];
+  placeholder?: string;
+  emptyMessage?: string;
+  ariaLabel?: string;
+  removeLabel?: string;
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: string[]];
@@ -54,13 +52,13 @@ const containerRef = useTemplateRef<HTMLElement>('containerEl');
 
 const normalizeLabel = (label: string) => label.trim().toLowerCase();
 
-const selectedLookup = computed(() => new Set(props.modelValue.map(normalizeLabel)));
+const selectedLookup = computed(() => new Set(modelValue.map(normalizeLabel)));
 
 const uniqueSuggestions = computed(() => {
   const seen = new Set<string>();
   const options: FilterMultiSelectOption[] = [];
 
-  for (const suggestion of props.suggestions) {
+  for (const suggestion of suggestions) {
     const value = suggestion.value.trim();
     const key = normalizeLabel(value);
     if (!value || seen.has(key) || selectedLookup.value.has(key)) continue;
@@ -82,7 +80,7 @@ const visibleSuggestions = computed(() => {
   });
 });
 
-const showPlaceholder = computed(() => props.modelValue.length === 0 && inputValue.value === '');
+const showPlaceholder = computed(() => modelValue.length === 0 && inputValue.value === '');
 
 const getDisplayLabel = (suggestion: FilterMultiSelectOption) =>
   suggestion.label ?? suggestion.value;
@@ -97,7 +95,7 @@ const emitLabels = (additions: string[]) => {
   const seen = new Set<string>();
   const nextLabels: string[] = [];
 
-  for (const label of [...props.modelValue, ...additions]) {
+  for (const label of [...modelValue, ...additions]) {
     const trimmed = label.trim();
     const key = normalizeLabel(trimmed);
     if (!trimmed || seen.has(key)) continue;
@@ -186,7 +184,7 @@ const removeSelectedLabel = (label: string) => {
   const target = normalizeLabel(label);
   emit(
     'update:modelValue',
-    props.modelValue.filter((value) => normalizeLabel(value) !== target)
+    modelValue.filter((value) => normalizeLabel(value) !== target)
   );
   focusInput();
 };
@@ -239,8 +237,8 @@ const handleKeydown = (event: KeyboardEvent) => {
     return;
   }
 
-  if (event.key === 'Backspace' && inputValue.value === '' && props.modelValue.length > 0) {
-    removeSelectedLabel(props.modelValue[props.modelValue.length - 1] ?? '');
+  if (event.key === 'Backspace' && inputValue.value === '' && modelValue.length > 0) {
+    removeSelectedLabel(modelValue[modelValue.length - 1] ?? '');
     return;
   }
 
@@ -346,7 +344,7 @@ watch(visibleSuggestions, (suggestions) => {
         <button
           class="filter-multiselect__tag-remove"
           type="button"
-          :aria-label="`${props.removeLabel} ${label}`"
+          :aria-label="`${removeLabel} ${label}`"
           @mousedown.prevent
           @click="removeSelectedLabel(label)"
         >

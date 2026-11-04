@@ -13,50 +13,48 @@ import { computed, type Component } from 'vue';
 import type { ReleaseListItem } from '#shared/types/releases';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
-const props = withDefaults(
-  defineProps<{
-    release: ReleaseListItem;
-    /** Full locale path to the release detail view. */
-    to: string;
-    /** Page-1 stable "Latest" badge (GitHub-aligned). */
-    isLatest?: boolean;
-    /** Featured hero card vs compact history row. */
-    variant?: 'hero' | 'row';
-  }>(),
-  {
-    isLatest: false,
-    variant: 'row',
-  }
-);
+const {
+  release,
+  isLatest = false,
+  variant = 'row',
+} = defineProps<{
+  release: ReleaseListItem;
+  /** Full locale path to the release detail view. */
+  to: string;
+  /** Page-1 stable "Latest" badge (GitHub-aligned). */
+  isLatest?: boolean;
+  /** Featured hero card vs compact history row. */
+  variant?: 'hero' | 'row';
+}>();
 
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 
-const tagName = computed(() => props.release.tag_name || t('releaseDetail.untitled'));
+const tagName = computed(() => release.tag_name || t('releaseDetail.untitled'));
 
 /**
  * Show the human title only when it adds information beyond the tag
  * (avoids "Grok App v0.2.6" + "v0.2.6" redundancy).
  */
 const secondaryName = computed(() => {
-  const name = props.release.name?.trim() || '';
+  const name = release.name?.trim() || '';
   if (!name) return '';
-  if (name === props.release.tag_name) return '';
+  if (name === release.tag_name) return '';
   return name;
 });
 
 const releasedAtLabel = computed(() => {
-  const releasedAt = props.release.published_at || props.release.created_at || '';
+  const releasedAt = release.published_at || release.created_at || '';
   return releasedAt
     ? formatDurationFromNow(releasedAt, locale.value, relativeTimeNow.value)
     : t('releaseDetail.unpublished');
 });
 
 const assetsCountLabel = computed(() =>
-  formatCompactNumber(Math.max(0, props.release.assets_count || 0), locale.value)
+  formatCompactNumber(Math.max(0, release.assets_count || 0), locale.value)
 );
 const downloadCountLabel = computed(() =>
-  formatCompactNumber(Math.max(0, props.release.download_count || 0), locale.value)
+  formatCompactNumber(Math.max(0, release.download_count || 0), locale.value)
 );
 
 type StatusKind = 'latest' | 'prerelease' | 'draft';
@@ -69,21 +67,21 @@ interface StatusDescriptor {
 
 /** At most one primary status chip; Latest wins over draft/prerelease labels. */
 const status = computed<StatusDescriptor | null>(() => {
-  if (props.isLatest) {
+  if (isLatest) {
     return {
       kind: 'latest',
       label: t('releasesPage.latest'),
       icon: RocketIcon,
     };
   }
-  if (props.release.draft) {
+  if (release.draft) {
     return {
       kind: 'draft',
       label: t('releaseDetail.draft'),
       icon: PencilLineIcon,
     };
   }
-  if (props.release.prerelease) {
+  if (release.prerelease) {
     return {
       kind: 'prerelease',
       label: t('releaseDetail.prerelease'),
@@ -95,11 +93,11 @@ const status = computed<StatusDescriptor | null>(() => {
 
 const itemClass = computed(() => [
   'release-list-item',
-  `release-list-item--${props.variant}`,
+  `release-list-item--${variant}`,
   {
-    'is-latest': props.isLatest,
-    'is-prerelease': Boolean(props.release.prerelease) && !props.release.draft && !props.isLatest,
-    'is-draft': Boolean(props.release.draft) && !props.isLatest,
+    'is-latest': isLatest,
+    'is-prerelease': Boolean(release.prerelease) && !release.draft && !isLatest,
+    'is-draft': Boolean(release.draft) && !isLatest,
   },
 ]);
 </script>

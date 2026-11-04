@@ -37,7 +37,7 @@ interface SidebarTab {
   badgeCount?: number;
 }
 
-const props = defineProps<{
+const { open } = defineProps<{
   open: boolean;
   builtInTabs: BuiltInTab[];
   activeTabId: string;
@@ -89,7 +89,7 @@ const handleDocumentKeydown = (event: KeyboardEvent) => {
 };
 
 watch(
-  () => props.open,
+  () => open,
   async (open, _previous, onCleanup) => {
     if (!import.meta.client) return;
 

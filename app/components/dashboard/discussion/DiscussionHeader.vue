@@ -106,24 +106,24 @@ const { openRepository } = useDashboardRepositoryNavigation();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
-const props = defineProps<{
+const { discussion, repoOwner, repoName } = defineProps<{
   discussion: DiscussionDetailPayload;
   repoOwner: string;
   repoName: string;
 }>();
 
 const stateLabel = computed(() =>
-  props.discussion.isAnswered ? t('discussionDetail.answered') : t('discussionDetail.unanswered')
+  discussion.isAnswered ? t('discussionDetail.answered') : t('discussionDetail.unanswered')
 );
 
-const stateVisual = computed(() => getDashboardDiscussionStateVisual(props.discussion.isAnswered));
+const stateVisual = computed(() => getDashboardDiscussionStateVisual(discussion.isAnswered));
 
 const stateColor = computed(() => ({
   color: stateVisual.value.color,
 }));
 
 const handleRepoClick = async () => {
-  await openRepository(props.repoOwner, props.repoName);
+  await openRepository(repoOwner, repoName);
 };
 </script>
 

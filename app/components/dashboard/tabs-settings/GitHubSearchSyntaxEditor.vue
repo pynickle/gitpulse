@@ -16,7 +16,7 @@ import type {
 } from '#shared/utils/github-search-syntax';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = defineProps<{
+const { modelValue, ast } = defineProps<{
   modelValue: string;
   ast: GitHubSearchSyntaxAst;
   placeholder: string;
@@ -64,7 +64,7 @@ const highlightPriority = (type: GitHubSearchSyntaxHighlight['type']) => {
 };
 
 const sortedHighlights = computed(() => {
-  return [...props.ast.highlights]
+  return [...ast.highlights]
     .filter((highlight) => highlight.end > highlight.start)
     .sort(
       (left, right) =>
@@ -85,23 +85,23 @@ const highlightedParts = computed(() => {
         type: 'term',
         start: cursor,
         end: highlight.start,
-        text: props.modelValue.slice(cursor, highlight.start),
+        text: modelValue.slice(cursor, highlight.start),
       });
     }
 
     parts.push({
       ...highlight,
-      text: props.modelValue.slice(highlight.start, highlight.end),
+      text: modelValue.slice(highlight.start, highlight.end),
     });
     cursor = highlight.end;
   }
 
-  if (cursor < props.modelValue.length) {
+  if (cursor < modelValue.length) {
     parts.push({
       type: 'term',
       start: cursor,
-      end: props.modelValue.length,
-      text: props.modelValue.slice(cursor),
+      end: modelValue.length,
+      text: modelValue.slice(cursor),
     });
   }
 
@@ -184,7 +184,7 @@ const syncFromEditor = () => {
 };
 
 const replaceSelection = (insertedText: string, selectionOffsets = getSelectionOffsets()) => {
-  const currentText = props.modelValue;
+  const currentText = modelValue;
   const fallbackOffset = currentText.length;
   const rawStart = selectionOffsets?.start ?? fallbackOffset;
   const rawEnd = selectionOffsets?.end ?? fallbackOffset;
@@ -203,11 +203,8 @@ const getSelectedText = (selectionOffsets = getSelectionOffsets()) => {
   }
 
   const start = Math.max(0, Math.min(selectionOffsets.start, selectionOffsets.end));
-  const end = Math.min(
-    props.modelValue.length,
-    Math.max(selectionOffsets.start, selectionOffsets.end)
-  );
-  return props.modelValue.slice(start, end);
+  const end = Math.min(modelValue.length, Math.max(selectionOffsets.start, selectionOffsets.end));
+  return modelValue.slice(start, end);
 };
 
 const findPreviousWordBoundary = (value: string, offset: number) => {
@@ -228,7 +225,7 @@ const deleteSelectionRange = (
   selectionOffsets: { start: number; end: number } | null,
   direction: 'backward' | 'forward' | 'word-backward' | 'word-forward'
 ) => {
-  const currentText = props.modelValue;
+  const currentText = modelValue;
   const rawStart = selectionOffsets?.start ?? currentText.length;
   const rawEnd = selectionOffsets?.end ?? currentText.length;
   let start = Math.max(0, Math.min(rawStart, rawEnd, currentText.length));
@@ -355,7 +352,7 @@ const handleDrop = (event: DragEvent) => {
 };
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   async () => {
     await nextTick();
     restoreSelection(pendingSelection.value);

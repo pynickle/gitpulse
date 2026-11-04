@@ -14,6 +14,7 @@ import {
   toFollowedRepositoryKey,
 } from '~/utils/filterReleaseTimelineGroups';
 
+// `props` stays whole: hasActiveTimelineFilter() consumes the filter object itself.
 const props = defineProps<{
   open: boolean;
   repositories: string[];

@@ -18,7 +18,7 @@ type SettingsCategoryNavItem = {
   description: string;
 };
 
-const props = defineProps<{
+const { activeId } = defineProps<{
   items: SettingsCategoryNavItem[];
   activeId: string;
 }>();
@@ -74,7 +74,7 @@ const indicatorStyle = computed(() => {
 // previous row for a frame after a click. `immediate` covers the first render too: the
 // queued tick runs after mount, when the rows have their geometry.
 watch(
-  () => props.activeId,
+  () => activeId,
   () => {
     void nextTick(measureActiveIndicator);
   },

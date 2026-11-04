@@ -103,14 +103,14 @@ const QUALIFIER_KIND: Record<string, TokenKind> = {
   archived: 'archive',
 };
 
-const props = defineProps<{
+const { parts } = defineProps<{
   parts: string[];
 }>();
 
 const { t } = useI18n();
 
 const tokens = computed<Token[]>(() => {
-  return props.parts.map((part) => {
+  return parts.map((part) => {
     const colonIndex = part.indexOf(':');
     if (colonIndex > 0) {
       const qualifier = part.slice(0, colonIndex);

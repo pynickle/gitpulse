@@ -144,29 +144,26 @@ export interface FilterSeparator {
 
 export type FilterItem = FilterOption | FilterSeparator;
 
-const props = withDefaults(
-  defineProps<{
-    options: FilterItem[];
-    modelValue?: string;
-    placeholder?: string;
-    searchable?: boolean;
-    disabled?: boolean;
-    ariaLabel?: string;
-    searchPlaceholder?: string;
-    clearSearchLabel?: string;
-    noResultsLabel?: string;
-  }>(),
-  {
-    modelValue: '',
-    placeholder: 'Select...',
-    searchable: false,
-    disabled: false,
-    ariaLabel: undefined,
-    searchPlaceholder: 'Search...',
-    clearSearchLabel: 'Clear search',
-    noResultsLabel: 'No results found',
-  }
-);
+const {
+  options,
+  modelValue = '',
+  placeholder = 'Select...',
+  searchable = false,
+  disabled = false,
+  searchPlaceholder = 'Search...',
+  clearSearchLabel = 'Clear search',
+  noResultsLabel = 'No results found',
+} = defineProps<{
+  options: FilterItem[];
+  modelValue?: string;
+  placeholder?: string;
+  searchable?: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
+  searchPlaceholder?: string;
+  clearSearchLabel?: string;
+  noResultsLabel?: string;
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
@@ -190,14 +187,12 @@ function isSeparator(item: FilterItem): item is FilterSeparator {
   return 'type' in item && item.type === 'separator';
 }
 
-const plainOptions = computed(() =>
-  props.options.filter((o): o is FilterOption => !isSeparator(o))
-);
+const plainOptions = computed(() => options.filter((o): o is FilterOption => !isSeparator(o)));
 
-const selectedOption = computed(() => plainOptions.value.find((o) => o.value === props.modelValue));
+const selectedOption = computed(() => plainOptions.value.find((o) => o.value === modelValue));
 
 const filteredItems = computed<FilterItem[]>(() => {
-  if (!props.searchable || !searchQuery.value.trim()) return props.options;
+  if (!searchable || !searchQuery.value.trim()) return options;
   const query = searchQuery.value.toLowerCase().trim();
   return plainOptions.value.filter(
     (o) => o.label.toLowerCase().includes(query) || o.description?.toLowerCase().includes(query)
@@ -254,13 +249,13 @@ function updatePanelPosition() {
 }
 
 function open() {
-  if (props.disabled) return;
+  if (disabled) return;
   updatePanelPosition();
   isOpen.value = true;
-  focusedIndex.value = props.modelValue
-    ? visibleItems.value.findIndex((o) => !isSeparator(o) && o.value === props.modelValue)
+  focusedIndex.value = modelValue
+    ? visibleItems.value.findIndex((o) => !isSeparator(o) && o.value === modelValue)
     : -1;
-  if (props.searchable) {
+  if (searchable) {
     nextTick(() => searchInputRef.value?.focus());
   }
 }
@@ -411,11 +406,11 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   () => {
     if (isOpen.value) {
       focusedIndex.value = visibleItems.value.findIndex(
-        (o) => !isSeparator(o) && o.value === props.modelValue
+        (o) => !isSeparator(o) && o.value === modelValue
       );
     }
   }

@@ -10,7 +10,7 @@ import type {
   DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
 
-const props = defineProps<{
+const { currentTab, filters, chips, repoSuggestions, authorSuggestions } = defineProps<{
   currentTab: DashboardFilterSource;
   filters: DashboardRouteFilters;
   chips: DashboardFilterChip[];
@@ -27,21 +27,19 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 // ─── Repo pill (autocomplete) ──────────────────────────────────
-const repoValue = computed(() => props.filters.repo ?? '');
-const repoActive = computed(() => Boolean(props.filters.repo));
-const repoSuggestionsMapped = computed(() =>
-  (props.repoSuggestions ?? []).map((r) => ({ value: r }))
-);
+const repoValue = computed(() => filters.repo ?? '');
+const repoActive = computed(() => Boolean(filters.repo));
+const repoSuggestionsMapped = computed(() => (repoSuggestions ?? []).map((r) => ({ value: r })));
 
 const handleRepoChange = (value: string) => {
   emit('update', { repo: value || undefined });
 };
 
 // ─── Author pill (autocomplete) ────────────────────────────────
-const authorValue = computed(() => props.filters.author ?? '');
-const authorActive = computed(() => Boolean(props.filters.author));
+const authorValue = computed(() => filters.author ?? '');
+const authorActive = computed(() => Boolean(filters.author));
 const authorSuggestionsMapped = computed(() =>
-  (props.authorSuggestions ?? []).map((a) => ({ value: a }))
+  (authorSuggestions ?? []).map((a) => ({ value: a }))
 );
 
 const handleAuthorChange = (value: string) => {
@@ -53,7 +51,7 @@ const chipValueLabel = (chip: DashboardFilterChip) => {
   return chip.labelValue.startsWith('dashboard.') ? t(chip.labelValue) : chip.labelValue;
 };
 
-const hasMultipleFilters = computed(() => props.chips.length >= 2);
+const hasMultipleFilters = computed(() => chips.length >= 2);
 const advancedFilterKeys = new Set<DashboardFilterChip['key']>([
   'labels',
   'subjectType',
@@ -67,17 +65,13 @@ const advancedFilterKeys = new Set<DashboardFilterChip['key']>([
 const segmentedControlKeys = new Set<DashboardFilterChip['key']>(['state']);
 
 const primaryChips = computed(() =>
-  props.chips.filter(
-    (chip) => !advancedFilterKeys.has(chip.key) && !segmentedControlKeys.has(chip.key)
-  )
+  chips.filter((chip) => !advancedFilterKeys.has(chip.key) && !segmentedControlKeys.has(chip.key))
 );
 const advancedChips = computed(() =>
-  props.chips.filter(
-    (chip) => advancedFilterKeys.has(chip.key) && !segmentedControlKeys.has(chip.key)
-  )
+  chips.filter((chip) => advancedFilterKeys.has(chip.key) && !segmentedControlKeys.has(chip.key))
 );
 
-const showPills = computed(() => props.currentTab !== 'repos');
+const showPills = computed(() => currentTab !== 'repos');
 </script>
 
 <template>

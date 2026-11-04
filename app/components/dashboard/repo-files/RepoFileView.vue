@@ -47,7 +47,7 @@ interface VisibleTreeRow {
   collapsePath: string;
 }
 
-const props = defineProps<{
+const { owner, repo } = defineProps<{
   owner: string;
   repo: string;
 }>();
@@ -101,7 +101,7 @@ const refreshState = useRefreshableView({
   refresh: retry,
   checkFreshness: fetchContentFreshness,
   freshnessKey: currentRefreshKey,
-  enabled: computed(() => Boolean(props.owner && props.repo)),
+  enabled: computed(() => Boolean(owner && repo)),
 });
 const {
   hasNewContent: refreshHasNewContent,
@@ -117,12 +117,7 @@ const treeScrollPositions = useState<Record<string, number>>(
 const treeRequestId = ref(0);
 
 const treeScrollKey = computed(() =>
-  [
-    'repo-tree',
-    props.owner,
-    props.repo,
-    currentBranch.value || defaultBranch.value || 'default',
-  ].join(':')
+  ['repo-tree', owner, repo, currentBranch.value || defaultBranch.value || 'default'].join(':')
 );
 const currentBranchQueryValue = computed(() => {
   return canonicalBranch.value && canonicalBranch.value !== defaultBranch.value
@@ -528,7 +523,7 @@ const loadTreeChildren = async (node: FolderTreeNode) => {
     const branch = canonicalBranch.value;
     const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : '';
     const response = await apiFetch<RepoContentItem[]>(
-      `/api/repos/${props.owner}/${props.repo}/contents/${encodedPath}${refQuery}`
+      `/api/repos/${owner}/${repo}/contents/${encodedPath}${refQuery}`
     );
 
     if (Array.isArray(response)) {
@@ -582,7 +577,7 @@ const loadRootTree = async () => {
     const branch = canonicalBranch.value;
     const refQuery = branch ? `?ref=${encodeURIComponent(branch)}` : '';
     const response = await apiFetch<RepoContentItem[]>(
-      `/api/repos/${props.owner}/${props.repo}/contents${refQuery}`
+      `/api/repos/${owner}/${repo}/contents${refQuery}`
     );
 
     if (requestId !== treeRequestId.value) return;
@@ -712,9 +707,7 @@ const goHome = async () => {
 const openRepoOnGitHub = () => {
   if (!opensGitHubLinks.value) return false;
 
-  openGitHubTarget(
-    createDashboardRepositoryTarget(props.owner, props.repo, currentBranchQueryValue.value)
-  );
+  openGitHubTarget(createDashboardRepositoryTarget(owner, repo, currentBranchQueryValue.value));
   return true;
 };
 
@@ -723,7 +716,7 @@ const navigateToRepoDetail = async () => {
 
   const query: LocationQueryRaw = {
     tab: 'repos',
-    repo: `${props.owner}/${props.repo}`,
+    repo: `${owner}/${repo}`,
     branch: currentBranchQueryValue.value,
   };
   await router.push({ path: localePath('/dashboard'), query });
@@ -741,7 +734,7 @@ const openFilePath = async (path: string, view: GitHubFileDashboardView) => {
   }
 
   openGitHubTarget(
-    createDashboardFileTarget(props.owner, props.repo, path, {
+    createDashboardFileTarget(owner, repo, path, {
       branch: canonicalBranch.value,
       view,
     })

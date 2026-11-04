@@ -7,7 +7,7 @@ import { toFollowedRepository } from '#shared/utils/release-follows';
 import RepoItem from '~/components/dashboard/RepoItem.vue';
 import type { StarredRepo } from '~/composables/useStarredRepos';
 
-const props = defineProps<{
+const { repo, followed, addBlock } = defineProps<{
   repo: StarredRepo;
   followed: boolean;
   addBlock: 'valid-cap' | 'stored-cap' | null;
@@ -21,27 +21,27 @@ const { t } = useI18n();
 
 const followedIdentity = computed(() => {
   return toFollowedRepository({
-    id: props.repo.node_id,
-    owner: props.repo.owner?.login,
-    name: props.repo.name,
+    id: repo.node_id,
+    owner: repo.owner?.login,
+    name: repo.name,
   });
 });
 
 const canToggle = computed(() => {
   if (!followedIdentity.value) return false;
-  if (props.followed) return true;
-  return props.addBlock === null;
+  if (followed) return true;
+  return addBlock === null;
 });
 
 const badgeLabel = computed(() => {
-  const fullName = `${props.repo.owner?.login ?? ''}/${props.repo.name}`;
-  if (props.followed) {
+  const fullName = `${repo.owner?.login ?? ''}/${repo.name}`;
+  if (followed) {
     return t('releaseFollows.unfollow', { repo: fullName });
   }
-  if (props.addBlock === 'stored-cap') {
+  if (addBlock === 'stored-cap') {
     return t('releaseFollows.storedCap');
   }
-  if (props.addBlock === 'valid-cap') {
+  if (addBlock === 'valid-cap') {
     return t('releaseFollows.validCap');
   }
   return t('releaseFollows.follow', { repo: fullName });

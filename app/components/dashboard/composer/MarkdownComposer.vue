@@ -19,27 +19,27 @@ import AutocompleteMenu from '~/components/ui/AutocompleteMenu.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = withDefaults(
-  defineProps<{
-    surface: ComposerSurface;
-    repoOwner: string;
-    repoName: string;
-    placeholder?: string;
-    disabled?: boolean;
-    compact?: boolean;
-    autofocus?: boolean;
-    expanded?: boolean;
-    reviewWorkspaceMode?: ComposerLayoutContext['reviewWorkspaceMode'];
-  }>(),
-  {
-    placeholder: undefined,
-    disabled: false,
-    compact: false,
-    autofocus: false,
-    expanded: true,
-    reviewWorkspaceMode: undefined,
-  }
-);
+const {
+  surface,
+  repoOwner,
+  repoName,
+  placeholder,
+  disabled = false,
+  compact = false,
+  autofocus = false,
+  expanded = true,
+  reviewWorkspaceMode,
+} = defineProps<{
+  surface: ComposerSurface;
+  repoOwner: string;
+  repoName: string;
+  placeholder?: string;
+  disabled?: boolean;
+  compact?: boolean;
+  autofocus?: boolean;
+  expanded?: boolean;
+  reviewWorkspaceMode?: ComposerLayoutContext['reviewWorkspaceMode'];
+}>();
 
 const draft = defineModel<string>({ default: '' });
 
@@ -57,9 +57,9 @@ const mentionListboxId = `${mentionComponentId}-mentions`;
 
 const { layout, activePane, switchable, bleed, seedLayout, toggleLayout, setActivePane } =
   useComposerPresentation({
-    surface: () => props.surface,
-    expanded: () => props.expanded,
-    reviewWorkspaceMode: () => props.reviewWorkspaceMode,
+    surface: () => surface,
+    expanded: () => expanded,
+    reviewWorkspaceMode: () => reviewWorkspaceMode,
   });
 
 const mentionTrigger = shallowRef<MarkdownMentionTrigger | null>(null);
@@ -77,11 +77,7 @@ const trimmedDraft = computed(() => draft.value.trim());
 const writeVisible = computed(() => layout.value === 'split' || activePane.value === 'write');
 const previewVisible = computed(() => layout.value === 'split' || activePane.value === 'preview');
 const mentionOpen = computed(
-  () =>
-    Boolean(mentionTrigger.value) &&
-    mentionAnchorReady.value &&
-    writeVisible.value &&
-    !props.disabled
+  () => Boolean(mentionTrigger.value) && mentionAnchorReady.value && writeVisible.value && !disabled
 );
 const mentionEmptyMessage = computed(() =>
   mentionLoadFailed.value
@@ -91,11 +87,9 @@ const mentionEmptyMessage = computed(() =>
 const mentionMenuLoading = computed(
   () => mentionLoading.value && mentionSuggestions.value.length === 0 && !mentionLoadFailed.value
 );
-const resolvedPlaceholder = computed(
-  () => props.placeholder || t('floatingMarkdownEditor.placeholder')
-);
+const resolvedPlaceholder = computed(() => placeholder || t('floatingMarkdownEditor.placeholder'));
 const composerClass = computed(() => ({
-  'markdown-composer--compact': props.compact,
+  'markdown-composer--compact': compact,
   'markdown-composer--split': layout.value === 'split',
   'markdown-composer--tabbed': layout.value === 'tabbed',
 }));
@@ -108,9 +102,7 @@ const MENTION_PANEL_MAX_HEIGHT = 280;
 const MENTION_PANEL_MIN_HEIGHT = 120;
 
 const getMentionSuggestionsUrl = () =>
-  `/api/repos/${encodeURIComponent(props.repoOwner)}/${encodeURIComponent(
-    props.repoName
-  )}/mention-suggestions`;
+  `/api/repos/${encodeURIComponent(repoOwner)}/${encodeURIComponent(repoName)}/mention-suggestions`;
 
 const closeMentionAutocomplete = () => {
   mentionTrigger.value = null;
@@ -202,7 +194,7 @@ const scheduleMentionSearch = (query: string) => {
 
 const refreshMentionTrigger = () => {
   const el = textareaRef.value;
-  if (!el || !writeVisible.value || props.disabled) {
+  if (!el || !writeVisible.value || disabled) {
     closeMentionAutocomplete();
     return;
   }
@@ -389,18 +381,18 @@ watch(activePane, async (pane) => {
 });
 
 watch(
-  () => [props.repoOwner, props.repoName],
+  () => [repoOwner, repoName],
   () => {
     closeMentionAutocomplete();
     mentionSuggestions.value = [];
   }
 );
 
-if (props.autofocus) {
+if (autofocus) {
   void focus();
 }
 
-if (props.compact || layout.value === 'tabbed') {
+if (compact || layout.value === 'tabbed') {
   void nextTick().then(() => autoResizeTextarea());
 }
 

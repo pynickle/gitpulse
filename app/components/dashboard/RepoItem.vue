@@ -79,7 +79,7 @@ interface RepositoryListItem {
   };
 }
 
-const props = defineProps<{
+const { repo } = defineProps<{
   repo: RepositoryListItem;
 }>();
 
@@ -97,14 +97,14 @@ const fullCountTitle = (value?: number | null) => {
   return count.toLocaleString(locale.value);
 };
 
-const repoOwner = computed(() => props.repo.owner?.login ?? '');
+const repoOwner = computed(() => repo.owner?.login ?? '');
 
 const openRepositoryLabel = computed(() => {
-  return t('repoItem.openRepository', { repo: `${repoOwner.value}/${props.repo.name}` });
+  return t('repoItem.openRepository', { repo: `${repoOwner.value}/${repo.name}` });
 });
 
 const repoTarget = computed(() => {
-  return repoOwner.value ? createDashboardRepositoryTarget(repoOwner.value, props.repo.name) : null;
+  return repoOwner.value ? createDashboardRepositoryTarget(repoOwner.value, repo.name) : null;
 });
 
 const detailPath = computed(() => {
@@ -112,7 +112,7 @@ const detailPath = computed(() => {
     path: '/dashboard',
     query: {
       tab: 'repos',
-      repo: `${repoOwner.value}/${props.repo.name}`,
+      repo: `${repoOwner.value}/${repo.name}`,
     },
   });
 });
@@ -123,7 +123,7 @@ const preferredHref = computed(() => {
 });
 
 const languageColor = computed(() => {
-  return getLanguageColor(props.repo.language);
+  return getLanguageColor(repo.language);
 });
 </script>
 

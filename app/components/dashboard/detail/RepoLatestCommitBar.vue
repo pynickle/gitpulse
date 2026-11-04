@@ -11,7 +11,7 @@ import type { RepoLatestCommitPayload } from '#shared/types/repos';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const props = defineProps<{
+const { commit } = defineProps<{
   commit: RepoLatestCommitPayload | null;
   loading: boolean;
   error: string | null;
@@ -29,19 +29,19 @@ const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
 const authorLabel = computed(() => {
-  const author = props.commit?.author;
+  const author = commit?.author;
   if (!author) return '';
   return author.login || author.name || t('repoDetail.unknownAuthor');
 });
 
 const relativeTime = computed(() => {
-  const at = props.commit?.committedAt;
+  const at = commit?.committedAt;
   if (!at) return '';
   return formatDurationFromNow(at, localeCode.value, relativeTimeNow.value);
 });
 
 const authorProfileUrl = computed(() => {
-  const login = props.commit?.author?.login;
+  const login = commit?.author?.login;
   return login ? `https://github.com/${login}` : null;
 });
 </script>

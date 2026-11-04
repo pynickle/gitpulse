@@ -47,7 +47,33 @@ interface DetailSummary {
 
 type DetailSummaryContent = Omit<DetailSummary, 'visible'>;
 
-const props = defineProps<{
+const {
+  issue,
+  pullRequest,
+  discussion,
+  release,
+  repository,
+  issueError,
+  pullRequestError,
+  discussionError,
+  releaseError,
+  repoError,
+  isIssueVisible,
+  isPullRequestVisible,
+  isDiscussionVisible,
+  isReleaseVisible,
+  isRepositoryVisible,
+  issueDetailKey,
+  pullRequestDetailKey,
+  discussionDetailKey,
+  releaseDetailKey,
+  repositoryDetailKey,
+  loadingIssue,
+  loadingPullRequest,
+  loadingDiscussion,
+  loadingRelease,
+  loadingRepository,
+} = defineProps<{
   issue: IssueDetailPayload | null;
   pullRequest: PullRequestDetailViewModel | null;
   discussion: DiscussionDetailPayload | null;
@@ -107,57 +133,57 @@ const ReleaseDetail = defineAsyncComponent(loadReleaseDetail);
 const RepoDetail = defineAsyncComponent(loadRepoDetail);
 
 const activeDetailPane = computed<ActiveDetailPane | null>(() => {
-  if (props.isIssueVisible) {
+  if (isIssueVisible) {
     return {
       type: 'issue',
-      key: props.issueDetailKey,
-      loading: props.loadingIssue,
-      hasData: Boolean(props.issue),
-      error: props.issueError,
+      key: issueDetailKey,
+      loading: loadingIssue,
+      hasData: Boolean(issue),
+      error: issueError,
       loadingTitle: t('detailOverlay.loading.issue'),
     };
   }
 
-  if (props.isPullRequestVisible) {
+  if (isPullRequestVisible) {
     return {
       type: 'pull-request',
-      key: props.pullRequestDetailKey,
-      loading: props.loadingPullRequest,
-      hasData: Boolean(props.pullRequest),
-      error: props.pullRequestError,
+      key: pullRequestDetailKey,
+      loading: loadingPullRequest,
+      hasData: Boolean(pullRequest),
+      error: pullRequestError,
       loadingTitle: t('detailOverlay.loading.pullRequest'),
     };
   }
 
-  if (props.isDiscussionVisible) {
+  if (isDiscussionVisible) {
     return {
       type: 'discussion',
-      key: props.discussionDetailKey,
-      loading: props.loadingDiscussion,
-      hasData: Boolean(props.discussion),
-      error: props.discussionError,
+      key: discussionDetailKey,
+      loading: loadingDiscussion,
+      hasData: Boolean(discussion),
+      error: discussionError,
       loadingTitle: t('discussionDetail.loading'),
     };
   }
 
-  if (props.isReleaseVisible) {
+  if (isReleaseVisible) {
     return {
       type: 'release',
-      key: props.releaseDetailKey,
-      loading: props.loadingRelease,
-      hasData: Boolean(props.release),
-      error: props.releaseError,
+      key: releaseDetailKey,
+      loading: loadingRelease,
+      hasData: Boolean(release),
+      error: releaseError,
       loadingTitle: t('releaseDetail.loading'),
     };
   }
 
-  if (props.isRepositoryVisible) {
+  if (isRepositoryVisible) {
     return {
       type: 'repository',
-      key: props.repositoryDetailKey,
-      loading: props.loadingRepository,
-      hasData: Boolean(props.repository),
-      error: props.repoError,
+      key: repositoryDetailKey,
+      loading: loadingRepository,
+      hasData: Boolean(repository),
+      error: repoError,
       loadingTitle: t('detailOverlay.loading.repository'),
     };
   }
@@ -230,12 +256,12 @@ const detailSidebarPaneIdentity = computed(() => {
 });
 
 const repositoryOwner = computed(() => {
-  const owner = props.repository?.owner;
+  const owner = repository?.owner;
   return owner && typeof owner === 'object' && 'login' in owner ? String(owner.login || '') : '';
 });
 
 const repositoryName = computed(() => {
-  return typeof props.repository?.name === 'string' ? props.repository.name : '';
+  return typeof repository?.name === 'string' ? repository.name : '';
 });
 
 const isContentLoading = computed(() => {
@@ -266,11 +292,11 @@ const detailSummary = computed<DetailSummary | null>(() => {
   const pane = activeDetailPane.value;
   if (!pane) return null;
 
-  if (pane.type === 'issue' && props.issue) {
-    const state = props.issue.state || 'closed';
+  if (pane.type === 'issue' && issue) {
+    const state = issue.state || 'closed';
     return {
-      title: props.issue.title,
-      number: props.issue.number,
+      title: issue.title,
+      number: issue.number,
       state,
       stateTone: getStateTone(state),
       subjectType: 'issue',
@@ -278,11 +304,11 @@ const detailSummary = computed<DetailSummary | null>(() => {
     };
   }
 
-  if (pane.type === 'pull-request' && props.pullRequest) {
-    const fallbackState = getPullRequestState(props.pullRequest);
+  if (pane.type === 'pull-request' && pullRequest) {
+    const fallbackState = getPullRequestState(pullRequest);
     const summary = pullRequestCompactSummary.value ?? {
-      title: props.pullRequest.title,
-      number: props.pullRequest.number,
+      title: pullRequest.title,
+      number: pullRequest.number,
       state: fallbackState,
       stateTone: getStateTone(fallbackState),
     };
@@ -294,11 +320,11 @@ const detailSummary = computed<DetailSummary | null>(() => {
     };
   }
 
-  if (pane.type === 'discussion' && props.discussion) {
-    const isAnswered = props.discussion.isAnswered;
+  if (pane.type === 'discussion' && discussion) {
+    const isAnswered = discussion.isAnswered;
     return {
-      title: props.discussion.title || t('discussionDetail.titleFallback'),
-      number: props.discussion.number,
+      title: discussion.title || t('discussionDetail.titleFallback'),
+      number: discussion.number,
       state: isAnswered ? 'answered' : 'unanswered',
       stateTone: isAnswered ? 'answered' : 'unanswered',
       subjectType: 'discussion',

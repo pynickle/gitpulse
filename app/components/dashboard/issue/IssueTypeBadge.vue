@@ -13,20 +13,14 @@ import { computed } from 'vue';
 
 import { resolveIssueTypeColor } from '~/utils/issueTypeColor';
 
-const props = withDefaults(
-  defineProps<{
-    name: string;
-    color?: string | null;
-    variant?: 'underline' | 'tag';
-  }>(),
-  {
-    color: null,
-    variant: 'underline',
-  }
-);
+const { color = null, variant = 'underline' } = defineProps<{
+  name: string;
+  color?: string | null;
+  variant?: 'underline' | 'tag';
+}>();
 
 const badgeStyle = computed(() => ({
-  '--issue-type-color': resolveIssueTypeColor(props.color),
+  '--issue-type-color': resolveIssueTypeColor(color),
 }));
 </script>
 

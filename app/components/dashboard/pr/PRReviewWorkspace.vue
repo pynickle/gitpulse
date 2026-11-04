@@ -16,7 +16,7 @@ import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.v
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
 import { shouldCloseReviewWorkspaceAfterSubmit } from '~/utils/prReviewNavigation';
 
-const props = defineProps<{
+const { owner, repo, pullNumber, commitId, title, changedFiles } = defineProps<{
   owner: string;
   repo: string;
   pullNumber: number;
@@ -40,9 +40,9 @@ const handleReviewSubmitted = () => {
   if (
     shouldCloseReviewWorkspaceAfterSubmit({
       previousEntry: previousEntry.value,
-      owner: props.owner,
-      repo: props.repo,
-      pullNumber: props.pullNumber,
+      owner: owner,
+      repo: repo,
+      pullNumber: pullNumber,
     })
   ) {
     emit('close');
@@ -50,10 +50,10 @@ const handleReviewSubmitted = () => {
 };
 
 const review = usePRReview({
-  owner: () => props.owner,
-  repo: () => props.repo,
-  pullNumber: () => props.pullNumber,
-  commitId: () => props.commitId,
+  owner: () => owner,
+  repo: () => repo,
+  pullNumber: () => pullNumber,
+  commitId: () => commitId,
   messages: {
     loadFailed: t('prReview.loadFailed'),
     submitFailed: t('prReview.submitFailed'),
@@ -67,11 +67,11 @@ const hasFiles = computed(() => review.files.value.length > 0);
 const fileCount = computed(() =>
   resolveReviewFileCount({
     loadedCount: review.files.value.length,
-    changedFiles: props.changedFiles ?? null,
+    changedFiles: changedFiles ?? null,
   })
 );
 const hasMoreFiles = computed(() => review.pagination.value.hasNext);
-const workspaceTitle = computed(() => props.title || t('prReview.untitledPullRequest'));
+const workspaceTitle = computed(() => title || t('prReview.untitledPullRequest'));
 const fileViewMode = shallowRef<'list' | 'tree'>('tree');
 const sidebarCollapsed = shallowRef(false);
 const reviewPanelCollapsed = shallowRef(true);

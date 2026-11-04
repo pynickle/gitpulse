@@ -21,14 +21,15 @@ import {
   getDashboardSubjectTypeVisual,
 } from '~/utils/getDashboardSubjectStateVisual';
 
-const props = defineProps<{
-  open: boolean;
-  currentTab: DashboardFilterSource;
-  filters: DashboardRouteFilters;
-  repoSuggestions?: string[] | AutocompleteSuggestion[];
-  authorSuggestions?: string[] | AutocompleteSuggestion[];
-  labelSuggestions?: string[];
-}>();
+const { open, currentTab, filters, repoSuggestions, authorSuggestions, labelSuggestions } =
+  defineProps<{
+    open: boolean;
+    currentTab: DashboardFilterSource;
+    filters: DashboardRouteFilters;
+    repoSuggestions?: string[] | AutocompleteSuggestion[];
+    authorSuggestions?: string[] | AutocompleteSuggestion[];
+    labelSuggestions?: string[];
+  }>();
 
 const emit = defineEmits<{
   close: [];
@@ -44,20 +45,17 @@ const localFilters = ref<DashboardRouteFilters>({ labels: [] });
 const advancedOpen = shallowRef(false);
 
 const repoItems = computed<AutocompleteSuggestion[]>(() =>
-  (props.repoSuggestions ?? []).map((s) => (typeof s === 'string' ? { value: s } : s))
+  (repoSuggestions ?? []).map((s) => (typeof s === 'string' ? { value: s } : s))
 );
 
 const authorItems = computed<AutocompleteSuggestion[]>(() =>
-  (props.authorSuggestions ?? []).map((s) => (typeof s === 'string' ? { value: s } : s))
+  (authorSuggestions ?? []).map((s) => (typeof s === 'string' ? { value: s } : s))
 );
 
-const labelItems = computed(() =>
-  (props.labelSuggestions ?? []).map((label) => ({ value: label }))
-);
+const labelItems = computed(() => (labelSuggestions ?? []).map((label) => ({ value: label })));
 
-const isTodoTab = computed(() => props.currentTab === 'todos');
-const supportsFilter = (key: DashboardFilterKey) =>
-  sourceSupportsDashboardFilter(props.currentTab, key);
+const isTodoTab = computed(() => currentTab === 'todos');
+const supportsFilter = (key: DashboardFilterKey) => sourceSupportsDashboardFilter(currentTab, key);
 const showsIssuePrAdvancedFilters = computed(() => {
   return (
     supportsFilter('labels') ||
@@ -69,13 +67,13 @@ const showsIssuePrAdvancedFilters = computed(() => {
 });
 
 const stateOptions = computed<SegmentedOption[]>(() => {
-  if (props.currentTab === 'notifications') {
+  if (currentTab === 'notifications') {
     return [
       { value: '', label: t('dashboard.filters.options.all') },
       { value: 'unread', label: t('dashboard.filters.options.unread') },
     ];
   }
-  if (props.currentTab === 'pulls') {
+  if (currentTab === 'pulls') {
     return [
       { value: '', label: t('dashboard.filters.options.open') },
       { value: 'closed', label: t('dashboard.filters.options.closed') },
@@ -83,7 +81,7 @@ const stateOptions = computed<SegmentedOption[]>(() => {
       { value: 'all', label: t('dashboard.filters.options.all') },
     ];
   }
-  if (props.currentTab === 'issues') {
+  if (currentTab === 'issues') {
     return [
       { value: '', label: t('dashboard.filters.options.open') },
       { value: 'closed', label: t('dashboard.filters.options.closed') },
@@ -145,7 +143,7 @@ const clearLocalFilters = () => {
 };
 
 watch(
-  () => props.open,
+  () => open,
   async (open) => {
     if (!import.meta.client) return;
 
@@ -156,8 +154,8 @@ watch(
     }
 
     localFilters.value = {
-      ...props.filters,
-      labels: [...props.filters.labels],
+      ...filters,
+      labels: [...filters.labels],
     };
 
     focusTrap.capturePreviousFocus();

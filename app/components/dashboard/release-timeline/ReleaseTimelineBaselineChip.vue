@@ -2,18 +2,18 @@
 import { ClockIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
-const props = defineProps<{
+const { baseline } = defineProps<{
   baseline: string;
 }>();
 
 const { t } = useI18n();
 const label = computed(() =>
   t('releaseTimeline.previousRefresh', {
-    time: new Date(props.baseline).toLocaleString(),
+    time: new Date(baseline).toLocaleString(),
   })
 );
 const time = computed(() => {
-  const date = new Date(props.baseline);
+  const date = new Date(baseline);
   if (Number.isNaN(date.getTime())) return '';
   const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();

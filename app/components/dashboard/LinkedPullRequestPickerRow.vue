@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 import type { LinkedPullRequestPickerRow } from '#shared/types/linked-pull-requests';
 
-const props = defineProps<{
+const { row } = defineProps<{
   row: LinkedPullRequestPickerRow;
 }>();
 
@@ -17,35 +17,30 @@ const relativeTimeNow = useRelativeTimeNow();
 
 const visual = computed(() =>
   getPullRequestStateVisual({
-    state:
-      props.row.state === 'merged'
-        ? 'closed'
-        : props.row.state === 'draft'
-          ? 'open'
-          : props.row.state,
-    merged: props.row.state === 'merged',
-    draft: props.row.state === 'draft',
+    state: row.state === 'merged' ? 'closed' : row.state === 'draft' ? 'open' : row.state,
+    merged: row.state === 'merged',
+    draft: row.state === 'draft',
   })
 );
 
 const stateLabel = computed(() => {
-  if (props.row.state === 'draft') return t('dashboard.linkedPullRequests.stateDraft');
-  if (props.row.state === 'merged') return t('dashboard.linkedPullRequests.stateMerged');
-  if (props.row.state === 'closed') return t('dashboard.linkedPullRequests.stateClosed');
+  if (row.state === 'draft') return t('dashboard.linkedPullRequests.stateDraft');
+  if (row.state === 'merged') return t('dashboard.linkedPullRequests.stateMerged');
+  if (row.state === 'closed') return t('dashboard.linkedPullRequests.stateClosed');
   return t('dashboard.linkedPullRequests.stateOpen');
 });
 
 const accessibleName = computed(() => {
-  const parts = [props.row.title, `#${props.row.number}`, stateLabel.value];
-  if (props.row.showRepository) {
-    parts.push(`${props.row.owner}/${props.row.repo}`);
+  const parts = [row.title, `#${row.number}`, stateLabel.value];
+  if (row.showRepository) {
+    parts.push(`${row.owner}/${row.repo}`);
   }
   return parts.filter(Boolean).join(', ');
 });
 
 const updatedLabel = computed(() => {
-  if (!props.row.updatedAt) return '';
-  return formatDurationFromNow(props.row.updatedAt, localeCode.value, relativeTimeNow.value);
+  if (!row.updatedAt) return '';
+  return formatDurationFromNow(row.updatedAt, localeCode.value, relativeTimeNow.value);
 });
 </script>
 

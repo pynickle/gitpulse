@@ -38,10 +38,10 @@
         class="floating-markdown-editor__capsule-avatar"
       />
       <span class="floating-markdown-editor__capsule-placeholder has-text-grey">
-        {{ placeholder }}
+        {{ placeholderText }}
       </span>
       <span class="button is-link is-small floating-markdown-editor__capsule-submit">
-        {{ submitLabel }}
+        {{ submitLabelText }}
       </span>
     </button>
 
@@ -70,7 +70,7 @@
           :surface="composerSurface"
           :repo-owner="repoOwner"
           :repo-name="repoName"
-          :placeholder="placeholder"
+          :placeholder="placeholderText"
           :disabled="isSubmitting"
           :compact="compact"
           :autofocus="autofocus || isExpanded"
@@ -113,7 +113,7 @@
               :disabled="isSubmitting || !trimmedDraft || !canSubmit"
               @click="handleSubmit"
             >
-              {{ isSubmitting ? submittingLabel : submitLabel }}
+              {{ isSubmitting ? submittingLabelText : submitLabelText }}
             </button>
           </div>
         </div>
@@ -167,32 +167,31 @@ type TimelineCommentItem = {
 
 type SubmitHandler = (body: string) => Promise<void>;
 
-const props = withDefaults(
-  defineProps<{
-    repoOwner: string;
-    repoName: string;
-    itemNumber?: number | null;
-    submit?: SubmitHandler | null;
-    placeholder?: string;
-    submitLabel?: string;
-    submittingLabel?: string;
-    modelValue?: string;
-    compact?: boolean;
-    autofocus?: boolean;
-    submitting?: boolean;
-  }>(),
-  {
-    itemNumber: null,
-    submit: null,
-    placeholder: undefined,
-    submitLabel: undefined,
-    submittingLabel: undefined,
-    modelValue: undefined,
-    compact: false,
-    autofocus: false,
-    submitting: false,
-  }
-);
+const {
+  repoOwner,
+  repoName,
+  itemNumber = null,
+  submit = null,
+  placeholder,
+  submitLabel,
+  submittingLabel,
+  modelValue,
+  compact = false,
+  autofocus = false,
+  submitting = false,
+} = defineProps<{
+  repoOwner: string;
+  repoName: string;
+  itemNumber?: number | null;
+  submit?: SubmitHandler | null;
+  placeholder?: string;
+  submitLabel?: string;
+  submittingLabel?: string;
+  modelValue?: string;
+  compact?: boolean;
+  autofocus?: boolean;
+  submitting?: boolean;
+}>();
 
 const emit = defineEmits<{
   (e: 'comment-created', item: TimelineCommentItem): void;
@@ -213,11 +212,11 @@ const placeholderRef = useTemplateRef<HTMLElement>('placeholderRef');
 const panelRef = useTemplateRef<HTMLElement>('panelRef');
 const isExpanded = shallowRef(false);
 const internalSubmitting = shallowRef(false);
-const draft = shallowRef(props.modelValue ?? '');
+const draft = shallowRef(modelValue ?? '');
 const errorMessage = shallowRef('');
 const { settings } = useUserSettings();
 const composerSurface = computed<ComposerSurface>(() =>
-  props.compact ? 'conversation-reply' : 'conversation-sticky'
+  compact ? 'conversation-reply' : 'conversation-sticky'
 );
 
 const seedBleedFromSettings = () => {
@@ -238,7 +237,7 @@ const seedBleedFromSettings = () => {
 const composerBleed = shallowRef(false);
 seedBleedFromSettings();
 
-const isBleeding = computed(() => composerBleed.value && !props.compact && isExpanded.value);
+const isBleeding = computed(() => composerBleed.value && !compact && isExpanded.value);
 const {
   bleedStyle,
   panelHeight: bleedPanelHeight,
@@ -252,24 +251,24 @@ const {
 const trimmedDraft = computed(() => draft.value.trim());
 const currentUserLogin = computed(() => user.value?.login || '');
 const currentUserAvatar = computed(() => user.value?.avatar_url || '');
-const isSelfSubmitMode = computed(() => props.itemNumber != null);
-const isCallbackMode = computed(() => props.submit != null);
+const isSelfSubmitMode = computed(() => itemNumber != null);
+const isCallbackMode = computed(() => submit != null);
 const canSubmit = computed(() => {
   if (isSelfSubmitMode.value) {
-    return Boolean(props.repoOwner && props.repoName && props.itemNumber);
+    return Boolean(repoOwner && repoName && itemNumber);
   }
   return isCallbackMode.value;
 });
 const isSubmitting = computed(() => {
   if (isCallbackMode.value) {
-    return props.submitting;
+    return submitting;
   }
   return internalSubmitting.value;
 });
-const placeholder = computed(() => props.placeholder || t('floatingMarkdownEditor.placeholder'));
-const submitLabel = computed(() => props.submitLabel || t('floatingMarkdownEditor.submit'));
-const submittingLabel = computed(
-  () => props.submittingLabel || t('floatingMarkdownEditor.submitting')
+const placeholderText = computed(() => placeholder || t('floatingMarkdownEditor.placeholder'));
+const submitLabelText = computed(() => submitLabel || t('floatingMarkdownEditor.submit'));
+const submittingLabelText = computed(
+  () => submittingLabel || t('floatingMarkdownEditor.submitting')
 );
 
 const setDraft = (value: string) => {
@@ -278,13 +277,13 @@ const setDraft = (value: string) => {
 };
 
 watch(draft, (value) => {
-  if (value !== props.modelValue) {
+  if (value !== modelValue) {
     emit('update:modelValue', value);
   }
 });
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (value) => {
     if (value === undefined || value === draft.value) return;
     draft.value = value;
@@ -330,15 +329,15 @@ const handleSubmit = async () => {
   errorMessage.value = '';
 
   try {
-    if (isSelfSubmitMode.value && props.itemNumber) {
+    if (isSelfSubmitMode.value && itemNumber) {
       await selfSubmit();
-    } else if (isCallbackMode.value && props.submit) {
-      await props.submit(trimmedDraft.value);
+    } else if (isCallbackMode.value && submit) {
+      await submit(trimmedDraft.value);
       emit('submitted');
     }
 
     reset();
-    if (!props.compact) {
+    if (!compact) {
       isExpanded.value = false;
     } else {
       composerRef.value?.seedLayout();
@@ -352,13 +351,13 @@ const handleSubmit = async () => {
 };
 
 const selfSubmit = async () => {
-  if (!props.itemNumber) return;
+  if (!itemNumber) return;
 
   internalSubmitting.value = true;
 
   try {
     const response = await apiFetch<CreatedCommentResponse>(
-      `/api/repos/${props.repoOwner}/${props.repoName}/issues/${props.itemNumber}/comments`,
+      `/api/repos/${repoOwner}/${repoName}/issues/${itemNumber}/comments`,
       {
         method: 'POST',
         body: {
@@ -389,7 +388,7 @@ const selfSubmit = async () => {
   }
 };
 
-if (props.autofocus) {
+if (autofocus) {
   isExpanded.value = true;
   void focus();
 }

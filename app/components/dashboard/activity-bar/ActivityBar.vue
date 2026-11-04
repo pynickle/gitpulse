@@ -110,7 +110,7 @@ interface Group {
   icon?: string;
 }
 
-const props = defineProps<{
+const { groups } = defineProps<{
   userAvatar?: string;
   userName?: string;
   activeGroupId?: string;
@@ -127,7 +127,7 @@ defineEmits<{
 
 const { t } = useI18n();
 
-const activityGroups = computed(() => props.groups ?? []);
+const activityGroups = computed(() => groups ?? []);
 const primaryGroups = computed(() => activityGroups.value.filter((group) => group.id === 'todos'));
 const mainGroups = computed(() => activityGroups.value.filter((group) => group.id !== 'todos'));
 

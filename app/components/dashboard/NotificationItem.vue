@@ -202,22 +202,21 @@ import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import { getDashboardSubjectStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 import { shouldShowNotificationSubjectNumber } from '~/utils/shouldShowNotificationSubjectNumber';
 
-const props = withDefaults(
-  defineProps<{
-    notification: DashboardNotification;
-    markAsRead?: (notification: DashboardNotification) => Promise<boolean> | boolean;
-    todoAction?: 'add' | 'remove';
-    showReason?: boolean;
-    showMarkAsRead?: boolean;
-    forceRead?: boolean;
-  }>(),
-  {
-    todoAction: undefined,
-    showReason: true,
-    showMarkAsRead: true,
-    forceRead: false,
-  }
-);
+const {
+  notification,
+  markAsRead,
+  todoAction,
+  showReason = true,
+  showMarkAsRead = true,
+  forceRead = false,
+} = defineProps<{
+  notification: DashboardNotification;
+  markAsRead?: (notification: DashboardNotification) => Promise<boolean> | boolean;
+  todoAction?: 'add' | 'remove';
+  showReason?: boolean;
+  showMarkAsRead?: boolean;
+  forceRead?: boolean;
+}>();
 
 const emit = defineEmits<{
   'todo-action': [notification: DashboardNotification];
@@ -232,8 +231,8 @@ const markingAsRead = ref(false);
 const isLocallyRead = ref(false);
 
 const currentNotification = computed(() => ({
-  ...props.notification,
-  unread: props.forceRead || isLocallyRead.value ? false : props.notification.unread,
+  ...notification,
+  unread: forceRead || isLocallyRead.value ? false : notification.unread,
 }));
 
 const subject = computed(() => currentNotification.value.subject);
@@ -336,22 +335,16 @@ const showCheckStatusChip = computed(
   () =>
     subject.value?.type === 'PullRequest' && toPullRequestChecksView(checkRollup.value).isVisible
 );
-const showReason = computed(() => props.showReason);
-const showMarkAsRead = computed(() => props.showMarkAsRead);
-const todoAction = computed(() => props.todoAction);
-const showActionColumn = computed(() => showReason.value || Boolean(todoAction.value));
+const showActionColumn = computed(() => showReason || Boolean(todoAction));
 const reasonMarksAsRead = computed(() => {
   return (
-    showReason.value &&
-    showMarkAsRead.value &&
-    Boolean(props.markAsRead) &&
-    Boolean(currentNotification.value.unread)
+    showReason && showMarkAsRead && Boolean(markAsRead) && Boolean(currentNotification.value.unread)
   );
 });
 const markAsReadTitle = computed(() => t('dashboard.notifications.markAsReadAction'));
 const reasonTitle = computed(() => t('dashboard.notifications.reasonAction'));
 const todoActionTitle = computed(() => {
-  return todoAction.value === 'remove'
+  return todoAction === 'remove'
     ? t('dashboard.todos.removeAction')
     : t('dashboard.todos.addAction');
 });
@@ -369,13 +362,12 @@ const subjectStateTitle = computed(() => {
 });
 
 const handleMarkAsRead = async () => {
-  const markAsRead = props.markAsRead;
   if (!markAsRead || markingAsRead.value || !currentNotification.value.unread) return;
 
   markingAsRead.value = true;
 
   try {
-    if (await markAsRead(props.notification)) {
+    if (await markAsRead(notification)) {
       isLocallyRead.value = true;
     }
   } finally {

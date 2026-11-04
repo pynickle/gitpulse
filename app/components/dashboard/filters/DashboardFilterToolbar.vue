@@ -7,7 +7,7 @@ import type {
   DashboardRouteState,
 } from '~/composables/useDashboardFilters';
 
-const props = defineProps<{
+const { currentTab, filters } = defineProps<{
   currentTab: DashboardFilterSource;
   filters: DashboardRouteFilters;
   repoSuggestions?: string[];
@@ -24,14 +24,14 @@ const repoListId = `${componentId}-repos`;
 const authorListId = `${componentId}-authors`;
 
 const stateOptions = computed<{ value: DashboardRouteState | ''; label: string }[]>(() => {
-  if (props.currentTab === 'notifications') {
+  if (currentTab === 'notifications') {
     return [
       { value: '', label: t('dashboard.filters.options.all') },
       { value: 'unread', label: t('dashboard.filters.options.unread') },
     ];
   }
 
-  if (props.currentTab === 'pulls') {
+  if (currentTab === 'pulls') {
     return [
       { value: '', label: t('dashboard.filters.options.open') },
       { value: 'closed', label: t('dashboard.filters.options.closed') },
@@ -40,7 +40,7 @@ const stateOptions = computed<{ value: DashboardRouteState | ''; label: string }
     ];
   }
 
-  if (props.currentTab === 'issues') {
+  if (currentTab === 'issues') {
     return [
       { value: '', label: t('dashboard.filters.options.open') },
       { value: 'closed', label: t('dashboard.filters.options.closed') },
@@ -51,7 +51,7 @@ const stateOptions = computed<{ value: DashboardRouteState | ''; label: string }
   return [];
 });
 
-const selectedState = computed(() => props.filters.state ?? '');
+const selectedState = computed(() => filters.state ?? '');
 
 const updateState = (event: Event) => {
   const value = (event.target as HTMLSelectElement).value as DashboardRouteState | '';

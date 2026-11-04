@@ -5,11 +5,11 @@ import TabsEditorDrawer from '~/components/dashboard/tabs-settings/TabsEditorDra
 import TabsLibraryPanel from '~/components/dashboard/tabs-settings/TabsLibraryPanel.vue';
 import type { TabsSettingsPageState } from '~/composables/useTabsSettingsPage';
 
-const props = defineProps<{
+const { model } = defineProps<{
   model: TabsSettingsPageState;
 }>();
 
-const { t, editorOpen, startNewTab, closeEditor } = props.model;
+const { t, editorOpen, startNewTab, closeEditor } = model;
 </script>
 
 <template>

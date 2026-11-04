@@ -8,7 +8,7 @@ import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { createFocusTrapController } from '~/utils/createFocusTrapController';
 
-const props = defineProps<{
+const { isVisible, view } = defineProps<{
   isVisible: boolean;
   /** The whole Check Rollup view model, so the modal reads the same source as the chip. */
   view: PullRequestChecksView;
@@ -24,7 +24,7 @@ const panelRef = shallowRef<HTMLElement | null>(null);
 const focusTrap = createFocusTrapController();
 
 const summary = computed(() => {
-  const { summaryKind, passedCount, failedCount, totalCount, isTruncated } = props.view;
+  const { summaryKind, passedCount, failedCount, totalCount, isTruncated } = view;
   const counts = { passed: passedCount ?? 0, failed: failedCount ?? 0, total: totalCount };
 
   // A truncated rollup cannot report a fraction, so the fallback names the total
@@ -48,15 +48,11 @@ const summary = computed(() => {
 });
 
 const summaryTone = computed<CheckStatusTone>(() =>
-  props.view.summaryKind === 'failed'
-    ? 'danger'
-    : props.view.summaryKind === 'pending'
-      ? 'warning'
-      : 'success'
+  view.summaryKind === 'failed' ? 'danger' : view.summaryKind === 'pending' ? 'warning' : 'success'
 );
 
 watch(
-  () => props.isVisible,
+  () => isVisible,
   async (isVisible) => {
     if (!isVisible) {
       await nextTick();

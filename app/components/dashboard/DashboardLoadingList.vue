@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
-const props = defineProps<{
+const { currentTab } = defineProps<{
   currentTab: DashboardTab;
 }>();
 
@@ -12,20 +12,18 @@ const skeletonCardCount = 5;
   <div class="dashboard-loading-list" aria-busy="true" aria-live="polite">
     <div
       v-for="index in skeletonCardCount"
-      :key="`${props.currentTab}-loading-card-${index}`"
+      :key="`${currentTab}-loading-card-${index}`"
       class="mb-4 mr-4"
     >
       <div
         class="card dashboard-list-card dashboard-loading-card"
         :class="
-          props.currentTab === 'repos'
-            ? 'dashboard-list-card--repo'
-            : 'dashboard-list-card--activity'
+          currentTab === 'repos' ? 'dashboard-list-card--repo' : 'dashboard-list-card--activity'
         "
       >
-        <div class="card-content p-3" :class="{ 'pl-4': props.currentTab === 'repos' }">
+        <div class="card-content p-3" :class="{ 'pl-4': currentTab === 'repos' }">
           <div class="media mb-2">
-            <div v-if="props.currentTab !== 'repos'" class="media-left ml-2 mt-2">
+            <div v-if="currentTab !== 'repos'" class="media-left ml-2 mt-2">
               <span class="dashboard-loading-card__icon" />
             </div>
 
@@ -36,7 +34,7 @@ const skeletonCardCount = 5;
               </div>
 
               <div
-                v-if="props.currentTab === 'notifications' || props.currentTab === 'todos'"
+                v-if="currentTab === 'notifications' || currentTab === 'todos'"
                 class="dashboard-loading-card__line dashboard-loading-card__line--subtitle mt-2"
               />
 
@@ -47,7 +45,7 @@ const skeletonCardCount = 5;
             </div>
           </div>
 
-          <div v-if="props.currentTab === 'repos'" class="dashboard-loading-card__stats">
+          <div v-if="currentTab === 'repos'" class="dashboard-loading-card__stats">
             <span class="dashboard-loading-card__metric" />
             <span class="dashboard-loading-card__metric" />
             <span class="dashboard-loading-card__metric" />

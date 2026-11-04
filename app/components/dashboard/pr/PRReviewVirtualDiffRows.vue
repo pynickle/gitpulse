@@ -66,7 +66,16 @@ interface RenderedVirtualRow extends VirtualRow {
   unifiedLines: RenderedUnifiedLine[];
 }
 
-const props = defineProps<{
+const {
+  rows,
+  filename,
+  reviewCommentThreads,
+  activeDraftTarget,
+  submitting,
+  scrollContainer,
+  diffArrangement,
+  keyboardInsetPx,
+} = defineProps<{
   rows: PRReviewDiffRow[];
   filename: string;
   repoOwner: string;
@@ -109,7 +118,7 @@ const codeLineTokenCache = new Map<string, CodeLineTokens>();
 const threadsByLine = computed(() => {
   const threads = new Map<number, PRReviewCommentThread[]>();
 
-  for (const thread of props.reviewCommentThreads) {
+  for (const thread of reviewCommentThreads) {
     const lineThreads = threads.get(thread.line) ?? [];
     lineThreads.push(thread);
     threads.set(thread.line, lineThreads);
@@ -118,18 +127,18 @@ const threadsByLine = computed(() => {
   return threads;
 });
 
-const shouldVirtualize = computed(() => props.rows.length > VIRTUAL_ROW_THRESHOLD);
+const shouldVirtualize = computed(() => rows.length > VIRTUAL_ROW_THRESHOLD);
 const shouldWindowRows = computed(
   () =>
     shouldVirtualize.value ||
     (typeof IntersectionObserver !== 'undefined' && !isRowsNearViewport.value)
 );
 const activeDraftLineForFile = computed(() =>
-  props.activeDraftTarget?.path === props.filename ? props.activeDraftTarget.line : null
+  activeDraftTarget?.path === filename ? activeDraftTarget.line : null
 );
 const reviewThreadsMeasurementKey = computed(() =>
   JSON.stringify(
-    props.reviewCommentThreads.map((thread) => ({
+    reviewCommentThreads.map((thread) => ({
       id: thread.id,
       line: thread.line,
       comments: thread.comments.map((comment) => ({
@@ -142,7 +151,7 @@ const reviewThreadsMeasurementKey = computed(() =>
   )
 );
 
-const getRowKey = (row: PRReviewDiffRow) => `${props.filename}:${row.key}`;
+const getRowKey = (row: PRReviewDiffRow) => `${filename}:${row.key}`;
 
 const isActiveDraftTarget = (line: number | null) =>
   Boolean(line && activeDraftLineForFile.value === line);
@@ -183,7 +192,7 @@ const getEstimatedRowHeight = (row: PRReviewDiffRow) => {
   }
 
   let estimate =
-    props.diffArrangement === 'unified' && row.type === 'replace'
+    diffArrangement === 'unified' && row.type === 'replace'
       ? DIFF_ROW_ESTIMATED_HEIGHT * 2
       : DIFF_ROW_ESTIMATED_HEIGHT;
   const threads = getReviewThreadsForLine(row.newLineNumber);
@@ -203,7 +212,7 @@ const getEstimatedRowHeight = (row: PRReviewDiffRow) => {
 const rowMetrics = computed<VirtualRow[]>(() => {
   let top = 0;
 
-  return props.rows.map((row, index) => {
+  return rows.map((row, index) => {
     const key = getRowKey(row);
     const height = measuredRowHeights.value.get(key) ?? getEstimatedRowHeight(row);
     const virtualRow = {
@@ -232,12 +241,12 @@ const effectiveRange = computed(() => {
       return { start: 0, end: 0 };
     }
 
-    return { start: 0, end: props.rows.length };
+    return { start: 0, end: rows.length };
   }
 
   return {
-    start: Math.min(visibleRange.value.start, props.rows.length),
-    end: Math.min(visibleRange.value.end, props.rows.length),
+    start: Math.min(visibleRange.value.start, rows.length),
+    end: Math.min(visibleRange.value.end, rows.length),
   };
 });
 
@@ -249,7 +258,7 @@ const visibleRows = computed(() => {
 const unifiedLinesBySourceKey = computed(() => {
   const grouped = new Map<string, UnifiedDiffLine[]>();
 
-  for (const line of presentUnifiedDiffLines(props.rows)) {
+  for (const line of presentUnifiedDiffLines(rows)) {
     const lines = grouped.get(line.sourceRowKey);
 
     if (lines) {
@@ -264,7 +273,7 @@ const unifiedLinesBySourceKey = computed(() => {
 
 const renderUnifiedLine = (line: UnifiedDiffLine): RenderedUnifiedLine => ({
   ...line,
-  tokens: line.kind === 'hunk' ? [] : getCachedCodeLineTokens(line.content || ' ', props.filename),
+  tokens: line.kind === 'hunk' ? [] : getCachedCodeLineTokens(line.content || ' ', filename),
   reviewThreads: getReviewThreadsForLine(line.newLineNumber),
   hasActiveDraftTarget: isActiveDraftTarget(line.newLineNumber),
 });
@@ -288,8 +297,8 @@ const renderedVisibleRows = computed<RenderedVirtualRow[]>(() =>
 
     return {
       ...virtualRow,
-      oldTokens: getCachedCodeLineTokens(getSideContent(row, 'old'), props.filename),
-      newTokens: getCachedCodeLineTokens(getSideContent(row, 'new'), props.filename),
+      oldTokens: getCachedCodeLineTokens(getSideContent(row, 'old'), filename),
+      newTokens: getCachedCodeLineTokens(getSideContent(row, 'new'), filename),
       reviewThreads: getReviewThreadsForLine(row.newLineNumber),
       hasActiveDraftTarget,
       unifiedLines,
@@ -375,12 +384,12 @@ const syncVisibleRows = async () => {
   await nextTick();
 
   if (!shouldVirtualize.value) {
-    setVisibleRange(0, props.rows.length);
+    setVisibleRange(0, rows.length);
     return;
   }
 
   const root = rowsRoot.value;
-  const container = props.scrollContainer;
+  const container = scrollContainer;
 
   if (!root || !container) {
     setVisibleRange(0, 0);
@@ -550,13 +559,13 @@ function getSideContent(row: PRReviewDiffRow, side: 'old' | 'new') {
 }
 
 const handleSaveDraft = (line: number, body: string) => {
-  const row = props.rows.find((diffRow) => diffRow.newLineNumber === line);
+  const row = rows.find((diffRow) => diffRow.newLineNumber === line);
 
   if (!row?.position) {
     return;
   }
 
-  emit('save-draft-comment', props.filename, line, row.position, body);
+  emit('save-draft-comment', filename, line, row.position, body);
 };
 
 const openDraftEditorForLine = (line: number | null) => {
@@ -564,7 +573,7 @@ const openDraftEditorForLine = (line: number | null) => {
     return;
   }
 
-  emit('open-draft-editor', props.filename, line);
+  emit('open-draft-editor', filename, line);
 };
 
 interface UnifiedDiffPointerSession {
@@ -689,7 +698,7 @@ const endPointerSession = () => {
 watch(horizontalScroller, endPointerSession);
 
 const onUnifiedCodePointerDown = (line: RenderedUnifiedLine, event: PointerEvent) => {
-  if (props.diffArrangement !== 'unified' || !event.isPrimary) {
+  if (diffArrangement !== 'unified' || !event.isPrimary) {
     return;
   }
 
@@ -722,7 +731,7 @@ const onUnifiedCodePointerDown = (line: RenderedUnifiedLine, event: PointerEvent
     target,
     rowsScroller,
     scrollLeft: rowsScroller?.scrollLeft ?? 0,
-    scrollTop: props.scrollContainer?.scrollTop ?? 0,
+    scrollTop: scrollContainer?.scrollTop ?? 0,
     lastX: event.clientX,
     lastY: event.clientY,
     anchor: null,
@@ -778,9 +787,9 @@ const onUnifiedCodePointerMove = (event: PointerEvent) => {
       session.rowsScroller.scrollLeft -= deltaX;
     }
 
-    if (props.scrollContainer) {
+    if (scrollContainer) {
       // doctor-disable-next-line vue/props/no-mutating-props -- This prop is a DOM scroll handle; panning updates the viewport, not parent application state.
-      props.scrollContainer.scrollTop -= deltaY;
+      scrollContainer.scrollTop -= deltaY;
     }
 
     event.preventDefault();
@@ -825,7 +834,7 @@ const finishUnifiedCodePointer = (event: PointerEvent, cancelled: boolean) => {
   let classification = session.gesture.classification;
   const scrolled =
     (session.rowsScroller?.scrollLeft ?? 0) !== session.scrollLeft ||
-    (props.scrollContainer?.scrollTop ?? 0) !== session.scrollTop;
+    (scrollContainer?.scrollTop ?? 0) !== session.scrollTop;
 
   if (cancelled) {
     classification = cancelUnifiedDiffPointer(session.gesture).classification;
@@ -845,7 +854,7 @@ const finishUnifiedCodePointer = (event: PointerEvent, cancelled: boolean) => {
     classification === 'tap' &&
     session.commentable &&
     session.lineNumber != null &&
-    !props.submitting
+    !submitting
   ) {
     openDraftEditorForLine(session.lineNumber);
     return;
@@ -858,17 +867,17 @@ const finishUnifiedCodePointer = (event: PointerEvent, cancelled: boolean) => {
 
 const scrollActiveComposerIntoView = () => {
   const line = activeDraftLineForFile.value;
-  const container = props.scrollContainer;
+  const container = scrollContainer;
 
   if (!line || !container) {
     return;
   }
 
-  const row = props.rows.find((diffRow) => diffRow.newLineNumber === line);
+  const row = rows.find((diffRow) => diffRow.newLineNumber === line);
   const rowElement = row ? rowElements.get(getRowKey(row)) : undefined;
   const composer = rowElement?.querySelector<HTMLElement>('.pr-review-inline-comment');
   const lineElement = rowElement?.querySelector<HTMLElement>(
-    props.diffArrangement === 'unified'
+    diffArrangement === 'unified'
       ? '.pr-review-diff-viewer__unified-line--commentable .pr-review-diff-viewer__code'
       : '.pr-review-diff-viewer__split-row'
   );
@@ -930,7 +939,7 @@ const scheduleComposerScroll = () => {
   });
 };
 
-watch(() => [props.filename, props.rows, props.diffArrangement], resetMeasurements, {
+watch(() => [filename, rows, diffArrangement], resetMeasurements, {
   flush: 'post',
 });
 
@@ -944,7 +953,7 @@ watch(
 );
 
 watch(
-  () => props.keyboardInsetPx,
+  () => keyboardInsetPx,
   () => {
     if (activeDraftLineForFile.value == null) {
       return;
@@ -957,7 +966,7 @@ watch(
 watch(reviewThreadsMeasurementKey, clearMeasurements, { flush: 'post' });
 
 watch(
-  () => props.scrollContainer,
+  () => scrollContainer,
   (container) => {
     scrollListenerTarget?.removeEventListener('scroll', handleContainerScroll);
     scrollListenerTarget = null;
@@ -986,7 +995,7 @@ watch(
     void nextTick(() => {
       const root = rowsRoot.value;
 
-      if (!root || props.scrollContainer !== container) {
+      if (!root || scrollContainer !== container) {
         isRowsNearViewport.value = true;
         scheduleVisibleRowsSync();
         return;

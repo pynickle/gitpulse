@@ -144,18 +144,19 @@ import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 import LockReasonModal from './LockReasonModal.vue';
 
-const props = defineProps<{
-  isLocked: boolean;
-  canLockIssue: boolean;
-  canManageState: boolean;
-  issueState: string | undefined;
-  repoInfo: { owner: string; repo: string } | null;
-  issueNumber: number | undefined;
-  htmlUrl: string | undefined;
-  createdAt: string | undefined;
-  updatedAt: string | undefined;
-  sourceNotification?: DashboardNotification | null;
-}>();
+const { canLockIssue, canManageState, issueState, repoInfo, issueNumber, sourceNotification } =
+  defineProps<{
+    isLocked: boolean;
+    canLockIssue: boolean;
+    canManageState: boolean;
+    issueState: string | undefined;
+    repoInfo: { owner: string; repo: string } | null;
+    issueNumber: number | undefined;
+    htmlUrl: string | undefined;
+    createdAt: string | undefined;
+    updatedAt: string | undefined;
+    sourceNotification?: DashboardNotification | null;
+  }>();
 
 const emit = defineEmits<{
   (e: 'update:isLocked', isLocked: boolean): void;
@@ -170,22 +171,22 @@ const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 const apiFetch = useGitPulseApiFetch();
 
 const isTodo = computed(() =>
-  props.sourceNotification ? isNotificationTodo(props.sourceNotification) : false
+  sourceNotification ? isNotificationTodo(sourceNotification) : false
 );
 
 const todoLabel = computed(() =>
   isTodo.value ? t('dashboard.todos.removeAction') : t('dashboard.todos.addAction')
 );
 
-const showManageActions = computed(() => props.canLockIssue || props.canManageState);
+const showManageActions = computed(() => canLockIssue || canManageState);
 
 const handleToggleTodo = () => {
-  if (props.sourceNotification) {
-    toggleNotificationTodo(props.sourceNotification);
+  if (sourceNotification) {
+    toggleNotificationTodo(sourceNotification);
   }
 };
 
-const isClosed = computed(() => props.issueState === 'closed');
+const isClosed = computed(() => issueState === 'closed');
 
 const loadingState = ref(false);
 const stateError = ref('');
@@ -214,15 +215,15 @@ const currentActor = () => ({
 });
 
 const updateIssueState = async (state: 'open' | 'closed') => {
-  if (!props.canManageState || !props.repoInfo || !props.issueNumber) return;
+  if (!canManageState || !repoInfo || !issueNumber) return;
 
   loadingState.value = true;
   clearStateError();
 
   try {
-    const { owner, repo } = props.repoInfo;
+    const { owner, repo } = repoInfo;
     const result = await apiFetch<{ state: string; stateReason: string | null }>(
-      `/api/repos/${owner}/${repo}/issues/${props.issueNumber}/state`,
+      `/api/repos/${owner}/${repo}/issues/${issueNumber}/state`,
       {
         method: 'PATCH',
         body: state === 'closed' ? { state, state_reason: 'completed' } : { state },
@@ -302,14 +303,13 @@ onUnmounted(() => {
 });
 
 const confirmLockIssue = async (lockReason: string) => {
-  if (!props.canLockIssue || !props.repoInfo || !props.issueNumber) return;
+  if (!canLockIssue || !repoInfo || !issueNumber) return;
 
   loadingLock.value = true;
   clearLockError();
 
   try {
-    const { owner, repo } = props.repoInfo;
-    const issueNumber = props.issueNumber;
+    const { owner, repo } = repoInfo;
 
     await apiFetch(`/api/repos/${owner}/${repo}/issues/${issueNumber}/lock`, {
       method: 'PUT',
@@ -340,14 +340,13 @@ const confirmLockIssue = async (lockReason: string) => {
 };
 
 const unlockIssue = async () => {
-  if (!props.canLockIssue || !props.repoInfo || !props.issueNumber) return;
+  if (!canLockIssue || !repoInfo || !issueNumber) return;
 
   loadingLock.value = true;
   clearLockError();
 
   try {
-    const { owner, repo } = props.repoInfo;
-    const issueNumber = props.issueNumber;
+    const { owner, repo } = repoInfo;
 
     await apiFetch(`/api/repos/${owner}/${repo}/issues/${issueNumber}/lock`, {
       method: 'DELETE',

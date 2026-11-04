@@ -5,7 +5,7 @@ import { computed, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { RepoBranch } from '~/composables/useRepoFiles';
 
-const props = defineProps<{
+const { branches, currentBranch, defaultBranch, loading } = defineProps<{
   branches: RepoBranch[];
   currentBranch: string;
   defaultBranch: string;
@@ -27,9 +27,9 @@ const listRef = useTemplateRef<HTMLElement>('branchList');
 const activeIndex = shallowRef(-1);
 
 const sortedBranches = computed(() => {
-  const defaultB = props.branches.find((branch) => branch.name === props.defaultBranch);
-  const others = props.branches
-    .filter((branch) => branch.name !== props.defaultBranch)
+  const defaultB = branches.find((branch) => branch.name === defaultBranch);
+  const others = branches
+    .filter((branch) => branch.name !== defaultBranch)
     .sort((first, second) => first.name.localeCompare(second.name));
 
   return defaultB ? [defaultB, ...others] : others;
@@ -43,7 +43,7 @@ const filteredBranches = computed(() => {
 });
 
 const open = () => {
-  if (props.loading || isOpen.value) return;
+  if (loading || isOpen.value) return;
 
   searchQuery.value = '';
   activeIndex.value = -1;
@@ -66,7 +66,7 @@ const close = () => {
 };
 
 const selectBranch = (branch: string) => {
-  if (branch !== props.currentBranch) {
+  if (branch !== currentBranch) {
     emit('select', branch);
   }
 

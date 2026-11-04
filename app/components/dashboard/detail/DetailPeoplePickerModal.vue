@@ -26,37 +26,37 @@ interface CandidateGroup {
   items: DetailPeoplePickerCandidate[];
 }
 
-const props = withDefaults(
-  defineProps<{
-    isVisible: boolean;
-    title: string;
-    closeLabel: string;
-    searchPlaceholder: string;
-    searchLabel: string;
-    loadingLabel: string;
-    emptyLabel: string;
-    cancelLabel: string;
-    submitLabel: string;
-    candidates: DetailPeoplePickerCandidate[];
-    initialSelectedKeys?: string[];
-    groupLabels?: Record<string, string>;
-    warnings?: DetailPeoplePickerWarning[];
-    loading: boolean;
-    submitting: boolean;
-    error: string;
-    allowEmptySelection?: boolean;
-    submitRequiresChange?: boolean;
-    showSelectedCount?: boolean;
-  }>(),
-  {
-    initialSelectedKeys: () => [],
-    groupLabels: () => ({}),
-    warnings: () => [],
-    allowEmptySelection: false,
-    submitRequiresChange: false,
-    showSelectedCount: false,
-  }
-);
+const {
+  isVisible,
+  candidates,
+  initialSelectedKeys = [],
+  groupLabels = {},
+  warnings = [],
+  submitting,
+  allowEmptySelection = false,
+  submitRequiresChange = false,
+  showSelectedCount = false,
+} = defineProps<{
+  isVisible: boolean;
+  title: string;
+  closeLabel: string;
+  searchPlaceholder: string;
+  searchLabel: string;
+  loadingLabel: string;
+  emptyLabel: string;
+  cancelLabel: string;
+  submitLabel: string;
+  candidates: DetailPeoplePickerCandidate[];
+  initialSelectedKeys?: string[];
+  groupLabels?: Record<string, string>;
+  warnings?: DetailPeoplePickerWarning[];
+  loading: boolean;
+  submitting: boolean;
+  error: string;
+  allowEmptySelection?: boolean;
+  submitRequiresChange?: boolean;
+  showSelectedCount?: boolean;
+}>();
 
 const emit = defineEmits<{
   close: [];
@@ -80,10 +80,10 @@ const focusSearchInput = () => {
   });
 };
 
-const initialSelectedKeySet = computed(() => new Set(props.initialSelectedKeys));
+const initialSelectedKeySet = computed(() => new Set(initialSelectedKeys));
 
 const filteredCandidates = computed(() =>
-  filterDetailPeoplePickerCandidates(props.candidates, searchQuery.value)
+  filterDetailPeoplePickerCandidates(candidates, searchQuery.value)
 );
 
 const groupedCandidates = computed<CandidateGroup[]>(() => {
@@ -97,15 +97,13 @@ const groupedCandidates = computed<CandidateGroup[]>(() => {
 
   return [...groupMap.entries()].map(([kind, items]) => ({
     kind,
-    label: props.groupLabels[kind] ?? kind,
+    label: groupLabels[kind] ?? kind,
     items,
   }));
 });
 
 const selectedCandidates = computed(() =>
-  props.candidates.filter(
-    (candidate) => selectedKeys.value.has(candidate.key) && !candidate.disabled
-  )
+  candidates.filter((candidate) => selectedKeys.value.has(candidate.key) && !candidate.disabled)
 );
 
 const hasSelectionChanges = computed(() => {
@@ -119,9 +117,9 @@ const hasSelectionChanges = computed(() => {
 });
 
 const isSubmitDisabled = computed(() => {
-  if (props.submitting) return true;
-  if (!props.allowEmptySelection && selectedCandidates.value.length === 0) return true;
-  if (props.submitRequiresChange && !hasSelectionChanges.value) return true;
+  if (submitting) return true;
+  if (!allowEmptySelection && selectedCandidates.value.length === 0) return true;
+  if (submitRequiresChange && !hasSelectionChanges.value) return true;
 
   return false;
 });
@@ -178,7 +176,7 @@ const handleSearchKeydown = (event: KeyboardEvent) => {
     }
     case 'Enter': {
       if (focusedKey.value) {
-        const candidate = props.candidates.find((c) => c.key === focusedKey.value);
+        const candidate = candidates.find((c) => c.key === focusedKey.value);
         if (candidate && !candidate.disabled) {
           event.preventDefault();
           toggleCandidate(candidate);
@@ -199,7 +197,7 @@ const submitSelection = () => {
 };
 
 watch(
-  () => props.candidates,
+  () => candidates,
   (candidates) => {
     const availableKeys = new Set(
       candidates.filter((candidate) => !candidate.disabled).map((candidate) => candidate.key)
@@ -213,21 +211,21 @@ watch(
 );
 
 watch(
-  () => props.initialSelectedKeys,
+  () => initialSelectedKeys,
   (keys) => {
-    if (props.isVisible) {
+    if (isVisible) {
       selectedKeys.value = new Set(keys);
     }
   }
 );
 
 watch(
-  () => props.isVisible,
+  () => isVisible,
   async (isVisible) => {
     if (isVisible) {
       if (import.meta.client) focusTrap.capturePreviousFocus();
       searchQuery.value = '';
-      selectedKeys.value = new Set(props.initialSelectedKeys);
+      selectedKeys.value = new Set(initialSelectedKeys);
       focusedKey.value = null;
       focusSearchInput();
       return;

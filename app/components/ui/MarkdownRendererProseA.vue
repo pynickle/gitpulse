@@ -5,24 +5,17 @@ import { markdownRepoContextKey } from '../../utils/markdownRepoPathUtils';
 
 const SAFE_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
-const props = withDefaults(
-  defineProps<{
-    href?: string;
-    target?: string;
-  }>(),
-  {
-    href: '',
-  }
-);
+const { href = '', target } = defineProps<{
+  href?: string;
+  target?: string;
+}>();
 
 const markdownRepoContext = inject(markdownRepoContextKey, null);
 const { resolveDashboardUrlTarget, getDashboardUrlRoute, getPreferredDashboardUrlHref } =
   useDashboardUrlNavigation();
 const { opensGitHubLinks } = useGitHubLinkRouting();
 
-const internalTarget = computed(() =>
-  resolveDashboardUrlTarget(props.href, markdownRepoContext?.value)
-);
+const internalTarget = computed(() => resolveDashboardUrlTarget(href, markdownRepoContext?.value));
 
 const preferredDashboardHref = computed(() => {
   const target = internalTarget.value;
@@ -34,22 +27,22 @@ const externalHref = computed(() => {
     return preferredDashboardHref.value;
   }
 
-  const href = props.href.trim();
+  const trimmedHref = href.trim();
 
-  if (!href) return null;
+  if (!trimmedHref) return null;
 
   if (
-    href.startsWith('/') ||
-    href.startsWith('./') ||
-    href.startsWith('../') ||
-    href.startsWith('#')
+    trimmedHref.startsWith('/') ||
+    trimmedHref.startsWith('./') ||
+    trimmedHref.startsWith('../') ||
+    trimmedHref.startsWith('#')
   ) {
-    return href;
+    return trimmedHref;
   }
 
   try {
-    const url = new URL(href);
-    return SAFE_EXTERNAL_PROTOCOLS.has(url.protocol) ? href : null;
+    const url = new URL(trimmedHref);
+    return SAFE_EXTERNAL_PROTOCOLS.has(url.protocol) ? trimmedHref : null;
   } catch {
     return null;
   }
@@ -60,7 +53,7 @@ const internalTo = computed(() => {
   return target && !opensGitHubLinks.value ? getDashboardUrlRoute(target) : null;
 });
 
-const externalRel = computed(() => (props.target === '_blank' ? 'noopener noreferrer' : undefined));
+const externalRel = computed(() => (target === '_blank' ? 'noopener noreferrer' : undefined));
 </script>
 
 <template>

@@ -7,47 +7,47 @@
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue';
 
-const props = withDefaults(
-  defineProps<{
-    to?: string | object;
-    href?: string;
-    target?: string;
-    color?: string;
-    size?: 'normal' | 'large';
-    lifted?: boolean;
-  }>(),
-  {
-    color: 'primary',
-    size: 'large',
-    lifted: true,
-  }
-);
+const {
+  to,
+  href,
+  target,
+  color = 'primary',
+  size = 'large',
+  lifted = true,
+} = defineProps<{
+  to?: string | object;
+  href?: string;
+  target?: string;
+  color?: string;
+  size?: 'normal' | 'large';
+  lifted?: boolean;
+}>();
 
 const attrs = useAttrs();
 
 const component = computed(() => {
-  if (props.to) return 'NuxtLinkLocale';
-  if (props.href) return 'a';
+  if (to) return 'NuxtLinkLocale';
+  if (href) return 'a';
   return 'button';
 });
 
 const bindProps = computed(() => {
   const baseAttrs = { ...attrs };
 
-  if (props.to) {
-    return { ...baseAttrs, to: props.to };
+  if (to) {
+    return { ...baseAttrs, to: to };
   }
-  if (props.href) {
-    return { ...baseAttrs, href: props.href, target: props.target };
+  if (href) {
+    return { ...baseAttrs, href: href, target: target };
   }
   return { ...baseAttrs, type: (attrs.type as string | undefined) ?? 'button' };
 });
 
 const classes = computed(() => [
   'button',
-  props.size === 'large' ? 'is-large' : null,
-  props.color ? `is-${props.color}` : null,
-  props.lifted ? 'is-lifted' : null,
+  size === 'large' ? 'is-large' : null,
+  color ? `is-${color}` : null,
+  lifted ? 'is-lifted' : null,
   'px-6',
 ]);
 </script>

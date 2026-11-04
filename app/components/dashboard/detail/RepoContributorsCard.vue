@@ -8,7 +8,7 @@ import {
   useRepoContributors,
 } from '~/composables/useRepoContributors';
 
-const props = defineProps<{
+const { owner, repo } = defineProps<{
   owner: string;
   repo: string;
 }>();
@@ -21,7 +21,7 @@ const { items, loading, error, fetchPage, reset } = useRepoContributors();
 const contributorsRoute = computed(() =>
   localePath({
     path: '/dashboard/contributors',
-    query: { repo: `${props.owner}/${props.repo}` },
+    query: { repo: `${owner}/${repo}` },
   })
 );
 
@@ -45,7 +45,7 @@ const profileRoute = (login: string) =>
   });
 
 watch(
-  () => [props.owner, props.repo] as const,
+  () => [owner, repo] as const,
   ([owner, repo]) => {
     if (!owner || !repo) {
       reset();

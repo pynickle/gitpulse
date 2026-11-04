@@ -13,7 +13,7 @@ import {
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = defineProps<{
+const { code } = defineProps<{
   code: string;
 }>();
 
@@ -232,10 +232,10 @@ async function renderDiagram() {
       securityLevel: 'strict',
       theme: colorMode.value === 'dark' ? 'dark' : 'default',
     });
-    await mermaid.parse(props.code);
+    await mermaid.parse(code);
 
     const renderId = `mermaid-viewer-${instanceId}-${renderCount.value}`;
-    const { svg } = await mermaid.render(renderId, props.code);
+    const { svg } = await mermaid.render(renderId, code);
     if (currentRenderCount !== renderCount.value) return;
 
     renderState.value = { kind: 'success', svg };
@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
             v-html="renderState.svg"
           />
           <ScrollArea v-else class="mermaid-viewer-modal__fallback" axis="both">
-            <pre class="mermaid-viewer-modal__fallback-text"><code>{{ props.code }}</code></pre>
+            <pre class="mermaid-viewer-modal__fallback-text"><code>{{ code }}</code></pre>
           </ScrollArea>
         </div>
       </section>

@@ -19,7 +19,7 @@ defineOptions({
 
 const MEDIA_TAGS = new Set(['audio', 'img', 'source', 'track', 'video']);
 
-const props = defineProps<{
+const { __node, src, srcset, poster, alt, media } = defineProps<{
   __node?: ElementNode;
   src?: string;
   srcset?: string;
@@ -38,7 +38,7 @@ const markdownRepoContext = inject(markdownRepoContextKey, null);
 const imageElement = ref<HTMLImageElement | null>(null);
 
 const tag = computed(() => {
-  const nodeTag = props.__node?.[0];
+  const nodeTag = __node?.[0];
   return nodeTag && MEDIA_TAGS.has(nodeTag) ? nodeTag : 'span';
 });
 
@@ -85,22 +85,20 @@ const shouldDeferImage = computed(
     !hasAttrValue(attrs.loading, 'eager') &&
     !hasAttrValue(attrs.fetchpriority ?? attrs.fetchPriority, 'high')
 );
-const imageLoadKey = computed(() => `${props.src ?? ''}\n${props.srcset ?? ''}`);
+const imageLoadKey = computed(() => `${src ?? ''}\n${srcset ?? ''}`);
 const imageShouldLoad = useDeferredElementLoad(imageElement, shouldDeferImage, imageLoadKey);
 
 const resolvedAttrs = computed(() => {
   const resolved = {
     ...attrs,
-    src: resolveResourceUrl(props.src),
-    srcset: resolveMarkdownRepoSrcset(props.srcset, markdownRepoContext?.value ?? {}, (resource) =>
+    src: resolveResourceUrl(src),
+    srcset: resolveMarkdownRepoSrcset(srcset, markdownRepoContext?.value ?? {}, (resource) =>
       applyAppBaseURL(buildRepoRawFileUrl(resource))
     ),
-    poster: resolveResourceUrl(props.poster),
-    alt: tag.value === 'img' ? (props.alt ?? '') : props.alt,
+    poster: resolveResourceUrl(poster),
+    alt: tag.value === 'img' ? (alt ?? '') : alt,
     media:
-      tag.value === 'source'
-        ? resolveMarkdownColorModeSourceMedia(props.media, colorMode.value)
-        : props.media,
+      tag.value === 'source' ? resolveMarkdownColorModeSourceMedia(media, colorMode.value) : media,
   };
 
   if (tag.value !== 'img') {
@@ -132,7 +130,7 @@ const renderedImageAttrs = computed(() => {
 </script>
 
 <template>
-  <img v-if="tag === 'img'" ref="imageElement" v-bind="renderedImageAttrs" :alt="props.alt ?? ''" />
+  <img v-if="tag === 'img'" ref="imageElement" v-bind="renderedImageAttrs" :alt="alt ?? ''" />
   <component v-else :is="tag" v-bind="resolvedAttrs">
     <slot />
   </component>

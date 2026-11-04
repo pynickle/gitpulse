@@ -4,31 +4,29 @@ import { computed } from 'vue';
 import type { RepoContributorWeek } from '#shared/types/repos';
 import { buildContributorSparkline } from '~/utils/buildContributorSparkline';
 
-const props = withDefaults(
-  defineProps<{
-    weeks: RepoContributorWeek[];
-    width?: number;
-    height?: number;
-    label?: string;
-  }>(),
-  {
-    width: 280,
-    height: 36,
-    label: '',
-  }
-);
+const {
+  weeks,
+  width = 280,
+  height = 36,
+  label = '',
+} = defineProps<{
+  weeks: RepoContributorWeek[];
+  width?: number;
+  height?: number;
+  label?: string;
+}>();
 
-const commitSeries = computed(() => props.weeks.map((week) => week.commits));
+const commitSeries = computed(() => weeks.map((week) => week.commits));
 
 const paths = computed(() =>
   buildContributorSparkline(commitSeries.value, {
-    width: props.width,
-    height: props.height,
+    width: width,
+    height: height,
   })
 );
 
 const hasActivity = computed(() => paths.value.maxValue > 0);
-const cssHeight = computed(() => `${props.height}px`);
+const cssHeight = computed(() => `${height}px`);
 </script>
 
 <template>

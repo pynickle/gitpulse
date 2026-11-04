@@ -13,7 +13,7 @@ import { computed, type Component } from 'vue';
 import type { ReleaseListItem } from '#shared/types/releases';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
-const props = defineProps<{
+const { items, latestId, entryId } = defineProps<{
   items: ReleaseListItem[];
   latestId: number | null | undefined;
   entryId: number;
@@ -45,20 +45,20 @@ interface RowView {
 }
 
 const rows = computed<RowView[]>(() =>
-  props.items.map((release) => {
+  items.map((release) => {
     const time = release.published_at || release.created_at;
     const name = release.name?.trim() || '';
     return {
       release,
       status:
-        release.id === props.latestId
+        release.id === latestId
           ? { kind: 'latest', label: t('releasesPage.latest'), icon: RocketIcon }
           : release.draft
             ? { kind: 'draft', label: t('releaseDetail.draft'), icon: PencilLineIcon }
             : release.prerelease
               ? { kind: 'prerelease', label: t('releaseDetail.prerelease'), icon: FlaskConicalIcon }
               : null,
-      isEntry: release.id === props.entryId,
+      isEntry: release.id === entryId,
       name: name && name !== release.tag_name ? name : null,
       author: release.author ?? null,
       time,

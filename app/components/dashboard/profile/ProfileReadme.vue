@@ -6,21 +6,21 @@ import type { UserReadmeResponse } from '#shared/types/users';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = defineProps<{
+const { login, readme } = defineProps<{
   login: string;
   readme: UserReadmeResponse | null;
 }>();
 
 const { t } = useI18n();
 
-const hasContent = computed(() => Boolean(props.readme?.content?.trim()));
+const hasContent = computed(() => Boolean(readme?.content?.trim()));
 
 /** Source repo for relative link/image resolution — `org/.github` for org READMEs. */
 const sourceRepo = computed(() => {
-  const [owner, name] = (props.readme?.repo ?? '').split('/');
+  const [owner, name] = (readme?.repo ?? '').split('/');
   return {
-    owner: owner || props.login,
-    name: name || props.login,
+    owner: owner || login,
+    name: name || login,
   };
 });
 </script>

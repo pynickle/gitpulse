@@ -5,7 +5,7 @@ import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type { TimelineRelease } from '#shared/types/release-follows';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: TimelineRelease;
 }>();
 
@@ -14,10 +14,10 @@ const { settings } = useUserSettings();
 const { itemsFor, setItems } = useReleaseReactionSummaries();
 
 const showReactions = computed(() => settings.value.releaseTimeline.showReactions);
-const reactionItems = computed(() => itemsFor(props.item));
+const reactionItems = computed(() => itemsFor(item));
 
 const handleReactionItems = (items: ReactionSummaryItem[]) => {
-  setItems(props.item, items);
+  setItems(item, items);
 };
 </script>
 

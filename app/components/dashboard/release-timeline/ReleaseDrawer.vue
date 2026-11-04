@@ -12,7 +12,7 @@ const loadReleaseDrawerBody = () =>
   import('~/components/dashboard/release-timeline/ReleaseDrawerBody.vue');
 const ReleaseDrawerBody = defineAsyncComponent(loadReleaseDrawerBody);
 
-const props = defineProps<{
+const { open, item, showingList, selectedRelease } = defineProps<{
   open: boolean;
   item: TimelineRelease | null;
   detail: ReleaseDetailPayload | null;
@@ -39,7 +39,7 @@ const { opensGitHubLinks } = useGitHubLinkRouting();
 const titleId = useId();
 const panel = useTemplateRef<HTMLElement>('panel');
 const { handleKeydown } = useModalLifecycle({
-  open: () => props.open && props.item !== null,
+  open: () => open && item !== null,
   panel,
   onRequestClose: () => emit('close'),
 });
@@ -52,12 +52,12 @@ const {
   onPointerUp,
   onPointerCancel,
 } = useReleaseOverlaySheet({
-  open: () => props.open && props.item !== null,
+  open: () => open && item !== null,
   onRequestClose: () => emit('close'),
 });
 
 const repoFullName = computed(() =>
-  props.item ? `${props.item.repository.owner}/${props.item.repository.name}` : ''
+  item ? `${item.repository.owner}/${item.repository.name}` : ''
 );
 const chromeTitle = computed(() => repoFullName.value || t('releaseTimeline.drawerLabel'));
 const openRepoLabel = computed(() =>
@@ -66,12 +66,12 @@ const openRepoLabel = computed(() =>
     : t('releaseTimeline.drawerLabel')
 );
 const returnLabel = computed(() =>
-  t('releaseTimeline.returnToEntryRelease', { tag: props.item?.tagName || '' })
+  t('releaseTimeline.returnToEntryRelease', { tag: item?.tagName || '' })
 );
 
 // Keep the drawer controls ready; fetch its body alongside the release data.
 watch(
-  () => props.open,
+  () => open,
   (open) => {
     if (import.meta.client && open) {
       void loadReleaseDrawerBody().catch(() => {
@@ -83,21 +83,21 @@ watch(
 );
 
 watch(
-  () => [props.showingList, props.selectedRelease?.id],
+  () => [showingList, selectedRelease?.id],
   () => {
-    if (props.open) panel.value?.querySelector<HTMLButtonElement>('.release-drawer__repo')?.focus();
+    if (open) panel.value?.querySelector<HTMLButtonElement>('.release-drawer__repo')?.focus();
   },
   { flush: 'post' }
 );
 
 const handleOpenRepo = async () => {
-  if (!props.item) return;
+  if (!item) return;
   if (!opensGitHubLinks.value) emit('close');
-  await openRepository(props.item.repository.owner, props.item.repository.name);
+  await openRepository(item.repository.owner, item.repository.name);
 };
 
 const handleOpenReleasePage = async () => {
-  const release = props.selectedRelease;
+  const release = selectedRelease;
   if (!release) return;
   emit('close');
   await openRelease(release.repository.owner, release.repository.name, release.id);

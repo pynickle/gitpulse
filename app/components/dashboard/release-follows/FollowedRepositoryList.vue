@@ -14,7 +14,7 @@ import type { FollowedRepositoryView } from '#shared/types/user-settings';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getLanguageColor } from '~/utils/languageColors';
 
-const props = defineProps<{
+const { items, unavailableIds, view, metadata, pendingIds } = defineProps<{
   items: FollowedRepository[];
   unavailableIds?: readonly string[];
   view: FollowedRepositoryView;
@@ -37,11 +37,11 @@ const confirmPanelId = `${instanceId}-clear-confirm`;
 const confirmTitleId = `${instanceId}-clear-title`;
 const confirmBodyId = `${instanceId}-clear-body`;
 
-const unavailableIdSet = computed(() => new Set(props.unavailableIds ?? []));
+const unavailableIdSet = computed(() => new Set(unavailableIds ?? []));
 const isUnavailable = (id: string) => unavailableIdSet.value.has(id);
 const repoLabel = (item: FollowedRepository) => `${item.owner}/${item.name}`;
-const isDetailed = computed(() => props.view === 'detailed');
-const metadataFor = (id: string) => props.metadata.get(id);
+const isDetailed = computed(() => view === 'detailed');
+const metadataFor = (id: string) => metadata.get(id);
 const descriptionFor = (id: string) => {
   const metadata = metadataFor(id);
   return metadata?.status === 'available' ? metadata.description : null;
@@ -55,7 +55,7 @@ const starCountFor = (id: string) => {
   return metadata?.status === 'available' ? metadata.starCount : null;
 };
 const metadataFailed = (id: string) => metadataFor(id)?.status === 'transient';
-const isRetrying = (id: string) => props.pendingIds?.has(id) ?? false;
+const isRetrying = (id: string) => pendingIds?.has(id) ?? false;
 const formattedStarCount = (id: string) => {
   const count = starCountFor(id);
   if (count === null) return '';
@@ -74,9 +74,9 @@ const onScrollElement = (element: HTMLElement | null) => {
   scrollElement.value = element;
 };
 
-const chooseView = (view: FollowedRepositoryView) => {
-  if (view === props.view) return;
-  emit('update:view', view);
+const chooseView = (nextView: FollowedRepositoryView) => {
+  if (nextView === view) return;
+  emit('update:view', nextView);
 };
 
 const captureViewedRepository = (scroller: HTMLElement) => {
@@ -115,7 +115,7 @@ const restoreViewedRepository = (
 // Item heights change with the view, so keep the repository in the viewport
 // rather than the previous pixel offset.
 watch(
-  () => props.view,
+  () => view,
   async () => {
     const scroller = scrollElement.value;
     const anchor = scroller ? captureViewedRepository(scroller) : null;
@@ -131,7 +131,7 @@ const emptyStateRef = ref<HTMLElement | null>(null);
 const focusEmptyAfterClear = ref(false);
 
 const openClearConfirm = async () => {
-  if (props.items.length === 0 || confirmingClear.value) return;
+  if (items.length === 0 || confirmingClear.value) return;
   confirmingClear.value = true;
   await nextTick();
   confirmAcceptRef.value?.focus();
@@ -153,7 +153,7 @@ const confirmClear = () => {
 // Closing the confirmation whenever the list empties keeps stale prompts from
 // lingering; the focus hand-off only happens for an explicit clear.
 watch(
-  () => props.items.length,
+  () => items.length,
   (length) => {
     if (length > 0) return;
     confirmingClear.value = false;

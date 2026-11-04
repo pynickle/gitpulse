@@ -15,7 +15,7 @@ import type {
   DetailPeoplePickerWarning,
 } from '~/types/detail-people-picker';
 
-const props = defineProps<{
+const { candidates, warnings } = defineProps<{
   isVisible: boolean;
   candidates: PRReviewerCandidate[];
   warnings: PRReviewerCandidateWarning[];
@@ -38,7 +38,7 @@ const reviewerGroupLabels = computed(() => ({
 }));
 
 const pickerCandidates = computed<DetailPeoplePickerCandidate[]>(() =>
-  props.candidates.map((candidate) => ({
+  candidates.map((candidate) => ({
     key: candidate.key,
     kind: candidate.kind,
     name: candidate.name,
@@ -52,7 +52,7 @@ const pickerCandidates = computed<DetailPeoplePickerCandidate[]>(() =>
 );
 
 const pickerWarnings = computed<DetailPeoplePickerWarning[]>(() =>
-  props.warnings.map((warning) => ({
+  warnings.map((warning) => ({
     key: `${warning.source}:${warning.message}`,
     message: warning.message,
   }))

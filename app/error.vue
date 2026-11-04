@@ -12,7 +12,7 @@ import type { NuxtError } from '#app';
 import LandingNavbar from '~/components/layouts/LandingNavbar.vue';
 import Button from '~/components/ui/Button.vue';
 
-const props = defineProps<{ error: NuxtError }>();
+const { error } = defineProps<{ error: NuxtError }>();
 
 const { t } = useI18n();
 const localePath = useLocalePath();
@@ -87,10 +87,8 @@ const variants: Record<number, ErrorVariant> = {
   },
 };
 
-const variant = computed<ErrorVariant>(
-  () => variants[props.error.status ?? 500] ?? fallbackVariant
-);
-const statusCode = computed<number>(() => props.error.status ?? 500);
+const variant = computed<ErrorVariant>(() => variants[error.status ?? 500] ?? fallbackVariant);
+const statusCode = computed<number>(() => error.status ?? 500);
 
 useHead(() => {
   const robots = notFoundRobots(statusCode.value);

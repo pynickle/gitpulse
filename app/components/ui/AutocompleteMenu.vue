@@ -6,26 +6,25 @@ import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 import type { AutocompleteSuggestion } from './autocomplete';
 
-const props = withDefaults(
-  defineProps<{
-    open: boolean;
-    suggestions: AutocompleteSuggestion[];
-    query?: string;
-    activeIndex: number;
-    listboxId: string;
-    optionIdPrefix: string;
-    panelStyle: Record<string, string>;
-    loading?: boolean;
-    emptyMessage?: string;
-    ariaLabel?: string;
-  }>(),
-  {
-    query: '',
-    loading: false,
-    emptyMessage: 'No results found',
-    ariaLabel: 'Suggestions',
-  }
-);
+const {
+  suggestions,
+  query = '',
+  activeIndex,
+  loading = false,
+  emptyMessage = 'No results found',
+  ariaLabel = 'Suggestions',
+} = defineProps<{
+  open: boolean;
+  suggestions: AutocompleteSuggestion[];
+  query?: string;
+  activeIndex: number;
+  listboxId: string;
+  optionIdPrefix: string;
+  panelStyle: Record<string, string>;
+  loading?: boolean;
+  emptyMessage?: string;
+  ariaLabel?: string;
+}>();
 
 const emit = defineEmits<{
   select: [suggestion: AutocompleteSuggestion];
@@ -40,9 +39,9 @@ const getDisplayLabel = (suggestion: AutocompleteSuggestion) =>
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const highlightedSuggestions = computed(() => {
-  const query = props.query.trim();
-  const pattern = query ? new RegExp(`(${escapeRegex(query)})`, 'gi') : null;
-  return props.suggestions.map((suggestion) => {
+  const normalizedQuery = query.trim();
+  const pattern = normalizedQuery ? new RegExp(`(${escapeRegex(normalizedQuery)})`, 'gi') : null;
+  return suggestions.map((suggestion) => {
     const label = getDisplayLabel(suggestion);
     return { suggestion, parts: pattern ? label.split(pattern) : [label] };
   });
@@ -50,15 +49,15 @@ const highlightedSuggestions = computed(() => {
 
 const scrollActiveOptionIntoView = async () => {
   await nextTick();
-  if (props.activeIndex < 0) {
+  if (activeIndex < 0) {
     return;
   }
 
   const items = listRef.value?.querySelectorAll('[role="option"]');
-  items?.[props.activeIndex]?.scrollIntoView({ block: 'nearest' });
+  items?.[activeIndex]?.scrollIntoView({ block: 'nearest' });
 };
 
-watch(() => props.activeIndex, scrollActiveOptionIntoView);
+watch(() => activeIndex, scrollActiveOptionIntoView);
 </script>
 
 <template>

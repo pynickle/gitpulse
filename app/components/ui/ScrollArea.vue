@@ -2,15 +2,17 @@
 import SimpleBar from 'simplebar-vue';
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue';
 
-const props = withDefaults(
-  defineProps<{
-    axis?: 'x' | 'y' | 'both';
-    disabled?: boolean;
-    contentClass?: string;
-    media?: string;
-  }>(),
-  { axis: 'y', disabled: false, contentClass: '', media: undefined }
-);
+const {
+  axis = 'y',
+  disabled = false,
+  contentClass = '',
+  media,
+} = defineProps<{
+  axis?: 'x' | 'y' | 'both';
+  disabled?: boolean;
+  contentClass?: string;
+  media?: string;
+}>();
 
 const emit = defineEmits<{
   scrollElement: [element: HTMLElement | null];
@@ -20,8 +22,8 @@ const emit = defineEmits<{
 // simplebar-vue's declaration omits the public instance exposed at runtime.
 const bar = useTemplateRef<{ scrollElement?: HTMLElement }>('bar');
 const scrollElement = shallowRef<HTMLElement | null>(null);
-const matchesMedia = shallowRef(!props.media);
-const enabled = computed(() => !props.disabled && matchesMedia.value);
+const matchesMedia = shallowRef(!media);
+const enabled = computed(() => !disabled && matchesMedia.value);
 let mediaQuery: MediaQueryList | undefined;
 const syncMedia = () => {
   matchesMedia.value = mediaQuery?.matches ?? true;
@@ -45,7 +47,7 @@ watch(
 );
 onMounted(() => {
   watch(
-    () => props.media,
+    () => media,
     (query) => {
       mediaQuery?.removeEventListener('change', syncMedia);
       mediaQuery = query ? window.matchMedia(query) : undefined;

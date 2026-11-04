@@ -326,23 +326,23 @@ import {
 import type { TimelineStateChange } from '~/composables/usePRTimelineEvents';
 import { getTextColorFromBackground } from '~/utils/getTextColorFromBackground';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: ProcessedIssueTimelineItem;
   repoOwner: string;
   repoName: string;
 }>();
 
 const { t } = useI18n();
-const assigneeChanges = computed(() => props.item.assigneeChanges ?? []);
-const labelChanges = computed(() => props.item.labelChanges ?? []);
-const assigneeLabel = computed(() => props.item.assignee?.login || props.item.assignee?.name || '');
+const assigneeChanges = computed(() => item.assigneeChanges ?? []);
+const labelChanges = computed(() => item.labelChanges ?? []);
+const assigneeLabel = computed(() => item.assignee?.login || item.assignee?.name || '');
 const assigneeUrl = computed(() => {
-  if (props.item.assignee?.url) return props.item.assignee.url;
-  if (props.item.assignee?.login) return `https://github.com/${props.item.assignee.login}`;
+  if (item.assignee?.url) return item.assignee.url;
+  if (item.assignee?.login) return `https://github.com/${item.assignee.login}`;
   return undefined;
 });
 const assigneePrefix = computed(() =>
-  props.item.eventType === 'assigned' ? 'assigned this to' : 'unassigned this from'
+  item.eventType === 'assigned' ? 'assigned this to' : 'unassigned this from'
 );
 
 const labelStyle = (color?: string) => {

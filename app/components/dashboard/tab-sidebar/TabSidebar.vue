@@ -119,24 +119,21 @@ interface TabSidebarItem {
   badgeCount?: number;
 }
 
-const props = withDefaults(
-  defineProps<{
-    groups?: TabSidebarGroup[];
-    tabs?: TabSidebarItem[];
-    activeTabId: string;
-  }>(),
-  {
-    groups: () => [
-      {
-        id: DEFAULT_CUSTOM_TAB_GROUP_ID,
-        name: 'General',
-        collapsed: false,
-        source: 'github-search' as const,
-      },
-    ],
-    tabs: () => [],
-  }
-);
+const {
+  groups = [
+    {
+      id: DEFAULT_CUSTOM_TAB_GROUP_ID,
+      name: 'General',
+      collapsed: false,
+      source: 'github-search' as const,
+    },
+  ],
+  tabs = [],
+} = defineProps<{
+  groups?: TabSidebarGroup[];
+  tabs?: TabSidebarItem[];
+  activeTabId: string;
+}>();
 
 const emit = defineEmits<{
   (e: 'tab-select', tabId: string): void;
@@ -152,7 +149,7 @@ onMounted(() => {
 
 const isGroupCollapsed = (group: TabSidebarGroup) => hasHydrated.value && Boolean(group.collapsed);
 
-const getTabsForGroup = (groupId: string) => props.tabs.filter((tab) => tab.groupId === groupId);
+const getTabsForGroup = (groupId: string) => tabs.filter((tab) => tab.groupId === groupId);
 const getGroupTabCount = (groupId: string) => getTabsForGroup(groupId).length;
 
 // Capped depth offset: max 2rem so deep nesting doesn't waste horizontal space
@@ -165,7 +162,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   const visited = new Set<string>();
 
   const visit = (parentId: string | null, depth: number, ancestorCollapsed = false) => {
-    for (const group of props.groups) {
+    for (const group of groups) {
       const currentParentId = group.parentId ?? null;
       if (currentParentId !== parentId || visited.has(group.id)) {
         continue;
@@ -187,7 +184,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 
   visit(null, 0);
 
-  for (const group of props.groups) {
+  for (const group of groups) {
     if (!visited.has(group.id)) {
       // Skip any system groups that might not have been visited
       if (group.source === 'system') {

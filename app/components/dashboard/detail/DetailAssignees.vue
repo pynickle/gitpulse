@@ -107,7 +107,7 @@ import type {
 } from '~/types/detail-people-picker';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
-const props = defineProps<{
+const { assignees, canEditAssignees, repoInfo, issueNumber } = defineProps<{
   assignees: IssueAssigneeUser[];
   canEditAssignees: boolean;
   repoInfo: { owner: string; repo: string } | null;
@@ -135,7 +135,7 @@ const candidates = ref<IssueAssigneeCandidate[]>([]);
 
 let assigneeErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
-const visibleAssignees = computed(() => props.assignees.filter((assignee) => assignee.login));
+const visibleAssignees = computed(() => assignees.filter((assignee) => assignee.login));
 
 const currentLoginSet = computed(() => {
   return new Set(visibleAssignees.value.map((assignee) => assignee.login));
@@ -186,7 +186,7 @@ const setEditorVisible = (visible: boolean) => {
 };
 
 const openAssigneeEditor = async () => {
-  if (!props.canEditAssignees || !props.repoInfo || !props.issueNumber) {
+  if (!canEditAssignees || !repoInfo || !issueNumber) {
     return;
   }
 
@@ -204,14 +204,14 @@ const closeAssigneeEditor = (force = false) => {
 };
 
 const loadAssigneeCandidates = async (query = '') => {
-  if (!props.repoInfo || !props.issueNumber) return;
+  if (!repoInfo || !issueNumber) return;
 
   loadingCandidates.value = true;
   clearAssigneeError();
 
   try {
-    const { owner, repo } = props.repoInfo;
-    const data = await fetchAssigneeCandidates(owner, repo, props.issueNumber, query.trim());
+    const { owner, repo } = repoInfo;
+    const data = await fetchAssigneeCandidates(owner, repo, issueNumber, query.trim());
     candidates.value = data.items ?? [];
   } catch (err: unknown) {
     console.error('Error fetching issue assignee candidates:', err);
@@ -229,16 +229,16 @@ const emitUpdatedAssignees = (issue: IssueAssigneeMutationResponse) => {
 };
 
 const syncCurrentAssignees = async () => {
-  if (!props.repoInfo || !props.issueNumber) return;
+  if (!repoInfo || !issueNumber) return;
 
-  const { owner, repo } = props.repoInfo;
-  const data = await fetchAssigneeCandidates(owner, repo, props.issueNumber, '');
+  const { owner, repo } = repoInfo;
+  const data = await fetchAssigneeCandidates(owner, repo, issueNumber, '');
   emit('update:assignees', data.assignees, { assignees: data.assignees });
   candidates.value = data.items ?? [];
 };
 
 const saveAssigneeSelection = async ({ selectedKeys }: DetailPeoplePickerSubmitPayload) => {
-  if (!props.repoInfo || !props.issueNumber) return;
+  if (!repoInfo || !issueNumber) return;
 
   const current = currentLoginSet.value;
   const selected = new Set(selectedKeys);
@@ -251,17 +251,17 @@ const saveAssigneeSelection = async ({ selectedKeys }: DetailPeoplePickerSubmitP
   clearAssigneeError();
 
   try {
-    const { owner, repo } = props.repoInfo;
+    const { owner, repo } = repoInfo;
     let latestIssue: IssueAssigneeMutationResponse | null = null;
 
     if (assigneesToAdd.length > 0) {
-      latestIssue = await addAssignees(owner, repo, props.issueNumber, {
+      latestIssue = await addAssignees(owner, repo, issueNumber, {
         assignees: assigneesToAdd,
       });
     }
 
     if (assigneesToRemove.length > 0) {
-      latestIssue = await removeAssignees(owner, repo, props.issueNumber, {
+      latestIssue = await removeAssignees(owner, repo, issueNumber, {
         assignees: assigneesToRemove,
       });
     }
@@ -287,15 +287,15 @@ const saveAssigneeSelection = async ({ selectedKeys }: DetailPeoplePickerSubmitP
 };
 
 const removeAssignee = async (assignee: IssueAssigneeUser) => {
-  if (!props.repoInfo || !props.issueNumber || savingAssignees.value) return;
+  if (!repoInfo || !issueNumber || savingAssignees.value) return;
 
   savingAssignees.value = true;
   removingLogin.value = assignee.login;
   clearAssigneeError();
 
   try {
-    const { owner, repo } = props.repoInfo;
-    const issue = await removeAssignees(owner, repo, props.issueNumber, {
+    const { owner, repo } = repoInfo;
+    const issue = await removeAssignees(owner, repo, issueNumber, {
       assignees: [assignee.login],
     });
     emitUpdatedAssignees(issue);

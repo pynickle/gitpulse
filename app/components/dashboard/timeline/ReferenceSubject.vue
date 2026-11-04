@@ -44,16 +44,15 @@ interface ReferenceSubject {
   };
 }
 
-const props = withDefaults(
-  defineProps<{
-    refSubject?: ReferenceSubject | null;
-    crossRepository?: boolean;
-    resourceType?: string;
-  }>(),
-  {
-    crossRepository: false,
-  }
-);
+const {
+  refSubject,
+  crossRepository = false,
+  resourceType,
+} = defineProps<{
+  refSubject?: ReferenceSubject | null;
+  crossRepository?: boolean;
+  resourceType?: string;
+}>();
 
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
@@ -62,16 +61,16 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const resolvedResourceType = computed(() => props.resourceType ?? props.refSubject?.resourceType);
+const resolvedResourceType = computed(() => resourceType ?? refSubject?.resourceType);
 const canNavigate = computed(() => {
-  const repository = props.refSubject?.repository;
-  return Boolean(repository?.owner?.login && repository?.name && props.refSubject?.number);
+  const repository = refSubject?.repository;
+  return Boolean(repository?.owner?.login && repository?.name && refSubject?.number);
 });
 
 const handleClick = () => {
   if (!canNavigate.value) return;
 
-  const { repository, number } = props.refSubject ?? {};
+  const { repository, number } = refSubject ?? {};
   const owner = repository?.owner?.login;
   const repo = repository?.name;
 

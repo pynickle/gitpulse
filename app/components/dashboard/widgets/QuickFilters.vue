@@ -46,7 +46,7 @@ import { ref, watch, computed } from 'vue';
 
 const { t } = useI18n();
 
-const props = defineProps<{
+const { currentTab, filters } = defineProps<{
   currentTab: string;
   filters?: Record<string, boolean>;
 }>();
@@ -69,13 +69,13 @@ const TAB_OPTIONS = computed<Record<string, { label: string; value: string }[]>>
 }));
 
 const options = computed(() => {
-  return TAB_OPTIONS.value[props.currentTab] || [];
+  return TAB_OPTIONS.value[currentTab] || [];
 });
 
 const selectedValues = ref<string[]>([]);
 
 watch(
-  () => props.filters,
+  () => filters,
   (newFilters) => {
     if (!newFilters) {
       selectedValues.value = [];

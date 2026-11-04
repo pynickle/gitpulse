@@ -2,7 +2,7 @@
 import { GitPullRequestIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
-const props = defineProps<{
+const { count } = defineProps<{
   count: number;
 }>();
 
@@ -12,10 +12,8 @@ const emit = defineEmits<{
 
 const { locale, t } = useI18n();
 
-const countLabel = computed(() => formatCompactNumber(props.count, locale.value));
-const accessibleName = computed(() =>
-  t('dashboard.linkedPullRequests.count', { count: props.count })
-);
+const countLabel = computed(() => formatCompactNumber(count, locale.value));
+const accessibleName = computed(() => t('dashboard.linkedPullRequests.count', { count: count }));
 
 const handleClick = (event: MouseEvent) => {
   event.stopPropagation();

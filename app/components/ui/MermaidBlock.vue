@@ -6,7 +6,7 @@ import { estimateMermaidPreviewHeight } from '#shared/utils/mermaid-preview-heig
 import MermaidViewerModal from '~/components/ui/MermaidViewerModal.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const props = defineProps<{
+const { code } = defineProps<{
   code: string;
 }>();
 
@@ -26,7 +26,7 @@ let renderSequence = 0;
 const instanceId = useId();
 const renderId = `mermaid-${instanceId.replace(/[^a-zA-Z0-9-]/g, '-')}`;
 const previewStyle = computed(() => ({
-  '--mermaid-preview-height': `${estimateMermaidPreviewHeight(props.code)}px`,
+  '--mermaid-preview-height': `${estimateMermaidPreviewHeight(code)}px`,
 }));
 
 async function render(code: string) {
@@ -76,9 +76,9 @@ async function closeViewer() {
   openerElement.value = null;
 }
 
-onMounted(() => render(props.code));
+onMounted(() => render(code));
 watch(
-  () => [props.code, colorMode.value] as const,
+  () => [code, colorMode.value] as const,
   ([code]) => render(code)
 );
 </script>

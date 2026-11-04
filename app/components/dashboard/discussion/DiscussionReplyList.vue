@@ -7,7 +7,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const props = defineProps<{
+const { replies } = defineProps<{
   replies: DiscussionRepliesPayload;
   repoOwner: string;
   repoName: string;
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 const localeCode = computed(() => locale.value);
-const hasReplies = computed(() => props.replies.items.length > 0);
+const hasReplies = computed(() => replies.items.length > 0);
 </script>
 
 <template>

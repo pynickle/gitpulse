@@ -2,7 +2,7 @@
 import { AlertCircleIcon, ArrowDownIcon, Loader2Icon } from '@lucide/vue';
 import { computed } from 'vue';
 
-const props = defineProps<{
+const { partial, hasMore, canRetry, persistenceError, error } = defineProps<{
   partial: boolean;
   hasMore: boolean;
   canRetry: boolean;
@@ -13,11 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{ older: []; retry: []; save: [] }>();
 const { t } = useI18n();
 const visible = computed(
-  () =>
-    props.hasMore ||
-    props.partial ||
-    props.canRetry ||
-    Boolean(props.error || props.persistenceError)
+  () => hasMore || partial || canRetry || Boolean(error || persistenceError)
 );
 </script>
 <template>

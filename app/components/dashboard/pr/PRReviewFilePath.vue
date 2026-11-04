@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-const props = defineProps<{
+const { filename } = defineProps<{
   filename: string;
 }>();
 
-const slashIndex = computed(() => props.filename.lastIndexOf('/'));
+const slashIndex = computed(() => filename.lastIndexOf('/'));
 const directory = computed(() =>
-  slashIndex.value < 0 ? '' : props.filename.slice(0, slashIndex.value + 1)
+  slashIndex.value < 0 ? '' : filename.slice(0, slashIndex.value + 1)
 );
 const name = computed(() =>
-  slashIndex.value < 0 ? props.filename : props.filename.slice(slashIndex.value + 1)
+  slashIndex.value < 0 ? filename : filename.slice(slashIndex.value + 1)
 );
 </script>
 

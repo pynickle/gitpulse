@@ -8,7 +8,13 @@ import { estimateMermaidPreviewHeight } from '#shared/utils/mermaid-preview-heig
 
 import { useDeferredElementLoad } from './deferredElementLoad';
 
-const props = defineProps<{
+const {
+  code,
+  language,
+  class: className,
+  style,
+  __node,
+} = defineProps<{
   code?: string;
   language?: string | null;
   filename?: string | null;
@@ -24,11 +30,11 @@ const { t } = useI18n();
 const mermaidContainer = ref<HTMLElement | null>(null);
 const copied = shallowRef(false);
 const resetTimer = shallowRef<ReturnType<typeof setTimeout> | null>(null);
-const languageLabel = computed(() => props.language?.trim() ?? '');
+const languageLabel = computed(() => language?.trim() ?? '');
 const copyLabel = computed(() => (copied.value ? t('markdown.copied') : t('markdown.copyCode')));
-const codeText = computed(() => props.code ?? extractCodeText(props.__node) ?? '');
+const codeText = computed(() => code ?? extractCodeText(__node) ?? '');
 const AsyncMermaidBlock = defineAsyncComponent(() => import('~/components/ui/MermaidBlock.vue'));
-const shouldDeferMermaid = computed(() => props.language === 'mermaid');
+const shouldDeferMermaid = computed(() => language === 'mermaid');
 const mermaidShouldLoad = useDeferredElementLoad(
   mermaidContainer,
   shouldDeferMermaid,
@@ -103,7 +109,7 @@ onBeforeUnmount(clearResetTimer);
 </script>
 
 <template>
-  <div v-if="props.language === 'mermaid'" ref="mermaidContainer">
+  <div v-if="language === 'mermaid'" ref="mermaidContainer">
     <AsyncMermaidBlock v-if="mermaidShouldLoad" :code="codeText" />
     <div v-else class="mermaid-placeholder" :style="mermaidPreviewStyle" aria-hidden="true">
       <div class="mermaid-placeholder__skeleton" />
@@ -128,7 +134,7 @@ onBeforeUnmount(clearResetTimer);
       </button>
     </div>
 
-    <pre :class="props.class" :style="props.style" tabindex="0"><slot /></pre>
+    <pre :class="className" :style="style" tabindex="0"><slot /></pre>
   </div>
 </template>
 

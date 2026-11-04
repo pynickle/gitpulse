@@ -246,7 +246,7 @@ interface PRPanelTab {
   icon: Component;
 }
 
-const props = defineProps<{
+const { pullRequest, reviewActive } = defineProps<{
   pullRequest: PullRequestDetailViewModel;
   reviewActive?: boolean;
   detailSidebarHidden?: boolean;
@@ -285,7 +285,7 @@ const emit = defineEmits<{
 }>();
 
 const loadingTimeline = ref(false);
-const currentPullRequest = ref(props.pullRequest);
+const currentPullRequest = ref(pullRequest);
 const { user: sessionUser } = useUserSession();
 const detailError = ref('');
 const timeline = ref<PRTimelineItem[]>([]);
@@ -1044,7 +1044,7 @@ watch(
 );
 
 watch(
-  () => props.pullRequest,
+  () => pullRequest,
   (newPullRequest) => {
     timelineRequestId.value += 1;
     detailRequestId.value += 1;
@@ -1065,7 +1065,7 @@ watch(
 );
 
 watch(
-  () => [props.reviewActive, canOpenReviewWindow.value] as const,
+  () => [reviewActive, canOpenReviewWindow.value] as const,
   ([shouldOpenReview, canOpen]) => {
     if (shouldOpenReview && canOpen) {
       isReviewWindowOpen.value = true;

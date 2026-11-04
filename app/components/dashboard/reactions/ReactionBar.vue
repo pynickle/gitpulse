@@ -79,7 +79,15 @@ import {
   REACTION_LABEL_MAP,
 } from '#shared/utils/reactions';
 
-const props = defineProps<{
+const {
+  targetKind,
+  owner,
+  repo,
+  targetId,
+  initialItems,
+  initialItemsIncludeViewerState,
+  deferViewerState,
+} = defineProps<{
   targetKind: ReactionTargetKind;
   owner: string;
   repo: string;
@@ -97,31 +105,28 @@ const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 const rootEl = useTemplateRef<HTMLElement>('rootEl');
 
-const summaryItems = shallowRef<ReactionSummaryItem[]>(cloneSummaryItems(props.initialItems));
+const summaryItems = shallowRef<ReactionSummaryItem[]>(cloneSummaryItems(initialItems));
 const isPopoverOpen = shallowRef(false);
 const isLoading = shallowRef(false);
 const pendingContent = shallowRef<ReactionContent | null>(null);
 const errorMessage = shallowRef('');
-const hasViewerState = shallowRef(Boolean(props.initialItemsIncludeViewerState));
+const hasViewerState = shallowRef(Boolean(initialItemsIncludeViewerState));
 
-const allowedContents = computed(() => getReactionContentsForTarget(props.targetKind));
+const allowedContents = computed(() => getReactionContentsForTarget(targetKind));
 const isBusy = computed(() => isLoading.value || Boolean(pendingContent.value));
 const hasHydratedInitialItems = computed(
-  () => Boolean(props.initialItems) && Boolean(props.initialItemsIncludeViewerState)
+  () => Boolean(initialItems) && Boolean(initialItemsIncludeViewerState)
 );
 const shouldDeferInitialViewerState = computed(
-  () =>
-    Boolean(props.deferViewerState) &&
-    props.initialItems !== undefined &&
-    !props.initialItemsIncludeViewerState
+  () => Boolean(deferViewerState) && initialItems !== undefined && !initialItemsIncludeViewerState
 );
 const endpoint = computed(() => {
-  const owner = encodeURIComponent(props.owner);
-  const repo = encodeURIComponent(props.repo);
-  const targetId = encodeURIComponent(String(props.targetId));
-  const targetPath = getReactionApiPathForTarget(props.targetKind);
+  const encodedOwner = encodeURIComponent(owner);
+  const encodedRepo = encodeURIComponent(repo);
+  const encodedTargetId = encodeURIComponent(String(targetId));
+  const targetPath = getReactionApiPathForTarget(targetKind);
 
-  return `/api/reactions/${targetPath}/${owner}/${repo}/${targetId}`;
+  return `/api/reactions/${targetPath}/${encodedOwner}/${encodedRepo}/${encodedTargetId}`;
 });
 const visibleItems = computed(() =>
   allowedContents.value
@@ -130,17 +135,17 @@ const visibleItems = computed(() =>
 );
 
 watch(
-  () => [props.initialItems, props.initialItemsIncludeViewerState] as const,
+  () => [initialItems, initialItemsIncludeViewerState] as const,
   (items) => {
     summaryItems.value = cloneSummaryItems(items[0]);
-    hasViewerState.value = Boolean(props.initialItemsIncludeViewerState);
+    hasViewerState.value = Boolean(initialItemsIncludeViewerState);
   }
 );
 
 watch(
-  () => [props.targetKind, props.owner, props.repo, String(props.targetId)] as const,
+  () => [targetKind, owner, repo, String(targetId)] as const,
   () => {
-    hasViewerState.value = Boolean(props.initialItemsIncludeViewerState);
+    hasViewerState.value = Boolean(initialItemsIncludeViewerState);
 
     if (
       hasHydratedInitialItems.value ||
@@ -209,7 +214,7 @@ function closePopover() {
 }
 
 async function loadSummary() {
-  if (!props.owner || !props.repo || !props.targetId) {
+  if (!owner || !repo || !targetId) {
     return;
   }
 

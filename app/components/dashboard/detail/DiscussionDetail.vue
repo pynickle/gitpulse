@@ -19,7 +19,7 @@ import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloa
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
-const props = defineProps<{
+const { discussion } = defineProps<{
   discussion: DiscussionDetailPayload;
   detailSidebarHidden?: boolean;
   sourceNotification?: DashboardNotification | null;
@@ -40,7 +40,7 @@ const EMPTY_PAGE_INFO: DiscussionPageInfo = {
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 
-const discussionState = shallowRef<DiscussionDetailPayload>(cloneDiscussion(props.discussion));
+const discussionState = shallowRef<DiscussionDetailPayload>(cloneDiscussion(discussion));
 const comments = shallowRef<DiscussionComment[]>([]);
 const commentsTotalCount = shallowRef(0);
 const commentsPageInfo = shallowRef<DiscussionPageInfo>({ ...EMPTY_PAGE_INFO });
@@ -393,7 +393,7 @@ watch(
 );
 
 watch(
-  () => props.discussion,
+  () => discussion,
   (discussion) => resetDiscussionState(discussion),
   { immediate: true }
 );

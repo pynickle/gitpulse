@@ -8,21 +8,19 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import RoundImg from '~/components/ui/RoundImg.vue';
 
-const props = defineProps<{
+const { model } = defineProps<{
   model: NativeLoginBrowserPage;
 }>();
 
 const { t } = useI18n();
 
-const showApprove = computed(() => props.model.status === 'pending' && props.model.signedIn);
-const showSignIn = computed(() => props.model.status === 'pending' && !props.model.signedIn);
-const accountName = computed(() => (props.model.login ? `@${props.model.login}` : ''));
-const showDisplayName = computed(
-  () => Boolean(props.model.name) && props.model.name !== props.model.login
-);
-const showResult = computed(() => props.model.status !== 'pending');
+const showApprove = computed(() => model.status === 'pending' && model.signedIn);
+const showSignIn = computed(() => model.status === 'pending' && !model.signedIn);
+const accountName = computed(() => (model.login ? `@${model.login}` : ''));
+const showDisplayName = computed(() => Boolean(model.name) && model.name !== model.login);
+const showResult = computed(() => model.status !== 'pending');
 const statusText = computed(() => {
-  switch (props.model.status) {
+  switch (model.status) {
     case 'approved':
       return t('nativeLogin.status.approved');
     case 'cancelled':
@@ -36,7 +34,7 @@ const statusText = computed(() => {
   }
 });
 const statusClass = computed(() => {
-  switch (props.model.status) {
+  switch (model.status) {
     case 'approved':
     case 'redeemed':
       return 'is-success';

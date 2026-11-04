@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 
-const props = defineProps<{
+const { rollup } = defineProps<{
   /** The Check Rollup attached to the card. A rollup with no contexts shows nothing. */
   rollup: PullRequestCheckRollup | null | undefined;
 }>();
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const view = computed(() => toPullRequestChecksView(props.rollup));
+const view = computed(() => toPullRequestChecksView(rollup));
 
 const countLabel = computed(() => {
   if (view.value.passedCount === null) return String(view.value.totalCount);
@@ -58,8 +58,8 @@ const accessibleName = computed(() => `${countLabel.value} — ${checkSummary.va
 const handleClick = (event: MouseEvent) => {
   // Tapping the chip must not trigger the card's own row activation.
   event.stopPropagation();
-  if (!props.rollup) return;
-  emit('open', props.rollup);
+  if (!rollup) return;
+  emit('open', rollup);
 };
 
 const handleKeydown = (event: KeyboardEvent) => {

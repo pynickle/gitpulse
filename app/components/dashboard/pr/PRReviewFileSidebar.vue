@@ -33,19 +33,20 @@ interface VisibleTreeRow {
   collapsePath: string;
 }
 
-const props = withDefaults(
-  defineProps<{
-    files: PRReviewFile[];
-    activeFilename: string;
-    draftComments: PRReviewDraftComment[];
-    loadingMore: boolean;
-    hasMoreFiles: boolean;
-    viewMode: FileViewMode;
-    collapsed: boolean;
-    variant?: FileSidebarVariant;
-  }>(),
-  { variant: 'column' }
-);
+const {
+  files,
+  draftComments,
+  variant = 'column',
+} = defineProps<{
+  files: PRReviewFile[];
+  activeFilename: string;
+  draftComments: PRReviewDraftComment[];
+  loadingMore: boolean;
+  hasMoreFiles: boolean;
+  viewMode: FileViewMode;
+  collapsed: boolean;
+  variant?: FileSidebarVariant;
+}>();
 
 const emit = defineEmits<{
   (e: 'select-file', filename: string): void;
@@ -60,7 +61,7 @@ const collapsedDirectories = ref(new Set<string>());
 const draftCountsByFile = computed(() => {
   const counts = new Map<string, number>();
 
-  for (const comment of props.draftComments) {
+  for (const comment of draftComments) {
     counts.set(comment.path, (counts.get(comment.path) ?? 0) + 1);
   }
 
@@ -70,7 +71,7 @@ const draftCountsByFile = computed(() => {
 const getDraftCount = (filename: string) => draftCountsByFile.value.get(filename) ?? 0;
 
 const sortedFiles = computed(() =>
-  [...props.files].sort((first, second) => first.filename.localeCompare(second.filename))
+  [...files].sort((first, second) => first.filename.localeCompare(second.filename))
 );
 
 /** Files in the same depth-first tree-traversal order as the tree view.

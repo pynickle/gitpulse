@@ -1,10 +1,10 @@
 <template>
   <TimelineCommentCard
-    :item="props.item"
+    :item="item"
     :empty-text="localizedEmptyText"
-    :repo-owner="props.repoOwner"
-    :repo-name="props.repoName"
-    :enable-reactions="props.item.kind === 'comment' || props.item.kind === 'review-comment'"
+    :repo-owner="repoOwner"
+    :repo-name="repoName"
+    :enable-reactions="item.kind === 'comment' || item.kind === 'review-comment'"
     :reaction-target-kind="reactionTargetKind"
   />
 </template>
@@ -16,7 +16,7 @@ import { useI18n } from 'vue-i18n';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 
-const props = defineProps<{
+const { item, emptyText, repoOwner, repoName } = defineProps<{
   item: PRTimelineItem;
   emptyText?: string;
   repoOwner: string;
@@ -24,8 +24,8 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const localizedEmptyText = computed(() => props.emptyText ?? t('detailTimeline.noCommentBody'));
+const localizedEmptyText = computed(() => emptyText ?? t('detailTimeline.noCommentBody'));
 const reactionTargetKind = computed(() =>
-  props.item.kind === 'review-comment' ? 'pull-review-comment' : undefined
+  item.kind === 'review-comment' ? 'pull-review-comment' : undefined
 );
 </script>

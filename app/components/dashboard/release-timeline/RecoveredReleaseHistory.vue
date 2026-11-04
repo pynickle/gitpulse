@@ -4,7 +4,7 @@ import { useId, useTemplateRef } from 'vue';
 
 import type { RecoveredRelease } from '#shared/types/timeline-history';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-const props = defineProps<{
+const { open } = defineProps<{
   open: boolean;
   records: RecoveredRelease[];
   saving: boolean;
@@ -15,7 +15,7 @@ const { t } = useI18n();
 const titleId = useId();
 const panel = useTemplateRef<HTMLElement>('panel');
 const { handleKeydown } = useModalLifecycle({
-  open: () => props.open,
+  open: () => open,
   panel,
   onRequestClose: () => emit('close'),
 });
@@ -27,7 +27,7 @@ const {
   onPointerMove,
   onPointerUp,
   onPointerCancel,
-} = useReleaseOverlaySheet({ open: () => props.open, onRequestClose: () => emit('close') });
+} = useReleaseOverlaySheet({ open: () => open, onRequestClose: () => emit('close') });
 </script>
 <template>
   <Teleport to="body">

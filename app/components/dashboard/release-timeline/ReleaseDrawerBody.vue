@@ -10,7 +10,7 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
-const props = defineProps<{
+const { item, repository, detail } = defineProps<{
   item: TimelineRelease | null;
   repository: FollowedRepository;
   detail: ReleaseDetailPayload;
@@ -24,28 +24,26 @@ const emit = defineEmits<{
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 
-const repoOwner = computed(() => props.repository.owner);
-const repoName = computed(() => props.repository.name);
-const releaseTitle = computed(
-  () => props.detail.name?.trim() || props.detail.tag_name || props.item?.title
-);
-const tagName = computed(() => props.detail.tag_name || props.item?.tagName);
-const isPrerelease = computed(() => Boolean(props.detail.prerelease || props.item?.isPrerelease));
+const repoOwner = computed(() => repository.owner);
+const repoName = computed(() => repository.name);
+const releaseTitle = computed(() => detail.name?.trim() || detail.tag_name || item?.title);
+const tagName = computed(() => detail.tag_name || item?.tagName);
+const isPrerelease = computed(() => Boolean(detail.prerelease || item?.isPrerelease));
 const releasedAt = computed(
-  () => props.detail.published_at || props.item?.publishedAt || props.detail.created_at || ''
+  () => detail.published_at || item?.publishedAt || detail.created_at || ''
 );
 const releasedAtLabel = computed(() =>
   releasedAt.value
     ? formatDurationFromNow(releasedAt.value, locale.value, relativeTimeNow.value)
     : t('releaseDetail.unpublished')
 );
-const body = computed(() => props.detail.body?.trim() || '');
-const assets = computed(() => props.detail.assets ?? []);
+const body = computed(() => detail.body?.trim() || '');
+const assets = computed(() => detail.assets ?? []);
 // Most releases name every asset after the repo and the tag; the header above
 // already says which release this is, so the list can drop that repeated prefix.
 const assetNamePrefix = computed(() => getReleaseAssetNamePrefix(repoName.value, tagName.value));
-const githubUrl = computed(() => props.detail.html_url || props.item?.htmlUrl || '');
-const author = computed(() => props.detail.author ?? null);
+const githubUrl = computed(() => detail.html_url || item?.htmlUrl || '');
+const author = computed(() => detail.author ?? null);
 
 const handleBodyNavigation = (event: MouseEvent) => {
   if (

@@ -81,32 +81,27 @@ defineOptions({
   inheritAttrs: false,
 });
 
-const props = withDefaults(
-  defineProps<{
-    repoOwner: string;
-    repoName: string;
-    itemNumber?: number | null;
-    submit?: SubmitHandler | null;
-    placeholder?: string;
-    submitLabel?: string;
-    submittingLabel?: string;
-    modelValue?: string;
-    compact?: boolean;
-    autofocus?: boolean;
-    submitting?: boolean;
-  }>(),
-  {
-    itemNumber: null,
-    submit: null,
-    placeholder: undefined,
-    submitLabel: undefined,
-    submittingLabel: undefined,
-    modelValue: undefined,
-    compact: false,
-    autofocus: false,
-    submitting: false,
-  }
-);
+const {
+  itemNumber = null,
+  submit = null,
+  placeholder,
+  submitLabel,
+  compact = false,
+  autofocus = false,
+  submitting = false,
+} = defineProps<{
+  repoOwner: string;
+  repoName: string;
+  itemNumber?: number | null;
+  submit?: SubmitHandler | null;
+  placeholder?: string;
+  submitLabel?: string;
+  submittingLabel?: string;
+  modelValue?: string;
+  compact?: boolean;
+  autofocus?: boolean;
+  submitting?: boolean;
+}>();
 
 const emit = defineEmits<{
   (event: 'comment-created', item: TimelineCommentItem): void;
@@ -125,15 +120,13 @@ const { t } = useI18n();
 const { user } = useUserSession();
 const { isAnyModalOpen } = useModalState();
 const activatedByPlaceholder = shallowRef(false);
-const shouldLoadEditor = shallowRef(Boolean(props.compact || props.autofocus));
+const shouldLoadEditor = shallowRef(Boolean(compact || autofocus));
 // Empty values fall back to GitHubAvatar's placeholder icon instead of a 404 image.
 const currentUserLogin = computed(() => user.value?.login || '');
 const currentUserAvatar = computed(() => user.value?.avatar_url || '');
-const resolvedPlaceholder = computed(
-  () => props.placeholder || t('floatingMarkdownEditor.placeholder')
-);
-const resolvedSubmitLabel = computed(() => props.submitLabel || t('floatingMarkdownEditor.submit'));
-const shouldAutofocusEditor = computed(() => props.autofocus || activatedByPlaceholder.value);
+const resolvedPlaceholder = computed(() => placeholder || t('floatingMarkdownEditor.placeholder'));
+const resolvedSubmitLabel = computed(() => submitLabel || t('floatingMarkdownEditor.submit'));
+const shouldAutofocusEditor = computed(() => autofocus || activatedByPlaceholder.value);
 
 const activateEditor = () => {
   activatedByPlaceholder.value = true;
@@ -141,7 +134,7 @@ const activateEditor = () => {
 };
 
 watch(
-  () => [props.compact, props.autofocus],
+  () => [compact, autofocus],
   ([compact, autofocus]) => {
     if (compact || autofocus) {
       shouldLoadEditor.value = true;

@@ -71,7 +71,7 @@ interface GenericSearchItem {
   [key: string]: unknown;
 }
 
-const props = defineProps<{
+const { item, endpoint } = defineProps<{
   item: GenericSearchItem;
   endpoint: GitHubSearchEndpoint;
 }>();
@@ -80,49 +80,48 @@ const { locale } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 
 const title = computed(() => {
-  const firstLine = props.item.commit?.message?.split('\n')[0]?.trim();
+  const firstLine = item.commit?.message?.split('\n')[0]?.trim();
   return (
-    props.item.title ??
-    props.item.full_name ??
-    props.item.name ??
-    props.item.login ??
+    item.title ??
+    item.full_name ??
+    item.name ??
+    item.login ??
     firstLine ??
-    props.item.description ??
+    item.description ??
     'GitHub result'
   );
 });
 
 const itemUrl = computed(() => {
-  return typeof props.item.html_url === 'string' ? props.item.html_url : '';
+  return typeof item.html_url === 'string' ? item.html_url : '';
 });
 
 const numberLabel = computed(() => {
-  return typeof props.item.number === 'number' ? `#${props.item.number}` : '';
+  return typeof item.number === 'number' ? `#${item.number}` : '';
 });
 
 const meta = computed(() => {
-  if (props.item.repository?.full_name) return props.item.repository.full_name;
-  if (props.item.repository_url) return getRepoName(props.item.repository_url);
-  if (props.item.full_name) return props.item.full_name;
-  if (props.item.login) return `@${props.item.login}`;
-  return `/search/${props.endpoint}`;
+  if (item.repository?.full_name) return item.repository.full_name;
+  if (item.repository_url) return getRepoName(item.repository_url);
+  if (item.full_name) return item.full_name;
+  if (item.login) return `@${item.login}`;
+  return `/search/${endpoint}`;
 });
 
 const timeLabel = computed(() => {
-  const timestamp =
-    props.item.updated_at ?? props.item.pushed_at ?? props.item.commit?.committer?.date;
+  const timestamp = item.updated_at ?? item.pushed_at ?? item.commit?.committer?.date;
   return timestamp ? formatDurationFromNow(timestamp, locale.value, relativeTimeNow.value) : '';
 });
 
 const icon = computed(() => {
-  if (props.endpoint === 'issues') {
-    return props.item.pull_request ? GitPullRequestIcon : CircleDotIcon;
+  if (endpoint === 'issues') {
+    return item.pull_request ? GitPullRequestIcon : CircleDotIcon;
   }
-  if (props.endpoint === 'repositories') return BookMarkedIcon;
-  if (props.endpoint === 'code') return Code2Icon;
-  if (props.endpoint === 'commits') return GitCommitIcon;
-  if (props.endpoint === 'users') return UserIcon;
-  if (props.endpoint === 'topics') return TagsIcon;
+  if (endpoint === 'repositories') return BookMarkedIcon;
+  if (endpoint === 'code') return Code2Icon;
+  if (endpoint === 'commits') return GitCommitIcon;
+  if (endpoint === 'users') return UserIcon;
+  if (endpoint === 'topics') return TagsIcon;
   return TagIcon;
 });
 </script>

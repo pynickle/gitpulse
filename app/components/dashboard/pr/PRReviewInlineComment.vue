@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import type { PRReviewWorkspaceMode } from '#shared/utils/pr-review-workspace-presentation';
 import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
 
-const props = defineProps<{
+const { body } = defineProps<{
   path: string;
   line: number;
   body: string;
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const draft = computed({
-  get: () => props.body,
+  get: () => body,
   set: (body: string) => emit('update:body', body),
 });
 const trimmedDraft = computed(() => draft.value.trim());

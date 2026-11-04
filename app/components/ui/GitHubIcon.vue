@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-const props = withDefaults(defineProps<{ size?: number | string }>(), { size: 24 });
-const dimension = computed(() => (typeof props.size === 'number' ? `${props.size}px` : props.size));
+const { size = 24 } = defineProps<{ size?: number | string }>();
+const dimension = computed(() => (typeof size === 'number' ? `${size}px` : size));
 </script>
 
 <template>

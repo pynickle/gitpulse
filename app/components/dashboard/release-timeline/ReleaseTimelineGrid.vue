@@ -20,7 +20,7 @@ const OVERSCAN_PX = 720;
 const OVERSCAN_ROWS = 2;
 const MIN_VISIBLE_ROWS = 4;
 
-const props = defineProps<{
+const { groups, previousBaseline } = defineProps<{
   groups: ReleaseTimelineGroup[];
   previousBaseline?: string | null;
 }>();
@@ -48,7 +48,7 @@ let measurementFrame: number | undefined;
 let backToTopFrame: number | undefined;
 
 const rows = computed(() =>
-  buildReleaseTimelineGridRows(props.groups, columnCount.value, props.previousBaseline)
+  buildReleaseTimelineGridRows(groups, columnCount.value, previousBaseline)
 );
 
 const getEstimatedRowHeight = (type: 'date' | 'cards' | 'baseline') =>
@@ -357,7 +357,7 @@ watch(columnCount, () => {
 });
 
 watch(
-  () => props.groups,
+  () => groups,
   () => {
     scheduleVisibleRowsSync();
   }

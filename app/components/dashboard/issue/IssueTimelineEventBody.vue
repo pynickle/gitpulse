@@ -53,7 +53,7 @@ import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUn
 import { type ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: ProcessedIssueTimelineItem;
   repoOwner: string;
   repoName: string;
@@ -67,7 +67,7 @@ const emit = defineEmits<{
 const { locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
-const shouldRenderActorPrefix = computed(() => !props.item.hasMixedActors);
+const shouldRenderActorPrefix = computed(() => !item.hasMixedActors);
 
 const referenceEventTypes = new Set([
   'connected',

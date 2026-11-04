@@ -27,20 +27,21 @@ import type {
 const EMPTY_DRAFT_COMMENTS: PRReviewDraftComment[] = [];
 const EMPTY_REVIEW_COMMENT_THREADS: PRReviewCommentThread[] = [];
 
-const props = defineProps<{
-  repoOwner: string;
-  repoName: string;
-  sections: PRReviewDiffSection[];
-  activeFilename: string;
-  draftComments: PRReviewDraftComment[];
-  reviewCommentThreads: PRReviewCommentThread[];
-  activeDraftTarget: { path: string; line: number } | null;
-  submitting: boolean;
-  resolvingReviewThreadId?: string | null;
-  diffArrangement: PRReviewDiffArrangement;
-  workspaceMode: PRReviewWorkspaceMode;
-  keyboardInsetPx: number;
-}>();
+const { sections, activeFilename, draftComments, reviewCommentThreads, activeDraftTarget } =
+  defineProps<{
+    repoOwner: string;
+    repoName: string;
+    sections: PRReviewDiffSection[];
+    activeFilename: string;
+    draftComments: PRReviewDraftComment[];
+    reviewCommentThreads: PRReviewCommentThread[];
+    activeDraftTarget: { path: string; line: number } | null;
+    submitting: boolean;
+    resolvingReviewThreadId?: string | null;
+    diffArrangement: PRReviewDiffArrangement;
+    workspaceMode: PRReviewWorkspaceMode;
+    keyboardInsetPx: number;
+  }>();
 
 const emit = defineEmits<{
   (e: 'open-draft-editor', path: string, line: number): void;
@@ -61,7 +62,7 @@ const { opensGitHubLinks } = useGitHubLinkRouting();
 const draftsByFile = computed(() => {
   const grouped = new Map<string, PRReviewDraftComment[]>();
 
-  for (const comment of props.draftComments) {
+  for (const comment of draftComments) {
     const comments = grouped.get(comment.path) ?? [];
     comments.push(comment);
     grouped.set(comment.path, comments);
@@ -73,7 +74,7 @@ const draftsByFile = computed(() => {
 const reviewThreadsByFile = computed(() => {
   const grouped = new Map<string, PRReviewCommentThread[]>();
 
-  for (const thread of props.reviewCommentThreads) {
+  for (const thread of reviewCommentThreads) {
     const threads = grouped.get(thread.path) ?? [];
     threads.push(thread);
     grouped.set(thread.path, threads);
@@ -204,7 +205,7 @@ const getReviewThreadsForFile = (filename: string) =>
 const fileNavigationTargets = computed(() => {
   const targets = new Map<string, NonNullable<ReturnType<typeof resolveDashboardUrlTarget>>>();
 
-  for (const section of props.sections) {
+  for (const section of sections) {
     const sourceUrl = section.file.blob_url || section.file.raw_url;
     const target = resolveDashboardUrlTarget(sourceUrl);
 
@@ -247,7 +248,7 @@ const ensureInlineDraftBody = (path: string, line: number) => {
 };
 
 const getInlineDraftBodyForFile = (filename: string) => {
-  const target = props.activeDraftTarget;
+  const target = activeDraftTarget;
 
   if (!target || target.path !== filename) {
     return '';
@@ -260,7 +261,7 @@ const getInlineDraftBodyForFile = (filename: string) => {
 };
 
 const setInlineDraftBodyForFile = (filename: string, body: string) => {
-  const target = props.activeDraftTarget;
+  const target = activeDraftTarget;
 
   if (!target || target.path !== filename) {
     return;
@@ -271,7 +272,7 @@ const setInlineDraftBodyForFile = (filename: string, body: string) => {
   inlineDraftBodies.value = nextBodies;
 };
 
-const clearInlineDraftBody = (target = props.activeDraftTarget) => {
+const clearInlineDraftBody = (target = activeDraftTarget) => {
   if (!target) {
     return;
   }
@@ -306,7 +307,7 @@ const handleRemoveDraftComment = (id: string) => {
 const scrollToActiveFile = async () => {
   await nextTick();
 
-  const target = sectionElements.get(props.activeFilename);
+  const target = sectionElements.get(activeFilename);
   const container = scrollContainer.value;
 
   if (!target || !container) {
@@ -336,9 +337,9 @@ const syncVisibleFile = () => {
 
   const containerTop = container.getBoundingClientRect().top;
   const threshold = containerTop + 16;
-  let visibleFilename = props.sections[0]?.file.filename ?? '';
+  let visibleFilename = sections[0]?.file.filename ?? '';
 
-  for (const section of props.sections) {
+  for (const section of sections) {
     const element = sectionElements.get(section.file.filename);
 
     if (element && element.getBoundingClientRect().top <= threshold) {
@@ -346,7 +347,7 @@ const syncVisibleFile = () => {
     }
   }
 
-  if (visibleFilename && visibleFilename !== props.activeFilename) {
+  if (visibleFilename && visibleFilename !== activeFilename) {
     lastScrollSyncedFilename.value = visibleFilename;
     emit('visible-file-changed', visibleFilename);
   }
@@ -364,7 +365,7 @@ const handleScroll = () => {
 };
 
 watch(
-  () => props.activeFilename,
+  () => activeFilename,
   (activeFilename) => {
     if (activeFilename === lastScrollSyncedFilename.value) {
       lastScrollSyncedFilename.value = null;
@@ -376,7 +377,7 @@ watch(
 );
 
 watch(
-  () => props.activeDraftTarget,
+  () => activeDraftTarget,
   (target) => {
     if (target) {
       ensureInlineDraftBody(target.path, target.line);

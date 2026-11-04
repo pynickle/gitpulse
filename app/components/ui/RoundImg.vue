@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-const props = defineProps<{
+const { width, height } = defineProps<{
   src: string;
   alt?: string;
   width?: number | string;
@@ -22,8 +22,8 @@ const props = defineProps<{
 }>();
 
 const style = computed(() => ({
-  width: props.width ? `${props.width}px` : undefined,
-  height: props.height ? `${props.height}px` : undefined,
+  width: width ? `${width}px` : undefined,
+  height: height ? `${height}px` : undefined,
 }));
 </script>
 

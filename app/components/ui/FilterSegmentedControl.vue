@@ -53,19 +53,16 @@ export interface SegmentedOption {
   color?: string;
 }
 
-const props = withDefaults(
-  defineProps<{
-    options: SegmentedOption[];
-    modelValue?: string;
-    disabled?: boolean;
-    ariaLabel?: string;
-  }>(),
-  {
-    modelValue: '',
-    disabled: false,
-    ariaLabel: undefined,
-  }
-);
+const {
+  options,
+  modelValue = '',
+  disabled = false,
+} = defineProps<{
+  options: SegmentedOption[];
+  modelValue?: string;
+  disabled?: boolean;
+  ariaLabel?: string;
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
@@ -75,7 +72,7 @@ const focusedIndex = ref(-1);
 const containerRef = useTemplateRef<HTMLDivElement>('containerEl');
 const indicatorPos = ref({ left: 0, width: 0 });
 
-const activeIndex = computed(() => props.options.findIndex((o) => o.value === props.modelValue));
+const activeIndex = computed(() => options.findIndex((o) => o.value === modelValue));
 
 function updateIndicator() {
   const container = containerRef.value;
@@ -94,7 +91,7 @@ function updateIndicator() {
 let resizeObserver: ResizeObserver | null = null;
 
 watch(
-  [activeIndex, () => props.options],
+  [activeIndex, () => options],
   () => {
     nextTick(updateIndicator);
   },
@@ -113,7 +110,7 @@ onUnmounted(() => {
 
 const indicatorStyle = computed(() => {
   if (activeIndex.value < 0) return { display: 'none' };
-  const activeColor = props.options[activeIndex.value]?.color;
+  const activeColor = options[activeIndex.value]?.color;
   return {
     left: `${indicatorPos.value.left}px`,
     width: `${indicatorPos.value.width}px`,
@@ -124,19 +121,19 @@ const indicatorStyle = computed(() => {
 });
 
 function selectOption(option: SegmentedOption) {
-  if (option.disabled || props.disabled) return;
+  if (option.disabled || disabled) return;
   emit('update:modelValue', option.value);
 }
 
 function selectOptionAt(index: number) {
-  const option = props.options[index];
+  const option = options[index];
   if (!option) return;
   selectOption(option);
   focusedIndex.value = index;
 }
 
 function onKeydown(e: KeyboardEvent) {
-  const opts = props.options;
+  const opts = options;
   const currentIdx = focusedIndex.value >= 0 ? focusedIndex.value : activeIndex.value;
 
   switch (e.key) {
@@ -182,9 +179,9 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (val) => {
-    const idx = props.options.findIndex((o) => o.value === val);
+    const idx = options.findIndex((o) => o.value === val);
     if (idx >= 0) focusedIndex.value = idx;
   },
   { immediate: true }

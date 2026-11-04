@@ -17,7 +17,7 @@ import {
   getDashboardSubjectTypeVisual,
 } from '~/utils/getDashboardSubjectStateVisual';
 
-const props = defineProps<{
+const { currentTab, filters, labelSuggestions, repoSuggestions, authorSuggestions } = defineProps<{
   currentTab: DashboardFilterSource;
   filters: DashboardRouteFilters;
   labelSuggestions?: string[];
@@ -34,20 +34,19 @@ const { t } = useI18n();
 const isCollapsed = ref(true);
 
 const labelSuggestionItems = computed(() =>
-  (props.labelSuggestions ?? []).map((label) => ({ value: label }))
+  (labelSuggestions ?? []).map((label) => ({ value: label }))
 );
 
 const repoSuggestionItems = computed(() =>
-  (props.repoSuggestions ?? []).map((repo) => ({ value: repo }))
+  (repoSuggestions ?? []).map((repo) => ({ value: repo }))
 );
 
 const authorSuggestionItems = computed(() =>
-  (props.authorSuggestions ?? []).map((author) => ({ value: author }))
+  (authorSuggestions ?? []).map((author) => ({ value: author }))
 );
 
-const isTodoTab = computed(() => props.currentTab === 'todos');
-const supportsFilter = (key: DashboardFilterKey) =>
-  sourceSupportsDashboardFilter(props.currentTab, key);
+const isTodoTab = computed(() => currentTab === 'todos');
+const supportsFilter = (key: DashboardFilterKey) => sourceSupportsDashboardFilter(currentTab, key);
 const hasAdvancedFilterControls = computed(() => {
   return (
     supportsFilter('repo') ||
@@ -63,16 +62,16 @@ const hasAdvancedFilterControls = computed(() => {
 
 const activeFilterCount = computed(() => {
   if (isTodoTab.value) {
-    return props.filters.subjectType ? 1 : 0;
+    return filters.subjectType ? 1 : 0;
   }
 
-  let count = props.filters.labels.length;
-  if (supportsFilter('repo') && props.filters.repo) count++;
-  if (supportsFilter('author') && props.filters.author) count++;
-  if (supportsFilter('review') && props.filters.review) count++;
-  if (supportsFilter('archived') && props.filters.archived) count++;
-  if (supportsFilter('sort') && props.filters.sort) count++;
-  if (supportsFilter('order') && props.filters.order) count++;
+  let count = filters.labels.length;
+  if (supportsFilter('repo') && filters.repo) count++;
+  if (supportsFilter('author') && filters.author) count++;
+  if (supportsFilter('review') && filters.review) count++;
+  if (supportsFilter('archived') && filters.archived) count++;
+  if (supportsFilter('sort') && filters.sort) count++;
+  if (supportsFilter('order') && filters.order) count++;
   return count;
 });
 

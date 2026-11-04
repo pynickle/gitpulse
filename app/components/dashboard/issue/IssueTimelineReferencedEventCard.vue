@@ -62,14 +62,14 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { sanitizeHtml } from '~/utils/sanitizeHtml';
 
-const props = defineProps<{
+const { item } = defineProps<{
   item: IssueTimelineItem;
 }>();
 
 const { t } = useI18n();
 
 const sanitizedCommitMessageHeadlineHtml = computed(() => {
-  const headlineHtml = props.item.commit?.messageHeadlineHTML;
+  const headlineHtml = item.commit?.messageHeadlineHTML;
 
   if (!headlineHtml) {
     return '';

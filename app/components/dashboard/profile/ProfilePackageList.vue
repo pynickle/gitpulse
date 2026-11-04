@@ -12,7 +12,7 @@ interface PackageFilterOption {
   icon: Component;
 }
 
-const props = defineProps<{
+const { username, isOrganization } = defineProps<{
   username: string;
   isOrganization: boolean;
   emptyLabel: string;
@@ -28,9 +28,9 @@ const relativeTimeNow = useRelativeTimeNow();
 const typeFilter = ref<PackageTypeFilter>('all');
 
 const { items, loading, error, pagination, showPagination, goToPage, refresh } = useUserPackages(
-  toRef(props, 'username'),
+  toRef(() => username),
   typeFilter,
-  toRef(props, 'isOrganization')
+  toRef(() => isOrganization)
 );
 
 const PACKAGE_TYPE_OPTIONS: PackageType[] = [

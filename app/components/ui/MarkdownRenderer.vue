@@ -17,7 +17,7 @@ import { loadShikiTheme, useUserSettings } from '~/composables/useUserSettings';
 
 import { markdownRepoContextKey } from '../../utils/markdownRepoPathUtils';
 
-const props = defineProps<{
+const { value, repoOwner, repoName, basePath, branch } = defineProps<{
   value: string;
   repoOwner?: string;
   repoName?: string;
@@ -31,10 +31,10 @@ const { applyGitHubAutolinks } = useGitHubAutolinks();
 const { settings } = useUserSettings();
 const markdownPlugins = createMarkdownPlugins();
 const markdownRepoContext = computed(() => ({
-  owner: props.repoOwner,
-  repo: props.repoName,
-  basePath: props.basePath,
-  branch: props.branch,
+  owner: repoOwner,
+  repo: repoName,
+  basePath: basePath,
+  branch: branch,
 }));
 
 provide(markdownRepoContextKey, markdownRepoContext);
@@ -215,11 +215,11 @@ const rendererComponents: Record<string, string | DefineComponent<any, any, any>
 
 watch(
   () => [
-    props.value,
-    props.repoOwner,
-    props.repoName,
-    props.basePath,
-    props.branch,
+    value,
+    repoOwner,
+    repoName,
+    basePath,
+    branch,
     settings.value.appearance.shikiLightTheme,
     settings.value.appearance.shikiDarkTheme,
   ],

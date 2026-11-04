@@ -48,7 +48,7 @@ import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUn
 import { type PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const props = defineProps<{
+const { item, repoOwner, repoName } = defineProps<{
   item: PRTimelineItem;
   repoOwner: string;
   repoName: string;
@@ -62,9 +62,9 @@ const emit = defineEmits<{
 const { locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
-const repoFullName = computed(() => `${props.repoOwner}/${props.repoName}`);
-const eventDate = computed(() => props.item.createdAt || props.item.commit?.committedDate || '');
-const shouldRenderActorPrefix = computed(() => !props.item.hasMixedActors);
+const repoFullName = computed(() => `${repoOwner}/${repoName}`);
+const eventDate = computed(() => item.createdAt || item.commit?.committedDate || '');
+const shouldRenderActorPrefix = computed(() => !item.hasMixedActors);
 
 const referenceEventTypes = new Set([
   'connected',

@@ -16,45 +16,45 @@ import { computed } from 'vue';
 
 const { t } = useI18n();
 
-const props = defineProps<{
+const { currentTab, stats } = defineProps<{
   currentTab: string;
   stats: Record<string, number>;
 }>();
 
 const displayStats = computed(() => {
-  if (props.currentTab === 'notifications') {
+  if (currentTab === 'notifications') {
     return [
       {
         label: t('dashboard.widgets.stats.unread'),
-        value: props.stats.unread || 0,
+        value: stats.unread || 0,
         colorClass: 'has-text-warning',
       },
       {
         label: t('dashboard.widgets.stats.read'),
-        value: props.stats.read || 0,
+        value: stats.read || 0,
         colorClass: 'has-text-success',
       },
       {
         label: t('dashboard.widgets.stats.total'),
-        value: props.stats.total || Object.values(props.stats).reduce((a, b) => a + b, 0),
+        value: stats.total || Object.values(stats).reduce((a, b) => a + b, 0),
         colorClass: 'has-text-info',
       },
     ];
-  } else if (props.currentTab === 'pulls') {
+  } else if (currentTab === 'pulls') {
     return [
       {
         label: t('dashboard.widgets.stats.open'),
-        value: props.stats.open || 0,
+        value: stats.open || 0,
         colorClass: 'has-text-success',
       },
       {
         label: t('dashboard.widgets.stats.merged'),
-        value: props.stats.merged || 0,
+        value: stats.merged || 0,
         colorClass: 'has-text-purple',
       },
       {
         label: t('dashboard.widgets.stats.closed'),
-        value: props.stats.closed || 0,
+        value: stats.closed || 0,
         colorClass: 'has-text-danger',
       },
     ];
@@ -62,17 +62,17 @@ const displayStats = computed(() => {
     return [
       {
         label: t('dashboard.widgets.stats.open'),
-        value: props.stats.open || 0,
+        value: stats.open || 0,
         colorClass: 'has-text-success',
       },
       {
         label: t('dashboard.widgets.stats.closed'),
-        value: props.stats.closed || 0,
+        value: stats.closed || 0,
         colorClass: 'has-text-danger',
       },
       {
         label: t('dashboard.widgets.stats.total'),
-        value: props.stats.total || (props.stats.open || 0) + (props.stats.closed || 0),
+        value: stats.total || (stats.open || 0) + (stats.closed || 0),
         colorClass: 'has-text-info',
       },
     ];
