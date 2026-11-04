@@ -670,7 +670,7 @@ const requestReviewerSelection = async (payload: PRReviewerMutationPayload) => {
 
     currentPullRequest.value = {
       ...currentPullRequest.value,
-      ...(data.pullRequest ?? {}),
+      ...data.pullRequest,
       reviewers: data.reviewers ?? currentPullRequest.value.reviewers,
     };
     invalidateReviewerSummaryRequests();
@@ -740,7 +740,7 @@ const removeReviewerRequest = async (reviewer: PRReviewerSummaryItem) => {
 
     currentPullRequest.value = {
       ...currentPullRequest.value,
-      ...(data.pullRequest ?? {}),
+      ...data.pullRequest,
       reviewers: data.reviewers ?? currentPullRequest.value.reviewers,
     };
     invalidateReviewerSummaryRequests();
@@ -785,7 +785,7 @@ const updateAssignees = (assignees: IssueAssigneeUser[], issue?: IssueAssigneeMu
 
   currentPullRequest.value = {
     ...currentPullRequest.value,
-    ...(issue ?? {}),
+    ...issue,
     assignees,
     assignee: issue?.assignee ?? assignees[0] ?? null,
   };
