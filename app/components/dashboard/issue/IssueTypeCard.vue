@@ -166,7 +166,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:issueType': [issueType: GitHubIssueType | null];
-  'update:isIssueTypeEditorVisible': [isVisible: boolean];
 }>();
 
 const { t } = useI18n();
@@ -232,7 +231,6 @@ const toggleIssueTypeEditor = async () => {
 
   const willBeVisible = !isIssueTypeEditorVisible.value;
   isIssueTypeEditorVisible.value = willBeVisible;
-  emit('update:isIssueTypeEditorVisible', willBeVisible);
   if (willBeVisible) {
     selectedTypeName.value = props.issueType?.name ?? '';
     openModal();
@@ -270,7 +268,6 @@ const saveIssueType = async () => {
     );
     emit('update:issueType', updatedIssueType);
     isIssueTypeEditorVisible.value = false;
-    emit('update:isIssueTypeEditorVisible', false);
     closeModal();
   } catch (error: unknown) {
     issueTypeError.value = getFetchErrorMessage(error, t('detailIssueType.updateFailed'));
@@ -296,7 +293,7 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
-@use '~/assets/scss/issue-metadata-editor';
+@use '~/assets/scss/detail-metadata-editor';
 
 .issue-type-row {
   position: relative;

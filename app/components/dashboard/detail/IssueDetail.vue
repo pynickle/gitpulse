@@ -51,16 +51,14 @@
             :issue-number="currentIssue?.number || null"
             :repo-info="repoInfo"
             @update:issue-type="updateIssueType"
-            @update:is-issue-type-editor-visible="updateIssueTypeEditorVisibility"
           />
 
-          <IssueLabels
+          <DetailLabels
             :labels="currentIssue?.labels || []"
             :can-edit-labels="canEditLabels"
-            :issue-number="currentIssue?.number || null"
+            :number="currentIssue?.number || null"
             :repo-info="repoInfo"
             @update:labels="updateLabels"
-            @update:is-label-editor-visible="updateLabelEditorVisibility"
           />
 
           <DetailAssignees
@@ -69,7 +67,6 @@
             :issue-number="currentIssue?.number || null"
             :repo-info="repoInfo"
             @update:assignees="updateAssignees"
-            @update:is-assignee-editor-visible="updateAssigneeEditorVisibility"
           />
 
           <IssueActions
@@ -97,12 +94,13 @@
 import { computed, ref, watch } from 'vue';
 
 import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
-import type { IssueDetailLabel, IssueDetailPayload } from '#shared/types/issues';
+import type { IssueDetailPayload } from '#shared/types/issues';
+import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
+import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
-import IssueLabels from '~/components/dashboard/issue/IssueLabels.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
 import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
@@ -120,7 +118,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
-  (e: 'update:non-sticky-header', visible: boolean): void;
   (e: 'update:compact-header-visible', visible: boolean): void;
 }>();
 
@@ -130,7 +127,6 @@ const currentIssue = ref(props.issue);
 const repoPermissions = ref(createEmptyRepoPermissions());
 const isLocked = ref(props.issue?.locked || false);
 const timeline = ref<IssueTimelineItem[]>([]);
-const isLabelEditorVisible = ref(false);
 const timelineRequestId = ref(0);
 const permissionRequestId = ref(0);
 const currentTimelinePage = ref(1);
@@ -211,7 +207,7 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
   emit('switch-pull-request', owner, repo, pullNumber);
 };
 
-const updateLabels = (labels: IssueDetailLabel[]) => {
+const updateLabels = (labels: RepositoryLabel[]) => {
   currentIssue.value.labels = labels;
 };
 
@@ -251,19 +247,6 @@ const addTimelineEvent = (event: IssueTimelineItem) => {
   timeline.value.push(event);
 };
 
-const updateLabelEditorVisibility = (visible: boolean) => {
-  isLabelEditorVisible.value = visible;
-  emit('update:non-sticky-header', visible);
-};
-
-const updateIssueTypeEditorVisibility = (visible: boolean) => {
-  emit('update:non-sticky-header', visible);
-};
-
-const updateAssigneeEditorVisibility = (visible: boolean) => {
-  emit('update:non-sticky-header', visible);
-};
-
 const getIssueIdentity = () => {
   if (!repoOwner.value || !repoName.value || !currentIssue.value?.number) return '';
   return `${repoOwner.value}/${repoName.value}/${currentIssue.value.number}`;
@@ -274,12 +257,10 @@ const resetIssueScopedState = (issue: IssueDetailPayload) => {
   timeline.value = [];
   repoPermissions.value = createEmptyRepoPermissions();
   isLocked.value = issue?.locked || false;
-  isLabelEditorVisible.value = false;
   currentTimelinePage.value = 1;
   hasNextTimelinePage.value = false;
   loadingMoreTimeline.value = false;
   resetCompactHeader();
-  emit('update:non-sticky-header', false);
 };
 
 const fetchTimeline = async () => {

@@ -1,5 +1,5 @@
 <template>
-  <div :class="['dashboard-top-header', { 'is-not-sticky': nonSticky }]">
+  <div class="dashboard-top-header">
     <div class="card-header-title dashboard-top-header__toolbar">
       <div class="buttons dashboard-top-header__nav">
         <button type="button" class="button is-light is-small" @click="$emit('back')">
@@ -135,7 +135,6 @@ const props = defineProps<{
   backLabel: string;
   homeLabel: string;
   showHomeButton: boolean;
-  nonSticky?: boolean;
   detailSummary?: DetailSummary | null;
   showDetailSidebarToggle?: boolean;
   detailSidebarHidden?: boolean;
@@ -277,11 +276,6 @@ onBeforeUnmount(() => {
   position: sticky;
   top: 0;
   z-index: 10;
-}
-
-.dashboard-top-header.is-not-sticky {
-  position: static;
-  z-index: auto;
 }
 
 .dashboard-top-header__toolbar {

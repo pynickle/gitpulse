@@ -275,6 +275,10 @@ _Avoid_: detail page, detail view
 The metadata column on the right side of a Detail Overlay, holding cards such as labels, assignees, and actions. Present on pull request, issue, discussion, and repository Detail Overlays.
 _Avoid_: right panel, metadata column, "sidebar" used alone
 
+**Metadata Editor Modal**:
+The modal a Detail Sidebar card opens to change one metadata value of the subject — the labels card's editor or the issue type card's editor, which draw their shell (overlay, title, scrollable option list, Cancel/Save) from one stylesheet. The assignee card's picker is a different shell. The labels editor is one component serving both an issue and a pull request, because both attach labels through the same GitHub endpoint.
+_Avoid_: label editor when naming the shell, metadata dialog
+
 ## Release Follows
 
 **Repository Discovery**:

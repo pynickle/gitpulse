@@ -7,7 +7,6 @@
           :back-label="backLabel"
           :home-label="homeLabel"
           :show-home-button="showHomeButton"
-          :non-sticky="nonStickyHeader"
           :detail-summary="detailSummary"
           :show-detail-sidebar-toggle="showDetailSidebarToggle"
           :detail-sidebar-hidden="detailSidebarHidden"
@@ -65,7 +64,6 @@ defineProps<{
   backLabel: string;
   homeLabel: string;
   showHomeButton: boolean;
-  nonStickyHeader?: boolean;
   contentClass?: string;
   hideHeader?: boolean;
   detailSummary?: DetailSummary | null;

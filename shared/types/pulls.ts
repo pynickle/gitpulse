@@ -1,4 +1,5 @@
 import type { IssueAssigneeUser } from './assignees';
+import type { RepositoryLabel } from './labels';
 import type { PullRequestReviewersSummary } from './pr-reviewers';
 import type { ReactionSummaryItem } from './reactions';
 
@@ -22,13 +23,6 @@ export interface PullRequestTeamSummary {
   description?: string | null;
   html_url?: string | null;
   url?: string | null;
-}
-
-export interface PullRequestDetailLabel {
-  id?: number | string;
-  name: string;
-  color: string;
-  description?: string | null;
 }
 
 export interface PullRequestRepositorySummary {
@@ -106,7 +100,7 @@ export interface PullRequestDetailPayload {
   assignees?: IssueAssigneeUser[];
 
   // Labels
-  labels?: PullRequestDetailLabel[];
+  labels?: RepositoryLabel[];
   reactions?: ReactionSummaryItem[];
 
   // Reviewers

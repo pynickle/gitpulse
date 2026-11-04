@@ -7,15 +7,16 @@
       </div>
       <button
         type="button"
-        @click="toggleLabelEditor"
         class="sidebar-card__action"
         :class="{ 'sidebar-card__action--hidden': !canEditLabels }"
         :title="t('detailLabels.edit')"
         :disabled="!canEditLabels"
+        @click="toggleLabelEditor"
       >
         <PencilIcon :size="14" />
       </button>
     </div>
+
     <div class="sidebar-card__content">
       <div v-if="labels.length > 0" class="label-tags">
         <span
@@ -30,9 +31,7 @@
           {{ label.name }}
         </span>
       </div>
-      <p v-else class="sidebar-card__empty">
-        {{ t('detailLabels.empty') }}
-      </p>
+      <p v-else class="sidebar-card__empty">{{ t('detailLabels.empty') }}</p>
     </div>
 
     <Teleport to="body">
@@ -48,8 +47,8 @@
               <button
                 type="button"
                 class="label-editor-close"
-                @click="toggleLabelEditor"
                 :disabled="savingLabels"
+                @click="toggleLabelEditor"
               >
                 <XIcon :size="16" />
               </button>
@@ -108,16 +107,16 @@
               <button
                 type="button"
                 class="label-btn-cancel"
-                @click="toggleLabelEditor"
                 :disabled="savingLabels"
+                @click="toggleLabelEditor"
               >
                 {{ t('detailLabels.cancel') }}
               </button>
               <button
                 type="button"
                 class="label-btn-save"
-                @click="saveLabels"
                 :disabled="loadingLabels || savingLabels"
+                @click="saveLabels"
               >
                 <Loader2Icon v-if="savingLabels" class="spin-animation" :size="14" />
                 <span>{{ savingLabels ? t('detailLabels.saving') : t('detailLabels.save') }}</span>
@@ -135,26 +134,18 @@ import { AlertCircleIcon, CheckIcon, Loader2Icon, PencilIcon, TagIcon, XIcon } f
 import { onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { RepositoryLabel } from '#shared/types/labels';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
-
-interface DashboardLabel {
-  id?: number | string;
-  name: string;
-  color: string;
-  description?: string | null;
-}
 
 const props = defineProps<{
-  labels: DashboardLabel[];
+  labels: RepositoryLabel[];
   canEditLabels: boolean;
   repoInfo: { owner: string; repo: string } | null;
-  issueNumber?: number | null;
+  number: number | null;
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:labels', labels: DashboardLabel[]): void;
-  (e: 'update:is-label-editor-visible', isVisible: boolean): void;
+  (e: 'update:labels', labels: RepositoryLabel[]): void;
 }>();
 
 const { t } = useI18n();
@@ -164,7 +155,7 @@ const { openModal, closeModal } = useModalState();
 const isLabelEditorVisible = ref(false);
 const loadingLabels = ref(false);
 const savingLabels = ref(false);
-const repoLabels = ref<DashboardLabel[]>([]);
+const repoLabels = ref<RepositoryLabel[]>([]);
 const selectedLabels = ref<string[]>([]);
 const labelError = ref<string>('');
 let labelErrorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -198,17 +189,18 @@ watch(
 );
 
 const toggleLabelEditor = async () => {
-  if (props.canEditLabels) {
-    const willBeVisible = !isLabelEditorVisible.value;
-    isLabelEditorVisible.value = willBeVisible;
-    emit('update:is-label-editor-visible', willBeVisible);
-    if (willBeVisible) {
-      openModal();
-      await fetchRepoLabels();
-    } else {
-      closeModal();
-    }
+  if (!props.canEditLabels) return;
+
+  const willBeVisible = !isLabelEditorVisible.value;
+  isLabelEditorVisible.value = willBeVisible;
+
+  if (willBeVisible) {
+    openModal();
+    await fetchRepoLabels();
+    return;
   }
+
+  closeModal();
 };
 
 onUnmounted(() => {
@@ -219,7 +211,7 @@ onUnmounted(() => {
 });
 
 const fetchRepoLabels = async () => {
-  if (!props.repoInfo || !props.issueNumber) return;
+  if (!props.repoInfo || !props.number) return;
 
   loadingLabels.value = true;
   selectedLabels.value = [];
@@ -227,12 +219,11 @@ const fetchRepoLabels = async () => {
   try {
     const { owner, repo } = props.repoInfo;
 
-    const data = await $fetch<DashboardLabel[]>(`/api/repos/${owner}/${repo}/labels`, {
+    const data = await $fetch<RepositoryLabel[]>(`/api/repos/${owner}/${repo}/labels`, {
       method: 'GET',
     });
 
     repoLabels.value = data || [];
-
     selectedLabels.value = props.labels.map((label) => label.name);
   } catch (err) {
     console.error('Error fetching repository labels:', err);
@@ -258,8 +249,8 @@ const saveLabels = async () => {
 
   try {
     const { owner, repo } = props.repoInfo;
-    const data = await apiFetch<DashboardLabel[]>(
-      `/api/repos/${owner}/${repo}/issues/${props.issueNumber}/labels`,
+    const data = await apiFetch<RepositoryLabel[]>(
+      `/api/repos/${owner}/${repo}/issues/${props.number}/labels`,
       {
         method: 'PUT',
         body: {
@@ -273,7 +264,6 @@ const saveLabels = async () => {
     }
 
     isLabelEditorVisible.value = false;
-    emit('update:is-label-editor-visible', false);
     closeModal();
   } catch (err: unknown) {
     console.error('Error saving labels:', err);
@@ -286,7 +276,7 @@ const saveLabels = async () => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/issue-metadata-editor';
+@use '~/assets/scss/detail-metadata-editor';
 
 .label-tag {
   display: inline-flex;

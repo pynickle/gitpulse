@@ -120,7 +120,6 @@ const emit = defineEmits<{
     assignees: IssueAssigneeUser[],
     issue?: IssueAssigneeMutationResponse
   ): void;
-  (e: 'update:is-assignee-editor-visible', isVisible: boolean): void;
 }>();
 
 const { t } = useI18n();
@@ -184,7 +183,6 @@ const scheduleAssigneeErrorClear = () => {
 
 const setEditorVisible = (visible: boolean) => {
   isAssigneeEditorVisible.value = visible;
-  emit('update:is-assignee-editor-visible', visible);
 };
 
 const openAssigneeEditor = async () => {

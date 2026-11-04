@@ -97,7 +97,6 @@ const { isDetailSidebarHidden, syncDetailSidebarPane, toggleDetailSidebar } =
 const { isDetailSidebarSheetViewport } = useDetailSidebarViewport();
 const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
   createDashboardDetailPaneLoaders();
-const isIssueHeaderNonSticky = shallowRef(false);
 const isPullRequestReviewActive = shallowRef(false);
 const isCompactHeaderVisible = shallowRef(false);
 const pullRequestCompactSummary = shallowRef<DetailSummaryContent | null>(null);
@@ -251,10 +250,6 @@ const isRepositoryContentVisible = computed(
   () => activeDetailPane.value?.type === 'repository' && !isFeedbackVisible.value
 );
 
-const isHeaderNonSticky = computed(() => {
-  return activeDetailPane.value?.type === 'issue' && isIssueHeaderNonSticky.value;
-});
-
 const getPullRequestState = (pullRequest: PullRequestDetailViewModel | null) => {
   if (pullRequest?.merged || pullRequest?.merged_at) return 'merged';
   if (pullRequest?.state === 'closed') return 'closed';
@@ -328,7 +323,6 @@ const handleSwitchDiscussion = (owner: string, repo: string, discussionNumber: n
 
 watch(activeDetailKey, () => {
   isPanePending.value = false;
-  isIssueHeaderNonSticky.value = false;
   isPullRequestReviewActive.value = false;
   isCompactHeaderVisible.value = false;
   pullRequestCompactSummary.value = null;
@@ -370,7 +364,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
       :back-label="t('detailOverlay.back')"
       :home-label="t('detailOverlay.home')"
       :show-home-button="shouldShowHomeButton"
-      :non-sticky-header="isHeaderNonSticky"
       :hide-header="isPullRequestReviewActive"
       :detail-summary="detailSummary"
       :show-detail-sidebar-toggle="isDetailSidebarToggleVisible"
@@ -438,7 +431,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
                 :issue="issue"
                 :detail-sidebar-hidden="isDetailSidebarHidden"
                 :source-notification="sourceNotification"
-                @update:non-sticky-header="isIssueHeaderNonSticky = $event"
                 @update:compact-header-visible="isCompactHeaderVisible = $event"
                 @switch-issue="handleSwitchIssue"
                 @switch-pull-request="handleSwitchPullRequest"

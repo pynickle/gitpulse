@@ -134,11 +134,11 @@
         media="(max-width: 1024px)"
       >
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
-          <PRLabels
+          <DetailLabels
             :labels="currentPullRequest?.labels || []"
             :can-edit-labels="canEditLabels"
             :repo-info="repoInfo"
-            :pr-number="currentPullRequest?.number || null"
+            :number="currentPullRequest?.number || null"
             @update:labels="updateLabels"
           />
 
@@ -210,18 +210,15 @@ import {
 } from 'vue';
 
 import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
+import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
-import type {
-  PullRequestDetailLabel,
-  PullRequestDetailResponse,
-  PullRequestDetailViewModel,
-} from '#shared/types/pulls';
+import type { PullRequestDetailResponse, PullRequestDetailViewModel } from '#shared/types/pulls';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
+import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
-import PRLabels from '~/components/dashboard/pr/PRLabels.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
@@ -777,7 +774,7 @@ const handlePullRequestHeadBranchUpdated = () => {
   fetchPullRequestDetails();
 };
 
-const updateLabels = (labels: PullRequestDetailLabel[]) => {
+const updateLabels = (labels: RepositoryLabel[]) => {
   if (currentPullRequest.value) {
     currentPullRequest.value.labels = labels;
   }

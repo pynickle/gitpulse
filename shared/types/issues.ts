@@ -3,6 +3,7 @@
  */
 
 import type { IssueAssigneeUser } from './assignees';
+import type { RepositoryLabel } from './labels';
 import type { ReactionSummaryItem } from './reactions';
 
 export type GitHubIssueTypeColor =
@@ -30,13 +31,6 @@ export interface GitHubIssueType extends IssueTypeSummary {
   is_enabled?: boolean;
 }
 
-export interface IssueDetailLabel {
-  id?: number | string;
-  name: string;
-  color: string;
-  description?: string | null;
-}
-
 export interface IssueDetailPayload {
   id: number;
   number: number;
@@ -59,7 +53,7 @@ export interface IssueDetailPayload {
   assignee?: IssueAssigneeUser | null;
   assignees?: IssueAssigneeUser[];
 
-  labels?: IssueDetailLabel[];
+  labels?: RepositoryLabel[];
   type?: GitHubIssueType | null;
   reactions?: ReactionSummaryItem[];
 
