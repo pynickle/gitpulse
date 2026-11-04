@@ -73,6 +73,8 @@ const { createNitroUserSettingsStorageAdapter, createUpstashRedisUserSettingsSto
 
 test('filesystem history round-trips separately from preferences and serializes clear/merge races', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'gitpulse-history-'));
+  if (dirname(directory) !== tmpdir() || !basename(directory).startsWith('gitpulse-history-'))
+    throw new Error('Unexpected temporary path');
   const original = Object.getOwnPropertyDescriptor(globalThis, 'useStorage');
   const storage = createStorage({ driver: fsDriver({ base: directory }) });
   Object.assign(globalThis, { useStorage: () => storage });
@@ -107,8 +109,6 @@ test('filesystem history round-trips separately from preferences and serializes 
     await storage.dispose();
     if (original) Object.defineProperty(globalThis, 'useStorage', original);
     else Reflect.deleteProperty(globalThis, 'useStorage');
-    if (dirname(directory) !== tmpdir() || !basename(directory).startsWith('gitpulse-history-'))
-      throw new Error('Unexpected temporary path');
     await rm(directory, { recursive: true, force: true });
   }
 });
