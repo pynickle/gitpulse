@@ -46,6 +46,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 - Read props through reactive destructure: `const { a, b = 2 } = defineProps<T>()` (stable since Vue 3.5, which is installed). Do not use `withDefaults()` — combined with a destructure it switches reactive destructuring off, and a factory default (`list = () => []`) does not compile. Array/object literals already get their per-instance factory from the compiler.
 - Keep `const props = defineProps<T>()` only when the whole object is handed to a util or composable, or for dynamic access (`props[key]`), and say why in a one-line comment.
+- A component that reads props only in its template calls `defineProps<T>()` unbound; bind a destructure only for the props that need a default, since a binding the script never reads is dead code.
 - Defaults must not reference another prop: they move into the hoisted runtime declaration, where the other binding does not exist.
 - `watch(() => x, …)` — a bare `watch(x, …)` is a compile error. A composable that must track a prop takes `toRef(() => x)`, not `x`.
 - After destructuring, a computed that only forwards a prop (`computed(() => props.x)`) is redundant — delete it, and a default belongs in the destructure rather than in a `?? fallback` computed.

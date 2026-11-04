@@ -1,9 +1,5 @@
 <script setup lang="ts">
-const {
-  modelValue,
-  ariaLabel,
-  disabled = false,
-} = defineProps<{
+const { ariaLabel, disabled = false } = defineProps<{
   modelValue: boolean;
   ariaLabel?: string;
   disabled?: boolean;

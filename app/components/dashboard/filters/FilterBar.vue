@@ -10,7 +10,13 @@ import type {
   DashboardRouteFilters,
 } from '~/composables/useDashboardFilters';
 
-const { currentTab, filters, chips, repoSuggestions, authorSuggestions } = defineProps<{
+const {
+  currentTab,
+  filters,
+  chips,
+  repoSuggestions = [],
+  authorSuggestions = [],
+} = defineProps<{
   currentTab: DashboardFilterSource;
   filters: DashboardRouteFilters;
   chips: DashboardFilterChip[];
@@ -29,7 +35,7 @@ const { t } = useI18n();
 // ─── Repo pill (autocomplete) ──────────────────────────────────
 const repoValue = computed(() => filters.repo ?? '');
 const repoActive = computed(() => Boolean(filters.repo));
-const repoSuggestionsMapped = computed(() => (repoSuggestions ?? []).map((r) => ({ value: r })));
+const repoSuggestionsMapped = computed(() => repoSuggestions.map((r) => ({ value: r })));
 
 const handleRepoChange = (value: string) => {
   emit('update', { repo: value || undefined });
@@ -38,9 +44,7 @@ const handleRepoChange = (value: string) => {
 // ─── Author pill (autocomplete) ────────────────────────────────
 const authorValue = computed(() => filters.author ?? '');
 const authorActive = computed(() => Boolean(filters.author));
-const authorSuggestionsMapped = computed(() =>
-  (authorSuggestions ?? []).map((a) => ({ value: a }))
-);
+const authorSuggestionsMapped = computed(() => authorSuggestions.map((a) => ({ value: a })));
 
 const handleAuthorChange = (value: string) => {
   emit('update', { author: value || undefined });

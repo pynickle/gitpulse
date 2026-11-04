@@ -38,10 +38,10 @@
         class="floating-markdown-editor__capsule-avatar"
       />
       <span class="floating-markdown-editor__capsule-placeholder has-text-grey">
-        {{ placeholderText }}
+        {{ resolvedPlaceholder }}
       </span>
       <span class="button is-link is-small floating-markdown-editor__capsule-submit">
-        {{ submitLabelText }}
+        {{ resolvedSubmitLabel }}
       </span>
     </button>
 
@@ -70,7 +70,7 @@
           :surface="composerSurface"
           :repo-owner="repoOwner"
           :repo-name="repoName"
-          :placeholder="placeholderText"
+          :placeholder="resolvedPlaceholder"
           :disabled="isSubmitting"
           :compact="compact"
           :autofocus="autofocus || isExpanded"
@@ -113,7 +113,7 @@
               :disabled="isSubmitting || !trimmedDraft || !canSubmit"
               @click="handleSubmit"
             >
-              {{ isSubmitting ? submittingLabelText : submitLabelText }}
+              {{ isSubmitting ? resolvedSubmittingLabel : resolvedSubmitLabel }}
             </button>
           </div>
         </div>
@@ -265,9 +265,9 @@ const isSubmitting = computed(() => {
   }
   return internalSubmitting.value;
 });
-const placeholderText = computed(() => placeholder || t('floatingMarkdownEditor.placeholder'));
-const submitLabelText = computed(() => submitLabel || t('floatingMarkdownEditor.submit'));
-const submittingLabelText = computed(
+const resolvedPlaceholder = computed(() => placeholder || t('floatingMarkdownEditor.placeholder'));
+const resolvedSubmitLabel = computed(() => submitLabel || t('floatingMarkdownEditor.submit'));
+const resolvedSubmittingLabel = computed(
   () => submittingLabel || t('floatingMarkdownEditor.submitting')
 );
 

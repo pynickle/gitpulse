@@ -19,7 +19,7 @@
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { TimelineActor } from '~/composables/usePRTimelineEvents';
 
-const { actor, avatarSize = 24 } = defineProps<{
+const { avatarSize = 24 } = defineProps<{
   actor?: TimelineActor;
   avatarSize?: number;
 }>();

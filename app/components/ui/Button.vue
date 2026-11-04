@@ -35,10 +35,10 @@ const bindProps = computed(() => {
   const baseAttrs = { ...attrs };
 
   if (to) {
-    return { ...baseAttrs, to: to };
+    return { ...baseAttrs, to };
   }
   if (href) {
-    return { ...baseAttrs, href: href, target: target };
+    return { ...baseAttrs, href, target };
   }
   return { ...baseAttrs, type: (attrs.type as string | undefined) ?? 'button' };
 });

@@ -17,7 +17,13 @@ import {
   getDashboardSubjectTypeVisual,
 } from '~/utils/getDashboardSubjectStateVisual';
 
-const { currentTab, filters, labelSuggestions, repoSuggestions, authorSuggestions } = defineProps<{
+const {
+  currentTab,
+  filters,
+  labelSuggestions = [],
+  repoSuggestions = [],
+  authorSuggestions = [],
+} = defineProps<{
   currentTab: DashboardFilterSource;
   filters: DashboardRouteFilters;
   labelSuggestions?: string[];
@@ -33,16 +39,12 @@ const { t } = useI18n();
 
 const isCollapsed = ref(true);
 
-const labelSuggestionItems = computed(() =>
-  (labelSuggestions ?? []).map((label) => ({ value: label }))
-);
+const labelSuggestionItems = computed(() => labelSuggestions.map((label) => ({ value: label })));
 
-const repoSuggestionItems = computed(() =>
-  (repoSuggestions ?? []).map((repo) => ({ value: repo }))
-);
+const repoSuggestionItems = computed(() => repoSuggestions.map((repo) => ({ value: repo })));
 
 const authorSuggestionItems = computed(() =>
-  (authorSuggestions ?? []).map((author) => ({ value: author }))
+  authorSuggestions.map((author) => ({ value: author }))
 );
 
 const isTodoTab = computed(() => currentTab === 'todos');
