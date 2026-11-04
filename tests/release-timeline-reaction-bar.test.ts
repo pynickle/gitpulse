@@ -7,6 +7,7 @@ import type { TimelineRelease } from '#shared/types/release-follows';
 import english from '../i18n/locales/en.json';
 import chinese from '../i18n/locales/zh-cn.json';
 import { compileVue } from './helpers/compile-vue';
+import { interpolateTranslation } from './helpers/translation';
 import { createVueDom } from './helpers/vue-dom';
 
 const catalogs = { en: english, 'zh-cn': chinese };
@@ -26,12 +27,7 @@ function translate(
   if (typeof value !== 'string') {
     throw new Error(`Missing translation ${key}`);
   }
-  return value.replace(/\{(\w+)\}/g, (_, name: string) => {
-    const param = params?.[name];
-    if (typeof param === 'string') return param;
-    if (typeof param === 'number' || typeof param === 'boolean') return String(param);
-    return '';
-  });
+  return interpolateTranslation(value, params);
 }
 
 const empty = defineComponent({ setup: () => () => h('span') });

@@ -25,6 +25,7 @@ const { useFollowedRepositoryMetadata } =
   await import('../app/composables/useFollowedRepositoryMetadata');
 import { compileVue as compileSfc } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
+import { interpolateTranslation } from './helpers/translation';
 import { createVueDom } from './helpers/vue-dom';
 
 const compileVue = (path: string, modules: Record<string, unknown> = {}) =>
@@ -36,12 +37,7 @@ function translate(key: string, params?: Record<string, unknown>) {
     return (node as Record<string, unknown>)[part];
   }, english);
   if (typeof value !== 'string') return key;
-  return value.replace(/\{(\w+)\}/g, (_, name: string) => {
-    const param = params?.[name];
-    if (typeof param === 'string') return param;
-    if (typeof param === 'number' || typeof param === 'boolean') return String(param);
-    return '';
-  });
+  return interpolateTranslation(value, params);
 }
 
 const icon = defineComponent({ setup: () => () => h('span') });

@@ -4,6 +4,7 @@ import { defineComponent, h } from 'vue';
 
 import * as prChecks from '../shared/utils/pr-checks';
 import { compileVue } from './helpers/compile-vue';
+import { interpolateTranslation } from './helpers/translation';
 import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ render: () => h('svg') });
@@ -24,12 +25,7 @@ const messages: Record<string, string> = {
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
-  (messages[key] ?? key).replace(/\{(\w+)\}/g, (_, name: string) => {
-    const param = params?.[name];
-    if (typeof param === 'string') return param;
-    if (typeof param === 'number' || typeof param === 'boolean') return String(param);
-    return '';
-  });
+  interpolateTranslation(messages[key] ?? key, params);
 
 /** Three completed contexts, all green: the chip reads "3/3". */
 const passingRollup = {
