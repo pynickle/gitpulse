@@ -65,7 +65,9 @@ const {
 } = useUserPackageDetail(() => packageTarget.value);
 
 const pageTitle = computed(() =>
-  packageTarget.value ? t('packageDetail.pageTitle', { name: packageTarget.value.name }) : ''
+  packageTarget.value
+    ? t('packageDetail.pageTitle', { name: packageTarget.value.name })
+    : t('packageDetail.pageTitleGeneric')
 );
 
 usePageMeta(pageTitle);

@@ -44,12 +44,16 @@ const repoFullName = computed(() =>
 );
 
 const pageTitle = computed(() =>
-  repoFullName.value ? t('releasesPage.pageTitle', { repo: repoFullName.value }) : ''
+  repoFullName.value
+    ? t('releasesPage.pageTitle', { repo: repoFullName.value })
+    : t('releasesPage.pageTitleGeneric')
 );
 
 usePageMeta(pageTitle);
 
-const initialLoading = computed(() => loading.value && items.value.length === 0 && !error.value);
+const initialLoading = computed(
+  () => Boolean(repoTarget.value) && loading.value && items.value.length === 0 && !error.value
+);
 
 const typeFilter = ref<ReleaseTypeFilter>('all');
 

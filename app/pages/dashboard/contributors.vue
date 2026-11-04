@@ -53,7 +53,9 @@ const repoFullName = computed(() =>
 );
 
 const pageTitle = computed(() =>
-  repoFullName.value ? t('contributorsPage.pageTitle', { repo: repoFullName.value }) : ''
+  repoFullName.value
+    ? t('contributorsPage.pageTitle', { repo: repoFullName.value })
+    : t('contributorsPage.pageTitleGeneric')
 );
 
 usePageMeta(pageTitle);

@@ -47,12 +47,16 @@ const repoFullName = computed(() =>
 );
 
 const pageTitle = computed(() =>
-  repoFullName.value ? t('branchesPage.pageTitle', { repo: repoFullName.value }) : ''
+  repoFullName.value
+    ? t('branchesPage.pageTitle', { repo: repoFullName.value })
+    : t('branchesPage.pageTitleGeneric')
 );
 
 usePageMeta(pageTitle);
 
-const initialLoading = computed(() => loading.value && items.value.length === 0 && !error.value);
+const initialLoading = computed(
+  () => Boolean(repoTarget.value) && loading.value && items.value.length === 0 && !error.value
+);
 
 const typeFilter = ref<BranchTypeFilter>('all');
 const searchQuery = ref('');

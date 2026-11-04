@@ -39,7 +39,13 @@ export interface PageMetaOptions {
  * Uses the global `titleTemplate` from app.vue.
  * Supports reactive titles for dynamic content (issue/PR titles, etc.).
  *
- * @param title - Page title (string, Ref, or computed). Pass `undefined` to use the global default.
+ * `undefined` is the only "this page has no title of its own" signal: it lets the
+ * nearest ancestor declaration (a parent route page) win, and falls back to the
+ * template default when there is none. An empty string is taken literally, so a
+ * page that forgets to name itself renders the app title instead of silently
+ * inheriting whatever the layout or parent route happened to declare.
+ *
+ * @param title - Page title (string, Ref, or computed). Omit or pass `undefined` to inherit.
  * @param meta - Optional SEO metadata fields.
  *
  * @example
@@ -59,11 +65,7 @@ export interface PageMetaOptions {
  * usePageMeta(t('dashboard.settings.pageTitle'))
  */
 export function usePageMeta(title?: MaybeRef<string | undefined>, meta?: PageMetaOptions) {
-  const resolvedTitle = computed(() => {
-    const val = unref(title);
-    // Empty string or undefined → let titleTemplate use its default
-    return val && val.length > 0 ? val : undefined;
-  });
+  const resolvedTitle = computed(() => unref(title));
 
   useSeoMeta({
     title: resolvedTitle,

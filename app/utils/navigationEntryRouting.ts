@@ -13,6 +13,7 @@ import {
 } from './dashboardUrlNavigationUtils';
 import { getQueryParamValue } from './getQueryParamValue';
 import { parseGitHubRepoPath } from './parseGitHubRepoPath';
+import { parsePackageType } from './parsePackageType';
 
 /**
  * Logical Navigation: route <-> entry derivation plus the sequential event
@@ -68,7 +69,7 @@ function childRouteToNavigationEntry(
 
   if (segment === 'package') {
     const user = getQueryParamValue(query.user)?.trim();
-    const packageType = getQueryParamValue(query.type)?.trim();
+    const packageType = parsePackageType(getQueryParamValue(query.type));
     const packageName = getQueryParamValue(query.name)?.trim();
 
     if (user && packageType && packageName) {
@@ -245,6 +246,25 @@ export function routeToNavigationEntry(
   }
 
   return dashboardEntry(tab);
+}
+
+/**
+ * Whether a matched dashboard child page URL identifies what that page shows:
+ * `/dashboard/wiki` needs `?repo=`, `/dashboard/package` needs its user, type and
+ * name, and a `?repo=` that does not parse identifies nothing.
+ *
+ * Such a URL is already the dashboard root as far as Logical Navigation is
+ * concerned (`childRouteToNavigationEntry`), so routing it to
+ * `resolveNavigationEntryRoute({ type: 'dashboard' })` is the same answer, not a
+ * second opinion. Pages can therefore rely on their target being present.
+ *
+ * Every URL that is not a dashboard child page is admissible, including the
+ * dashboard root with stray detail params.
+ */
+export function isDashboardRouteShapeAdmissible(route: NavigationRouteLocation): boolean {
+  const segment = getDashboardChildSegment(route.path);
+  if (segment === null) return true;
+  return childRouteToNavigationEntry(segment, route.query).type !== 'dashboard';
 }
 
 const getReleaseRefValue = (entry: DashboardNavigationEntry | null | undefined) => {

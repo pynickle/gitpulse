@@ -1167,6 +1167,7 @@
   },
   "packageDetail": {
     "pageTitle": "{name} · 软件包",
+    "pageTitleGeneric": "软件包",
     "loadingTitle": "正在加载软件包",
     "loadingSubtitle": "正在从 GitHub 获取软件包信息",
     "error": "加载软件包失败。",
@@ -1315,6 +1316,7 @@
   },
   "releasesPage": {
     "pageTitle": "{repo} 的 Releases",
+    "pageTitleGeneric": "Releases",
     "heading": "发布",
     "viewReleases": "查看全部发布",
     "openRepo": "打开仓库",
@@ -1334,6 +1336,7 @@
   },
   "branchesPage": {
     "pageTitle": "{repo} 的分支",
+    "pageTitleGeneric": "分支",
     "heading": "分支",
     "viewBranches": "查看全部分支",
     "openRepo": "打开仓库",
@@ -1367,6 +1370,7 @@
   },
   "wikiPage": {
     "pageTitle": "{repo} 的 Wiki",
+    "pageTitleGeneric": "Wiki",
     "heading": "Wiki",
     "viewWiki": "浏览 Wiki",
     "openRepo": "打开仓库",
@@ -1385,6 +1389,7 @@
   },
   "contributorsPage": {
     "pageTitle": "{repo} 的贡献者",
+    "pageTitleGeneric": "贡献者",
     "heading": "贡献者",
     "viewAll": "查看全部贡献者",
     "openRepo": "打开仓库",

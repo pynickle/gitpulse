@@ -54,7 +54,9 @@ const repoFullName = computed(() =>
 );
 
 const pageTitle = computed(() =>
-  repoFullName.value ? t('wikiPage.pageTitle', { repo: repoFullName.value }) : ''
+  repoFullName.value
+    ? t('wikiPage.pageTitle', { repo: repoFullName.value })
+    : t('wikiPage.pageTitleGeneric')
 );
 
 usePageMeta(pageTitle);
@@ -105,7 +107,8 @@ const htmlSegments = computed<Array<WikiHtmlSegment & { key: string }>>(() => {
 });
 
 const initialLoading = computed(
-  () => pagesLoading.value && pages.value.length === 0 && !pagesError.value
+  () =>
+    Boolean(repoTarget.value) && pagesLoading.value && pages.value.length === 0 && !pagesError.value
 );
 
 const fetchCurrentPages = async () => {

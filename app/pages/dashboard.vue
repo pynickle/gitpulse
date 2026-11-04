@@ -887,8 +887,9 @@ const releaseTimelineViewRef = useTemplateRef<{ reload: () => Promise<void> }>(
 );
 const releaseTimelineRefreshing = shallowRef(false);
 
-// SEO: dynamic title based on current tab
-usePageMeta(currentTabTitle);
+// SEO: the list shapes title themselves; a child page owns its own title, so the
+// tab name must not leak into it.
+usePageMeta(computed(() => (isDashboardChildRoute.value ? undefined : currentTabTitle.value)));
 
 const currentRouteTabId = computed(() => {
   if (isReleaseTimelineView.value) return RELEASE_TIMELINE_TAB;

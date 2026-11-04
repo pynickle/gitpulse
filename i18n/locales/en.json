@@ -1167,6 +1167,7 @@
   },
   "packageDetail": {
     "pageTitle": "{name} · Package",
+    "pageTitleGeneric": "Package",
     "loadingTitle": "Loading package",
     "loadingSubtitle": "Fetching package details from GitHub",
     "error": "Failed to load package.",
@@ -1315,6 +1316,7 @@
   },
   "releasesPage": {
     "pageTitle": "Releases · {repo}",
+    "pageTitleGeneric": "Releases",
     "heading": "Releases",
     "viewReleases": "View all releases",
     "openRepo": "Open repository",
@@ -1334,6 +1336,7 @@
   },
   "branchesPage": {
     "pageTitle": "Branches · {repo}",
+    "pageTitleGeneric": "Branches",
     "heading": "Branches",
     "viewBranches": "View all branches",
     "openRepo": "Open repository",
@@ -1367,6 +1370,7 @@
   },
   "wikiPage": {
     "pageTitle": "Wiki · {repo}",
+    "pageTitleGeneric": "Wiki",
     "heading": "Wiki",
     "viewWiki": "Browse wiki",
     "openRepo": "Open repository",
@@ -1385,6 +1389,7 @@
   },
   "contributorsPage": {
     "pageTitle": "Contributors · {repo}",
+    "pageTitleGeneric": "Contributors",
     "heading": "Contributors",
     "viewAll": "View all contributors",
     "openRepo": "Open repository",
