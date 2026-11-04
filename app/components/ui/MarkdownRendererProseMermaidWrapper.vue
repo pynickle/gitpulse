@@ -12,7 +12,6 @@ const {
   code,
   language,
   class: className,
-  style,
   __node,
 } = defineProps<{
   code?: string;

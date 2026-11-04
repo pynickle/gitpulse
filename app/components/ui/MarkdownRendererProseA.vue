@@ -18,8 +18,8 @@ const { opensGitHubLinks } = useGitHubLinkRouting();
 const internalTarget = computed(() => resolveDashboardUrlTarget(href, markdownRepoContext?.value));
 
 const preferredDashboardHref = computed(() => {
-  const target = internalTarget.value;
-  return target ? getPreferredDashboardUrlHref(target) : null;
+  const resolvedTarget = internalTarget.value;
+  return resolvedTarget ? getPreferredDashboardUrlHref(resolvedTarget) : null;
 });
 
 const externalHref = computed(() => {
@@ -49,8 +49,8 @@ const externalHref = computed(() => {
 });
 
 const internalTo = computed(() => {
-  const target = internalTarget.value;
-  return target && !opensGitHubLinks.value ? getDashboardUrlRoute(target) : null;
+  const resolvedTarget = internalTarget.value;
+  return resolvedTarget && !opensGitHubLinks.value ? getDashboardUrlRoute(resolvedTarget) : null;
 });
 
 const externalRel = computed(() => (target === '_blank' ? 'noopener noreferrer' : undefined));

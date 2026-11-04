@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DashboardTab } from '~/composables/useDashboardTabs';
 
-const { currentTab } = defineProps<{
+defineProps<{
   currentTab: DashboardTab;
 }>();
 

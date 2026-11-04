@@ -16,7 +16,7 @@ import { useI18n } from 'vue-i18n';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 
-const { item, emptyText, repoOwner, repoName } = defineProps<{
+const { item, emptyText } = defineProps<{
   item: PRTimelineItem;
   emptyText?: string;
   repoOwner: string;

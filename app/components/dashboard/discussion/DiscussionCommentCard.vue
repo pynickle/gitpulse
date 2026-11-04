@@ -12,7 +12,7 @@ import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 type DiscussionReplySubmitHandler = (comment: DiscussionComment, body: string) => Promise<void>;
 
-const { comment, submitReply, isEditorActive } = defineProps<{
+const { comment, submitReply } = defineProps<{
   comment: DiscussionComment;
   repoOwner: string;
   repoName: string;

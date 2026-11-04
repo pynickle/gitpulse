@@ -74,7 +74,6 @@ interface TimelineCommentCardItem {
 
 const {
   item,
-  emptyText,
   repoOwner,
   repoName,
   enableReactions,
