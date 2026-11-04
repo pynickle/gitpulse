@@ -43,7 +43,7 @@ test.each(['server', 'client'] as const)(
       await scope.run(() => plugin({} as Parameters<typeof plugin>[0]));
 
       if (mode === 'client') {
-        await renderDOMHead(head);
+        renderDOMHead(head);
         expect(
           dom.document.documentElement.style.getPropertyValue('--gitpulse-app-font-family')
         ).toBe('"Custom App", sans-serif');
@@ -56,14 +56,14 @@ test.each(['server', 'client'] as const)(
       prReviewCodeFontSizePx.value = '18px';
       if (mode === 'server') {
         // SSR loads account settings after registering head but before rendering it.
-        const rendered = await renderSSRHead(head);
+        const rendered = renderSSRHead(head);
         expect(rendered.htmlAttrs).toContain('--gitpulse-app-font-family:system-ui');
         expect(rendered.htmlAttrs).toContain('--gitpulse-pr-review-code-font-size:18px');
         expect(rendered.htmlAttrs).toContain('Custom Code');
         expect(rendered.htmlAttrs).not.toContain('Custom App');
       } else {
         await nextTick();
-        await renderDOMHead(head);
+        renderDOMHead(head);
         expect(
           dom.document.documentElement.style.getPropertyValue('--gitpulse-app-font-family')
         ).toBe('system-ui');

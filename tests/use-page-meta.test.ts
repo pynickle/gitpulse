@@ -40,7 +40,7 @@ async function renderPageMeta(title: string | undefined, meta?: Parameters<typeo
   const scope = effectScope();
   try {
     scope.run(() => usePageMeta(title, meta));
-    return await renderSSRHead(head);
+    return renderSSRHead(head);
   } finally {
     scope.stop();
     restore();
@@ -73,7 +73,7 @@ async function renderLayeredPageMeta(
     );
     parentScope.run(() => usePageMeta(parentTitle));
     childScope.run(() => usePageMeta(childTitle));
-    return await renderSSRHead(head);
+    return renderSSRHead(head);
   } finally {
     childScope.stop();
     parentScope.stop();

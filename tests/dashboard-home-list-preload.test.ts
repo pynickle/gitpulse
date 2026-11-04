@@ -44,7 +44,7 @@ const renderPlugin = async () => {
   scope.run(() => {
     renderDashboardHomeListPreload({} as Parameters<typeof renderDashboardHomeListPreload>[0]);
   });
-  const rendered = await renderSSRHead(head);
+  const rendered = renderSSRHead(head);
   scope.stop();
   return rendered.headTags;
 };
@@ -266,7 +266,7 @@ test('keeps the cold-load hint when the route later changes', async () => {
     renderDashboardHomeListPreload({} as Parameters<typeof renderDashboardHomeListPreload>[0]);
   });
   routeState.query = { tab: 'issues' };
-  const links = readFetchPreloads((await renderSSRHead(head)).headTags);
+  const links = readFetchPreloads(renderSSRHead(head).headTags);
   scope.stop();
 
   expect(links).toHaveLength(1);

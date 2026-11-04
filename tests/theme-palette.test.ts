@@ -71,10 +71,10 @@ async function renderInjectedPalette(mode: 'server' | 'client'): Promise<Record<
 
     const css =
       mode === 'server'
-        ? [...(await renderSSRHead(head)).headTags.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
+        ? [...renderSSRHead(head).headTags.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)]
             .map(([, body]) => body)
             .join('')
-        : [...(await renderDOMHead(head), dom!.document.head.querySelectorAll('style'))]
+        : [...(renderDOMHead(head), dom!.document.head.querySelectorAll('style'))]
             .map((style) => style.textContent ?? '')
             .join('');
 
