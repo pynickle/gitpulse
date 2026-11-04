@@ -212,7 +212,7 @@ bunx oxlint ./app --print-config | 统计 unicorn 规则数  →  0
     fi
 ```
 
-理由：`categories: "off"` 这类改动不会让 oxlint 报错，只会让规则数悄悄变成 0、退出码仍是 0。这条守卫是唯一能立刻发现「门禁又空了」的机制。可选，但成本极低。
+理由：`categories: "off"` 这类改动不会让 oxlint 报错，只会让规则数悄悄变成 0、退出码仍是 0。**评估后未采用**：该守卫靠匹配 oxlint 的摘要措辞生效，措辞一变即静默失效。
 
 ### 落地步骤
 
@@ -235,5 +235,7 @@ bunx oxlint ./app --print-config | 统计 unicorn 规则数  →  0
 
 ## 与文档的不一致
 
-- `AGENTS.md` 的「Linting, Formatting, Hooks」写「source files enable the `unicorn` plugin with a few rules disabled」。实测 `overrides[].plugins: ["unicorn"]` 未生效（`--print-config` 下 `app/` 的 unicorn 规则数为 0），所描述的行为在 `1.91.0` 上不成立。
-- `CONTRIBUTING.md`「Format and Lint」把 `bun run lint` 列为提交前检查，但该命令在修改前不检查任何规则——文档描述的保证大于实际。
+本节记录的是**修复前**的状态，两处都已在 `chore/oxlint-correctness-gate` 分支上改正：
+
+- `AGENTS.md` 曾写「source files enable the `unicorn` plugin with a few rules disabled」。实测 `overrides[].plugins: ["unicorn"]` 从未生效（`--print-config` 下 `app/` 的 unicorn 规则数为 0），该描述在 `1.91.0` 上不成立；现已改为陈述实际的插件集与 `correctness: "deny"`。
+- `CONTRIBUTING.md` 曾把 `bun run lint` 列为提交前检查，而该命令当时不检查任何规则——文档描述的保证大于实际；现在该保证成立。

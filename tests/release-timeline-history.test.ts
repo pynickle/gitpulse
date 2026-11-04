@@ -73,8 +73,7 @@ const { createNitroUserSettingsStorageAdapter, createUpstashRedisUserSettingsSto
 
 test('filesystem history round-trips separately from preferences and serializes clear/merge races', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'gitpulse-history-'));
-  // Only ever remove a directory this test created; computed up front so cleanup can gate on it
-  // without a throw in `finally`.
+  // Only ever remove a directory this test created.
   const isOwnTemporaryDirectory =
     dirname(directory) === tmpdir() && basename(directory).startsWith('gitpulse-history-');
   const original = Object.getOwnPropertyDescriptor(globalThis, 'useStorage');

@@ -42,7 +42,7 @@ const normalizeSignatureValue = (value: unknown): FreshnessValue => {
     return value.toString();
   }
 
-  // Anything else (functions) carries no signature; JSON.stringify drops it at the end anyway.
+  // Functions carry no signature.
   return '';
 };
 

@@ -86,7 +86,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Linting, Formatting, Hooks
 
-- Formatter and linter config: `.oxfmtrc.json` / `.oxlintrc.json` (source files enable the `unicorn` plugin with a few rules disabled). Commands and the `prek` pre-commit hook: `CONTRIBUTING.md`.
+- Formatter and linter config: `.oxfmtrc.json` / `.oxlintrc.json`. Oxlint runs the `unicorn`, `typescript` and `oxc` plugins with `correctness` at `deny`, so `bun run lint` fails on any diagnostic; other categories are off. Commands and the `prek` pre-commit hook: `CONTRIBUTING.md`.
 - LF enforced by `.gitattributes`.
 - Commits: use the project skill `.agents/skills/conventional-commit/SKILL.md`.
 

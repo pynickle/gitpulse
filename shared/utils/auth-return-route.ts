@@ -2,7 +2,7 @@ const INTERNAL_ORIGIN = 'https://gitpulse.invalid';
 
 const DISALLOWED_PATH_PREFIXES = ['/api', '/auth'];
 
-// oxlint-disable-next-line no-control-regex -- rejecting control characters is the point here, so the rule's usual "did you mean a printable character" concern is inverted
+// oxlint-disable-next-line no-control-regex -- control characters are exactly what this rejects
 const CONTROL_CHARACTER_PATTERN = /[\u0000-\u001f\u007f]/;
 
 export const DEFAULT_AUTH_RETURN_PATH = '/dashboard';

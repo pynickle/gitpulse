@@ -21,8 +21,8 @@ interface PullReviewCommentResponse {
   original_start_line?: number | null;
   line?: number | null;
   original_line?: number | null;
-  start_side?: 'LEFT' | 'RIGHT' | (string & {}) | null;
-  side?: 'LEFT' | 'RIGHT' | (string & {}) | null;
+  start_side?: string | null;
+  side?: string | null;
   created_at?: string;
   updated_at?: string;
   user?: {

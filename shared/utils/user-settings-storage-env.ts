@@ -4,7 +4,7 @@ export const DEFAULT_USER_SETTINGS_REDIS_BASE = 'gitpulse:user-settings';
 export const DEFAULT_USER_SETTINGS_UPSTASH_BASE = DEFAULT_USER_SETTINGS_REDIS_BASE;
 export const DEFAULT_USER_SETTINGS_UPSTASH_ENV_PREFIX = 'UPSTASH_REDIS_REST';
 
-// Known drivers stay listed for autocomplete while an unknown value is validated at runtime.
+// Known drivers get autocomplete; anything else falls back to the fs adapter.
 export type UserSettingsStorageDriver = 'fs' | 'redis' | 'upstash' | (string & {});
 
 export type UpstashRedisCredentials = {
