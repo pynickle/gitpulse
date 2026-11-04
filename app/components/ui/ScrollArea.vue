@@ -72,8 +72,8 @@ defineExpose({ scrollElement });
       { 'scroll-area--disabled': !enabled, 'scroll-area--custom-content': contentClass },
     ]"
     :style="{
-      overflowX: !enabled ? 'visible' : axis === 'y' ? 'hidden' : 'auto',
-      overflowY: !enabled ? 'visible' : axis === 'x' ? 'hidden' : 'auto',
+      overflowX: !enabled ? 'visible' : axis === 'y' ? 'hidden' : 'clip',
+      overflowY: !enabled ? 'visible' : axis === 'x' ? 'hidden' : 'clip',
     }"
     :auto-hide="true"
     :tab-index="enabled ? 0 : -1"
@@ -98,11 +98,20 @@ defineExpose({ scrollElement });
     height: 100%;
   }
 
+  // `overflow: clip` from the component's own style makes the host a clip box rather
+  // than a scrollport, so a wrapper that outgrows it — which still happens wherever
+  // `height: 100%` cannot resolve, such as the body of a max-height flex modal — is
+  // cut off instead of drawing a second scrollbar beside the library's track. These
+  // declarations only take effect in browsers that drop the `clip` keyword, keeping
+  // their previous auto/hidden behaviour instead of releasing the wrapper.
   &--y {
-    overflow-x: hidden;
+    overflow: hidden auto;
   }
   &--x {
-    overflow-y: hidden;
+    overflow: auto hidden;
+  }
+  &--both {
+    overflow: auto;
   }
 
   > :deep(.simplebar-wrapper),

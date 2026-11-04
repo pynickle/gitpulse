@@ -62,6 +62,38 @@ test('ScrollArea publishes the actual scroller, forwards its events, and release
   }
 });
 
+test('the scroll host clips instead of scrolling so the library owns the only scrollbar', async () => {
+  const dom = createVueDom();
+  try {
+    const ScrollArea = await compileVue('app/components/ui/ScrollArea.vue', {
+      'simplebar-vue': { default: SimpleBar },
+    });
+    const disabled = shallowRef(false);
+    const view = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(ScrollArea, { disabled: disabled.value }, { default: () => h('p', 'HarmonyOS Sans') }),
+      })
+    );
+    await nextTick();
+    const host = view.root.firstElementChild as HTMLElement;
+    // A host that can scroll natively paints a second scrollbar beside the library's
+    // track as soon as its wrapper cannot resolve to the host's height (an indefinite
+    // flex pane, for instance). Clipping keeps the library's scroller the only one.
+    expect(host.style.overflowY).toBe('clip');
+    // The unmanaged axis stays `hidden`: the library turns an axis off only when it
+    // reads that value on the host.
+    expect(host.style.overflowX).toBe('hidden');
+    expect(host.querySelector('.simplebar-content-wrapper')).not.toBeNull();
+    disabled.value = true;
+    await nextTick();
+    expect(host.style.overflowY).toBe('visible');
+    expect(host.style.overflowX).toBe('visible');
+  } finally {
+    await dom.cleanup();
+  }
+});
+
 test('responsive scroll ownership preserves content and releases the obsolete viewport binding', async () => {
   const dom = createVueDom();
   const listeners = new Set<() => void>();
