@@ -19,11 +19,9 @@ const layoutModules = {
 };
 const nuxtPageAutoImport = { NuxtPage: 'virtual:nuxt-page' };
 
-const LandingLayout = await compileVue(
-  'app/layouts/landing.vue',
-  layoutModules,
-  nuxtPageAutoImport
-);
+// Every signed-out surface renders this shell, so the landmark contract is
+// asserted once here instead of once per page.
+const PublicShell = await compileVue('app/components/layouts/PublicShell.vue', layoutModules);
 
 const DashboardLayout = await compileVue(
   'app/layouts/dashboard.vue',
@@ -39,9 +37,12 @@ afterEach(async () => {
 
 const t = (key: string) => key;
 
-function mountLanding() {
+function mountPublicShell() {
   dom = createVueDom({ useI18n: () => ({ t }) });
-  return dom.mount(LandingLayout as never).root;
+  const host = defineComponent({
+    setup: () => () => h(PublicShell as never, null, { default: () => h(page) }),
+  });
+  return dom.mount(host).root;
 }
 
 function mountDashboard() {
@@ -73,7 +74,7 @@ function expectLandmark(root: ParentNode) {
 }
 
 describe.each([
-  ['landing', mountLanding],
+  ['public shell', mountPublicShell],
   ['dashboard', mountDashboard],
 ] as const)('%s layout', (_name, mount) => {
   test('wraps the page in a main landmark a skip link can jump to', () => {

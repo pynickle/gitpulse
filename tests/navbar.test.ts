@@ -52,7 +52,7 @@ afterEach(async () => {
   await dom.cleanup();
 });
 
-const mountNavbar = (variant?: 'app' | 'landing') => {
+const mountNavbar = (variant?: 'app' | 'public') => {
   dom = createVueDom({
     useI18n: () => ({ t: (key: string) => (key === 'app.title' ? 'GitPulse' : key) }),
     useColorMode: () => shallowRef('light'),
@@ -62,7 +62,7 @@ const mountNavbar = (variant?: 'app' | 'landing') => {
 
 describe('Navbar', () => {
   test('links the localized brand name to the locale root', () => {
-    const brand = mountNavbar('landing').querySelector('.navbar-brand-link');
+    const brand = mountNavbar('public').querySelector('.navbar-brand-link');
 
     expect(brand?.textContent?.trim()).toBe('GitPulse');
     expect(brand?.getAttribute('href')).toBe('/');
@@ -72,21 +72,21 @@ describe('Navbar', () => {
     expect(mountNavbar().querySelector('h1.title')?.textContent?.trim()).toBe('GitPulse');
   });
 
-  test('keeps the landing brand out of the heading outline', () => {
-    const root = mountNavbar('landing');
+  test('keeps the public shell brand out of the heading outline', () => {
+    const root = mountNavbar('public');
 
     expect(root.querySelector('h1.title')).toBeNull();
     expect(root.querySelector('span.title')?.textContent?.trim()).toBe('GitPulse');
   });
 
-  test('keeps the controls visible on narrow viewports only for the landing variant', () => {
+  test('keeps the controls visible on narrow viewports only for the public shell', () => {
     const appRoot = mountNavbar();
-    const landingRoot = dom.mount(
-      defineComponent({ setup: () => () => h(Navbar as never, { variant: 'landing' }) })
+    const publicRoot = dom.mount(
+      defineComponent({ setup: () => () => h(Navbar as never, { variant: 'public' }) })
     ).root;
 
     const appActions = appRoot.querySelector('.navbar-bar__actions');
     expect(appActions?.classList.contains('navbar-bar__actions--always')).toBe(false);
-    expect(landingRoot.querySelector('.navbar-bar__actions--always')).toBeTruthy();
+    expect(publicRoot.querySelector('.navbar-bar__actions--always')).toBeTruthy();
   });
 });

@@ -1502,7 +1502,7 @@ watch(
 .dashboard-page {
   display: flex;
   width: 100%;
-  height: calc(var(--gitpulse-frame-height) - var(--bulma-navbar-height, 3.25rem));
+  height: calc(var(--gitpulse-frame-height) - var(--gitpulse-topbar-height));
   min-height: 0;
   overflow: hidden;
   background: var(--gitpulse-page-bg);

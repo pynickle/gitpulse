@@ -32,6 +32,9 @@ textarea,
   color-scheme: light;
   /* Visible app-shell height. A client plugin may replace this with visualViewport pixels. */
   --gitpulse-frame-height: 100vh;
+  /* One top-bar height for every surface: the layout navbar and the dashboard
+     overlay header must agree, or the two shells disagree by a few pixels. */
+  --gitpulse-topbar-height: 3.25rem;
 
   /* ── Border radius scale ── */
   --gitpulse-radius-sm: 4px;

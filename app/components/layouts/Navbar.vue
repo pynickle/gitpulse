@@ -1,10 +1,10 @@
 <template>
   <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="navbar-bar">
-      <NavbarBrand :title-tag="variant === 'landing' ? 'span' : 'h1'" />
+      <NavbarBrand :title-tag="variant === 'public' ? 'span' : 'h1'" />
       <div
         class="navbar-bar__actions"
-        :class="{ 'navbar-bar__actions--always': variant === 'landing' }"
+        :class="{ 'navbar-bar__actions--always': variant === 'public' }"
       >
         <LinkIcon to="https://github.com/pynickle/gitpulse">
           <GitHubIcon class="is-centered" />
@@ -22,7 +22,7 @@ import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import LinkIcon from '~/components/ui/LinkIcon.vue';
 
-const { variant = 'app' } = defineProps<{ variant?: 'app' | 'landing' }>();
+const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
 </script>
 
 <style scoped lang="scss">
@@ -31,7 +31,7 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'landing' }>();
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  min-height: 3.25rem;
+  min-height: var(--gitpulse-topbar-height);
   padding: 0 1rem;
 }
 
@@ -50,8 +50,9 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'landing' }>();
   }
 }
 
-// App chrome hides its controls on narrow viewports; the landing variant keeps them.
-@media (max-width: 1023px) {
+// App chrome keeps the controls until the narrow chrome takes over at 860px,
+// the single narrow cutoff the shell uses (ADR 0004).
+@media (max-width: 860px) {
   .navbar-bar__actions {
     display: none;
   }
@@ -63,8 +64,17 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'landing' }>();
 
 @media (max-width: 480px) {
   .navbar-bar {
-    gap: 0.5rem;
-    padding-inline: 0.75rem;
+    /* The brand and the three controls cannot share one line below ~430px.
+       Wrapping keeps every control reachable instead of pushing the last one
+       off screen, where the hidden scrollbar made the overflow invisible. */
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .navbar-bar__actions--always {
+    flex-basis: 100%;
+    justify-content: flex-end;
   }
 }
 </style>

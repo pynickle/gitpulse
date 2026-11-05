@@ -88,7 +88,9 @@ defineEmits<{
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* The visible frame, not the layout viewport: on a phone with browser chrome
+     the two differ, and the dashboard home frame already uses this unit. */
+  height: var(--gitpulse-frame-height);
   background-color: var(--gitpulse-overlay-bg);
   z-index: 9999;
 }
@@ -96,7 +98,6 @@ defineEmits<{
 .detail-container {
   width: 100%;
   height: 100%;
-  max-height: 100vh;
   overflow: hidden;
 }
 

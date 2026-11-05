@@ -28,13 +28,17 @@ interface PathCase {
   prerender: boolean | undefined;
 }
 
+/**
+ * Signed-out surfaces carry no `appLayout`: Nuxt falls back to the `default`
+ * layout, which is the public shell. Only the dashboard needs a rule to leave it.
+ */
 const PATH_CASES: PathCase[] = [
-  { path: '/', appLayout: 'landing', prerender: undefined },
-  { path: '/zh-cn', appLayout: 'landing', prerender: undefined },
-  { path: '/open', appLayout: 'landing', prerender: undefined },
-  { path: '/zh-cn/open', appLayout: 'landing', prerender: undefined },
-  { path: '/native-login', appLayout: 'native-login', prerender: false },
-  { path: '/zh-cn/native-login', appLayout: 'native-login', prerender: false },
+  { path: '/', appLayout: undefined, prerender: undefined },
+  { path: '/zh-cn', appLayout: undefined, prerender: undefined },
+  { path: '/open', appLayout: undefined, prerender: undefined },
+  { path: '/zh-cn/open', appLayout: undefined, prerender: undefined },
+  { path: '/native-login', appLayout: undefined, prerender: false },
+  { path: '/zh-cn/native-login', appLayout: undefined, prerender: false },
   { path: '/dashboard', appLayout: 'dashboard', prerender: undefined },
   { path: '/zh-cn/dashboard', appLayout: 'dashboard', prerender: undefined },
   { path: '/dashboard/settings', appLayout: 'dashboard', prerender: undefined },
@@ -93,6 +97,25 @@ test('every configured locale is covered by an explicit rule', async () => {
     expect(routeRules[`${prefix}/dashboard`], locale.code).toBeDefined();
     expect(routeRules[`${prefix}/dashboard/**`], locale.code).toBeDefined();
     expect(routeRules[`${prefix}/native-login`], locale.code).toBeDefined();
+  }
+});
+
+test('signed-out surfaces resolve the public shell and the dashboard resolves its own', async () => {
+  const routeRules = await loadRouteRules();
+  // Mirrors Nuxt's layout resolution: a route rule wins only when it names a layout.
+  const layoutOf = (path: string) => resolveWithRou3(routeRules, path).appLayout ?? 'default';
+  for (const path of [
+    '/',
+    '/zh-cn',
+    '/open',
+    '/zh-cn/open',
+    '/native-login',
+    '/zh-cn/native-login',
+  ]) {
+    expect(layoutOf(path), path).toBe('default');
+  }
+  for (const path of ['/dashboard', '/zh-cn/dashboard', '/dashboard/settings']) {
+    expect(layoutOf(path), path).toBe('dashboard');
   }
 });
 

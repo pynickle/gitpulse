@@ -9,7 +9,7 @@ import {
 import { computed } from 'vue';
 
 import type { NuxtError } from '#app';
-import Navbar from '~/components/layouts/Navbar.vue';
+import PublicShell from '~/components/layouts/PublicShell.vue';
 import Button from '~/components/ui/Button.vue';
 
 const { error } = defineProps<{ error: NuxtError }>();
@@ -126,43 +126,30 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
 </script>
 
 <template>
-  <div class="error-page">
-    <Navbar variant="landing" />
-    <section class="hero is-fullheight-with-navbar error-page__hero">
-      <div class="hero-body error-page__body">
-        <div class="container has-text-centered error-page__container">
-          <div class="error-card" data-testid="error-card">
-            <div
-              class="error-card__icon"
-              :style="{ background: variant.iconBg, color: variant.iconColor }"
-            >
-              <component :is="variant.icon" :size="40" aria-hidden="true" />
-            </div>
-            <p class="error-card__code">{{ statusCode }}</p>
-            <h1 class="error-card__title">{{ title }}</h1>
-            <p class="error-card__description">{{ description }}</p>
-            <div class="error-card__actions">
-              <Button color="primary" @click="handlePrimary">
-                {{ primaryLabel }}
-              </Button>
-              <Button color="light" @click="handleSecondary">
-                {{ secondaryLabel }}
-              </Button>
-            </div>
-          </div>
-        </div>
+  <PublicShell>
+    <div class="error-card" data-testid="error-card">
+      <div
+        class="error-card__icon"
+        :style="{ background: variant.iconBg, color: variant.iconColor }"
+      >
+        <component :is="variant.icon" :size="40" aria-hidden="true" />
       </div>
-    </section>
-  </div>
+      <p class="error-card__code">{{ statusCode }}</p>
+      <h1 class="error-card__title">{{ title }}</h1>
+      <p class="error-card__description">{{ description }}</p>
+      <div class="error-card__actions">
+        <Button color="primary" @click="handlePrimary">
+          {{ primaryLabel }}
+        </Button>
+        <Button color="light" @click="handleSecondary">
+          {{ secondaryLabel }}
+        </Button>
+      </div>
+    </div>
+  </PublicShell>
 </template>
 
 <style scoped lang="scss">
-.error-page {
-  min-height: 100vh;
-  background-color: var(--gitpulse-page-bg);
-  color: var(--gitpulse-text);
-}
-
 .error-card {
   max-width: 480px;
   margin: 0 auto;
@@ -226,34 +213,10 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
 // Phone: a narrow column on the page, under the navbar and above the vertical center.
 // Wider screens keep the raised card.
 @media (max-width: 640px) {
-  .error-page {
-    display: flex;
-    flex-direction: column;
-    min-height: 100dvh;
-  }
-
-  .error-page__hero.is-fullheight-with-navbar {
-    flex: 1 0 auto;
-    min-height: auto;
-  }
-
-  .error-page__hero.is-fullheight-with-navbar .error-page__body {
-    align-items: flex-start;
-    justify-content: center;
-    padding: clamp(2.75rem, 12vh, 5.5rem) max(1.25rem, env(safe-area-inset-right, 0px))
-      max(2rem, env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
-  }
-
-  .error-page__hero.is-fullheight-with-navbar .error-page__body > .error-page__container {
-    flex-grow: 0;
-    flex-shrink: 0;
-    width: min(100%, 17.5rem);
-  }
-
   .error-card {
     width: 100%;
-    max-width: none;
-    margin: 0;
+    max-width: min(100%, 22rem);
+    margin: 0 auto;
     padding: 0;
     background: transparent;
     border: none;

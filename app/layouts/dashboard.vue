@@ -14,8 +14,11 @@ const isDashboardHome = computed(() => {
 });
 
 const showNavbar = computed(() => {
+  // Sub-pages and the detail overlays own their chrome: they render the overlay
+  // header. Mounting the layout navbar too would duplicate the language and
+  // color-mode controls under a layer that paints over them.
+  if (!isDashboardHome.value) return false;
   if (isFileBrowserActive.value) return false;
-  if (!isDashboardHome.value) return true;
   return presentation.value.showNavbar;
 });
 </script>

@@ -118,7 +118,7 @@ function siteConfig() {
  * matcher drops everything after `**` (the key becomes a catch-all), and Nitro
  * 2's radix3 matcher never matches it. Expanded keys are portable to both.
  */
-function localeRouteRules<T extends Record<string, unknown>>(
+function localeRouteRules<const T extends Record<string, unknown>>(
   path: string,
   rule: T
 ): Record<string, T> {
@@ -212,10 +212,7 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    ...localeRouteRules('/', { appLayout: 'landing' }),
-    ...localeRouteRules('/open', { appLayout: 'landing' }),
     ...localeRouteRules('/native-login', {
-      appLayout: 'native-login',
       prerender: false,
       headers: {
         'Referrer-Policy': 'same-origin',

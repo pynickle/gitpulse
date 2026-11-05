@@ -270,7 +270,9 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .dashboard-top-header {
-  background-color: var(--gitpulse-surface-muted);
+  /* The layout navbar's surface, so the bar looks the same on the dashboard
+     home and on a sub-page. */
+  background-color: var(--gitpulse-surface);
   border-bottom: 1px solid var(--gitpulse-border);
   position: sticky;
   top: 0;
@@ -281,8 +283,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  min-height: 3rem;
-  padding: 0.4rem 0.75rem;
+  min-height: var(--gitpulse-topbar-height);
+  padding: 0.4rem 1rem;
   gap: 0.5rem 0.75rem;
 }
 
@@ -437,7 +439,10 @@ onBeforeUnmount(() => {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem;
+  /* Same gap as the layout navbar's action group: both bars are one shell, so
+     the GitHub link, language switcher and color mode toggle must space
+     identically on every surface. */
+  gap: 0.75rem;
   margin-left: auto;
 }
 
