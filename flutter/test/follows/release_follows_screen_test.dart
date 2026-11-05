@@ -1344,6 +1344,83 @@ void main() {
   );
 
   testWidgets(
+    'a reload turns the panel’s own control rather than adding a second indicator',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      await _openFollows(tester, server);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await _settleUi(tester);
+
+      final panel = find.byType(FollowedRepositoriesPanel);
+      final reload = findNamedAction('Reload follows');
+      final row = find.byKey(const ValueKey('followed-R_kept'));
+      expect(row, findsOneWidget);
+      final restingRowTop = tester.getTopLeft(row).dy;
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsNothing,
+      );
+
+      final held = Completer<void>();
+      server.holdSettings = held.future;
+      await tester.tap(reload);
+      await _pumpFrames(tester);
+
+      // The read is stated by the control that asked for it: its mark turns,
+      // it refuses another press, and nothing is added under the header.
+      expect(tester.widget<GitPulseIconButton>(reload).onPressed, isNull);
+      expect(
+        find.descendant(
+          of: reload,
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(GitPulseLoadingView), findsNothing);
+      // The confirmed list is not replaced, and the read does not move it.
+      expect(row, findsOneWidget);
+      expect(tester.getTopLeft(row).dy, restingRowTop);
+
+      held.complete();
+      server.holdSettings = null;
+      await _settleUi(tester);
+
+      expect(tester.widget<GitPulseIconButton>(reload).onPressed, isNotNull);
+      expect(
+        find.descendant(of: reload, matching: find.byIcon(Icons.refresh)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsNothing,
+      );
+      expect(row, findsOneWidget);
+      expect(tester.getTopLeft(row).dy, restingRowTop);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'a failed follows reload replaces the list with the full-screen offline page',
     (tester) async {
       final server = FollowsServer();

@@ -65,8 +65,15 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
               ),
               GitPulseIconButton(
                 label: l10n.followsReload,
-                onPressed: disabled ? null : facade.reload,
-                icon: const Icon(Icons.refresh),
+                onPressed: state.loading || disabled ? null : facade.reload,
+                // The control that asked for the read states it, the way the
+                // Timeline's own reload control does: while the follow set is
+                // being read its mark is the app's inline progress, and
+                // nothing is added under the header, so only one indicator is
+                // ever on screen and the list never moves (ADR 0047).
+                icon: state.loading
+                    ? const GitPulseProgressInline()
+                    : const Icon(Icons.refresh),
               ),
               if (onClose != null)
                 GitPulseIconButton(
@@ -77,7 +84,6 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
             ],
           ),
         ),
-        if (state.loading) const Center(child: GitPulseProgressInline()),
         Divider(
           height: GitPulseStroke.hairline,
           thickness: GitPulseStroke.hairline,
