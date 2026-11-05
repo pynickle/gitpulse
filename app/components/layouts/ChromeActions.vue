@@ -62,21 +62,25 @@ import LinkIcon from '~/components/ui/LinkIcon.vue';
  * into a menu below 860px (the shell's single narrow cutoff).
  *
  * The menu closes on outside clicks, on Escape and on scroll. A locale switch
- * replaces the URL and recreates the page, which would close the menu, so the
- * open state is held across that one recreation; the scroll from that
- * navigation does not count as a dismissal.
+ * closes and re-renders some bars but not others, so only a bar that is
+ * recreated by that navigation (`holdOpenOnLocaleSwitch`) asks the menu to
+ * survive it; the scroll from that navigation does not count as a dismissal.
  */
 defineSlots<{ actions?: () => unknown }>();
 
+const { holdOpenOnLocaleSwitch = false } = defineProps<{
+  holdOpenOnLocaleSwitch?: boolean;
+}>();
+
 const { t } = useI18n();
 
-const restoredMenu = holdDashboardMoreMenu.take();
-const isMenuOpen = ref(restoredMenu);
-let ignoreScrollClose = restoredMenu;
+const restoredMenu = holdOpenOnLocaleSwitch && holdTopBarMenu.take();
+const isMenuOpen = ref(Boolean(restoredMenu));
+let ignoreScrollClose = Boolean(restoredMenu);
 const menuRef = ref<HTMLElement | null>(null);
 
 const armMenuForLocaleChange = () => {
-  holdDashboardMoreMenu.arm();
+  if (holdOpenOnLocaleSwitch) holdTopBarMenu.arm();
 };
 
 const closeMenu = () => {
@@ -149,10 +153,6 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.chrome-actions__more-toggle {
-  height: 2.25rem;
-}
-
 .chrome-actions__menu {
   position: absolute;
   top: calc(100% + 0.35rem);
@@ -211,12 +211,12 @@ onBeforeUnmount(() => {
 }
 
 /* The narrow top bar's menu button: transparent at rest, so it shows whatever
-   the bar paints (the public bar and the overlay bar differ), and the shared
-   hover fill on interaction — the same convention as the dashboard icon
-   buttons, which keeps it correct in both color modes. */
+   the bar paints (the public bar and the overlay bar differ), and a hover wash
+   on interaction. The wash is mixed from the theme's own text colour, so it
+   reads on either bar in both color modes. */
 .chrome-actions .chrome-actions__more-toggle {
-  /* A wash mixed from the theme's own text colour, so it reads on the white\n     public bar and on the tinted overlay bar, in both color modes. */
   --chrome-actions-hover: color-mix(in srgb, var(--gitpulse-text) 7%, transparent);
+
   height: 2.25rem;
   border-color: transparent;
   background-color: transparent;

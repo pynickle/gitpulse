@@ -26,12 +26,7 @@ import RoundImg from '~/components/ui/RoundImg.vue';
  * typography, and the responsive switch from two columns to one; callers supply
  * only what differs between them (the copy and the interactive panel).
  */
-const {
-  eyebrow,
-  title,
-  paragraphs = [],
-  logoAlt = 'GitPulse',
-} = defineProps<{
+const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
   eyebrow: string;
   title: string;
   paragraphs?: readonly string[];
@@ -73,6 +68,19 @@ const {
   align-content: center;
   gap: 1rem;
   min-width: 0;
+}
+
+/* The shared button carries `px-6` (3rem per side), which overflows a 320px
+   card once an icon sits next to the label. Scoped to this card so every other
+   surface keeps the button it had. */
+.public-card__panel :deep(.button) {
+  padding-inline: 1.5rem !important;
+}
+
+@media (max-width: 480px) {
+  .public-card__panel :deep(.button) {
+    padding-inline: 0.85rem !important;
+  }
 }
 
 .public-card__logo {

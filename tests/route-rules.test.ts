@@ -1,10 +1,12 @@
 import { expect, test } from 'bun:test';
 
+// The engines under test, at the versions Nuxt and Nitro install: importing them
+// here is what lets the assertions mirror production instead of a re-implementation.
 import { defu } from 'defu';
 import { createRouter as createRadixRouter, toRouteMatcher } from 'radix3';
 import { addRoute, createRouter, findAllRoutes } from 'rou3';
 
-import { appLocales } from '../shared/utils/app-locales';
+import { appLocales, defaultLocaleCode } from '../shared/utils/app-locales';
 
 /**
  * One `routeRules` object is read by two matchers: Nuxt compiles the keys for
@@ -93,7 +95,7 @@ test('route-rule keys keep wildcards out of the middle of the path', async () =>
 test('every configured locale is covered by an explicit rule', async () => {
   const routeRules = await loadRouteRules();
   for (const locale of appLocales) {
-    const prefix = locale.code === 'en' ? '' : `/${locale.code}`;
+    const prefix = locale.code === defaultLocaleCode ? '' : `/${locale.code}`;
     expect(routeRules[`${prefix}/dashboard`], locale.code).toBeDefined();
     expect(routeRules[`${prefix}/dashboard/**`], locale.code).toBeDefined();
     expect(routeRules[`${prefix}/native-login`], locale.code).toBeDefined();

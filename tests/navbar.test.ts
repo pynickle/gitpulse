@@ -56,7 +56,7 @@ afterEach(async () => {
 
 const mountNavbar = (variant?: 'app' | 'public') => {
   dom = createVueDom({
-    holdDashboardMoreMenu: { arm: () => {}, take: () => false },
+    holdTopBarMenu: { arm: () => {}, take: () => false },
     useI18n: () => ({ t: (key: string) => (key === 'app.title' ? 'GitPulse' : key) }),
     useColorMode: () => shallowRef('light'),
   });

@@ -32,7 +32,6 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
 .navbar-bar__actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .navbar-bar :deep(a) {

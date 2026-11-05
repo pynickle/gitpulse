@@ -18,7 +18,6 @@ const showNavbar = computed(() => {
   // header. Mounting the layout navbar too would duplicate the language and
   // color-mode controls under a layer that paints over them.
   if (!isDashboardHome.value) return false;
-  if (isFileBrowserActive.value) return false;
   return presentation.value.showNavbar;
 });
 </script>

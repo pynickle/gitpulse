@@ -48,20 +48,12 @@ const classes = computed(() => [
   size === 'large' ? 'is-large' : null,
   color ? `is-${color}` : null,
   lifted ? 'is-lifted' : null,
+  'px-6',
 ]);
 </script>
 
 <style scoped lang="scss">
 .button {
   font-size: 1.1rem;
-  /* 3rem per side (the `px-6` helper) overflows a 320px card once the icon
-     sits next to the label; the padding scales with the card instead. */
-  padding-inline: 1.5rem;
-}
-
-@media (max-width: 480px) {
-  .button {
-    padding-inline: 0.85rem;
-  }
 }
 </style>

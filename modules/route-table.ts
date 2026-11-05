@@ -1,7 +1,7 @@
 import { addTemplate, defineNuxtModule } from '@nuxt/kit';
 import type { NuxtPage } from '@nuxt/schema';
 
-import { appLocales, defaultLocaleCode } from '../shared/utils/app-locales';
+import { appLocales, defaultLocaleCode, localeVariants } from '../shared/utils/app-locales';
 
 // Nitro forbids `#build` in the server bundle. The server imports this virtual
 // instead. Its types point at the written file, with the `.mjs` kept: Nitro 2
@@ -24,9 +24,7 @@ function withLocalePrefixes(paths: readonly string[]): string[] {
     if (localePrefixes.some((code) => path === `/${code}` || path.startsWith(`/${code}/`))) {
       continue;
     }
-    for (const code of localePrefixes) {
-      localized.add(path === '/' ? `/${code}` : `/${code}${path}`);
-    }
+    for (const variant of localeVariants(path)) localized.add(variant);
   }
   return [...localized].sort();
 }

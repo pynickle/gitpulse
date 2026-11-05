@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
-import { holdDashboardMoreMenu } from '../app/utils/holdDashboardMoreMenu';
+import { holdTopBarMenu } from '../app/utils/holdTopBarMenu';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -47,9 +47,9 @@ const button = (root: ParentNode, name: string) =>
 let dom: ReturnType<typeof createVueDom>;
 
 beforeEach(() => {
-  holdDashboardMoreMenu.take();
+  holdTopBarMenu.take();
   dom = createVueDom({
-    holdDashboardMoreMenu,
+    holdTopBarMenu,
     useDetailSidebarViewport: () => ({
       isDetailSidebarSheetViewport: shallowRef(false),
     }),
@@ -71,7 +71,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  holdDashboardMoreMenu.take();
+  holdTopBarMenu.take();
   await dom.cleanup();
 });
 
@@ -107,5 +107,31 @@ describe('top bar language menu', () => {
 
     const menuOpen = second.root.querySelector('.chrome-actions__menu') !== null;
     expect(menuOpen).toBe(true);
+  });
+
+  test('a bar that survives the locale switch does not open the next bar menu', async () => {
+    // The public top bar lives in a persistent layout: a locale switch re-renders
+    // the page but not the bar, so nothing consumes the held open state.
+    const persistent = dom.mount(defineComponent({ setup: () => () => h(ChromeActions as never) }));
+    persistent.root
+      .querySelector('.chrome-actions__more-toggle')
+      ?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    const menu = persistent.root.querySelector('.chrome-actions__menu');
+    button(menu ?? persistent.root, '中文')?.dispatchEvent(
+      new dom.window.MouseEvent('click', { bubbles: true })
+    );
+    await Promise.resolve();
+    persistent.unmount();
+
+    const recreated = dom.mount(
+      defineComponent({
+        setup: () => () => h(ChromeActions as never, { holdOpenOnLocaleSwitch: true }),
+      })
+    );
+    await nextTick();
+
+    expect(recreated.root.querySelector('.chrome-actions__menu')).toBeNull();
   });
 });

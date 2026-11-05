@@ -47,6 +47,10 @@ textarea,
   --gitpulse-scrollbar-track-size: 10px;
   --gitpulse-scrollbar-thumb-inset: 2px;
   --gitpulse-scrollbar-thumb-radius: 999px;
+  /* Space between the scrolled content and the thumb capsule. A SimpleBar host
+     moves this right padding onto its scroll content, so the thumb never sits
+     on top of the text. */
+  --gitpulse-scrollbar-content-gap: calc(var(--gitpulse-scrollbar-track-size) + 0.5rem);
 
   /* The semantic palette — the page canvas, the shell, surface, border, text, accent and the
      status tones — is injected at startup from shared/data/theme-palette.json, the data the

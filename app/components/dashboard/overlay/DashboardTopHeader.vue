@@ -42,7 +42,7 @@
         </Transition>
       </div>
       <div class="dashboard-top-header__actions">
-        <ChromeActions>
+        <ChromeActions hold-open-on-locale-switch>
           <template #actions>
             <button
               v-if="showDetailSidebarToggle"
@@ -332,10 +332,6 @@ const isDetailSummaryVisible = computed(() => {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  /* Same gap as the layout navbar's action group: both bars are one shell, so
-     the GitHub link, language switcher and color mode toggle must space
-     identically on every surface. */
-  gap: 0.75rem;
   margin-left: auto;
 }
 

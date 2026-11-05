@@ -31,6 +31,18 @@
     transition-delay: 0.06s;
   }
 
+  /* Scroll thumb gutter. SimpleBar copies the host's padding onto the scrolled
+     content, so right padding on the scroll host is the only thing that keeps
+     the content off the thumb capsule. Only the columns that own a scroller at
+     this width get it; narrower layouts stack and the page scroller owns the
+     track (the repository detail's main column is never a scroll host). */
+  @media (min-width: 1025px) {
+    #{$scope} :deep(.scroll-area.detail-main-column),
+    #{$scope} :deep(.scroll-area.sidebar-scroll) {
+      padding-right: var(--gitpulse-scrollbar-content-gap);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #{$scope} :deep(.columns),
     #{$scope} :deep(.detail-sidebar-column) {

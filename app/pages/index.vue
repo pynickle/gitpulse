@@ -44,7 +44,6 @@ import AuthenticatedLandingCard from '~/components/auth/AuthenticatedLandingCard
 import AuthGateway from '~/components/auth/AuthGateway.vue';
 import PersonalLockForm from '~/components/auth/PersonalLockForm.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
-import RoundImg from '~/components/ui/RoundImg.vue';
 
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
 const { t } = useI18n();
