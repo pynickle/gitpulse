@@ -34,17 +34,19 @@ const NavbarBrand = await compileVue(
   }
 );
 
-const Navbar = await compileVue(
-  'app/components/layouts/Navbar.vue',
-  {
-    '~/components/layouts/NavbarBrand.vue': { default: NavbarBrand },
-    '~/components/ui/ColorModeToggle.vue': { default: stub },
-    '~/components/ui/GitHubIcon.vue': { default: stub },
-    '~/components/ui/LinkIcon.vue': { default: stub },
-    'virtual:language-switcher': { LanguageSwitcher: stub },
-  },
-  { LanguageSwitcher: 'virtual:language-switcher' }
-);
+const ChromeActions = await compileVue('app/components/layouts/ChromeActions.vue', {
+  '@lucide/vue': { EllipsisIcon: stub },
+  'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
+  '~/components/LanguageSwitcher.vue': { default: stub },
+  '~/components/ui/ColorModeToggle.vue': { default: stub },
+  '~/components/ui/GitHubIcon.vue': { default: stub },
+  '~/components/ui/LinkIcon.vue': { default: stub },
+});
+
+const Navbar = await compileVue('app/components/layouts/Navbar.vue', {
+  '~/components/layouts/ChromeActions.vue': { default: ChromeActions },
+  '~/components/layouts/NavbarBrand.vue': { default: NavbarBrand },
+});
 
 let dom: ReturnType<typeof createVueDom>;
 
@@ -54,6 +56,7 @@ afterEach(async () => {
 
 const mountNavbar = (variant?: 'app' | 'public') => {
   dom = createVueDom({
+    holdDashboardMoreMenu: { arm: () => {}, take: () => false },
     useI18n: () => ({ t: (key: string) => (key === 'app.title' ? 'GitPulse' : key) }),
     useColorMode: () => shallowRef('light'),
   });

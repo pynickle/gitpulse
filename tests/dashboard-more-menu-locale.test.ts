@@ -8,6 +8,19 @@ import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ setup: () => () => h('span') });
 const Switcher = await compileVue('app/components/LanguageSwitcher.vue');
+
+// The shared trailing controls live in ChromeActions; the header only places them.
+const ChromeActions = await compileVue('app/components/layouts/ChromeActions.vue', {
+  '@lucide/vue': { EllipsisIcon: icon },
+  'vue-i18n': {
+    useI18n: () => ({ t: (key: string) => key }),
+  },
+  '~/components/LanguageSwitcher.vue': { default: Switcher },
+  '~/components/ui/ColorModeToggle.vue': { default: icon },
+  '~/components/ui/GitHubIcon.vue': { default: icon },
+  '~/components/ui/LinkIcon.vue': { default: icon },
+});
+
 const Header = await compileVue('app/components/dashboard/overlay/DashboardTopHeader.vue', {
   '@lucide/vue': {
     ArrowLeftIcon: icon,
@@ -24,10 +37,7 @@ const Header = await compileVue('app/components/dashboard/overlay/DashboardTopHe
       t: (key: string) => key,
     }),
   },
-  '~/components/LanguageSwitcher.vue': { default: Switcher },
-  '~/components/ui/ColorModeToggle.vue': { default: icon },
-  '~/components/ui/GitHubIcon.vue': { default: icon },
-  '~/components/ui/LinkIcon.vue': { default: icon },
+  '~/components/layouts/ChromeActions.vue': { default: ChromeActions },
   '~/utils/getPullRequestStateVisual': { getPullRequestStateIcon: () => null },
 });
 
@@ -77,15 +87,15 @@ const mountHeader = () =>
     })
   );
 
-describe('DashboardTopHeader language menu', () => {
+describe('top bar language menu', () => {
   test('keeps the more menu open when a locale switch recreates the page', async () => {
     const first = mountHeader();
     first.root
-      .querySelector('.dashboard-top-header__more-toggle')
+      .querySelector('.chrome-actions__more-toggle')
       ?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
     await nextTick();
 
-    const menu = first.root.querySelector('.dashboard-top-header__more-menu');
+    const menu = first.root.querySelector('.chrome-actions__menu');
     button(menu ?? first.root, '中文')?.dispatchEvent(
       new dom.window.MouseEvent('click', { bubbles: true })
     );
@@ -95,7 +105,7 @@ describe('DashboardTopHeader language menu', () => {
     const second = mountHeader();
     await nextTick();
 
-    const menuOpen = second.root.querySelector('.dashboard-top-header__more-menu') !== null;
+    const menuOpen = second.root.querySelector('.chrome-actions__menu') !== null;
     expect(menuOpen).toBe(true);
   });
 });

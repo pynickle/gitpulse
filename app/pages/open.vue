@@ -33,7 +33,7 @@ watch(
 </script>
 
 <template>
-  <!-- The landing layout that hosts this page already supplies the `main` landmark. -->
+  <!-- The public shell that hosts this page already supplies the `main` landmark. -->
   <div class="open-page" aria-live="polite">
     <div v-if="destination" aria-busy="true">
       <p>{{ t('launch.opening') }}</p>

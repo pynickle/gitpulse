@@ -6,21 +6,15 @@
         class="navbar-bar__actions"
         :class="{ 'navbar-bar__actions--always': variant === 'public' }"
       >
-        <LinkIcon to="https://github.com/pynickle/gitpulse">
-          <GitHubIcon class="is-centered" />
-        </LinkIcon>
-        <LanguageSwitcher />
-        <ColorModeToggle />
+        <ChromeActions />
       </div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
+import ChromeActions from '~/components/layouts/ChromeActions.vue';
 import NavbarBrand from '~/components/layouts/NavbarBrand.vue';
-import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
-import GitHubIcon from '~/components/ui/GitHubIcon.vue';
-import LinkIcon from '~/components/ui/LinkIcon.vue';
 
 const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
 </script>
@@ -59,22 +53,6 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
 
   .navbar-bar__actions--always {
     display: flex;
-  }
-}
-
-@media (max-width: 480px) {
-  .navbar-bar {
-    /* The brand and the three controls cannot share one line below ~430px.
-       Wrapping keeps every control reachable instead of pushing the last one
-       off screen, where the hidden scrollbar made the overflow invisible. */
-    flex-wrap: wrap;
-    row-gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-  }
-
-  .navbar-bar__actions--always {
-    flex-basis: 100%;
-    justify-content: flex-end;
   }
 }
 </style>

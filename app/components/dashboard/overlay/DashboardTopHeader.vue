@@ -42,58 +42,21 @@
         </Transition>
       </div>
       <div class="dashboard-top-header__actions">
-        <button
-          v-if="showDetailSidebarToggle"
-          type="button"
-          class="button is-light is-small dashboard-top-header__detail-sidebar-toggle"
-          :title="detailSidebarToggleLabel"
-          :aria-label="detailSidebarToggleLabel"
-          @click="$emit('toggle-detail-sidebar')"
-        >
-          <PanelRightCloseIcon v-if="!detailSidebarHidden" :size="16" aria-hidden="true" />
-          <PanelRightOpenIcon v-else :size="16" aria-hidden="true" />
-        </button>
-        <LinkIcon to="https://github.com/pynickle/gitpulse">
-          <GitHubIcon class="is-centered" />
-        </LinkIcon>
-        <!-- Desktop-only: inline language switcher and color mode toggle. The
-             wrapper div carries the scoped class — passing it straight to the
-             component loses the scope id through ColorScheme's extra root. -->
-        <div class="dashboard-top-header__inline-extra">
-          <LanguageSwitcher />
-        </div>
-        <div class="dashboard-top-header__inline-extra">
-          <ColorModeToggle />
-        </div>
-
-        <!-- Mobile-only (<=860px): the two extras collapse into a "more" menu
-             so the toolbar always fits on one row. -->
-        <div ref="moreMenuRef" class="dashboard-top-header__more">
-          <button
-            type="button"
-            class="button is-light is-small dashboard-top-header__more-toggle"
-            :title="t('detailOverlay.moreActions')"
-            :aria-label="t('detailOverlay.moreActions')"
-            :aria-expanded="isMoreMenuOpen"
-            aria-haspopup="menu"
-            @click="toggleMoreMenu"
-          >
-            <EllipsisIcon :size="16" aria-hidden="true" />
-          </button>
-          <Transition name="dashboard-top-header-more-menu">
-            <div v-if="isMoreMenuOpen" class="dashboard-top-header__more-menu" role="menu">
-              <div class="dashboard-top-header__more-menu-row" role="none">
-                <LanguageSwitcher @before-switch="armMoreMenuForLocaleChange" />
-              </div>
-              <div class="dashboard-top-header__more-menu-row" role="none">
-                <span class="dashboard-top-header__more-menu-label">
-                  {{ t('colorMode.label') }}
-                </span>
-                <ColorModeToggle />
-              </div>
-            </div>
-          </Transition>
-        </div>
+        <ChromeActions>
+          <template #actions>
+            <button
+              v-if="showDetailSidebarToggle"
+              type="button"
+              class="button is-light is-small dashboard-top-header__detail-sidebar-toggle"
+              :title="detailSidebarToggleLabel"
+              :aria-label="detailSidebarToggleLabel"
+              @click="$emit('toggle-detail-sidebar')"
+            >
+              <PanelRightCloseIcon v-if="!detailSidebarHidden" :size="16" aria-hidden="true" />
+              <PanelRightOpenIcon v-else :size="16" aria-hidden="true" />
+            </button>
+          </template>
+        </ChromeActions>
       </div>
     </div>
   </div>
@@ -106,17 +69,13 @@ import {
   CircleMinusIcon,
   HouseIcon,
   MessageSquareIcon,
-  EllipsisIcon,
   PanelRightCloseIcon,
   PanelRightOpenIcon,
 } from '@lucide/vue';
-import { type Component, computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { type Component, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import LanguageSwitcher from '~/components/LanguageSwitcher.vue';
-import ColorModeToggle from '~/components/ui/ColorModeToggle.vue';
-import GitHubIcon from '~/components/ui/GitHubIcon.vue';
-import LinkIcon from '~/components/ui/LinkIcon.vue';
+import ChromeActions from '~/components/layouts/ChromeActions.vue';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
@@ -202,77 +161,11 @@ const isDetailSummaryVisible = computed(() => {
     detailSummary?.visible && (detailTitle.value || detailState.value || detailNumberLabel.value)
   );
 });
-
-/*
- * Mobile "more" menu (<=860px): hosts the language switcher and color mode
- * toggle so the toolbar stays on one row. The menu closes on outside clicks,
- * on Escape, and on overlay scroll. Locale choices stay in the menu. The
- * locale URL recreates the page, so the open menu is restored once;
- * the scroll from that navigation does not count as a dismissal.
- */
-const restoredMoreMenu = holdDashboardMoreMenu.take();
-const isMoreMenuOpen = ref(restoredMoreMenu);
-let ignoreScrollClose = restoredMoreMenu;
-const moreMenuRef = ref<HTMLElement | null>(null);
-
-const armMoreMenuForLocaleChange = () => {
-  holdDashboardMoreMenu.arm();
-};
-
-const closeMoreMenu = () => {
-  isMoreMenuOpen.value = false;
-  ignoreScrollClose = false;
-};
-
-const toggleMoreMenu = () => {
-  isMoreMenuOpen.value = !isMoreMenuOpen.value;
-};
-
-const onMoreMenuDocumentClick = (event: MouseEvent) => {
-  if (!isMoreMenuOpen.value) return;
-  const target = event.target as Node | null;
-  if (target && moreMenuRef.value?.contains(target)) return;
-  closeMoreMenu();
-};
-
-const onMoreMenuKeydown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') closeMoreMenu();
-};
-
-const onMoreMenuScroll = () => {
-  if (ignoreScrollClose) return;
-  closeMoreMenu();
-};
-
-onMounted(() => {
-  document.addEventListener('click', onMoreMenuDocumentClick, true);
-  document.addEventListener('keydown', onMoreMenuKeydown);
-  document.addEventListener('scroll', onMoreMenuScroll, true);
-
-  if (!ignoreScrollClose) return;
-
-  // Nuxt scrolls to the top on the frame after this page finishes loading.
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        ignoreScrollClose = false;
-      });
-    });
-  });
-});
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onMoreMenuDocumentClick, true);
-  document.removeEventListener('keydown', onMoreMenuKeydown);
-  document.removeEventListener('scroll', onMoreMenuScroll, true);
-});
 </script>
 
 <style scoped lang="scss">
 .dashboard-top-header {
-  /* The layout navbar's surface, so the bar looks the same on the dashboard
-     home and on a sub-page. */
-  background-color: var(--gitpulse-surface);
+  background-color: var(--gitpulse-surface-muted);
   border-bottom: 1px solid var(--gitpulse-border);
   position: sticky;
   top: 0;
@@ -447,86 +340,6 @@ onBeforeUnmount(() => {
 }
 
 .dashboard-top-header__detail-sidebar-toggle {
-  height: 2.25rem;
-}
-
-/* Mobile "more" menu: hidden on desktop, replaces the inline extras below
-   860px so the toolbar never wraps to a second row. */
-.dashboard-top-header__more {
-  display: none;
-  position: relative;
-}
-
-.dashboard-top-header__more-toggle {
-  height: 2.25rem;
-}
-
-.dashboard-top-header__more-menu {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  min-width: 11rem;
-  padding: 0.35rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: var(--gitpulse-radius, 8px);
-  background: var(--gitpulse-surface);
-  box-shadow: var(--gitpulse-shadow-raised);
-}
-
-.dashboard-top-header__more-menu-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.4rem 0.5rem;
-
-  & + & {
-    border-top: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
-  }
-}
-
-.dashboard-top-header__more-menu-label {
-  color: var(--gitpulse-text-muted);
-  font-size: 0.8rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.dashboard-top-header-more-menu-enter-active,
-.dashboard-top-header-more-menu-leave-active {
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
-}
-
-.dashboard-top-header-more-menu-enter-from,
-.dashboard-top-header-more-menu-leave-to {
-  opacity: 0;
-  transform: translateY(-0.3rem);
-}
-
-@media (max-width: 860px) {
-  .dashboard-top-header__inline-extra {
-    display: none;
-  }
-
-  .dashboard-top-header__more {
-    display: block;
-  }
-}
-
-.dashboard-top-header__actions :deep(.dropdown),
-.dashboard-top-header__actions :deep(.dropdown-trigger) {
-  display: inline-flex;
-  align-items: center;
-}
-
-.dashboard-top-header__actions :deep(.dropdown-trigger .button) {
-  display: inline-flex;
-  align-items: center;
   height: 2.25rem;
 }
 </style>
