@@ -48,6 +48,7 @@ const icons = {
   ArrowUpIcon: icon,
   ChevronLeftIcon: icon,
   ChevronRightIcon: icon,
+  ChevronsLeftIcon: icon,
   ClockIcon: icon,
   RefreshCwIcon: icon,
   RocketIcon: icon,

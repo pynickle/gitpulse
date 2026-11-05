@@ -5,6 +5,12 @@ import { useModalState } from '../../app/composables/useModalState';
 import { createFocusTrapController } from '../../app/utils/createFocusTrapController';
 import { resolveReleaseDrawerSheetGesture } from '../../app/utils/resolveReleaseDrawerSheetGesture';
 
+function isValueHost(element: Element): element is HTMLInputElement & { value: string } {
+  return (
+    element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT'
+  );
+}
+
 export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
   const window = new Window({ width: 390, height: 844 });
   const document = window.document as unknown as Document;
@@ -57,6 +63,11 @@ export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
         const event = key.slice(2, capture ? -7 : undefined).toLowerCase();
         if (previous) element.removeEventListener(event, previous, capture);
         if (next) element.addEventListener(event, next, capture);
+      } else if (key === 'value' && isValueHost(element)) {
+        // runtime-dom writes the live property, so a field the user typed into still
+        // follows a re-render; the attribute alone would be the untouched default value.
+        const value = next == null ? '' : String(next);
+        if (element.value !== value) element.value = value;
       } else if (key === 'style') {
         if (typeof next === 'string') {
           element.setAttribute('style', next);

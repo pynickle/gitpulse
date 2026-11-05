@@ -88,7 +88,7 @@ const i18n = {
   }),
 };
 const Pagination = await compileVue('app/components/dashboard/DashboardPagination.vue', {
-  '@lucide/vue': { ChevronLeftIcon: empty, ChevronRightIcon: empty },
+  '@lucide/vue': { ChevronLeftIcon: empty, ChevronRightIcon: empty, ChevronsLeftIcon: empty },
 });
 const DrawerFilters = await compileVue(
   'app/components/dashboard/release-timeline/ReleaseDrawerReleaseFilters.vue',

@@ -661,8 +661,11 @@
       }
     },
     "pagination": {
+      "first": "First Page",
       "previous": "Previous Page",
-      "next": "Next Page"
+      "next": "Next Page",
+      "pageNumber": "Page number",
+      "pageOfTotal": "Page {page} of {total}"
     },
     "meta": {
       "commentCount": "{count} comments"
