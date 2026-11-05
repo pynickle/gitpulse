@@ -111,8 +111,6 @@
   "timelineEmptyReleasesDescription": "已关注仓库在当前加载范围内还没有已发布的 Release。",
   "timelineBannerUnavailableTitle": "不可用的已关注仓库",
   "timelineBannerUnavailableDescription": "{repos} 在 GitHub 上已找不到。它们会保留在列表中，直到你移除。",
-  "timelineBannerTransientTitle": "部分已关注仓库加载失败",
-  "timelineBannerTransientDescription": "{repos} 暂时无法加载。",
   "timelinePersistenceError": "时间线更改未能保存，已加载的版本仍然可用。",
   "timelineOldestShown": "更早的 Release 未显示。",
   "timelinePrerelease": "预发布版",

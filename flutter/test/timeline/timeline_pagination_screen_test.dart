@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';
 import 'package:gitpulse/timeline/timeline_session.dart';
 
+import '../support/named_actions.dart';
 import 'timeline_screen_test.dart' show pumpTimelineScreen;
 import 'timeline_test_support.dart';
 
@@ -143,11 +143,15 @@ void main() {
       },
     );
   }
-
   testWidgets(
-    'retrying a failed repository preserves scroll context when its banner disappears',
+    'an unreadable repository is retried by the next refresh, with no banner above the list',
     (tester) async {
-      final mounted = await pumpTimelineScreen(
+      // The repository whose page could not be read is not named above the list;
+      // the Timeline's own refresh asks for it again, and its releases appear
+      // when it answers. Nothing above the list is added or removed either way,
+      // so the release a reader is on never moves for a banner's sake.
+      var betaFails = true;
+      await pumpTimelineScreen(
         tester,
         size: const Size(500, 900),
         handlers: {
@@ -170,52 +174,34 @@ void main() {
                       DateTime.utc(2026, 10, 1, id).toIso8601String(),
                     ),
                 ]),
-                'B': transientPageJson(),
-              },
-            ),
-          ),
-          pageRequest({'B': null}): () => BackendResult(
-            statusCode: 200,
-            data: roundJson(
-              pages: {
-                'B': pageJson('octo', 'b', [
-                  releaseJson(40, 'recovered', '2026-10-04T00:00:00Z'),
-                ]),
+                'B': betaFails
+                    ? transientPageJson()
+                    : pageJson('octo', 'b', [
+                        releaseJson(40, 'recovered', '2026-10-04T00:00:00Z'),
+                      ]),
               },
             ),
           ),
         },
       );
-      await tester.drag(
-        find.descendant(
-          of: find.byType(CustomScrollView),
-          matching: find.byType(Scrollable),
-        ),
-        const Offset(0, -600),
-      );
-      await tester.pumpAndSettle();
-      final card = find.byType(ReleaseTimelineCard).evaluate().firstWhere((
-        element,
-      ) {
-        final y = (element.renderObject! as RenderBox)
-            .localToGlobal(Offset.zero)
-            .dy;
-        return y > 350 && y < 700;
-      });
-      final key = (card.widget as ReleaseTimelineCard).item.key;
-      final anchor = find.byWidgetPredicate(
-        (w) => w is ReleaseTimelineCard && w.item.key == key,
-      );
-      final before = tester.getTopLeft(anchor).dy;
-      await tester.tap(find.widgetWithText(GitPulseButton, 'Retry').first);
-      await tester.pumpAndSettle();
+
+      expect(find.text('v30'), findsOneWidget);
       expect(
         find.text('Some Followed Repositories failed to load'),
         findsNothing,
       );
-      expect(anchor, findsOneWidget);
-      expect(tester.getTopLeft(anchor).dy, closeTo(before, 1));
-      expect(mounted.session.requests.last, pageRequest({'B': null}));
+      expect(find.textContaining('octo/b'), findsNothing);
+
+      betaFails = false;
+      await tester.tap(findNamedAction('Reload'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('recovered'), findsOneWidget);
+      expect(
+        find.text('Some Followed Repositories failed to load'),
+        findsNothing,
+      );
+      expect(tester.takeException(), isNull);
     },
   );
 }

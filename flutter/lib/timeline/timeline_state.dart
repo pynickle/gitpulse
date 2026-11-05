@@ -104,8 +104,13 @@ class TimelineViewState {
   /// Timeline Filter.
   bool get filteredEmpty => hasExposedReleases && visibleGroups.isEmpty;
 
-  bool get hasLookupFailures =>
-      unavailableRepositories.isNotEmpty || transientRepositories.isNotEmpty;
+  /// Whether the Timeline has something to say above its list: a Followed
+  /// Repository GitHub reports as missing.
+  ///
+  /// A repository that failed to load for now is not one of them — the failed
+  /// round is retried by the next one or by Retry, and naming it above the list
+  /// only repeats the round's own state in a second place.
+  bool get hasLookupFailures => unavailableRepositories.isNotEmpty;
 
   /// The same content under another projection.
   TimelineViewState withProjection(TimelineProjection projection) =>

@@ -285,6 +285,15 @@ class _FailureState extends StatelessWidget {
   }
 }
 
+/// The Followed Repositories GitHub itself reports as gone, named above the
+/// releases that are still there.
+///
+/// Only a repository GitHub says is missing is named here. A repository whose
+/// releases failed to load for now — a timeout, a rate limit, a dropped
+/// connection — is not a fact about the repository, and the round that failed
+/// is retried by the next one or by the reader's own Retry; listing those names
+/// above the list said the same thing again in a second place and moved the
+/// release a reader was halfway through.
 class _LookupFailureBanner extends StatelessWidget {
   const _LookupFailureBanner({required this.state, required this.onRetry});
 
@@ -323,30 +332,16 @@ class _LookupFailureBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (state.unavailableRepositories.isNotEmpty) ...[
-            Text(
-              l10n.timelineBannerUnavailableTitle,
-              style: gitPulseTypeRowLabel(context),
+          Text(
+            l10n.timelineBannerUnavailableTitle,
+            style: gitPulseTypeRowLabel(context),
+          ),
+          Text(
+            l10n.timelineBannerUnavailableDescription(
+              _names(state.unavailableRepositories),
             ),
-            Text(
-              l10n.timelineBannerUnavailableDescription(
-                _names(state.unavailableRepositories),
-              ),
-              style: gitPulseTypeMeta(context),
-            ),
-          ],
-          if (state.transientRepositories.isNotEmpty) ...[
-            Text(
-              l10n.timelineBannerTransientTitle,
-              style: gitPulseTypeRowLabel(context),
-            ),
-            Text(
-              l10n.timelineBannerTransientDescription(
-                _names(state.transientRepositories),
-              ),
-              style: gitPulseTypeMeta(context),
-            ),
-          ],
+            style: gitPulseTypeMeta(context),
+          ),
           const SizedBox(height: GitPulseSpace.inline),
           Align(
             alignment: Alignment.centerLeft,

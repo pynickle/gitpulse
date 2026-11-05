@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
-import 'package:gitpulse/presentation/gitpulse_tokens.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/native_login_handoff.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -332,7 +331,7 @@ void main() {
   );
 
   testWidgets(
-    'a failed repository is named in the banner while the successful releases stay readable',
+    'a repository that failed to load is not named above the list, and the successful releases stay readable',
     (tester) async {
       final mounted = await pumpTimelineScreen(
         tester,
@@ -365,36 +364,21 @@ void main() {
         },
       );
 
-      expect(find.textContaining('octo/beta'), findsWidgets);
+      // The successful repository's release is still readable, and the window
+      // says it is a partial one.
       expect(find.text('v1.1'), findsOneWidget);
       expect(find.text('Partial timeline coverage'), findsOneWidget);
 
-      // The banner's outline is an outline: the fill is the shared danger wash and the boundary
-      // is the app's own edge tone, so the edge is visible against the page instead of being drawn
-      // in the same ink as the fill it bounds.
-      final bannerTitle = find.text(
-        'Some Followed Repositories failed to load',
-      );
-      expect(bannerTitle, findsOneWidget);
-      final context = tester.element(bannerTitle);
-      final decoration =
-          tester
-                  .widget<Container>(
-                    find
-                        .ancestor(
-                          of: bannerTitle,
-                          matching: find.byType(Container),
-                        )
-                        .first,
-                  )
-                  .decoration
-              as BoxDecoration;
-      expect(decoration.color, toneDangerSoft(context));
+      // A repository whose releases could not be read for now is a fact about
+      // the round, not about the repository: it is not named on a banner, and
+      // nothing above the list moves when the retry brings it back.
+      expect(find.textContaining('octo/beta'), findsNothing);
       expect(
-        decoration.border!.top.color,
-        toneEdge(Theme.of(context).colorScheme),
-        reason: 'a surface boundary, not a second wash',
+        find.text('Some Followed Repositories failed to load'),
+        findsNothing,
       );
+      expect(find.text('Unavailable Followed Repositories'), findsNothing);
+      final listTop = tester.getTopLeft(find.text('v1.1')).dy;
 
       await tester.tap(find.widgetWithText(GitPulseButton, 'Retry').first);
       await tester.pump();
@@ -406,6 +390,7 @@ void main() {
         pageRequest({'R_beta': null}),
       ]);
       expect(find.text('v1.1'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('v1.1')).dy, closeTo(listTop, 1));
       expect(
         find.text('Some Followed Repositories failed to load'),
         findsNothing,

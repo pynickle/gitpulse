@@ -129,11 +129,6 @@
   "@timelineBannerUnavailableDescription": {
     "placeholders": {"repos": {"type": "String"}}
   },
-  "timelineBannerTransientTitle": "Some Followed Repositories failed to load",
-  "timelineBannerTransientDescription": "{repos} could not be loaded. This is usually temporary.",
-  "@timelineBannerTransientDescription": {
-    "placeholders": {"repos": {"type": "String"}}
-  },
   "timelinePersistenceError": "Timeline changes could not be saved. Loaded releases are still available.",
   "timelineOldestShown": "Earlier releases are not shown.",
   "timelinePrerelease": "Prerelease",

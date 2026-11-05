@@ -547,9 +547,11 @@ void main() {
       await _pull(tester);
 
       expect(_card('v3'), findsOneWidget);
+      // The repository that could not be read is not named above the list: its
+      // round failed, not the repository, and the next refresh retries it.
       expect(
         find.text('Some Followed Repositories failed to load'),
-        findsOneWidget,
+        findsNothing,
       );
     });
   });
