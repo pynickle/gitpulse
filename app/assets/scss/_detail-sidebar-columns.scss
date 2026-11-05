@@ -91,6 +91,14 @@
  * down (not unmounted), so the slide transition can play and the existing
  * `inert` binding keeps the closed sheet out of the tab order.
  *
+ * The sheet is a non-modal panel, never a dialog: no scrim may be painted
+ * over it. It always renders inside an enabled SimpleBar scroll area — the
+ * detail component's root one, or the pane's for the repository detail —
+ * whose `.simplebar-mask` is `z-index: 0`. The column's own `z-index` only
+ * orders it inside that stacking context, so a scrim rendered by the pane
+ * stage outranks the whole context: it dims the sheet and swallows its
+ * pointer and wheel input.
+ *
  * The doubled stage class raises specificity above the stacking mixin's
  * `display: none` collapse and the collapse fade without `!important`.
  */
@@ -144,8 +152,11 @@
       pointer-events: none;
     }
 
-    /* The column scrolls as the sheet; the inner scroll region must not
-       impose its own 100% height or nested scrollbar. */
+    /*
+     * The column is an enabled ScrollArea at this breakpoint, so its own
+     * SimpleBar scroller owns the sheet's scrolling; the inner scroll region
+     * must not impose its own 100% height or a nested scrollbar.
+     */
     #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column .sidebar-scroll) {
       height: auto;
       max-height: none;

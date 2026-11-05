@@ -223,9 +223,10 @@ const isDetailSidebarToggleVisible = computed(() => {
 
 /*
  * The mobile bottom sheet mirrors the shared hidden flag: a hidden sidebar is
- * a closed sheet, the expanded default an open one. The sheet class is only
- * applied for panes that actually have a Detail Sidebar, so a subject without
- * a toggle never gets pinned as an undismissable sheet.
+ * a closed sheet, the expanded default an open one. Only panes that actually
+ * have a Detail Sidebar can open it, so a subject without a toggle never
+ * reports an open sheet. The sheet is a non-modal panel, so this state drives
+ * focus handoff only.
  */
 const isDetailSidebarSheetOpen = computed(() => {
   return resolveDetailSidebarSheetOpen(
@@ -234,11 +235,6 @@ const isDetailSidebarSheetOpen = computed(() => {
     isDetailSidebarHidden.value
   );
 });
-
-const closeDetailSidebarSheet = () => {
-  if (!isDetailSidebarSheetOpen.value) return;
-  toggleDetailSidebar();
-};
 
 /*
  * Identity of the active pane for Detail Sidebar state resets. The PR Review
@@ -359,8 +355,9 @@ watch(detailSidebarPaneIdentity, (paneIdentity) => syncDetailSidebarPane(paneIde
 });
 
 /*
- * Closing the sheet restores focus to the header toggle that opened it; the
- * backdrop click path would otherwise leave focus on the now-hidden sheet.
+ * Closing the sheet restores focus to the header toggle that owns it. The
+ * sheet also closes when the pane identity changes, so the toggle takes
+ * focus back on that path too.
  */
 watch(isDetailSidebarSheetOpen, (isOpen, wasOpen) => {
   if (!isOpen && wasOpen) {
@@ -517,14 +514,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
             </Suspense>
           </ScrollArea>
         </Transition>
-        <Transition name="detail-sidebar-sheet-fade">
-          <div
-            v-if="isDetailSidebarSheetOpen"
-            class="detail-sidebar-sheet-backdrop"
-            aria-hidden="true"
-            @click="closeDetailSidebarSheet"
-          />
-        </Transition>
         <div :id="COMPOSER_BLEED_LAYER_ID" class="composer-bleed-layer" />
       </div>
     </DashboardOverlayFrame>
@@ -544,23 +533,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
 /* Mobile Detail Sidebar bottom sheet: the host owns one ruleset covering every
    detail component, so their templates stay untouched. */
 @include detail-sidebar-sheet('.detail-pane-stage');
-
-.detail-sidebar-sheet-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  background: rgb(0 0 0 / 0.4);
-}
-
-.detail-sidebar-sheet-fade-enter-active,
-.detail-sidebar-sheet-fade-leave-active {
-  transition: opacity 0.28s ease;
-}
-
-.detail-sidebar-sheet-fade-enter-from,
-.detail-sidebar-sheet-fade-leave-to {
-  opacity: 0;
-}
 
 .composer-bleed-layer {
   position: absolute;
