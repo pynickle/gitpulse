@@ -466,7 +466,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
                     :code="segment.code"
                     class="wiki-page__mermaid"
                   />
-                  <!-- doctor-disable-next-line vue/security/restrict-v-html -- HTML segments pass through sanitizeWikiHtml's document xss allowlist. -->
+                  <!-- v-html: HTML segments pass through sanitizeWikiHtml's document xss allowlist. -->
                   <div v-else class="wiki-page__html-chunk" v-html="segment.html" />
                 </template>
               </div>

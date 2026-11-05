@@ -788,7 +788,7 @@ const onUnifiedCodePointerMove = (event: PointerEvent) => {
     }
 
     if (scrollContainer) {
-      // doctor-disable-next-line vue/props/no-mutating-props -- This prop is a DOM scroll handle; panning updates the viewport, not parent application state.
+      // This prop is a DOM scroll handle; panning updates the viewport, not parent application state.
       scrollContainer.scrollTop -= deltaY;
     }
 
