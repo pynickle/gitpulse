@@ -9,7 +9,7 @@ body:
     attributes:
       label: Documentation location
       description: Which page, section, file, or message needs work?
-      placeholder: README.md, deployment docs, settings text, zh-cn translation, etc.
+      placeholder: README.md, flutter/README.md, docs/flutter-release.md, deployment docs, settings text, zh-cn translation, etc.
     validations:
       required: true
 

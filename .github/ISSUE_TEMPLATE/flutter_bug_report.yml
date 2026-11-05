@@ -1,0 +1,84 @@
+name: Flutter app bug report
+description: Report a reproducible problem in the GitPulse Flutter app.
+title: '[Flutter Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Android only. The iOS target is code-level and not a built platform, so a report against it cannot be reproduced.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+      placeholder: Describe the problem clearly and briefly.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps that trigger the problem.
+      placeholder: |
+        1. Open ...
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App version
+      description: Read it from the APK file name (`GitPulse-flutter-v0.1.0-android-<abi>.apk`), or from Android Settings, Apps, GitPulse.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and Android version
+      placeholder: Pixel 8, Android 14
+    validations:
+      required: true
+
+  - type: input
+    id: deployment
+    attributes:
+      label: Deployment build
+      description: Self-hosted, say the release tag you deployed, or run `git rev-parse --short HEAD`. Official deployment, leave this blank.
+      placeholder: v2.1.0, or a1b2c3d
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: The app does not export logs. Attach `adb logcat` output if you can, or screenshots and screen recordings.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Add any other context that may help with triage.

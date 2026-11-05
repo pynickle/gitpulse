@@ -46,21 +46,6 @@ body:
     validations:
       required: true
 
-  - type: dropdown
-    id: area
-    attributes:
-      label: Affected area
-      options:
-        - Dashboard / UI
-        - Authentication
-        - GitHub API data
-        - User settings
-        - Browser extension
-        - Build / deployment
-        - Other
-    validations:
-      required: true
-
   - type: input
     id: browser
     attributes:
@@ -68,10 +53,11 @@ body:
       placeholder: Chrome 126, Firefox 127, Safari 18, etc.
 
   - type: input
-    id: runtime
+    id: deployment
     attributes:
-      label: Runtime / deployment
-      placeholder: Local Bun dev server, static export, Vercel, Docker, etc.
+      label: Deployment build
+      description: Self-hosted, say the release tag you deployed, or run `git rev-parse --short HEAD`. Official deployment, leave this blank.
+      placeholder: v2.1.0, or a1b2c3d
 
   - type: textarea
     id: logs

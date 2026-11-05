@@ -28,19 +28,14 @@ body:
       required: true
 
   - type: dropdown
-    id: area
+    id: client
     attributes:
-      label: Affected area
+      label: Client
       options:
-        - Dashboard / UI
-        - Notifications
-        - Issues / pull requests
-        - Repositories
-        - Custom tabs / search
-        - User settings
-        - Authentication
+        - Web client
+        - Flutter client
         - Browser extension
-        - Other
+        - Server / self-hosting
     validations:
       required: true
 
