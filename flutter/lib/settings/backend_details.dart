@@ -35,11 +35,6 @@ import '../session/session_notice.dart';
 class BackendDetails extends ConsumerStatefulWidget {
   const BackendDetails({super.key});
 
-  /// The card's first line also holds the two actions that act on its address,
-  /// so its surface gives up the part of their target that stands above the name
-  /// and the name starts on the card's own inset (ADR 0040).
-  static const firstLineHoldsControl = true;
-
   @override
   ConsumerState<BackendDetails> createState() => _BackendDetailsState();
 }

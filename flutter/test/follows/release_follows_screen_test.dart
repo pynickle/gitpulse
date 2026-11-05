@@ -26,13 +26,6 @@ int _metadataRequestCount(FollowsServer server) => server.featureRequests
     .where((request) => request.uri.path.contains('release-follows/metadata'))
     .length;
 
-/// The ceiling a Compact View row must now stay under.
-///
-/// Measured on a 390×844 phone: 68dp with the old 10dp inset, 60dp with the
-/// 6dp one. The row is still tall enough to clear [GitPulseHeight.rowMin] on
-/// its own, which is the floor a row may not fall under.
-const _compactRowMaxHeight = 60.0;
-
 /// The strength the panel's view toggle paints its mark with.
 double _viewMarkOpacity(WidgetTester tester, Finder toggle) => tester
     .widget<Opacity>(
@@ -1451,6 +1444,77 @@ void main() {
   );
 
   testWidgets(
+    'the first open states its load once, on the page it has no list on',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      final held = Completer<void>();
+      addTearDown(() {
+        if (!held.isCompleted) held.complete();
+      });
+      // The confirmed read never answers before the panel opens, so the first
+      // frame the panel draws is the first-load one: it has no list yet.
+      server.holdSettings = held.future;
+      await auth.mountApp(tester, server);
+      await auth.connectTo(tester, 'https://gitpulse.example');
+      await tester.enterText(auth.fieldLabeled('Password'), 'correct-horse');
+      await tester.tap(find.text('Unlock'));
+      await _pumpFrames(tester, frames: 20);
+      await tester.tap(find.text('Follows'));
+      await _pumpFrames(tester);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await _pumpFrames(tester);
+
+      final panel = find.byType(FollowedRepositoriesPanel);
+      final reload = findNamedAction('Reload follows');
+      expect(panel, findsOneWidget);
+      // A panel with no list states the load in the content area, the way every
+      // page states a first load. Its own control keeps the refresh glyph while
+      // it is disabled rather than turning beside that page indicator: one
+      // reading indicator, at any moment (ADR 0047).
+      expect(
+        find.descendant(of: panel, matching: find.byType(GitPulseLoadingView)),
+        findsOneWidget,
+      );
+      expect(tester.widget<GitPulseIconButton>(reload).onPressed, isNull);
+      expect(
+        find.descendant(of: reload, matching: find.byIcon(Icons.refresh)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.byType(GitPulseProgressInline),
+        ),
+        findsNothing,
+      );
+
+      // Once the confirmed list arrives the panel is a list, and the control
+      // that reads it is the panel's one statement of the next read.
+      held.complete();
+      server.holdSettings = null;
+      await _settleUi(tester);
+      expect(
+        find.descendant(of: panel, matching: find.byType(GitPulseLoadingView)),
+        findsNothing,
+      );
+      expect(find.byKey(const ValueKey('followed-R_kept')), findsOneWidget);
+      expect(tester.widget<GitPulseIconButton>(reload).onPressed, isNotNull);
+      expect(
+        find.descendant(of: reload, matching: find.byIcon(Icons.refresh)),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'the view toggle breathes while Detailed View’s details are still arriving',
     (tester) async {
       tester.view.physicalSize = const Size(390, 844);
@@ -2155,11 +2219,14 @@ void main() {
 
       final row = find.byKey(const ValueKey('followed-R_kept'));
       final height = tester.getRect(row).height;
+      // Measured on a 390×844 phone: 68dp at the old 10dp inset, 60dp at the
+      // 6dp one. The density is the point, so the measurement is pinned rather
+      // than bounded: any row between the tap floor and 60dp would pass a bound
+      // and leave the inset free to drift back under the same green test.
       expect(
         height,
-        lessThanOrEqualTo(_compactRowMaxHeight),
-        reason:
-            'compact row measured ${height}dp; it was 68dp at the 10dp inset',
+        closeTo(60, 0.5),
+        reason: 'compact row measured ${height}dp; it was 68dp before',
       );
       // The padding is not what keeps the row a target: the action it carries
       // and the row's own floor do, and the row still clears that floor.

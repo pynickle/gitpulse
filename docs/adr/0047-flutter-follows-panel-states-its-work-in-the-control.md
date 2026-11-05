@@ -36,10 +36,14 @@ The control is not removed or replaced while it works, because it is the panel's
 re-reading the confirmed set; an indicator standing in its place would take the reader's way in away
 for the duration of the read.
 
-The first-load state — no confirmed list yet — is unchanged as a page state. `GitPulseLoadingView`
-still fills the content area, and the header mark turns over it as well: the same statement at the same
-control, not a second one. That is the one moment the panel also draws `GitPulseProgressPage`, because
-a page that has no list yet has nothing else to say.
+The first-load state — no confirmed list yet — keeps its page state, and it is the one exception to
+the rule above. `GitPulseLoadingView` fills the content area with the app's page progress, because a
+content area that has no list yet has nothing else to say, and the reload action keeps its
+`Icons.refresh` mark while it is disabled. Its mark turns only once a confirmed list exists to read
+over — `state.loading && state.loaded` — so the panel never draws the page's progress and the
+control's own beside each other. This is the same exception `TimelineToolbar` already makes for a
+round the pull gesture started: the surface that draws its own progress is the one statement of it,
+and the control adds no second.
 
 The panel reads the session's own `loading` field, the field that already gates the first-load page.
 It does not keep a second flag of its own and does not infer work from a request, so the header and the
@@ -65,10 +69,11 @@ the sections that record them rather than in a second record beside it:
 
 ## Consequences
 
-- **Only one inline indicator is ever on screen, and it is the control's.** While the follow set is
-  read, the header action's own mark turns and no `GitPulseProgressInline` appears anywhere else in the
-  panel. The first-load page keeps `GitPulseProgressPage`, which is a page state rather than a row
-  indicator and the one thing a content area with no list can say.
+- **Only one inline indicator is ever on screen, and it is the control's.** While a confirmed follow
+  set is read, the header action's own mark turns and no `GitPulseProgressInline` appears anywhere else
+  in the panel. The first-load page keeps `GitPulseProgressPage`, which is a page state rather than a
+  row indicator and the one thing a content area with no list can say; on that frame the action keeps
+  its glyph and is only disabled, so the page's mark is still the only one drawn.
 - **A refresh no longer moves the list.** The header row is the same height whether its control draws a
   glyph or the inline progress, both of which stand at the control's own measure, so the repositories
   do not leave and return as the read starts and finishes; the row the reader was reading stays where
@@ -105,7 +110,7 @@ confirmation clears the field with the pending requests, and a new account or co
 none. Compact View asks for no details, so its mark neither breathes nor starts a read.
 
 **While Detailed View is on and the field is true, the toggle's mark breathes.** Its opacity travels
-from full to `_followedViewFaintOpacity` (0.55) and back over one `gitPulseProgressTurn` — the period
+from full to `gitPulseWaitingFaintOpacity` (0.55) and back over one `gitPulseProgressTurn` — the period
 the app's own progress indicator turns with, so waiting reads the same wherever the client states it
 — eased at both ends with `Curves.easeInOut`. The mark's own painting and geometry are untouched:
 the breath is an opacity carried around them. It is the mark's alone, so the control keeps its place,
@@ -113,6 +118,14 @@ its full touch target and its name, `l10n.followsViewDetailed` or `l10n.followsV
 press still switches the view at the moment the mark is moving. The action is never disabled and
 never renamed: the wait is the mark's motion, never a state called "loading", and the mark announces
 nothing and adds no row, no second indicator and no text.
+
+The breath belongs to the app's presentation layer rather than to this panel. `GitPulseWaitingMark`
+in `lib/presentation/gitpulse_progress.dart` is the mark that states a wait: it carries the turn, the
+easing, the hold at full strength, and the reader who turned animation off, and
+`gitPulseWaitingFaintOpacity` names the strength it breathes to. This panel only says when its own
+mark waits — `waiting: detailed && state.metadataPending` around `_FollowedViewIcon` — and keeps every
+other thing the header does. A strength the app's visual vocabulary does not name is a literal in a
+widget, and a widget that owns such a value is where the next surface's copy of it comes from.
 
 A reader who turned animation off gets the state without the motion: when
 `MediaQuery.disableAnimationsOf(context)` is true the mark is drawn at full strength and no

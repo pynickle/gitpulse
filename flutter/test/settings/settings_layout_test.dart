@@ -244,6 +244,29 @@ void main() {
         );
       }
 
+      // The fix moved the card's own top edge, not what stands under the name.
+      // At 1× the address still begins 16dp below the name's line (measured):
+      // the 10dp the line puts back above the name plus the 6dp the block keeps
+      // between its two lines. At 2× the name fills its line, so nothing is put
+      // back and the address begins the same 6dp under it that it began under
+      // before the fix. Either way the card still ends a surface inset below the
+      // address.
+      final addressGap = textScale == 1 ? 16.0 : 6.0;
+      final backendCard = find.ancestor(
+        of: find.text('Backend'),
+        matching: find.byWidgetPredicate(_isSettingCard),
+      );
+      expect(
+        address.top - backendName.bottom,
+        closeTo(addressGap, 0.5),
+        reason: 'the address keeps its distance from the name at ${textScale}x',
+      );
+      expect(
+        tester.getRect(backendCard).bottom - address.bottom,
+        closeTo(GitPulseSpace.surfaceInset, 0.5),
+        reason: 'the card keeps its surface inset under the address',
+      );
+
       final insets = <String, double>{};
       for (final label in [
         'Backend',

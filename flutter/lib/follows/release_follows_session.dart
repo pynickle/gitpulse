@@ -310,8 +310,10 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       loading: false,
       saving: false,
       // A confirmed collection is the whole truth about membership, so no
-      // detail read for the set it replaces is still owed.
-      metadataPending: false,
+      // detail read for the set it replaces is still owed: the pending requests
+      // were cleared above, and the field is stated from them rather than from
+      // a second rule of this function's own.
+      metadataPending: _metadataRequests.isNotEmpty,
       clearSavingRepository: true,
     );
   }
@@ -413,14 +415,21 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       statuses: Map.unmodifiable(statuses),
       details: Map.unmodifiable(details),
       previousNames: Map.unmodifiable(previousNames),
-      metadataPending: _metadataRequests.isNotEmpty,
       metadataProblem: problem,
       clearMetadataProblem: problem == null,
     );
+    // The bookkeeping was emptied above as each member's result was applied, so
+    // the field is restated from it rather than derived a second time here.
+    _publishMetadataPending();
   }
 
   /// Restates [ReleaseFollowsState.metadataPending] from the per-repository
   /// request bookkeeping that decides it.
+  ///
+  /// It is the only writer besides a confirmation, which states the same
+  /// expression from the map it has just emptied, so the field has one rule
+  /// wherever it is published: a detail read is owed exactly while a per-member
+  /// request is recorded.
   void _publishMetadataPending() {
     final pending = _metadataRequests.isNotEmpty;
     if (state.metadataPending == pending) return;

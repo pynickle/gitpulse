@@ -546,6 +546,45 @@ void main() {
     },
   );
 
+  test('a confirmed collection clears the pending details it replaces', () async {
+    final server = FollowsServer();
+    server.settings['followedRepositories'] = [
+      followJson('R_kept', 'octo', 'kept'),
+    ];
+    final container = await openFollowsSession(server);
+    final session = container.read(releaseFollowsSessionProvider.notifier);
+    final held = Completer<void>();
+    server.holdMetadata = held.future;
+    final started = server.nextRequest('POST', '/api/release-follows/metadata');
+    final read = session.loadMetadata();
+    await started;
+    expect(
+      container.read(releaseFollowsSessionProvider).metadataPending,
+      isTrue,
+      reason: 'a detail read is still in flight',
+    );
+
+    // A confirmation is the whole truth about the set it replaces, so the
+    // field cannot stay true over a collection that was just confirmed: the
+    // reload's own confirmation clears the pending set while that detail read
+    // is still held, which is what makes this one derivation of it rather than
+    // a flag each writer keeps for itself. The held read settles afterwards
+    // into a set that no longer owes it and publishes nothing.
+    await session.reload();
+    expect(
+      container.read(releaseFollowsSessionProvider).metadataPending,
+      isFalse,
+      reason: 'the confirmed collection cleared the pending set',
+    );
+    held.complete();
+    await read;
+    expect(
+      container.read(releaseFollowsSessionProvider).metadataPending,
+      isFalse,
+      reason: 'the settled read found nothing still owed',
+    );
+  });
+
   test('sign-out hides follows and ignores search and save responses from the previous session', () async {
     final server = FollowsServer();
     final container = await openFollowsSession(

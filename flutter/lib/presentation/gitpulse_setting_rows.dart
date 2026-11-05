@@ -31,10 +31,17 @@ double _labelLineBoxHeight(BuildContext context) {
 }
 
 /// The part of a first line's control target that stands above the name: half
-/// of the compact target minus the name's line, never less than zero.
+/// of the compact target minus the name's line, never less than zero and never
+/// more than the card's own inset.
+///
+/// It is the one place the overhang is bounded, so a first line's top is simply
+/// the card's inset minus this value and never needs clamping again: a line tall
+/// enough to fill the target gives up nothing, and one so short that half the
+/// target would stand above more than the inset gives up the inset itself rather
+/// than pushing the name over the card's edge.
 double _labelOverhang(BuildContext context) {
   final overhang = (GitPulseHeight.compact - _labelLineHeight(context)) / 2;
-  return overhang > 0 ? overhang : 0;
+  return overhang.clamp(0, GitPulseSpace.surfaceInset).toDouble();
 }
 
 /// The rounded surface every Settings card shares.
@@ -50,10 +57,10 @@ double _labelOverhang(BuildContext context) {
 /// is text alone starts at it. The name sits on the card's inset whatever stands
 /// beside it, and the control keeps its whole target: the card gives up the part
 /// of the target that stands above the name instead. That overhang is derived
-/// from the name's type role at the reader's text scale, never chosen, and it
-/// clamps at zero — a text scale large enough to fill the target keeps the
-/// ordinary inset. The line's name and mark stand in a
-/// [GitPulseSettingLabelLine], which puts the overhang back above the name.
+/// from the name's type role at the reader's text scale, never chosen, and it is
+/// bounded where it is derived — never below zero, so a text scale large enough
+/// to fill the target keeps the ordinary inset. The line's name and mark stand in
+/// a [GitPulseSettingLabelLine], which puts the overhang back above the name.
 class GitPulseSettingSurface extends StatelessWidget {
   const GitPulseSettingSurface({
     super.key,
@@ -86,7 +93,7 @@ class GitPulseSettingSurface extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           GitPulseSpace.surfaceInset,
-          top > 0 ? top : 0,
+          top,
           GitPulseSpace.surfaceInset,
           GitPulseSpace.surfaceInset,
         ),

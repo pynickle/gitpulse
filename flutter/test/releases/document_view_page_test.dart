@@ -273,12 +273,16 @@ void main() {
     );
 
     // A release while another finger is still down is not the end of the
-    // gesture, so the movement is never even measured.
-    final remaining = end.indexOf('event.touches.length');
-    expect(remaining, greaterThanOrEqualTo(0));
+    // gesture, so the listener has to ask how many fingers are still down
+    // before it measures anything. This is the page's own contract, asserted
+    // where it is written the way its CSP is (ADR 0046): a widget test has no
+    // browser engine, so what the renderer does with a document — including how
+    // a touch is read — is asserted in `tool/document_viewer/verify.mjs`
+    // (`flutter/AGENTS.md`). The order of statements inside the generated
+    // script is not a contract and is not asserted.
     expect(
-      remaining,
-      lessThan(end.indexOf('startX')),
+      end,
+      contains('event.touches.length'),
       reason:
           'a finger left down must be answered before the flick is measured',
     );

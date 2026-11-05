@@ -46,6 +46,116 @@ class GitPulseProgressPage extends StatelessWidget {
   );
 }
 
+/// How strong a mark that states a wait stays at its faintest.
+///
+/// A mark that breathes to state a wait never reaches nothing: it is still the
+/// picture of what its control does, so the breath is a change of strength
+/// rather than a disappearance of the thing the reader pressed.
+const gitPulseWaitingFaintOpacity = 0.55;
+
+/// Breathes [child] while [waiting], and holds it at full strength otherwise.
+///
+/// A wait that belongs to a control belongs in that control's mark rather than
+/// in a second indicator beside it: the mark breathes in place, on the app's own
+/// [gitPulseProgressTurn], and gains no indicator, no row and no name. The
+/// control around this mark keeps its press and its name for the whole breath,
+/// because the motion is a visual cue and the action still works at the moment
+/// it moves (ADR 0047 states the Followed Repositories instance of the rule).
+///
+/// A reader who turned animation off gets the wait without the motion: when
+/// [MediaQuery.disableAnimationsOf] is true the child is drawn at full strength
+/// and no controller is left running behind it. Reduced motion removes the
+/// breath, not the state, so a surface that states the wait another way still
+/// can.
+class GitPulseWaitingMark extends StatefulWidget {
+  const GitPulseWaitingMark({
+    super.key,
+    required this.waiting,
+    required this.child,
+  });
+
+  /// Whether the work this mark stands for is still in flight.
+  final bool waiting;
+
+  final Widget child;
+
+  @override
+  State<GitPulseWaitingMark> createState() => _GitPulseWaitingMarkState();
+}
+
+class _GitPulseWaitingMarkState extends State<GitPulseWaitingMark>
+    with SingleTickerProviderStateMixin {
+  /// One round trip of the opacity, on the period the app's own progress
+  /// indicator turns with, so waiting reads the same wherever it is stated.
+  late final AnimationController _turn = AnimationController(
+    vsync: this,
+    duration: gitPulseProgressTurn,
+  );
+
+  /// Full to faint and back, eased at both ends so the breath has no corner.
+  late final Animation<double> _opacity = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: gitPulseWaitingFaintOpacity,
+      ).chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 1,
+    ),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: gitPulseWaitingFaintOpacity,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 1,
+    ),
+  ]).animate(_turn);
+
+  bool _breathing = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncBreath();
+  }
+
+  @override
+  void didUpdateWidget(covariant GitPulseWaitingMark oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncBreath();
+  }
+
+  /// Starts or stops the turn for the state this frame is built in.
+  ///
+  /// A reader who turned animation off is the reason this is decided here: the
+  /// mark is drawn at full strength and no controller is left running behind
+  /// it.
+  void _syncBreath() {
+    final breathing =
+        widget.waiting && !MediaQuery.disableAnimationsOf(context);
+    if (breathing == _breathing) return;
+    _breathing = breathing;
+    if (breathing) {
+      _turn.repeat();
+    } else {
+      _turn.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _turn,
+    child: widget.child,
+    builder: (context, child) =>
+        Opacity(opacity: _breathing ? _opacity.value : 1, child: child),
+  );
+}
+
 /// One turning arc in the Accent, at the size and line its face asks for.
 ///
 /// The arc is drawn rather than taken from Material: an indicator the theme

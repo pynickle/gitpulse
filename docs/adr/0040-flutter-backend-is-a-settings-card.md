@@ -84,7 +84,8 @@ the card gives up the part of the target that stands above the name. The overhan
 (the compact control target minus the name's line at the reader's text scale) — never a distance of
 its own, and it clamps at zero, so a text scale large enough to fill the target keeps the ordinary
 inset. `GitPulseSettingRow(inlineControl: true)` passes the statement on, and the hand-composed Backend
-card declares it itself (`BackendDetails.firstLineHoldsControl`).
+card states it at its composition site (`GitPulseSettingSurface(firstLineHoldsControl: true)`), where
+the line it draws itself is already declared.
 
 `GitPulseSettingLabelLine` is the other half of the rule: the name and its mark stand in a box as tall
 as the compact target — or as tall as their own line, when large text is taller — so putting the
@@ -93,5 +94,10 @@ line is stated from, and it is never shrunk to make the name fit. Large text is 
 special case: the line grows past the target, the overhang falls to zero, and the name still begins on
 the card's inset.
 
-No other card's geometry changes, and the address keeps its distance from the name: the block below
-the name moves up with it, and the card is that much shorter.
+The rule holds for both cards whose first line carries a control, because both their names were
+sitting under the card's edge for the same reason: the Timeline cache card passes
+`GitPulseSettingRow(inlineControl: true)`, and the Backend card is the one that declares its own line
+by hand (`GitPulseSettingSurface(firstLineHoldsControl: true)`), since its two actions and its stack of
+state notes are not what that row's slots describe. Neither card moves anything below its name: the
+address keeps its distance (16dp) from the name, the block under the name moves up with it, and the
+card is that much shorter.
