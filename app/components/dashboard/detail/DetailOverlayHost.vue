@@ -355,19 +355,47 @@ watch(detailSidebarPaneIdentity, (paneIdentity) => syncDetailSidebarPane(paneIde
 });
 
 /*
- * Closing the sheet restores focus to the header toggle that owns it. The
- * sheet also closes when the pane identity changes, so the toggle takes
- * focus back on that path too.
+ * Closing the sheet restores focus to the header toggle that owns it, but only
+ * when focus was inside the sheet: a click on the pane behind it must keep the
+ * focus the user just gave that element. The sheet also closes when the pane
+ * identity changes, so the toggle takes focus back on that path too.
  */
 watch(isDetailSidebarSheetOpen, (isOpen, wasOpen) => {
-  if (!isOpen && wasOpen) {
-    nextTick(() => {
-      document
-        .querySelector<HTMLElement>('.dashboard-top-header__detail-sidebar-toggle')
-        ?.focus({ preventScroll: true });
-    });
-  }
+  if (isOpen || !wasOpen) return;
+
+  nextTick(() => {
+    const sheet = document.querySelector<HTMLElement>('.detail-sidebar-column');
+    const active = document.activeElement;
+    if (!sheet || !active || !sheet.contains(active)) return;
+
+    document
+      .querySelector<HTMLElement>('.dashboard-top-header__detail-sidebar-toggle')
+      ?.focus({ preventScroll: true });
+  });
 });
+
+/*
+ * Light dismiss for the non-modal sheet: a click on the pane outside it closes
+ * it. The listener sits on the pane stage rather than the document, so a dialog
+ * opened from the sheet (teleported out of the stage) never dismisses the sheet
+ * behind it, and the header toggle keeps its own toggle instead of closing and
+ * reopening in one click.
+ *
+ * A sheet that is not on screen is skipped: the PR review workspace and the
+ * loading/error panes keep the open flag but render no sheet column, so their
+ * clicks must not flip the shared state the user cannot see.
+ */
+const handlePaneStageClick = (event: MouseEvent) => {
+  if (!isDetailSidebarSheetOpen.value) return;
+
+  const sheet = document.querySelector<HTMLElement>('.detail-sidebar-column');
+  if (!sheet) return;
+
+  const target = event.target;
+  if (target instanceof Element && sheet.contains(target)) return;
+
+  toggleDetailSidebar();
+};
 
 /*
  * The volatile Detail Sidebar state outlives this host (app-scoped), so an
@@ -398,6 +426,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
     >
       <div
         class="detail-pane-stage is-clipped"
+        @click="handlePaneStageClick"
         :class="{
           'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository',
           'detail-pane-stage--sidebar-sheet':

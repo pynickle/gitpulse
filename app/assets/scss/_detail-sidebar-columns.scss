@@ -115,7 +115,10 @@
       z-index: 30;
       width: auto;
       max-height: 75dvh;
-      padding: 0.5rem 1.25rem 1.5rem;
+      /* Top padding matches the side padding: the drag handle sits inside that
+         band, so the first card starts as far from the top edge as from the
+         sides instead of cramming against the rounded corner. */
+      padding: 1.25rem 1.25rem 1.5rem;
       overflow-x: hidden;
       border-radius: 16px 16px 0 0;
       background: var(--gitpulse-surface);
@@ -129,17 +132,25 @@
         opacity 0.28s ease,
         visibility 0.28s;
 
-      /* Drag handle affordance. Sticky so it stays on top while scrolling. */
+      /*
+       * Drag handle affordance, centered in the reserved top padding band.
+       * Absolute (not in flow) because the scroll content lives in SimpleBar's
+       * absolutely positioned mask: a flow handle would sit under the first
+       * card, and `z-index` keeps it visible above the content as it scrolls.
+       */
       &::before {
         content: '';
-        position: sticky;
-        top: 0.25rem;
-        display: block;
+        position: absolute;
+        top: 0.5rem;
+        right: 0;
+        left: 0;
+        z-index: 1;
         width: 2.25rem;
         height: 0.25rem;
-        margin: 0.25rem auto 0.75rem;
+        margin: 0 auto;
         border-radius: 999px;
         background: var(--gitpulse-border);
+        pointer-events: none;
       }
     }
 
