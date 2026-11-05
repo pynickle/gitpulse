@@ -2,6 +2,7 @@
 import {
   appLocales,
   defaultLocaleCode,
+  localeVariants,
   publicSiteDescription,
   publicSiteName,
 } from './shared/utils/app-locales';
@@ -111,6 +112,19 @@ function siteConfig() {
   return personalModeEnabled ? { indexable: false } : {};
 }
 
+/**
+ * One rule, one explicit key per locale. Route-rule keys are interpreted by two
+ * matchers that disagree on any wildcard before the last segment: Nuxt's rou3
+ * matcher drops everything after `**` (the key becomes a catch-all), and Nitro
+ * 2's radix3 matcher never matches it. Expanded keys are portable to both.
+ */
+function localeRouteRules<T extends Record<string, unknown>>(
+  path: string,
+  rule: T
+): Record<string, T> {
+  return Object.fromEntries(localeVariants(path).map((variant) => [variant, { ...rule }]));
+}
+
 if (!personalModeEnabled && !tokenEnabled && !oauthRequested) {
   throw new Error(
     'GitPulse auth configuration is invalid: both token input and GitHub OAuth are disabled. Enable NUXT_AUTH_PAT_ENABLED or NUXT_AUTH_GITHUB_OAUTH_ENABLED before starting the app.'
@@ -198,10 +212,9 @@ export default defineNuxtConfig({
   },
 
   routeRules: {
-    '/': { appLayout: 'landing' },
-    '/open': { appLayout: 'landing' },
-    '/**/open': { appLayout: 'landing' },
-    '/native-login': {
+    ...localeRouteRules('/', { appLayout: 'landing' }),
+    ...localeRouteRules('/open', { appLayout: 'landing' }),
+    ...localeRouteRules('/native-login', {
       appLayout: 'native-login',
       prerender: false,
       headers: {
@@ -210,20 +223,9 @@ export default defineNuxtConfig({
         'X-Frame-Options': 'DENY',
         'Content-Security-Policy': "frame-ancestors 'none'",
       },
-    },
-    '/**/native-login': {
-      appLayout: 'native-login',
-      headers: {
-        'Referrer-Policy': 'same-origin',
-        'Cache-Control': 'no-store',
-        'X-Frame-Options': 'DENY',
-        'Content-Security-Policy': "frame-ancestors 'none'",
-      },
-    },
-    // Nitro's prerender matcher needs a single-segment wildcard for locale prefixes.
-    '/*/native-login': { prerender: false },
-    '/**/dashboard': { appLayout: 'dashboard' },
-    '/**/dashboard/**': { appLayout: 'dashboard' },
+    }),
+    ...localeRouteRules('/dashboard', { appLayout: 'dashboard' }),
+    ...localeRouteRules('/dashboard/**', { appLayout: 'dashboard' }),
   },
 
   // Canonical origin is NUXT_SITE_URL, applied when the server process starts.
@@ -289,7 +291,13 @@ export default defineNuxtConfig({
   },
 
   robots: {
-    disallow: ['/dashboard', '/dashboard/**', '/open', '/api/**', '/auth/**'],
+    disallow: [
+      ...localeVariants('/dashboard'),
+      ...localeVariants('/dashboard/**'),
+      ...localeVariants('/open'),
+      '/api/**',
+      '/auth/**',
+    ],
   },
 
   i18n: {
