@@ -69,6 +69,22 @@ _Avoid_: dashboard deep link when referring to the browser integration contract
 A page rendered without a session. The locale landing pages and the native login page are public surfaces.
 _Avoid_: public route when referring to the Browser Launch Link
 
+**Shell**:
+The route-level chrome a page renders inside. There are exactly two: the Public Shell, which every signed-out route falls back to, and the dashboard shell, which the `/dashboard` rules name.
+_Avoid_: page layout, app wrapper, template
+
+**Public Shell**:
+The chrome shared by every signed-out surface — landing pages, the native approval page, the Browser Launch Link entry, and the error page: skip link, Top Bar, page gutter, and frame height.
+_Avoid_: landing layout, native-login layout, public layout
+
+**Top Bar**:
+The single chrome row at the top of a Shell: a leading slot (the product brand, or Back and Home) and the trailing GitHub link, language switcher, and color-mode toggle. Both shells give it the same height, padding, and control spacing.
+_Avoid_: navbar, toolbar, header bar
+
+**Locale Variant**:
+One route as a configured locale spells it. The default locale is unprefixed, so `/dashboard` and `/zh-cn/dashboard` are the locale variants of one route.
+_Avoid_: localized path, prefixed route
+
 **Session Surface**:
 A page that matches a route and requires a session. The Browser Launch Link is a session surface.
 _Avoid_: protected page, private route

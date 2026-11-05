@@ -25,15 +25,9 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Layout & Wiring
 
-- Global layouts via `routeRules` `appLayout` in `nuxt.config.ts` (not `layout:` / `definePageMeta` in pages). Locale prefixes need the `/**/` rules:
-  - `/` → `landing`
-  - `/open` and `/**/open` → `landing` (the browser integration launch entry)
-  - `/**/dashboard` and `/**/dashboard/**` → `dashboard`
-- `nuxt.config.ts` does early auth validation at load time and will throw if no provider is available.
-- `nuxt.config.ts` ignores the entire `extension/` tree.
-- `shared/data/*.json` holds language-neutral data **both clients** read — presentation values live here, never in a stylesheet literal and never per client. `shared/data/theme-palette.json` is the `gitpulse` Theme Preset palette in both presentations: the web app injects it as CSS custom properties at startup (`app/plugins/user-settings.ts` → `shared/utils/theme-palette.ts`), and the Flutter client reads generated, committed constants (`flutter/lib/presentation/gitpulse_palette.g.dart`, regenerated with `dart run tool/generate_theme_palette.dart`). A tone a client renders hardcoded instead of through this data is out of spec.
-- Logical navigation history is **derived from the route** — pages and components must never record it manually. The client plugin `app/plugins/navigation-history.client.ts` feeds each `router.afterEach` (route + vue-router `history.state.position`) into `useNavigationHistory` → `applyLogicalNavigationEvent` in `app/utils/navigationEntryRouting.ts`; logical Back/Home are the same function. New dashboard URL shapes must be added to `routeToNavigationEntry` and covered by the round-trip tests in `tests/navigation-entry-routing.test.ts`. Sequential push/replace/back/home cases belong on `applyLogicalNavigationEvent` in that same file. A matched dashboard child page whose URL cannot name its target (`/dashboard/wiki` without `?repo=`) never renders: `app/middleware/dashboard-route-shape.global.ts` redirects it to the dashboard root after the auth gate, using `isDashboardRouteShapeAdmissible`, so pages may rely on their target being present. Cover new child pages in `tests/dashboard-route-shape.test.ts`.
-- Dashboard child pages (`/dashboard/profile`, `/dashboard/package`, `/dashboard/releases`, `/dashboard/branches`, `/dashboard/wiki`, …) must use the generic **Back + Home** header unless explicitly required otherwise: labels `t('detailOverlay.back')` / `t('detailOverlay.home')` and `useNavigationRouting` (`goBackToPreviousPage`/`goToDashboardHome`/`shouldShowHomeButton`). Never hardcode "Back to X" labels, fixed back targets, or local entry→route fallbacks — `resolveNavigationEntryRoute` is the only resolver.
+- Layouts: `routeRules` `appLayout` only, never `layout:` / `definePageMeta`. Only the dashboard names one; every other route falls back to `layouts/default.vue`.
+- Top bars share `--gitpulse-topbar-height` and `ChromeActions`; a bar that hand-renders the GitHub, language and color-mode controls is a regression.
+- Route-rule keys carry no `**` before the last segment: Nuxt's rou3 matcher truncates the key there and Nitro 2's radix3 never matches it. Expand locale prefixes with `localeVariants`; `tests/route-rules.test.ts` pins both engines.
 
 ## Imports (Strict)
 
