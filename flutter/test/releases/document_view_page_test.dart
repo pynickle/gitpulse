@@ -70,6 +70,29 @@ double _cssNumber(DocumentViewPage page, String name) {
   return double.parse(match!.group(1)!);
 }
 
+/// The declarations on the page's own viewport, as the engine reads them.
+String _viewport(DocumentViewPage page) {
+  final meta = RegExp(r'<meta name="viewport" content="([^"]*)">')
+      .firstMatch(page.html);
+  expect(meta, isNotNull, reason: 'the page declares no viewport');
+  return meta!.group(1)!;
+}
+
+/// The flick reader: the last of the page's own two scripts.
+String _flickScript(DocumentViewPage page) {
+  final scripts = RegExp(r'<script>([\s\S]*?)</script>').allMatches(page.html);
+  expect(scripts, hasLength(2), reason: 'the renderer and the flick reader');
+  return scripts.last.group(1)!;
+}
+
+/// One listener the flick reader installs, from its registration to the next.
+String _flickListener(String script, String event) {
+  final start = script.indexOf("addEventListener('$event'");
+  expect(start, greaterThanOrEqualTo(0), reason: 'no $event listener');
+  final next = script.indexOf('addEventListener(', start + 1);
+  return script.substring(start, next < 0 ? script.length : next);
+}
+
 void main() {
   testWidgets('a document can match its page host in either appearance', (
     tester,
@@ -218,6 +241,52 @@ void main() {
     }
     expect(html, isNot(contains('unsafe-eval')));
     expect(html, isNot(contains("default-src *")));
+  });
+
+  test('the page takes no zoom of its own', () {
+    // A pinch is refused by the page as well as by the engine: the reader's
+    // text size arrives only as the app's own `--gp-*` variables, never as a
+    // page scale (ADR 0028, ADR 0031, ADR 0046).
+    final viewport = _viewport(_page());
+    expect(viewport, contains('width=device-width'));
+    expect(viewport, contains('initial-scale=1'));
+    expect(viewport, contains('maximum-scale=1'));
+    expect(viewport, contains('user-scalable=no'));
+  });
+
+  test('a gesture is a flick only while one finger makes it', () {
+    final script = _flickScript(_page());
+    final start = _flickListener(script, 'touchstart');
+    final end = _flickListener(script, 'touchend');
+
+    // A second finger landing abandons the gesture: the first finger is still
+    // down, so leaving the track armed would report its release as a flick.
+    expect(
+      start,
+      contains('event.touches.length !== 1'),
+      reason: 'a two-finger gesture is not a flick',
+    );
+    expect(
+      start,
+      contains('tracking = false'),
+      reason: 'the first finger must not stay armed once a second lands',
+    );
+
+    // A release while another finger is still down is not the end of the
+    // gesture, so the movement is never even measured.
+    final remaining = end.indexOf('event.touches.length');
+    expect(remaining, greaterThanOrEqualTo(0));
+    expect(
+      remaining,
+      lessThan(end.indexOf('startX')),
+      reason:
+          'a finger left down must be answered before the flick is measured',
+    );
+
+    // The flick itself keeps the header's own thresholds.
+    expect(script, contains('Math.abs(dx) < 80'));
+    expect(script, contains('Date.now() - startedAt > 600'));
+    expect(script, contains('Math.abs(dx) <= Math.abs(dy)'));
   });
 
   test('the language tag cannot leave its attribute', () {

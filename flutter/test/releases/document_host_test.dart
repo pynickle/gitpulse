@@ -148,4 +148,25 @@ void main() {
     // (ADR 0028). The document is a texture, so a sheet can move it away.
     expect(documentWebViewSettings().useHybridComposition, isFalse);
   });
+
+  test('a document page takes no zoom of its own', () {
+    // The engine's zoom is not the reading scale. A reader's text size reaches
+    // a document only as the app's own `--gp-*` variables, so a pinch must not
+    // resize the page: Android maps these three to setSupportZoom,
+    // setBuiltInZoomControls and setDisplayZoomControls, and Windows maps
+    // `pinchZoomEnabled` to WebView2's IsPinchZoomEnabled (ADR 0046).
+    final settings = documentWebViewSettings();
+    expect(settings.supportZoom, isFalse);
+    expect(settings.builtInZoomControls, isFalse);
+    expect(settings.displayZoomControls, isFalse);
+    expect(settings.pinchZoomEnabled, isFalse);
+    // Every engine zoom scale is pinned at 1: there is no page zoom to stand
+    // beside the app's reading scale.
+    expect(settings.pageZoom, 1.0);
+    expect(settings.maximumZoomScale, 1.0);
+    expect(settings.minimumZoomScale, 1.0);
+    // Text is 100% of the page's CSS, so nothing the engine scales can disagree
+    // with the type table the CSS variables are built from.
+    expect(settings.textZoom, 100);
+  });
 }

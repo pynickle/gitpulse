@@ -201,6 +201,14 @@ class _InAppWebViewDocumentState extends ConsumerState<_InAppWebViewDocument> {
 /// the drawer shut (ADR 0028). Texture-layer composition keeps the page inside
 /// the app's own layer tree, so a sheet can move it or put it away like any other
 /// surface.
+///
+/// The page takes no zoom of its own either. The reading scale a document is
+/// shown at is the app's — the reader's text size written into the page's CSS
+/// variables (ADR 0031) — so the engine's zoom is not a second accessibility
+/// path beside it: a pinch must not resize the page a reader is already reading
+/// (ADR 0046). Android's support and built-in zoom controls, Windows' pinch
+/// zoom and every engine zoom scale stay off and pinned at 1, and text zoom stays
+/// at 100%, so the CSS is the only thing that sets a document's size.
 InAppWebViewSettings documentWebViewSettings() => InAppWebViewSettings(
   useHybridComposition: false,
   transparentBackground: true,
@@ -215,6 +223,13 @@ InAppWebViewSettings documentWebViewSettings() => InAppWebViewSettings(
   thirdPartyCookiesEnabled: false,
   mediaPlaybackRequiresUserGesture: true,
   textZoom: 100,
+  supportZoom: false,
+  builtInZoomControls: false,
+  displayZoomControls: false,
+  pinchZoomEnabled: false,
+  pageZoom: 1,
+  maximumZoomScale: 1,
+  minimumZoomScale: 1,
   isInspectable: kDebugMode,
   verticalScrollBarEnabled: false,
 );

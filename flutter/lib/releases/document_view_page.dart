@@ -198,7 +198,7 @@ DocumentViewPage buildDocumentViewPage({
 <html lang="${_languageTag(language)}" data-appearance="${style.dark ? 'dark' : 'light'}">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta http-equiv="Content-Security-Policy" content="$_contentSecurityPolicy">
 <!-- The stylesheet first, the app's variables second: its own `:root` block is
      the fallback for a standalone preview, and must not shadow the app. -->
@@ -235,6 +235,13 @@ String _languageTag(String value) =>
 /// reported once it is clearly sideways, so a wide table's own scrolling still
 /// wins.
 ///
+/// A flick is a gesture of one finger, for the whole of it. A document is also a
+/// surface a reader pinches, so a second finger landing abandons the track and a
+/// finger that lifts while another is still down is not the end of a gesture:
+/// neither is reported, because a report here opens the repository's release
+/// list. The header's own `GitPulseSwipe` is a Flutter gesture in the app's
+/// arena, not this script, and is unaffected (ADR 0046).
+///
 /// Passive listeners throughout: the page's scrolling is never delayed or
 /// cancelled by this script.
 const _swipeScript = r'''
@@ -246,7 +253,12 @@ const _swipeScript = r'''
       .callHandler('documentSwipe', dx < 0 ? 'left' : 'right');
   }
   document.addEventListener('touchstart', function (event) {
-    if (event.touches.length !== 1) return;
+    // One finger for the whole gesture: a second finger landing is a pinch or a
+    // two-finger scroll, so this gesture is abandoned rather than re-anchored.
+    if (event.touches.length !== 1) {
+      tracking = false;
+      return;
+    }
     var touch = event.touches[0];
     startX = touch.clientX;
     startY = touch.clientY;
@@ -257,6 +269,9 @@ const _swipeScript = r'''
   document.addEventListener('touchend', function (event) {
     if (!tracking) return;
     tracking = false;
+    // A finger lifting while another is still down is not the end of the
+    // gesture, so the movement is not measured at all.
+    if (event.touches.length > 0) return;
     var touch = event.changedTouches[0];
     if (!touch) return;
     var dx = touch.clientX - startX;
