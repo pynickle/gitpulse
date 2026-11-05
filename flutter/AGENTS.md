@@ -59,8 +59,9 @@ and `gitpulse_theme.dart`; a surface that shows the ink beneath it says `GitPuls
   not just mounted.
 - **Sheets and dialogs open only through `showGitPulseSheet` and `showGitPulseDialog`**, passing a
   body that decides its own content and height. A release's notes are a platform view: an opacity
-  layer over one is what flashed on close, so a sheet slides and never fades, and the one opacity
-  inside a sheet belongs to the assets module rising above the notes.
+  layer over one is what flashed on close, so a sheet slides and never fades, and the opacity inside
+  a sheet belongs to the assets module rising above the notes or to a drawn mark that states its own
+  wait (the Followed Repositories view mark breathing, ADR 0047) — never to the sheet itself.
 - **A destination owns no chrome.** The bar belongs to the shell (`lib/app.dart`); a page-built bar
   has no previous position to animate from.
 - **The bar stands on the device.** `GitPulseNavigationBar` pads with the view's bottom inset

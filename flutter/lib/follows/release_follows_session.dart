@@ -309,6 +309,9 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       loaded: true,
       loading: false,
       saving: false,
+      // A confirmed collection is the whole truth about membership, so no
+      // detail read for the set it replaces is still owed.
+      metadataPending: false,
       clearSavingRepository: true,
     );
   }
@@ -352,6 +355,9 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
     for (final repo in targets) {
       _metadataRequests[repo.id] = request;
     }
+    // The per-repository bookkeeping above is the statement: a surface reads
+    // the published field rather than guessing from a status that is missing.
+    _publishMetadataPending();
     bool eligible(String id) =>
         members.containsKey(id) &&
         members[id] == _members[id] &&
@@ -407,8 +413,17 @@ class ReleaseFollowsSession extends Notifier<ReleaseFollowsState> {
       statuses: Map.unmodifiable(statuses),
       details: Map.unmodifiable(details),
       previousNames: Map.unmodifiable(previousNames),
+      metadataPending: _metadataRequests.isNotEmpty,
       metadataProblem: problem,
       clearMetadataProblem: problem == null,
     );
+  }
+
+  /// Restates [ReleaseFollowsState.metadataPending] from the per-repository
+  /// request bookkeeping that decides it.
+  void _publishMetadataPending() {
+    final pending = _metadataRequests.isNotEmpty;
+    if (state.metadataPending == pending) return;
+    state = state.copyWith(metadataPending: pending);
   }
 }

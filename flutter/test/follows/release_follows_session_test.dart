@@ -514,6 +514,38 @@ void main() {
     },
   );
 
+  test(
+    'a held metadata read states that the details are still arriving',
+    () async {
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      final container = await openFollowsSession(server);
+      final session = container.read(releaseFollowsSessionProvider.notifier);
+      final held = Completer<void>();
+      server.holdMetadata = held.future;
+      final started = server.nextRequest(
+        'POST',
+        '/api/release-follows/metadata',
+      );
+      final read = session.loadMetadata();
+      await started;
+      expect(
+        container.read(releaseFollowsSessionProvider).metadataPending,
+        isTrue,
+        reason: 'the read has not settled yet',
+      );
+      held.complete();
+      await read;
+      expect(
+        container.read(releaseFollowsSessionProvider).metadataPending,
+        isFalse,
+        reason: 'the request settled',
+      );
+    },
+  );
+
   test('sign-out hides follows and ignores search and save responses from the previous session', () async {
     final server = FollowsServer();
     final container = await openFollowsSession(

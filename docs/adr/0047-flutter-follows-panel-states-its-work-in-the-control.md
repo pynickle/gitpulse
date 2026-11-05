@@ -57,8 +57,7 @@ the sections that record them rather than in a second record beside it:
   through the session's metadata read (ADR 0021). While they are still arriving, the
   Compact/Detailed toggle's mark is the panel's statement of that wait: it breathes in place and does
   not gain a second indicator, a row or a name. The control stays pressable and keeps its name, so the
-  wait is the mark's motion and never a word. That section is not written by this record, and the
-  motion is not implemented yet.
+  wait is the mark's motion and never a word. That section is written at the end of this record.
 - **The rows.** The chrome states the panel's work so the content area can spend its height on
   repositories. The denser row — a tighter inset and a description held to one line — is the same
   decision seen from the content side: the panel does not spend its height on chrome, so it must not
@@ -88,3 +87,42 @@ the sections that record them rather than in a second record beside it:
   and asserts the widget tree: the control is disabled and its mark is the app's inline progress, no
   second inline indicator exists in the panel, the confirmed row has not moved, and after the hold
   completes the mark is `Icons.refresh` again with the control enabled and the list intact.
+
+## The view mark states the details that are still arriving
+
+Detailed View's description, language and star count arrive after the follow set does: the session
+reads them in a separate metadata request (ADR 0021). Before this section that wait was drawn
+nowhere. The Compact/Detailed toggle's mark — the mark of the control the reader had just pressed —
+stood still while the details came in, so a repository whose description had not arrived and one
+that has no description at all read the same, and the reader could not tell whether the panel was
+still working or had nothing more to say.
+
+`ReleaseFollowsState.metadataPending` is the statement the panel reads. It is true from the moment a
+metadata read starts until its request settles, and false after it; the session restates it from its
+own per-repository request bookkeeping — the record that already decides whether a returned detail
+may be applied — so a surface reads that one field and never infers a wait from a status that is
+absent. A confirmed collection is the whole truth about the set it replaces, so a reload's
+confirmation clears the field with the pending requests, and a new account or context starts with
+none. Compact View asks for no details, so its mark neither breathes nor starts a read.
+
+**While Detailed View is on and the field is true, the toggle's mark breathes.** Its opacity travels
+from full to `_followedViewFaintOpacity` (0.55) and back over one `gitPulseProgressTurn` — the period
+the app's own progress indicator turns with, so waiting reads the same wherever the client states it
+— eased at both ends with `Curves.easeInOut`. The mark's own painting and geometry are untouched:
+the breath is an opacity carried around them. It is the mark's alone, so the control keeps its place,
+its full touch target and its name, `l10n.followsViewDetailed` or `l10n.followsViewCompact`, and a
+press still switches the view at the moment the mark is moving. The action is never disabled and
+never renamed: the wait is the mark's motion, never a state called "loading", and the mark announces
+nothing and adds no row, no second indicator and no text.
+
+A reader who turned animation off gets the state without the motion: when
+`MediaQuery.disableAnimationsOf(context)` is true the mark is drawn at full strength and no
+controller is left running behind it. Reduced motion removes the breath, not the field, so a surface
+that states the wait another way still can; nothing else in the panel changes.
+
+`test/follows/release_follows_screen_test.dart` holds the metadata read mid-flight, mounts the
+client, opens the panel and asserts the rendered mark: it paints at more than one strength across a
+fraction of the turn while the read is held, the toggle still switches the view at that moment, the
+mark rests once the details have arrived, and a reader with `disableAnimations` gets a still mark.
+`test/follows/release_follows_session_test.dart` asserts the field itself, with no UI: true while a
+held read is in flight, false once it settles.

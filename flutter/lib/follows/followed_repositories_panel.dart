@@ -61,7 +61,13 @@ class FollowedRepositoriesPanel extends ConsumerWidget {
                             : FollowedRepositoryView.detailed,
                       ),
                 ),
-                icon: _FollowedViewIcon(detailed: detailed),
+                // Detailed View's details arrive after the follow set, so its
+                // mark breathes while they do rather than leaving the wait
+                // unstated. The action keeps its name and its press (ADR 0047).
+                icon: _FollowedViewBreath(
+                  breathing: detailed && state.metadataPending,
+                  child: _FollowedViewIcon(detailed: detailed),
+                ),
               ),
               GitPulseIconButton(
                 label: l10n.followsReload,
@@ -217,6 +223,105 @@ class _FollowedViewIcon extends StatelessWidget {
       painter: _FollowedViewIconPainter(color: color, detailed: detailed),
     );
   }
+}
+
+/// How strong the panel's view mark stays while it breathes.
+///
+/// It never reaches nothing: the mark is still the picture of what the control
+/// does, so the breath is a change of strength, not a disappearance.
+const _followedViewFaintOpacity = 0.55;
+
+/// Breathes [child] while [breathing], and holds it at full strength otherwise.
+///
+/// Detailed View's description, language and star count arrive after the follow
+/// set, so the wait belongs to the mark of the control that asked for them: it
+/// breathes in place, on the app's own progress turn, and gains no second
+/// indicator, no row and no name (ADR 0047). The control around this mark is
+/// never disabled and never renamed: the motion is a visual cue, and the action
+/// keeps working at the moment it moves.
+class _FollowedViewBreath extends StatefulWidget {
+  const _FollowedViewBreath({required this.breathing, required this.child});
+
+  /// Whether a detail read is still arriving.
+  final bool breathing;
+
+  final Widget child;
+
+  @override
+  State<_FollowedViewBreath> createState() => _FollowedViewBreathState();
+}
+
+class _FollowedViewBreathState extends State<_FollowedViewBreath>
+    with SingleTickerProviderStateMixin {
+  /// One round trip of the opacity, on the period the app's own progress
+  /// indicator turns with, so waiting reads the same wherever it is stated.
+  late final AnimationController _turn = AnimationController(
+    vsync: this,
+    duration: gitPulseProgressTurn,
+  );
+
+  /// Full to faint and back, eased at both ends so the breath has no corner.
+  late final Animation<double> _opacity = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: 1,
+        end: _followedViewFaintOpacity,
+      ).chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 1,
+    ),
+    TweenSequenceItem(
+      tween: Tween<double>(
+        begin: _followedViewFaintOpacity,
+        end: 1,
+      ).chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 1,
+    ),
+  ]).animate(_turn);
+
+  bool _breathing = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncBreath();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FollowedViewBreath oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncBreath();
+  }
+
+  /// Starts or stops the turn for the state this frame is built in.
+  ///
+  /// A reader who turned animation off is the reason this is decided here: the
+  /// mark is drawn at full strength and no controller is left running behind
+  /// it.
+  void _syncBreath() {
+    final breathing =
+        widget.breathing && !MediaQuery.disableAnimationsOf(context);
+    if (breathing == _breathing) return;
+    _breathing = breathing;
+    if (breathing) {
+      _turn.repeat();
+    } else {
+      _turn.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _turn.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _turn,
+    child: widget.child,
+    builder: (context, child) =>
+        Opacity(opacity: _breathing ? _opacity.value : 1, child: child),
+  );
 }
 
 class _FollowedViewIconPainter extends CustomPainter {

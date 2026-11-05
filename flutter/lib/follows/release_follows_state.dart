@@ -48,6 +48,7 @@ class ReleaseFollowsState {
     this.loaded = false,
     this.loading = false,
     this.saving = false,
+    this.metadataPending = false,
     this.savingRepositoryId,
     this.saveFailed = false,
     this.repositories = const [],
@@ -62,6 +63,17 @@ class ReleaseFollowsState {
   final bool loaded;
   final bool loading;
   final bool saving;
+
+  /// Whether the details Detailed View reads are still arriving.
+  ///
+  /// It is true from the moment a metadata read starts until its request
+  /// settles, so a surface can state the wait instead of asking whether a
+  /// description is missing. A confirmed collection replaces the pending set,
+  /// so a reload's confirmation clears it, and a new account or context starts
+  /// with none. The session restates its own per-repository request bookkeeping
+  /// here; a surface reads this field and never infers a wait from a status
+  /// that is absent.
+  final bool metadataPending;
 
   /// The repository whose follow is being added or removed, while [saving].
   ///
@@ -90,6 +102,7 @@ class ReleaseFollowsState {
     bool? loaded,
     bool? loading,
     bool? saving,
+    bool? metadataPending,
     String? savingRepositoryId,
     bool clearSavingRepository = false,
     bool? saveFailed,
@@ -106,6 +119,7 @@ class ReleaseFollowsState {
     loaded: loaded ?? this.loaded,
     loading: loading ?? this.loading,
     saving: saving ?? this.saving,
+    metadataPending: metadataPending ?? this.metadataPending,
     savingRepositoryId: clearSavingRepository
         ? null
         : savingRepositoryId ?? this.savingRepositoryId,

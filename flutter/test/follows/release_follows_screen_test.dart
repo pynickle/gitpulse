@@ -25,6 +25,28 @@ int _metadataRequestCount(FollowsServer server) => server.featureRequests
     .where((request) => request.uri.path.contains('release-follows/metadata'))
     .length;
 
+/// The strength the panel's view toggle paints its mark with.
+double _viewMarkOpacity(WidgetTester tester, Finder toggle) => tester
+    .widget<Opacity>(
+      find.descendant(of: toggle, matching: find.byType(Opacity)),
+    )
+    .opacity;
+
+/// The strengths the mark paints at a few frames a fraction of the app's
+/// progress turn apart.
+Future<List<double>> _markOpacities(
+  WidgetTester tester,
+  Finder toggle, {
+  int frames = 4,
+}) async {
+  final opacities = <double>[];
+  for (var i = 0; i < frames; i++) {
+    await tester.pump(const Duration(milliseconds: 110));
+    opacities.add(_viewMarkOpacity(tester, toggle));
+  }
+  return opacities;
+}
+
 /// A temporary device store for the language choice.
 ///
 /// Created synchronously: a widget test body runs on a fake clock, so awaiting
@@ -1416,6 +1438,126 @@ void main() {
       );
       expect(row, findsOneWidget);
       expect(tester.getTopLeft(row).dy, restingRowTop);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'the view toggle breathes while Detailed View’s details are still arriving',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      server.metadata['R_kept'] = {
+        'status': 'available',
+        'owner': 'octo',
+        'name': 'kept',
+        'description': 'Notes for followers',
+        'primaryLanguage': 'Python',
+        'starCount': 5600,
+      };
+      final held = Completer<void>();
+      addTearDown(() {
+        if (!held.isCompleted) held.complete();
+      });
+      await _openFollows(tester, server);
+      server.holdMetadata = held.future;
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await _settleUi(tester);
+
+      // Compact View asks for no details, so its mark stands still.
+      final compact = findNamedAction('Compact');
+      expect(await _markOpacities(tester, compact, frames: 2), everyElement(1));
+
+      // Detailed View asks for them, and that read is held: the mark breathes
+      // rather than leaving the reader to guess whether a description is
+      // missing.
+      await tester.tap(compact);
+      await _settleUi(tester);
+      final detailed = findNamedAction('Detailed');
+      final breathing = await _markOpacities(tester, detailed);
+      expect(
+        breathing.toSet(),
+        hasLength(greaterThan(1)),
+        reason: '$breathing',
+      );
+      expect(
+        breathing.reduce((a, b) => a < b ? a : b),
+        lessThan(0.9),
+        reason: '$breathing',
+      );
+      // It is still the action it was: pressable, and named the same.
+      expect(tester.widget<GitPulseIconButton>(detailed).onPressed, isNotNull);
+      expect(find.text('Detailed'), findsNothing);
+
+      // A press while the mark moves switches the view at once.
+      await tester.tap(detailed);
+      await _pumpFrames(tester, frames: 2);
+      expect(findNamedAction('Compact'), findsOneWidget);
+      expect(
+        _viewMarkOpacity(tester, findNamedAction('Compact')),
+        1,
+        reason: 'Compact View has no read to state',
+      );
+
+      // Back in Detailed View another read is owed, so the mark moves again;
+      // once the details arrive it stops where it is.
+      await tester.tap(findNamedAction('Compact'));
+      await _settleUi(tester);
+      final moving = await _markOpacities(tester, findNamedAction('Detailed'));
+      expect(moving.toSet(), hasLength(greaterThan(1)), reason: '$moving');
+      held.complete();
+      server.holdMetadata = null;
+      await _settleUi(tester);
+      expect(find.text('Notes for followers'), findsOneWidget);
+      final resting = await _markOpacities(tester, findNamedAction('Detailed'));
+      expect(resting, everyElement(1), reason: '$resting');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'the view toggle holds its mark still when the reader asked for no motion',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      final held = Completer<void>();
+      addTearDown(() {
+        if (!held.isCompleted) held.complete();
+      });
+      server.holdMetadata = held.future;
+      await _openFollows(tester, server);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await _settleUi(tester);
+      await tester.tap(findNamedAction('Compact'));
+      await _settleUi(tester);
+
+      // A detail read is in flight, and Detailed View states it — but the
+      // reader asked for no motion, so the mark rests at full strength.
+      final detailed = findNamedAction('Detailed');
+      expect(_metadataRequestCount(server), greaterThan(0));
+      final opacities = await _markOpacities(tester, detailed);
+      expect(opacities, everyElement(1), reason: '$opacities');
+      expect(tester.widget<GitPulseIconButton>(detailed).onPressed, isNotNull);
+      await tester.tap(detailed);
+      await _pumpFrames(tester, frames: 2);
+      expect(findNamedAction('Compact'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
