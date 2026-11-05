@@ -206,6 +206,71 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  /// Where a setting's name starts, relative to the card that holds it.
+  double labelInset(WidgetTester tester, String label) {
+    final card = find.ancestor(
+      of: find.text(label),
+      matching: find.byWidgetPredicate(_isSettingCard),
+    );
+    expect(card, findsOneWidget, reason: label);
+    return tester.getRect(find.text(label)).top - tester.getRect(card).top;
+  }
+
+  // Every card's name sits on the card's own surface inset, whatever else stands
+  // on its first line: the Backend card's two actions and the Timeline cache's
+  // Clear are full touch targets, and they never push the name lower than the
+  // name on a card whose first line is text alone. Large text is the case where
+  // the target no longer stands above the name, so the same rule has to hold
+  // when the name is taller than the control.
+  for (final textScale in [1.0, 2.0]) {
+    testWidgets('every card starts its name on the surface inset at '
+        '${textScale}x text', (tester) async {
+      _useWindow(tester, const Size(390, 844), textScale: textScale);
+      await _openSettings(tester);
+
+      // The backend card's own geometry below the name is untouched: the address
+      // still follows the name, and the two actions that act on the address
+      // still stand on the name's line and still answer a press.
+      final backendName = tester.getRect(find.text('Backend'));
+      final address = tester.getRect(find.text('https://gitpulse.example/'));
+      expect(address.top, greaterThan(backendName.bottom));
+      for (final action in ['Copy backend address', 'Change backend']) {
+        final target = findNamedAction(action);
+        expect(target.hitTestable(), findsOneWidget, reason: action);
+        expect(
+          (tester.getRect(target).center.dy - backendName.center.dy).abs(),
+          lessThan(12),
+          reason: action,
+        );
+      }
+
+      final insets = <String, double>{};
+      for (final label in [
+        'Backend',
+        'Language',
+        'Appearance',
+        'Keep releases for',
+        'Timeline cache',
+      ]) {
+        await tester.scrollUntilVisible(
+          find.text(label),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        insets[label] = labelInset(tester, label);
+      }
+      for (final MapEntry(key: label, value: inset) in insets.entries) {
+        expect(
+          inset,
+          closeTo(GitPulseSpace.surfaceInset, 0.5),
+          reason: '$label at ${textScale}x text',
+        );
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('a wide window keeps the same one column of cards', (
     tester,
   ) async {

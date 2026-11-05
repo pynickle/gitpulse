@@ -35,6 +35,11 @@ import '../session/session_notice.dart';
 class BackendDetails extends ConsumerStatefulWidget {
   const BackendDetails({super.key});
 
+  /// The card's first line also holds the two actions that act on its address,
+  /// so its surface gives up the part of their target that stands above the name
+  /// and the name starts on the card's own inset (ADR 0040).
+  static const firstLineHoldsControl = true;
+
   @override
   ConsumerState<BackendDetails> createState() => _BackendDetailsState();
 }
@@ -88,21 +93,28 @@ class _BackendDetailsState extends ConsumerState<BackendDetails> {
     // The address is the one fact here a reader checks against the server they
     // meant, so it takes a line of its own and nothing is drawn beside it to
     // shorten it; the two actions act on it from the line above.
+    //
+    // That line also holds the two actions, so the surface gives up the part of
+    // their target that stands above the name and the name and its mark stand in
+    // the line the target gives them (ADR 0040).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ExcludeSemantics(
-              child: Icon(
-                Icons.dns_outlined,
-                size: GitPulseIconSize.inline,
-                color: toneTextMuted(context),
+            GitPulseSettingLabelLine(
+              child: ExcludeSemantics(
+                child: Icon(
+                  Icons.dns_outlined,
+                  size: GitPulseIconSize.inline,
+                  color: toneTextMuted(context),
+                ),
               ),
             ),
             const SizedBox(width: GitPulseSpace.inline),
-            Expanded(child: name),
+            Expanded(child: GitPulseSettingLabelLine(child: name)),
             const SizedBox(width: GitPulseSpace.inline),
             GitPulseIconButton(
               label: l10n.copyBackendAddress,

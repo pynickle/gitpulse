@@ -12,18 +12,66 @@ const gitPulseSettingsGutter = GitPulseSpace.gutter;
 TextStyle? gitPulseSettingLabelStyle(BuildContext context) =>
     gitPulseTypeRowLabel(context);
 
+/// The height one line of a setting's name takes at the reader's text scale:
+/// the type role's size as the reader scales it, times the role's line height.
+double _labelLineHeight(BuildContext context) {
+  final style = gitPulseSettingLabelStyle(context);
+  final size = style?.fontSize;
+  final height = style?.height;
+  if (size == null || height == null) return 0;
+  return MediaQuery.textScalerOf(context).scale(size) * height;
+}
+
+/// The height a first line takes when its control shares it with the name: the
+/// compact control target, or the name's own line when large text fills that
+/// target already.
+double _labelLineBoxHeight(BuildContext context) {
+  final line = _labelLineHeight(context);
+  return line > GitPulseHeight.compact ? line : GitPulseHeight.compact;
+}
+
+/// The part of a first line's control target that stands above the name: half
+/// of the compact target minus the name's line, never less than zero.
+double _labelOverhang(BuildContext context) {
+  final overhang = (GitPulseHeight.compact - _labelLineHeight(context)) / 2;
+  return overhang > 0 ? overhang : 0;
+}
+
 /// The rounded surface every Settings card shares.
 ///
 /// The fill, the corner, and the edge are the same roles a Timeline card uses,
 /// so a settings card cannot grow a private palette. The card is not itself a
 /// button: the control inside it is what answers a press.
+///
+/// A card whose first line also holds its control states that with
+/// [firstLineHoldsControl]. The line is then as tall as the control's touch
+/// target and the name inside it is centred, which would leave the name half
+/// that difference under the card's own inset while every card whose first line
+/// is text alone starts at it. The name sits on the card's inset whatever stands
+/// beside it, and the control keeps its whole target: the card gives up the part
+/// of the target that stands above the name instead. That overhang is derived
+/// from the name's type role at the reader's text scale, never chosen, and it
+/// clamps at zero — a text scale large enough to fill the target keeps the
+/// ordinary inset. The line's name and mark stand in a
+/// [GitPulseSettingLabelLine], which puts the overhang back above the name.
 class GitPulseSettingSurface extends StatelessWidget {
-  const GitPulseSettingSurface({super.key, required this.child});
+  const GitPulseSettingSurface({
+    super.key,
+    required this.child,
+    this.firstLineHoldsControl = false,
+  });
 
   final Widget child;
 
+  /// Whether the card's first line also holds its control, so the line is as
+  /// tall as the control's target rather than as the name alone.
+  final bool firstLineHoldsControl;
+
   @override
   Widget build(BuildContext context) {
+    final top = firstLineHoldsControl
+        ? GitPulseSpace.surfaceInset - _labelOverhang(context)
+        : GitPulseSpace.surfaceInset;
     return DecoratedBox(
       decoration: BoxDecoration(
         // A block within the page, read by the job it does rather than by a
@@ -36,7 +84,39 @@ class GitPulseSettingSurface extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(GitPulseSpace.surfaceInset),
+        padding: EdgeInsets.fromLTRB(
+          GitPulseSpace.surfaceInset,
+          top > 0 ? top : 0,
+          GitPulseSpace.surfaceInset,
+          GitPulseSpace.surfaceInset,
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// One child of a Settings card's first line, standing in the line the card's
+/// control target gives it.
+///
+/// A card whose first line also holds its control takes the target's overhang
+/// off its top inset (see [GitPulseSettingSurface.firstLineHoldsControl]), so
+/// the line puts that overhang back above the name: the name is centred in a box
+/// as tall as the compact target, and large text — which fills the target on its
+/// own — keeps its own line instead. The mark and the name stand in this box;
+/// the control does not, because it is the target the box is stated from.
+class GitPulseSettingLabelLine extends StatelessWidget {
+  const GitPulseSettingLabelLine({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _labelLineBoxHeight(context),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        widthFactor: 1,
         child: child,
       ),
     );
@@ -67,7 +147,10 @@ class GitPulseSettingRow extends StatelessWidget {
   final Widget control;
   final Widget? aside;
 
-  /// Puts [control] on the name's line, at the trailing edge.
+  /// Puts [control] on the name's line, at the trailing edge. The card then
+  /// states the line's own top inset, so the name starts on the card's inset
+  /// beside a control that keeps its whole target
+  /// ([GitPulseSettingSurface.firstLineHoldsControl]).
   final bool inlineControl;
 
   final List<Widget> notes;
@@ -87,21 +170,30 @@ class GitPulseSettingRow extends StatelessWidget {
         color: toneTextMuted(context),
       ),
     );
+    // A control on the name's line makes that line as tall as its target, so the
+    // name and its mark stand in the line's own box; everything else keeps the
+    // one line it always had.
+    Widget onLabelLine(Widget child) =>
+        inlineControl ? GitPulseSettingLabelLine(child: child) : child;
     return GitPulseSettingSurface(
+      firstLineHoldsControl: inlineControl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: inlineControl
+                ? CrossAxisAlignment.start
+                : CrossAxisAlignment.center,
             children: [
-              mark,
+              onLabelLine(mark),
               const SizedBox(width: GitPulseSpace.inline),
               if (inlineControl)
-                Expanded(child: name)
+                Expanded(child: onLabelLine(name))
               else
-                Flexible(child: name),
+                Flexible(child: onLabelLine(name)),
               if (aside != null) ...[
                 const SizedBox(width: GitPulseSpace.inline),
-                aside!,
+                onLabelLine(aside!),
               ],
               if (inlineControl) ...[
                 const SizedBox(width: GitPulseSpace.inline),

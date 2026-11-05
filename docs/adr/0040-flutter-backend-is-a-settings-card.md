@@ -68,3 +68,30 @@ nothing to report, so on the ordinary visit the page's first ink is a way in.
 - A reader loses the one-tap copy of the address on the sign-in page, and the address itself from that
   page. Both live on the card that owns them, and the address editor still holds the address in a field
   the platform lets a reader select and copy.
+
+## A card's first line states its own top inset
+
+A Settings card's first line is not always text alone. The Backend card's name shares its line with the
+two actions that act on its address, and the Timeline cache card's name shares its line with Clear. A
+control stands on the compact touch target, so that line is 40dp tall and the name inside it is
+centred: its visible top sat about 10dp under the card's top edge while every card whose first line is
+text alone started at the card's inset. The address line below kept the ordinary inset, so the card
+read top-heavy with a hole under its own edge.
+
+`GitPulseSettingSurface` now states the top inset of a card whose first line also holds its control.
+The name sits on the card's inset whatever stands beside it, and the control keeps its whole target:
+the card gives up the part of the target that stands above the name. The overhang is derived — half of
+(the compact control target minus the name's line at the reader's text scale) — never a distance of
+its own, and it clamps at zero, so a text scale large enough to fill the target keeps the ordinary
+inset. `GitPulseSettingRow(inlineControl: true)` passes the statement on, and the hand-composed Backend
+card declares it itself (`BackendDetails.firstLineHoldsControl`).
+
+`GitPulseSettingLabelLine` is the other half of the rule: the name and its mark stand in a box as tall
+as the compact target — or as tall as their own line, when large text is taller — so putting the
+overhang back above the name costs the line nothing. The control is not boxed; it is the target the
+line is stated from, and it is never shrunk to make the name fit. Large text is therefore not a
+special case: the line grows past the target, the overhang falls to zero, and the name still begins on
+the card's inset.
+
+No other card's geometry changes, and the address keeps its distance from the name: the block below
+the name moves up with it, and the card is that much shorter.
