@@ -215,18 +215,20 @@ onBeforeUnmount(() => {
    hover fill on interaction — the same convention as the dashboard icon
    buttons, which keeps it correct in both color modes. */
 .chrome-actions .chrome-actions__more-toggle {
+  /* A wash mixed from the theme's own text colour, so it reads on the white\n     public bar and on the tinted overlay bar, in both color modes. */
+  --chrome-actions-hover: color-mix(in srgb, var(--gitpulse-text) 7%, transparent);
   height: 2.25rem;
   border-color: transparent;
   background-color: transparent;
 
   @media (hover: hover) {
     &:hover {
-      background-color: var(--gitpulse-surface-hover);
+      background-color: var(--chrome-actions-hover);
     }
   }
 
   &:focus-visible {
-    background-color: var(--gitpulse-surface-hover);
+    background-color: var(--chrome-actions-hover);
   }
 }
 
