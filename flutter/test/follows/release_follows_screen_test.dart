@@ -10,6 +10,7 @@ import 'package:gitpulse/follows/release_follows_state.dart';
 import 'package:gitpulse/follows/release_follows_widgets.dart';
 import 'package:gitpulse/follows/repository_pagination.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
+import 'package:gitpulse/presentation/gitpulse_language_colors.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
 import 'package:gitpulse/presentation/gitpulse_state_views.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
@@ -24,6 +25,13 @@ import 'follows_test_support.dart';
 int _metadataRequestCount(FollowsServer server) => server.featureRequests
     .where((request) => request.uri.path.contains('release-follows/metadata'))
     .length;
+
+/// The ceiling a Compact View row must now stay under.
+///
+/// Measured on a 390×844 phone: 68dp with the old 10dp inset, 60dp with the
+/// 6dp one. The row is still tall enough to clear [GitPulseHeight.rowMin] on
+/// its own, which is the floor a row may not fall under.
+const _compactRowMaxHeight = 60.0;
 
 /// The strength the panel's view toggle paints its mark with.
 double _viewMarkOpacity(WidgetTester tester, Finder toggle) => tester
@@ -1711,7 +1719,9 @@ void main() {
       expect(find.text('5.6K'), findsOneWidget);
       expect(find.text('python'), findsOneWidget);
       final descriptionText = tester.widget<Text>(find.text(description));
-      expect(descriptionText.maxLines, 2);
+      // The discovery list mounts the same row as the followed list, so its
+      // description is held to the same one line (ADR 0047).
+      expect(descriptionText.maxLines, 1);
       final pythonSwatch = tester.widget<DecoratedBox>(
         find.descendant(
           of: find.byKey(const ValueKey('starred-R_py')),
@@ -2057,4 +2067,227 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'a Detailed View row keeps one height however long its description is',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      const longDescription =
+          'A description long enough that a phone wraps it onto a second '
+          'line, which used to make this one row taller than the rows around '
+          'it in the same list.';
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_short', 'octo', 'short'),
+        followJson('R_long', 'octo', 'long'),
+      ];
+      server.metadata['R_short'] = {
+        'status': 'available',
+        'owner': 'octo',
+        'name': 'short',
+        'description': 'Notes',
+        'primaryLanguage': 'Rust',
+        'starCount': 42,
+      };
+      server.metadata['R_long'] = {
+        'status': 'available',
+        'owner': 'octo',
+        'name': 'long',
+        'description': longDescription,
+        'primaryLanguage': 'TypeScript',
+        'starCount': 12345,
+      };
+      await _openFollows(tester, server);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await _settleUi(tester);
+      await tester.tap(findNamedAction('Compact'));
+      await _settleUi(tester);
+
+      final shortRow = tester.getRect(
+        find.byKey(const ValueKey('followed-R_short')),
+      );
+      final longRow = tester.getRect(
+        find.byKey(const ValueKey('followed-R_long')),
+      );
+      // Measured after this change: both rows are 71dp. While the description
+      // could wrap to two lines the long one was 98dp, so a list of them was a
+      // list of unequal rows.
+      expect(
+        longRow.height,
+        shortRow.height,
+        reason: 'short ${shortRow.height}, long ${longRow.height}',
+      );
+      // The description is one line of prose however much of it there is: the
+      // long one is laid out at the same height as the short one and clipped
+      // with its ellipsis inside that line.
+      expect(
+        tester.getSize(find.text(longDescription)).height,
+        tester.getSize(find.text('Notes')).height,
+        reason: 'a description is one line, not two',
+      );
+      expect(find.text('octo/short'), findsOneWidget);
+      expect(find.text('octo/long'), findsOneWidget);
+      // The metadata line is still there under the name, unchanged.
+      expect(find.text('Rust'), findsOneWidget);
+      expect(find.text('42'), findsOneWidget);
+      expect(find.text('12.3K'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'a Compact View row is denser than before and is still a whole target',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final server = FollowsServer();
+      server.settings['followedRepositories'] = [
+        followJson('R_kept', 'octo', 'kept'),
+      ];
+      await _openFollows(tester, server);
+      await tester.tap(find.byKey(const ValueKey('manage-follows')));
+      await _settleUi(tester);
+
+      final row = find.byKey(const ValueKey('followed-R_kept'));
+      final height = tester.getRect(row).height;
+      expect(
+        height,
+        lessThanOrEqualTo(_compactRowMaxHeight),
+        reason:
+            'compact row measured ${height}dp; it was 68dp at the 10dp inset',
+      );
+      // The padding is not what keeps the row a target: the action it carries
+      // and the row's own floor do, and the row still clears that floor.
+      expect(
+        height,
+        greaterThanOrEqualTo(GitPulseHeight.rowMin),
+        reason: 'a row is never smaller than a finger target: ${height}dp',
+      );
+      expect(find.text('octo/kept').hitTestable(), findsOneWidget);
+      expect(row.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('consecutive rows keep the language and star columns on one x', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final server = FollowsServer();
+    server.settings['followedRepositories'] = [
+      followJson('R_one', 'octo', 'one'),
+      followJson('R_two', 'octo', 'two'),
+    ];
+    server.metadata['R_one'] = {
+      'status': 'available',
+      'owner': 'octo',
+      'name': 'one',
+      'description': 'Notes',
+      'primaryLanguage': 'Rust',
+      'starCount': 42,
+    };
+    server.metadata['R_two'] = {
+      'status': 'available',
+      'owner': 'octo',
+      'name': 'two',
+      'description': 'Notes',
+      'primaryLanguage': 'TypeScript',
+      'starCount': 12345,
+    };
+    await _openFollows(tester, server);
+    await tester.tap(find.byKey(const ValueKey('manage-follows')));
+    await _settleUi(tester);
+    await tester.tap(findNamedAction('Compact'));
+    await _settleUi(tester);
+
+    final panel = find.byType(FollowedRepositoriesPanel);
+    final swatches = find.descendant(
+      of: panel,
+      matching: find.byType(LanguageSwatch),
+    );
+    final stars = find.descendant(
+      of: panel,
+      matching: find.byIcon(Icons.star_border),
+    );
+    expect(swatches, findsNWidgets(2));
+    expect(stars, findsNWidgets(2));
+    // Different language names and different counts, one column each: the
+    // swatch and the glyph start at the same x on both consecutive rows.
+    expect(
+      tester.getRect(swatches.at(1)).left,
+      tester.getRect(swatches.at(0)).left,
+      reason: 'language column',
+    );
+    expect(
+      tester.getRect(stars.at(1)).left,
+      tester.getRect(stars.at(0)).left,
+      reason: 'star column',
+    );
+    // Both are one metadata line under their own row's name rather than a
+    // line the tighter row pushed away.
+    expect(
+      tester.getRect(swatches.at(0)).top,
+      greaterThan(tester.getRect(find.text('octo/one')).bottom),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a long description at a large text scale stays inside its row', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    const longDescription =
+        'A description long enough that a phone wraps it onto a second '
+        'line, which a large text setting turns into several.';
+    final server = FollowsServer();
+    server.settings['followedRepositories'] = [
+      followJson('R_long', 'octo', 'long'),
+    ];
+    server.metadata['R_long'] = {
+      'status': 'available',
+      'owner': 'octo',
+      'name': 'long',
+      'description': longDescription,
+      'primaryLanguage': 'TypeScript',
+      'starCount': 12345,
+    };
+    await _openFollows(tester, server);
+    await tester.tap(find.byKey(const ValueKey('manage-follows')));
+    await _settleUi(tester);
+    await tester.tap(findNamedAction('Compact'));
+    await _settleUi(tester);
+
+    final row = tester.getRect(find.byKey(const ValueKey('followed-R_long')));
+    final description = tester.getRect(find.text(longDescription));
+    final name = tester.getRect(find.text('octo/long'));
+    // The scaling text is laid out inside the row it belongs to: the one
+    // description line is clipped to its row and the name starts inside it,
+    // so nothing overflows or is cut by the row's edge.
+    expect(
+      description.top,
+      greaterThanOrEqualTo(row.top),
+      reason: 'row $row, description $description',
+    );
+    expect(
+      description.bottom,
+      lessThanOrEqualTo(row.bottom),
+      reason: 'row $row, description $description',
+    );
+    expect(name.top, greaterThanOrEqualTo(row.top));
+    expect(name.bottom, lessThanOrEqualTo(row.bottom));
+    expect(tester.takeException(), isNull);
+  });
 }

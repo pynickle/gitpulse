@@ -61,8 +61,7 @@ the sections that record them rather than in a second record beside it:
 - **The rows.** The chrome states the panel's work so the content area can spend its height on
   repositories. The denser row — a tighter inset and a description held to one line — is the same
   decision seen from the content side: the panel does not spend its height on chrome, so it must not
-  spend it on padding either. That section is not written by this record, and that density is not
-  implemented yet.
+  spend it on padding either. The section at the end of this record states the density it settled on.
 
 ## Consequences
 
@@ -126,3 +125,38 @@ fraction of the turn while the read is held, the toggle still switches the view 
 mark rests once the details have arrived, and a reader with `disableAnimations` gets a still mark.
 `test/follows/release_follows_session_test.dart` asserts the field itself, with no UI: true while a
 held read is in flight, false once it settles.
+
+## The rows are packed to the tap floor, not to a padding
+
+The panel spends its height on repositories, and a list is read by scanning. A row carried a 10dp
+inset above and below and, in Detailed View, a description allowed to wrap to two lines. Neither was
+what kept the row tappable: the 48dp action at the row's right edge and `GitPulseHeight.rowMin` do
+that, and a row that clears the floor is a target whether its inset is 10dp or 6dp. The second
+description line, for its part, was the one thing that made one row taller than another, so a list of
+repositories could not be scanned as a column.
+
+**A row's vertical inset is 6dp, and its description is one line.** `_rowPadding` in
+`lib/follows/release_follows_widgets.dart` is 6, and `_RepositoryRow`'s description is `maxLines: 1`
+with its ellipsis kept, so a description too long for the line is clipped inside it instead of
+growing its row. The name keeps its line; the metadata line keeps its place and its two columns (the
+language column and the star column are still fixed widths measured at the reader's text scale, so
+the language swatch and the star start at one x down the list); the divider and the trailing actions
+(retry, unfollow) are untouched. Measured on a 390×844 phone at text scale 1: a Compact View row is
+60dp (68dp before), and a Detailed View row is 71dp (79dp with a short description, 98dp with one
+that wrapped to two lines). The row still clears `GitPulseHeight.rowMin` (44) on its own, so the
+inset is the tightest that keeps the row a comfortable target rather than the thing that makes it
+one.
+
+**The two lists keep one row grammar.** `FollowRepositoryCard` — the discovery list's row, for
+Starred and Search — and `FollowedRepositoryCard` mount the same `_RepositoryRow`, so the density
+belongs to the row rather than to an argument a surface passes. No per-surface density exists: a
+second density would be a second row grammar, and the reader would have to learn where a repository
+is dense and where it is not.
+
+The rule is asserted where it is rendered, in `test/follows/release_follows_screen_test.dart`: two
+Detailed View rows whose descriptions are short and long measure the same height and their
+descriptions measure one line; a Compact View row stays under the measured bound and above
+`GitPulseHeight.rowMin`; the language swatch and the star glyph of two consecutive rows start at one
+x; and at text scale 2 the name and the description are laid out inside their row with no overflow.
+The discovery list mounts the same row, so its card test now finds the description held to one line
+as well.

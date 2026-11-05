@@ -17,10 +17,16 @@ import 'release_follows_state.dart';
 /// the page can sit a few pixels out of line with anything else.
 const releaseFollowsPadding = 16.0;
 
-/// One repository row's own vertical inset. Dense enough that a phone lists six
-/// repositories without scrolling, tall enough that a row is a comfortable tap
-/// target on its own.
-const _rowPadding = 10.0;
+/// One repository row's own vertical inset.
+///
+/// The tightest inset that still leaves a row a comfortable target: the row is
+/// read as a scanned list, so its height is spent on the name, the one
+/// description line and the metadata line rather than on padding, and what
+/// keeps it tappable is [GitPulseHeight.rowMin] and the 48dp action it carries
+/// — not this inset. Measured on a 390×844 phone: a Compact View row is 60dp
+/// (it was 68 at 10) and a Detailed View row is 71dp (it was 79 with a
+/// one-line description and 98 with a two-line one).
+const _rowPadding = 6.0;
 
 /// The space between a row's language and its star count. Wide enough that a
 /// long language name still reads as one datum and the count as another.
@@ -53,11 +59,17 @@ double _countColumnWidth(BuildContext context) {
 
 /// One repository, as a row of a list rather than a card.
 ///
-/// Identity runs down the left in reading order — the name, the description,
-/// then one metadata line naming the language and the star count — while the
-/// right edge belongs to the row's action alone. [FollowRowDivider] separates
-/// one row from the next, so a page of repositories reads as one list instead
-/// of a stack of boxes.
+/// Identity runs down the left in reading order — the name, one line of
+/// description, then one metadata line naming the language and the star count —
+/// while the right edge belongs to the row's action alone. [FollowRowDivider]
+/// separates one row from the next, so a page of repositories reads as one list
+/// instead of a stack of boxes.
+///
+/// The description is held to one line because the row is the unit of a scanned
+/// list: a long description must not make one row taller than its neighbours,
+/// so the ellipsis is what keeps every row's height predictable. The discovery
+/// list (Starred and Search) mounts this same row on purpose, so both lists
+/// read at one density rather than a per-surface one.
 class _RepositoryRow extends StatelessWidget {
   const _RepositoryRow({
     required this.name,
@@ -133,9 +145,12 @@ class _RepositoryRow extends StatelessWidget {
                     ),
                     if (description != null) ...[
                       const SizedBox(height: 2),
+                      // One line, always: the ellipsis is what keeps a long
+                      // description from setting its row's height apart from
+                      // the rows it is scanned with (ADR 0047).
                       Text(
                         description!,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: gitPulseTypeMeta(context),
                       ),
