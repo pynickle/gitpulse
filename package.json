@@ -16,8 +16,8 @@
     "test": "bun test --parallel",
     "postinstall": "nuxt prepare",
     "prepare": "prek install",
-    "lint": "bunx oxlint ./ --type-aware --ignore-pattern extension/ --ignore-pattern flutter/",
-    "lint:fix": "bunx oxlint ./ --fix --type-aware --ignore-pattern extension/ --ignore-pattern flutter/",
+    "lint": "bunx oxlint ./ --type-aware",
+    "lint:fix": "bunx oxlint ./ --fix --type-aware",
     "fmt": "bunx oxfmt ./",
     "fmt:check": "bunx oxfmt --check ./"
   },

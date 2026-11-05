@@ -6,6 +6,45 @@ repo = "builtin"
 
 [[repos.hooks]]
 id = "fix-byte-order-marker"
+exclude = '(^|/)(\.nuxtrc|[^/]*\.lock|[^/]*\.g\.dart)$|^flutter/assets/document_viewer/'
+
+[[repos.hooks]]
+id = "trailing-whitespace"
+args = ["--markdown-linebreak-ext=md"]
+exclude = '(^|/)(\.nuxtrc|[^/]*\.lock|[^/]*\.g\.dart)$|^flutter/assets/document_viewer/'
+
+[[repos.hooks]]
+id = "end-of-file-fixer"
+exclude = '(^|/)(\.nuxtrc|[^/]*\.lock|[^/]*\.g\.dart)$|^flutter/assets/document_viewer/'
+
+[[repos.hooks]]
+id = "mixed-line-ending"
+exclude = '(^|/)(\.nuxtrc|[^/]*\.lock|[^/]*\.g\.dart)$|^flutter/assets/document_viewer/'
+
+[[repos.hooks]]
+id = "check-added-large-files"
+
+[[repos.hooks]]
+id = "check-case-conflict"
+
+[[repos.hooks]]
+id = "check-illegal-windows-names"
+
+[[repos.hooks]]
+id = "check-merge-conflict"
+
+[[repos.hooks]]
+id = "check-xml"
+
+[[repos.hooks]]
+id = "detect-private-key"
+
+[[repos.hooks]]
+id = "check-json"
+exclude = 'tsconfig\.json$'
+
+[[repos.hooks]]
+id = "check-jsonc"
 
 [[repos]]
 repo = "local"

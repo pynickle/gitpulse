@@ -6,5 +6,6 @@
   },
   "env": {
     "builtin": true
-  }
+  },
+  "ignorePatterns": ["extension/", "flutter/"]
 }

@@ -15,15 +15,15 @@ bun install
 
 ## Pre-Commit Checks
 
-GitPulse uses `prek` for pre-commit checks. The hook configuration lives in
-`prek.toml` and currently runs:
+GitPulse uses `prek` for pre-commit checks. The hook list lives in `prek.toml`,
+which is the single source of truth; [the ADR](docs/adr/0048-prek-builtin-hook-selection.md)
+records why each hook is there. It runs native `prek` builtins (byte-order marker, trailing whitespace,
+end-of-file newline, mixed line endings, JSON/JSONC parse, added large files,
+case conflicts, Windows-illegal names, merge markers, XML parse, private keys)
+followed by `bun run fmt:check` and `bun run lint`.
 
-```bash
-bun run fmt:check
-bun run lint
-```
-
-Fix any failures before committing.
+Fix any failures before committing. Hooks that rewrite a file report it as a
+failure, so when one does, re-stage the file and commit again.
 
 ## Commit Messages
 
@@ -64,7 +64,7 @@ bun run lint:fix
 Review the diff after automatic fixes. `lint:fix` may not resolve every issue;
 re-run `bun run lint` and handle remaining diagnostics manually.
 
-The root lint script ignores `extension/` and `flutter/`. Use each package's
+The root lint config ignores `extension/` and `flutter/`. Use each package's
 own checks when working on the browser extension or native client. Root formatting
 also excludes `flutter/`, which uses Dart formatting.
 
