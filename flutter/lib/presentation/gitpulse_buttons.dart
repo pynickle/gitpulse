@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'gitpulse_theme.dart';
@@ -48,6 +50,7 @@ class GitPulseButton extends StatelessWidget {
     this.expand = false,
     this.semanticsLabel,
     this.statusMarkTone,
+    this.height,
   });
 
   /// The action, in the reader's language.
@@ -94,6 +97,16 @@ class GitPulseButton extends StatelessWidget {
   /// action can no longer report is not painted at full strength.
   final Color? statusMarkTone;
 
+  /// The height this control's shape stands at, when a surface sets it.
+  ///
+  /// A control that sets the height of the line it stands on states it here, and
+  /// the shape takes exactly that height: the label is centred in it with the
+  /// room left over, so a shorter control reads as the same control, smaller,
+  /// rather than as a cropped one. Null keeps the app's control height, which is
+  /// what every other caller wants — a control decides its own size, unless a
+  /// surface it stands in decided the line for it (ADR 0040).
+  final double? height;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -130,6 +143,20 @@ class GitPulseButton extends StatelessWidget {
         : gitPulseInkOverlay(scheme);
     // The label's ink, unless the mark itself is the status the action reports.
     final markInk = enabled ? (statusMarkTone ?? ink) : ink;
+    // A surface that set this control's height also sets the room its label has:
+    // the label's own line plus whatever the height leaves over, so the shape is
+    // exactly the height the line states and the label is centred in it.
+    final verticalPadding = height == null
+        ? GitPulseSpace.inline
+        : math.max(
+            0.0,
+            (height! -
+                    math.max(
+                      gitPulseTypeControlLineHeight(context),
+                      icon == null ? 0 : GitPulseIconSize.inControl,
+                    )) /
+                2,
+          );
 
     return Semantics(
       button: true,
@@ -151,7 +178,7 @@ class GitPulseButton extends StatelessWidget {
               final fillsTheRow = expand && constraints.hasBoundedWidth;
               return ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: GitPulseHeight.compact,
+                  minHeight: height ?? GitPulseHeight.compact,
                   minWidth: fillsTheRow ? constraints.maxWidth : 0,
                 ),
                 child: DecoratedBox(
@@ -160,9 +187,9 @@ class GitPulseButton extends StatelessWidget {
                     border: edge == null ? null : Border.fromBorderSide(edge),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
+                    padding: EdgeInsets.symmetric(
                       horizontal: GitPulseSpace.surfaceInset,
-                      vertical: GitPulseSpace.inline,
+                      vertical: verticalPadding,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

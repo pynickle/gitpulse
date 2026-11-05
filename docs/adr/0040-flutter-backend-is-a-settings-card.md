@@ -69,35 +69,41 @@ nothing to report, so on the ordinary visit the page's first ink is a way in.
   page. Both live on the card that owns them, and the address editor still holds the address in a field
   the platform lets a reader select and copy.
 
-## A card's first line states its own top inset
+## A card is padded to the line it draws, and a control on that line is drawn to it
 
-A Settings card's first line is not always text alone. The Backend card's name shares its line with the
-two actions that act on its address, and the Timeline cache card's name shares its line with Clear. A
-control stands on the compact touch target, so that line is 40dp tall and the name inside it is
-centred: its visible top sat about 10dp under the card's top edge while every card whose first line is
-text alone started at the card's inset. The address line below kept the ordinary inset, so the card
-read top-heavy with a hole under its own edge.
+A Settings card's line is not always text alone. The Backend card's name shares its line with the two
+actions that act on its address, and the Timeline cache card's name shares its line with Clear. A
+control stands on a touch target, so that line is taller than the name inside it and the name is
+centred: its visible top sat about 10dp under the card's top edge while every card whose line is text
+alone started at the card's inset. The address line below kept the ordinary inset, so the card read
+top-heavy with a hole under its own edge.
 
-`GitPulseSettingSurface` now states the top inset of a card whose first line also holds its control.
-The name sits on the card's inset whatever stands beside it, and the control keeps its whole target:
-the card gives up the part of the target that stands above the name. The overhang is derived — half of
-(the compact control target minus the name's line at the reader's text scale) — never a distance of
-its own, and it clamps at zero, so a text scale large enough to fill the target keeps the ordinary
-inset. `GitPulseSettingRow(inlineControl: true)` passes the statement on, and the hand-composed Backend
-card states it at its composition site (`GitPulseSettingSurface(firstLineHoldsControl: true)`), where
-the line it draws itself is already declared.
+`GitPulseSettingSurface` therefore states what stands on the card's first line —
+`GitPulseSettingLineControl`: nothing, icon actions, or a control with a label. Two things follow.
 
-`GitPulseSettingLabelLine` is the other half of the rule: the name and its mark stand in a box as tall
-as the compact target — or as tall as their own line, when large text is taller — so putting the
-overhang back above the name costs the line nothing. The control is not boxed; it is the target the
-line is stated from, and it is never shrunk to make the name fit. Large text is therefore not a
-special case: the line grows past the target, the overhang falls to zero, and the name still begins on
-the card's inset.
+- **The card's top inset is the card's inset to the name, whatever stands beside it.** A line that is
+  followed by other content gives up the part of its control's height that stands off the name, and
+  `GitPulseSettingLabelLine` puts that part back above the name by standing the name and its mark in a
+  box as tall as the line. The name therefore begins on the same inset as every other card's, and the
+  address or note under it moves up with it. The overhang is derived — half of (the line's height
+  minus the name's line at the reader's text scale) — never a distance of its own, and it clamps at
+  zero, so a text scale large enough to fill the line keeps the ordinary inset.
+- **A card made of that line alone is padded to the line on both edges, and the control is drawn to
+  the line rather than to the app's control height.** With nothing under the control there is no line
+  of text for the name to be levelled with, so the card keeps its ordinary inset above and below and
+  the name rides centred on its control: the card, its name and its control share one centre line.
+  That only reads as a card if the control is not the card's whole inner box, so a control standing on
+  a Settings line takes `GitPulseHeight.inlineControl` (32dp) — the line's own measure — and centres
+  its label in what that leaves. The first version of this rule moved the top edge alone: the card
+  then hugged its own button with 4dp of padding and the button looked pressed shut.
 
-The rule holds for both cards whose first line carries a control, because both their names were
-sitting under the card's edge for the same reason: the Timeline cache card passes
-`GitPulseSettingRow(inlineControl: true)`, and the Backend card is the one that declares its own line
-by hand (`GitPulseSettingSurface(firstLineHoldsControl: true)`), since its two actions and its stack of
-state notes are not what that row's slots describe. Neither card moves anything below its name: the
-address keeps its distance (16dp) from the name, the block under the name moves up with it, and the
-card is that much shorter.
+The two shapes of control are stated separately because they behave differently at large text: an icon
+target is the compact height at every text size, while a labelled control grows when the reader's text
+makes it taller than `GitPulseHeight.inlineControl`. A card names the one it holds, so it is padded to
+the control it actually draws at every scale.
+
+`GitPulseSettingRow(inlineControl: true)` states itself as a labelled control and declares itself the
+whole card when it draws no note under that line; the hand-composed Backend card states its first line
+as icon actions at its composition site, because its two actions and its stack of state notes are not
+what that row's slots describe. Neither card moves anything below its name beyond the card's own
+edges: the address keeps its distance (16dp) from the name.

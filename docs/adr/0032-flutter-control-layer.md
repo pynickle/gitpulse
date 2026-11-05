@@ -347,6 +347,16 @@ is respected because every assertion is about what rendered.
   `OutlinedButton`s, and the box at each repository row's end draws the app's own 18dp box. The panel
   keeps the row rhythm it had — a repository row still stands at `GitPulseHeight.rowMin` — because
   the box takes the square the row has left rather than a target of its own.
+
+- **One control is drawn under the app's control height, and only one.** The Settings row that clears
+  the timeline cache holds its control on its own name line, and that card is padded to the line it
+  draws: at 40dp the line left the card 4dp of padding above and below the button, which read as a box
+  pressed shut on its own control. That control therefore takes `GitPulseHeight.inlineControl` (32dp)
+  and is drawn to the line it sets, so the card keeps its ordinary inset around it and the name beside
+  it is centred on it (ADR 0040). Every other control the client draws stands at
+  `GitPulseHeight.compact` or at the `dimension` its surface states; here the line, rather than the
+  control, decides the height. The 44dp row minimum is untouched: a list row is still the target it
+  was.
 - The theme's own Material component themes were the last thing this record could not settle until
   every screen had moved: `outlinedButtonTheme` and `dialogTheme` are deleted, `checkboxTheme` went
   with the toggles, and the two families a retained face genuinely draws keep theirs. Deleting them

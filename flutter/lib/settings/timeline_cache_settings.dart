@@ -87,6 +87,10 @@ class _TimelineCacheSettingsState extends ConsumerState<TimelineCacheSettings> {
         label: l10n.settingsClear,
         variant: GitPulseButtonVariant.outlined,
         expand: true,
+        // The card states this line's height and the control stands in it, so
+        // the card is padded to the button rather than the button filling the
+        // card's whole inner box (ADR 0040).
+        height: GitPulseHeight.inlineControl,
         onPressed: locked ? null : _askToClear,
         icon: actions.clearing
             ? GitPulseProgressInline(label: l10n.clearingTimelineCache)

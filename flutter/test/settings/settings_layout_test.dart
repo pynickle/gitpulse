@@ -202,7 +202,10 @@ void main() {
     final cacheTitle = tester.getRect(find.text('Timeline cache'));
     final clear = tester.getRect(find.widgetWithText(GitPulseButton, 'Clear'));
     expect(clear.left, greaterThan(cacheTitle.right));
-    expect((clear.center.dy - cacheTitle.center.dy).abs(), lessThan(24));
+    // The control stands on the title's own line and shares its centre: the
+    // card's padding is measured from the line, so neither is left sitting
+    // higher than the other.
+    expect((clear.center.dy - cacheTitle.center.dy).abs(), lessThan(0.5));
     expect(tester.takeException(), isNull);
   });
 
@@ -217,11 +220,12 @@ void main() {
   }
 
   // Every card's name sits on the card's own surface inset, whatever else stands
-  // on its first line: the Backend card's two actions and the Timeline cache's
-  // Clear are full touch targets, and they never push the name lower than the
-  // name on a card whose first line is text alone. Large text is the case where
-  // the target no longer stands above the name, so the same rule has to hold
-  // when the name is taller than the control.
+  // on its line: the Backend card's two actions and the Timeline cache's Clear
+  // stand on that line, and they never push the name down to where a card whose
+  // line is text alone would not have it. The line is as tall as what stands on
+  // it, so the name is centred on its control as well. The one card made of a
+  // control line alone is asserted separately below, because with no line of text
+  // under the control there is nothing for its name to be levelled with.
   for (final textScale in [1.0, 2.0]) {
     testWidgets('every card starts its name on the surface inset at '
         '${textScale}x text', (tester) async {
@@ -284,12 +288,47 @@ void main() {
         insets[label] = labelInset(tester, label);
       }
       for (final MapEntry(key: label, value: inset) in insets.entries) {
+        // The Timeline cache card is the one card made of a control line alone,
+        // so its name rides centred on that control instead of being levelled
+        // with a line of text below it; it is asserted on its own below.
+        if (label == 'Timeline cache') continue;
         expect(
           inset,
           closeTo(GitPulseSpace.surfaceInset, 0.5),
           reason: '$label at ${textScale}x text',
         );
       }
+
+      // A card made of one control line is padded to that line on both edges,
+      // and the control is drawn to the line's own measure (32dp at 1x), so the
+      // button is not pressed shut inside the card and the name is centred on
+      // it. The control is the line's height at 1x and a little shorter than the
+      // name's own line at 2x, so what holds at both scales is that the card
+      // gives it the same room above and below, never a sliver.
+      final cacheCard = find.ancestor(
+        of: find.text('Timeline cache'),
+        matching: find.byWidgetPredicate(_isSettingCard),
+      );
+      final cacheName = tester.getRect(find.text('Timeline cache'));
+      final clear = tester.getRect(
+        find.widgetWithText(GitPulseButton, 'Clear'),
+      );
+      final cache = tester.getRect(cacheCard);
+      expect(
+        (clear.center.dy - cacheName.center.dy).abs(),
+        lessThan(2),
+        reason: 'the name is centred on its control at ${textScale}x text',
+      );
+      expect(
+        clear.top - cache.top,
+        closeTo(cache.bottom - clear.bottom, 0.5),
+        reason: 'the card gives the control the same room above and below',
+      );
+      expect(
+        clear.top - cache.top,
+        greaterThan(GitPulseSpace.surfaceInset - 1),
+        reason: 'and never a sliver of it',
+      );
       expect(tester.takeException(), isNull);
     });
   }

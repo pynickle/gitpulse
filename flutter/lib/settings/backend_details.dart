@@ -89,9 +89,10 @@ class _BackendDetailsState extends ConsumerState<BackendDetails> {
     // meant, so it takes a line of its own and nothing is drawn beside it to
     // shorten it; the two actions act on it from the line above.
     //
-    // That line also holds the two actions, so the surface gives up the part of
-    // their target that stands above the name and the name and its mark stand in
-    // the line the target gives them (ADR 0040).
+    // That line also holds the two actions, so the surface states it as a line
+    // holding icon targets, gives up the part of their target that stands above
+    // the name, and the name and its mark stand in the line those targets give
+    // them (ADR 0040).
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -100,6 +101,7 @@ class _BackendDetailsState extends ConsumerState<BackendDetails> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             GitPulseSettingLabelLine(
+              control: GitPulseSettingLineControl.icons,
               child: ExcludeSemantics(
                 child: Icon(
                   Icons.dns_outlined,
@@ -109,7 +111,12 @@ class _BackendDetailsState extends ConsumerState<BackendDetails> {
               ),
             ),
             const SizedBox(width: GitPulseSpace.inline),
-            Expanded(child: GitPulseSettingLabelLine(child: name)),
+            Expanded(
+              child: GitPulseSettingLabelLine(
+                control: GitPulseSettingLineControl.icons,
+                child: name,
+              ),
+            ),
             const SizedBox(width: GitPulseSpace.inline),
             GitPulseIconButton(
               label: l10n.copyBackendAddress,

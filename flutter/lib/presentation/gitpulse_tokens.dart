@@ -324,6 +324,18 @@ abstract final class GitPulseHeight {
   /// strip — and the floor for anything clickable.
   static const compact = 40.0;
 
+  /// A control that stands on a Settings card's line and sets that line's
+  /// height, rather than taking the app's control height.
+  ///
+  /// A card is padded to the line it draws, so a control on that line decides
+  /// how much room the card gives it: at the app's control height the line would
+  /// leave the card a sliver of padding above and below it, and the card would
+  /// read as a box pressed shut on its own button. A shorter control keeps the
+  /// card's ordinary inset while the name beside it stays on the card's own
+  /// name line (ADR 0040). The control still clears the row minimum a reader
+  /// needs to hit, and its label renders at the control type role either way.
+  static const inlineControl = 32.0;
+
   /// The smallest a clickable list row may be. A control drawn smaller than
   /// this still has to clear it as a touch target.
   static const rowMin = 44.0;
@@ -512,6 +524,17 @@ TextStyle? gitPulseTypePageHeadline(BuildContext context) => _typeRow(
 /// control role, so a control cannot invent a size of its own.
 TextStyle? gitPulseTypeControlLabel(BuildContext context, Color color) =>
     _typeRow(context, (table) => table.labelMedium, color: color);
+
+/// One line of [gitPulseTypeControlLabel] at the reader's text scale: the room
+/// a control's own label takes.
+///
+/// A surface that has to state the height a labelled control stands at — the
+/// Settings card whose name line holds one — asks the control's own type role
+/// for its line rather than guessing a height (ADR 0040).
+double gitPulseTypeControlLineHeight(BuildContext context) {
+  final row = gitPulseTypeTableOf(context).labelMedium;
+  return MediaQuery.textScalerOf(context).scale(row.size) * row.height;
+}
 
 /// A repository's description: prose, but still part of a page that is scanned.
 ///

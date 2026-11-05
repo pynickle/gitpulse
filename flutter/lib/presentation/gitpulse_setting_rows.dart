@@ -22,25 +22,61 @@ double _labelLineHeight(BuildContext context) {
   return MediaQuery.textScalerOf(context).scale(size) * height;
 }
 
-/// The height a first line takes when its control shares it with the name: the
-/// compact control target, or the name's own line when large text fills that
-/// target already.
-double _labelLineBoxHeight(BuildContext context) {
-  final line = _labelLineHeight(context);
-  return line > GitPulseHeight.compact ? line : GitPulseHeight.compact;
+/// What stands on a line of a card beside its name.
+///
+/// A card is padded to the line it draws, so it has to know what that line is:
+/// text alone, a fixed icon target, or a labelled control whose own label grows
+/// the target with the reader's text.
+enum GitPulseSettingLineControl {
+  /// Nothing but the name and its mark.
+  none,
+
+  /// Icon actions: their target is the compact control height at every text
+  /// size, because an icon does not grow with the reader's text.
+  icons,
+
+  /// A control with a label: its label grows with the reader's text, so the
+  /// target grows past the compact height once the text does.
+  labelled,
 }
 
-/// The part of a first line's control target that stands above the name: half
-/// of the compact target minus the name's line, never less than zero and never
-/// more than the card's own inset.
+/// The height a labelled control stands at on a Settings line.
 ///
-/// It is the one place the overhang is bounded, so a first line's top is simply
-/// the card's inset minus this value and never needs clamping again: a line tall
+/// A card states its line and the control on it is drawn to that line, so the
+/// two agree by construction: the control takes
+/// [GitPulseHeight.inlineControl], or its own label's line when large text makes
+/// that taller. The card is then padded to a line the control actually fills
+/// (ADR 0040).
+double _labelledControlHeight(BuildContext context) {
+  final line = gitPulseTypeControlLineHeight(context);
+  return line > GitPulseHeight.inlineControl
+      ? line
+      : GitPulseHeight.inlineControl;
+}
+
+/// The height one line of a card takes, by what stands on it.
+double _lineHeight(BuildContext context, GitPulseSettingLineControl control) {
+  final line = _labelLineHeight(context);
+  final target = switch (control) {
+    GitPulseSettingLineControl.none => line,
+    GitPulseSettingLineControl.icons => GitPulseHeight.compact,
+    GitPulseSettingLineControl.labelled => _labelledControlHeight(context),
+  };
+  return target > line ? target : line;
+}
+
+/// The part of a line's control target that stands above the name: half the
+/// difference between the line and the name's own line, never less than zero
+/// and never more than the card's own inset.
+///
+/// It is the one place the overhang is bounded, so a line's edge is simply the
+/// card's inset minus this value and never needs clamping again: a line tall
 /// enough to fill the target gives up nothing, and one so short that half the
-/// target would stand above more than the inset gives up the inset itself rather
-/// than pushing the name over the card's edge.
-double _labelOverhang(BuildContext context) {
-  final overhang = (GitPulseHeight.compact - _labelLineHeight(context)) / 2;
+/// target would stand above more than the inset gives up the inset itself
+/// rather than pushing the name over the card's edge.
+double _overhang(BuildContext context, GitPulseSettingLineControl control) {
+  final overhang =
+      (_lineHeight(context, control) - _labelLineHeight(context)) / 2;
   return overhang.clamp(0, GitPulseSpace.surfaceInset).toDouble();
 }
 
@@ -50,35 +86,45 @@ double _labelOverhang(BuildContext context) {
 /// so a settings card cannot grow a private palette. The card is not itself a
 /// button: the control inside it is what answers a press.
 ///
-/// A card whose first line also holds its control states that with
-/// [firstLineHoldsControl]. The line is then as tall as the control's touch
-/// target and the name inside it is centred, which would leave the name half
-/// that difference under the card's own inset while every card whose first line
-/// is text alone starts at it. The name sits on the card's inset whatever stands
-/// beside it, and the control keeps its whole target: the card gives up the part
-/// of the target that stands above the name instead. That overhang is derived
-/// from the name's type role at the reader's text scale, never chosen, and it is
+/// A card states what stands on its first line ([GitPulseSettingLineControl]),
+/// because that line decides how tall the line is and where the name sits on it.
+/// A line that holds a control is taller than the name, and the name is centred
+/// in it: the name is placed on the card's own inset by giving up the part of
+/// the target that stands off it ([GitPulseSettingLabelLine] puts it back), and
+/// the card still ends a surface inset under whatever it draws last. A card made
+/// of that line alone ([firstLineOnly]) has no name below to line up with, so it
+/// keeps its ordinary inset on both edges and lets the name ride centred on its
+/// control: the card, the name and the control then share one centre line, and
+/// the card does not end up pressed shut on its own button. The overhang is
+/// derived from the line at the reader's text scale, never chosen, and it is
 /// bounded where it is derived — never below zero, so a text scale large enough
-/// to fill the target keeps the ordinary inset. The line's name and mark stand in
-/// a [GitPulseSettingLabelLine], which puts the overhang back above the name.
+/// to fill the target keeps the ordinary inset.
 class GitPulseSettingSurface extends StatelessWidget {
   const GitPulseSettingSurface({
     super.key,
     required this.child,
-    this.firstLineHoldsControl = false,
+    this.firstLine = GitPulseSettingLineControl.none,
+    this.firstLineOnly = false,
   });
 
   final Widget child;
 
-  /// Whether the card's first line also holds its control, so the line is as
-  /// tall as the control's target rather than as the name alone.
-  final bool firstLineHoldsControl;
+  /// What stands on the card's first line beside its name.
+  final GitPulseSettingLineControl firstLine;
+
+  /// Whether the first line is the whole card: no address, no control and no
+  /// note under it.
+  ///
+  /// Such a card is padded to its line on both edges rather than giving up the
+  /// overhang at the top, because there is no line of text under the control to
+  /// which the name could be levelled.
+  final bool firstLineOnly;
 
   @override
   Widget build(BuildContext context) {
-    final top = firstLineHoldsControl
-        ? GitPulseSpace.surfaceInset - _labelOverhang(context)
-        : GitPulseSpace.surfaceInset;
+    final top = firstLineOnly
+        ? GitPulseSpace.surfaceInset
+        : GitPulseSpace.surfaceInset - _overhang(context, firstLine);
     return DecoratedBox(
       decoration: BoxDecoration(
         // A block within the page, read by the job it does rather than by a
@@ -103,24 +149,30 @@ class GitPulseSettingSurface extends StatelessWidget {
   }
 }
 
-/// One child of a Settings card's first line, standing in the line the card's
-/// control target gives it.
+/// One child of a Settings card's line, standing in the line the card states
+/// for it.
 ///
-/// A card whose first line also holds its control takes the target's overhang
-/// off its top inset (see [GitPulseSettingSurface.firstLineHoldsControl]), so
-/// the line puts that overhang back above the name: the name is centred in a box
-/// as tall as the compact target, and large text — which fills the target on its
-/// own — keeps its own line instead. The mark and the name stand in this box;
-/// the control does not, because it is the target the box is stated from.
+/// A card whose line holds a control takes the target's overhang off its own
+/// inset (see [GitPulseSettingSurface]), so the line puts that overhang back
+/// above the name: the name is centred in a box as tall as the control's
+/// target. The mark and the name stand in this box; the control does not,
+/// because it is the target the box is stated from.
 class GitPulseSettingLabelLine extends StatelessWidget {
-  const GitPulseSettingLabelLine({super.key, required this.child});
+  const GitPulseSettingLabelLine({
+    super.key,
+    required this.control,
+    required this.child,
+  });
+
+  /// What stands on this line beside the name.
+  final GitPulseSettingLineControl control;
 
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: _labelLineBoxHeight(context),
+      height: _lineHeight(context, control),
       child: Align(
         alignment: AlignmentDirectional.centerStart,
         widthFactor: 1,
@@ -155,9 +207,9 @@ class GitPulseSettingRow extends StatelessWidget {
   final Widget? aside;
 
   /// Puts [control] on the name's line, at the trailing edge. The card then
-  /// states the line's own top inset, so the name starts on the card's inset
-  /// beside a control that keeps its whole target
-  /// ([GitPulseSettingSurface.firstLineHoldsControl]).
+  /// states that line as one holding a control, so a card whose only line this
+  /// is is padded to it on both edges, and its control is drawn to the line's
+  /// own measure ([GitPulseSettingSurface.firstLineOnly]).
   final bool inlineControl;
 
   final List<Widget> notes;
@@ -180,17 +232,28 @@ class GitPulseSettingRow extends StatelessWidget {
     // A control on the name's line makes that line as tall as its target, so the
     // name and its mark stand in the line's own box; everything else keeps the
     // one line it always had.
-    Widget onLabelLine(Widget child) =>
-        inlineControl ? GitPulseSettingLabelLine(child: child) : child;
+    Widget onLabelLine(Widget child) => inlineControl
+        ? GitPulseSettingLabelLine(
+            control: GitPulseSettingLineControl.labelled,
+            child: child,
+          )
+        : child;
     return GitPulseSettingSurface(
-      firstLineHoldsControl: inlineControl,
+      firstLine: inlineControl
+          ? GitPulseSettingLineControl.labelled
+          : GitPulseSettingLineControl.none,
+      // A row with no note under it is the whole card: its name line is all the
+      // card draws, so the card is padded to that line rather than to a name
+      // that would have nothing under it to line up with.
+      firstLineOnly: inlineControl && notes.isEmpty,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: inlineControl
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
+            // The name's box is the line, and the control stands in the same
+            // line: centring both is what keeps a control that is shorter than
+            // the line (a label's own line at large text) on the name's centre.
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               onLabelLine(mark),
               const SizedBox(width: GitPulseSpace.inline),

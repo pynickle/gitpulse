@@ -67,9 +67,10 @@ class AccountPanel extends ConsumerWidget {
         // The backend card's own first line carries the two actions that act on
         // its address, which the card itself states by hand: the surface then
         // lets the name start on the card's inset and keeps both targets whole
-        // (ADR 0040).
+        // (ADR 0040). The address below the name is what the card's bottom inset
+        // is measured from, so the card still ends on its ordinary padding.
         const GitPulseSettingSurface(
-          firstLineHoldsControl: true,
+          firstLine: GitPulseSettingLineControl.icons,
           child: BackendDetails(),
         ),
       ],
