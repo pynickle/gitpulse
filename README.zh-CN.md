@@ -46,6 +46,12 @@
 
 ---
 
+## 移动端 Release Timeline 应用
+
+我们还提供了一个独立的 [Flutter 应用](flutter/README.md)，方便你随时随地查看版本发布动态。你可以查看 Release 时间线、关注版本发布，并打开仓库和版本详情。该应用以 Android 为主，代码库中也支持 iOS。
+
+---
+
 ## 致谢
 
 本项目在 [LINUX DO](https://linux.do) 社区分享和推广。

@@ -44,13 +44,11 @@ No. Your token is kept in an encrypted server-side session cookie – it is neve
 
 For details, see the [Self-hosting Guide](docs/self-hosted.md).
 
-## Native Release Timeline client
+---
 
-The independent [Flutter client](flutter/README.md) focuses on Release Timeline,
-Release Follows, and repository/release details on Android, with code-level iOS
-support. See the [distribution and acceptance guide](docs/flutter-release.md) for
-signing, independent `flutter-vX.Y.Z` versions, and the one platform this project
-builds and runs.
+## Mobile Release Timeline app
+
+We also offer a standalone [Flutter app](flutter/README.md) for keeping up with releases on the go. You can view the Release Timeline, follow releases, and open repository and release details. The app is Android-first, with iOS support also available in the codebase.
 
 ---
 
