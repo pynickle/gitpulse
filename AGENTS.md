@@ -1,6 +1,6 @@
 # AGENTS.md — GitPulse
 
-> Compact guidance for AI agents working in this repository. Every entry answers: "Would an agent likely miss this without help?" Update when build/auth/storage/CSRF/conventions change. Commands, commit format, and pre-PR checks live in `CONTRIBUTING.md`; this file holds what that guide cannot say.
+> Compact guidance for AI agents working in this repository. Every entry answers: "Would an agent likely miss this without help?" Commands, commit format, and pre-PR checks live in `CONTRIBUTING.md`.
 
 ## Interface copy (non-negotiable)
 
@@ -16,23 +16,18 @@ Before adding complexity for a speculative or vanishingly unlikely race or secur
 
 ## Commands
 
-Full command reference and pre-PR checks: `CONTRIBUTING.md`.
-
-- **Pre-commit verification** (matches CI intent): `bunx prek run --all-files && bunx nuxi typecheck && bun test --parallel`.
-- `bun run build` is **intentionally reserved for CI** — do not invoke locally unless asked. `bun run generate` is the static export, not a build.
-- Root CI runs the `prek` hooks over all files (formatting, linting and the builtin file checks), typecheck, `bun test --parallel`, extension typecheck, and build. Run `bun run extension:test` for the extension package. Flutter CI runs Flutter tests. `--parallel` isolates each file, so a test must install its own `mock.module` aliases before importing the module under test.
-- The extension is a separate WXT package; root `extension:*` scripts are wrappers. After a clean checkout, `cd extension && bun install` may be needed for WXT/editor state.
+- `bun run build` is reserved for CI; run it locally only when asked. `bun run generate` is the static export.
+- `bun test --parallel` isolates each file, so a test installs its own `mock.module` aliases before importing the module under test.
+- The extension is a separate WXT package; `cd extension && bun install` may be needed for WXT/editor state.
 
 ## Layout & Wiring
 
-- Layouts: `routeRules` `appLayout` only, never `layout:` / `definePageMeta`. Only the dashboard names one; every other route falls back to `layouts/default.vue`.
+- Layouts: `routeRules` `appLayout` only, never `layout:` / `definePageMeta`.
 - Top bars share `--gitpulse-topbar-height` and `ChromeActions`; a bar that hand-renders the GitHub, language and color-mode controls is a regression.
 - Route-rule keys carry no `**` before the last segment: Nuxt's rou3 matcher truncates the key there and Nitro 2's radix3 never matches it. Expand locale prefixes with `localeVariants`; `tests/route-rules.test.ts` pins both engines.
-- `nuxt.config.ts` does early auth validation at load time and will throw if no provider is available.
-- `nuxt.config.ts` ignores the entire `extension/` tree.
-- `shared/data/*.json` holds language-neutral data **both clients** read — presentation values live here, never in a stylesheet literal and never per client. `shared/data/theme-palette.json` is the `gitpulse` Theme Preset palette in both presentations: the web app injects it as CSS custom properties at startup (`app/plugins/user-settings.ts` → `shared/utils/theme-palette.ts`), and the Flutter client reads generated, committed constants (`flutter/lib/presentation/gitpulse_palette.g.dart`, regenerated with `dart run tool/generate_theme_palette.dart`). A tone a client renders hardcoded instead of through this data is out of spec.
-- Logical navigation history is **derived from the route** — pages and components must never record it manually. The client plugin `app/plugins/navigation-history.client.ts` feeds each `router.afterEach` (route + vue-router `history.state.position`) into `useNavigationHistory` → `applyLogicalNavigationEvent` in `app/utils/navigationEntryRouting.ts`; logical Back/Home are the same function. New dashboard URL shapes must be added to `routeToNavigationEntry` and covered by the round-trip tests in `tests/navigation-entry-routing.test.ts`. Sequential push/replace/back/home cases belong on `applyLogicalNavigationEvent` in that same file. A matched dashboard child page whose URL cannot name its target (`/dashboard/wiki` without `?repo=`) never renders: `app/middleware/dashboard-route-shape.global.ts` redirects it to the dashboard root after the auth gate, using `isDashboardRouteShapeAdmissible`, so pages may rely on their target being present. Cover new child pages in `tests/dashboard-route-shape.test.ts`.
-- Dashboard child pages (`/dashboard/profile`, `/dashboard/package`, `/dashboard/releases`, `/dashboard/branches`, `/dashboard/wiki`, …) must use the generic **Back + Home** header unless explicitly required otherwise: labels `t('detailOverlay.back')` / `t('detailOverlay.home')` and `useNavigationRouting` (`goBackToPreviousPage`/`goToDashboardHome`/`shouldShowHomeButton`). Never hardcode "Back to X" labels, fixed back targets, or local entry→route fallbacks — `resolveNavigationEntryRoute` is the only resolver.
+- `shared/data/*.json` holds language-neutral data **both clients** read — presentation values live there, never in a stylesheet literal and never per client; the `gitpulse` Theme Preset palette is the worked example.
+- Logical navigation history is **derived from the route** — pages and components must never record it manually. The client plugin feeds each `router.afterEach` into `useNavigationHistory` → `applyLogicalNavigationEvent` (`app/utils/navigationEntryRouting.ts`); logical Back/Home are the same function. New dashboard URL shapes must be added to `routeToNavigationEntry` and covered by `tests/navigation-entry-routing.test.ts`. An inadmissible dashboard child URL (`/dashboard/wiki` without `?repo=`) redirects to the dashboard root after the auth gate (`app/middleware/dashboard-route-shape.global.ts`); cover new child pages in `tests/dashboard-route-shape.test.ts`.
+- Dashboard child pages (`/dashboard/profile`, `/dashboard/releases`, `/dashboard/wiki`, …) must use the generic **Back + Home** header via `useNavigationRouting` unless explicitly required otherwise; never hardcode labels, back targets, or local route fallbacks — `resolveNavigationEntryRoute` is the only resolver.
 
 ## Pointer contract (Web, ADR 0049)
 
@@ -62,7 +57,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 - **Every** GitHub auth session write goes through `establishGitHubSession()` from `server/utils/auth-session-utils.ts` — the only writer of `github`/`pat` sessions, and the owner of their shape and cookie wiring.
 - Read provider availability with `resolveAuthProviderState()` / `assertAuthProviderState()` (`server/utils/auth-providers.ts`). Do not inspect raw `NUXT_*` env vars.
-- Personal mode defaults **on** (`NUXT_AUTH_PERSONAL_MODE_ENABLED`, default `true`). Startup validation is `server/plugins/personal-mode.ts` (baked token against GitHub `/user`) plus `server/plugins/personal-mode-validate-secret.ts` (cookie-secret strength). Required values: `NUXT_GITPULSE_AUTH_GITHUB_TOKEN`, `NUXT_GITPULSE_AUTH_PERSONAL_PASSWORD`, `NUXT_GITPULSE_AUTH_PERSONAL_COOKIE_SECRET`. A blank value still accepts the same `NUXT_GIT_PULSE_AUTH_*` name. Old `AUTH_PERSONAL_*` names are not read. Fails fatally on error.
+- Personal mode defaults **on** (`NUXT_AUTH_PERSONAL_MODE_ENABLED`, default `true`). Startup validates the baked token and the cookie secret; required values: `NUXT_GITPULSE_AUTH_GITHUB_TOKEN`, `NUXT_GITPULSE_AUTH_PERSONAL_PASSWORD`, `NUXT_GITPULSE_AUTH_PERSONAL_COOKIE_SECRET`. A blank value still accepts the same `NUXT_GIT_PULSE_AUTH_*` name; old `AUTH_PERSONAL_*` names are not read. Missing values fail startup.
 - Single global auth gate: `app/middleware/auth.global.ts`. Do not scatter checks.
 - `server/plugins/validate-app-secret.ts` asserts `NUXT_APP_SECRET` at startup in every mode (`assertAppSecretStrength` in `server/utils/app-secret-utils.ts`). `nuxt-auth-utils` seals the session with a secret HKDF-derived from that root and throws per request when it is missing; Nuxt generates one in development only, so a production build must set it. See `docs/self-hosted.md`.
 - Browser launch links use `/open?url=<GitHub URL>`. `resolveGitPulseLaunchRoute` owns GitHub URL parsing and resolves supported targets through `resolveNavigationEntryRoute`; `/dashboard?url=` is not a supported entry shape. Cover new mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
@@ -73,7 +68,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## CSRF (Non-Negotiable)
 
-- Mutating methods under `/api/` are protected by `server/middleware/csrf.ts` (double-submit cookie `gitpulse_csrf` + `x-csrf-token` header). Cookie issuance is `server/plugins/csrf.ts`.
+- Mutating methods under `/api/` are protected by `server/middleware/csrf.ts` (double-submit cookie `gitpulse_csrf` + `x-csrf-token` header).
 - `/auth/**` is outside that middleware. Session mutations live there (`/auth/github`, `/auth/pat`, `/auth/unlock`, `/auth/logout`).
 - Add a mutating `/api` exemption only via `CSRF_EXEMPT_PATHS` in that middleware, plus a security review.
 - Client: `useGitPulseApiFetch()` for all mutating same-origin `/api/**` and `/auth/**` calls. Nuxt 4.5+ auto-imports `$fetch` as a module binding; that module binding is the `$fetch` to patch.
@@ -88,35 +83,25 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## User Settings Storage
 
-- Backed by Nitro mount `userSettings`. Client entry: `app/composables/useUserSettings.ts` (optimistic store in `app/composables/user-settings/store.ts`).
-- Driver and env-var matrix (`fs` / `redis` / `upstash`): `docs/self-hosted.md`.
+- Settings storage is the Nitro `userSettings` mount; the client entry is `useUserSettings` (`app/composables/useUserSettings.ts`), an optimistic store. Driver and env-var matrix: `docs/self-hosted.md`.
 
 ## Linting, Formatting, Hooks
 
-- Formatter and linter config: `.oxfmtrc.json` / `.oxlintrc.json`. Oxlint runs the `unicorn`, `typescript` and `oxc` plugins with `correctness` at `deny`, so `bun run lint` fails on any diagnostic; other categories are off. Commands and the `prek` hooks (pre-commit and CI): `CONTRIBUTING.md`.
-- LF enforced by `.gitattributes`.
-- Commits: use the project skill `.agents/skills/conventional-commit/SKILL.md`.
+- Oxlint runs the `unicorn`, `typescript` and `oxc` plugins with `correctness` at `deny`, so `bun run lint` fails on any diagnostic. Formatting, linting and hook commands: `CONTRIBUTING.md`.
 
 ## Testing
 
-- Root: `bun test --parallel` (`tests/`). Extension: `bun run extension:test` (`extension/tests/`); extension typecheck: `bun run extension:typecheck`.
-- Timeline/detail response shapes and launch GitHub URL mappings are the highest-risk surfaces; re-verify against real GitHub payloads after changes, and cover new launch mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
-- Verify UI and layout changes with `bun test --parallel`, `bun run lint`, and `bunx nuxi typecheck`.
+- Timeline/detail response shapes and launch GitHub URL mappings are the highest-risk surfaces; re-verify against real GitHub payloads and cover new launch mappings in `tests/resolve-gitpulse-launch-route.test.ts`.
 - Drive a real browser — Chrome DevTools, browser-use, or clicking through `bun run dev` — only when the user explicitly asks for browser testing; do not start the dev server on your own initiative.
 
 ## Anti-Patterns (High-Miss)
 
 - Do not create a second Octokit factory — extend `server/utils/github-auth-utils.ts`.
 - Do not duplicate timeline parsing in components — use the dedicated composables.
-- Do not bypass `app/utils/sanitizeHtml.ts`.
-- Do not add mutating `/api` routes without CSRF middleware.
-- Do not scatter auth checks — the global middleware is the only gate.
-- Do not add an import for an auto-imported `app/utils/` or `app/composables/` binding in app code — Nuxt resolves it by name; only tests, `server/`, and `mock.module` stubs import explicitly.
 - Do not write session shape inline in auth routes; keep `shared/types/auth.d.ts` + `establishGitHubSession` in sync.
 - Do not treat `.nuxt/` or `.output/` as source of truth — read `nuxt.config.ts` and the app source.
 - When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.
-- Do not test source text (`readFileSync` + `toContain`) — see **Tests (Non-Negotiable)**.
-- Extension releases (`extension-v*`), Flutter distributions (`flutter-vX.Y.Z`) and main app releases (`vX.Y.Z`) are independent. Their release workflows do not trigger each other.
+- Extension releases (`extension-v*`), Flutter distributions (`flutter-vX.Y.Z`) and main app releases (`vX.Y.Z`) are independent; their workflows do not trigger each other.
 
 ## Design options
 
