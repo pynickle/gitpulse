@@ -186,13 +186,22 @@
                         handleListRowKeydown($event, () => handleNotificationOpen(notification))
                       "
                     >
-                      <AsyncNotificationItem
-                        :notification="notification"
-                        :mark-as-read="markNotificationAsReadFromDashboard"
-                        :todo-action="isNotificationTodo(notification) ? 'remove' : 'add'"
-                        @todo-action="toggleNotificationTodo"
-                        @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
-                      />
+                      <NotificationTodoSwipeRow
+                        :is-todo="isNotificationTodo(notification)"
+                        :enabled="isNarrowViewport"
+                        :guiding="swipeGuideRowId === String(notification.id)"
+                        :show-hint="swipeGuideHintRowId === String(notification.id)"
+                        :toggle-todo="() => toggleNotificationTodo(notification)"
+                      >
+                        <AsyncNotificationItem
+                          :notification="notification"
+                          :mark-as-read="markNotificationAsReadFromDashboard"
+                          :todo-action="isNotificationTodo(notification) ? 'remove' : 'add'"
+                          :hide-todo-control="replacesTodoControl"
+                          @todo-action="toggleNotificationTodo"
+                          @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                        />
+                      </NotificationTodoSwipeRow>
                     </div>
                   </template>
 
@@ -444,6 +453,7 @@ import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAd
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import NotificationSubjectEnrichmentNotice from '~/components/dashboard/NotificationSubjectEnrichmentNotice.vue';
+import NotificationTodoSwipeRow from '~/components/dashboard/NotificationTodoSwipeRow.vue';
 import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
 import ReleaseTimelineBaselineChip from '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue';
 import ReleaseTimelineView from '~/components/dashboard/release-timeline/ReleaseTimelineView.vue';
@@ -474,8 +484,10 @@ import {
 } from '~/composables/useDashboardRouteState';
 import { RELEASE_TIMELINE_TAB, type DashboardTab } from '~/composables/useDashboardTabs';
 import { buildDashboardTabSwitchQuery } from '~/utils/dashboardUrlNavigationUtils';
+import { getNotificationSubjectEnrichmentPresentation } from '~/utils/getNotificationSubjectEnrichmentPresentation';
 import { getQueryParamValue } from '~/utils/getQueryParamValue';
 import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
+import { shouldReplaceNotificationTodoControl } from '~/utils/shouldReplaceNotificationTodoControl';
 
 const AsyncNotificationItem = defineAsyncComponent(
   () => import('~/components/dashboard/NotificationItem.vue')
@@ -540,7 +552,7 @@ const {
   markNotificationAsRead,
 } = useGithubData();
 
-const { settings } = useUserSettings();
+const { settings, loaded: settingsLoaded, updateOnboarding } = useUserSettings();
 const {
   todos: notificationTodos,
   refreshing: refreshingNotificationTodos,
@@ -987,6 +999,59 @@ const dashboardListContentState = computed(() =>
     rowCount: dashboardListRowCount.value,
   })
 );
+
+// ── Narrow notification swipe ───────────────────────────────────────────────
+// On a narrow touch viewport the row's todo control is gone and the right swipe owns
+// the action; a narrow desktop window keeps the control, so it never meets the
+// swipe-only treatment.
+const finePointer = useFinePointer();
+const isNarrowViewport = computed(() => dashboardHomeChrome.value.mode === 'narrow');
+const replacesTodoControl = computed(() =>
+  shouldReplaceNotificationTodoControl({
+    narrow: isNarrowViewport.value,
+    finePointer: finePointer.value,
+  })
+);
+
+/** Null until the settings answer, so the guide never fires off a default value. */
+const swipeGuideSeen = computed(() =>
+  settingsLoaded.value ? settings.value.onboarding.notificationTodoSwipeSeen : null
+);
+
+/** The row the first-visit demonstration may use: the first one that would add. */
+const swipeGuideTarget = computed(() => {
+  if (currentTab.value !== 'notifications') return null;
+  return filteredNotifications.value.find((item) => !isNotificationTodo(item)) ?? null;
+});
+
+const swipeGuideTargetId = computed(() => {
+  const target = swipeGuideTarget.value;
+  return target ? String(target.id) : null;
+});
+
+/**
+ * The demonstration slides the card, so it must not start while the card is still
+ * growing. Everything that can still arrive — labels, the type badge, the counts — comes
+ * with the subject enrichment, which marks a subject `pending` for exactly as long as
+ * that is true. A subject-less notification has nothing left to load, so it is ready.
+ */
+const swipeGuideTargetReady = computed(() => {
+  const target = swipeGuideTarget.value;
+  return target ? !getNotificationSubjectEnrichmentPresentation(target.subject).isPending : false;
+});
+
+const { guidingRowId: swipeGuideRowId, hintRowId: swipeGuideHintRowId } =
+  useNotificationTodoSwipeGuide({
+    // Only where the gesture replaced the control: a narrow mouse window still shows the
+    // button, and teaching a swipe beside a visible button would be a second answer.
+    narrowTouchList: replacesTodoControl,
+    onNotificationsTab: computed(() => currentTab.value === 'notifications'),
+    loaded: computed(() => dashboardListContentState.value !== 'loading'),
+    targetReady: swipeGuideTargetReady,
+    addableRowId: swipeGuideTargetId,
+    seen: swipeGuideSeen,
+    updateOnboarding,
+  });
 
 const dashboardListEmptyMessage = computed(() => {
   const filtered = hasActiveVisibleFilters.value;

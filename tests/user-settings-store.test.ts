@@ -413,6 +413,26 @@ describe('user settings store', () => {
     ).toEqual({ view: 'compact' });
   });
 
+  test('keeps the one-shot swipe demonstration flag per user, defaulting to unseen', () => {
+    expect(createDefaultUserSettings().onboarding).toEqual({ notificationTodoSwipeSeen: false });
+    expect(normalizeUserSettings({}).onboarding).toEqual({ notificationTodoSwipeSeen: false });
+    expect(
+      normalizeUserSettings({ onboarding: { notificationTodoSwipeSeen: true } }).onboarding
+    ).toEqual({ notificationTodoSwipeSeen: true });
+    expect(
+      normalizeUserSettings({ onboarding: { notificationTodoSwipeSeen: 'yes' } }).onboarding
+    ).toEqual({ notificationTodoSwipeSeen: false });
+
+    const spent = mergeUserSettingsPatch(createDefaultUserSettings(), {
+      onboarding: { notificationTodoSwipeSeen: true },
+    });
+    expect(spent.onboarding).toEqual({ notificationTodoSwipeSeen: true });
+
+    // Another section's save must not resurrect the first visit.
+    const preserved = mergeUserSettingsPatch(spent, { fonts: { appFont: 'misans-latin' } });
+    expect(preserved.onboarding).toEqual({ notificationTodoSwipeSeen: true });
+  });
+
   test('defaults and normalizes Followed Repositories through settings patches', () => {
     expect(createDefaultUserSettings().followedRepositories).toEqual([]);
     expect(normalizeUserSettings({}).followedRepositories).toEqual([]);

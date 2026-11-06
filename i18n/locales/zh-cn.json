@@ -701,7 +701,16 @@
       "empty": "暂无待办通知。",
       "emptyFiltered": "当前筛选条件下没有匹配的待办通知。",
       "addAction": "加入待办事项",
-      "removeAction": "从待办事项移除"
+      "removeAction": "从待办事项移除",
+      "swipeAddLabel": "加入待办",
+      "swipeRemoveLabel": "移出待办",
+      "swipeAddRelease": "松手添加",
+      "swipeRemoveRelease": "松手移除",
+      "swipeAdded": "已加入待办",
+      "swipeRemoved": "已移出待办",
+      "swipeAddFailed": "未能加入待办",
+      "swipeRemoveFailed": "未能移出待办",
+      "swipeGuideHint": "右滑加入待办"
     },
     "issues": {
       "empty": "暂无议题。",

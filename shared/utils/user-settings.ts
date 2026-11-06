@@ -35,6 +35,7 @@ import type {
   UserLayoutSettings,
   UserNavigationSettings,
   UserNotificationBehaviorSettings,
+  UserOnboardingSettings,
   UserReleaseFollowSettings,
   UserReleaseTimelineSettings,
   UserSettings,
@@ -140,6 +141,10 @@ export const DEFAULT_USER_RELEASE_TIMELINE_SETTINGS: UserReleaseTimelineSettings
 
 export const DEFAULT_USER_RELEASE_FOLLOW_SETTINGS: UserReleaseFollowSettings = {
   view: 'compact',
+};
+
+export const DEFAULT_USER_ONBOARDING_SETTINGS: UserOnboardingSettings = {
+  notificationTodoSwipeSeen: false,
 };
 
 const hasOwn = (value: object, key: string) => {
@@ -256,6 +261,7 @@ export function createDefaultUserSettings(): UserSettings {
     composer: { ...DEFAULT_USER_COMPOSER_SETTINGS },
     releaseTimeline: { ...DEFAULT_USER_RELEASE_TIMELINE_SETTINGS },
     releaseFollows: { ...DEFAULT_USER_RELEASE_FOLLOW_SETTINGS },
+    onboarding: { ...DEFAULT_USER_ONBOARDING_SETTINGS },
     tabGroups: createDefaultTabGroups(),
     customTabs: [],
     notificationTodos: [],
@@ -867,6 +873,24 @@ export function normalizeUserReleaseFollowSettings(
   };
 }
 
+export function normalizeUserOnboardingSettings(
+  value: unknown,
+  fallback: UserOnboardingSettings = DEFAULT_USER_ONBOARDING_SETTINGS
+): UserOnboardingSettings {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback };
+  }
+
+  const candidate = value as Partial<UserOnboardingSettings>;
+
+  return {
+    notificationTodoSwipeSeen:
+      typeof candidate.notificationTodoSwipeSeen === 'boolean'
+        ? candidate.notificationTodoSwipeSeen
+        : fallback.notificationTodoSwipeSeen,
+  };
+}
+
 export function normalizeUserLayoutSettings(
   value: unknown,
   fallback: UserLayoutSettings = DEFAULT_USER_LAYOUT_SETTINGS
@@ -900,6 +924,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       composer: { ...fallback.composer },
       releaseTimeline: { ...fallback.releaseTimeline },
       releaseFollows: { ...fallback.releaseFollows },
+      onboarding: { ...fallback.onboarding },
       tabGroups: cloneTabGroups(fallback.tabGroups),
       customTabs: cloneCustomTabs(fallback.customTabs),
       notificationTodos: cloneNotificationTodos(fallback.notificationTodos),
@@ -928,6 +953,7 @@ export function normalizeUserSettings(value: unknown, fallback = createDefaultUs
       candidate.releaseFollows,
       fallback.releaseFollows
     ),
+    onboarding: normalizeUserOnboardingSettings(candidate.onboarding, fallback.onboarding),
     tabGroups: normalizeTabGroups(candidate.tabGroups, fallback.tabGroups),
     customTabs: normalizeCustomTabs(candidate.customTabs, fallback.customTabs),
     notificationTodos: normalizeNotificationTodos(
@@ -988,6 +1014,12 @@ export function mergeUserSettingsPatch(current: UserSettings, patch: unknown) {
           base.releaseFollows
         )
       : { ...base.releaseFollows },
+    onboarding: hasOwn(candidate, 'onboarding')
+      ? normalizeUserOnboardingSettings(
+          { ...base.onboarding, ...candidate.onboarding },
+          base.onboarding
+        )
+      : { ...base.onboarding },
     tabGroups: hasOwn(candidate, 'tabGroups')
       ? normalizeTabGroups(candidate.tabGroups, base.tabGroups)
       : cloneTabGroups(base.tabGroups),

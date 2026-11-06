@@ -89,6 +89,11 @@ export interface UserReleaseFollowSettings {
   view: FollowedRepositoryView;
 }
 
+export interface UserOnboardingSettings {
+  /** Whether the narrow notification list already spent its one right-swipe demonstration. */
+  notificationTodoSwipeSeen: boolean;
+}
+
 export interface NotificationTodoItem {
   id: string;
   addedAt: string;
@@ -105,6 +110,7 @@ export interface UserSettings {
   composer: UserComposerSettings;
   releaseTimeline: UserReleaseTimelineSettings;
   releaseFollows: UserReleaseFollowSettings;
+  onboarding: UserOnboardingSettings;
   tabGroups: TabGroup[];
   customTabs: CustomTab[];
   notificationTodos: NotificationTodoItem[];
@@ -121,6 +127,7 @@ export interface UserSettingsPatch {
   composer?: Partial<UserComposerSettings>;
   releaseTimeline?: Partial<UserReleaseTimelineSettings>;
   releaseFollows?: Partial<UserReleaseFollowSettings>;
+  onboarding?: Partial<UserOnboardingSettings>;
   tabGroups?: TabGroup[];
   customTabs?: CustomTab[];
   notificationTodos?: NotificationTodoItem[];

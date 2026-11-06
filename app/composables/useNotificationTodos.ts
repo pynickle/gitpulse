@@ -13,6 +13,13 @@ export const getNotificationTodoId = (notification: DashboardNotification) => {
   return String(notification.id);
 };
 
+/**
+ * What a toggle actually did. `failed` matters: the settings save is optimistic and
+ * rolls back silently, so a caller that hid its own control needs to know that the
+ * change did not land.
+ */
+export type NotificationTodoToggleResult = 'added' | 'removed' | 'failed';
+
 const withoutTransientSubjectStatus = (
   notification: DashboardNotification
 ): DashboardNotification => {
@@ -77,7 +84,13 @@ export function useNotificationTodos() {
         notification: withoutTransientSubjectStatus(item.notification),
       }))
     );
-    await updateSettings({ notificationTodos: normalizedTodos });
+    const savedSettings = await updateSettings({ notificationTodos: normalizedTodos });
+
+    // The store rolls the optimistic write back on its own; reporting the miss is what
+    // lets a caller that replaced a visible control say so.
+    if (!savedSettings) {
+      return null;
+    }
 
     const persistedIds = new Set(normalizedTodos.map((item) => item.id));
     transientNotifications.value = Object.fromEntries(
@@ -113,8 +126,8 @@ export function useNotificationTodos() {
     const { [todo.id]: _previousTransient, ...remainingTransient } = transientNotifications.value;
     transientNotifications.value = remainingTransient;
     const nextTodos = [todo, ...todos.value.filter((item) => item.id !== todo.id)];
-    await setTodos(nextTodos);
-    return todo;
+    const savedTodos = await setTodos(nextTodos);
+    return savedTodos ? todo : null;
   };
 
   const removeNotificationTodo = async (id: string) => {
@@ -124,19 +137,21 @@ export function useNotificationTodos() {
 
     const { [id]: _removedTransient, ...remainingTransient } = transientNotifications.value;
     transientNotifications.value = remainingTransient;
-    await setTodos(todos.value.filter((item) => item.id !== id));
-    return true;
+    const savedTodos = await setTodos(todos.value.filter((item) => item.id !== id));
+    return savedTodos !== null;
   };
 
-  const toggleNotificationTodo = async (notification: DashboardNotification) => {
+  const toggleNotificationTodo = async (
+    notification: DashboardNotification
+  ): Promise<NotificationTodoToggleResult> => {
     const todoId = getNotificationTodoId(notification);
     if (todoIds.value.has(todoId)) {
-      await removeNotificationTodo(todoId);
-      return false;
+      const removed = await removeNotificationTodo(todoId);
+      return removed ? 'removed' : 'failed';
     }
 
-    await addNotificationTodo(notification);
-    return true;
+    const added = await addNotificationTodo(notification);
+    return added ? 'added' : 'failed';
   };
 
   const refreshNotificationTodos = async () => {

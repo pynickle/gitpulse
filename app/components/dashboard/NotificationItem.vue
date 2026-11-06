@@ -3,6 +3,7 @@
     class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
     :class="{
       'is-unread': currentNotification.unread,
+      'notification-card--todo': marksSavedRow,
     }"
   >
     <div class="card-content p-3">
@@ -151,7 +152,7 @@
               </div>
 
               <button
-                v-if="todoAction"
+                v-if="todoAction && !hideTodoControl"
                 class="notification-card__todo-btn"
                 :class="`notification-card__todo-btn--${todoAction}`"
                 type="button"
@@ -213,6 +214,7 @@ const {
   showReason = true,
   showMarkAsRead = true,
   forceRead = false,
+  hideTodoControl = false,
 } = defineProps<{
   notification: DashboardNotification;
   markAsRead?: (notification: DashboardNotification) => Promise<boolean> | boolean;
@@ -220,6 +222,8 @@ const {
   showReason?: boolean;
   showMarkAsRead?: boolean;
   forceRead?: boolean;
+  /** The narrow touch list replaces this control with the row's right swipe. */
+  hideTodoControl?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -339,7 +343,12 @@ const showCheckStatusChip = computed(
   () =>
     subject.value?.type === 'PullRequest' && toPullRequestChecksView(checkRollup.value).isVisible
 );
-const showActionColumn = computed(() => showReason || Boolean(todoAction));
+const showActionColumn = computed(() => showReason || Boolean(todoAction && !hideTodoControl));
+/**
+ * Where the control is gone, the row has to state "already saved" itself. A saved row on
+ * that list is exactly the one whose action would remove, so the two facts name it.
+ */
+const marksSavedRow = computed(() => hideTodoControl && todoAction === 'remove');
 const reasonMarksAsRead = computed(() => {
   return (
     showReason && showMarkAsRead && Boolean(markAsRead) && Boolean(currentNotification.value.unread)

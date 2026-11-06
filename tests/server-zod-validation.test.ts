@@ -415,6 +415,14 @@ describe('server Zod request validation', () => {
     expect(() => parseUserSettingsPatchBody({ releaseFollows: { view: 'grid' } })).toThrow(
       'Invalid settings request body'
     );
+    expect(parseUserSettingsPatchBody({ onboarding: { notificationTodoSwipeSeen: true } })).toEqual(
+      {
+        onboarding: { notificationTodoSwipeSeen: true },
+      }
+    );
+    expect(() =>
+      parseUserSettingsPatchBody({ onboarding: { notificationTodoSwipeSeen: 'yes' } })
+    ).toThrow('Invalid settings request body');
     expect(() =>
       parseUserSettingsPatchBody({
         composer: { conversationDefaultLayout: 'stacked' },

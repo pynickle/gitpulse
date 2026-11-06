@@ -355,6 +355,21 @@ $transition-hint:
 }
 
 // ============================================
+// Saved-to-todo cards (narrow touch list)
+// ============================================
+
+// The narrow touch list replaces the todo control with the row's right swipe, so an
+// already-saved row has to say so on its own. It says it on the border only: the body —
+// including the translucent unread wash and the 4px unread bar — stays exactly as it
+// was. The rule outranks the pointer tint so hovering cannot repaint the edge, and the
+// hover shadow still lands on top.
+.dashboard-list-card.notification-card.notification-card--todo {
+  border-color: var(--gitpulse-accent);
+  outline: 1px solid var(--gitpulse-accent);
+  outline-offset: -2px;
+}
+
+// ============================================
 // Metadata & Labels
 // ============================================
 

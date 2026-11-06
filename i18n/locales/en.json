@@ -701,7 +701,16 @@
       "empty": "No todo notifications yet.",
       "emptyFiltered": "No todo notifications match the current filters.",
       "addAction": "Add to todo",
-      "removeAction": "Remove from todo"
+      "removeAction": "Remove from todo",
+      "swipeAddLabel": "Add to todo",
+      "swipeRemoveLabel": "Remove todo",
+      "swipeAddRelease": "Release to add",
+      "swipeRemoveRelease": "Drop to remove",
+      "swipeAdded": "Added to todo",
+      "swipeRemoved": "Todo removed",
+      "swipeAddFailed": "Could not add",
+      "swipeRemoveFailed": "Remove failed",
+      "swipeGuideHint": "Swipe for todo"
     },
     "issues": {
       "empty": "No issues to show.",

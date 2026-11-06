@@ -152,6 +152,14 @@ const releaseFollowSettingsPatchSchema = z
     message: 'At least one release follow setting is required',
   });
 
+const onboardingSettingsPatchSchema = z
+  .strictObject({
+    notificationTodoSwipeSeen: z.boolean().optional(),
+  })
+  .refine((onboarding) => Object.keys(onboarding).length > 0, {
+    message: 'At least one onboarding setting is required',
+  });
+
 const tabGroupSchema = z.strictObject({
   id: nonEmptyStringSchema,
   name: nonEmptyStringSchema,
@@ -302,6 +310,7 @@ export const userSettingsPatchSchema = z
     composer: composerSettingsPatchSchema.optional(),
     releaseTimeline: releaseTimelineSettingsPatchSchema.optional(),
     releaseFollows: releaseFollowSettingsPatchSchema.optional(),
+    onboarding: onboardingSettingsPatchSchema.optional(),
     tabGroups: z.array(tabGroupSchema).optional(),
     customTabs: z.array(customTabSchema).optional(),
     notificationTodos: z.array(notificationTodoSchema).optional(),
