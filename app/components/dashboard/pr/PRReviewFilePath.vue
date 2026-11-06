@@ -16,8 +16,7 @@ const name = computed(() =>
 
 <template>
   <span class="pr-review-file-path" :title="filename">
-    <span v-if="directory" class="pr-review-file-path__directory"
-      ><bdi>{{ directory }}</bdi></span
+    <span v-if="directory" class="pr-review-file-path__directory"><bdi>{{ directory }}</bdi></span
     ><span class="pr-review-file-path__name">{{ name }}</span>
   </span>
 </template>
