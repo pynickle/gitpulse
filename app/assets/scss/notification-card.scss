@@ -164,6 +164,17 @@ $transition-hint:
   gap: 0.25rem;
 }
 
+// On a narrow viewport the row's two controls stack: the column is then as wide as its
+// widest button instead of both together, and the gap that frees goes to the subject.
+// The cross axis is still centred by the parent's stretch, so centring the stack on the
+// main axis keeps both buttons sitting beside the text rather than riding its top edge.
+@media (max-width: 860px) {
+  .notification-card__action-column {
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
 .notification-card__actions {
   display: flex;
   align-items: center;

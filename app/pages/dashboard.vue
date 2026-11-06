@@ -1530,6 +1530,52 @@ watch(
     flex: 1 1 auto;
     min-height: 0;
   }
+
+  // The panel carries one inset on narrow. The in-card title row is gone, so nothing
+  // needs the wider lead-in it left; 0.5rem here plus the row card's own 0.25rem margin
+  // puts a row 0.75rem inside the panel's top and left edges. The right keeps a wider
+  // inset for the overlay scrollbar, below.
+  .dashboard-page .dashboard-list-card-content {
+    padding: 0.5rem;
+  }
+
+  .dashboard-page .dashboard-pagination-footer {
+    padding: 0.75rem;
+
+    @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+  }
+
+  // Bulma's spacing helpers are `!important`, so the wide layout's scrollbar clearance —
+  // the rows' own `mr-4` — can only be reshaped at the same weight. Keep exactly one
+  // track's width here instead of the wide 1rem: the overlay thumb is 10px wide and sits
+  // inside the panel, so the row has to stand off it by that much on top of its own
+  // 0.25rem margin. That leaves the panel 0.75rem on the left and top, ~1.4rem right.
+  .dashboard-list-row,
+  :deep(.dashboard-loading-list > .mb-4) {
+    margin-right: var(--gitpulse-scrollbar-track-size) !important;
+  }
+
+  // A row inside the narrow column may never widen it; the subject wraps instead.
+  .dashboard-list-row {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  // The in-card title row is unmounted on narrow by the chrome snapshot, which lands
+  // after the first paint. Hide it through the viewport query as well, or a narrow
+  // surface draws the wide lead-in before hydration swaps it out.
+  .dashboard-page .dashboard-tabs-header {
+    display: none;
+  }
+
+  // Row titles step down one size: the action column is a single-button width here, so
+  // the shortened line is the whole gain the row needs.
+  .dashboard-page :deep(.dashboard-list-card__title),
+  .dashboard-page :deep(.dashboard-list-card__subject) {
+    font-size: 0.875rem;
+  }
 }
 
 .dashboard-page--narrow {
@@ -1539,28 +1585,8 @@ watch(
   isolation: isolate;
 }
 
-.dashboard-page--narrow :deep(.dashboard-list-row) {
-  margin-right: 0;
-  max-width: 100%;
-  min-width: 0;
-}
-
 .dashboard-page--narrow :deep(.dashboard-list-scroll) {
   overflow-x: hidden;
-}
-
-// The in-card title row is hidden on narrow, so Bulma's 1.5rem inline padding
-// no longer lines up with the 0.25rem block start left for that row.
-.dashboard-page--narrow .dashboard-list-card-content {
-  padding: 0.75rem;
-}
-
-.dashboard-page--narrow .dashboard-pagination-footer {
-  padding: 0.75rem;
-
-  @media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
-  }
 }
 
 .dashboard-page--narrow :deep(.dashboard-empty-state),
