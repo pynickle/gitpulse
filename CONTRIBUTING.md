@@ -25,6 +25,12 @@ followed by `bun run fmt:check` and `bun run lint`.
 Fix any failures before committing. Hooks that rewrite a file report it as a
 failure, so when one does, re-stage the file and commit again.
 
+CI runs the same hooks over every tracked file — `prek run --all-files`
+through [`j178/prek-action`](https://github.com/j178/prek-action) — so a hook
+failure fails the pull request. There is no separate format or lint CI job:
+`bun run fmt:check` and `bun run lint` are the last two hooks, locally and in
+CI.
+
 ## Commit Messages
 
 Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org) format:

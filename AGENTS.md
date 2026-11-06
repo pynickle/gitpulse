@@ -18,9 +18,9 @@ Before adding complexity for a speculative or vanishingly unlikely race or secur
 
 Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
-- **Pre-commit verification** (matches CI intent): `bun run fmt:check && bun run lint && bunx nuxi typecheck && bun test --parallel`.
+- **Pre-commit verification** (matches CI intent): `bunx prek run --all-files && bunx nuxi typecheck && bun test --parallel`.
 - `bun run build` is **intentionally reserved for CI** — do not invoke locally unless asked. `bun run generate` is the static export, not a build.
-- Root CI runs format, lint, typecheck, `bun test --parallel`, extension typecheck, and build. Run `bun run extension:test` for the extension package. Flutter CI runs Flutter tests. `--parallel` isolates each file, so a test must install its own `mock.module` aliases before importing the module under test.
+- Root CI runs the `prek` hooks over all files (formatting, linting and the builtin file checks), typecheck, `bun test --parallel`, extension typecheck, and build. Run `bun run extension:test` for the extension package. Flutter CI runs Flutter tests. `--parallel` isolates each file, so a test must install its own `mock.module` aliases before importing the module under test.
 - The extension is a separate WXT package; root `extension:*` scripts are wrappers. After a clean checkout, `cd extension && bun install` may be needed for WXT/editor state.
 
 ## Layout & Wiring
@@ -93,7 +93,7 @@ Full command reference and pre-PR checks: `CONTRIBUTING.md`.
 
 ## Linting, Formatting, Hooks
 
-- Formatter and linter config: `.oxfmtrc.json` / `.oxlintrc.json`. Oxlint runs the `unicorn`, `typescript` and `oxc` plugins with `correctness` at `deny`, so `bun run lint` fails on any diagnostic; other categories are off. Commands and the `prek` pre-commit hook: `CONTRIBUTING.md`.
+- Formatter and linter config: `.oxfmtrc.json` / `.oxlintrc.json`. Oxlint runs the `unicorn`, `typescript` and `oxc` plugins with `correctness` at `deny`, so `bun run lint` fails on any diagnostic; other categories are off. Commands and the `prek` hooks (pre-commit and CI): `CONTRIBUTING.md`.
 - LF enforced by `.gitattributes`.
 - Commits: use the project skill `.agents/skills/conventional-commit/SKILL.md`.
 

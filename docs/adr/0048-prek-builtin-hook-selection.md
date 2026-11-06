@@ -52,11 +52,12 @@ on that list: those files are generated once by `flutter create` and edited by h
 
 ## Consequences
 
-- **The guard is local, and it advises rather than enforces.** CI still runs `fmt:check`, `lint`,
-  typecheck, tests and a build, and it does not run `prek`. Adding a CI job would have repeated
-  `fmt:check` and `lint` — the two local hooks run exactly those — and was rejected as duplication.
-  The cost is stated plainly: `git commit --no-verify`, or a contributor who never ran `bun install`,
-  bypasses every hook above. These hooks catch mistakes early; they do not make them impossible.
+- **The guard runs locally and in CI.** CI runs the same hooks over every tracked file —
+  `prek run --all-files` through `j178/prek-action` — alongside typecheck, tests and a build. The
+  earlier rejection of a CI job, that it would repeat `fmt:check` and `lint`, no longer applies: the
+  job replaces the two CI jobs that ran those commands rather than duplicating them. `git commit
+  --no-verify`, or a contributor who never ran `bun install`, still bypasses the local hook; the pull
+  request is what catches it. These hooks catch mistakes early; they do not make them impossible.
 - **A commit can be interrupted once.** A hook that rewrites a file reports it as a failure. The file
   is fixed, the commit is not: re-stage it and commit again. `CONTRIBUTING.md` says so, and no longer
   restates the hook list — `prek.toml` is the single source of truth, which removes the drift that had
