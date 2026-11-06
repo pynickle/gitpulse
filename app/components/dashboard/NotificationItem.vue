@@ -3,7 +3,7 @@
     class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
     :class="{
       'is-unread': currentNotification.unread,
-      'notification-card--todo': marksSavedRow,
+      'notification-card--todo': isTodoCard,
     }"
   >
     <div class="card-content p-3">
@@ -154,15 +154,31 @@
               <button
                 v-if="todoAction && !hideTodoControl"
                 class="notification-card__todo-btn"
-                :class="`notification-card__todo-btn--${todoAction}`"
+                :class="
+                  isTodoCard
+                    ? 'notification-card__todo-btn--saved'
+                    : 'notification-card__todo-btn--add'
+                "
                 type="button"
                 :title="todoActionTitle"
                 :aria-label="todoActionTitle"
                 @click.stop="emit('todo-action', currentNotification)"
               >
-                <ListPlusIcon v-if="todoAction === 'add'" :size="16" />
-                <ListMinusIcon v-else :size="16" />
+                <ListChecksIcon v-if="isTodoCard" :size="16" />
+                <ListPlusIcon v-else :size="16" />
               </button>
+
+              <!-- The narrow touch list hands the action to the row's swipe, so a saved row
+                   states the fact with the same glyph, unboxed: a plate there would read as
+                   a second button. -->
+              <span
+                v-else-if="showsSavedMark"
+                class="notification-card__todo-mark"
+                role="img"
+                :aria-label="savedStateTitle"
+              >
+                <ListChecksIcon :size="16" aria-hidden="true" />
+              </span>
             </div>
           </div>
         </div>
@@ -182,7 +198,7 @@ import {
   CheckIcon,
   EyeIcon,
   GitCommitHorizontalIcon,
-  ListMinusIcon,
+  ListChecksIcon,
   ListPlusIcon,
   MailIcon,
   MessageSquareIcon,
@@ -343,12 +359,22 @@ const showCheckStatusChip = computed(
   () =>
     subject.value?.type === 'PullRequest' && toPullRequestChecksView(checkRollup.value).isVisible
 );
-const showActionColumn = computed(() => showReason || Boolean(todoAction && !hideTodoControl));
 /**
- * Where the control is gone, the row has to state "already saved" itself. A saved row on
- * that list is exactly the one whose action would remove, so the two facts name it.
+ * The card is in the reader's todos. The todo action names it: a saved notification is
+ * exactly the one whose control would remove it, in both the notifications and the todo
+ * list.
  */
-const marksSavedRow = computed(() => hideTodoControl && todoAction === 'remove');
+const isTodoCard = computed(() => todoAction === 'remove');
+
+/**
+ * On the narrow touch list the row's swipe owns the action and the control is gone, so
+ * the row has to state "already saved" itself.
+ */
+const showsSavedMark = computed(() => hideTodoControl && isTodoCard.value);
+
+const showActionColumn = computed(
+  () => showReason || Boolean(todoAction && !hideTodoControl) || showsSavedMark.value
+);
 const reasonMarksAsRead = computed(() => {
   return (
     showReason && showMarkAsRead && Boolean(markAsRead) && Boolean(currentNotification.value.unread)
@@ -357,10 +383,9 @@ const reasonMarksAsRead = computed(() => {
 const markAsReadTitle = computed(() => t('dashboard.notifications.markAsReadAction'));
 const reasonTitle = computed(() => t('dashboard.notifications.reasonAction'));
 const todoActionTitle = computed(() => {
-  return todoAction === 'remove'
-    ? t('dashboard.todos.removeAction')
-    : t('dashboard.todos.addAction');
+  return isTodoCard.value ? t('dashboard.todos.removeAction') : t('dashboard.todos.addAction');
 });
+const savedStateTitle = computed(() => t('dashboard.todos.savedState'));
 
 const subjectStateTitle = computed(() => {
   if (isSubjectStatePending.value) {

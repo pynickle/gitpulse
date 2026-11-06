@@ -702,6 +702,7 @@
       "emptyFiltered": "当前筛选条件下没有匹配的待办通知。",
       "addAction": "加入待办事项",
       "removeAction": "从待办事项移除",
+      "savedState": "已加入待办",
       "swipeAddLabel": "加入待办",
       "swipeRemoveLabel": "移出待办",
       "swipeAddRelease": "松手添加",

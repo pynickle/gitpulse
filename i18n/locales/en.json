@@ -702,6 +702,7 @@
       "emptyFiltered": "No todo notifications match the current filters.",
       "addAction": "Add to todo",
       "removeAction": "Remove from todo",
+      "savedState": "Added to todo",
       "swipeAddLabel": "Add to todo",
       "swipeRemoveLabel": "Remove todo",
       "swipeAddRelease": "Release to add",

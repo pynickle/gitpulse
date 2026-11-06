@@ -25,9 +25,16 @@ Three consequences are deliberate:
   translucent, the card gets an opaque `surface` backing of its own box (it moves with
   the card), or the colour would show through the card body instead of only around it —
   the unread look has to stay exactly as it was.
-- **A saved row marks itself on its border only** (`--gitpulse-accent`, plus a 1px inset
-  ring). The body, including the unread wash and the 4px unread bar, is untouched: "in a
-  todo" and "unread" are independent states and must not overwrite each other.
+- **A saved row states the state on the card, not only on its border.** The card takes an
+  accent-tinted edge and a 2px hairline that tapers in from the control's side; the todo
+  control becomes a filled accent plate with a list-check glyph, where the add state stays
+  a quiet tint. A read saved row also takes a soft accent wash; an unread one keeps the
+  unread wash, because "in a todo" and "unread" are independent states and the 4px unread
+  bar must keep saying the second. The treatment paints on every list that shows the
+  state — the notifications list on both viewports and the todo list itself — so the same
+  fact never has two looks. Where the narrow touch list hands the action to the swipe, the
+  row states it with the same glyph unboxed, so nothing beside the reason button reads as
+  a second button.
 
 The first-visit demonstration is a saved per-user setting rather than an in-memory flag,
 so it happens at most once in a reader's life. It belongs to the narrow touch list — the

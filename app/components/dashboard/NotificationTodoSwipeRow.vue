@@ -333,8 +333,8 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
   transition: none;
 }
 
-// The add side is the soft green the brief asks for; removal borrows the danger tone
-// the visible control already uses; a settled outcome reads as finished.
+// The add side is the soft green the brief asks for; removal stays on the danger tone;
+// a settled outcome reads as finished.
 .notification-swipe-row--add .notification-swipe-row__action {
   background: color-mix(in srgb, var(--gitpulse-success) 14%, var(--gitpulse-surface));
   color: var(--gitpulse-success);

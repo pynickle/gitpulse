@@ -297,7 +297,7 @@ $transition-hint:
 }
 
 // ============================================
-// Todo Buttons (DRY pattern with CSS variables)
+// Todo Control (add <-> saved)
 // ============================================
 
 .notification-card__todo-btn {
@@ -324,7 +324,8 @@ $transition-hint:
   transition: $transition-button;
 }
 
-// Modifier classes only override the color variable
+// Offering the action is a quiet tint; holding it is a filled plate. The two states
+// then read at a glance instead of only through the glyph.
 .notification-card__todo-btn--add {
   --btn-color: var(--gitpulse-accent);
   border-color: var(--btn-border-base);
@@ -332,21 +333,34 @@ $transition-hint:
   color: var(--btn-color);
 }
 
-.notification-card__todo-btn--remove {
-  --btn-color: var(--gitpulse-danger);
-  border-color: var(--btn-border-base);
-  background: var(--btn-bg-base);
-  color: var(--btn-color);
+// The saved plate keeps one fill in a variable, so hover and press only step the same
+// tone deeper instead of repeating the same three declarations (ADR 0049 asks for the
+// split itself; the copy is not the point).
+.notification-card__todo-btn--saved {
+  --todo-plate: var(--gitpulse-accent);
+
+  border-color: var(--todo-plate);
+  background: var(--todo-plate);
+  color: var(--gitpulse-surface);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--gitpulse-accent) 30%, transparent);
 }
 
-// Shared hover state
 @include hover-only {
-  .notification-card__todo-btn--add:hover,
-  .notification-card__todo-btn--remove:hover {
+  .notification-card__todo-btn--add:hover {
     border-color: var(--btn-border-hover);
     background: var(--btn-bg-hover);
     color: var(--btn-color);
   }
+
+  .notification-card__todo-btn--saved:hover {
+    --todo-plate: var(--gitpulse-accent-hover);
+  }
+}
+
+// A filled control answers a press with its own deeper tone, and only a filled one does:
+// the add state stays a tinted outline and paints nothing on a touch.
+.notification-card__todo-btn--saved:active {
+  --todo-plate: var(--gitpulse-accent-hover);
 }
 
 .notification-card__todo-btn:focus-visible {
@@ -354,19 +368,55 @@ $transition-hint:
   outline-offset: 2px;
 }
 
+// The narrow touch list hands the action to the row's swipe, so the control is gone
+// there. The glyph that replaces it is deliberately unboxed: a plate beside the reason
+// button would read as a second button that does nothing.
+.notification-card__todo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: $button-size;
+  height: $button-size;
+  color: var(--gitpulse-accent);
+  line-height: 1;
+}
+
 // ============================================
-// Saved-to-todo cards (narrow touch list)
+// Saved-to-todo cards
 // ============================================
 
-// The narrow touch list replaces the todo control with the row's right swipe, so an
-// already-saved row has to say so on its own. It says it on the border only: the body —
-// including the translucent unread wash and the 4px unread bar — stays exactly as it
-// was. The rule outranks the pointer tint so hovering cannot repaint the edge, and the
-// hover shadow still lands on top.
+// The card states the state itself: an accent edge, a short hairline that tapers in
+// from the control's side, and (while the row is read) a soft accent wash. An unread
+// saved row keeps its unread wash: "in a todo" and "unread" are independent states, and
+// the 4px unread bar plus the wash keep saying the second one. The accent edge and the
+// filled control carry the first on their own.
+.dashboard-list-card.notification-card.notification-card--todo:not(.is-unread) {
+  background-color: color-mix(in srgb, var(--gitpulse-accent) 6%, var(--gitpulse-surface));
+}
+
 .dashboard-list-card.notification-card.notification-card--todo {
-  border-color: var(--gitpulse-accent);
-  outline: 1px solid var(--gitpulse-accent);
-  outline-offset: -2px;
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 32%, var(--gitpulse-border));
+}
+
+.dashboard-list-card.notification-card.notification-card--todo::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 52%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: linear-gradient(90deg, transparent, var(--gitpulse-accent));
+  pointer-events: none;
+  z-index: 1;
+}
+
+// The pointer only deepens the wash; the edge, the hairline and the unread bar stay put.
+@include hover-only {
+  .dashboard-list-card.notification-card.notification-card--todo:not(.is-unread):hover {
+    background-color: color-mix(in srgb, var(--gitpulse-accent) 9%, var(--gitpulse-surface));
+  }
 }
 
 // ============================================
