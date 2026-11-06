@@ -1102,19 +1102,34 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 }
 
 .repo-detail-layout :deep(.detail-sidebar-column) {
+  /*
+    Pin flush with the pane top and hold the gap under the header with padding
+    instead of a sticky inset. A top inset only applies while the grid row is
+    taller than this column: when the main column swaps to a short loading
+    panel the row shrinks to the sidebar's own height, the inset is clamped and
+    the sidebar rides 0.75rem higher until the panel's data lands.
+  */
+  --repo-detail-sidebar-extra-top-gap: 0.75rem;
+
   position: sticky;
-  top: 0.75rem;
+  top: 0;
   /*
     Fit inside the page-scroll pane, not the full viewport:
-    overlay header (~3.8rem) + sticky top (0.75rem) + pane bottom padding (2rem) + buffer.
+    overlay header (~3.8rem) + pane top gap (0.75rem) + pane bottom padding (2rem) + buffer.
+    The gap is padding now, so the cap grows by it and the visible scroll area
+    keeps the size the old 7.25rem subtraction produced.
     Previous 100vh - 4.5rem was ~2rem too tall and clipped the Links card.
   */
-  --repo-detail-sidebar-max-height: calc(100dvh - 7.25rem);
+  --repo-detail-sidebar-max-height: calc(
+    100dvh - 7.25rem + var(--repo-detail-sidebar-extra-top-gap)
+  );
   max-height: var(--repo-detail-sidebar-max-height);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  /* Column padding plus the gap the sticky inset used to add. */
+  padding-top: calc(var(--bulma-column-gap) + var(--repo-detail-sidebar-extra-top-gap));
   padding-right: 1rem;
   box-sizing: border-box;
 }
@@ -1871,6 +1886,11 @@ html.dark .repo-detail-section__chrome {
     display: block;
     min-height: 0;
     padding-right: 0;
+  }
+
+  /* The desktop gap pairs with a sticky pane; stacked flow keeps the column's. */
+  .repo-detail-layout :deep(.detail-sidebar-column) {
+    padding-top: var(--bulma-column-gap);
   }
 
   .repo-detail-layout :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
