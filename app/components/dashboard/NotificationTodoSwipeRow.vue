@@ -45,12 +45,7 @@ import { computed, onScopeDispose, shallowRef, watch } from 'vue';
 
 import type { NotificationTodoToggleResult } from '~/composables/useNotificationTodos';
 import { resolveNotificationTodoSwipeAction } from '~/utils/resolveNotificationTodoSwipeAction';
-
-/** Long enough to read the confirmation, short enough that the card comes home. */
-const CONFIRM_HOLD_MS = 800;
-
-/** A refusal needs a beat longer than a success. */
-const FAILURE_HOLD_MS = 1_200;
+import { resolveNotificationTodoSwipeHold } from '~/utils/resolveNotificationTodoSwipeHold';
 
 /** The card's own return, matching the stylesheet's settle transition. */
 const SETTLE_MS = 240;
@@ -108,6 +103,10 @@ const handleCommit = () => {
   contentDismissed.value = false;
   clearFeedbackTimers();
 
+  // The dwell starts at the gesture, so a slow settings write cannot stretch it; the
+  // write only decides whether the optimistic confirmation stands or becomes a refusal.
+  const committedAt = performance.now();
+
   void (async () => {
     let result: NotificationTodoToggleResult;
     try {
@@ -117,9 +116,12 @@ const handleCommit = () => {
       result = 'failed';
     }
 
-    const holdMs = result === 'failed' ? FAILURE_HOLD_MS : CONFIRM_HOLD_MS;
-
     feedback.value = result;
+
+    const holdMs = resolveNotificationTodoSwipeHold({
+      failed: result === 'failed',
+      elapsedMs: performance.now() - committedAt,
+    });
 
     holdTimer = setTimeout(() => {
       // The wording goes first; then the card returns over an empty strip.
