@@ -189,6 +189,14 @@ const onGridLeave = () => {
 
 .contribution-graph__scroll {
   padding-bottom: 0.25rem;
+
+  // SimpleBar pins the horizontal track to the host's bottom edge and draws the
+  // thumb over the content, so once the weeks overflow the thumb rides on the
+  // legend row. Reserve the same clearance a vertical scroll area keeps beside
+  // its content, which puts the thumb below the legend instead of on it.
+  &.simplebar-scrollable-x {
+    padding-bottom: var(--gitpulse-scrollbar-content-gap);
+  }
 }
 
 .contribution-graph__canvas {
