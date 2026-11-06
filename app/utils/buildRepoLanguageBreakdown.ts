@@ -44,6 +44,11 @@ function allocatePercentages(weights: number[], total: number): number[] {
   return units.map((value) => value / 10);
 }
 
+/**
+ * Build the visible shares for the language card. Entries are sorted by bytes;
+ * a language whose rounded share is 0% has no width in the bar and no number
+ * worth reading in the legend, so it is dropped instead of listed as "0%".
+ */
 export function buildRepoLanguageBreakdown(
   languages: RepoLanguageBytesMap | null | undefined,
   options: {
@@ -68,10 +73,12 @@ export function buildRepoLanguageBreakdown(
   );
   const getColor = options.getColor ?? (() => DEFAULT_COLOR);
 
-  return entries.map(([name, bytes], index) => ({
-    name,
-    bytes,
-    percentage: percentages[index] ?? 0,
-    color: getColor(name) || DEFAULT_COLOR,
-  }));
+  return entries
+    .map(([name, bytes], index) => ({
+      name,
+      bytes,
+      percentage: percentages[index] ?? 0,
+      color: getColor(name) || DEFAULT_COLOR,
+    }))
+    .filter((share) => share.percentage > 0);
 }

@@ -65,4 +65,16 @@ describe('buildRepoLanguageBreakdown', () => {
       },
     ]);
   });
+
+  test('omits languages whose rounded share is 0%', () => {
+    const result = buildRepoLanguageBreakdown({
+      TypeScript: 999_000,
+      Dockerfile: 12,
+    });
+
+    expect(result.map((item) => item.name)).toEqual(['TypeScript']);
+    expect(result[0]?.percentage).toBe(100);
+    // The remaining shares still total 100%.
+    expect(result.reduce((sum, item) => sum + Math.round(item.percentage * 10), 0)).toBe(1000);
+  });
 });
