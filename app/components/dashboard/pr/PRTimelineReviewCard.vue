@@ -669,6 +669,8 @@ const buildSuggestionDiffLines = (
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .review-item {
   border-radius: var(--gitpulse-radius-xl);
   background-color: var(--gitpulse-surface);
@@ -838,8 +840,10 @@ const buildSuggestionDiffLines = (
   text-align: left;
 }
 
-.review-item__file-toggle:hover {
-  background: var(--gitpulse-surface-hover);
+@include hover-only {
+  .review-item__file-toggle:hover {
+    background: var(--gitpulse-surface-hover);
+  }
 }
 
 .review-item__file-toggle:focus-visible {
@@ -925,10 +929,12 @@ const buildSuggestionDiffLines = (
   cursor: pointer;
   transition: all 0.15s ease;
 
-  &:hover:not(:disabled) {
-    border-color: var(--gitpulse-success);
-    color: var(--gitpulse-success);
-    background: var(--gitpulse-success-soft);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-success);
+      color: var(--gitpulse-success);
+      background: var(--gitpulse-success-soft);
+    }
   }
 
   &:focus-visible {
@@ -961,10 +967,12 @@ const buildSuggestionDiffLines = (
 
 // Dark mode adjustments
 html.dark .review-item__thread-toggle {
-  &:hover:not(:disabled) {
-    border-color: var(--gitpulse-success);
-    color: var(--gitpulse-success);
-    background: color-mix(in srgb, var(--gitpulse-success) 16%, transparent);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-success);
+      color: var(--gitpulse-success);
+      background: color-mix(in srgb, var(--gitpulse-success) 16%, transparent);
+    }
   }
 
   &.is-resolved {

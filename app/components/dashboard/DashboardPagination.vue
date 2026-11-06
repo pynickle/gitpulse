@@ -276,6 +276,8 @@ const pageItems = computed(() => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .dashboard-pagination {
   margin: 0;
   gap: 0.125rem;
@@ -292,8 +294,14 @@ const pageItems = computed(() => {
   min-height: 1.5rem;
   font-size: 0.75rem;
 
-  &:hover:not([disabled]),
-  &:focus:not([disabled]) {
+  @include hover-only {
+    &:hover:not([disabled]) {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
+  &:focus-visible:not([disabled]) {
     background: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
@@ -311,14 +319,26 @@ html.dark .pagination-link.is-current {
   color: var(--gitpulse-info);
 }
 
-.pagination-link.is-current:hover,
-.pagination-link.is-current:focus {
+@include hover-only {
+  .pagination-link.is-current:hover {
+    background: color-mix(in srgb, var(--gitpulse-info) 25%, transparent);
+    color: var(--gitpulse-info);
+  }
+}
+
+.pagination-link.is-current:focus-visible {
   background: color-mix(in srgb, var(--gitpulse-info) 25%, transparent);
   color: var(--gitpulse-info);
 }
 
-html.dark .pagination-link.is-current:hover,
-html.dark .pagination-link.is-current:focus {
+@include hover-only {
+  html.dark .pagination-link.is-current:hover {
+    background: color-mix(in srgb, var(--gitpulse-info) 20%, transparent);
+    color: var(--gitpulse-info);
+  }
+}
+
+html.dark .pagination-link.is-current:focus-visible {
   background: color-mix(in srgb, var(--gitpulse-info) 20%, transparent);
   color: var(--gitpulse-info);
 }
@@ -401,9 +421,11 @@ html.dark .pagination-link.is-current:focus {
     background-color 0.15s ease,
     color 0.15s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:focus-visible {
@@ -441,8 +463,10 @@ html.dark .pagination-link.is-current:focus {
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &:focus-within {

@@ -1,3 +1,5 @@
+@use 'pointer' as *;
+
 // ============================================
 // Base Card Styles
 // ============================================
@@ -203,10 +205,12 @@ $transition-hint:
   transition: $transition-button;
 }
 
-.notification-card__reason-control--action:hover {
-  border-color: var(--reason-border-hover);
-  background: var(--reason-bg-hover);
-  color: var(--gitpulse-info);
+@include hover-only {
+  .notification-card__reason-control--action:hover {
+    border-color: var(--reason-border-hover);
+    background: var(--reason-bg-hover);
+    color: var(--gitpulse-info);
+  }
 }
 
 .notification-card__reason-control--action:focus-visible {
@@ -263,9 +267,11 @@ $transition-hint:
   transition: $transition-hint;
 }
 
-.notification-card__reason-control--action:hover .notification-card__reason-read-hint {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-hover);
+@include hover-only {
+  .notification-card__reason-control--action:hover .notification-card__reason-read-hint {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-hover);
+  }
 }
 
 .notification-card__reason-control--action:disabled .notification-card__reason-read-hint {
@@ -323,11 +329,13 @@ $transition-hint:
 }
 
 // Shared hover state
-.notification-card__todo-btn--add:hover,
-.notification-card__todo-btn--remove:hover {
-  border-color: var(--btn-border-hover);
-  background: var(--btn-bg-hover);
-  color: var(--btn-color);
+@include hover-only {
+  .notification-card__todo-btn--add:hover,
+  .notification-card__todo-btn--remove:hover {
+    border-color: var(--btn-border-hover);
+    background: var(--btn-bg-hover);
+    color: var(--btn-color);
+  }
 }
 
 .notification-card__todo-btn:focus-visible {

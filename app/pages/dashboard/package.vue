@@ -462,6 +462,8 @@ const handleHome = async () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .package-page {
   display: flex;
   flex-direction: column;
@@ -521,8 +523,10 @@ const handleHome = async () => {
   cursor: pointer;
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 
   &:focus-visible {
@@ -578,9 +582,11 @@ const handleHome = async () => {
   font-size: 0.75rem;
   cursor: pointer;
 
-  &:hover:not([disabled]) {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover:not([disabled]) {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &[disabled] {
@@ -638,8 +644,10 @@ const handleHome = async () => {
   text-decoration: none;
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 
   &:focus-visible {

@@ -127,6 +127,8 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .check-list-modal__overlay {
   position: fixed;
   inset: 0;
@@ -181,9 +183,11 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 

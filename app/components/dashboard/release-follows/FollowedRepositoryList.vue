@@ -372,6 +372,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .followed-list {
   display: flex;
   flex-direction: column;
@@ -486,10 +488,12 @@ watch(
     border-color 0.15s ease,
     color 0.15s ease;
 
-  &:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--gitpulse-danger) 35%, transparent);
-    background: var(--gitpulse-danger-soft);
-    color: var(--gitpulse-danger);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: color-mix(in srgb, var(--gitpulse-danger) 35%, transparent);
+      background: var(--gitpulse-danger-soft);
+      color: var(--gitpulse-danger);
+    }
   }
 
   &:disabled {
@@ -574,8 +578,10 @@ watch(
   background: var(--gitpulse-surface);
   color: var(--gitpulse-text);
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -584,7 +590,14 @@ watch(
   background: var(--gitpulse-danger-solid, var(--gitpulse-danger));
   color: #fff;
 
-  &:hover {
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-danger-solid-hover, var(--gitpulse-danger));
+      background: var(--gitpulse-danger-solid-hover, var(--gitpulse-danger));
+    }
+  }
+
+  &:active:not(:disabled) {
     border-color: var(--gitpulse-danger-solid-hover, var(--gitpulse-danger));
     background: var(--gitpulse-danger-solid-hover, var(--gitpulse-danger));
   }
@@ -804,10 +817,12 @@ watch(
     border-color 0.15s ease,
     color 0.15s ease;
 
-  &:hover:not(:disabled) {
-    border-color: var(--gitpulse-warning-solid);
-    background: var(--gitpulse-warning-solid);
-    color: #fff;
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-warning-solid);
+      background: var(--gitpulse-warning-solid);
+      color: #fff;
+    }
   }
 
   &:focus-visible {
@@ -854,9 +869,11 @@ watch(
     background-color 0.15s ease,
     color 0.15s ease;
 
-  &:hover {
-    background: var(--gitpulse-danger-soft);
-    color: var(--gitpulse-danger);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-danger-soft);
+      color: var(--gitpulse-danger);
+    }
   }
 
   &:focus-visible {

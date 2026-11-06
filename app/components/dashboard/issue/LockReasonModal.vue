@@ -120,6 +120,8 @@ const confirmLock = () => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .lock-reason-item {
   border: 1px solid transparent;
   border-radius: 0.5rem;
@@ -127,9 +129,11 @@ const confirmLock = () => {
     background-color 0.15s ease,
     border-color 0.15s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border);
+    }
   }
 
   &.is-selected {

@@ -109,6 +109,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .error-preview-widget {
   position: fixed;
   right: max(1rem, env(safe-area-inset-right));
@@ -158,13 +160,16 @@ onBeforeUnmount(() => {
     transform 0.16s ease,
     box-shadow 0.16s ease;
 
-  &:hover,
-  &:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: var(--gitpulse-shadow-card);
+  @include hover-only {
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--gitpulse-shadow-card);
+    }
   }
 
   &:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: var(--gitpulse-shadow-card);
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 2px;
   }

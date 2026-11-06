@@ -66,6 +66,8 @@ const onSelectTab = (value: string) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .profile-tab-nav {
   min-width: 0;
 }
@@ -92,8 +94,10 @@ const onSelectTab = (value: string) => {
     color 0.12s ease,
     border-color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &:focus-visible {

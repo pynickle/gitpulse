@@ -1502,6 +1502,8 @@ watch(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .dashboard-page {
   display: flex;
   width: 100%;
@@ -1796,8 +1798,10 @@ watch(
   transition: color 0.15s ease;
 }
 
-.dashboard-error-state__details-toggle:hover {
-  color: var(--gitpulse-text-muted);
+@include hover-only {
+  .dashboard-error-state__details-toggle:hover {
+    color: var(--gitpulse-text-muted);
+  }
 }
 
 .dashboard-error-state__details {

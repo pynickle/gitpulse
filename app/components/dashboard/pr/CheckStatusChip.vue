@@ -84,6 +84,8 @@ const handleKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .check-status-chip {
   display: inline-flex;
   align-items: center;
@@ -97,8 +99,10 @@ const handleKeydown = (event: KeyboardEvent) => {
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 
-  &:hover {
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text);
+    }
   }
 
   &:focus-visible {

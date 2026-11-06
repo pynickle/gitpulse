@@ -1081,6 +1081,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-sidebar-columns' as *;
+@use '~/assets/scss/pointer' as *;
 
 .repo-detail-layout {
   /* Page-level scroll lives on the parent detail pane so sticky chrome can pin
@@ -1178,10 +1179,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:disabled {
@@ -1194,8 +1197,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     border-color: var(--gitpulse-accent);
     color: var(--gitpulse-accent);
 
-    &:hover:not(:disabled) {
-      background: var(--gitpulse-surface-active);
+    @include hover-only {
+      &:hover:not(:disabled) {
+        background: var(--gitpulse-surface-active);
+      }
     }
   }
 }
@@ -1231,8 +1236,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   cursor: pointer;
   transition: background 0.1s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &--active {
@@ -1332,9 +1339,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   cursor: pointer;
   transition: color 0.16s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent-hover);
-    text-decoration: underline;
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent-hover);
+      text-decoration: underline;
+    }
   }
 
   &:focus-visible {
@@ -1510,9 +1519,11 @@ html.dark .repo-detail-section__chrome {
     color 0.12s ease,
     background 0.12s ease;
 
-  &:hover:not(.is-active):not(:disabled) {
-    color: var(--gitpulse-text);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(.is-active):not(:disabled) {
+      color: var(--gitpulse-text);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
@@ -1587,8 +1598,10 @@ html.dark .repo-detail-section__chrome {
   color: var(--gitpulse-link);
   text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
+  @include hover-only {
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -1685,10 +1698,12 @@ html.dark .repo-detail-section__chrome {
   background: var(--gitpulse-surface);
   transition: all 0.2s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
   }
 }
 
@@ -1696,8 +1711,10 @@ html.dark .repo-detail-section__chrome {
   margin-bottom: 0.5rem;
   transition: transform 0.2s ease;
 
-  .info-stat:hover & {
-    transform: scale(1.1);
+  @include hover-only {
+    .info-stat:hover & {
+      transform: scale(1.1);
+    }
   }
 }
 
@@ -1812,7 +1829,14 @@ html.dark .repo-detail-section__chrome {
   text-decoration: none;
   transition: all 0.12s ease;
 
-  &:hover,
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
   &:focus-visible {
     border-color: var(--gitpulse-border-strong);
     background: var(--gitpulse-surface-hover);

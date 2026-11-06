@@ -258,6 +258,9 @@ export default defineNuxtConfig({
     '@nuxt/fonts',
     'nuxt-skill-hub',
     './modules/route-table',
+    // The hover gate (ADR 0049): every `:hover` rule in the built CSS is moved
+    // inside the hover-capable query, so a stylesheet cannot forget to.
+    './modules/hover-gate',
   ],
 
   fonts: {

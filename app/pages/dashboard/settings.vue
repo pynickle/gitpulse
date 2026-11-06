@@ -825,6 +825,8 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .settings {
   display: flex;
   flex: 1;
@@ -1005,8 +1007,10 @@ onMounted(() => {
   cursor: text;
   transition: border-color 0.15s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 }
 
@@ -1062,8 +1066,10 @@ onMounted(() => {
     background 0.15s ease,
     box-shadow 0.15s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &.is-selected {
@@ -1213,10 +1219,12 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.15s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 

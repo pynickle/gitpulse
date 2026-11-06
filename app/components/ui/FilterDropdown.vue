@@ -418,6 +418,8 @@ watch(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .filter-dropdown {
   position: relative;
   display: inline-flex;
@@ -446,9 +448,11 @@ watch(
     background 0.12s ease;
   white-space: nowrap;
 
-  &:hover:not(:disabled) {
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
@@ -534,9 +538,11 @@ watch(
   color: var(--gitpulse-text-muted);
   cursor: pointer;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 
@@ -567,8 +573,10 @@ watch(
   transition: background 0.1s ease;
   user-select: none;
 
-  &:hover {
-    background: var(--gitpulse-surface-active);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-active);
+    }
   }
 
   &--focused {

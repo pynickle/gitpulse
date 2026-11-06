@@ -36,6 +36,8 @@ const { t } = useI18n();
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .check-list__group-label {
   display: flex;
   align-items: center;
@@ -133,8 +135,10 @@ const { t } = useI18n();
   color: var(--gitpulse-link, var(--gitpulse-text));
   text-decoration: none;
 
-  &:hover {
-    text-decoration: underline;
+  @include hover-only {
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 

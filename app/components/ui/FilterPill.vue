@@ -120,6 +120,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .filter-pill {
   position: relative;
   display: inline-flex;
@@ -139,9 +141,11 @@ onBeforeUnmount(() => {
   transition: all 0.15s ease;
   white-space: nowrap;
 
-  &:hover:not(:disabled) {
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {

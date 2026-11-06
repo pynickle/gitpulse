@@ -113,6 +113,8 @@ const resolvedPreload = computed<NuxtImagePreload | undefined>(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 $motion-normal: 0.3s;
 
 .github-avatar {
@@ -143,8 +145,10 @@ $motion-normal: 0.3s;
 .github-avatar--interactive {
   transition: transform $motion-normal ease;
 
-  &:hover {
-    transform: scale(1.05);
+  @include hover-only {
+    &:hover {
+      transform: scale(1.05);
+    }
   }
 }
 

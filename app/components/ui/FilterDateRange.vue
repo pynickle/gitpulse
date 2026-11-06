@@ -192,6 +192,8 @@ const removeBound = (bound: 'from' | 'to') => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .filter-date-range {
   display: grid;
   gap: 0.75rem;
@@ -252,7 +254,13 @@ const removeBound = (bound: 'from' | 'to') => {
   cursor: pointer;
 }
 
-.filter-date-range__chip-remove:hover,
+@include hover-only {
+  .filter-date-range__chip-remove:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text-strong);
+  }
+}
+
 .filter-date-range__chip-remove:focus-visible {
   background: var(--gitpulse-surface-hover);
   color: var(--gitpulse-text-strong);
@@ -287,7 +295,13 @@ const removeBound = (bound: 'from' | 'to') => {
   cursor: pointer;
 }
 
-.filter-date-range__nav:hover:not(:disabled),
+@include hover-only {
+  .filter-date-range__nav:hover:not(:disabled) {
+    background: var(--gitpulse-info-soft);
+    color: var(--gitpulse-link);
+  }
+}
+
 .filter-date-range__nav:focus-visible:not(:disabled) {
   background: var(--gitpulse-info-soft);
   color: var(--gitpulse-link);
@@ -342,8 +356,10 @@ const removeBound = (bound: 'from' | 'to') => {
     color 0.1s ease;
 }
 
-.filter-date-range__day:hover:not(:disabled) {
-  background: var(--gitpulse-surface-active);
+@include hover-only {
+  .filter-date-range__day:hover:not(:disabled) {
+    background: var(--gitpulse-surface-active);
+  }
 }
 
 .filter-date-range__day:focus-visible {
@@ -373,8 +389,10 @@ const removeBound = (bound: 'from' | 'to') => {
   color: var(--gitpulse-text-strong);
 }
 
-.filter-date-range__day--in-range:hover:not(:disabled) {
-  background: var(--gitpulse-info-soft);
+@include hover-only {
+  .filter-date-range__day--in-range:hover:not(:disabled) {
+    background: var(--gitpulse-info-soft);
+  }
 }
 
 .filter-date-range__day--start {
@@ -396,8 +414,10 @@ const removeBound = (bound: 'from' | 'to') => {
   font-weight: 700;
 }
 
-.filter-date-range__day--start:hover:not(:disabled),
-.filter-date-range__day--end:hover:not(:disabled) {
-  background: var(--gitpulse-accent);
+@include hover-only {
+  .filter-date-range__day--start:hover:not(:disabled),
+  .filter-date-range__day--end:hover:not(:disabled) {
+    background: var(--gitpulse-accent);
+  }
 }
 </style>

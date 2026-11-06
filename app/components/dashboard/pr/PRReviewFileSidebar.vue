@@ -374,6 +374,8 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .pr-review-file-sidebar {
   position: relative;
   height: 100%;
@@ -456,9 +458,11 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
     visibility 0s;
 }
 
-.pr-review-file-sidebar__collapsed-handle:hover {
-  background: var(--gitpulse-info-soft);
-  color: var(--gitpulse-info);
+@include hover-only {
+  .pr-review-file-sidebar__collapsed-handle:hover {
+    background: var(--gitpulse-info-soft);
+    color: var(--gitpulse-info);
+  }
 }
 
 .pr-review-file-sidebar__collapsed-handle strong {
@@ -526,9 +530,11 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   cursor: pointer;
 }
 
-.pr-review-file-sidebar__collapse-button:hover {
-  background: var(--gitpulse-surface-hover);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+@include hover-only {
+  .pr-review-file-sidebar__collapse-button:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 }
 
 .pr-review-file-sidebar__toggle-button {
@@ -571,7 +577,13 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   text-align: left;
 }
 
-.pr-review-file-sidebar__item:hover,
+@include hover-only {
+  .pr-review-file-sidebar__item:hover {
+    background: var(--gitpulse-info-soft);
+    border-left-color: var(--gitpulse-info);
+  }
+}
+
 .pr-review-file-sidebar__item--active {
   background: var(--gitpulse-info-soft);
   border-left-color: var(--gitpulse-info);
@@ -662,13 +674,15 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   transition: transform 0.15s ease;
 }
 
-.pr-review-file-sidebar__tree-directory:hover,
-.pr-review-file-sidebar__tree-file:hover,
-.pr-review-file-sidebar__tree-file--active {
-  background: var(--gitpulse-info-soft);
+@include hover-only {
+  .pr-review-file-sidebar__tree-directory:hover,
+  .pr-review-file-sidebar__tree-file:hover {
+    background: var(--gitpulse-info-soft);
+  }
 }
 
 .pr-review-file-sidebar__tree-file--active {
+  background: var(--gitpulse-info-soft);
   border-left-color: var(--gitpulse-info);
   font-weight: 700;
 }

@@ -176,6 +176,8 @@ const updatedLabel = (pkg: PackageSummary) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .profile-package-list {
   display: flex;
   flex-direction: column;
@@ -206,9 +208,11 @@ const updatedLabel = (pkg: PackageSummary) => {
     border-color 0.12s ease,
     background-color 0.12s ease;
 
-  &:hover:not(:disabled) {
-    color: var(--gitpulse-text-strong);
-    border-color: var(--gitpulse-text-muted);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-text-strong);
+      border-color: var(--gitpulse-text-muted);
+    }
   }
 
   &:focus-visible {
@@ -246,8 +250,10 @@ const updatedLabel = (pkg: PackageSummary) => {
   cursor: pointer;
   transition: border-color 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-accent);
+    }
   }
 
   &:focus-visible {

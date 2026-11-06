@@ -185,6 +185,8 @@ const starredTo = computed(() => ({
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .profile-header {
   display: flex;
   flex-direction: column;
@@ -244,7 +246,12 @@ const starredTo = computed(() => ({
   font-size: 0.875rem;
   cursor: pointer;
 
-  &:hover .profile-header__connection-count,
+  @include hover-only {
+    &:hover .profile-header__connection-count {
+      color: var(--gitpulse-link);
+    }
+  }
+
   &:focus-visible .profile-header__connection-count {
     color: var(--gitpulse-link);
   }
@@ -280,14 +287,16 @@ const starredTo = computed(() => ({
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 
-  &:hover {
-    background: color-mix(in srgb, var(--gitpulse-accent-soft) 78%, var(--gitpulse-surface));
-    border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
-  }
+  @include hover-only {
+    &:hover {
+      background: color-mix(in srgb, var(--gitpulse-accent-soft) 78%, var(--gitpulse-surface));
+      border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
+    }
 
-  &:hover .profile-header__starred-chevron {
-    transform: translateX(2px);
-    color: var(--gitpulse-accent);
+    &:hover .profile-header__starred-chevron {
+      transform: translateX(2px);
+      color: var(--gitpulse-accent);
+    }
   }
 
   &:focus-visible {
@@ -353,8 +362,10 @@ const starredTo = computed(() => ({
   a {
     color: var(--gitpulse-link);
 
-    &:hover {
-      text-decoration: underline;
+    @include hover-only {
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 }
@@ -390,7 +401,12 @@ const starredTo = computed(() => ({
     border-radius: 6px;
   }
 
-  &:hover :deep(.github-avatar),
+  @include hover-only {
+    &:hover :deep(.github-avatar) {
+      box-shadow: 0 0 0 2px var(--gitpulse-accent);
+    }
+  }
+
   &:focus-visible :deep(.github-avatar) {
     box-shadow: 0 0 0 2px var(--gitpulse-accent);
   }
@@ -417,8 +433,10 @@ const starredTo = computed(() => ({
   text-decoration: none;
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 
   &:focus-visible {

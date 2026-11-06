@@ -1233,6 +1233,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
 .pr-review-diff-viewer__rows-scroll {
   width: 100%;
   max-width: 100%;
@@ -1351,20 +1352,22 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-.pr-review-diff-viewer__pane--commentable:hover
-  .pr-review-diff-viewer__comment-button:not(:disabled),
+@include hover-only {
+  .pr-review-diff-viewer__pane--commentable:hover
+    .pr-review-diff-viewer__comment-button:not(:disabled),
+  .pr-review-diff-viewer__unified-line--commentable:hover
+    .pr-review-diff-viewer__comment-button:not(:disabled) {
+    @include pr-review-comment-button-visible;
+  }
+}
+
+// The keyboard's reveal, kept outside the gate: a reader tabbing through a diff on
+// a device with no pointer still has to reach the comment button.
 .pr-review-diff-viewer__pane--commentable:focus-within
   .pr-review-diff-viewer__comment-button:not(:disabled),
 .pr-review-diff-viewer__unified-line--commentable:focus-within
   .pr-review-diff-viewer__comment-button:not(:disabled) {
   @include pr-review-comment-button-visible;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .pr-review-diff-viewer__unified-line--commentable:hover
-    .pr-review-diff-viewer__comment-button:not(:disabled) {
-    @include pr-review-comment-button-visible;
-  }
 }
 
 .pr-review-diff-viewer__comment-button:disabled {

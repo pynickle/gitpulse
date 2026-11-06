@@ -185,6 +185,8 @@ const clearAll = () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-timeline-filter-panel {
   position: fixed;
   inset: 0;
@@ -254,10 +256,16 @@ const clearAll = () => {
   cursor: pointer;
 }
 
-.release-timeline-filter-panel__close:hover,
 .release-timeline-filter-panel__close:focus-visible {
   background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
   color: var(--gitpulse-text-strong);
+}
+
+@include hover-only {
+  .release-timeline-filter-panel__close:hover {
+    background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
+    color: var(--gitpulse-text-strong);
+  }
 }
 
 .release-timeline-filter-panel__close:focus-visible {
@@ -310,8 +318,10 @@ const clearAll = () => {
   transition: background-color 0.15s ease;
 }
 
-.release-timeline-filter-panel__toggle-row:hover {
-  background: var(--bulma-background-hover);
+@include hover-only {
+  .release-timeline-filter-panel__toggle-row:hover {
+    background: var(--bulma-background-hover);
+  }
 }
 
 .release-timeline-filter-panel__toggle-label {

@@ -234,6 +234,7 @@ usePageMeta(
 
 <style scoped lang="scss">
 @use '~/assets/scss/detail-sidebar-columns' as *;
+@use '~/assets/scss/pointer' as *;
 
 .detail-scroll {
   height: 100%;
@@ -465,10 +466,12 @@ usePageMeta(
   font-weight: 500;
   transition: all 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
-    color: var(--gitpulse-accent);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      color: var(--gitpulse-accent);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -505,10 +508,12 @@ usePageMeta(
   text-decoration: none;
   transition: all 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
-    color: var(--gitpulse-accent);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      color: var(--gitpulse-accent);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 

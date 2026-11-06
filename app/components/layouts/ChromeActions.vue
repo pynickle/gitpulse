@@ -133,6 +133,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .chrome-actions {
   display: flex;
   flex: none;
@@ -221,7 +223,7 @@ onBeforeUnmount(() => {
   border-color: transparent;
   background-color: transparent;
 
-  @media (hover: hover) {
+  @include hover-only {
     &:hover {
       background-color: var(--chrome-actions-hover);
     }

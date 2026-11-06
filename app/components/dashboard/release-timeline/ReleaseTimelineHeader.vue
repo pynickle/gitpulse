@@ -161,6 +161,8 @@ const { t } = useI18n();
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-timeline-header {
   display: flex;
   align-items: center;
@@ -274,9 +276,11 @@ const { t } = useI18n();
     border-color 0.15s ease;
 }
 
-.release-timeline-header__notes:hover {
-  border-color: var(--gitpulse-border-strong);
-  color: var(--gitpulse-text);
+@include hover-only {
+  .release-timeline-header__notes:hover {
+    border-color: var(--gitpulse-border-strong);
+    color: var(--gitpulse-text);
+  }
 }
 
 .release-timeline-header__notes:has(.release-timeline-header__notes-input:focus-visible) {
@@ -284,11 +288,18 @@ const { t } = useI18n();
   outline-offset: 1px;
 }
 
-.release-timeline-header__notes--active,
-.release-timeline-header__notes--active:hover {
+.release-timeline-header__notes--active {
   border-color: color-mix(in srgb, var(--gitpulse-accent) 55%, var(--gitpulse-border));
   background: var(--gitpulse-info-soft);
   color: var(--gitpulse-accent);
+}
+
+@include hover-only {
+  .release-timeline-header__notes--active:hover {
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 55%, var(--gitpulse-border));
+    background: var(--gitpulse-info-soft);
+    color: var(--gitpulse-accent);
+  }
 }
 
 .release-timeline-header__notes-input {
@@ -357,10 +368,16 @@ const { t } = useI18n();
   display: none;
 }
 
-.release-timeline-header__action:hover,
 .release-timeline-header__action:focus-visible {
   color: var(--gitpulse-link);
   background: var(--gitpulse-info-soft);
+}
+
+@include hover-only {
+  .release-timeline-header__action:hover {
+    color: var(--gitpulse-link);
+    background: var(--gitpulse-info-soft);
+  }
 }
 
 .release-timeline-header__action--active {
@@ -368,16 +385,28 @@ const { t } = useI18n();
   color: var(--gitpulse-accent);
 }
 
-.release-timeline-header__action--active:hover,
 .release-timeline-header__action--active:focus-visible {
   color: var(--gitpulse-accent);
   background: var(--gitpulse-info-soft);
 }
 
-.release-timeline-header__action:hover .release-timeline-header__reload-icon:not(.spin-animation),
+@include hover-only {
+  .release-timeline-header__action--active:hover {
+    color: var(--gitpulse-accent);
+    background: var(--gitpulse-info-soft);
+  }
+}
+
 .release-timeline-header__action:focus-visible
   .release-timeline-header__reload-icon:not(.spin-animation) {
   transform: rotate(15deg);
+}
+
+@include hover-only {
+  .release-timeline-header__action:hover
+    .release-timeline-header__reload-icon:not(.spin-animation) {
+    transform: rotate(15deg);
+  }
 }
 
 .release-timeline-header__reload-icon {
@@ -453,10 +482,16 @@ const { t } = useI18n();
     color: var(--gitpulse-text-muted);
   }
 
-  .release-timeline-header__recovery:hover,
   .release-timeline-header__recovery:focus-visible {
     color: var(--gitpulse-link);
     background: var(--gitpulse-info-soft);
+  }
+
+  @include hover-only {
+    .release-timeline-header__recovery:hover {
+      color: var(--gitpulse-link);
+      background: var(--gitpulse-info-soft);
+    }
   }
 }
 </style>

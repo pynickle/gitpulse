@@ -249,6 +249,8 @@ const toggleSection = (section: string) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .pr-review-submit-bar {
   position: relative;
   height: 100%;
@@ -346,10 +348,12 @@ const toggleSection = (section: string) => {
   justify-content: center;
 }
 
-.pr-review-submit-bar__collapse-button:hover,
-.pr-review-submit-bar__delete-button:hover {
-  background: var(--gitpulse-surface-hover);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+@include hover-only {
+  .pr-review-submit-bar__collapse-button:hover,
+  .pr-review-submit-bar__delete-button:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 }
 
 .pr-review-submit-bar__collapsed-handle {
@@ -438,8 +442,10 @@ const toggleSection = (section: string) => {
   cursor: pointer;
 }
 
-.pr-review-submit-bar__section-header:hover {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+@include hover-only {
+  .pr-review-submit-bar__section-header:hover {
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 }
 
 .pr-review-submit-bar__section-chevron {

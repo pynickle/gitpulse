@@ -60,7 +60,9 @@ const visible = computed(
     </button>
   </div>
 </template>
-<style scoped>
+<style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .timeline-status {
   display: flex;
   align-items: center;
@@ -130,10 +132,16 @@ const visible = computed(
   font-size: 0.75rem;
   line-height: 1;
   cursor: pointer;
+
+  &:active:not(:disabled) {
+    background: var(--gitpulse-warning-solid-hover);
+  }
 }
 
-.timeline-status__retry:hover {
-  background: var(--gitpulse-warning-solid-hover);
+@include hover-only {
+  .timeline-status__retry:hover {
+    background: var(--gitpulse-warning-solid-hover);
+  }
 }
 
 .spin-animation {

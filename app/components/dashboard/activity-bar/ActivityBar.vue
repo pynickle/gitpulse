@@ -148,6 +148,8 @@ function getGroupIcon(icon?: string) {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .activity-bar {
   display: flex;
   flex-direction: column;
@@ -176,8 +178,10 @@ function getGroupIcon(icon?: string) {
       outline-offset: 2px;
     }
 
-    &:hover {
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--gitpulse-accent) 25%, transparent);
+    @include hover-only {
+      &:hover {
+        box-shadow: 0 0 0 2px color-mix(in srgb, var(--gitpulse-accent) 25%, transparent);
+      }
     }
 
     &:active {
@@ -223,18 +227,16 @@ function getGroupIcon(icon?: string) {
       background-color 0.15s ease,
       color 0.15s ease;
 
-    &:hover {
-      background: var(--bulma-background-hover);
-      color: var(--bulma-text-strong, #1e293b);
+    @include hover-only {
+      &:hover {
+        background: var(--bulma-background-hover);
+        color: var(--bulma-text-strong, #1e293b);
+      }
     }
 
     &:focus-visible {
       outline: 2px solid var(--gitpulse-focus-ring);
       outline-offset: 1px;
-    }
-
-    &:active {
-      background: var(--bulma-background-hover);
     }
 
     &.is-active {

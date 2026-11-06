@@ -235,6 +235,8 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .linked-pr-picker-overlay {
   position: fixed;
   inset: 0;
@@ -287,9 +289,11 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 

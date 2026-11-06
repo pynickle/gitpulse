@@ -105,6 +105,8 @@ const onChange = () => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .quick-filters {
   &__group {
     margin-bottom: 1.5rem;
@@ -143,11 +145,13 @@ const onChange = () => {
     margin-left: -0.75rem; /* pull left to align text while keeping padding */
     margin-right: -0.75rem;
 
-    &:hover {
-      background-color: var(--bulma-background-hover);
+    @include hover-only {
+      &:hover {
+        background-color: var(--bulma-background-hover);
 
-      .quick-filters__checkbox {
-        border-color: var(--gitpulse-border-strong);
+        .quick-filters__checkbox {
+          border-color: var(--gitpulse-border-strong);
+        }
       }
     }
 

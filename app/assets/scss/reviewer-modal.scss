@@ -1,4 +1,5 @@
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 .reviewer-modal-overlay {
   position: fixed;
@@ -53,9 +54,11 @@
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 
   &:disabled {
@@ -127,9 +130,11 @@
   color: var(--gitpulse-text-muted);
   cursor: pointer;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 
@@ -159,8 +164,10 @@
   color: var(--gitpulse-danger);
   cursor: pointer;
 
-  &:hover {
-    background: var(--gitpulse-danger-soft);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-danger-soft);
+    }
   }
 }
 
@@ -209,8 +216,10 @@
   transition: background 0.1s ease;
   user-select: none;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &--requested {
@@ -239,8 +248,10 @@
   flex-shrink: 0;
   transition: all 0.12s ease;
 
-  .reviewer-modal-candidate:hover & {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    .reviewer-modal-candidate:hover & {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   .reviewer-modal-candidate--selected & {
@@ -347,10 +358,12 @@
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
 
-  &:hover:not(:disabled) {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -359,7 +372,15 @@
   background: $brand-primary;
   border: 1px solid $brand-primary;
 
-  &:hover:not(:disabled) {
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-accent-hover);
+      border-color: var(--gitpulse-accent-hover);
+    }
+  }
+
+  // A filled surface keeps an answer to a press (ADR 0032).
+  &:active:not(:disabled) {
     background: var(--gitpulse-accent-hover);
     border-color: var(--gitpulse-accent-hover);
   }

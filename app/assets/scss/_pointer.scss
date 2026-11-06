@@ -1,0 +1,27 @@
+// The web client's pointer contract (ADR 0049).
+//
+// One sentence: a touch leaves no tint and a press paints nothing. Only a hovering
+// fine pointer paints the hover tint, and only the keyboard paints focus. ADR 0032
+// owns the shared vocabulary — the web client states the same rule in CSS, and this
+// partial is the only way a stylesheet expresses it.
+//
+// A stylesheet that paints a hover state wraps it in `hover-only`. Nothing else may
+// author `:hover`.
+
+// Capability, not width: a phone in landscape and a tablet are both still touch,
+// and a tablet with a trackpad genuinely hovers. ADR 0049 accepts that trade.
+$hover-capable: '(hover: hover) and (pointer: fine)';
+
+// Selection and the long-press menu are refused only where there is no prose to
+// copy. A `[role="button"]` row and the list card are deliberately absent: both are
+// usually a title a reader may want to select, and refusing a press answer does not
+// have to take the text away with it.
+$unselectable-chrome: 'button, summary, .button, .tag, .navbar-item, .dropdown-item, .gitpulse-floating-fab';
+
+// The one gate for a hover state. Everything a pointer-only affordance paints —
+// tint, border, shadow, a revealed control — goes inside this.
+@mixin hover-only {
+  @media #{$hover-capable} {
+    @content;
+  }
+}

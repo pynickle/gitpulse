@@ -158,6 +158,8 @@ const submitReplyDraft = async (body: string) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .discussion-comment {
   display: flex;
   gap: 0;
@@ -227,8 +229,10 @@ const submitReplyDraft = async (body: string) => {
   color: var(--gitpulse-text-muted);
   font-size: 0.75rem;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 }
 

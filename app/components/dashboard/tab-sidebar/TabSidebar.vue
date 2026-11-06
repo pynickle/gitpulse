@@ -199,6 +199,8 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .tab-sidebar {
   display: flex;
   flex-direction: column;
@@ -243,18 +245,16 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   cursor: pointer;
   transition: background-color 0.15s ease;
 
-  &:hover {
-    background: var(--bulma-background-hover);
-    color: var(--bulma-text, #374151);
+  @include hover-only {
+    &:hover {
+      background: var(--bulma-background-hover);
+      color: var(--bulma-text, #374151);
+    }
   }
 
   &:focus-visible {
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 2px;
-  }
-
-  &:active {
-    background: var(--bulma-background-hover);
   }
 }
 
@@ -295,18 +295,16 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   user-select: none;
   transition: background-color 0.15s ease;
 
-  &:hover {
-    background: var(--bulma-background-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--bulma-background-hover);
+    }
   }
 
   &:focus-visible {
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 1px;
     border-radius: 6px;
-  }
-
-  &:active {
-    background: var(--bulma-background-hover);
   }
 
   &--nested {
@@ -331,8 +329,10 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   color: var(--bulma-text-weak, #9ca3af);
   transition: color 0.15s ease;
 
-  .tab-sidebar__group:hover & {
-    color: var(--bulma-text, #374151);
+  @include hover-only {
+    .tab-sidebar__group:hover & {
+      color: var(--bulma-text, #374151);
+    }
   }
 }
 
@@ -405,19 +405,17 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
     background-color 0.15s ease,
     color 0.15s ease;
 
-  &:hover {
-    background: var(--bulma-background-hover);
-    color: var(--bulma-text-strong, #1e293b);
+  @include hover-only {
+    &:hover {
+      background: var(--bulma-background-hover);
+      color: var(--bulma-text-strong, #1e293b);
+    }
   }
 
   &:focus-visible {
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 1px;
     border-radius: 6px;
-  }
-
-  &:active {
-    background: var(--bulma-background-hover);
   }
 
   &--active {
@@ -429,8 +427,10 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
       color: var(--gitpulse-accent);
     }
 
-    &:hover {
-      background: var(--gitpulse-accent-soft);
+    @include hover-only {
+      &:hover {
+        background: var(--gitpulse-accent-soft);
+      }
     }
   }
 }
@@ -511,11 +511,6 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   .tab-sidebar__manage-btn,
   .tab-sidebar__group-toggle {
     transition: none;
-  }
-
-  .tab-sidebar__tab:active,
-  .tab-sidebar__group:active {
-    background: var(--bulma-background-hover);
   }
 }
 </style>

@@ -298,6 +298,8 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 /* The overlay hands this page one definite-height flex box, so the filter and
    pager bands are plain flex items and only the middle band scrolls. Nothing
    here depends on position: sticky inside a nested scroll area. */
@@ -443,9 +445,11 @@ onMounted(() => {
     background-color 0.15s ease,
     border-color 0.15s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-accent);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-accent);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {

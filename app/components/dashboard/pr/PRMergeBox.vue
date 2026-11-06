@@ -750,6 +750,8 @@ watch(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .merge-box {
   border: 1px solid var(--gitpulse-border);
   border-radius: 12px;
@@ -894,8 +896,10 @@ watch(
   text-decoration: none;
   transition: color 0.2s ease;
 
-  &:hover {
-    color: var(--gitpulse-purple);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-purple);
+    }
   }
 }
 
@@ -976,10 +980,12 @@ watch(
     border-color 0.2s ease,
     background-color 0.2s ease;
 
-  &:hover:not(:disabled) {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &:disabled {
@@ -987,14 +993,18 @@ watch(
     cursor: not-allowed;
   }
 
-  &--delete:hover:not(:disabled) {
-    color: var(--gitpulse-danger-solid);
-    border-color: var(--gitpulse-danger);
+  @include hover-only {
+    &--delete:hover:not(:disabled) {
+      color: var(--gitpulse-danger-solid);
+      border-color: var(--gitpulse-danger);
+    }
   }
 
-  &--restore:hover:not(:disabled) {
-    color: var(--gitpulse-success-solid);
-    border-color: var(--gitpulse-success);
+  @include hover-only {
+    &--restore:hover:not(:disabled) {
+      color: var(--gitpulse-success-solid);
+      border-color: var(--gitpulse-success);
+    }
   }
 }
 
@@ -1020,8 +1030,10 @@ watch(
     font: inherit;
     transition: background-color 0.2s ease;
 
-    &:hover {
-      background: var(--gitpulse-surface-hover);
+    @include hover-only {
+      &:hover {
+        background: var(--gitpulse-surface-hover);
+      }
     }
   }
 }
@@ -1115,9 +1127,11 @@ watch(
     transition: color 0.2s ease;
   }
 
-  :deep(.check-list__name--link:hover) {
-    color: var(--gitpulse-accent);
-    text-decoration: underline;
+  @include hover-only {
+    :deep(.check-list__name--link:hover) {
+      color: var(--gitpulse-accent);
+      text-decoration: underline;
+    }
   }
 
   :deep(.check-list__app) {
@@ -1162,7 +1176,14 @@ watch(
     background-color 0.2s ease,
     border-color 0.2s ease;
 
-  &:hover:not(:disabled) {
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-success-solid-hover);
+      border-color: var(--gitpulse-success-solid-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
     background: var(--gitpulse-success-solid-hover);
     border-color: var(--gitpulse-success-solid-hover);
   }
@@ -1193,7 +1214,13 @@ watch(
     background-color 0.2s ease,
     border-color 0.2s ease;
 
-  &:hover:not(:disabled) {
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-success-solid-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
     background: var(--gitpulse-success-solid-hover);
   }
 
@@ -1222,9 +1249,11 @@ watch(
     color 0.2s ease,
     border-color 0.2s ease;
 
-  &:hover:not(:disabled) {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &:disabled {
@@ -1263,8 +1292,10 @@ watch(
   cursor: pointer;
   transition: background-color 0.2s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 

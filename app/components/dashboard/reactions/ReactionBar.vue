@@ -314,6 +314,8 @@ function onDocumentClick(event: MouseEvent) {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .reaction-bar {
   position: relative;
 }
@@ -346,9 +348,11 @@ function onDocumentClick(event: MouseEvent) {
     opacity: 0.65;
   }
 
-  &:not(:disabled):hover {
-    border-color: var(--gitpulse-accent);
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:not(:disabled):hover {
+      border-color: var(--gitpulse-accent);
+      color: var(--gitpulse-accent);
+    }
   }
 }
 

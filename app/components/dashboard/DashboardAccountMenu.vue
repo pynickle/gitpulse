@@ -97,6 +97,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .dashboard-account-menu {
   position: absolute;
   top: calc(100% + 0.35rem);
@@ -132,12 +134,14 @@ onBeforeUnmount(() => {
   text-decoration: none;
   cursor: pointer;
 
-  &:hover,
-  &:focus-visible {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
+    background: var(--gitpulse-surface-hover);
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: -2px;
   }

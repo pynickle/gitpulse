@@ -77,6 +77,8 @@ const handleFilterKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-drawer-list__filters {
   display: flex;
   align-items: center;
@@ -100,9 +102,11 @@ const handleFilterKeydown = (event: KeyboardEvent) => {
     border-color 0.12s ease,
     color 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &[aria-selected='true'] {

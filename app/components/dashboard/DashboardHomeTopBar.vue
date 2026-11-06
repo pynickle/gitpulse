@@ -138,6 +138,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .dashboard-home-top-bar {
   position: sticky;
   top: 0;
@@ -198,21 +200,11 @@ watch(
   background: transparent;
   color: var(--gitpulse-text-strong);
   cursor: pointer;
-  // Touch browsers otherwise flash their own highlight over the control and leave
-  // the hover tint behind after the tap. The press squish below is the feedback.
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  // Pressing is answered by a short squish instead of a colour wash.
-  transition: transform 0.12s ease;
 
-  @media (hover: hover) {
+  @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
     }
-  }
-
-  &:active {
-    transform: scale(0.92);
   }
 
   &:focus-visible {
@@ -262,15 +254,6 @@ watch(
 @media (prefers-reduced-motion: reduce) {
   .dashboard-home-top-bar__refresh-spin {
     animation: none;
-  }
-
-  .dashboard-home-top-bar__icon-btn,
-  .dashboard-home-top-bar__avatar {
-    transition: none;
-
-    &:active {
-      transform: none;
-    }
   }
 }
 </style>

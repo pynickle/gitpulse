@@ -100,6 +100,7 @@ const navigateToItem = async (item: RepoContentItem) => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 .repo-file-tree {
   margin-top: 1.5rem;
@@ -160,8 +161,10 @@ const navigateToItem = async (item: RepoContentItem) => {
     border-bottom: 0;
   }
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 

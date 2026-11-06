@@ -75,6 +75,8 @@ const relativeTimeNow = useRelativeTimeNow();
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .merge-item {
   border-radius: 12px;
   background-color: var(--gitpulse-purple-soft);
@@ -110,9 +112,11 @@ const relativeTimeNow = useRelativeTimeNow();
   color: var(--gitpulse-purple);
   font-weight: 500;
 
-  &:hover {
-    background-color: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-accent);
+    }
   }
 }
 

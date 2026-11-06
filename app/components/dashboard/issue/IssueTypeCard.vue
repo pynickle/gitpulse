@@ -301,6 +301,7 @@ onUnmounted(() => {
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-metadata-editor';
+@use '~/assets/scss/pointer' as *;
 
 .issue-type-row {
   position: relative;
@@ -314,8 +315,10 @@ onUnmounted(() => {
   transition: background 0.1s ease;
   user-select: none;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:has(.issue-type-row__input:focus-visible) {

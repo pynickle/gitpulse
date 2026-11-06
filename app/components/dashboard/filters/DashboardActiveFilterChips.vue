@@ -51,6 +51,8 @@ const chipValueLabel = (chip: DashboardFilterChip) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .dashboard-filter-chips {
   display: flex;
   align-items: center;
@@ -73,7 +75,13 @@ const chipValueLabel = (chip: DashboardFilterChip) => {
   cursor: pointer;
 }
 
-.dashboard-filter-chips__chip:hover,
+@include hover-only {
+  .dashboard-filter-chips__chip:hover {
+    border-color: var(--gitpulse-border-strong);
+    color: var(--gitpulse-link);
+  }
+}
+
 .dashboard-filter-chips__chip:focus-visible {
   border-color: var(--gitpulse-border-strong);
   color: var(--gitpulse-link);

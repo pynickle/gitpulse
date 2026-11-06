@@ -32,6 +32,8 @@ const { t } = useI18n();
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .notification-enrichment-notice {
   display: flex;
   min-width: 0;
@@ -71,13 +73,16 @@ const { t } = useI18n();
   cursor: pointer;
 }
 
-.notification-enrichment-notice__retry:hover,
-.notification-enrichment-notice__retry:focus-visible {
-  border-color: var(--gitpulse-warning);
-  color: var(--gitpulse-text-strong);
+@include hover-only {
+  .notification-enrichment-notice__retry:hover {
+    border-color: var(--gitpulse-warning);
+    color: var(--gitpulse-text-strong);
+  }
 }
 
 .notification-enrichment-notice__retry:focus-visible {
+  border-color: var(--gitpulse-warning);
+  color: var(--gitpulse-text-strong);
   outline: 2px solid var(--gitpulse-focus-ring);
   outline-offset: 2px;
 }

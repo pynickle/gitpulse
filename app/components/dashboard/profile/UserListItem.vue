@@ -35,6 +35,8 @@ const showSecondaryLogin = computed(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .user-list-item {
   display: flex;
   align-items: center;
@@ -49,21 +51,18 @@ const showSecondaryLogin = computed(
   cursor: pointer;
   transition:
     background 0.12s ease,
-    border-color 0.12s ease,
-    transform 0.12s ease;
+    border-color 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &:focus-visible {
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 2px;
-  }
-
-  &:active {
-    transform: translateY(1px);
   }
 }
 

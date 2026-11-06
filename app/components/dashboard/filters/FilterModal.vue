@@ -426,6 +426,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .filter-modal {
   position: fixed;
   inset: 0;
@@ -463,8 +465,10 @@ watch(
   transition: background 0.12s ease;
   flex-shrink: 0;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
@@ -494,8 +498,10 @@ watch(
   transition: opacity 0.12s ease;
   flex-shrink: 0;
 
-  &:hover {
-    opacity: 0.9;
+  @include hover-only {
+    &:hover {
+      opacity: 0.9;
+    }
   }
 
   &:focus-visible {
@@ -607,9 +613,11 @@ watch(
     color 0.12s ease;
   min-height: 44px;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &:focus-visible {

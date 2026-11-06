@@ -40,6 +40,8 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
 </template>
 
 <style lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .tabs-settings-page {
   width: 100%;
   min-height: 100%;
@@ -104,11 +106,17 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   transition:
     background 0.15s ease,
     color 0.15s ease;
+
+  &:active:not(:disabled) {
+    background: var(--gitpulse-primary-solid-hover);
+  }
 }
 
-.new-view-btn:hover {
-  color: #ffffff;
-  background: var(--gitpulse-primary-solid-hover);
+@include hover-only {
+  .new-view-btn:hover {
+    color: #ffffff;
+    background: var(--gitpulse-primary-solid-hover);
+  }
 }
 
 /* ------------------------------ Built-in strip ----------------------------- */
@@ -204,8 +212,10 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   transition: border-color 0.15s ease;
 }
 
-.tree-group:hover {
-  border-color: color-mix(in srgb, var(--gitpulse-accent) 26%, var(--gitpulse-border));
+@include hover-only {
+  .tree-group:hover {
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 26%, var(--gitpulse-border));
+  }
 }
 
 .tree-group-row {
@@ -305,8 +315,10 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   font-weight: 700;
 }
 
-.tree-name-input:hover:not(:disabled) {
-  border-bottom-color: color-mix(in srgb, var(--gitpulse-accent) 46%, transparent);
+@include hover-only {
+  .tree-name-input:hover:not(:disabled) {
+    border-bottom-color: color-mix(in srgb, var(--gitpulse-accent) 46%, transparent);
+  }
 }
 
 .tree-name-input:focus {
@@ -339,25 +351,44 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
     transform 0.15s ease;
 }
 
-.tree-group-row:hover .tree-add,
+@include hover-only {
+  .tree-group-row:hover .tree-add {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+// A reveal is a keyboard affordance rather than a tint: a reader tabbing into the
+// row must still find the control on a device that has no pointer to hover with.
 .tree-group-row:focus-within .tree-add {
   opacity: 1;
   pointer-events: auto;
 }
 
-.tree-add:hover,
 .tree-add:focus-visible {
   background: var(--gitpulse-accent-soft);
   transform: translateY(-1px);
+}
+
+@include hover-only {
+  .tree-add:hover {
+    background: var(--gitpulse-accent-soft);
+    transform: translateY(-1px);
+  }
 }
 
 .tree-add.tree-add-view {
   color: var(--gitpulse-success);
 }
 
-.tree-add.tree-add-view:hover,
 .tree-add.tree-add-view:focus-visible {
   background: var(--gitpulse-success-soft);
+}
+
+@include hover-only {
+  .tree-add.tree-add-view:hover {
+    background: var(--gitpulse-success-soft);
+  }
 }
 
 .inline-child-creator,
@@ -430,10 +461,16 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
     box-shadow 0.15s ease;
 }
 
-.tree-tab-row:hover,
 .tree-tab-row:focus-visible {
   border-color: color-mix(in srgb, var(--gitpulse-accent) 24%, transparent);
   background: var(--gitpulse-accent-soft);
+}
+
+@include hover-only {
+  .tree-tab-row:hover {
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 24%, transparent);
+    background: var(--gitpulse-accent-soft);
+  }
 }
 
 .tree-tab-row.is-selected {
@@ -466,12 +503,20 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   cursor: text;
 }
 
-.tab-subtitle-button:hover,
 .tab-subtitle-button:focus-visible {
   color: var(--gitpulse-accent);
   outline: none;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+@include hover-only {
+  .tab-subtitle-button:hover {
+    color: var(--gitpulse-accent);
+    outline: none;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 }
 
 .tab-subtitle-button.is-placeholder {
@@ -514,10 +559,12 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
     background 0.15s ease;
 }
 
-.empty-drop-zone:hover {
-  border-color: color-mix(in srgb, var(--gitpulse-success) 50%, transparent);
-  color: var(--gitpulse-success);
-  background: var(--gitpulse-success-soft);
+@include hover-only {
+  .empty-drop-zone:hover {
+    border-color: color-mix(in srgb, var(--gitpulse-success) 50%, transparent);
+    color: var(--gitpulse-success);
+    background: var(--gitpulse-success-soft);
+  }
 }
 
 /* ----------------------------- Group creator tile -------------------------- */
@@ -572,9 +619,15 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   transition: opacity 0.15s ease;
 }
 
-.tree-group-row:hover .drag-handle,
+@include hover-only {
+  .tree-group-row:hover .drag-handle,
+  .tree-tab-row:hover .drag-handle {
+    opacity: 1;
+  }
+}
+
+// The keyboard's reveal, kept outside the gate for the same reason as `.tree-add`.
 .tree-group-row:focus-within .drag-handle,
-.tree-tab-row:hover .drag-handle,
 .tree-tab-row:focus-within .drag-handle {
   opacity: 1;
 }
@@ -706,9 +759,11 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   color: var(--gitpulse-text-muted);
 }
 
-.drawer-close:hover {
-  color: var(--gitpulse-danger);
-  background: var(--gitpulse-danger-soft);
+@include hover-only {
+  .drawer-close:hover {
+    color: var(--gitpulse-danger);
+    background: var(--gitpulse-danger-soft);
+  }
 }
 
 .drawer-body {
@@ -784,8 +839,14 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   background: var(--gitpulse-primary-solid) !important;
   font-weight: 700;
 
-  &:hover:not(:disabled) {
-    color: #ffffff;
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: #ffffff;
+      background: var(--gitpulse-primary-solid-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
     background: var(--gitpulse-primary-solid-hover);
   }
 
@@ -835,10 +896,12 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
     fill: currentColor;
   }
 
-  &:hover {
-    border-color: color-mix(in srgb, var(--gitpulse-accent) 36%, transparent);
-    color: var(--gitpulse-accent);
-    background: color-mix(in srgb, var(--gitpulse-accent) 12%, var(--gitpulse-surface));
+  @include hover-only {
+    &:hover {
+      border-color: color-mix(in srgb, var(--gitpulse-accent) 36%, transparent);
+      color: var(--gitpulse-accent);
+      background: color-mix(in srgb, var(--gitpulse-accent) 12%, var(--gitpulse-surface));
+    }
   }
 }
 
@@ -947,11 +1010,13 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   padding: 0.18rem 0.45rem;
 }
 
-.chip-button:hover:not(:disabled),
-.segmented-button:hover {
-  border-color: color-mix(in srgb, var(--gitpulse-accent) 36%, transparent);
-  color: var(--gitpulse-accent);
-  background: color-mix(in srgb, var(--gitpulse-accent) 14%, var(--gitpulse-surface));
+@include hover-only {
+  .chip-button:hover:not(:disabled),
+  .segmented-button:hover {
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 36%, transparent);
+    color: var(--gitpulse-accent);
+    background: color-mix(in srgb, var(--gitpulse-accent) 14%, var(--gitpulse-surface));
+  }
 }
 
 .chip-button.is-active {
@@ -1030,10 +1095,12 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
     background 0.15s ease,
     border-color 0.15s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-accent-soft);
-    border-color: var(--gitpulse-accent);
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-accent-soft);
+      border-color: var(--gitpulse-accent);
+      color: var(--gitpulse-accent);
+    }
   }
 
   &:disabled {

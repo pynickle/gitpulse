@@ -72,6 +72,8 @@ const updatedLabel = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .linked-pr-picker-row {
   display: flex;
   align-items: flex-start;
@@ -86,12 +88,14 @@ const updatedLabel = computed(() => {
   cursor: pointer;
   transition: background 0.1s ease;
 
-  &:hover,
-  &:focus-visible {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
+    background: var(--gitpulse-surface-hover);
     outline: 2px solid var(--gitpulse-accent);
     outline-offset: -2px;
   }

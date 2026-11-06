@@ -287,6 +287,8 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .font-modal-overlay {
   position: fixed;
   inset: 0;
@@ -339,9 +341,11 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 
@@ -409,9 +413,11 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   color: var(--gitpulse-text-muted);
   cursor: pointer;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 }
 
@@ -442,8 +448,10 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   transition: background 0.1s ease;
   user-select: none;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &--selected {
@@ -471,8 +479,10 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   flex-shrink: 0;
   transition: all 0.12s ease;
 
-  .font-modal-item:hover & {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    .font-modal-item:hover & {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   .font-modal-item--selected & {
@@ -515,9 +525,11 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover:not(:disabled) {
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:disabled {
@@ -596,10 +608,12 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
 
-  &:hover:not(:disabled) {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 

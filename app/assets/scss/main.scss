@@ -1,4 +1,5 @@
 @use 'variables' as *;
+@use 'pointer' as *;
 
 // Native editing and generated Markdown retain their own scrollports.
 // Limit the approximation to these exceptions; document scrolling stays native.
@@ -291,6 +292,34 @@ body::-webkit-scrollbar {
   display: none;
 }
 
+// ── Pointer contract (ADR 0049) ──
+// A touch tap paints neither the platform's own highlight nor a background the
+// app authored for a pointer, and no surface may keep a tint after the finger
+// lifts. The base rules below are the ones that must hold for the whole document;
+// every other stylesheet expresses the same rule through `_pointer.scss`.
+
+// Declared on the universal selector rather than inherited from `html`: the
+// property's inheritance is not dependable in older WebViews, and no surface in
+// this app wants the platform highlight back.
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+// The document, not a surface: a control that restored double-tap zoom would make
+// every tap wait for the second one. Pinching still zooms.
+html {
+  touch-action: manipulation;
+}
+
+// Chrome refuses the platform's long-press selection and callout. Prose keeps
+// both — a reader who cannot select a paragraph cannot copy it.
+#{$unselectable-chrome} {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
 .hero-body {
   padding: 0;
 }
@@ -330,8 +359,13 @@ a {
   color: var(--bulma-link, var(--gitpulse-link));
 }
 
-a:hover,
-a:focus {
+@include hover-only {
+  a:hover {
+    color: var(--gitpulse-accent-hover);
+  }
+}
+
+a:focus-visible {
   color: var(--gitpulse-accent-hover);
 }
 
@@ -377,14 +411,18 @@ hr {
     transform 0.18s ease;
 }
 
-.gitpulse-floating-fab:hover:not(:disabled),
+@include hover-only {
+  .gitpulse-floating-fab:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
+    color: var(--gitpulse-accent);
+  }
+}
+
 .gitpulse-floating-fab:focus-visible {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
   color: var(--gitpulse-accent);
-}
-
-.gitpulse-floating-fab:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--gitpulse-accent) 72%, transparent);
   outline-offset: 3px;
 }
@@ -403,8 +441,14 @@ hr {
 .dropdown-item {
   color: var(--bulma-text, var(--gitpulse-text));
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
+  &:focus-visible {
     background-color: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
@@ -419,8 +463,14 @@ hr {
 .navbar-link {
   color: var(--bulma-text, var(--gitpulse-text));
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
+  &:focus-visible {
     background-color: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
@@ -456,12 +506,24 @@ hr {
   color: var(--bulma-primary-invert, #fff);
 }
 
+// A filled control keeps an answer to a press (ADR 0032): its own tone one step
+// deeper, on the pointer-and-keyboard tint and on the press alike. The hover tint
+// is gated; the press and the keyboard tint are not, so a touch device still gets
+// an answer where it has no hover to fall back on.
 .button.is-primary {
   background-color: var(--gitpulse-primary-solid);
   border-color: var(--gitpulse-primary-solid);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-primary-solid-hover);
+      border-color: var(--gitpulse-primary-solid-hover);
+      color: var(--bulma-primary-invert, #fff);
+    }
+  }
+
+  &:focus-visible,
+  &:active:not(:disabled) {
     background-color: var(--gitpulse-primary-solid-hover);
     border-color: var(--gitpulse-primary-solid-hover);
     color: var(--bulma-primary-invert, #fff);
@@ -478,8 +540,15 @@ hr {
   background-color: var(--gitpulse-link-solid);
   border-color: var(--gitpulse-link-solid);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-link-solid-hover);
+      border-color: var(--gitpulse-link-solid-hover);
+    }
+  }
+
+  &:focus-visible,
+  &:active:not(:disabled) {
     background-color: var(--gitpulse-link-solid-hover);
     border-color: var(--gitpulse-link-solid-hover);
   }
@@ -489,8 +558,15 @@ hr {
   background-color: var(--gitpulse-info-solid);
   border-color: var(--gitpulse-info-solid);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-info-solid-hover);
+      border-color: var(--gitpulse-info-solid-hover);
+    }
+  }
+
+  &:focus-visible,
+  &:active:not(:disabled) {
     background-color: var(--gitpulse-info-solid-hover);
     border-color: var(--gitpulse-info-solid-hover);
   }
@@ -500,8 +576,15 @@ hr {
   background-color: var(--gitpulse-success-solid);
   border-color: var(--gitpulse-success-solid);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-success-solid-hover);
+      border-color: var(--gitpulse-success-solid-hover);
+    }
+  }
+
+  &:focus-visible,
+  &:active:not(:disabled) {
     background-color: var(--gitpulse-success-solid-hover);
     border-color: var(--gitpulse-success-solid-hover);
   }
@@ -511,8 +594,15 @@ hr {
   background-color: var(--gitpulse-warning-solid);
   border-color: var(--gitpulse-warning-solid);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-warning-solid-hover);
+      border-color: var(--gitpulse-warning-solid-hover);
+    }
+  }
+
+  &:focus-visible,
+  &:active:not(:disabled) {
     background-color: var(--gitpulse-warning-solid-hover);
     border-color: var(--gitpulse-warning-solid-hover);
   }
@@ -522,8 +612,15 @@ hr {
   background-color: var(--gitpulse-danger-solid);
   border-color: var(--gitpulse-danger-solid);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-danger-solid-hover);
+      border-color: var(--gitpulse-danger-solid-hover);
+    }
+  }
+
+  &:focus-visible,
+  &:active:not(:disabled) {
     background-color: var(--gitpulse-danger-solid-hover);
     border-color: var(--gitpulse-danger-solid-hover);
   }
@@ -532,8 +629,14 @@ hr {
 .button.is-ghost {
   color: var(--bulma-text, var(--gitpulse-text));
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
+  &:focus-visible {
     background-color: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
@@ -544,8 +647,15 @@ hr {
   background-color: var(--gitpulse-surface-muted);
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
+  &:focus-visible {
     border-color: var(--gitpulse-border-strong);
     background-color: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
@@ -628,9 +738,11 @@ hr {
 .tabs a {
   color: var(--gitpulse-text-muted);
 
-  &:hover {
-    border-bottom-color: var(--gitpulse-border-strong);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover {
+      border-bottom-color: var(--gitpulse-border-strong);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 }
 
@@ -668,8 +780,13 @@ hr {
 .delete {
   background-color: color-mix(in srgb, var(--gitpulse-text-muted) 34%, transparent);
 
-  &:hover,
-  &:focus {
+  @include hover-only {
+    &:hover {
+      background-color: color-mix(in srgb, var(--gitpulse-text-strong) 42%, transparent);
+    }
+  }
+
+  &:focus-visible {
     background-color: color-mix(in srgb, var(--gitpulse-text-strong) 42%, transparent);
   }
 }

@@ -40,6 +40,8 @@ const handleKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .notification-card__linked-prs {
   display: inline-flex;
   align-items: center;
@@ -52,8 +54,10 @@ const handleKeydown = (event: KeyboardEvent) => {
   font: inherit;
   cursor: pointer;
 
-  &:hover {
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text);
+    }
   }
 
   &:focus-visible {

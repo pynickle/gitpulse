@@ -1,5 +1,6 @@
 @use 'sass:color';
 @use './variables' as *;
+@use './pointer' as *;
 
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
@@ -48,9 +49,11 @@
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-accent-soft);
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-accent-soft);
+      color: var(--gitpulse-accent);
+    }
   }
 
   &--hidden {
@@ -126,9 +129,11 @@
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 
   &:disabled {
@@ -169,8 +174,10 @@
   color: var(--gitpulse-danger);
   cursor: pointer;
 
-  &:hover {
-    background: var(--gitpulse-danger-soft);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-danger-soft);
+    }
   }
 }
 
@@ -202,8 +209,10 @@
   transition: background 0.1s ease;
   user-select: none;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -243,8 +252,10 @@
     color: var(--gitpulse-surface);
   }
 
-  .label-row:hover & {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    .label-row:hover & {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   .label-row.is-selected & {
@@ -310,7 +321,14 @@
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover:not(:disabled) {
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
+  &:focus-visible {
     background: var(--gitpulse-surface-hover);
     color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   }
@@ -335,9 +353,17 @@
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover:not(:disabled) {
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: color.adjust($brand-primary, $lightness: -5%);
+      box-shadow: 0 2px 8px rgba($brand-primary, 0.25);
+    }
+  }
+
+  // A filled surface keeps an answer to a press (ADR 0032): its own tone one step
+  // deeper, where a touch device has no hover to fall back on.
+  &:active:not(:disabled) {
     background: color.adjust($brand-primary, $lightness: -5%);
-    box-shadow: 0 2px 8px rgba($brand-primary, 0.25);
   }
 
   &:disabled {

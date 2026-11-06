@@ -131,6 +131,8 @@ const {
   </Teleport>
 </template>
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .recovered-history {
   position: fixed;
   inset: 0;
@@ -240,10 +242,16 @@ const {
   cursor: pointer;
 }
 
-.recovered-history__close:hover,
 .recovered-history__close:focus-visible {
   background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
   color: var(--gitpulse-text-strong);
+}
+
+@include hover-only {
+  .recovered-history__close:hover {
+    background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
+    color: var(--gitpulse-text-strong);
+  }
 }
 
 .recovered-history__close:focus-visible {

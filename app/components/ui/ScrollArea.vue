@@ -87,6 +87,8 @@ defineExpose({ scrollElement });
 
 <style src="simplebar-vue/dist/simplebar.min.css"></style>
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 :where(.scroll-area) {
   min-width: 0;
   min-height: 0;
@@ -147,9 +149,11 @@ defineExpose({ scrollElement });
   :deep(.simplebar-scrollbar.simplebar-visible::before) {
     opacity: 0.75;
   }
-  :deep(.simplebar-track:hover .simplebar-scrollbar::before) {
-    background: var(--gitpulse-text-muted);
-    opacity: 1;
+  @include hover-only {
+    :deep(.simplebar-track:hover .simplebar-scrollbar::before) {
+      background: var(--gitpulse-text-muted);
+      opacity: 1;
+    }
   }
 
   // Keep slot instances alive while responsive layouts hand scroll ownership

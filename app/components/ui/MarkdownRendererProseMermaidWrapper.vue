@@ -138,6 +138,8 @@ onBeforeUnmount(clearResetTimer);
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .markdown-code-block {
   overflow: hidden;
   margin: 1rem 0;
@@ -204,10 +206,12 @@ onBeforeUnmount(clearResetTimer);
   line-height: 1;
 }
 
-.markdown-code-block__copy:hover {
-  border-color: var(--gitpulse-border-strong);
-  background-color: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+@include hover-only {
+  .markdown-code-block__copy:hover {
+    border-color: var(--gitpulse-border-strong);
+    background-color: var(--gitpulse-surface);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 }
 
 .markdown-code-block__copy:focus-visible {

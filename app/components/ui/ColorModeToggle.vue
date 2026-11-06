@@ -40,6 +40,8 @@ const modes = [
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .color-mode-toggle {
   display: inline-flex;
   align-items: center;
@@ -67,13 +69,16 @@ const modes = [
     color 0.16s ease,
     box-shadow 0.16s ease;
 
-  &:hover,
-  &:focus-visible {
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:focus-visible {
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
     outline: 2px solid var(--gitpulse-accent);
     outline-offset: 2px;
   }

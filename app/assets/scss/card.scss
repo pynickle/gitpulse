@@ -1,3 +1,5 @@
+@use 'pointer' as *;
+
 .card {
   margin: 0.25rem;
   --bulma-shadow: var(--gitpulse-shadow-card);
@@ -20,16 +22,21 @@
   overflow: hidden;
 }
 
-.dashboard-list-card:hover,
-.dashboard-list-card:focus-within {
-  border-color: var(--gitpulse-link, #3e8ed0);
-  background-color: var(--gitpulse-surface-hover, #fbfdff);
-  box-shadow: var(--gitpulse-shadow-card-hover);
-}
+// The whole-card tint is a pointer affordance, and `:focus-within` joins it: a tap
+// that focuses a control inside a card would otherwise paint the card and keep it
+// painted, because a focus is not released by lifting the finger.
+@include hover-only {
+  .dashboard-list-card:hover,
+  .dashboard-list-card:focus-within {
+    border-color: var(--gitpulse-link, #3e8ed0);
+    background-color: var(--gitpulse-surface-hover, #fbfdff);
+    box-shadow: var(--gitpulse-shadow-card-hover);
+  }
 
-.dashboard-list-card:hover .dashboard-list-card__title,
-.dashboard-list-card:focus-within .dashboard-list-card__title {
-  color: var(--gitpulse-link, #3e8ed0);
+  .dashboard-list-card:hover .dashboard-list-card__title,
+  .dashboard-list-card:focus-within .dashboard-list-card__title {
+    color: var(--gitpulse-link, #3e8ed0);
+  }
 }
 
 .dashboard-list-card__content {

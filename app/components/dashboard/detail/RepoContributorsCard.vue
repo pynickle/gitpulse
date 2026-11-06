@@ -133,6 +133,7 @@ watch(
 // Child component: must own full sidebar-card chrome. RepoDetail's scoped
 // .sidebar-card rules do not apply across component boundaries.
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
   overflow: hidden;
@@ -210,7 +211,14 @@ watch(
   text-decoration: none;
   transition: all 0.12s ease;
 
-  &:hover,
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
+  }
+
   &:focus-visible {
     border-color: var(--gitpulse-border-strong);
     background: var(--gitpulse-surface-hover);
@@ -251,8 +259,10 @@ watch(
 .repo-contributors__avatar-link {
   transition: transform 0.12s ease;
 
-  &:hover {
-    transform: scale(1.06);
+  @include hover-only {
+    &:hover {
+      transform: scale(1.06);
+    }
   }
 
   &:focus-visible {

@@ -193,6 +193,8 @@ const getStateIcon = (item: SearchResultItem) => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .search-result-preview {
   display: flex;
   flex-direction: column;
@@ -275,9 +277,11 @@ const getStateIcon = (item: SearchResultItem) => {
     border-color 0.15s ease,
     box-shadow 0.15s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-accent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--gitpulse-accent) 20%, transparent);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-accent);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--gitpulse-accent) 20%, transparent);
+    }
   }
 }
 

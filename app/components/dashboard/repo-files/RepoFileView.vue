@@ -1210,6 +1210,7 @@ onActivated(() => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 .repo-file-view {
   height: 100%;
@@ -1276,9 +1277,14 @@ onActivated(() => {
   cursor: pointer;
   transition: color 0.1s ease;
 
-  &:hover,
   &:focus-visible {
     color: var(--gitpulse-info);
+  }
+
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-info);
+    }
   }
 
   &:focus-visible {
@@ -1322,9 +1328,11 @@ onActivated(() => {
     background 0.1s ease,
     color 0.1s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 }
 
@@ -1355,9 +1363,11 @@ onActivated(() => {
     background 0.1s ease,
     color 0.1s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 }
 
@@ -1406,9 +1416,11 @@ onActivated(() => {
   cursor: pointer;
 }
 
-.repo-file-view__collapsed-handle:hover {
-  background: var(--gitpulse-info-soft);
-  color: var(--gitpulse-info);
+@include hover-only {
+  .repo-file-view__collapsed-handle:hover {
+    background: var(--gitpulse-info-soft);
+    color: var(--gitpulse-info);
+  }
 }
 
 .repo-file-view__sidebar-header {
@@ -1441,9 +1453,11 @@ onActivated(() => {
   cursor: pointer;
 }
 
-.repo-file-view__collapse-button:hover {
-  background: var(--gitpulse-surface-hover);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+@include hover-only {
+  .repo-file-view__collapse-button:hover {
+    background: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
 }
 
 .repo-file-view__tree-loading {
@@ -1478,9 +1492,14 @@ onActivated(() => {
   font-weight: 600;
 }
 
-.repo-file-view__tree-root:hover,
 .repo-file-view__tree-root--active {
   background: var(--gitpulse-info-soft);
+}
+
+@include hover-only {
+  .repo-file-view__tree-root:hover {
+    background: var(--gitpulse-info-soft);
+  }
 }
 
 .repo-file-view__tree-directory,
@@ -1516,11 +1535,16 @@ onActivated(() => {
   cursor: pointer;
 }
 
-.repo-file-view__tree-directory:hover,
-.repo-file-view__tree-file:hover,
 .repo-file-view__tree-directory--active,
 .repo-file-view__tree-file--active {
   background: var(--gitpulse-info-soft);
+}
+
+@include hover-only {
+  .repo-file-view__tree-directory:hover,
+  .repo-file-view__tree-file:hover {
+    background: var(--gitpulse-info-soft);
+  }
 }
 
 .repo-file-view__tree-directory--active {
@@ -1632,8 +1656,10 @@ onActivated(() => {
     border-bottom: 0;
   }
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -1717,9 +1743,11 @@ onActivated(() => {
   cursor: pointer;
   text-decoration: none;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 }
 
@@ -1838,8 +1866,10 @@ onActivated(() => {
 }
 
 .repo-file-view__code-line {
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 

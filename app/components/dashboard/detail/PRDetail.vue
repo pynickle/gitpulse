@@ -1091,6 +1091,7 @@ watch(
 
 <style scoped lang="scss">
 @use '~/assets/scss/detail-sidebar-columns' as *;
+@use '~/assets/scss/pointer' as *;
 
 .pr-detail-layout :deep(.columns) {
   height: 100%;
@@ -1170,8 +1171,10 @@ watch(
     color 0.12s ease,
     border-color 0.12s ease;
 
-  &:hover:not(.is-active) {
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover:not(.is-active) {
+      color: var(--gitpulse-text);
+    }
   }
 
   &:focus-visible {

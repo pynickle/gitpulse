@@ -416,6 +416,8 @@ watch(visibleSuggestions, (suggestions) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .filter-multiselect {
   position: relative;
   min-width: 0;
@@ -497,9 +499,11 @@ watch(visibleSuggestions, (suggestions) => {
     background 0.12s ease,
     color 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &:focus-visible {
@@ -553,7 +557,12 @@ watch(visibleSuggestions, (suggestions) => {
   cursor: pointer;
   transition: background 0.08s ease;
 
-  &:hover,
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-active);
+    }
+  }
+
   &--active {
     background: var(--gitpulse-surface-active);
   }
@@ -573,7 +582,12 @@ watch(visibleSuggestions, (suggestions) => {
   opacity: 0;
 }
 
-.filter-multiselect__option:hover .filter-multiselect__option-check,
+@include hover-only {
+  .filter-multiselect__option:hover .filter-multiselect__option-check {
+    opacity: 1;
+  }
+}
+
 .filter-multiselect__option--active .filter-multiselect__option-check {
   opacity: 1;
 }

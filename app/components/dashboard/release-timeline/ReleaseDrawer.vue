@@ -241,6 +241,8 @@ const handleOpenReleasePage = async () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-drawer {
   position: fixed;
   inset: 0;
@@ -340,9 +342,14 @@ const handleOpenReleasePage = async () => {
   cursor: pointer;
 }
 
-.release-drawer__repo:hover,
 .release-drawer__repo:focus-visible {
   text-decoration: underline;
+}
+
+@include hover-only {
+  .release-drawer__repo:hover {
+    text-decoration: underline;
+  }
 }
 
 .release-drawer__repo:focus-visible {
@@ -366,12 +373,18 @@ const handleOpenReleasePage = async () => {
   cursor: pointer;
 }
 
-.release-drawer__action:hover,
 .release-drawer__action:focus-visible,
-.release-drawer__close:hover,
 .release-drawer__close:focus-visible {
   background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
   color: var(--gitpulse-text-strong);
+}
+
+@include hover-only {
+  .release-drawer__action:hover,
+  .release-drawer__close:hover {
+    background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
+    color: var(--gitpulse-text-strong);
+  }
 }
 
 .release-drawer__action:focus-visible,

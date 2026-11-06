@@ -98,6 +98,8 @@ const currentConfig = computed<GuideConfig>(() => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
@@ -151,8 +153,10 @@ const currentConfig = computed<GuideConfig>(() => {
   text-decoration: none;
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 }
 </style>

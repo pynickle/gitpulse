@@ -515,6 +515,8 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .wiki-page {
   max-width: 76rem;
   margin: 0 auto;
@@ -544,8 +546,10 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   color: var(--gitpulse-text-muted);
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text-strong);
+    }
   }
 }
 
@@ -556,8 +560,10 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   color: var(--gitpulse-text-muted);
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text-strong);
+    }
   }
 }
 
@@ -641,9 +647,11 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
     background 0.1s ease,
     color 0.1s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &.is-active {
@@ -880,9 +888,11 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
     color 0.1s ease,
     border-color 0.1s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &.is-active {

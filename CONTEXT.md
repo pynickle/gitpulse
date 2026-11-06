@@ -50,6 +50,28 @@ _Avoid_: brand color, primary when it could be confused with a status colour
 **Platform Dialect Exception**:
 A control whose behaviour and appearance both stay the platform's own by an explicit decision, named where the decision lives, rather than by nobody having got round to it.
 
+## Interaction
+
+**Press Feedback**:
+The answer a surface gives while a finger or a pointer is held down on it. It is never a tint laid over a surface and it never moves the surface: a control with no fill of its own paints nothing, and a filled control deepens its own fill. A press judged to need more than that takes a different remedy — never a tint, never a scale.
+_Avoid_: pressed state, tap effect, ripple
+
+**Hover Tint**:
+The background a hovering pointer lays under the row it rests on, before any click. It exists only where a pointer genuinely hovers; a touch that leaves it applied after the finger lifts is a Hold, not a tint.
+_Avoid_: hover state, mouseover, active background
+
+**Hold**:
+A Hover Tint or a focus tint left painted after the input that caused it is gone — a tapped row that stays shaded because a touch has no mouse pointer to leave with, or a card that stays shaded because focusing a control inside it never releases. A Hold is the defect this vocabulary exists to name; it is never a state the client intends to show.
+_Avoid_: sticky hover, trapped hover, lingering highlight
+
+**Pressable Surface**:
+A surface a reader operates — a button, a row, a tab, a card — as distinct from a surface a reader only reads. It answers a press with Press Feedback, refuses the platform's long-press menu, and never holds a tint.
+_Avoid_: clickable element, interactive component, tappable
+
+**Chrome Text Selection**:
+Which surfaces a long press may select text on. Prose, documents, code and fields may be selected and copied; a Pressable Surface may not, because selecting it is never what a reader meant.
+_Avoid_: text selection when naming the boundary
+
 ## Integration
 
 **Canonical Origin**:

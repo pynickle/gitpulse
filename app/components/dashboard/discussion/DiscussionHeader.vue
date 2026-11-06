@@ -128,6 +128,8 @@ const handleRepoClick = async () => {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .header-meta {
   gap: 0.75rem;
 }
@@ -200,9 +202,11 @@ const handleRepoClick = async () => {
   cursor: pointer;
   transition: color 0.16s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent-hover);
-    text-decoration: underline;
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent-hover);
+      text-decoration: underline;
+    }
   }
 }
 
@@ -214,8 +218,10 @@ const handleRepoClick = async () => {
   font-size: 0.875rem;
   transition: color 0.16s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent-hover);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent-hover);
+    }
   }
 }
 

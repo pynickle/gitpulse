@@ -508,6 +508,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 .detail-sidebar-panel {
   display: flex;
@@ -642,10 +643,12 @@ const formatRelativeTime = (dateString: string | undefined) => {
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -665,8 +668,10 @@ const formatRelativeTime = (dateString: string | undefined) => {
   border-radius: 6px;
   transition: all 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &--approved {
@@ -811,10 +816,12 @@ const formatRelativeTime = (dateString: string | undefined) => {
   cursor: pointer;
   opacity: 0.6;
 
-  &:hover {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    background: var(--gitpulse-surface-hover);
-    opacity: 1;
+  @include hover-only {
+    &:hover {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      opacity: 1;
+    }
   }
 }
 
@@ -874,9 +881,11 @@ const formatRelativeTime = (dateString: string | undefined) => {
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 
   &:focus-visible {
@@ -932,10 +941,12 @@ const formatRelativeTime = (dateString: string | undefined) => {
     color 0.12s ease,
     box-shadow 0.12s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:disabled {
@@ -985,14 +996,16 @@ const formatRelativeTime = (dateString: string | undefined) => {
     color: var(--gitpulse-accent);
   }
 
-  &:hover:not(:disabled) {
-    color: var(--gitpulse-text-strong);
-    border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
-    background: color-mix(in srgb, var(--gitpulse-accent-soft) 78%, var(--gitpulse-surface));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-text-strong);
+      border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
+      background: color-mix(in srgb, var(--gitpulse-accent-soft) 78%, var(--gitpulse-surface));
 
-    .sidebar-action-btn__chevron {
-      transform: translateX(2px);
-      color: var(--gitpulse-accent);
+      .sidebar-action-btn__chevron {
+        transform: translateX(2px);
+        color: var(--gitpulse-accent);
+      }
     }
   }
 }
@@ -1008,10 +1021,12 @@ const formatRelativeTime = (dateString: string | undefined) => {
     color: var(--gitpulse-danger);
   }
 
-  &:hover:not(:disabled) {
-    color: var(--gitpulse-danger);
-    border-color: color-mix(in srgb, var(--gitpulse-danger) 55%, var(--gitpulse-border));
-    background: color-mix(in srgb, var(--gitpulse-danger-soft) 90%, var(--gitpulse-surface));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-danger);
+      border-color: color-mix(in srgb, var(--gitpulse-danger) 55%, var(--gitpulse-border));
+      background: color-mix(in srgb, var(--gitpulse-danger-soft) 90%, var(--gitpulse-surface));
+    }
   }
 }
 
@@ -1026,10 +1041,12 @@ const formatRelativeTime = (dateString: string | undefined) => {
     color: var(--gitpulse-success);
   }
 
-  &:hover:not(:disabled) {
-    color: var(--gitpulse-success);
-    border-color: color-mix(in srgb, var(--gitpulse-success) 55%, var(--gitpulse-border));
-    background: color-mix(in srgb, var(--gitpulse-success-soft) 90%, var(--gitpulse-surface));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-success);
+      border-color: color-mix(in srgb, var(--gitpulse-success) 55%, var(--gitpulse-border));
+      background: color-mix(in srgb, var(--gitpulse-success-soft) 90%, var(--gitpulse-surface));
+    }
   }
 }
 
@@ -1054,10 +1071,12 @@ const formatRelativeTime = (dateString: string | undefined) => {
     color: var(--gitpulse-accent);
   }
 
-  &:hover:not(:disabled) {
-    color: var(--gitpulse-accent);
-    border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
-    background: color-mix(in srgb, var(--gitpulse-accent-soft) 72%, var(--gitpulse-surface));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-accent);
+      border-color: color-mix(in srgb, var(--gitpulse-accent) 48%, var(--gitpulse-border));
+      background: color-mix(in srgb, var(--gitpulse-accent-soft) 72%, var(--gitpulse-surface));
+    }
   }
 }
 
@@ -1077,8 +1096,10 @@ const formatRelativeTime = (dateString: string | undefined) => {
   text-decoration: none;
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 
   &:focus-visible {
@@ -1116,8 +1137,10 @@ const formatRelativeTime = (dateString: string | undefined) => {
   color: var(--gitpulse-danger);
   cursor: pointer;
 
-  &:hover {
-    background: var(--gitpulse-danger-soft);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-danger-soft);
+    }
   }
 }
 

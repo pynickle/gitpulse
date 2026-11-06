@@ -181,6 +181,8 @@ const showPills = computed(() => currentTab !== 'repos');
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .filter-bar {
   display: flex;
   align-items: center;
@@ -239,9 +241,11 @@ const showPills = computed(() => currentTab !== 'repos');
     border-color 0.12s ease,
     color 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-danger);
-    color: var(--gitpulse-danger);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-danger);
+      color: var(--gitpulse-danger);
+    }
   }
 }
 
@@ -263,8 +267,10 @@ const showPills = computed(() => currentTab !== 'repos');
   border-radius: var(--gitpulse-radius-sm);
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-danger);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-danger);
+    }
   }
 }
 

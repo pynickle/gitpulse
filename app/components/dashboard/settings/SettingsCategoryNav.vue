@@ -130,6 +130,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .settings-category-nav {
   position: relative;
   display: flex;
@@ -234,7 +236,7 @@ onBeforeUnmount(() => {
       border-bottom: 0;
     }
 
-    @media (hover: hover) {
+    @include hover-only {
       &:hover {
         background: var(--gitpulse-surface-hover);
       }

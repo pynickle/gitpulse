@@ -167,6 +167,8 @@ const itemClass = computed(() => [
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-list-item {
   display: flex;
   align-items: center;
@@ -181,9 +183,11 @@ const itemClass = computed(() => [
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    border-color: color-mix(in srgb, var(--gitpulse-border) 70%, var(--gitpulse-text-muted));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      border-color: color-mix(in srgb, var(--gitpulse-border) 70%, var(--gitpulse-text-muted));
+    }
   }
 
   &:focus-visible {
@@ -195,8 +199,10 @@ const itemClass = computed(() => [
     border-color: color-mix(in srgb, var(--gitpulse-success) 40%, var(--gitpulse-border));
     background: color-mix(in srgb, var(--gitpulse-success) 6%, var(--gitpulse-surface));
 
-    &:hover {
-      background: color-mix(in srgb, var(--gitpulse-success) 10%, var(--gitpulse-surface));
+    @include hover-only {
+      &:hover {
+        background: color-mix(in srgb, var(--gitpulse-success) 10%, var(--gitpulse-surface));
+      }
     }
   }
 

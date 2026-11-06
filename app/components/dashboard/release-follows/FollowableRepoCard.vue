@@ -75,6 +75,8 @@ const handleToggle = (event: MouseEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .followable-repo-card {
   position: relative;
   height: 100%;
@@ -106,9 +108,11 @@ const handleToggle = (event: MouseEvent) => {
   cursor: pointer;
   box-shadow: var(--gitpulse-shadow-raised);
 
-  &:hover:not(:disabled) {
-    color: var(--gitpulse-text-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-text-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {

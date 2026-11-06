@@ -132,6 +132,8 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .repo-commit-list {
   min-height: 8rem;
   min-width: 0;
@@ -193,8 +195,10 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
     border-top: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
   }
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -219,8 +223,10 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
   font-weight: 500;
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-link);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+    }
   }
 
   &:focus-visible {
@@ -252,8 +258,10 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
   font-weight: 600;
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-link);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+    }
   }
 
   &--plain {
@@ -282,9 +290,11 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
     color 0.12s ease,
     border-color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-link);
-    border-color: var(--gitpulse-link);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+      border-color: var(--gitpulse-link);
+    }
   }
 
   &:focus-visible {
@@ -292,9 +302,11 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
     outline-offset: 1px;
   }
 
-  &--plain:hover {
-    color: var(--gitpulse-text-muted);
-    border-color: var(--gitpulse-border);
+  @include hover-only {
+    &--plain:hover {
+      color: var(--gitpulse-text-muted);
+      border-color: var(--gitpulse-border);
+    }
   }
 }
 

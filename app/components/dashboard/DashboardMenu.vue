@@ -165,6 +165,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .dashboard-menu__scrim {
   position: fixed;
   inset: 0;
@@ -259,12 +261,14 @@ watch(
   text-align: left;
   cursor: pointer;
 
-  &:hover,
-  &:focus-visible {
-    background: var(--bulma-background-hover, var(--gitpulse-surface-hover));
+  @include hover-only {
+    &:hover {
+      background: var(--bulma-background-hover, var(--gitpulse-surface-hover));
+    }
   }
 
   &:focus-visible {
+    background: var(--bulma-background-hover, var(--gitpulse-surface-hover));
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 1px;
   }

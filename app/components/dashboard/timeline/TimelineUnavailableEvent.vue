@@ -43,6 +43,8 @@ const reasonText = computed(() => t(`timeline.unavailableReason_${reasonCode}`))
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .timeline-unavailable {
   &__label {
     color: var(--bulma-grey);
@@ -57,8 +59,10 @@ const reasonText = computed(() => t(`timeline.unavailableReason_${reasonCode}`))
     color: var(--bulma-grey-light);
     vertical-align: middle;
 
-    &:hover {
-      color: var(--bulma-grey);
+    @include hover-only {
+      &:hover {
+        color: var(--bulma-grey);
+      }
     }
   }
 
@@ -92,8 +96,10 @@ const reasonText = computed(() => t(`timeline.unavailableReason_${reasonCode}`))
     }
   }
 
-  &__icon:hover &__tooltip {
-    display: block;
+  @include hover-only {
+    &__icon:hover &__tooltip {
+      display: block;
+    }
   }
 }
 </style>

@@ -144,6 +144,8 @@ const rows = computed<RowView[]>(() =>
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-drawer-list__rows {
   display: flex;
   flex-direction: column;
@@ -168,12 +170,14 @@ const rows = computed<RowView[]>(() =>
     background-color 0.12s ease,
     border-color 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    border-color: color-mix(in srgb, var(--gitpulse-border) 70%, var(--gitpulse-text-muted));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      border-color: color-mix(in srgb, var(--gitpulse-border) 70%, var(--gitpulse-text-muted));
 
-    .release-drawer-list__chevron {
-      color: var(--gitpulse-text-strong);
+      .release-drawer-list__chevron {
+        color: var(--gitpulse-text-strong);
+      }
     }
   }
 
@@ -186,8 +190,10 @@ const rows = computed<RowView[]>(() =>
     border-color: color-mix(in srgb, var(--gitpulse-success) 40%, var(--gitpulse-border));
     background: color-mix(in srgb, var(--gitpulse-success) 6%, var(--gitpulse-surface));
 
-    &:hover {
-      background: color-mix(in srgb, var(--gitpulse-success) 10%, var(--gitpulse-surface));
+    @include hover-only {
+      &:hover {
+        background: color-mix(in srgb, var(--gitpulse-success) 10%, var(--gitpulse-surface));
+      }
     }
   }
 
@@ -205,8 +211,10 @@ const rows = computed<RowView[]>(() =>
     box-shadow: inset 3px 0 0 var(--gitpulse-link);
     background: color-mix(in srgb, var(--gitpulse-link) 5%, var(--gitpulse-surface));
 
-    &:hover {
-      background: color-mix(in srgb, var(--gitpulse-link) 8%, var(--gitpulse-surface-hover));
+    @include hover-only {
+      &:hover {
+        background: color-mix(in srgb, var(--gitpulse-link) 8%, var(--gitpulse-surface-hover));
+      }
     }
   }
 }

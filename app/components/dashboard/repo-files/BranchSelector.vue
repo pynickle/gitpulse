@@ -269,6 +269,7 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 // ─── Trigger button ────────────────────────────────────────────
 .branch-selector {
@@ -293,10 +294,12 @@ onBeforeUnmount(() => {
     border-color 0.12s ease,
     color 0.12s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:focus-visible {
@@ -387,9 +390,11 @@ onBeforeUnmount(() => {
   line-height: 1;
   transition: all 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
+    }
   }
 
   &:focus-visible {
@@ -473,8 +478,10 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background 0.1s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
@@ -555,9 +562,11 @@ onBeforeUnmount(() => {
     color: var(--gitpulse-text-muted);
     background: transparent;
 
-    &:hover:not(:disabled) {
-      background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    @include hover-only {
+      &:hover:not(:disabled) {
+        background: var(--gitpulse-surface-hover);
+        color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      }
     }
   }
 

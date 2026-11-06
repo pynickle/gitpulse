@@ -258,6 +258,8 @@ const toggleCollapsed = () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
@@ -279,8 +281,10 @@ const toggleCollapsed = () => {
   cursor: pointer;
   transition: background 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {

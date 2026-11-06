@@ -145,6 +145,7 @@ const updatedAtLabel = computed(() =>
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
@@ -233,8 +234,10 @@ const updatedAtLabel = computed(() =>
   text-decoration: none;
   transition: color 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-accent);
+    }
   }
 }
 
@@ -254,10 +257,12 @@ const updatedAtLabel = computed(() =>
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover:not(:disabled) {
-    background: var(--gitpulse-surface-hover);
-    border-color: var(--gitpulse-border-strong);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:disabled {

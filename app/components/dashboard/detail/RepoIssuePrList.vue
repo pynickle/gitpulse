@@ -82,6 +82,8 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .repo-issue-pr-list {
   min-height: 8rem;
   min-width: 0;
@@ -152,7 +154,14 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
       background-color 0.12s ease;
   }
 
-  &:hover :deep(.dashboard-list-card),
+  @include hover-only {
+    &:hover :deep(.dashboard-list-card) {
+      border-color: var(--gitpulse-link, var(--gitpulse-border-strong));
+      background-color: var(--gitpulse-surface-hover, var(--gitpulse-surface));
+      box-shadow: var(--gitpulse-shadow-card-hover, var(--gitpulse-shadow-card));
+    }
+  }
+
   &:focus-visible :deep(.dashboard-list-card) {
     border-color: var(--gitpulse-link, var(--gitpulse-border-strong));
     background-color: var(--gitpulse-surface-hover, var(--gitpulse-surface));

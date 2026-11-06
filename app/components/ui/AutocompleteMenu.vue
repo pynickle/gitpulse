@@ -127,6 +127,8 @@ watch(() => activeIndex, scrollActiveOptionIntoView);
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .fa-panel {
   position: fixed;
   z-index: 99998;
@@ -156,8 +158,10 @@ watch(() => activeIndex, scrollActiveOptionIntoView);
   cursor: pointer;
   transition: background 0.08s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-active);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-active);
+    }
   }
 
   &--active {

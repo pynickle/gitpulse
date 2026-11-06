@@ -320,6 +320,7 @@ onUnmounted(() => {
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/reviewer-modal';
+@use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
@@ -399,10 +400,12 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.12s ease;
 
-  &:hover {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      border-color: var(--gitpulse-border-strong);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 }
 
@@ -422,8 +425,10 @@ onUnmounted(() => {
   border-radius: 6px;
   transition: border-color 0.12s ease;
 
-  &:hover {
-    border-color: var(--gitpulse-border-strong);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-border-strong);
+    }
   }
 }
 
@@ -468,10 +473,12 @@ onUnmounted(() => {
   cursor: pointer;
   opacity: 0.6;
 
-  &:hover:not(:disabled) {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    background: var(--gitpulse-surface-hover);
-    opacity: 1;
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      opacity: 1;
+    }
   }
 
   &:disabled {

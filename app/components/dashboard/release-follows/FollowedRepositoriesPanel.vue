@@ -127,6 +127,8 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .followed-panel--desktop {
   display: none;
   width: 18rem;
@@ -184,9 +186,11 @@ const handleSheetKeydown = (event: KeyboardEvent) => {
     background-color 0.15s ease,
     color 0.15s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &:focus-visible {

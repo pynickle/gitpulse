@@ -60,6 +60,8 @@ defineExpose({
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .collapsible-group {
   display: flex;
   flex-direction: column;
@@ -79,8 +81,10 @@ defineExpose({
   cursor: pointer;
   transition: background 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {

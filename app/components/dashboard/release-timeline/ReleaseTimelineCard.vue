@@ -86,6 +86,8 @@ const handleCardClick = (event: MouseEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-timeline-card {
   display: flex;
   min-width: 0;
@@ -122,12 +124,14 @@ const handleCardClick = (event: MouseEvent) => {
   cursor: pointer;
 }
 
-.release-timeline-card__repo:hover,
-.release-timeline-card__repo:focus-visible {
-  text-decoration: underline;
+@include hover-only {
+  .release-timeline-card__repo:hover {
+    text-decoration: underline;
+  }
 }
 
 .release-timeline-card__repo:focus-visible {
+  text-decoration: underline;
   outline: 2px solid var(--gitpulse-info);
   outline-offset: 2px;
 }

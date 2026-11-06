@@ -304,6 +304,8 @@ watch(repoFullName, () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .releases-page {
   max-width: 56rem;
   margin: 0 auto;
@@ -333,8 +335,10 @@ watch(repoFullName, () => {
   color: var(--gitpulse-text-muted);
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text-strong);
+    }
   }
 }
 
@@ -357,9 +361,11 @@ watch(repoFullName, () => {
   font-size: 0.75rem;
   cursor: pointer;
 
-  &:hover:not([disabled]) {
-    background: var(--gitpulse-surface-hover);
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover:not([disabled]) {
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
   }
 
   &[disabled] {

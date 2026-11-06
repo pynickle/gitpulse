@@ -445,6 +445,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .mermaid-viewer-modal {
   z-index: 60;
 }
@@ -571,7 +573,13 @@ onBeforeUnmount(() => {
     color 120ms ease;
 }
 
-.mermaid-viewer-modal__icon-button:hover:not(:disabled),
+@include hover-only {
+  .mermaid-viewer-modal__icon-button:hover:not(:disabled) {
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  }
+}
+
 .mermaid-viewer-modal__icon-button:focus-visible {
   background-color: var(--gitpulse-surface-hover);
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
@@ -598,7 +606,12 @@ onBeforeUnmount(() => {
   transition: background-color 120ms ease;
 }
 
-.mermaid-viewer-modal__zoom-readout:hover,
+@include hover-only {
+  .mermaid-viewer-modal__zoom-readout:hover {
+    background-color: var(--gitpulse-surface-hover);
+  }
+}
+
 .mermaid-viewer-modal__zoom-readout:focus-visible {
   background-color: var(--gitpulse-surface-hover);
 }

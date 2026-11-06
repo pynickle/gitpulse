@@ -189,6 +189,8 @@ watch(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .segmented-control {
   position: relative;
   display: inline-flex;
@@ -251,8 +253,10 @@ watch(
     font-weight: 500;
   }
 
-  &:hover:not(.is-active):not(.is-disabled) {
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover:not(.is-active):not(.is-disabled) {
+      color: var(--gitpulse-text);
+    }
   }
 
   &.is-disabled {

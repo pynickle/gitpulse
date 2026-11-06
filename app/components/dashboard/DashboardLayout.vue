@@ -135,6 +135,7 @@ const handleReset = () => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
+@use '~/assets/scss/pointer' as *;
 
 // Layout variables defining the 4-column structure
 $activity-bar-width: 48px;
@@ -210,17 +211,19 @@ $splitter-hover-zone: 14px;
     height: 100%;
   }
 
-  &:hover,
-  &:focus-visible,
-  &.is-dragging {
-    background: var(--gitpulse-border-strong, var(--gitpulse-border));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-border-strong, var(--gitpulse-border));
+    }
   }
 
   &:focus-visible {
+    background: var(--gitpulse-border-strong, var(--gitpulse-border));
     box-shadow: 0 0 0 2px var(--gitpulse-focus-ring, rgba(0, 122, 255, 0.45));
   }
 
   &.is-dragging {
+    background: var(--gitpulse-border-strong, var(--gitpulse-border));
     cursor: ew-resize;
   }
 }
@@ -256,16 +259,24 @@ $splitter-hover-zone: 14px;
     background 0.14s ease,
     border-color 0.14s ease;
 
-  .dashboard-splitter:hover &,
+  @include hover-only {
+    .dashboard-splitter:hover & {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
   .dashboard-splitter:focus-visible & {
     opacity: 1;
     pointer-events: auto;
   }
 
-  &:hover {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    background: var(--gitpulse-surface-hover, var(--gitpulse-shell-bg));
-    border-color: var(--gitpulse-border-strong, var(--gitpulse-border));
+  @include hover-only {
+    &:hover {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover, var(--gitpulse-shell-bg));
+      border-color: var(--gitpulse-border-strong, var(--gitpulse-border));
+    }
   }
 
   // Hide while actively dragging — resizing is a separate intent from resetting.

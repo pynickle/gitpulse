@@ -155,6 +155,8 @@ const authorProfileUrl = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .repo-latest-commit-bar {
   display: flex;
   align-items: center;
@@ -203,8 +205,10 @@ const authorProfileUrl = computed(() => {
   font-weight: 600;
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-link);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+    }
   }
 
   &--plain {
@@ -222,8 +226,10 @@ const authorProfileUrl = computed(() => {
   font-size: 0.8125rem;
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-link);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+    }
   }
 
   &--plain {
@@ -261,9 +267,11 @@ const authorProfileUrl = computed(() => {
     color 0.12s ease,
     background 0.12s ease;
 
-  &:hover {
-    color: var(--gitpulse-link);
-    background: var(--gitpulse-surface-hover);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+      background: var(--gitpulse-surface-hover);
+    }
   }
 
   &:focus-visible {
@@ -299,8 +307,10 @@ const authorProfileUrl = computed(() => {
   padding: 0.1rem 0.25rem;
   border-radius: 4px;
 
-  &:hover {
-    text-decoration: underline;
+  @include hover-only {
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &:focus-visible {

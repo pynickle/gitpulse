@@ -145,6 +145,8 @@ const handleBodyNavigation = (event: MouseEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-drawer-body {
   display: flex;
   min-width: 0;
@@ -191,9 +193,14 @@ const handleBodyNavigation = (event: MouseEvent) => {
   cursor: pointer;
 }
 
-.release-drawer-body__title:hover,
 .release-drawer-body__title:focus-visible {
   color: var(--gitpulse-link);
+}
+
+@include hover-only {
+  .release-drawer-body__title:hover {
+    color: var(--gitpulse-link);
+  }
 }
 
 .release-drawer-body__title:focus-visible {
@@ -232,10 +239,16 @@ const handleBodyNavigation = (event: MouseEvent) => {
   color: var(--gitpulse-text-muted);
 }
 
-.release-drawer-body__github:hover,
 .release-drawer-body__github:focus-visible {
   color: var(--gitpulse-text-strong);
   background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
+}
+
+@include hover-only {
+  .release-drawer-body__github:hover {
+    color: var(--gitpulse-text-strong);
+    background: var(--gitpulse-surface-hover, var(--gitpulse-info-soft));
+  }
 }
 
 .release-drawer-body__github:focus-visible {

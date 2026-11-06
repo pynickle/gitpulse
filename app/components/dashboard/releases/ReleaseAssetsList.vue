@@ -106,6 +106,8 @@ const downloadCountLabel = (count: number) => formatCompactNumber(Math.max(0, co
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .release-assets-list {
   display: grid;
   gap: 0.5rem;
@@ -155,18 +157,30 @@ const downloadCountLabel = (count: number) => formatCompactNumber(Math.max(0, co
   }
 }
 
-.release-assets-list__item:hover,
 .release-assets-list__item:focus-visible {
   border-color: var(--gitpulse-link);
   color: var(--gitpulse-link);
 }
 
+@include hover-only {
+  .release-assets-list__item:hover {
+    border-color: var(--gitpulse-link);
+    color: var(--gitpulse-link);
+  }
+}
+
 // The flat rows need to answer the pointer too, but without pretending to be one
 // of the cards above: hovering lifts a band rather than drawing a frame.
-.release-assets-list__item--sidecar:hover,
 .release-assets-list__item--sidecar:focus-visible {
   border-color: var(--gitpulse-border);
   background: var(--gitpulse-surface-hover);
+}
+
+@include hover-only {
+  .release-assets-list__item--sidecar:hover {
+    border-color: var(--gitpulse-border);
+    background: var(--gitpulse-surface-hover);
+  }
 }
 
 .release-assets-list__icon {

@@ -486,6 +486,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .pr-review-workspace {
   --pr-review-bottom-bar-block: calc(3.25rem + env(safe-area-inset-bottom, 0px));
   --pr-review-bottom-bar-offset: 0px;
@@ -586,12 +588,14 @@ watch(
   cursor: pointer;
   transition: color 0.12s ease;
 
-  &:hover,
-  &:focus-visible {
-    color: var(--gitpulse-info);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-info);
+    }
   }
 
   &:focus-visible {
+    color: var(--gitpulse-info);
     outline: 2px solid var(--gitpulse-info);
     outline-offset: 2px;
   }
@@ -659,9 +663,11 @@ watch(
     background 0.12s ease,
     color 0.12s ease;
 
-  &:hover {
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    }
   }
 
   &:focus-visible {

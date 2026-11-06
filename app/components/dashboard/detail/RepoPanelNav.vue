@@ -78,6 +78,8 @@ const handleTablistKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .repo-panel-nav {
   min-width: 0;
 }
@@ -111,8 +113,10 @@ const handleTablistKeydown = (event: KeyboardEvent) => {
     color 0.12s ease,
     border-color 0.12s ease;
 
-  &:hover:not(.is-active) {
-    color: var(--gitpulse-text);
+  @include hover-only {
+    &:hover:not(.is-active) {
+      color: var(--gitpulse-text);
+    }
   }
 
   &:focus-visible {

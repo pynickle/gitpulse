@@ -583,6 +583,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .pr-review-diff-viewer {
   min-width: 0;
   min-height: 0;
@@ -629,8 +631,10 @@ html.dark .pr-review-diff-viewer__header {
   --pr-review-file-header-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.55);
 }
 
-.pr-review-diff-viewer__header:hover {
-  background: color-mix(in srgb, var(--gitpulse-surface-muted) 86%, var(--gitpulse-text-strong));
+@include hover-only {
+  .pr-review-diff-viewer__header:hover {
+    background: color-mix(in srgb, var(--gitpulse-surface-muted) 86%, var(--gitpulse-text-strong));
+  }
 }
 
 .pr-review-diff-viewer__header:focus-visible {
@@ -661,7 +665,13 @@ html.dark .pr-review-diff-viewer__header {
   text-decoration: none;
 }
 
-.pr-review-diff-viewer__file-link:hover,
+@include hover-only {
+  .pr-review-diff-viewer__file-link:hover {
+    color: var(--gitpulse-link);
+    text-decoration: underline;
+  }
+}
+
 .pr-review-diff-viewer__file-link:focus-visible {
   color: var(--gitpulse-link);
   text-decoration: underline;

@@ -344,6 +344,8 @@ watch(repoFullName, () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .contributors-page {
   // Fill the overlay content width (same idea as starred grid).
   width: 100%;
@@ -375,8 +377,10 @@ watch(repoFullName, () => {
   color: var(--gitpulse-text-muted);
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-text-strong);
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-text-strong);
+    }
   }
 }
 
@@ -515,9 +519,11 @@ watch(repoFullName, () => {
 .contributors-page__login-link {
   text-decoration: none;
 
-  &:hover {
-    color: var(--gitpulse-link);
-    text-decoration: underline;
+  @include hover-only {
+    &:hover {
+      color: var(--gitpulse-link);
+      text-decoration: underline;
+    }
   }
 
   &:focus-visible {

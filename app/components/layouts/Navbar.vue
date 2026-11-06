@@ -20,6 +20,8 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .navbar-bar {
   display: flex;
   align-items: center;
@@ -38,8 +40,10 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
   display: inline-flex;
   transition: opacity 0.16s ease;
 
-  &:hover {
-    opacity: 0.65;
+  @include hover-only {
+    &:hover {
+      opacity: 0.65;
+    }
   }
 }
 

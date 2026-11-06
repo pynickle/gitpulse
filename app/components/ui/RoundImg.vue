@@ -28,6 +28,8 @@ const style = computed(() => ({
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 $motion-normal: 0.3s;
 
 .logo-image-wrapper {
@@ -37,8 +39,10 @@ $motion-normal: 0.3s;
   box-shadow: var(--gitpulse-shadow-card);
   transition: transform $motion-normal ease;
 
-  &:hover {
-    transform: scale(1.05);
+  @include hover-only {
+    &:hover {
+      transform: scale(1.05);
+    }
   }
 }
 
