@@ -303,6 +303,9 @@ _Avoid_: hamburger menu, sidebar, Tab Sidebar when referring to this overlay
 The number of users watching a repository — the total behind GitHub's Watch button.
 _Avoid_: watchers_count, Star Count
 
+**Language Share**:
+One language's percentage of a repository's bytes, as the repository Detail Sidebar lists it. A language whose share rounds to 0% is not listed; the listed shares still total 100%.
+
 ## Detail Overlays
 
 **Detail Overlay**:
