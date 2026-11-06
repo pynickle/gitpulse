@@ -137,15 +137,13 @@ describe('resolveNotificationTodoSwipeGuide', () => {
     expect(resolveNotificationTodoSwipeGuide(watching)).toEqual({
       consume: true,
       play: true,
-      hint: false,
     });
   });
 
-  test('waits for the target card to stop growing before it slides it', () => {
+  test('puts the guide card up before the target card has stopped growing', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, targetReady: false })).toEqual({
       consume: true,
       play: false,
-      hint: false,
     });
   });
 
@@ -153,31 +151,27 @@ describe('resolveNotificationTodoSwipeGuide', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, hasAddableRow: false })).toEqual({
       consume: true,
       play: false,
-      hint: false,
     });
   });
 
-  test('a reduced-motion reader gets the static hint instead of a moving card', () => {
+  test('a reduced-motion reader gets the guide card but no moving card', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, reducedMotion: true })).toEqual({
       consume: true,
       play: false,
-      hint: true,
     });
   });
 
-  test('a wide viewport neither consumes the first visit nor demonstrates', () => {
+  test('a wide viewport neither consumes the first visit nor shows the card', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, narrowTouchList: false })).toEqual({
       consume: false,
       play: false,
-      hint: false,
     });
   });
 
-  test('another tab neither consumes the first visit nor demonstrates', () => {
+  test('another tab neither consumes the first visit nor shows the card', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, onNotificationsTab: false })).toEqual({
       consume: false,
       play: false,
-      hint: false,
     });
   });
 
@@ -185,7 +179,6 @@ describe('resolveNotificationTodoSwipeGuide', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, loaded: false })).toEqual({
       consume: false,
       play: false,
-      hint: false,
     });
   });
 
@@ -193,7 +186,6 @@ describe('resolveNotificationTodoSwipeGuide', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, spent: true })).toEqual({
       consume: true,
       play: false,
-      hint: false,
     });
   });
 
@@ -201,7 +193,6 @@ describe('resolveNotificationTodoSwipeGuide', () => {
     expect(resolveNotificationTodoSwipeGuide({ ...watching, firstRun: false })).toEqual({
       consume: false,
       play: false,
-      hint: false,
     });
   });
 });

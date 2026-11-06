@@ -36,11 +36,19 @@ even when it is empty; only the rest of the same page load may still demonstrate
 that arrives later. It waits for the target row's own details before sliding it, so it
 never demonstrates on a card that is still growing. An interaction that cancels the
 demonstration still spends the visit, or a reader who scrolled once would be taught on
-every later visit. Under `prefers-reduced-motion` the card never moves and the short hint
-takes the demonstration's place; otherwise that hint accompanies the moving card, which
-is the one place the copy earns its keep. The guide wording is stacked under its icon
-because the card uncovers at most 35% of the row, and a side-by-side icon would leave the
-arming copy too little width to read.
+every later visit.
+
+The lesson itself is a guide card above the list, not a floating pill under the
+demonstrating row: one icon, one line ("swipe right to add a todo") and a close button,
+with the card's left and right edges sitting exactly on the notification cards' edges.
+The card arrives with the list, survives the demonstration, and leaves only when the
+reader closes it; hiding it is the reader's decision, not the timer's. It opens and
+closes on one animated grid row, so the list shifts by a single small box instead of the
+app measuring and animating a height. The demonstration runs longer than the old hint,
+and its glyph and wording fade out before the card starts home — the same order a
+released gesture uses, so the card never slides back over its own label. Under
+`prefers-reduced-motion` the card never moves, and the guide card is the whole
+instruction.
 
 Rejected: hiding the control whenever the viewport is narrow regardless of pointer (it
 strands touch-capable desktop windows without a visible control), and a toast for the

@@ -35,10 +35,6 @@
       </div>
     </div>
 
-    <p v-if="showHint" class="notification-swipe-row__hint" aria-hidden="true">
-      {{ t('dashboard.todos.swipeGuideHint') }}
-    </p>
-
     <span class="notification-swipe-row__announcer" aria-live="polite">{{ announcement }}</span>
   </div>
 </template>
@@ -66,7 +62,6 @@ const {
   isTodo,
   enabled = true,
   guiding = false,
-  showHint = false,
   toggleTodo,
 } = defineProps<{
   /** Whether this notification already sits in the reader's todos. */
@@ -75,8 +70,6 @@ const {
   enabled?: boolean;
   /** The first-visit demonstration is running on this row. */
   guiding?: boolean;
-  /** The short instruction that replaces the demonstration under reduced motion. */
-  showHint?: boolean;
   /** Runs the action and reports whether the settings write actually landed. */
   toggleTodo: () => Promise<NotificationTodoToggleResult>;
 }>();
@@ -367,25 +360,6 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
   color: var(--gitpulse-warning);
 }
 
-// Hangs in the gap between rows, which is `mb-4` plus the two cards' own 0.25rem margins
-// (24px in all): the pill is sized to leave roughly 4px clear of the card above and the
-// card below. It sits outside the clipped viewport so the row's own overflow cannot cut
-// it, and never takes a pointer.
-.notification-swipe-row__hint {
-  position: absolute;
-  top: 100%;
-  left: 0.9rem;
-  z-index: 2;
-  margin: 0;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--gitpulse-text-strong) 82%, transparent);
-  color: var(--gitpulse-surface);
-  font-size: 0.62rem;
-  line-height: 1.15;
-  pointer-events: none;
-}
-
 .notification-swipe-row__announcer {
   position: absolute;
   width: 1px;
@@ -401,7 +375,7 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
 // The demonstration: slide out, hold, come home. Timings match GUIDE_DURATION_MS in
 // useNotificationTodoSwipeGuide; the row's background is already on screen for it.
 .notification-swipe-row--guiding .notification-swipe-row__content {
-  animation: notification-todo-swipe-guide 1420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: notification-todo-swipe-guide 2200ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes notification-todo-swipe-guide {
@@ -409,11 +383,11 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
     transform: translate3d(0, 0, 0);
   }
 
-  21% {
+  20% {
     transform: translate3d(3.5rem, 0, 0);
   }
 
-  77% {
+  80% {
     transform: translate3d(3.5rem, 0, 0);
   }
 
@@ -423,9 +397,11 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
 }
 
 // The uncovered strip the action is centred in grows in step with the card, so the glyph
-// and wording appear centred instead of sliding in from the left edge.
+// and wording appear centred instead of sliding in from the left edge. They leave before
+// the card starts home — exactly like a released gesture — so the card never slides back
+// over its own label.
 .notification-swipe-row--guiding .notification-swipe-row__action-body {
-  animation: notification-todo-swipe-guide-reveal 1420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: notification-todo-swipe-guide-reveal 2200ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes notification-todo-swipe-guide-reveal {
@@ -433,16 +409,23 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
     width: 0;
   }
 
-  21% {
+  20% {
     width: 3.5rem;
   }
 
-  77% {
+  74% {
     width: 3.5rem;
+    opacity: 1;
+  }
+
+  80% {
+    width: 3.5rem;
+    opacity: 0;
   }
 
   100% {
     width: 0;
+    opacity: 0;
   }
 }
 

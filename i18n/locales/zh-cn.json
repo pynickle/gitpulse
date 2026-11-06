@@ -710,7 +710,8 @@
       "swipeRemoved": "已移出待办",
       "swipeAddFailed": "未能加入待办",
       "swipeRemoveFailed": "未能移出待办",
-      "swipeGuideHint": "右滑加入待办"
+      "swipeGuideCard": "右滑卡片加入待办",
+      "swipeGuideDismiss": "关闭引导"
     },
     "issues": {
       "empty": "暂无议题。",

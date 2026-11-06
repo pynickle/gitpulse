@@ -710,7 +710,8 @@
       "swipeRemoved": "Todo removed",
       "swipeAddFailed": "Could not add",
       "swipeRemoveFailed": "Remove failed",
-      "swipeGuideHint": "Swipe for todo"
+      "swipeGuideCard": "Swipe right to add a todo",
+      "swipeGuideDismiss": "Dismiss guide"
     },
     "issues": {
       "empty": "No issues to show.",

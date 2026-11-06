@@ -7,6 +7,9 @@
  * explicit that a reader who never met an eligible notification must not be taught
  * later. The one exception is the rest of the same page load: rows that arrive after
  * the list settled may still be demonstrated, which is what `spent` guards.
+ *
+ * The guide card above the list shares that first visit, but it is not tied to a row:
+ * it is due as soon as the list settles and stays until the reader closes it.
  */
 
 export interface NotificationTodoSwipeGuideInput {
@@ -31,12 +34,14 @@ export interface NotificationTodoSwipeGuideInput {
 }
 
 export interface NotificationTodoSwipeGuideDecision {
-  /** Persist the flag now: the first visit is spent even if nothing plays. */
+  /**
+   * The first visit's guide is due: persist the flag and raise the persistent card above
+   * the list. The card outlives the demonstration; it stays up until the reader closes
+   * it, and returns if the narrow notifications list does.
+   */
   consume: boolean;
   /** Run the automatic demonstration. */
   play: boolean;
-  /** Show the short static hint instead of moving the card. */
-  hint: boolean;
 }
 
 export function resolveNotificationTodoSwipeGuide(
@@ -56,12 +61,11 @@ export function resolveNotificationTodoSwipeGuide(
     !input.targetReady ||
     !input.firstRun ||
     input.spent ||
-    !input.hasAddableRow
+    !input.hasAddableRow ||
+    input.reducedMotion
   ) {
-    return { consume, play: false, hint: false };
+    return { consume, play: false };
   }
 
-  return input.reducedMotion
-    ? { consume, play: false, hint: true }
-    : { consume, play: true, hint: false };
+  return { consume, play: true };
 }

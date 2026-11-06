@@ -175,6 +175,11 @@
                   </template>
 
                   <template v-else-if="currentTab === 'notifications'">
+                    <NotificationTodoSwipeGuideCard
+                      :visible="swipeGuideCardVisible"
+                      @dismiss="dismissSwipeGuideCard"
+                    />
+
                     <div
                       v-for="notification in filteredNotifications"
                       :key="notification.id"
@@ -190,7 +195,6 @@
                         :is-todo="isNotificationTodo(notification)"
                         :enabled="isNarrowViewport"
                         :guiding="swipeGuideRowId === String(notification.id)"
-                        :show-hint="swipeGuideHintRowId === String(notification.id)"
                         :toggle-todo="() => toggleNotificationTodo(notification)"
                       >
                         <AsyncNotificationItem
@@ -453,6 +457,7 @@ import DashboardAdvancedFilters from '~/components/dashboard/filters/DashboardAd
 import FilterPills from '~/components/dashboard/filters/FilterPills.vue';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import NotificationSubjectEnrichmentNotice from '~/components/dashboard/NotificationSubjectEnrichmentNotice.vue';
+import NotificationTodoSwipeGuideCard from '~/components/dashboard/NotificationTodoSwipeGuideCard.vue';
 import NotificationTodoSwipeRow from '~/components/dashboard/NotificationTodoSwipeRow.vue';
 import DashboardTopHeader from '~/components/dashboard/overlay/DashboardTopHeader.vue';
 import ReleaseTimelineBaselineChip from '~/components/dashboard/release-timeline/ReleaseTimelineBaselineChip.vue';
@@ -1040,18 +1045,21 @@ const swipeGuideTargetReady = computed(() => {
   return target ? !getNotificationSubjectEnrichmentPresentation(target.subject).isPending : false;
 });
 
-const { guidingRowId: swipeGuideRowId, hintRowId: swipeGuideHintRowId } =
-  useNotificationTodoSwipeGuide({
-    // Only where the gesture replaced the control: a narrow mouse window still shows the
-    // button, and teaching a swipe beside a visible button would be a second answer.
-    narrowTouchList: replacesTodoControl,
-    onNotificationsTab: computed(() => currentTab.value === 'notifications'),
-    loaded: computed(() => dashboardListContentState.value !== 'loading'),
-    targetReady: swipeGuideTargetReady,
-    addableRowId: swipeGuideTargetId,
-    seen: swipeGuideSeen,
-    updateOnboarding,
-  });
+const {
+  guidingRowId: swipeGuideRowId,
+  guideCardVisible: swipeGuideCardVisible,
+  dismissGuideCard: dismissSwipeGuideCard,
+} = useNotificationTodoSwipeGuide({
+  // Only where the gesture replaced the control: a narrow mouse window still shows the
+  // button, and teaching a swipe beside a visible button would be a second answer.
+  narrowTouchList: replacesTodoControl,
+  onNotificationsTab: computed(() => currentTab.value === 'notifications'),
+  loaded: computed(() => dashboardListContentState.value !== 'loading'),
+  targetReady: swipeGuideTargetReady,
+  addableRowId: swipeGuideTargetId,
+  seen: swipeGuideSeen,
+  updateOnboarding,
+});
 
 const dashboardListEmptyMessage = computed(() => {
   const filtered = hasActiveVisibleFilters.value;
