@@ -5,7 +5,10 @@ defineProps<{
   currentTab: DashboardTab;
 }>();
 
-const skeletonCardCount = 5;
+// Rows keep their natural card height; the list is clipped to the scrollport instead, so
+// the count only has to outlast the tallest frame. Twenty covers a 4K-tall viewport, and
+// the surplus rows overflow below the fold where the scroll area cuts them off.
+const skeletonCardCount = 20;
 </script>
 
 <template>
@@ -64,7 +67,8 @@ const skeletonCardCount = 5;
 <style scoped lang="scss">
 .dashboard-loading-list {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .dashboard-loading-card {

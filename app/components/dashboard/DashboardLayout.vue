@@ -146,16 +146,21 @@ $widgets-panel-width: 320px;
 $splitter-width: 1px;
 $splitter-hover-zone: 14px;
 
+// The layout is the shell's fill child: on wide it is stretched by the row page,
+// and on narrow the page is a fixed-height column, so it must grow on its own.
+// Growing from the layout itself (instead of the narrow chrome class) keeps the
+// main card at full height from the first paint, before that class can land.
 .dashboard-layout {
   display: flex;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: inherit;
+  min-height: 0;
 }
 
 .dashboard-layout-columns {
   display: flex;
   width: 100%;
-  min-height: inherit;
+  min-height: 0;
   margin: 0;
   align-items: stretch;
   justify-content: flex-start;
@@ -276,17 +281,12 @@ $splitter-hover-zone: 14px;
   flex: 1 1 auto;
   justify-content: center;
   min-width: 0;
+  min-height: 0;
   padding: 1.25rem 1.25rem;
 }
 
 .dashboard-layout-columns--icon-bar-only .column-main-content {
   justify-content: flex-start;
-}
-
-.dashboard-layout-columns--narrow {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
 }
 
 .dashboard-layout-columns--narrow .column-main-content {
@@ -312,6 +312,12 @@ $splitter-hover-zone: 14px;
     width: 100%;
     max-width: 100%;
     padding: 0.75rem;
+    // One child fills this column, so grow it along the block axis instead of
+    // resolving a percentage height against the stretched flex box. The list card
+    // then stays frame-height while its rows are still loading. The block axis no
+    // longer needs the inline centring the wide row layout uses.
+    flex-direction: column;
+    justify-content: flex-start;
   }
 }
 </style>

@@ -128,6 +128,9 @@
             <div v-if="dashboardListLoading || !dashboardListError" class="dashboard-list-shell">
               <ScrollArea
                 class="dashboard-list-scroll"
+                :class="{
+                  'dashboard-list-scroll--loading': dashboardListContentState === 'loading',
+                }"
                 axis="both"
                 content-class="dashboard-list-content"
               >
@@ -1514,6 +1517,17 @@ watch(
     height: var(--gitpulse-frame-height);
     overflow: hidden;
   }
+
+  // The page class that marks the narrow frame comes from the chrome snapshot, so it can
+  // land after the first paint. Fill through the viewport query instead, and grow the card
+  // down the block axis rather than through a percentage height: a chain that starts from
+  // the chrome-driven class can collapse the card to the skeleton's height and lift the
+  // pagination footer with it.
+  .dashboard-main-card {
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
 }
 
 .dashboard-page--narrow {
@@ -1521,12 +1535,6 @@ watch(
   height: var(--gitpulse-frame-height);
   overflow: hidden;
   isolation: isolate;
-}
-
-.dashboard-page--narrow :deep(.dashboard-layout) {
-  flex: 1 1 auto;
-  width: 100%;
-  min-height: 0;
 }
 
 .dashboard-page--narrow :deep(.dashboard-list-row) {
@@ -1685,6 +1693,12 @@ watch(
 
 .dashboard-list-scroll {
   min-height: 0;
+  height: 100%;
+}
+
+// The skeleton list sizes itself to the scrollport and clips its surplus cards there; the
+// real list keeps the auto-height content that makes it scroll.
+.dashboard-list-scroll--loading :deep(.dashboard-list-content) {
   height: 100%;
 }
 
