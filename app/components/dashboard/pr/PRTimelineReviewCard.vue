@@ -43,35 +43,46 @@
         <span v-if="item.dismissal" class="review-item__dismissed-note">
           {{ t('prReview.timelineDismissedNote') }}
         </span>
-        <span class="review-item__time has-text-grey">
-          {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
-        </span>
+        <TimelineEventTime class="review-item__time has-text-grey" :date="item.createdAt" />
       </div>
     </header>
+    <TimelineEventNote
+      v-if="item.onBehalfOf?.length"
+      :icon="UsersIcon"
+      class="review-item__on-behalf-of"
+    >
+      <template #label>
+        {{ t('prReview.timelineOnBehalfOf') }}
+        <template
+          v-for="(team, index) in item.onBehalfOf"
+          :key="team.url || team.slug || team.name || index"
+        >
+          <span v-if="index > 0">, </span>
+          <a v-if="team.url" :href="team.url" target="_blank" rel="noopener" class="has-text-link">
+            {{ getOnBehalfOfTeamLabel(team) }}
+          </a>
+          <span v-else>{{ getOnBehalfOfTeamLabel(team) }}</span>
+        </template>
+      </template>
+    </TimelineEventNote>
     <div v-if="item.body" class="review-item__body content">
       <MarkdownRenderer :value="item.body" :repo-owner="repoOwner" :repo-name="repoName" />
     </div>
-    <div v-if="item.dismissal" class="review-item__dismissal">
-      <div class="review-item__dismissal-heading">
-        <SlashIcon :size="14" :stroke-width="2.5" />
-        <span>
-          {{ t('prReview.timelineDismissed') }}
-          <template v-if="item.dismissal.actor?.login">
-            {{ t('prReview.timelineDismissedBy') }}
-            <a
-              :href="item.dismissal.actor.url"
-              target="_blank"
-              rel="noopener"
-              class="has-text-link"
-            >
-              {{ item.dismissal.actor.login }}
-            </a>
-          </template>
-        </span>
-        <span v-if="item.dismissal.createdAt" class="has-text-grey">
-          {{ formatDurationFromNow(item.dismissal.createdAt, localeCode, relativeTimeNow) }}
-        </span>
-      </div>
+    <TimelineEventNote
+      v-if="item.dismissal"
+      :icon="BanIcon"
+      :date="item.dismissal.createdAt"
+      class="review-item__dismissal"
+    >
+      <template #label>
+        {{ t('prReview.timelineDismissed') }}
+        <template v-if="item.dismissal.actor?.login">
+          {{ t('prReview.timelineDismissedBy') }}
+          <a :href="item.dismissal.actor.url" target="_blank" rel="noopener" class="has-text-link">
+            {{ item.dismissal.actor.login }}
+          </a>
+        </template>
+      </template>
       <MarkdownRenderer
         v-if="item.dismissal.message"
         class="review-item__dismissal-message"
@@ -79,7 +90,7 @@
         :repo-owner="repoOwner"
         :repo-name="repoName"
       />
-    </div>
+    </TimelineEventNote>
     <div v-if="hasReviewComments" class="review-item__comments">
       <article
         v-for="group in reviewCommentGroups"
@@ -188,11 +199,12 @@
 
 <script setup lang="ts">
 import {
+  BanIcon,
   CheckIcon,
   ChevronRightIcon,
   ClockIcon,
   MessageSquareIcon,
-  SlashIcon,
+  UsersIcon,
   XIcon,
 } from '@lucide/vue';
 import { computed, defineAsyncComponent, ref } from 'vue';
@@ -202,9 +214,15 @@ import { parsePRReviewPatch } from '#shared/utils/pr-review-patch';
 import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
 import TimelineCardHeader from '~/components/dashboard/timeline/TimelineCardHeader.vue';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
+import TimelineEventNote from '~/components/dashboard/timeline/TimelineEventNote.vue';
+import TimelineEventTime from '~/components/dashboard/timeline/TimelineEventTime.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import type { PRTimelineItem, TimelineReviewComment } from '~/composables/usePRTimelineEvents';
+import {
+  getOnBehalfOfTeamLabel,
+  type PRTimelineItem,
+  type TimelineReviewComment,
+} from '~/composables/usePRTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const { item, resolvingReviewThreadId } = defineProps<{
@@ -225,6 +243,7 @@ const { t, locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const hasReviewComments = computed(() => Boolean(item.reviewComments?.length));
+const hasVerdictDetail = computed(() => Boolean(item.dismissal || item.onBehalfOf?.length));
 const expandedFiles = ref(new Set<string>());
 
 interface ReviewCommentGroup {
@@ -262,12 +281,14 @@ const reviewCommentGroups = computed<ReviewCommentGroup[]>(() => {
 
 const isPlainComment = computed(() => {
   const state = item.state;
-  return !state || (state === 'commented' && !hasReviewComments.value && !item.dismissal);
+  return !state || (state === 'commented' && !hasReviewComments.value && !hasVerdictDetail.value);
 });
 
 // Only a review that merely comments reads like a conversation; a verdict keeps
 // its badge and verb so approval, requested changes and dismissal stay legible.
-const showsConversationHeader = computed(() => item.state === 'commented' && !item.dismissal);
+const showsConversationHeader = computed(
+  () => item.state === 'commented' && !hasVerdictDetail.value
+);
 
 const stateModifier = computed(() => {
   switch (item.state) {
@@ -310,7 +331,7 @@ const stateIcon = computed(() => {
     case 'changes-requested':
       return XIcon;
     case 'dismissed':
-      return SlashIcon;
+      return BanIcon;
     case 'commented':
       return MessageSquareIcon;
     case 'pending':
@@ -653,8 +674,8 @@ const buildSuggestionDiffLines = (
 
 .review-item {
   @include timeline-card-surface;
+  @include timeline-event-accent(var(--review-accent, var(--gitpulse-border-strong)));
 
-  border-left: 4px solid var(--review-accent, var(--gitpulse-border-strong));
   overflow: hidden;
 }
 
@@ -754,7 +775,6 @@ const buildSuggestionDiffLines = (
   margin-bottom: 0;
 }
 
-.review-item__dismissal,
 .review-item__comments {
   min-width: 0;
   margin-top: 1.25rem;
@@ -762,7 +782,6 @@ const buildSuggestionDiffLines = (
   border-top: 1px solid var(--gitpulse-border);
 }
 
-.review-item__dismissal-heading,
 .review-item__comment-meta {
   display: flex;
   flex-wrap: wrap;

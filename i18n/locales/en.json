@@ -1044,6 +1044,7 @@
     "timelineDismissedNote": "dismissed",
     "timelineDismissed": "Dismissed",
     "timelineDismissedBy": "by",
+    "timelineOnBehalfOf": "on behalf of",
     "resolveThread": "Resolve thread",
     "unresolveThread": "Unresolve thread",
     "threadResolved": "Resolved",

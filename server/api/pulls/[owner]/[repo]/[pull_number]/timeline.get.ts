@@ -3,6 +3,7 @@ import {
   createUnsupportedWarnings,
   enrichPRTimelineWithReviewData,
   fetchPaginatedArray,
+  fetchPRReviewOnBehalfOf,
   fetchPRReviewThreads,
   fetchTimelinePage,
   normalizePRTimelineItems,
@@ -10,6 +11,7 @@ import {
   SKIPPED_TIMELINE_EVENTS,
   sortTimelineItems,
   throwTimelineFatalError,
+  type TimelineReviewTeamPayload,
 } from '#server/utils/github-timeline-utils';
 
 function buildPullCommitLookup(commits: Record<string, any>[]) {
@@ -73,6 +75,20 @@ async function fetchPRReviewThreadsForTimeline(
   }
 }
 
+async function fetchPRReviewOnBehalfOfForTimeline(
+  octokit: Parameters<typeof fetchPRReviewOnBehalfOf>[0],
+  owner: string,
+  repo: string,
+  pullNumber: number
+): Promise<Map<string, TimelineReviewTeamPayload[]>> {
+  try {
+    return await fetchPRReviewOnBehalfOf(octokit, owner, repo, pullNumber);
+  } catch (error: unknown) {
+    console.warn('Failed to fetch pull request review on-behalf-of teams:', error);
+    return new Map();
+  }
+}
+
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
     const { owner, repo, pull_number } = event.context.params as {
@@ -94,47 +110,54 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
 
     const octokit = await getGitHubClient(event);
 
-    const [timelinePage, pullCommits, pullReviews, pullReviewComments, pullReviewThreads] =
-      await Promise.all([
-        fetchTimelinePage<Record<string, any>>(
-          octokit,
-          'GET /repos/{owner}/{repo}/issues/{issue_number}/timeline',
-          {
-            owner,
-            repo,
-            issue_number: pullNumber,
-          },
-          page
-        ),
-        fetchPaginatedArray<Record<string, any>>(
-          octokit,
-          'GET /repos/{owner}/{repo}/pulls/{pull_number}/commits',
-          {
-            owner,
-            repo,
-            pull_number: pullNumber,
-          }
-        ),
-        fetchPaginatedArray<Record<string, any>>(
-          octokit,
-          'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
-          {
-            owner,
-            repo,
-            pull_number: pullNumber,
-          }
-        ),
-        fetchPaginatedArray<Record<string, any>>(
-          octokit,
-          'GET /repos/{owner}/{repo}/pulls/{pull_number}/comments',
-          {
-            owner,
-            repo,
-            pull_number: pullNumber,
-          }
-        ),
-        fetchPRReviewThreadsForTimeline(octokit, owner, repo, pullNumber),
-      ]);
+    const [
+      timelinePage,
+      pullCommits,
+      pullReviews,
+      pullReviewComments,
+      pullReviewThreads,
+      reviewOnBehalfOf,
+    ] = await Promise.all([
+      fetchTimelinePage<Record<string, any>>(
+        octokit,
+        'GET /repos/{owner}/{repo}/issues/{issue_number}/timeline',
+        {
+          owner,
+          repo,
+          issue_number: pullNumber,
+        },
+        page
+      ),
+      fetchPaginatedArray<Record<string, any>>(
+        octokit,
+        'GET /repos/{owner}/{repo}/pulls/{pull_number}/commits',
+        {
+          owner,
+          repo,
+          pull_number: pullNumber,
+        }
+      ),
+      fetchPaginatedArray<Record<string, any>>(
+        octokit,
+        'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
+        {
+          owner,
+          repo,
+          pull_number: pullNumber,
+        }
+      ),
+      fetchPaginatedArray<Record<string, any>>(
+        octokit,
+        'GET /repos/{owner}/{repo}/pulls/{pull_number}/comments',
+        {
+          owner,
+          repo,
+          pull_number: pullNumber,
+        }
+      ),
+      fetchPRReviewThreadsForTimeline(octokit, owner, repo, pullNumber),
+      fetchPRReviewOnBehalfOfForTimeline(octokit, owner, repo, pullNumber),
+    ]);
 
     const pullCommitsBySha = buildPullCommitLookup(pullCommits);
     const enrichedTimeline = timelinePage.items
@@ -152,7 +175,8 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       normalizedTimeline,
       pullReviews,
       pullReviewComments,
-      pullReviewThreads
+      pullReviewThreads,
+      reviewOnBehalfOf
     );
 
     return {

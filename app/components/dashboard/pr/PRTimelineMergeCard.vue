@@ -32,9 +32,7 @@
           </span>
         </div>
 
-        <span class="is-size-7 has-text-grey mt-1">
-          {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
-        </span>
+        <TimelineEventTime class="is-size-7 has-text-grey mt-1" :date="item.createdAt" />
       </div>
 
       <a
@@ -56,31 +54,27 @@
 
 <script setup lang="ts">
 import { GitMergeIcon } from '@lucide/vue';
-import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
 
+import TimelineEventTime from '~/components/dashboard/timeline/TimelineEventTime.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
-import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
   item: PRTimelineItem;
   repoOwner: string;
   repoName: string;
 }>();
-
-const { locale } = useI18n();
-const localeCode = computed(() => locale.value);
-const relativeTimeNow = useRelativeTimeNow();
 </script>
 
 <style scoped lang="scss">
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/timeline-card' as *;
 
 .merge-item {
+  @include timeline-event-accent(var(--gitpulse-purple));
+
   border-radius: 12px;
   background-color: var(--gitpulse-purple-soft);
-  border-left: 3px solid var(--gitpulse-purple);
   transition: background-color 0.2s ease;
 }
 

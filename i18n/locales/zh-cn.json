@@ -1044,6 +1044,7 @@
     "timelineDismissedNote": "已撤销",
     "timelineDismissed": "已撤销",
     "timelineDismissedBy": "由",
+    "timelineOnBehalfOf": "代表",
     "resolveThread": "解决讨论",
     "unresolveThread": "取消解决",
     "threadResolved": "已解决",

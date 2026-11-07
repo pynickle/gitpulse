@@ -92,6 +92,13 @@ export interface TimelineReviewThreadMutationResult {
   resolvedBy?: ReturnType<typeof mapActor>;
 }
 
+export interface TimelineReviewTeamPayload {
+  name?: string;
+  slug?: string;
+  url?: string;
+  organizationLogin?: string;
+}
+
 interface SortableTimelineItem {
   kind: string;
   eventType?: string;
@@ -111,6 +118,7 @@ interface SortableTimelineItem {
     commitId?: string;
     previousState?: string;
   };
+  onBehalfOf?: TimelineReviewTeamPayload[];
   review?: {
     id?: string;
     author?: ReturnType<typeof mapActor>;
@@ -413,6 +421,119 @@ export async function fetchPRReviewThreads(
     }
 
     cursor = reviewThreads.pageInfo.endCursor;
+  }
+}
+
+const PR_REVIEW_ON_BEHALF_OF_QUERY = `
+  query PullRequestReviewOnBehalfOf(
+    $owner: String!
+    $repo: String!
+    $pullNumber: Int!
+    $cursor: String
+  ) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pullNumber) {
+        reviews(first: 100, after: $cursor) {
+          nodes {
+            databaseId
+            onBehalfOf(first: 10) {
+              nodes {
+                name
+                slug
+                url
+                organization {
+                  login
+                }
+              }
+            }
+          }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }
+    }
+  }
+`;
+
+interface TimelineReviewTeamNode {
+  name?: string | null;
+  slug?: string | null;
+  url?: string | null;
+  organization?: { login?: string | null } | null;
+}
+
+interface PRReviewOnBehalfOfGraphQLResponse {
+  repository?: {
+    pullRequest?: {
+      reviews?: {
+        nodes?: Array<{
+          databaseId?: number | null;
+          onBehalfOf?: {
+            nodes?: Array<TimelineReviewTeamNode | null> | null;
+          } | null;
+        } | null> | null;
+        pageInfo?: {
+          hasNextPage?: boolean;
+          endCursor?: string | null;
+        } | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+/**
+ * Maps each review's REST database id to the teams it was submitted on behalf of.
+ * `PullRequestReview.onBehalfOf` only exists in GraphQL; the REST review payload
+ * does not expose it.
+ */
+export async function fetchPRReviewOnBehalfOf(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  pullNumber: number
+): Promise<Map<string, TimelineReviewTeamPayload[]>> {
+  const teamsByReviewId = new Map<string, TimelineReviewTeamPayload[]>();
+  let cursor: string | null = null;
+
+  while (true) {
+    const response = (await octokit.graphql(PR_REVIEW_ON_BEHALF_OF_QUERY, {
+      owner,
+      repo,
+      pullNumber,
+      cursor,
+    })) as PRReviewOnBehalfOfGraphQLResponse;
+    const reviews = response.repository?.pullRequest?.reviews;
+
+    for (const review of reviews?.nodes ?? []) {
+      if (review?.databaseId == null) {
+        continue;
+      }
+
+      const teams = (review.onBehalfOf?.nodes ?? []).flatMap((team) =>
+        team
+          ? [
+              {
+                name: team.name ?? undefined,
+                slug: team.slug ?? undefined,
+                url: team.url ?? undefined,
+                organizationLogin: team.organization?.login ?? undefined,
+              },
+            ]
+          : []
+      );
+
+      if (teams.length) {
+        teamsByReviewId.set(String(review.databaseId), teams);
+      }
+    }
+
+    if (!reviews?.pageInfo?.hasNextPage || !reviews.pageInfo.endCursor) {
+      return teamsByReviewId;
+    }
+
+    cursor = reviews.pageInfo.endCursor;
   }
 }
 
@@ -1313,7 +1434,8 @@ export function enrichPRTimelineWithReviewData(
   timeline: SortableTimelineItem[],
   reviews: Record<string, any>[],
   reviewComments: Record<string, any>[],
-  reviewThreads: TimelineReviewThreadPayload[] = []
+  reviewThreads: TimelineReviewThreadPayload[] = [],
+  onBehalfOfByReviewId: Map<string, TimelineReviewTeamPayload[]> = new Map()
 ): SortableTimelineItem[] {
   const reviewThreadsByCommentId = buildReviewThreadsByCommentId(reviewThreads);
   const commentsByReviewId = buildReviewCommentsByReviewId(
@@ -1340,6 +1462,7 @@ export function enrichPRTimelineWithReviewData(
     const review = reviewsById.get(reviewId);
     const dismissal = dismissalsByReviewId.get(reviewId);
     const reviewComments = commentsByReviewId.get(reviewId) ?? [];
+    const onBehalfOf = onBehalfOfByReviewId.get(reviewId);
     const submittedState = normalizeReviewState(
       dismissal?.previousState ?? item.state ?? review?.state
     );
@@ -1353,6 +1476,7 @@ export function enrichPRTimelineWithReviewData(
       url: item.url ?? review?.html_url,
       reviewComments,
       dismissal,
+      ...(onBehalfOf?.length ? { onBehalfOf } : {}),
     };
   });
 

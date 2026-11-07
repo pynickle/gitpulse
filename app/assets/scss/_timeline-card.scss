@@ -3,6 +3,14 @@
 //
 // The surface owns the box; each card owns only what it puts inside.
 
+$timeline-event-accent-width: 2.4px;
+
+// The colored edge that marks a verdict or merge event. Review and merge cards
+// share the width so the timeline reads as one column of event boxes.
+@mixin timeline-event-accent($color) {
+  border-left: $timeline-event-accent-width solid $color;
+}
+
 @mixin timeline-card-surface {
   padding: 1rem 1.125rem 0.875rem;
   border: 1px solid var(--gitpulse-border-strong);

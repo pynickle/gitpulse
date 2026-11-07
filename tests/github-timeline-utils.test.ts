@@ -5,6 +5,8 @@ const reactions = await import('../shared/utils/reactions');
 mock.module('#shared/utils/reactions', () => reactions);
 
 const {
+  enrichPRTimelineWithReviewData,
+  fetchPRReviewOnBehalfOf,
   normalizeIssueTimelineEvent,
   normalizePRTimelineEvent,
   normalizeTimelineStateItems,
@@ -182,6 +184,155 @@ describe('PR timeline server normalization', () => {
       assignee: { login: 'Chiloven945' },
       displayText: 'self-assigned this',
     });
+  });
+
+  test('maps review on-behalf-of teams from every GraphQL review page', async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const octokit = {
+      graphql: async (_query: string, variables: Record<string, unknown>) => {
+        calls.push(variables);
+
+        if (!variables.cursor) {
+          return {
+            repository: {
+              pullRequest: {
+                reviews: {
+                  nodes: [
+                    {
+                      databaseId: 11,
+                      onBehalfOf: {
+                        nodes: [
+                          {
+                            name: 'Reviewers',
+                            slug: 'reviewers',
+                            url: 'https://github.com/orgs/octo/teams/reviewers',
+                            organization: { login: 'octo' },
+                          },
+                        ],
+                      },
+                    },
+                    { databaseId: 12, onBehalfOf: { nodes: [] } },
+                  ],
+                  pageInfo: { hasNextPage: true, endCursor: 'cursor-1' },
+                },
+              },
+            },
+          };
+        }
+
+        return {
+          repository: {
+            pullRequest: {
+              reviews: {
+                nodes: [
+                  {
+                    databaseId: 13,
+                    onBehalfOf: {
+                      nodes: [
+                        {
+                          name: 'Core',
+                          slug: 'core',
+                          url: 'https://github.com/orgs/octo/teams/core',
+                          organization: { login: 'octo' },
+                        },
+                      ],
+                    },
+                  },
+                ],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        };
+      },
+    } as unknown as Parameters<typeof fetchPRReviewOnBehalfOf>[0];
+
+    const teamsByReviewId = await fetchPRReviewOnBehalfOf(octokit, 'octo', 'app', 1);
+
+    expect(calls).toEqual([
+      { owner: 'octo', repo: 'app', pullNumber: 1, cursor: null },
+      { owner: 'octo', repo: 'app', pullNumber: 1, cursor: 'cursor-1' },
+    ]);
+    expect(teamsByReviewId.get('11')).toEqual([
+      {
+        name: 'Reviewers',
+        slug: 'reviewers',
+        url: 'https://github.com/orgs/octo/teams/reviewers',
+        organizationLogin: 'octo',
+      },
+    ]);
+    expect(teamsByReviewId.has('12')).toBe(false);
+    expect(teamsByReviewId.get('13')).toEqual([
+      {
+        name: 'Core',
+        slug: 'core',
+        url: 'https://github.com/orgs/octo/teams/core',
+        organizationLogin: 'octo',
+      },
+    ]);
+  });
+
+  test('attaches on-behalf-of teams to the review they belong to', () => {
+    const timeline = normalizePullTimeline([
+      {
+        id: 11,
+        event: 'reviewed',
+        state: 'approved',
+        created_at: '2026-11-07T00:00:00Z',
+        user: user('octo'),
+        body: 'LGTM',
+      },
+    ]);
+    const reviews = [
+      {
+        id: 11,
+        state: 'APPROVED',
+        body: 'LGTM',
+        submitted_at: '2026-11-07T00:00:00Z',
+        user: user('octo'),
+      },
+    ];
+
+    const [enriched] = enrichPRTimelineWithReviewData(
+      timeline,
+      reviews,
+      [],
+      [],
+      new Map([['11', [{ name: 'Reviewers', slug: 'reviewers', organizationLogin: 'octo' }]]])
+    );
+
+    expect(enriched).toMatchObject({
+      kind: 'review',
+      state: 'approved',
+      onBehalfOf: [{ name: 'Reviewers', slug: 'reviewers', organizationLogin: 'octo' }],
+    });
+  });
+
+  test('omits on-behalf-of when the review has no team attribution', () => {
+    const timeline = normalizePullTimeline([
+      {
+        id: 11,
+        event: 'reviewed',
+        state: 'approved',
+        created_at: '2026-11-07T00:00:00Z',
+        user: user('octo'),
+        body: 'LGTM',
+      },
+    ]);
+    const reviews = [
+      {
+        id: 11,
+        state: 'APPROVED',
+        body: 'LGTM',
+        submitted_at: '2026-11-07T00:00:00Z',
+        user: user('octo'),
+      },
+    ];
+
+    const [enriched] = enrichPRTimelineWithReviewData(timeline, reviews, [], [], new Map());
+
+    expect(enriched).toMatchObject({ kind: 'review', state: 'approved' });
+    expect(enriched).not.toHaveProperty('onBehalfOf');
   });
 });
 

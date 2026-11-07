@@ -93,6 +93,13 @@ export interface TimelineReviewDismissal {
   previousState?: string;
 }
 
+export interface TimelineReviewTeam {
+  name?: string;
+  slug?: string;
+  url?: string;
+  organizationLogin?: string;
+}
+
 export interface TimelineRequestedReviewer {
   resourceType?: string;
   login?: string;
@@ -175,6 +182,7 @@ export interface PRTimelineItem {
   commitId?: string;
   reviewComments?: TimelineReviewComment[];
   dismissal?: TimelineReviewDismissal;
+  onBehalfOf?: TimelineReviewTeam[];
   requestedReviewer?: TimelineRequestedReviewer;
   deletedCommentAuthor?: { login?: string };
   commit?: TimelineCommit;
@@ -281,6 +289,11 @@ export function getRequestedReviewerLabel(reviewer?: TimelineRequestedReviewer):
   }
 
   return reviewer.login ?? reviewer.name ?? 'reviewer';
+}
+
+export function getOnBehalfOfTeamLabel(team: TimelineReviewTeam): string {
+  const name = team.name || team.slug || '';
+  return team.organizationLogin && name ? `${team.organizationLogin}/${name}` : name;
 }
 
 export function getRequestedReviewerUrl(reviewer?: TimelineRequestedReviewer): string | undefined {
