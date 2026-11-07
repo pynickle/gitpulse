@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { CheckIcon, CircleIcon } from '@lucide/vue';
 
+import LoadingIcon from '~/components/ui/LoadingIcon.vue';
+
 const { resolved = false, loading = false } = defineProps<{
   resolved?: boolean;
   loading?: boolean;
@@ -9,6 +11,14 @@ const { resolved = false, loading = false } = defineProps<{
 const emit = defineEmits<{ (e: 'toggle'): void }>();
 
 const { t } = useI18n();
+
+const handleClick = () => {
+  if (loading) {
+    return;
+  }
+
+  emit('toggle');
+};
 </script>
 
 <template>
@@ -16,21 +26,28 @@ const { t } = useI18n();
     type="button"
     class="pr-review-thread-toggle"
     :class="{ 'is-resolved': resolved }"
-    :disabled="loading"
     :aria-pressed="resolved"
+    :aria-disabled="loading || undefined"
+    :aria-busy="loading || undefined"
     :title="resolved ? t('prReview.unresolveThread') : t('prReview.resolveThread')"
-    @click="emit('toggle')"
+    @click="handleClick"
   >
     <span class="pr-review-thread-toggle__marks" aria-hidden="true">
+      <LoadingIcon
+        class="pr-review-thread-toggle__spinner"
+        :class="{ 'is-active': loading }"
+        :size="13"
+        :stroke-width="2.5"
+      />
       <CheckIcon
         class="pr-review-thread-toggle__mark"
-        :class="{ 'is-active': resolved }"
+        :class="{ 'is-active': !loading && resolved }"
         :size="13"
         :stroke-width="2.5"
       />
       <CircleIcon
         class="pr-review-thread-toggle__mark"
-        :class="{ 'is-active': !resolved }"
+        :class="{ 'is-active': !loading && !resolved }"
         :size="13"
         :stroke-width="2.5"
       />
@@ -73,9 +90,9 @@ const { t } = useI18n();
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease;
+    background-color 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease;
 
   &.is-resolved {
     border-color: color-mix(in srgb, var(--gitpulse-success) 28%, transparent);
@@ -84,13 +101,13 @@ const { t } = useI18n();
   }
 
   @include hover-only {
-    &:hover:not(:disabled) {
+    &:hover:not([aria-disabled='true']) {
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
       color: var(--gitpulse-text-strong);
     }
 
-    &.is-resolved:hover:not(:disabled) {
+    &.is-resolved:hover:not([aria-disabled='true']) {
       border-color: color-mix(in srgb, var(--gitpulse-success) 40%, transparent);
       background: color-mix(in srgb, var(--gitpulse-success) 18%, transparent);
     }
@@ -101,9 +118,8 @@ const { t } = useI18n();
     outline-offset: 2px;
   }
 
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
+  &[aria-disabled='true'] {
+    cursor: progress;
   }
 }
 
@@ -113,14 +129,14 @@ const { t } = useI18n();
 }
 
 .pr-review-thread-toggle__mark,
+.pr-review-thread-toggle__spinner,
 .pr-review-thread-toggle__text {
   grid-area: 1 / 1;
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 0.16s ease,
-    transform 0.24s cubic-bezier(0.34, 1.46, 0.64, 1),
-    visibility 0s linear 0.16s;
+    opacity 0.2s ease,
+    visibility 0s linear 0.2s;
 
   &.is-active {
     opacity: 1;
@@ -128,6 +144,14 @@ const { t } = useI18n();
     transform: none;
     transition-delay: 0s;
   }
+}
+
+.pr-review-thread-toggle__mark,
+.pr-review-thread-toggle__text {
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s cubic-bezier(0.34, 1.46, 0.64, 1),
+    visibility 0s linear 0.2s;
 }
 
 .pr-review-thread-toggle__mark {

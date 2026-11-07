@@ -17,6 +17,7 @@ const loadToggle = () =>
     'app/components/dashboard/pr/PRReviewThreadToggle.vue',
     {
       '@lucide/vue': { CheckIcon: empty, CircleIcon: empty },
+      '~/components/ui/LoadingIcon.vue': { default: empty },
       'vue-i18n': i18n,
     },
     { useI18n: 'vue-i18n' }
@@ -41,6 +42,7 @@ const loadTimelineCard = async () => {
       '~/components/dashboard/pr/PRTimelineReviewDiff.vue': { default: empty },
       '~/components/dashboard/timeline/TimelineCommentCard.vue': { default: empty },
       '~/components/ui/GitHubAvatar.vue': { default: empty },
+      '~/components/ui/LoadingIcon.vue': { default: empty },
       '~/components/ui/MarkdownRenderer.vue': { default: empty },
       '~/utils/formatDurationFromNow': { formatDurationFromNow: () => 'now' },
       '~/composables/useRelativeTimeNow': { useRelativeTimeNow: () => 0 },
@@ -57,6 +59,7 @@ const loadThreadPills = async () => {
       'vue-i18n': i18n,
       '~/components/dashboard/pr/PRReviewThreadToggle.vue': { default: Toggle },
       '~/components/ui/GitHubAvatar.vue': { default: empty },
+      '~/components/ui/LoadingIcon.vue': { default: empty },
       '~/components/ui/MarkdownRenderer.vue': { default: empty },
       '~/utils/formatDurationFromNow': { formatDurationFromNow: () => 'now' },
       '~/composables/useRelativeTimeNow': { useRelativeTimeNow: () => 0 },
@@ -107,8 +110,11 @@ describe('timeline review card thread toggle', () => {
         setup: () => () =>
           h(Card, {
             ...props,
-            'onToggle-review-thread': (payload: { threadId: string; resolved: boolean }) =>
-              toggles.push(payload),
+            // Stands in for PRDetail: the click starts the request; the new state lands later.
+            'onToggle-review-thread': (payload: { threadId: string; resolved: boolean }) => {
+              toggles.push(payload);
+              props.resolvingReviewThreadId = payload.threadId;
+            },
           }),
       })
     );
@@ -124,10 +130,16 @@ describe('timeline review card thread toggle', () => {
       toggle.click();
       await nextTick();
       expect(toggles).toEqual([{ threadId: 'thread-1', resolved: true }]);
+      expect(toggle.getAttribute('aria-pressed')).toBe('false');
+      expect(toggle.getAttribute('aria-disabled')).toBe('true');
+      expect(toggle.querySelector('.pr-review-thread-toggle__spinner.is-active')).not.toBeNull();
+      expect(toggle.disabled).toBe(false);
 
-      props.resolvingReviewThreadId = 'thread-1';
+      props.item.reviewComments[0]!.isResolved = true;
+      props.resolvingReviewThreadId = null;
       await nextTick();
-      expect(toggle.disabled).toBe(true);
+      expect(toggle.getAttribute('aria-pressed')).toBe('true');
+      expect(toggle.querySelector('.pr-review-thread-toggle__spinner.is-active')).toBeNull();
     } finally {
       await dom.cleanup();
     }

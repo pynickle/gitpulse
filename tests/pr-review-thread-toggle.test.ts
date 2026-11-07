@@ -15,6 +15,7 @@ const loadToggle = () =>
     'app/components/dashboard/pr/PRReviewThreadToggle.vue',
     {
       '@lucide/vue': { CheckIcon: icon('check'), CircleIcon: icon('circle') },
+      '~/components/ui/LoadingIcon.vue': { default: icon('loader') },
       'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
     },
     { useI18n: 'vue-i18n' }
@@ -25,6 +26,13 @@ const exposedLabel = (root: Element) =>
   root
     .querySelector('.pr-review-thread-toggle__text:not([aria-hidden="true"])')
     ?.textContent?.trim();
+
+const activeIcon = (root: Element) =>
+  root.querySelector('.pr-review-thread-toggle__mark.is-active')?.getAttribute('data-icon') ?? null;
+
+const activeSpinner = (root: Element) =>
+  root.querySelector('.pr-review-thread-toggle__spinner.is-active')?.getAttribute('data-icon') ??
+  null;
 
 const mountToggle = async (props: Record<string, unknown>) => {
   const Toggle = (await loadToggle()) as Component;
@@ -74,10 +82,19 @@ describe('review thread toggle', () => {
     }
   });
 
-  test('a thread that is being updated refuses a second click', async () => {
-    const { dom, button, toggles } = await mountToggle({ resolved: false, loading: true });
+  test('an update in flight shows a loading mark while the state stays put', async () => {
+    const { dom, view, button, toggles } = await mountToggle({
+      resolved: false,
+      loading: true,
+    });
     try {
-      expect(button.disabled).toBe(true);
+      expect(activeSpinner(button)).toBe('loader');
+      expect(activeIcon(button)).toBeNull();
+      expect(exposedLabel(button)).toBe('prReview.threadUnresolved');
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect(button.getAttribute('aria-busy')).toBe('true');
+      expect(button.disabled).toBe(false);
+      expect(view.root.querySelectorAll('button')).toHaveLength(1);
       button.click();
       await nextTick();
       expect(toggles).toHaveLength(0);
