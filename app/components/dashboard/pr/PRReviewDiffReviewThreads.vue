@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { CheckIcon, XIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
+import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { PRReviewCommentThread } from '~/composables/usePRReview';
@@ -23,17 +23,6 @@ const relativeTimeNow = useRelativeTimeNow();
 
 const isReviewThreadResolving = (thread: PRReviewCommentThread) =>
   Boolean(thread.threadId && resolvingReviewThreadId === thread.threadId);
-
-const reviewThreadActionLabel = (thread: PRReviewCommentThread) =>
-  thread.isResolved ? t('prReview.unresolveThread') : t('prReview.resolveThread');
-
-const reviewThreadStateLabel = (thread: PRReviewCommentThread) =>
-  thread.isResolved ? t('prReview.threadResolved') : t('prReview.threadUnresolved');
-
-const reviewThreadStateClass = (thread: PRReviewCommentThread) =>
-  thread.isResolved
-    ? 'pr-review-diff-viewer__thread-action--resolved'
-    : 'pr-review-diff-viewer__thread-action--unresolved';
 
 const toggleReviewThread = (thread: PRReviewCommentThread) => {
   if (!thread.threadId || isReviewThreadResolving(thread)) {
@@ -60,27 +49,13 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
         :key="comment.id"
         class="pr-review-diff-viewer__review-comment"
       >
-        <button
+        <PRReviewThreadToggle
           v-if="thread.threadId && commentIndex === 0"
-          class="button is-small pr-review-diff-viewer__thread-action"
-          type="button"
-          :class="[
-            reviewThreadStateClass(thread),
-            { 'is-loading': isReviewThreadResolving(thread) },
-          ]"
-          :disabled="isReviewThreadResolving(thread)"
-          :aria-label="reviewThreadActionLabel(thread)"
-          :title="reviewThreadActionLabel(thread)"
-          @click="toggleReviewThread(thread)"
-        >
-          <component
-            :is="thread.isResolved ? XIcon : CheckIcon"
-            :size="13"
-            :stroke-width="2.5"
-            aria-hidden="true"
-          />
-          <span>{{ reviewThreadStateLabel(thread) }}</span>
-        </button>
+          class="pr-review-diff-viewer__thread-action"
+          :resolved="thread.isResolved"
+          :loading="isReviewThreadResolving(thread)"
+          @toggle="toggleReviewThread(thread)"
+        />
         <div class="pr-review-diff-viewer__review-comment-header">
           <GitHubAvatar
             variant="raised"
@@ -157,24 +132,6 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
   top: 0.5rem;
   right: 0.5rem;
   z-index: 1;
-  gap: 0.25rem;
-  height: 1.5rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.pr-review-diff-viewer__thread-action--resolved {
-  border-color: color-mix(in srgb, var(--gitpulse-success) 42%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-success) 12%, var(--gitpulse-surface));
-  color: var(--gitpulse-success);
-}
-
-.pr-review-diff-viewer__thread-action--unresolved {
-  border-color: color-mix(in srgb, var(--gitpulse-warning) 42%, var(--gitpulse-border));
-  background: color-mix(in srgb, var(--gitpulse-warning) 12%, var(--gitpulse-surface));
-  color: var(--gitpulse-warning);
 }
 
 .pr-review-diff-viewer__review-comment {

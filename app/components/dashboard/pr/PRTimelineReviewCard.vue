@@ -150,30 +150,12 @@
                       {{ t('prReview.threadOutdated') }}
                     </span>
                   </div>
-                  <div v-if="comment.threadId" class="review-item__thread-status">
-                    <button
-                      class="review-item__thread-toggle"
-                      type="button"
-                      :class="{
-                        'is-resolved': comment.isResolved,
-                        'is-loading': isReviewThreadResolving(comment),
-                      }"
-                      :disabled="isReviewThreadResolving(comment)"
-                      :aria-label="reviewThreadActionLabel(comment)"
-                      :title="reviewThreadActionLabel(comment)"
-                      @click="toggleReviewThread(comment)"
-                    >
-                      <component
-                        :is="comment.isResolved ? CheckIcon : CircleIcon"
-                        :size="14"
-                        :stroke-width="2.5"
-                        aria-hidden="true"
-                      />
-                    </button>
-                    <span class="review-item__thread-label">
-                      {{ reviewThreadStateLabel(comment) }}
-                    </span>
-                  </div>
+                  <PRReviewThreadToggle
+                    v-if="comment.threadId"
+                    :resolved="comment.isResolved"
+                    :loading="isReviewThreadResolving(comment)"
+                    @toggle="toggleReviewThread(comment)"
+                  />
                 </div>
                 <div class="review-item__comment-body content">
                   <template v-if="comment.body">
@@ -210,7 +192,6 @@
 import {
   CheckIcon,
   ChevronRightIcon,
-  CircleIcon,
   ClockIcon,
   MessageSquareIcon,
   SlashIcon,
@@ -220,6 +201,7 @@ import { computed, defineAsyncComponent, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { parsePRReviewPatch } from '#shared/utils/pr-review-patch';
+import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
@@ -362,12 +344,6 @@ const toggleFile = (path: string) => {
 
 const isReviewThreadResolving = (comment: TimelineReviewComment) =>
   Boolean(comment.threadId && resolvingReviewThreadId === comment.threadId);
-
-const reviewThreadActionLabel = (comment: TimelineReviewComment) =>
-  comment.isResolved ? t('prReview.unresolveThread') : t('prReview.resolveThread');
-
-const reviewThreadStateLabel = (comment: TimelineReviewComment) =>
-  comment.isResolved ? t('prReview.threadResolved') : t('prReview.threadUnresolved');
 
 const toggleReviewThread = (comment: TimelineReviewComment) => {
   if (!comment.threadId || isReviewThreadResolving(comment)) {
@@ -908,78 +884,6 @@ const buildSuggestionDiffLines = (
 .review-item__outdated-tag {
   font-size: 0.65rem;
   font-weight: 700;
-}
-
-.review-item__thread-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.review-item__thread-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  border: 1.5px solid var(--gitpulse-border-strong);
-  background: var(--gitpulse-surface);
-  color: var(--gitpulse-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  @include hover-only {
-    &:hover:not(:disabled) {
-      border-color: var(--gitpulse-success);
-      color: var(--gitpulse-success);
-      background: var(--gitpulse-success-soft);
-    }
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring);
-    outline-offset: 2px;
-  }
-
-  &.is-resolved {
-    border-color: var(--gitpulse-success);
-    background: var(--gitpulse-success);
-    color: #fff;
-  }
-
-  &.is-loading {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-}
-
-.review-item__thread-label {
-  font-size: 0.7rem;
-  color: var(--gitpulse-text-muted);
-  white-space: nowrap;
-}
-
-// Dark mode adjustments
-html.dark .review-item__thread-toggle {
-  @include hover-only {
-    &:hover:not(:disabled) {
-      border-color: var(--gitpulse-success);
-      color: var(--gitpulse-success);
-      background: color-mix(in srgb, var(--gitpulse-success) 16%, transparent);
-    }
-  }
-
-  &.is-resolved {
-    border-color: var(--gitpulse-success);
-    background: color-mix(in srgb, var(--gitpulse-success) 85%, transparent);
-    color: #fff;
-  }
 }
 
 .review-item__comment {
