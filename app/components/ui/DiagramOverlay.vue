@@ -30,6 +30,7 @@ const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.25;
 const ZOOM_WHEEL_STEP = 0.1;
 const ZOOM_WHEEL_FINE_STEP = 0.04;
+const MIN_INITIAL_ZOOM = 0.75;
 // Floating chrome the fitted diagram has to clear: the close control above and
 // the zoom capsule with the hint below.
 const FIT_INSET_X = 40;
@@ -64,6 +65,7 @@ const zoom = shallowRef(1);
 const panX = shallowRef(0);
 const panY = shallowRef(0);
 const fitZoom = shallowRef(1);
+const isViewportReady = shallowRef(false);
 const diagramWidth = shallowRef(0);
 const diagramHeight = shallowRef(0);
 const dragState = shallowRef<DragState | null>(null);
@@ -85,6 +87,8 @@ const canZoomIn = computed(() => zoom.value < MAX_ZOOM);
 const canZoomOut = computed(() => zoom.value > MIN_ZOOM);
 const isGrabbing = computed(() => dragState.value !== null || pinchState.value !== null);
 const transformStyle = computed(() => ({
+  visibility: isViewportReady.value ? ('visible' as const) : ('hidden' as const),
+  transition: isViewportReady.value ? undefined : 'none',
   transform: `translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`,
   width: diagramWidth.value > 0 ? `${diagramWidth.value}px` : undefined,
   height: diagramHeight.value > 0 ? `${diagramHeight.value}px` : undefined,
@@ -207,8 +211,15 @@ function cancelPendingPan() {
 async function resetViewportAfterRender() {
   await nextTick();
   measureDiagram();
-  resetViewport();
+  zoom.value = Math.max(fitZoom.value, MIN_INITIAL_ZOOM);
+  const rect = viewport.value!.getBoundingClientRect();
+  panX.value = Math.max(0, (diagramWidth.value * zoom.value - rect.width) / 2 + FIT_INSET_X);
+  panY.value = Math.max(0, (diagramHeight.value * zoom.value - rect.height) / 2 + FIT_INSET_TOP);
   clampPan();
+  // Commit the measured transform to layout without a transition before revealing the SVG.
+  await nextTick();
+  diagram.value?.getBoundingClientRect();
+  isViewportReady.value = true;
 }
 
 function changeZoom(delta: number) {
@@ -243,6 +254,7 @@ async function renderDiagram() {
   if (!import.meta.client) return;
 
   renderState.value = { kind: 'loading' };
+  isViewportReady.value = false;
   renderCount.value += 1;
   const currentRenderCount = renderCount.value;
 

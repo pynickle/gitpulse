@@ -9,10 +9,11 @@ import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ setup: () => () => h('svg') });
 
+let renderedSvg = '<svg viewBox="0 0 120 60"><g /></svg>';
 const mermaid = {
   initialize() {},
   parse: async () => true,
-  render: async () => ({ svg: '<svg viewBox="0 0 120 60"><g /></svg>' }),
+  render: async () => ({ svg: renderedSvg }),
 };
 
 const Overlay = await compileVue(
@@ -55,8 +56,12 @@ async function createOverlayDom() {
   return createVueDom({ SVGSVGElement });
 }
 
-async function mountOverlay(onClose: () => void = () => {}) {
+async function mountOverlay(
+  onClose: () => void = () => {},
+  svg = '<svg viewBox="0 0 120 60"><g /></svg>'
+) {
   dom = await createOverlayDom();
+  renderedSvg = svg;
   const view = dom.mount(
     defineComponent({
       setup: () => () =>
@@ -65,12 +70,29 @@ async function mountOverlay(onClose: () => void = () => {}) {
         ]),
     })
   );
+  const visibilityAtMeasurement: string[] = [];
+  const viewport = dom.document.querySelector<HTMLElement>('.diagram-overlay__viewport')!;
+  viewport.getBoundingClientRect = () => {
+    const diagram = dom.document.querySelector<HTMLElement>('.diagram-overlay__diagram');
+    if (diagram) visibilityAtMeasurement.push(diagram.style.visibility);
+    return {
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 1024,
+      bottom: 768,
+      width: 1024,
+      height: 768,
+      toJSON() {},
+    };
+  };
   // The mermaid import and the post-render fit both resolve across microtasks.
   await nextTick();
   await Bun.sleep(0);
   await nextTick();
 
-  return { document: dom.document, root: view.root };
+  return { document: dom.document, root: view.root, visibilityAtMeasurement };
 }
 
 function zoomReadout(document: Document) {
@@ -144,6 +166,27 @@ test('the percentage readout zooms in and returns to fit when clicked', async ()
   document.querySelector<HTMLElement>('[aria-label^="markdown.mermaid.fit"]')!.click();
   await nextTick();
   expect(zoomReadout(document)).toBe(fitted);
+});
+
+test('the SVG stays hidden until its initial viewport has been measured', async () => {
+  const { document, visibilityAtMeasurement } = await mountOverlay();
+  expect(visibilityAtMeasurement[0]).toBe('hidden');
+  const diagram = document.querySelector<HTMLElement>('.diagram-overlay__diagram')!;
+  expect(diagram.querySelector('svg')).not.toBeNull();
+  expect(diagram.style.visibility).toBe('visible');
+  expect(zoomReadout(document)).toBe('100%');
+});
+
+test('large diagrams open at 75% from their start while Fit still shows the whole diagram', async () => {
+  const { document } = await mountOverlay(() => {}, '<svg viewBox="0 0 2000 3000"><g /></svg>');
+  expect(zoomReadout(document)).toBe('75%');
+  const diagram = document.querySelector<HTMLElement>('.diagram-overlay__diagram')!;
+  expect(diagram.style.transform).toBe('translate(278px, 805px) scale(0.75)');
+
+  document.querySelector<HTMLElement>('[aria-label^="markdown.mermaid.fit"]')!.click();
+  await nextTick();
+  expect(zoomReadout(document)).toBe('20%');
+  expect(diagram.style.transform).toContain('translate(0px, 0px)');
 });
 
 test('the readout announces both the fit action and the current zoom', async () => {

@@ -68,6 +68,8 @@ export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
         // follows a re-render; the attribute alone would be the untouched default value.
         const value = next == null ? '' : String(next);
         if (element.value !== value) element.value = value;
+      } else if (key === 'innerHTML') {
+        element.innerHTML = next ?? '';
       } else if (key === 'style') {
         if (typeof next === 'string') {
           element.setAttribute('style', next);

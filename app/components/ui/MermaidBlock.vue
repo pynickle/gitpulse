@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Maximize2Icon } from '@lucide/vue';
-import { computed, nextTick, onMounted, shallowRef, useId, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, useId, watch } from 'vue';
 
 import { estimateMermaidPreviewHeight } from '#shared/utils/mermaid-preview-height';
 import DiagramOverlay from '~/components/ui/DiagramOverlay.vue';
@@ -20,6 +20,11 @@ type State = { kind: 'loading' } | { kind: 'success'; svg: string } | { kind: 'f
 const state = shallowRef<State>({ kind: 'loading' });
 const isOverlayOpen = shallowRef(false);
 const openerElement = shallowRef<HTMLElement | null>(null);
+const isNarrow = shallowRef(false);
+let previewMedia: MediaQueryList;
+const syncPreviewMedia = () => {
+  isNarrow.value = previewMedia.matches;
+};
 let renderSequence = 0;
 
 // useId() is Vue 3.5+ — generates a stable, unique id per component instance.
@@ -76,7 +81,13 @@ async function closeOverlay() {
   openerElement.value = null;
 }
 
-onMounted(() => render(code));
+onMounted(() => {
+  previewMedia = window.matchMedia('(max-width: 640px)');
+  syncPreviewMedia();
+  previewMedia.addEventListener('change', syncPreviewMedia);
+  void render(code);
+});
+onBeforeUnmount(() => previewMedia?.removeEventListener('change', syncPreviewMedia));
 watch(
   () => [code, colorMode.value] as const,
   ([code]) => render(code)
@@ -107,7 +118,16 @@ watch(
           </button>
 
           <!-- v-html: SVG comes from Mermaid with securityLevel: 'strict'. -->
-          <ScrollArea class="mermaid-output" axis="both"><div v-html="state.svg" /></ScrollArea>
+          <ScrollArea class="mermaid-output" axis="both">
+            <component
+              :is="isNarrow ? 'button' : 'div'"
+              class="mermaid-preview"
+              :type="isNarrow ? 'button' : undefined"
+              :aria-label="isNarrow ? t('markdown.mermaid.open') : undefined"
+              @click="isNarrow && openOverlay($event)"
+              v-html="state.svg"
+            />
+          </ScrollArea>
         </template>
       </div>
 
@@ -135,7 +155,6 @@ watch(
   position: relative;
   overflow: hidden;
   margin: 1rem 0;
-  min-height: min(var(--mermaid-preview-height), 70vh);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
   background-color: var(--gitpulse-markdown-bg);
@@ -177,8 +196,24 @@ watch(
 }
 
 .mermaid-output {
-  max-height: min(var(--mermaid-preview-height), 70vh);
+  max-height: min(480px, 60dvh);
   padding: 1rem;
+}
+
+.mermaid-preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+}
+
+.mermaid-preview:focus-visible {
+  outline: 2px solid var(--gitpulse-focus-ring);
+  outline-offset: 2px;
 }
 
 .mermaid-output :deep(svg) {
@@ -190,12 +225,11 @@ watch(
 
 @media (max-width: 640px) {
   .mermaid-block__open {
-    position: static;
-    width: 100%;
-    justify-content: center;
-    border-width: 0 0 1px;
-    border-radius: 0;
-    box-shadow: none;
+    display: none;
+  }
+
+  .mermaid-preview {
+    cursor: pointer;
   }
 }
 </style>
