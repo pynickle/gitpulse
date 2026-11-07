@@ -41,6 +41,7 @@ const loadTimelineCard = async () => {
       '~/components/dashboard/pr/PRReviewThreadToggle.vue': { default: Toggle },
       '~/components/dashboard/pr/PRTimelineReviewDiff.vue': { default: empty },
       '~/components/dashboard/timeline/TimelineCommentCard.vue': { default: empty },
+      '~/components/dashboard/timeline/TimelineCardHeader.vue': { default: empty },
       '~/components/ui/GitHubAvatar.vue': { default: empty },
       '~/components/ui/LoadingIcon.vue': { default: empty },
       '~/components/ui/MarkdownRenderer.vue': { default: empty },
@@ -140,6 +141,43 @@ describe('timeline review card thread toggle', () => {
       await nextTick();
       expect(toggle.getAttribute('aria-pressed')).toBe('true');
       expect(toggle.querySelector('.pr-review-thread-toggle__spinner.is-active')).toBeNull();
+    } finally {
+      await dom.cleanup();
+    }
+  });
+});
+
+describe('timeline review card header', () => {
+  const renderFor = async (state: 'approved' | 'commented') => {
+    const Card = await loadTimelineCard();
+    const dom = createVueDom();
+    const view = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(Card, {
+            item: { ...reviewItem(), state },
+            repoOwner: 'octo',
+            repoName: 'app',
+          }),
+      })
+    );
+    await nextTick();
+    return { dom, text: view.root.textContent ?? '' };
+  };
+
+  test('a verdict keeps its label in the review header', async () => {
+    const { dom, text } = await renderFor('approved');
+    try {
+      expect(text).toContain('prReview.timelineApprovedChanges');
+    } finally {
+      await dom.cleanup();
+    }
+  });
+
+  test('a review that only comments reads without a verdict label', async () => {
+    const { dom, text } = await renderFor('commented');
+    try {
+      expect(text).not.toContain('prReview.timelineCommented');
     } finally {
       await dom.cleanup();
     }

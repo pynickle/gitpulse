@@ -1,31 +1,6 @@
 <template>
   <article class="comment-item">
-    <header class="comment-item__header">
-      <GitHubAvatar
-        variant="raised"
-        interactive
-        class="comment-item__avatar"
-        width="32"
-        height="32"
-        :src="item.author?.avatarUrl || ''"
-        :alt="item.author?.login || ''"
-      />
-      <div class="comment-item__meta">
-        <a
-          :href="item.author?.url"
-          target="_blank"
-          rel="noopener"
-          class="comment-item__author is-size-6 has-text-weight-medium has-text-link"
-        >
-          {{ item.author?.login }}
-        </a>
-        <slot name="meta">
-          <span class="comment-item__time is-size-7 has-text-grey">
-            {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
-          </span>
-        </slot>
-      </div>
-    </header>
+    <TimelineCardHeader :author="item.author" :created-at="item.createdAt" />
     <div class="comment-item__body content">
       <MarkdownRenderer
         v-if="item.body"
@@ -58,10 +33,9 @@ import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type { ReactionTargetKind } from '#shared/types/reactions';
 import { extractCommentIdFromUrl } from '#shared/utils/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
-import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import TimelineCardHeader from '~/components/dashboard/timeline/TimelineCardHeader.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import type { TimelineActor } from '~/composables/usePRTimelineEvents';
-import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 interface TimelineCommentCardItem {
   id?: string | number;
@@ -87,9 +61,7 @@ const {
   reactionTargetKind?: ReactionTargetKind;
 }>();
 
-const { locale, t } = useI18n();
-const localeCode = computed(() => locale.value);
-const relativeTimeNow = useRelativeTimeNow();
+const { t } = useI18n();
 const reactionTargetId = computed(() => extractCommentIdFromUrl(item.url) || String(item.id ?? ''));
 const canShowReactions = computed(
   () => enableReactions !== false && Boolean(repoOwner && repoName && reactionTargetId.value)
@@ -97,49 +69,18 @@ const canShowReactions = computed(
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/timeline-card' as *;
+
 .comment-item {
+  @include timeline-card-surface;
+
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 1rem 1.125rem 0.875rem;
-  border: 1px solid var(--gitpulse-border-strong);
-  border-radius: var(--gitpulse-radius-xl);
-  background-color: var(--gitpulse-surface);
-  box-shadow: var(--gitpulse-shadow-card);
-}
-
-.comment-item__header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.comment-item__avatar {
-  flex: none;
-}
-
-.comment-item__meta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-}
-
-.comment-item__author {
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-
-.comment-item__time {
-  line-height: 1.3;
 }
 
 .comment-item__body {
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--gitpulse-border);
-  overflow-wrap: anywhere;
+  @include timeline-card-body;
 }
 
 .comment-item__body :deep(*:last-child) {

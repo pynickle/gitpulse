@@ -9,181 +9,179 @@
   />
   <div
     v-else
-    class="review-item p-4"
+    class="review-item"
     :class="[`review-item--${stateModifier}`, { 'review-item--has-dismissal': item.dismissal }]"
   >
-    <div class="is-flex is-align-items-flex-start">
+    <TimelineCardHeader
+      v-if="showsConversationHeader"
+      :author="item.author"
+      :created-at="item.createdAt"
+    />
+    <header v-else class="review-item__header">
       <GitHubAvatar
         variant="raised"
         interactive
-        class="mr-3 review-item__avatar"
+        class="review-item__avatar"
         width="32"
         height="32"
         :src="item.author?.avatarUrl || ''"
         :alt="item.author?.login || ''"
       />
-      <div class="review-item__content is-flex-grow-1">
-        <div class="review-item__heading">
-          <span class="review-item__badge" aria-hidden="true">
-            <component :is="stateIcon" :size="14" :stroke-width="2.5" />
+      <div class="review-item__heading">
+        <span class="review-item__badge" aria-hidden="true">
+          <component :is="stateIcon" :size="14" :stroke-width="2.5" />
+        </span>
+        <a
+          :href="item.author?.url"
+          target="_blank"
+          rel="noopener"
+          class="has-text-link has-text-weight-semibold review-item__author"
+        >
+          {{ item.author?.login }}
+        </a>
+        <span class="review-item__action">{{ stateAction }}</span>
+        <span v-if="item.dismissal" class="review-item__dismissed-note">
+          {{ t('prReview.timelineDismissedNote') }}
+        </span>
+        <span class="review-item__time has-text-grey">
+          {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
+        </span>
+      </div>
+    </header>
+    <div v-if="item.body" class="review-item__body content">
+      <MarkdownRenderer :value="item.body" :repo-owner="repoOwner" :repo-name="repoName" />
+    </div>
+    <div v-if="item.dismissal" class="review-item__dismissal">
+      <div class="review-item__dismissal-heading">
+        <SlashIcon :size="14" :stroke-width="2.5" />
+        <span>
+          {{ t('prReview.timelineDismissed') }}
+          <template v-if="item.dismissal.actor?.login">
+            {{ t('prReview.timelineDismissedBy') }}
+            <a
+              :href="item.dismissal.actor.url"
+              target="_blank"
+              rel="noopener"
+              class="has-text-link"
+            >
+              {{ item.dismissal.actor.login }}
+            </a>
+          </template>
+        </span>
+        <span v-if="item.dismissal.createdAt" class="has-text-grey">
+          {{ formatDurationFromNow(item.dismissal.createdAt, localeCode, relativeTimeNow) }}
+        </span>
+      </div>
+      <MarkdownRenderer
+        v-if="item.dismissal.message"
+        class="review-item__dismissal-message"
+        :value="item.dismissal.message"
+        :repo-owner="repoOwner"
+        :repo-name="repoName"
+      />
+    </div>
+    <div v-if="hasReviewComments" class="review-item__comments">
+      <article
+        v-for="group in reviewCommentGroups"
+        :key="group.path"
+        class="review-item__file-group"
+        :class="{ 'review-item__file-group--expanded': isFileExpanded(group.path) }"
+      >
+        <button
+          class="review-item__file-toggle"
+          type="button"
+          :aria-expanded="isFileExpanded(group.path)"
+          @click="toggleFile(group.path)"
+        >
+          <ChevronRightIcon
+            :size="14"
+            class="review-item__file-chevron"
+            :class="{ 'review-item__file-chevron--expanded': isFileExpanded(group.path) }"
+            aria-hidden="true"
+          />
+          <span class="review-item__file-name">{{ group.path }}</span>
+          <span class="review-item__file-count">
+            {{ group.comments.length }}
           </span>
-          <a
-            :href="item.author?.url"
-            target="_blank"
-            rel="noopener"
-            class="has-text-link has-text-weight-semibold review-item__author"
+        </button>
+
+        <div v-if="isFileExpanded(group.path)" class="review-item__file-comments">
+          <div
+            v-for="comment in group.comments"
+            :key="comment.id || `${comment.path}-${comment.createdAt}`"
+            class="review-item__comment"
           >
-            {{ item.author?.login }}
-          </a>
-          <span class="review-item__action">{{ stateAction }}</span>
-          <span v-if="item.dismissal" class="review-item__dismissed-note">
-            {{ t('prReview.timelineDismissedNote') }}
-          </span>
-          <span class="review-item__time has-text-grey">
-            {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
-          </span>
-        </div>
-        <div v-if="item.body" class="review-item__body content">
-          <MarkdownRenderer :value="item.body" :repo-owner="repoOwner" :repo-name="repoName" />
-        </div>
-        <div v-if="item.dismissal" class="review-item__dismissal">
-          <div class="review-item__dismissal-heading">
-            <SlashIcon :size="14" :stroke-width="2.5" />
-            <span>
-              {{ t('prReview.timelineDismissed') }}
-              <template v-if="item.dismissal.actor?.login">
-                {{ t('prReview.timelineDismissedBy') }}
+            <PRTimelineReviewDiff
+              v-if="comment.diffHunk"
+              class="review-item__diff"
+              :filename="comment.path ?? group.path"
+              :lines="buildReviewCommentDiffLines(comment)"
+              :aria-label="t('prReview.reviewDiffLabel', { filename: group.path })"
+            />
+            <div class="review-item__comment-meta">
+              <div class="review-item__comment-meta-left">
+                <GitHubAvatar
+                  variant="raised"
+                  interactive
+                  width="20"
+                  height="20"
+                  :src="comment.author?.avatarUrl || ''"
+                  :alt="comment.author?.login || ''"
+                />
+                <a :href="comment.author?.url" target="_blank" rel="noopener" class="has-text-link">
+                  {{ comment.author?.login }}
+                </a>
                 <a
-                  :href="item.dismissal.actor.url"
+                  v-if="comment.url"
+                  :href="comment.url"
                   target="_blank"
                   rel="noopener"
-                  class="has-text-link"
+                  class="review-item__path-tag"
                 >
-                  {{ item.dismissal.actor.login }}
+                  {{ commentLineLabel(comment) }}
                 </a>
-              </template>
-            </span>
-            <span v-if="item.dismissal.createdAt" class="has-text-grey">
-              {{ formatDurationFromNow(item.dismissal.createdAt, localeCode, relativeTimeNow) }}
-            </span>
-          </div>
-          <MarkdownRenderer
-            v-if="item.dismissal.message"
-            class="review-item__dismissal-message"
-            :value="item.dismissal.message"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
-          />
-        </div>
-        <div v-if="hasReviewComments" class="review-item__comments">
-          <article
-            v-for="group in reviewCommentGroups"
-            :key="group.path"
-            class="review-item__file-group"
-            :class="{ 'review-item__file-group--expanded': isFileExpanded(group.path) }"
-          >
-            <button
-              class="review-item__file-toggle"
-              type="button"
-              :aria-expanded="isFileExpanded(group.path)"
-              @click="toggleFile(group.path)"
-            >
-              <ChevronRightIcon
-                :size="14"
-                class="review-item__file-chevron"
-                :class="{ 'review-item__file-chevron--expanded': isFileExpanded(group.path) }"
-                aria-hidden="true"
-              />
-              <span class="review-item__file-name">{{ group.path }}</span>
-              <span class="review-item__file-count">
-                {{ group.comments.length }}
-              </span>
-            </button>
-
-            <div v-if="isFileExpanded(group.path)" class="review-item__file-comments">
-              <div
-                v-for="comment in group.comments"
-                :key="comment.id || `${comment.path}-${comment.createdAt}`"
-                class="review-item__comment"
-              >
-                <PRTimelineReviewDiff
-                  v-if="comment.diffHunk"
-                  class="review-item__diff"
-                  :filename="comment.path ?? group.path"
-                  :lines="buildReviewCommentDiffLines(comment)"
-                  :aria-label="t('prReview.reviewDiffLabel', { filename: group.path })"
-                />
-                <div class="review-item__comment-meta">
-                  <div class="review-item__comment-meta-left">
-                    <GitHubAvatar
-                      variant="raised"
-                      interactive
-                      width="20"
-                      height="20"
-                      :src="comment.author?.avatarUrl || ''"
-                      :alt="comment.author?.login || ''"
-                    />
-                    <a
-                      :href="comment.author?.url"
-                      target="_blank"
-                      rel="noopener"
-                      class="has-text-link"
-                    >
-                      {{ comment.author?.login }}
-                    </a>
-                    <a
-                      v-if="comment.url"
-                      :href="comment.url"
-                      target="_blank"
-                      rel="noopener"
-                      class="review-item__path-tag"
-                    >
-                      {{ commentLineLabel(comment) }}
-                    </a>
-                    <span v-if="comment.createdAt" class="has-text-grey">
-                      {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
-                    </span>
-                    <span
-                      v-if="comment.isOutdated"
-                      class="tag is-warning is-light review-item__outdated-tag"
-                    >
-                      {{ t('prReview.threadOutdated') }}
-                    </span>
-                  </div>
-                  <PRReviewThreadToggle
-                    v-if="comment.threadId"
-                    :resolved="comment.isResolved"
-                    :loading="isReviewThreadResolving(comment)"
-                    @toggle="toggleReviewThread(comment)"
-                  />
-                </div>
-                <div class="review-item__comment-body content">
-                  <template v-if="comment.body">
-                    <template v-for="part in splitSuggestionBody(comment.body)" :key="part.key">
-                      <MarkdownRenderer
-                        v-if="part.kind === 'markdown' && part.value.trim()"
-                        :value="part.value"
-                        :repo-owner="repoOwner"
-                        :repo-name="repoName"
-                      />
-                      <PRTimelineReviewDiff
-                        v-else-if="part.kind === 'suggestion'"
-                        class="review-item__suggestion"
-                        :filename="comment.path ?? group.path"
-                        :lines="buildSuggestionDiffLines(comment, part.value)"
-                        :aria-label="t('prReview.suggestedChangeLabel', { filename: group.path })"
-                      />
-                    </template>
-                  </template>
-                  <p v-else class="has-text-grey is-size-7">
-                    {{ t('prReview.noReviewCommentBody') }}
-                  </p>
-                </div>
+                <span v-if="comment.createdAt" class="has-text-grey">
+                  {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
+                </span>
+                <span
+                  v-if="comment.isOutdated"
+                  class="tag is-warning is-light review-item__outdated-tag"
+                >
+                  {{ t('prReview.threadOutdated') }}
+                </span>
               </div>
+              <PRReviewThreadToggle
+                v-if="comment.threadId"
+                :resolved="comment.isResolved"
+                :loading="isReviewThreadResolving(comment)"
+                @toggle="toggleReviewThread(comment)"
+              />
             </div>
-          </article>
+            <div class="review-item__comment-body content">
+              <template v-if="comment.body">
+                <template v-for="part in splitSuggestionBody(comment.body)" :key="part.key">
+                  <MarkdownRenderer
+                    v-if="part.kind === 'markdown' && part.value.trim()"
+                    :value="part.value"
+                    :repo-owner="repoOwner"
+                    :repo-name="repoName"
+                  />
+                  <PRTimelineReviewDiff
+                    v-else-if="part.kind === 'suggestion'"
+                    class="review-item__suggestion"
+                    :filename="comment.path ?? group.path"
+                    :lines="buildSuggestionDiffLines(comment, part.value)"
+                    :aria-label="t('prReview.suggestedChangeLabel', { filename: group.path })"
+                  />
+                </template>
+              </template>
+              <p v-else class="has-text-grey is-size-7">
+                {{ t('prReview.noReviewCommentBody') }}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </article>
     </div>
   </div>
 </template>
@@ -202,6 +200,7 @@ import { useI18n } from 'vue-i18n';
 
 import { parsePRReviewPatch } from '#shared/utils/pr-review-patch';
 import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
+import TimelineCardHeader from '~/components/dashboard/timeline/TimelineCardHeader.vue';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
@@ -265,6 +264,10 @@ const isPlainComment = computed(() => {
   const state = item.state;
   return !state || (state === 'commented' && !hasReviewComments.value && !item.dismissal);
 });
+
+// Only a review that merely comments reads like a conversation; a verdict keeps
+// its badge and verb so approval, requested changes and dismissal stay legible.
+const showsConversationHeader = computed(() => item.state === 'commented' && !item.dismissal);
 
 const stateModifier = computed(() => {
   switch (item.state) {
@@ -646,13 +649,12 @@ const buildSuggestionDiffLines = (
 
 <style scoped lang="scss">
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/timeline-card' as *;
 
 .review-item {
-  border-radius: var(--gitpulse-radius-xl);
-  background-color: var(--gitpulse-surface);
-  border: 1px solid var(--gitpulse-border-strong);
+  @include timeline-card-surface;
+
   border-left: 4px solid var(--review-accent, var(--gitpulse-border-strong));
-  box-shadow: var(--gitpulse-shadow-card);
   overflow: hidden;
 }
 
@@ -690,7 +692,10 @@ const buildSuggestionDiffLines = (
   flex-shrink: 0;
 }
 
-.review-item__content {
+.review-item__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   min-width: 0;
 }
 
@@ -700,6 +705,7 @@ const buildSuggestionDiffLines = (
   align-items: center;
   column-gap: 0.5rem;
   row-gap: 0.25rem;
+  min-width: 0;
   min-height: 32px;
 }
 
@@ -741,9 +747,7 @@ const buildSuggestionDiffLines = (
 }
 
 .review-item__body {
-  margin-top: 0.875rem;
-  padding-top: 0.875rem;
-  border-top: 1px solid var(--gitpulse-border);
+  @include timeline-card-body;
 }
 
 .review-item__body :deep(*:last-child) {
@@ -754,7 +758,7 @@ const buildSuggestionDiffLines = (
 .review-item__comments {
   min-width: 0;
   margin-top: 1.25rem;
-  padding: 1rem 0.25rem 0.25rem;
+  padding: 1rem 0 0.25rem;
   border-top: 1px solid var(--gitpulse-border);
 }
 

@@ -1,0 +1,21 @@
+// One card surface for the timeline events that read like chat messages: a
+// comment card and a review card are the same box with different content.
+//
+// The surface owns the box; each card owns only what it puts inside.
+
+@mixin timeline-card-surface {
+  padding: 1rem 1.125rem 0.875rem;
+  border: 1px solid var(--gitpulse-border-strong);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  box-shadow: var(--gitpulse-shadow-card);
+}
+
+// A reader-facing block that follows the header, separated by a hairline. The
+// block spans the card, so its first character starts at the card's padding.
+@mixin timeline-card-body {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gitpulse-border);
+  overflow-wrap: anywhere;
+}
