@@ -255,6 +255,16 @@ The user setting that seeds Composer Layout when a Conversation Composer opens.
 **Review Inline Composer Default Layout**:
 The user setting that seeds Composer Layout when a Review Inline Composer opens on a wide viewport.
 
+## Diagrams
+
+**Diagram Preview**:
+A Mermaid diagram rendered inline in a Markdown body or wiki page, in its document flow.
+_Avoid_: mermaid block, embed, thumbnail
+
+**Diagram Overlay**:
+The full-viewport surface opened from a Diagram Preview to pan and zoom one diagram.
+_Avoid_: diagram viewer, lightbox, preview modal
+
 ## Fonts
 
 **App Font**:

@@ -24,7 +24,7 @@ Status: confirmed by the user; implementation authorized.
 
 ## Existing constraints
 
-- Use the vocabulary in `../CONTEXT.md`.
+- Use the vocabulary in `../GLOSSARY.md`.
 - Timeline Refresh Baseline is shared refresh state and does not represent reading progress.
 - Retained release history and Saved Visible Timeline have their existing boundaries under ADR 0016; preserving a reading position does not change those boundaries.
 

@@ -217,7 +217,7 @@ void main() {
     );
     // An empty page is not the app acting: its glyph is a noun — the mark that says what the
     // page is about — so it is painted in a text tone rather than in the Accent, which belongs
-    // to primary actions, the selected state and focus (CONTEXT.md).
+    // to primary actions, the selected state and focus (GLOSSARY.md).
     final context = tester.element(message);
     final glyph = tester.widget<Icon>(
       find.descendant(of: message, matching: find.byType(Icon)).first,

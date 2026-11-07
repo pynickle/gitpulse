@@ -109,7 +109,7 @@ The user invoked to-spec instead of another interview/confirmation round. [Issue
 
 ## Existing domain constraints
 
-The canonical vocabulary remains in `../CONTEXT.md`. In particular, a Shared Timeline Window does not guarantee that every release in its interval has been found. Cache connection must not silently strengthen this into a completeness guarantee.
+The canonical vocabulary remains in `../GLOSSARY.md`. In particular, a Shared Timeline Window does not guarantee that every release in its interval has been found. Cache connection must not silently strengthen this into a completeness guarantee.
 
 Read-only code investigation established the following constraints; these are facts about this checkout, not verification of the production deployment:
 
@@ -123,7 +123,7 @@ Read-only code investigation established the following constraints; these are fa
 
 ## Decision record
 
-Canonical terminology is recorded in `CONTEXT.md`. [ADR 0015](adr/0015-flutter-release-timeline-client-boundary.md) records the application and backend boundary. [ADR 0016](adr/0016-flutter-timeline-cache-reconnection.md) records the accepted per-repository reconnection rule. Dependency findings are recorded separately in [the research notes](research/flutter-release-timeline-dependencies.md); that file distinguishes accepted packages from remaining candidates.
+Canonical terminology is recorded in `GLOSSARY.md`. [ADR 0015](adr/0015-flutter-release-timeline-client-boundary.md) records the application and backend boundary. [ADR 0016](adr/0016-flutter-timeline-cache-reconnection.md) records the accepted per-repository reconnection rule. Dependency findings are recorded separately in [the research notes](research/flutter-release-timeline-dependencies.md); that file distinguishes accepted packages from remaining candidates.
 
 Native authentication options and baseline side effects are investigated in [the authentication notes](research/flutter-native-auth.md). [ADR 0017](adr/0017-flutter-cookie-session-browser-handoff.md) records the chosen Cookie session and browser/poll handoff.
 

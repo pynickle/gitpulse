@@ -16,7 +16,7 @@ pointer to put under. This record decides that, and the state it names.
 A touch leaves no tint. A tap paints neither the platform's own highlight nor a background the app
 authored for a pointer; a press paints nothing at all; a filled surface answers it with a deeper tone
 of its own fill; only a hovering fine pointer paints the hover tint; only the keyboard paints focus.
-The word for the failure is **Hold** (`CONTEXT.md`): a tint left painted after the input that caused
+The word for the failure is **Hold** (`GLOSSARY.md`): a tint left painted after the input that caused
 it is gone.
 
 ## What was painting the blue wash

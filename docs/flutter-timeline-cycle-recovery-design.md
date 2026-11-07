@@ -12,7 +12,7 @@ Design for architecture review candidate 04, “封装当前轮次的页面记�
 
 [Timeline cache behavior](flutter-timeline-cache.md), [ADR 0016](adr/0016-flutter-timeline-cache-reconnection.md) and [ADR 0024](adr/0024-flutter-device-timeline-cache-retention.md) remain authoritative. The new module is internal to the timeline session boundary; this design does not transfer SQL or account isolation out of the cache module.
 
-A current cycle spans a usable refresh and its subsequent pagination/retry rounds. Its journal records actual returned pages in reception order. Connected cached extensions are not fetched pages. These are implementation concepts, not additions to the domain vocabulary in `CONTEXT.md`.
+A current cycle spans a usable refresh and its subsequent pagination/retry rounds. Its journal records actual returned pages in reception order. Connected cached extensions are not fetched pages. These are implementation concepts, not additions to the domain vocabulary in `GLOSSARY.md`.
 
 ## Selected architecture
 
@@ -85,4 +85,4 @@ Test through the content interface and app-facing facade with actual temporary S
 
 `TimelineContentController` in `flutter/lib/timeline/timeline_content.dart` owns the current content and recovery lifecycle. Its private fetched-page journal in `timeline_content_journal.dart` concentrates append, commit acknowledgement, repository retention and both forms of replay. `TimelineContentState` publishes an immutable unfiltered window; `ReleaseTimelineSession` derives the presentation projection with current filters and retains account/network and device-choice coordination.
 
-The linked [ADR](adr/0038-flutter-timeline-content-and-recovery-ownership.md) records the accepted ownership decision. Keep `CONTEXT.md` as the repository's domain glossary; journal, commit acknowledgement and recovery commands are implementation concepts and do not warrant new glossary entries.
+The linked [ADR](adr/0038-flutter-timeline-content-and-recovery-ownership.md) records the accepted ownership decision. Keep `GLOSSARY.md` as the repository's domain glossary; journal, commit acknowledgement and recovery commands are implementation concepts and do not warrant new glossary entries.

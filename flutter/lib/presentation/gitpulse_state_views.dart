@@ -69,7 +69,7 @@ class GitPulseMessageView extends StatelessWidget {
           // A failure is the danger tone; an empty page is nobody's status at all, so its glyph
           // is a noun painted in the tone a supporting line is set in. The Accent is not a
           // decoration: it means the app is acting, and a page that found nothing is not acting
-          // (CONTEXT.md, ADR 0031).
+          // (GLOSSARY.md, ADR 0031).
           color: tone == GitPulseMessageTone.error
               ? toneDanger(context)
               : toneTextMuted(context),

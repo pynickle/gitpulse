@@ -35,7 +35,7 @@
 
 本设计更新 [原设计](timeline-refresh-navigation-design.md) 和
 [原规格](timeline-refresh-navigation-spec.md) 中仅使用 240ms 连续回顶的约束。
-其余刷新和阅读位置合同继续适用。术语沿用 [CONTEXT](../CONTEXT.md)，不新增通用 UI 术语。
+其余刷新和阅读位置合同继续适用。术语沿用 [GLOSSARY](../GLOSSARY.md)，不新增通用 UI 术语。
 
 ## 验证
 
