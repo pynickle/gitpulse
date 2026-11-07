@@ -1103,13 +1103,13 @@
     "copyCode": "复制",
     "copied": "已复制",
     "mermaid": {
-      "openViewer": "打开图表",
-      "title": "图表查看器",
+      "open": "打开图表",
+      "title": "图表",
       "zoomIn": "放大",
       "zoomOut": "缩小",
-      "reset": "重置视图",
+      "fit": "适配屏幕",
       "close": "关闭",
-      "hint": "拖动平移 · 滚轮缩放"
+      "hint": "拖动平移 · 滚轮或双指缩放"
     }
   },
   "fontModal": {

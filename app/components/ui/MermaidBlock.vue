@@ -3,7 +3,7 @@ import { Maximize2Icon } from '@lucide/vue';
 import { computed, nextTick, onMounted, shallowRef, useId, watch } from 'vue';
 
 import { estimateMermaidPreviewHeight } from '#shared/utils/mermaid-preview-height';
-import MermaidViewerModal from '~/components/ui/MermaidViewerModal.vue';
+import DiagramOverlay from '~/components/ui/DiagramOverlay.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const { code } = defineProps<{
@@ -18,7 +18,7 @@ const MAX_SOURCE_BYTES = 16384;
 type State = { kind: 'loading' } | { kind: 'success'; svg: string } | { kind: 'fallback' };
 
 const state = shallowRef<State>({ kind: 'loading' });
-const isViewerOpen = shallowRef(false);
+const isOverlayOpen = shallowRef(false);
 const openerElement = shallowRef<HTMLElement | null>(null);
 let renderSequence = 0;
 
@@ -64,13 +64,13 @@ async function render(code: string) {
   }
 }
 
-function openViewer(event: MouseEvent) {
+function openOverlay(event: MouseEvent) {
   openerElement.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
-  isViewerOpen.value = true;
+  isOverlayOpen.value = true;
 }
 
-async function closeViewer() {
-  isViewerOpen.value = false;
+async function closeOverlay() {
+  isOverlayOpen.value = false;
   await nextTick();
   openerElement.value?.focus();
   openerElement.value = null;
@@ -98,12 +98,12 @@ watch(
           <button
             class="mermaid-block__open button is-small"
             type="button"
-            :aria-label="t('markdown.mermaid.openViewer')"
-            :title="t('markdown.mermaid.openViewer')"
-            @click="openViewer"
+            :aria-label="t('markdown.mermaid.open')"
+            :title="t('markdown.mermaid.open')"
+            @click="openOverlay"
           >
             <Maximize2Icon :size="14" aria-hidden="true" />
-            <span>{{ t('markdown.mermaid.openViewer') }}</span>
+            <span>{{ t('markdown.mermaid.open') }}</span>
           </button>
 
           <!-- v-html: SVG comes from Mermaid with securityLevel: 'strict'. -->
@@ -111,10 +111,10 @@ watch(
         </template>
       </div>
 
-      <MermaidViewerModal
-        v-if="state.kind === 'success' && isViewerOpen"
+      <DiagramOverlay
+        v-if="state.kind === 'success' && isOverlayOpen"
         :code="code"
-        @close="closeViewer"
+        @close="closeOverlay"
       />
     </template>
 

@@ -1103,13 +1103,13 @@
     "copyCode": "Copy",
     "copied": "Copied",
     "mermaid": {
-      "openViewer": "Open diagram",
-      "title": "Diagram viewer",
+      "open": "Open diagram",
+      "title": "Diagram",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
-      "reset": "Reset view",
+      "fit": "Fit to screen",
       "close": "Close",
-      "hint": "Drag to pan · Scroll to zoom"
+      "hint": "Drag to pan · Scroll or pinch to zoom"
     }
   },
   "fontModal": {
