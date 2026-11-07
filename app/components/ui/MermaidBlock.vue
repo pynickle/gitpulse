@@ -150,8 +150,10 @@ watch(
 .mermaid-block__open {
   position: absolute;
   z-index: 1;
-  top: 0.5rem;
-  right: 0.5rem;
+  /* Inset clear of the preview's overlay scrollbars, keeping the top and right
+     gaps equal. */
+  top: 1rem;
+  right: 1rem;
   display: inline-flex;
   max-width: calc(100% - 1rem);
   align-items: center;

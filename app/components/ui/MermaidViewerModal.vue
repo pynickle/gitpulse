@@ -342,118 +342,122 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="modal mermaid-viewer-modal is-active" role="dialog" aria-modal="true">
-    <div class="modal-background" @click="requestClose" />
-    <div ref="modalCard" class="modal-card mermaid-viewer-modal__card">
-      <header class="modal-card-head mermaid-viewer-modal__head">
-        <p class="modal-card-title mermaid-viewer-modal__title">
-          {{ t('markdown.mermaid.title') }}
-        </p>
+  <Teleport to="body">
+    <div class="modal mermaid-viewer-modal is-active" role="dialog" aria-modal="true">
+      <div class="modal-background" @click="requestClose" />
+      <div ref="modalCard" class="modal-card mermaid-viewer-modal__card">
+        <header class="modal-card-head mermaid-viewer-modal__head">
+          <p class="modal-card-title mermaid-viewer-modal__title">
+            {{ t('markdown.mermaid.title') }}
+          </p>
 
-        <button
-          ref="closeButton"
-          class="delete"
-          type="button"
-          :aria-label="t('markdown.mermaid.close')"
-          @click="requestClose"
-        />
-      </header>
-
-      <section class="modal-card-body mermaid-viewer-modal__body">
-        <div
-          ref="viewport"
-          class="mermaid-viewer-modal__viewport"
-          :class="{ 'mermaid-viewer-modal__viewport--dragging': isDragging }"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @pointerup="stopDragging"
-          @pointercancel="stopDragging"
-          @wheel.prevent="onWheel"
-          @click.stop
-        >
-          <div v-if="renderState.kind === 'loading'" class="mermaid-viewer-modal__skeleton" />
-          <!-- v-html: SVG comes from Mermaid with securityLevel: 'strict'. -->
-          <div
-            v-else-if="renderState.kind === 'success'"
-            ref="diagram"
-            class="mermaid-viewer-modal__diagram"
-            :style="transformStyle"
-            v-html="renderState.svg"
+          <button
+            ref="closeButton"
+            class="delete"
+            type="button"
+            :aria-label="t('markdown.mermaid.close')"
+            @click="requestClose"
           />
-          <ScrollArea v-else class="mermaid-viewer-modal__fallback" axis="both">
-            <pre class="mermaid-viewer-modal__fallback-text"><code>{{ code }}</code></pre>
-          </ScrollArea>
-        </div>
-      </section>
+        </header>
 
-      <footer class="modal-card-foot mermaid-viewer-modal__foot">
-        <div class="mermaid-viewer-modal__zoom-cluster">
-          <button
-            class="button is-small mermaid-viewer-modal__icon-button"
-            type="button"
-            :aria-label="t('markdown.mermaid.zoomOut')"
-            :disabled="!canZoomOut"
-            @click="changeZoom(-ZOOM_STEP)"
+        <section class="modal-card-body mermaid-viewer-modal__body">
+          <div
+            ref="viewport"
+            class="mermaid-viewer-modal__viewport"
+            :class="{ 'mermaid-viewer-modal__viewport--dragging': isDragging }"
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="stopDragging"
+            @pointercancel="stopDragging"
+            @wheel.prevent="onWheel"
+            @click.stop
           >
-            <MinusIcon :size="16" aria-hidden="true" />
-          </button>
+            <div v-if="renderState.kind === 'loading'" class="mermaid-viewer-modal__skeleton" />
+            <!-- v-html: SVG comes from Mermaid with securityLevel: 'strict'. -->
+            <div
+              v-else-if="renderState.kind === 'success'"
+              ref="diagram"
+              class="mermaid-viewer-modal__diagram"
+              :style="transformStyle"
+              v-html="renderState.svg"
+            />
+            <ScrollArea v-else class="mermaid-viewer-modal__fallback" axis="both">
+              <pre class="mermaid-viewer-modal__fallback-text"><code>{{ code }}</code></pre>
+            </ScrollArea>
+          </div>
+        </section>
+
+        <footer class="modal-card-foot mermaid-viewer-modal__foot">
+          <div class="mermaid-viewer-modal__zoom-cluster">
+            <button
+              class="button is-small mermaid-viewer-modal__icon-button"
+              type="button"
+              :aria-label="t('markdown.mermaid.zoomOut')"
+              :disabled="!canZoomOut"
+              @click="changeZoom(-ZOOM_STEP)"
+            >
+              <MinusIcon :size="16" aria-hidden="true" />
+            </button>
+
+            <button
+              class="mermaid-viewer-modal__zoom-readout"
+              type="button"
+              :aria-label="t('markdown.mermaid.reset')"
+              :title="t('markdown.mermaid.reset')"
+              @click="resetViewport"
+            >
+              {{ zoomPercent }}
+            </button>
+
+            <button
+              class="button is-small mermaid-viewer-modal__icon-button"
+              type="button"
+              :aria-label="t('markdown.mermaid.zoomIn')"
+              :disabled="!canZoomIn"
+              @click="changeZoom(ZOOM_STEP)"
+            >
+              <PlusIcon :size="16" aria-hidden="true" />
+            </button>
+
+            <button
+              class="button is-small mermaid-viewer-modal__icon-button"
+              type="button"
+              :aria-label="t('markdown.mermaid.reset')"
+              :title="t('markdown.mermaid.reset')"
+              @click="resetViewport"
+            >
+              <RotateCcwIcon :size="16" aria-hidden="true" />
+            </button>
+          </div>
+
+          <p class="mermaid-viewer-modal__hint">{{ t('markdown.mermaid.hint') }}</p>
 
           <button
-            class="mermaid-viewer-modal__zoom-readout"
+            class="button is-small mermaid-viewer-modal__close"
             type="button"
-            :aria-label="t('markdown.mermaid.reset')"
-            :title="t('markdown.mermaid.reset')"
-            @click="resetViewport"
+            @click="requestClose"
           >
-            {{ zoomPercent }}
+            <XIcon :size="16" aria-hidden="true" />
+            <span>{{ t('markdown.mermaid.close') }}</span>
           </button>
-
-          <button
-            class="button is-small mermaid-viewer-modal__icon-button"
-            type="button"
-            :aria-label="t('markdown.mermaid.zoomIn')"
-            :disabled="!canZoomIn"
-            @click="changeZoom(ZOOM_STEP)"
-          >
-            <PlusIcon :size="16" aria-hidden="true" />
-          </button>
-
-          <button
-            class="button is-small mermaid-viewer-modal__icon-button"
-            type="button"
-            :aria-label="t('markdown.mermaid.reset')"
-            :title="t('markdown.mermaid.reset')"
-            @click="resetViewport"
-          >
-            <RotateCcwIcon :size="16" aria-hidden="true" />
-          </button>
-        </div>
-
-        <p class="mermaid-viewer-modal__hint">{{ t('markdown.mermaid.hint') }}</p>
-
-        <button
-          class="button is-small mermaid-viewer-modal__close"
-          type="button"
-          @click="requestClose"
-        >
-          <XIcon :size="16" aria-hidden="true" />
-          <span>{{ t('markdown.mermaid.close') }}</span>
-        </button>
-      </footer>
+        </footer>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped lang="scss">
 @use '~/assets/scss/pointer' as *;
 
+/* Teleported to body, so this sits above the Detail Overlay frame (9999). */
 .mermaid-viewer-modal {
-  z-index: 60;
+  z-index: 99999;
 }
 
 .mermaid-viewer-modal__card {
   width: min(1120px, calc(100vw - 2rem));
   max-height: min(860px, calc(100vh - 2rem));
+  border-radius: var(--gitpulse-radius-xl);
   box-shadow: var(--gitpulse-shadow-raised);
 }
 
