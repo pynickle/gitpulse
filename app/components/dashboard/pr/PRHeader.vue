@@ -27,11 +27,27 @@
           {{ repoOwner }}/{{ repoName }}
         </a>
       </span>
-      <template v-if="pullRequest?.head?.ref && pullRequest?.base?.ref">
+      <template v-if="headBranch.ref && baseBranch.ref">
         <span class="header-branch is-flex is-align-items-center">
-          <span class="header-branch__ref">{{ pullRequest?.head?.ref }}</span>
+          <span
+            class="header-branch__side"
+            :class="{ 'header-branch__side--split': headBranch.ownerLogin }"
+          >
+            <span v-if="headBranch.ownerLogin" class="header-branch__owner">{{
+              headBranch.ownerLogin
+            }}</span>
+            <span class="header-branch__ref">{{ headBranch.ref }}</span>
+          </span>
           <ArrowRightIcon :size="14" class="header-branch__arrow" />
-          <span class="header-branch__ref">{{ pullRequest?.base?.ref }}</span>
+          <span
+            class="header-branch__side"
+            :class="{ 'header-branch__side--split': baseBranch.ownerLogin }"
+          >
+            <span v-if="baseBranch.ownerLogin" class="header-branch__owner">{{
+              baseBranch.ownerLogin
+            }}</span>
+            <span class="header-branch__ref">{{ baseBranch.ref }}</span>
+          </span>
         </span>
       </template>
     </div>
@@ -98,6 +114,10 @@ import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { getPullRequestStateVisual } from '~/utils/getPullRequestStateVisual';
+import {
+  resolvePullRequestBranchRef,
+  type PullRequestBranchRefSource,
+} from '~/utils/resolvePullRequestBranchRef';
 
 const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -111,8 +131,8 @@ interface PullRequestHeaderPullRequest {
   merged_at?: string | null;
   draft?: boolean;
   updated_at?: string;
-  head?: { ref?: string };
-  base?: { ref?: string };
+  head?: PullRequestBranchRefSource;
+  base?: PullRequestBranchRefSource;
   user?: {
     avatar_url?: string | null;
     login?: string;
@@ -127,6 +147,13 @@ const { pullRequest, repoOwner, repoName } = defineProps<{
   repoOwner: string;
   repoName: string;
 }>();
+
+const headBranch = computed(() =>
+  resolvePullRequestBranchRef(repoOwner, repoName, pullRequest?.head)
+);
+const baseBranch = computed(() =>
+  resolvePullRequestBranchRef(repoOwner, repoName, pullRequest?.base)
+);
 
 const stateVisual = computed(() => getPullRequestStateVisual(pullRequest));
 const displayState = computed(() => stateVisual.value.state);
@@ -247,6 +274,34 @@ const handleRepoClick = async () => {
 .header-branch {
   gap: 0.25rem;
   margin-left: 0.75rem;
+}
+
+.header-branch__side {
+  display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.header-branch__side--split {
+  border-radius: var(--gitpulse-radius-sm);
+  overflow: hidden;
+
+  .header-branch__owner,
+  .header-branch__ref {
+    border-radius: 0;
+  }
+}
+
+.header-branch__owner {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  border-right: 1px solid color-mix(in srgb, var(--gitpulse-purple) 32%, transparent);
+  background-color: color-mix(in srgb, var(--gitpulse-purple) 18%, var(--gitpulse-surface));
+  color: var(--gitpulse-purple);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .header-branch__arrow {
