@@ -39,7 +39,7 @@
         "@types/node": "^26.6.6",
         "@vue/compiler-sfc": "3.5.44",
         "happy-dom": "^21.0.4",
-        "nuxt-skill-hub": "0.3.1",
+        "nuxt-skill-hub": "0.3.3",
         "nuxtseo-devtools-host": "^1.0.2",
         "oxfmt": "^0.78.0",
         "oxlint": "^1.93.0",
@@ -1767,7 +1767,7 @@
 
     "nuxt-site-config-kit": ["nuxt-site-config-kit@5.0.3", "", { "dependencies": { "@nuxt/kit": "^4.6.0", "site-config-stack": "5.0.3", "ufo": "^1.6.4" } }, "sha512-vM7i0ZxNegKO4ibrHagtAlK+8ZWJsQ/bzG4bzdasMK/afjdcwZSBQy63C7Q6SP2TZrc4KGM61tHtbW21K5De8Q=="],
 
-    "nuxt-skill-hub": ["nuxt-skill-hub@0.3.1", "", { "dependencies": { "@nuxt/kit": "^4.6.2", "consola": "^3.4.2", "giget": "^3.3.1", "gray-matter": "^4.0.3", "mlly": "^1.8.2", "ofetch": "^1.5.1", "ohash": "^2.0.12", "pathe": "^2.0.3", "pkg-types": "^2.4.0", "std-env": "^4.3.0", "tinyglobby": "^0.2.17", "unagent": "^0.0.8" } }, "sha512-e6QHdySe2XTx5E/dIjp9CFMrdJm3w0A3vY26sl54LkUKc/IbXRFQPgKSAw+ipCWFo//9c8GPNfitm6wbunIYdw=="],
+    "nuxt-skill-hub": ["nuxt-skill-hub@0.3.3", "", { "dependencies": { "@nuxt/kit": "^4.6.2", "consola": "^3.4.2", "giget": "^3.3.1", "gray-matter": "^4.0.3", "mlly": "^1.8.2", "ofetch": "^1.5.1", "ohash": "^2.0.12", "pathe": "^2.0.3", "pkg-types": "^2.4.0", "std-env": "^4.3.0", "tinyglobby": "^0.2.17", "unagent": "^0.0.8" } }, "sha512-aFe2Dsg6gOmVI2KX+dDCKK7gm4btMODakZFZ7XNY1Co/JtL4gpgKe9WYDjX3QBqpHkisvcEJWmMCgb3M/joTyw=="],
 
     "nuxtseo-devtools-host": ["nuxtseo-devtools-host@1.0.2", "", { "dependencies": { "@nuxt/devtools-kit": "4.0.0-beta.4", "@nuxt/kit": "^4.6.1", "birpc": "^4.2.0", "nuxtseo-layer-devtools": "6.0.2", "nuxtseo-shared": "^6.0.2", "sirv": "^3.0.2" }, "peerDependencies": { "nuxt": "^4.6.0 || ^5.0.0" } }, "sha512-xWvmgJNAa3IH5sAqDdvbmApexOEBwOHwjXSyZoEeCn2aoUgM+B5shQHsU0qZauX20gbx0ruvSCrE3Nc3wFblUQ=="],
 
