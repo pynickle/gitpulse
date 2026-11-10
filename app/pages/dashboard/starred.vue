@@ -179,7 +179,12 @@ watch(requestedUser, () => {
         </div>
 
         <div v-else class="starred-page__grid">
-          <RepoItem v-for="repo in items" :key="repo.id" :repo="repo" class="starred-page__cell" />
+          <RepoItem
+            v-for="repo in items"
+            :key="repo.id"
+            :repo="repo"
+            class="dashboard-list-card--grid-cell"
+          />
         </div>
       </div>
 
@@ -235,37 +240,6 @@ watch(requestedUser, () => {
 
 .spin-animation {
   color: var(--gitpulse-accent);
-}
-
-/* Cards fill their grid cell so rows stay even regardless of description length. */
-.starred-page__cell {
-  height: 100%;
-}
-
-/* Pin the stats row to the card bottom so it doesn't drift with description length. */
-.starred-page__cell :deep(.card-content) {
-  height: 100%;
-  display: flex;
-}
-
-.starred-page__cell :deep(.dashboard-list-card__content) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.starred-page__cell :deep(.dashboard-list-card__meta) {
-  margin-top: auto;
-}
-
-/* The shared card style clamps descriptions to a single line; give grid cards
-   room for up to three lines before truncating. */
-.starred-page__cell :deep(.dashboard-list-card__description) {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
 }
 
 /* Always visible: pinned to the bottom edge of the overlay's scroll area. */
