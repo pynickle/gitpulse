@@ -1,4 +1,5 @@
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '#server/utils/github-pagination';
+import { fetchCommitCheckRollups } from '#server/utils/pr-check-rollup-graphql-utils';
 import {
   buildPullRequestCommitUrl,
   mapGitHubCommitToCommitListItem,
@@ -45,16 +46,22 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }
     );
 
-    const items: RepoCommitListItemPayload[] = [];
-    for (const commit of Array.isArray(data) ? (data as GitHubCommitListItem[]) : []) {
+    const rawCommits = Array.isArray(data) ? (data as GitHubCommitListItem[]) : [];
+    const commits = rawCommits.flatMap((commit) => {
       const item = mapGitHubCommitToCommitListItem(commit);
-      if (!item) continue;
-
-      items.push({
-        ...item,
-        htmlUrl: buildPullRequestCommitUrl(owner, repo, pullNumber, item.sha),
-      });
-    }
+      return item ? [item] : [];
+    });
+    const rollups = await fetchCommitCheckRollups(
+      octokit,
+      owner,
+      repo,
+      commits.map((item) => item.sha)
+    );
+    const items: RepoCommitListItemPayload[] = commits.map((item) => ({
+      ...item,
+      htmlUrl: buildPullRequestCommitUrl(owner, repo, pullNumber, item.sha),
+      checkRollup: rollups.get(item.sha) ?? null,
+    }));
 
     return {
       items,

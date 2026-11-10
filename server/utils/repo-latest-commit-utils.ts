@@ -1,4 +1,8 @@
-import type { RepoCommitListItemPayload, RepoLatestCommitPayload } from '#shared/types/repos';
+import type {
+  CommitVerification,
+  RepoCommitListItemPayload,
+  RepoLatestCommitPayload,
+} from '#shared/types/repos';
 
 interface GitHubCommitUser {
   login?: string | null;
@@ -11,12 +15,21 @@ interface GitHubCommitIdentity {
   date?: string | null;
 }
 
+interface GitHubCommitVerification {
+  verified?: boolean | null;
+  reason?: string | null;
+  verified_at?: string | null;
+  signature?: string | null;
+  payload?: string | null;
+}
+
 /**
  * Subset of GitHub's commit list item used for the latest-commit summary.
  * @see https://docs.github.com/en/rest/commits/commits#list-commits
  */
 export interface GitHubCommitListItem {
   sha?: string | null;
+  node_id?: string | null;
   html_url?: string | null;
   author?: GitHubCommitUser | null;
   committer?: GitHubCommitUser | null;
@@ -24,7 +37,10 @@ export interface GitHubCommitListItem {
     message?: string | null;
     author?: GitHubCommitIdentity | null;
     committer?: GitHubCommitIdentity | null;
+    verification?: GitHubCommitVerification | null;
   } | null;
+  /** Timeline `committed` events carry verification on the event itself. */
+  verification?: GitHubCommitVerification | null;
 }
 
 function trimString(value: unknown): string {
@@ -34,6 +50,20 @@ function trimString(value: unknown): string {
 function firstLine(message: string): string {
   const newline = message.search(/\r?\n/);
   return newline === -1 ? message : message.slice(0, newline).trimEnd();
+}
+
+/** Keep the verdict. The armored signature and signed payload stay upstream. */
+export function mapCommitVerification(
+  verification: GitHubCommitVerification | null | undefined
+): CommitVerification | null {
+  const reason = trimString(verification?.reason);
+  if (!reason) return null;
+
+  return {
+    verified: verification?.verified === true,
+    reason,
+    verifiedAt: trimString(verification?.verified_at) || null,
+  };
 }
 
 /** Build the public GitHub commits list URL for a repo ref (branch/tag/sha). */
@@ -81,6 +111,8 @@ export function mapGitHubCommitToCommitListItem(
       avatarUrl: trimString(commit.author?.avatar_url) || null,
     },
     htmlUrl: trimString(commit.html_url) || null,
+    verification: mapCommitVerification(commit.commit?.verification ?? commit.verification),
+    checkRollup: null,
   };
 }
 

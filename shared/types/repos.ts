@@ -2,6 +2,8 @@
  * Repository detail payload from the GitHub API.
  */
 
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
+
 /** Minimal parent/source repo identity returned by GitHub for forks. */
 export interface RepositoryParentSummary {
   id?: number | string;
@@ -56,6 +58,17 @@ export interface RepoLatestCommitAuthor {
   avatarUrl: string | null;
 }
 
+/**
+ * GitHub's stored judgment of one commit signature.
+ * `signature` and `payload` stay on GitHub's response and never cross this boundary.
+ */
+export interface CommitVerification {
+  verified: boolean;
+  /** GitHub's reason code, such as `valid` or `unsigned`. */
+  reason: string;
+  verifiedAt: string | null;
+}
+
 /** One entry of the repository Commits panel list. */
 export interface RepoCommitListItemPayload {
   sha: string;
@@ -64,6 +77,10 @@ export interface RepoCommitListItemPayload {
   committedAt: string | null;
   author: RepoLatestCommitAuthor;
   htmlUrl: string | null;
+  /** Null when GitHub's commit object carried no verification record. */
+  verification: CommitVerification | null;
+  /** Null when this commit has no Check Rollup. The commits request fills it. */
+  checkRollup: PullRequestCheckRollup | null;
 }
 
 export interface RepoLatestCommitPayload extends RepoCommitListItemPayload {

@@ -900,6 +900,28 @@
     "allCommits": "全部提交",
     "unknownAuthor": "未知作者"
   },
+  "commitVerification": {
+    "verified": "已验证",
+    "unverified": "未验证",
+    "verifiedAt": "已于 {time} 验证",
+    "reasons": {
+      "invalid": "签名未能通过密码学校验。",
+      "malformed_signature": "签名无法解析。",
+      "unknown_key": "签名密钥未登记到 GitHub 账户。",
+      "bad_email": "提交者邮箱不在签名密钥上。",
+      "unverified_email": "提交者邮箱未在 GitHub 上验证。",
+      "no_user": "提交者邮箱没有对应的 GitHub 账户。",
+      "unknown_signature_type": "GitHub 无法识别这种签名。",
+      "gpgverify_unavailable": "GitHub 暂时联系不上签名验证服务。",
+      "gpgverify_error": "签名验证服务出错了。",
+      "not_signing_key": "这把密钥不能用于签名。",
+      "expired_key": "签名密钥已过期。",
+      "bad_cert": "签名证书未能通过验证。",
+      "ocsp_pending": "签名正在等待证书吊销检查。",
+      "ocsp_error": "证书吊销检查失败。",
+      "ocsp_revoked": "签名证书链中有证书已被吊销。"
+    }
+  },
   "repoFileView": {
     "fileTree": "文件树",
     "collapseSidebar": "收起侧边栏",

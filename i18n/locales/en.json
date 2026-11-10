@@ -900,6 +900,28 @@
     "allCommits": "All commits",
     "unknownAuthor": "Unknown"
   },
+  "commitVerification": {
+    "verified": "Verified",
+    "unverified": "Unverified",
+    "verifiedAt": "Verified {time}",
+    "reasons": {
+      "invalid": "The signature could not be cryptographically verified.",
+      "malformed_signature": "The signature could not be parsed.",
+      "unknown_key": "The signing key is not registered to a GitHub account.",
+      "bad_email": "The committer email is not on the signing key.",
+      "unverified_email": "The committer email is not verified on GitHub.",
+      "no_user": "The committer email is not associated with a GitHub account.",
+      "unknown_signature_type": "GitHub could not read this signature type.",
+      "gpgverify_unavailable": "GitHub could not reach the signature verification service.",
+      "gpgverify_error": "The signature verification service failed.",
+      "not_signing_key": "The key is not allowed to sign.",
+      "expired_key": "The signing key is expired.",
+      "bad_cert": "The signing certificate could not be verified.",
+      "ocsp_pending": "The signature is waiting on a certificate revocation check.",
+      "ocsp_error": "The certificate revocation check failed.",
+      "ocsp_revoked": "A certificate in the signing chain has been revoked."
+    }
+  },
   "repoFileView": {
     "fileTree": "File tree",
     "collapseSidebar": "Collapse sidebar",

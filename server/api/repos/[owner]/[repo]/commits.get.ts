@@ -1,4 +1,5 @@
 import { buildLinkedPaginationMeta, parsePaginationNumber } from '#server/utils/github-pagination';
+import { fetchCommitCheckRollups } from '#server/utils/pr-check-rollup-graphql-utils';
 import {
   mapGitHubCommitToCommitListItem,
   type GitHubCommitListItem,
@@ -8,7 +9,7 @@ import {
   extractRepoParams,
   getStringQueryParam,
 } from '#server/utils/repo-route-utils';
-import type { RepoCommitListItemPayload, RepoCommitListResponse } from '#shared/types/repos';
+import type { RepoCommitListResponse } from '#shared/types/repos';
 
 const DEFAULT_COMMITS_PER_PAGE = 20;
 const MAX_COMMITS_PER_PAGE = 100;
@@ -49,9 +50,21 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
           }
         );
 
-        const items = (Array.isArray(commits) ? (commits as GitHubCommitListItem[]) : [])
-          .map((commit) => mapGitHubCommitToCommitListItem(commit))
-          .filter((item): item is RepoCommitListItemPayload => item !== null);
+        const rawCommits = Array.isArray(commits) ? (commits as GitHubCommitListItem[]) : [];
+        const mappedCommits = rawCommits.flatMap((commit) => {
+          const item = mapGitHubCommitToCommitListItem(commit);
+          return item ? [item] : [];
+        });
+        const rollups = await fetchCommitCheckRollups(
+          octokit,
+          owner,
+          repo,
+          mappedCommits.map((item) => item.sha)
+        );
+        const items = mappedCommits.map((item) => ({
+          ...item,
+          checkRollup: rollups.get(item.sha) ?? null,
+        }));
 
         return {
           items,

@@ -57,6 +57,8 @@ describe('mapGitHubCommitToCommitListItem', () => {
         avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       },
       htmlUrl: 'https://github.com/acme/widgets/commit/abcdef0123456789',
+      verification: null,
+      checkRollup: null,
     });
   });
 
@@ -85,6 +87,8 @@ describe('mapGitHubCommitToCommitListItem', () => {
         avatarUrl: null,
       },
       htmlUrl: null,
+      verification: null,
+      checkRollup: null,
     });
   });
 
@@ -107,7 +111,34 @@ describe('mapGitHubCommitToCommitListItem', () => {
         avatarUrl: null,
       },
       htmlUrl: null,
+      verification: null,
+      checkRollup: null,
     });
+  });
+
+  test('keeps the verification verdict and drops the signature material', () => {
+    const payload = mapGitHubCommitToCommitListItem({
+      sha: 'abcdef0123456789',
+      node_id: 'C_commit',
+      commit: {
+        message: 'feat: sign',
+        verification: {
+          verified: true,
+          reason: 'valid',
+          verified_at: '2024-01-01T12:00:01Z',
+          signature: '-----BEGIN PGP SIGNATURE-----\nsecret\n-----END PGP SIGNATURE-----',
+          payload: 'tree abc',
+        },
+      },
+    });
+
+    expect(payload?.verification).toEqual({
+      verified: true,
+      reason: 'valid',
+      verifiedAt: '2024-01-01T12:00:01Z',
+    });
+    expect(JSON.stringify(payload)).not.toContain('BEGIN PGP');
+    expect(JSON.stringify(payload)).not.toContain('tree abc');
   });
 });
 
@@ -147,6 +178,8 @@ describe('mapGitHubCommitToLatestCommit', () => {
         avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       },
       htmlUrl: 'https://github.com/acme/widgets/commit/abcdef0123456789',
+      verification: null,
+      checkRollup: null,
       commitsUrl: 'https://github.com/acme/widgets/commits/main',
     });
   });

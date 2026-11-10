@@ -123,6 +123,16 @@ export const PULL_REQUEST_CHECK_ROLLUP_QUERY = `
   }
 `;
 
+const COMMIT_CHECK_ROLLUP_CHUNK = 50;
+
+interface GraphQLCommitCheckRollupNode {
+  statusCheckRollup?: GraphQLStatusCheckRollup | null;
+}
+
+interface GraphQLCommitCheckRollupResult {
+  repository?: Record<string, GraphQLCommitCheckRollupNode | null> | null;
+}
+
 interface GraphQLNodeResult {
   node?: { statusCheckRollup?: GraphQLStatusCheckRollup | null } | null;
 }
@@ -152,6 +162,70 @@ export async function fetchPullRequestCheckRollup(
 
     return mapPullRequestCheckRollup(partial.node?.statusCheckRollup);
   }
+}
+
+/**
+ * One Check Rollup per SHA in the requested repository. A fork's Commit node id
+ * can refer to the same SHA but carry none of the base repository's checks.
+ * A failed pass returns whatever chunks resolved, so the commit list still paints.
+ */
+export async function fetchCommitCheckRollups(
+  octokit: CheckRollupGraphQLClient | Octokit,
+  owner: string,
+  repo: string,
+  shas: readonly (string | null | undefined)[]
+): Promise<Map<string, PullRequestCheckRollup>> {
+  const unique: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of shas) {
+    const id = typeof value === 'string' ? value.trim() : '';
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    unique.push(id);
+  }
+
+  const rollups = new Map<string, PullRequestCheckRollup>();
+  if (unique.length === 0) return rollups;
+
+  try {
+    for (let offset = 0; offset < unique.length; offset += COMMIT_CHECK_ROLLUP_CHUNK) {
+      const chunk = unique.slice(offset, offset + COMMIT_CHECK_ROLLUP_CHUNK);
+      const definitions = ['$owner: String!', '$repo: String!'];
+      const fields: string[] = [];
+      const variables: Record<string, string> = { owner, repo };
+      chunk.forEach((sha, index) => {
+        definitions.push(`$oid${index}: GitObjectID!`);
+        variables[`oid${index}`] = sha;
+        fields.push(
+          `commit${index}: object(oid: $oid${index}) { ... on Commit { ${PR_CHECK_ROLLUP_NODE_FIELDS} } }`
+        );
+      });
+      const query = `query CommitCheckRollups(${definitions.join(', ')}) {
+        repository(owner: $owner, name: $repo) { ${fields.join('\n')} }
+      }`;
+      let payload: GraphQLCommitCheckRollupResult;
+
+      try {
+        payload = await octokit.graphql<GraphQLCommitCheckRollupResult>(query, variables);
+      } catch (error: unknown) {
+        const partial = getPartialGraphQLData<GraphQLCommitCheckRollupResult>(error);
+        if (!partial) throw error;
+        payload = partial;
+      }
+
+      chunk.forEach((sha, index) => {
+        const rollup = mapPullRequestCheckRollup(
+          payload.repository?.[`commit${index}`]?.statusCheckRollup
+        );
+        if (rollup) rollups.set(sha, rollup);
+      });
+    }
+  } catch (error: unknown) {
+    console.warn('Failed to fetch commit Check Rollups:', error);
+  }
+
+  return rollups;
 }
 
 const buildCheckRollupQuery = (targets: Array<{ owner: string; repo: string; number: number }>) => {

@@ -1,10 +1,13 @@
 import type { Octokit } from '@octokit/core';
 
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { ReactionContent, ReactionSummaryItem } from '#shared/types/reactions';
+import type { CommitVerification } from '#shared/types/repos';
 import { ISSUE_COMMENT_REACTION_CONTENTS } from '#shared/utils/reactions';
 
 import { stringifyGitHubId } from './github-id-utils';
 import { parseLinkHeader } from './github-pagination';
+import { mapCommitVerification } from './repo-latest-commit-utils';
 
 type GitHubClient = Octokit;
 
@@ -45,6 +48,8 @@ interface TimelineCommitPayload {
     name?: string;
     user?: ReturnType<typeof mapActor>;
   };
+  verification?: CommitVerification;
+  checkRollup?: PullRequestCheckRollup | null;
 }
 
 interface TimelineReviewCommentPayload {
@@ -1867,6 +1872,8 @@ function mapReference(item: Record<string, any> | undefined, context: TimelineRe
 }
 
 function mapCommitPayload(commit: Record<string, any>) {
+  const verification = mapCommitVerification(commit.commit?.verification ?? commit.verification);
+
   return {
     oid: commit.sha ?? commit.commit_id,
     message: commit.commit?.message ?? commit.message,
@@ -1881,7 +1888,21 @@ function mapCommitPayload(commit: Record<string, any>) {
       name: commit.commit?.author?.name ?? commit.author?.name,
       user: mapActor(commit.author_user ?? commit.author ?? commit.user ?? commit.actor),
     },
+    ...(verification ? { verification } : {}),
   };
+}
+
+/** Writes each commit card's Check Rollup for its SHA on this timeline page. */
+export function assignCommitCheckRollups<
+  T extends { kind?: string; commit?: TimelineCommitPayload },
+>(items: T[], rollups: ReadonlyMap<string, PullRequestCheckRollup>): T[] {
+  for (const item of items) {
+    if (item.kind !== 'commit' || !item.commit) continue;
+    const sha = item.commit.oid?.trim() ?? '';
+    item.commit.checkRollup = rollups.get(sha) ?? null;
+  }
+
+  return items;
 }
 
 function mapRepository(item: Record<string, any>, context: TimelineRepoContext) {

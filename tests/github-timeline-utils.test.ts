@@ -5,6 +5,7 @@ const reactions = await import('../shared/utils/reactions');
 mock.module('#shared/utils/reactions', () => reactions);
 
 const {
+  assignCommitCheckRollups,
   enrichPRTimelineWithReviewData,
   fetchPRReviewOnBehalfOf,
   normalizeIssueTimelineEvent,
@@ -478,5 +479,54 @@ describe('issue timeline server normalization', () => {
       'SALTWOOD',
       'Chiloven945',
     ]);
+  });
+});
+
+describe('timeline commit verification and check rollups', () => {
+  test('keeps a committed event verdict and drops the signature material', () => {
+    const [item] = normalizePullTimeline([
+      {
+        event: 'committed',
+        sha: 'abcdef0123456789',
+        message: 'feat: sign\n\nbody',
+        html_url: 'https://github.com/acme/widgets/commit/abcdef0123456789',
+        author: { name: 'Local Dev', date: '2024-01-01T00:00:00Z' },
+        verification: {
+          verified: false,
+          reason: 'bad_email',
+          signature: '-----BEGIN PGP SIGNATURE-----\nsecret\n-----END PGP SIGNATURE-----',
+          payload: 'tree abc',
+          verified_at: null,
+        },
+      },
+    ]);
+
+    expect(item?.kind).toBe('commit');
+    expect(item?.commit?.verification).toEqual({
+      verified: false,
+      reason: 'bad_email',
+      verifiedAt: null,
+    });
+    expect(JSON.stringify(item)).not.toContain('BEGIN PGP');
+    expect(JSON.stringify(item)).not.toContain('tree abc');
+  });
+
+  test('assigns a rollup by commit SHA and leaves non-commit events alone', () => {
+    const rollup = {
+      state: 'FAILURE',
+      contexts: { totalCount: 1, nodes: [] },
+    };
+    const items = assignCommitCheckRollups(
+      [
+        { kind: 'commit', commit: { oid: 'abc' } },
+        { kind: 'commit', commit: { oid: 'missing' } },
+        { kind: 'event', eventType: 'merged', commit: { oid: 'def' } },
+      ],
+      new Map([['abc', rollup]])
+    );
+
+    expect(items[0]?.commit?.checkRollup).toEqual(rollup);
+    expect(items[1]?.commit?.checkRollup).toBeNull();
+    expect(items[2]?.commit?.checkRollup).toBeUndefined();
   });
 });

@@ -1,4 +1,5 @@
 import {
+  assignCommitCheckRollups,
   buildPRTimelineCapabilities,
   createUnsupportedWarnings,
   enrichPRTimelineWithReviewData,
@@ -13,6 +14,7 @@ import {
   throwTimelineFatalError,
   type TimelineReviewTeamPayload,
 } from '#server/utils/github-timeline-utils';
+import { fetchCommitCheckRollups } from '#server/utils/pr-check-rollup-graphql-utils';
 
 function buildPullCommitLookup(commits: Record<string, any>[]) {
   const commitsBySha = new Map<string, Record<string, any>>();
@@ -178,6 +180,11 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       pullReviewThreads,
       reviewOnBehalfOf
     );
+    const commitShas = timeline.flatMap((item) =>
+      item.kind === 'commit' && item.commit?.oid ? [item.commit.oid] : []
+    );
+    const commitRollups = await fetchCommitCheckRollups(octokit, owner, repo, commitShas);
+    assignCommitCheckRollups(timeline, commitRollups);
 
     return {
       timeline,

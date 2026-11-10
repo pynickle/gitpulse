@@ -4,12 +4,10 @@ import {
   GitCommitHorizontalIcon,
   LoaderCircleIcon,
 } from '@lucide/vue';
-import { computed } from 'vue';
 
 import type { RepoCommitListItemPayload } from '#shared/types/repos';
+import CommitListRow from '~/components/dashboard/detail/CommitListRow.vue';
 import Button from '~/components/ui/Button.vue';
-import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
-import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
   items: RepoCommitListItemPayload[];
@@ -22,22 +20,7 @@ const emit = defineEmits<{
   retry: [];
 }>();
 
-const { locale, t } = useI18n();
-const localeCode = computed(() => locale.value);
-const relativeTimeNow = useRelativeTimeNow();
-
-const authorLabel = (commit: RepoCommitListItemPayload) => {
-  return commit.author.login || commit.author.name || t('repoDetail.unknownAuthor');
-};
-
-const authorProfileUrl = (commit: RepoCommitListItemPayload) => {
-  return commit.author.login ? `https://github.com/${commit.author.login}` : undefined;
-};
-
-const relativeTime = (commit: RepoCommitListItemPayload) => {
-  if (!commit.committedAt) return '';
-  return formatDurationFromNow(commit.committedAt, localeCode.value, relativeTimeNow.value);
-};
+const { t } = useI18n();
 </script>
 
 <template>
@@ -66,65 +49,7 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
 
       <ul v-else class="repo-commit-list__items">
         <li v-for="commit in items" :key="commit.sha" class="repo-commit-list__item">
-          <GitHubAvatar
-            class="repo-commit-list__avatar"
-            variant="raised"
-            :interactive="Boolean(authorProfileUrl(commit))"
-            :src="commit.author.avatarUrl"
-            :alt="authorLabel(commit)"
-            :size="24"
-          />
-
-          <div class="repo-commit-list__body">
-            <a
-              v-if="commit.htmlUrl"
-              :href="commit.htmlUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="repo-commit-list__message"
-              :title="commit.message || commit.shortSha"
-            >
-              {{ commit.message || commit.shortSha }}
-            </a>
-            <span
-              v-else
-              class="repo-commit-list__message repo-commit-list__message--plain"
-              :title="commit.message || commit.shortSha"
-            >
-              {{ commit.message || commit.shortSha }}
-            </span>
-
-            <div class="repo-commit-list__meta">
-              <a
-                v-if="authorProfileUrl(commit)"
-                :href="authorProfileUrl(commit)"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="repo-commit-list__author"
-              >
-                {{ authorLabel(commit) }}
-              </a>
-              <span v-else class="repo-commit-list__author repo-commit-list__author--plain">
-                {{ authorLabel(commit) }}
-              </span>
-              <span v-if="relativeTime(commit)" class="repo-commit-list__time">
-                {{ relativeTime(commit) }}
-              </span>
-            </div>
-          </div>
-
-          <a
-            v-if="commit.htmlUrl"
-            :href="commit.htmlUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="repo-commit-list__sha"
-          >
-            {{ commit.shortSha }}
-          </a>
-          <span v-else class="repo-commit-list__sha repo-commit-list__sha--plain">
-            {{ commit.shortSha }}
-          </span>
+          <CommitListRow :commit="commit" />
         </li>
       </ul>
     </template>
@@ -132,8 +57,6 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/pointer' as *;
-
 .repo-commit-list {
   min-height: 8rem;
   min-width: 0;
@@ -183,131 +106,8 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
   overflow: hidden;
 }
 
-.repo-commit-list__item {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-width: 0;
-  padding: 0.6rem 0.85rem;
-  transition: background-color 0.12s ease;
-
-  & + & {
-    border-top: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
-  }
-
-  @include hover-only {
-    &:hover {
-      background: var(--gitpulse-surface-hover);
-    }
-  }
-}
-
-.repo-commit-list__avatar {
-  flex-shrink: 0;
-}
-
-.repo-commit-list__body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.repo-commit-list__message {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-link);
-    }
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
-    outline-offset: 1px;
-    border-radius: 4px;
-  }
-
-  &--plain {
-    color: var(--gitpulse-text);
-  }
-}
-
-.repo-commit-list__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-  color: var(--gitpulse-text-muted);
-  font-size: 0.75rem;
-}
-
-.repo-commit-list__author {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 12rem;
-  color: var(--gitpulse-text);
-  font-weight: 600;
-  text-decoration: none;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-link);
-    }
-  }
-
-  &--plain {
-    color: var(--gitpulse-text-muted);
-  }
-}
-
-.repo-commit-list__time {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.repo-commit-list__sha {
-  flex-shrink: 0;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 6px;
-  background: var(--gitpulse-surface-muted, var(--gitpulse-surface));
-  color: var(--gitpulse-text-muted);
-  font-family: var(--gitpulse-code-font-family, monospace);
-  font-size: 0.75rem;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
-  transition:
-    color 0.12s ease,
-    border-color 0.12s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-link);
-      border-color: var(--gitpulse-link);
-    }
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
-    outline-offset: 1px;
-  }
-
-  @include hover-only {
-    &--plain:hover {
-      color: var(--gitpulse-text-muted);
-      border-color: var(--gitpulse-border);
-    }
-  }
+.repo-commit-list__item + .repo-commit-list__item {
+  border-top: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
 }
 
 .spin-animation {
@@ -320,27 +120,6 @@ const relativeTime = (commit: RepoCommitListItemPayload) => {
   }
   to {
     transform: rotate(360deg);
-  }
-}
-
-/* Phone width: give commit messages up to two lines (the profile cards clamp
-   descriptions the same way) and let the meta row wrap instead of squeezing
-   the author, timestamp and SHA chip into one line. */
-@media (max-width: 1024px) {
-  .repo-commit-list__message {
-    display: -webkit-box;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-
-  .repo-commit-list__meta {
-    flex-wrap: wrap;
-  }
-
-  .repo-commit-list__author {
-    max-width: 8rem;
   }
 }
 </style>

@@ -168,12 +168,16 @@ _Avoid_: single-PR confirmation, chooser setting
 ## Pull Request Review
 
 **Check Rollup**:
-GitHub's own precomputed summary of a Pull Request's checks for its head commit: one aggregate state plus the deduplicated set of check runs and status contexts GitHub shows on the Checks tab.
+GitHub's precomputed summary of the checks on one commit: one aggregate state plus the deduplicated set of check runs and status contexts GitHub shows on the Checks tab. A pull request's Check Rollup is the rollup of its head commit.
 _Avoid_: CI status, action status, workflow status, combined status
 
 **Check Status Chip**:
-The meta-row indicator on a Pull Request Card and Notification Card that shows the Check Rollup's passed count over its total count and opens the Check List Modal. It is absent when the Check Rollup has no contexts.
+The indicator that shows a Check Rollup's passed count over its total count and opens the Check List Modal. It is absent when the Check Rollup has no contexts. It sits on a Pull Request Card, a Notification Card, and the second line of a commit row.
 _Avoid_: CI badge, action badge, checks icon, checks count
+
+**Commit Verification**:
+GitHub's stored judgment of one commit signature. It is verified when GitHub accepted the signature, unverified when a signature is present and GitHub rejected it, and absent when the commit is unsigned.
+_Avoid_: signed, sign-off, GPG badge, partially verified
 
 **Check List Modal**:
 The modal opened from a Check Status Chip that shows the Check Rollup's summary line and its checks grouped by conclusion. It renders the same list as the PR Review Workspace merge box.

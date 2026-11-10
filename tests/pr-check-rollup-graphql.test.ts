@@ -10,6 +10,7 @@ const {
   PULL_REQUEST_CHECK_ROLLUP_QUERY,
   PR_CHECK_ROLLUP_NODE_FIELDS,
   attachPullRequestCheckRollups,
+  fetchCommitCheckRollups,
   fetchPullRequestCheckRollup,
   mapPullRequestCheckRollup,
 } = await import('../server/utils/pr-check-rollup-graphql-utils');
@@ -330,5 +331,117 @@ describe('fetch one pull request Check Rollup', () => {
     } finally {
       console.warn = originalConsoleWarn;
     }
+  });
+});
+
+describe('fetch commit Check Rollups', () => {
+  const rollup = {
+    state: 'SUCCESS',
+    contexts: {
+      totalCount: 1,
+      nodes: [
+        {
+          __typename: 'CheckRun',
+          name: 'lint',
+          status: 'COMPLETED',
+          conclusion: 'SUCCESS',
+        },
+      ],
+    },
+  };
+
+  test('reads checks in the requested repository even when the commit comes from a fork', async () => {
+    const octokit = {
+      graphql: async (query: string, variables: Record<string, unknown>) => {
+        // The same SHA has different Commit node ids in a fork and the base repo.
+        // The fork node has no checks; only the base repository ran this CI.
+        if (query.includes('nodes(ids:')) return { nodes: [{ statusCheckRollup: null }, null] };
+        expect(variables).toEqual({
+          owner: 'acme',
+          repo: 'widgets',
+          oid0: 'commit-a',
+          oid1: 'commit-b',
+        });
+        return { repository: { commit0: { statusCheckRollup: rollup }, commit1: null } };
+      },
+    };
+
+    const result = await fetchCommitCheckRollups(octokit, 'acme', 'widgets', [
+      'commit-a',
+      'commit-b',
+      'commit-a',
+      '',
+    ]);
+
+    expect(result.get('commit-a')).toMatchObject({
+      state: 'SUCCESS',
+      contexts: { totalCount: 1, nodes: [{ name: 'lint', conclusion: 'SUCCESS' }] },
+    });
+    expect(result.has('commit-b')).toBe(false);
+  });
+
+  test('chunks commit SHAs at 50', async () => {
+    const chunkSizes: number[] = [];
+    const octokit = {
+      graphql: async (_query: string, variables: Record<string, unknown>) => {
+        chunkSizes.push(Object.keys(variables).filter((key) => key.startsWith('oid')).length);
+        return { repository: {} };
+      },
+    };
+
+    await fetchCommitCheckRollups(
+      octokit,
+      'acme',
+      'widgets',
+      Array.from({ length: 60 }, (_, index) => `commit-${index}`)
+    );
+
+    expect(chunkSizes).toEqual([50, 10]);
+  });
+
+  test('keeps rollups from a partially failed response', async () => {
+    const octokit = {
+      graphql: async () => {
+        const error = new Error('GraphQL partial') as Error & { data: unknown };
+        error.data = { repository: { commit0: { statusCheckRollup: rollup } } };
+        throw error;
+      },
+    };
+
+    const result = await fetchCommitCheckRollups(octokit, 'acme', 'widgets', ['commit-a']);
+    expect(result.get('commit-a')).toMatchObject({ state: 'SUCCESS' });
+  });
+
+  test('returns an empty map when the rollup pass fails', async () => {
+    const octokit = {
+      graphql: async () => {
+        throw new Error('GraphQL 502');
+      },
+    };
+    const originalConsoleWarn = console.warn;
+    console.warn = () => {};
+
+    try {
+      expect(await fetchCommitCheckRollups(octokit, 'acme', 'widgets', ['commit-a'])).toEqual(
+        new Map()
+      );
+    } finally {
+      console.warn = originalConsoleWarn;
+    }
+  });
+
+  test('skips GraphQL when there are no commit SHAs', async () => {
+    let called = false;
+    const octokit = {
+      graphql: async () => {
+        called = true;
+        return {};
+      },
+    };
+
+    expect(
+      await fetchCommitCheckRollups(octokit, 'acme', 'widgets', [null, undefined, '  '])
+    ).toEqual(new Map());
+    expect(called).toBe(false);
   });
 });

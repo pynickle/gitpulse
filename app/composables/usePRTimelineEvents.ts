@@ -1,6 +1,8 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 
+import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
+import type { CommitVerification } from '#shared/types/repos';
 import { parseGitHubMarkdownTarget } from '~/utils/parseGitHubMarkdownTarget';
 import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
@@ -59,6 +61,8 @@ export interface TimelineCommit {
     name?: string;
     user?: TimelineActor;
   };
+  verification?: CommitVerification | null;
+  checkRollup?: PullRequestCheckRollup | null;
 }
 
 export interface TimelineReviewComment {
