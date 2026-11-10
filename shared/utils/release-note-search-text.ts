@@ -18,15 +18,6 @@ markdown.core.ruler.before('inline', 'release_note_search_tasks', ({ tokens }) =
   }
 });
 
-// The default image-alt renderer omits inline code. Keep that readable content.
-const renderImageText = markdown.renderer.renderInlineAsText.bind(markdown.renderer);
-markdown.renderer.renderInlineAsText = (tokens, options, env) => {
-  for (const token of tokens) {
-    if (token.type === 'code_inline') token.type = 'text';
-  }
-  return renderImageText(tokens, options, env);
-};
-
 const blockTags = new Set([
   'address',
   'article',

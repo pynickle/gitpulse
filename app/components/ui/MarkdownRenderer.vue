@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { parseMarkdown } from 'comark';
 import type { MarkdownDocument, Node } from 'comark';
+import linkify from 'comark/plugins/linkify';
 import security from 'comark/plugins/security';
 import type { highlightCodeBlocks } from 'comark/plugins/shiki';
 import type { LanguageRegistration, ThemeRegistration } from 'shiki';
@@ -41,8 +42,12 @@ provide(markdownRepoContextKey, markdownRepoContext);
 
 function createMarkdownPlugins() {
   return [
+    // linkify-it 6 turns fuzzy matching off, which would stop `www.` links and bare
+    // domains from being linked. Keep fuzzy on; `urlAuth` stays off so `user:pass@`
+    // URLs are not linked.
+    linkify({ fuzzyLink: true }),
     security({
-      blockedTags: ['script', 'style', 'iframe', 'object', 'embed'],
+      blockedTags: ['script', 'style', 'iframe', 'object', 'embed', 'link', 'base', 'meta'],
       allowedProtocols: ['http', 'https', 'mailto', 'tel'],
       allowDataImages: false,
     }),
