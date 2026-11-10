@@ -410,11 +410,6 @@ const timelineChangeActorUrl = (change: TimelineStateChange) => {
 </script>
 
 <style scoped lang="scss">
-.tag.is-activity {
-  font-size: 0.62rem;
-  font-weight: bold;
-}
-
 .tag.issue-type-tag {
   border: 1px solid color-mix(in srgb, var(--issue-type-tag-color, #6e7781) 28%, transparent);
   background-color: color-mix(
