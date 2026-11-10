@@ -87,29 +87,6 @@ const emit = defineEmits<{
   height: 100%;
 }
 
-.release-follows-grid__cell :deep(.card-content) {
-  height: 100%;
-  display: flex;
-}
-
-.release-follows-grid__cell :deep(.dashboard-list-card__content) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.release-follows-grid__cell :deep(.dashboard-list-card__meta) {
-  margin-top: auto;
-}
-
-.release-follows-grid__cell :deep(.dashboard-list-card__description) {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
 /* The narrow page runs its bands edge to edge, so the grid carries the gutter
    the wide layout gets from the page padding. */
 @media (max-width: 860px) {

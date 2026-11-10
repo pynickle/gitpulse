@@ -57,7 +57,7 @@ const handleToggle = (event: MouseEvent) => {
 
 <template>
   <div class="followable-repo-card">
-    <RepoItem :repo="repo" class="followable-repo-card__item" />
+    <RepoItem :repo="repo" class="dashboard-list-card--grid-cell" />
     <button
       class="followable-repo-card__badge"
       type="button"
@@ -84,10 +84,6 @@ const handleToggle = (event: MouseEvent) => {
 
 .followable-repo-card :deep(.dashboard-list-card__text-stack) {
   padding-right: 2rem;
-}
-
-.followable-repo-card__item {
-  height: 100%;
 }
 
 .followable-repo-card__badge {
