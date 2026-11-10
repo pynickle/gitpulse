@@ -1446,6 +1446,10 @@
     "unknownAuthor": "Unknown contributor",
     "sparklineLabel": "{user}: {count} commits over time"
   },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close"
+  },
   "commentModeration": {
     "actions": "Comment actions",
     "hide": "Hide",
@@ -1454,8 +1458,9 @@
     "deleteComment": "Delete this comment?",
     "deleteReview": "Delete this review?",
     "reason": "Reason",
-    "hidden": "Hidden comment",
-    "expand": "Expand",
+    "hidden": "Hidden",
+    "expand": "Show content",
+    "collapse": "Hide content",
     "failed": "Could not update comment",
     "reasons": {
       "ABUSE": "Abuse or harassment",

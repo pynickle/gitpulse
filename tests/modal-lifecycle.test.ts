@@ -17,12 +17,12 @@ afterEach(async () => {
   await dom.cleanup();
 });
 
-function harness(initialOpen = false, controls = true) {
+function harness(initialOpen = false, controls = true, modal = true) {
   const open = shallowRef(initialOpen);
   const opener = dom.document.createElement('button');
   dom.document.body.append(opener);
   opener.focus();
-  const modal = useModalState();
+  const modalState = useModalState();
   const mounted = dom.mount(
     defineComponent({
       setup() {
@@ -33,6 +33,7 @@ function harness(initialOpen = false, controls = true) {
           onRequestClose: () => {
             open.value = false;
           },
+          modal,
         });
         return () =>
           open.value
@@ -50,7 +51,7 @@ function harness(initialOpen = false, controls = true) {
       },
     })
   );
-  return { ...mounted, open, opener, modal };
+  return { ...mounted, open, opener, modal: modalState };
 }
 
 describe('modal lifecycle through a mounted Vue host', () => {
@@ -228,6 +229,20 @@ describe('modal lifecycle through a mounted Vue host', () => {
     view.open.value = true;
     await nextTick();
     expect(view.modal.openModalCount.value).toBe(1);
+    expectFocus(view.root.querySelector('button'));
+    view.open.value = false;
+    await nextTick();
+    expect(view.modal.openModalCount.value).toBe(0);
+    expectFocus(view.opener);
+  });
+
+  test('a surface that only takes focus never registers a modal', async () => {
+    const view = harness(false, true, false);
+    view.open.value = true;
+    await nextTick();
+    // Focus is trapped and restored, but the app's modal state stays untouched —
+    // what keeps a floating composer visible under a popover.
+    expect(view.modal.openModalCount.value).toBe(0);
     expectFocus(view.root.querySelector('button'));
     view.open.value = false;
     await nextTick();

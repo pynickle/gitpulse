@@ -14,6 +14,12 @@ interface ModalLifecycleOptions {
   open: MaybeRefOrGetter<boolean>;
   panel: Readonly<Ref<HTMLElement | null>>;
   onRequestClose: () => void;
+  /**
+   * Whether the surface is an app modal. A modal hides the floating composer; an
+   * anchored menu or popover takes focus without taking the page over, so it
+   * passes false.
+   */
+  modal?: boolean;
 }
 
 interface FocusSession {
@@ -41,6 +47,7 @@ const isUsableReturnTarget = (target: HTMLElement | null): target is HTMLElement
 
 export function useModalLifecycle(options: ModalLifecycleOptions) {
   const { openModal, closeModal } = useModalState();
+  const registersModal = options.modal !== false;
   const focusTrap = createFocusTrapController();
   const session = shallowRef<FocusSession | null>(null);
 
@@ -48,7 +55,7 @@ export function useModalLifecycle(options: ModalLifecycleOptions) {
     const closing = session.value;
     if (!closing) return;
     session.value = null;
-    closeModal();
+    if (registersModal) closeModal();
     const pending = closingSessions.get(document) ?? new Set<FocusSession>();
     closingSessions.set(document, pending);
     pending.add(closing);
@@ -76,7 +83,7 @@ export function useModalLifecycle(options: ModalLifecycleOptions) {
           close();
           return;
         }
-        openModal();
+        if (registersModal) openModal();
         session.value = {
           returnTarget:
             document.activeElement instanceof HTMLElement ? document.activeElement : null,

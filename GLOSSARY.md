@@ -227,6 +227,20 @@ _Avoid_: File Header
 A single context, added, deleted, or replaced line in a file diff.
 _Avoid_: code line when referring to the review row, including its line numbers and comment controls
 
+## Comments
+
+**Hidden Comment**:
+A GitHub comment whose body is concealed by default but remains available for readers to expand. A hidden Discussion parent leaves its replies as independent comments with their own visibility.
+_Avoid_: deleted comment, resolved conversation
+
+**Comment Expansion**:
+A reader's temporary view of a Hidden Comment's body, leaving its shared hidden status unchanged.
+_Avoid_: unhide, restore
+
+**Comment Unhiding**:
+Removal of a comment's shared hidden status on GitHub by a reader permitted to do so.
+_Avoid_: expand, show comment
+
 ## Markdown Composer
 
 **Markdown Composer**:

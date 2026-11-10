@@ -2,13 +2,13 @@ import { expect, mock, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, ref, Suspense, type Component } from 'vue';
 
-import { useCommentModeration } from '../app/composables/useCommentModeration';
 import useDetailCompactHeader from '../app/composables/useDetailCompactHeader';
-import { useModalLifecycle } from '../app/composables/useModalLifecycle';
+import { useModalState } from '../app/composables/useModalState';
 import { getFetchErrorMessage } from '../app/utils/getFetchErrorMessage';
 import * as tokenizeCodeLine from '../app/utils/tokenizeCodeLine';
 import * as contract from '../shared/types/comment-moderation';
 import * as prReviewPatch from '../shared/utils/pr-review-patch';
+import { commentModerationModules } from './helpers/comment-moderation';
 import { commentPresentationModules } from './helpers/comment-presentation';
 import { compileVue } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
@@ -47,40 +47,26 @@ const i18n = {
   }),
 };
 const empty = defineComponent({ setup: () => () => h('span') });
-const framework = { useModalLifecycle, useCommentModeration };
 async function loadComponents() {
   const presentation = await commentPresentationModules();
-  const Actions = await compileVue('app/components/dashboard/comments/CommentActions.vue', {
-    'vue-i18n': i18n,
-    '#shared/types/comment-moderation': contract,
-    '~/composables/useCommentModeration': framework,
-    '~/composables/useModalLifecycle': framework,
-  });
-  const Body = await compileVue('app/components/dashboard/comments/CommentBody.vue', {
-    'vue-i18n': i18n,
-    '~/composables/useCommentModeration': framework,
-  });
+  const moderation = await commentModerationModules();
   const Header = await compileVue('app/components/dashboard/timeline/TimelineCardHeader.vue', {
     'vue-i18n': i18n,
     ...presentation,
+    ...moderation,
     '~/utils/formatDurationFromNow': { formatDurationFromNow: () => 'now' },
   });
   const Card = await compileVue('app/components/dashboard/timeline/TimelineCommentCard.vue', {
     'vue-i18n': i18n,
     '~/components/dashboard/timeline/TimelineCardHeader.vue': { default: Header },
-    '~/components/dashboard/comments/CommentActions.vue': { default: Actions },
-    '~/components/dashboard/comments/CommentBody.vue': { default: Body },
-    '~/composables/useCommentModeration': framework,
+    ...moderation,
     ...presentation,
     '~/components/dashboard/reactions/ReactionBar.vue': { default: empty },
     '#shared/utils/reactions': await import('../shared/utils/reactions'),
   });
   const shared = {
     'vue-i18n': i18n,
-
-    '~/components/dashboard/comments/CommentActions.vue': { default: Actions },
-    '~/components/dashboard/comments/CommentBody.vue': { default: Body },
-    '~/composables/useCommentModeration': framework,
+    ...moderation,
     ...presentation,
     '~/components/dashboard/pr/PRReviewThreadToggle.vue': { default: empty },
     '~/utils/formatDurationFromNow': { formatDurationFromNow: () => 'now' },
@@ -124,7 +110,7 @@ async function loadComponents() {
     '~/components/dashboard/pr/PRTimelineReviewDiff.vue': { default: Diff },
     '~/composables/usePRTimelineEvents': timelineEvents,
   });
-  return { Card, Actions, Body, Replies, Answer, Discussion, Threads, Review, shared };
+  return { ...moderation, Card, Replies, Answer, Discussion, Threads, Review, shared };
 }
 const target = (): contract.CommentModeration => ({
   resourceType: 'IssueComment',
@@ -143,6 +129,26 @@ const button = (root: ParentNode, text: string) =>
   [...root.querySelectorAll<HTMLButtonElement>('button')].find(
     (el) => el.textContent?.trim() === text
   )!;
+// A dialog stage replaces the anchored menu once that menu's exit has run; this DOM
+// applies no stylesheet, so wait for the element instead of guessing a delay.
+const findDialog = async (dom: ReturnType<typeof createDom>) => {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const dialog = dom.document.querySelector<HTMLElement>('[role="dialog"]');
+    if (dialog) return dialog;
+    await Bun.sleep(10);
+    await nextTick();
+  }
+  throw new Error('the comment dialog never opened');
+};
+const settleMotion = async () => {
+  await Bun.sleep(140);
+  await nextTick();
+};
+// A reason is a native radio in a label, so choosing one is a change on the input.
+const chooseReason = (dialog: HTMLElement, reason: string) => {
+  const input = dialog.querySelector<HTMLInputElement>(`input[type="radio"][value="${reason}"]`)!;
+  input.click();
+};
 
 test('real comment header opens reasons with no selection and writes only on explicit Hide', async () => {
   const { Card } = await loadComponents();
@@ -182,11 +188,10 @@ test('real comment header opens reasons with no selection and writes only on exp
     trigger.click();
     await flush();
     button(dom.document, 'commentModeration.hide').click();
-    await flush();
-    const dialog = dom.document.querySelector('[role="dialog"]')!;
-    expect(dialog.querySelector('[aria-checked="true"]')).toBeNull();
+    const dialog = await findDialog(dom);
+    expect(dialog.querySelector('input[type="radio"]:checked')).toBeNull();
     expect(button(dialog, 'commentModeration.hide').disabled).toBe(true);
-    button(dialog, 'commentModeration.reasons.OFF_TOPIC').click();
+    chooseReason(dialog, 'OFF_TOPIC');
     await flush();
     expect(writes).toEqual([]);
     button(dialog, 'commentModeration.hide').click();
@@ -196,9 +201,18 @@ test('real comment header opens reasons with no selection and writes only on exp
     ]);
     expect(view.root.textContent).not.toContain('Keep the context readable');
     expect(view.root.textContent).toContain('octo');
+    const notice = view.root.querySelector('.comment-hidden__state')!;
+    expect(notice.textContent).toContain('commentModeration.hidden');
+    expect(notice.textContent).toContain('commentModeration.reasons.OFF_TOPIC');
     button(view.root, 'commentModeration.expand').click();
     await flush();
     expect(view.root.textContent).toContain('Keep the context readable');
+    expect(writes).toHaveLength(1);
+    button(view.root, 'commentModeration.collapse').click();
+    await flush();
+    // The revealed body leaves the DOM once its fold has closed.
+    await Bun.sleep(260);
+    expect(view.root.textContent).not.toContain('Keep the context readable');
     expect(writes).toHaveLength(1);
   } finally {
     await dom.cleanup();
@@ -279,8 +293,7 @@ test.each(['timeline', 'workspace', 'discussion', 'answer', 'review'] as const)(
       triggers[0]!.click();
       await flush();
       button(dom.document, 'commentModeration.delete').click();
-      await flush();
-      const confirmation = dom.document.querySelector('[role="dialog"]')!;
+      const confirmation = await findDialog(dom);
       expect(confirmation.textContent).not.toContain('octo');
       expect(confirmation.textContent).not.toContain('Comment context');
       button(confirmation, 'common.cancel').click();
@@ -290,18 +303,50 @@ test.each(['timeline', 'workspace', 'discussion', 'answer', 'review'] as const)(
       triggers[0]!.click();
       await flush();
       button(dom.document, 'commentModeration.hide').click();
+      const hideDialog = await findDialog(dom);
+      chooseReason(hideDialog, 'SPAM');
       await flush();
-      button(dom.document, 'commentModeration.reasons.SPAM').click();
-      await flush();
-      button(dom.document.querySelector('[role="dialog"]')!, 'commentModeration.hide').click();
+      button(hideDialog, 'commentModeration.hide').click();
       await flush();
       expect(view.root.textContent).not.toContain('Comment context');
-      expect(view.root.querySelectorAll('.comment-hidden')).toHaveLength(2);
     } finally {
       await dom.cleanup();
     }
   }
 );
+
+test('neither the menu nor a dialog takes the floating composer away', async () => {
+  const { Card } = await loadComponents();
+  const dom = createDom({ useRelativeTimeNow: () => 0 });
+  try {
+    // The composer observes this flag: a true hides the reader's open draft.
+    const Composer = defineComponent({
+      setup() {
+        const { isAnyModalOpen } = useModalState();
+        return () => h('div', { class: 'composer', 'data-hidden': String(isAnyModalOpen.value) });
+      },
+    });
+    const view = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h('main', [
+            h(Card, { item: { body: 'Context', moderation: target() }, enableReactions: false }),
+            h(Composer),
+          ]),
+      })
+    );
+    await flush();
+    view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
+    await flush();
+    expect(view.root.querySelector('.composer')!.getAttribute('data-hidden')).toBe('false');
+    expect(dom.document.querySelector('[role="menu"]')).not.toBeNull();
+    button(dom.document, 'commentModeration.delete').click();
+    await findDialog(dom);
+    expect(view.root.querySelector('.composer')!.getAttribute('data-hidden')).toBe('false');
+  } finally {
+    await dom.cleanup();
+  }
+});
 
 test('read-only and unknown capabilities produce no empty menu', async () => {
   const { Card } = await loadComponents();
@@ -435,19 +480,18 @@ test('cancel and Escape do not write; each reason dialog reopens without a selec
     menu.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
     expect(dom.document.activeElement?.textContent).toBe('commentModeration.hide');
     button(menu, 'commentModeration.hide').click();
+    const firstDialog = await findDialog(dom);
+    chooseReason(firstDialog, 'ABUSE');
     await flush();
-    button(dom.document, 'commentModeration.reasons.ABUSE').click();
-    await flush();
-    button(dom.document, 'common.cancel').click();
-    await flush();
+    button(firstDialog, 'common.cancel').click();
+    await settleMotion();
     trigger.click();
     await flush();
     button(dom.document, 'commentModeration.hide').click();
-    await flush();
-    const dialog = dom.document.querySelector('[role="dialog"]')!;
-    expect(dialog.querySelector('[aria-checked="true"]')).toBeNull();
+    const dialog = await findDialog(dom);
+    expect(dialog.querySelector('input[type="radio"]:checked')).toBeNull();
     dialog.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    await flush();
+    await settleMotion();
     expect(dom.document.querySelector('[role="dialog"]')).toBeNull();
     expect(writes).toEqual([]);
   } finally {
@@ -485,8 +529,7 @@ test('a pending delete disables duplicates; refusal keeps content and refreshes 
     view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
     await flush();
     button(dom.document, 'commentModeration.delete').click();
-    await flush();
-    const dialog = dom.document.querySelector('[role="dialog"]')!;
+    const dialog = await findDialog(dom);
     const submit = button(dialog, 'commentModeration.delete');
     submit.click();
     await flush();
@@ -504,6 +547,46 @@ test('a pending delete disables duplicates; refusal keeps content and refreshes 
     button(dom.document, 'common.cancel').click();
     await flush();
     expect(view.root.querySelector('[aria-haspopup]')).toBeNull();
+  } finally {
+    await dom.cleanup();
+  }
+});
+
+test('a refused Unhide keeps the comment hidden and shows the error beside the menu', async () => {
+  const { Card } = await loadComponents();
+  const hidden = {
+    ...target(),
+    isMinimized: true,
+    minimizedReason: 'spam',
+    viewerCanMinimize: false,
+    viewerCanUnminimize: true,
+  };
+  const dom = createDom({
+    useRelativeTimeNow: () => 0,
+    getFetchErrorMessage,
+    useGitPulseApiFetch: () => async (_url: string, options: { method?: string }) => {
+      if (options.method === 'POST')
+        throw Object.assign(new Error('Permission denied'), { statusCode: 403 });
+      return { moderation: hidden };
+    },
+  });
+  try {
+    const view = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(Card, { item: { body: 'Masked body', moderation: hidden }, enableReactions: false }),
+      })
+    );
+    await flush();
+    view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
+    await flush();
+    button(dom.document, 'commentModeration.unhide').click();
+    await flush();
+    expect(dom.document.querySelector('[role="alert"]')?.textContent).toContain(
+      'Permission denied'
+    );
+    expect(view.root.textContent).not.toContain('Masked body');
+    expect(button(dom.document, 'commentModeration.unhide').disabled).toBe(false);
   } finally {
     await dom.cleanup();
   }
@@ -595,8 +678,8 @@ test('Discussion detail reconciles a wiped accepted parent, keeping replies and 
     view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
     await flush();
     button(dom.document, 'commentModeration.delete').click();
-    await flush();
-    button(dom.document.querySelector('[role="dialog"]')!, 'commentModeration.delete').click();
+    const confirm = await findDialog(dom);
+    button(confirm, 'commentModeration.delete').click();
     await flush();
     expect(view.root.textContent).toContain('Reply survives');
     expect(view.root.textContent).not.toContain('Accepted parent');
@@ -716,11 +799,9 @@ test('deleting a review preserves all loaded timeline pages and the existing scr
     view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
     await flush();
     button(dom.document, 'commentModeration.delete').click();
-    await flush();
-    expect(dom.document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(
-      'commentModeration.deleteReview'
-    );
-    button(dom.document.querySelector('[role="dialog"]')!, 'commentModeration.delete').click();
+    const confirm = await findDialog(dom);
+    expect(confirm.getAttribute('aria-label')).toBe('commentModeration.deleteReview');
+    button(confirm, 'commentModeration.delete').click();
     await flush();
     expect(view.root.textContent).toContain('First page context');
     expect(view.root.textContent).toContain('Second page context');

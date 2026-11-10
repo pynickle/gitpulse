@@ -1446,6 +1446,10 @@
     "unknownAuthor": "未知贡献者",
     "sparklineLabel": "{user}：共 {count} 次提交"
   },
+  "common": {
+    "cancel": "取消",
+    "close": "关闭"
+  },
   "commentModeration": {
     "actions": "评论操作",
     "hide": "隐藏",
@@ -1454,8 +1458,9 @@
     "deleteComment": "删除这条评论？",
     "deleteReview": "删除这条 review？",
     "reason": "隐藏原因",
-    "hidden": "已隐藏的评论",
-    "expand": "展开",
+    "hidden": "已隐藏",
+    "expand": "显示内容",
+    "collapse": "隐藏内容",
     "failed": "无法更新评论",
     "reasons": {
       "ABUSE": "辱骂或骚扰",
