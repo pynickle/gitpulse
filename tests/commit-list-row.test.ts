@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
+import { buildTimelineCommitPayload } from '../app/utils/buildTimelineCommitPayload';
 import { commitVerificationMark } from '../app/utils/commitVerification';
 import type { RepoCommitListItemPayload } from '../shared/types/repos';
 import { compileVue } from './helpers/compile-vue';
@@ -56,6 +57,7 @@ const rowModules = {
       },
     }),
   },
+  'virtual:commit-payload': { buildTimelineCommitPayload },
 };
 
 const rowAutoImports = {
@@ -77,7 +79,7 @@ const PRTimelineCommitCard = await compileVue(
     ...rowModules,
     '~/components/dashboard/detail/CommitListRow.vue': { default: CommitListRow },
   },
-  { useI18n: 'vue-i18n' }
+  { useI18n: 'vue-i18n', buildTimelineCommitPayload: 'virtual:commit-payload' }
 );
 
 const commit = (overrides: Partial<RepoCommitListItemPayload> = {}): RepoCommitListItemPayload => ({

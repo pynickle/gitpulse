@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue';
 
 import type { IssueTimelineItem } from '../app/composables/useIssueTimelineEvents';
+import { buildTimelineCommitPayload } from '../app/utils/buildTimelineCommitPayload';
 import { commitVerificationMark } from '../app/utils/commitVerification';
 import * as reactions from '../shared/utils/reactions';
 import { compileVue } from './helpers/compile-vue';
@@ -90,8 +91,9 @@ const IssueTimelineCommitCard = await compileVue(
   {
     'vue-i18n': i18n,
     '~/components/dashboard/detail/CommitListRow.vue': { default: CommitListRow },
+    'virtual:commit-payload': { buildTimelineCommitPayload },
   },
-  { useI18n: 'vue-i18n' }
+  { useI18n: 'vue-i18n', buildTimelineCommitPayload: 'virtual:commit-payload' }
 );
 
 const TimelineCardHeader = await compileVue(

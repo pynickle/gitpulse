@@ -42,7 +42,7 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
         v-for="repo in items"
         :key="repo.id"
         :repo="repo"
-        class="profile-pinned__card dashboard-list-card--grid-cell"
+        class="dashboard-list-card--grid-cell"
       />
     </div>
   </section>
@@ -73,10 +73,6 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   gap: 0.75rem;
   align-items: stretch;
-}
-
-.profile-pinned__card {
-  height: 100%;
 }
 
 .profile-pinned__status {

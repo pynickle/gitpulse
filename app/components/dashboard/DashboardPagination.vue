@@ -388,7 +388,7 @@ html.dark .pagination-link.is-current:focus-visible {
 }
 
 // Narrow screens swap the page list for one compact row. It borrows the sizing and colour
-// tokens of the app's other small controls (FilterPill, FilterMultiSelect) so the pagination
+// tokens of the app's other small controls (FilterMultiSelect) so the pagination
 // reads as part of the same toolbar rather than as a form dropped into the footer.
 .dashboard-pagination__compact {
   --dashboard-pagination-control-size: 2rem;

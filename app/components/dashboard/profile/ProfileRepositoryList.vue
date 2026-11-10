@@ -36,7 +36,7 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
           v-for="repo in items"
           :key="repo.id"
           :repo="repo"
-          class="profile-repo-list__cell dashboard-list-card--grid-cell"
+          class="dashboard-list-card--grid-cell"
         />
       </div>
 
@@ -68,11 +68,6 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
   grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
   gap: 0.75rem;
   align-items: stretch;
-}
-
-/* Cards fill their grid cell so rows stay even regardless of description length. */
-.profile-repo-list__cell {
-  height: 100%;
 }
 
 .profile-repo-list__pagination {

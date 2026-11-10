@@ -152,7 +152,7 @@ onBeforeUnmount(() => {
       :aria-label="t('branchSelector.label')"
       @click="open"
     >
-      <LoaderCircleIcon v-if="loading" :size="14" class="branch-selector__spinner" />
+      <LoaderCircleIcon v-if="loading" :size="14" class="spin-animation" />
       <GitBranchIcon v-else :size="14" aria-hidden="true" />
       <span class="branch-selector__branch-name">{{ currentBranch || '-' }}</span>
       <ChevronDownIcon :size="14" class="branch-selector__chevron" aria-hidden="true" />
@@ -328,10 +328,6 @@ onBeforeUnmount(() => {
 
 .branch-selector__trigger[aria-expanded='true'] .branch-selector__chevron {
   transform: rotate(180deg);
-}
-
-.branch-selector__spinner {
-  animation: spin 1s linear infinite;
 }
 
 // ─── Overlay (matches label editor pattern) ────────────────────
