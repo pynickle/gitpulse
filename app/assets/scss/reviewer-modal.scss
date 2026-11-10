@@ -400,20 +400,6 @@
   border-radius: 9px;
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .reviewer-modal-enter-active,
 .reviewer-modal-leave-active {
   transition: opacity 0.18s ease;

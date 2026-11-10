@@ -270,18 +270,4 @@ watch(
     outline-offset: 2px;
   }
 }
-
-.spin-animation {
-  animation: repo-contributors-spin 1s linear infinite;
-}
-
-@keyframes repo-contributors-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

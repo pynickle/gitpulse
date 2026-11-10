@@ -352,19 +352,6 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
   color: var(--gitpulse-text-muted);
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .linked-pr-picker-enter-active,
 .linked-pr-picker-leave-active {
   transition: opacity 0.18s ease;

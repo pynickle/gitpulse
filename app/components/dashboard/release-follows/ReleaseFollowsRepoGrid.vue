@@ -80,17 +80,7 @@ const emit = defineEmits<{
 }
 
 .spin-animation {
-  animation: spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .release-follows-grid__cell {

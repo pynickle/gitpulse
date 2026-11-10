@@ -418,17 +418,7 @@ const handleOpenReleasePage = async () => {
 }
 
 .spin-animation {
-  animation: release-drawer-spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes release-drawer-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (min-width: 861px) {

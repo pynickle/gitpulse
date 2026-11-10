@@ -234,17 +234,7 @@ watch(requestedUser, () => {
 }
 
 .spin-animation {
-  animation: spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Cards fill their grid cell so rows stay even regardless of description length. */

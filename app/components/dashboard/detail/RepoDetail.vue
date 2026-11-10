@@ -1859,19 +1859,6 @@ html.dark .repo-detail-section__chrome {
   }
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media screen and (max-width: 1024px) {
   .repo-detail-layout :deep(.columns) {
     display: block;
