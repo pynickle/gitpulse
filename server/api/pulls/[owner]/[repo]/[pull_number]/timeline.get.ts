@@ -1,3 +1,4 @@
+import { enrichCommentModeration } from '#server/utils/comment-moderation-utils';
 import {
   assignCommitCheckRollups,
   buildPRTimelineCapabilities,
@@ -185,6 +186,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     );
     const commitRollups = await fetchCommitCheckRollups(octokit, owner, repo, commitShas);
     assignCommitCheckRollups(timeline, commitRollups);
+    await enrichCommentModeration(octokit, timeline);
 
     return {
       timeline,

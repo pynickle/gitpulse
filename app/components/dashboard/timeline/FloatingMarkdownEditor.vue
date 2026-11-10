@@ -136,6 +136,7 @@ import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.v
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 
 interface CreatedCommentResponse {
+  moderation?: import('#shared/types/comment-moderation').CommentModeration;
   id?: number | string;
   node_id?: string;
   body?: string;
@@ -150,6 +151,7 @@ interface CreatedCommentResponse {
 }
 
 type TimelineCommentItem = {
+  moderation?: import('#shared/types/comment-moderation').CommentModeration;
   kind: 'comment';
   eventType: 'commented';
   id: string;
@@ -367,6 +369,7 @@ const selfSubmit = async () => {
     );
 
     emit('comment-created', {
+      moderation: response.moderation,
       kind: 'comment',
       eventType: 'commented',
       id: String(response.id ?? response.node_id ?? `local-comment-${Date.now()}`),

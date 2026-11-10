@@ -1,3 +1,7 @@
+import {
+  enrichCommentModeration,
+  restCommentModeration,
+} from '#server/utils/comment-moderation-utils';
 import { parseRequiredBodyText } from '#server/utils/repo-request-validation-utils';
 import { extractIssueRouteParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
@@ -12,7 +16,9 @@ export default defineEventHandler(async (event) => {
         'POST /repos/{owner}/{repo}/issues/{issue_number}/comments',
         { owner, repo, issue_number: issueNumber, body: commentBody }
       );
-      return comment;
+      const item = { ...comment, moderation: restCommentModeration('IssueComment', comment) };
+      await enrichCommentModeration(octokit, [item]);
+      return item;
     },
     'Failed to create comment'
   );

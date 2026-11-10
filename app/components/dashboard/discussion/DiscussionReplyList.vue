@@ -3,10 +3,14 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionRepliesPayload } from '#shared/types/discussions';
+import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
+import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
+const { stateFor } = useCommentModeration();
 const { replies } = defineProps<{
   replies: DiscussionRepliesPayload;
   repoOwner: string;
@@ -22,13 +26,16 @@ const emit = defineEmits<{
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 const localeCode = computed(() => locale.value);
-const hasReplies = computed(() => replies.items.length > 0);
+const visibleReplies = computed(() =>
+  replies.items.filter((reply) => !stateFor(reply.moderation).deleted)
+);
+const hasReplies = computed(() => visibleReplies.value.length > 0);
 </script>
 
 <template>
   <div class="discussion-replies">
     <div v-if="hasReplies" class="discussion-replies__list">
-      <article v-for="reply in replies.items" :key="reply.id" class="discussion-replies__item">
+      <article v-for="reply in visibleReplies" :key="reply.id" class="discussion-replies__item">
         <div class="discussion-replies__header">
           <GitHubAvatar
             variant="raised"
@@ -53,19 +60,22 @@ const hasReplies = computed(() => replies.items.length > 0);
           <span class="is-size-7 has-text-grey">
             {{ formatDurationFromNow(reply.createdAt || '', localeCode, relativeTimeNow) }}
           </span>
+          <CommentActions :target="reply.moderation" />
         </div>
 
-        <div class="discussion-replies__body content">
-          <MarkdownRenderer
-            v-if="reply.body"
-            :value="reply.body"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
-          />
-          <p v-else class="has-text-grey is-size-7">
-            {{ t('discussionDetail.noCommentBody') }}
-          </p>
-        </div>
+        <CommentBody v-slot="{ body }" :target="reply.moderation" :body="reply.body">
+          <div class="discussion-replies__body content">
+            <MarkdownRenderer
+              v-if="body"
+              :value="body"
+              :repo-owner="repoOwner"
+              :repo-name="repoName"
+            />
+            <p v-else class="has-text-grey is-size-7">
+              {{ t('discussionDetail.noCommentBody') }}
+            </p>
+          </div>
+        </CommentBody>
       </article>
     </div>
 

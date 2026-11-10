@@ -4,8 +4,11 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionReply } from '#shared/types/discussions';
+import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
+import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 defineProps<{
@@ -14,13 +17,14 @@ defineProps<{
   repoName: string;
 }>();
 
+const { stateFor } = useCommentModeration();
 const { locale, t } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
 const localeCode = computed(() => locale.value);
 </script>
 
 <template>
-  <section class="discussion-answer">
+  <section v-if="!stateFor(answer.moderation).deleted" class="discussion-answer">
     <div class="discussion-answer__label">
       <CircleCheckIcon :size="16" />
       <span>{{ t('discussionDetail.acceptedAnswer') }}</span>
@@ -50,19 +54,17 @@ const localeCode = computed(() => locale.value);
       <span class="is-size-7 has-text-grey">
         {{ formatDurationFromNow(answer.createdAt || '', localeCode, relativeTimeNow) }}
       </span>
+      <CommentActions :target="answer.moderation" />
     </div>
 
-    <div class="discussion-answer__body content">
-      <MarkdownRenderer
-        v-if="answer.body"
-        :value="answer.body"
-        :repo-owner="repoOwner"
-        :repo-name="repoName"
-      />
-      <p v-else class="has-text-grey is-size-7">
-        {{ t('discussionDetail.noCommentBody') }}
-      </p>
-    </div>
+    <CommentBody v-slot="{ body }" :target="answer.moderation" :body="answer.body">
+      <div class="discussion-answer__body content">
+        <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
+        <p v-else class="has-text-grey is-size-7">
+          {{ t('discussionDetail.noCommentBody') }}
+        </p>
+      </div>
+    </CommentBody>
   </section>
 </template>
 

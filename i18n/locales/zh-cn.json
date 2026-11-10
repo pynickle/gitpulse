@@ -1445,5 +1445,26 @@
     "computing": "正在生成贡献图表…",
     "unknownAuthor": "未知贡献者",
     "sparklineLabel": "{user}：共 {count} 次提交"
+  },
+  "commentModeration": {
+    "actions": "评论操作",
+    "hide": "隐藏",
+    "unhide": "取消隐藏",
+    "delete": "删除",
+    "deleteComment": "删除这条评论？",
+    "deleteReview": "删除这条 review？",
+    "reason": "隐藏原因",
+    "hidden": "已隐藏的评论",
+    "expand": "展开",
+    "failed": "无法更新评论",
+    "reasons": {
+      "ABUSE": "辱骂或骚扰",
+      "DUPLICATE": "重复内容",
+      "LOW_QUALITY": "低质量内容",
+      "OFF_TOPIC": "偏离主题",
+      "OUTDATED": "已过时",
+      "RESOLVED": "已解决",
+      "SPAM": "垃圾信息"
+    }
   }
 }

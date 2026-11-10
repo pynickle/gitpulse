@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
+import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import type { PRReviewCommentThread } from '~/composables/usePRReview';
 
-const { resolvingReviewThreadId } = defineProps<{
+const { stateFor } = useCommentModeration();
+const { threads, resolvingReviewThreadId } = defineProps<{
   threads: PRReviewCommentThread[];
   repoOwner: string;
   repoName: string;
@@ -20,6 +24,14 @@ const emit = defineEmits<{
 const { t, locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
+const visibleThreads = computed(() =>
+  threads
+    .map((thread) => ({
+      ...thread,
+      comments: thread.comments.filter((comment) => !stateFor(comment.moderation).deleted),
+    }))
+    .filter((thread) => thread.comments.length > 0)
+);
 
 const isReviewThreadResolving = (thread: PRReviewCommentThread) =>
   Boolean(thread.threadId && resolvingReviewThreadId === thread.threadId);
@@ -39,7 +51,7 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
 <template>
   <div class="pr-review-diff-viewer__new-line-threads">
     <div
-      v-for="thread in threads"
+      v-for="thread in visibleThreads"
       :key="thread.id"
       class="pr-review-diff-viewer__review-thread"
       :class="{ 'pr-review-diff-viewer__review-thread--resolved': thread.isResolved }"
@@ -49,13 +61,6 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
         :key="comment.id"
         class="pr-review-diff-viewer__review-comment"
       >
-        <PRReviewThreadToggle
-          v-if="thread.threadId && commentIndex === 0"
-          class="pr-review-diff-viewer__thread-action"
-          :resolved="thread.isResolved"
-          :loading="isReviewThreadResolving(thread)"
-          @toggle="toggleReviewThread(thread)"
-        />
         <div class="pr-review-diff-viewer__review-comment-header">
           <GitHubAvatar
             variant="raised"
@@ -89,18 +94,28 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
               {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
             </span>
           </div>
-        </div>
-        <div class="pr-review-diff-viewer__review-comment-body content">
-          <MarkdownRenderer
-            v-if="comment.body"
-            :value="comment.body"
-            :repo-owner="repoOwner"
-            :repo-name="repoName"
+          <PRReviewThreadToggle
+            v-if="thread.threadId && commentIndex === 0"
+            class="pr-review-diff-viewer__thread-action"
+            :resolved="thread.isResolved"
+            :loading="isReviewThreadResolving(thread)"
+            @toggle="toggleReviewThread(thread)"
           />
-          <p v-else class="has-text-grey mb-0">
-            {{ t('prReview.noReviewCommentBody') }}
-          </p>
+          <CommentActions :target="comment.moderation" />
         </div>
+        <CommentBody v-slot="{ body }" :target="comment.moderation" :body="comment.body">
+          <div class="pr-review-diff-viewer__review-comment-body content">
+            <MarkdownRenderer
+              v-if="body"
+              :value="body"
+              :repo-owner="repoOwner"
+              :repo-name="repoName"
+            />
+            <p v-else class="has-text-grey mb-0">
+              {{ t('prReview.noReviewCommentBody') }}
+            </p>
+          </div>
+        </CommentBody>
       </article>
     </div>
   </div>
@@ -127,16 +142,13 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
   background: color-mix(in srgb, var(--gitpulse-success) 4%, var(--gitpulse-surface));
 }
 
-.pr-review-diff-viewer__thread-action {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 1;
-}
-
 .pr-review-diff-viewer__review-comment {
   position: relative;
   padding: 0.6rem 0.7rem;
+}
+
+.pr-review-diff-viewer__thread-action {
+  flex: none;
 }
 
 .pr-review-diff-viewer__review-comment + .pr-review-diff-viewer__review-comment {
@@ -151,6 +163,7 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
 }
 
 .pr-review-diff-viewer__review-comment-meta {
+  flex: 1;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;

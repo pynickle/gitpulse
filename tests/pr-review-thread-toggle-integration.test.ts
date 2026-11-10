@@ -3,6 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 import { defineComponent, h, nextTick, reactive, ref } from 'vue';
 
 import * as prReviewPatch from '../shared/utils/pr-review-patch';
+import { commentModerationModules } from './helpers/comment-moderation';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -74,6 +75,7 @@ const loadTimelineCard = async () => {
   return compileVue(
     'app/components/dashboard/pr/PRTimelineReviewCard.vue',
     {
+      ...(await commentModerationModules()),
       '@lucide/vue': icons,
       'vue-i18n': i18n,
       '#shared/utils/pr-review-patch': prReviewPatch,
@@ -99,6 +101,7 @@ const loadThreadPills = async () => {
   return compileVue(
     'app/components/dashboard/pr/PRReviewDiffReviewThreads.vue',
     {
+      ...(await commentModerationModules()),
       'vue-i18n': i18n,
       '~/components/dashboard/pr/PRReviewThreadToggle.vue': { default: Toggle },
       '~/components/ui/GitHubAvatar.vue': { default: empty },

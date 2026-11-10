@@ -1,3 +1,7 @@
+import {
+  enrichCommentModeration,
+  restCommentModeration,
+} from '#server/utils/comment-moderation-utils';
 import { stringifyGitHubId } from '#server/utils/github-id-utils';
 import {
   buildReviewThreadStatePayload,
@@ -39,6 +43,7 @@ const normalizeReviewComment = (
   comment: PullReviewCommentResponse,
   reviewThreadsByCommentId: ReviewThreadsByCommentId
 ) => ({
+  moderation: restCommentModeration('PullRequestReviewComment', comment),
   id: stringifyGitHubId(comment.id ?? comment.node_id) ?? '',
   pullRequestReviewId: stringifyGitHubId(comment.pull_request_review_id),
   inReplyToId: stringifyGitHubId(comment.in_reply_to_id),
@@ -126,13 +131,15 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       fetchPRReviewThreadsForComments(octokit, owner, repo, pullNumber),
     ]);
     const reviewThreadsByCommentId = buildReviewThreadsByCommentId(reviewThreads);
+    const items = reviewComments
+      .filter((comment) => comment.position !== null && comment.position !== undefined)
+      .map((comment) => normalizeReviewComment(comment, reviewThreadsByCommentId))
+      .filter((comment) => comment.path && !comment.isOutdated)
+      .sort(compareReviewComments);
+    await enrichCommentModeration(octokit, items);
 
     return {
-      items: reviewComments
-        .filter((comment) => comment.position !== null && comment.position !== undefined)
-        .map((comment) => normalizeReviewComment(comment, reviewThreadsByCommentId))
-        .filter((comment) => comment.path && !comment.isOutdated)
-        .sort(compareReviewComments),
+      items,
     };
   } catch (error: unknown) {
     console.error('Error fetching pull request review comments:', error);

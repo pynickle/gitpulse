@@ -1,5 +1,6 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 
+import type { CommentModeration } from '#shared/types/comment-moderation';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type { CommitVerification } from '#shared/types/repos';
@@ -66,6 +67,7 @@ export interface TimelineCommit {
 }
 
 export interface TimelineReviewComment {
+  moderation?: CommentModeration;
   id?: string;
   threadId?: string;
   author?: TimelineActor;
@@ -120,6 +122,7 @@ export interface TimelineProject {
 }
 
 export interface PRTimelineItem {
+  moderation?: CommentModeration;
   kind:
     | 'comment'
     | 'event'

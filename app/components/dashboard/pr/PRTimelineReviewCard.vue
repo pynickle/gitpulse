@@ -8,7 +8,7 @@
     :enable-reactions="false"
   />
   <div
-    v-else
+    v-else-if="!stateFor(item.moderation).deleted"
     class="review-item"
     :class="[`review-item--${stateModifier}`, { 'review-item--has-dismissal': item.dismissal }]"
   >
@@ -16,7 +16,8 @@
       v-if="showsConversationHeader"
       :author="item.author"
       :created-at="item.createdAt"
-    />
+      ><CommentActions :target="item.moderation"
+    /></TimelineCardHeader>
     <header v-else class="review-item__header">
       <GitHubAvatar
         variant="raised"
@@ -45,6 +46,7 @@
         </span>
         <TimelineEventTime class="review-item__time has-text-grey" :date="item.createdAt" />
       </div>
+      <CommentActions :target="item.moderation" />
     </header>
     <TimelineEventNote
       v-if="item.onBehalfOf?.length"
@@ -65,9 +67,11 @@
         </template>
       </template>
     </TimelineEventNote>
-    <div v-if="item.body" class="review-item__body content">
-      <MarkdownRenderer :value="item.body" :repo-owner="repoOwner" :repo-name="repoName" />
-    </div>
+    <CommentBody v-slot="{ body }" :target="item.moderation" :body="item.body">
+      <div v-if="body" class="review-item__body content">
+        <MarkdownRenderer :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
+      </div>
+    </CommentBody>
     <TimelineEventNote
       v-if="item.dismissal"
       :icon="BanIcon"
@@ -167,29 +171,32 @@
                 :loading="isReviewThreadResolving(comment)"
                 @toggle="toggleReviewThread(comment)"
               />
+              <CommentActions :target="comment.moderation" />
             </div>
-            <div class="review-item__comment-body content">
-              <template v-if="comment.body">
-                <template v-for="part in splitSuggestionBody(comment.body)" :key="part.key">
-                  <MarkdownRenderer
-                    v-if="part.kind === 'markdown' && part.value.trim()"
-                    :value="part.value"
-                    :repo-owner="repoOwner"
-                    :repo-name="repoName"
-                  />
-                  <PRTimelineReviewDiff
-                    v-else-if="part.kind === 'suggestion'"
-                    class="review-item__suggestion"
-                    :filename="comment.path ?? group.path"
-                    :lines="buildSuggestionDiffLines(comment, part.value)"
-                    :aria-label="t('prReview.suggestedChangeLabel', { filename: group.path })"
-                  />
+            <CommentBody v-slot="{ body }" :target="comment.moderation" :body="comment.body">
+              <div class="review-item__comment-body content">
+                <template v-if="body">
+                  <template v-for="part in splitSuggestionBody(body)" :key="part.key">
+                    <MarkdownRenderer
+                      v-if="part.kind === 'markdown' && part.value.trim()"
+                      :value="part.value"
+                      :repo-owner="repoOwner"
+                      :repo-name="repoName"
+                    />
+                    <PRTimelineReviewDiff
+                      v-else-if="part.kind === 'suggestion'"
+                      class="review-item__suggestion"
+                      :filename="comment.path ?? group.path"
+                      :lines="buildSuggestionDiffLines(comment, part.value)"
+                      :aria-label="t('prReview.suggestedChangeLabel', { filename: group.path })"
+                    />
+                  </template>
                 </template>
-              </template>
-              <p v-else class="has-text-grey is-size-7">
-                {{ t('prReview.noReviewCommentBody') }}
-              </p>
-            </div>
+                <p v-else class="has-text-grey is-size-7">
+                  {{ t('prReview.noReviewCommentBody') }}
+                </p>
+              </div>
+            </CommentBody>
           </div>
         </div>
       </article>
@@ -211,6 +218,8 @@ import { computed, defineAsyncComponent, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import { parsePRReviewPatch } from '#shared/utils/pr-review-patch';
+import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
+import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
 import TimelineCardHeader from '~/components/dashboard/timeline/TimelineCardHeader.vue';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
@@ -218,6 +227,7 @@ import TimelineEventNote from '~/components/dashboard/timeline/TimelineEventNote
 import TimelineEventTime from '~/components/dashboard/timeline/TimelineEventTime.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import {
   getOnBehalfOfTeamLabel,
   type PRTimelineItem,
@@ -240,6 +250,7 @@ const PRTimelineReviewDiff = defineAsyncComponent(
   () => import('~/components/dashboard/pr/PRTimelineReviewDiff.vue')
 );
 const { t, locale } = useI18n();
+const { stateFor } = useCommentModeration();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const hasReviewComments = computed(() => Boolean(item.reviewComments?.length));
@@ -270,6 +281,7 @@ const reviewCommentGroups = computed<ReviewCommentGroup[]>(() => {
   const groups = new Map<string, TimelineReviewComment[]>();
 
   for (const comment of item.reviewComments ?? []) {
+    if (stateFor(comment.moderation).deleted) continue;
     const path = comment.path ?? 'file';
     const comments = groups.get(path) ?? [];
     comments.push(comment);

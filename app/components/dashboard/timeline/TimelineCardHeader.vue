@@ -22,6 +22,7 @@
         {{ formatDurationFromNow(createdAt || '', localeCode, relativeTimeNow) }}
       </span>
     </div>
+    <slot />
   </header>
 </template>
 

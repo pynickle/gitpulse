@@ -1,17 +1,16 @@
 <template>
-  <article class="comment-item">
-    <TimelineCardHeader :author="item.author" :created-at="item.createdAt" />
-    <div class="comment-item__body content">
-      <MarkdownRenderer
-        v-if="item.body"
-        :value="item.body"
-        :repo-owner="repoOwner"
-        :repo-name="repoName"
-      />
-      <p v-else class="has-text-grey is-size-7">
-        {{ emptyText ?? t('detailTimeline.noCommentBody') }}
-      </p>
-    </div>
+  <article v-if="!stateFor(item.moderation).deleted" class="comment-item">
+    <TimelineCardHeader :author="item.author" :created-at="item.createdAt"
+      ><CommentActions :target="item.moderation"
+    /></TimelineCardHeader>
+    <CommentBody v-slot="{ body }" :target="item.moderation" :body="item.body">
+      <div class="comment-item__body content">
+        <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
+        <p v-else class="has-text-grey is-size-7">
+          {{ emptyText ?? t('detailTimeline.noCommentBody') }}
+        </p>
+      </div>
+    </CommentBody>
     <ReactionBar
       v-if="canShowReactions"
       class="comment-item__reactions"
@@ -29,15 +28,20 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { CommentModeration } from '#shared/types/comment-moderation';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type { ReactionTargetKind } from '#shared/types/reactions';
 import { extractCommentIdFromUrl } from '#shared/utils/reactions';
+import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
+import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import TimelineCardHeader from '~/components/dashboard/timeline/TimelineCardHeader.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import type { TimelineActor } from '~/composables/usePRTimelineEvents';
 
 interface TimelineCommentCardItem {
+  moderation?: CommentModeration;
   id?: string | number;
   author?: TimelineActor;
   createdAt?: string;
@@ -62,6 +66,7 @@ const {
 }>();
 
 const { t } = useI18n();
+const { stateFor } = useCommentModeration();
 const reactionTargetId = computed(() => extractCommentIdFromUrl(item.url) || String(item.id ?? ''));
 const canShowReactions = computed(
   () => enableReactions !== false && Boolean(repoOwner && repoName && reactionTargetId.value)

@@ -4,14 +4,18 @@ import { computed, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DiscussionComment } from '#shared/types/discussions';
+import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
+import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import DiscussionReplyList from '~/components/dashboard/discussion/DiscussionReplyList.vue';
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 type DiscussionReplySubmitHandler = (comment: DiscussionComment, body: string) => Promise<void>;
 
+const { stateFor } = useCommentModeration();
 const { comment, submitReply } = defineProps<{
   comment: DiscussionComment;
   repoOwner: string;
@@ -52,7 +56,7 @@ const submitReplyDraft = async (body: string) => {
 </script>
 
 <template>
-  <article class="discussion-comment">
+  <article v-if="!stateFor(comment.moderation).deleted" class="discussion-comment">
     <div class="discussion-comment__rail" aria-hidden="true">
       <span class="discussion-comment__dot" />
       <span class="discussion-comment__line" />
@@ -87,20 +91,22 @@ const submitReplyDraft = async (body: string) => {
           <CircleCheckIcon :size="14" />
           {{ t('discussionDetail.answer') }}
         </span>
+        <CommentActions :target="comment.moderation" />
       </div>
 
-      <div class="discussion-comment__body content">
-        <MarkdownRenderer
-          v-if="comment.body"
-          :value="comment.body"
-          :repo-owner="repoOwner"
-          :repo-name="repoName"
-        />
-        <p v-else class="has-text-grey is-size-7">
-          {{ t('discussionDetail.noCommentBody') }}
-        </p>
-      </div>
-
+      <CommentBody v-slot="{ body }" :target="comment.moderation" :body="comment.body">
+        <div class="discussion-comment__body content">
+          <MarkdownRenderer
+            v-if="body"
+            :value="body"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+          />
+          <p v-else class="has-text-grey is-size-7">
+            {{ t('discussionDetail.noCommentBody') }}
+          </p>
+        </div>
+      </CommentBody>
       <div class="discussion-comment__toolbar">
         <button
           v-if="comment.replies.totalCount > 0"

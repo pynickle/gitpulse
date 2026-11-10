@@ -3,6 +3,7 @@ import { expect, test } from 'bun:test';
 import { defineComponent, h, nextTick, reactive, shallowRef } from 'vue';
 
 import { resolveDetailSidebarSheetOpen } from '../app/utils/resolveDetailSidebarSheetOpen';
+import { commentModerationComposable } from './helpers/comment-moderation';
 import { compileVue } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
 import { createVueDom } from './helpers/vue-dom';
@@ -33,6 +34,7 @@ const loadPaneWithoutSheet = async () =>
     setup: () => () => h('div', { class: 'page-control' }, 'review workspace'),
   });
 const Host = await compileVue('app/components/dashboard/detail/DetailOverlayHost.vue', {
+  '~/composables/useCommentModeration': commentModerationComposable,
   '@lucide/vue': { LoaderCircleIcon: empty },
   'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
   '~/components/dashboard/overlay/DashboardOverlayFrame.vue': { default: frame },

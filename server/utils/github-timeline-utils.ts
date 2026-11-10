@@ -1,10 +1,12 @@
 import type { Octokit } from '@octokit/core';
 
+import type { CommentModeration } from '#shared/types/comment-moderation';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { ReactionContent, ReactionSummaryItem } from '#shared/types/reactions';
 import type { CommitVerification } from '#shared/types/repos';
 import { ISSUE_COMMENT_REACTION_CONTENTS } from '#shared/utils/reactions';
 
+import { restCommentModeration } from './comment-moderation-utils';
 import { stringifyGitHubId } from './github-id-utils';
 import { parseLinkHeader } from './github-pagination';
 import { mapCommitVerification } from './repo-latest-commit-utils';
@@ -53,6 +55,7 @@ interface TimelineCommitPayload {
 }
 
 interface TimelineReviewCommentPayload {
+  moderation?: CommentModeration;
   id?: string;
   threadId?: string;
   author?: ReturnType<typeof mapActor>;
@@ -105,6 +108,7 @@ export interface TimelineReviewTeamPayload {
 }
 
 interface SortableTimelineItem {
+  moderation?: CommentModeration;
   kind: string;
   eventType?: string;
   id?: string;
@@ -896,6 +900,7 @@ export function normalizeIssueTimelineEvent(
   switch (eventName) {
     case 'commented':
       return {
+        moderation: restCommentModeration('IssueComment', rawEvent),
         ...baseItem,
         kind: 'comment',
         eventType: eventName,
@@ -1319,6 +1324,7 @@ function normalizePRReviewEvent(review: Record<string, any>): SortableTimelineIt
   const reviewId = stringifyGitHubId(review.id ?? review.node_id);
 
   return {
+    moderation: restCommentModeration('PullRequestReview', review),
     kind: 'review',
     eventType: String(review.event ?? 'reviewed'),
     id: reviewId,
@@ -1339,6 +1345,7 @@ function normalizePRReviewCommentEvents(rawEvent: Record<string, any>): Sortable
   if (!comments.length) {
     return [
       {
+        moderation: restCommentModeration('PullRequestReviewComment', rawEvent),
         ...buildBaseTimelineItem(rawEvent),
         kind: rawEvent.body ? 'review-comment' : 'event',
         eventType: 'line_commented',
@@ -1362,6 +1369,7 @@ function normalizePRReviewCommentEvents(rawEvent: Record<string, any>): Sortable
   }
 
   return comments.map((comment: Record<string, any>) => ({
+    moderation: restCommentModeration('PullRequestReviewComment', comment),
     kind: 'review-comment',
     eventType: 'line_commented',
     id: stringifyGitHubId(comment.id ?? comment.node_id),
@@ -1391,6 +1399,7 @@ function normalizePRCommitCommentEvents(rawEvent: Record<string, any>): Sortable
   if (!comments.length) {
     return [
       {
+        moderation: restCommentModeration('CommitComment', rawEvent),
         ...buildBaseTimelineItem(rawEvent),
         kind: rawEvent.body ? 'review-comment' : 'event',
         eventType: 'commit_commented',
@@ -1411,6 +1420,7 @@ function normalizePRCommitCommentEvents(rawEvent: Record<string, any>): Sortable
   }
 
   return comments.map((comment: Record<string, any>) => ({
+    moderation: restCommentModeration('CommitComment', comment),
     kind: 'review-comment',
     eventType: 'commit_commented',
     id: stringifyGitHubId(comment.id ?? comment.node_id),
@@ -1475,6 +1485,9 @@ export function enrichPRTimelineWithReviewData(
     return {
       ...item,
       reviewId,
+      moderation:
+        item.moderation ??
+        (review ? restCommentModeration('PullRequestReview', review) : undefined),
       commitId: item.commitId ?? review?.commit_id,
       state: submittedState,
       body: item.body ?? review?.body ?? '',
@@ -1668,6 +1681,7 @@ function normalizeReviewCommentForReview(
   const thread = getReviewThreadForComment(comment, reviewThreadsByCommentId);
 
   return {
+    moderation: restCommentModeration('PullRequestReviewComment', comment),
     id: stringifyGitHubId(comment.id ?? comment.node_id),
     ...buildReviewThreadStatePayload(thread),
     author: mapActor(comment.user),

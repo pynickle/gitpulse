@@ -1445,5 +1445,26 @@
     "computing": "Building contribution graphs…",
     "unknownAuthor": "Unknown contributor",
     "sparklineLabel": "{user}: {count} commits over time"
+  },
+  "commentModeration": {
+    "actions": "Comment actions",
+    "hide": "Hide",
+    "unhide": "Unhide",
+    "delete": "Delete",
+    "deleteComment": "Delete this comment?",
+    "deleteReview": "Delete this review?",
+    "reason": "Reason",
+    "hidden": "Hidden comment",
+    "expand": "Expand",
+    "failed": "Could not update comment",
+    "reasons": {
+      "ABUSE": "Abuse or harassment",
+      "DUPLICATE": "Duplicate",
+      "LOW_QUALITY": "Low quality",
+      "OFF_TOPIC": "Off-topic",
+      "OUTDATED": "Outdated",
+      "RESOLVED": "Resolved",
+      "SPAM": "Spam"
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { computed, toValue, type MaybeRefOrGetter } from 'vue';
 
+import type { CommentModeration } from '#shared/types/comment-moderation';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type {
   TimelineActor,
@@ -14,6 +15,7 @@ import type {
 } from '~/composables/usePRTimelineEvents';
 
 export interface IssueTimelineItem {
+  moderation?: CommentModeration;
   kind: 'comment' | 'event' | 'commit' | 'unsupported' | 'unavailable';
   eventType?: string;
   id?: string;

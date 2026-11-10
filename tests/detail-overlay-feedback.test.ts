@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, reactive, shallowRef, type Component } from 'vue';
 
+import { commentModerationComposable } from './helpers/comment-moderation';
 import { compileVue } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
 import { createVueDom } from './helpers/vue-dom';
@@ -24,6 +25,7 @@ const defaultLoaders = () => ({
 });
 type PaneLoaders = Record<keyof ReturnType<typeof defaultLoaders>, () => Promise<Component>>;
 const Host = await compileVue('app/components/dashboard/detail/DetailOverlayHost.vue', {
+  '~/composables/useCommentModeration': commentModerationComposable,
   '@lucide/vue': { LoaderCircleIcon: empty },
   'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
   '~/components/dashboard/overlay/DashboardOverlayFrame.vue': { default: frame },

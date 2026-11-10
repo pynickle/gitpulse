@@ -1,3 +1,5 @@
+import type { CommentModeration } from '#shared/types/comment-moderation';
+
 export interface DiscussionAuthor {
   login: string;
   avatarUrl?: string;
@@ -19,6 +21,7 @@ export interface DiscussionPageInfo {
 }
 
 export interface DiscussionReply {
+  moderation?: CommentModeration;
   id: string;
   nodeId: string;
   body: string;

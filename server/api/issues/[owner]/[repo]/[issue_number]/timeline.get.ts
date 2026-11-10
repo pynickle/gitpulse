@@ -1,3 +1,4 @@
+import { enrichCommentModeration } from '#server/utils/comment-moderation-utils';
 import {
   buildIssueTimelineCapabilities,
   createUnsupportedWarnings,
@@ -53,6 +54,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       )
     );
 
+    await enrichCommentModeration(octokit, timeline);
     return {
       currentParent: null,
       timeline,

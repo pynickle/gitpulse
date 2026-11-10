@@ -17,6 +17,7 @@ import DiscussionComments from '~/components/dashboard/discussion/DiscussionComm
 import DiscussionHeader from '~/components/dashboard/discussion/DiscussionHeader.vue';
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 const { discussion } = defineProps<{
@@ -44,6 +45,52 @@ const discussionState = shallowRef<DiscussionDetailPayload>(cloneDiscussion(disc
 const comments = shallowRef<DiscussionComment[]>([]);
 const commentsTotalCount = shallowRef(0);
 const commentsPageInfo = shallowRef<DiscussionPageInfo>({ ...EMPTY_PAGE_INFO });
+const { results: moderationResults } = useCommentModeration();
+watch(moderationResults, (results, previous) => {
+  for (const [nodeId, result] of Object.entries(results)) {
+    if (result === previous[nodeId]) continue;
+    if (result.discussion?.id === discussionState.value.nodeId) {
+      const snapshot = result.discussion;
+      commentsTotalCount.value = snapshot.totalCount;
+      discussionState.value = {
+        ...discussionState.value,
+        isAnswered: snapshot.isAnswered,
+        answer:
+          discussionState.value.answer?.nodeId === snapshot.answerId
+            ? discussionState.value.answer
+            : null,
+      };
+      comments.value = comments.value.map((comment) => ({
+        ...comment,
+        isAnswer: comment.nodeId === snapshot.answerId,
+        replies: {
+          ...comment.replies,
+          totalCount:
+            snapshot.parentId === comment.nodeId
+              ? (snapshot.replyCount ?? comment.replies.totalCount)
+              : comment.replies.totalCount,
+          items: comment.replies.items.map((reply) => ({
+            ...reply,
+            isAnswer: reply.nodeId === snapshot.answerId,
+          })),
+        },
+      }));
+    }
+    if (result.deleted) {
+      comments.value = comments.value
+        .filter((comment) => comment.nodeId !== nodeId)
+        .map((comment) => ({
+          ...comment,
+          replies: {
+            ...comment.replies,
+            items: comment.replies.items.filter((reply) => reply.nodeId !== nodeId),
+          },
+        }));
+      if (discussionState.value.answer?.nodeId === nodeId)
+        discussionState.value = { ...discussionState.value, answer: null };
+    }
+  }
+});
 const loadingComments = shallowRef(false);
 const loadingMoreComments = shallowRef(false);
 const commentsError = shallowRef('');

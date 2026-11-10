@@ -11,6 +11,7 @@ import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { useCommentModeration } from '~/composables/useCommentModeration';
 import { COMPOSER_BLEED_LAYER_ID } from '~/composables/useComposerBleedPosition';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 
@@ -192,6 +193,8 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
 });
 
 const activeDetailKey = computed(() => activeDetailPane.value?.key ?? 'empty');
+const { reset: resetCommentModeration } = useCommentModeration();
+watch(activeDetailKey, resetCommentModeration, { immediate: true });
 const isPanePending = shallowRef(false);
 const paneLoaders = {
   issue: loadIssueDetail,

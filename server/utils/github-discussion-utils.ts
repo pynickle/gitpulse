@@ -11,6 +11,12 @@ import type {
   DiscussionReply,
 } from '#shared/types/discussions';
 
+import {
+  COMMENT_MODERATION_FIELDS,
+  normalizeCommentModeration,
+  type CommentModerationNode,
+} from './comment-moderation-utils';
+
 type GitHubClient = Octokit;
 
 const DISCUSSION_COMMENTS_PAGE_SIZE = 20;
@@ -43,7 +49,7 @@ interface DiscussionConnectionPayload<TNode> {
   pageInfo?: DiscussionPageInfoPayload | null;
 }
 
-interface DiscussionReplyPayload {
+interface DiscussionReplyPayload extends CommentModerationNode {
   id?: string | null;
   body?: string | null;
   url?: string | null;
@@ -158,6 +164,9 @@ const DISCUSSION_ACTOR_FIELDS = `
 
 const DISCUSSION_REPLY_FIELDS = `
   fragment DiscussionReplyFields on DiscussionComment {
+    __typename
+    databaseId
+    ${COMMENT_MODERATION_FIELDS}
     id
     body
     url
@@ -446,6 +455,7 @@ function normalizeReply(reply: DiscussionReplyPayload): DiscussionReply {
   const nodeId = requireString(reply.id, 'Discussion reply ID');
 
   return {
+    moderation: normalizeCommentModeration({ ...reply, __typename: 'DiscussionComment' }),
     id: nodeId,
     nodeId,
     body: typeof reply.body === 'string' ? reply.body : '',
