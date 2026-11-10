@@ -101,13 +101,14 @@ export function toLinkedPullRequestListSummary(
 }
 
 export function toLinkedPullRequestClickIntent(
-  summary: LinkedPullRequestListSummary | null | undefined
+  summary: LinkedPullRequestListSummary | null | undefined,
+  previewSingleLinkedPullRequest: boolean
 ): LinkedPullRequestClickIntent {
   if (!summary || summary.count < 1) {
     return { kind: 'hide' };
   }
 
-  if (summary.count === 1 && summary.identity) {
+  if (summary.count === 1 && summary.identity && !previewSingleLinkedPullRequest) {
     return { kind: 'open', identity: summary.identity };
   }
 

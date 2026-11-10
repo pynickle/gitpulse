@@ -102,16 +102,32 @@ describe('user settings store', () => {
   test('defaults and normalizes navigation link targets', () => {
     expect(createDefaultUserSettings().navigation).toEqual({
       linkTarget: 'gitpulse',
+      previewSingleLinkedPullRequest: true,
     });
 
     expect(normalizeUserSettings({}).navigation).toEqual({
       linkTarget: 'gitpulse',
+      previewSingleLinkedPullRequest: true,
     });
     expect(normalizeUserSettings({ navigation: { linkTarget: 'github' } }).navigation).toEqual({
       linkTarget: 'github',
+      previewSingleLinkedPullRequest: true,
     });
     expect(normalizeUserSettings({ navigation: { linkTarget: 'external' } }).navigation).toEqual({
       linkTarget: 'gitpulse',
+      previewSingleLinkedPullRequest: true,
+    });
+    expect(
+      normalizeUserSettings({ navigation: { previewSingleLinkedPullRequest: false } }).navigation
+    ).toEqual({
+      linkTarget: 'gitpulse',
+      previewSingleLinkedPullRequest: false,
+    });
+    expect(
+      normalizeUserSettings({ navigation: { previewSingleLinkedPullRequest: 'yes' } }).navigation
+    ).toEqual({
+      linkTarget: 'gitpulse',
+      previewSingleLinkedPullRequest: true,
     });
   });
 
@@ -660,6 +676,7 @@ describe('user settings store', () => {
 
     expect(harness.settings.value.navigation).toEqual({
       linkTarget: 'github',
+      previewSingleLinkedPullRequest: true,
     });
     expect(harness.saveRequests).toHaveLength(1);
     expect(harness.saveRequests[0]?.patch).toEqual({

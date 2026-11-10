@@ -68,6 +68,7 @@ export interface UserNotificationBehaviorSettings {
 
 export interface UserNavigationSettings {
   linkTarget: LinkTargetId;
+  previewSingleLinkedPullRequest: boolean;
 }
 
 export interface UserLayoutSettings {

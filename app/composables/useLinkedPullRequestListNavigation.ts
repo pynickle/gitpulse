@@ -12,8 +12,13 @@ export function useLinkedPullRequestListNavigation(
   const pickerIssue = shallowRef<LinkedPullRequestIdentity | null>(null);
   const isPickerVisible = computed(() => pickerIssue.value !== null);
 
+  const { settings } = useUserSettings();
+
   const handleLinkedPullRequestCountClick = (payload: LinkedPullRequestCountClickPayload) => {
-    const intent = toLinkedPullRequestClickIntent(payload.summary);
+    const intent = toLinkedPullRequestClickIntent(
+      payload.summary,
+      settings.value.navigation.previewSingleLinkedPullRequest
+    );
     if (intent.kind === 'open') {
       void openPullRequest(intent.identity);
       return;

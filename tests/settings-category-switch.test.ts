@@ -50,6 +50,8 @@ const FontPickerModal = defineComponent({
   setup: () => () => h('div', { class: 'font-picker' }),
 });
 
+const navigationUpdates: Array<Record<string, unknown>> = [];
+
 const createSettingsState = () => ({
   fonts: {
     appFont: 'harmonyos-sans',
@@ -66,7 +68,7 @@ const createSettingsState = () => ({
     reviewInlineMobileDefaultLayout: 'tabbed',
   },
   notificationBehavior: { readMarkMode: 'delayed', readMarkDelaySeconds: 3 },
-  navigation: { linkTarget: 'gitpulse' },
+  navigation: { linkTarget: 'gitpulse', previewSingleLinkedPullRequest: true },
   releaseTimeline: { showReactions: true },
 });
 
@@ -107,7 +109,9 @@ const SettingsPage = await compileVue(
         updateFonts: async () => {},
         updateAppearance: async () => {},
         updateComposer: async () => {},
-        updateNavigation: async () => {},
+        updateNavigation: async (navigation: Record<string, unknown>) => {
+          navigationUpdates.push(navigation);
+        },
         updateNotificationBehavior: async () => {},
         updateReleaseTimeline: async () => {},
       }),
@@ -166,6 +170,7 @@ const currentRows = (root: ParentNode) =>
 
 beforeEach(() => {
   scrollTops.length = 0;
+  navigationUpdates.length = 0;
   dom = createVueDom();
 });
 
@@ -234,5 +239,32 @@ describe('settings category switch', () => {
       expect.stringContaining('dashboard.settings.navigationTitle'),
     ]);
     expect(panelText(root)).toContain('dashboard.settings.navigationTitle');
+  });
+
+  test('shows the single linked pull request list until the reader turns it off', async () => {
+    const root = await mountPage();
+
+    await clickCategory(root, 2);
+    await waitUntil(() =>
+      panelText(root).includes('dashboard.settings.previewSingleLinkedPullRequestLabel')
+    );
+
+    const input = root.querySelector<HTMLInputElement>(
+      'input[aria-label="dashboard.settings.previewSingleLinkedPullRequestLabel"]'
+    );
+    expect(input?.checked).toBe(true);
+    if (!input) {
+      throw new Error('missing single linked pull request preview toggle');
+    }
+
+    input.checked = false;
+    // The handler's `instanceof HTMLInputElement` reads this realm, not happy-dom's.
+    const previousInputElement = globalThis.HTMLInputElement;
+    globalThis.HTMLInputElement = dom.window.HTMLInputElement;
+    input.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    globalThis.HTMLInputElement = previousInputElement;
+    await nextTick();
+
+    expect(navigationUpdates).toEqual([{ previewSingleLinkedPullRequest: false }]);
   });
 });

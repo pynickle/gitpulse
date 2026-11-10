@@ -348,6 +348,13 @@ const applyLinkTarget = (value: string) => {
   }
 };
 
+const applyPreviewSingleLinkedPullRequest = (event: Event) => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement) {
+    void updateNavigation({ previewSingleLinkedPullRequest: target.checked });
+  }
+};
+
 const applyShowReleaseReactions = (event: Event) => {
   const target = event.target;
   if (target instanceof HTMLInputElement) {
@@ -794,6 +801,29 @@ onMounted(() => {
                       <span class="settings__option-desc">{{ option.description }}</span>
                     </span>
                     <CheckIcon class="settings__option-check" :size="16" aria-hidden="true" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="settings__section">
+                <h2 class="settings__section-title">
+                  {{ t('dashboard.settings.linkedPullRequestSection') }}
+                </h2>
+                <div class="settings__font-card">
+                  <label class="settings__toggle-row">
+                    <span class="settings__option-body">
+                      <span class="settings__option-label">
+                        {{ t('dashboard.settings.previewSingleLinkedPullRequestLabel') }}
+                      </span>
+                    </span>
+                    <input
+                      class="settings__toggle-input"
+                      type="checkbox"
+                      :checked="settings.navigation.previewSingleLinkedPullRequest"
+                      :aria-label="t('dashboard.settings.previewSingleLinkedPullRequestLabel')"
+                      @change="applyPreviewSingleLinkedPullRequest"
+                    />
+                    <span class="settings__toggle" aria-hidden="true" />
                   </label>
                 </div>
               </section>

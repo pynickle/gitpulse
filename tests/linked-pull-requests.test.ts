@@ -130,29 +130,57 @@ describe('Linked Pull Request list summary', () => {
 
 describe('Linked Pull Request click intent', () => {
   test('hides when there is no summary or Count is 0', () => {
-    expect(toLinkedPullRequestClickIntent(null)).toEqual({ kind: 'hide' });
-    expect(toLinkedPullRequestClickIntent({ count: 0, identity: null })).toEqual({ kind: 'hide' });
-  });
-
-  test('opens the single pull request when Count is 1 and identity is complete', () => {
-    expect(
-      toLinkedPullRequestClickIntent({
-        count: 1,
-        identity: { owner: 'acme', repo: 'widgets', number: 12 },
-      })
-    ).toEqual({
-      kind: 'open',
-      identity: { owner: 'acme', repo: 'widgets', number: 12 },
+    expect(toLinkedPullRequestClickIntent(null, true)).toEqual({ kind: 'hide' });
+    expect(toLinkedPullRequestClickIntent({ count: 0, identity: null }, true)).toEqual({
+      kind: 'hide',
     });
   });
 
-  test('opens the Picker when Count is 1 without identity or Count is greater than 1', () => {
-    expect(toLinkedPullRequestClickIntent({ count: 1, identity: null })).toEqual({ kind: 'pick' });
+  test('opens the Picker when Count is 1 and identity is complete', () => {
     expect(
-      toLinkedPullRequestClickIntent({
-        count: 2,
-        identity: { owner: 'acme', repo: 'widgets', number: 1 },
-      })
+      toLinkedPullRequestClickIntent(
+        {
+          count: 1,
+          identity: { owner: 'acme', repo: 'widgets', number: 12 },
+        },
+        true
+      )
+    ).toEqual({ kind: 'pick' });
+  });
+
+  test('opens the single pull request when Single Linked Pull Request Preview is off', () => {
+    const summary = {
+      count: 1,
+      identity: { owner: 'acme', repo: 'widgets', number: 12 },
+    };
+
+    expect(toLinkedPullRequestClickIntent(summary, false)).toEqual({
+      kind: 'open',
+      identity: summary.identity,
+    });
+    expect(toLinkedPullRequestClickIntent({ count: 1, identity: null }, false)).toEqual({
+      kind: 'pick',
+    });
+    expect(
+      toLinkedPullRequestClickIntent(
+        { count: 2, identity: { owner: 'acme', repo: 'widgets', number: 1 } },
+        false
+      )
+    ).toEqual({ kind: 'pick' });
+  });
+
+  test('opens the Picker when Count is 1 without identity or Count is greater than 1', () => {
+    expect(toLinkedPullRequestClickIntent({ count: 1, identity: null }, true)).toEqual({
+      kind: 'pick',
+    });
+    expect(
+      toLinkedPullRequestClickIntent(
+        {
+          count: 2,
+          identity: { owner: 'acme', repo: 'widgets', number: 1 },
+        },
+        true
+      )
     ).toEqual({ kind: 'pick' });
   });
 });

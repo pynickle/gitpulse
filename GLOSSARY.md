@@ -158,8 +158,12 @@ How many Linked Pull Requests an Issue currently has.
 _Avoid_: associated PR count, related PR count
 
 **Linked Pull Request Picker**:
-A modal that lists an Issue's Linked Pull Requests so the user can open one. It opens when Count is greater than 1, or when Count is 1 but routing identity is incomplete.
+A modal that lists an Issue's Linked Pull Requests so the user can open one. It opens when Count is greater than 1, when Count is 1 but the routing identity is incomplete, or when Count is 1 and Single Linked Pull Request Preview is on.
 _Avoid_: associated PR modal, PR chooser
+
+**Single Linked Pull Request Preview**:
+The reader's choice to open the Linked Pull Request Picker when an Issue has exactly one Linked Pull Request with a complete routing identity. Previewing is the default.
+_Avoid_: single-PR confirmation, chooser setting
 
 ## Pull Request Review
 

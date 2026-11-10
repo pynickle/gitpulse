@@ -327,9 +327,21 @@ describe('server Zod request validation', () => {
         navigation: { linkTarget: 'external' },
       })
     ).toThrow('Invalid settings request body');
+    expect(
+      parseUserSettingsPatchBody({
+        navigation: { previewSingleLinkedPullRequest: false },
+      })
+    ).toEqual({
+      navigation: { previewSingleLinkedPullRequest: false },
+    });
     expect(() =>
       parseUserSettingsPatchBody({
         navigation: { linkTarget: 'github', extra: true },
+      })
+    ).toThrow('Invalid settings request body');
+    expect(() =>
+      parseUserSettingsPatchBody({
+        navigation: { previewSingleLinkedPullRequest: 'yes' },
       })
     ).toThrow('Invalid settings request body');
     expect(() =>
