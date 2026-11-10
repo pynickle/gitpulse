@@ -306,6 +306,9 @@ describe('server Zod request validation', () => {
       ],
     });
 
+    expect(parseUserSettingsPatchBody({ fonts: { appFont: 'geist-sans' } })).toEqual({
+      fonts: { appFont: 'geist-sans' },
+    });
     expect(() => parseUserSettingsPatchBody({ fonts: { appFont: 'invalid' } })).toThrow(
       'Invalid settings request body'
     );

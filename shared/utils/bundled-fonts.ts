@@ -1,5 +1,6 @@
 const HARMONY_OS_SANS = 'HarmonyOS Sans';
 const MISANS_LATIN = 'MiSans Latin';
+const GEIST_SANS = 'Geist Sans';
 const MAPLE_MONO = 'Maple Mono';
 /** Installed locally by some users. Not part of the files we ship. */
 const MAPLE_MONO_NF_CN = 'Maple Mono NF CN';
@@ -30,6 +31,7 @@ export type BundledFontFace = {
 export const bundledAppFonts = [
   { id: 'harmonyos-sans', label: HARMONY_OS_SANS, family: HARMONY_OS_SANS },
   { id: 'misans-latin', label: MISANS_LATIN, family: MISANS_LATIN },
+  { id: 'geist-sans', label: GEIST_SANS, family: GEIST_SANS },
 ] as const;
 
 export const bundledCodeFonts = [
@@ -55,6 +57,7 @@ export const bundledCodeFonts = [
 
 const HARMONY_SANS_PACKAGE = '@lobehub/webfont-harmony-sans@1.0.0';
 const MISANS_PACKAGE = 'misans@5.0.0';
+const GEIST_SANS_PACKAGE = '@fontsource/geist-sans@5.3.0';
 const MAPLE_MONO_PACKAGE = '@fontsource/maple-mono@5.3.0';
 const JETBRAINS_MONO_PACKAGE = '@fontsource/jetbrains-mono@5.3.0';
 const GEIST_MONO_PACKAGE = '@fontsource/geist-mono@5.3.0';
@@ -105,6 +108,7 @@ const misansLatinFiles: Record<BundledFontWeight, string> = {
 export const bundledFontFaces: BundledFontFace[] = [
   ...facesFor(HARMONY_OS_SANS, harmonySansFiles),
   ...facesFor(MISANS_LATIN, misansLatinFiles),
+  ...facesFor(GEIST_SANS, fontsourceLatin(GEIST_SANS_PACKAGE, 'geist-sans')),
   ...facesFor(MAPLE_MONO, fontsourceLatin(MAPLE_MONO_PACKAGE, 'maple-mono')),
   ...facesFor(JETBRAINS_MONO, fontsourceLatin(JETBRAINS_MONO_PACKAGE, 'jetbrains-mono')),
   ...facesFor(GEIST_MONO, fontsourceLatin(GEIST_MONO_PACKAGE, 'geist-mono')),

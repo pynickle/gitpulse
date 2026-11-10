@@ -1,18 +1,22 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { CODE_FONT_IDS } from '../shared/types/user-settings';
+import { APP_FONT_IDS, CODE_FONT_IDS } from '../shared/types/user-settings';
 import * as bundledFonts from '../shared/utils/bundled-fonts';
-import { createDefaultUserSettings } from '../shared/utils/user-settings';
+import {
+  createDefaultUserSettings,
+  normalizeUserFontSettings,
+} from '../shared/utils/user-settings';
 
 mock.module('#shared/utils/bundled-fonts', () => bundledFonts);
 
-const { builtinCodeFontOptions, getAppFontStack, getCodeFontStack } =
+const { builtinAppFontOptions, builtinCodeFontOptions, getAppFontStack, getCodeFontStack } =
   await import('../app/composables/user-settings/fonts');
 const {
   bundledAppFonts,
   bundledCodeFonts,
   bundledFontFaces,
   bundledFontWeights,
+  APP_FONT_FALLBACK_STACK,
   CODE_FONT_FALLBACK_STACK,
 } = bundledFonts;
 
@@ -30,6 +34,9 @@ describe('bundled font stacks', () => {
     expect(getAppFontStack({ ...fonts, appFont: 'misans-latin' })).toBe(
       '"MiSans Latin", var(--gitpulse-app-font-fallback)'
     );
+    expect(getAppFontStack({ ...fonts, appFont: 'geist-sans' })).toBe(
+      '"Geist Sans", var(--gitpulse-app-font-fallback)'
+    );
     expect(getAppFontStack({ ...fonts, appFont: 'system', appSystemFont: 'Font "Quoted"' })).toBe(
       '"Font \\"Quoted\\"", var(--gitpulse-app-font-fallback)'
     );
@@ -42,6 +49,32 @@ describe('bundled font stacks', () => {
     expect(
       getCodeFontStack({ ...fonts, codeFont: 'system', codeSystemFont: 'Cascadia Mono' })
     ).toBe('"Cascadia Mono", "Maple Mono", var(--gitpulse-code-font-fallback)');
+  });
+});
+
+describe('selectable app fonts', () => {
+  const selectableIds = builtinAppFontOptions.map((option) => option.id);
+
+  test('the picker offers the bundled app fonts in order with the system face last', () => {
+    expect(fonts.appFont).toBe('harmonyos-sans');
+    expect(selectableIds).toEqual(['harmonyos-sans', 'misans-latin', 'geist-sans']);
+    expect(APP_FONT_IDS).toEqual([...selectableIds, 'system']);
+  });
+
+  test('every selectable id leads its own stack instead of falling back to the default face', () => {
+    for (const id of selectableIds) {
+      const bundled = bundledAppFonts.find((font) => font.id === id);
+      const stack = getAppFontStack({ ...fonts, appFont: id });
+
+      expect(bundled?.family).toBeTruthy();
+      expect(stack.split(', ')[0]).toBe(`"${bundled?.family}"`);
+      expect(stack.endsWith(APP_FONT_FALLBACK_STACK)).toBe(true);
+      expect(stack.includes('HarmonyOS Sans')).toBe(id === 'harmonyos-sans');
+    }
+  });
+
+  test('a stored Geist Sans choice stays Geist Sans', () => {
+    expect(normalizeUserFontSettings({ appFont: 'geist-sans' }).appFont).toBe('geist-sans');
   });
 });
 
@@ -79,6 +112,17 @@ describe('bundled font faces', () => {
 
       expect(weights).toEqual(bundledFontWeights.map(String));
     }
+  });
+
+  test('Geist Sans uses the fontsource latin files for every configured weight', () => {
+    const faces = bundledFontFaces.filter((face) => face.name === 'Geist Sans');
+
+    expect(faces.map((face) => face.src)).toEqual(
+      bundledFontWeights.map(
+        (weight) =>
+          `https://cdn.jsdelivr.net/npm/@fontsource/geist-sans@5.3.0/files/geist-sans-latin-${weight}-normal.woff2`
+      )
+    );
   });
 
   test('HarmonyOS Sans weight 600 reuses the Medium file', () => {

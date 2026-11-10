@@ -278,6 +278,13 @@ _Avoid_: diagram viewer, lightbox, preview modal
 **App Font**:
 The typeface used for interface text outside code surfaces — either a face GitPulse serves or a family installed on the user's device.
 
+**Bundled App Font**:
+An App Font GitPulse serves itself and offers as a choice in settings, as distinct from a family the user has installed.
+_Avoid_: built-in font, installed font
+
+**Default App Font**:
+The App Font a user has when they have never chosen one. A change to it changes what every such user sees, so it is a separate decision from adding a Bundled App Font.
+
 **Code Font**:
 The typeface used for code, identifiers, commit SHAs, and other monospace surfaces — either a face GitPulse serves or a family installed on the user's device.
 _Avoid_: monospace font when naming the setting

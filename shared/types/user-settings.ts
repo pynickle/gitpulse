@@ -3,7 +3,7 @@ import type { DashboardNotification } from '#shared/types/notifications';
 import type { FollowedRepository } from '#shared/types/release-follows';
 import type { TabGroup } from '#shared/types/tab-groups';
 
-export const APP_FONT_IDS = ['harmonyos-sans', 'misans-latin', 'system'] as const;
+export const APP_FONT_IDS = ['harmonyos-sans', 'misans-latin', 'geist-sans', 'system'] as const;
 export const CODE_FONT_IDS = ['maple-mono', 'jetbrains-mono', 'geist-mono', 'system'] as const;
 export const NOTIFICATION_READ_MARK_MODE_IDS = ['delayed', 'immediate', 'manual'] as const;
 export const NOTIFICATION_READ_MARK_DELAY_SECONDS = [3, 5, 10, 15, 30, 60] as const;
