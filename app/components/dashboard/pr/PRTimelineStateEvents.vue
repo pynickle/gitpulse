@@ -453,10 +453,3 @@ const timelineChangeActorUrl = (change: TimelineStateChange) => {
   return undefined;
 };
 </script>
-
-<style scoped lang="scss">
-.tag.is-activity {
-  font-size: 0.62rem;
-  font-weight: bold;
-}
-</style>
