@@ -55,6 +55,11 @@ const listItem = computed((): RepoCommitListItemPayload | null => {
   border-radius: 12px;
   background-color: var(--gitpulse-surface-muted);
   overflow: hidden;
+
+  /* The card already supplies the surface; a timeline commit row is not a list target. */
+  :deep(.commit-list-row) {
+    background: none;
+  }
 }
 
 .commit-item__fallback {
