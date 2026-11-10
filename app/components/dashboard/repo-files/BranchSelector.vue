@@ -623,14 +623,4 @@ onBeforeUnmount(() => {
     margin: 0 0.75rem;
   }
 }
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

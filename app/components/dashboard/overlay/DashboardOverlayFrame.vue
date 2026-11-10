@@ -128,10 +128,6 @@ defineEmits<{
   background: var(--gitpulse-surface-muted);
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
 .shadow-md {
   box-shadow: var(--gitpulse-shadow-raised);
 }

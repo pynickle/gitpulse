@@ -108,16 +108,6 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
 }
 
 .spin-animation {
-  animation: spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

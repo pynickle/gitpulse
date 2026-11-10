@@ -414,17 +414,7 @@ const { t } = useI18n();
 }
 
 .spin-animation {
-  animation: release-timeline-header-spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes release-timeline-header-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (max-width: 700px) {
