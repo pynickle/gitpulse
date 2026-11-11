@@ -1789,16 +1789,15 @@ onActivated(() => {
 // Code display
 
 .repo-file-view__code-wrapper {
+  // The line-number gutter the highlighted code draws: the number's own column, then the
+  // gap that separates it from the code. One declaration feeds both the generated number
+  // and the indent a folded row hangs from, so the two cannot drift apart.
+  --repo-file-view-code-number-width: 3rem;
+  --repo-file-view-code-number-gap: 1rem;
+
   flex: 1;
   min-height: 0;
   background: var(--gitpulse-surface);
-}
-
-.repo-file-view__code-wrapper--wrap {
-  :deep(.line-content) {
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
 }
 
 .repo-file-view__highlight-loading {
@@ -1833,6 +1832,15 @@ onActivated(() => {
     width: 100%;
     padding: 0 0.75rem;
     min-height: 1.6em;
+
+    // The wash belongs to the line box rather than to a row, so a folded line answers the
+    // pointer with one tint over every row it occupies — the same answer the fallback
+    // table gives with its <tr>.
+    @include hover-only {
+      &:hover {
+        background: var(--gitpulse-surface-hover);
+      }
+    }
   }
 
   :deep(.line[data-line]) {
@@ -1841,8 +1849,8 @@ onActivated(() => {
     &::before {
       content: attr(data-line);
       display: inline-block;
-      width: 3rem;
-      margin-right: 1rem;
+      width: var(--repo-file-view-code-number-width);
+      margin-right: var(--repo-file-view-code-number-gap);
       text-align: right;
       color: var(--gitpulse-text-muted);
       opacity: 0.5;
@@ -1890,9 +1898,25 @@ onActivated(() => {
   white-space: pre;
 }
 
-.repo-file-view__code-wrapper--wrap .repo-file-view__line-content {
-  white-space: pre-wrap;
-  word-break: break-all;
+// A reflowed line keeps the number in its own column: the first row starts in the gutter
+// (text-indent), and every row after it clears the gutter and starts under the code
+// (padding-left), so a folded line never reads as a new line at column zero. The fallback
+// table needs no indent — its number and code are separate columns.
+.repo-file-view__code-wrapper--wrap {
+  :deep(.line),
+  .repo-file-view__line-content {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  :deep(.line[data-line]) {
+    padding-left: calc(
+      0.75rem + var(--repo-file-view-code-number-width) + var(--repo-file-view-code-number-gap)
+    );
+    text-indent: calc(
+      -1 * (var(--repo-file-view-code-number-width) + var(--repo-file-view-code-number-gap))
+    );
+  }
 }
 
 @media (max-width: 900px) {
