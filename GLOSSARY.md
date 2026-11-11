@@ -180,12 +180,28 @@ GitHub's stored judgment of one commit signature. It is verified when GitHub acc
 _Avoid_: signed, sign-off, GPG badge, partially verified
 
 **Check List Modal**:
-The modal opened from a Check Status Chip that shows the Check Rollup's summary line and its checks grouped by conclusion. It renders the same list as the PR Review Workspace merge box.
+The modal opened from a Check Status Chip that shows the Check Rollup's summary line and its checks grouped by conclusion. It renders the same list as the Merge Box.
 _Avoid_: checks panel, checks popover, checks drawer, CI details
 
 **PR Review Workspace**:
 The surface for reviewing one pull request: its changed files, its diff, and its review submission. On a wide viewport these are three panes. On a narrow viewport the Diff Viewer stays on screen, and a bottom bar opens the changed files and the review submission each in its own sheet.
 _Avoid_: PR review page, review UI
+
+**Merge Box**:
+The part of a pull request's conversation that states whether it can be merged and performs the merge, including the method chosen for it and the commit title and message the merge records. It offers only the Merge Methods the repository allows.
+_Avoid_: merge panel, merge card, merge widget
+
+**Merge Method**:
+One of the three ways GitHub can land a pull request: a merge commit, a squash, or a rebase. Rebase records no title or message of its own.
+_Avoid_: merge type, merge option, merge strategy
+
+**Merge Method Availability**:
+Which Merge Methods one repository's settings allow. A repository always allows at least one, and a pull request's Merge Box never offers a method outside it.
+_Avoid_: merge permissions, merge settings when naming the list itself
+
+**Default Commit Message**:
+The commit title and message GitHub forms for a merge when none is supplied, chosen per Merge Method and per repository setting. It is not the text of any one commit, and not the field a reader types into.
+_Avoid_: commit message when naming the generated one, merge message template
 
 **Review Bottom Bar**:
 The bar on a narrow PR Review Workspace that opens the Review File Sheet and the Review Submit Sheet. It stays at the bottom of the screen while the diff scrolls, and both sheets open above it. It hides while the keyboard is open or a Review Inline Composer is open.

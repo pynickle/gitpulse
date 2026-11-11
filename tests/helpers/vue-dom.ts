@@ -20,6 +20,10 @@ export function createVueDom(extraGlobals: Record<string, unknown> = {}) {
     document,
     HTMLElement: window.HTMLElement,
     Element: window.Element,
+    // Vue's v-model update hook instanceof-checks these against the element's root
+    // node, so a test that writes a bound field programmatically needs them present.
+    Document: window.Document,
+    ShadowRoot: window.ShadowRoot,
     requestAnimationFrame: window.requestAnimationFrame.bind(window),
     cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
     useModalState,

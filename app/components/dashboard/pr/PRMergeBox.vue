@@ -134,7 +134,7 @@
               <span>{{ mergeButtonLabel }}</span>
             </button>
             <button
-              v-if="!confirming"
+              v-if="!confirming && showMethodMenu"
               type="button"
               class="merge-box__method-toggle"
               :disabled="mergeDisabled"
@@ -145,7 +145,7 @@
               <ChevronDownIcon :size="14" />
             </button>
             <button
-              v-else
+              v-else-if="confirming"
               type="button"
               class="merge-box__cancel-btn"
               :disabled="merging"
@@ -286,12 +286,10 @@ import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
 
-const { owner, repo, pullNumber, prTitle, headLabel, initialStatus } = defineProps<{
+const { owner, repo, pullNumber, initialStatus } = defineProps<{
   owner: string;
   repo: string;
   pullNumber: number;
-  prTitle?: string;
-  headLabel?: string;
   initialStatus?: PRMergeStatus | null;
 }>();
 
@@ -308,14 +306,17 @@ const {
   error,
   mergeError,
   branchActionError,
+  commitDefaults,
   setMergeStatus,
   fetchMergeStatus,
+  fetchCommitDefaults,
+  clearCommitDefaults,
   mergePullRequest,
   deleteHeadBranch,
   restoreHeadBranch,
 } = usePRMergeStatus();
 
-const mergeMethods: PRMergeMethod[] = ['merge', 'squash', 'rebase'];
+const ALL_MERGE_METHODS: PRMergeMethod[] = ['merge', 'squash', 'rebase'];
 const selectedMethod = shallowRef<PRMergeMethod>('merge');
 const dropdownOpen = shallowRef(false);
 const confirming = shallowRef(false);
@@ -324,6 +325,8 @@ const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
+const prefillTitle = shallowRef('');
+const prefillMessage = shallowRef('');
 const mergeControlsRef = ref<HTMLElement | null>(null);
 const commitTitleId = useId();
 const commitMessageId = useId();
@@ -331,6 +334,21 @@ const commitMessageId = useId();
 const status = computed(() => mergeStatus.value);
 const showSkeleton = computed(() => loading.value && !status.value);
 const showError = computed(() => Boolean(error.value) && !status.value);
+
+/** The repository's own list, or every method when the settings could not be read. */
+const mergeMethods = computed<PRMergeMethod[]>(
+  () => status.value?.allowedMergeMethods ?? ALL_MERGE_METHODS
+);
+
+/** GitHub hides the method picker when there is nothing to choose between. */
+const showMethodMenu = computed(() => mergeMethods.value.length > 1);
+
+/** A method the repository disables can never stay selected. */
+watch(mergeMethods, (methods) => {
+  if (!methods.includes(selectedMethod.value)) {
+    selectedMethod.value = methods[0] ?? 'merge';
+  }
+});
 
 const mergedTimeLabel = computed(() => {
   const mergedAt = status.value?.mergedAt;
@@ -571,19 +589,34 @@ const confirmLabel = computed(() => {
 
 const showCommitForm = computed(() => confirming.value && selectedMethod.value !== 'rebase');
 
-const defaultCommitTitle = (method: PRMergeMethod) => {
-  if (method === 'squash') {
-    return prTitle ? `${prTitle} (#${pullNumber})` : '';
-  }
-
-  return headLabel
-    ? `Merge pull request #${pullNumber} from ${headLabel}`
-    : `Merge pull request #${pullNumber}`;
+/** The default text GitHub forms for a method. Rebase keeps every commit's own message. */
+const commitDefaultsFor = (method: PRMergeMethod) => {
+  if (method === 'merge') return commitDefaults.value?.merge ?? null;
+  if (method === 'squash') return commitDefaults.value?.squash ?? null;
+  return null;
 };
 
-const prefillCommitForm = () => {
-  commitTitle.value = defaultCommitTitle(selectedMethod.value);
+const resetCommitForm = () => {
+  commitTitle.value = '';
   commitMessage.value = '';
+  prefillTitle.value = '';
+  prefillMessage.value = '';
+};
+
+/** Fills only the fields the reader has not typed into while the defaults were loading. */
+const applyCommitDefaults = () => {
+  const defaults = commitDefaultsFor(selectedMethod.value);
+  if (!defaults) return;
+
+  if (commitTitle.value === '') {
+    commitTitle.value = defaults.title;
+    prefillTitle.value = defaults.title;
+  }
+
+  if (commitMessage.value === '') {
+    commitMessage.value = defaults.message;
+    prefillMessage.value = defaults.message;
+  }
 };
 
 const selectMergeMethod = (method: PRMergeMethod) => {
@@ -605,8 +638,16 @@ const performMerge = async () => {
     return;
   }
 
-  const title = showCommitForm.value ? commitTitle.value.trim() : '';
-  const message = showCommitForm.value ? commitMessage.value.trim() : '';
+  // Only a field the reader changed is sent. An untouched field keeps GitHub's own
+  // default, which is the text we would otherwise have to reproduce byte for byte.
+  const title =
+    showCommitForm.value && commitTitle.value !== prefillTitle.value
+      ? commitTitle.value.trim()
+      : '';
+  const message =
+    showCommitForm.value && commitMessage.value !== prefillMessage.value
+      ? commitMessage.value.trim()
+      : '';
 
   merging.value = true;
   try {
@@ -651,15 +692,32 @@ const onMergeClick = async () => {
     return;
   }
 
-  if (!confirming.value) {
-    dropdownOpen.value = false;
-    prefillCommitForm();
-    confirming.value = true;
+  if (confirming.value) {
+    await performMerge();
+    confirming.value = false;
     return;
   }
 
-  await performMerge();
-  confirming.value = false;
+  dropdownOpen.value = false;
+  resetCommitForm();
+  confirming.value = true;
+
+  // Rebase writes one commit per change, each keeping its own message: no form.
+  if (selectedMethod.value === 'rebase') {
+    return;
+  }
+
+  // Read on every open: the pull request's own text may have moved since the last
+  // one, and the answer is only shown, never sent unchanged.
+  const method = selectedMethod.value;
+  await fetchCommitDefaults(owner, repo, pullNumber);
+
+  // The reader may have cancelled or switched method while the request was in flight.
+  if (!confirming.value || selectedMethod.value !== method) {
+    return;
+  }
+
+  applyCommitDefaults();
 };
 
 const onDocumentClick = (event: MouseEvent) => {
@@ -727,23 +785,25 @@ watch(
     dropdownOpen.value = false;
     confirming.value = false;
     checksExpanded.value = false;
-    selectedMethod.value = 'merge';
-    commitTitle.value = '';
-    commitMessage.value = '';
+    resetCommitForm();
+    clearCommitDefaults();
     branchAction.value = null;
     stopMergeabilityPolling();
     mergeabilityPollAttempts = 0;
 
     if (initialStatus) {
       setMergeStatus(initialStatus);
-      return;
+    } else {
+      setMergeStatus(null);
+
+      if (owner && repo && pullNumber) {
+        fetchMergeStatus(owner, repo, pullNumber);
+      }
     }
 
-    setMergeStatus(null);
-
-    if (owner && repo && pullNumber) {
-      fetchMergeStatus(owner, repo, pullNumber);
-    }
+    // Pick from the status already in hand, so the first paint names the method
+    // the repository actually offers.
+    selectedMethod.value = mergeMethods.value[0] ?? 'merge';
   },
   { immediate: true }
 );

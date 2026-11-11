@@ -33,6 +33,14 @@ export interface PRMergeStatus {
   headSha: string | null;
   headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;
+  /** The merge methods the repository allows, in the order the box offers them. */
+  allowedMergeMethods?: PRMergeMethod[];
+}
+
+/** The commit title and message GitHub would record for each merge method. */
+export interface PRMergeCommitDefaults {
+  merge: { title: string; message: string };
+  squash: { title: string; message: string };
 }
 
 export interface PRMergePayload {
@@ -80,7 +88,9 @@ export function usePRMergeStatus() {
   const error = shallowRef<string | null>(null);
   const mergeError = shallowRef<string | null>(null);
   const branchActionError = shallowRef<string | null>(null);
+  const commitDefaults = shallowRef<PRMergeCommitDefaults | null>(null);
   let statusRequestId = 0;
+  let commitDefaultsRequestId = 0;
 
   const setMergeStatus = (status: PRMergeStatus | null) => {
     statusRequestId += 1;
@@ -117,6 +127,35 @@ export function usePRMergeStatus() {
         loading.value = false;
       }
     }
+  };
+
+  /**
+   * The default commit title and message for both merge methods. A failed read
+   * clears them: the form then starts empty, and an untouched empty field is
+   * never sent, so GitHub still forms its own message.
+   */
+  const fetchCommitDefaults = async (owner: string, repo: string, pullNumber: number) => {
+    const requestId = commitDefaultsRequestId + 1;
+    commitDefaultsRequestId = requestId;
+
+    try {
+      const defaults = await apiFetch<PRMergeCommitDefaults>(
+        `/api/pulls/${owner}/${repo}/${pullNumber}/commit-defaults`,
+        { method: 'GET' }
+      );
+      if (requestId === commitDefaultsRequestId) {
+        commitDefaults.value = defaults;
+      }
+    } catch {
+      if (requestId === commitDefaultsRequestId) {
+        commitDefaults.value = null;
+      }
+    }
+  };
+
+  const clearCommitDefaults = () => {
+    commitDefaultsRequestId += 1;
+    commitDefaults.value = null;
   };
 
   const mergePullRequest = async (
@@ -186,8 +225,11 @@ export function usePRMergeStatus() {
     error,
     mergeError,
     branchActionError,
+    commitDefaults,
     setMergeStatus,
     fetchMergeStatus,
+    fetchCommitDefaults,
+    clearCommitDefaults,
     mergePullRequest,
     deleteHeadBranch,
     restoreHeadBranch,

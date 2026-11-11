@@ -96,8 +96,6 @@
               :owner="repoOwner"
               :repo="repoName"
               :pull-number="currentPullRequest.number"
-              :pr-title="currentPullRequest?.title"
-              :head-label="currentPullRequest?.head?.label || currentPullRequest?.head?.ref"
               :initial-status="terminalMergeStatus"
               @head-branch-updated="handlePullRequestHeadBranchUpdated"
               @merged="handlePullRequestMerged"

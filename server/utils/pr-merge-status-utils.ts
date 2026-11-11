@@ -8,12 +8,13 @@ import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { PullRequestHeadBranchState } from '#shared/types/pulls';
 
 import { fetchPullHeadBranchState } from './pr-head-branch-utils';
+import type { PRMergeMethod, RepositoryMergeSettings } from './pr-merge-settings-utils';
+import { mapRepositoryMergeSettings, resolveAllowedMergeMethods } from './pr-merge-settings-utils';
 
 type GitHubClient = Octokit;
 
 export type PRState = 'open' | 'closed' | 'merged';
 export type PRReviewDecision = 'approved' | 'changes_requested' | 'review_required' | 'none';
-export type PRMergeMethod = 'merge' | 'squash' | 'rebase';
 
 interface GitHubUserSummary {
   login?: string;
@@ -95,6 +96,8 @@ export interface PRMergeStatus {
   headSha: string | null;
   headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;
+  /** The merge methods the repository allows, in the order the box offers them. */
+  allowedMergeMethods: PRMergeMethod[];
 }
 
 export interface NormalizedMergePullRequestBody {
@@ -141,20 +144,28 @@ function getViewerCanMerge(permissions?: RepositoryPermissions | null) {
   return Boolean(permissions?.admin || permissions?.maintain || permissions?.push);
 }
 
-async function fetchRepositoryPermissions(
+interface RepositoryAccess {
+  permissions: RepositoryPermissions | null;
+  mergeSettings: RepositoryMergeSettings | null;
+}
+
+async function fetchRepositoryAccess(
   octokit: GitHubClient,
   owner: string,
   repo: string
-): Promise<RepositoryPermissions | null> {
+): Promise<RepositoryAccess> {
   try {
     const { data: repository } = await octokit.request('GET /repos/{owner}/{repo}', {
       owner,
       repo,
     });
-    return repository.permissions ?? null;
+    return {
+      permissions: repository.permissions ?? null,
+      mergeSettings: mapRepositoryMergeSettings(repository),
+    };
   } catch (error) {
-    console.error('Failed to fetch repository permissions for merge status', error);
-    return null;
+    console.error('Failed to fetch repository access for merge status', error);
+    return { permissions: null, mergeSettings: null };
   }
 }
 
@@ -256,8 +267,8 @@ export async function fetchPRMergeStatus(
   const normalizedPullRequest = pullRequest as GitHubPullRequestResponse;
   const headSha = normalizedPullRequest.head?.sha ?? null;
 
-  const [reviews, requestedReviewers, repoPermissions, headBranch, checkRollup] = await Promise.all(
-    [
+  const [reviews, requestedReviewers, repositoryAccess, headBranch, checkRollup] =
+    await Promise.all([
       fetchPaginatedArray<GitHubPullReviewResponse>(
         octokit,
         'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
@@ -274,14 +285,13 @@ export async function fetchPRMergeStatus(
           pull_number: pullNumber,
         })
         .then(({ data }) => data as GitHubRequestedReviewersResponse),
-      fetchRepositoryPermissions(octokit, owner, repo),
+      fetchRepositoryAccess(octokit, owner, repo),
       fetchPullHeadBranchState(octokit, normalizedPullRequest).catch((error: unknown) => {
         console.warn('Failed to fetch pull request head branch action state:', error);
         return null;
       }),
       fetchPullRequestCheckRollup(octokit, normalizedPullRequest.node_id ?? null),
-    ]
-  );
+    ]);
 
   const review = computeReviewDecision({
     reviews,
@@ -304,7 +314,8 @@ export async function fetchPRMergeStatus(
     headSha,
     headBranch,
     viewerCanMerge: getViewerCanMerge(
-      repoPermissions ?? normalizedPullRequest.base?.repo?.permissions
+      repositoryAccess.permissions ?? normalizedPullRequest.base?.repo?.permissions
     ),
+    allowedMergeMethods: resolveAllowedMergeMethods(repositoryAccess.mergeSettings),
   };
 }
