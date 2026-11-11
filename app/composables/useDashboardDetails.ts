@@ -106,7 +106,7 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   const { loggedIn, ready: sessionReady } = useUserSession();
   const { getNotificationDetails, openExternalNotification } = useUrlHelper();
   const { opensGitHubLinks, openGitHubTarget } = useGitHubLinkRouting();
-  const { goBackToPreviousPage, goToDashboardHome } = useNavigationRouting();
+  const { canGoBack, goBackToPreviousPage, goToDashboardHome } = useNavigationRouting();
   const route = useRoute();
   const router = useRouter();
   const localePath = useLocalePath();
@@ -624,7 +624,9 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const handlePRReviewClose = async () => {
-    const target = activePRReviewTarget.value;
+    // The review window can be open without a `prReview` query (external-link
+    // mode), where the pull request on screen is the one to return to.
+    const target = activePRReviewTarget.value ?? activePRTarget.value;
 
     await pushDashboardQuery({
       ...route.query,
@@ -702,6 +704,13 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
   };
 
   const handleDetailBack = async () => {
+    // A review route with no history is still loading its workspace (or cannot
+    // open one), so the overlay's Back belongs to that review's pull request.
+    if (activePRReviewTarget.value && !canGoBack.value) {
+      await handlePRReviewClose();
+      return;
+    }
+
     await goBackToPreviousPage();
   };
 

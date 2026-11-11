@@ -33,7 +33,7 @@ const { t } = useI18n();
 const { presentation, keyboardInsetPx, keyboardVisibleHeightPx } =
   usePRReviewWorkspacePresentation();
 const narrowLayoutCss = buildPRReviewWorkspaceNarrowLayoutCss();
-const { canGoBack, goBackToPreviousPage, goToDashboardHome, previousEntry, shouldShowHomeButton } =
+const { canGoBack, goBackToPreviousPage, goToDashboardHome, previousEntry } =
   useNavigationRouting();
 
 const handleReviewSubmitted = () => {
@@ -82,9 +82,15 @@ const totalAdditions = computed(() =>
 const totalDeletions = computed(() =>
   review.files.value.reduce((total, file) => total + file.deletions, 0)
 );
-const shouldShowNavButtons = computed(() => canGoBack.value || shouldShowHomeButton.value);
 
 const goBack = async () => {
+  // No logical history (a link opened the review directly): leave it for the
+  // pull request the review belongs to.
+  if (!canGoBack.value) {
+    goToPullRequestDetails();
+    return;
+  }
+
   await goBackToPreviousPage();
 };
 
@@ -308,9 +314,8 @@ watch(
           <MessageSquareIcon :size="13" aria-hidden="true" />
           {{ review.pendingCommentCount.value }}
         </span>
-        <div v-if="shouldShowNavButtons" class="pr-review-workspace__nav-buttons">
+        <div class="pr-review-workspace__nav-buttons">
           <button
-            v-if="canGoBack"
             type="button"
             class="pr-review-workspace__nav-button"
             :aria-label="t('repoFileView.back')"
@@ -320,7 +325,6 @@ watch(
             <ArrowLeftIcon :size="15" aria-hidden="true" />
           </button>
           <button
-            v-if="shouldShowHomeButton"
             type="button"
             class="pr-review-workspace__nav-button"
             :aria-label="t('repoFileView.home')"
