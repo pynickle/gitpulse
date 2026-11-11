@@ -1754,6 +1754,15 @@ onActivated(() => {
 .repo-file-view__toolbar-button--active {
   background: var(--gitpulse-info-soft);
   color: var(--gitpulse-info);
+
+  // An engaged toggle keeps its own fill when a pointer arrives: the icon deepens in place
+  // instead, the way the file's other toolbar icons answer a hover.
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-info-soft);
+      color: color-mix(in srgb, var(--gitpulse-info) 80%, var(--gitpulse-text-strong));
+    }
+  }
 }
 
 .repo-file-view__copied-icon {
