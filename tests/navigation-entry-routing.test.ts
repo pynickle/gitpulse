@@ -626,6 +626,122 @@ describe('applyLogicalNavigationEvent', () => {
     });
   });
 
+  test('cold-start repo file Back falls onto its repository and offers Home', () => {
+    const fileQuery = normalizeQuery({
+      tab: 'repos',
+      repo: 'octo/repo',
+      path: 'src/index.ts',
+    });
+    let result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard',
+      { tab: 'repos', repo: 'octo/repo', path: 'src/index.ts' },
+      0
+    );
+
+    expect(result.snapshot.canGoBack).toBe(false);
+    expect(result.snapshot.shouldShowHomeButton).toBe(true);
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard', query: fileQuery },
+    });
+
+    expect(result.target).toEqual({
+      path: '/dashboard',
+      query: { tab: 'repos', repo: 'octo/repo' },
+    });
+    expect(result.snapshot.current).toEqual({
+      type: 'repository',
+      data: { owner: 'octo', repo: 'repo', tab: 'repos' },
+    });
+
+    // The repository route replaces the entry, so Back is not re-stacked.
+    result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'octo/repo' }, 1);
+    expect(result.decision).toBe('replace');
+    expect(result.snapshot.history).toEqual([]);
+    expect(result.snapshot.shouldShowHomeButton).toBe(false);
+
+    // From the repository the empty stack falls onto the dashboard root again.
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard', query: normalizeQuery({ tab: 'repos', repo: 'octo/repo' }) },
+    });
+    expect(result.target).toEqual({ path: '/dashboard', query: { tab: 'repos' } });
+  });
+
+  test('cold-start repo file Back keeps the browsed branch on the repository', () => {
+    let result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard',
+      { tab: 'repos', repo: 'octo/repo', path: 'src/index.ts', branch: 'dev' },
+      0
+    );
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: {
+        path: '/dashboard',
+        query: normalizeQuery({
+          tab: 'repos',
+          repo: 'octo/repo',
+          path: 'src/index.ts',
+          branch: 'dev',
+        }),
+      },
+    });
+
+    expect(result.target).toEqual({
+      path: '/dashboard',
+      query: { tab: 'repos', repo: 'octo/repo', branch: 'dev' },
+    });
+    expect(result.entry).toEqual({
+      type: 'repository',
+      data: { owner: 'octo', repo: 'repo', branch: 'dev', tab: 'repos' },
+    });
+  });
+
+  test('cold-start contributors Back falls onto its repository and offers Home', () => {
+    let result = applyRoute(
+      createLogicalNavigationState(),
+      '/dashboard/contributors',
+      { repo: 'octo/repo' },
+      0
+    );
+
+    expect(result.snapshot.current?.type).toBe('contributors-list');
+    expect(result.snapshot.canGoBack).toBe(false);
+    expect(result.snapshot.shouldShowHomeButton).toBe(true);
+
+    result = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/contributors', query: normalizeQuery({ repo: 'octo/repo' }) },
+    });
+
+    expect(result.target).toEqual({
+      path: '/dashboard',
+      query: { tab: 'repos', repo: 'octo/repo' },
+    });
+    expect(result.snapshot.current).toEqual({
+      type: 'repository',
+      data: { owner: 'octo', repo: 'repo', tab: undefined },
+    });
+    expect(result.snapshot.shouldShowHomeButton).toBe(false);
+  });
+
+  test('a cold-start child page with no repository keeps Back on the dashboard', () => {
+    const result = applyRoute(createLogicalNavigationState(), '/dashboard/settings', {}, 0);
+
+    expect(result.snapshot.shouldShowHomeButton).toBe(false);
+
+    const back = applyLogicalNavigationEvent(result.state, {
+      type: 'back',
+      route: { path: '/dashboard/settings', query: {} },
+    });
+
+    expect(back.target).toEqual({ path: '/dashboard', query: {} });
+  });
+
   test('a later position is a forward push', () => {
     let result = applyRoute(createLogicalNavigationState(), '/dashboard', { tab: 'repos' }, 0);
     result = applyRoute(

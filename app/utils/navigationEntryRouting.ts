@@ -518,13 +518,32 @@ export function createLogicalNavigationState(): LogicalNavigationState {
   };
 }
 
+/**
+ * Where Back lands when the logical stack is empty. Repo-scoped views
+ * (file browsing, contributors) fall back onto their repository; every other
+ * entry keeps backing onto the dashboard root.
+ */
+function resolveEmptyStackBackEntry(
+  entry: DashboardNavigationEntry | null
+): DashboardNavigationEntry | null {
+  if (!entry) return null;
+
+  const { owner, repo, branch, tab } = entry.data ?? {};
+  if (!owner || !repo) return null;
+  if (entry.type !== 'file' && entry.type !== 'contributors-list') return null;
+
+  return { type: 'repository', data: { owner, repo, branch, tab } };
+}
+
 export function getLogicalNavigationSnapshot(
   state: LogicalNavigationState
 ): LogicalNavigationSnapshot {
   const previousEntry = state.history.length > 0 ? state.history[state.history.length - 1]! : null;
   const canGoBack = state.history.length > 0;
+  // Home is offered whenever Back would not already land there.
+  const backEntry = previousEntry ?? resolveEmptyStackBackEntry(state.current);
   const shouldShowHomeButton = Boolean(
-    state.current && canGoBack && previousEntry?.type !== 'dashboard'
+    state.current && backEntry && backEntry.type !== 'dashboard'
   );
 
   return {
@@ -590,15 +609,17 @@ export function applyLogicalNavigationEvent(
 
   if (event.type === 'back') {
     const popped = state.history.length > 0 ? state.history[state.history.length - 1]! : null;
+    const destination = popped ?? resolveEmptyStackBackEntry(state.current);
     const next: LogicalNavigationState = {
       ...state,
       history: state.history.length > 0 ? state.history.slice(0, -1) : [],
-      current: popped ?? { type: 'dashboard' },
+      current: destination ?? { type: 'dashboard' },
       pendingIntent: 'back',
     };
     return logicalNavigationResult(next, {
-      entry: popped,
-      target: resolveBackHomeTarget(popped, event.route),
+      // Back lands on the popped entry, or on the empty-stack fallback.
+      entry: destination,
+      target: resolveBackHomeTarget(destination, event.route),
     });
   }
 
