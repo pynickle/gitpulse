@@ -45,28 +45,6 @@
           :style="panelStyle"
           @wheel.stop
         >
-          <div v-if="searchable" class="filter-dropdown-search">
-            <SearchIcon :size="14" class="filter-dropdown-search-icon" />
-            <input
-              ref="searchInputRef"
-              v-model="searchQuery"
-              class="filter-dropdown-search-input"
-              type="search"
-              :placeholder="searchPlaceholder"
-              :aria-label="searchPlaceholder"
-              @keydown="onSearchKeydown"
-            />
-            <button
-              v-if="searchQuery.length > 0"
-              class="filter-dropdown-search-clear"
-              type="button"
-              :aria-label="clearSearchLabel"
-              @click="clearSearch"
-            >
-              <XIcon :size="12" />
-            </button>
-          </div>
-
           <ScrollArea
             :id="listboxId"
             @scroll-element="listRef = $event"
@@ -76,7 +54,7 @@
             content-class="filter-dropdown-options"
           >
             <template
-              v-for="(item, idx) in visibleItems"
+              v-for="(item, idx) in options"
               :key="isSeparator(item) ? `sep-${idx}` : item.value"
             >
               <li v-if="isSeparator(item)" class="filter-dropdown-separator" role="separator" />
@@ -114,7 +92,7 @@
               </li>
             </template>
 
-            <li v-if="visibleItems.length === 0" class="filter-dropdown-empty">
+            <li v-if="options.length === 0" class="filter-dropdown-empty">
               <SearchIcon :size="16" />
               <span>{{ noResultsLabel }}</span>
             </li>
@@ -126,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckIcon, ChevronDownIcon, SearchIcon, XIcon } from '@lucide/vue';
+import { CheckIcon, ChevronDownIcon, SearchIcon } from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 
@@ -149,22 +127,16 @@ const {
   options,
   modelValue = '',
   placeholder = 'Select...',
-  searchable = false,
   disabled = false,
   contentWidth = false,
-  searchPlaceholder = 'Search...',
-  clearSearchLabel = 'Clear search',
   noResultsLabel = 'No results found',
 } = defineProps<{
   options: FilterItem[];
   modelValue?: string;
   placeholder?: string;
-  searchable?: boolean;
   disabled?: boolean;
   contentWidth?: boolean;
   ariaLabel?: string;
-  searchPlaceholder?: string;
-  clearSearchLabel?: string;
   noResultsLabel?: string;
 }>();
 
@@ -175,14 +147,12 @@ const emit = defineEmits<{
 const listboxId = `${useId()}-listbox`;
 
 const isOpen = shallowRef(false);
-const searchQuery = shallowRef('');
 const focusedIndex = shallowRef(-1);
 
 const triggerRef = ref<HTMLDivElement | null>(null);
 const buttonRef = ref<HTMLButtonElement | null>(null);
 const panelRef = ref<HTMLDivElement | null>(null);
 const listRef = ref<HTMLElement | null>(null);
-const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const panelStyle = shallowRef<Record<string, string>>({});
 
@@ -193,16 +163,6 @@ function isSeparator(item: FilterItem): item is FilterSeparator {
 const plainOptions = computed(() => options.filter((o): o is FilterOption => !isSeparator(o)));
 
 const selectedOption = computed(() => plainOptions.value.find((o) => o.value === modelValue));
-
-const filteredItems = computed<FilterItem[]>(() => {
-  if (!searchable || !searchQuery.value.trim()) return options;
-  const query = searchQuery.value.toLowerCase().trim();
-  return plainOptions.value.filter(
-    (o) => o.label.toLowerCase().includes(query) || o.description?.toLowerCase().includes(query)
-  );
-});
-
-const visibleItems = computed<FilterItem[]>(() => filteredItems.value);
 
 function optionId(idx: number) {
   return `${listboxId}-option-${idx}`;
@@ -276,16 +236,12 @@ function open() {
   isOpen.value = true;
   if (contentWidth) nextTick(updatePanelPosition);
   focusedIndex.value = modelValue
-    ? visibleItems.value.findIndex((o) => !isSeparator(o) && o.value === modelValue)
+    ? options.findIndex((o) => !isSeparator(o) && o.value === modelValue)
     : -1;
-  if (searchable) {
-    nextTick(() => searchInputRef.value?.focus());
-  }
 }
 
 function close() {
   isOpen.value = false;
-  searchQuery.value = '';
   focusedIndex.value = -1;
 }
 
@@ -300,19 +256,12 @@ function selectOption(option: FilterOption) {
   nextTick(() => buttonRef.value?.focus());
 }
 
-function clearSearch() {
-  searchQuery.value = '';
-  focusedIndex.value = -1;
-  nextTick(() => searchInputRef.value?.focus());
-}
-
 function moveFocus(direction: 1 | -1) {
-  const items = visibleItems.value;
-  if (items.length === 0) return;
+  if (options.length === 0) return;
   let idx = focusedIndex.value;
-  for (let attempt = 0; attempt < items.length; attempt++) {
-    idx = (idx + direction + items.length) % items.length;
-    const item = items[idx];
+  for (let attempt = 0; attempt < options.length; attempt++) {
+    idx = (idx + direction + options.length) % options.length;
+    const item = options[idx];
     if (item && !isSeparator(item)) {
       focusedIndex.value = idx;
       scrollToFocused();
@@ -348,7 +297,7 @@ function onTriggerKeydown(e: KeyboardEvent) {
       if (!isOpen.value) {
         open();
       } else if (focusedIndex.value >= 0) {
-        const item = visibleItems.value[focusedIndex.value];
+        const item = options[focusedIndex.value];
         if (item && !isSeparator(item)) selectOption(item);
       }
       break;
@@ -358,33 +307,6 @@ function onTriggerKeydown(e: KeyboardEvent) {
       break;
     case 'Tab':
       if (isOpen.value) close();
-      break;
-  }
-}
-
-function onSearchKeydown(e: KeyboardEvent) {
-  switch (e.key) {
-    case 'ArrowDown':
-    case 'Down':
-      e.preventDefault();
-      moveFocus(1);
-      break;
-    case 'ArrowUp':
-    case 'Up':
-      e.preventDefault();
-      moveFocus(-1);
-      break;
-    case 'Enter':
-      e.preventDefault();
-      if (focusedIndex.value >= 0) {
-        const item = visibleItems.value[focusedIndex.value];
-        if (item && !isSeparator(item)) selectOption(item);
-      }
-      break;
-    case 'Escape':
-      e.preventDefault();
-      close();
-      nextTick(() => buttonRef.value?.focus());
       break;
   }
 }
@@ -432,9 +354,7 @@ watch(
   () => modelValue,
   () => {
     if (isOpen.value) {
-      focusedIndex.value = visibleItems.value.findIndex(
-        (o) => !isSeparator(o) && o.value === modelValue
-      );
+      focusedIndex.value = options.findIndex((o) => !isSeparator(o) && o.value === modelValue);
     }
   }
 );
@@ -516,56 +436,6 @@ watch(
 
   &--open {
     transform: rotate(180deg);
-  }
-}
-
-.filter-dropdown-search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 8px 4px;
-  border-bottom: 1px solid var(--gitpulse-border);
-}
-
-.filter-dropdown-search-icon {
-  flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
-  margin-left: 2px;
-}
-
-.filter-dropdown-search-input {
-  flex: 1;
-  height: 28px;
-  padding: 0 6px;
-  font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  background: transparent;
-  border: none;
-  outline: none;
-
-  &::placeholder {
-    color: var(--gitpulse-text-subtle);
-  }
-}
-
-.filter-dropdown-search-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: var(--gitpulse-radius-sm);
-  color: var(--gitpulse-text-muted);
-  cursor: pointer;
-
-  @include hover-only {
-    &:hover {
-      background: var(--gitpulse-surface-hover);
-      color: var(--gitpulse-text);
-    }
   }
 }
 
