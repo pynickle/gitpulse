@@ -8,7 +8,10 @@ import {
   type CommentNode,
 } from '#server/utils/comment-moderation-utils';
 import { getGitHubClient, throwGitHubRouteError } from '#server/utils/github-auth-utils';
-import { COMMENT_HIDDEN_REASONS } from '#shared/types/comment-moderation';
+import {
+  COMMENT_HIDDEN_REASONS,
+  isDeletableCommentResource,
+} from '#shared/types/comment-moderation';
 import type { CommentModerationResult } from '#shared/types/comment-moderation';
 
 const target = { nodeId: z.string().trim().min(1) };
@@ -91,19 +94,19 @@ export default defineEventHandler(async (event) => {
       }
       return result;
     }
+    if (input.action === 'delete' && !isDeletableCommentResource(current.resourceType))
+      throw createError({ statusCode: 400, statusMessage: 'A review cannot be deleted' });
     if (
       input.action === 'delete' &&
-      current.resourceType !== 'CommitComment' &&
-      current.resourceType !== 'DiscussionComment'
+      (current.resourceType === 'IssueComment' ||
+        current.resourceType === 'PullRequestReviewComment')
     ) {
-      const mutation = {
-        IssueComment: 'deleteIssueComment',
-        PullRequestReviewComment: 'deletePullRequestReviewComment',
-        PullRequestReview: 'deletePullRequestReview',
-      }[current.resourceType];
-      const idField = current.resourceType === 'PullRequestReview' ? 'pullRequestReviewId' : 'id';
+      const mutation =
+        current.resourceType === 'IssueComment'
+          ? 'deleteIssueComment'
+          : 'deletePullRequestReviewComment';
       const response = await octokit.graphql<Record<string, unknown>>(
-        `mutation DeleteComment($id: ID!) { ${mutation}(input: {${idField}: $id}) { clientMutationId } }`,
+        `mutation DeleteComment($id: ID!) { ${mutation}(input: {id: $id}) { clientMutationId } }`,
         { id: input.nodeId }
       );
       if (!response[mutation])

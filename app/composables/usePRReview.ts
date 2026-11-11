@@ -2,7 +2,6 @@ import { computed, ref, shallowRef, watch } from 'vue';
 
 import type { CommentModeration } from '#shared/types/comment-moderation';
 import { parsePRReviewPatch, type PRReviewDiffRow } from '#shared/utils/pr-review-patch';
-import { useCommentModeration } from '~/composables/useCommentModeration';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 export { parsePRReviewPatch };
@@ -436,22 +435,6 @@ export function usePRReview(options: UsePRReviewOptions) {
 
     reviewComments.value = response.items ?? [];
   };
-
-  const { results: moderationResults } = useCommentModeration();
-  watch(moderationResults, (results, previous) => {
-    if (
-      Object.entries(results).some(
-        ([nodeId, result]) =>
-          result !== previous[nodeId] &&
-          result.deleted &&
-          result.resourceType === 'PullRequestReview'
-      )
-    ) {
-      void refreshReviewComments().catch((error) => {
-        errorMessage.value = getFetchErrorMessage(error, options.messages.loadFailed);
-      });
-    }
-  });
 
   const loadFiles = async (page = 1) => {
     if (!canLoad.value) {

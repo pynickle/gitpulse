@@ -292,7 +292,11 @@ test.each(['timeline', 'workspace', 'discussion', 'answer', 'review'] as const)(
       triggers[0]!.focus();
       triggers[0]!.click();
       await flush();
-      button(dom.document, 'commentModeration.delete').click();
+      // A review is never deletable, so its one dialog is the reason picker.
+      button(
+        dom.document,
+        surface === 'review' ? 'commentModeration.hide' : 'commentModeration.delete'
+      ).click();
       const confirmation = await findDialog(dom);
       expect(confirmation.textContent).not.toContain('octo');
       expect(confirmation.textContent).not.toContain('Comment context');
@@ -690,125 +694,54 @@ test('Discussion detail reconciles a wiped accepted parent, keeping replies and 
   }
 });
 
-test('deleting a review preserves all loaded timeline pages and the existing scroll container', async () => {
-  const components = await loadComponents();
-  const TimelineCard = await compileVue('app/components/dashboard/pr/PRTimelineCommentCard.vue', {
-    ...components.shared,
-    '~/components/dashboard/timeline/TimelineCommentCard.vue': { default: components.Card },
-  });
-  const Timeline = await compileVue('app/components/dashboard/pr/PRTimelineEvents.vue', {
-    ...components.shared,
-    '~/composables/usePRTimelineEvents': timelineEvents,
-    '~/components/dashboard/pr/PRTimelineCommentCard.vue': { default: TimelineCard },
-    '~/components/dashboard/pr/PRTimelineReviewCard.vue': { default: components.Review },
-    '~/components/dashboard/pr/PRTimelineCommitCard.vue': { default: empty },
-    '~/components/dashboard/pr/PRTimelineEventBody.vue': { default: empty },
-    '~/components/dashboard/pr/PRTimelineMergeCard.vue': { default: empty },
-    '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue': { default: empty },
-    '~/components/dashboard/timeline/TimelineEventActorRow.vue': { default: empty },
-    '~/components/ui/LoadingIcon.vue': { default: empty },
-  });
-  mock.module('~/utils/getFetchErrorMessage', () => import('../app/utils/getFetchErrorMessage'));
-  mock.module(
-    '~/utils/withPendingPaginationPage',
-    () => import('../app/utils/withPendingPaginationPage')
-  );
-  const commitList = await import('../app/composables/usePRCommitList');
-  const reviewers = await import('../app/composables/usePRReviewers');
-  const permissions = await import('../app/utils/createEmptyRepoPermissions');
-  const Detail = await compileVue(
-    'app/components/dashboard/detail/PRDetail.vue',
-    {
-      ...components.shared,
-      '~/components/dashboard/pr/PRTimelineEvents.vue': { default: Timeline },
-      '~/components/ui/ScrollArea.vue': { default: ScrollArea },
-      '~/components/dashboard/DashboardPagination.vue': { default: empty },
-      '~/components/dashboard/detail/DetailAssignees.vue': { default: empty },
-      '~/components/dashboard/detail/DetailLabels.vue': { default: empty },
-      '~/components/dashboard/detail/RepoCommitList.vue': { default: empty },
-      '~/components/dashboard/pr/PRActions.vue': { default: empty },
-      '~/components/dashboard/pr/PRHeader.vue': { default: empty },
-      '~/components/dashboard/pr/PRMergeBox.vue': { default: empty },
-      '~/composables/usePRCommitList': commitList,
-      '~/composables/usePRReviewers': reviewers,
-      '~/utils/createEmptyRepoPermissions': permissions,
-      '~/utils/createPullRequestDetailViewModel':
-        await import('../app/utils/createPullRequestDetailViewModel'),
-      '~/utils/formatPageMetaDescription': await import('../app/utils/formatPageMetaDescription'),
-      '~/utils/getFetchErrorMessage': { getFetchErrorMessage },
-      '~/utils/handleRovingTablistKeydown': await import('../app/utils/handleRovingTablistKeydown'),
-      '~/utils/parseGitHubRepoPath': await import('../app/utils/parseGitHubRepoPath'),
-    },
-    { useI18n: 'vue-i18n' }
-  );
-  const pullRequest = {
-    number: 1,
-    title: 'PR',
-    repository_url: 'https://api.github.com/repos/octo/app',
-    head: { sha: 'sha' },
-    state: 'open',
-  };
+test('a review offers Hide and never Delete, whatever capability the payload reports', async () => {
+  const { Review } = await loadComponents();
+  const writes: unknown[] = [];
   const review = {
-    kind: 'review',
     id: 'review-1',
     state: 'approved',
     body: 'Review summary',
+    author: { login: 'octo' },
     moderation: { ...target(), resourceType: 'PullRequestReview' },
   };
-  const pages: number[] = [];
-  let deleted = false;
   const dom = createDom({
-    useDetailCompactHeader,
     useRelativeTimeNow: () => 0,
-    usePageMeta: () => {},
-    usePRReviewers: reviewers.usePRReviewers,
-    createEmptyRepoPermissions: permissions.createEmptyRepoPermissions,
-    useGitPulseApiFetch:
-      () => async (url: string, options?: { method?: string; query?: { page?: number } }) => {
-        if (options?.method === 'POST') {
-          deleted = true;
-          return { moderation: null, deleted: true };
-        }
-        if (url.endsWith('/timeline')) {
-          const page = options?.query?.page ?? 1;
-          pages.push(page);
-          return {
-            timeline:
-              page === 1
-                ? [
-                    ...(deleted ? [] : [review]),
-                    { kind: 'comment', id: 'first', body: 'First page context' },
-                  ]
-                : [{ kind: 'comment', id: 'later', body: 'Second page context' }],
-            pageInfo: { hasNextPage: page === 1 },
-          };
-        }
-        if (url.endsWith('/reviewers')) return reviewers.createEmptyPRReviewersSummary();
-        if (url.endsWith('/permissions')) return {};
-        return pullRequest;
-      },
+    useGitPulseApiFetch: () => async (_url: string, options: unknown) => {
+      writes.push(options);
+      return {
+        moderation: {
+          ...review.moderation,
+          isMinimized: true,
+          minimizedReason: 'spam',
+          viewerCanUnminimize: true,
+        },
+      };
+    },
   });
   try {
-    const view = dom.mount(defineComponent({ setup: () => () => h(Detail, { pullRequest }) }));
+    const view = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(Review, { item: review, repoOwner: 'octo', repoName: 'app', enableReactions: false }),
+      })
+    );
     await flush();
-    button(view.root, 'detailTimeline.loadMore').click();
-    await flush();
-    expect(view.root.textContent).toContain('Second page context');
-    const scroll = view.root.querySelector<HTMLElement>('.detail-main-column')!;
-    scroll.scrollTop = 240;
     view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
     await flush();
-    button(dom.document, 'commentModeration.delete').click();
-    const confirm = await findDialog(dom);
-    expect(confirm.getAttribute('aria-label')).toBe('commentModeration.deleteReview');
-    button(confirm, 'commentModeration.delete').click();
+    const menu = dom.document.querySelector<HTMLElement>('[role="menu"]')!;
+    expect([...menu.querySelectorAll('button')].map((el) => el.textContent?.trim())).toEqual([
+      'commentModeration.hide',
+    ]);
+    button(dom.document, 'commentModeration.hide').click();
+    const dialog = await findDialog(dom);
+    chooseReason(dialog, 'SPAM');
     await flush();
-    expect(view.root.textContent).toContain('First page context');
-    expect(view.root.textContent).toContain('Second page context');
+    button(dialog, 'commentModeration.hide').click();
+    await flush();
+    expect(writes).toEqual([
+      { method: 'POST', body: { nodeId: 'IC_1', action: 'hide', reason: 'SPAM' } },
+    ]);
     expect(view.root.textContent).not.toContain('Review summary');
-    expect(pages).toEqual([1, 2, 1, 2]);
-    expect(view.root.querySelector('.detail-main-column') === scroll).toBe(true);
-    expect(scroll.scrollTop).toBe(240);
   } finally {
     await dom.cleanup();
   }

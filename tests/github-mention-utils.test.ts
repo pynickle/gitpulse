@@ -25,6 +25,7 @@ const octokitRequest = mock(async () => ({
 mock.module('#shared/utils/reactions', () => ({
   ...reactions,
 }));
+mock.module('#shared/types/comment-moderation', () => import('../shared/types/comment-moderation'));
 mock.module('#shared/types/mention-suggestions', () => ({}));
 mock.module('#shared/utils/markdown-mentions', () => ({
   GITHUB_MENTION_LOGIN_PATTERN: '[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?',

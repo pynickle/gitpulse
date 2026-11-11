@@ -222,7 +222,6 @@ import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import { useCommentModeration } from '~/composables/useCommentModeration';
 import { usePRCommitList } from '~/composables/usePRCommitList';
 import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
 import type {
@@ -290,24 +289,6 @@ const currentPullRequest = ref(pullRequest);
 const { user: sessionUser } = useUserSession();
 const detailError = ref('');
 const timeline = ref<PRTimelineItem[]>([]);
-const { results: moderationResults } = useCommentModeration();
-watch(moderationResults, (results, previous) => {
-  if (
-    Object.entries(results).some(
-      ([nodeId, result]) =>
-        result !== previous[nodeId] &&
-        result.deleted &&
-        timeline.value.some(
-          (item) =>
-            item.moderation?.nodeId === nodeId &&
-            item.moderation.resourceType === 'PullRequestReview'
-        )
-    )
-  ) {
-    void fetchTimeline(true);
-    void fetchPullRequestDetails();
-  }
-});
 const timelineRequestId = ref(0);
 const detailRequestId = ref(0);
 const permissionRequestId = ref(0);
@@ -857,7 +838,7 @@ const resetPullRequestScopedState = (pullRequest: PullRequestDetailViewModel) =>
   resetCompactHeader();
 };
 
-const fetchTimeline = async (preserveLoadedPages = false) => {
+const fetchTimeline = async () => {
   if (!repoInfo.value || !currentPullRequest.value?.number) {
     return;
   }
@@ -865,39 +846,28 @@ const fetchTimeline = async (preserveLoadedPages = false) => {
   const requestId = timelineRequestId.value + 1;
   const pullRequestIdentity = getPullRequestIdentity();
   timelineRequestId.value = requestId;
-  const pageCount = preserveLoadedPages ? currentTimelinePage.value : 1;
-  if (!preserveLoadedPages) {
-    loadingTimeline.value = true;
-    currentTimelinePage.value = 1;
-    hasNextTimelinePage.value = false;
-  }
+  loadingTimeline.value = true;
+  currentTimelinePage.value = 1;
+  hasNextTimelinePage.value = false;
 
   try {
     const { owner, repo } = repoInfo.value;
     const pullNumber = currentPullRequest.value.number;
 
-    const pages = await Promise.all(
-      Array.from({ length: pageCount }, (_, index) =>
-        apiFetch<PRTimelineResponse>(`/api/pulls/${owner}/${repo}/${pullNumber}/timeline`, {
-          method: 'GET',
-          query: { page: index + 1 },
-        })
-      )
+    const page = await apiFetch<PRTimelineResponse>(
+      `/api/pulls/${owner}/${repo}/${pullNumber}/timeline`,
+      { method: 'GET', query: { page: 1 } }
     );
 
     if (requestId === timelineRequestId.value && pullRequestIdentity === getPullRequestIdentity()) {
-      timeline.value = pages.flatMap((data) => data?.timeline || []);
-      hasNextTimelinePage.value = Boolean(pages.at(-1)?.pageInfo?.hasNextPage);
+      timeline.value = page?.timeline || [];
+      hasNextTimelinePage.value = Boolean(page?.pageInfo?.hasNextPage);
     }
   } catch (err: unknown) {
     console.error('Error fetching PR timeline:', err);
     if (requestId === timelineRequestId.value) {
-      if (preserveLoadedPages) {
-        detailError.value = getFetchErrorMessage(err, t('detailOverlay.loadError.pullRequest'));
-      } else {
-        timeline.value = [];
-        hasNextTimelinePage.value = false;
-      }
+      timeline.value = [];
+      hasNextTimelinePage.value = false;
     }
   } finally {
     if (requestId === timelineRequestId.value) {

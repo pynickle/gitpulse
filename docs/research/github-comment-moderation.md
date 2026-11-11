@@ -8,6 +8,8 @@ GitHub 的 Hide 是共享的审核状态：评论被 minimize，仍有读取权�
 
 权限不能归结为“只有自己的评论能删”或“仓库 collaborator 都能隐藏”。应返回具体对象的 `viewerCanDelete`、`viewerCanMinimize`、`viewerCanUnminimize`，再结合对象种类及状态决定菜单；实际写操作仍由 GitHub 判权。`authorAssociation` 描述评论作者与仓库的关系，不是当前读者的授权。[GraphQL Issues：权限接口及作者关系](https://docs.github.com/en/graphql/reference/issues#minimizable)
 
+**产品决定（2026-11-11）：review 永不提供删除。** REST 明确 review 删除只支持 pending，GraphQL 的 submitted 边界则未验证；GitPulse 只呈现已提交的 review，因此菜单不显示删除入口。`viewerCanDelete` 对 `PullRequestReview` 一律视为 false，服务端也拒绝该请求。这是产品选择，不取代下文关于 GraphQL 能力字段的取证。
+
 ## Discussion 父评论隐藏后的回复呈现
 
 官方管理评论文档说明选中评论会折叠，具有读取权限的人仍可展开，但未明确描述隐藏 Discussion 顶层评论时子回复是否继续显示。[官方隐藏说明](https://docs.github.com/en/communities/moderating-comments-and-conversations/managing-disruptive-comments#hiding-a-comment)
@@ -43,7 +45,7 @@ Issue / PR 主楼正文不属于可删除的普通评论。不要在主楼复用
 
 Dismiss review 还会改变 review 状态，并要求解释；它也不能借用“删除评论”的名称或确认框。[Dismiss review](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/dismissing-a-pull-request-review)
 
-**REST 限制不可直接推广到 GraphQL。** 官方 `deletePullRequestReview` 只描述删除 review，另有对象级 `viewerCanDelete`，没有公开列出 submitted / pending 的完整状态规则。针对 GraphQL 已提交 review 删除行为的额外官方定向检索仍未找到确定说明；因此本研究不声称“任何 API 都不能删 submitted review”，也不声称 GraphQL 一定能删。采用 GraphQL 路径时按其能力字段展示，并处理 mutation 的实际拒绝；不得仅因 `state !== PENDING` 把能力硬编码为 false。[GraphQL review mutation 与能力字段](https://docs.github.com/en/graphql/reference/pulls#deletepullrequestreview)
+**REST 限制不可直接推广到 GraphQL。** 官方 `deletePullRequestReview` 只描述删除 review，另有对象级 `viewerCanDelete`，没有公开列出 submitted / pending 的完整状态规则。针对 GraphQL 已提交 review 删除行为的额外官方定向检索仍未找到确定说明；因此本研究不声称“任何 API 都不能删 submitted review”，也不声称 GraphQL 一定能删。采用 GraphQL 路径时按其能力字段展示，并处理 mutation 的实际拒绝；不得仅因 `state !== PENDING` 把能力硬编码为 false（GitPulse 按上面的产品决定对 review 一律不提供删除）。[GraphQL review mutation 与能力字段](https://docs.github.com/en/graphql/reference/pulls#deletepullrequestreview)
 
 ## 谁能操作
 
@@ -108,7 +110,7 @@ Fine-grained PAT 仍有重要资源限制：不能向自己不是成员的公共
 ## 设计边界、证据差异与未验证项
 
 - 通用“管理 disruptive comments”页只概括 Write 可 hide，而角色表明确 Triage 可 hide Discussion；不能将前者当作完整穷举。
-- 当前 `PullRequestReview` 同时有 `Minimizable` / `Deletable`，但 REST 明确 submitted review 不能删除。GraphQL 的简短 delete mutation 说明没有逐状态列权限，本次未实测它是否存在不同边界；按 `viewerCanDelete` 判入口，不将 REST 的 pending-only 规则硬编码为 GraphQL 规则。
+- 当前 `PullRequestReview` 同时有 `Minimizable` / `Deletable`，但 REST 明确 submitted review 不能删除。GraphQL 的简短 delete mutation 说明没有逐状态列权限，本次未实测它是否存在不同边界；GitPulse 按上面的产品决定对 review 一律不提供删除入口，其余对象按 `viewerCanDelete` 判入口。
 - `deleteDiscussionComment` 对有回复评论会 wipe；设计不得说“所有回复也会删除”，也不要乐观移除整棵回复树。
 - 未用真实多个角色账号执行 mutation；未确认每种 token 与每种 minimize 对象所需最小 fine-grained permission 的逐格组合。REST 删除表不能直接套给 GraphQL minimize。菜单能力与实际 API 错误应共同决定可用状态。
 - 未发现“本地收起”需要任何 GitHub 写权限的依据；若设计这种阅读操作，其持久化范围是 GitPulse 的产品决定，不是 GitHub moderation 功能。

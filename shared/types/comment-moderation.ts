@@ -16,6 +16,14 @@ export type CommentResourceType =
   | 'CommitComment'
   | 'DiscussionComment';
 
+/**
+ * A review is reviewed history, not a comment: GitHub only deletes a pending
+ * review, and GitPulse never shows one. Every delete entry point asks this first.
+ */
+export function isDeletableCommentResource(resourceType: CommentResourceType) {
+  return resourceType !== 'PullRequestReview';
+}
+
 export interface CommentModeration {
   resourceType: CommentResourceType;
   nodeId: string;

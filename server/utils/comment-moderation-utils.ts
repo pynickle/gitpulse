@@ -1,6 +1,7 @@
 import type { Octokit } from '@octokit/core';
 
 import type { CommentModeration, CommentResourceType } from '#shared/types/comment-moderation';
+import { isDeletableCommentResource } from '#shared/types/comment-moderation';
 
 export interface CommentModerationNode {
   __typename?: string;
@@ -37,13 +38,14 @@ export function normalizeCommentModeration(
   node: CommentModerationNode
 ): CommentModeration | undefined {
   if (!node.id || !RESOURCE_TYPES.includes(node.__typename as CommentResourceType)) return;
+  const resourceType = node.__typename as CommentResourceType;
   return {
     nodeId: node.id,
-    resourceType: node.__typename as CommentResourceType,
+    resourceType,
     ...(typeof node.databaseId === 'number' ? { databaseId: node.databaseId } : {}),
     isMinimized: node.isMinimized === true,
     minimizedReason: node.minimizedReason ?? null,
-    viewerCanDelete: node.viewerCanDelete === true,
+    viewerCanDelete: isDeletableCommentResource(resourceType) && node.viewerCanDelete === true,
     viewerCanMinimize: node.viewerCanMinimize === true,
     viewerCanUnminimize: node.viewerCanUnminimize === true,
   };

@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n';
 
 import {
   COMMENT_HIDDEN_REASONS,
+  isDeletableCommentResource,
   type CommentHiddenReason,
   type CommentModeration,
 } from '#shared/types/comment-moderation';
@@ -46,7 +47,12 @@ const canHide = computed(() =>
 const canUnhide = computed(() =>
   Boolean(current.value?.isMinimized && current.value.viewerCanUnminimize)
 );
-const canDelete = computed(() => current.value?.viewerCanDelete === true);
+// The menu follows the reported capability, and a review is never deletable.
+const canDelete = computed(
+  () =>
+    current.value?.viewerCanDelete === true &&
+    isDeletableCommentResource(current.value.resourceType)
+);
 const available = computed(() => canHide.value || canUnhide.value || canDelete.value);
 // Radios group by name; one name per comment keeps two open pickers from sharing a
 // single selection group.
@@ -55,16 +61,11 @@ const radioGroupName = computed(
 );
 
 const stage = shallowRef<Stage | null>(null);
-const deleteLabel = computed(() =>
-  current.value?.resourceType === 'PullRequestReview'
-    ? t('commentModeration.deleteReview')
-    : t('commentModeration.deleteComment')
-);
 const label = computed(() =>
   stage.value === 'hide'
     ? t('commentModeration.hide')
     : stage.value === 'delete'
-      ? deleteLabel.value
+      ? t('commentModeration.deleteComment')
       : t('commentModeration.actions')
 );
 const reason = shallowRef<CommentHiddenReason | null>(null);

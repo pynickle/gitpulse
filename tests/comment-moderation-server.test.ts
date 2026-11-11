@@ -367,7 +367,8 @@ test('PR timeline distinguishes reviews, inline replies and CommitComment despit
   expect(payload.timeline).toHaveLength(3);
   expect(payload.timeline.find((item) => item.id === '12')).toMatchObject({
     state: 'approved',
-    moderation: { resourceType: 'PullRequestReview', viewerCanDelete: true },
+    // GitHub reports the capability on a review node, but a review is never deleted.
+    moderation: { resourceType: 'PullRequestReview', viewerCanDelete: false },
   });
   expect(payload.timeline.find((item) => item.id === '13')).toMatchObject({
     kind: 'review-comment',
@@ -462,22 +463,21 @@ test('Discussion reads and reply pagination retain hidden state and explicit vie
 test.each([
   ['IssueComment', 'deleteIssueComment'],
   ['PullRequestReviewComment', 'deletePullRequestReviewComment'],
-  ['PullRequestReview', 'deletePullRequestReview'],
-])(
-  'deletes %s through its real resource mutation, including a submitted review',
-  async (type, mutation) => {
-    node = { ...node, __typename: type, state: 'APPROVED' };
-    mutationResult = { [mutation]: { clientMutationId: null } };
-    const response = await submit({ nodeId: 'IC_1', action: 'delete' });
-    expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ deleted: true });
-    expect(calls.at(-1)!.query).toContain(`${mutation}(input:`);
-    expect(calls.at(-1)!.query).toContain(
-      type === 'PullRequestReview' ? 'pullRequestReviewId: $id' : 'id: $id'
-    );
-    expect(calls.at(-1)!.variables).toEqual({ id: 'IC_1' });
-  }
-);
+])('deletes %s through its real resource mutation', async (type, mutation) => {
+  node = { ...node, __typename: type, state: 'APPROVED' };
+  mutationResult = { [mutation]: { clientMutationId: null } };
+  const response = await submit({ nodeId: 'IC_1', action: 'delete' });
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ deleted: true });
+  expect(calls.at(-1)!.query).toContain(`${mutation}(input: {id: $id})`);
+  expect(calls.at(-1)!.variables).toEqual({ id: 'IC_1' });
+});
+test('a review is never deleted, even when GitHub reports the capability', async () => {
+  node = { ...node, __typename: 'PullRequestReview', state: 'APPROVED', viewerCanDelete: true };
+  const response = await submit({ nodeId: 'IC_1', action: 'delete' });
+  expect(response.status).toBe(400);
+  expect(calls.some((call) => call.query.includes('mutation'))).toBe(false);
+});
 test('rejects invalid operations and reasons before contacting GitHub', async () => {
   for (const body of [
     { nodeId: 'IC_1', action: 'hide' },

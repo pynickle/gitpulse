@@ -3,6 +3,7 @@ import { describe, expect, mock, test } from 'bun:test';
 const reactions = await import('../shared/utils/reactions');
 
 mock.module('#shared/utils/reactions', () => reactions);
+mock.module('#shared/types/comment-moderation', () => import('../shared/types/comment-moderation'));
 
 const {
   assignCommitCheckRollups,
