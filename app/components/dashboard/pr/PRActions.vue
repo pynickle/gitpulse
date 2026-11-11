@@ -166,11 +166,15 @@
               <span class="info-stat__label">{{ t('prReview.filesShort') }}</span>
             </div>
             <div class="info-stat info-stat--success">
-              <span class="info-stat__value">+{{ additions }}</span>
+              <span class="info-stat__value" :title="exact(additions)"
+                >+{{ compact(additions) }}</span
+              >
               <span class="info-stat__label">{{ t('prReview.added') }}</span>
             </div>
             <div class="info-stat info-stat--danger">
-              <span class="info-stat__value">-{{ deletions }}</span>
+              <span class="info-stat__value" :title="exact(deletions)"
+                >-{{ compact(deletions) }}</span
+              >
               <span class="info-stat__label">{{ t('prReview.removed') }}</span>
             </div>
           </div>
@@ -300,6 +304,7 @@ import type {
 } from '~/composables/usePRReviewers';
 
 const { t, locale } = useI18n();
+const { compact, exact } = useCompactCount();
 const relativeTimeNow = useRelativeTimeNow();
 
 interface PullRequestUserSummary {

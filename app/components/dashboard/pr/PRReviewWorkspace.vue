@@ -16,20 +16,24 @@ import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.v
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
 import { shouldCloseReviewWorkspaceAfterSubmit } from '~/utils/prReviewNavigation';
 
-const { owner, repo, pullNumber, commitId, title, changedFiles } = defineProps<{
-  owner: string;
-  repo: string;
-  pullNumber: number;
-  commitId: string;
-  title?: string;
-  changedFiles?: number;
-}>();
+const { owner, repo, pullNumber, commitId, title, changedFiles, additions, deletions } =
+  defineProps<{
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    commitId: string;
+    title?: string;
+    changedFiles?: number;
+    additions?: number;
+    deletions?: number;
+  }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
 const { t } = useI18n();
+const { compact, exact } = useCompactCount();
 const { presentation, keyboardInsetPx, keyboardVisibleHeightPx } =
   usePRReviewWorkspacePresentation();
 const narrowLayoutCss = buildPRReviewWorkspaceNarrowLayoutCss();
@@ -82,6 +86,10 @@ const totalAdditions = computed(() =>
 const totalDeletions = computed(() =>
   review.files.value.reduce((total, file) => total + file.deletions, 0)
 );
+// The pull request's own totals include files whose pages have not loaded yet;
+// the loaded sum only stands in while the detail is still arriving.
+const summaryAdditions = computed(() => additions ?? totalAdditions.value);
+const summaryDeletions = computed(() => deletions ?? totalDeletions.value);
 
 const goBack = async () => {
   // No logical history (a link opened the review directly): leave it for the
@@ -299,13 +307,17 @@ watch(
 
       <div class="pr-review-workspace__summary" aria-live="polite">
         <span class="pr-review-workspace__summary-pill">{{
-          t('prReview.filesCount', { count: review.files.value.length })
+          t('prReview.filesCount', { count: fileCount })
         }}</span>
-        <span class="pr-review-workspace__summary-pill pr-review-workspace__summary-pill--add"
-          >+{{ totalAdditions }}</span
+        <span
+          class="pr-review-workspace__summary-pill pr-review-workspace__summary-pill--add"
+          :title="exact(summaryAdditions)"
+          >+{{ compact(summaryAdditions) }}</span
         >
-        <span class="pr-review-workspace__summary-pill pr-review-workspace__summary-pill--delete"
-          >-{{ totalDeletions }}</span
+        <span
+          class="pr-review-workspace__summary-pill pr-review-workspace__summary-pill--delete"
+          :title="exact(summaryDeletions)"
+          >-{{ compact(summaryDeletions) }}</span
         >
         <span
           v-if="review.pendingCommentCount.value"
@@ -373,6 +385,7 @@ watch(
       <PRReviewFileSidebar
         v-if="presentation.showFileColumn"
         :files="review.files.value"
+        :file-count="fileCount"
         :active-filename="review.activeFilename.value"
         :draft-comments="review.draftComments.value"
         :loading-more="review.loadingMore.value"
@@ -443,6 +456,7 @@ watch(
       <PRReviewFileSidebar
         variant="sheet"
         :files="review.files.value"
+        :file-count="fileCount"
         :active-filename="review.activeFilename.value"
         :draft-comments="review.draftComments.value"
         :loading-more="review.loadingMore.value"

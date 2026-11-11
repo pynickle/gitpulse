@@ -37,6 +37,7 @@ const {
   files,
   draftComments,
   variant = 'column',
+  fileCount,
 } = defineProps<{
   files: PRReviewFile[];
   activeFilename: string;
@@ -45,6 +46,7 @@ const {
   hasMoreFiles: boolean;
   viewMode: FileViewMode;
   collapsed: boolean;
+  fileCount: number;
   variant?: FileSidebarVariant;
 }>();
 
@@ -56,6 +58,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { compact, exact } = useCompactCount();
 const collapsedDirectories = ref(new Set<string>());
 
 const draftCountsByFile = computed(() => {
@@ -252,7 +255,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 
       <div class="pr-review-file-sidebar__subheader">
         <FilesIcon :size="13" aria-hidden="true" />
-        <span>{{ t('prReview.filesCount', { count: files.length }) }}</span>
+        <span>{{ t('prReview.filesCount', { count: fileCount }) }}</span>
       </div>
 
       <ScrollArea v-if="files.length && viewMode === 'list'" class="pr-review-file-sidebar__list">
@@ -271,8 +274,12 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
           </span>
           <span class="pr-review-file-sidebar__name">{{ file.filename }}</span>
           <span class="pr-review-file-sidebar__meta">
-            <span class="has-text-success">+{{ file.additions }}</span>
-            <span class="has-text-danger">-{{ file.deletions }}</span>
+            <span class="has-text-success" :title="exact(file.additions)"
+              >+{{ compact(file.additions) }}</span
+            >
+            <span class="has-text-danger" :title="exact(file.deletions)"
+              >-{{ compact(file.deletions) }}</span
+            >
             <span v-if="getDraftCount(file.filename)" class="pr-review-file-sidebar__draft-count">
               {{ getDraftCount(file.filename) }}
             </span>
@@ -368,7 +375,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
       @click="emit('update:collapsed', false)"
     >
       <PanelLeftOpenIcon :size="16" aria-hidden="true" />
-      <strong>{{ files.length }}</strong>
+      <strong>{{ fileCount }}</strong>
     </button>
   </aside>
 </template>

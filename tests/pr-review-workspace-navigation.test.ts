@@ -1,97 +1,13 @@
 import { describe, expect, mock, test } from 'bun:test';
 
-import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue';
+import { defineComponent, h, nextTick, ref } from 'vue';
 
-import { parseGridTemplateColumnWidths } from '../app/utils/parseGridTemplateColumnWidths';
-import * as prReviewWorkspacePresentation from '../shared/utils/pr-review-workspace-presentation';
-import { compileVue } from './helpers/compile-vue';
+import { useCompactCount } from '../app/composables/useCompactCount';
+import { compilePRReviewWorkspace } from './helpers/pr-review-workspace';
 import { createVueDom } from './helpers/vue-dom';
 
-const empty = defineComponent({ setup: () => () => h('span') });
-const i18n = { useI18n: () => ({ t: (key: string) => key }) };
-
-// The review data is irrelevant here: an empty file list keeps the header
-// mounted while the diff panes stay out of the tree.
-const review = {
-  files: ref([]),
-  reviewComments: ref([]),
-  activeFilename: shallowRef(''),
-  pagination: ref({ hasNext: false }),
-  loading: shallowRef(false),
-  loadingMore: shallowRef(false),
-  submitting: shallowRef(false),
-  resolvingReviewThreadId: shallowRef(null),
-  errorMessage: shallowRef(''),
-  submitError: shallowRef(''),
-  draftBody: shallowRef(''),
-  selectedEvent: shallowRef('COMMENT'),
-  draftComments: ref([]),
-  activeDraftTarget: ref(null),
-  allDiffSections: computed(() => []),
-  reviewCommentThreads: computed(() => []),
-  pendingCommentCount: computed(() => 0),
-  canSubmit: computed(() => false),
-  loadMoreFiles: () => {},
-  retryLoad: () => {},
-  selectFile: () => {},
-  syncVisibleFile: () => {},
-  openDraftEditor: () => {},
-  closeDraftEditor: () => {},
-  saveDraftComment: () => {},
-  removeDraftComment: () => {},
-  toggleReviewThreadResolved: () => {},
-  submitReview: () => {},
-};
-
-const presentation = {
-  presentation: ref({
-    mode: 'wide',
-    diffArrangement: 'split',
-    showFileColumn: true,
-    showSubmitColumn: true,
-    wrapCode: true,
-  }),
-  keyboardInsetPx: ref(0),
-  keyboardVisibleHeightPx: ref(null),
-};
-
-const navigation = {
-  canGoBack: ref(false),
-  goBackToPreviousPage: mock(async () => {}),
-  goToDashboardHome: mock(async () => {}),
-};
-
-const Workspace = await compileVue(
-  'app/components/dashboard/pr/PRReviewWorkspace.vue',
-  {
-    '@lucide/vue': {
-      ArrowLeftIcon: empty,
-      GitPullRequestIcon: empty,
-      HouseIcon: empty,
-      MessageSquareIcon: empty,
-    },
-    '#shared/utils/pr-review-workspace-presentation': prReviewWorkspacePresentation,
-    '~/components/dashboard/pr/PRReviewBottomBar.vue': { default: empty },
-    '~/components/dashboard/pr/PRReviewDiffViewer.vue': { default: empty },
-    '~/components/dashboard/pr/PRReviewFileSidebar.vue': { default: empty },
-    '~/components/dashboard/pr/PRReviewSubmitBar.vue': { default: empty },
-    '~/utils/prReviewNavigation': { shouldCloseReviewWorkspaceAfterSubmit: () => false },
-    '~/utils/parseGridTemplateColumnWidths': { parseGridTemplateColumnWidths },
-    '~/composables/usePRReview': { usePRReview: () => review },
-    '~/composables/usePRReviewWorkspacePresentation': {
-      usePRReviewWorkspacePresentation: () => presentation,
-    },
-    '~/composables/useNavigationRouting': { useNavigationRouting: () => navigation },
-    'vue-i18n': i18n,
-  },
-  {
-    useI18n: 'vue-i18n',
-    useNavigationRouting: '~/composables/useNavigationRouting',
-    usePRReview: '~/composables/usePRReview',
-    usePRReviewWorkspacePresentation: '~/composables/usePRReviewWorkspacePresentation',
-    parseGridTemplateColumnWidths: '~/utils/parseGridTemplateColumnWidths',
-  }
-);
+const i18n = { useI18n: () => ({ locale: ref('en'), t: (key: string) => key }) };
+const { Workspace, navigation } = await compilePRReviewWorkspace(i18n);
 
 const mountWorkspace = async (canGoBack: boolean) => {
   navigation.canGoBack.value = canGoBack;
@@ -99,7 +15,7 @@ const mountWorkspace = async (canGoBack: boolean) => {
   navigation.goToDashboardHome.mockClear();
 
   const close = mock(() => {});
-  const dom = createVueDom();
+  const dom = createVueDom({ useI18n: i18n.useI18n, useCompactCount });
   const view = dom.mount(
     defineComponent({
       setup: () => () =>

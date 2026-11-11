@@ -3,6 +3,7 @@ import { expect, mock, test } from 'bun:test';
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
 import { useAutocompletePanel } from '../app/composables/useAutocompletePanel';
+import { useCompactCount } from '../app/composables/useCompactCount';
 import { useRefreshableView } from '../app/composables/useRefreshableView';
 import * as dashboardTargets from '../app/utils/dashboardUrlNavigationUtils';
 import { getQueryParamValue } from '../app/utils/getQueryParamValue';
@@ -175,6 +176,7 @@ test('the production Diff Viewer navigates and virtualizes against its viewport,
   let frameId = 0;
   const dom = createVueDom({
     useI18n: i18n.useI18n,
+    useCompactCount,
     useDashboardUrlNavigation: () => ({
       resolveDashboardUrlTarget: () => null,
       getDashboardUrlRoute: () => null,

@@ -15,6 +15,8 @@
       :commit-id="reviewCommitId"
       :title="currentPullRequest?.title"
       :changed-files="currentPullRequest?.changed_files"
+      :additions="currentPullRequest?.additions"
+      :deletions="currentPullRequest?.deletions"
       @close="closeReviewWindow"
     />
 

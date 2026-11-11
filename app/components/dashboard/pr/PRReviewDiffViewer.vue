@@ -55,6 +55,7 @@ const emit = defineEmits<{
 const collapsedFiles = ref(new Set<string>());
 const inlineDraftBodies = shallowRef(new Map<string, string>());
 const { t } = useI18n();
+const { compact, exact } = useCompactCount();
 const { resolveDashboardUrlTarget, getDashboardUrlRoute, getPreferredDashboardUrlHref } =
   useDashboardUrlNavigation();
 const { opensGitHubLinks } = useGitHubLinkRouting();
@@ -500,14 +501,16 @@ onBeforeUnmount(() => {
             <span
               v-if="section.file.additions"
               class="pr-review-diff-viewer__stat pr-review-diff-viewer__stat--add"
+              :title="exact(section.file.additions)"
             >
-              +{{ section.file.additions }}
+              +{{ compact(section.file.additions) }}
             </span>
             <span
               v-if="section.file.deletions"
               class="pr-review-diff-viewer__stat pr-review-diff-viewer__stat--delete"
+              :title="exact(section.file.deletions)"
             >
-              -{{ section.file.deletions }}
+              -{{ compact(section.file.deletions) }}
             </span>
           </div>
         </div>

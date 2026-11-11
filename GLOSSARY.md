@@ -28,6 +28,10 @@ _Avoid_: document view, article view
 The maximum line width a Reading Surface allows before it stops growing, so a long line never outruns the eye.
 _Avoid_: max width, content width
 
+**Compact Count**:
+A count written in the reader's own abbreviated notation — `5.2K` in English, `5.2万` in Chinese — carrying the exact number alongside the abbreviation.
+_Avoid_: abbreviated number, k-notation, shortened count
+
 **Foundation Layer**:
 The part of a client's presentation that decides tone, type and motion for everything else — its palette, its type ramp, and the ink an interaction paints — and which no reader operates directly.
 _Avoid_: theme when meaning more than one client's theme object, design system when meaning only these values
