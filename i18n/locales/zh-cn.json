@@ -1090,6 +1090,7 @@
     "expandFileSidebar": "展开变更文件",
     "mergeBox": {
       "loading": "正在加载合并状态...",
+      "loadingCommitDefaults": "正在加载默认提交信息...",
       "merged": "已合并",
       "mergedTime": "于 {time} 合并",
       "closedTitle": "未合并已关闭",

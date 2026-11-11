@@ -1090,6 +1090,7 @@
     "expandFileSidebar": "Expand changed files",
     "mergeBox": {
       "loading": "Loading merge status...",
+      "loadingCommitDefaults": "Loading the default commit message...",
       "merged": "Merged",
       "mergedTime": "merged {time}",
       "closedTitle": "Closed without merging",

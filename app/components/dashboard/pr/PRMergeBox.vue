@@ -117,6 +117,9 @@
         </div>
 
         <div v-if="status.viewerCanMerge && !status.draft" class="merge-box__actions">
+          <p class="is-sr-only" role="status" aria-live="polite">
+            {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
+          </p>
           <div v-if="mergeError" class="merge-box__note merge-box__note--danger" role="alert">
             <CircleExclamationPointIcon :size="14" />
             <span>{{ mergeError }}</span>
@@ -128,11 +131,13 @@
               :class="{
                 'merge-box__merge-btn--confirm': confirming,
                 'merge-box__merge-btn--standalone': !confirming && !showMethodMenu,
+                'merge-box__merge-btn--busy': mergeButtonBusy,
               }"
               :disabled="mergeDisabled"
+              :aria-busy="mergeButtonBusy || undefined"
               @click="onMergeClick"
             >
-              <span v-if="merging" class="merge-box__spinner" aria-hidden="true" />
+              <span v-if="mergeButtonBusy" class="merge-box__spinner" aria-hidden="true" />
               <GitMergeIcon v-else :size="14" />
               <span>{{ mergeButtonLabel }}</span>
             </button>
@@ -324,6 +329,8 @@ const selectedMethod = shallowRef<PRMergeMethod>('merge');
 const dropdownOpen = shallowRef(false);
 const confirming = shallowRef(false);
 const merging = shallowRef(false);
+/** The confirm step is open but its Default Commit Message is still being read. */
+const loadingCommitDefaults = shallowRef(false);
 const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
@@ -541,9 +548,12 @@ const mergeabilityRow = computed<MergeBoxRow>(() => {
   }
 });
 
+/** The button is working on the reader's own request: a merge, or the text its form opens on. */
+const mergeButtonBusy = computed(() => merging.value || loadingCommitDefaults.value);
+
 const mergeDisabled = computed(() => {
   const current = status.value;
-  if (!current || merging.value || loading.value) {
+  if (!current || mergeButtonBusy.value || loading.value) {
     return true;
   }
 
@@ -572,7 +582,9 @@ const mergeButtonLabel = computed(() => {
     return t('prReview.mergeBox.merging');
   }
 
-  if (confirming.value) {
+  // The confirm form is not on screen yet, so the button still answers the request
+  // the reader made with it.
+  if (confirming.value && !loadingCommitDefaults.value) {
     return confirmLabel.value;
   }
 
@@ -590,7 +602,9 @@ const confirmLabel = computed(() => {
   }
 });
 
-const showCommitForm = computed(() => confirming.value && selectedMethod.value !== 'rebase');
+const showCommitForm = computed(
+  () => confirming.value && !loadingCommitDefaults.value && selectedMethod.value !== 'rebase'
+);
 
 /** The default text GitHub forms for a method. Rebase keeps every commit's own message. */
 const commitDefaultsFor = (method: PRMergeMethod) => {
@@ -711,9 +725,15 @@ const onMergeClick = async () => {
   }
 
   // Read on every open: the pull request's own text may have moved since the last
-  // one, and the answer is only shown, never sent unchanged.
+  // one, and the answer is only shown, never sent unchanged. The form waits for it,
+  // so the button that asked for it carries the progress until the text is in hand.
   const method = selectedMethod.value;
-  await fetchCommitDefaults(owner, repo, pullNumber);
+  loadingCommitDefaults.value = true;
+  try {
+    await fetchCommitDefaults(owner, repo, pullNumber);
+  } finally {
+    loadingCommitDefaults.value = false;
+  }
 
   // The reader may have cancelled or switched method while the request was in flight.
   if (!confirming.value || selectedMethod.value !== method) {
@@ -787,6 +807,7 @@ watch(
   ([owner, repo, pullNumber, initialStatus]) => {
     dropdownOpen.value = false;
     confirming.value = false;
+    loadingCommitDefaults.value = false;
     checksExpanded.value = false;
     resetCommitForm();
     clearCommitDefaults();
@@ -1254,6 +1275,12 @@ watch(
   &:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+  }
+
+  /* A busy control keeps its own fill: the spinner is the progress, not a refusal. */
+  &--busy:disabled {
+    opacity: 1;
+    cursor: progress;
   }
 
   &--confirm {

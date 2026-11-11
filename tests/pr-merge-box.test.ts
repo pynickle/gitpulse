@@ -23,6 +23,7 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.reviewNone': 'No reviews required',
   'prReview.mergeBox.mergeableClean': 'This branch has no conflicts with the base branch',
   'prReview.mergeBox.cancel': 'Cancel',
+  'prReview.mergeBox.loadingCommitDefaults': 'Loading the default commit message...',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -46,14 +47,28 @@ const commitDefaults: CommitDefaults = {
   squash: { title: 'Add feature (#4)', message: '* feat: one\n\n* fix: two' },
 };
 
+function createDeferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((next) => {
+    resolve = next;
+  });
+
+  return { promise, resolve };
+}
+
 /**
  * Stands in for the merge status store: the component only needs a status to read
  * its allowed methods from, plus a place to record what a merge would send.
+ *
+ * `holdDefaults` keeps the default commit message request pending so a test can
+ * observe the form's state while the box is still reading it.
  */
-function createMergeStatusStore() {
+function createMergeStatusStore({ holdDefaults = false } = {}) {
   const mergeStatus = shallowRef<Record<string, unknown> | null>(null);
   const merges: RecordedMerge[] = [];
   const defaults = shallowRef<CommitDefaults | null>(null);
+  const defaultsGate = holdDefaults ? createDeferred() : null;
+  let defaultsReads = 0;
 
   const store = {
     mergeStatus,
@@ -67,9 +82,13 @@ function createMergeStatusStore() {
     },
     fetchMergeStatus: async () => null,
     fetchCommitDefaults: async () => {
+      defaultsReads += 1;
+      await defaultsGate?.promise;
       defaults.value = commitDefaults;
       return commitDefaults;
     },
+    defaultsReads: () => defaultsReads,
+    releaseDefaults: () => defaultsGate?.resolve(),
     clearCommitDefaults: () => {
       defaults.value = null;
     },
@@ -117,8 +136,8 @@ const MergeBox = await compileVue(
   }
 );
 
-function mountMergeBox(allowedMergeMethods: MergeMethod[]) {
-  store = createMergeStatusStore();
+function mountMergeBox(allowedMergeMethods: MergeMethod[], options?: { holdDefaults?: boolean }) {
+  store = createMergeStatusStore(options);
   dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
 
   const initialStatus = {
@@ -240,6 +259,37 @@ describe('PRMergeBox default commit message', () => {
     );
     expect(form?.querySelector<HTMLTextAreaElement>('.merge-box__commit-textarea')?.value).toBe(
       '* feat: one\n\n* fix: two'
+    );
+  });
+
+  test('the merge button carries the progress until the default commit message arrives', async () => {
+    const root = mountMergeBox(['squash'], { holdDefaults: true });
+    const controlsButton = () => root.querySelector('.merge-box__merge-btn');
+
+    click(controlsButton());
+    // Pressing again while the read is in flight asks for nothing new.
+    click(controlsButton());
+    await settle();
+
+    expect(store.defaultsReads()).toBe(1);
+    expect(root.querySelector('.merge-box__commit-form')).toBeNull();
+    expect(controlsButton()?.hasAttribute('disabled')).toBe(true);
+    expect(controlsButton()?.querySelector('.merge-box__spinner')).not.toBeNull();
+    expect(controlsButton()?.getAttribute('aria-busy')).toBe('true');
+    // Still the reader's own request: no confirmation is on screen to confirm.
+    expect(controlsButton()?.textContent?.trim()).toBe('Squash and merge');
+    // The wait stays cancellable.
+    expect(root.querySelector('.merge-box__cancel-btn')).not.toBeNull();
+    expect(root.querySelector('[role="status"]')?.textContent?.trim()).toBe(
+      'Loading the default commit message...'
+    );
+
+    store.releaseDefaults();
+    await settle();
+
+    expect(root.querySelector('.merge-box__spinner')).toBeNull();
+    expect(root.querySelector<HTMLInputElement>('.merge-box__commit-input')?.value).toBe(
+      'Add feature (#4)'
     );
   });
 
