@@ -1246,15 +1246,15 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  font-size: 13px;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
   color: #ffffff;
   background: var(--gitpulse-success-solid);
   border: 1px solid var(--gitpulse-success-solid);
-  border-radius: 8px 0 0 8px;
+  border-radius: 6px 0 0 6px;
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -1267,6 +1267,7 @@ watch(
     }
   }
 
+  &:focus-visible,
   &:active:not(:disabled) {
     background: var(--gitpulse-success-solid-hover);
     border-color: var(--gitpulse-success-solid-hover);
@@ -1284,12 +1285,12 @@ watch(
   }
 
   &--confirm {
-    border-radius: 8px;
+    border-radius: 6px;
   }
 
   /* No method picker beside it, so the split button's right edge rounds too. */
   &--standalone {
-    border-radius: 8px;
+    border-radius: 6px;
   }
 }
 
@@ -1297,13 +1298,13 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 8px;
+  height: 30px;
+  padding: 0 7px;
   color: #ffffff;
   background: var(--gitpulse-success-solid);
   border: 1px solid var(--gitpulse-success-solid);
   border-left-color: color-mix(in srgb, #ffffff 28%, transparent);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 6px 6px 0;
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -1315,6 +1316,7 @@ watch(
     }
   }
 
+  &:focus-visible,
   &:active:not(:disabled) {
     background: var(--gitpulse-success-solid-hover);
   }
@@ -1331,14 +1333,14 @@ watch(
 
 .merge-box__cancel-btn {
   margin-left: 8px;
-  height: 34px;
-  padding: 0 12px;
+  height: 30px;
+  padding: 0 10px;
   font-size: 12px;
   font-weight: 500;
   color: var(--gitpulse-text-muted);
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition:
     color 0.2s ease,
@@ -1349,6 +1351,11 @@ watch(
       color: var(--bulma-text-strong, var(--gitpulse-text-strong));
       border-color: var(--gitpulse-border-strong);
     }
+  }
+
+  &:focus-visible {
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    border-color: var(--gitpulse-border-strong);
   }
 
   &:disabled {
