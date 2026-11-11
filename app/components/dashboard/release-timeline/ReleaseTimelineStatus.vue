@@ -147,17 +147,6 @@ const visible = computed(
 .spin-animation {
   flex: none;
   transform-origin: center;
-  animation: timeline-status-spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes timeline-status-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

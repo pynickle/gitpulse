@@ -25,13 +25,4 @@ const { size = 16, strokeWidth = 2 } = defineProps<{
   transform-origin: center;
   color: var(--gitpulse-text-muted);
 }
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

@@ -617,19 +617,6 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   }
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .font-modal-enter-active,
 .font-modal-leave-active {
   transition: opacity 0.18s ease;

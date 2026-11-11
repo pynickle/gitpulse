@@ -671,6 +671,8 @@ hr {
 
 .tag.is-activity {
   margin-bottom: 0.3rem;
+  font-size: 0.62rem;
+  font-weight: bold;
 }
 
 .tag.is-info.is-light {
@@ -837,4 +839,8 @@ hr {
   to {
     transform: rotate(360deg);
   }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
 }

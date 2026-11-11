@@ -118,6 +118,36 @@
   max-width: 100%;
 }
 
+// A card that sits in a grid cell: it fills the cell, its content owns the height, and
+// the meta row is pinned to the bottom. The grids apply this class to the card itself.
+.dashboard-list-card--grid-cell {
+  height: 100%;
+}
+
+.dashboard-list-card--grid-cell > .card-content {
+  height: 100%;
+  display: flex;
+}
+
+.dashboard-list-card--grid-cell .dashboard-list-card__content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.dashboard-list-card--grid-cell .dashboard-list-card__meta {
+  margin-top: auto;
+}
+
+// The shared card clamps descriptions to one line; a grid card gets three.
+.dashboard-list-card--grid-cell .dashboard-list-card__description {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
 @media screen and (max-width: 768px) {
   .dashboard-list-card--detailed .dashboard-list-card__title,
   .dashboard-list-card--detailed .dashboard-list-card__subject {

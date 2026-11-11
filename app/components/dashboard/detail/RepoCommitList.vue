@@ -109,17 +109,4 @@ const { t } = useI18n();
 .repo-commit-list__item + .repo-commit-list__item {
   border-top: 1px solid var(--gitpulse-border-subtle, var(--gitpulse-border));
 }
-
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 </style>

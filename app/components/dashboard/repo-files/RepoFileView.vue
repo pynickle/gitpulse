@@ -1895,19 +1895,6 @@ onActivated(() => {
   word-break: break-all;
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (max-width: 900px) {
   .repo-file-view__grid {
     grid-template-columns: var(--file-sidebar-width, 12rem) minmax(0, 1fr);

@@ -648,19 +648,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
   opacity: 0;
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .shadow-md {
   box-shadow: var(--gitpulse-shadow-raised);
 }

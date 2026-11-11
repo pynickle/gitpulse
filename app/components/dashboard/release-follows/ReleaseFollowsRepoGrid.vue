@@ -80,44 +80,11 @@ const emit = defineEmits<{
 }
 
 .spin-animation {
-  animation: spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .release-follows-grid__cell {
   height: 100%;
-}
-
-.release-follows-grid__cell :deep(.card-content) {
-  height: 100%;
-  display: flex;
-}
-
-.release-follows-grid__cell :deep(.dashboard-list-card__content) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.release-follows-grid__cell :deep(.dashboard-list-card__meta) {
-  margin-top: auto;
-}
-
-.release-follows-grid__cell :deep(.dashboard-list-card__description) {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
 }
 
 /* The narrow page runs its bands edge to edge, so the grid carries the gutter

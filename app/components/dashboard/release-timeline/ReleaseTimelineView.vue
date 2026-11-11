@@ -401,16 +401,6 @@ defineExpose({
 }
 
 .spin-animation {
-  animation: release-timeline-spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes release-timeline-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

@@ -12,7 +12,7 @@
 
     <div v-if="processedTimeline.length > 0" class="issue-timeline-events__list">
       <div v-for="item in processedTimeline" :key="item.renderKey">
-        <IssueTimelineCommentCard
+        <TimelineCommentCard
           v-if="item.kind === 'comment' && item.eventType === 'commented'"
           :item="item"
           :repo-owner="repoOwner"
@@ -77,11 +77,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n';
 
-import IssueTimelineCommentCard from '~/components/dashboard/issue/IssueTimelineCommentCard.vue';
 import IssueTimelineCommitCard from '~/components/dashboard/issue/IssueTimelineCommitCard.vue';
 import IssueTimelineEventBody from '~/components/dashboard/issue/IssueTimelineEventBody.vue';
 import IssueTimelineReferencedEventCard from '~/components/dashboard/issue/IssueTimelineReferencedEventCard.vue';
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
+import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import TimelineEventActorRow from '~/components/dashboard/timeline/TimelineEventActorRow.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import {

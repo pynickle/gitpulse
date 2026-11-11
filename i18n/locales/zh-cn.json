@@ -219,8 +219,6 @@
     "issueTypeFallback": "议题",
     "noDescription": "没有提供描述",
     "commitFallbackTitle": "提交",
-    "unknownCommitAuthor": "未知",
-    "committedAt": "于 {time} 提交",
     "commitFallbackRef": "提交",
     "referenceCommitIntro": "添加了引用此议题的提交",
     "referenceCommitFallback": "此议题被一个提交引用",
@@ -299,7 +297,6 @@
   "dashboard": {
     "filters": {
       "title": "筛选",
-      "active": "已启用筛选",
       "advanced": "高级筛选",
       "state": "状态",
       "repo": "仓库",
@@ -318,7 +315,6 @@
       "clearAll": "全部清除",
       "openDrawer": "打开筛选",
       "closeDrawer": "关闭筛选",
-      "removeFilter": "移除 {value}",
       "apply": "应用",
       "back": "返回",
       "addFilter": "+ 筛选",

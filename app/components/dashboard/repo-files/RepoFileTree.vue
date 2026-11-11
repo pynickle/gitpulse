@@ -187,19 +187,6 @@ const navigateToItem = async (item: RepoContentItem) => {
   white-space: nowrap;
 }
 
-.spin-animation {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Phone width: comfortable touch targets, matching the card padding the
    profile lists settle into on narrow screens. */
 @media (max-width: 1024px) {

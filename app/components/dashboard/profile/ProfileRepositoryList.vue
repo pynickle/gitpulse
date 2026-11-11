@@ -36,7 +36,7 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
           v-for="repo in items"
           :key="repo.id"
           :repo="repo"
-          class="profile-repo-list__cell"
+          class="dashboard-list-card--grid-cell"
         />
       </div>
 
@@ -70,37 +70,6 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
   align-items: stretch;
 }
 
-/* Cards fill their grid cell so rows stay even regardless of description length. */
-.profile-repo-list__cell {
-  height: 100%;
-}
-
-/* Pin the stats row to the card bottom so it doesn't drift with description length. */
-.profile-repo-list__cell :deep(.card-content) {
-  height: 100%;
-  display: flex;
-}
-
-.profile-repo-list__cell :deep(.dashboard-list-card__content) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.profile-repo-list__cell :deep(.dashboard-list-card__meta) {
-  margin-top: auto;
-}
-
-/* The shared card style clamps descriptions to a single line; give grid cards
-   room for up to three lines before truncating. */
-.profile-repo-list__cell :deep(.dashboard-list-card__description) {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-}
-
 .profile-repo-list__pagination {
   margin-top: 0.5rem;
 }
@@ -123,16 +92,6 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
 }
 
 .spin-animation {
-  animation: spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

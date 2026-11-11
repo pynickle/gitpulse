@@ -38,7 +38,12 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
     </div>
 
     <div v-else class="profile-pinned__grid">
-      <RepoItem v-for="repo in items" :key="repo.id" :repo="repo" class="profile-pinned__card" />
+      <RepoItem
+        v-for="repo in items"
+        :key="repo.id"
+        :repo="repo"
+        class="dashboard-list-card--grid-cell"
+      />
     </div>
   </section>
 </template>
@@ -70,26 +75,6 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
   align-items: stretch;
 }
 
-.profile-pinned__card {
-  height: 100%;
-}
-
-/* Match the repositories tab: pin the stats row to the card bottom. */
-.profile-pinned__card :deep(.card-content) {
-  height: 100%;
-  display: flex;
-}
-
-.profile-pinned__card :deep(.dashboard-list-card__content) {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.profile-pinned__card :deep(.dashboard-list-card__meta) {
-  margin-top: auto;
-}
-
 .profile-pinned__status {
   display: flex;
   flex-direction: column;
@@ -108,16 +93,6 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
 }
 
 .spin-animation {
-  animation: spin 1s linear infinite;
   color: var(--gitpulse-accent);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>
