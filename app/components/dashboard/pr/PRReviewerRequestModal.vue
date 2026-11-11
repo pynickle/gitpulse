@@ -3,6 +3,7 @@ import { SendIcon, UserIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import { isCopilotReviewer, type CopilotReviewEffort } from '#shared/utils/copilot-review';
 import DetailPeoplePickerModal from '~/components/dashboard/detail/DetailPeoplePickerModal.vue';
 import type {
   PRReviewerCandidate,
@@ -15,13 +16,14 @@ import type {
   DetailPeoplePickerWarning,
 } from '~/types/detail-people-picker';
 
-const { candidates, warnings } = defineProps<{
+const { candidates, warnings, copilotReviewEffort } = defineProps<{
   isVisible: boolean;
   candidates: PRReviewerCandidate[];
   warnings: PRReviewerCandidateWarning[];
   loading: boolean;
   submitting: boolean;
   error: string;
+  copilotReviewEffort?: CopilotReviewEffort;
 }>();
 
 const emit = defineEmits<{
@@ -46,7 +48,14 @@ const pickerCandidates = computed<DetailPeoplePickerCandidate[]>(() =>
     login: candidate.login,
     slug: candidate.slug,
     disabled: candidate.requested,
-    badgeLabel: candidate.requested ? t('prReview.status.requested') : '',
+    badgeLabel: [
+      candidate.requested ? t('prReview.status.requested') : '',
+      isCopilotReviewer(candidate)
+        ? t(`prReview.copilot.${copilotReviewEffort ?? 'defaultEffort'}`)
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
     ariaLabel: t('prReview.reviewerPicker.selectCandidate', { name: candidate.name }),
   }))
 );

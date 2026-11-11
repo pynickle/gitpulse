@@ -1,3 +1,5 @@
+import type { CopilotReviewEffort } from '#shared/utils/copilot-review';
+
 export type PullRequestReviewerKind = 'user' | 'team';
 
 export type PullRequestReviewerStatus =
@@ -28,6 +30,7 @@ export interface PullRequestReviewerSummaryItem {
   commentCount: number;
   requested: boolean;
   removable: boolean;
+  copilotReviewEffort?: CopilotReviewEffort;
 }
 
 export interface PullRequestReviewerRequestedUser {
@@ -55,6 +58,7 @@ export interface PullRequestReviewerSummaryWarning {
 }
 
 export interface PullRequestReviewersSummary {
+  canRequestCopilot?: boolean;
   items: PullRequestReviewerSummaryItem[];
   requestedUsers: PullRequestReviewerRequestedUser[];
   requestedTeams: PullRequestReviewerRequestedTeam[];
@@ -80,7 +84,7 @@ export interface PullRequestReviewerCandidate {
 }
 
 export interface PullRequestReviewerCandidateWarning {
-  source: 'requested-reviewers' | 'collaborators' | 'teams';
+  source: 'requested-reviewers' | 'collaborators' | 'teams' | 'copilot';
   message: string;
 }
 
@@ -91,11 +95,14 @@ export interface PullRequestReviewerCandidatesResponse {
   teams: PullRequestReviewerCandidate[];
   warnings: PullRequestReviewerCandidateWarning[];
   canRequestReviewers: boolean;
+  canRequestCopilot?: boolean;
+  copilotReviewEfforts?: CopilotReviewEffort[];
 }
 
 export interface PullRequestReviewerMutationPayload {
   reviewers?: string[];
   teamReviewers?: string[];
+  copilotReviewEffort?: CopilotReviewEffort;
 }
 
 export interface PullRequestReviewerMutationResponse {

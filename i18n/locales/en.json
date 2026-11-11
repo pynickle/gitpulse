@@ -961,6 +961,18 @@
       "requested": "Requested",
       "unknown": "Unknown"
     },
+    "copilot": {
+      "effort": "Copilot review effort",
+      "defaultEffort": "GitHub default",
+      "lite": "Lite",
+      "balanced": "Balanced",
+      "max": "Max",
+      "startedReview": "Copilot AI started reviewing",
+      "finishedReview": "Copilot AI finished reviewing",
+      "startedWork": "Copilot AI started work",
+      "finishedWork": "Copilot AI finished work",
+      "onBehalfOf": "on behalf of"
+    },
     "reviewerPicker": {
       "close": "Close reviewer picker",
       "search": "Search reviewers",

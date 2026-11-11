@@ -11,7 +11,7 @@
             {{ reviewerItems.length }}
           </span>
           <button
-            v-if="canRequestReviewers"
+            v-if="canRequestReviewers || canRequestCopilot"
             class="reviewers-action-btn"
             type="button"
             :aria-label="t('prReview.reviewerPicker.requestReviewers')"
@@ -48,7 +48,21 @@
               <UsersIcon :size="13" />
             </span>
             <span class="reviewer-item__body">
-              <span class="reviewer-item__name">{{ reviewer.name }}</span>
+              <span class="reviewer-item__identity">
+                <span class="reviewer-item__name">{{ reviewer.name }}</span>
+                <CopilotReviewEffortPicker
+                  v-if="isCopilotReviewer(reviewer)"
+                  v-model="copilotReviewEffort"
+                  :efforts="copilotReviewEfforts"
+                  :disabled="
+                    !canRequestCopilot ||
+                    reviewer.requested ||
+                    requestingReviewers ||
+                    prState !== 'open' ||
+                    merged
+                  "
+                />
+              </span>
               <span class="reviewer-item__meta">
                 <span class="reviewer-item__status-text">{{
                   getReviewerStatusLabel(reviewer.status)
@@ -66,7 +80,10 @@
               {{ reviewer.commentCount }}
             </span>
             <button
-              v-if="canRequestReviewers && canRerequestReviewer(reviewer)"
+              v-if="
+                (isCopilotReviewer(reviewer) ? canRequestCopilot : canRequestReviewers) &&
+                canRerequestReviewer(reviewer)
+              "
               class="reviewer-item__action"
               type="button"
               :aria-label="t('prReview.reviewerPicker.rerequestReviewer')"
@@ -88,6 +105,17 @@
           </div>
         </div>
         <p v-else class="sidebar-section__empty">{{ t('prReview.noReviewers') }}</p>
+        <div
+          v-if="canRequestCopilot && !reviewerItems.some(isCopilotReviewer)"
+          class="copilot-review-choice"
+        >
+          <span class="reviewer-item__name">Copilot</span>
+          <CopilotReviewEffortPicker
+            v-model="copilotReviewEffort"
+            :efforts="copilotReviewEfforts"
+            :disabled="requestingReviewers || prState !== 'open' || merged"
+          />
+        </div>
         <div v-if="reviewerWarnings.length > 0" class="reviewer-warning-list">
           <p
             v-for="warning in reviewerWarnings"
@@ -261,6 +289,8 @@ import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DashboardNotification } from '#shared/types/notifications';
+import { isCopilotReviewer, type CopilotReviewEffort } from '#shared/utils/copilot-review';
+import CopilotReviewEffortPicker from '~/components/dashboard/pr/CopilotReviewEffortPicker.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import type {
@@ -304,6 +334,9 @@ const {
   reviewers?: PRReviewersSummary;
   reviewerError?: string;
   canRequestReviewers: boolean;
+  canRequestCopilot?: boolean;
+  copilotReviewEfforts?: CopilotReviewEffort[];
+  requestingReviewers?: boolean;
   canOpenReview?: boolean;
   htmlUrl: string | undefined;
   createdAt: string | undefined;
@@ -320,6 +353,8 @@ const {
   repoInfo: { owner: string; repo: string } | null;
   prNumber: number | undefined;
 }>();
+
+const copilotReviewEffort = defineModel<CopilotReviewEffort>('copilotReviewEffort');
 
 const emit = defineEmits<{
   openReviewers: [];
@@ -656,6 +691,17 @@ const formatRelativeTime = (dateString: string | undefined) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.reviewer-item__identity,
+.copilot-review-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copilot-review-choice {
+  margin-top: 6px;
 }
 
 .reviewer-item {

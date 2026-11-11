@@ -149,11 +149,15 @@
           />
 
           <PRActions
+            v-model:copilot-review-effort="copilotReviewEffort"
+            :copilot-review-efforts="copilotReviewEfforts"
+            :requesting-reviewers="submittingReviewerRequest"
             :requested-reviewers="currentPullRequest?.requested_reviewers || []"
             :requested-teams="currentPullRequest?.requested_teams || []"
             :reviewers="currentPullRequest?.reviewers"
             :reviewer-error="reviewerPickerError"
             :can-request-reviewers="canRequestReviewers"
+            :can-request-copilot="canRequestCopilot"
             :can-open-review="canOpenReviewWindow"
             :html-url="currentPullRequest?.html_url"
             :created-at="currentPullRequest?.created_at"
@@ -178,6 +182,7 @@
           />
 
           <PRReviewerRequestModal
+            :copilot-review-effort="copilotReviewEffort"
             v-if="hasOpenedReviewerPicker"
             :is-visible="isReviewerPickerOpen"
             :candidates="reviewerCandidates"
@@ -211,6 +216,7 @@ import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/t
 import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
 import type { PullRequestDetailResponse, PullRequestDetailViewModel } from '#shared/types/pulls';
+import { isCopilotReviewer, type CopilotReviewEffort } from '#shared/utils/copilot-review';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
@@ -306,6 +312,18 @@ const reviewerPickerError = shallowRef('');
 const resolvingReviewThreadId = shallowRef<string | null>(null);
 const reviewerCandidates = ref<PRReviewerCandidate[]>([]);
 const reviewerCandidateWarnings = ref<PRReviewerCandidateWarning[]>([]);
+const selectedCopilotReviewEffort = shallowRef<CopilotReviewEffort | null>();
+const copilotReviewEfforts = shallowRef<CopilotReviewEffort[]>();
+const copilotRequestsAvailable = shallowRef<boolean | null>(null);
+const copilotReviewEffort = computed({
+  get: () =>
+    selectedCopilotReviewEffort.value === undefined
+      ? currentPullRequest.value.reviewers?.items.find(isCopilotReviewer)?.copilotReviewEffort
+      : (selectedCopilotReviewEffort.value ?? undefined),
+  set: (effort: CopilotReviewEffort | undefined) => {
+    selectedCopilotReviewEffort.value = effort ?? null;
+  },
+});
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
 const detailScrollRef = ref<HTMLElement | null>(null);
@@ -355,6 +373,17 @@ const canRequestReviewers = computed(
     Boolean(
       repoPermissions.value.admin || repoPermissions.value.maintain || repoPermissions.value.push
     ) && reviewerRequestsAvailable.value !== false
+);
+
+// Use GitHub's offered reviewer, independently of collaborator write permissions.
+const canRequestCopilot = computed(
+  () =>
+    Boolean(
+      copilotRequestsAvailable.value ?? currentPullRequest.value.reviewers?.canRequestCopilot
+    ) &&
+    currentPullRequest.value.state === 'open' &&
+    !currentPullRequest.value.merged &&
+    !currentPullRequest.value.merged_at
 );
 
 // Repo triage+ rights, or the author closing/reopening their own pull request.
@@ -471,7 +500,7 @@ const addTimelineEvent = (event: PRTimelineItem) => {
 };
 
 const openReviewerPicker = () => {
-  if (!canRequestReviewers.value) {
+  if (!canRequestReviewers.value && !canRequestCopilot.value) {
     return;
   }
 
@@ -632,7 +661,9 @@ const loadReviewerCandidates = async (query = '') => {
     reviewerCandidates.value = data.items ?? [];
     reviewerCandidateWarnings.value = data.warnings ?? [];
     reviewerRequestsAvailable.value = data.canRequestReviewers;
-    if (!data.canRequestReviewers) {
+    copilotReviewEfforts.value = data.copilotReviewEfforts;
+    copilotRequestsAvailable.value = data.canRequestCopilot ?? null;
+    if (!data.canRequestReviewers && !canRequestCopilot.value) {
       isReviewerPickerOpen.value = false;
     }
   } catch (err: unknown) {
@@ -664,7 +695,13 @@ const requestReviewerSelection = async (payload: PRReviewerMutationPayload) => {
   try {
     const { owner, repo } = repoInfo.value;
     const pullNumber = currentPullRequest.value.number;
-    const data = await requestReviewers(owner, repo, pullNumber, payload);
+    const data = await requestReviewers(owner, repo, pullNumber, {
+      ...payload,
+      ...(payload.reviewers?.some((login) => isCopilotReviewer({ login })) &&
+      copilotReviewEffort.value
+        ? { copilotReviewEffort: copilotReviewEffort.value }
+        : {}),
+    });
 
     if (pullRequestIdentity !== getPullRequestIdentity() || !currentPullRequest.value) {
       return;
@@ -678,13 +715,13 @@ const requestReviewerSelection = async (payload: PRReviewerMutationPayload) => {
     isReviewerPickerOpen.value = false;
     reviewerCandidates.value = [];
     reviewerCandidateWarnings.value = [];
+    void fetchTimeline();
   } catch (err: unknown) {
     console.error('Error requesting pull request reviewers:', err);
     if (pullRequestIdentity === getPullRequestIdentity()) {
-      reviewerPickerError.value = getFetchErrorMessage(
-        err,
-        t('prReview.reviewerPicker.requestFailed')
-      );
+      const message = getFetchErrorMessage(err, t('prReview.reviewerPicker.requestFailed'));
+      await Promise.allSettled([loadReviewerSummary(), loadReviewerCandidates()]);
+      if (pullRequestIdentity === getPullRequestIdentity()) reviewerPickerError.value = message;
     }
   } finally {
     if (pullRequestIdentity === getPullRequestIdentity()) {
@@ -704,7 +741,10 @@ const createReviewerMutationPayload = (
 };
 
 const rerequestReviewer = async (reviewer: PRReviewerSummaryItem) => {
-  if (!canRequestReviewers.value || reviewer.requested) {
+  if (
+    !(isCopilotReviewer(reviewer) ? canRequestCopilot.value : canRequestReviewers.value) ||
+    reviewer.requested
+  ) {
     return;
   }
 
@@ -828,6 +868,9 @@ const resetPullRequestScopedState = (pullRequest: PullRequestDetailViewModel) =>
   submittingReviewerRequest.value = false;
   resolvingReviewThreadId.value = null;
   reviewerRequestsAvailable.value = null;
+  selectedCopilotReviewEffort.value = undefined;
+  copilotReviewEfforts.value = undefined;
+  copilotRequestsAvailable.value = null;
   reviewerPickerError.value = '';
   reviewerCandidates.value = [];
   reviewerCandidateWarnings.value = [];

@@ -1,8 +1,17 @@
 import type { Octokit } from '@octokit/core';
 import * as z from 'zod';
 
-import { fetchPaginatedArray } from '#server/utils/github-timeline-utils';
+import {
+  fetchPaginatedArray,
+  fetchPRReviewMetadata,
+  type TimelineReviewMetadata,
+} from '#server/utils/github-timeline-utils';
 import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
+import {
+  isCopilotReviewer,
+  normalizeCopilotReviewEffort,
+  type CopilotReviewEffort,
+} from '#shared/utils/copilot-review';
 
 import { stringifyGitHubId } from './github-id-utils';
 
@@ -69,6 +78,7 @@ interface PRReviewerSummaryTelemetry {
 export interface NormalizedReviewerRequestBody {
   reviewers: string[];
   teamReviewers: string[];
+  copilotReviewEffort?: CopilotReviewEffort;
 }
 
 export interface PRReviewerSummaryItem {
@@ -90,9 +100,11 @@ export interface PRReviewerSummaryItem {
   commentCount: number;
   requested: boolean;
   removable: boolean;
+  copilotReviewEffort?: CopilotReviewEffort;
 }
 
 export interface PRReviewersSummary {
+  canRequestCopilot?: boolean;
   items: PRReviewerSummaryItem[];
   requestedUsers: GitHubUserSummary[];
   requestedTeams: GitHubTeamSummary[];
@@ -118,6 +130,7 @@ export interface PRReviewerCandidate {
 }
 
 export interface PRReviewerCandidatesResponse {
+  canRequestCopilot?: boolean;
   query: string;
   items: PRReviewerCandidate[];
   users: PRReviewerCandidate[];
@@ -132,7 +145,7 @@ export interface PRReviewerSummaryWarning {
 }
 
 export interface PRReviewerCandidateWarning {
-  source: 'requested-reviewers' | 'collaborators' | 'teams';
+  source: 'requested-reviewers' | 'collaborators' | 'teams' | 'copilot';
   message: string;
 }
 
@@ -155,10 +168,19 @@ const reviewerRequestBodySchema = z
   .strictObject({
     reviewers: reviewerListSchema.default([]),
     teamReviewers: reviewerListSchema.default([]),
+    copilotReviewEffort: z.enum(['lite', 'balanced', 'max']).optional(),
   })
   .refine((body) => body.reviewers.length > 0 || body.teamReviewers.length > 0, {
     message: 'At least one reviewer or team reviewer is required',
-  });
+  })
+  .refine(
+    (body) =>
+      body.copilotReviewEffort == null ||
+      body.reviewers.some((login) => isCopilotReviewer({ login })),
+    {
+      message: 'Copilot review effort requires a Copilot reviewer',
+    }
+  );
 
 const getErrorMessage = (error: unknown, fallback: string) =>
   (error as { message?: string })?.message || fallback;
@@ -374,14 +396,21 @@ function ensureUserEntry(
   user: GitHubUserSummary,
   fallbackLogin?: string
 ) {
-  const login = trimString(user.login) || fallbackLogin;
+  const login = isCopilotReviewer(user) ? 'Copilot' : trimString(user.login) || fallbackLogin;
 
   if (!login) {
     return null;
   }
 
   const key = userKey(login);
-  const existing = entries.get(key);
+  const id = stringifyGitHubId(user.id);
+  const existing =
+    entries.get(key) ??
+    [...entries.values()].find(
+      (entry) =>
+        entry.kind === 'user' &&
+        ((id != null && entry.id === id) || (user.node_id != null && entry.nodeId === user.node_id))
+    );
 
   if (existing) {
     existing.id ??= stringifyGitHubId(user.id);
@@ -533,6 +562,81 @@ export async function fetchRequestedReviewers(
   };
 }
 
+export async function requestPRReviewers(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  body: NormalizedReviewerRequestBody
+) {
+  const requestsCopilot = body.reviewers.some((login) => isCopilotReviewer({ login }));
+  if (requestsCopilot && !(await fetchCopilotReviewAccess(octokit, owner, repo, pullNumber))) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Copilot is not available as a reviewer for this pull request',
+    });
+  }
+  const reviewers = body.reviewers.filter((login) => !isCopilotReviewer({ login }));
+  let pullRequest: Record<string, unknown> | undefined;
+  if (reviewers.length || body.teamReviewers.length) {
+    const { data } = await octokit.request(
+      'POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers',
+      {
+        owner,
+        repo,
+        pull_number: pullNumber,
+        reviewers,
+        team_reviewers: body.teamReviewers,
+      }
+    );
+    pullRequest = data as Record<string, unknown>;
+  }
+  if (requestsCopilot) {
+    await octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/copilot-code-review', {
+      owner,
+      repo,
+      pull_number: pullNumber,
+      ...(body.copilotReviewEffort ? { review_effort: body.copilotReviewEffort } : {}),
+    });
+  }
+  return pullRequest;
+}
+
+async function fetchCopilotReviewAccess(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  pullNumber: number
+) {
+  const response = await octokit.graphql<{
+    repository: {
+      pullRequest?: {
+        state: string;
+        suggestedReviewerActors?: {
+          nodes?: Array<{ reviewer?: { __typename?: string; login?: string } | null } | null>;
+        };
+      } | null;
+    } | null;
+  }>(
+    `query CopilotReviewAccess($owner: String!, $repo: String!, $pullNumber: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pullNumber) {
+        state
+        suggestedReviewerActors(first: 10, query: "Copilot") {
+          nodes { reviewer { __typename ... on Bot { login } } }
+        }
+      }
+    }
+  }`,
+    { owner, repo, pullNumber }
+  );
+  const pull = response.repository?.pullRequest;
+  const offered = pull?.suggestedReviewerActors?.nodes?.some(
+    (node) => node?.reviewer?.__typename === 'Bot' && isCopilotReviewer(node.reviewer)
+  );
+  return pull?.state === 'OPEN' && Boolean(offered);
+}
+
 export async function fetchPRReviewerSummary(
   octokit: GitHubClient,
   owner: string,
@@ -549,9 +653,10 @@ export async function fetchPRReviewerSummary(
   let requestedReviewers: RequestedReviewersResponse;
   let reviews: PullReviewResponse[];
   let reviewComments: PullReviewCommentResponse[];
+  let canRequestCopilot: boolean;
 
   try {
-    [requestedReviewers, reviews, reviewComments] = await Promise.all([
+    [requestedReviewers, reviews, reviewComments, canRequestCopilot] = await Promise.all([
       fetchRequestedReviewers(telemetryOctokit, owner, repo, pullNumber),
       fetchPaginatedArray<PullReviewResponse>(
         telemetryOctokit,
@@ -571,6 +676,10 @@ export async function fetchPRReviewerSummary(
           pull_number: pullNumber,
         }
       ),
+      fetchCopilotReviewAccess(octokit, owner, repo, pullNumber).catch((error: unknown) => {
+        console.warn('Failed to check Copilot reviewer availability:', error);
+        return false;
+      }),
     ]);
   } catch (error: unknown) {
     warnReviewerSummaryFailure({
@@ -585,6 +694,15 @@ export async function fetchPRReviewerSummary(
   }
 
   const entries = new Map<string, PRReviewerSummaryItem>();
+  const hasCopilot =
+    requestedReviewers.users.some(isCopilotReviewer) ||
+    reviews.some((review) => isCopilotReviewer(review.user));
+  const reviewMetadata = hasCopilot
+    ? await fetchPRReviewMetadata(octokit, owner, repo, pullNumber).catch((error: unknown) => {
+        console.warn('Failed to fetch Copilot review metadata:', error);
+        return new Map<string, TimelineReviewMetadata>();
+      })
+    : new Map<string, TimelineReviewMetadata>();
 
   for (const user of requestedReviewers.users) {
     const entry = ensureUserEntry(entries, user);
@@ -617,6 +735,10 @@ export async function fetchPRReviewerSummary(
       entry.rawState = typeof review.state === 'string' ? review.state : undefined;
       entry.latestSubmittedAt = latestSubmittedAt;
       entry.latestReviewUrl = review.html_url;
+      const reviewId = stringifyGitHubId(review.id);
+      entry.copilotReviewEffort = reviewId
+        ? reviewMetadata.get(reviewId)?.copilotReviewEffort
+        : undefined;
     }
   }
 
@@ -646,6 +768,7 @@ export async function fetchPRReviewerSummary(
 
   const items = sortReviewerItems([...entries.values()]);
   const summary = {
+    canRequestCopilot,
     items,
     requestedUsers: requestedReviewers.users,
     requestedTeams: requestedReviewers.teams,
@@ -721,21 +844,23 @@ function matchesCandidate(candidate: PRReviewerCandidate, query: string) {
 }
 
 interface OrganizationTeamsGraphqlResponse {
-  organization?: {
-    teams?: {
-      nodes?: Array<{
-        id?: string;
-        databaseId?: number | null;
-        combinedSlug?: string;
-        name?: string;
-        description?: string | null;
-        avatarUrl?: string | null;
-        repositories?: {
-          nodes?: Array<{
-            nameWithOwner?: string;
-          } | null> | null;
-        } | null;
-      } | null> | null;
+  repository?: {
+    owner?: {
+      teams?: {
+        nodes?: Array<{
+          id?: string;
+          databaseId?: number | null;
+          combinedSlug?: string;
+          name?: string;
+          description?: string | null;
+          avatarUrl?: string | null;
+          repositories?: {
+            nodes?: Array<{
+              nameWithOwner?: string;
+            } | null> | null;
+          } | null;
+        } | null> | null;
+      } | null;
     } | null;
   } | null;
 }
@@ -753,30 +878,34 @@ async function fetchRepositoryTeams(
   repo: string
 ): Promise<GitHubTeamSummary[]> {
   const response = await octokit.graphql<OrganizationTeamsGraphqlResponse>(
-    `query GitPulseRepositoryReviewTeams($owner: String!) {
-      organization(login: $owner) {
-        teams(first: 100) {
-          nodes {
-            id
-            databaseId
-            combinedSlug
-            name
-            description
-            avatarUrl(size: 40)
-            repositories(first: 100) {
+    `query GitPulseRepositoryReviewTeams($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
+        owner {
+          ... on Organization {
+            teams(first: 100) {
               nodes {
-                nameWithOwner
+                id
+                databaseId
+                combinedSlug
+                name
+                description
+                avatarUrl(size: 40)
+                repositories(first: 100) {
+                  nodes {
+                    nameWithOwner
+                  }
+                }
               }
             }
           }
         }
       }
     }`,
-    { owner }
+    { owner, repo }
   );
 
   const repoNameWithOwner = `${owner}/${repo}`.toLowerCase();
-  const teams = response.organization?.teams?.nodes ?? [];
+  const teams = response.repository?.owner?.teams?.nodes ?? [];
 
   return teams.flatMap((team) => {
     if (!team) return [];
@@ -812,11 +941,20 @@ export async function fetchReviewerCandidates(
   pullNumber: number,
   query = ''
 ) {
+  const warnings: PRReviewerCandidateWarning[] = [];
+  const canRequestCopilot = await fetchCopilotReviewAccess(octokit, owner, repo, pullNumber).catch(
+    (error: unknown) => {
+      warnings.push({
+        source: 'copilot',
+        message: getErrorMessage(error, 'Copilot availability could not be checked.'),
+      });
+      return false;
+    }
+  );
   let requestedReviewers: RequestedReviewersResponse = { users: [], teams: [] };
   let collaborators: GitHubUserSummary[] = [];
   let teams: GitHubTeamSummary[] = [];
   let canRequestReviewers = true;
-  const warnings: PRReviewerCandidateWarning[] = [];
 
   try {
     requestedReviewers = await fetchRequestedReviewers(octokit, owner, repo, pullNumber);
@@ -839,25 +977,28 @@ export async function fetchReviewerCandidates(
   } catch (error: unknown) {
     if (isReviewerRequestPermissionError(error)) {
       canRequestReviewers = false;
+    } else {
+      warnings.push({
+        source: 'collaborators',
+        message: getErrorMessage(error, 'Repository collaborators are unavailable.'),
+      });
     }
-    warnings.push({
-      source: 'collaborators',
-      message: getErrorMessage(error, 'Repository collaborators are unavailable.'),
-    });
   }
 
-  try {
-    teams = await fetchRepositoryTeams(octokit, owner, repo);
-  } catch (error: unknown) {
-    warnings.push({
-      source: 'teams',
-      message: getErrorMessage(error, 'Repository teams are unavailable.'),
-    });
+  if (canRequestReviewers) {
+    try {
+      teams = await fetchRepositoryTeams(octokit, owner, repo);
+    } catch (error: unknown) {
+      warnings.push({
+        source: 'teams',
+        message: getErrorMessage(error, 'Repository teams are unavailable.'),
+      });
+    }
   }
 
   const requestedKeys = new Set([
     ...requestedReviewers.users
-      .map((user) => trimString(user.login))
+      .map((user) => (isCopilotReviewer(user) ? 'Copilot' : trimString(user.login)))
       .filter(Boolean)
       .map(userKey),
     ...requestedReviewers.teams
@@ -866,21 +1007,44 @@ export async function fetchReviewerCandidates(
       .map(teamKey),
   ]);
 
-  if (!canRequestReviewers) {
-    return {
-      query,
-      items: [],
-      users: [],
-      teams: [],
-      warnings,
-      canRequestReviewers,
-    };
-  }
-
   const userCandidates = collaborators
+    .filter((user) => !isCopilotReviewer(user))
     .map((user) => mapUserCandidate(user, requestedKeys))
     .filter((candidate): candidate is PRReviewerCandidate => Boolean(candidate))
     .filter((candidate) => matchesCandidate(candidate, query));
+
+  const copilot = mapUserCandidate(
+    {
+      id: 175728472,
+      node_id: 'BOT_kgDOCnlnWA',
+      login: 'Copilot',
+      avatar_url: 'https://avatars.githubusercontent.com/in/946600',
+      html_url: 'https://github.com/apps/copilot-pull-request-reviewer',
+    },
+    requestedKeys
+  )!;
+  if (canRequestCopilot && matchesCandidate(copilot, query)) userCandidates.unshift(copilot);
+
+  let copilotReviewEfforts: CopilotReviewEffort[] | undefined;
+  try {
+    const { data } = await octokit.request(
+      'GET /repos/{owner}/{repo}/copilot/code-review/settings',
+      { owner, repo }
+    );
+    const settings = data as { available_review_efforts?: string[] };
+    copilotReviewEfforts = settings.available_review_efforts?.flatMap((value) => {
+      const effort = normalizeCopilotReviewEffort(value);
+      return effort ? [effort] : [];
+    });
+  } catch (error: unknown) {
+    // Settings require administration rights; review requests have their own authorization.
+    if (getErrorStatus(error) !== 403 && getErrorStatus(error) !== 404) {
+      warnings.push({
+        source: 'copilot',
+        message: getErrorMessage(error, 'Copilot review options are unavailable.'),
+      });
+    }
+  }
 
   const teamCandidates = teams
     .map((team) => mapTeamCandidate(team, requestedKeys))
@@ -899,5 +1063,7 @@ export async function fetchReviewerCandidates(
     teams: teamCandidates,
     warnings,
     canRequestReviewers,
+    canRequestCopilot,
+    copilotReviewEfforts,
   };
 }

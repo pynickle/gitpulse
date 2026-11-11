@@ -2,6 +2,7 @@ import {
   createEmptyPRReviewerSummary,
   fetchPRReviewerSummary,
   normalizeReviewerRequestBody,
+  requestPRReviewers,
 } from '#server/utils/pr-reviewers-utils';
 import { extractPullRouteParams, executeGitHubRequest } from '#server/utils/repo-route-utils';
 
@@ -15,16 +16,7 @@ export default defineEventHandler(async (event) => {
   return executeGitHubRequest(
     event,
     async (octokit) => {
-      const { data: pullRequest } = await octokit.request(
-        'POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers',
-        {
-          owner,
-          repo,
-          pull_number: pullNumber,
-          reviewers: body.reviewers,
-          team_reviewers: body.teamReviewers,
-        }
-      );
+      const pullRequest = await requestPRReviewers(octokit, owner, repo, pullNumber, body);
 
       let reviewers: Awaited<ReturnType<typeof fetchPRReviewerSummary>>;
       try {

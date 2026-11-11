@@ -62,6 +62,7 @@ const githubAdapter = {
 mock.module('#server/utils/github-auth-utils', () => githubAdapter);
 mock.module('../server/utils/github-auth-utils', () => githubAdapter);
 mock.module('#shared/types/comment-moderation', () => import('../shared/types/comment-moderation'));
+mock.module('#shared/utils/copilot-review', () => import('../shared/utils/copilot-review'));
 mock.module(
   '#server/utils/comment-moderation-utils',
   () => import('../server/utils/comment-moderation-utils')

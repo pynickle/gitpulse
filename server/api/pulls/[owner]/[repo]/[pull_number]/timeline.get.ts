@@ -5,7 +5,7 @@ import {
   createUnsupportedWarnings,
   enrichPRTimelineWithReviewData,
   fetchPaginatedArray,
-  fetchPRReviewOnBehalfOf,
+  fetchPRReviewMetadata,
   fetchPRReviewThreads,
   fetchTimelinePage,
   normalizePRTimelineItems,
@@ -13,7 +13,7 @@ import {
   SKIPPED_TIMELINE_EVENTS,
   sortTimelineItems,
   throwTimelineFatalError,
-  type TimelineReviewTeamPayload,
+  type TimelineReviewMetadata,
 } from '#server/utils/github-timeline-utils';
 import { fetchCommitCheckRollups } from '#server/utils/pr-check-rollup-graphql-utils';
 
@@ -78,16 +78,16 @@ async function fetchPRReviewThreadsForTimeline(
   }
 }
 
-async function fetchPRReviewOnBehalfOfForTimeline(
-  octokit: Parameters<typeof fetchPRReviewOnBehalfOf>[0],
+async function fetchPRReviewMetadataForTimeline(
+  octokit: Parameters<typeof fetchPRReviewMetadata>[0],
   owner: string,
   repo: string,
   pullNumber: number
-): Promise<Map<string, TimelineReviewTeamPayload[]>> {
+): Promise<Map<string, TimelineReviewMetadata>> {
   try {
-    return await fetchPRReviewOnBehalfOf(octokit, owner, repo, pullNumber);
+    return await fetchPRReviewMetadata(octokit, owner, repo, pullNumber);
   } catch (error: unknown) {
-    console.warn('Failed to fetch pull request review on-behalf-of teams:', error);
+    console.warn('Failed to fetch pull request review metadata:', error);
     return new Map();
   }
 }
@@ -119,7 +119,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       pullReviews,
       pullReviewComments,
       pullReviewThreads,
-      reviewOnBehalfOf,
+      reviewMetadata,
     ] = await Promise.all([
       fetchTimelinePage<Record<string, any>>(
         octokit,
@@ -159,7 +159,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         }
       ),
       fetchPRReviewThreadsForTimeline(octokit, owner, repo, pullNumber),
-      fetchPRReviewOnBehalfOfForTimeline(octokit, owner, repo, pullNumber),
+      fetchPRReviewMetadataForTimeline(octokit, owner, repo, pullNumber),
     ]);
 
     const pullCommitsBySha = buildPullCommitLookup(pullCommits);
@@ -179,7 +179,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       pullReviews,
       pullReviewComments,
       pullReviewThreads,
-      reviewOnBehalfOf
+      reviewMetadata
     );
     const commitShas = timeline.flatMap((item) =>
       item.kind === 'commit' && item.commit?.oid ? [item.commit.oid] : []

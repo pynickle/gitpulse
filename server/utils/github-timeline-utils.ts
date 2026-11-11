@@ -4,6 +4,10 @@ import type { CommentModeration } from '#shared/types/comment-moderation';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { ReactionContent, ReactionSummaryItem } from '#shared/types/reactions';
 import type { CommitVerification } from '#shared/types/repos';
+import {
+  normalizeCopilotReviewEffort,
+  type CopilotReviewEffort,
+} from '#shared/utils/copilot-review';
 import { ISSUE_COMMENT_REACTION_CONTENTS } from '#shared/utils/reactions';
 
 import { restCommentModeration } from './comment-moderation-utils';
@@ -105,6 +109,12 @@ export interface TimelineReviewTeamPayload {
   slug?: string;
   url?: string;
   organizationLogin?: string;
+}
+
+export interface TimelineReviewMetadata {
+  onBehalfOf?: TimelineReviewTeamPayload[];
+  isCopilotCodeReview?: boolean;
+  copilotReviewEffort?: CopilotReviewEffort;
 }
 
 interface SortableTimelineItem {
@@ -433,8 +443,8 @@ export async function fetchPRReviewThreads(
   }
 }
 
-const PR_REVIEW_ON_BEHALF_OF_QUERY = `
-  query PullRequestReviewOnBehalfOf(
+const PR_REVIEW_METADATA_QUERY = `
+  query PullRequestReviewMetadata(
     $owner: String!
     $repo: String!
     $pullNumber: Int!
@@ -445,6 +455,8 @@ const PR_REVIEW_ON_BEHALF_OF_QUERY = `
         reviews(first: 100, after: $cursor) {
           nodes {
             databaseId
+            isCopilotCodeReview
+            copilotCodeReviewEffort
             onBehalfOf(first: 10) {
               nodes {
                 name
@@ -473,12 +485,14 @@ interface TimelineReviewTeamNode {
   organization?: { login?: string | null } | null;
 }
 
-interface PRReviewOnBehalfOfGraphQLResponse {
+interface PRReviewMetadataGraphQLResponse {
   repository?: {
     pullRequest?: {
       reviews?: {
         nodes?: Array<{
           databaseId?: number | null;
+          isCopilotCodeReview?: boolean;
+          copilotCodeReviewEffort?: string | null;
           onBehalfOf?: {
             nodes?: Array<TimelineReviewTeamNode | null> | null;
           } | null;
@@ -493,26 +507,24 @@ interface PRReviewOnBehalfOfGraphQLResponse {
 }
 
 /**
- * Maps each review's REST database id to the teams it was submitted on behalf of.
- * `PullRequestReview.onBehalfOf` only exists in GraphQL; the REST review payload
- * does not expose it.
+ * GraphQL owns team attribution and Copilot provenance/effort, which REST omits.
  */
-export async function fetchPRReviewOnBehalfOf(
+export async function fetchPRReviewMetadata(
   octokit: GitHubClient,
   owner: string,
   repo: string,
   pullNumber: number
-): Promise<Map<string, TimelineReviewTeamPayload[]>> {
-  const teamsByReviewId = new Map<string, TimelineReviewTeamPayload[]>();
+): Promise<Map<string, TimelineReviewMetadata>> {
+  const metadataByReviewId = new Map<string, TimelineReviewMetadata>();
   let cursor: string | null = null;
 
   while (true) {
-    const response = (await octokit.graphql(PR_REVIEW_ON_BEHALF_OF_QUERY, {
+    const response = (await octokit.graphql(PR_REVIEW_METADATA_QUERY, {
       owner,
       repo,
       pullNumber,
       cursor,
-    })) as PRReviewOnBehalfOfGraphQLResponse;
+    })) as PRReviewMetadataGraphQLResponse;
     const reviews = response.repository?.pullRequest?.reviews;
 
     for (const review of reviews?.nodes ?? []) {
@@ -533,13 +545,21 @@ export async function fetchPRReviewOnBehalfOf(
           : []
       );
 
-      if (teams.length) {
-        teamsByReviewId.set(String(review.databaseId), teams);
+      if (teams.length || review.isCopilotCodeReview) {
+        metadataByReviewId.set(String(review.databaseId), {
+          ...(teams.length ? { onBehalfOf: teams } : {}),
+          ...(review.isCopilotCodeReview
+            ? {
+                isCopilotCodeReview: true,
+                copilotReviewEffort: normalizeCopilotReviewEffort(review.copilotCodeReviewEffort),
+              }
+            : {}),
+        });
       }
     }
 
     if (!reviews?.pageInfo?.hasNextPage || !reviews.pageInfo.endCursor) {
-      return teamsByReviewId;
+      return metadataByReviewId;
     }
 
     cursor = reviews.pageInfo.endCursor;
@@ -1168,6 +1188,17 @@ export function normalizePRIssueTimelineEvent(
   const eventName = String(rawEvent.event ?? 'unknown');
 
   switch (eventName) {
+    case 'copilot_work_started':
+    case 'copilot_work_finished':
+      return {
+        ...buildBaseTimelineItem(rawEvent),
+        kind: 'event',
+        eventType: eventName,
+        copilotWorkType:
+          rawEvent.performed_via_github_app?.slug === 'copilot-pull-request-reviewer'
+            ? 'review'
+            : 'work',
+      };
     case 'review_requested':
       return {
         ...buildBaseTimelineItem(rawEvent),
@@ -1450,7 +1481,7 @@ export function enrichPRTimelineWithReviewData(
   reviews: Record<string, any>[],
   reviewComments: Record<string, any>[],
   reviewThreads: TimelineReviewThreadPayload[] = [],
-  onBehalfOfByReviewId: Map<string, TimelineReviewTeamPayload[]> = new Map()
+  metadataByReviewId: Map<string, TimelineReviewMetadata> = new Map()
 ): SortableTimelineItem[] {
   const reviewThreadsByCommentId = buildReviewThreadsByCommentId(reviewThreads);
   const commentsByReviewId = buildReviewCommentsByReviewId(
@@ -1477,7 +1508,7 @@ export function enrichPRTimelineWithReviewData(
     const review = reviewsById.get(reviewId);
     const dismissal = dismissalsByReviewId.get(reviewId);
     const reviewComments = commentsByReviewId.get(reviewId) ?? [];
-    const onBehalfOf = onBehalfOfByReviewId.get(reviewId);
+    const metadata = metadataByReviewId.get(reviewId);
     const submittedState = normalizeReviewState(
       dismissal?.previousState ?? item.state ?? review?.state
     );
@@ -1494,7 +1525,7 @@ export function enrichPRTimelineWithReviewData(
       url: item.url ?? review?.html_url,
       reviewComments,
       dismissal,
-      ...(onBehalfOf?.length ? { onBehalfOf } : {}),
+      ...metadata,
     };
   });
 

@@ -961,6 +961,18 @@
       "requested": "已请求",
       "unknown": "未知"
     },
+    "copilot": {
+      "effort": "Copilot 审查档位",
+      "defaultEffort": "GitHub 默认",
+      "lite": "Lite",
+      "balanced": "Balanced",
+      "max": "Max",
+      "startedReview": "Copilot AI 开始审查",
+      "finishedReview": "Copilot AI 完成审查",
+      "startedWork": "Copilot AI 开始工作",
+      "finishedWork": "Copilot AI 完成工作",
+      "onBehalfOf": "受托于"
+    },
     "reviewerPicker": {
       "close": "关闭审查者选择器",
       "search": "搜索审查者",

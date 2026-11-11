@@ -167,6 +167,14 @@ _Avoid_: single-PR confirmation, chooser setting
 
 ## Pull Request Review
 
+**Copilot Reviewer**:
+GitHub's automated pull request reviewer. Its review-request identity and the bot author of its submitted reviews represent the same reviewer.
+_Avoid_: two Copilot reviewers, Copilot user versus Copilot bot
+
+**Copilot Review Effort**:
+The depth of a Copilot review: Lite, Balanced, or Max. An effort explicitly chosen for a review takes priority; later reviews of the same pull request inherit the previously used effort unless another choice overrides it.
+_Avoid_: model, review verdict, review status
+
 **Check Rollup**:
 GitHub's precomputed summary of the checks on one commit: one aggregate state plus the deduplicated set of check runs and status contexts GitHub shows on the Checks tab. A pull request's Check Rollup is the rollup of its head commit.
 _Avoid_: CI status, action status, workflow status, combined status

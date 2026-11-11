@@ -3,12 +3,13 @@ import { describe, expect, mock, test } from 'bun:test';
 const reactions = await import('../shared/utils/reactions');
 
 mock.module('#shared/utils/reactions', () => reactions);
+mock.module('#shared/utils/copilot-review', () => import('../shared/utils/copilot-review'));
 mock.module('#shared/types/comment-moderation', () => import('../shared/types/comment-moderation'));
 
 const {
   assignCommitCheckRollups,
   enrichPRTimelineWithReviewData,
-  fetchPRReviewOnBehalfOf,
+  fetchPRReviewMetadata,
   normalizeIssueTimelineEvent,
   normalizePRTimelineEvent,
   normalizeTimelineStateItems,
@@ -34,6 +35,40 @@ const normalizeIssueTimeline = (rawEvents: Record<string, any>[]) =>
   );
 
 describe('PR timeline server normalization', () => {
+  test('attributes Copilot work to the service and preserves the requesting actor', () => {
+    const [item] = normalizePRTimelineEvent(
+      {
+        id: 1,
+        event: 'copilot_work_started',
+        actor: user('viadanna'),
+        created_at: '2026-11-11T02:56:35Z',
+        performed_via_github_app: { id: 946600, slug: 'copilot-pull-request-reviewer' },
+      },
+      context
+    );
+
+    expect(item).toMatchObject({
+      kind: 'event',
+      eventType: 'copilot_work_started',
+      actor: { login: 'viadanna' },
+      copilotWorkType: 'review',
+    });
+  });
+
+  test('attaches the actual Copilot effort to its submitted review', () => {
+    const timeline = normalizePRTimelineEvent(
+      { id: 2, event: 'reviewed', user: user('Copilot') },
+      context
+    );
+    const [item] = enrichPRTimelineWithReviewData(
+      timeline,
+      [],
+      [],
+      [],
+      new Map([['2', { isCopilotCodeReview: true, copilotReviewEffort: 'balanced' }]])
+    );
+    expect(item).toMatchObject({ isCopilotCodeReview: true, copilotReviewEffort: 'balanced' });
+  });
   test('adds server display text for a single assignment', () => {
     const [item] = normalizePullTimeline([
       {
@@ -247,15 +282,15 @@ describe('PR timeline server normalization', () => {
           },
         };
       },
-    } as unknown as Parameters<typeof fetchPRReviewOnBehalfOf>[0];
+    } as unknown as Parameters<typeof fetchPRReviewMetadata>[0];
 
-    const teamsByReviewId = await fetchPRReviewOnBehalfOf(octokit, 'octo', 'app', 1);
+    const teamsByReviewId = await fetchPRReviewMetadata(octokit, 'octo', 'app', 1);
 
     expect(calls).toEqual([
       { owner: 'octo', repo: 'app', pullNumber: 1, cursor: null },
       { owner: 'octo', repo: 'app', pullNumber: 1, cursor: 'cursor-1' },
     ]);
-    expect(teamsByReviewId.get('11')).toEqual([
+    expect(teamsByReviewId.get('11')?.onBehalfOf).toEqual([
       {
         name: 'Reviewers',
         slug: 'reviewers',
@@ -264,7 +299,7 @@ describe('PR timeline server normalization', () => {
       },
     ]);
     expect(teamsByReviewId.has('12')).toBe(false);
-    expect(teamsByReviewId.get('13')).toEqual([
+    expect(teamsByReviewId.get('13')?.onBehalfOf).toEqual([
       {
         name: 'Core',
         slug: 'core',
@@ -300,7 +335,12 @@ describe('PR timeline server normalization', () => {
       reviews,
       [],
       [],
-      new Map([['11', [{ name: 'Reviewers', slug: 'reviewers', organizationLogin: 'octo' }]]])
+      new Map([
+        [
+          '11',
+          { onBehalfOf: [{ name: 'Reviewers', slug: 'reviewers', organizationLogin: 'octo' }] },
+        ],
+      ])
     );
 
     expect(enriched).toMatchObject({

@@ -45,6 +45,9 @@
           {{ t('prReview.timelineDismissedNote') }}
         </span>
         <TimelineEventTime class="review-item__time has-text-grey" :date="item.createdAt" />
+        <span v-if="item.copilotReviewEffort" class="tag is-activity is-info is-light">
+          {{ t(`prReview.copilot.${item.copilotReviewEffort}`) }}
+        </span>
       </div>
       <CommentActions :target="item.moderation" />
     </header>
@@ -254,7 +257,9 @@ const { stateFor } = useCommentModeration();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const hasReviewComments = computed(() => Boolean(item.reviewComments?.length));
-const hasVerdictDetail = computed(() => Boolean(item.dismissal || item.onBehalfOf?.length));
+const hasVerdictDetail = computed(() =>
+  Boolean(item.dismissal || item.onBehalfOf?.length || item.isCopilotCodeReview)
+);
 const expandedFiles = ref(new Set<string>());
 
 interface ReviewCommentGroup {

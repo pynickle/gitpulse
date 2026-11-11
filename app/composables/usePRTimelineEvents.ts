@@ -4,6 +4,7 @@ import type { CommentModeration } from '#shared/types/comment-moderation';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import type { CommitVerification } from '#shared/types/repos';
+import type { CopilotReviewEffort } from '#shared/utils/copilot-review';
 import { parseGitHubMarkdownTarget } from '~/utils/parseGitHubMarkdownTarget';
 import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
@@ -122,6 +123,9 @@ export interface TimelineProject {
 }
 
 export interface PRTimelineItem {
+  copilotWorkType?: 'review' | 'work';
+  isCopilotCodeReview?: boolean;
+  copilotReviewEffort?: CopilotReviewEffort;
   moderation?: CommentModeration;
   kind:
     | 'comment'

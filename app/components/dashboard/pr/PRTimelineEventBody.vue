@@ -64,7 +64,9 @@ const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const repoFullName = computed(() => `${repoOwner}/${repoName}`);
 const eventDate = computed(() => item.createdAt || item.commit?.committedDate || '');
-const shouldRenderActorPrefix = computed(() => !item.hasMixedActors);
+const shouldRenderActorPrefix = computed(
+  () => !item.hasMixedActors && !item.eventType?.startsWith('copilot_work_')
+);
 
 const referenceEventTypes = new Set([
   'connected',
@@ -97,6 +99,8 @@ const stateEventTypes = new Set([
   'closed',
   'comment_deleted',
   'convert_to_draft',
+  'copilot_work_started',
+  'copilot_work_finished',
   'converted_from_draft',
   'converted_note_to_issue',
   'converted_to_discussion',

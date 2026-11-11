@@ -22,6 +22,7 @@ const githubPagination = await import('../server/utils/github-pagination');
 const zodValidationUtils = await import('../server/utils/zod-validation-utils');
 
 mock.module('#shared/utils/reactions', () => reactions);
+mock.module('#shared/utils/copilot-review', () => import('../shared/utils/copilot-review'));
 mock.module('#shared/types/custom-search', () => customSearchTypes);
 mock.module('#shared/types/tab-groups', () => tabGroupTypes);
 mock.module('#shared/types/release-follows', () => releaseFollowsTypes);
@@ -30,6 +31,7 @@ mock.module('#shared/utils/user-settings', () => userSettingsUtils);
 mock.module('#server/utils/github-pagination', () => githubPagination);
 mock.module('#server/utils/github-timeline-utils', () => ({
   fetchPaginatedArray: async () => [],
+  fetchPRReviewMetadata: async () => new Map(),
 }));
 mock.module('#server/utils/zod-validation-utils', () => zodValidationUtils);
 mock.module('#server/utils/pr-check-rollup-graphql-utils', () => ({
@@ -123,6 +125,19 @@ describe('server Zod request validation', () => {
     expect(() => normalizeReviewerRequestBody({ reviewers: ['alice'], extra: true })).toThrow(
       'Invalid reviewer request body'
     );
+    expect(
+      normalizeReviewerRequestBody({ reviewers: ['Copilot'], copilotReviewEffort: 'max' })
+    ).toEqual({
+      reviewers: ['Copilot'],
+      teamReviewers: [],
+      copilotReviewEffort: 'max',
+    });
+    expect(() =>
+      normalizeReviewerRequestBody({ reviewers: ['alice'], copilotReviewEffort: 'max' })
+    ).toThrow('Invalid reviewer request body');
+    expect(() =>
+      normalizeReviewerRequestBody({ reviewers: ['Copilot'], copilotReviewEffort: 'high' })
+    ).toThrow('Invalid reviewer request body');
   });
 
   test('validates settings patches with concrete strict schemas', () => {

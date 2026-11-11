@@ -41,6 +41,7 @@
           v-if="isOpen"
           ref="panelRef"
           class="filter-dropdown-panel"
+          :class="{ 'filter-dropdown-panel--content-width': contentWidth }"
           :style="panelStyle"
           @wheel.stop
         >
@@ -150,6 +151,7 @@ const {
   placeholder = 'Select...',
   searchable = false,
   disabled = false,
+  contentWidth = false,
   searchPlaceholder = 'Search...',
   clearSearchLabel = 'Clear search',
   noResultsLabel = 'No results found',
@@ -159,6 +161,7 @@ const {
   placeholder?: string;
   searchable?: boolean;
   disabled?: boolean;
+  contentWidth?: boolean;
   ariaLabel?: string;
   searchPlaceholder?: string;
   clearSearchLabel?: string;
@@ -218,10 +221,25 @@ function updatePanelPosition() {
   const viewportHeight = document.documentElement.clientHeight;
 
   const minWidth = Math.round(rect.width);
+  let panelWidth = minWidth;
+  if (contentWidth && panelRef.value) {
+    // SimpleBar's positioned wrappers don't contribute intrinsic width. Include
+    // the full label overflow instead of measuring only the clipped panel.
+    const overflow = Math.max(
+      0,
+      ...[...panelRef.value.querySelectorAll<HTMLElement>('.filter-dropdown-option-label')].map(
+        (label) => label.scrollWidth - label.clientWidth
+      )
+    );
+    panelWidth = Math.max(
+      minWidth,
+      Math.ceil(panelRef.value.getBoundingClientRect().width + overflow)
+    );
+  }
   const left = Math.round(
     Math.min(
       Math.max(rect.left, PANEL_VIEWPORT_MARGIN),
-      Math.max(viewportWidth - minWidth - PANEL_VIEWPORT_MARGIN, PANEL_VIEWPORT_MARGIN)
+      Math.max(viewportWidth - panelWidth - PANEL_VIEWPORT_MARGIN, PANEL_VIEWPORT_MARGIN)
     )
   );
 
@@ -236,10 +254,14 @@ function updatePanelPosition() {
     position: 'fixed',
     left: `${left}px`,
     minWidth: `${minWidth}px`,
-    maxWidth: `${Math.max(viewportWidth - left - PANEL_VIEWPORT_MARGIN, minWidth)}px`,
+    maxWidth: `${contentWidth ? viewportWidth - PANEL_VIEWPORT_MARGIN * 2 : Math.max(viewportWidth - left - PANEL_VIEWPORT_MARGIN, minWidth)}px`,
     maxHeight: `${maxHeight}px`,
     zIndex: '9999',
   };
+  if (contentWidth) {
+    style.width = panelWidth > 0 ? `${panelWidth}px` : 'max-content';
+    if (buttonRef.value) style.fontSize = window.getComputedStyle(buttonRef.value).fontSize;
+  }
   if (openUpward) {
     style.bottom = `${Math.round(viewportHeight - rect.top + PANEL_GAP)}px`;
   } else {
@@ -252,6 +274,7 @@ function open() {
   if (disabled) return;
   updatePanelPosition();
   isOpen.value = true;
+  if (contentWidth) nextTick(updatePanelPosition);
   focusedIndex.value = modelValue
     ? visibleItems.value.findIndex((o) => !isSeparator(o) && o.value === modelValue)
     : -1;
@@ -616,6 +639,10 @@ watch(
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.filter-dropdown-panel--content-width .filter-dropdown-option-label {
+  font-size: inherit;
 }
 
 .filter-dropdown-option-description {

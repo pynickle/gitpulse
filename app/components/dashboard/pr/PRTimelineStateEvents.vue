@@ -1,5 +1,26 @@
 <template>
-  <template v-if="item.eventType === 'added_to_merge_queue'">added this to merge queue</template>
+  <template
+    v-if="item.eventType === 'copilot_work_started' || item.eventType === 'copilot_work_finished'"
+  >
+    {{
+      t(
+        `prReview.copilot.${item.eventType === 'copilot_work_started' ? 'started' : 'finished'}${item.copilotWorkType === 'review' ? 'Review' : 'Work'}`
+      )
+    }}
+    <template v-if="item.actor?.login">
+      {{ t('prReview.copilot.onBehalfOf') }}
+      <a
+        :href="item.actor.url"
+        target="_blank"
+        rel="noopener"
+        class="has-text-weight-medium has-text-link"
+        >{{ item.actor.login }}</a
+      >
+    </template>
+  </template>
+  <template v-else-if="item.eventType === 'added_to_merge_queue'"
+    >added this to merge queue</template
+  >
   <template v-else-if="item.eventType === 'auto_merge_enabled'">enabled auto-merge</template>
   <template v-else-if="item.eventType === 'auto_rebase_enabled'">enabled auto-rebase</template>
   <template v-else-if="item.eventType === 'auto_squash_enabled'">enabled auto-squash</template>
@@ -357,7 +378,9 @@
   <template
     v-else-if="item.eventType === 'review_request_removed' || item.eventType === 'review_requested'"
   >
-    {{ item.eventType === 'review_requested' ? 'requested review' : 'removed review request' }}
+    {{
+      item.eventType === 'review_requested' ? 'requested review from' : 'removed review request for'
+    }}
     <a
       v-if="reviewerUrl"
       :href="reviewerUrl"
