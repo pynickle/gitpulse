@@ -203,11 +203,22 @@ describe('PRMergeBox merge methods', () => {
 
   test('hides the method picker when there is nothing to choose between', () => {
     const root = mountMergeBox(['squash']);
+    const button = root.querySelector('.merge-box__merge-btn');
 
     expect(root.querySelector('.merge-box__method-toggle')).toBeNull();
-    expect(root.querySelector('.merge-box__merge-btn')?.textContent?.trim()).toBe(
-      'Squash and merge'
-    );
+    expect(button?.textContent?.trim()).toBe('Squash and merge');
+    // Nothing sits to its right, so it is not drawn as the left half of a split button.
+    expect(button?.classList.contains('merge-box__merge-btn--standalone')).toBe(true);
+  });
+
+  test('keeps the split button edge while a method picker sits beside it', () => {
+    const root = mountMergeBox(['squash', 'rebase']);
+
+    expect(
+      root
+        .querySelector('.merge-box__merge-btn')
+        ?.classList.contains('merge-box__merge-btn--standalone')
+    ).toBe(false);
   });
 
   test('preselects the first method the repository allows', () => {

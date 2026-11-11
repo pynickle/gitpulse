@@ -125,7 +125,10 @@
             <button
               type="button"
               class="merge-box__merge-btn"
-              :class="{ 'merge-box__merge-btn--confirm': confirming }"
+              :class="{
+                'merge-box__merge-btn--confirm': confirming,
+                'merge-box__merge-btn--standalone': !confirming && !showMethodMenu,
+              }"
               :disabled="mergeDisabled"
               @click="onMergeClick"
             >
@@ -1254,6 +1257,11 @@ watch(
   }
 
   &--confirm {
+    border-radius: 8px;
+  }
+
+  /* No method picker beside it, so the split button's right edge rounds too. */
+  &--standalone {
     border-radius: 8px;
   }
 }
