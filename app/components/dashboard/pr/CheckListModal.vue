@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { XIcon } from '@lucide/vue';
-import { computed, nextTick, shallowRef, watch } from 'vue';
+import { computed, onBeforeUnmount, shallowRef, watchPostEffect } from 'vue';
 
 import type { CheckStatusTone, PullRequestChecksView } from '#shared/types/pr-checks';
 import { CHECK_ROLLUP_CONTEXT_LIMIT } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import { createFocusTrapController } from '~/utils/createFocusTrapController';
 
 const { isVisible, view } = defineProps<{
   isVisible: boolean;
@@ -20,8 +19,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const panelRef = shallowRef<HTMLElement | null>(null);
-const focusTrap = createFocusTrapController();
+const dialogRef = shallowRef<HTMLDialogElement | null>(null);
+let unmounting = false;
 
 const summary = computed(() => {
   const { summaryKind, passedCount, failedCount, totalCount, isTruncated } = view;
@@ -51,107 +50,154 @@ const summaryTone = computed<CheckStatusTone>(() =>
   view.summaryKind === 'failed' ? 'danger' : view.summaryKind === 'pending' ? 'warning' : 'success'
 );
 
-watch(
-  () => isVisible,
-  async (isVisible) => {
-    if (!isVisible) {
-      await nextTick();
-      if (import.meta.client) focusTrap.restorePreviousFocus();
-      return;
-    }
+watchPostEffect(() => {
+  const dialog = dialogRef.value;
+  if (!dialog) return;
 
-    if (import.meta.client) focusTrap.capturePreviousFocus();
-    await nextTick();
-    if (panelRef.value) focusTrap.focusInitialElement(panelRef.value);
-  }
-);
+  dialog.removeAttribute('data-closing');
+  if (isVisible && !dialog.open) dialog.showModal();
+  else if (!isVisible && dialog.open) dialog.close();
+});
 
-const handleClose = () => {
-  emit('close');
+onBeforeUnmount(() => {
+  unmounting = true;
+  dialogRef.value?.close();
+  if (isVisible) emit('close');
+});
+
+const handleClose = async () => {
+  const dialog = dialogRef.value;
+  if (!dialog?.open || dialog.hasAttribute('data-closing')) return;
+
+  // Keep the native modal in the top layer until the fade completes, including
+  // browsers that cannot transition display/overlay on a closed dialog.
+  dialog.setAttribute('data-closing', '');
+  await Promise.allSettled(
+    dialog.getAnimations({ subtree: true }).map((animation) => animation.finished)
+  );
+  if (!dialog.isConnected || !dialog.hasAttribute('data-closing')) return;
+  dialog.removeAttribute('data-closing');
+  dialog.close();
 };
 
-const handleOverlayKeydown = (event: KeyboardEvent) => {
-  if (panelRef.value) focusTrap.trapTabKey(event, panelRef.value);
+const handleNativeClose = () => {
+  if (!unmounting && isVisible && !dialogRef.value?.open) emit('close');
+};
+
+let pressedOutside = false;
+
+const isOutsideDialog = (event: PointerEvent) => {
+  const dialog = dialogRef.value;
+  if (!dialog || Reflect.has(dialog, 'closedBy')) return false;
+  const { left, right, top, bottom } = dialog.getBoundingClientRect();
+  return (
+    event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom
+  );
+};
+
+const handlePointerDown = (event: PointerEvent) => {
+  pressedOutside = isOutsideDialog(event);
+};
+
+const handlePointerUp = (event: PointerEvent) => {
+  if (pressedOutside && isOutsideDialog(event)) handleClose();
+  pressedOutside = false;
 };
 </script>
 
 <template>
   <Teleport to="body">
-    <Transition name="check-list-modal">
-      <div
-        v-if="isVisible"
-        class="check-list-modal__overlay"
-        @click.self="handleClose"
-        @keydown.escape="handleClose"
-        @keydown="handleOverlayKeydown"
-      >
-        <div
-          ref="panelRef"
-          class="check-list-modal__panel"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="t('dashboard.checks.modalTitle')"
-          tabindex="-1"
+    <dialog
+      ref="dialogRef"
+      class="check-list-modal__panel"
+      closedby="any"
+      :aria-label="t('dashboard.checks.modalTitle')"
+      @close="handleNativeClose"
+      @cancel.prevent="handleClose"
+      @pointerdown="handlePointerDown"
+      @pointerup="handlePointerUp"
+    >
+      <div class="check-list-modal__header">
+        <h3 class="check-list-modal__title">{{ t('dashboard.checks.modalTitle') }}</h3>
+        <button
+          class="check-list-modal__close"
+          type="button"
+          autofocus
+          :aria-label="t('dashboard.linkedPullRequests.closeAriaLabel')"
+          @click="handleClose"
         >
-          <div class="check-list-modal__header">
-            <h3 class="check-list-modal__title">{{ t('dashboard.checks.modalTitle') }}</h3>
-            <button
-              class="check-list-modal__close"
-              type="button"
-              :aria-label="t('dashboard.linkedPullRequests.closeAriaLabel')"
-              @click="handleClose"
-            >
-              <XIcon :size="16" />
-            </button>
-          </div>
-
-          <ScrollArea class="check-list-modal__content">
-            <!-- Summary line first: the headline before the list is scanned. -->
-            <p class="check-list-modal__summary" :data-tone="summaryTone">
-              <span class="check-list-modal__summary-icon" aria-hidden="true">
-                <component :is="getCheckStatusToneIcon(summaryTone)" :size="14" />
-              </span>
-              <span>{{ summary }}</span>
-            </p>
-
-            <p v-if="view.isTruncated" class="check-list-modal__truncated">
-              {{ t('dashboard.checks.truncated', { limit: CHECK_ROLLUP_CONTEXT_LIMIT }) }}
-            </p>
-
-            <CheckListRows :groups="view.groups" />
-          </ScrollArea>
-        </div>
+          <XIcon :size="16" />
+        </button>
       </div>
-    </Transition>
+
+      <ScrollArea class="check-list-modal__content">
+        <!-- Summary line first: the headline before the list is scanned. -->
+        <p class="check-list-modal__summary" :data-tone="summaryTone">
+          <span class="check-list-modal__summary-icon" aria-hidden="true">
+            <component :is="getCheckStatusToneIcon(summaryTone)" :size="14" />
+          </span>
+          <span>{{ summary }}</span>
+        </p>
+
+        <p v-if="view.isTruncated" class="check-list-modal__truncated">
+          {{ t('dashboard.checks.truncated', { limit: CHECK_ROLLUP_CONTEXT_LIMIT }) }}
+        </p>
+
+        <CheckListRows :groups="view.groups" />
+      </ScrollArea>
+    </dialog>
   </Teleport>
 </template>
 
 <style scoped lang="scss">
 @use '~/assets/scss/pointer' as *;
 
-.check-list-modal__overlay {
+.check-list-modal__panel {
   position: fixed;
   inset: 0;
-  z-index: 99999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: var(--gitpulse-overlay-bg);
-  backdrop-filter: blur(6px);
-}
-
-.check-list-modal__panel {
-  width: 100%;
+  margin: auto;
+  padding: 0;
+  width: calc(100% - 2rem);
   max-width: 460px;
   max-height: 70vh;
-  display: flex;
   flex-direction: column;
+  color: inherit;
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   box-shadow: var(--gitpulse-shadow-raised);
   overflow: hidden;
+  overscroll-behavior: contain;
+  opacity: 0;
+  transition:
+    opacity 0.16s ease,
+    display 0.16s,
+    overlay 0.16s;
+  transition-behavior: allow-discrete;
+}
+
+.check-list-modal__panel[open] {
+  display: flex;
+}
+
+.check-list-modal__panel::backdrop {
+  background: var(--gitpulse-overlay-bg);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  opacity: 0;
+  transition:
+    opacity 0.16s ease,
+    display 0.16s,
+    overlay 0.16s;
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check-list-modal__panel,
+  .check-list-modal__panel::backdrop {
+    transition-duration: 0.1s;
+  }
 }
 
 .check-list-modal__header {
@@ -256,14 +302,18 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 .check-list-modal__content :deep(.check-list) {
   padding-bottom: 4px;
 }
+</style>
 
-.check-list-modal-enter-active,
-.check-list-modal-leave-active {
-  transition: opacity 0.16s ease;
+<style>
+.check-list-modal__panel[open]:not([data-closing]),
+.check-list-modal__panel[open]:not([data-closing])::backdrop {
+  opacity: 1;
 }
 
-.check-list-modal-enter-from,
-.check-list-modal-leave-to {
-  opacity: 0;
+@starting-style {
+  .check-list-modal__panel[open]:not([data-closing]),
+  .check-list-modal__panel[open]:not([data-closing])::backdrop {
+    opacity: 0;
+  }
 }
 </style>
