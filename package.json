@@ -62,7 +62,7 @@
     "oxlint": "^1.93.0",
     "oxlint-tsgolint": "^7.0.2006",
     "postcss": "8.5.33",
-    "sass-embedded": "1.100.0",
+    "sass-embedded": "1.108.2",
     "typescript": "^6.0.3",
     "vue-tsc": "^3.3.14"
   },
