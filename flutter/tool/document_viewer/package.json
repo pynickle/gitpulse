@@ -8,7 +8,7 @@
     "build": "bun run build.mjs"
   },
   "dependencies": {
-    "dompurify": "3.4.17",
+    "dompurify": "3.4.18",
     "highlight.js": "11.12.0",
     "markdown-it": "15.0.3"
   },
