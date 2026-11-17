@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   CalendarIcon,
-  ChevronRightIcon,
   DownloadIcon,
   FlaskConicalIcon,
   PackageIcon,
@@ -120,18 +119,15 @@ const rows = computed<RowView[]>(() =>
             <CalendarIcon :size="13" aria-hidden="true" />
             <time :datetime="row.time">{{ row.timeLabel }}</time>
           </span>
-          <span class="release-drawer-list__aside">
-            <span class="release-drawer-list__metrics" :aria-label="t('releasesPage.metricsLabel')">
-              <span class="release-drawer-list__metric" :title="row.assetsLabel">
-                <PackageIcon :size="13" aria-hidden="true" />
-                <span>{{ row.assetsValue }}</span>
-              </span>
-              <span class="release-drawer-list__metric" :title="row.downloadsLabel">
-                <DownloadIcon :size="13" aria-hidden="true" />
-                <span>{{ row.downloadsValue }}</span>
-              </span>
+          <span class="release-drawer-list__metrics" :aria-label="t('releasesPage.metricsLabel')">
+            <span class="release-drawer-list__metric" :title="row.assetsLabel">
+              <PackageIcon :size="13" aria-hidden="true" />
+              <span>{{ row.assetsValue }}</span>
             </span>
-            <ChevronRightIcon :size="15" class="release-drawer-list__chevron" aria-hidden="true" />
+            <span class="release-drawer-list__metric" :title="row.downloadsLabel">
+              <DownloadIcon :size="13" aria-hidden="true" />
+              <span>{{ row.downloadsValue }}</span>
+            </span>
           </span>
         </span>
 
@@ -175,10 +171,6 @@ const rows = computed<RowView[]>(() =>
     &:hover {
       background: var(--gitpulse-surface-hover);
       border-color: color-mix(in srgb, var(--gitpulse-border) 70%, var(--gitpulse-text-muted));
-
-      .release-drawer-list__chevron {
-        color: var(--gitpulse-text-strong);
-      }
     }
   }
 
@@ -238,15 +230,11 @@ const rows = computed<RowView[]>(() =>
 }
 
 .release-drawer-list__tag {
-  width: fit-content;
-  padding: 0.14rem 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--gitpulse-border-strong) 65%, transparent);
-  border-radius: 0.35rem;
-  background: var(--gitpulse-surface-muted);
   font-family: var(--gitpulse-code-font-family);
-  font-size: 0.86rem;
-  font-weight: 650;
+  font-size: 0.94rem;
+  font-weight: 700;
   line-height: 1.25;
+  letter-spacing: -0.01em;
   color: var(--gitpulse-text-strong);
   overflow-wrap: anywhere;
 }
@@ -331,17 +319,11 @@ const rows = computed<RowView[]>(() =>
   flex-shrink: 0;
 }
 
-.release-drawer-list__aside {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-left: auto;
-}
-
 .release-drawer-list__metrics {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
+  margin-left: auto;
 }
 
 .release-drawer-list__metric {
@@ -351,14 +333,5 @@ const rows = computed<RowView[]>(() =>
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--gitpulse-text-muted);
-}
-
-.release-drawer-list__chevron {
-  flex-shrink: 0;
-  padding-left: 0.5rem;
-  border-left: 1px solid var(--gitpulse-border);
-  box-sizing: content-box;
-  color: var(--gitpulse-text-muted);
-  transition: color 0.12s ease;
 }
 </style>
