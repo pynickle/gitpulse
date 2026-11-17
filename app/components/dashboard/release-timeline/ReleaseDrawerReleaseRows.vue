@@ -120,15 +120,18 @@ const rows = computed<RowView[]>(() =>
             <CalendarIcon :size="13" aria-hidden="true" />
             <time :datetime="row.time">{{ row.timeLabel }}</time>
           </span>
-          <span class="release-drawer-list__metrics" :aria-label="t('releasesPage.metricsLabel')">
-            <span class="release-drawer-list__metric" :title="row.assetsLabel">
-              <PackageIcon :size="13" aria-hidden="true" />
-              <span>{{ row.assetsValue }}</span>
+          <span class="release-drawer-list__aside">
+            <span class="release-drawer-list__metrics" :aria-label="t('releasesPage.metricsLabel')">
+              <span class="release-drawer-list__metric" :title="row.assetsLabel">
+                <PackageIcon :size="13" aria-hidden="true" />
+                <span>{{ row.assetsValue }}</span>
+              </span>
+              <span class="release-drawer-list__metric" :title="row.downloadsLabel">
+                <DownloadIcon :size="13" aria-hidden="true" />
+                <span>{{ row.downloadsValue }}</span>
+              </span>
             </span>
-            <span class="release-drawer-list__metric" :title="row.downloadsLabel">
-              <DownloadIcon :size="13" aria-hidden="true" />
-              <span>{{ row.downloadsValue }}</span>
-            </span>
+            <ChevronRightIcon :size="15" class="release-drawer-list__chevron" aria-hidden="true" />
           </span>
         </span>
 
@@ -137,8 +140,6 @@ const rows = computed<RowView[]>(() =>
           {{ t('releaseTimeline.entryRelease') }}
         </span>
       </span>
-
-      <ChevronRightIcon :size="16" class="release-drawer-list__chevron" aria-hidden="true" />
     </button>
   </div>
 </template>
@@ -206,9 +207,9 @@ const rows = computed<RowView[]>(() =>
     opacity: 0.92;
   }
 
-  /* Entry release: wordless accent rail + tint instead of a label chip. */
+  /* Entry release: a quiet tinted outline rather than a heavy rail. */
   &.is-entry {
-    box-shadow: inset 3px 0 0 var(--gitpulse-link);
+    border-color: color-mix(in srgb, var(--gitpulse-link) 38%, var(--gitpulse-border));
     background: color-mix(in srgb, var(--gitpulse-link) 5%, var(--gitpulse-surface));
 
     @include hover-only {
@@ -237,8 +238,13 @@ const rows = computed<RowView[]>(() =>
 }
 
 .release-drawer-list__tag {
+  width: fit-content;
+  padding: 0.14rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-border-strong) 65%, transparent);
+  border-radius: 0.35rem;
+  background: var(--gitpulse-surface-muted);
   font-family: var(--gitpulse-code-font-family);
-  font-size: 0.92rem;
+  font-size: 0.86rem;
   font-weight: 650;
   line-height: 1.25;
   color: var(--gitpulse-text-strong);
@@ -295,9 +301,10 @@ const rows = computed<RowView[]>(() =>
 }
 
 .release-drawer-list__name {
-  font-size: 0.82rem;
-  line-height: 1.35;
-  color: var(--gitpulse-text-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--gitpulse-text);
   overflow-wrap: anywhere;
 }
 
@@ -305,7 +312,8 @@ const rows = computed<RowView[]>(() =>
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.3rem 0.75rem;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.1rem;
   color: var(--gitpulse-text-muted);
   font-size: 0.75rem;
 }
@@ -323,17 +331,23 @@ const rows = computed<RowView[]>(() =>
   flex-shrink: 0;
 }
 
+.release-drawer-list__aside {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-left: auto;
+}
+
 .release-drawer-list__metrics {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-left: auto;
+  gap: 0.65rem;
 }
 
 .release-drawer-list__metric {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.28rem;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--gitpulse-text-muted);
@@ -341,6 +355,9 @@ const rows = computed<RowView[]>(() =>
 
 .release-drawer-list__chevron {
   flex-shrink: 0;
+  padding-left: 0.5rem;
+  border-left: 1px solid var(--gitpulse-border);
+  box-sizing: content-box;
   color: var(--gitpulse-text-muted);
   transition: color 0.12s ease;
 }
