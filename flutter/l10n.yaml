@@ -3,3 +3,7 @@ template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
 output-dir: lib/l10n/generated
 nullable-getter: false
+# The generated delegates list still names the SDK's deprecated design libraries. The app uses its
+# own list (lib/l10n/app_localizations_delegates.dart) for the same reason, so the warning here
+# only repeats a migration the framework itself has not finished (flutter/flutter#194500).
+header: "// ignore_for_file: deprecated_member_use\n"

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'connection/connection_controller.dart';
 import 'connection/connection_screen.dart';
 import 'device/device_preferences_controller.dart';
+import 'l10n/app_localizations_delegates.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'presentation/gitpulse_navigation_bar.dart';
 import 'presentation/gitpulse_theme.dart';
@@ -194,7 +195,7 @@ class GitPulseApp extends ConsumerWidget {
       darkTheme: gitPulseTheme(Brightness.dark),
       themeMode: device.preferences.themeMode,
       locale: device.preferences.locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => restoring
           ? Scaffold(

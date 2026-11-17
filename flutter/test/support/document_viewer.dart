@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:gitpulse/releases/document_viewer_assets.dart';
 import 'package:gitpulse/releases/document_web_view.dart';

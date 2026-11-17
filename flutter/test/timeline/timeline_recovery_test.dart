@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/l10n/app_localizations_delegates.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/session/session_controller.dart';
@@ -138,7 +139,7 @@ void main() {
         UncontrolledProviderScope(
           container: h.container,
           child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(body: TimelineScreen()),
           ),
@@ -398,7 +399,7 @@ void main() {
         UncontrolledProviderScope(
           container: h.container,
           child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(body: TimelineScreen()),
           ),
@@ -474,7 +475,7 @@ void main() {
         UncontrolledProviderScope(
           container: h.container,
           child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(body: TimelineScreen()),
           ),

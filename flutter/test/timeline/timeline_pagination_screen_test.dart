@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gitpulse/session/gitpulse_http.dart';
 import 'package:gitpulse/timeline/release_timeline_card.dart';

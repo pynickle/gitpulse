@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/l10n/app_localizations_delegates.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
 import 'package:gitpulse/presentation/gitpulse_tokens.dart';
@@ -73,7 +74,7 @@ Future<List<Uri>> pumpDetails(
       overrides: documentViewerOverrides(),
       child: MaterialApp(
         theme: theme,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Align(

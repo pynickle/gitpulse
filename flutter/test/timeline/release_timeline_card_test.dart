@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/l10n/app_localizations_delegates.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_formatting.dart';
 import 'package:gitpulse/presentation/gitpulse_status_badge.dart';
@@ -62,7 +63,7 @@ Future<void> _pumpCard(
       child: MaterialApp(
         locale: locale,
         theme: gitPulseTheme(brightness),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: ReleaseTimelineCard(item: item)),
       ),

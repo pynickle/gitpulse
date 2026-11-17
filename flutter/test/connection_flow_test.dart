@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +16,7 @@ import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_dialog.dart';
 import 'package:gitpulse/presentation/gitpulse_navigation_bar.dart';
 import 'package:gitpulse/presentation/gitpulse_theme.dart';
+import 'package:gitpulse/l10n/app_localizations_delegates.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 
 import 'support/app_overrides.dart';
@@ -155,7 +156,7 @@ void main() {
           container: harness.container,
           child: MaterialApp(
             theme: gitPulseTheme(Brightness.light),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const ConnectionScreen(),
           ),
@@ -207,7 +208,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: gitPulseTheme(Brightness.light),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Builder(

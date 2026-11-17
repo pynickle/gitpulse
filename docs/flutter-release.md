@@ -18,23 +18,26 @@ Run Flutter commands from `flutter/`. The exact stable Flutter SDK is recorded i
 Dart SDK and commit `pubspec.lock`. Flutter does not participate in the Bun
 workspace or Nuxt discovery. The root web checks still run independently.
 
-The current pin is Flutter 3.47.9 stable with its bundled Dart 3.13.7.
+The current pin is Flutter 3.50.0 stable with its bundled Dart 3.14.0.
 
 Android uses AGP 9.4.1, Gradle 9.8.2, and built-in Kotlin. The Kotlin compiler
 stays pinned to 2.4.21 to satisfy Flutter's minimum version and the JVM 25 target;
 the Kotlin Android plugin is declared with `apply false` and is not applied.
-Flutter 3.47 still needs `android.newDsl=false`, so warnings about the legacy
-AGP DSL and variant API are expected. Keep `android.builtInKotlin=true` explicit
+Flutter 3.50 ships a Flutter Gradle Plugin rewritten against AGP 9's public API,
+so `android.newDsl=true` is enabled; the legacy-DSL warnings of 3.47 are gone.
+Keep `android.builtInKotlin=true` explicit
 so Flutter's migrator does not restore the Kotlin opt-out. The Gradle Wrapper
 scripts and JAR are tracked; update them with the `wrapper` task when upgrading
 Gradle, rather than changing only the distribution URL.
 
-The 2026-10-20 audit resolved Flutter 3.47.7 / Dart 3.13.5. All selected runtime
-dependencies resolve to their current compatible stable releases. The compatible
-generator update is included in the lockfile. `build_runner` remains at 2.16.2:
-the newer 2.17.x needs `build` / `build_config` versions incompatible with the
-selected generators. SDK-pinned/transitively constrained packages are not forced
-past their constraints, and no floating Git dependency or override is introduced.
+The 2026-11-17 audit resolved Flutter 3.50.0 / Dart 3.14.0. All selected runtime
+dependencies resolve to their current compatible stable releases. Every direct and
+dev dependency is on its latest published release (including `build_runner` 2.17.x,
+`drift` 2.35.4, `flutter_riverpod` 3.5.0, `go_router` 18.1.4, `sqlite3` 3.9.1 and
+`image` 4.13.1). SDK-pinned/transitively constrained packages (`cross_file`,
+`material_color_utilities`, `test_api`, `built_collection`, `cli_util`) are not
+forced past their constraints, and no floating Git dependency or override is
+introduced.
 
 ```sh
 flutter pub get --enforce-lockfile
@@ -103,7 +106,7 @@ Android job rather than uploading an unsigned or debug-signed formal artifact.
 
 Increment `flutter/pubspec.yaml`'s `version: X.Y.Z+N` for a release. `X.Y.Z` must
 match `flutter-vX.Y.Z`; `N` is a positive, monotonically increasing build
-number. Split APKs do not use `N` itself as `versionCode`. Flutter 3.47 adds an
+number. Split APKs do not use `N` itself as `versionCode`. Flutter adds an
 ABI prefix: armeabi-v7a is `1000 + N`, arm64-v8a is `2000 + N`, and x86_64 is
 `4000 + N` (`3000 + N` stayed reserved after Flutter removed x86). `N` must stay
 at or below 2099996000 so the x86_64 code still fits Android's 2100000000 limit.

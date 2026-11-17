@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../presentation/gitpulse_pull_to_refresh.dart';
 import 'release_follows_dto.dart';

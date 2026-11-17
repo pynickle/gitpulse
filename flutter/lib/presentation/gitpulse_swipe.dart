@@ -1,5 +1,5 @@
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// How fast a horizontal drag has to be thrown, in dp a second, to count as a
 /// swipe rather than a hand that drifted while finding its place.

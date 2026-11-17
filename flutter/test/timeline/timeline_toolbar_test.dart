@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gitpulse/l10n/app_localizations_delegates.dart';
 import 'package:gitpulse/l10n/generated/app_localizations.dart';
 import 'package:gitpulse/presentation/gitpulse_buttons.dart';
 import 'package:gitpulse/presentation/gitpulse_progress.dart';
@@ -33,7 +34,7 @@ void main() {
           ProviderScope(
             child: MaterialApp(
               locale: locale,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              localizationsDelegates: appLocalizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               builder: (context, child) => MediaQuery(
                 data: MediaQuery.of(context)
@@ -444,7 +445,7 @@ Future<void> _pumpToolbar(
       ],
       child: MaterialApp(
         locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TimelineToolbar(

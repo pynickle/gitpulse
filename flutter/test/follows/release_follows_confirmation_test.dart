@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:gitpulse/follows/followed_repositories_panel.dart';
 import 'package:gitpulse/follows/release_follows_session.dart';
 import 'package:gitpulse/follows/followed_repository_view.dart';

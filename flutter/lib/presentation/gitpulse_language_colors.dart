@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// GitHub language colors shared with the web palette in
 /// `app/utils/languageColors.ts`, including that palette's fallback.
