@@ -253,7 +253,7 @@ export default defineNuxtConfig({
     'nuxt-seo-utils',
     '@nuxt/image',
     'nuxt-auth-utils',
-    '@comark/nuxt',
+    '@comark/vue',
     '@nuxtjs/color-mode',
     '@nuxt/fonts',
     'nuxt-skill-hub',
