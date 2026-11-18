@@ -17,15 +17,14 @@
 
       <div class="is-flex is-flex-direction-column is-justify-content-center is-flex-grow-1">
         <div class="is-flex is-align-items-center">
-          <a
+          <GitHubProfileLink
             v-if="item.actor?.login"
-            :href="item.actor.url"
-            target="_blank"
-            rel="noopener"
+            :login="item.actor.login"
+            :github-href="item.actor.url"
             class="is-size-6 has-text-weight-medium has-text-link mr-2"
           >
             {{ item.actor.login }}
-          </a>
+          </GitHubProfileLink>
           <span class="merge-label">
             <GitMergeIcon :size="14" class="mr-1" />
             merged commit
@@ -57,6 +56,7 @@ import { GitMergeIcon } from '@lucide/vue';
 
 import TimelineEventTime from '~/components/dashboard/timeline/TimelineEventTime.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import type { PRTimelineItem } from '~/composables/usePRTimelineEvents';
 
 defineProps<{

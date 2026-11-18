@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 
-import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue';
+import { computed, defineComponent, h, nextTick, provide, ref, shallowRef } from 'vue';
 
 import type { IssueTimelineItem } from '../app/composables/useIssueTimelineEvents';
 import { buildTimelineCommitPayload } from '../app/utils/buildTimelineCommitPayload';
 import { commitVerificationMark } from '../app/utils/commitVerification';
 import * as reactions from '../shared/utils/reactions';
 import { compileVue } from './helpers/compile-vue';
+import { githubProfileLinkModules, opensGitHubLinksKey } from './helpers/github-profile-link';
 import { createVueDom } from './helpers/vue-dom';
 
 const i18n = {
@@ -70,6 +71,7 @@ const timelineEvents = {
 const CommitListRow = await compileVue(
   'app/components/dashboard/detail/CommitListRow.vue',
   {
+    ...githubProfileLinkModules,
     'vue-i18n': i18n,
     '~/components/dashboard/pr/CheckStatusChip.vue': { default: empty },
     '~/components/ui/GitHubAvatar.vue': { default: avatarStub },
@@ -99,6 +101,7 @@ const IssueTimelineCommitCard = await compileVue(
 const TimelineCardHeader = await compileVue(
   'app/components/dashboard/timeline/TimelineCardHeader.vue',
   {
+    ...githubProfileLinkModules,
     'vue-i18n': i18n,
     '~/components/ui/GitHubAvatar.vue': { default: avatarStub },
     '~/utils/formatDurationFromNow': formatTime,
@@ -163,7 +166,10 @@ const commit: IssueTimelineItem = {
     oid: 'abcdef0123456789',
     message: 'feat: sign the release\n\nbody text',
     committedDate: '2024-01-01T12:00:00Z',
-    author: { name: 'Local Dev', user: { login: 'octocat' } },
+    author: {
+      name: 'Dependabot',
+      user: { login: 'dependabot[bot]', url: 'https://github.com/apps/dependabot' },
+    },
     commitUrl: 'https://github.com/acme/widgets/commit/abcdef0123456789',
     verification: null,
     checkRollup: null,
@@ -181,16 +187,20 @@ afterEach(async () => {
 });
 
 test('the issue timeline shows its comment and commit through the shared cards', async () => {
+  const opensGitHubLinks = shallowRef(false);
   const view = dom.mount(
     defineComponent({
-      setup: () => () =>
-        h(IssueTimelineEvents as never, {
-          timeline: [comment, commit],
-          loading: false,
-          repoOwner: 'acme',
-          repoName: 'widgets',
-          issueNumber: 7,
-        }),
+      setup() {
+        provide(opensGitHubLinksKey, opensGitHubLinks);
+        return () =>
+          h(IssueTimelineEvents as never, {
+            timeline: [comment, commit],
+            loading: false,
+            repoOwner: 'acme',
+            repoName: 'widgets',
+            issueNumber: 7,
+          });
+      },
     })
   );
   await nextTick();
@@ -208,7 +218,30 @@ test('the issue timeline shows its comment and commit through the shared cards',
   expect(commitCard?.querySelector('.commit-list-row__message')?.textContent?.trim()).toBe(
     'feat: sign the release'
   );
-  expect(commitCard?.querySelector('.commit-list-row__author')?.getAttribute('href')).toBe(
-    'https://github.com/octocat'
-  );
+  const commentAuthor = () => commentCard?.querySelector('a.timeline-card-header__author');
+  const commitAuthor = () => commitCard?.querySelector('a.commit-list-row__author');
+  const authorLinks = [
+    {
+      author: commentAuthor,
+      internal: '/dashboard/profile?user=octocat',
+      external: 'https://github.com/octocat',
+    },
+    {
+      author: commitAuthor,
+      internal: '/dashboard/profile?user=dependabot[bot]',
+      external: 'https://github.com/apps/dependabot',
+    },
+  ];
+  for (const { author, internal } of authorLinks) {
+    expect(author()?.getAttribute('href')).toBe(internal);
+    expect(author()?.getAttribute('target')).toBeNull();
+  }
+
+  opensGitHubLinks.value = true;
+  await nextTick();
+
+  for (const { author, external } of authorLinks) {
+    expect(author()?.getAttribute('href')).toBe(external);
+    expect(author()?.getAttribute('target')).toBe('_blank');
+  }
 });

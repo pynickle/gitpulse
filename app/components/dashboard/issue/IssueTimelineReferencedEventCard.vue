@@ -14,14 +14,13 @@
 
       <div class="is-flex is-flex-direction-column is-justify-content-center is-flex-grow-1">
         <div class="is-flex is-align-items-center mt-1">
-          <a
-            :href="item.actor?.url"
-            target="_blank"
-            rel="noopener"
+          <GitHubProfileLink
+            :login="item.actor?.login"
+            :github-href="item.actor?.url"
             class="is-size-7 has-text-weight-medium has-text-link mr-2"
           >
             {{ item.actor?.login }}
-          </a>
+          </GitHubProfileLink>
           <span class="commit-message is-size-7 has-text-grey">
             {{ t('issueDetail.referenceCommitIntro') }}
           </span>
@@ -59,6 +58,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { sanitizeHtml } from '~/utils/sanitizeHtml';
 

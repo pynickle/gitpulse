@@ -13,6 +13,7 @@ import * as avatarUrl from '../../shared/utils/github-avatar-url';
 import * as colorModeMedia from '../../shared/utils/markdown-color-mode-source-media';
 import * as mermaidPreviewHeight from '../../shared/utils/mermaid-preview-height';
 import { compileVue } from './compile-vue';
+import { githubProfileLinkModules } from './github-profile-link';
 
 mock.module('#shared/utils/user-settings', () => import('../../shared/utils/user-settings'));
 mock.module('#shared/utils/bundled-fonts', () => import('../../shared/utils/bundled-fonts'));
@@ -70,6 +71,7 @@ export async function commentPresentationModules() {
     './deferredElementLoad': deferredElementLoad,
   });
   return {
+    ...githubProfileLinkModules,
     '@lucide/vue': icons,
     '~/components/ui/GitHubAvatar.vue': { default: Avatar },
     '~/components/ui/MarkdownRenderer.vue': { default: Markdown },

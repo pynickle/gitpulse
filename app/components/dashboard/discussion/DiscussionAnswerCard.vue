@@ -7,6 +7,7 @@ import type { DiscussionReply } from '#shared/types/discussions';
 import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
 import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
@@ -39,15 +40,14 @@ const localeCode = computed(() => locale.value);
         :src="answer.author?.avatarUrl || ''"
         :alt="answer.author?.login || t('discussionDetail.authorFallback')"
       />
-      <a
-        v-if="answer.author?.url"
-        :href="answer.author.url"
-        target="_blank"
-        rel="noopener"
+      <GitHubProfileLink
+        v-if="answer.author?.login || answer.author?.url"
+        :login="answer.author.login"
+        :github-href="answer.author.url"
         class="has-text-weight-medium has-text-link"
       >
         {{ answer.author.login }}
-      </a>
+      </GitHubProfileLink>
       <span v-else class="has-text-weight-medium">
         {{ answer.author?.login || t('discussionDetail.authorFallback') }}
       </span>

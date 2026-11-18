@@ -3,13 +3,11 @@ import { computed } from 'vue';
 
 import type { UserSummary } from '#shared/types/users';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 
 const { user } = defineProps<{
   user: UserSummary;
-}>();
-
-const emit = defineEmits<{
-  (e: 'select', login: string): void;
+  currentLogin: string;
 }>();
 
 const displayName = computed(() => user.name?.trim() || user.login);
@@ -19,7 +17,12 @@ const showSecondaryLogin = computed(
 </script>
 
 <template>
-  <button type="button" class="user-list-item" @click="emit('select', user.login)">
+  <GitHubProfileLink
+    :login="user.login"
+    :github-href="user.htmlUrl"
+    :current-login="currentLogin"
+    class="user-list-item"
+  >
     <GitHubAvatar
       :src="user.avatarUrl"
       :alt="displayName"
@@ -31,7 +34,7 @@ const showSecondaryLogin = computed(
       <span class="user-list-item__name">{{ displayName }}</span>
       <span v-if="showSecondaryLogin" class="user-list-item__login">{{ user.login }}</span>
     </span>
-  </button>
+  </GitHubProfileLink>
 </template>
 
 <style scoped lang="scss">
@@ -48,13 +51,13 @@ const showSecondaryLogin = computed(
   background: var(--gitpulse-surface);
   color: var(--gitpulse-text-strong);
   text-align: left;
-  cursor: pointer;
+  text-decoration: none;
   transition:
     background 0.12s ease,
     border-color 0.12s ease;
 
   @include hover-only {
-    &:hover {
+    &:any-link:hover {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }

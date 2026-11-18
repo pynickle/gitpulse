@@ -1,5 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
+import type { H3Event } from 'h3';
+
 type CreateErrorInput = {
   statusCode: number;
   statusMessage: string;
@@ -21,8 +23,21 @@ mock.module('#server/utils/github-auth-utils', () => ({
 }));
 mock.module('#server/utils/github-pagination', () => githubPagination);
 
-const { mapGitHubOrganizationToSummary, mapGitHubRepositoryToSummary } =
+const { extractUsername, mapGitHubOrganizationToSummary, mapGitHubRepositoryToSummary } =
   await import('../server/utils/github-user-utils');
+
+describe('extractUsername', () => {
+  const eventFor = (username: string) => ({ context: { params: { username } } }) as H3Event;
+
+  test('reads the encoded login from a bot profile request', () => {
+    expect(extractUsername(eventFor('dependabot%5Bbot%5D'))).toBe('dependabot[bot]');
+  });
+
+  test('rejects brackets other than the bot suffix and encoded path separators', () => {
+    expect(() => extractUsername(eventFor('octo%5Bother%5D'))).toThrow('Invalid GitHub username');
+    expect(() => extractUsername(eventFor('octo%2Frepo'))).toThrow('Invalid GitHub username');
+  });
+});
 
 describe('mapGitHubOrganizationToSummary', () => {
   test('maps a full organization payload and derives the org page URL', () => {

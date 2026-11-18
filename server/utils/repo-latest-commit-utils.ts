@@ -7,6 +7,7 @@ import type {
 interface GitHubCommitUser {
   login?: string | null;
   avatar_url?: string | null;
+  html_url?: string | null;
 }
 
 interface GitHubCommitIdentity {
@@ -109,6 +110,7 @@ export function mapGitHubCommitToCommitListItem(
       login: authorLogin,
       name: authorName,
       avatarUrl: trimString(commit.author?.avatar_url) || null,
+      htmlUrl: trimString(commit.author?.html_url) || undefined,
     },
     htmlUrl: trimString(commit.html_url) || null,
     verification: mapCommitVerification(commit.commit?.verification ?? commit.verification),

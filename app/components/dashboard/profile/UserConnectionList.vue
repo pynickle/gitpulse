@@ -12,10 +12,6 @@ const { username, relation } = defineProps<{
   emptyLabel: string;
 }>();
 
-const emit = defineEmits<{
-  (e: 'select', login: string): void;
-}>();
-
 const { t } = useI18n();
 
 const { items, loading, error, pagination, showPagination, goToPage, refresh } = useUserConnections(
@@ -43,7 +39,7 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
           v-for="user in items"
           :key="user.login"
           :user="user"
-          @select="emit('select', $event)"
+          :current-login="username"
         />
       </div>
 

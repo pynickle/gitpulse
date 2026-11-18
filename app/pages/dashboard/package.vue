@@ -14,6 +14,7 @@ import type { PackageVersionFilter, PackageVersionSummary } from '#shared/types/
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import {
   packageTypeHasVersionTags,
@@ -22,9 +23,7 @@ import {
 } from '~/composables/useUserPackages';
 
 const { locale, t } = useI18n();
-const localePath = useLocalePath();
 const route = useRoute();
-const router = useRouter();
 const relativeTimeNow = useRelativeTimeNow();
 const { openRepository } = useDashboardRepositoryNavigation();
 const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
@@ -224,15 +223,6 @@ const handleRepoClick = async () => {
   await openRepository(repoPath.owner, repoPath.repo);
 };
 
-const handleOwnerClick = async () => {
-  const target = packageTarget.value;
-  if (!target) return;
-  await router.push({
-    path: localePath('/dashboard/profile'),
-    query: { user: target.username, tab: 'packages' },
-  });
-};
-
 const handleBack = async () => {
   await goBackToPreviousPage();
 };
@@ -287,14 +277,13 @@ const handleHome = async () => {
           </div>
 
           <div class="package-page__meta">
-            <button
+            <GitHubProfileLink
               v-if="detail.ownerLogin"
-              type="button"
+              :login="detail.ownerLogin"
               class="package-page__meta-link"
-              @click="handleOwnerClick"
             >
               {{ detail.ownerLogin }}
-            </button>
+            </GitHubProfileLink>
 
             <button
               v-if="detail.repository"

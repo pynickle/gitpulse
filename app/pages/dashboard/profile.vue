@@ -52,16 +52,6 @@ const updateTab = async (tab: ProfileTab) => {
   });
 };
 
-const openUserProfile = async (login: string) => {
-  if (!login || login === username.value) {
-    return;
-  }
-  await router.push({
-    path: localePath('/dashboard/profile'),
-    query: { user: login },
-  });
-};
-
 const openPackage = async (selection: ProfilePackageSelection) => {
   await router.push({
     path: localePath('/dashboard/package'),
@@ -99,7 +89,6 @@ const handleHome = async () => {
       :username="username"
       :tab="activeTab"
       @update:tab="updateTab"
-      @select-user="openUserProfile"
       @select-package="openPackage"
     />
     <div v-else class="profile-page__empty">

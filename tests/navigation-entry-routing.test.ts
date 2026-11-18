@@ -1036,6 +1036,21 @@ describe('applyLogicalNavigationEvent', () => {
     ]);
   });
 
+  test('Back from a profile opened from a pull request restores that pull request', () => {
+    const source = { tab: 'pulls', pr: 'octo/repo/7' };
+    const start = applyRoute(createLogicalNavigationState(), '/zh-cn/dashboard', source, 0);
+    const profile = { path: '/zh-cn/dashboard/profile', query: { user: 'octocat' } };
+    const opened = applyRoute(start.state, profile.path, profile.query, 1);
+
+    expect(opened.decision).toBe('push');
+    expect(
+      applyLogicalNavigationEvent(opened.state, { type: 'back', route: profile }).target
+    ).toEqual({
+      path: '/dashboard',
+      query: source,
+    });
+  });
+
   test('multi-level file browsing collapses into one entry', () => {
     let result = applyRoute(createLogicalNavigationState(), '/dashboard/profile', { user: 'a' }, 0);
     result = applyRoute(result.state, '/dashboard', { tab: 'repos', repo: 'a/r' }, 1);

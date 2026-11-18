@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
 import { resolvePullRequestBranchRef } from '../app/utils/resolvePullRequestBranchRef';
 import { compileVue } from './helpers/compile-vue';
+import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ setup: () => () => h('svg') });
@@ -12,6 +13,7 @@ const stub = defineComponent({ setup: () => () => h('div') });
 const PRHeader = await compileVue(
   'app/components/dashboard/pr/PRHeader.vue',
   {
+    ...githubProfileLinkModules,
     '@lucide/vue': new Proxy({}, { get: () => icon }),
     'vue-i18n': {
       useI18n: () => ({ t: (key: string) => key, locale: shallowRef('en') }),

@@ -9,13 +9,13 @@
     }}
     <template v-if="item.actor?.login">
       {{ t('prReview.copilot.onBehalfOf') }}
-      <a
-        :href="item.actor.url"
-        target="_blank"
-        rel="noopener"
+      <GitHubProfileLink
+        :login="item.actor.login"
+        :github-href="item.actor.url"
         class="has-text-weight-medium has-text-link"
-        >{{ item.actor.login }}</a
       >
+        {{ item.actor.login }}
+      </GitHubProfileLink>
     </template>
   </template>
   <template v-else-if="item.eventType === 'added_to_merge_queue'"
@@ -159,14 +159,12 @@
 
   <template v-else-if="item.eventType === 'comment_deleted'">
     deleted a comment by
-    <a
-      :href="`https://github.com/${item.deletedCommentAuthor?.login}`"
-      target="_blank"
-      rel="noopener"
+    <GitHubProfileLink
+      :login="item.deletedCommentAuthor?.login"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ item.deletedCommentAuthor?.login }}
-    </a>
+    </GitHubProfileLink>
   </template>
 
   <template v-else-if="item.eventType === 'converted_to_discussion'">
@@ -220,32 +218,23 @@
         :key="`${change.action}-${change.value}-${index}`"
       >
         <template v-if="item.hasMixedActors">
-          <a
-            v-if="timelineChangeActorUrl(change)"
-            :href="timelineChangeActorUrl(change)"
-            target="_blank"
-            rel="noopener"
-            class="has-text-weight-medium has-text-link mr-1"
+          <GitHubProfileLink
+            :login="change.actor?.login"
+            :github-href="change.actor?.url"
+            class="has-text-weight-medium mr-1"
+            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
-          </a>
-          <span v-else class="has-text-weight-medium mr-1">
-            {{ timelineChangeActorLabel(change) }}
-          </span>
+          </GitHubProfileLink>
         </template>
         {{ change.action }}
-        <a
-          v-if="assigneeChangeUrl(change)"
-          :href="assigneeChangeUrl(change)"
-          target="_blank"
-          rel="noopener"
+        <GitHubProfileLink
+          :login="change.assignee?.login"
+          :github-href="change.assignee?.url"
           class="tag is-activity ml-1 is-info is-light"
         >
           {{ assigneeChangeLabel(change) }}
-        </a>
-        <span v-else class="tag is-activity ml-1 is-info is-light">
-          {{ assigneeChangeLabel(change) }}
-        </span>
+        </GitHubProfileLink>
         {{
           index === assigneeChanges.length - 2
             ? ' and '
@@ -275,18 +264,14 @@
         :key="`${change.action}-${change.value}-${index}`"
       >
         <template v-if="item.hasMixedActors">
-          <a
-            v-if="timelineChangeActorUrl(change)"
-            :href="timelineChangeActorUrl(change)"
-            target="_blank"
-            rel="noopener"
-            class="has-text-weight-medium has-text-link mr-1"
+          <GitHubProfileLink
+            :login="change.actor?.login"
+            :github-href="change.actor?.url"
+            class="has-text-weight-medium mr-1"
+            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
-          </a>
-          <span v-else class="has-text-weight-medium mr-1">
-            {{ timelineChangeActorLabel(change) }}
-          </span>
+          </GitHubProfileLink>
         </template>
         {{ change.action }}
         <span
@@ -365,14 +350,12 @@
 
   <template v-else-if="item.eventType === 'review_dismissed'">
     dismissed review by
-    <a
-      :href="`https://github.com/${item.review?.author?.login}`"
-      target="_blank"
-      rel="noopener"
+    <GitHubProfileLink
+      :login="item.review?.author?.login"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ item.review?.author?.login }}
-    </a>
+    </GitHubProfileLink>
   </template>
 
   <template
@@ -381,36 +364,30 @@
     {{
       item.eventType === 'review_requested' ? 'requested review from' : 'removed review request for'
     }}
-    <a
-      v-if="reviewerUrl"
-      :href="reviewerUrl"
-      target="_blank"
-      rel="noopener"
+    <GitHubProfileLink
+      v-if="reviewer?.login || reviewer?.url"
+      :login="reviewer.login"
+      :github-href="reviewer.url"
       class="tag is-activity ml-1 is-info is-light"
     >
-      {{ reviewerLabel }}
-    </a>
+      {{ reviewer.label }}
+    </GitHubProfileLink>
   </template>
 
   <template v-else-if="item.eventType === 'user_blocked'">
     blocked user
-    <a
-      :href="`https://github.com/${item.subject?.login}`"
-      target="_blank"
-      rel="noopener"
-      class="tag is-activity ml-1 is-info is-light"
-    >
+    <GitHubProfileLink :login="item.subject?.login" class="tag is-activity ml-1 is-info is-light">
       {{ item.subject?.login }}
-    </a>
+    </GitHubProfileLink>
   </template>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import {
-  getRequestedReviewerLabel,
-  getRequestedReviewerUrl,
+  describeRequestedReviewer,
   type PRTimelineItem,
   type TimelineStateChange,
 } from '~/composables/usePRTimelineEvents';
@@ -421,8 +398,7 @@ const { item } = defineProps<{
 }>();
 
 const { t } = useI18n();
-const reviewerUrl = computed(() => getRequestedReviewerUrl(item.requestedReviewer));
-const reviewerLabel = computed(() => getRequestedReviewerLabel(item.requestedReviewer));
+const reviewer = computed(() => describeRequestedReviewer(item.requestedReviewer));
 const assigneeChanges = computed(() => item.assigneeChanges ?? []);
 const labelChanges = computed(() => item.labelChanges ?? []);
 
@@ -459,20 +435,8 @@ const labelStyle = (color?: string) => {
 const assigneeChangeLabel = (change: TimelineStateChange) =>
   change.assignee?.login || change.assignee?.name || change.value;
 
-const assigneeChangeUrl = (change: TimelineStateChange) => {
-  if (change.assignee?.url) return change.assignee.url;
-  if (change.assignee?.login) return `https://github.com/${change.assignee.login}`;
-  return undefined;
-};
-
 const labelChangeLabel = (change: TimelineStateChange) => change.label?.name || change.value;
 
 const timelineChangeActorLabel = (change: TimelineStateChange) =>
   change.actor?.login || change.actor?.name || '';
-
-const timelineChangeActorUrl = (change: TimelineStateChange) => {
-  if (change.actor?.url) return change.actor.url;
-  if (change.actor?.login) return `https://github.com/${change.actor.login}`;
-  return undefined;
-};
 </script>

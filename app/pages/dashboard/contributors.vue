@@ -7,6 +7,7 @@ import ContributorCommitSparkline from '~/components/dashboard/contributors/Cont
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { useRepoContributors } from '~/composables/useRepoContributors';
 import { useRepoContributorStats } from '~/composables/useRepoContributorStats';
 
@@ -16,12 +17,12 @@ interface ContributorCard {
   login: string | null;
   name: string | null;
   avatarUrl: string | null;
+  htmlUrl: string | null;
   commits: number;
   weeks: RepoContributorWeek[] | null;
 }
 
 const { locale, t } = useI18n();
-const localePath = useLocalePath();
 const route = useRoute();
 const { goBackToPreviousPage, goToDashboardHome, shouldShowHomeButton } = useNavigationRouting();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -106,6 +107,7 @@ const matrixCards = computed<ContributorCard[]>(() => {
         login: item.login,
         name: null,
         avatarUrl: item.avatarUrl,
+        htmlUrl: item.htmlUrl,
         commits: item.total,
         weeks: item.weeks,
       }));
@@ -118,6 +120,7 @@ const matrixCards = computed<ContributorCard[]>(() => {
       login: item.login,
       name: item.name,
       avatarUrl: item.avatarUrl,
+      htmlUrl: item.htmlUrl,
       commits: item.contributions,
       weeks: null,
     }));
@@ -126,12 +129,6 @@ const matrixCards = computed<ContributorCard[]>(() => {
 const totalShown = computed(() => matrixCards.value.length);
 
 const hasSourceData = computed(() => useStatsView.value || listItems.value.length > 0);
-
-const profileRoute = (login: string) =>
-  localePath({
-    path: '/dashboard/profile',
-    query: { user: login },
-  });
 
 const sparklineLabel = (card: ContributorCard) =>
   t('contributorsPage.sparklineLabel', {
@@ -269,9 +266,10 @@ watch(repoFullName, () => {
         >
           <article v-for="card in matrixCards" :key="card.key" class="contributors-page__card card">
             <div class="contributors-page__card-top">
-              <NuxtLink
+              <GitHubProfileLink
                 v-if="card.login"
-                :to="profileRoute(card.login)"
+                :login="card.login"
+                :github-href="card.htmlUrl"
                 class="contributors-page__avatar-link"
               >
                 <GitHubAvatar
@@ -280,7 +278,7 @@ watch(repoFullName, () => {
                   :size="48"
                   class="contributors-page__avatar"
                 />
-              </NuxtLink>
+              </GitHubProfileLink>
               <GitHubAvatar
                 v-else
                 :src="card.avatarUrl"
@@ -290,14 +288,15 @@ watch(repoFullName, () => {
               />
 
               <div class="contributors-page__card-identity">
-                <NuxtLink
+                <GitHubProfileLink
                   v-if="card.login"
-                  :to="profileRoute(card.login)"
+                  :login="card.login"
+                  :github-href="card.htmlUrl"
                   class="contributors-page__login-link"
                   :title="displayName(card)"
                 >
                   {{ displayName(card) }}
-                </NuxtLink>
+                </GitHubProfileLink>
                 <span v-else class="contributors-page__login" :title="displayName(card)">
                   {{ displayName(card) }}
                 </span>

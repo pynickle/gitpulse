@@ -6,6 +6,7 @@ import en from '../i18n/locales/en.json';
 import * as copilot from '../shared/utils/copilot-review';
 import type { CopilotReviewEffort } from '../shared/utils/copilot-review';
 import { compileVue } from './helpers/compile-vue';
+import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { createVueDom } from './helpers/vue-dom';
 
 mock.module(
@@ -38,6 +39,7 @@ const Picker = await compileVue('app/components/dashboard/pr/CopilotReviewEffort
 const StateEvent = await compileVue(
   'app/components/dashboard/pr/PRTimelineStateEvents.vue',
   {
+    ...githubProfileLinkModules,
     'vue-i18n': { useI18n },
     '~/composables/usePRTimelineEvents': timeline,
     '~/utils/getTextColorFromBackground': await import('../app/utils/getTextColorFromBackground'),
@@ -195,6 +197,25 @@ test('an ordinary timeline request includes from before the reviewer', () => {
     })
   ).root;
   expect(root.textContent?.replace(/\s+/g, ' ').trim()).toBe('requested review from reviewer');
+  expect(root.querySelector('a')?.getAttribute('href')).toBe('/dashboard/profile?user=reviewer');
+});
+
+test('a team review request opens the GitHub team page', () => {
+  dom = createVueDom();
+  const url = 'https://github.com/orgs/acme/teams/platform';
+  const root = dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(StateEvent, {
+          item: {
+            kind: 'event',
+            eventType: 'review_requested',
+            requestedReviewer: { resourceType: 'Team', slug: 'platform', url },
+          },
+        }),
+    })
+  ).root;
+  expect(root.querySelector('a')?.getAttribute('href')).toBe(url);
 });
 
 test('a Copilot work event distinguishes the service from its human requester', () => {

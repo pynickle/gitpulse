@@ -27,7 +27,6 @@ const { username } = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'select-user', login: string): void;
   (e: 'select-package', selection: ProfilePackageSelection): void;
 }>();
 
@@ -39,6 +38,7 @@ const {
   profile,
   readme,
   contributions,
+  hasContributionGraph,
   organizations,
   loadingProfile,
   loadingReadme,
@@ -68,7 +68,6 @@ const tabs = computed(() => [
   },
 ]);
 
-// Organizations are not GraphQL `user`s and have no contribution wall on GitHub either.
 const isOrganization = computed(() => profile.value?.type === 'Organization');
 
 const handlePackageSelect = (pkg: PackageSummary) => {
@@ -82,7 +81,7 @@ const handlePackageSelect = (pkg: PackageSummary) => {
 const showOverviewSkeleton = computed(
   () =>
     tab.value === 'overview' &&
-    (loadingReadme.value || (!isOrganization.value && loadingContributions.value))
+    (loadingReadme.value || (hasContributionGraph.value && loadingContributions.value))
 );
 </script>
 
@@ -120,9 +119,9 @@ const showOverviewSkeleton = computed(
           <template v-else>
             <ProfileReadme :login="profile.login" :readme="readme" />
 
-            <ProfilePinnedRepos :username="profile.login" />
+            <ProfilePinnedRepos v-if="profile.type !== 'Bot'" :username="profile.login" />
 
-            <template v-if="!isOrganization">
+            <template v-if="hasContributionGraph">
               <ContributionGraph v-if="contributions" :calendar="contributions" />
               <div
                 v-else-if="contributionsError"
@@ -155,7 +154,6 @@ const showOverviewSkeleton = computed(
           :empty-label="
             tab === 'followers' ? t('profile.emptyFollowers') : t('profile.emptyFollowing')
           "
-          @select="emit('select-user', $event)"
         />
       </div>
     </div>

@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, ref, shallowRef, type Component } from 'v
 
 import * as prChecks from '../shared/utils/pr-checks';
 import { compileVue } from './helpers/compile-vue';
+import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { interpolateTranslation } from './helpers/translation';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -115,6 +116,7 @@ let dom: ReturnType<typeof createVueDom>;
 const MergeBox = await compileVue(
   'app/components/dashboard/pr/PRMergeBox.vue',
   {
+    ...githubProfileLinkModules,
     '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
     'vue-i18n': { useI18n: () => ({ t, locale: ref('en') }) },
     '#shared/utils/pr-checks': prChecks,

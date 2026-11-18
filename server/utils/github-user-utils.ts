@@ -1,4 +1,4 @@
-import type { H3Event } from 'h3';
+import { getRouterParam, type H3Event } from 'h3';
 
 import { getGitHubClient } from '#server/utils/github-auth-utils';
 import { buildLinkedPaginationMeta } from '#server/utils/github-pagination';
@@ -10,13 +10,12 @@ import type {
   UserSummary,
 } from '#shared/types/users';
 
-/** GitHub login rules: 1–39 chars, alphanumeric or single hyphens, no leading/trailing hyphen. */
-const GITHUB_USERNAME_PATTERN = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
+/** GitHub logins may carry a `[bot]` suffix for GitHub App bots. */
+const GITHUB_USERNAME_PATTERN = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}(?:\[bot\])?$/i;
 
 /** Extract and validate the `username` route param. */
 export function extractUsername(event: H3Event): string {
-  const { username } = event.context.params as { username?: string };
-  const normalized = typeof username === 'string' ? username.trim() : '';
+  const normalized = getRouterParam(event, 'username', { decode: true })?.trim() ?? '';
 
   if (!normalized || !GITHUB_USERNAME_PATTERN.test(normalized)) {
     throw createError({

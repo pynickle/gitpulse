@@ -56,6 +56,7 @@ export interface RepoLatestCommitAuthor {
   login: string | null;
   name: string | null;
   avatarUrl: string | null;
+  htmlUrl?: string;
 }
 
 /**

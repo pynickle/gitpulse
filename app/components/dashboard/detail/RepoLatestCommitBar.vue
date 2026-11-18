@@ -9,6 +9,7 @@ import { computed } from 'vue';
 
 import type { RepoLatestCommitPayload } from '#shared/types/repos';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const { commit } = defineProps<{
@@ -38,11 +39,6 @@ const relativeTime = computed(() => {
   const at = commit?.committedAt;
   if (!at) return '';
   return formatDurationFromNow(at, localeCode.value, relativeTimeNow.value);
-});
-
-const authorProfileUrl = computed(() => {
-  const login = commit?.author?.login;
-  return login ? `https://github.com/${login}` : null;
 });
 </script>
 
@@ -82,22 +78,21 @@ const authorProfileUrl = computed(() => {
         <GitHubAvatar
           class="repo-latest-commit-bar__avatar"
           variant="raised"
-          :interactive="Boolean(authorProfileUrl)"
+          :interactive="Boolean(commit.author.login)"
           :src="commit.author.avatarUrl"
           :alt="authorLabel"
           :size="20"
         />
 
         <div class="repo-latest-commit-bar__body">
-          <a
-            v-if="authorProfileUrl"
-            :href="authorProfileUrl"
-            target="_blank"
-            rel="noopener noreferrer"
+          <GitHubProfileLink
+            v-if="commit.author.login"
+            :login="commit.author.login"
+            :github-href="commit.author.htmlUrl"
             class="repo-latest-commit-bar__author"
           >
             {{ authorLabel }}
-          </a>
+          </GitHubProfileLink>
           <span v-else class="repo-latest-commit-bar__author repo-latest-commit-bar__author--plain">
             {{ authorLabel }}
           </span>

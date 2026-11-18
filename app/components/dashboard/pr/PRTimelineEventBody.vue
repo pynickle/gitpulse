@@ -1,14 +1,13 @@
 <template>
   <span class="is-size-7">
-    <a
+    <GitHubProfileLink
       v-if="shouldRenderActorPrefix"
-      :href="item.actor?.url"
-      target="_blank"
-      rel="noopener"
+      :login="item.actor?.login"
+      :github-href="item.actor?.url"
       class="has-text-weight-medium has-text-link mr-1"
     >
       {{ item.actor?.login }}
-    </a>
+    </GitHubProfileLink>
 
     <PRTimelineReferenceEvents
       v-if="shouldRenderReferenceEvents(item)"
@@ -45,6 +44,7 @@ import { useI18n } from 'vue-i18n';
 import PRTimelineReferenceEvents from '~/components/dashboard/pr/PRTimelineReferenceEvents.vue';
 import PRTimelineStateEvents from '~/components/dashboard/pr/PRTimelineStateEvents.vue';
 import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUnavailableEvent.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { type PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 

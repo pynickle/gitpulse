@@ -6,6 +6,7 @@ import { buildTimelineCommitPayload } from '../app/utils/buildTimelineCommitPayl
 import { commitVerificationMark } from '../app/utils/commitVerification';
 import type { RepoCommitListItemPayload } from '../shared/types/repos';
 import { compileVue } from './helpers/compile-vue';
+import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { createVueDom } from './helpers/vue-dom';
 
 const opened: unknown[] = [];
@@ -31,6 +32,7 @@ const CheckStatusChip = defineComponent({
 });
 
 const rowModules = {
+  ...githubProfileLinkModules,
   'vue-i18n': {
     useI18n: () => ({
       t: (key: string, params?: Record<string, string>) =>

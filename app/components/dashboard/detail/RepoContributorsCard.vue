@@ -3,6 +3,7 @@ import { LoaderCircleIcon, UsersIcon } from '@lucide/vue';
 import { computed, watch } from 'vue';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import {
   REPO_CONTRIBUTORS_PREVIEW_COUNT,
   useRepoContributors,
@@ -37,12 +38,6 @@ const countLabel = computed(() => {
 const displayName = (login: string | null, name: string | null) => {
   return login || name || t('repoDetail.contributorsUnknown');
 };
-
-const profileRoute = (login: string) =>
-  localePath({
-    path: '/dashboard/profile',
-    query: { user: login },
-  });
 
 watch(
   () => [owner, repo] as const,
@@ -93,9 +88,10 @@ watch(
             :key="String(item.id ?? item.login ?? item.name)"
             class="repo-contributors__avatar-item"
           >
-            <NuxtLink
+            <GitHubProfileLink
               v-if="item.login"
-              :to="profileRoute(item.login)"
+              :login="item.login"
+              :github-href="item.htmlUrl"
               class="repo-contributors__avatar-link"
               :title="displayName(item.login, item.name)"
               :aria-label="displayName(item.login, item.name)"
@@ -105,7 +101,7 @@ watch(
                 :alt="displayName(item.login, item.name)"
                 :size="32"
               />
-            </NuxtLink>
+            </GitHubProfileLink>
             <span
               v-else
               class="repo-contributors__avatar-static"

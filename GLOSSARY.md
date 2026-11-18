@@ -86,6 +86,10 @@ _Avoid_: site URL, base URL, GitPulse base URL
 A GitHub account within one connected GitPulse backend. Renaming the account or changing the capitalization of its login preserves its identity; the same GitHub account connected through a different backend has a separate identity in GitPulse.
 _Avoid_: login, username when referring to account identity
 
+**GitHub User Profile**:
+The view in GitPulse of public GitHub information for an account identified by its login. It covers users, organizations, and bots.
+_Avoid_: other user's account, GitHub account identity when referring to the profile surface
+
 **Browser Launch Link**:
 A URL that asks GitPulse to open a supported GitHub page and resolve it into the matching GitPulse
 surface after authentication.

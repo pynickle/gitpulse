@@ -1,4 +1,4 @@
-import { ref, shallowRef, watch, type Ref } from 'vue';
+import { computed, ref, shallowRef, watch, type ComputedRef, type Ref } from 'vue';
 
 import type {
   ContributionCalendar,
@@ -13,6 +13,7 @@ interface UseUserProfileState {
   profile: Ref<UserProfilePayload | null>;
   readme: Ref<UserReadmeResponse | null>;
   contributions: Ref<ContributionCalendar | null>;
+  hasContributionGraph: ComputedRef<boolean>;
   organizations: Ref<UserOrganizationSummary[]>;
   loadingProfile: Ref<boolean>;
   loadingReadme: Ref<boolean>;
@@ -40,6 +41,9 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
   const readme = shallowRef<UserReadmeResponse | null>(null);
   const contributions = shallowRef<ContributionCalendar | null>(null);
   const organizations = shallowRef<UserOrganizationSummary[]>([]);
+  const hasContributionGraph = computed(
+    () => !!profile.value && profile.value.type !== 'Organization' && profile.value.type !== 'Bot'
+  );
 
   const loadingProfile = ref(false);
   const loadingReadme = ref(false);
@@ -84,6 +88,7 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
     loadingOrganizations.value = true;
     profileError.value = '';
     contributionsError.value = '';
+    organizations.value = [];
 
     const profileRequest = apiFetch<UserProfilePayload>(`/api/users/${encodedLogin}`)
       .then((data) => {
@@ -122,9 +127,12 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
         if (isCurrent()) loadingReadme.value = false;
       });
 
-    const contributionsRequest = apiFetch<ContributionCalendar>(
-      `/api/users/${encodedLogin}/contributions`
-    )
+    // GitHub's contribution calendar belongs to the GraphQL User type.
+    const contributionsRequest = profileRequest
+      .then(() => {
+        if (!isCurrent() || !hasContributionGraph.value) return null;
+        return apiFetch<ContributionCalendar>(`/api/users/${encodedLogin}/contributions`);
+      })
       .then((data) => {
         if (!isCurrent()) return;
         contributions.value = data;
@@ -166,6 +174,7 @@ export function useUserProfile(username: Ref<string> | (() => string)): UseUserP
     profile,
     readme,
     contributions,
+    hasContributionGraph,
     organizations,
     loadingProfile,
     loadingReadme,

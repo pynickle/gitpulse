@@ -32,6 +32,7 @@ describe('mapGitHubCommitToCommitListItem', () => {
       author: {
         login: 'octocat',
         avatar_url: 'https://avatars.githubusercontent.com/u/1?v=4',
+        html_url: 'https://github.com/octocat',
       },
       commit: {
         message: 'feat: add widgets\n\nLonger body.',
@@ -55,6 +56,7 @@ describe('mapGitHubCommitToCommitListItem', () => {
         login: 'octocat',
         name: 'The Octocat',
         avatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
+        htmlUrl: 'https://github.com/octocat',
       },
       htmlUrl: 'https://github.com/acme/widgets/commit/abcdef0123456789',
       verification: null,

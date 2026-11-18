@@ -24,6 +24,7 @@ export function buildTimelineCommitPayload(
       login,
       name: commit?.author?.name || null,
       avatarUrl: commit?.author?.user?.avatarUrl || null,
+      htmlUrl: commit?.author?.user?.url,
     },
     htmlUrl: commit?.commitUrl || commit?.url || fallbackHref(sha),
     verification: commit?.verification ?? null,

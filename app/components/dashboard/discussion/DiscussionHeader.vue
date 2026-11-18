@@ -62,15 +62,14 @@
           :alt="discussion.author?.login || t('discussionDetail.authorFallback')"
         />
         <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
-          <a
-            v-if="discussion.author?.url"
-            :href="discussion.author.url"
-            target="_blank"
-            rel="noopener"
+          <GitHubProfileLink
+            v-if="discussion.author?.login || discussion.author?.url"
+            :login="discussion.author.login"
+            :github-href="discussion.author.url"
             class="header-author__name has-text-weight-medium has-text-link"
           >
             {{ discussion.author.login }}
-          </a>
+          </GitHubProfileLink>
           <span v-else class="header-author__name has-text-weight-medium">
             {{ discussion.author?.login || t('discussionDetail.authorFallback') }}
           </span>
@@ -99,6 +98,7 @@ import { useI18n } from 'vue-i18n';
 
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const { locale, t } = useI18n();

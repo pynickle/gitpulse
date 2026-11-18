@@ -1,10 +1,8 @@
 <template>
   <component
-    :is="itemUrl ? 'a' : 'div'"
+    :is="profileLogin ? GitHubProfileLink : itemUrl ? 'a' : 'div'"
     class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed generic-search-card"
-    :href="itemUrl || undefined"
-    :target="itemUrl ? '_blank' : undefined"
-    :rel="itemUrl ? 'noreferrer' : undefined"
+    v-bind="linkProps"
   >
     <div class="card-content p-3">
       <div class="dashboard-list-card__main-row">
@@ -45,6 +43,7 @@ import {
 import { computed } from 'vue';
 
 import type { GitHubSearchEndpoint } from '#shared/types/custom-search';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 
 interface GenericSearchItem {
   title?: string;
@@ -78,6 +77,7 @@ const { item, endpoint } = defineProps<{
 
 const { locale } = useI18n();
 const relativeTimeNow = useRelativeTimeNow();
+const profileLogin = computed(() => (endpoint === 'users' ? item.login?.trim() : undefined));
 
 const title = computed(() => {
   const firstLine = item.commit?.message?.split('\n')[0]?.trim();
@@ -94,6 +94,11 @@ const title = computed(() => {
 
 const itemUrl = computed(() => {
   return typeof item.html_url === 'string' ? item.html_url : '';
+});
+
+const linkProps = computed(() => {
+  if (profileLogin.value) return { login: profileLogin.value, githubHref: itemUrl.value };
+  return itemUrl.value ? { href: itemUrl.value, target: '_blank', rel: 'noreferrer' } : {};
 });
 
 const numberLabel = computed(() => {

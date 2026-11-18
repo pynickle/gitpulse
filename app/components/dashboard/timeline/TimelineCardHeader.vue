@@ -10,14 +10,13 @@
       :alt="author?.login || ''"
     />
     <div class="timeline-card-header__meta">
-      <a
-        :href="author?.url"
-        target="_blank"
-        rel="noopener"
+      <GitHubProfileLink
+        :login="author?.login"
+        :github-href="author?.url"
         class="timeline-card-header__author is-size-6 has-text-weight-medium has-text-link"
       >
         {{ author?.login }}
-      </a>
+      </GitHubProfileLink>
       <span class="timeline-card-header__time is-size-7 has-text-grey">
         {{ formatDurationFromNow(createdAt || '', localeCode, relativeTimeNow) }}
       </span>
@@ -31,6 +30,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import type { TimelineActor } from '~/composables/usePRTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 

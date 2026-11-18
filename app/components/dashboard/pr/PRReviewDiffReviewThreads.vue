@@ -5,6 +5,7 @@ import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
 import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import PRReviewThreadToggle from '~/components/dashboard/pr/PRReviewThreadToggle.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import type { PRReviewCommentThread } from '~/composables/usePRReview';
@@ -71,15 +72,14 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
             :alt="comment.author?.login || ''"
           />
           <div class="pr-review-diff-viewer__review-comment-meta">
-            <a
-              v-if="comment.author?.url"
-              :href="comment.author.url"
-              target="_blank"
-              rel="noopener noreferrer"
+            <GitHubProfileLink
+              v-if="comment.author?.login || comment.author?.url"
+              :login="comment.author.login"
+              :github-href="comment.author.url"
               class="has-text-link has-text-weight-semibold"
             >
               {{ comment.author.login }}
-            </a>
+            </GitHubProfileLink>
             <strong v-else>{{ comment.author?.login || t('prReview.unknownReviewAuthor') }}</strong>
             <a
               v-if="comment.url"

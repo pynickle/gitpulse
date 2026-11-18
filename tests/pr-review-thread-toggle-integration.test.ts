@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, reactive, ref } from 'vue';
 import * as prReviewPatch from '../shared/utils/pr-review-patch';
 import { commentModerationModules } from './helpers/comment-moderation';
 import { compileVue } from './helpers/compile-vue';
+import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { createVueDom } from './helpers/vue-dom';
 
 mock.module('~/utils/parseGitHubMarkdownTarget', () => ({
@@ -75,6 +76,7 @@ const loadTimelineCard = async () => {
   return compileVue(
     'app/components/dashboard/pr/PRTimelineReviewCard.vue',
     {
+      ...githubProfileLinkModules,
       ...(await commentModerationModules()),
       '@lucide/vue': icons,
       'vue-i18n': i18n,
@@ -101,6 +103,7 @@ const loadThreadPills = async () => {
   return compileVue(
     'app/components/dashboard/pr/PRReviewDiffReviewThreads.vue',
     {
+      ...githubProfileLinkModules,
       ...(await commentModerationModules()),
       'vue-i18n': i18n,
       '~/components/dashboard/pr/PRReviewThreadToggle.vue': { default: Toggle },
@@ -268,7 +271,7 @@ describe('timeline review card verdict details', () => {
       expect(note.querySelector('.lucide-Ban')).not.toBeNull();
       expect(note.querySelector('.timeline-event-time .lucide-Clock')).not.toBeNull();
       expect(note.textContent).toContain('prReview.timelineDismissed');
-      expect(note.querySelector('a')?.getAttribute('href')).toBe('https://github.com/dragon');
+      expect(note.querySelector('a')?.getAttribute('href')).toBe('/dashboard/profile?user=dragon');
     } finally {
       await dom.cleanup();
     }

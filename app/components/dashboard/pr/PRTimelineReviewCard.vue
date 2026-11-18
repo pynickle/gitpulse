@@ -32,14 +32,13 @@
         <span class="review-item__badge" aria-hidden="true">
           <component :is="stateIcon" :size="14" :stroke-width="2.5" />
         </span>
-        <a
-          :href="item.author?.url"
-          target="_blank"
-          rel="noopener"
+        <GitHubProfileLink
+          :login="item.author?.login"
+          :github-href="item.author?.url"
           class="has-text-link has-text-weight-semibold review-item__author"
         >
           {{ item.author?.login }}
-        </a>
+        </GitHubProfileLink>
         <span class="review-item__action">{{ stateAction }}</span>
         <span v-if="item.dismissal" class="review-item__dismissed-note">
           {{ t('prReview.timelineDismissedNote') }}
@@ -85,9 +84,13 @@
         {{ t('prReview.timelineDismissed') }}
         <template v-if="item.dismissal.actor?.login">
           {{ t('prReview.timelineDismissedBy') }}
-          <a :href="item.dismissal.actor.url" target="_blank" rel="noopener" class="has-text-link">
+          <GitHubProfileLink
+            :login="item.dismissal.actor.login"
+            :github-href="item.dismissal.actor.url"
+            class="has-text-link"
+          >
             {{ item.dismissal.actor.login }}
-          </a>
+          </GitHubProfileLink>
         </template>
       </template>
       <MarkdownRenderer
@@ -146,9 +149,13 @@
                   :src="comment.author?.avatarUrl || ''"
                   :alt="comment.author?.login || ''"
                 />
-                <a :href="comment.author?.url" target="_blank" rel="noopener" class="has-text-link">
+                <GitHubProfileLink
+                  :login="comment.author?.login"
+                  :github-href="comment.author?.url"
+                  class="has-text-link"
+                >
                   {{ comment.author?.login }}
-                </a>
+                </GitHubProfileLink>
                 <a
                   v-if="comment.url"
                   :href="comment.url"
@@ -229,6 +236,7 @@ import TimelineCommentCard from '~/components/dashboard/timeline/TimelineComment
 import TimelineEventNote from '~/components/dashboard/timeline/TimelineEventNote.vue';
 import TimelineEventTime from '~/components/dashboard/timeline/TimelineEventTime.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import {

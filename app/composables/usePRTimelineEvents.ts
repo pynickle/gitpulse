@@ -288,28 +288,27 @@ export function parseGitHubIssueOrPullUrl(url?: string) {
   };
 }
 
-export function getRequestedReviewerLabel(reviewer?: TimelineRequestedReviewer): string {
-  if (!reviewer) return 'reviewer';
-
+export function describeRequestedReviewer(reviewer?: TimelineRequestedReviewer) {
+  if (!reviewer) return null;
   if (reviewer.resourceType === 'Team') {
-    return reviewer.slug ? `@${reviewer.slug}` : (reviewer.name ?? 'team');
+    return {
+      login: undefined,
+      url: reviewer.url,
+      label: reviewer.slug ? `@${reviewer.slug}` : (reviewer.name ?? 'team'),
+    };
   }
 
-  if (reviewer.resourceType === 'Organization') {
-    return reviewer.login ?? reviewer.name ?? 'organization';
-  }
-
-  return reviewer.login ?? reviewer.name ?? 'reviewer';
+  return {
+    login: reviewer.login,
+    url: reviewer.url,
+    label:
+      reviewer.login ??
+      reviewer.name ??
+      (reviewer.resourceType === 'Organization' ? 'organization' : 'reviewer'),
+  };
 }
 
 export function getOnBehalfOfTeamLabel(team: TimelineReviewTeam): string {
   const name = team.name || team.slug || '';
   return team.organizationLogin && name ? `${team.organizationLogin}/${name}` : name;
-}
-
-export function getRequestedReviewerUrl(reviewer?: TimelineRequestedReviewer): string | undefined {
-  if (!reviewer) return undefined;
-  if (reviewer.url) return reviewer.url;
-  if (reviewer.login) return `https://github.com/${reviewer.login}`;
-  return undefined;
 }

@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import type { RepoCommitListItemPayload } from '#shared/types/repos';
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
 const { commit } = defineProps<{
@@ -19,10 +20,6 @@ const mark = computed(() => commitVerificationMark(commit.verification));
 
 const authorLabel = computed(
   () => commit.author.login || commit.author.name || t('repoDetail.unknownAuthor')
-);
-
-const authorProfileUrl = computed(() =>
-  commit.author.login ? `https://github.com/${commit.author.login}` : undefined
 );
 
 const relativeTime = computed(() => {
@@ -66,7 +63,7 @@ const verificationTitle = computed(() => {
     <GitHubAvatar
       class="commit-list-row__avatar"
       variant="raised"
-      :interactive="Boolean(authorProfileUrl)"
+      :interactive="Boolean(commit.author.login)"
       :src="commit.author.avatarUrl"
       :alt="authorLabel"
       :size="24"
@@ -92,15 +89,14 @@ const verificationTitle = computed(() => {
       </span>
 
       <div class="commit-list-row__meta">
-        <a
-          v-if="authorProfileUrl"
-          :href="authorProfileUrl"
-          target="_blank"
-          rel="noopener noreferrer"
+        <GitHubProfileLink
+          v-if="commit.author.login"
+          :login="commit.author.login"
+          :github-href="commit.author.htmlUrl"
           class="commit-list-row__author"
         >
           {{ authorLabel }}
-        </a>
+        </GitHubProfileLink>
         <span v-else class="commit-list-row__author commit-list-row__author--plain">
           {{ authorLabel }}
         </span>

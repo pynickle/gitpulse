@@ -15,6 +15,7 @@ import { computed } from 'vue';
 import type { UserOrganizationSummary, UserProfilePayload } from '#shared/types/users';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 
 type ProfileConnectionTab = 'followers' | 'following';
 
@@ -155,16 +156,16 @@ const starredTo = computed(() => ({
       <h2 class="profile-header__orgs-title">{{ t('profile.organizations') }}</h2>
       <ul class="profile-header__orgs-list">
         <li v-for="org in organizations" :key="org.login">
-          <a
-            :href="org.htmlUrl"
-            target="_blank"
-            rel="noopener noreferrer"
+          <GitHubProfileLink
+            :login="org.login"
+            :current-login="profile.login"
+            :github-href="org.htmlUrl"
             class="profile-header__org"
             :title="org.description ? `${org.login} — ${org.description}` : org.login"
             :aria-label="org.login"
           >
             <GitHubAvatar :src="org.avatarUrl" :alt="org.login" size="32" />
-          </a>
+          </GitHubProfileLink>
         </li>
       </ul>
     </section>

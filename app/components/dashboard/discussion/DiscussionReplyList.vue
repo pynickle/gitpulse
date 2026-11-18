@@ -6,6 +6,7 @@ import type { DiscussionRepliesPayload } from '#shared/types/discussions';
 import CommentActions from '~/components/dashboard/comments/CommentActions.vue';
 import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
@@ -45,15 +46,14 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
             :src="reply.author?.avatarUrl || ''"
             :alt="reply.author?.login || t('discussionDetail.authorFallback')"
           />
-          <a
-            v-if="reply.author?.url"
-            :href="reply.author.url"
-            target="_blank"
-            rel="noopener"
+          <GitHubProfileLink
+            v-if="reply.author?.login || reply.author?.url"
+            :login="reply.author.login"
+            :github-href="reply.author.url"
             class="has-text-weight-medium has-text-link is-size-7"
           >
             {{ reply.author.login }}
-          </a>
+          </GitHubProfileLink>
           <span v-else class="has-text-weight-medium is-size-7">
             {{ reply.author?.login || t('discussionDetail.authorFallback') }}
           </span>

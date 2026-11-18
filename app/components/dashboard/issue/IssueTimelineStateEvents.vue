@@ -13,18 +13,14 @@
         :key="`${change.action}-${change.value}-${index}`"
       >
         <template v-if="item.hasMixedActors">
-          <a
-            v-if="timelineChangeActorUrl(change)"
-            :href="timelineChangeActorUrl(change)"
-            target="_blank"
-            rel="noopener"
-            class="has-text-weight-medium has-text-link mr-1"
+          <GitHubProfileLink
+            :login="change.actor?.login"
+            :github-href="change.actor?.url"
+            class="has-text-weight-medium mr-1"
+            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
-          </a>
-          <span v-else class="has-text-weight-medium mr-1">
-            {{ timelineChangeActorLabel(change) }}
-          </span>
+          </GitHubProfileLink>
         </template>
         {{ change.action }}
         <span class="tag is-activity ml-1" :style="labelStyle(change.label?.color)">
@@ -134,18 +130,14 @@
     <template v-if="item.displayText">{{ item.displayText }}</template>
     <template v-else>
       {{ assigneePrefix }}
-      <a
-        v-if="assigneeUrl"
-        :href="assigneeUrl"
-        target="_blank"
-        rel="noopener"
+      <GitHubProfileLink
+        v-if="assigneeLabel || item.assignee?.url"
+        :login="item.assignee?.login"
+        :github-href="item.assignee?.url"
         class="tag is-activity ml-1 is-warning is-light"
       >
         {{ assigneeLabel }}
-      </a>
-      <span v-else-if="assigneeLabel" class="tag is-activity ml-1 is-warning is-light">
-        {{ assigneeLabel }}
-      </span>
+      </GitHubProfileLink>
     </template>
   </template>
 
@@ -156,32 +148,23 @@
         :key="`${change.action}-${change.value}-${index}`"
       >
         <template v-if="item.hasMixedActors">
-          <a
-            v-if="timelineChangeActorUrl(change)"
-            :href="timelineChangeActorUrl(change)"
-            target="_blank"
-            rel="noopener"
-            class="has-text-weight-medium has-text-link mr-1"
+          <GitHubProfileLink
+            :login="change.actor?.login"
+            :github-href="change.actor?.url"
+            class="has-text-weight-medium mr-1"
+            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
-          </a>
-          <span v-else class="has-text-weight-medium mr-1">
-            {{ timelineChangeActorLabel(change) }}
-          </span>
+          </GitHubProfileLink>
         </template>
         {{ change.action }}
-        <a
-          v-if="assigneeChangeUrl(change)"
-          :href="assigneeChangeUrl(change)"
-          target="_blank"
-          rel="noopener"
+        <GitHubProfileLink
+          :login="change.assignee?.login"
+          :github-href="change.assignee?.url"
           class="tag is-activity ml-1 is-warning is-light"
         >
           {{ assigneeChangeLabel(change) }}
-        </a>
-        <span v-else class="tag is-activity ml-1 is-warning is-light">
-          {{ assigneeChangeLabel(change) }}
-        </span>
+        </GitHubProfileLink>
         {{
           index === assigneeChanges.length - 2
             ? ' and '
@@ -208,14 +191,12 @@
 
   <template v-else-if="item.eventType === 'comment_deleted'">
     deleted a comment by
-    <a
-      :href="`https://github.com/${item.deletedCommentAuthor?.login}`"
-      target="_blank"
-      rel="noopener"
+    <GitHubProfileLink
+      :login="item.deletedCommentAuthor?.login"
       class="tag is-activity ml-1 is-warning is-light"
     >
       {{ item.deletedCommentAuthor?.login }}
-    </a>
+    </GitHubProfileLink>
   </template>
 
   <template v-else-if="item.eventType === 'converted_from_draft'"
@@ -297,14 +278,13 @@
 
   <template v-else-if="item.eventType === 'user_blocked'">
     blocked user
-    <a
-      :href="item.subject?.url"
-      target="_blank"
-      rel="noopener"
+    <GitHubProfileLink
+      :login="item.subject?.login"
+      :github-href="item.subject?.url"
       class="tag is-activity ml-1 is-warning is-light"
     >
       {{ item.subject?.login }}
-    </a>
+    </GitHubProfileLink>
   </template>
 
   <template v-else-if="item.eventType === 'pinned' || item.eventType === 'unpinned'">
@@ -317,6 +297,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ProjectTag from '~/components/dashboard/timeline/ProjectTag.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import type { ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import {
   formatLockReason,
@@ -336,11 +317,6 @@ const { t } = useI18n();
 const assigneeChanges = computed(() => item.assigneeChanges ?? []);
 const labelChanges = computed(() => item.labelChanges ?? []);
 const assigneeLabel = computed(() => item.assignee?.login || item.assignee?.name || '');
-const assigneeUrl = computed(() => {
-  if (item.assignee?.url) return item.assignee.url;
-  if (item.assignee?.login) return `https://github.com/${item.assignee.login}`;
-  return undefined;
-});
 const assigneePrefix = computed(() =>
   item.eventType === 'assigned' ? 'assigned this to' : 'unassigned this from'
 );
@@ -391,22 +367,10 @@ const addedProjectEventTypes = new Set(['added_to_project', 'added_to_project_v2
 const assigneeChangeLabel = (change: TimelineStateChange) =>
   change.assignee?.login || change.assignee?.name || change.value;
 
-const assigneeChangeUrl = (change: TimelineStateChange) => {
-  if (change.assignee?.url) return change.assignee.url;
-  if (change.assignee?.login) return `https://github.com/${change.assignee.login}`;
-  return undefined;
-};
-
 const labelChangeLabel = (change: TimelineStateChange) => change.label?.name || change.value;
 
 const timelineChangeActorLabel = (change: TimelineStateChange) =>
   change.actor?.login || change.actor?.name || '';
-
-const timelineChangeActorUrl = (change: TimelineStateChange) => {
-  if (change.actor?.url) return change.actor.url;
-  if (change.actor?.login) return `https://github.com/${change.actor.login}`;
-  return undefined;
-};
 </script>
 
 <style scoped lang="scss">

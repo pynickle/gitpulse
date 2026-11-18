@@ -9,6 +9,7 @@ import CommentBody from '~/components/dashboard/comments/CommentBody.vue';
 import DiscussionReplyList from '~/components/dashboard/discussion/DiscussionReplyList.vue';
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
@@ -72,15 +73,14 @@ const submitReplyDraft = async (body: string) => {
           :src="comment.author?.avatarUrl || ''"
           :alt="comment.author?.login || t('discussionDetail.authorFallback')"
         />
-        <a
-          v-if="comment.author?.url"
-          :href="comment.author.url"
-          target="_blank"
-          rel="noopener"
+        <GitHubProfileLink
+          v-if="comment.author?.login || comment.author?.url"
+          :login="comment.author.login"
+          :github-href="comment.author.url"
           class="has-text-weight-medium has-text-link"
         >
           {{ comment.author.login }}
-        </a>
+        </GitHubProfileLink>
         <span v-else class="has-text-weight-medium">
           {{ comment.author?.login || t('discussionDetail.authorFallback') }}
         </span>

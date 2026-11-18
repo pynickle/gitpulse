@@ -43,14 +43,13 @@
           :alt="issue?.user?.login"
         />
         <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
-          <a
-            :href="`https://github.com/${issue?.user?.login}`"
-            target="_blank"
-            rel="noopener"
+          <GitHubProfileLink
+            :login="issue?.user?.login"
+            :github-href="issue?.user?.html_url"
             class="header-author__name has-text-weight-medium has-text-link"
           >
             {{ issue?.user?.login }}
-          </a>
+          </GitHubProfileLink>
           <span class="header-author__time">
             {{ formatDurationFromNow(issue?.created_at, localeCode, relativeTimeNow) }}
           </span>
@@ -87,6 +86,7 @@ import { useI18n } from 'vue-i18n';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 
 const { locale, t } = useI18n();
@@ -101,6 +101,7 @@ interface IssueHeaderIssue {
   updated_at?: string;
   user?: {
     avatar_url?: string | null;
+    html_url?: string | null;
     login?: string;
   } | null;
   created_at?: string;

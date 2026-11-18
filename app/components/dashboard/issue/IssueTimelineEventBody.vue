@@ -1,14 +1,13 @@
 <template>
   <span class="is-size-7">
-    <a
+    <GitHubProfileLink
       v-if="shouldRenderActorPrefix"
-      :href="item.actor?.url"
-      target="_blank"
-      rel="noopener"
+      :login="item.actor?.login"
+      :github-href="item.actor?.url"
       class="has-text-weight-medium has-text-link mr-1"
     >
       {{ item.actor?.login }}
-    </a>
+    </GitHubProfileLink>
 
     <IssueTimelineReferenceEvents
       v-if="shouldRenderReferenceEvents(item)"
@@ -50,6 +49,7 @@ import { useI18n } from 'vue-i18n';
 import IssueTimelineReferenceEvents from '~/components/dashboard/issue/IssueTimelineReferenceEvents.vue';
 import IssueTimelineStateEvents from '~/components/dashboard/issue/IssueTimelineStateEvents.vue';
 import TimelineUnavailableEvent from '~/components/dashboard/timeline/TimelineUnavailableEvent.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { type ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 

@@ -28,11 +28,10 @@
           <div class="merge-box__panel-body">
             <p class="merge-box__headline">{{ t('prReview.mergeBox.merged') }}</p>
             <p class="merge-box__subline">
-              <a
+              <GitHubProfileLink
                 v-if="status.mergedBy"
-                :href="status.mergedBy.htmlUrl"
-                target="_blank"
-                rel="noopener noreferrer"
+                :login="status.mergedBy.login"
+                :github-href="status.mergedBy.htmlUrl"
                 class="merge-box__merged-by"
               >
                 <GitHubAvatar
@@ -42,7 +41,7 @@
                   class="merge-box__merged-avatar"
                 />
                 <span>{{ status.mergedBy.login }}</span>
-              </a>
+              </GitHubProfileLink>
               <span>{{ t('prReview.mergeBox.mergedTime', { time: mergedTimeLabel }) }}</span>
               <code v-if="shortMergeSha" class="merge-box__sha">{{ shortMergeSha }}</code>
             </p>
@@ -291,6 +290,7 @@ import { useI18n } from 'vue-i18n';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
 

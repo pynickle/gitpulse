@@ -68,14 +68,13 @@
           :alt="pullRequest?.user?.login"
         />
         <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
-          <a
-            :href="`https://github.com/${pullRequest?.user?.login}`"
-            target="_blank"
-            rel="noopener"
+          <GitHubProfileLink
+            :login="pullRequest?.user?.login"
+            :github-href="pullRequest?.user?.html_url"
             class="header-author__name has-text-weight-medium has-text-link"
           >
             {{ pullRequest?.user?.login }}
-          </a>
+          </GitHubProfileLink>
           <span class="header-author__time">
             {{ createdAtLabel }}
           </span>
@@ -112,6 +111,7 @@ import { useI18n } from 'vue-i18n';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import { getPullRequestStateVisual } from '~/utils/getPullRequestStateVisual';
 import {
@@ -135,6 +135,7 @@ interface PullRequestHeaderPullRequest {
   base?: PullRequestBranchRefSource;
   user?: {
     avatar_url?: string | null;
+    html_url?: string | null;
     login?: string;
   };
   created_at?: string;
