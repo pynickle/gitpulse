@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import { withAppBase } from '#shared/utils/auth-return-route';
 import ErrorPreviewWidget from '~/components/ErrorPreviewWidget.vue';
 
 const colorMode = useColorMode();
+const runtimeConfig = useRuntimeConfig();
 const isDev = import.meta.dev;
 
 const primerColorMode = computed(() => (colorMode.value === 'dark' ? 'dark' : 'light'));
@@ -27,7 +29,10 @@ useHead(() => {
       'data-light-theme': 'light',
       'data-dark-theme': 'dark',
     },
-    link: [...localeHead.link],
+    link: [
+      ...localeHead.link,
+      { rel: 'manifest', href: withAppBase('/manifest.webmanifest', runtimeConfig.app.baseURL) },
+    ],
     meta: [...localeHead.meta],
   };
 });
