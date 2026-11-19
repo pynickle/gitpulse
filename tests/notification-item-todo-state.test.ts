@@ -103,6 +103,21 @@ const isSavedCard = (root: Element) =>
   root.querySelector('.notification-card')?.classList.contains('notification-card--todo') ?? false;
 
 describe('dashboard Notification item todo state', () => {
+  test('renders the completed icon and accessible label for a completed issue', async () => {
+    const view = mountItem({
+      notification: {
+        ...notification,
+        subject: { ...notification.subject, state: 'closed', stateReason: 'completed' },
+      },
+    });
+    await nextTick();
+
+    const badge = view.root.querySelector('.notification-type-badge');
+    expect(badge?.getAttribute('aria-label')).toBe('Completed issue');
+    expect(badge?.classList.contains('notification-type-badge--completed')).toBe(true);
+    expect(badge?.querySelector('svg.lucide-circle-check[aria-hidden="true"]')).not.toBeNull();
+  });
+
   test('fills the control and the card for a notification already in the todos', async () => {
     const view = mountItem({ todoAction: 'remove' });
     await nextTick();

@@ -35,6 +35,7 @@ export interface IssueDetailPayload {
   id: number;
   number: number;
   state: string;
+  state_reason?: string | null;
   title: string;
   body?: string | null;
   html_url?: string;

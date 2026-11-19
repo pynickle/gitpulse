@@ -41,6 +41,7 @@ interface DetailSummary {
   title?: string;
   number?: number | string;
   state?: string;
+  stateReason?: string | null;
   stateTone?: DetailSummaryTone;
   subjectType?: DetailSubjectType;
   visible?: boolean;
@@ -126,6 +127,9 @@ const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, 
   createDashboardDetailPaneLoaders();
 const isPullRequestReviewActive = shallowRef(false);
 const isCompactHeaderVisible = shallowRef(false);
+const issueCompactState = shallowRef<Pick<IssueDetailPayload, 'state' | 'state_reason'> | null>(
+  null
+);
 const pullRequestCompactSummary = shallowRef<DetailSummaryContent | null>(null);
 const DiscussionDetail = defineAsyncComponent(loadDiscussionDetail);
 const IssueDetail = defineAsyncComponent(loadIssueDetail);
@@ -292,11 +296,13 @@ const detailSummary = computed<DetailSummary | null>(() => {
   if (!pane) return null;
 
   if (pane.type === 'issue' && issue) {
-    const state = issue.state || 'closed';
+    const issueState = issueCompactState.value ?? issue;
+    const state = issueState.state || 'closed';
     return {
       title: issue.title,
       number: issue.number,
       state,
+      stateReason: issueState.state_reason,
       stateTone: getStateTone(state),
       subjectType: 'issue',
       visible: isCompactHeaderVisible.value,
@@ -352,6 +358,13 @@ watch(activeDetailKey, () => {
   isCompactHeaderVisible.value = false;
   pullRequestCompactSummary.value = null;
 });
+
+watch(
+  () => issue,
+  () => {
+    issueCompactState.value = null;
+  }
+);
 
 watch(detailSidebarPaneIdentity, (paneIdentity) => syncDetailSidebarPane(paneIdentity), {
   immediate: true,
@@ -487,6 +500,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
                 :detail-sidebar-hidden="isDetailSidebarHidden"
                 :source-notification="sourceNotification"
                 @update:compact-header-visible="isCompactHeaderVisible = $event"
+                @update:compact-header-state="issueCompactState = $event"
                 @switch-issue="handleSwitchIssue"
                 @switch-pull-request="handleSwitchPullRequest"
               />

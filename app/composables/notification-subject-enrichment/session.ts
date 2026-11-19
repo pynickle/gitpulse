@@ -173,6 +173,10 @@ const toValidResult = (
     title: value.title,
     updatedAt: value.updatedAt as string | undefined,
     state: state as NotificationSubjectEnrichmentResult['state'],
+    stateReason:
+      target.type === 'issues' && typeof value.stateReason === 'string'
+        ? value.stateReason
+        : undefined,
     draft: value.draft as boolean | undefined,
     isAnswered: value.isAnswered as boolean | undefined,
     issueType: issueType as NotificationSubjectEnrichmentResult['issueType'],
@@ -224,6 +228,7 @@ const mergeEnrichmentResults = (
         ...subjectWithoutAttachedData,
         title: result.title,
         state: result.state,
+        stateReason: result.stateReason,
         draft: result.draft,
         isAnswered: result.isAnswered,
         issueType: result.issueType,

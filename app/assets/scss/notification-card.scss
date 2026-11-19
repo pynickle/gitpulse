@@ -87,6 +87,10 @@ $transition-hint:
   color: var(--gitpulse-text-muted);
 }
 
+.notification-type-badge--completed {
+  color: var(--gitpulse-purple);
+}
+
 .notification-type-badge--merged {
   color: var(--gitpulse-info);
 }

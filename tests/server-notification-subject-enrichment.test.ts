@@ -98,6 +98,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
     requestBody = { targets };
     graphQLRequest = async (query, variables) => {
       expect(query).toContain('issue(number: $number0)');
+      expect(query).toContain('issue(number: $number0) { title updatedAt state stateReason');
       expect(query).toContain('closedByPullRequestsReferences(first: 1, includeClosedPrs: true)');
       expect(query).toContain('pullRequest(number: $number1)');
       expect(query).toContain('discussion(number: $number2)');
@@ -120,6 +121,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
             title: 'Issue title',
             updatedAt: '2026-08-12T01:00:00.000Z',
             state: 'CLOSED',
+            stateReason: 'COMPLETED',
             issueType: { name: 'Bug', color: 'FF0000' },
             labels: { nodes: [{ name: 'priority', color: '00AA00' }, { name: 'invalid' }] },
             comments: { totalCount: 4 },
@@ -159,6 +161,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
       title: 'Issue title',
       updatedAt: '2026-08-12T01:00:00.000Z',
       state: 'closed',
+      stateReason: 'completed',
       draft: undefined,
       isAnswered: undefined,
       issueType: { name: 'Bug', color: 'ff0000' },

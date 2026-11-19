@@ -157,6 +157,9 @@ _Avoid_: Feed item, generic Todo
 
 ## Issues
 
+**Issue Closure Reason**:
+Why a closed Issue was closed. A Completed Issue is closed with an explicit Completed reason; a closed Issue with no known reason is not necessarily Completed.
+
 **Linked Pull Request**:
 A pull request attached to an Issue through GitHub Development — a closing keyword or a manual Development link — in any lifecycle state.
 _Avoid_: associated PR, related PR, connected PR, mentioned PR, cross-referenced PR

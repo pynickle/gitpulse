@@ -44,6 +44,7 @@ interface GraphQLSubjectNode {
   title?: string;
   updatedAt?: string;
   state?: string;
+  stateReason?: string | null;
   mergedAt?: string | null;
   /** PullRequest only — GraphQL `isDraft`. */
   isDraft?: boolean | null;
@@ -153,7 +154,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectEnrichmentTarget[])
         ? `title updatedAt state mergedAt isDraft comments { totalCount } ${PR_CHECK_ROLLUP_NODE_FIELDS}`
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
-          : `title updatedAt state issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS}`;
+          : `title updatedAt state stateReason issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS}`;
     const labelsFields =
       target.type === 'discussions' ? '' : ' labels(first: 10) { nodes { name color } }';
     fields.push(
@@ -204,6 +205,9 @@ export default defineEventHandler(async (event) => {
         title: node?.title,
         updatedAt: node?.updatedAt,
         state: normalizeState(target.type, node),
+        ...(target.type === 'issues' && node?.stateReason
+          ? { stateReason: node.stateReason.toLowerCase() }
+          : {}),
         draft:
           target.type === 'pulls' && typeof node?.isDraft === 'boolean' ? node.isDraft : undefined,
         isAnswered: target.type === 'discussions' && node ? Boolean(node.isAnswered) : undefined,

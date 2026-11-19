@@ -42,6 +42,7 @@
               :class="{
                 'notification-type-badge--pending': enrichmentPresentation.animatesSubjectBadge,
                 [`notification-type-badge--${subjectVisual.state}`]: subjectVisual.state,
+                'notification-type-badge--completed': subjectVisual.isCompleted,
               }"
               :title="subjectStateTitle"
               :aria-label="subjectStateTitle"
@@ -50,7 +51,12 @@
               aria-atomic="true"
             >
               <Transition name="notification-state-icon" mode="out-in">
-                <component :is="subjectVisual.icon" :key="subjectVisual.label" :size="13" />
+                <component
+                  :is="subjectVisual.icon"
+                  :key="subjectVisual.label"
+                  :size="13"
+                  aria-hidden="true"
+                />
               </Transition>
             </span>
           </figure>
@@ -305,6 +311,7 @@ const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({
     isPullRequest: isPullRequestSubject.value,
     state: subject.value?.state,
+    stateReason: subject.value?.stateReason,
     subjectType: subject.value?.type,
     isAnswered: subject.value?.isAnswered,
     draft: subject.value?.draft,

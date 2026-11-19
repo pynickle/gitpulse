@@ -33,6 +33,7 @@ export interface DashboardIssuePrEntity {
   number?: number | null;
   updated_at?: string;
   state?: NotificationSubjectState;
+  state_reason?: string | null;
   draft?: boolean;
   merged_at?: string | null;
   /** Issue comment count from GitHub Search/Issues APIs (not review comments). */
@@ -58,6 +59,7 @@ export interface DashboardIssuePrCard {
   updatedAt: string | undefined;
   subjectType: NotificationSubjectKind;
   state: NotificationSubjectState;
+  stateReason?: string | null;
   /** True when the PR is an open draft (ignored for issues / closed / merged). */
   draft: boolean;
   /** Issue comment count when provided by the list payload. */
@@ -109,6 +111,7 @@ export function toDashboardIssuePrCard(entity: DashboardIssuePrEntity): Dashboar
     updatedAt: entity.updated_at,
     subjectType: isPullRequest ? 'PullRequest' : 'Issue',
     state,
+    stateReason: !isPullRequest && entity.state === 'closed' ? entity.state_reason : undefined,
     draft: isPullRequest && state === 'open' && Boolean(entity.draft),
     comments: normalizeCommentsCount(entity.comments),
     linkedPullRequestCount: linkedSummary?.count ?? null,

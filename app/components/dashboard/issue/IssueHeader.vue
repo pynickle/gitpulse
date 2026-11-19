@@ -2,7 +2,13 @@
   <div class="mb-4">
     <!-- Title row -->
     <div class="is-flex is-align-items-center mb-3 header-title">
-      <component :size="22" :is="stateIcon" :style="stateColor" class="header-title__icon" />
+      <component
+        :size="22"
+        :is="stateVisual.icon"
+        :style="stateColor"
+        class="header-title__icon"
+        aria-hidden="true"
+      />
       <h1 class="title is-3 ml-3 mb-0 header-title__text">{{ issue?.title }}</h1>
     </div>
 
@@ -10,7 +16,7 @@
     <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
       <span class="header-number has-text-weight-medium">#{{ issue?.number }}</span>
       <span class="header-state-tag" :class="issue?.state === 'open' ? 'is-open' : 'is-closed'">
-        <component :size="12" :is="issue?.state === 'open' ? CircleDotIcon : CircleMinusIcon" />
+        <component :size="12" :is="stateVisual.icon" :style="stateColor" aria-hidden="true" />
         <span>{{ issue?.state }}</span>
       </span>
       <span class="header-time is-flex is-align-items-center">
@@ -79,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { CircleDotIcon, CircleMinusIcon, ClockIcon, GitForkIcon } from '@lucide/vue';
+import { ClockIcon, GitForkIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -88,6 +94,7 @@ import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import { getIssueStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 
 const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -98,6 +105,7 @@ interface IssueHeaderIssue {
   title?: string;
   number?: number | string;
   state?: string;
+  state_reason?: string | null;
   updated_at?: string;
   user?: {
     avatar_url?: string | null;
@@ -115,13 +123,13 @@ const { issue, repoOwner, repoName } = defineProps<{
   repoName: string;
 }>();
 
-const stateIcon = computed(() => {
-  return issue?.state === 'open' ? CircleDotIcon : CircleMinusIcon;
-});
+const stateVisual = computed(() => getIssueStateVisual(issue?.state, issue?.state_reason));
 
 const stateColor = computed(() => {
   return {
-    color: issue?.state === 'open' ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)',
+    color:
+      stateVisual.value.color ??
+      (issue?.state === 'open' ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)'),
   };
 });
 

@@ -29,7 +29,13 @@
               :class="detailStateClass"
               :title="detailState"
             >
-              <component :is="detailStateIcon" v-if="detailStateIcon" :size="12" />
+              <component
+                :is="detailStateIcon"
+                v-if="detailStateIcon"
+                :size="12"
+                :style="detailStateIconStyle"
+                aria-hidden="true"
+              />
               <span class="dashboard-top-header__summary-state-label">{{ detailState }}</span>
             </span>
             <span v-if="detailNumberLabel" class="dashboard-top-header__summary-number">
@@ -65,8 +71,6 @@
 <script setup lang="ts">
 import {
   ArrowLeftIcon,
-  CircleDotIcon,
-  CircleMinusIcon,
   HouseIcon,
   MessageSquareIcon,
   PanelRightCloseIcon,
@@ -76,6 +80,7 @@ import { type Component, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ChromeActions from '~/components/layouts/ChromeActions.vue';
+import { getIssueStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
@@ -85,6 +90,7 @@ interface DetailSummary {
   title?: string;
   number?: number | string;
   state?: string;
+  stateReason?: string | null;
   stateTone?: DetailSummaryTone;
   subjectType?: DetailSubjectType;
   visible?: boolean;
@@ -117,7 +123,12 @@ const detailSidebarToggleLabel = computed(() => {
 const detailTitle = computed(() => detailSummary?.title?.trim() ?? '');
 
 const detailState = computed(() => detailSummary?.state?.trim() ?? '');
-
+const issueStateVisual = computed(() =>
+  getIssueStateVisual(
+    detailSummary?.stateTone === 'open' ? 'open' : detailState.value,
+    detailSummary?.stateReason
+  )
+);
 const detailStateClass = computed(() => {
   const tone = detailSummary?.stateTone ?? 'closed';
   return `is-${tone}`;
@@ -140,10 +151,13 @@ const detailStateIcon = computed<Component | null>(() => {
     return MessageSquareIcon;
   }
 
-  // Default: issue
-  if (stateTone === 'open' || state === 'open') return CircleDotIcon;
-  return CircleMinusIcon;
+  return issueStateVisual.value.icon;
 });
+const detailStateIconStyle = computed(() =>
+  detailSummary?.subjectType === 'issue' && detailState.value === 'closed'
+    ? { color: issueStateVisual.value.color ?? 'var(--gitpulse-text-muted)' }
+    : undefined
+);
 
 const detailNumberLabel = computed(() => {
   const rawNumber = detailSummary?.number;

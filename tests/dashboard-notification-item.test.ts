@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 
-import { GitPullRequestDraftIcon, GitPullRequestIcon } from '@lucide/vue';
+import {
+  CircleCheckIcon,
+  CircleDotIcon,
+  CircleMinusIcon,
+  GitPullRequestDraftIcon,
+  GitPullRequestIcon,
+} from '@lucide/vue';
 
 import {
   getDashboardSubjectStateVisual,
@@ -72,5 +78,28 @@ describe('dashboard Notification item presentation', () => {
         draft: false,
       }).icon
     ).toBe(GitPullRequestIcon);
+  });
+
+  test('distinguishes completed issues from other closed issues and reopened issues', () => {
+    const visual = (state: 'open' | 'closed', stateReason?: string | null) =>
+      getDashboardSubjectStateVisual({
+        isPullRequest: false,
+        subjectType: 'Issue',
+        state,
+        stateReason,
+      });
+
+    expect(visual('closed', 'completed')).toMatchObject({
+      icon: CircleCheckIcon,
+      state: 'closed',
+      label: 'Completed issue',
+      isCompleted: true,
+      color: 'var(--gitpulse-purple)',
+    });
+    for (const reason of ['not_planned', 'duplicate', null, undefined]) {
+      expect(visual('closed', reason).icon).toBe(CircleMinusIcon);
+      expect(visual('closed', reason).color).toBeUndefined();
+    }
+    expect(visual('open', 'completed').icon).toBe(CircleDotIcon);
   });
 });

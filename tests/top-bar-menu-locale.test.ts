@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 
 import { defineComponent, h, nextTick, shallowRef } from 'vue';
 
+import * as dashboardSubjectStateVisual from '../app/utils/getDashboardSubjectStateVisual';
 import { holdTopBarMenu } from '../app/utils/holdTopBarMenu';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
@@ -25,6 +26,7 @@ const Header = await compileVue('app/components/dashboard/overlay/DashboardTopHe
   '@lucide/vue': {
     ArrowLeftIcon: icon,
     CircleDotIcon: icon,
+    CircleCheckIcon: icon,
     CircleMinusIcon: icon,
     HouseIcon: icon,
     MessageSquareIcon: icon,
@@ -38,6 +40,7 @@ const Header = await compileVue('app/components/dashboard/overlay/DashboardTopHe
     }),
   },
   '~/components/layouts/ChromeActions.vue': { default: ChromeActions },
+  '~/utils/getDashboardSubjectStateVisual': dashboardSubjectStateVisual,
   '~/utils/getPullRequestStateVisual': { getPullRequestStateIcon: () => null },
 });
 
@@ -75,7 +78,12 @@ afterEach(async () => {
   await dom.cleanup();
 });
 
-const mountHeader = () =>
+const mountHeader = (detailSummary?: {
+  subjectType: 'issue';
+  state: string;
+  stateReason?: string;
+  visible: boolean;
+}) =>
   dom.mount(
     defineComponent({
       setup: () => () =>
@@ -83,11 +91,35 @@ const mountHeader = () =>
           backLabel: 'Back',
           homeLabel: 'Home',
           showHomeButton: false,
+          detailSummary,
         }),
     })
   );
 
 describe('top bar language menu', () => {
+  test('uses purple for completed issues and gray for other closed issues', async () => {
+    const completed = mountHeader({
+      subjectType: 'issue',
+      state: 'closed',
+      stateReason: 'completed',
+      visible: true,
+    });
+    expect(
+      completed.root.querySelector('svg.lucide-circle-check')?.getAttribute('style')
+    ).toContain('var(--gitpulse-purple)');
+    completed.unmount();
+
+    const closed = mountHeader({
+      subjectType: 'issue',
+      state: 'closed',
+      stateReason: 'not_planned',
+      visible: true,
+    });
+    expect(closed.root.querySelector('svg.lucide-circle-minus')?.getAttribute('style')).toContain(
+      'var(--gitpulse-text-muted)'
+    );
+  });
+
   test('keeps the more menu open when a locale switch recreates the page', async () => {
     const first = mountHeader();
     first.root

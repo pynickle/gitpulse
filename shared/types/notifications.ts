@@ -25,6 +25,7 @@ export interface DashboardNotificationSubject {
   url?: string;
   number?: number;
   state?: NotificationSubjectState;
+  stateReason?: string;
   /** Open draft PR — set by Notification Subject Enrichment (`isDraft` from GraphQL). */
   draft?: boolean;
   isAnswered?: boolean;
@@ -76,6 +77,7 @@ export interface NotificationSubjectEnrichmentResult {
   title?: string;
   updatedAt?: string;
   state?: NotificationSubjectState;
+  stateReason?: string;
   /** Present for pull requests; true when GraphQL `isDraft` is true. */
   draft?: boolean;
   isAnswered?: boolean;

@@ -119,6 +119,10 @@ const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'update:compact-header-visible', visible: boolean): void;
+  (
+    e: 'update:compact-header-state',
+    issueState: Pick<IssueDetailPayload, 'state' | 'state_reason'>
+  ): void;
 }>();
 
 const loadingTimeline = ref(false);
@@ -241,6 +245,7 @@ const updateIssueState = (state: 'open' | 'closed', stateReason: string | null) 
     state_reason: stateReason,
     closed_at: state === 'closed' ? new Date().toISOString() : null,
   };
+  emit('update:compact-header-state', { state, state_reason: stateReason });
 };
 
 const addTimelineEvent = (event: IssueTimelineItem) => {

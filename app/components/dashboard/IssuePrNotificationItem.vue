@@ -18,11 +18,13 @@
               class="notification-type-badge"
               :class="{
                 [`notification-type-badge--${subjectVisual.state}`]: subjectVisual.state,
+                'notification-type-badge--completed': subjectVisual.isCompleted,
               }"
               :title="subjectVisual.label"
               :aria-label="subjectVisual.label"
+              role="img"
             >
-              <component :is="subjectVisual.icon" :size="13" />
+              <component :is="subjectVisual.icon" :size="13" aria-hidden="true" />
             </span>
           </figure>
         </div>
@@ -195,6 +197,7 @@ const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({
     isPullRequest: card.value.subjectType === 'PullRequest',
     state: card.value.state,
+    stateReason: card.value.stateReason,
     subjectType: card.value.subjectType,
     draft: card.value.draft,
   });

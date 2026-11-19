@@ -1,5 +1,6 @@
 import {
   SquareCheckBigIcon,
+  CircleCheckIcon,
   CircleDotIcon,
   CircleMinusIcon,
   GitCommitHorizontalIcon,
@@ -19,6 +20,7 @@ import { getPullRequestStateVisual } from './getPullRequestStateVisual';
 interface DashboardSubjectStateVisualOptions {
   isPullRequest: boolean;
   state?: NotificationSubjectState;
+  stateReason?: string | null;
   subjectType?: string;
   isAnswered?: boolean;
   /** Open draft PR — ignored when state is closed/merged. */
@@ -28,6 +30,7 @@ interface DashboardSubjectStateVisualOptions {
 export interface DashboardSubjectStateVisual {
   icon?: Component;
   label: string;
+  isCompleted?: boolean;
   state?:
     | 'open'
     | 'closed'
@@ -145,9 +148,24 @@ const PULL_REQUEST_STATE_LABELS = {
   closed: 'Closed pull request',
 } as const;
 
+export function getIssueStateVisual(state?: string, stateReason?: string | null) {
+  const isCompleted = state === 'closed' && stateReason === 'completed';
+
+  return state === 'open'
+    ? { icon: CircleDotIcon, label: 'Open issue', state: 'open' as const, isCompleted }
+    : {
+        icon: isCompleted ? CircleCheckIcon : CircleMinusIcon,
+        label: isCompleted ? 'Completed issue' : 'Closed issue',
+        state: 'closed' as const,
+        isCompleted,
+        color: isCompleted ? 'var(--gitpulse-purple)' : undefined,
+      };
+}
+
 export function getDashboardSubjectStateVisual({
   isPullRequest,
   state,
+  stateReason,
   subjectType,
   isAnswered,
   draft,
@@ -175,17 +193,5 @@ export function getDashboardSubjectStateVisual({
     };
   }
 
-  if (state === 'open') {
-    return {
-      icon: CircleDotIcon,
-      label: 'Open issue',
-      state: 'open',
-    };
-  }
-
-  return {
-    icon: CircleMinusIcon,
-    label: 'Closed issue',
-    state: 'closed',
-  };
+  return getIssueStateVisual(state, stateReason);
 }

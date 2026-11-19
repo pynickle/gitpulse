@@ -12,6 +12,17 @@ import { resolveIssueTypeColor } from '../app/utils/issueTypeColor';
 const { toDashboardIssuePrCard } = await import('../app/utils/dashboardIssuePrCard');
 
 describe('dashboard issue/PR notification-style cards', () => {
+  test('preserves the closure reason only for closed issues', () => {
+    const issue = { id: 1, state: 'closed', state_reason: 'completed' } as const;
+
+    expect(toDashboardIssuePrCard(issue)).toMatchObject({
+      state: 'closed',
+      stateReason: 'completed',
+    });
+    expect(toDashboardIssuePrCard({ ...issue, state: 'open' }).stateReason).toBeUndefined();
+    expect(toDashboardIssuePrCard({ ...issue, pull_request: {} }).stateReason).toBeUndefined();
+  });
+
   test('maps an open issue into the notification-style card view model', () => {
     const issue: DashboardIssuePrEntity = {
       id: 101,

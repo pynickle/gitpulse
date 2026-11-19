@@ -56,6 +56,7 @@ interface DetailSummary {
   title?: string;
   number?: number | string;
   state?: string;
+  stateReason?: string | null;
   stateTone?: 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
   subjectType?: 'issue' | 'pull-request' | 'discussion';
   visible?: boolean;
