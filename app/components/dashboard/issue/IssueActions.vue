@@ -25,7 +25,7 @@
         <h3 class="sidebar-section__title">{{ t('detailActions.manage') }}</h3>
       </header>
       <div class="sidebar-section__body">
-        <div v-if="lockError" class="sidebar-alert sidebar-alert--error">
+        <div v-if="lockError && !showLockReasonModal" class="sidebar-alert sidebar-alert--error">
           <CircleExclamationPointIcon :size="14" />
           <span>{{ lockError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearLockError">
@@ -112,8 +112,10 @@
     <LockReasonModal
       :is-visible="showLockReasonModal"
       :loading="loadingLock"
+      :error="lockError"
       @close="closeLockModal"
       @confirm="confirmLockIssue"
+      @dismiss-error="clearLockError"
     />
   </div>
 </template>
@@ -166,7 +168,6 @@ const emit = defineEmits<{
 
 const { locale, t } = useI18n();
 const { user } = useUserSession();
-const { openModal, closeModal } = useModalState();
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 const apiFetch = useGitPulseApiFetch();
 
@@ -283,12 +284,10 @@ const scheduleLockErrorClear = () => {
 
 const openLockModal = () => {
   showLockReasonModal.value = true;
-  openModal();
 };
 
 const closeLockModal = () => {
   showLockReasonModal.value = false;
-  closeModal();
 };
 
 onUnmounted(() => {
@@ -296,9 +295,6 @@ onUnmounted(() => {
   if (stateErrorTimer) {
     clearTimeout(stateErrorTimer);
     stateErrorTimer = null;
-  }
-  if (showLockReasonModal.value) {
-    closeModal();
   }
 });
 

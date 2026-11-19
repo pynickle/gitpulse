@@ -233,7 +233,6 @@
     "lockIssue": "Lock Issue",
     "unlockIssue": "Unlock Issue",
     "lockIssueReason": "Lock Issue Reason",
-    "selectLockReason": "Please select a reason for locking this issue:",
     "locking": "Locking...",
     "lockReasonOffTopic": "Off Topic",
     "lockReasonOffTopicDesc": "The issue is not related to the repository's purpose",

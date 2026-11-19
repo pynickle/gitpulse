@@ -233,7 +233,6 @@
     "lockIssue": "锁定议题",
     "unlockIssue": "解锁议题",
     "lockIssueReason": "锁定议题原因",
-    "selectLockReason": "请选择锁定此议题的原因：",
     "locking": "锁定中...",
     "lockReasonOffTopic": "偏离主题",
     "lockReasonOffTopicDesc": "此议题与仓库的目的无关",

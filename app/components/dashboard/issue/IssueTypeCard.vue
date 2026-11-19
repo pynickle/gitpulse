@@ -24,145 +24,36 @@
       <p v-else class="sidebar-card__empty">{{ t('detailIssueType.empty') }}</p>
     </div>
 
-    <Teleport to="body">
-      <Transition name="label-modal">
-        <div
-          v-if="isIssueTypeEditorVisible"
-          class="label-editor-overlay"
-          @click.self="toggleIssueTypeEditor"
-        >
-          <div class="label-editor-panel">
-            <div class="label-editor-header">
-              <h3 class="label-editor-title">{{ t('detailIssueType.edit') }}</h3>
-              <button
-                type="button"
-                class="label-editor-close"
-                :disabled="savingIssueType"
-                @click="toggleIssueTypeEditor"
-              >
-                <XIcon :size="16" />
-              </button>
-            </div>
-
-            <ScrollArea class="label-editor-content">
-              <div v-if="issueTypeError" class="label-editor-error">
-                <CircleExclamationPointIcon :size="14" />
-                <span>{{ issueTypeError }}</span>
-                <button
-                  type="button"
-                  class="label-editor-error-dismiss"
-                  @click="clearIssueTypeError"
-                >
-                  <XIcon :size="12" />
-                </button>
-              </div>
-
-              <div v-if="loadingIssueTypes" class="label-editor-loading">
-                <LoaderCircleIcon class="spin-animation" :size="18" />
-                <span>{{ t('detailIssueType.loading') }}</span>
-              </div>
-
-              <div v-else class="label-editor-list">
-                <label class="issue-type-row" :class="{ 'is-selected': selectedTypeName === '' }">
-                  <input
-                    class="issue-type-row__input"
-                    type="radio"
-                    name="issue-type"
-                    value=""
-                    :checked="selectedTypeName === ''"
-                    :disabled="savingIssueType"
-                    @change="selectIssueType('')"
-                  />
-                  <span class="issue-type-row__bar" aria-hidden="true"></span>
-                  <span class="issue-type-row__text">
-                    <span class="issue-type-row__head">
-                      <span class="issue-type-row__name">{{ t('detailIssueType.none') }}</span>
-                      <CheckIcon class="issue-type-row__check" :size="14" aria-hidden="true" />
-                    </span>
-                  </span>
-                </label>
-
-                <label
-                  v-for="type in selectableIssueTypes"
-                  :key="type.id"
-                  class="issue-type-row"
-                  :class="{ 'is-selected': selectedTypeName === type.name }"
-                >
-                  <input
-                    class="issue-type-row__input"
-                    type="radio"
-                    name="issue-type"
-                    :value="type.name"
-                    :checked="selectedTypeName === type.name"
-                    :disabled="savingIssueType"
-                    @change="selectIssueType(type.name)"
-                  />
-                  <span
-                    class="issue-type-row__bar"
-                    :style="issueTypeBarStyle(type)"
-                    aria-hidden="true"
-                  ></span>
-                  <span class="issue-type-row__text">
-                    <span class="issue-type-row__head">
-                      <span class="issue-type-row__name">{{ type.name }}</span>
-                      <CheckIcon class="issue-type-row__check" :size="14" aria-hidden="true" />
-                    </span>
-                    <span v-if="type.description" class="issue-type-row__desc">
-                      {{ type.description }}
-                    </span>
-                  </span>
-                </label>
-
-                <div v-if="selectableIssueTypes.length === 0" class="label-editor-empty">
-                  {{ t('detailIssueType.noneAvailable') }}
-                </div>
-              </div>
-            </ScrollArea>
-
-            <div class="label-editor-footer">
-              <button
-                type="button"
-                class="label-btn-cancel"
-                :disabled="savingIssueType"
-                @click="toggleIssueTypeEditor"
-              >
-                {{ t('detailIssueType.cancel') }}
-              </button>
-              <button
-                type="button"
-                class="label-btn-save"
-                :disabled="loadingIssueTypes || savingIssueType"
-                @click="saveIssueType"
-              >
-                <LoaderCircleIcon v-if="savingIssueType" class="spin-animation" :size="14" />
-                <span>
-                  {{ savingIssueType ? t('detailIssueType.saving') : t('detailIssueType.save') }}
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <IssueOptionModal
+      v-model="selectedTypeName"
+      :is-visible="isIssueTypeEditorVisible"
+      :title="t('detailIssueType.edit')"
+      :options="issueTypeOptions"
+      :cancel-label="t('detailIssueType.cancel')"
+      :confirm-label="savingIssueType ? t('detailIssueType.saving') : t('detailIssueType.save')"
+      :saving="savingIssueType"
+      :loading-label="loadingIssueTypes ? t('detailIssueType.loading') : undefined"
+      :empty-message="
+        selectableIssueTypes.length === 0 ? t('detailIssueType.noneAvailable') : undefined
+      "
+      :error="issueTypeError"
+      @close="toggleIssueTypeEditor"
+      @confirm="saveIssueType"
+      @dismiss-error="clearIssueTypeError"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  CircleExclamationPointIcon,
-  CheckIcon,
-  LoaderCircleIcon,
-  PencilIcon,
-  TagsIcon,
-  XIcon,
-} from '@lucide/vue';
+import { PencilIcon, TagsIcon } from '@lucide/vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 
 import type { GitHubIssueType } from '#shared/types/issues';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
-import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 import { resolveIssueTypeColor } from '~/utils/issueTypeColor';
+
+import IssueOptionModal from './IssueOptionModal.vue';
 
 const { issueType, canEditIssueType, repoInfo, issueNumber } = defineProps<{
   issueType?: GitHubIssueType | null;
@@ -177,7 +68,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
-const { openModal, closeModal } = useModalState();
 const isIssueTypeEditorVisible = ref(false);
 const loadingIssueTypes = ref(false);
 const savingIssueType = ref(false);
@@ -194,6 +84,16 @@ const selectableIssueTypes = computed(() => {
 
   return [issueType, ...enabledTypes];
 });
+
+const issueTypeOptions = computed(() => [
+  { value: '', label: t('detailIssueType.none') },
+  ...selectableIssueTypes.value.map((type) => ({
+    value: type.name,
+    label: type.name,
+    description: type.description,
+    color: resolveIssueTypeColor(type.color),
+  })),
+]);
 
 const clearIssueTypeErrorTimer = () => {
   if (!issueTypeErrorTimer) return;
@@ -240,24 +140,13 @@ const toggleIssueTypeEditor = async () => {
   isIssueTypeEditorVisible.value = willBeVisible;
   if (willBeVisible) {
     selectedTypeName.value = issueType?.name ?? '';
-    openModal();
     await fetchIssueTypes();
     return;
   }
 
   selectedTypeName.value = issueType?.name ?? '';
   clearIssueTypeError();
-  closeModal();
 };
-
-const selectIssueType = (typeName: string) => {
-  if (savingIssueType.value) return;
-  selectedTypeName.value = typeName;
-};
-
-const issueTypeBarStyle = (type: GitHubIssueType) => ({
-  '--issue-type-color': resolveIssueTypeColor(type.color),
-});
 
 const saveIssueType = async () => {
   if (!repoInfo || !issueNumber) return;
@@ -275,7 +164,6 @@ const saveIssueType = async () => {
     );
     emit('update:issueType', updatedIssueType);
     isIssueTypeEditorVisible.value = false;
-    closeModal();
   } catch (error: unknown) {
     issueTypeError.value = getFetchErrorMessage(error, t('detailIssueType.updateFailed'));
     scheduleIssueTypeErrorClear();
@@ -294,119 +182,9 @@ watch(
 
 onUnmounted(() => {
   clearIssueTypeErrorTimer();
-  if (isIssueTypeEditorVisible.value) closeModal();
 });
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-metadata-editor';
-@use '~/assets/scss/pointer' as *;
-
-.issue-type-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px 9px 8px;
-  margin: 0 -8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.1s ease;
-  user-select: none;
-
-  @include hover-only {
-    &:hover {
-      background: var(--gitpulse-surface-hover);
-    }
-  }
-
-  &:has(.issue-type-row__input:focus-visible) {
-    outline: 2px solid $brand-primary;
-    outline-offset: -2px;
-  }
-
-  &:has(.issue-type-row__input:disabled) {
-    cursor: progress;
-    opacity: 0.6;
-  }
-}
-
-.issue-type-row__input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  clip-path: inset(50%);
-  pointer-events: none;
-}
-
-.issue-type-row__bar {
-  flex-shrink: 0;
-  align-self: stretch;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--issue-type-color, var(--gitpulse-border-strong));
-  opacity: 0.5;
-  transition: opacity 0.12s ease;
-}
-
-.issue-type-row__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.issue-type-row__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.issue-type-row__name {
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  transition: color 0.12s ease;
-}
-
-.issue-type-row__desc {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--gitpulse-text-muted);
-  word-break: break-word;
-}
-
-.issue-type-row__check {
-  flex-shrink: 0;
-  color: var(--gitpulse-accent);
-  opacity: 0;
-  transform: scale(0.7);
-  transition:
-    opacity 0.14s ease,
-    transform 0.14s ease;
-}
-
-.issue-type-row.is-selected {
-  .issue-type-row__bar {
-    opacity: 1;
-  }
-
-  .issue-type-row__name {
-    font-weight: 600;
-    color: var(--gitpulse-accent);
-  }
-
-  .issue-type-row__check {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 </style>
