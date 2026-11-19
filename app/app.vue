@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { withAppBase } from '#shared/utils/auth-return-route';
 import ErrorPreviewWidget from '~/components/ErrorPreviewWidget.vue';
 
 const colorMode = useColorMode();
@@ -31,7 +30,7 @@ useHead(() => {
     },
     link: [
       ...localeHead.link,
-      { rel: 'manifest', href: withAppBase('/manifest.webmanifest', runtimeConfig.app.baseURL) },
+      { rel: 'manifest', href: pwaManifestHref(runtimeConfig.app.baseURL) },
     ],
     meta: [...localeHead.meta],
   };

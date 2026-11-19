@@ -1,15 +1,16 @@
-import { expect, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { createHead, renderSSRHead } from '@unhead/vue/server';
 
-import { withAppBase } from '../shared/utils/auth-return-route';
+const authReturnRoute = await import('../shared/utils/auth-return-route');
+mock.module('#shared/utils/auth-return-route', () => authReturnRoute);
+const { pwaManifestHref } = await import('../app/utils/pwaManifestHref');
 
 const manifest = JSON.parse(
   readFileSync(fileURLToPath(new URL('../public/manifest.webmanifest', import.meta.url)), 'utf8')
 ) as {
-  id: string;
   name: string;
   short_name: string;
   start_url: string;
@@ -19,11 +20,11 @@ const manifest = JSON.parse(
 
 function renderManifestLink(baseURL: string): string {
   const head = createHead();
-  head.push({ link: [{ rel: 'manifest', href: withAppBase('/manifest.webmanifest', baseURL) }] });
+  head.push({ link: [{ rel: 'manifest', href: pwaManifestHref(baseURL) }] });
   return renderSSRHead(head).headTags;
 }
 
-test('the app head links to the web app manifest under the configured app base', () => {
+test('the manifest link follows the configured application base', () => {
   expect(renderManifestLink('/')).toContain('<link rel="manifest" href="/manifest.webmanifest">');
   expect(renderManifestLink('/gitpulse/')).toContain(
     '<link rel="manifest" href="/gitpulse/manifest.webmanifest">'
@@ -31,8 +32,8 @@ test('the app head links to the web app manifest under the configured app base',
 });
 
 test('the install manifest provides GitPulse identity and base-relative install assets', () => {
+  expect(manifest).not.toHaveProperty('id');
   expect(manifest).toMatchObject({
-    id: './',
     name: 'GitPulse',
     short_name: 'GitPulse',
     start_url: './',
