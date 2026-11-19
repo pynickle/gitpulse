@@ -230,6 +230,9 @@ test('issue timeline pagination preserves existing identity and enriches hidden 
     '#server/utils/github-timeline-utils',
     () => import('../server/utils/github-timeline-utils')
   );
+  mock.module('#server/utils/issue-duplicate-target-utils', () => ({
+    attachClosedEventDuplicateTargets: async () => {},
+  }));
   Object.assign(globalThis, {
     getGitHubClient: async () => github,
     parsePaginationNumber: (value: unknown, fallback: number) => Number(value) || fallback,

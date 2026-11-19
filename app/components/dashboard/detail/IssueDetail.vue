@@ -95,7 +95,7 @@
 import { computed, ref, watch } from 'vue';
 
 import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/types/assignees';
-import type { IssueDetailPayload } from '#shared/types/issues';
+import type { IssueDetailPayload, IssueDuplicateTarget } from '#shared/types/issues';
 import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
@@ -239,12 +239,17 @@ const updateIsLocked = (locked: boolean) => {
   isLocked.value = locked;
 };
 
-const updateIssueState = (state: 'open' | 'closed', stateReason: string | null) => {
+const updateIssueState = (
+  state: 'open' | 'closed',
+  stateReason: string | null,
+  duplicateOf: IssueDuplicateTarget | null
+) => {
   currentIssue.value = {
     ...currentIssue.value,
     state,
     state_reason: stateReason,
     closed_at: state === 'closed' ? new Date().toISOString() : null,
+    duplicate_of: duplicateOf,
   };
   emit('update:compact-header-state', { state, state_reason: stateReason });
 };
