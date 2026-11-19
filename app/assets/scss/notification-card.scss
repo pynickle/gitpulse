@@ -84,7 +84,7 @@ $transition-hint:
 }
 
 .notification-type-badge--closed {
-  color: var(--gitpulse-text-muted);
+  color: var(--gitpulse-danger);
 }
 
 .notification-type-badge--completed {

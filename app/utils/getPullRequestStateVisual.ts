@@ -41,7 +41,7 @@ const VISUALS: Record<PullRequestDisplayState, Omit<PullRequestStateVisual, 'sta
   },
   closed: {
     icon: GitPullRequestClosedIcon,
-    color: 'var(--gitpulse-text-strong)',
+    color: 'var(--gitpulse-danger)',
   },
 };
 

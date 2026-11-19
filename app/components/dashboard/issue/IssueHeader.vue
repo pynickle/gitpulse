@@ -15,7 +15,7 @@
     <!-- Meta row -->
     <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
       <span class="header-number has-text-weight-medium">#{{ issue?.number }}</span>
-      <span class="header-state-tag" :class="issue?.state === 'open' ? 'is-open' : 'is-closed'">
+      <span class="header-state-tag" :class="stateTagClass">
         <component :size="12" :is="stateVisual.icon" :style="stateColor" aria-hidden="true" />
         <span>{{ issue?.state }}</span>
       </span>
@@ -94,7 +94,10 @@ import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
-import { getIssueStateVisual } from '~/utils/getDashboardSubjectStateVisual';
+import {
+  getIssueStatePillClass,
+  getIssueStateVisual,
+} from '~/utils/getDashboardSubjectStateVisual';
 
 const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();
@@ -125,13 +128,14 @@ const { issue, repoOwner, repoName } = defineProps<{
 
 const stateVisual = computed(() => getIssueStateVisual(issue?.state, issue?.state_reason));
 
-const stateColor = computed(() => {
-  return {
-    color:
-      stateVisual.value.color ??
-      (issue?.state === 'open' ? 'var(--gitpulse-success)' : 'var(--gitpulse-text-strong)'),
-  };
-});
+const stateTagClass = computed(() =>
+  issue?.state === 'open' ? 'is-open' : getIssueStatePillClass(stateVisual.value.isCompleted)
+);
+
+// Open is the only state the visual leaves uncoloured.
+const stateColor = computed(() => ({
+  color: stateVisual.value.color ?? 'var(--gitpulse-success)',
+}));
 
 const handleRepoClick = async () => {
   await openRepository(repoOwner, repoName);
@@ -181,6 +185,12 @@ const handleRepoClick = async () => {
     background-color: var(--gitpulse-success-soft);
     color: var(--gitpulse-success-solid);
     border: 1px solid color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
+  }
+
+  &.is-completed {
+    background-color: var(--gitpulse-purple-soft);
+    color: var(--gitpulse-purple);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-purple) 24%, transparent);
   }
 
   &.is-closed {

@@ -25,10 +25,7 @@
         v-for="(item, i) in items"
         :key="item.id ?? i"
         class="srp-card"
-        :class="{
-          'srp-card--open': item.state === 'open',
-          'srp-card--closed': item.state !== 'open',
-        }"
+        :class="getStateClass(item)"
       >
         <div class="srp-card__state">
           <component :is="getStateIcon(item)" :size="16" />
@@ -71,8 +68,6 @@
 <script setup lang="ts">
 import {
   BookBookmarkIcon,
-  CircleDotIcon,
-  CircleMinusIcon,
   CodeXmlIcon,
   GitCommitHorizontalIcon,
   TagIcon,
@@ -81,6 +76,7 @@ import {
 } from '@lucide/vue';
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { getIssueStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 import { getTextColorFromBackground } from '~/utils/getTextColorFromBackground';
 
@@ -95,6 +91,7 @@ interface SearchResultItem {
   login?: string;
   number?: number;
   state?: string;
+  state_reason?: string | null;
   draft?: boolean;
   merged_at?: string | null;
   pull_request?: { merged_at?: string | null; draft?: boolean } | unknown;
@@ -172,6 +169,23 @@ const getPullRequestDraft = (item: SearchResultItem) => {
   return Boolean((item.pull_request as { draft?: boolean }).draft);
 };
 
+const getStateClass = (item: SearchResultItem) => {
+  if (item.pull_request) {
+    return {
+      'srp-card--open': item.state === 'open',
+      'srp-card--closed': item.state === 'closed' && !getPullRequestMergedAt(item),
+    };
+  }
+  // Only an issue-like result carries an issue state; a commit, user or repository does not.
+  if (item.state !== 'open' && item.state !== 'closed') return {};
+  const visual = getIssueStateVisual(item.state, item.state_reason);
+  return {
+    'srp-card--open': visual.state === 'open',
+    'srp-card--completed': visual.isCompleted,
+    'srp-card--closed': visual.state === 'closed' && !visual.isCompleted,
+  };
+};
+
 const getStateIcon = (item: SearchResultItem) => {
   if (item.pull_request) {
     return getPullRequestStateIcon({
@@ -181,7 +195,7 @@ const getStateIcon = (item: SearchResultItem) => {
     });
   }
   if (item.state === 'open' || item.state === 'closed') {
-    return item.state === 'open' ? CircleDotIcon : CircleMinusIcon;
+    return getIssueStateVisual(item.state, item.state_reason).icon;
   }
   if (item.commit) return GitCommitHorizontalIcon;
   if (item.login) return UserIcon;
@@ -297,7 +311,11 @@ const getStateIcon = (item: SearchResultItem) => {
 }
 
 .srp-card--closed .srp-card__state {
-  color: var(--gitpulse-text-muted);
+  color: var(--gitpulse-danger);
+}
+
+.srp-card--completed .srp-card__state {
+  color: var(--gitpulse-purple);
 }
 
 .srp-card__body {

@@ -96,8 +96,10 @@ const mountHeader = (detailSummary?: {
     })
   );
 
+const statePill = (root: ParentNode) => root.querySelector('.dashboard-top-header__summary-state');
+
 describe('top bar language menu', () => {
-  test('uses purple for completed issues and gray for other closed issues', async () => {
+  test('uses purple for completed issues and danger red for other closed issues', async () => {
     const completed = mountHeader({
       subjectType: 'issue',
       state: 'closed',
@@ -107,6 +109,8 @@ describe('top bar language menu', () => {
     expect(
       completed.root.querySelector('svg.lucide-circle-check')?.getAttribute('style')
     ).toContain('var(--gitpulse-purple)');
+    expect(statePill(completed.root)?.classList.contains('is-completed')).toBe(true);
+    expect(statePill(completed.root)?.classList.contains('is-closed')).toBe(false);
     completed.unmount();
 
     const closed = mountHeader({
@@ -116,8 +120,10 @@ describe('top bar language menu', () => {
       visible: true,
     });
     expect(closed.root.querySelector('svg.lucide-circle-minus')?.getAttribute('style')).toContain(
-      'var(--gitpulse-text-muted)'
+      'var(--gitpulse-danger)'
     );
+    expect(statePill(closed.root)?.classList.contains('is-closed')).toBe(true);
+    expect(statePill(closed.root)?.classList.contains('is-completed')).toBe(false);
   });
 
   test('keeps the more menu open when a locale switch recreates the page', async () => {

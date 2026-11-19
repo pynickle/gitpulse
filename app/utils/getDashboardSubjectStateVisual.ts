@@ -158,8 +158,13 @@ export function getIssueStateVisual(state?: string, stateReason?: string | null)
         label: isCompleted ? 'Completed issue' : 'Closed issue',
         state: 'closed' as const,
         isCompleted,
-        color: isCompleted ? 'var(--gitpulse-purple)' : undefined,
+        color: isCompleted ? 'var(--gitpulse-purple)' : 'var(--gitpulse-danger)',
       };
+}
+
+/** Pill class for a closed issue: a completed closure reads purple, any other closure red. */
+export function getIssueStatePillClass(isCompleted?: boolean) {
+  return isCompleted ? 'is-completed' : 'is-closed';
 }
 
 export function getDashboardSubjectStateVisual({

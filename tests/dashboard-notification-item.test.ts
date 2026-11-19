@@ -98,7 +98,7 @@ describe('dashboard Notification item presentation', () => {
     });
     for (const reason of ['not_planned', 'duplicate', null, undefined]) {
       expect(visual('closed', reason).icon).toBe(CircleMinusIcon);
-      expect(visual('closed', reason).color).toBeUndefined();
+      expect(visual('closed', reason).color).toBe('var(--gitpulse-danger)');
     }
     expect(visual('open', 'completed').icon).toBe(CircleDotIcon);
   });

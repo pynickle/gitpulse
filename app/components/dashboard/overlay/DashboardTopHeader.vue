@@ -80,7 +80,10 @@ import { type Component, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import ChromeActions from '~/components/layouts/ChromeActions.vue';
-import { getIssueStateVisual } from '~/utils/getDashboardSubjectStateVisual';
+import {
+  getIssueStatePillClass,
+  getIssueStateVisual,
+} from '~/utils/getDashboardSubjectStateVisual';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
@@ -130,6 +133,9 @@ const issueStateVisual = computed(() =>
   )
 );
 const detailStateClass = computed(() => {
+  if (detailSummary?.subjectType === 'issue' && detailState.value !== 'open') {
+    return getIssueStatePillClass(issueStateVisual.value.isCompleted);
+  }
   const tone = detailSummary?.stateTone ?? 'closed';
   return `is-${tone}`;
 });
@@ -154,8 +160,8 @@ const detailStateIcon = computed<Component | null>(() => {
   return issueStateVisual.value.icon;
 });
 const detailStateIconStyle = computed(() =>
-  detailSummary?.subjectType === 'issue' && detailState.value === 'closed'
-    ? { color: issueStateVisual.value.color ?? 'var(--gitpulse-text-muted)' }
+  detailSummary?.subjectType === 'issue' && issueStateVisual.value.color
+    ? { color: issueStateVisual.value.color }
     : undefined
 );
 
@@ -283,6 +289,12 @@ const isDetailSummaryVisible = computed(() => {
     background-color: var(--gitpulse-info-soft);
     color: var(--gitpulse-info-solid);
     border: 1px solid color-mix(in srgb, var(--gitpulse-info) 24%, transparent);
+  }
+
+  &.is-completed {
+    background-color: var(--gitpulse-purple-soft);
+    color: var(--gitpulse-purple);
+    border: 1px solid color-mix(in srgb, var(--gitpulse-purple) 24%, transparent);
   }
 
   &.is-closed {

@@ -79,5 +79,10 @@ describe('getPullRequestStateVisual', () => {
       icon: GitPullRequestDraftIcon,
       color: 'var(--gitpulse-text-muted)',
     });
+    expect(getPullRequestStateVisual({ state: 'closed' })).toMatchObject({
+      state: 'closed',
+      icon: GitPullRequestClosedIcon,
+      color: 'var(--gitpulse-danger)',
+    });
   });
 });
