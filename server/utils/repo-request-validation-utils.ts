@@ -39,6 +39,12 @@ const issueLockBodySchema = z.strictObject({
   lock_reason: issueLockReasonSchema.optional(),
 });
 
+const issueDuplicateTargetSchema = z.strictObject({
+  owner: z.string().trim().min(1),
+  repo: z.string().trim().min(1),
+  number: z.number().int().positive(),
+});
+
 const reviewThreadResolveBodySchema = z.strictObject({
   resolved: z.boolean(),
 });
@@ -71,6 +77,10 @@ export function parseIssueAssigneesBody(body: unknown) {
 export function parseIssueLockBody(body: unknown): IssueLockReason | undefined {
   return parseZodRequestBody(issueLockBodySchema, body, 'Invalid issue lock request body')
     .lock_reason;
+}
+
+export function parseIssueDuplicateTarget(value: unknown) {
+  return parseZodRequestBody(issueDuplicateTargetSchema, value, 'Invalid duplicate target');
 }
 
 export function parseReviewThreadResolveBody(body: unknown) {

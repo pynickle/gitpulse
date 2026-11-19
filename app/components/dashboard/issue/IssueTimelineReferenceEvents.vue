@@ -45,6 +45,18 @@
     <ReferenceSubject
       :ref-subject="item.duplicate"
       resource-type="issue"
+      :cross-repository="isOtherRepository(item.duplicate)"
+      @switch-issue="handleSwitchIssue"
+      @switch-pull-request="handleSwitchPullRequest"
+    />
+  </template>
+
+  <template v-else-if="item.eventType === 'closed'">
+    closed this as a duplicate of
+    <ReferenceSubject
+      :ref-subject="item.duplicate"
+      resource-type="issue"
+      :cross-repository="isOtherRepository(item.duplicate)"
       @switch-issue="handleSwitchIssue"
       @switch-pull-request="handleSwitchPullRequest"
     />
@@ -75,8 +87,9 @@
 <script setup lang="ts">
 import ReferenceSubject from '~/components/dashboard/timeline/ReferenceSubject.vue';
 import type { ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
+import type { TimelineReference } from '~/composables/usePRTimelineEvents';
 
-defineProps<{
+const { repoOwner, repoName } = defineProps<{
   item: ProcessedIssueTimelineItem;
   repoOwner: string;
   repoName: string;
@@ -86,6 +99,11 @@ const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
 }>();
+
+const isOtherRepository = (reference?: TimelineReference) =>
+  Boolean(reference?.repository) &&
+  (reference?.repository?.owner?.login?.toLowerCase() !== repoOwner.toLowerCase() ||
+    reference?.repository?.name?.toLowerCase() !== repoName.toLowerCase());
 
 const handleSwitchIssue = (owner: string, repo: string, issueNumber?: number) => {
   if (!issueNumber) return;

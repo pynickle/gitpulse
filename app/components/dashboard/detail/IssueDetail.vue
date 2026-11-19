@@ -17,6 +17,7 @@
             :issue="currentIssue"
             :repo-owner="resolvedRepoOwner"
             :repo-name="resolvedRepoName"
+            @switch-issue="switchToIssue"
           />
         </div>
 

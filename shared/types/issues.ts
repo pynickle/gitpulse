@@ -31,11 +31,24 @@ export interface GitHubIssueType extends IssueTypeSummary {
   is_enabled?: boolean;
 }
 
+export type IssueCloseReason = 'completed' | 'not_planned' | 'duplicate';
+
+/** The Issue a closed duplicate points to, in the timeline reference shape. */
+export interface IssueDuplicateTarget {
+  resourceType: 'issue';
+  number: number;
+  title?: string;
+  url?: string;
+  state?: string;
+  repository: { name: string; nameWithOwner: string; owner: { login: string } };
+}
+
 export interface IssueDetailPayload {
   id: number;
   number: number;
   state: string;
   state_reason?: string | null;
+  duplicate_of?: IssueDuplicateTarget | null;
   title: string;
   body?: string | null;
   html_url?: string;

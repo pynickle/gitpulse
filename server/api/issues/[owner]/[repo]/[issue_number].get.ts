@@ -1,5 +1,6 @@
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
+import { fetchIssueDuplicateTarget } from '#server/utils/issue-duplicate-target-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
@@ -39,9 +40,15 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
     ]);
 
+    const duplicateOf =
+      issue.data.state_reason === 'duplicate'
+        ? await fetchIssueDuplicateTarget(octokit, owner, repo, issueNumber)
+        : undefined;
+
     return {
       ...issue.data,
       reactions: reactionSummary.items,
+      ...(duplicateOf ? { duplicate_of: duplicateOf } : {}),
     };
   } catch (error: unknown) {
     console.error('Error fetching GitHub issue:', error);

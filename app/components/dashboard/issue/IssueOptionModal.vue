@@ -56,14 +56,12 @@
                   aria-hidden="true"
                 ></span>
                 <span class="issue-option-row__text">
-                  <span class="issue-option-row__head">
-                    <span class="issue-option-row__name">{{ option.label }}</span>
-                    <CheckIcon class="issue-option-row__check" :size="14" aria-hidden="true" />
-                  </span>
+                  <span class="issue-option-row__name">{{ option.label }}</span>
                   <span v-if="option.description" class="issue-option-row__desc">
                     {{ option.description }}
                   </span>
                 </span>
+                <CheckIcon class="issue-option-row__check" :size="14" aria-hidden="true" />
               </label>
 
               <div v-if="emptyMessage" class="label-editor-empty">{{ emptyMessage }}</div>
@@ -131,114 +129,5 @@ const { handleKeydown } = useModalLifecycle({
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-metadata-editor';
-@use '~/assets/scss/pointer' as *;
-
-.issue-option-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px 9px 8px;
-  margin: 0 -8px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.1s ease;
-  user-select: none;
-
-  @include hover-only {
-    &:hover {
-      background: var(--gitpulse-surface-hover);
-    }
-  }
-
-  &:has(.issue-option-row__input:focus-visible) {
-    outline: 2px solid $brand-primary;
-    outline-offset: -2px;
-  }
-
-  &:has(.issue-option-row__input:disabled) {
-    cursor: progress;
-    opacity: 0.6;
-  }
-}
-
-.issue-option-row__input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  clip-path: inset(50%);
-  pointer-events: none;
-}
-
-.issue-option-row__bar {
-  flex-shrink: 0;
-  align-self: stretch;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--issue-option-color, var(--gitpulse-border-strong));
-  opacity: 0.5;
-  transition: opacity 0.12s ease;
-}
-
-.issue-option-row__text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  flex: 1;
-}
-
-.issue-option-row__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.issue-option-row__name {
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  transition: color 0.12s ease;
-}
-
-.issue-option-row__desc {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--gitpulse-text-muted);
-  word-break: break-word;
-}
-
-.issue-option-row__check {
-  flex-shrink: 0;
-  color: var(--gitpulse-accent);
-  opacity: 0;
-  transform: scale(0.7);
-  transition:
-    opacity 0.14s ease,
-    transform 0.14s ease;
-}
-
-.issue-option-row:has(.issue-option-row__input:checked) {
-  .issue-option-row__bar {
-    opacity: 1;
-  }
-
-  .issue-option-row__name {
-    font-weight: 600;
-    color: var(--gitpulse-accent);
-  }
-
-  .issue-option-row__check {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 </style>

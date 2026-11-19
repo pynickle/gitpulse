@@ -25,6 +25,16 @@
       </span>
     </div>
 
+    <p v-if="issue?.duplicate_of" class="header-duplicate mb-4" data-duplicate-target>
+      <span>{{ t('issueDetail.duplicateOf') }}</span>
+      <ReferenceSubject
+        :ref-subject="issue.duplicate_of"
+        resource-type="issue"
+        :cross-repository="isOtherRepository(issue.duplicate_of)"
+        @switch-issue="(owner, repo, number) => emit('switch-issue', owner, repo, number)"
+      />
+    </p>
+
     <!-- Repo row -->
     <div class="header-repo is-flex is-align-items-center mb-4">
       <GitForkIcon :size="14" />
@@ -89,8 +99,10 @@ import { ClockIcon, GitForkIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { IssueDuplicateTarget } from '#shared/types/issues';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
+import ReferenceSubject from '~/components/dashboard/timeline/ReferenceSubject.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
@@ -109,6 +121,7 @@ interface IssueHeaderIssue {
   number?: number | string;
   state?: string;
   state_reason?: string | null;
+  duplicate_of?: IssueDuplicateTarget | null;
   updated_at?: string;
   user?: {
     avatar_url?: string | null;
@@ -125,6 +138,14 @@ const { issue, repoOwner, repoName } = defineProps<{
   repoOwner: string;
   repoName: string;
 }>();
+
+const emit = defineEmits<{
+  (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
+}>();
+
+const isOtherRepository = ({ repository }: IssueDuplicateTarget) =>
+  repository.owner.login.toLowerCase() !== repoOwner.toLowerCase() ||
+  repository.name.toLowerCase() !== repoName.toLowerCase();
 
 const stateVisual = computed(() => getIssueStateVisual(issue?.state, issue?.state_reason));
 
@@ -198,6 +219,15 @@ const handleRepoClick = async () => {
     color: var(--gitpulse-danger-solid);
     border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
   }
+}
+
+.header-duplicate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--gitpulse-text-muted);
 }
 
 .header-time {

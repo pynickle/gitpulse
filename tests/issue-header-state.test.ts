@@ -16,6 +16,7 @@ const IssueHeader = await compileVue(
   {
     '@lucide/vue': icons,
     '~/components/dashboard/reactions/ReactionBar.vue': { default: stub },
+    '~/components/dashboard/timeline/ReferenceSubject.vue': { default: stub },
     '~/components/ui/GitHubAvatar.vue': { default: stub },
     '~/components/ui/GitHubProfileLink.vue': { default: stub },
     '~/components/ui/MarkdownRenderer.vue': { default: stub },

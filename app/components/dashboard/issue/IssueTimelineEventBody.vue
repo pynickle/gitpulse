@@ -74,6 +74,7 @@ const referenceEventTypes = new Set([
   'disconnected',
   'parent_issue_added',
   'parent_issue_removed',
+  'closed',
   'cross-referenced',
   'marked_as_duplicate',
   'unmarked_as_duplicate',
@@ -124,6 +125,7 @@ const shouldRenderReferenceEvents = (item: ProcessedIssueTimelineItem) => {
       return Boolean(item.otherTarget);
     case 'cross-referenced':
       return Boolean(item.source);
+    case 'closed':
     case 'marked_as_duplicate':
       return Boolean(item.duplicate);
     case 'sub_issue_added':

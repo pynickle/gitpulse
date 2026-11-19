@@ -1050,6 +1050,7 @@ export function normalizeIssueTimelineEvent(
         kind: 'event',
         eventType: eventName,
         stateReason: rawEvent.state_reason,
+        ...(rawEvent.duplicate_of ? { duplicate: rawEvent.duplicate_of } : {}),
       };
     case 'reopened':
       return {

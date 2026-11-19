@@ -32,7 +32,7 @@
             <XIcon :size="12" />
           </button>
         </div>
-        <div v-if="stateError" class="sidebar-alert sidebar-alert--error">
+        <div v-if="stateError && !showCloseModal" class="sidebar-alert sidebar-alert--error">
           <CircleExclamationPointIcon :size="14" />
           <span>{{ stateError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearStateError">
@@ -46,7 +46,7 @@
             class="sidebar-action-btn"
             :class="isClosed ? 'sidebar-action-btn--reopen' : 'sidebar-action-btn--close'"
             :disabled="loadingState"
-            @click="isClosed ? reopenIssue() : closeIssue()"
+            @click="isClosed ? reopenIssue() : openCloseModal()"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
               <LoaderCircleIcon v-if="loadingState" class="spin-animation" :size="14" />
@@ -117,6 +117,19 @@
       @confirm="confirmLockIssue"
       @dismiss-error="clearLockError"
     />
+
+    <IssueCloseModal
+      v-if="repoInfo && issueNumber"
+      :is-visible="showCloseModal"
+      :owner="repoInfo.owner"
+      :repo="repoInfo.repo"
+      :issue-number="issueNumber"
+      :saving="loadingState"
+      :error="stateError"
+      @close="closeCloseModal"
+      @confirm="confirmCloseIssue"
+      @dismiss-error="clearStateError"
+    />
   </div>
 </template>
 
@@ -139,11 +152,13 @@ import {
 import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { IssueCloseReason, IssueDuplicateTarget } from '#shared/types/issues';
 import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
+import IssueCloseModal from './IssueCloseModal.vue';
 import LockReasonModal from './LockReasonModal.vue';
 
 const { canLockIssue, canManageState, issueState, repoInfo, issueNumber, sourceNotification } =
@@ -162,7 +177,12 @@ const { canLockIssue, canManageState, issueState, repoInfo, issueNumber, sourceN
 
 const emit = defineEmits<{
   (e: 'update:isLocked', isLocked: boolean): void;
-  (e: 'update:state', state: 'open' | 'closed', stateReason: string | null): void;
+  (
+    e: 'update:state',
+    state: 'open' | 'closed',
+    stateReason: string | null,
+    duplicateOf: IssueDuplicateTarget | null
+  ): void;
   (e: 'add-timeline-event', event: IssueTimelineItem): void;
 }>();
 
@@ -215,7 +235,13 @@ const currentActor = () => ({
   url: user.value?.login ? `https://github.com/${user.value.login}` : '',
 });
 
-const updateIssueState = async (state: 'open' | 'closed') => {
+const updateIssueState = async (
+  state: 'open' | 'closed',
+  closeBody: {
+    state_reason: IssueCloseReason;
+    duplicate_of?: { owner: string; repo: string; number: number };
+  } | null = null
+) => {
   if (!canManageState || !repoInfo || !issueNumber) return;
 
   loadingState.value = true;
@@ -223,23 +249,27 @@ const updateIssueState = async (state: 'open' | 'closed') => {
 
   try {
     const { owner, repo } = repoInfo;
-    const result = await apiFetch<{ state: string; stateReason: string | null }>(
-      `/api/repos/${owner}/${repo}/issues/${issueNumber}/state`,
-      {
-        method: 'PATCH',
-        body: state === 'closed' ? { state, state_reason: 'completed' } : { state },
-      }
-    );
+    const result = await apiFetch<{
+      state: string;
+      stateReason: string | null;
+      duplicateOf: IssueDuplicateTarget | null;
+    }>(`/api/repos/${owner}/${repo}/issues/${issueNumber}/state`, {
+      method: 'PATCH',
+      body: { state, ...closeBody },
+    });
 
-    emit('update:state', state, result.stateReason);
+    const duplicateOf = state === 'closed' ? (result.duplicateOf ?? null) : null;
+    emit('update:state', state, result.stateReason, duplicateOf);
     emit('add-timeline-event', {
       kind: 'event',
       eventType: state === 'closed' ? 'closed' : 'reopened',
       id: `state-${Date.now()}`,
       actor: currentActor(),
       ...(state === 'closed' && result.stateReason ? { stateReason: result.stateReason } : {}),
+      ...(duplicateOf ? { duplicate: duplicateOf } : {}),
       createdAt: new Date().toISOString(),
     });
+    showCloseModal.value = false;
   } catch (err: unknown) {
     console.error('Error updating issue state:', err);
     stateError.value = getFetchErrorMessage(
@@ -254,8 +284,28 @@ const updateIssueState = async (state: 'open' | 'closed') => {
   }
 };
 
-const closeIssue = () => updateIssueState('closed');
 const reopenIssue = () => updateIssueState('open');
+
+const showCloseModal = ref(false);
+
+const openCloseModal = () => {
+  clearStateError();
+  showCloseModal.value = true;
+};
+
+const closeCloseModal = () => {
+  clearStateError();
+  showCloseModal.value = false;
+};
+
+const confirmCloseIssue = (
+  stateReason: IssueCloseReason,
+  duplicateOf: { owner: string; repo: string; number: number } | null
+) =>
+  updateIssueState('closed', {
+    state_reason: stateReason,
+    ...(duplicateOf ? { duplicate_of: duplicateOf } : {}),
+  });
 
 const showLockReasonModal = ref(false);
 const loadingLock = ref(false);

@@ -9,6 +9,7 @@ import {
   sortTimelineItems,
   throwTimelineFatalError,
 } from '#server/utils/github-timeline-utils';
+import { attachClosedEventDuplicateTargets } from '#server/utils/issue-duplicate-target-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
@@ -41,6 +42,8 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       },
       page
     );
+
+    await attachClosedEventDuplicateTargets(octokit, items);
 
     const timeline = normalizeTimelineStateItems(
       sortTimelineItems(
