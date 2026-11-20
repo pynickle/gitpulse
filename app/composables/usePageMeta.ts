@@ -14,8 +14,6 @@ type OpenGraphType =
   | 'video.tv_show'
   | 'video.other';
 
-type TwitterCardType = 'summary' | 'summary_large_image' | 'app' | 'player';
-
 /**
  * SEO meta options for the page.
  * All fields are optional. When omitted, global defaults from nuxt.config.ts apply.
@@ -29,8 +27,6 @@ export interface PageMetaOptions {
   ogDescription?: MaybeRef<string>;
   /** Open Graph type (default: 'website') */
   ogType?: MaybeRef<OpenGraphType>;
-  /** Twitter card type. Omit to inherit `seo.meta.twitterCard` from nuxt.config. */
-  twitterCard?: MaybeRef<TwitterCardType>;
 }
 
 /**
@@ -73,9 +69,5 @@ export function usePageMeta(title?: MaybeRef<string | undefined>, meta?: PageMet
     ogTitle: () => unref(meta?.ogTitle) ?? resolvedTitle.value,
     ogDescription: () => unref(meta?.ogDescription) ?? unref(meta?.description),
     ogType: () => unref(meta?.ogType) ?? 'website',
-    // Omit the key when unset: an undefined twitterCard still replaces the global default.
-    // Title and description stay on Open Graph. X reads og:title and og:description;
-    // twitter:title and twitter:description only repeat them and trip Unhead's deprecation check.
-    ...(meta?.twitterCard === undefined ? {} : { twitterCard: () => unref(meta.twitterCard) }),
   });
 }

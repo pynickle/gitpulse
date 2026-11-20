@@ -238,7 +238,6 @@ export default defineNuxtConfig({
   // description / og:site_name / og:type come from site config + module defaults.
   seo: {
     meta: {
-      twitterCard: 'summary_large_image',
       themeColor: [
         { content: '#1f2937', media: '(prefers-color-scheme: dark)' },
         { content: '#ffffff', media: '(prefers-color-scheme: light)' },

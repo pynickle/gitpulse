@@ -94,18 +94,6 @@ test('page meta publishes Open Graph title and description without Twitter dupli
   expect(rendered.headTags).not.toContain('twitter:card');
 });
 
-test('an explicit twitter card is the only twitter tag page meta emits', async () => {
-  const rendered = await renderPageMeta('Release', {
-    description: 'Notes',
-    twitterCard: 'summary',
-  });
-
-  expect(rendered.headTags).toContain('name="twitter:card" content="summary"');
-  expect(rendered.headTags).toContain('property="og:title" content="Release"');
-  expect(rendered.headTags).not.toContain('twitter:title');
-  expect(rendered.headTags).not.toContain('twitter:description');
-});
-
 test('a page that has no title of its own renders the app title, not the ancestor page title', async () => {
   const rendered = await renderLayeredPageMeta('Notifications', '');
 
