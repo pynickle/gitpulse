@@ -23,6 +23,12 @@
         <ClockIcon :size="13" />
         <span>{{ formatDurationFromNow(issue?.updated_at, localeCode, relativeTimeNow) }}</span>
       </span>
+      <span class="header-repo is-flex is-align-items-center">
+        <GitForkIcon :size="13" />
+        <a class="header-repo__link has-text-weight-medium" @click.prevent="handleRepoClick">
+          {{ repoOwner }}/{{ repoName }}
+        </a>
+      </span>
     </div>
 
     <p v-if="issue?.duplicate_of" class="header-duplicate mb-4" data-duplicate-target>
@@ -35,15 +41,9 @@
       />
     </p>
 
-    <!-- Repo row -->
-    <div class="header-repo is-flex is-align-items-center mb-4">
-      <GitForkIcon :size="14" />
-      <a class="header-repo__link has-text-weight-medium" @click.prevent="handleRepoClick">
-        {{ repoOwner }}/{{ repoName }}
-      </a>
-    </div>
+    <slot name="before-description" />
 
-    <hr class="mr-4" />
+    <hr class="mr-4 header-rule" />
     <div data-detail-compact-threshold aria-hidden="true"></div>
 
     <!-- Author row -->
@@ -182,6 +182,11 @@ const handleRepoClick = async () => {
   gap: 0.75rem;
 }
 
+/* Tightened so the band above and the author below sit 0.75rem from the rule. */
+.header-rule {
+  margin: 0.75rem 0;
+}
+
 .header-number {
   font-size: 0.75rem;
   font-weight: 500;
@@ -243,8 +248,8 @@ const handleRepoClick = async () => {
 }
 
 .header-repo {
-  gap: 0.4rem;
-  font-size: 0.875rem;
+  gap: 0.3rem;
+  font-size: 0.8rem;
   color: var(--gitpulse-text-muted);
 }
 

@@ -11,7 +11,7 @@ import { toLinkedPullRequestListSummary } from '#shared/utils/linked-pull-reques
 
 export const LINKED_PULL_REQUEST_LIST_NODE_FIELDS = `closedByPullRequestsReferences(first: 1, includeClosedPrs: true) { totalCount nodes { number repository { name owner { login } } } }`;
 
-export const LINKED_PULL_REQUEST_PICKER_NODE_FIELDS = `closedByPullRequestsReferences(first: 20, includeClosedPrs: true) { totalCount nodes { number title updatedAt state isDraft mergedAt author { login } repository { name owner { login } } } }`;
+export const LINKED_PULL_REQUEST_PAGE_NODE_FIELDS = `closedByPullRequestsReferences(first: 20, includeClosedPrs: true, after: $after) { totalCount pageInfo { hasNextPage endCursor } nodes { number title updatedAt state isDraft mergedAt author { login } repository { name owner { login } } } }`;
 
 export interface GraphQLLinkedPullRequestRepository {
   name?: string | null;
@@ -30,8 +30,14 @@ export interface GraphQLLinkedPullRequestNode {
   repository?: GraphQLLinkedPullRequestRepository | null;
 }
 
+export interface GraphQLLinkedPullRequestPageInfo {
+  hasNextPage?: boolean | null;
+  endCursor?: string | null;
+}
+
 export interface GraphQLLinkedPullRequestConnection {
   totalCount?: number | null;
+  pageInfo?: GraphQLLinkedPullRequestPageInfo | null;
   nodes?: (GraphQLLinkedPullRequestNode | null)[] | null;
 }
 
@@ -118,7 +124,14 @@ export function mapLinkedPullRequestConnection(
         .filter((node): node is LinkedPullRequestNode => node !== null)
     : [];
 
-  return { totalCount, nodes };
+  return {
+    totalCount,
+    nodes,
+    pageInfo: {
+      hasNextPage: Boolean(connection?.pageInfo?.hasNextPage),
+      endCursor: toNonEmptyString(connection?.pageInfo?.endCursor),
+    },
+  };
 }
 
 const buildLinkedPullRequestListQuery = (
@@ -144,28 +157,34 @@ const buildLinkedPullRequestListQuery = (
   };
 };
 
-export const LINKED_PULL_REQUEST_PICKER_QUERY = `
-  query LinkedPullRequestPicker($owner: String!, $repo: String!, $number: Int!) {
+export const LINKED_PULL_REQUEST_QUERY = `
+  query LinkedPullRequestPage($owner: String!, $repo: String!, $number: Int!, $after: String) {
     repository(owner: $owner, name: $repo) {
       issue(number: $number) {
-        ${LINKED_PULL_REQUEST_PICKER_NODE_FIELDS}
+        ${LINKED_PULL_REQUEST_PAGE_NODE_FIELDS}
       }
     }
   }
 `;
 
-export async function fetchLinkedPullRequestPickerConnection(
+export async function fetchLinkedPullRequestConnection(
   octokit: LinkedPullRequestGraphQLClient | Octokit,
   owner: string,
   repo: string,
-  number: number
+  number: number,
+  after?: string | null
 ): Promise<LinkedPullRequestConnection> {
   let payload: {
     repository?: GraphQLLinkedPullRequestRepositoryResult | null;
   };
 
+  const variables: Record<string, string | number> = { owner, repo, number };
+  if (after) {
+    variables.after = after;
+  }
+
   try {
-    payload = await octokit.graphql(LINKED_PULL_REQUEST_PICKER_QUERY, { owner, repo, number });
+    payload = await octokit.graphql(LINKED_PULL_REQUEST_QUERY, variables);
   } catch (error: unknown) {
     const partial = getPartialGraphQLData<typeof payload>(error);
     if (!partial) throw error;

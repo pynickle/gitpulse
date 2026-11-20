@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import type { LinkedPullRequestPickerRow } from '#shared/types/linked-pull-requests';
+import type { LinkedPullRequestRow } from '#shared/types/linked-pull-requests';
 
-const { row } = defineProps<{
-  row: LinkedPullRequestPickerRow;
+const { row, compact = false } = defineProps<{
+  row: LinkedPullRequestRow;
+  /** One line: used where the row sits inside a page rather than a dialog. */
+  compact?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -47,6 +49,7 @@ const updatedLabel = computed(() => {
 <template>
   <button
     class="linked-pr-picker-row"
+    :class="{ 'linked-pr-picker-row--compact': compact }"
     type="button"
     :aria-label="accessibleName"
     @click="emit('select')"
@@ -98,6 +101,31 @@ const updatedLabel = computed(() => {
     background: var(--gitpulse-surface-hover);
     outline: 2px solid var(--gitpulse-accent);
     outline-offset: -2px;
+  }
+}
+
+.linked-pr-picker-row--compact {
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+
+  .linked-pr-picker-row-icon {
+    margin-top: 0;
+  }
+
+  .linked-pr-picker-row-text {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .linked-pr-picker-row-title {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .linked-pr-picker-row-meta {
+    flex-shrink: 0;
   }
 }
 

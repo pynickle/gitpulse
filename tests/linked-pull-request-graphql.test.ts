@@ -10,7 +10,7 @@ mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 
 const {
   LINKED_PULL_REQUEST_LIST_NODE_FIELDS,
-  LINKED_PULL_REQUEST_PICKER_NODE_FIELDS,
+  LINKED_PULL_REQUEST_PAGE_NODE_FIELDS,
   attachLinkedPullRequestSummaries,
   mapLinkedPullRequestConnection,
   mapLinkedPullRequestDisplayState,
@@ -43,6 +43,7 @@ describe('Linked Pull Request GraphQL mapping', () => {
       })
     ).toEqual({
       totalCount: 2,
+      pageInfo: { hasNextPage: false, endCursor: null },
       nodes: [
         {
           owner: 'acme',
@@ -84,11 +85,11 @@ describe('Linked Pull Request GraphQL mapping', () => {
   test('list and picker GraphQL field sets ask for includeClosedPrs references', () => {
     expect(LINKED_PULL_REQUEST_LIST_NODE_FIELDS).toContain('includeClosedPrs: true');
     expect(LINKED_PULL_REQUEST_LIST_NODE_FIELDS).toContain('first: 1');
-    expect(LINKED_PULL_REQUEST_PICKER_NODE_FIELDS).toContain('includeClosedPrs: true');
-    expect(LINKED_PULL_REQUEST_PICKER_NODE_FIELDS).toContain('first: 20');
-    expect(LINKED_PULL_REQUEST_PICKER_NODE_FIELDS).toContain('title');
-    expect(LINKED_PULL_REQUEST_PICKER_NODE_FIELDS).toContain('updatedAt');
-    expect(LINKED_PULL_REQUEST_PICKER_NODE_FIELDS).toContain('author { login }');
+    expect(LINKED_PULL_REQUEST_PAGE_NODE_FIELDS).toContain('includeClosedPrs: true');
+    expect(LINKED_PULL_REQUEST_PAGE_NODE_FIELDS).toContain('first: 20');
+    expect(LINKED_PULL_REQUEST_PAGE_NODE_FIELDS).toContain('title');
+    expect(LINKED_PULL_REQUEST_PAGE_NODE_FIELDS).toContain('updatedAt');
+    expect(LINKED_PULL_REQUEST_PAGE_NODE_FIELDS).toContain('author { login }');
   });
 
   test('picker JSON from GraphQL yields the grouped Picker model', () => {

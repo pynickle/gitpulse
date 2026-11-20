@@ -175,6 +175,10 @@ _Avoid_: associated PR count, related PR count
 A modal that lists an Issue's Linked Pull Requests so the user can open one. It opens when Count is greater than 1, when Count is 1 but the routing identity is incomplete, or when Count is 1 and Single Linked Pull Request Preview is on.
 _Avoid_: associated PR modal, PR chooser
 
+**Linked Pull Request List**:
+An Issue's Linked Pull Requests rendered inside its own Detail Overlay, showing the ones most worth opening first and the rest on request. A Picker is a modal opened from elsewhere; a List belongs to the Issue's page.
+_Avoid_: development section, linked PRs panel, Picker when referring to the page's own list
+
 **Single Linked Pull Request Preview**:
 The reader's choice to open the Linked Pull Request Picker when an Issue has exactly one Linked Pull Request with a complete routing identity. Previewing is the default.
 _Avoid_: single-PR confirmation, chooser setting

@@ -12,7 +12,7 @@ import type {
   LinkedPullRequestIdentity,
 } from '#shared/types/linked-pull-requests';
 import { toLinkedPullRequestPickerModel } from '#shared/utils/linked-pull-requests';
-import LinkedPullRequestPickerRow from '~/components/dashboard/LinkedPullRequestPickerRow.vue';
+import LinkedPullRequestRow from '~/components/dashboard/LinkedPullRequestRow.vue';
 import CollapsibleGroup from '~/components/ui/CollapsibleGroup.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
@@ -201,7 +201,7 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
                         : t('dashboard.linkedPullRequests.otherRepositories')
                     }}
                   </template>
-                  <LinkedPullRequestPickerRow
+                  <LinkedPullRequestRow
                     v-for="row in group.rows"
                     :key="`${row.owner}/${row.repo}#${row.number}`"
                     :row="row"
@@ -210,7 +210,7 @@ const selectRow = (row: LinkedPullRequestIdentity) => {
                 </CollapsibleGroup>
 
                 <template v-else>
-                  <LinkedPullRequestPickerRow
+                  <LinkedPullRequestRow
                     v-for="row in group.rows"
                     :key="`${row.owner}/${row.repo}#${row.number}`"
                     :row="row"

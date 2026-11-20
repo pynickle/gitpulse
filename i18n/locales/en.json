@@ -694,6 +694,8 @@
     "linkedPullRequests": {
       "count": "{count} linked pull requests",
       "pickerTitle": "Linked pull requests",
+      "showAll": "Show all {count}",
+      "loadMore": "Load more",
       "sameRepository": "This repository",
       "otherRepositories": "Other repositories",
       "loading": "Loading linked pull requests…",

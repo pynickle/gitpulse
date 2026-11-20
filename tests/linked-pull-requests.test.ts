@@ -8,6 +8,7 @@ import {
   LINKED_PULL_REQUEST_PICKER_PAGE_SIZE,
   readLinkedPullRequestListSummary,
   toLinkedPullRequestClickIntent,
+  toLinkedPullRequestListModel,
   toLinkedPullRequestListSummary,
   toLinkedPullRequestPickerModel,
 } from '../shared/utils/linked-pull-requests';
@@ -31,6 +32,7 @@ const connection = (
 ): LinkedPullRequestConnection => ({
   totalCount,
   nodes,
+  pageInfo: { hasNextPage: false, endCursor: null },
 });
 
 describe('Linked Pull Request list summary', () => {
@@ -421,5 +423,68 @@ describe('Linked Pull Request Picker model', () => {
       groups: [],
       remainder: 0,
     });
+  });
+});
+
+describe('Linked Pull Request List model', () => {
+  const sameRepositoryNodes = (count: number) =>
+    Array.from({ length: count }, (_, index) =>
+      node({
+        owner: 'acme',
+        repo: 'widgets',
+        number: index + 1,
+        title: `PR ${index + 1}`,
+        updatedAt: `2026-08-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+      })
+    );
+
+  test('shows the five most recently updated rows before the reader asks for the rest', () => {
+    const model = toLinkedPullRequestListModel(connection(7, sameRepositoryNodes(7)), ISSUE, false);
+
+    expect(model.groups.flatMap((group) => group.rows).map((row) => row.number)).toEqual([
+      7, 6, 5, 4, 3,
+    ]);
+    expect(model.hiddenCount).toBe(2);
+  });
+
+  test('reveals every loaded row once the reader asks for the rest', () => {
+    const model = toLinkedPullRequestListModel(connection(7, sameRepositoryNodes(7)), ISSUE, true);
+
+    expect(model.groups.flatMap((group) => group.rows)).toHaveLength(7);
+    expect(model.hiddenCount).toBe(0);
+  });
+
+  test('adds the other-repository header only when revealing reaches a foreign row', () => {
+    const nodes = [
+      ...sameRepositoryNodes(5),
+      node({
+        owner: 'foreign',
+        repo: 'lib',
+        number: 9,
+        title: 'Foreign',
+        updatedAt: '2026-07-01T00:00:00.000Z',
+      }),
+    ];
+
+    const collapsed = toLinkedPullRequestListModel(connection(6, nodes), ISSUE, false);
+    expect(collapsed.groups.map((group) => group.kind)).toEqual(['same-repository']);
+    expect(collapsed.hiddenCount).toBe(1);
+
+    const expanded = toLinkedPullRequestListModel(connection(6, nodes), ISSUE, true);
+    expect(expanded.groups.map((group) => [group.kind, group.showHeader])).toEqual([
+      ['same-repository', true],
+      ['other-repositories', true],
+    ]);
+  });
+
+  test('reports rows it has not loaded yet as hidden', () => {
+    const model = toLinkedPullRequestListModel(
+      connection(25, sameRepositoryNodes(20)),
+      ISSUE,
+      true
+    );
+
+    expect(model.groups.flatMap((group) => group.rows)).toHaveLength(20);
+    expect(model.hiddenCount).toBe(5);
   });
 });

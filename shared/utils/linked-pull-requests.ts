@@ -3,14 +3,19 @@ import type {
   LinkedPullRequestConnection,
   LinkedPullRequestDisplayState,
   LinkedPullRequestIdentity,
+  LinkedPullRequestListModel,
   LinkedPullRequestListSummary,
   LinkedPullRequestNode,
-  LinkedPullRequestPickerGroup,
   LinkedPullRequestPickerModel,
-  LinkedPullRequestPickerRow,
+  LinkedPullRequestRow,
+  LinkedPullRequestRowGroup,
+  LinkedPullRequestRowGroupKind,
 } from '../types/linked-pull-requests';
 
 export const LINKED_PULL_REQUEST_PICKER_PAGE_SIZE = 20;
+
+/** Rows the Issue Detail Overlay shows before the reader asks for the rest. */
+export const LINKED_PULL_REQUEST_LIST_VISIBLE_LIMIT = 5;
 
 const DISPLAY_STATE_SORT_RANK: Record<LinkedPullRequestDisplayState, number> = {
   open: 0,
@@ -121,18 +126,18 @@ const toUpdatedAtTime = (value: string | null): number => {
   return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY;
 };
 
-const comparePickerRows = (left: LinkedPullRequestPickerRow, right: LinkedPullRequestPickerRow) => {
+const compareRows = (left: LinkedPullRequestRow, right: LinkedPullRequestRow) => {
   const rankDelta = DISPLAY_STATE_SORT_RANK[left.state] - DISPLAY_STATE_SORT_RANK[right.state];
   if (rankDelta !== 0) return rankDelta;
 
   return toUpdatedAtTime(right.updatedAt) - toUpdatedAtTime(left.updatedAt);
 };
 
-const toPickerRow = (
+const toRow = (
   node: LinkedPullRequestNode,
   identity: LinkedPullRequestIdentity,
   showRepository: boolean
-): LinkedPullRequestPickerRow => {
+): LinkedPullRequestRow => {
   const state: LinkedPullRequestDisplayState =
     node.state === 'draft' || node.state === 'merged' || node.state === 'closed'
       ? node.state
@@ -150,28 +155,30 @@ const toPickerRow = (
   };
 };
 
-export function toLinkedPullRequestPickerModel(
-  connection: LinkedPullRequestConnection,
+interface LinkedPullRequestRowsByRepository {
+  sameRepositoryRows: LinkedPullRequestRow[];
+  otherRepositoryRows: LinkedPullRequestRow[];
+}
+
+const collectRows = (
+  nodes: LinkedPullRequestNode[],
   issue: Pick<LinkedPullRequestIdentity, 'owner' | 'repo'>
-): LinkedPullRequestPickerModel {
-  const count = toCount(connection.totalCount) ?? 0;
-  const remainder = Math.max(0, count - LINKED_PULL_REQUEST_PICKER_PAGE_SIZE);
-  const pageNodes = connection.nodes.slice(0, LINKED_PULL_REQUEST_PICKER_PAGE_SIZE);
+): LinkedPullRequestRowsByRepository => {
   const issueIdentity: LinkedPullRequestIdentity = {
     owner: issue.owner,
     repo: issue.repo,
     number: 1,
   };
 
-  const sameRepositoryRows: LinkedPullRequestPickerRow[] = [];
-  const otherRepositoryRows: LinkedPullRequestPickerRow[] = [];
+  const sameRepositoryRows: LinkedPullRequestRow[] = [];
+  const otherRepositoryRows: LinkedPullRequestRow[] = [];
 
-  for (const node of pageNodes) {
+  for (const node of nodes) {
     const identity = toNodeIdentity(node);
     if (!identity) continue;
 
     const showRepository = !isSameRepository(identity, issueIdentity);
-    const row = toPickerRow(node, identity, showRepository);
+    const row = toRow(node, identity, showRepository);
     if (showRepository) {
       otherRepositoryRows.push(row);
     } else {
@@ -179,27 +186,69 @@ export function toLinkedPullRequestPickerModel(
     }
   }
 
-  sameRepositoryRows.sort(comparePickerRows);
-  otherRepositoryRows.sort(comparePickerRows);
+  sameRepositoryRows.sort(compareRows);
+  otherRepositoryRows.sort(compareRows);
 
+  return { sameRepositoryRows, otherRepositoryRows };
+};
+
+const toGroups = (
+  sameRepositoryRows: LinkedPullRequestRow[],
+  otherRepositoryRows: LinkedPullRequestRow[]
+): LinkedPullRequestRowGroup[] => {
   const showHeaders = sameRepositoryRows.length > 0 && otherRepositoryRows.length > 0;
-  const groups: LinkedPullRequestPickerGroup[] = [];
+  const groups: LinkedPullRequestRowGroup[] = [];
+  const kinds: Array<[LinkedPullRequestRowGroupKind, LinkedPullRequestRow[]]> = [
+    ['same-repository', sameRepositoryRows],
+    ['other-repositories', otherRepositoryRows],
+  ];
 
-  if (sameRepositoryRows.length > 0) {
-    groups.push({
-      kind: 'same-repository',
-      showHeader: showHeaders,
-      rows: sameRepositoryRows,
-    });
+  for (const [kind, rows] of kinds) {
+    if (rows.length > 0) {
+      groups.push({ kind, showHeader: showHeaders, rows });
+    }
   }
 
-  if (otherRepositoryRows.length > 0) {
-    groups.push({
-      kind: 'other-repositories',
-      showHeader: showHeaders,
-      rows: otherRepositoryRows,
-    });
-  }
+  return groups;
+};
 
-  return { groups, remainder };
+export function toLinkedPullRequestPickerModel(
+  connection: LinkedPullRequestConnection,
+  issue: Pick<LinkedPullRequestIdentity, 'owner' | 'repo'>
+): LinkedPullRequestPickerModel {
+  const count = toCount(connection.totalCount) ?? 0;
+  const remainder = Math.max(0, count - LINKED_PULL_REQUEST_PICKER_PAGE_SIZE);
+  const pageNodes = connection.nodes.slice(0, LINKED_PULL_REQUEST_PICKER_PAGE_SIZE);
+  const { sameRepositoryRows, otherRepositoryRows } = collectRows(pageNodes, issue);
+
+  return { groups: toGroups(sameRepositoryRows, otherRepositoryRows), remainder };
+}
+
+/**
+ * Rows the Issue Detail Overlay renders: the first five in the order the Picker
+ * shows them, or every loaded row once the reader asks for the rest. Hidden
+ * Count also covers rows the connection has not loaded yet.
+ */
+export function toLinkedPullRequestListModel(
+  connection: LinkedPullRequestConnection,
+  issue: Pick<LinkedPullRequestIdentity, 'owner' | 'repo'>,
+  expanded: boolean
+): LinkedPullRequestListModel {
+  const { sameRepositoryRows, otherRepositoryRows } = collectRows(connection.nodes, issue);
+  const totalCount =
+    toCount(connection.totalCount) ?? sameRepositoryRows.length + otherRepositoryRows.length;
+
+  const visibleSameRepositoryRows = expanded
+    ? sameRepositoryRows
+    : sameRepositoryRows.slice(0, LINKED_PULL_REQUEST_LIST_VISIBLE_LIMIT);
+  const remainingRowBudget = expanded
+    ? otherRepositoryRows.length
+    : Math.max(0, LINKED_PULL_REQUEST_LIST_VISIBLE_LIMIT - visibleSameRepositoryRows.length);
+  const visibleOtherRepositoryRows = otherRepositoryRows.slice(0, remainingRowBudget);
+  const visibleRowCount = visibleSameRepositoryRows.length + visibleOtherRepositoryRows.length;
+
+  return {
+    groups: toGroups(visibleSameRepositoryRows, visibleOtherRepositoryRows),
+    hiddenCount: Math.max(0, totalCount - visibleRowCount),
+  };
 }

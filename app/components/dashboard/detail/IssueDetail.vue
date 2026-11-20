@@ -18,7 +18,18 @@
             :repo-owner="resolvedRepoOwner"
             :repo-name="resolvedRepoName"
             @switch-issue="switchToIssue"
-          />
+          >
+            <template #before-description>
+              <LinkedPullRequestList
+                :owner="resolvedRepoOwner"
+                :repo="resolvedRepoName"
+                :number="currentIssue.number"
+                @select="
+                  (identity) => switchToPullRequest(identity.owner, identity.repo, identity.number)
+                "
+              />
+            </template>
+          </IssueHeader>
         </div>
 
         <hr />
@@ -104,6 +115,7 @@ import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
 import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
+import LinkedPullRequestList from '~/components/dashboard/issue/LinkedPullRequestList.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';

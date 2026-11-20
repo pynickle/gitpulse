@@ -33,12 +33,20 @@ export interface LinkedPullRequestNode {
   state?: LinkedPullRequestDisplayState | null;
 }
 
+/** Which cursor page of the GitHub connection a response covers. */
+export interface LinkedPullRequestConnectionPageInfo {
+  hasNextPage: boolean;
+  endCursor: string | null;
+}
+
 export interface LinkedPullRequestConnection {
   totalCount: number | null;
   nodes: LinkedPullRequestNode[];
+  /** Only a paged fetch reads this; the row models ignore it. */
+  pageInfo?: LinkedPullRequestConnectionPageInfo;
 }
 
-export interface LinkedPullRequestPickerRow {
+export interface LinkedPullRequestRow {
   owner: string;
   repo: string;
   number: number;
@@ -49,17 +57,26 @@ export interface LinkedPullRequestPickerRow {
   showRepository: boolean;
 }
 
-export type LinkedPullRequestPickerGroupKind = 'same-repository' | 'other-repositories';
+export type LinkedPullRequestRowGroupKind = 'same-repository' | 'other-repositories';
 
-export interface LinkedPullRequestPickerGroup {
-  kind: LinkedPullRequestPickerGroupKind;
+export interface LinkedPullRequestRowGroup {
+  kind: LinkedPullRequestRowGroupKind;
   showHeader: boolean;
-  rows: LinkedPullRequestPickerRow[];
+  rows: LinkedPullRequestRow[];
 }
 
 export interface LinkedPullRequestPickerModel {
-  groups: LinkedPullRequestPickerGroup[];
+  groups: LinkedPullRequestRowGroup[];
   remainder: number;
+}
+
+/**
+ * The rows an Issue's Detail Overlay renders, plus how many of its Linked Pull
+ * Requests the reader cannot see yet.
+ */
+export interface LinkedPullRequestListModel {
+  groups: LinkedPullRequestRowGroup[];
+  hiddenCount: number;
 }
 
 export interface LinkedPullRequestCountClickPayload {

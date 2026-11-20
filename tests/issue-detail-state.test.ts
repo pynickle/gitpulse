@@ -28,13 +28,16 @@ const ScrollArea = defineComponent({
 });
 const IssueHeader = defineComponent({
   props: { issue: { type: Object, required: true } },
-  setup(props) {
+  setup(props, { slots }) {
     return () =>
-      h('output', {
-        'data-duplicate-target':
-          (props.issue as { duplicate_of?: { number: number } | null }).duplicate_of?.number ??
-          null,
-      });
+      h('div', [
+        h('output', {
+          'data-duplicate-target':
+            (props.issue as { duplicate_of?: { number: number } | null }).duplicate_of?.number ??
+            null,
+        }),
+        slots['before-description']?.(),
+      ]);
   },
 });
 const IssueActions = defineComponent({
@@ -54,6 +57,22 @@ const IssueActions = defineComponent({
   },
 });
 
+let bandProps: Record<string, unknown> | undefined;
+let selectLinkedPullRequest: ((identity: unknown) => void) | undefined;
+const LinkedPullRequestList = defineComponent({
+  props: {
+    owner: { type: String, required: true },
+    repo: { type: String, required: true },
+    number: { type: Number, required: true },
+  },
+  emits: ['select'],
+  setup(props, { emit }) {
+    bandProps = props as unknown as Record<string, unknown>;
+    selectLinkedPullRequest = (identity) => emit('select', identity);
+    return () => h('div', { class: 'linked-pr-band' });
+  },
+});
+
 const IssueDetail = await compileVue(
   'app/components/dashboard/detail/IssueDetail.vue',
   {
@@ -63,6 +82,7 @@ const IssueDetail = await compileVue(
     '~/components/dashboard/issue/IssueHeader.vue': { default: IssueHeader },
     '~/components/dashboard/issue/IssueTimelineEvents.vue': { default: emptyStub },
     '~/components/dashboard/issue/IssueTypeCard.vue': { default: emptyStub },
+    '~/components/dashboard/issue/LinkedPullRequestList.vue': { default: LinkedPullRequestList },
     '~/components/ui/ScrollArea.vue': { default: ScrollArea },
     '~/utils/createEmptyRepoPermissions': { createEmptyRepoPermissions, normalizeRepoPermissions },
     '~/utils/formatPageMetaDescription': { formatPageMetaDescription },
@@ -114,6 +134,41 @@ test('updates and clears the duplicate target in the issue header with state cha
     root.querySelectorAll('button')[1]?.click();
     await nextTick();
     expect(targetDisplay()).toBeNull();
+  } finally {
+    await dom.cleanup();
+  }
+});
+
+test('lists the linked pull requests of the issue it shows and opens the chosen one', async () => {
+  const dom = createVueDom();
+  try {
+    const issue = {
+      id: 7,
+      number: 7,
+      title: 'Issue with linked pull requests',
+      state: 'open',
+      repository_url: 'https://api.github.com/repos/acme/widgets',
+    };
+    const switched: unknown[] = [];
+
+    dom.mount(
+      defineComponent(() => () => {
+        return h(IssueDetail, {
+          issue,
+          onSwitchPullRequest: (owner: string, repo: string, pullNumber: number) => {
+            switched.push({ owner, repo, number: pullNumber });
+          },
+        });
+      })
+    );
+    await nextTick();
+
+    expect(bandProps).toMatchObject({ owner: 'acme', repo: 'widgets', number: 7 });
+
+    selectLinkedPullRequest?.({ owner: 'acme', repo: 'widgets', number: 22 });
+    await nextTick();
+
+    expect(switched).toEqual([{ owner: 'acme', repo: 'widgets', number: 22 }]);
   } finally {
     await dom.cleanup();
   }

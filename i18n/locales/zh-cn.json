@@ -694,6 +694,8 @@
     "linkedPullRequests": {
       "count": "{count} 个链接的拉取请求",
       "pickerTitle": "链接的拉取请求",
+      "showAll": "显示全部 {count} 个",
+      "loadMore": "加载更多",
       "sameRepository": "此仓库",
       "otherRepositories": "其他仓库",
       "loading": "正在加载链接的拉取请求…",

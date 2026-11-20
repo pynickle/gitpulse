@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 
 import * as githubGraphqlUtils from '../server/utils/github-graphql-utils';
+import * as repoRouteUtils from '../server/utils/repo-route-utils';
 import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 
@@ -12,6 +13,7 @@ const linkedPullRequestGraphql = await import('../server/utils/linked-pull-reque
 mock.module('#server/utils/linked-pull-request-graphql-utils', () => linkedPullRequestGraphql);
 
 let graphQLRequest: (query: string, variables: Record<string, unknown>) => Promise<unknown>;
+let requestQuery: Record<string, unknown> = {};
 
 (
   globalThis as unknown as {
@@ -20,7 +22,11 @@ let graphQLRequest: (query: string, variables: Record<string, unknown>) => Promi
 ).definePrivateApiCoalescedEventHandler = ((handler: unknown) =>
   handler) as typeof definePrivateApiCoalescedEventHandler;
 
+(globalThis as unknown as { getQuery: (event: unknown) => Record<string, unknown> }).getQuery =
+  () => requestQuery;
+
 mock.module('#server/utils/repo-route-utils', () => ({
+  ...repoRouteUtils,
   extractIssueRouteParams: () => ({ owner: 'acme', repo: 'widgets', issueNumber: 7 }),
   executeGitHubRequest: async (
     _event: unknown,
@@ -28,20 +34,48 @@ mock.module('#server/utils/repo-route-utils', () => ({
   ) => requestFn({ graphql: graphQLRequest }),
 }));
 
-const handler = (
-  await import('../server/api/issues/[owner]/[repo]/[issue_number]/linked-pull-requests.get')
-).default as (event: unknown) => Promise<{
+interface LinkedPullRequestsResponse {
   owner: string;
   repo: string;
   number: number;
   totalCount: number;
   nodes: unknown[];
-}>;
+  pageInfo: { hasNextPage: boolean; endCursor: string | null };
+}
 
-describe('Linked Pull Request Picker API', () => {
+const handler = (
+  await import('../server/api/issues/[owner]/[repo]/[issue_number]/linked-pull-requests.get')
+).default as (event: unknown) => Promise<LinkedPullRequestsResponse>;
+
+const connectionPage = (pageInfo: { hasNextPage: boolean; endCursor: string | null } | null) => ({
+  repository: {
+    issue: {
+      closedByPullRequestsReferences: {
+        totalCount: 25,
+        pageInfo,
+        nodes: [
+          {
+            number: 5,
+            title: 'Local',
+            updatedAt: '2026-08-02T00:00:00.000Z',
+            state: 'CLOSED',
+            mergedAt: '2026-08-03T00:00:00.000Z',
+            author: { login: 'octocat' },
+            repository: { name: 'widgets', owner: { login: 'acme' } },
+          },
+        ],
+      },
+    },
+  },
+});
+
+describe('Linked Pull Request API', () => {
   test('returns connection JSON that the list model can group', async () => {
+    requestQuery = {};
     graphQLRequest = async (query, variables) => {
-      expect(query).toContain('closedByPullRequestsReferences(first: 20, includeClosedPrs: true)');
+      expect(query).toContain(
+        'closedByPullRequestsReferences(first: 20, includeClosedPrs: true, after: $after)'
+      );
       expect(variables).toEqual({ owner: 'acme', repo: 'widgets', number: 7 });
       return {
         repository: {
@@ -99,6 +133,7 @@ describe('Linked Pull Request Picker API', () => {
           state: 'merged',
         },
       ],
+      pageInfo: { hasNextPage: false, endCursor: null },
     });
 
     expect(
@@ -112,6 +147,7 @@ describe('Linked Pull Request Picker API', () => {
   });
 
   test('represents an empty Linked Pull Request list without auto-closing', async () => {
+    requestQuery = {};
     graphQLRequest = async () => ({
       repository: {
         issue: {
@@ -126,6 +162,49 @@ describe('Linked Pull Request Picker API', () => {
       number: 7,
       totalCount: 0,
       nodes: [],
+      pageInfo: { hasNextPage: false, endCursor: null },
+    });
+  });
+
+  test('asks GitHub for the cursor page the reader requested and returns its cursor', async () => {
+    requestQuery = { after: 'CURSOR-1' };
+    graphQLRequest = async (query, variables) => {
+      expect(query).toContain('after: $after');
+      expect(variables).toEqual({
+        owner: 'acme',
+        repo: 'widgets',
+        number: 7,
+        after: 'CURSOR-1',
+      });
+      return connectionPage({ hasNextPage: true, endCursor: 'CURSOR-2' });
+    };
+
+    expect((await handler({})).pageInfo).toEqual({
+      hasNextPage: true,
+      endCursor: 'CURSOR-2',
+    });
+  });
+
+  test('reports no further page when GitHub returns none', async () => {
+    requestQuery = {};
+    graphQLRequest = async () => connectionPage(null);
+
+    expect((await handler({})).pageInfo).toEqual({
+      hasNextPage: false,
+      endCursor: null,
+    });
+  });
+
+  test('drops a blank cursor instead of asking GitHub for page after an empty string', async () => {
+    requestQuery = { after: '' };
+    graphQLRequest = async (_query, variables) => {
+      expect(variables).toEqual({ owner: 'acme', repo: 'widgets', number: 7 });
+      return connectionPage(null);
+    };
+
+    expect((await handler({})).pageInfo).toEqual({
+      hasNextPage: false,
+      endCursor: null,
     });
   });
 });
