@@ -237,6 +237,10 @@ export default defineNuxtConfig({
   // Site-wide extras that nuxt-seo-utils does not infer from `site`.
   // description / og:site_name / og:type come from site config + module defaults.
   seo: {
+    // nuxt-seo-utils otherwise infers a twitter:card (summary / summary_large_image)
+    // from the page's og:image, and unhead 3 flags every twitter:* meta as deprecated.
+    // Open Graph tags are inferred either way; only the Twitter duplicates go.
+    automaticTwitterTags: false,
     meta: {
       themeColor: [
         { content: '#1f2937', media: '(prefers-color-scheme: dark)' },
