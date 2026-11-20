@@ -228,6 +228,12 @@ const handleRepoClick = async () => {
   gap: 0.25rem;
   font-size: 0.8rem;
   color: var(--gitpulse-text-muted);
+
+  // A timeline pill keeps a bottom margin so wrapped rows of pills stay apart; this row
+  // centres its pill instead, and that margin would lift the pill above the label.
+  :deep(.tag.is-activity) {
+    margin-bottom: 0;
+  }
 }
 
 .header-time {
