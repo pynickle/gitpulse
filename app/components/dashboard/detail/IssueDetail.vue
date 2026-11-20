@@ -32,6 +32,14 @@
           </IssueHeader>
         </div>
 
+        <SubIssueList
+          v-if="subIssueTarget && subIssueProgress"
+          :key="`${subIssueTarget.owner}/${subIssueTarget.repo}#${subIssueTarget.number}`"
+          :issue="subIssueTarget"
+          :progress="subIssueProgress"
+          @select="({ owner, repo, number }) => switchToIssue(owner, repo, number, true)"
+        />
+
         <hr />
 
         <div class="issue-detail__timeline mt-4">
@@ -109,6 +117,7 @@ import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/t
 import type { IssueDetailPayload, IssueDuplicateTarget } from '#shared/types/issues';
 import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
+import { readSubIssueProgress, toSubIssueIdentity } from '#shared/utils/sub-issues';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
@@ -116,6 +125,7 @@ import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
 import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
 import LinkedPullRequestList from '~/components/dashboard/issue/LinkedPullRequestList.vue';
+import SubIssueList from '~/components/dashboard/issue/SubIssueList.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
@@ -129,7 +139,13 @@ const { issue } = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
+  (
+    e: 'switch-issue',
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    openInOverlay?: boolean
+  ): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'update:compact-header-visible', visible: boolean): void;
   (
@@ -185,6 +201,16 @@ const repoName = computed(() => repoInfo.value?.repo);
 const resolvedRepoOwner = computed(() => repoOwner.value ?? '');
 
 const resolvedRepoName = computed(() => repoName.value ?? '');
+const subIssueTarget = computed(() =>
+  toSubIssueIdentity({
+    owner: repoOwner.value,
+    repo: repoName.value,
+    number: currentIssue.value.number,
+  })
+);
+const subIssueProgress = computed(() =>
+  readSubIssueProgress(currentIssue.value.sub_issues_summary)
+);
 
 const canEditLabels = computed(() => {
   return repoPermissions.value.canEditLabels;
@@ -216,8 +242,14 @@ const issueAssignees = computed<IssueAssigneeUser[]>(() => {
   return currentIssue.value?.assignee ? [currentIssue.value.assignee] : [];
 });
 
-const switchToIssue = (owner: string, repo: string, issueNumber: number) => {
-  emit('switch-issue', owner, repo, issueNumber);
+const switchToIssue = (
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  openInOverlay?: boolean
+) => {
+  if (openInOverlay) emit('switch-issue', owner, repo, issueNumber, true);
+  else emit('switch-issue', owner, repo, issueNumber);
 };
 
 const switchToPullRequest = (owner: string, repo: string, pullNumber: number) => {

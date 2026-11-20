@@ -32,6 +32,7 @@ import RepoContributorsCard from '~/components/dashboard/detail/RepoContributors
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
 import RepoLatestCommitBar from '~/components/dashboard/detail/RepoLatestCommitBar.vue';
 import RepoPanelNav, { type RepoPanelNavTab } from '~/components/dashboard/detail/RepoPanelNav.vue';
+import SubIssuePickerModal from '~/components/dashboard/issue/SubIssuePickerModal.vue';
 import LinkedPullRequestPickerModal from '~/components/dashboard/LinkedPullRequestPickerModal.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
 import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
@@ -61,6 +62,13 @@ const emit = defineEmits<{
   (e: 'open-issue', item: DashboardIssuePrEntity): void;
   (e: 'open-pull-request', item: DashboardIssuePrEntity): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
+  (
+    e: 'switch-issue',
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    openInOverlay: boolean
+  ): void;
 }>();
 
 type RepoDetailIcon = Component;
@@ -274,6 +282,14 @@ const {
   selectFromPicker: selectLinkedPullRequestFromPicker,
 } = useLinkedPullRequestListNavigation((identity) => {
   emit('switch-pull-request', identity.owner, identity.repo, identity.number);
+});
+const {
+  pickerIssue: subIssuePickerIssue,
+  openPicker: openSubIssuePicker,
+  closePicker: closeSubIssuePicker,
+  selectFromPicker: selectSubIssueFromPicker,
+} = useSubIssuePickerNavigation(({ owner, repo, number }) => {
+  emit('switch-issue', owner, repo, number, true);
 });
 
 const localeCode = computed(() => locale.value);
@@ -952,6 +968,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               @select="handleIssuePrSelect"
               @retry="listRefresh"
               @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+              @sub-issues-open="openSubIssuePicker"
             />
           </div>
         </section>
@@ -1066,6 +1083,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     :number="linkedPullRequestPickerIssue?.number ?? 1"
     @close="closeLinkedPullRequestPicker"
     @select="selectLinkedPullRequestFromPicker"
+  />
+  <SubIssuePickerModal
+    v-if="subIssuePickerIssue"
+    :issue="subIssuePickerIssue"
+    @close="closeSubIssuePicker"
+    @select="selectSubIssueFromPicker"
   />
 </template>
 

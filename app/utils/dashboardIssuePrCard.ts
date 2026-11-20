@@ -6,6 +6,7 @@ import type {
   NotificationSubjectState,
 } from '#shared/types/notifications';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
+import type { SubIssueProgress } from '#shared/types/sub-issues';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 import { readPullRequestCheckRollup } from '#shared/utils/pr-checks';
 
@@ -42,6 +43,7 @@ export interface DashboardIssuePrEntity {
   linkedPullRequestCount?: number | null;
   /** Present only when Count is 1 and routing identity is complete. */
   linkedPullRequest?: LinkedPullRequestIdentity | null;
+  sub_issues_summary?: SubIssueProgress | null;
   /** Check Rollup attached after the Search GraphQL pass. Pull requests only. */
   checkRollup?: PullRequestCheckRollup | null;
   pull_request?: unknown;

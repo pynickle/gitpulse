@@ -8,6 +8,10 @@ import {
   PR_CHECK_ROLLUP_NODE_FIELDS,
   mapPullRequestCheckRollup,
 } from '#server/utils/pr-check-rollup-graphql-utils';
+import {
+  SUB_ISSUE_SUMMARY_NODE_FIELDS,
+  type GraphQLSubIssueSummary,
+} from '#server/utils/sub-issue-graphql-utils';
 import type { IssueTypeSummary } from '#shared/types/issues';
 import type {
   NotificationLabel,
@@ -16,6 +20,7 @@ import type {
   NotificationSubjectState,
 } from '#shared/types/notifications';
 import { toLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
+import { readSubIssueProgress } from '#shared/utils/sub-issues';
 
 interface GraphQLLabelNode {
   name?: string;
@@ -52,6 +57,7 @@ interface GraphQLSubjectNode {
   comments?: GraphQLCommentsConnection | null;
   author?: GraphQLAuthorNode;
   issueType?: GraphQLIssueTypeNode | null;
+  subIssuesSummary?: GraphQLSubIssueSummary | null;
   labels?: GraphQLLabelsConnection;
   closedByPullRequestsReferences?: {
     totalCount?: number | null;
@@ -154,7 +160,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectEnrichmentTarget[])
         ? `title updatedAt state mergedAt isDraft comments { totalCount } ${PR_CHECK_ROLLUP_NODE_FIELDS}`
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
-          : `title updatedAt state stateReason issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS}`;
+          : `title updatedAt state stateReason issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS} ${SUB_ISSUE_SUMMARY_NODE_FIELDS}`;
     const labelsFields =
       target.type === 'discussions' ? '' : ' labels(first: 10) { nodes { name color } }';
     fields.push(
@@ -199,6 +205,8 @@ export default defineEventHandler(async (event) => {
           : null;
       const checkRollup =
         target.type === 'pulls' ? mapPullRequestCheckRollup(node?.statusCheckRollup) : null;
+      const subIssuesSummary =
+        target.type === 'issues' ? readSubIssueProgress(node?.subIssuesSummary) : null;
 
       return {
         key: target.key,
@@ -223,6 +231,7 @@ export default defineEventHandler(async (event) => {
             }
           : {}),
         ...(checkRollup ? { checkRollup } : {}),
+        ...(subIssuesSummary ? { subIssuesSummary } : {}),
       };
     });
 

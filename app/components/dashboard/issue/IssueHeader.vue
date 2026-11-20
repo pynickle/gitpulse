@@ -41,6 +41,16 @@
       />
     </p>
 
+    <p v-if="issue?.parent_issue" class="header-duplicate mb-4">
+      <span>{{ t('dashboard.subIssues.parent') }}</span>
+      <ReferenceSubject
+        :ref-subject="issue.parent_issue"
+        resource-type="issue"
+        :cross-repository="isOtherRepository(issue.parent_issue)"
+        @switch-issue="(owner, repo, number) => emit('switch-issue', owner, repo, number, true)"
+      />
+    </p>
+
     <slot name="before-description" />
 
     <hr class="mr-4 header-rule" />
@@ -99,7 +109,7 @@ import { ClockIcon, GitForkIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import type { IssueDuplicateTarget } from '#shared/types/issues';
+import type { IssueDuplicateTarget, IssueReferenceTarget } from '#shared/types/issues';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import ReferenceSubject from '~/components/dashboard/timeline/ReferenceSubject.vue';
@@ -122,6 +132,7 @@ interface IssueHeaderIssue {
   state?: string;
   state_reason?: string | null;
   duplicate_of?: IssueDuplicateTarget | null;
+  parent_issue?: IssueReferenceTarget | null;
   updated_at?: string;
   user?: {
     avatar_url?: string | null;
@@ -140,10 +151,16 @@ const { issue, repoOwner, repoName } = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
+  (
+    e: 'switch-issue',
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    openInOverlay?: boolean
+  ): void;
 }>();
 
-const isOtherRepository = ({ repository }: IssueDuplicateTarget) =>
+const isOtherRepository = ({ repository }: IssueReferenceTarget) =>
   repository.owner.login.toLowerCase() !== repoOwner.toLowerCase() ||
   repository.name.toLowerCase() !== repoName.toLowerCase();
 

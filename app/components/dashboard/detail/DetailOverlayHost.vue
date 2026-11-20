@@ -108,7 +108,13 @@ const {
 const emit = defineEmits<{
   (e: 'back'): void;
   (e: 'home'): void;
-  (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
+  (
+    e: 'switch-issue',
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    openInOverlay?: boolean
+  ): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
   (e: 'switch-discussion', owner: string, repo: string, discussionNumber: number): void;
   (e: 'open-issue', item: DashboardIssuePrEntity): void;
@@ -340,8 +346,14 @@ const detailSummary = computed<DetailSummary | null>(() => {
   return null;
 });
 
-const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
-  emit('switch-issue', owner, repo, issueNumber);
+const handleSwitchIssue = (
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  openInOverlay?: boolean
+) => {
+  if (openInOverlay) emit('switch-issue', owner, repo, issueNumber, true);
+  else emit('switch-issue', owner, repo, issueNumber);
 };
 
 const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number) => {
@@ -545,6 +557,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
                 :detail-sidebar-hidden="isDetailSidebarHidden"
                 @open-issue="emit('open-issue', $event)"
                 @open-pull-request="emit('open-pull-request', $event)"
+                @switch-issue="handleSwitchIssue"
                 @switch-pull-request="handleSwitchPullRequest"
               />
               <template #fallback>

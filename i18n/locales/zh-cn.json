@@ -693,6 +693,22 @@
     "meta": {
       "commentCount": "{count} 条评论"
     },
+    "subIssues": {
+      "title": "子议题",
+      "parent": "父议题",
+      "progress": "已完成 {completed}/{total} 个子议题",
+      "loading": "正在加载子议题…",
+      "error": "无法加载子议题。",
+      "empty": "没有可显示的子议题。",
+      "retry": "重试",
+      "close": "关闭",
+      "states": {
+        "open": "打开",
+        "completed": "已完成",
+        "notPlanned": "不计划处理",
+        "closed": "已关闭"
+      }
+    },
     "linkedPullRequests": {
       "count": "{count} 个链接的拉取请求",
       "pickerTitle": "链接的拉取请求",

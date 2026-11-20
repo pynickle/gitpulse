@@ -6,6 +6,7 @@ import { getDashboardSubjectStateVisual } from '../app/utils/getDashboardSubject
 import { shouldShowNotificationSubjectNumber } from '../app/utils/shouldShowNotificationSubjectNumber';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as subIssues from '../shared/utils/sub-issues';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -18,7 +19,9 @@ const NotificationItem = await compileVue(
     '@lucide/vue': new Proxy({}, { get: () => icon }),
     '#shared/utils/linked-pull-requests': linkedPullRequests,
     '#shared/utils/pr-checks': prChecks,
+    '#shared/utils/sub-issues': subIssues,
     '~/components/dashboard/issue/IssueTypeBadge.vue': stub,
+    '~/components/dashboard/issue/SubIssueProgressControl.vue': stub,
     '~/components/dashboard/LinkedPullRequestCountControl.vue': stub,
     '~/components/dashboard/pr/CheckStatusChip.vue': stub,
     '~/components/ui/GitHubAvatar.vue': stub,

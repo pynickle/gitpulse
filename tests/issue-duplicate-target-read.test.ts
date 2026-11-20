@@ -63,6 +63,11 @@ mock.module(
   '#server/utils/issue-duplicate-target-utils',
   () => import('../server/utils/issue-duplicate-target-utils')
 );
+mock.module('#shared/utils/sub-issues', () => import('../shared/utils/sub-issues'));
+mock.module(
+  '#server/utils/sub-issue-graphql-utils',
+  () => import('../server/utils/sub-issue-graphql-utils')
+);
 
 const detail = (await import('../server/api/issues/[owner]/[repo]/[issue_number].get')).default;
 const timeline = (await import('../server/api/issues/[owner]/[repo]/[issue_number]/timeline.get'))
@@ -134,6 +139,24 @@ test('an Issue closed for another reason asks GitHub for no Duplicate Target', a
 
   expect(body.duplicate_of).toBeUndefined();
   expect(graphqlCalls).toEqual([]);
+});
+
+test('Issue detail returns its parent reference and the REST sub-issue counts', async () => {
+  restResponses = {
+    'GET /repos/{owner}/{repo}/issues/{issue_number}': {
+      number: 7,
+      state: 'open',
+      parent_issue_url: 'https://api.github.com/repos/other/lib/issues/42',
+      sub_issues_summary: { completed: 1, total: 3, percent_completed: 33 },
+    },
+  };
+  graphqlResponse = () => ({ repository: { issue: { parent: canonical } } });
+
+  const { status, body } = await getJson('/api/issues/acme/widgets/7');
+
+  expect(status).toBe(200);
+  expect(body.parent_issue).toEqual(duplicateTarget);
+  expect(body.sub_issues_summary).toMatchObject({ completed: 1, total: 3 });
 });
 
 test('a duplicate close event in the timeline links to its cross-repository target', async () => {

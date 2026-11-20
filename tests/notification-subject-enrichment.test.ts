@@ -3,9 +3,11 @@ import { describe, expect, mock, test } from 'bun:test';
 import { parseGitHubNotificationSubjectTarget } from '../app/utils/parseGitHubNotificationSubjectTarget';
 import type { DashboardNotification } from '../shared/types/notifications';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+import * as subIssues from '../shared/utils/sub-issues';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+mock.module('#shared/utils/sub-issues', () => subIssues);
 
 const { createNotificationSubjectEnrichmentSession } =
   await import('../app/composables/notification-subject-enrichment/session');
@@ -246,11 +248,12 @@ describe('Notification Subject Enrichment', () => {
     expect(outcome.notifications[0]?.subject?.stateStatus).toBe('error');
   });
 
-  test('loads Linked Pull Request Count and identity onto Issue Notifications only', async () => {
+  test('loads development links and sub-issue progress onto Issue Notifications only', async () => {
     const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
       {
         key: 'acme/widgets/issues/7',
         title: 'Has a linked pull request',
+        subIssuesSummary: { completed: 1, total: 2 },
         state: 'open',
         linkedPullRequestCount: 1,
         linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 9 },
@@ -259,6 +262,7 @@ describe('Notification Subject Enrichment', () => {
         key: 'acme/widgets/pulls/2',
         title: 'Pull request',
         state: 'open',
+        subIssuesSummary: { completed: 2, total: 2 },
         linkedPullRequestCount: 4,
         linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 1 },
       },
@@ -279,6 +283,7 @@ describe('Notification Subject Enrichment', () => {
     expect(outcome.notifications[0]?.subject).toMatchObject({
       linkedPullRequestCount: 1,
       linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 9 },
+      subIssuesSummary: { completed: 1, total: 2 },
       stateStatus: 'loaded',
     });
     expect(outcome.notifications[1]?.subject).toMatchObject({
@@ -287,6 +292,7 @@ describe('Notification Subject Enrichment', () => {
     });
     expect(outcome.notifications[1]?.subject).not.toHaveProperty('linkedPullRequestCount');
     expect(outcome.notifications[1]?.subject).not.toHaveProperty('linkedPullRequest');
+    expect(outcome.notifications[1]?.subject).not.toHaveProperty('subIssuesSummary');
   });
 
   test('loads more targets than one adapter batch accepts', async () => {

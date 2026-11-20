@@ -1,6 +1,7 @@
 import type { IssueTypeSummary } from './issues';
 import type { LinkedPullRequestIdentity } from './linked-pull-requests';
 import type { PullRequestCheckRollup } from './pr-checks';
+import type { SubIssueProgress } from './sub-issues';
 
 // Known kinds stay listed for autocomplete; GitHub may add more.
 export type NotificationSubjectKind =
@@ -40,6 +41,7 @@ export interface DashboardNotificationSubject {
   linkedPullRequestCount?: number;
   /** Present only when Linked Pull Request Count is 1 and routing identity is complete. */
   linkedPullRequest?: LinkedPullRequestIdentity;
+  subIssuesSummary?: SubIssueProgress;
   /** Check Rollup for PullRequests after Notification Subject Enrichment. */
   checkRollup?: PullRequestCheckRollup;
 }
@@ -91,6 +93,7 @@ export interface NotificationSubjectEnrichmentResult {
   linkedPullRequestCount?: number;
   /** Present only when Count is 1 and owner, repository, and number are all present. */
   linkedPullRequest?: LinkedPullRequestIdentity;
+  subIssuesSummary?: SubIssueProgress;
   /** Check Rollup. Present on Pull Request results only. */
   checkRollup?: PullRequestCheckRollup;
 }

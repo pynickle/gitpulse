@@ -693,6 +693,22 @@
     "meta": {
       "commentCount": "{count} comments"
     },
+    "subIssues": {
+      "title": "Sub-issues",
+      "parent": "Parent issue",
+      "progress": "{completed} of {total} sub-issues completed",
+      "loading": "Loading sub-issues…",
+      "error": "Could not load sub-issues.",
+      "empty": "No sub-issues to display.",
+      "retry": "Retry",
+      "close": "Close",
+      "states": {
+        "open": "Open",
+        "completed": "Completed",
+        "notPlanned": "Not planned",
+        "closed": "Closed"
+      }
+    },
     "linkedPullRequests": {
       "count": "{count} linked pull requests",
       "pickerTitle": "Linked pull requests",

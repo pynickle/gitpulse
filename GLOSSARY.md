@@ -183,6 +183,26 @@ _Avoid_: development section, linked PRs panel, Picker when referring to the pag
 The reader's choice to open the Linked Pull Request Picker when an Issue has exactly one Linked Pull Request with a complete routing identity. Previewing is the default.
 _Avoid_: single-PR confirmation, chooser setting
 
+**Parent Issue**:
+The Issue directly above a Sub-issue in an issue hierarchy. An Issue has at most one Parent Issue, which may belong to the same repository or another repository with the same owner.
+_Avoid_: epic, super-issue, parent task
+
+**Sub-issue**:
+An Issue attached directly under another Issue in an issue hierarchy, ordered by the parent's priority order. A Sub-issue may belong to the same repository or another repository with the same owner.
+_Avoid_: child issue, sub-task, nested task
+
+**Sub-issue Progress**:
+The completion summary of an Issue's direct Sub-issues: how many are closed out of how many exist in total. Absent when the Issue has no direct Sub-issues.
+_Avoid_: sub-issue count, subtask progress, child count
+
+**Sub-issue List**:
+An Issue's direct Sub-issues rendered inside its own Detail Overlay below the description and reactions, preserving GitHub's priority order in a collapsible section.
+_Avoid_: sub-issues panel, child issues list, Picker when referring to the page's own list
+
+**Sub-issue Picker**:
+A modal opened from a list card's Sub-issue Progress control that lists an Issue's direct Sub-issues so the reader can open one.
+_Avoid_: sub-issue modal, child chooser
+
 ## Timelines
 
 **Grouped Timeline Activity**:

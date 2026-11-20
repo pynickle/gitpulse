@@ -551,10 +551,15 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     );
   };
 
-  const handleSwitchIssue = async (owner: string, repo: string, issueNumber: number) => {
+  const handleSwitchIssue = async (
+    owner: string,
+    repo: string,
+    issueNumber: number,
+    openInOverlay = false
+  ) => {
     if (!owner || !repo || !issueNumber) return;
 
-    if (opensGitHubLinks.value) {
+    if (!openInOverlay && opensGitHubLinks.value) {
       openGitHubTarget(createDashboardIssueTarget(owner, repo, issueNumber));
       return;
     }

@@ -130,6 +130,13 @@
                     @click="handleLinkedPullRequestCountClick"
                   />
                 </template>
+                <template v-if="subIssueProgress && issueIdentity">
+                  <span class="dashboard-list-card__separator">&middot;</span>
+                  <SubIssueProgressControl
+                    :progress="subIssueProgress"
+                    @open="emit('sub-issues-open', issueIdentity)"
+                  />
+                </template>
               </p>
             </div>
 
@@ -219,9 +226,12 @@ import { ref, computed } from 'vue';
 
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
 import type { DashboardNotification } from '#shared/types/notifications';
+import type { SubIssueIdentity } from '#shared/types/sub-issues';
 import { toLinkedPullRequestIdentity } from '#shared/utils/linked-pull-requests';
 import { toPullRequestChecksView } from '#shared/utils/pr-checks';
+import { readSubIssueProgress } from '#shared/utils/sub-issues';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
+import SubIssueProgressControl from '~/components/dashboard/issue/SubIssueProgressControl.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -251,6 +261,7 @@ const {
 const emit = defineEmits<{
   'todo-action': [notification: DashboardNotification];
   'linked-pull-request-count-click': [payload: LinkedPullRequestCountClickPayload];
+  'sub-issues-open': [issue: SubIssueIdentity];
 }>();
 
 const { locale, t } = useI18n();
@@ -322,6 +333,9 @@ const subjectLabels = computed(() => subject.value?.labels ?? []);
 const subjectIssueType = computed(() =>
   subject.value?.type === 'Issue' ? subject.value.issueType : undefined
 );
+const subIssueProgress = computed(() =>
+  subject.value?.type === 'Issue' ? readSubIssueProgress(subject.value.subIssuesSummary) : null
+);
 
 const subjectComments = computed(() => {
   const count = subject.value?.comments;
@@ -345,7 +359,7 @@ const showLinkedPullRequestCount = computed(() => {
   const count = linkedPullRequestSummary.value?.count;
   return typeof count === 'number' && count > 0;
 });
-const linkedPullRequestIssue = computed(() => {
+const issueIdentity = computed(() => {
   const target = parseGitHubNotificationSubjectTarget(subject.value);
   return toLinkedPullRequestIdentity({
     owner: target?.owner,
@@ -358,7 +372,7 @@ const handleLinkedPullRequestCountClick = () => {
   if (!summary) return;
   emit('linked-pull-request-count-click', {
     summary,
-    issue: linkedPullRequestIssue.value,
+    issue: issueIdentity.value,
   });
 };
 const checkRollup = computed(() => subject.value?.checkRollup);

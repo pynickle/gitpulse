@@ -4,15 +4,18 @@ import * as githubGraphqlUtils from '../server/utils/github-graphql-utils';
 import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as subIssues from '../shared/utils/sub-issues';
 
 mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#shared/types/linked-pull-requests', () => linkedPullRequestTypes);
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/pr-checks', () => prChecks);
+mock.module('#shared/utils/sub-issues', () => subIssues);
 
 const validationUtils = await import('../server/utils/notification-subject-state-validation-utils');
 const linkedPullRequestGraphql = await import('../server/utils/linked-pull-request-graphql-utils');
 const checkRollupGraphql = await import('../server/utils/pr-check-rollup-graphql-utils');
+const subIssueGraphql = await import('../server/utils/sub-issue-graphql-utils');
 
 let requestBody: unknown;
 let graphQLRequest: (query: string, variables: Record<string, unknown>) => Promise<unknown>;
@@ -39,6 +42,7 @@ let routedError: unknown;
 mock.module('#server/utils/notification-subject-state-validation-utils', () => validationUtils);
 mock.module('#server/utils/linked-pull-request-graphql-utils', () => linkedPullRequestGraphql);
 mock.module('#server/utils/pr-check-rollup-graphql-utils', () => checkRollupGraphql);
+mock.module('#server/utils/sub-issue-graphql-utils', () => subIssueGraphql);
 mock.module('#server/utils/github-auth-utils', () => ({
   throwGitHubRouteError: (error: unknown) => {
     routedError = error;
@@ -199,7 +203,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
     expect(response.items[2]).not.toHaveProperty('linkedPullRequestCount');
   });
 
-  test('attaches Linked Pull Request Count and optional identity on Issue results', async () => {
+  test('attaches development links and sub-issue progress on Issue results', async () => {
     requestBody = { targets: [targets[0]] };
     graphQLRequest = async (query) => {
       expect(query).toContain('includeClosedPrs: true');
@@ -207,6 +211,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
         subject0: {
           issue: {
             title: 'Issue with Development links',
+            subIssuesSummary: { completed: 2, total: 5 },
             updatedAt: '2026-08-12T01:00:00.000Z',
             state: 'OPEN',
             comments: { totalCount: 1 },
@@ -232,6 +237,7 @@ describe('Notification Subject Enrichment server endpoint', () => {
       title: 'Issue with Development links',
       linkedPullRequestCount: 1,
       linkedPullRequest: { owner: 'acme', repo: 'widgets', number: 44 },
+      subIssuesSummary: { completed: 2, total: 5 },
     });
   });
 

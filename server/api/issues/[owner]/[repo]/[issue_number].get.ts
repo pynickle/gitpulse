@@ -1,6 +1,7 @@
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
 import { fetchIssueDuplicateTarget } from '#server/utils/issue-duplicate-target-utils';
+import { fetchIssueParentTarget } from '#server/utils/sub-issue-graphql-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
@@ -40,15 +41,20 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
     ]);
 
-    const duplicateOf =
+    const [duplicateOf, parentIssue] = await Promise.all([
       issue.data.state_reason === 'duplicate'
-        ? await fetchIssueDuplicateTarget(octokit, owner, repo, issueNumber)
-        : undefined;
+        ? fetchIssueDuplicateTarget(octokit, owner, repo, issueNumber)
+        : undefined,
+      issue.data.parent_issue_url
+        ? fetchIssueParentTarget(octokit, owner, repo, issueNumber)
+        : undefined,
+    ]);
 
     return {
       ...issue.data,
       reactions: reactionSummary.items,
       ...(duplicateOf ? { duplicate_of: duplicateOf } : {}),
+      ...(parentIssue ? { parent_issue: parentIssue } : {}),
     };
   } catch (error: unknown) {
     console.error('Error fetching GitHub issue:', error);

@@ -8,6 +8,7 @@ import {
 } from '../app/utils/createEmptyRepoPermissions';
 import { formatPageMetaDescription } from '../app/utils/formatPageMetaDescription';
 import { parseGitHubRepoPath } from '../app/utils/parseGitHubRepoPath';
+import * as subIssues from '../shared/utils/sub-issues';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -80,6 +81,8 @@ const IssueDetail = await compileVue(
     '~/components/dashboard/detail/DetailLabels.vue': { default: emptyStub },
     '~/components/dashboard/issue/IssueActions.vue': { default: IssueActions },
     '~/components/dashboard/issue/IssueHeader.vue': { default: IssueHeader },
+    '#shared/utils/sub-issues': subIssues,
+    '~/components/dashboard/issue/SubIssueList.vue': { default: emptyStub },
     '~/components/dashboard/issue/IssueTimelineEvents.vue': { default: emptyStub },
     '~/components/dashboard/issue/IssueTypeCard.vue': { default: emptyStub },
     '~/components/dashboard/issue/LinkedPullRequestList.vue': { default: LinkedPullRequestList },

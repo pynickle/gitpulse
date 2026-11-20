@@ -5,6 +5,7 @@ import type {
 } from '#shared/types/notifications';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
+import { readSubIssueProgress } from '#shared/utils/sub-issues';
 
 interface ParsedNotificationSubjectTarget {
   owner: string;
@@ -162,6 +163,8 @@ const toValidResult = (
   if (target.type === 'issues' && value.linkedPullRequestCount !== undefined && !linkedSummary) {
     return null;
   }
+  const subIssuesSummary =
+    target.type === 'issues' ? readSubIssueProgress(value.subIssuesSummary) : null;
 
   const checkRollup = value.checkRollup;
   if (checkRollup !== undefined && !isRecord(checkRollup)) {
@@ -191,6 +194,7 @@ const toValidResult = (
         }
       : {}),
     ...(checkRollup !== undefined ? { checkRollup: checkRollup as PullRequestCheckRollup } : {}),
+    ...(subIssuesSummary ? { subIssuesSummary } : {}),
   };
 };
 
@@ -218,6 +222,7 @@ const mergeEnrichmentResults = (
       linkedPullRequestCount: _previousCount,
       linkedPullRequest: _previousIdentity,
       checkRollup: _previousCheckRollup,
+      subIssuesSummary: _previousSubIssuesSummary,
       ...subjectWithoutAttachedData
     } = notification.subject;
 
@@ -243,6 +248,7 @@ const mergeEnrichmentResults = (
             }
           : {}),
         ...(result.checkRollup !== undefined ? { checkRollup: result.checkRollup } : {}),
+        ...(result.subIssuesSummary ? { subIssuesSummary: result.subIssuesSummary } : {}),
         stateStatus: 'loaded' as const,
       },
     };

@@ -5,6 +5,7 @@
 import type { IssueAssigneeUser } from './assignees';
 import type { RepositoryLabel } from './labels';
 import type { ReactionSummaryItem } from './reactions';
+import type { SubIssueProgress } from './sub-issues';
 
 export type GitHubIssueTypeColor =
   | 'gray'
@@ -33,8 +34,8 @@ export interface GitHubIssueType extends IssueTypeSummary {
 
 export type IssueCloseReason = 'completed' | 'not_planned' | 'duplicate';
 
-/** The Issue a closed duplicate points to, in the timeline reference shape. */
-export interface IssueDuplicateTarget {
+/** Issue reference used by the timeline, a Parent Issue, or a Duplicate Target. */
+export interface IssueReferenceTarget {
   resourceType: 'issue';
   number: number;
   title?: string;
@@ -43,12 +44,16 @@ export interface IssueDuplicateTarget {
   repository: { name: string; nameWithOwner: string; owner: { login: string } };
 }
 
+export type IssueDuplicateTarget = IssueReferenceTarget;
+
 export interface IssueDetailPayload {
   id: number;
   number: number;
   state: string;
   state_reason?: string | null;
   duplicate_of?: IssueDuplicateTarget | null;
+  parent_issue?: IssueReferenceTarget | null;
+  sub_issues_summary?: SubIssueProgress | null;
   title: string;
   body?: string | null;
   html_url?: string;

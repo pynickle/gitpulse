@@ -170,6 +170,7 @@
                         todo-action="remove"
                         @todo-action="removeNotificationTodo(todo.id)"
                         @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                        @sub-issues-open="openSubIssuePicker"
                       />
                     </div>
                   </template>
@@ -204,6 +205,7 @@
                           :hide-todo-control="replacesTodoControl"
                           @todo-action="toggleNotificationTodo"
                           @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                          @sub-issues-open="openSubIssuePicker"
                         />
                       </NotificationTodoSwipeRow>
                     </div>
@@ -226,6 +228,7 @@
                         "
                         :item="issue"
                         @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                        @sub-issues-open="openSubIssuePicker"
                       />
                       <AsyncGenericSearchItem
                         v-else
@@ -248,6 +251,7 @@
                       <AsyncIssuePrNotificationItem
                         :item="issue"
                         @linked-pull-request-count-click="handleLinkedPullRequestCountClick"
+                        @sub-issues-open="openSubIssuePicker"
                       />
                     </div>
                   </template>
@@ -418,6 +422,12 @@
     @close="closeLinkedPullRequestPicker"
     @select="selectLinkedPullRequestFromPicker"
   />
+  <SubIssuePickerModal
+    v-if="subIssuePickerIssue"
+    :issue="subIssuePickerIssue"
+    @close="closeSubIssuePicker"
+    @select="selectSubIssueFromPicker"
+  />
 
   <CheckListModal :is-visible="isCheckListVisible" :view="checkListView" @close="closeCheckList" />
 
@@ -511,6 +521,9 @@ const loadCheckListModal = () => import('~/components/dashboard/pr/CheckListModa
 const loadRepoFileView = () => import('~/components/dashboard/repo-files/RepoFileView.vue');
 const FilterModal = defineAsyncComponent(loadFilterModal);
 const LinkedPullRequestPickerModal = defineAsyncComponent(loadLinkedPullRequestPickerModal);
+const SubIssuePickerModal = defineAsyncComponent(
+  () => import('~/components/dashboard/issue/SubIssuePickerModal.vue')
+);
 const CheckListModal = defineAsyncComponent(loadCheckListModal);
 const RepoFileView = defineAsyncComponent(loadRepoFileView);
 
@@ -1225,9 +1238,14 @@ const handlePROpen = (...args: Parameters<typeof openPR>) => {
   openPR(...args);
 };
 
-const handleSwitchIssueFromDetail = (owner: string, repo: string, issueNumber: number) => {
+const handleSwitchIssueFromDetail = (
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  openInOverlay?: boolean
+) => {
   clearSourceNotification();
-  handleSwitchIssue(owner, repo, issueNumber);
+  handleSwitchIssue(owner, repo, issueNumber, openInOverlay);
 };
 
 const handleSwitchPRFromDetail = (owner: string, repo: string, pullNumber: number) => {
@@ -1244,6 +1262,14 @@ const {
 } = useLinkedPullRequestListNavigation((identity) => {
   clearSourceNotification();
   handleSwitchPR(identity.owner, identity.repo, identity.number);
+});
+const {
+  pickerIssue: subIssuePickerIssue,
+  openPicker: openSubIssuePicker,
+  closePicker: closeSubIssuePicker,
+  selectFromPicker: selectSubIssueFromPicker,
+} = useSubIssuePickerNavigation(({ owner, repo, number }) => {
+  handleSwitchIssueFromDetail(owner, repo, number, true);
 });
 
 const {

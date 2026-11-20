@@ -260,6 +260,9 @@ const notificationSubjectSchema = z.strictObject({
   authorLogin: optionalNonEmptyStringSchema,
   authorAvatarUrl: optionalLongNonEmptyStringSchema,
   linkedPullRequestCount: z.number().int().nonnegative().optional(),
+  subIssuesSummary: z
+    .strictObject({ completed: z.number().int().nonnegative(), total: z.number().int().positive() })
+    .optional(),
   linkedPullRequest: z
     .strictObject({
       owner: nonEmptyStringSchema,

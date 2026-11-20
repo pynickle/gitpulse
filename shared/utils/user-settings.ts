@@ -76,6 +76,7 @@ import {
   TAB_SIDEBAR_WIDTH_MIN,
 } from '../types/user-settings';
 import { cloneFollowedRepositories, normalizeFollowedRepositories } from './release-follows';
+import { readSubIssueProgress } from './sub-issues';
 
 const APP_FONTS = new Set<AppFontId>(APP_FONT_IDS);
 const CODE_FONTS = new Set<CodeFontId>(CODE_FONT_IDS);
@@ -418,6 +419,7 @@ const normalizeDashboardNotificationSubject = (
     authorAvatarUrl: normalizeString(candidate.authorAvatarUrl, 1000),
     linkedPullRequestCount: normalizeNonNegativeCount(candidate.linkedPullRequestCount),
     linkedPullRequest: normalizeLinkedPullRequestIdentity(candidate.linkedPullRequest),
+    subIssuesSummary: readSubIssueProgress(candidate.subIssuesSummary) ?? undefined,
   };
 };
 

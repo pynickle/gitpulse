@@ -2,6 +2,7 @@
 import { TriangleExclamationPointIcon, LoaderCircleIcon } from '@lucide/vue';
 
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
+import type { SubIssueIdentity } from '#shared/types/sub-issues';
 import IssuePrNotificationItem from '~/components/dashboard/IssuePrNotificationItem.vue';
 import Button from '~/components/ui/Button.vue';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
@@ -19,6 +20,7 @@ const emit = defineEmits<{
   select: [item: DashboardIssuePrEntity];
   retry: [];
   'linked-pull-request-count-click': [payload: LinkedPullRequestCountClickPayload];
+  'sub-issues-open': [issue: SubIssueIdentity];
 }>();
 
 const { t } = useI18n();
@@ -74,6 +76,7 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
           <IssuePrNotificationItem
             :item="item"
             @linked-pull-request-count-click="emit('linked-pull-request-count-click', $event)"
+            @sub-issues-open="emit('sub-issues-open', $event)"
           />
         </div>
       </div>

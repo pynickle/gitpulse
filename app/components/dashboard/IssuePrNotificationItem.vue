@@ -111,6 +111,13 @@
                     @click="handleLinkedPullRequestCountClick"
                   />
                 </template>
+                <template v-if="subIssueProgress && issueIdentity">
+                  <span class="dashboard-list-card__separator">&middot;</span>
+                  <SubIssueProgressControl
+                    :progress="subIssueProgress"
+                    @open="emit('sub-issues-open', issueIdentity)"
+                  />
+                </template>
               </p>
             </div>
           </div>
@@ -125,12 +132,15 @@ import { MessageSquareIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
 import type { LinkedPullRequestCountClickPayload } from '#shared/types/linked-pull-requests';
+import type { SubIssueIdentity } from '#shared/types/sub-issues';
 import {
   readLinkedPullRequestListSummary,
   toLinkedPullRequestIdentity,
 } from '#shared/utils/linked-pull-requests';
 import { toPullRequestChecksView } from '#shared/utils/pr-checks';
+import { readSubIssueProgress } from '#shared/utils/sub-issues';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
+import SubIssueProgressControl from '~/components/dashboard/issue/SubIssueProgressControl.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -143,6 +153,7 @@ const { item } = defineProps<{
 
 const emit = defineEmits<{
   'linked-pull-request-count-click': [payload: LinkedPullRequestCountClickPayload];
+  'sub-issues-open': [issue: SubIssueIdentity];
 }>();
 
 const { locale, t } = useI18n();
@@ -151,6 +162,9 @@ const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 
 const card = computed(() => toDashboardIssuePrCard(item));
+const subIssueProgress = computed(() =>
+  card.value.subjectType === 'Issue' ? readSubIssueProgress(item.sub_issues_summary) : null
+);
 
 const commentsLabel = computed(() => {
   if (card.value.comments === null) return '';
@@ -169,7 +183,7 @@ const showLinkedPullRequestCount = computed(() => {
   const count = linkedPullRequestSummary.value?.count;
   return typeof count === 'number' && count > 0;
 });
-const linkedPullRequestIssue = computed(() => {
+const issueIdentity = computed(() => {
   const repoPath = parseGitHubRepoPath(item.repository_url);
   return toLinkedPullRequestIdentity({
     owner: repoPath?.owner,
@@ -182,7 +196,7 @@ const handleLinkedPullRequestCountClick = () => {
   if (!summary) return;
   emit('linked-pull-request-count-click', {
     summary,
-    issue: linkedPullRequestIssue.value,
+    issue: issueIdentity.value,
   });
 };
 
