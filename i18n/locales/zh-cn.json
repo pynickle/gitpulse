@@ -246,6 +246,8 @@
     "failedToUnlockIssue": "解锁议题失败",
     "closeIssue": "关闭议题",
     "reopenIssue": "重新打开议题",
+    "reopenIssueConfirm": "重新打开此议题？",
+    "reopening": "正在重新打开...",
     "failedToCloseIssue": "关闭议题失败",
     "failedToReopenIssue": "重新打开议题失败",
     "closing": "关闭中...",

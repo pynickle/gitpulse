@@ -61,6 +61,7 @@ const IssueActions = await compileVue(
     '~/utils/getFetchErrorMessage': { getFetchErrorMessage },
     './LockReasonModal.vue': { default: icon },
     './IssueCloseModal.vue': { default: IssueCloseModal },
+    './IssueOptionModal.vue': { default: icon },
     'test/stubs': stubs,
   },
   {

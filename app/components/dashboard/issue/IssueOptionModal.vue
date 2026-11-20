@@ -6,6 +6,7 @@
           ref="panelRef"
           class="label-editor-panel"
           role="dialog"
+          aria-modal="true"
           :aria-labelledby="titleId"
           @keydown="handleKeydown"
         >
@@ -22,7 +23,10 @@
             </button>
           </div>
 
-          <ScrollArea class="label-editor-content">
+          <ScrollArea
+            v-if="error || loadingLabel || options.length > 0 || emptyMessage"
+            class="label-editor-content"
+          >
             <div v-if="error" class="label-editor-error">
               <CircleExclamationPointIcon :size="14" />
               <span>{{ error }}</span>
@@ -40,7 +44,7 @@
               <span>{{ loadingLabel }}</span>
             </div>
 
-            <div v-else class="label-editor-list">
+            <div v-else-if="options.length > 0 || emptyMessage" class="label-editor-list">
               <label v-for="option in options" :key="option.value" class="issue-option-row">
                 <input
                   v-model="selectedValue"
@@ -94,10 +98,14 @@ import { ref, useId } from 'vue';
 
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
-const { isVisible, saving } = defineProps<{
+const {
+  isVisible,
+  saving,
+  options = [],
+} = defineProps<{
   isVisible: boolean;
   title: string;
-  options: { value: string; label: string; description?: string | null; color?: string }[];
+  options?: { value: string; label: string; description?: string | null; color?: string }[];
   cancelLabel: string;
   confirmLabel: string;
   confirmDisabled?: boolean;
@@ -113,7 +121,7 @@ const emit = defineEmits<{
   'dismiss-error': [];
 }>();
 
-const selectedValue = defineModel<string>({ required: true });
+const selectedValue = defineModel<string>({ default: '' });
 const panelRef = ref<HTMLElement | null>(null);
 const titleId = useId();
 

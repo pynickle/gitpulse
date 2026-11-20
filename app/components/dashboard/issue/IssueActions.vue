@@ -32,7 +32,10 @@
             <XIcon :size="12" />
           </button>
         </div>
-        <div v-if="stateError && !showCloseModal" class="sidebar-alert sidebar-alert--error">
+        <div
+          v-if="stateError && !showCloseModal && !showReopenModal"
+          class="sidebar-alert sidebar-alert--error"
+        >
           <CircleExclamationPointIcon :size="14" />
           <span>{{ stateError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearStateError">
@@ -46,7 +49,7 @@
             class="sidebar-action-btn"
             :class="isClosed ? 'sidebar-action-btn--reopen' : 'sidebar-action-btn--close'"
             :disabled="loadingState"
-            @click="isClosed ? reopenIssue() : openCloseModal()"
+            @click="isClosed ? openReopenModal() : openCloseModal()"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
               <LoaderCircleIcon v-if="loadingState" class="spin-animation" :size="14" />
@@ -130,6 +133,19 @@
       @confirm="confirmCloseIssue"
       @dismiss-error="clearStateError"
     />
+
+    <IssueOptionModal
+      v-if="repoInfo && issueNumber"
+      :is-visible="showReopenModal"
+      :title="t('issueDetail.reopenIssueConfirm')"
+      :cancel-label="t('issueDetail.cancel')"
+      :confirm-label="loadingState ? t('issueDetail.reopening') : t('issueDetail.reopenIssue')"
+      :saving="loadingState"
+      :error="stateError"
+      @close="closeReopenModal"
+      @confirm="confirmReopenIssue"
+      @dismiss-error="clearStateError"
+    />
   </div>
 </template>
 
@@ -159,6 +175,7 @@ import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 import IssueCloseModal from './IssueCloseModal.vue';
+import IssueOptionModal from './IssueOptionModal.vue';
 import LockReasonModal from './LockReasonModal.vue';
 
 const { canLockIssue, canManageState, issueState, repoInfo, issueNumber, sourceNotification } =
@@ -270,6 +287,7 @@ const updateIssueState = async (
       createdAt: new Date().toISOString(),
     });
     showCloseModal.value = false;
+    showReopenModal.value = false;
   } catch (err: unknown) {
     console.error('Error updating issue state:', err);
     stateError.value = getFetchErrorMessage(
@@ -284,7 +302,19 @@ const updateIssueState = async (
   }
 };
 
-const reopenIssue = () => updateIssueState('open');
+const showReopenModal = ref(false);
+
+const openReopenModal = () => {
+  clearStateError();
+  showReopenModal.value = true;
+};
+
+const closeReopenModal = () => {
+  clearStateError();
+  showReopenModal.value = false;
+};
+
+const confirmReopenIssue = () => updateIssueState('open');
 
 const showCloseModal = ref(false);
 

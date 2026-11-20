@@ -246,6 +246,8 @@
     "failedToUnlockIssue": "Failed to unlock issue",
     "closeIssue": "Close Issue",
     "reopenIssue": "Reopen Issue",
+    "reopenIssueConfirm": "Reopen this issue?",
+    "reopening": "Reopening...",
     "failedToCloseIssue": "Failed to close issue",
     "failedToReopenIssue": "Failed to reopen issue",
     "closing": "Closing...",
