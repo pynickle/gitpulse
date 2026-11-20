@@ -174,7 +174,10 @@ void main() {
       'linkTarget': 'github',
       'previewSingleLinkedPullRequest': true,
     });
-    expect(settings['releaseTimeline'], {'showReactions': false});
+    expect(settings['releaseTimeline'], {
+      'showReactions': false,
+      'showAssetsCount': false,
+    });
     await facade.unfollow('R_web');
     settings = (await web.get<Map<String, dynamic>>('api/settings')).data!;
     expect(
