@@ -1627,6 +1627,7 @@ watch(
   // 0.25rem margin. That leaves the panel 0.75rem on the left and top, ~1.4rem right.
   .dashboard-list-row,
   :deep(.dashboard-loading-list > .mb-4) {
+    margin-block-end: 0.5rem !important;
     margin-right: var(--gitpulse-scrollbar-track-size) !important;
   }
 

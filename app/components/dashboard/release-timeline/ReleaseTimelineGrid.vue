@@ -572,6 +572,12 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+@media (max-width: 860px) {
+  .release-timeline-grid__cards {
+    row-gap: 0.5rem;
+  }
+}
+
 @media (max-width: 700px) {
   .release-timeline-grid {
     padding: 0.85rem 0.9rem 1.25rem;
