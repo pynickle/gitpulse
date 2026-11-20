@@ -1206,10 +1206,15 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
 
+  // The starred / watching wash is its own state. The idle hover must not
+  // reach it, or the accent border and label drain to the neutral hover.
   @include hover-only {
-    &:hover:not(:disabled) {
+    &:hover:not(:disabled):not(&--active) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
       color: var(--bulma-text-strong, var(--gitpulse-text-strong));
@@ -1228,7 +1233,9 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
     @include hover-only {
       &:hover:not(:disabled) {
-        background: var(--gitpulse-surface-active);
+        background: color-mix(in srgb, var(--gitpulse-accent) 22%, var(--gitpulse-surface));
+        border-color: var(--gitpulse-accent);
+        color: var(--gitpulse-accent);
       }
     }
   }
@@ -1263,17 +1270,30 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   font-size: 12px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.1s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
 
+  // surface-hover is nearly the panel color in light mode, so a row hover
+  // painted with it reads as nothing. The current choice keeps its accent
+  // and only deepens, instead of swapping to that wash.
   @include hover-only {
-    &:hover {
-      background: var(--gitpulse-surface-hover);
+    &:hover:not(&--active) {
+      background: var(--gitpulse-surface-active);
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
     }
   }
 
   &--active {
     background: var(--gitpulse-surface-active);
     color: var(--gitpulse-accent);
+
+    @include hover-only {
+      &:hover {
+        background: color-mix(in srgb, var(--gitpulse-accent) 22%, var(--gitpulse-surface));
+        color: var(--gitpulse-accent);
+      }
+    }
   }
 
   &:first-child {
