@@ -14,6 +14,8 @@ import type {
   TimelineStateChange,
 } from '~/composables/usePRTimelineEvents';
 
+import { groupAdjacentTimelineItems } from '../utils/groupAdjacentTimelineItems';
+
 export interface IssueTimelineItem {
   moderation?: CommentModeration;
   kind: 'comment' | 'event' | 'commit' | 'unsupported' | 'unavailable';
@@ -62,6 +64,7 @@ export interface IssueTimelineItem {
 
 export interface ProcessedIssueTimelineItem extends IssueTimelineItem {
   renderKey: string;
+  groupedEvents?: ProcessedIssueTimelineItem[];
   otherTarget?: TimelineReference | null;
 }
 
@@ -163,7 +166,7 @@ export function normalizeIssueTimelineItems(
   timeline: IssueTimelineItem[],
   context: IssueTimelineContext
 ): ProcessedIssueTimelineItem[] {
-  return timeline.map((item, index) => ({
+  const processed = timeline.map((item, index) => ({
     ...item,
     otherTarget:
       item.eventType === 'connected' || item.eventType === 'disconnected'
@@ -171,6 +174,8 @@ export function normalizeIssueTimelineItems(
         : item.otherTarget,
     renderKey: buildIssueTimelineItemKey(item, index),
   }));
+
+  return groupAdjacentTimelineItems(processed);
 }
 
 export function useIssueTimelineEvents(

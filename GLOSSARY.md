@@ -183,6 +183,12 @@ _Avoid_: development section, linked PRs panel, Picker when referring to the pag
 The reader's choice to open the Linked Pull Request Picker when an Issue has exactly one Linked Pull Request with a complete routing identity. Previewing is the default.
 _Avoid_: single-PR confirmation, chooser setting
 
+## Timelines
+
+**Grouped Timeline Activity**:
+Consecutive events of the same type by the same GitHub user, presented together with a shared actor and a separate target and time for each event.
+_Avoid_: merged event, when individual actions remain distinct
+
 ## Pull Request Review
 
 **Copilot Reviewer**:

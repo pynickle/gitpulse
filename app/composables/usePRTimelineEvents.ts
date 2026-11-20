@@ -8,6 +8,8 @@ import type { CopilotReviewEffort } from '#shared/utils/copilot-review';
 import { parseGitHubMarkdownTarget } from '~/utils/parseGitHubMarkdownTarget';
 import { parseGitHubRepoPath } from '~/utils/parseGitHubRepoPath';
 
+import { groupAdjacentTimelineItems } from '../utils/groupAdjacentTimelineItems';
+
 export interface TimelineActor {
   resourceType?: string;
   login?: string;
@@ -221,6 +223,7 @@ export interface PRTimelineItem {
 
 export interface ProcessedPRTimelineItem extends PRTimelineItem {
   renderKey: string;
+  groupedEvents?: ProcessedPRTimelineItem[];
 }
 
 export function buildPRTimelineItemKey(item: PRTimelineItem, index: number): string {
@@ -236,7 +239,7 @@ export function buildPRTimelineItemKey(item: PRTimelineItem, index: number): str
 }
 
 export function normalizePRTimelineItems(timeline: PRTimelineItem[]): ProcessedPRTimelineItem[] {
-  return timeline
+  const processed = timeline
     .filter((item, index, array) => {
       // Skip "closed" events that immediately follow a "merged" event —
       // merge always implies close, so the redundant close is noise.
@@ -256,6 +259,8 @@ export function normalizePRTimelineItems(timeline: PRTimelineItem[]): ProcessedP
       ...item,
       renderKey: buildPRTimelineItemKey(item, index),
     }));
+
+  return groupAdjacentTimelineItems(processed);
 }
 
 export function usePRTimelineEvents(timeline: MaybeRefOrGetter<PRTimelineItem[]>) {

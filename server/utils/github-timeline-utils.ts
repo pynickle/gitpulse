@@ -929,18 +929,31 @@ export function normalizeIssueTimelineEvent(
         url: rawEvent.html_url,
         reactions: mapReactionAggregate(rawEvent.reactions),
       };
-    case 'cross-referenced':
+    case 'sub_issue_added': {
+      const subIssue = mapTimelineReferenceTarget(rawEvent.sub_issue);
       return {
         ...baseItem,
         kind: 'event',
         eventType: eventName,
-        source: mapReferencedSource(rawEvent.source, context),
+        subIssue,
+        degraded: !subIssue,
+        displayText: subIssue ? undefined : 'target issue details are unavailable',
+      };
+    }
+    case 'cross-referenced': {
+      const source = mapReferencedSource(rawEvent.source);
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+        source,
         willCloseTarget: Boolean(rawEvent.source?.issue?.pull_request?.merged_at),
-        degraded: !rawEvent.source,
-        displayText: rawEvent.source
+        degraded: !source,
+        displayText: source
           ? undefined
           : 'referenced this issue from a resource that is no longer fully visible',
       };
+    }
     case 'connected':
       return {
         ...baseItem,
@@ -1888,14 +1901,17 @@ function mapBlockedSubject(user: RestUserLike | undefined | null) {
   };
 }
 
-function mapReferencedSource(
-  source: Record<string, any> | undefined,
-  context: TimelineRepoContext
-) {
-  if (!source) return undefined;
+function mapReferencedSource(source: Record<string, any> | undefined) {
+  return mapTimelineReferenceTarget(source?.issue ?? source?.pull_request ?? source);
+}
 
-  const issue = source.issue ?? source.pull_request ?? source;
-  return mapReference(issue, context);
+function mapTimelineReferenceTarget(item: Record<string, any> | undefined) {
+  if (!item || !Number.isInteger(item.number) || item.number < 1) return undefined;
+
+  const address = parseGitHubRepoPath(item.html_url);
+  const owner = item.repository?.owner?.login || address?.owner;
+  const repo = item.repository?.name || address?.repo;
+  return owner && repo ? mapReference(item, { owner, repo }) : undefined;
 }
 
 function mapReference(item: Record<string, any> | undefined, context: TimelineRepoContext) {

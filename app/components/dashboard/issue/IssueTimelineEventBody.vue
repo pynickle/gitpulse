@@ -14,6 +14,7 @@
       :item="item"
       :repo-owner="repoOwner"
       :repo-name="repoName"
+      :grouped="grouped"
       @switch-issue="handleSwitchIssue"
       @switch-pull-request="handleSwitchPullRequest"
     />
@@ -33,7 +34,11 @@
     />
 
     <template v-else>
-      {{ item.displayText || `${item.eventType || item.kind} this issue` }}
+      {{
+        grouped && item.eventType === 'cross-referenced'
+          ? 'reference details are unavailable'
+          : item.displayText || `${item.eventType || item.kind} this issue`
+      }}
     </template>
 
     <span class="ml-2 has-text-grey">
@@ -53,10 +58,11 @@ import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { type ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const { item } = defineProps<{
+const { item, grouped = false } = defineProps<{
   item: ProcessedIssueTimelineItem;
   repoOwner: string;
   repoName: string;
+  grouped?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -67,7 +73,7 @@ const emit = defineEmits<{
 const { locale } = useI18n();
 const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
-const shouldRenderActorPrefix = computed(() => !item.hasMixedActors);
+const shouldRenderActorPrefix = computed(() => !grouped && !item.hasMixedActors);
 
 const referenceEventTypes = new Set([
   'connected',
@@ -129,6 +135,7 @@ const shouldRenderReferenceEvents = (item: ProcessedIssueTimelineItem) => {
     case 'marked_as_duplicate':
       return Boolean(item.duplicate);
     case 'sub_issue_added':
+      return true;
     case 'sub_issue_removed':
       return Boolean(item.subIssue);
     case 'parent_issue_added':

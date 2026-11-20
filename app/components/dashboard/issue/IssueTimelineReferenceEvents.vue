@@ -32,7 +32,7 @@
   </template>
 
   <template v-else-if="item.eventType === 'cross-referenced'">
-    referenced this in
+    <template v-if="!grouped">referenced this in</template>
     <ReferenceSubject
       :ref-subject="item.source"
       @switch-issue="handleSwitchIssue"
@@ -63,14 +63,25 @@
   </template>
 
   <template v-else-if="item.eventType === 'sub_issue_added'">
-    added a sub-issue
-    <a
-      href="#"
-      @click.prevent="handleSwitchIssue(repoOwner, repoName, item.subIssue?.number)"
-      class="tag is-activity ml-1 is-info is-light"
-    >
-      {{ item.subIssue?.title }} #{{ item.subIssue?.number }}
-    </a>
+    <template v-if="item.subIssue">
+      <template v-if="!grouped">added a sub-issue</template>
+      <a
+        href="#"
+        @click.prevent="
+          handleSwitchIssue(
+            item.subIssue.repository?.owner?.login ?? repoOwner,
+            item.subIssue.repository?.name ?? repoName,
+            item.subIssue.number
+          )
+        "
+        class="tag is-activity ml-1 is-info is-light"
+      >
+        {{ item.subIssue.title }} #{{ item.subIssue.number }}
+      </a>
+    </template>
+    <template v-else>
+      <template v-if="!grouped">added a sub-issue, but </template>{{ item.displayText }}
+    </template>
   </template>
 
   <template v-else-if="item.eventType === 'sub_issue_removed'">
@@ -89,10 +100,15 @@ import ReferenceSubject from '~/components/dashboard/timeline/ReferenceSubject.v
 import type { ProcessedIssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import type { TimelineReference } from '~/composables/usePRTimelineEvents';
 
-const { repoOwner, repoName } = defineProps<{
+const {
+  repoOwner,
+  repoName,
+  grouped = false,
+} = defineProps<{
   item: ProcessedIssueTimelineItem;
   repoOwner: string;
   repoName: string;
+  grouped?: boolean;
 }>();
 
 const emit = defineEmits<{

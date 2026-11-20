@@ -31,6 +31,34 @@
           :repo-name="repoName"
         />
 
+        <div v-else-if="item.groupedEvents" class="mx-2">
+          <TimelineEventActorRow :actor="item.actor" align-start>
+            <div>
+              <div class="is-size-7 has-text-grey mb-1">
+                <GitHubProfileLink
+                  :login="item.actor?.login"
+                  :github-href="item.actor?.url"
+                  class="has-text-weight-medium has-text-link mr-1"
+                >
+                  {{ item.actor?.login }}
+                </GitHubProfileLink>
+                {{
+                  item.eventType === 'cross-referenced' ? 'referenced this in' : 'added sub-issues'
+                }}
+              </div>
+              <div v-for="groupedItem in item.groupedEvents" :key="groupedItem.renderKey">
+                <IssueTimelineEventBody
+                  :item="groupedItem"
+                  grouped
+                  :repo-owner="repoOwner"
+                  :repo-name="repoName"
+                  @switch-issue="switchToIssue"
+                  @switch-pull-request="switchToPullRequest"
+                />
+              </div>
+            </div>
+          </TimelineEventActorRow>
+        </div>
         <div v-else class="mx-2">
           <TimelineEventActorRow :actor="item.actor">
             <IssueTimelineEventBody
@@ -83,6 +111,7 @@ import IssueTimelineReferencedEventCard from '~/components/dashboard/issue/Issue
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import TimelineEventActorRow from '~/components/dashboard/timeline/TimelineEventActorRow.vue';
+import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import {
   useIssueTimelineEvents,

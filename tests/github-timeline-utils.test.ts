@@ -34,6 +34,63 @@ const normalizeIssueTimeline = (rawEvents: Record<string, any>[]) =>
     sortTimelineItems(rawEvents.map((rawEvent) => normalizeIssueTimelineEvent(rawEvent, context)))
   );
 
+describe('issue timeline REST event normalization', () => {
+  test('maps a sub-issue target from repository metadata when REST omits its URL', () => {
+    const item = normalizeIssueTimelineEvent(
+      {
+        event: 'sub_issue_added',
+        sub_issue: {
+          number: 27,
+          title: 'Build setup',
+          repository: { name: 'build', full_name: 'acme/build', owner: { login: 'acme' } },
+        },
+      },
+      context
+    );
+
+    expect(item).toMatchObject({
+      kind: 'event',
+      degraded: false,
+      subIssue: {
+        resourceType: 'issue',
+        number: 27,
+        title: 'Build setup',
+        repository: { name: 'build', nameWithOwner: 'acme/build', owner: { login: 'acme' } },
+      },
+    });
+  });
+
+  test('keeps an incomplete cross-reference without guessing its repository', () => {
+    const item = normalizeIssueTimelineEvent(
+      { event: 'cross-referenced', source: { issue: { number: 23 } } },
+      context
+    );
+
+    expect(item.source).toBeUndefined();
+    expect(item.displayText).toContain('no longer fully visible');
+  });
+
+  test('keeps sub-issue additions visible when REST omits the target issue', () => {
+    const item = normalizeIssueTimelineEvent(
+      {
+        id: 42,
+        event: 'sub_issue_added',
+        actor: user('alice'),
+        created_at: '2026-06-01T12:00:00Z',
+      },
+      context
+    );
+
+    expect(item).toMatchObject({
+      kind: 'event',
+      eventType: 'sub_issue_added',
+      degraded: true,
+      displayText: expect.stringContaining('details are unavailable'),
+    });
+    expect(item.subIssue).toBeUndefined();
+  });
+});
+
 describe('PR timeline server normalization', () => {
   test('attributes Copilot work to the service and preserves the requesting actor', () => {
     const [item] = normalizePRTimelineEvent(

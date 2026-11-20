@@ -1,6 +1,6 @@
 <template>
   <template v-if="isSourceReferenceEvent">
-    {{ sourceReferencePrefix }}
+    <template v-if="!grouped">{{ sourceReferencePrefix }}</template>
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.source)"
@@ -66,14 +66,22 @@
   <template
     v-else-if="item.eventType === 'sub_issue_added' || item.eventType === 'sub_issue_removed'"
   >
-    {{ item.eventType === 'sub_issue_added' ? 'added sub-issue' : 'removed sub-issue' }}
-    <a
-      href="#"
-      @click.prevent="switchToIssueOrPR(item.subIssue)"
-      class="tag is-activity ml-1 is-info is-light"
-    >
-      {{ item.subIssue?.title }} #{{ item.subIssue?.number }}
-    </a>
+    <template v-if="item.subIssue">
+      <template v-if="!grouped">{{
+        item.eventType === 'sub_issue_added' ? 'added sub-issue' : 'removed sub-issue'
+      }}</template>
+      <a
+        href="#"
+        @click.prevent="switchToIssueOrPR(item.subIssue)"
+        class="tag is-activity ml-1 is-info is-light"
+      >
+        {{ item.subIssue.title }} #{{ item.subIssue.number }}
+      </a>
+    </template>
+    <template v-else>
+      <template v-if="!grouped">added sub-issue, but </template
+      >{{ item.displayText || 'target issue details are unavailable' }}
+    </template>
   </template>
 </template>
 
@@ -88,9 +96,14 @@ import {
   type TimelineReference,
 } from '~/composables/usePRTimelineEvents';
 
-const { item, repoFullName } = defineProps<{
+const {
+  item,
+  repoFullName,
+  grouped = false,
+} = defineProps<{
   item: PRTimelineItem;
   repoFullName: string;
+  grouped?: boolean;
 }>();
 
 const emit = defineEmits<{

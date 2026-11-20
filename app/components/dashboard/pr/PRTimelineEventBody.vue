@@ -13,6 +13,7 @@
       v-if="shouldRenderReferenceEvents(item)"
       :item="item"
       :repo-full-name="repoFullName"
+      :grouped="grouped"
       @switch-issue="handleSwitchIssue"
       @switch-pull-request="handleSwitchPullRequest"
     />
@@ -29,7 +30,13 @@
       scope="pull"
     />
 
-    <template v-else> {{ item.displayText || `${item.eventType || item.kind} this PR` }} </template>
+    <template v-else>
+      {{
+        grouped && item.eventType === 'cross-referenced'
+          ? 'reference details are unavailable'
+          : item.displayText || `${item.eventType || item.kind} this PR`
+      }}
+    </template>
 
     <span class="ml-2 has-text-grey">
       {{ formatDurationFromNow(eventDate, localeCode, relativeTimeNow) }}
@@ -48,10 +55,16 @@ import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import { type PRTimelineItem } from '~/composables/usePRTimelineEvents';
 import { formatDurationFromNow } from '~/utils/formatDurationFromNow';
 
-const { item, repoOwner, repoName } = defineProps<{
+const {
+  item,
+  repoOwner,
+  repoName,
+  grouped = false,
+} = defineProps<{
   item: PRTimelineItem;
   repoOwner: string;
   repoName: string;
+  grouped?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -65,7 +78,7 @@ const relativeTimeNow = useRelativeTimeNow();
 const repoFullName = computed(() => `${repoOwner}/${repoName}`);
 const eventDate = computed(() => item.createdAt || item.commit?.committedDate || '');
 const shouldRenderActorPrefix = computed(
-  () => !item.hasMixedActors && !item.eventType?.startsWith('copilot_work_')
+  () => !grouped && !item.hasMixedActors && !item.eventType?.startsWith('copilot_work_')
 );
 
 const referenceEventTypes = new Set([
@@ -161,6 +174,7 @@ const shouldRenderReferenceEvents = (item: PRTimelineItem) => {
     case 'parent_issue_removed':
       return Boolean(item.parent);
     case 'sub_issue_added':
+      return true;
     case 'sub_issue_removed':
       return Boolean(item.subIssue);
     case 'referenced':

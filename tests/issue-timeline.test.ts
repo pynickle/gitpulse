@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 
-import { computed, defineComponent, h, nextTick, provide, ref, shallowRef } from 'vue';
+import { defineComponent, h, nextTick, provide, ref, shallowRef } from 'vue';
 
+import * as timelineEvents from '../app/composables/useIssueTimelineEvents';
 import type { IssueTimelineItem } from '../app/composables/useIssueTimelineEvents';
 import { buildTimelineCommitPayload } from '../app/utils/buildTimelineCommitPayload';
 import { commitVerificationMark } from '../app/utils/commitVerification';
@@ -57,14 +58,6 @@ const formatTime = { formatDurationFromNow: () => '2 days ago' };
 const moderation = {
   useCommentModeration: () => ({
     stateFor: (target: unknown) => ({ deleted: false, moderation: target, body: undefined }),
-  }),
-};
-
-const timelineEvents = {
-  useIssueTimelineEvents: (items: () => IssueTimelineItem[]) => ({
-    processedTimeline: computed(() =>
-      items().map((item, index) => ({ ...item, renderKey: `timeline-${index}` }))
-    ),
   }),
 };
 
@@ -124,18 +117,45 @@ const TimelineCommentCard = await compileVue(
   }
 );
 
+const TimelineEventActorRow = await compileVue(
+  'app/components/dashboard/timeline/TimelineEventActorRow.vue',
+  { '~/components/ui/GitHubAvatar.vue': { default: avatarStub } }
+);
+
+const IssueTimelineReferenceEvents = await compileVue(
+  'app/components/dashboard/issue/IssueTimelineReferenceEvents.vue',
+  { '~/components/dashboard/timeline/ReferenceSubject.vue': { default: empty } }
+);
+
+const IssueTimelineEventBody = await compileVue(
+  'app/components/dashboard/issue/IssueTimelineEventBody.vue',
+  {
+    ...githubProfileLinkModules,
+    'vue-i18n': i18n,
+    '~/components/dashboard/issue/IssueTimelineReferenceEvents.vue': {
+      default: IssueTimelineReferenceEvents,
+    },
+    '~/components/dashboard/issue/IssueTimelineStateEvents.vue': { default: empty },
+    '~/components/dashboard/timeline/TimelineUnavailableEvent.vue': { default: empty },
+    '~/utils/formatDurationFromNow': { formatDurationFromNow: (date: string) => date },
+    'virtual:time': time,
+  },
+  { useRelativeTimeNow: 'virtual:time' }
+);
+
 const IssueTimelineEvents = await compileVue(
   'app/components/dashboard/issue/IssueTimelineEvents.vue',
   {
+    ...githubProfileLinkModules,
     'vue-i18n': i18n,
     '~/components/dashboard/timeline/TimelineCommentCard.vue': { default: TimelineCommentCard },
     '~/components/dashboard/issue/IssueTimelineCommitCard.vue': {
       default: IssueTimelineCommitCard,
     },
-    '~/components/dashboard/issue/IssueTimelineEventBody.vue': { default: empty },
+    '~/components/dashboard/issue/IssueTimelineEventBody.vue': { default: IssueTimelineEventBody },
     '~/components/dashboard/issue/IssueTimelineReferencedEventCard.vue': { default: empty },
     '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue': { default: empty },
-    '~/components/dashboard/timeline/TimelineEventActorRow.vue': { default: empty },
+    '~/components/dashboard/timeline/TimelineEventActorRow.vue': { default: TimelineEventActorRow },
     '~/components/ui/LoadingIcon.vue': { default: empty },
     '~/composables/useIssueTimelineEvents': timelineEvents,
   }
@@ -184,6 +204,55 @@ beforeEach(() => {
 
 afterEach(async () => {
   await dom.cleanup();
+});
+
+test('a grouped issue activity displays one actor and action before its individually timed targets', () => {
+  const targets: Array<[string, string, number]> = [];
+  const view = dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(IssueTimelineEvents as never, {
+          timeline: [
+            {
+              kind: 'event',
+              eventType: 'sub_issue_added',
+              actor: { login: 'octocat' },
+              subIssue: {
+                number: 27,
+                title: 'Build setup',
+                repository: { owner: { login: 'acme' }, name: 'build' },
+              },
+              createdAt: '2026-09-27T06:42:13Z',
+            },
+            {
+              kind: 'event',
+              eventType: 'sub_issue_added',
+              actor: { login: 'octocat' },
+              displayText: 'target issue details are unavailable',
+              createdAt: '2026-09-27T06:42:17Z',
+            },
+          ],
+          loading: false,
+          repoOwner: 'acme',
+          repoName: 'widgets',
+          issueNumber: 26,
+          onSwitchIssue: (owner: string, repo: string, number: number) => {
+            targets.push([owner, repo, number]);
+          },
+        }),
+    })
+  );
+
+  const group = view.root.querySelector('.issue-timeline-events__list');
+  expect(group?.querySelectorAll('.avatar-stub')).toHaveLength(1);
+  expect(group?.querySelector('a')?.getAttribute('href')).toBe('/dashboard/profile?user=octocat');
+  const target = group?.querySelector<HTMLAnchorElement>('a.tag');
+  expect(target?.textContent?.trim()).toBe('Build setup #27');
+  target?.click();
+  expect(targets).toEqual([['acme', 'build', 27]]);
+  expect(group?.textContent?.trim()).toMatch(
+    /^octocat\s+added sub-issues\s*Build setup #27\s*2026-09-27T06:42:13Z\s*target issue details are unavailable\s*2026-09-27T06:42:17Z$/
+  );
 });
 
 test('the issue timeline shows its comment and commit through the shared cards', async () => {

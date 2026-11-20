@@ -1,5 +1,11 @@
 <template>
-  <div class="is-flex is-align-items-center">
+  <div
+    class="is-flex"
+    :class="{
+      'is-align-items-center': !alignStart,
+      'is-align-items-flex-start': alignStart,
+    }"
+  >
     <GitHubAvatar
       variant="raised"
       interactive
@@ -19,8 +25,9 @@
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import type { TimelineActor } from '~/composables/usePRTimelineEvents';
 
-const { avatarSize = 24 } = defineProps<{
+const { avatarSize = 24, alignStart = false } = defineProps<{
   actor?: TimelineActor;
   avatarSize?: number;
+  alignStart?: boolean;
 }>();
 </script>
