@@ -65,19 +65,11 @@
   <template v-else-if="item.eventType === 'sub_issue_added'">
     <template v-if="item.subIssue">
       <template v-if="!grouped">added a sub-issue</template>
-      <a
-        href="#"
-        @click.prevent="
-          handleSwitchIssue(
-            item.subIssue.repository?.owner?.login ?? repoOwner,
-            item.subIssue.repository?.name ?? repoName,
-            item.subIssue.number
-          )
-        "
-        class="tag is-activity ml-1 is-info is-light"
-      >
-        {{ item.subIssue.title }} #{{ item.subIssue.number }}
-      </a>
+      <ReferenceSubject
+        :ref-subject="item.subIssue"
+        resource-type="issue"
+        @switch-issue="handleSwitchIssue"
+      />
     </template>
     <template v-else>
       <template v-if="!grouped">added a sub-issue, but </template>{{ item.displayText }}
@@ -121,8 +113,7 @@ const isOtherRepository = (reference?: TimelineReference) =>
   (reference?.repository?.owner?.login?.toLowerCase() !== repoOwner.toLowerCase() ||
     reference?.repository?.name?.toLowerCase() !== repoName.toLowerCase());
 
-const handleSwitchIssue = (owner: string, repo: string, issueNumber?: number) => {
-  if (!issueNumber) return;
+const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
 };
 

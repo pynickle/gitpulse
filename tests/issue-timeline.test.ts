@@ -122,9 +122,19 @@ const TimelineEventActorRow = await compileVue(
   { '~/components/ui/GitHubAvatar.vue': { default: avatarStub } }
 );
 
+const ReferenceSubject = await compileVue(
+  'app/components/dashboard/timeline/ReferenceSubject.vue',
+  {
+    'vue-i18n': {
+      useI18n: () => ({ t: (key: string) => (key === 'timeline.issueType' ? 'Issue' : key) }),
+    },
+  },
+  { computed: 'vue' }
+);
+
 const IssueTimelineReferenceEvents = await compileVue(
   'app/components/dashboard/issue/IssueTimelineReferenceEvents.vue',
-  { '~/components/dashboard/timeline/ReferenceSubject.vue': { default: empty } }
+  { '~/components/dashboard/timeline/ReferenceSubject.vue': { default: ReferenceSubject } }
 );
 
 const IssueTimelineEventBody = await compileVue(
@@ -246,12 +256,15 @@ test('a grouped issue activity displays one actor and action before its individu
   const group = view.root.querySelector('.issue-timeline-events__list');
   expect(group?.querySelectorAll('.avatar-stub')).toHaveLength(1);
   expect(group?.querySelector('a')?.getAttribute('href')).toBe('/dashboard/profile?user=octocat');
-  const target = group?.querySelector<HTMLAnchorElement>('a.tag');
-  expect(target?.textContent?.trim()).toBe('Build setup #27');
+  const target = group?.querySelector<HTMLAnchorElement>('a.tags');
+  const tags = Array.from(target?.querySelectorAll('.tag') ?? [], (tag) =>
+    tag.textContent?.replace(/\s+/g, ' ').trim()
+  );
+  expect(tags).toEqual(['Issue #27', 'Build setup']);
   target?.click();
   expect(targets).toEqual([['acme', 'build', 27]]);
   expect(group?.textContent?.trim()).toMatch(
-    /^octocat\s+added sub-issues\s*Build setup #27\s*2026-09-27T06:42:13Z\s*target issue details are unavailable\s*2026-09-27T06:42:17Z$/
+    /^octocat\s+added sub-issues\s*Issue\s+#27\s*Build setup\s*2026-09-27T06:42:13Z\s*target issue details are unavailable\s*2026-09-27T06:42:17Z$/
   );
 });
 

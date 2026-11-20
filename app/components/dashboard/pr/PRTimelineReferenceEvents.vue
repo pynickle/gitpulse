@@ -70,13 +70,11 @@
       <template v-if="!grouped">{{
         item.eventType === 'sub_issue_added' ? 'added sub-issue' : 'removed sub-issue'
       }}</template>
-      <a
-        href="#"
-        @click.prevent="switchToIssueOrPR(item.subIssue)"
-        class="tag is-activity ml-1 is-info is-light"
-      >
-        {{ item.subIssue.title }} #{{ item.subIssue.number }}
-      </a>
+      <ReferenceSubject
+        :ref-subject="item.subIssue"
+        resource-type="issue"
+        @switch-issue="handleSwitchIssue"
+      />
     </template>
     <template v-else>
       <template v-if="!grouped">added sub-issue, but </template
@@ -89,6 +87,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import ReferenceSubject from '~/components/dashboard/timeline/ReferenceSubject.vue';
 import {
   parseGitHubIssueOrPullUrl,
   parseRepoFullName,
@@ -112,6 +111,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+
+const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
+  emit('switch-issue', owner, repo, issueNumber);
+};
 
 const sourceReferencePrefix = computed(() => {
   switch (item.eventType) {
