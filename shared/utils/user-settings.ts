@@ -138,6 +138,7 @@ export const DEFAULT_USER_COMPOSER_SETTINGS: UserComposerSettings = {
 
 export const DEFAULT_USER_RELEASE_TIMELINE_SETTINGS: UserReleaseTimelineSettings = {
   showReactions: true,
+  showAssetsCount: false,
 };
 
 export const DEFAULT_USER_RELEASE_FOLLOW_SETTINGS: UserReleaseFollowSettings = {
@@ -860,6 +861,10 @@ export function normalizeUserReleaseTimelineSettings(
       typeof candidate.showReactions === 'boolean'
         ? candidate.showReactions
         : fallback.showReactions,
+    showAssetsCount:
+      typeof candidate.showAssetsCount === 'boolean'
+        ? candidate.showAssetsCount
+        : fallback.showAssetsCount,
   };
 }
 

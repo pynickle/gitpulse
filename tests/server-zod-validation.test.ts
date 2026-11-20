@@ -429,10 +429,10 @@ describe('server Zod request validation', () => {
     });
     expect(
       parseUserSettingsPatchBody({
-        releaseTimeline: { showReactions: false },
+        releaseTimeline: { showReactions: false, showAssetsCount: true },
       })
     ).toEqual({
-      releaseTimeline: { showReactions: false },
+      releaseTimeline: { showReactions: false, showAssetsCount: true },
     });
     expect(() =>
       parseUserSettingsPatchBody({

@@ -368,14 +368,16 @@ describe('user settings store', () => {
     ]);
   });
 
-  test('defaults and normalizes Release Timeline reaction visibility without changing settings version', () => {
+  test('defaults and normalizes Release Timeline visibility without changing settings version', () => {
     expect(createDefaultUserSettings().version).toBe(1);
     expect(createDefaultUserSettings().releaseTimeline).toEqual({
       showReactions: true,
+      showAssetsCount: false,
     });
 
     expect(normalizeUserSettings({}).releaseTimeline).toEqual({
       showReactions: true,
+      showAssetsCount: false,
     });
     expect(normalizeUserSettings({ releaseTimeline: undefined }).version).toBe(1);
     expect(
@@ -384,6 +386,7 @@ describe('user settings store', () => {
       }).releaseTimeline
     ).toEqual({
       showReactions: false,
+      showAssetsCount: false,
     });
     expect(
       normalizeUserSettings({
@@ -391,13 +394,15 @@ describe('user settings store', () => {
       }).releaseTimeline
     ).toEqual({
       showReactions: true,
+      showAssetsCount: false,
     });
 
     const patchedOff = mergeUserSettingsPatch(createDefaultUserSettings(), {
-      releaseTimeline: { showReactions: false },
+      releaseTimeline: { showReactions: false, showAssetsCount: true },
     });
     expect(patchedOff.releaseTimeline).toEqual({
       showReactions: false,
+      showAssetsCount: true,
     });
 
     const patchedOn = mergeUserSettingsPatch(patchedOff, {
@@ -405,6 +410,7 @@ describe('user settings store', () => {
     });
     expect(patchedOn.releaseTimeline).toEqual({
       showReactions: true,
+      showAssetsCount: true,
     });
     expect(patchedOn.version).toBe(1);
   });
@@ -636,20 +642,25 @@ describe('user settings store', () => {
     });
   });
 
-  test('persists Release Timeline reaction visibility with optimistic save normalization', async () => {
+  test('persists Release Timeline settings with optimistic save normalization', async () => {
     const harness = createHarness('octocat');
     markLoaded(harness);
 
-    const save = harness.store.updateReleaseTimeline({ showReactions: false });
+    const save = harness.store.updateReleaseTimeline({
+      showReactions: false,
+      showAssetsCount: true,
+    });
     await tick();
 
     expect(harness.settings.value.releaseTimeline).toEqual({
       showReactions: false,
+      showAssetsCount: true,
     });
     expect(harness.saveRequests).toHaveLength(1);
     expect(harness.saveRequests[0]?.patch).toEqual({
       releaseTimeline: {
         showReactions: false,
+        showAssetsCount: true,
       },
     });
 

@@ -485,6 +485,8 @@
       "releaseTimelineSection": "Release Timeline",
       "releaseTimelineShowReactionsLabel": "Show reactions",
       "releaseTimelineShowReactionsDescription": "Show GitHub reaction counts on timeline cards and in the Release Drawer.",
+      "releaseTimelineShowAssetsCountLabel": "Show release asset counts",
+      "releaseTimelineShowAssetsCountDescription": "Show the number of assets on Release Timeline cards.",
       "notificationReadSection": "Unread notification handling",
       "notificationReadMarkModeLabel": "Mark as read",
       "notificationReadMarkModeDelayed": "After a delay",

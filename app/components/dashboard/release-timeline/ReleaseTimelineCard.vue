@@ -14,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const { locale, t } = useI18n();
+const { settings } = useUserSettings();
 const relativeTimeNow = useRelativeTimeNow();
 const { openRepository } = useDashboardRepositoryNavigation();
 
@@ -72,7 +73,11 @@ const handleCardClick = (event: MouseEvent) => {
     <p v-if="showSummary" class="release-timeline-card__summary">{{ item.changelog }}</p>
 
     <div class="release-timeline-card__footer">
-      <span class="release-timeline-card__assets" :title="assetsCountLabel">
+      <span
+        v-if="settings.releaseTimeline.showAssetsCount"
+        class="release-timeline-card__assets"
+        :title="assetsCountLabel"
+      >
         <PackageIcon :size="13" aria-hidden="true" />
         <span>{{ assetsCountLabel }}</span>
       </span>

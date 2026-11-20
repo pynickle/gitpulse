@@ -362,6 +362,13 @@ const applyShowReleaseReactions = (event: Event) => {
   }
 };
 
+const applyShowReleaseAssetsCount = (event: Event) => {
+  const target = event.target;
+  if (target instanceof HTMLInputElement) {
+    void updateReleaseTimeline({ showAssetsCount: target.checked });
+  }
+};
+
 // Manual input handlers
 const focusEditableFontInput = (input: HTMLInputElement | null) => {
   if (!input) return;
@@ -706,7 +713,7 @@ onMounted(() => {
                 <h2 class="settings__section-title">
                   {{ t('dashboard.settings.releaseTimelineSection') }}
                 </h2>
-                <div class="settings__font-card">
+                <div class="settings__font-card settings__font-card--toggle-list">
                   <label class="settings__toggle-row">
                     <span class="settings__option-body">
                       <span class="settings__option-label">
@@ -722,6 +729,24 @@ onMounted(() => {
                       :checked="settings.releaseTimeline.showReactions"
                       :aria-label="t('dashboard.settings.releaseTimelineShowReactionsLabel')"
                       @change="applyShowReleaseReactions"
+                    />
+                    <span class="settings__toggle" aria-hidden="true" />
+                  </label>
+                  <label class="settings__toggle-row">
+                    <span class="settings__option-body">
+                      <span class="settings__option-label">
+                        {{ t('dashboard.settings.releaseTimelineShowAssetsCountLabel') }}
+                      </span>
+                      <span class="settings__option-desc">
+                        {{ t('dashboard.settings.releaseTimelineShowAssetsCountDescription') }}
+                      </span>
+                    </span>
+                    <input
+                      class="settings__toggle-input"
+                      type="checkbox"
+                      :checked="settings.releaseTimeline.showAssetsCount"
+                      :aria-label="t('dashboard.settings.releaseTimelineShowAssetsCountLabel')"
+                      @change="applyShowReleaseAssetsCount"
                     />
                     <span class="settings__toggle" aria-hidden="true" />
                   </label>
@@ -987,6 +1012,11 @@ onMounted(() => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
   background: var(--gitpulse-surface);
+}
+
+.settings__font-card--toggle-list > .settings__toggle-row + .settings__toggle-row {
+  padding-top: 1rem;
+  border-top: 1px solid var(--gitpulse-border);
 }
 
 .settings__font-field {

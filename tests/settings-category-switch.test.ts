@@ -51,6 +51,7 @@ const FontPickerModal = defineComponent({
 });
 
 const navigationUpdates: Array<Record<string, unknown>> = [];
+const releaseTimelineUpdates: Array<Record<string, unknown>> = [];
 
 const createSettingsState = () => ({
   fonts: {
@@ -69,7 +70,7 @@ const createSettingsState = () => ({
   },
   notificationBehavior: { readMarkMode: 'delayed', readMarkDelaySeconds: 3 },
   navigation: { linkTarget: 'gitpulse', previewSingleLinkedPullRequest: true },
-  releaseTimeline: { showReactions: true },
+  releaseTimeline: { showReactions: true, showAssetsCount: false },
 });
 
 const SettingsPage = await compileVue(
@@ -113,7 +114,9 @@ const SettingsPage = await compileVue(
           navigationUpdates.push(navigation);
         },
         updateNotificationBehavior: async () => {},
-        updateReleaseTimeline: async () => {},
+        updateReleaseTimeline: async (releaseTimeline: Record<string, unknown>) => {
+          releaseTimelineUpdates.push(releaseTimeline);
+        },
       }),
     },
     '~test/app-autoimports': {
@@ -171,6 +174,7 @@ const currentRows = (root: ParentNode) =>
 beforeEach(() => {
   scrollTops.length = 0;
   navigationUpdates.length = 0;
+  releaseTimelineUpdates.length = 0;
   dom = createVueDom();
 });
 
@@ -239,6 +243,26 @@ describe('settings category switch', () => {
       expect.stringContaining('dashboard.settings.navigationTitle'),
     ]);
     expect(panelText(root)).toContain('dashboard.settings.navigationTitle');
+  });
+
+  test('saves the release asset count visibility choice', async () => {
+    const root = await mountPage();
+    const input = root.querySelector<HTMLInputElement>(
+      'input[aria-label="dashboard.settings.releaseTimelineShowAssetsCountLabel"]'
+    );
+    expect(input?.checked).toBe(false);
+    if (!input) {
+      throw new Error('missing release asset count toggle');
+    }
+
+    input.checked = true;
+    const previousInputElement = globalThis.HTMLInputElement;
+    globalThis.HTMLInputElement = dom.window.HTMLInputElement;
+    input.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    globalThis.HTMLInputElement = previousInputElement;
+    await nextTick();
+
+    expect(releaseTimelineUpdates).toEqual([{ showAssetsCount: true }]);
   });
 
   test('shows the single linked pull request list until the reader turns it off', async () => {

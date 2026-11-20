@@ -140,6 +140,7 @@ const composerSettingsPatchSchema = z
 const releaseTimelineSettingsPatchSchema = z
   .strictObject({
     showReactions: z.boolean().optional(),
+    showAssetsCount: z.boolean().optional(),
   })
   .refine((releaseTimeline) => Object.keys(releaseTimeline).length > 0, {
     message: 'At least one release timeline setting is required',

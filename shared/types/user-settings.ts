@@ -84,6 +84,7 @@ export interface UserComposerSettings {
 
 export interface UserReleaseTimelineSettings {
   showReactions: boolean;
+  showAssetsCount: boolean;
 }
 
 export interface UserReleaseFollowSettings {

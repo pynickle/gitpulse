@@ -485,6 +485,8 @@
       "releaseTimelineSection": "Release 时间线",
       "releaseTimelineShowReactionsLabel": "显示反应",
       "releaseTimelineShowReactionsDescription": "在时间线卡片和 Release 抽屉中显示 GitHub 反应数。",
+      "releaseTimelineShowAssetsCountLabel": "显示 Release 资源数量",
+      "releaseTimelineShowAssetsCountDescription": "在 Release 时间线卡片上显示资源数量。",
       "notificationReadSection": "未读通知处理",
       "notificationReadMarkModeLabel": "设为已读",
       "notificationReadMarkModeDelayed": "延迟后",
