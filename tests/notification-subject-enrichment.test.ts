@@ -3,10 +3,12 @@ import { describe, expect, mock, test } from 'bun:test';
 import { parseGitHubNotificationSubjectTarget } from '../app/utils/parseGitHubNotificationSubjectTarget';
 import type { DashboardNotification } from '../shared/types/notifications';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 import * as subIssues from '../shared/utils/sub-issues';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+mock.module('#shared/utils/pull-request-conflicts', () => pullRequestConflicts);
 mock.module('#shared/utils/sub-issues', () => subIssues);
 
 const { createNotificationSubjectEnrichmentSession } =
@@ -222,6 +224,69 @@ describe('Notification Subject Enrichment', () => {
       stateStatus: 'loaded',
     });
     expect(outcome.notifications[1]?.subject).toHaveProperty('checkRollup');
+  });
+
+  test('loads mergeability onto Pull Request Notifications and drops a stale value', async () => {
+    const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
+      {
+        key: 'acme/widgets/pulls/2',
+        title: 'Pull request with conflicts',
+        state: 'open',
+        mergeable: 'CONFLICTING',
+      },
+      {
+        key: 'acme/widgets/issues/7',
+        title: 'Issue',
+        state: 'open',
+        mergeable: 'CONFLICTING',
+      },
+    ]);
+    const session = createNotificationSubjectEnrichmentSession({
+      adapter,
+      parseSubject: parseGitHubNotificationSubjectTarget,
+    });
+    const input = [
+      notification('pull', 'PullRequest', 'https://api.github.com/repos/acme/widgets/pulls/2', {
+        mergeable: 'mergeable',
+      }),
+      notification('issue', 'Issue', 'https://api.github.com/repos/acme/widgets/issues/7', {
+        mergeable: 'conflicting',
+      }),
+    ];
+
+    const outcome = await session.start(input).completion;
+
+    expect(outcome.outcome).toBe('complete');
+    if (outcome.outcome === 'stale') throw new Error('Expected applicable Notifications');
+    expect(outcome.notifications[0]?.subject).toMatchObject({
+      mergeable: 'conflicting',
+      stateStatus: 'loaded',
+    });
+    expect(outcome.notifications[1]?.subject).not.toHaveProperty('mergeable');
+  });
+
+  test('clears mergeability when GitHub no longer reports it', async () => {
+    const adapter = new InMemoryNotificationSubjectEnrichmentAdapter(() => [
+      {
+        key: 'acme/widgets/pulls/2',
+        title: 'Pull request',
+        state: 'open',
+      },
+    ]);
+    const session = createNotificationSubjectEnrichmentSession({
+      adapter,
+      parseSubject: parseGitHubNotificationSubjectTarget,
+    });
+
+    const outcome = await session.start([
+      notification('pull', 'PullRequest', 'https://api.github.com/repos/acme/widgets/pulls/2', {
+        mergeable: 'conflicting',
+      }),
+    ]).completion;
+
+    expect(outcome.outcome).toBe('complete');
+    if (outcome.outcome === 'stale') throw new Error('Expected applicable Notifications');
+    expect(outcome.notifications[0]?.subject).not.toHaveProperty('mergeable');
   });
 
   test('drops an enrichment result whose Check Rollup is not a rollup', async () => {

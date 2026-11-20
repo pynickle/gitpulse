@@ -313,6 +313,10 @@ test('Workspace reads preserve inline comment IDs and enrich object capabilities
 test('PR timeline distinguishes reviews, inline replies and CommitComment despite shared display classification', async () => {
   mock.module('#shared/utils/pr-checks', () => import('../shared/utils/pr-checks'));
   mock.module(
+    '#shared/utils/pull-request-conflicts',
+    () => import('../shared/utils/pull-request-conflicts')
+  );
+  mock.module(
     '#server/utils/github-graphql-utils',
     () => import('../server/utils/github-graphql-utils')
   );

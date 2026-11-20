@@ -2,9 +2,11 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/pr-checks', () => prChecks);
+mock.module('#shared/utils/pull-request-conflicts', () => pullRequestConflicts);
 
 import type { DashboardIssuePrEntity } from '../app/utils/dashboardIssuePrCard';
 import { resolveIssueTypeColor } from '../app/utils/issueTypeColor';
@@ -62,6 +64,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       linkedPullRequestCount: null,
       linkedPullRequest: null,
       checkRollup: null,
+      hasConflicts: false,
       actorLogin: 'octocat',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
       issueType: { name: 'Bug', color: 'red' },
@@ -109,6 +112,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       linkedPullRequestCount: null,
       linkedPullRequest: null,
       checkRollup: null,
+      hasConflicts: false,
       actorLogin: 'merge-bot',
       actorAvatarUrl: 'https://avatars.githubusercontent.com/u/1?v=4',
       issueType: null,
@@ -180,6 +184,7 @@ describe('dashboard issue/PR notification-style cards', () => {
       linkedPullRequestCount: null,
       linkedPullRequest: null,
       checkRollup: null,
+      hasConflicts: false,
       actorLogin: '',
       actorAvatarUrl: '',
       issueType: null,
@@ -264,6 +269,39 @@ describe('dashboard issue/PR notification-style cards', () => {
       subjectType: 'Issue',
       checkRollup: null,
     });
+  });
+
+  test('marks an open pull request card when it has conflicts to resolve', () => {
+    expect(
+      toDashboardIssuePrCard({
+        id: 16,
+        title: 'Resolve the conflict',
+        state: 'open',
+        draft: true,
+        pull_request: {},
+        mergeable: 'CONFLICTING',
+      }).hasConflicts
+    ).toBe(true);
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 17,
+        title: 'Already merged',
+        state: 'closed',
+        merged_at: '2026-06-10T13:00:00Z',
+        pull_request: {},
+        mergeable: 'CONFLICTING',
+      }).hasConflicts
+    ).toBe(false);
+
+    expect(
+      toDashboardIssuePrCard({
+        id: 18,
+        title: 'Issue that must not borrow the marker',
+        state: 'open',
+        mergeable: 'CONFLICTING',
+      }).hasConflicts
+    ).toBe(false);
   });
 
   test('maps zero and invalid comments counts safely', () => {

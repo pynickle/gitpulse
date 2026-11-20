@@ -88,6 +88,27 @@
   white-space: normal;
 }
 
+// The marker sits outside the clamped title. The title gives up width first,
+// so a long title ellipsizes and the marker stays on the row.
+.dashboard-list-card--detailed .dashboard-list-card__subject--with-conflict {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  white-space: nowrap;
+}
+
+.dashboard-list-card--detailed
+  .dashboard-list-card__subject--with-conflict
+  .dashboard-list-card__subject-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dashboard-list-card--compact .dashboard-list-card__title,
 .dashboard-list-card__meta,
 .dashboard-list-card__description {

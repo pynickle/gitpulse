@@ -6,6 +6,7 @@ import { getDashboardSubjectStateVisual } from '../app/utils/getDashboardSubject
 import { shouldShowNotificationSubjectNumber } from '../app/utils/shouldShowNotificationSubjectNumber';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 import * as subIssues from '../shared/utils/sub-issues';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
@@ -13,13 +14,28 @@ import { createVueDom } from './helpers/vue-dom';
 const icon = defineComponent({ setup: () => () => h('svg') });
 const stub = defineComponent({ setup: () => () => h('div') });
 
+const PullRequestConflictMarker = await compileVue(
+  'app/components/dashboard/pr/PullRequestConflictMarker.vue',
+  {
+    '@lucide/vue': new Proxy({}, { get: () => icon }),
+    'virtual:app-runtime': {
+      useI18n: () => ({ t: (key: string) => key, locale: shallowRef('en') }),
+    },
+  },
+  { useI18n: 'virtual:app-runtime' }
+);
+
 const NotificationItem = await compileVue(
   'app/components/dashboard/NotificationItem.vue',
   {
     '@lucide/vue': new Proxy({}, { get: () => icon }),
     '#shared/utils/linked-pull-requests': linkedPullRequests,
     '#shared/utils/pr-checks': prChecks,
+    '#shared/utils/pull-request-conflicts': pullRequestConflicts,
     '#shared/utils/sub-issues': subIssues,
+    '~/components/dashboard/pr/PullRequestConflictMarker.vue': {
+      default: PullRequestConflictMarker,
+    },
     '~/components/dashboard/issue/IssueTypeBadge.vue': stub,
     '~/components/dashboard/issue/SubIssueProgressControl.vue': stub,
     '~/components/dashboard/LinkedPullRequestCountControl.vue': stub,
@@ -152,6 +168,56 @@ describe('dashboard Notification item todo state', () => {
     expect(mark?.getAttribute('aria-label')).toBe('dashboard.todos.savedState');
     expect(mark?.getAttribute('role')).toBe('img');
     expect(isSavedCard(view.root)).toBe(true);
+  });
+
+  test('puts the conflict marker after an open pull request title and keeps it outside the text', async () => {
+    const title = 'A very long pull request title that has to give up width before the marker';
+    const view = mountItem({
+      notification: {
+        ...notification,
+        subject: {
+          ...notification.subject,
+          type: 'PullRequest',
+          title,
+          state: 'open',
+          mergeable: 'conflicting',
+        },
+      },
+    });
+    await nextTick();
+
+    const subject = view.root.querySelector('.dashboard-list-card__subject');
+    const text = subject?.querySelector('.dashboard-list-card__subject-text');
+    const marker = subject?.querySelector('.pr-conflict-marker');
+
+    expect(subject?.classList.contains('dashboard-list-card__subject--with-conflict')).toBe(true);
+    expect(text?.textContent).toBe(title);
+    expect(text?.nextElementSibling).toBe(marker);
+    expect(text?.contains(marker ?? null)).toBe(false);
+    expect(marker?.getAttribute('aria-label')).toBe('dashboard.pullRequestConflicts');
+    expect(marker?.getAttribute('role')).toBe('img');
+  });
+
+  test('leaves a mergeable pull request title unmarked', async () => {
+    const view = mountItem({
+      notification: {
+        ...notification,
+        subject: {
+          ...notification.subject,
+          type: 'PullRequest',
+          state: 'open',
+          mergeable: 'mergeable',
+        },
+      },
+    });
+    await nextTick();
+
+    expect(view.root.querySelector('.pr-conflict-marker')).toBeNull();
+    expect(
+      view.root
+        .querySelector('.dashboard-list-card__subject')
+        ?.classList.contains('dashboard-list-card__subject--with-conflict')
+    ).toBe(false);
   });
 
   test('still states a saved row when the reason control is hidden', async () => {

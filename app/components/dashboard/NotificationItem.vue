@@ -64,8 +64,14 @@
         <div class="dashboard-list-card__content">
           <div class="notification-card__content-frame">
             <div class="dashboard-list-card__text-stack notification-card__text-stack">
-              <p class="title is-6 mb-1 dashboard-list-card__subject">
-                {{ subjectTitle }}
+              <p
+                class="title is-6 mb-1 dashboard-list-card__subject"
+                :class="{
+                  'dashboard-list-card__subject--with-conflict': showPullRequestConflict,
+                }"
+              >
+                <span class="dashboard-list-card__subject-text">{{ subjectTitle }}</span>
+                <PullRequestConflictMarker v-if="showPullRequestConflict" />
               </p>
 
               <div
@@ -229,11 +235,13 @@ import type { DashboardNotification } from '#shared/types/notifications';
 import type { SubIssueIdentity } from '#shared/types/sub-issues';
 import { toLinkedPullRequestIdentity } from '#shared/utils/linked-pull-requests';
 import { toPullRequestChecksView } from '#shared/utils/pr-checks';
+import { pullRequestHasConflicts } from '#shared/utils/pull-request-conflicts';
 import { readSubIssueProgress } from '#shared/utils/sub-issues';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import SubIssueProgressControl from '~/components/dashboard/issue/SubIssueProgressControl.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
+import PullRequestConflictMarker from '~/components/dashboard/pr/PullRequestConflictMarker.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import { getDashboardSubjectStateVisual } from '~/utils/getDashboardSubjectStateVisual';
@@ -317,6 +325,16 @@ const isSubjectStateError = computed(() => {
 const isPullRequestSubject = computed(() => {
   return subject.value?.type === 'PullRequest';
 });
+
+const showPullRequestConflict = computed(
+  () =>
+    isPullRequestSubject.value &&
+    pullRequestHasConflicts({
+      mergeable: subject.value?.mergeable,
+      state: subject.value?.state,
+      draft: subject.value?.draft,
+    })
+);
 
 const subjectVisual = computed(() => {
   return getDashboardSubjectStateVisual({

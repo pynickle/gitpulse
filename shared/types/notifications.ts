@@ -1,6 +1,7 @@
 import type { IssueTypeSummary } from './issues';
 import type { LinkedPullRequestIdentity } from './linked-pull-requests';
 import type { PullRequestCheckRollup } from './pr-checks';
+import type { PullRequestMergeability } from './pulls';
 import type { SubIssueProgress } from './sub-issues';
 
 // Known kinds stay listed for autocomplete; GitHub may add more.
@@ -44,6 +45,8 @@ export interface DashboardNotificationSubject {
   subIssuesSummary?: SubIssueProgress;
   /** Check Rollup for PullRequests after Notification Subject Enrichment. */
   checkRollup?: PullRequestCheckRollup;
+  /** GraphQL mergeability. Present on Pull Request results only. */
+  mergeable?: PullRequestMergeability;
 }
 
 export interface DashboardNotificationRepository {
@@ -96,4 +99,6 @@ export interface NotificationSubjectEnrichmentResult {
   subIssuesSummary?: SubIssueProgress;
   /** Check Rollup. Present on Pull Request results only. */
   checkRollup?: PullRequestCheckRollup;
+  /** GraphQL mergeability. Present on Pull Request results only. */
+  mergeable?: PullRequestMergeability;
 }

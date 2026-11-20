@@ -2,7 +2,9 @@ import type { Octokit } from '@octokit/core';
 
 import { getPartialGraphQLData } from '#server/utils/github-graphql-utils';
 import type { CheckRollupContext, PullRequestCheckRollup } from '#shared/types/pr-checks';
+import type { PullRequestMergeability } from '#shared/types/pulls';
 import { CHECK_ROLLUP_CONTEXT_LIMIT } from '#shared/utils/pr-checks';
+import { readPullRequestMergeability } from '#shared/utils/pull-request-conflicts';
 
 /**
  * Rollup fields for the server-side batch attach.
@@ -45,7 +47,15 @@ interface GraphQLStatusCheckRollup {
 }
 
 interface GraphQLPullRequestResult {
-  pullRequest?: { statusCheckRollup?: GraphQLStatusCheckRollup | null } | null;
+  pullRequest?: {
+    statusCheckRollup?: GraphQLStatusCheckRollup | null;
+    mergeable?: string | null;
+  } | null;
+}
+
+interface AttachedPullRequestListFields {
+  checkRollup?: PullRequestCheckRollup;
+  mergeable?: PullRequestMergeability;
 }
 
 interface GraphQLCheckRollupBatchResponse {
@@ -239,7 +249,7 @@ const buildCheckRollupQuery = (targets: Array<{ owner: string; repo: string; num
     values[`repo${index}`] = target.repo;
     values[`number${index}`] = target.number;
     fields.push(
-      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { pullRequest(number: $number${index}) { ${PR_CHECK_ROLLUP_NODE_FIELDS} } }`
+      `subject${index}: repository(owner: $owner${index}, name: $repo${index}) { pullRequest(number: $number${index}) { mergeable ${PR_CHECK_ROLLUP_NODE_FIELDS} } }`
     );
   });
 
@@ -250,10 +260,11 @@ const buildCheckRollupQuery = (targets: Array<{ owner: string; repo: string; num
 };
 
 /**
- * Attaches each pull request item's Check Rollup in one aliased GraphQL query
- * per chunk, mirroring the Linked Pull Request Count attach. Items that are not
- * pull requests are left untouched, and the whole pass degrades silently so one
- * failed rollup never blanks a list.
+ * Attaches each pull request item's Check Rollup, and its mergeability, in one
+ * aliased GraphQL query per chunk. Mergeability rides that request so a conflict
+ * marker does not cost a second round trip. Items that are not pull requests are
+ * left untouched, and the whole pass degrades silently so one failed query never
+ * blanks a list.
  */
 export async function attachPullRequestCheckRollups<T>(
   octokit: CheckRollupGraphQLClient | Octokit,
@@ -281,7 +292,7 @@ export async function attachPullRequestCheckRollups<T>(
     return items;
   }
 
-  const rollupsByIndex = new Map<number, PullRequestCheckRollup>();
+  const attachedByIndex = new Map<number, AttachedPullRequestListFields>();
 
   try {
     for (
@@ -302,28 +313,31 @@ export async function attachPullRequestCheckRollups<T>(
       }
 
       chunk.forEach((target, chunkIndex) => {
-        const rollup = mapPullRequestCheckRollup(
-          payload[`subject${chunkIndex}`]?.pullRequest?.statusCheckRollup
-        );
-        if (rollup) {
-          rollupsByIndex.set(target.index, rollup);
-        }
+        const pullRequest = payload[`subject${chunkIndex}`]?.pullRequest;
+        const rollup = mapPullRequestCheckRollup(pullRequest?.statusCheckRollup);
+        const mergeable = readPullRequestMergeability(pullRequest?.mergeable);
+        if (!rollup && !mergeable) return;
+
+        attachedByIndex.set(target.index, {
+          ...(rollup ? { checkRollup: rollup } : {}),
+          ...(mergeable ? { mergeable } : {}),
+        });
       });
     }
   } catch {
     return items;
   }
 
-  if (rollupsByIndex.size === 0) {
+  if (attachedByIndex.size === 0) {
     return items;
   }
 
   return items.map((item, index) => {
-    const rollup = rollupsByIndex.get(index);
-    if (!rollup || !item || typeof item !== 'object' || Array.isArray(item)) {
+    const attached = attachedByIndex.get(index);
+    if (!attached || !item || typeof item !== 'object' || Array.isArray(item)) {
       return item;
     }
 
-    return { ...(item as Record<string, unknown>), checkRollup: rollup } as T;
+    return { ...(item as Record<string, unknown>), ...attached } as T;
   });
 }

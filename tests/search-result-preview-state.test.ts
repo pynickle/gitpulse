@@ -6,6 +6,7 @@ import { defineComponent, h, shallowRef } from 'vue';
 import * as subjectStateVisual from '../app/utils/getDashboardSubjectStateVisual';
 import { getPullRequestStateIcon } from '../app/utils/getPullRequestStateVisual';
 import { getTextColorFromBackground } from '../app/utils/getTextColorFromBackground';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -16,10 +17,22 @@ const SlotPassThrough = defineComponent({
     () =>
       h('div', slots.default?.()),
 });
+const PullRequestConflictMarker = await compileVue(
+  'app/components/dashboard/pr/PullRequestConflictMarker.vue',
+  {
+    '@lucide/vue': icons,
+    'vue-i18n': { useI18n: () => ({ t: (key: string) => key, locale: shallowRef('en') }) },
+  },
+  { useI18n: 'vue-i18n' }
+);
 const Preview = await compileVue(
   'app/components/dashboard/SearchResultPreview.vue',
   {
     '@lucide/vue': icons,
+    '#shared/utils/pull-request-conflicts': pullRequestConflicts,
+    '~/components/dashboard/pr/PullRequestConflictMarker.vue': {
+      default: PullRequestConflictMarker,
+    },
     '~/components/ui/ScrollArea.vue': { default: SlotPassThrough },
     '~/utils/getDashboardSubjectStateVisual': subjectStateVisual,
     '~/utils/getPullRequestStateVisual': { getPullRequestStateIcon },
@@ -94,6 +107,35 @@ test('a merged pull request carries no closed tint', () => {
   const card = root.querySelector('.srp-card');
   expect(card?.classList.contains('srp-card--closed')).toBe(false);
   expect(card?.classList.contains('srp-card--completed')).toBe(false);
+});
+
+test('an open conflicting pull request keeps the marker after the title', () => {
+  const title = 'Resolve conflicts in the preview card before the title runs out of room';
+  const { root } = mountItem({
+    title,
+    state: 'open',
+    pull_request: {},
+    mergeable: 'CONFLICTING',
+  });
+
+  const heading = root.querySelector('.srp-card__title');
+  const text = heading?.querySelector('.srp-card__title-text');
+  const marker = heading?.querySelector('.pr-conflict-marker');
+
+  expect(heading?.classList.contains('srp-card__title--with-conflict')).toBe(true);
+  expect(text?.textContent).toBe(title);
+  expect(text?.nextElementSibling).toBe(marker);
+  expect(marker?.getAttribute('aria-label')).toBe('dashboard.pullRequestConflicts');
+});
+
+test('a closed conflicting pull request preview stays unmarked', () => {
+  const { root } = mountItem({
+    state: 'closed',
+    pull_request: {},
+    mergeable: 'CONFLICTING',
+  });
+
+  expect(root.querySelector('.pr-conflict-marker')).toBeNull();
 });
 
 test('a state-less result such as a commit carries no state tint', () => {

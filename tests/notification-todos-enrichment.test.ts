@@ -6,12 +6,14 @@ import { parseGitHubNotificationSubjectTarget } from '../app/utils/parseGitHubNo
 import type { DashboardNotification } from '../shared/types/notifications';
 import type { NotificationTodoItem } from '../shared/types/user-settings';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 import * as subIssues from '../shared/utils/sub-issues';
 import { InMemoryNotificationSubjectEnrichmentAdapter } from './support/inMemoryNotificationSubjectEnrichmentAdapter';
 
 const userSettingsUtils = await import('../shared/utils/user-settings');
 
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
+mock.module('#shared/utils/pull-request-conflicts', () => pullRequestConflicts);
 mock.module('#shared/utils/sub-issues', () => subIssues);
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
 

@@ -6,9 +6,11 @@ import type {
   NotificationSubjectState,
 } from '#shared/types/notifications';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
+import type { PullRequestMergeability } from '#shared/types/pulls';
 import type { SubIssueProgress } from '#shared/types/sub-issues';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
 import { readPullRequestCheckRollup } from '#shared/utils/pr-checks';
+import { pullRequestHasConflicts } from '#shared/utils/pull-request-conflicts';
 
 import { parseGitHubRepoPath } from './parseGitHubRepoPath';
 
@@ -46,6 +48,8 @@ export interface DashboardIssuePrEntity {
   sub_issues_summary?: SubIssueProgress | null;
   /** Check Rollup attached after the Search GraphQL pass. Pull requests only. */
   checkRollup?: PullRequestCheckRollup | null;
+  /** GraphQL mergeability attached with the list. Pull requests only. */
+  mergeable?: PullRequestMergeability | null;
   pull_request?: unknown;
   user?: DashboardIssuePrUser | null;
   labels?: DashboardIssuePrLabel[];
@@ -71,6 +75,8 @@ export interface DashboardIssuePrCard {
   linkedPullRequest: LinkedPullRequestIdentity | null;
   /** Check Rollup when the list payload included it. Pull requests only. */
   checkRollup: PullRequestCheckRollup | null;
+  /** Open pull request with conflicts that must be resolved. */
+  hasConflicts: boolean;
   actorLogin: string;
   actorAvatarUrl: string;
   issueType: IssueTypeSummary | null;
@@ -119,6 +125,13 @@ export function toDashboardIssuePrCard(entity: DashboardIssuePrEntity): Dashboar
     linkedPullRequestCount: linkedSummary?.count ?? null,
     linkedPullRequest: linkedSummary?.identity ?? null,
     checkRollup: isPullRequest ? readPullRequestCheckRollup(entity) : null,
+    hasConflicts:
+      isPullRequest &&
+      pullRequestHasConflicts({
+        mergeable: entity.mergeable,
+        state,
+        draft: entity.draft,
+      }),
     actorLogin: entity.user?.login ?? '',
     actorAvatarUrl: entity.user?.avatar_url ?? '',
     issueType:

@@ -2,9 +2,11 @@ import { describe, expect, mock, test } from 'bun:test';
 
 import * as githubGraphqlUtils from '../server/utils/github-graphql-utils';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 
 mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#shared/utils/pr-checks', () => prChecks);
+mock.module('#shared/utils/pull-request-conflicts', () => pullRequestConflicts);
 
 const {
   PULL_REQUEST_CHECK_ROLLUP_QUERY,
@@ -185,6 +187,33 @@ describe('attach Check Rollups to Search items', () => {
     expect(next[1]).toEqual(items[1]);
     expect(next[1]).not.toHaveProperty('checkRollup');
     expect(next[2]).not.toHaveProperty('checkRollup');
+  });
+
+  test('attaches mergeability on the same query, including a pull request with no rollup', async () => {
+    const items = [pullItem(1, 10), pullItem(2, 12)];
+    const octokit = {
+      graphql: async (query: string) => {
+        expect(query).toContain('mergeable');
+        return {
+          subject0: {
+            pullRequest: {
+              mergeable: 'CONFLICTING',
+              statusCheckRollup: {
+                state: 'SUCCESS',
+                contexts: { totalCount: 1, nodes: [] },
+              },
+            },
+          },
+          subject1: { pullRequest: { mergeable: 'MERGEABLE' } },
+        };
+      },
+    };
+
+    const next = await attachPullRequestCheckRollups(octokit, items);
+
+    expect(next[0]).toMatchObject({ mergeable: 'conflicting', checkRollup: { state: 'SUCCESS' } });
+    expect(next[1]).toMatchObject({ mergeable: 'mergeable' });
+    expect(next[1]).not.toHaveProperty('checkRollup');
   });
 
   test('chunks targets at 50 per aliased query', async () => {

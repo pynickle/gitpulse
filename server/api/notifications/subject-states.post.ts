@@ -20,6 +20,7 @@ import type {
   NotificationSubjectState,
 } from '#shared/types/notifications';
 import { toLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
+import { readPullRequestMergeability } from '#shared/utils/pull-request-conflicts';
 import { readSubIssueProgress } from '#shared/utils/sub-issues';
 
 interface GraphQLLabelNode {
@@ -53,6 +54,8 @@ interface GraphQLSubjectNode {
   mergedAt?: string | null;
   /** PullRequest only — GraphQL `isDraft`. */
   isDraft?: boolean | null;
+  /** PullRequest only — GraphQL `MergeableState`. */
+  mergeable?: string | null;
   isAnswered?: boolean | null;
   comments?: GraphQLCommentsConnection | null;
   author?: GraphQLAuthorNode;
@@ -157,7 +160,7 @@ const buildSubjectStatesQuery = (targets: NotificationSubjectEnrichmentTarget[])
           : 'issue';
     const nodeFields =
       target.type === 'pulls'
-        ? `title updatedAt state mergedAt isDraft comments { totalCount } ${PR_CHECK_ROLLUP_NODE_FIELDS}`
+        ? `title updatedAt state mergedAt isDraft mergeable comments { totalCount } ${PR_CHECK_ROLLUP_NODE_FIELDS}`
         : target.type === 'discussions'
           ? 'title updatedAt isAnswered'
           : `title updatedAt state stateReason issueType { name color } comments { totalCount } ${LINKED_PULL_REQUEST_LIST_NODE_FIELDS} ${SUB_ISSUE_SUMMARY_NODE_FIELDS}`;
@@ -205,6 +208,8 @@ export default defineEventHandler(async (event) => {
           : null;
       const checkRollup =
         target.type === 'pulls' ? mapPullRequestCheckRollup(node?.statusCheckRollup) : null;
+      const mergeable =
+        target.type === 'pulls' ? readPullRequestMergeability(node?.mergeable) : null;
       const subIssuesSummary =
         target.type === 'issues' ? readSubIssueProgress(node?.subIssuesSummary) : null;
 
@@ -231,6 +236,7 @@ export default defineEventHandler(async (event) => {
             }
           : {}),
         ...(checkRollup ? { checkRollup } : {}),
+        ...(mergeable ? { mergeable } : {}),
         ...(subIssuesSummary ? { subIssuesSummary } : {}),
       };
     });

@@ -31,7 +31,13 @@
           <component :is="getStateIcon(item)" :size="16" />
         </div>
         <div class="srp-card__body">
-          <p class="srp-card__title">{{ getTitle(item) }}</p>
+          <p
+            class="srp-card__title"
+            :class="{ 'srp-card__title--with-conflict': pullRequestHasConflictMarker(item) }"
+          >
+            <span class="srp-card__title-text">{{ getTitle(item) }}</span>
+            <PullRequestConflictMarker v-if="pullRequestHasConflictMarker(item)" />
+          </p>
           <div class="srp-card__meta">
             <span v-if="getMeta(item)" class="srp-card__repo">{{ getMeta(item) }}</span>
             <span v-if="getNumberLabel(item)" class="srp-card__sep">&middot;</span>
@@ -75,6 +81,8 @@ import {
   UserIcon,
 } from '@lucide/vue';
 
+import { pullRequestHasConflicts } from '#shared/utils/pull-request-conflicts';
+import PullRequestConflictMarker from '~/components/dashboard/pr/PullRequestConflictMarker.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { getIssueStateVisual } from '~/utils/getDashboardSubjectStateVisual';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
@@ -168,6 +176,14 @@ const getPullRequestDraft = (item: SearchResultItem) => {
   if (typeof item.pull_request !== 'object' || item.pull_request === null) return false;
   return Boolean((item.pull_request as { draft?: boolean }).draft);
 };
+
+const pullRequestHasConflictMarker = (item: SearchResultItem) =>
+  Boolean(item.pull_request) &&
+  pullRequestHasConflicts({
+    mergeable: item.mergeable,
+    state: item.state,
+    draft: getPullRequestDraft(item),
+  });
 
 const getStateClass = (item: SearchResultItem) => {
   if (item.pull_request) {
@@ -332,6 +348,23 @@ const getStateIcon = (item: SearchResultItem) => {
   font-weight: 700;
   line-height: 1.35;
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.srp-card__title--with-conflict {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.srp-card__title-text {
+  min-width: 0;
+}
+
+.srp-card__title--with-conflict .srp-card__title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 0 1 auto;
 }
 
 .srp-card__meta {

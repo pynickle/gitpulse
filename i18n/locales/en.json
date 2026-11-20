@@ -695,6 +695,7 @@
     "meta": {
       "commentCount": "{count} comments"
     },
+    "pullRequestConflicts": "This pull request has conflicts that must be resolved",
     "subIssues": {
       "title": "Sub-issues",
       "parent": "Parent issue",

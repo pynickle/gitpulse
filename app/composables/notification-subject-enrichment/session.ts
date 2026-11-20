@@ -5,6 +5,7 @@ import type {
 } from '#shared/types/notifications';
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
 import { readLinkedPullRequestListSummary } from '#shared/utils/linked-pull-requests';
+import { readPullRequestMergeability } from '#shared/utils/pull-request-conflicts';
 import { readSubIssueProgress } from '#shared/utils/sub-issues';
 
 interface ParsedNotificationSubjectTarget {
@@ -171,6 +172,8 @@ const toValidResult = (
     return null;
   }
 
+  const mergeable = target.type === 'pulls' ? readPullRequestMergeability(value.mergeable) : null;
+
   return {
     key: target.key,
     title: value.title,
@@ -194,6 +197,7 @@ const toValidResult = (
         }
       : {}),
     ...(checkRollup !== undefined ? { checkRollup: checkRollup as PullRequestCheckRollup } : {}),
+    ...(mergeable ? { mergeable } : {}),
     ...(subIssuesSummary ? { subIssuesSummary } : {}),
   };
 };
@@ -222,6 +226,7 @@ const mergeEnrichmentResults = (
       linkedPullRequestCount: _previousCount,
       linkedPullRequest: _previousIdentity,
       checkRollup: _previousCheckRollup,
+      mergeable: _previousMergeable,
       subIssuesSummary: _previousSubIssuesSummary,
       ...subjectWithoutAttachedData
     } = notification.subject;
@@ -248,6 +253,7 @@ const mergeEnrichmentResults = (
             }
           : {}),
         ...(result.checkRollup !== undefined ? { checkRollup: result.checkRollup } : {}),
+        ...(result.mergeable !== undefined ? { mergeable: result.mergeable } : {}),
         ...(result.subIssuesSummary ? { subIssuesSummary: result.subIssuesSummary } : {}),
         stateStatus: 'loaded' as const,
       },

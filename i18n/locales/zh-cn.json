@@ -695,6 +695,7 @@
     "meta": {
       "commentCount": "{count} 条评论"
     },
+    "pullRequestConflicts": "此拉取请求存在必须解决的冲突",
     "subIssues": {
       "title": "子议题",
       "parent": "父议题",

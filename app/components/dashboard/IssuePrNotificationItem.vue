@@ -32,8 +32,12 @@
         <div class="dashboard-list-card__content">
           <div class="is-flex is-align-items-flex-start">
             <div class="dashboard-list-card__text-stack">
-              <p class="title is-6 mb-1 dashboard-list-card__subject">
-                {{ card.title }}
+              <p
+                class="title is-6 mb-1 dashboard-list-card__subject"
+                :class="{ 'dashboard-list-card__subject--with-conflict': card.hasConflicts }"
+              >
+                <span class="dashboard-list-card__subject-text">{{ card.title }}</span>
+                <PullRequestConflictMarker v-if="card.hasConflicts" />
               </p>
 
               <div v-if="card.issueType || card.labels.length" class="notification-card__labels">
@@ -143,6 +147,7 @@ import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import SubIssueProgressControl from '~/components/dashboard/issue/SubIssueProgressControl.vue';
 import LinkedPullRequestCountControl from '~/components/dashboard/LinkedPullRequestCountControl.vue';
 import CheckStatusChip from '~/components/dashboard/pr/CheckStatusChip.vue';
+import PullRequestConflictMarker from '~/components/dashboard/pr/PullRequestConflictMarker.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import { toDashboardIssuePrCard, type DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { getDashboardSubjectStateVisual } from '~/utils/getDashboardSubjectStateVisual';

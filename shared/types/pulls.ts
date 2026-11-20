@@ -121,6 +121,12 @@ export interface PullRequestDetailPayload {
   deletions?: number;
 }
 
+/**
+ * GitHub GraphQL `MergeableState`, stored lowercased.
+ * `conflicting` means the pull request has conflicts that must be resolved.
+ */
+export type PullRequestMergeability = 'conflicting' | 'mergeable' | 'unknown';
+
 export type PullRequestDetailResponse = PullRequestDetailPayload;
 
 export interface PullRequestDetailViewModel extends PullRequestDetailPayload {

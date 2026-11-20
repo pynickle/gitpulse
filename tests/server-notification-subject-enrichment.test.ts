@@ -4,12 +4,14 @@ import * as githubGraphqlUtils from '../server/utils/github-graphql-utils';
 import * as linkedPullRequestTypes from '../shared/types/linked-pull-requests';
 import * as linkedPullRequests from '../shared/utils/linked-pull-requests';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as pullRequestConflicts from '../shared/utils/pull-request-conflicts';
 import * as subIssues from '../shared/utils/sub-issues';
 
 mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#shared/types/linked-pull-requests', () => linkedPullRequestTypes);
 mock.module('#shared/utils/linked-pull-requests', () => linkedPullRequests);
 mock.module('#shared/utils/pr-checks', () => prChecks);
+mock.module('#shared/utils/pull-request-conflicts', () => pullRequestConflicts);
 mock.module('#shared/utils/sub-issues', () => subIssues);
 
 const validationUtils = await import('../server/utils/notification-subject-state-validation-utils');
@@ -313,6 +315,41 @@ describe('Notification Subject Enrichment server endpoint', () => {
           ],
         },
       },
+    });
+  });
+
+  test('attaches conflicting mergeability on Pull Request results only', async () => {
+    requestBody = { targets: [targets[0], targets[1]] };
+    graphQLRequest = async (query) => {
+      expect(query).toContain('mergeable');
+      return {
+        subject0: {
+          issue: {
+            title: 'Issue',
+            updatedAt: '2026-08-12T01:00:00.000Z',
+            state: 'OPEN',
+            author: { login: 'issue-author', avatarUrl: 'https://avatars.example/issue' },
+          },
+        },
+        subject1: {
+          pullRequest: {
+            title: 'Pull with conflicts',
+            updatedAt: '2026-08-12T02:00:00.000Z',
+            state: 'OPEN',
+            isDraft: false,
+            mergeable: 'CONFLICTING',
+            author: { login: 'pull-author', avatarUrl: 'https://avatars.example/pull' },
+          },
+        },
+      };
+    };
+
+    const response = await handler({});
+
+    expect(response.items[0]).not.toHaveProperty('mergeable');
+    expect(response.items[1]).toMatchObject({
+      key: 'acme/widgets/pulls/2',
+      mergeable: 'conflicting',
     });
   });
 
