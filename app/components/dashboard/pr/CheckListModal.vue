@@ -106,47 +106,48 @@ const handlePointerUp = (event: PointerEvent) => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <dialog
-      ref="dialogRef"
-      class="check-list-modal__panel"
-      closedby="any"
-      :aria-label="t('dashboard.checks.modalTitle')"
-      @close="handleNativeClose"
-      @cancel.prevent="handleClose"
-      @pointerdown="handlePointerDown"
-      @pointerup="handlePointerUp"
-    >
-      <div class="check-list-modal__header">
-        <h3 class="check-list-modal__title">{{ t('dashboard.checks.modalTitle') }}</h3>
-        <button
-          class="check-list-modal__close"
-          type="button"
-          autofocus
-          :aria-label="t('dashboard.linkedPullRequests.closeAriaLabel')"
-          @click="handleClose"
-        >
-          <XIcon :size="16" />
-        </button>
-      </div>
+  <!-- showModal() already promotes a modal <dialog> to the top layer, so it needs no
+  Teleport. Rendering it into the shared `body` target made its hydration depend on
+  which async chunk resolved first, so it swapped nodes with the sibling modals. -->
+  <dialog
+    ref="dialogRef"
+    class="check-list-modal__panel"
+    closedby="any"
+    :aria-label="t('dashboard.checks.modalTitle')"
+    @close="handleNativeClose"
+    @cancel.prevent="handleClose"
+    @pointerdown="handlePointerDown"
+    @pointerup="handlePointerUp"
+  >
+    <div class="check-list-modal__header">
+      <h3 class="check-list-modal__title">{{ t('dashboard.checks.modalTitle') }}</h3>
+      <button
+        class="check-list-modal__close"
+        type="button"
+        autofocus
+        :aria-label="t('dashboard.linkedPullRequests.closeAriaLabel')"
+        @click="handleClose"
+      >
+        <XIcon :size="16" />
+      </button>
+    </div>
 
-      <ScrollArea class="check-list-modal__content">
-        <!-- Summary line first: the headline before the list is scanned. -->
-        <p class="check-list-modal__summary" :data-tone="summaryTone">
-          <span class="check-list-modal__summary-icon" aria-hidden="true">
-            <component :is="getCheckStatusToneIcon(summaryTone)" :size="14" />
-          </span>
-          <span>{{ summary }}</span>
-        </p>
+    <ScrollArea class="check-list-modal__content">
+      <!-- Summary line first: the headline before the list is scanned. -->
+      <p class="check-list-modal__summary" :data-tone="summaryTone">
+        <span class="check-list-modal__summary-icon" aria-hidden="true">
+          <component :is="getCheckStatusToneIcon(summaryTone)" :size="14" />
+        </span>
+        <span>{{ summary }}</span>
+      </p>
 
-        <p v-if="view.isTruncated" class="check-list-modal__truncated">
-          {{ t('dashboard.checks.truncated', { limit: CHECK_ROLLUP_CONTEXT_LIMIT }) }}
-        </p>
+      <p v-if="view.isTruncated" class="check-list-modal__truncated">
+        {{ t('dashboard.checks.truncated', { limit: CHECK_ROLLUP_CONTEXT_LIMIT }) }}
+      </p>
 
-        <CheckListRows :groups="view.groups" />
-      </ScrollArea>
-    </dialog>
-  </Teleport>
+      <CheckListRows :groups="view.groups" />
+    </ScrollArea>
+  </dialog>
 </template>
 
 <style scoped lang="scss">
