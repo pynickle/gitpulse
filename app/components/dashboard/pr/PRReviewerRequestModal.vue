@@ -16,7 +16,12 @@ import type {
   DetailPeoplePickerWarning,
 } from '~/types/detail-people-picker';
 
-const { candidates, warnings, copilotReviewEffort } = defineProps<{
+const {
+  candidates,
+  warnings,
+  copilotReviewEffort,
+  hideCopilot = false,
+} = defineProps<{
   isVisible: boolean;
   candidates: PRReviewerCandidate[];
   warnings: PRReviewerCandidateWarning[];
@@ -24,6 +29,7 @@ const { candidates, warnings, copilotReviewEffort } = defineProps<{
   submitting: boolean;
   error: string;
   copilotReviewEffort?: CopilotReviewEffort;
+  hideCopilot?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -40,24 +46,26 @@ const reviewerGroupLabels = computed(() => ({
 }));
 
 const pickerCandidates = computed<DetailPeoplePickerCandidate[]>(() =>
-  candidates.map((candidate) => ({
-    key: candidate.key,
-    kind: candidate.kind,
-    name: candidate.name,
-    avatarUrl: candidate.avatarUrl,
-    login: candidate.login,
-    slug: candidate.slug,
-    disabled: candidate.requested,
-    badgeLabel: [
-      candidate.requested ? t('prReview.status.requested') : '',
-      isCopilotReviewer(candidate)
-        ? t(`prReview.copilot.${copilotReviewEffort ?? 'defaultEffort'}`)
-        : '',
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    ariaLabel: t('prReview.reviewerPicker.selectCandidate', { name: candidate.name }),
-  }))
+  candidates
+    .filter((candidate) => !hideCopilot || !isCopilotReviewer(candidate))
+    .map((candidate) => ({
+      key: candidate.key,
+      kind: candidate.kind,
+      name: candidate.name,
+      avatarUrl: candidate.avatarUrl,
+      login: candidate.login,
+      slug: candidate.slug,
+      disabled: candidate.requested,
+      badgeLabel: [
+        candidate.requested ? t('prReview.status.requested') : '',
+        isCopilotReviewer(candidate)
+          ? t(`prReview.copilot.${copilotReviewEffort ?? 'defaultEffort'}`)
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      ariaLabel: t('prReview.reviewerPicker.selectCandidate', { name: candidate.name }),
+    }))
 );
 
 const pickerWarnings = computed<DetailPeoplePickerWarning[]>(() =>

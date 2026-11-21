@@ -506,6 +506,8 @@
       "linkTargetGithubDescription": "Open on github.com.",
       "linkedPullRequestSection": "Linked pull requests",
       "previewSingleLinkedPullRequestLabel": "Show the selection dialog when there is only one",
+      "copilotReviewSection": "Copilot review",
+      "hideUnrequestedCopilotLabel": "Hide until requested",
       "selectAppFont": "Select app font",
       "selectCodeFont": "Select code font",
       "loadSystemFonts": "Load system fonts",

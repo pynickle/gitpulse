@@ -69,7 +69,11 @@ const createSettingsState = () => ({
     reviewInlineMobileDefaultLayout: 'tabbed',
   },
   notificationBehavior: { readMarkMode: 'delayed', readMarkDelaySeconds: 3 },
-  navigation: { linkTarget: 'gitpulse', previewSingleLinkedPullRequest: true },
+  navigation: {
+    linkTarget: 'gitpulse',
+    previewSingleLinkedPullRequest: true,
+    hideUnrequestedCopilot: true,
+  },
   releaseTimeline: { showReactions: true, showAssetsCount: false },
 });
 
@@ -290,5 +294,32 @@ describe('settings category switch', () => {
     await nextTick();
 
     expect(navigationUpdates).toEqual([{ previewSingleLinkedPullRequest: false }]);
+  });
+
+  test('hides an unrequested Copilot review until the reader turns it off', async () => {
+    navigationUpdates.length = 0;
+    const root = await mountPage();
+
+    await clickCategory(root, 2);
+    await waitUntil(() =>
+      panelText(root).includes('dashboard.settings.hideUnrequestedCopilotLabel')
+    );
+
+    const input = root.querySelector<HTMLInputElement>(
+      'input[aria-label="dashboard.settings.hideUnrequestedCopilotLabel"]'
+    );
+    expect(input?.checked).toBe(true);
+    if (!input) {
+      throw new Error('missing unrequested Copilot hiding toggle');
+    }
+
+    input.checked = false;
+    const previousInputElement = globalThis.HTMLInputElement;
+    globalThis.HTMLInputElement = dom.window.HTMLInputElement;
+    input.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    globalThis.HTMLInputElement = previousInputElement;
+    await nextTick();
+
+    expect(navigationUpdates).toEqual([{ hideUnrequestedCopilot: false }]);
   });
 });

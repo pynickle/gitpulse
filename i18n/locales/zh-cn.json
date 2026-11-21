@@ -506,6 +506,8 @@
       "linkTargetGithubDescription": "在 github.com 上打开。",
       "linkedPullRequestSection": "链接的拉取请求",
       "previewSingleLinkedPullRequestLabel": "只有一个时也显示选择弹窗",
+      "copilotReviewSection": "Copilot 审查",
+      "hideUnrequestedCopilotLabel": "未请求时隐藏",
       "selectAppFont": "选择应用字体",
       "selectCodeFont": "选择代码字体",
       "loadSystemFonts": "加载系统字体",

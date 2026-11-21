@@ -103,32 +103,51 @@ describe('user settings store', () => {
     expect(createDefaultUserSettings().navigation).toEqual({
       linkTarget: 'gitpulse',
       previewSingleLinkedPullRequest: true,
+      hideUnrequestedCopilot: true,
     });
 
     expect(normalizeUserSettings({}).navigation).toEqual({
       linkTarget: 'gitpulse',
       previewSingleLinkedPullRequest: true,
+      hideUnrequestedCopilot: true,
     });
     expect(normalizeUserSettings({ navigation: { linkTarget: 'github' } }).navigation).toEqual({
       linkTarget: 'github',
       previewSingleLinkedPullRequest: true,
+      hideUnrequestedCopilot: true,
     });
     expect(normalizeUserSettings({ navigation: { linkTarget: 'external' } }).navigation).toEqual({
       linkTarget: 'gitpulse',
       previewSingleLinkedPullRequest: true,
+      hideUnrequestedCopilot: true,
     });
     expect(
       normalizeUserSettings({ navigation: { previewSingleLinkedPullRequest: false } }).navigation
     ).toEqual({
       linkTarget: 'gitpulse',
       previewSingleLinkedPullRequest: false,
+      hideUnrequestedCopilot: true,
     });
     expect(
       normalizeUserSettings({ navigation: { previewSingleLinkedPullRequest: 'yes' } }).navigation
     ).toEqual({
       linkTarget: 'gitpulse',
       previewSingleLinkedPullRequest: true,
+      hideUnrequestedCopilot: true,
     });
+  });
+
+  test('hides an unrequested Copilot review unless the reader turns it off', () => {
+    expect(createDefaultUserSettings().navigation.hideUnrequestedCopilot).toBe(true);
+    expect(normalizeUserSettings({}).navigation.hideUnrequestedCopilot).toBe(true);
+    expect(
+      normalizeUserSettings({ navigation: { hideUnrequestedCopilot: false } }).navigation
+        .hideUnrequestedCopilot
+    ).toBe(false);
+    expect(
+      normalizeUserSettings({ navigation: { hideUnrequestedCopilot: 'yes' } }).navigation
+        .hideUnrequestedCopilot
+    ).toBe(true);
   });
 
   test('defaults and normalizes composer layouts without changing settings version', () => {
@@ -688,6 +707,7 @@ describe('user settings store', () => {
     expect(harness.settings.value.navigation).toEqual({
       linkTarget: 'github',
       previewSingleLinkedPullRequest: true,
+      hideUnrequestedCopilot: true,
     });
     expect(harness.saveRequests).toHaveLength(1);
     expect(harness.saveRequests[0]?.patch).toEqual({

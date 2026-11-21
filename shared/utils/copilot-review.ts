@@ -5,6 +5,28 @@ export function normalizeCopilotReviewEffort(value: unknown): CopilotReviewEffor
   return effort === 'lite' || effort === 'balanced' || effort === 'max' ? effort : undefined;
 }
 
+type CopilotReviewerIdentity = {
+  login?: string;
+  id?: string | number;
+  node_id?: string;
+  nodeId?: string;
+};
+
+export function hidesUnrequestedCopilot({
+  hiding,
+  reviewerItems,
+  requestedReviewers,
+}: {
+  hiding: boolean;
+  reviewerItems?: ReadonlyArray<CopilotReviewerIdentity | null> | null;
+  requestedReviewers?: ReadonlyArray<CopilotReviewerIdentity | null> | null;
+}): boolean {
+  if (!hiding) return false;
+
+  const reviewers = reviewerItems?.length ? reviewerItems : (requestedReviewers ?? []);
+  return !reviewers.some((reviewer) => isCopilotReviewer(reviewer));
+}
+
 export function isCopilotReviewer(
   user?: { login?: string; id?: string | number; node_id?: string; nodeId?: string } | null
 ): boolean {

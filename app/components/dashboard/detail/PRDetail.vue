@@ -153,6 +153,7 @@
 
           <PRActions
             v-model:copilot-review-effort="copilotReviewEffort"
+            :hide-unrequested-copilot="settings.navigation.hideUnrequestedCopilot"
             :copilot-review-efforts="copilotReviewEfforts"
             :requesting-reviewers="submittingReviewerRequest"
             :requested-reviewers="currentPullRequest?.requested_reviewers || []"
@@ -185,6 +186,7 @@
           />
 
           <PRReviewerRequestModal
+            :hide-copilot="hidesCopilotOffer"
             :copilot-review-effort="copilotReviewEffort"
             v-if="hasOpenedReviewerPicker"
             :is-visible="isReviewerPickerOpen"
@@ -219,7 +221,11 @@ import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/t
 import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
 import type { PullRequestDetailResponse, PullRequestDetailViewModel } from '#shared/types/pulls';
-import { isCopilotReviewer, type CopilotReviewEffort } from '#shared/utils/copilot-review';
+import {
+  hidesUnrequestedCopilot,
+  isCopilotReviewer,
+  type CopilotReviewEffort,
+} from '#shared/utils/copilot-review';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
@@ -378,6 +384,16 @@ const canRequestReviewers = computed(
     ) && reviewerRequestsAvailable.value !== false
 );
 
+const { settings } = useUserSettings();
+
+const hidesCopilotOffer = computed(() =>
+  hidesUnrequestedCopilot({
+    hiding: settings.value.navigation.hideUnrequestedCopilot,
+    reviewerItems: currentPullRequest.value?.reviewers?.items,
+    requestedReviewers: currentPullRequest.value?.requested_reviewers,
+  })
+);
+
 // Use GitHub's offered reviewer, independently of collaborator write permissions.
 const canRequestCopilot = computed(
   () =>
@@ -507,7 +523,7 @@ const addTimelineEvent = (event: PRTimelineItem) => {
 };
 
 const openReviewerPicker = () => {
-  if (!canRequestReviewers.value && !canRequestCopilot.value) {
+  if (!canRequestReviewers.value && (hidesCopilotOffer.value || !canRequestCopilot.value)) {
     return;
   }
 
@@ -670,7 +686,7 @@ const loadReviewerCandidates = async (query = '') => {
     reviewerRequestsAvailable.value = data.canRequestReviewers;
     copilotReviewEfforts.value = data.copilotReviewEfforts;
     copilotRequestsAvailable.value = data.canRequestCopilot ?? null;
-    if (!data.canRequestReviewers && !canRequestCopilot.value) {
+    if (!data.canRequestReviewers && (hidesCopilotOffer.value || !canRequestCopilot.value)) {
       isReviewerPickerOpen.value = false;
     }
   } catch (err: unknown) {

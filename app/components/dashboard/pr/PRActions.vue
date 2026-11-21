@@ -11,7 +11,7 @@
             {{ reviewerItems.length }}
           </span>
           <button
-            v-if="canRequestReviewers || canRequestCopilot"
+            v-if="canRequestReviewers || (canRequestCopilot && !hidesCopilotOffer)"
             class="reviewers-action-btn"
             type="button"
             :aria-label="t('prReview.reviewerPicker.requestReviewers')"
@@ -106,7 +106,7 @@
         </div>
         <p v-else class="sidebar-section__empty">{{ t('prReview.noReviewers') }}</p>
         <div
-          v-if="canRequestCopilot && !reviewerItems.some(isCopilotReviewer)"
+          v-if="canRequestCopilot && !reviewerItems.some(isCopilotReviewer) && !hidesCopilotOffer"
           class="copilot-review-choice"
         >
           <span class="reviewer-item__name">Copilot</span>
@@ -293,7 +293,11 @@ import { computed, onUnmounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DashboardNotification } from '#shared/types/notifications';
-import { isCopilotReviewer, type CopilotReviewEffort } from '#shared/utils/copilot-review';
+import {
+  hidesUnrequestedCopilot,
+  isCopilotReviewer,
+  type CopilotReviewEffort,
+} from '#shared/utils/copilot-review';
 import CopilotReviewEffortPicker from '~/components/dashboard/pr/CopilotReviewEffortPicker.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
@@ -333,6 +337,7 @@ const {
   canManageState,
   repoInfo,
   prNumber,
+  hideUnrequestedCopilot = true,
 } = defineProps<{
   requestedReviewers: PullRequestUserSummary[];
   requestedTeams: PullRequestTeamSummary[];
@@ -340,6 +345,7 @@ const {
   reviewerError?: string;
   canRequestReviewers: boolean;
   canRequestCopilot?: boolean;
+  hideUnrequestedCopilot?: boolean;
   copilotReviewEfforts?: CopilotReviewEffort[];
   requestingReviewers?: boolean;
   canOpenReview?: boolean;
@@ -494,6 +500,14 @@ const reviewerItems = computed<PRReviewerSummaryItem[]>(() => {
 
   return [...requestedUsers, ...requestedTeamItems];
 });
+
+const hidesCopilotOffer = computed(() =>
+  hidesUnrequestedCopilot({
+    hiding: hideUnrequestedCopilot,
+    reviewerItems: reviewers?.items,
+    requestedReviewers,
+  })
+);
 
 const reviewerWarnings = computed(() => reviewers?.warnings ?? []);
 const reviewerErrorText = computed(() => reviewerError?.trim() || '');

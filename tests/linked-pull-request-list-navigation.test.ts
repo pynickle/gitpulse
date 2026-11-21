@@ -13,6 +13,7 @@ const settings = shallowRef({
   navigation: {
     linkTarget: 'gitpulse',
     previewSingleLinkedPullRequest: true,
+    hideUnrequestedCopilot: true,
   } satisfies UserNavigationSettings,
 });
 
@@ -28,7 +29,11 @@ const pullRequest = { owner: 'acme', repo: 'widgets', number: 12 };
 
 const click = (preview: boolean, payload: LinkedPullRequestCountClickPayload) => {
   settings.value = {
-    navigation: { linkTarget: 'gitpulse', previewSingleLinkedPullRequest: preview },
+    navigation: {
+      linkTarget: 'gitpulse',
+      previewSingleLinkedPullRequest: preview,
+      hideUnrequestedCopilot: true,
+    },
   };
   const opened: Array<typeof pullRequest> = [];
   const list = useLinkedPullRequestListNavigation((identity) => {

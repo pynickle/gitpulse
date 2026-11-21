@@ -182,6 +182,41 @@ test('the request modal displays the chosen effort without an editor', () => {
   expect(root.querySelector('select')).toBeNull();
 });
 
+test('the request list omits Copilot while the unrequested offer is hidden', () => {
+  dom = createVueDom();
+  const root = dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(RequestModal, {
+          isVisible: true,
+          hideCopilot: true,
+          candidates: [
+            {
+              key: 'user:copilot',
+              kind: 'user',
+              name: 'Copilot',
+              login: 'Copilot',
+              requested: false,
+            },
+            {
+              key: 'user:octocat',
+              kind: 'user',
+              name: 'octocat',
+              login: 'octocat',
+              requested: false,
+            },
+          ],
+          warnings: [],
+          loading: false,
+          submitting: false,
+          error: '',
+        }),
+    })
+  ).root;
+  expect(root.textContent).not.toContain('Copilot');
+  expect(root.textContent).toContain('octocat');
+});
+
 test('an ordinary timeline request includes from before the reviewer', () => {
   dom = createVueDom();
   const root = dom.mount(

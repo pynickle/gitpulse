@@ -362,6 +362,18 @@ describe('server Zod request validation', () => {
         navigation: { previewSingleLinkedPullRequest: 'yes' },
       })
     ).toThrow('Invalid settings request body');
+    expect(
+      parseUserSettingsPatchBody({
+        navigation: { hideUnrequestedCopilot: false },
+      })
+    ).toEqual({
+      navigation: { hideUnrequestedCopilot: false },
+    });
+    expect(() =>
+      parseUserSettingsPatchBody({
+        navigation: { hideUnrequestedCopilot: 'yes' },
+      })
+    ).toThrow('Invalid settings request body');
     expect(() =>
       parseUserSettingsPatchBody({
         tabGroups: [{ id: 'default', name: 'General', extra: true }],

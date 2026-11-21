@@ -106,6 +106,7 @@ const navigationSettingsPatchSchema = z
   .strictObject({
     linkTarget: linkTargetSchema.optional(),
     previewSingleLinkedPullRequest: z.boolean().optional(),
+    hideUnrequestedCopilot: z.boolean().optional(),
   })
   .refine((navigation) => Object.keys(navigation).length > 0, {
     message: 'At least one navigation setting is required',

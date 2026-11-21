@@ -124,6 +124,7 @@ export const DEFAULT_USER_NOTIFICATION_BEHAVIOR_SETTINGS: UserNotificationBehavi
 export const DEFAULT_USER_NAVIGATION_SETTINGS: UserNavigationSettings = {
   linkTarget: 'gitpulse',
   previewSingleLinkedPullRequest: true,
+  hideUnrequestedCopilot: true,
 };
 
 export const DEFAULT_USER_LAYOUT_SETTINGS: UserLayoutSettings = {
@@ -813,6 +814,10 @@ export function normalizeUserNavigationSettings(
       typeof candidate.previewSingleLinkedPullRequest === 'boolean'
         ? candidate.previewSingleLinkedPullRequest
         : fallback.previewSingleLinkedPullRequest,
+    hideUnrequestedCopilot:
+      typeof candidate.hideUnrequestedCopilot === 'boolean'
+        ? candidate.hideUnrequestedCopilot
+        : fallback.hideUnrequestedCopilot,
   };
 }
 
