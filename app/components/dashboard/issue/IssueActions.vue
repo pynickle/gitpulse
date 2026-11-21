@@ -461,6 +461,7 @@ const formatDate = (dateString: string | undefined) => {
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/sidebar-github-link' as *;
 
 .detail-sidebar-panel {
   display: flex;
@@ -729,34 +730,7 @@ const formatDate = (dateString: string | undefined) => {
   }
 }
 
-// Profile-style escape hatch: quiet footer link, not another full-width button.
-.sidebar-github-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  width: fit-content;
-  margin-top: 0.15rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--gitpulse-border);
-  color: var(--gitpulse-text-muted);
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.3;
-  text-decoration: none;
-  transition: color 0.12s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent);
-    }
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--gitpulse-radius-sm, 6px);
-  }
-}
+@include sidebar-github-link;
 
 .info-list {
   display: flex;

@@ -216,21 +216,17 @@ usePageMeta(
             </div>
           </section>
 
-          <section class="sidebar-card">
-            <div class="sidebar-card__content">
-              <a
-                v-if="release.html_url"
-                :href="release.html_url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="release-link"
-              >
-                <GitHubIcon :size="14" />
-                <span>{{ t('releaseDetail.openOnGitHub') }}</span>
-                <ExternalLinkIcon :size="12" />
-              </a>
-            </div>
-          </section>
+          <a
+            v-if="release.html_url"
+            :href="release.html_url"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="sidebar-github-link"
+          >
+            <GitHubIcon :size="14" aria-hidden="true" />
+            <span>{{ t('detailActions.viewOnGithub') }}</span>
+            <ExternalLinkIcon :size="12" aria-hidden="true" />
+          </a>
         </div>
       </ScrollArea>
     </div>
@@ -240,6 +236,7 @@ usePageMeta(
 <style scoped lang="scss">
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/sidebar-github-link' as *;
 
 .detail-scroll {
   height: 100%;
@@ -499,28 +496,7 @@ usePageMeta(
   opacity: 0.7;
 }
 
-.release-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 6px;
-  color: var(--gitpulse-text-muted);
-  background: var(--gitpulse-surface);
-  font-size: 12px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.12s ease;
-
-  @include hover-only {
-    &:hover {
-      border-color: var(--gitpulse-border-strong);
-      color: var(--gitpulse-accent);
-      background: var(--gitpulse-surface-hover);
-    }
-  }
-}
+@include sidebar-github-link;
 
 @include detail-sidebar-stacking('.detail-scroll');
 

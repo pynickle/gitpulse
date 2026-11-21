@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="sidebar-card mb-4">
+  <div class="detail-sidebar-panel">
+    <div class="sidebar-card">
       <div class="sidebar-card__header">
         <div class="sidebar-card__header-left">
           <MessageSquareIcon :size="14" class="sidebar-card__icon" />
@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <div v-if="sourceNotification" class="sidebar-card mb-4">
+    <div v-if="sourceNotification" class="sidebar-card">
       <div class="sidebar-card__content">
         <button type="button" class="sidebar-action-btn" @click="handleToggleTodo">
           <ListPlusIcon v-if="!isTodo" :size="14" />
@@ -78,14 +78,17 @@
       </div>
     </div>
 
-    <div v-if="discussion.url" class="sidebar-card">
-      <div class="sidebar-card__content">
-        <a :href="discussion.url" target="_blank" rel="noopener noreferrer" class="sidebar-link">
-          <ExternalLinkIcon :size="14" />
-          <span>{{ t('discussionDetail.viewOnGithub') }}</span>
-        </a>
-      </div>
-    </div>
+    <a
+      v-if="discussion.url"
+      :href="discussion.url"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="sidebar-github-link"
+    >
+      <GitHubIcon :size="14" aria-hidden="true" />
+      <span>{{ t('detailActions.viewOnGithub') }}</span>
+      <ExternalLinkIcon :size="12" aria-hidden="true" />
+    </a>
   </div>
 </template>
 
@@ -105,6 +108,7 @@ import { useI18n } from 'vue-i18n';
 import type { DiscussionDetailPayload } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 
 const { discussion, sourceNotification } = defineProps<{
   discussion: DiscussionDetailPayload;
@@ -146,6 +150,13 @@ const updatedAtLabel = computed(() =>
 <style scoped lang="scss">
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/sidebar-github-link' as *;
+
+.detail-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
@@ -224,22 +235,7 @@ const updatedAtLabel = computed(() =>
   color: var(--gitpulse-text-muted);
 }
 
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--gitpulse-text-muted);
-  text-decoration: none;
-  transition: color 0.12s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent);
-    }
-  }
-}
+@include sidebar-github-link;
 
 .sidebar-action-btn {
   display: flex;

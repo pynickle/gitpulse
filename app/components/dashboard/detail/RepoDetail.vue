@@ -149,14 +149,12 @@ const copy = computed(() => ({
   license: t('repoDetail.license'),
   noDescription: t('repoDetail.noDescription'),
   notWatching: t('repoDetail.notWatching'),
-  openGitHub: t('repoDetail.openGitHub'),
   private: t('repoDetail.private'),
   public: t('repoDetail.public'),
   pushed: t('repoDetail.pushed'),
   readme: t('repoDetail.readme'),
   releases: t('repoDetail.releases'),
   repository: t('repoDetail.repository'),
-  source: t('repoDetail.links'),
   star: t('repoDetail.star'),
   starCount: t('repoDetail.starCount'),
   starred: t('repoDetail.starred'),
@@ -980,96 +978,94 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         media="(max-width: 1024px)"
       >
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
-          <div class="sidebar-card mb-4">
-            <div class="sidebar-card__header">
-              <div class="sidebar-card__header-left">
-                <StarIcon :size="14" class="sidebar-card__icon" />
-                <span class="sidebar-card__title">{{ copy.stats }}</span>
-              </div>
-            </div>
-            <div class="sidebar-card__content">
-              <div class="info-stats">
-                <div v-for="stat in stats" :key="stat.label" class="info-stat">
-                  <component
-                    :is="stat.icon"
-                    :size="20"
-                    class="info-stat__icon"
-                    :style="{ color: stat.color }"
-                  />
-                  <span class="info-stat__value" :title="stat.value.toLocaleString(localeCode)">
-                    {{ formatCompactNumber(stat.value, localeCode) }}
-                  </span>
-                  <span class="info-stat__label">{{ stat.label }}</span>
+          <div class="repo-sidebar">
+            <div class="sidebar-card mb-4">
+              <div class="sidebar-card__header">
+                <div class="sidebar-card__header-left">
+                  <StarIcon :size="14" class="sidebar-card__icon" />
+                  <span class="sidebar-card__title">{{ copy.stats }}</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card mb-4">
-            <div class="sidebar-card__header">
-              <div class="sidebar-card__header-left">
-                <CodeXmlIcon :size="14" class="sidebar-card__icon" />
-                <span class="sidebar-card__title">{{ copy.languages }}</span>
-              </div>
-            </div>
-            <div class="sidebar-card__content">
-              <div
-                v-if="loadingLanguages && languageShares.length === 0"
-                class="repo-languages__loading"
-              >
-                <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
-                <span class="is-sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
-              </div>
-              <div v-else class="repo-languages">
-                <div class="repo-languages__bar" role="img" :aria-label="languageBarAriaLabel">
-                  <span
-                    v-for="item in languageShares"
-                    :key="item.name"
-                    class="repo-languages__segment"
-                    :style="{
-                      width: `${item.percentage}%`,
-                      backgroundColor: item.color,
-                    }"
-                    :title="`${item.name} ${formatLanguagePercentage(item.percentage)}`"
-                  />
-                </div>
-                <ul class="repo-languages__legend">
-                  <li v-for="item in languageShares" :key="item.name" class="repo-languages__item">
-                    <span
-                      class="repo-languages__dot"
-                      :style="{ backgroundColor: item.color }"
-                      aria-hidden="true"
+              <div class="sidebar-card__content">
+                <div class="info-stats">
+                  <div v-for="stat in stats" :key="stat.label" class="info-stat">
+                    <component
+                      :is="stat.icon"
+                      :size="20"
+                      class="info-stat__icon"
+                      :style="{ color: stat.color }"
                     />
-                    <span class="repo-languages__name">{{ item.name }}</span>
-                    <span class="repo-languages__percent">
-                      {{ formatLanguagePercentage(item.percentage) }}
+                    <span class="info-stat__value" :title="stat.value.toLocaleString(localeCode)">
+                      {{ formatCompactNumber(stat.value, localeCode) }}
                     </span>
-                  </li>
-                </ul>
+                    <span class="info-stat__label">{{ stat.label }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <RepoContributorsCard :owner="owner" :repo="repo" />
-
-          <div class="sidebar-card">
-            <div class="sidebar-card__header">
-              <div class="sidebar-card__header-left">
-                <ExternalLinkIcon :size="14" class="sidebar-card__icon" />
-                <span class="sidebar-card__title">{{ copy.source }}</span>
+            <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card mb-4">
+              <div class="sidebar-card__header">
+                <div class="sidebar-card__header-left">
+                  <CodeXmlIcon :size="14" class="sidebar-card__icon" />
+                  <span class="sidebar-card__title">{{ copy.languages }}</span>
+                </div>
+              </div>
+              <div class="sidebar-card__content">
+                <div
+                  v-if="loadingLanguages && languageShares.length === 0"
+                  class="repo-languages__loading"
+                >
+                  <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
+                  <span class="is-sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
+                </div>
+                <div v-else class="repo-languages">
+                  <div class="repo-languages__bar" role="img" :aria-label="languageBarAriaLabel">
+                    <span
+                      v-for="item in languageShares"
+                      :key="item.name"
+                      class="repo-languages__segment"
+                      :style="{
+                        width: `${item.percentage}%`,
+                        backgroundColor: item.color,
+                      }"
+                      :title="`${item.name} ${formatLanguagePercentage(item.percentage)}`"
+                    />
+                  </div>
+                  <ul class="repo-languages__legend">
+                    <li
+                      v-for="item in languageShares"
+                      :key="item.name"
+                      class="repo-languages__item"
+                    >
+                      <span
+                        class="repo-languages__dot"
+                        :style="{ backgroundColor: item.color }"
+                        aria-hidden="true"
+                      />
+                      <span class="repo-languages__name">{{ item.name }}</span>
+                      <span class="repo-languages__percent">
+                        {{ formatLanguagePercentage(item.percentage) }}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
-            <div class="sidebar-card__content">
-              <a
-                :href="repository.html_url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="sidebar-link"
-              >
-                <ExternalLinkIcon :size="14" />
-                <span>{{ copy.openGitHub }}</span>
-              </a>
-            </div>
+
+            <RepoContributorsCard :owner="owner" :repo="repo" />
+
+            <a
+              v-if="repository.html_url"
+              :href="repository.html_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="sidebar-github-link"
+            >
+              <GitHubIcon :size="14" aria-hidden="true" />
+              <span>{{ t('detailActions.viewOnGithub') }}</span>
+              <ExternalLinkIcon :size="12" aria-hidden="true" />
+            </a>
           </div>
         </ScrollArea>
       </ScrollArea>
@@ -1096,6 +1092,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 @use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/sidebar-github-link' as *;
 
 .repo-detail-layout {
   /* Page-level scroll lives on the parent detail pane so sticky chrome can pin
@@ -1693,6 +1690,11 @@ html.dark .repo-detail-section__chrome {
   padding: 0 0.75rem 0.75rem 0;
 }
 
+.repo-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
 .sidebar-card {
   overflow: hidden;
   border: 1px solid var(--gitpulse-border);
@@ -1862,36 +1864,7 @@ html.dark .repo-detail-section__chrome {
   font-variant-numeric: tabular-nums;
 }
 
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid var(--gitpulse-border);
-  border-radius: 8px;
-  background: var(--gitpulse-surface);
-  color: var(--gitpulse-text-muted);
-  font-size: 12px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.12s ease;
-
-  @include hover-only {
-    &:hover {
-      border-color: var(--gitpulse-border-strong);
-      background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    }
-  }
-
-  &:focus-visible {
-    border-color: var(--gitpulse-border-strong);
-    background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  }
-}
+@include sidebar-github-link;
 
 @media screen and (max-width: 1024px) {
   .repo-detail-layout :deep(.columns) {
