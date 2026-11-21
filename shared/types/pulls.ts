@@ -74,6 +74,27 @@ export interface PullRequestHeadBranchState {
   unavailable_reason: PullRequestHeadBranchUnavailableReason | null;
 }
 
+export type PullRequestStackLayerState = 'open' | 'draft' | 'closed' | 'merged';
+
+/** GitHub either reports the Stack's history, or the detail does not say. */
+export type PullRequestStackHistory = 'linear' | 'not-linear' | 'unknown';
+
+export interface PullRequestStackLayer {
+  number: number;
+  title: string;
+  state: PullRequestStackLayerState;
+}
+
+export interface PullRequestStack {
+  trunk: string;
+  count: number;
+  /** 1 is the Layer closest to the Trunk. */
+  place: number;
+  /** From the first Layer to the top. */
+  layers: PullRequestStackLayer[];
+  history: PullRequestStackHistory;
+}
+
 export interface PullRequestDetailPayload {
   id: number;
   number: number;
@@ -119,6 +140,9 @@ export interface PullRequestDetailPayload {
   changed_files?: number;
   additions?: number;
   deletions?: number;
+
+  /** Null when GitHub has not linked this pull request into a Stack. */
+  stack?: PullRequestStack | null;
 }
 
 /**

@@ -1001,6 +1001,9 @@
     "retry": "Retry",
     "noFiles": "No changed files found for this pull request.",
     "noDescription": "No description provided",
+    "stackChip": {
+      "place": "Layer {place} of {count}"
+    },
     "reviewers": "Reviewers",
     "noReviewers": "No reviewers assigned",
     "status": {

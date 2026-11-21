@@ -1001,6 +1001,9 @@
     "retry": "重试",
     "noFiles": "此拉取请求没有变更文件。",
     "noDescription": "没有提供描述",
+    "stackChip": {
+      "place": "第 {place} 层，共 {count} 层"
+    },
     "reviewers": "审查者",
     "noReviewers": "没有指派审查者",
     "status": {

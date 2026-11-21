@@ -4,6 +4,11 @@
     <div class="is-flex is-align-items-center mb-3 header-title">
       <component :size="22" :is="stateIcon" :style="stateColor" class="header-title__icon" />
       <h1 class="title is-3 ml-3 mb-0 header-title__text">{{ pullRequest?.title }}</h1>
+      <PRStackChip
+        v-if="pullRequest?.stack"
+        class="header-title__stack"
+        :stack="pullRequest.stack"
+      />
     </div>
 
     <!-- Meta row -->
@@ -108,7 +113,9 @@ import { ArrowRightIcon, ClockIcon, GitForkIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { PullRequestStack } from '#shared/types/pulls';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
+import PRStackChip from '~/components/dashboard/pr/PRStackChip.vue';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
@@ -141,6 +148,7 @@ interface PullRequestHeaderPullRequest {
   created_at?: string;
   body?: string | null;
   reactions?: ReactionSummaryItem[];
+  stack?: PullRequestStack | null;
 }
 
 const { pullRequest, repoOwner, repoName } = defineProps<{
@@ -191,6 +199,11 @@ const handleRepoClick = async () => {
   overflow-wrap: anywhere;
   font-size: clamp(1.3rem, 1rem + 1.5vw, 2rem);
   line-height: 1.25;
+}
+
+.header-title__stack {
+  flex: none;
+  margin-left: 0.75rem;
 }
 
 .header-meta {

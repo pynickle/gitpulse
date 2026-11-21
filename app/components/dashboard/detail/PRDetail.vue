@@ -17,6 +17,7 @@
       :changed-files="currentPullRequest?.changed_files"
       :additions="currentPullRequest?.additions"
       :deletions="currentPullRequest?.deletions"
+      :stack="currentPullRequest?.stack"
       @close="closeReviewWindow"
     />
 

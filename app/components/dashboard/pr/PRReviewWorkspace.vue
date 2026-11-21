@@ -2,6 +2,7 @@
 import { ArrowLeftIcon, GitPullRequestIcon, HouseIcon, MessageSquareIcon } from '@lucide/vue';
 import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
 
+import type { PullRequestStack } from '#shared/types/pulls';
 import {
   buildPRReviewWorkspaceNarrowLayoutCss,
   presentReviewBottomBar,
@@ -14,6 +15,7 @@ import PRReviewBottomBar from '~/components/dashboard/pr/PRReviewBottomBar.vue';
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
+import PRStackChip from '~/components/dashboard/pr/PRStackChip.vue';
 import { shouldCloseReviewWorkspaceAfterSubmit } from '~/utils/prReviewNavigation';
 
 const { owner, repo, pullNumber, commitId, title, changedFiles, additions, deletions } =
@@ -26,6 +28,7 @@ const { owner, repo, pullNumber, commitId, title, changedFiles, additions, delet
     changedFiles?: number;
     additions?: number;
     deletions?: number;
+    stack?: PullRequestStack | null;
   }>();
 
 const emit = defineEmits<{
@@ -301,7 +304,10 @@ watch(
           >
             {{ owner }}/{{ repo }} #{{ pullNumber }}
           </button>
-          <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
+          <div class="pr-review-workspace__title-line">
+            <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
+            <PRStackChip v-if="stack" :stack="stack" />
+          </div>
         </div>
       </div>
 
@@ -581,7 +587,15 @@ watch(
   min-width: 0;
 }
 
+.pr-review-workspace__title-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .pr-review-workspace__title {
+  min-width: 0;
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.9rem;
   font-weight: 700;
