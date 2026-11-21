@@ -43,9 +43,10 @@ const {
   loading,
   error,
   hasFollows,
-  hasLookupFailures,
+  allFollowsUnavailable,
   unavailableRepos,
   transientRepos,
+  refreshFailed,
   fetchTimeline,
   visibleGroups,
   hasMore,
@@ -118,26 +119,43 @@ const handleOpenDrawer = (item: TimelineRelease) => {
 const filterActive = computed(() => hasActiveTimelineFilter(activeFilter.value));
 
 const showFollowsEmpty = computed(() => loaded.value && !hasFollows.value);
+const hasCards = computed(() => groups.value.length > 0);
+const roundFailed = computed(() => Boolean(error.value) || refreshFailed.value);
 const showLoading = computed(
-  () => !showFollowsEmpty.value && loading.value && groups.value.length === 0 && !error.value
+  () => !showFollowsEmpty.value && loading.value && !hasCards.value && !error.value
 );
-const showFailureBanner = computed(() => !showFollowsEmpty.value && hasLookupFailures.value);
-const showError = computed(
+const showRoundError = computed(
+  () => !showFollowsEmpty.value && !loading.value && roundFailed.value && !hasCards.value
+);
+const showUnavailableEmpty = computed(
   () =>
     !showFollowsEmpty.value &&
-    groups.value.length === 0 &&
-    Boolean(error.value) &&
-    !showFailureBanner.value
+    !loading.value &&
+    !roundFailed.value &&
+    !hasCards.value &&
+    allFollowsUnavailable.value
+);
+const showUnavailableNotice = computed(
+  () =>
+    !showFollowsEmpty.value &&
+    !showUnavailableEmpty.value &&
+    !showRoundError.value &&
+    unavailableRepos.value.length > 0
 );
 const showReleasesEmpty = computed(
   () =>
     loaded.value &&
     hasFollows.value &&
     !loading.value &&
-    !error.value &&
-    !showFailureBanner.value &&
-    groups.value.length === 0
+    !roundFailed.value &&
+    !showUnavailableEmpty.value &&
+    !hasCards.value
 );
+const showCoverage = computed(
+  () => partial.value && transientRepos.value.length === 0 && !roundFailed.value
+);
+const showTransientStatus = computed(() => transientRepos.value.length > 0 && !roundFailed.value);
+const showRoundStatus = computed(() => roundFailed.value && hasCards.value);
 const showFilterEmpty = computed(
   () => filterActive.value && groups.value.length > 0 && visibleGroups.value.length === 0
 );
@@ -192,13 +210,7 @@ defineExpose({
       @filter-click="handleOpenFilterPanel"
     />
 
-    <ReleaseTimelineFailureBanner
-      v-if="showFailureBanner"
-      :unavailable-repos="unavailableRepos"
-      :transient-repos="transientRepos"
-      @retry="retryFailed"
-      @manage="emit('manage')"
-    />
+    <ReleaseTimelineFailureBanner v-if="showUnavailableNotice" @manage="emit('manage')" />
 
     <div class="release-timeline__body">
       <div v-if="showFollowsEmpty" class="release-timeline__empty">
@@ -224,12 +236,21 @@ defineExpose({
         <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
       </div>
 
-      <div v-else-if="showError" class="release-timeline__status release-timeline__status--error">
+      <div
+        v-else-if="showRoundError"
+        class="release-timeline__status release-timeline__status--error"
+      >
         <p class="release-timeline__empty-title">{{ t('releaseTimeline.error') }}</p>
         <button class="button is-small is-danger is-outlined" type="button" @click="fetchTimeline">
           {{ t('releaseTimeline.retry') }}
         </button>
       </div>
+
+      <ReleaseTimelineFailureBanner
+        v-else-if="showUnavailableEmpty"
+        centered
+        @manage="emit('manage')"
+      />
 
       <div v-else-if="showReleasesEmpty" class="release-timeline__empty">
         <p class="release-timeline__empty-title">{{ t('releaseTimeline.emptyReleasesTitle') }}</p>
@@ -265,12 +286,13 @@ defineExpose({
       >
         <template #footer>
           <ReleaseTimelineStatus
-            :partial="partial"
+            :partial="showCoverage"
             :has-more="hasMore"
             :can-retry="canRetry"
             :loading="loading"
             :persistence-error="persistenceError"
-            :error="error"
+            :failed="showRoundStatus"
+            :transient="showTransientStatus"
             @older="loadOlder"
             @retry="retryFailed"
             @save="retryPersistence"
@@ -278,13 +300,14 @@ defineExpose({
         </template>
       </ReleaseTimelineGrid>
       <ReleaseTimelineStatus
-        v-if="!showGrid"
-        :partial="partial"
+        v-if="!showGrid && !showLoading && !showRoundError && !showUnavailableEmpty"
+        :partial="showCoverage"
         :has-more="hasMore"
         :can-retry="canRetry"
         :loading="loading"
         :persistence-error="persistenceError"
-        :error="error"
+        :failed="showRoundStatus"
+        :transient="showTransientStatus"
         @older="loadOlder"
         @retry="retryFailed"
         @save="retryPersistence"

@@ -217,7 +217,7 @@ test.each(['success', 'failure', 'partial'] as const)(
       );
     await old;
     expect(app.queries.unavailableIds.value).toEqual([]);
-    expect(app.queries.transientIds.value).toEqual(['R0', 'R1']);
+    expect(app.queries.transientIds.value).toEqual([]);
   }
 );
 
@@ -321,14 +321,14 @@ test('background reuse consumes a failed Timeline wait while its caller receives
   const fills = [app.queries.ensureClassification(), app.queries.ensureClassification()];
   app.timelines[0]!.reject(error);
   expect(await observed).toBe(error);
+  await settle();
+  expect(app.identities).toHaveLength(1);
+  app.identities[0]!.resolve(available());
   await Promise.all(fills);
   await app.queries.ensureClassification();
-  expect(app.identities).toHaveLength(0);
-  expect(app.queries.transientIds.value).toEqual(['R0']);
-  const retry = app.queries.fetchIdentities();
-  app.identities[0]!.resolve(available());
-  await retry;
+  expect(app.identities).toHaveLength(1);
   expect(app.queries.transientIds.value).toEqual([]);
+  expect(app.queries.unavailableIds.value).toEqual([]);
 });
 
 test('background identity failure is queried once, with explicit retry available', async () => {
@@ -354,7 +354,8 @@ test('classification survives its first consumer and is shared with later consum
   expect(app.queries.unavailableIds.value).toEqual(['R0']);
   app.cache.value = { login: 'octocat', followKey: 'R0', timeline: releases() };
   const view = await app.openTimeline();
-  expect(view.unavailableRepos.value).toEqual(app.repositories.value);
+  expect(view.unavailableRepos.value).toEqual([]);
+  expect(app.queries.unavailableIds.value).toEqual(['R0']);
   await app.closeTimeline();
   app.login.value = 'hubot';
   expect(app.queries.unavailableIds.value).toEqual([]);
@@ -451,7 +452,7 @@ test.each(['success', 'failure'] as const)(
     if (outcome === 'success') app.timelines[0]!.resolve(releases());
     else app.timelines[0]!.reject(new Error('original error'));
     await settle();
-    expect(view.unavailableRepos.value).toEqual(app.repositories.value);
+    expect(view.unavailableRepos.value).toEqual([]);
     expect(view.groups.value).toEqual(outcome === 'success' ? releases().groups : []);
     expect(view.error.value).toBe(outcome === 'success' ? null : 'original error');
   }
@@ -468,7 +469,8 @@ test('returning restores cached content immediately without restoring its old cl
   await identity;
   const view = await app.openTimeline();
   expect(view.groups.value).toEqual(releases().groups);
-  expect(view.unavailableRepos.value).toEqual(app.repositories.value);
+  expect(view.unavailableRepos.value).toEqual([]);
+  expect(app.queries.unavailableIds.value).toEqual(['R0']);
   expect(app.timelines).toHaveLength(1);
   expect(app.identities).toHaveLength(1);
 });
@@ -492,7 +494,8 @@ test('cached content displays while missing classifications are filled once in t
   const fill = app.queries.ensureClassification();
   app.identities[0]!.resolve(unavailable());
   await fill;
-  expect(view.unavailableRepos.value).toEqual([app.repositories.value[0]!]);
+  expect(app.queries.unavailableIds.value).toEqual(['R0']);
+  expect(view.unavailableRepos.value).toEqual([]);
 });
 
 test('an unmounted Timeline accepts shared classification but leaves its view and cache untouched', async () => {

@@ -328,6 +328,8 @@ let timelineGroups: Ref<ReleaseTimelineGroup[]>;
 let timelineScrolls: number;
 let timelinePages: Record<string, RepositoryReleaseLookup>;
 let timelinePartial: Ref<boolean>;
+let timelineLoading: Ref<boolean>;
+let timelineCanRetry: Ref<boolean>;
 let olderLoads: number;
 const recoveredItem: TimelineRelease = {
   ...item,
@@ -352,6 +354,8 @@ beforeEach(() => {
   timelineScrolls = 0;
   timelinePages = {};
   timelinePartial = shallowRef(false);
+  timelineLoading = shallowRef(false);
+  timelineCanRetry = shallowRef(false);
   olderLoads = 0;
   dom = createVueDom({
     ...i18n,
@@ -411,20 +415,24 @@ beforeEach(() => {
       baselineExposed: shallowRef(false),
       partial: timelinePartial,
       hasMore: shallowRef(true),
-      canRetry: shallowRef(false),
+      canRetry: timelineCanRetry,
       loadOlder: () => {
         olderLoads += 1;
       },
       retryFailed: () => {},
       clearRecovered: () => {},
       retryPersistence: () => {},
-      groups: (timelineGroups = shallowRef([{ date: '2026-10-02', items: timelineItems }])),
-      loading: shallowRef(false),
+      groups: (timelineGroups = shallowRef(
+        timelineItems.length ? [{ date: '2026-10-02', items: timelineItems }] : []
+      )),
+      loading: timelineLoading,
       error: shallowRef(null),
       hasFollows: shallowRef(true),
       hasLookupFailures: shallowRef(false),
+      allFollowsUnavailable: shallowRef(false),
       unavailableRepos: shallowRef([]),
       transientRepos: shallowRef([]),
+      refreshFailed: shallowRef(false),
       fetchTimeline: () => {},
     }),
   });
@@ -442,6 +450,16 @@ beforeEach(() => {
       return this.parentElement;
     },
   });
+});
+
+test('a timeline retry shows the loading indicator without a second disabled Retry', async () => {
+  timelineItems = [];
+  timelineLoading.value = true;
+  timelineCanRetry.value = true;
+  dom.mount(View);
+  await nextTick();
+  expect(dom.document.querySelector('[aria-busy="true"]')).not.toBeNull();
+  expect(dom.document.querySelector('.timeline-status')).toBeNull();
 });
 
 test('release-note search starts off and the real header option includes full notes in visible results', async () => {

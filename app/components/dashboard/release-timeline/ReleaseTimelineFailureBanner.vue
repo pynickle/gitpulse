@@ -1,97 +1,90 @@
 <script setup lang="ts">
-import type { FollowedRepository } from '#shared/types/release-follows';
-
-defineProps<{
-  unavailableRepos: FollowedRepository[];
-  transientRepos: FollowedRepository[];
+const { centered = false } = defineProps<{
+  centered?: boolean;
 }>();
 
 const emit = defineEmits<{
-  retry: [];
   manage: [];
 }>();
 
 const { t } = useI18n();
-
-const repoList = (items: FollowedRepository[]) =>
-  items.map((item) => `${item.owner}/${item.name}`).join(', ');
 </script>
 
 <template>
-  <div class="timeline-failure-banner" role="status">
-    <div v-if="unavailableRepos.length > 0" class="timeline-failure-banner__section">
-      <p class="timeline-failure-banner__title">
-        {{ t('releaseTimeline.bannerUnavailableTitle') }}
-      </p>
-      <p class="timeline-failure-banner__body">
-        {{
-          t('releaseTimeline.bannerUnavailableDescription', {
-            repos: repoList(unavailableRepos),
-          })
-        }}
-      </p>
-    </div>
-
-    <div v-if="transientRepos.length > 0" class="timeline-failure-banner__section">
-      <p class="timeline-failure-banner__title">
-        {{ t('releaseTimeline.bannerTransientTitle') }}
-      </p>
-      <p class="timeline-failure-banner__body">
-        {{
-          t('releaseTimeline.bannerTransientDescription', {
-            repos: repoList(transientRepos),
-          })
-        }}
-      </p>
-    </div>
-
-    <div class="timeline-failure-banner__actions">
-      <button class="button is-small is-danger is-outlined" type="button" @click="emit('retry')">
-        {{ t('releaseTimeline.retry') }}
-      </button>
-      <button class="button is-small is-ghost" type="button" @click="emit('manage')">
-        {{ t('releaseTimeline.bannerManage') }}
-      </button>
-    </div>
+  <div
+    class="timeline-failure-banner"
+    :class="{ 'timeline-failure-banner--centered': centered }"
+    role="status"
+  >
+    <p class="timeline-failure-banner__text">{{ t('releaseTimeline.unavailableNotice') }}</p>
+    <button class="timeline-failure-banner__config" type="button" @click="emit('manage')">
+      {{ t('releaseTimeline.bannerManage') }}
+    </button>
   </div>
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .timeline-failure-banner {
   display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
   margin: 0.75rem 1rem 0;
-  padding: 0.85rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, var(--gitpulse-border));
-  border-radius: var(--gitpulse-radius-md, 8px);
-  background: var(--gitpulse-danger-soft);
-}
-
-.timeline-failure-banner__section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.timeline-failure-banner__title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--gitpulse-text-strong);
-}
-
-.timeline-failure-banner__body {
-  margin: 0;
+  color: var(--gitpulse-text-muted);
   font-size: 0.85rem;
   line-height: 1.45;
-  color: var(--gitpulse-text);
 }
 
-.timeline-failure-banner__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.timeline-failure-banner--centered {
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 12rem;
+  margin: 0;
+  padding: clamp(1.5rem, 6vh, 4rem) clamp(1rem, 5vw, 3rem);
+  text-align: center;
+
+  .timeline-failure-banner__text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--gitpulse-text-strong);
+  }
+}
+
+.timeline-failure-banner__text {
+  margin: 0;
+}
+
+.timeline-failure-banner__config {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gitpulse-text);
+  font: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+@include hover-only {
+  .timeline-failure-banner__config:hover {
+    color: var(--gitpulse-text-strong);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
 }
 </style>

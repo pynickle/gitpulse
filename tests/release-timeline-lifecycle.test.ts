@@ -170,18 +170,38 @@ describe('Release Timeline lifecycle', () => {
     expect(first.view.groups.value).toEqual(timeline('2026-10-01').groups);
     expect(first.view.error.value).toBe('Temporarily unavailable');
     expect(first.view.loading.value).toBe(false);
-    expect(first.view.transientRepos.value).toEqual([repository]);
+    expect(first.view.transientRepos.value).toEqual([]);
+    expect(first.view.canRetry.value).toBe(true);
 
     first.close();
     const second = harness.open();
     expect(second.view.groups.value).toEqual(timeline('2026-10-01').groups);
-    expect(second.view.hasLookupFailures.value).toBe(true);
+    expect(second.view.hasLookupFailures.value).toBe(false);
+    expect(second.view.canRetry.value).toBe(true);
     expect(harness.requests).toHaveLength(2);
     const retry = second.view.fetchTimeline();
     harness.requests[2]!.resolve(timeline());
     await retry;
     expect(second.view.groups.value).toEqual(timeline().groups);
     expect(second.view.error.value).toBeNull();
+  });
+
+  test('a round where every repository is unavailable is not a load failure', async () => {
+    const harness = createHarness();
+    const { view } = harness.open();
+    harness.requests[0]!.resolve({
+      groups: [],
+      unavailableIds: [repository.id],
+      transientIds: [],
+    });
+    await settle();
+    expect(view.error.value).toBeNull();
+    expect(view.groups.value).toEqual([]);
+    expect(view.unavailableRepos.value).toEqual([repository]);
+    expect(view.transientRepos.value).toEqual([]);
+    expect(view.canRetry.value).toBe(false);
+    expect(view.partial.value).toBe(false);
+    expect(view.hasLookupFailures.value).toBe(true);
   });
 
   test.each(['success', 'failure'] as const)(
@@ -288,7 +308,7 @@ describe('Release Timeline lifecycle', () => {
 
     harness.requests[1]!.resolve({ ...timeline(), unavailableIds: [repository.id] });
     await refresh;
-    expect(second.view.hasLookupFailures.value).toBe(true);
+    expect(second.view.hasLookupFailures.value).toBe(false);
     second.close();
     const third = harness.open();
     expect(third.view.groups.value).toEqual(timeline('2026-10-01').groups);
@@ -622,6 +642,8 @@ test('partial windows do not retract when a missing repository returns and retry
   );
   await settle();
   expect(view.partial.value).toBe(true);
+  expect(view.transientRepos.value.map((item) => item.id)).toEqual(['B']);
+  expect(view.unavailableRepos.value).toEqual([]);
   const retry = view.retryFailed();
   expect(harness.requests[1]!.input).toEqual({ cursors: { B: null } });
   harness.requests[1]!.resolve(round({ B: releasePage('B', ['2026-10-12'], 'B1') }));
@@ -641,6 +663,50 @@ test('partial windows do not retract when a missing repository returns and retry
   await again;
   expect(view.partial.value).toBe(false);
   expect(view.hasMore.value).toBe(false);
+});
+
+test('a refresh that finds every repository unavailable drops the previous cards', async () => {
+  const harness = createHarness();
+  harness.repositories.value = [{ id: 'A', owner: 'octo', name: 'A' }];
+  const { view } = harness.open();
+  harness.requests[0]!.resolve(round({ A: releasePage('A', ['2026-10-01'], 'A1') }));
+  await settle();
+  const refresh = view.fetchTimeline();
+  harness.requests[1]!.resolve({
+    groups: [],
+    unavailableIds: ['A'],
+    transientIds: [],
+    pages: { A: { status: 'unavailable' } },
+  });
+  await refresh;
+  expect(view.groups.value).toEqual([]);
+  expect(view.error.value).toBeNull();
+  expect(view.unavailableRepos.value.map((item) => item.id)).toEqual(['A']);
+  expect(view.canRetry.value).toBe(false);
+  expect(view.partial.value).toBe(false);
+  expect(view.hasMore.value).toBe(false);
+});
+
+test('an unavailable retry clears partial coverage when no older pages remain', async () => {
+  const harness = createHarness();
+  harness.repositories.value = [
+    { id: 'A', owner: 'octo', name: 'A' },
+    { id: 'B', owner: 'octo', name: 'B' },
+  ];
+  const { view } = harness.open();
+  harness.requests[0]!.resolve(
+    round({ A: releasePage('A', ['2026-10-01'], null), B: { status: 'transient' } })
+  );
+  await settle();
+  expect(view.partial.value).toBe(true);
+  const retry = view.retryFailed();
+  harness.requests[1]!.resolve(round({ B: { status: 'unavailable' } }));
+  await retry;
+  expect(view.partial.value).toBe(false);
+  expect(view.hasMore.value).toBe(false);
+  expect(view.error.value).toBeNull();
+  expect(view.unavailableRepos.value.map((item) => item.id)).toEqual(['B']);
+  expect(dates(view)).toEqual(['2026-10-01']);
 });
 
 test('empty displayable pages retain continuation without automatically fetching another page', async () => {

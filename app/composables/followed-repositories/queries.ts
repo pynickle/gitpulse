@@ -137,7 +137,8 @@ function createQueries({ login, loaded, repositories, loadSettings, adapter }: Q
       try {
         data = await request();
       } catch (error) {
-        commit(null);
+        // Identity failure is the classification. A timeline failure is not.
+        if (identity) commit(null);
         throw error;
       }
       commit(data);

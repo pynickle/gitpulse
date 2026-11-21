@@ -2,24 +2,33 @@
 import { CircleExclamationPointIcon, ArrowDownIcon, LoaderCircleIcon } from '@lucide/vue';
 import { computed } from 'vue';
 
-const { partial, hasMore, canRetry, persistenceError, error } = defineProps<{
+const {
+  partial,
+  hasMore,
+  canRetry,
+  persistenceError,
+  failed,
+  transient = false,
+} = defineProps<{
   partial: boolean;
   hasMore: boolean;
   canRetry: boolean;
   loading: boolean;
   persistenceError: string | null;
-  error: string | null;
+  failed: boolean;
+  transient?: boolean;
 }>();
 const emit = defineEmits<{ older: []; retry: []; save: [] }>();
 const { t } = useI18n();
 const visible = computed(
-  () => hasMore || partial || canRetry || Boolean(error || persistenceError)
+  () => hasMore || partial || canRetry || failed || transient || Boolean(persistenceError)
 );
 </script>
 <template>
   <div v-if="visible" class="timeline-status" aria-live="polite">
     <p v-if="partial" class="timeline-status__meta">{{ t('releaseTimeline.partialWindow') }}</p>
-    <p v-if="error" class="timeline-status__alert timeline-status__alert--danger" role="alert">
+    <p v-if="transient" class="timeline-status__meta">{{ t('releaseTimeline.transientNotice') }}</p>
+    <p v-if="failed" class="timeline-status__alert timeline-status__alert--danger" role="alert">
       <CircleExclamationPointIcon
         class="timeline-status__alert-icon"
         :size="14"

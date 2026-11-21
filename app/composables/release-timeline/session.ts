@@ -21,6 +21,8 @@ type Cycle = {
   lower: number | null;
   partial: boolean;
   previousBaseline: string | null;
+  unavailableIds: string[];
+  transientIds: string[];
 };
 export type ReleaseTimelineSessionEntry = {
   login: string;
@@ -47,6 +49,8 @@ const emptyCycle = (): Cycle => ({
   lower: null,
   partial: false,
   previousBaseline: null,
+  unavailableIds: [],
+  transientIds: [],
 });
 
 export function createReleaseTimelineSession({
@@ -116,10 +120,20 @@ export function createReleaseTimelineSession({
       .map((id) => byId.get(id))
       .filter((item): item is FollowedRepository => Boolean(item));
   };
-  const unavailableRepos = computed(() => reposForIds(lookups.unavailableIds.value));
-  const transientRepos = computed(() => reposForIds(lookups.transientIds.value));
+  const unavailableRepos = computed(() => reposForIds(cycle.value.unavailableIds));
+  const transientRepos = computed(() => reposForIds(cycle.value.transientIds));
   const hasLookupFailures = computed(
     () => unavailableRepos.value.length > 0 || transientRepos.value.length > 0
+  );
+  const everyFollowUnavailable = (
+    unavailableIds: readonly string[],
+    transientIds: readonly string[]
+  ) =>
+    repositories.value.length > 0 &&
+    transientIds.length === 0 &&
+    repositories.value.every((repo) => unavailableIds.includes(repo.id));
+  const allFollowsUnavailable = computed(() =>
+    everyFollowUnavailable(cycle.value.unavailableIds, cycle.value.transientIds)
   );
   const hasMore = computed(() =>
     Object.values(cycle.value.pages).some(
@@ -127,7 +141,26 @@ export function createReleaseTimelineSession({
     )
   );
   const canRetry = computed(() => refreshFailed.value || cycle.value.failedIds.length > 0);
-  const partial = computed(() => cycle.value.partial || hasLookupFailures.value);
+  const partial = computed(() => cycle.value.partial);
+  const recordLookups = (before: Cycle, data: ReleaseTimeline, requestedIds: readonly string[]) => {
+    const unavailable = new Set(before.unavailableIds);
+    const transient = new Set(before.transientIds);
+    const gone = new Set(data.unavailableIds);
+    const flaky = new Set(data.transientIds);
+    for (const id of requestedIds) {
+      unavailable.delete(id);
+      transient.delete(id);
+      if (gone.has(id)) unavailable.add(id);
+      else if (flaky.has(id)) transient.add(id);
+    }
+    return { unavailableIds: [...unavailable], transientIds: [...transient] };
+  };
+  const everyRequestedGone = (data: ReleaseTimeline, requestedIds: readonly string[]) => {
+    if (!requestedIds.length) return false;
+    const gone = new Set(data.unavailableIds);
+    const flaky = new Set(data.transientIds);
+    return requestedIds.every((id) => gone.has(id) && !flaky.has(id));
+  };
   const remember = () => {
     cache.value = {
       login: login.value!,
@@ -148,6 +181,10 @@ export function createReleaseTimelineSession({
     );
     for (const id of requestedIds) {
       const page = data.pages?.[id];
+      if (page?.status === 'unavailable') {
+        failed.delete(id);
+        continue;
+      }
       if (!page || page.status !== 'available') {
         failed.add(id);
         continue;
@@ -207,7 +244,10 @@ export function createReleaseTimelineSession({
         : candidate === null
           ? before.lower
           : Math.min(before.lower, candidate);
+    const lookups = recordLookups(before, data, requestedIds);
+    const gone = new Set(lookups.unavailableIds);
     const incomplete = repositories.value.some(({ id }) => {
+      if (gone.has(id)) return false;
       const page = pages[id];
       return (
         failed.has(id) ||
@@ -236,6 +276,7 @@ export function createReleaseTimelineSession({
       previousBaseline: refresh
         ? (data.refresh?.previousBaseline ?? null)
         : before.previousBaseline,
+      ...lookups,
     };
   };
   const run = async (mode: 'refresh' | 'older' | 'retry') => {
@@ -287,13 +328,44 @@ export function createReleaseTimelineSession({
             (id) => !data.unavailableIds.includes(id) && !data.transientIds.includes(id)
           );
       if (!usable) {
-        refreshFailed.value = refresh;
-        cycle.value = {
-          ...cycle.value,
-          failedIds: [...new Set([...cycle.value.failedIds, ...requestedIds])],
-          partial: true,
-        };
-        error.value = 'No repository history could be loaded.';
+        if (everyRequestedGone(data, requestedIds)) {
+          const failed = new Set(cycle.value.failedIds);
+          for (const id of requestedIds) failed.delete(id);
+          const recorded = recordLookups(refresh ? emptyCycle() : cycle.value, data, requestedIds);
+          refreshFailed.value = false;
+          error.value = null;
+          if (everyFollowUnavailable(recorded.unavailableIds, recorded.transientIds)) {
+            timeline.value = emptyTimeline();
+            cycle.value = {
+              ...emptyCycle(),
+              unavailableIds: recorded.unavailableIds,
+              previousBaseline: cycle.value.previousBaseline,
+            };
+          } else {
+            const gapRemains =
+              failed.size > 0 ||
+              Object.entries(cycle.value.pages).some(
+                ([id, page]) =>
+                  page.status === 'available' &&
+                  page.hasOlderReleases &&
+                  !recorded.unavailableIds.includes(id)
+              );
+            cycle.value = {
+              ...cycle.value,
+              ...recorded,
+              failedIds: [...failed],
+              partial: gapRemains ? cycle.value.partial : false,
+            };
+          }
+        } else {
+          refreshFailed.value = refresh;
+          cycle.value = {
+            ...cycle.value,
+            ...recordLookups(refresh ? emptyCycle() : cycle.value, data, requestedIds),
+            failedIds: [...new Set([...cycle.value.failedIds, ...requestedIds])],
+          };
+          error.value = 'No repository history could be loaded.';
+        }
         if (cache.value?.followKey === followKey.value) remember();
         return;
       }
@@ -309,7 +381,6 @@ export function createReleaseTimelineSession({
       cycle.value = {
         ...cycle.value,
         failedIds: [...new Set([...cycle.value.failedIds, ...requestedIds])],
-        partial: true,
       };
       error.value = describeError(err);
       if (cache.value?.followKey === followKey.value) remember();
@@ -334,10 +405,8 @@ export function createReleaseTimelineSession({
       error.value = null;
       loading.value = false;
       refreshFailed.value = cache.value?.refreshFailed ?? false;
-      cycle.value =
-        cache.value?.followKey === followKey.value
-          ? (cache.value.cycle ?? emptyCycle())
-          : emptyCycle();
+      const stored = cache.value?.followKey === followKey.value ? cache.value.cycle : undefined;
+      cycle.value = stored ? { ...emptyCycle(), ...stored } : emptyCycle();
       if (!login.value || !loaded.value) {
         timeline.value = emptyTimeline();
         return;
@@ -370,6 +439,7 @@ export function createReleaseTimelineSession({
     persistenceError: historyState.error,
     hasFollows,
     hasLookupFailures,
+    allFollowsUnavailable,
     unavailableRepos,
     transientRepos,
     hasMore,
@@ -381,6 +451,7 @@ export function createReleaseTimelineSession({
     recoveredRecords: historyState.records,
     savingHistory: historyState.saving,
     clearingHistory: historyState.clearing,
+    refreshFailed,
     fetchTimeline,
     loadOlder: () => run('older'),
     retryFailed: () => run('retry'),
