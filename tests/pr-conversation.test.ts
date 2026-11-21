@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { defineComponent, h, ref, shallowRef, type Component } from 'vue';
+import { defineComponent, h, nextTick, ref, shallowRef, type Component } from 'vue';
 
 import { formatDurationFromNow } from '../app/utils/formatDurationFromNow';
 import { getPullRequestStateVisual } from '../app/utils/getPullRequestStateVisual';
@@ -103,13 +103,25 @@ function createMergeStatusStore() {
 
 let store: ReturnType<typeof createMergeStatusStore>;
 let dom: ReturnType<typeof createVueDom>;
+let switchedPullRequest: { owner: string; repo: string; pullNumber: number } | null = null;
 
 const i18n = { useI18n: () => ({ t, locale: ref('en') }) };
 const relativeTime = { useRelativeTimeNow: () => shallowRef(0) };
 const duration = { formatDurationFromNow };
 
+const PickerModal = await compileVue('app/components/dashboard/PickerModal.vue', {
+  '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+  '~/components/ui/ScrollArea.vue': { default: slotStub },
+});
+
+const StackDetail = await compileVue('app/components/dashboard/pr/PRStackDetail.vue', {
+  'vue-i18n': i18n,
+  '~/components/dashboard/PickerModal.vue': { default: PickerModal },
+});
+
 const StackChip = await compileVue('app/components/dashboard/pr/PRStackChip.vue', {
   'vue-i18n': i18n,
+  '~/components/dashboard/pr/PRStackDetail.vue': { default: StackDetail },
 });
 
 const Header = await compileVue(
@@ -183,7 +195,12 @@ const openLayer = {
   },
 };
 
-function mountConversation() {
+type ConversationPullRequest = Omit<typeof openLayer, 'stack'> & {
+  stack?: typeof openLayer.stack | null;
+};
+
+function mountConversation(pullRequest: ConversationPullRequest = openLayer) {
+  switchedPullRequest = null;
   store = createMergeStatusStore();
   dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
 
@@ -191,9 +208,12 @@ function mountConversation() {
     setup: () => () =>
       h('div', [
         h(Header as Component, {
-          pullRequest: openLayer,
+          pullRequest,
           repoOwner: 'octo',
           repoName: 'app',
+          onSwitchPullRequest: (owner: string, repo: string, pullNumber: number) => {
+            switchedPullRequest = { owner, repo, pullNumber };
+          },
         }),
         h(MergeBox as Component, {
           owner: 'octo',
@@ -237,5 +257,84 @@ describe('pull request conversation', () => {
     const root = mountConversation();
 
     expect(root.textContent).toContain('Layer 2 of 4');
+  });
+});
+
+Object.assign(messages, {
+  'prReview.stackDetail.title': 'Stack',
+  'prReview.stackDetail.close': 'Close',
+  'prReview.stackDetail.current': 'Current',
+  'prReview.stackDetail.state.open': 'Open',
+  'prReview.stackDetail.state.draft': 'Draft',
+  'prReview.stackDetail.state.closed': 'Closed',
+  'prReview.stackDetail.state.merged': 'Merged',
+});
+
+const detailLayer: ConversationPullRequest = {
+  ...openLayer,
+  stack: {
+    trunk: 'main',
+    count: 4,
+    place: 2,
+    history: 'unknown',
+    layers: [
+      { number: 101, title: 'Add the model', state: 'merged' },
+      { number: 102, title: 'Add the API', state: 'open' },
+      { number: 103, title: 'Add the screen', state: 'draft' },
+      { number: 104, title: 'Add the notes', state: 'closed' },
+    ],
+  },
+};
+
+const layerText = (element: Element) => element.textContent?.replaceAll(/\s+/g, ' ').trim() ?? '';
+
+describe('stack detail', () => {
+  test('names the Trunk and lists every Layer, and another Layer switches the pull request', async () => {
+    const root = mountConversation(detailLayer);
+    const chip = root.querySelector<HTMLElement>('.pr-stack-chip');
+
+    expect(chip).not.toBeNull();
+    expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
+
+    chip?.click();
+    await nextTick();
+
+    const dialog = root.ownerDocument.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain('main');
+    expect([...dialog!.querySelectorAll('.pr-stack-detail__layer')].map(layerText)).toEqual([
+      '#101 Add the model Merged',
+      '#102 Add the API Open Current',
+      '#103 Add the screen Draft',
+      '#104 Add the notes Closed',
+    ]);
+
+    const current = dialog?.querySelector<HTMLElement>('[aria-current="true"]');
+    expect(current?.matches('button')).toBe(false);
+    current?.click();
+    expect(switchedPullRequest).toBeNull();
+
+    const actionable = [...(dialog?.querySelectorAll('button') ?? [])]
+      .map(layerText)
+      .filter(Boolean);
+    expect(actionable).toEqual([
+      '#101 Add the model Merged',
+      '#103 Add the screen Draft',
+      '#104 Add the notes Closed',
+    ]);
+    expect(dialog?.textContent).not.toContain('Stack Merge');
+    expect(dialog?.textContent).not.toContain('Stack Rebase');
+
+    [...(dialog?.querySelectorAll('button') ?? [])]
+      .find((button) => layerText(button).includes('Add the model'))
+      ?.click();
+    expect(switchedPullRequest).toEqual({ owner: 'octo', repo: 'app', pullNumber: 101 });
+  });
+
+  test('a pull request that is not a Layer has no Stack Chip', () => {
+    const root = mountConversation({ ...openLayer, stack: null });
+
+    expect(root.querySelector('.pr-stack-chip')).toBeNull();
+    expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
   });
 });

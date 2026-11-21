@@ -19,6 +19,7 @@
       :deletions="currentPullRequest?.deletions"
       :stack="currentPullRequest?.stack"
       @close="closeReviewWindow"
+      @switch-pull-request="switchToPullRequest"
     />
 
     <div v-else class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
@@ -37,6 +38,7 @@
             :pull-request="currentPullRequest"
             :repo-owner="repoOwner"
             :repo-name="repoName"
+            @switch-pull-request="switchToPullRequest"
           />
         </div>
 

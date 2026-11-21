@@ -1004,6 +1004,17 @@
     "stackChip": {
       "place": "Layer {place} of {count}"
     },
+    "stackDetail": {
+      "title": "Stack",
+      "close": "Close",
+      "current": "Current",
+      "state": {
+        "open": "Open",
+        "draft": "Draft",
+        "closed": "Closed",
+        "merged": "Merged"
+      }
+    },
     "reviewers": "Reviewers",
     "noReviewers": "No reviewers assigned",
     "status": {

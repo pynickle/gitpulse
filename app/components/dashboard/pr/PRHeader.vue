@@ -8,6 +8,7 @@
         v-if="pullRequest?.stack"
         class="header-title__stack"
         :stack="pullRequest.stack"
+        @select="emit('switch-pull-request', repoOwner, repoName, $event)"
       />
     </div>
 
@@ -155,6 +156,10 @@ const { pullRequest, repoOwner, repoName } = defineProps<{
   pullRequest?: PullRequestHeaderPullRequest | null;
   repoOwner: string;
   repoName: string;
+}>();
+
+const emit = defineEmits<{
+  'switch-pull-request': [owner: string, repo: string, pullNumber: number];
 }>();
 
 const headBranch = computed(() =>

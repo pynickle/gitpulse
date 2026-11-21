@@ -1004,6 +1004,17 @@
     "stackChip": {
       "place": "第 {place} 层，共 {count} 层"
     },
+    "stackDetail": {
+      "title": "堆叠",
+      "close": "关闭",
+      "current": "当前",
+      "state": {
+        "open": "打开",
+        "draft": "草稿",
+        "closed": "已关闭",
+        "merged": "已合并"
+      }
+    },
     "reviewers": "审查者",
     "noReviewers": "没有指派审查者",
     "status": {
