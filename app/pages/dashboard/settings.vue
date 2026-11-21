@@ -713,7 +713,7 @@ onMounted(() => {
                 <h2 class="settings__section-title">
                   {{ t('dashboard.settings.releaseTimelineSection') }}
                 </h2>
-                <div class="settings__font-card settings__font-card--toggle-list">
+                <div class="settings__toggle-list">
                   <label class="settings__toggle-row">
                     <span class="settings__option-body">
                       <span class="settings__option-label">
@@ -1014,9 +1014,17 @@ onMounted(() => {
   background: var(--gitpulse-surface);
 }
 
-.settings__font-card--toggle-list > .settings__toggle-row + .settings__toggle-row {
-  padding-top: 1rem;
-  border-top: 1px solid var(--gitpulse-border);
+.settings__toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings__toggle-list > .settings__toggle-row {
+  padding: 1rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
+  background: var(--gitpulse-surface);
 }
 
 .settings__font-field {
