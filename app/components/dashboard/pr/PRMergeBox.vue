@@ -392,7 +392,11 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-import type { PullRequestStack, PullRequestStackLayerState } from '#shared/types/pulls';
+import type {
+  PullRequestStack,
+  PullRequestStackLayerState,
+  StackMergeOutcome,
+} from '#shared/types/pulls';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -459,7 +463,7 @@ const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
-const stackMergePhase = shallowRef<'in-progress' | 'landed' | 'queued' | 'failed' | null>(null);
+const stackMergePhase = shallowRef<StackMergeOutcome | null>(null);
 /** Kept as an interpolation so the compiler does not drop the space between Layer fields. */
 const stackLayerGap = ' ';
 const prefillTitle = shallowRef('');
@@ -770,18 +774,8 @@ const stackMergeHolding = computed(() => {
   return phase === 'in-progress' && !merging.value;
 });
 
-const layerStateLabel = (state: PullRequestStackLayerState) => {
-  switch (state) {
-    case 'draft':
-      return t('prReview.mergeBox.layerDraft');
-    case 'closed':
-      return t('prReview.mergeBox.layerClosed');
-    case 'merged':
-      return t('prReview.mergeBox.layerMerged');
-    default:
-      return t('prReview.mergeBox.layerOpen');
-  }
-};
+const layerStateLabel = (state: PullRequestStackLayerState) =>
+  t(`prReview.stackDetail.state.${state}`);
 
 const rebaseUpdateAllowed = computed(() => mergeMethods.value.includes('rebase'));
 

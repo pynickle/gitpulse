@@ -1,5 +1,7 @@
+import { onScopeDispose, shallowRef } from 'vue';
+
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
-import type { PullRequestHeadBranchState } from '#shared/types/pulls';
+import type { PullRequestHeadBranchState, StackMergeOutcome } from '#shared/types/pulls';
 
 export type PRState = 'open' | 'closed' | 'merged';
 export type PRReviewDecision = 'approved' | 'changes_requested' | 'review_required' | 'none';
@@ -73,10 +75,8 @@ export interface PRMergeResponse {
   message: string;
 }
 
-export type PRStackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
-
 export interface PRStackMergeResponse {
-  outcome: PRStackMergeOutcome;
+  outcome: StackMergeOutcome;
   id?: string;
   message?: string;
 }
@@ -209,13 +209,35 @@ export function usePRMergeStatus() {
     commitDefaults.value = null;
   };
 
-  const STACK_MERGE_POLL_ATTEMPTS = 15;
   const STACK_MERGE_POLL_DELAY_MS = 2000;
   let stackMergeRequestId = 0;
+  let stackMergePollTimer: ReturnType<typeof setTimeout> | null = null;
+  let finishStackMergePoll: ((current: boolean) => void) | null = null;
 
-  const wait = (ms: number) =>
-    new Promise<void>((resolve) => {
-      setTimeout(resolve, ms);
+  const stopStackMergePoll = () => {
+    if (stackMergePollTimer !== null) {
+      clearTimeout(stackMergePollTimer);
+      stackMergePollTimer = null;
+    }
+    const finish = finishStackMergePoll;
+    finishStackMergePoll = null;
+    finish?.(false);
+  };
+
+  // Disposal retires this caller so a Stack Merge does not keep polling.
+  onScopeDispose(() => {
+    stackMergeRequestId += 1;
+    stopStackMergePoll();
+  });
+
+  const waitForStackMergePoll = (requestId: number) =>
+    new Promise<boolean>((resolve) => {
+      finishStackMergePoll = resolve;
+      stackMergePollTimer = setTimeout(() => {
+        stackMergePollTimer = null;
+        finishStackMergePoll = null;
+        resolve(requestId === stackMergeRequestId);
+      }, STACK_MERGE_POLL_DELAY_MS);
     });
 
   const mergeStack = async (
@@ -226,7 +248,14 @@ export function usePRMergeStatus() {
   ) => {
     const requestId = stackMergeRequestId + 1;
     stackMergeRequestId = requestId;
+    stopStackMergePoll();
     mergeError.value = null;
+    const caller = () => requestId === stackMergeRequestId;
+
+    const failed = (message?: string): PRStackMergeResponse => ({
+      outcome: 'failed',
+      ...(message ? { message } : {}),
+    });
 
     try {
       let result = await apiFetch<PRStackMergeResponse>(
@@ -234,32 +263,26 @@ export function usePRMergeStatus() {
         { method: 'POST', body: payload }
       );
 
-      for (
-        let attempt = 0;
-        requestId === stackMergeRequestId &&
-        result.outcome === 'in-progress' &&
-        result.id &&
-        attempt < STACK_MERGE_POLL_ATTEMPTS;
-        attempt += 1
-      ) {
-        await wait(STACK_MERGE_POLL_DELAY_MS);
-        const id = result.id;
-        if (requestId !== stackMergeRequestId || !id) return result;
+      while (caller() && result.outcome === 'in-progress') {
+        if (!result.id) return failed(result.message);
+        const current = await waitForStackMergePoll(requestId);
+        if (!current || !caller()) return null;
         result = await apiFetch<PRStackMergeResponse>(
-          `/api/pulls/${owner}/${repo}/${pullNumber}/stack-merge/${encodeURIComponent(id)}`
+          `/api/pulls/${owner}/${repo}/${pullNumber}/stack-merge/${encodeURIComponent(result.id)}`
         );
       }
 
-      if (result.outcome === 'landed' && requestId === stackMergeRequestId) {
+      if (!caller()) return null;
+
+      if (result.outcome === 'landed') {
         await fetchMergeStatus(owner, repo, pullNumber);
       }
 
-      return requestId === stackMergeRequestId ? result : null;
+      return caller() ? result : null;
     } catch (fetchError: unknown) {
-      if (requestId === stackMergeRequestId) {
-        mergeError.value = getFetchErrorMessage(fetchError, 'Failed to merge stack');
-      }
-      return null;
+      if (!caller()) return null;
+      mergeError.value = getFetchErrorMessage(fetchError, 'Failed to merge stack');
+      return failed();
     }
   };
 

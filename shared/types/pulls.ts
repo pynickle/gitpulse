@@ -76,6 +76,9 @@ export interface PullRequestHeadBranchState {
 
 export type PullRequestStackLayerState = 'open' | 'draft' | 'closed' | 'merged';
 
+/** In progress until GitHub lands the Stack, queues it, or fails it. */
+export type StackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
+
 /** GitHub either reports the Stack's history, or the detail does not say. */
 export type PullRequestStackHistory = 'linear' | 'not-linear' | 'unknown';
 

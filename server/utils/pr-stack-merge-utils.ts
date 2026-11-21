@@ -2,10 +2,9 @@ import type { Octokit } from '@octokit/core';
 
 import { getGitHubErrorStatusCode } from '#server/utils/github-auth-utils';
 import type { NormalizedMergePullRequestBody } from '#server/utils/pr-merge-status-utils';
+import type { StackMergeOutcome } from '#shared/types/pulls';
 
 type GitHubClient = Octokit;
-
-export type StackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
 
 export interface StackMergeResult {
   outcome: StackMergeOutcome;

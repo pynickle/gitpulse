@@ -1206,11 +1206,7 @@
       "stackMergeInProgress": "堆叠合并进行中",
       "stackMergeLanded": "堆叠合并已落地",
       "stackMergeQueued": "已进入合并队列",
-      "stackMergeFailed": "堆叠合并失败",
-      "layerOpen": "打开",
-      "layerDraft": "草稿",
-      "layerClosed": "已关闭",
-      "layerMerged": "已合并"
+      "stackMergeFailed": "堆叠合并失败"
     }
   },
   "markdown": {

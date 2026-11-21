@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { defineComponent, h, nextTick, ref, shallowRef, type Component } from 'vue';
+import { defineComponent, h, nextTick, onScopeDispose, ref, shallowRef, type Component } from 'vue';
+
+const { usePRMergeStatus: readMergeStatus } = await import('../app/composables/usePRMergeStatus');
 
 import { formatDurationFromNow } from '../app/utils/formatDurationFromNow';
 import { getPullRequestStateVisual } from '../app/utils/getPullRequestStateVisual';
@@ -57,10 +59,13 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.stackMergeLanded': 'Stack merge landed',
   'prReview.mergeBox.stackMergeQueued': 'Entered the merge queue',
   'prReview.mergeBox.stackMergeFailed': 'Stack merge failed',
-  'prReview.mergeBox.layerOpen': 'Open',
-  'prReview.mergeBox.layerDraft': 'Draft',
-  'prReview.mergeBox.layerClosed': 'Closed',
-  'prReview.mergeBox.layerMerged': 'Merged',
+  'prReview.stackDetail.title': 'Stack',
+  'prReview.stackDetail.close': 'Close',
+  'prReview.stackDetail.current': 'Current',
+  'prReview.stackDetail.state.open': 'Open',
+  'prReview.stackDetail.state.draft': 'Draft',
+  'prReview.stackDetail.state.closed': 'Closed',
+  'prReview.stackDetail.state.merged': 'Merged',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -141,6 +146,7 @@ function createMergeStatusStore() {
 
 let store: ReturnType<typeof createMergeStatusStore>;
 let dom: ReturnType<typeof createVueDom>;
+let useRealStackMerge = false;
 let switchedPullRequest: { owner: string; repo: string; pullNumber: number } | null = null;
 
 const i18n = { useI18n: () => ({ t, locale: ref('en') }) };
@@ -199,7 +205,7 @@ const MergeBox = await compileVue(
     '~/components/ui/ScrollArea.vue': { default: slotStub },
     '~/utils/getCheckStatusToneIcon': { getCheckStatusToneIcon: () => icon },
     '~/composables/usePRMergeStatus': {
-      usePRMergeStatus: () => store,
+      usePRMergeStatus: () => (useRealStackMerge ? readMergeStatus() : store),
     },
     '~/composables/useRelativeTimeNow': relativeTime,
     '~/utils/formatDurationFromNow': { formatDurationFromNow: () => '' },
@@ -212,91 +218,39 @@ const MergeBox = await compileVue(
   }
 );
 
-const openLayer = {
-  title: 'Add the API',
-  number: 102,
-  state: 'open',
-  updated_at: '2026-04-15T10:00:00Z',
-  created_at: '2026-04-15T10:00:00Z',
-  user: { login: 'octocat', avatar_url: '', html_url: 'https://github.com/octocat' },
-  stack: {
-    trunk: 'main',
-    count: 4,
-    place: 2,
-    history: 'unknown' as const,
-    layers: [
-      { number: 101, title: 'Add the model', state: 'open' as const },
-      { number: 102, title: 'Add the API', state: 'open' as const },
-      { number: 103, title: 'Add the screen', state: 'draft' as const },
-      { number: 104, title: 'Add the notes', state: 'closed' as const },
-    ],
-  },
-};
+const stackLayers = [
+  { number: 101, title: 'Add the model', state: 'merged' as const },
+  { number: 102, title: 'Add the API', state: 'open' as const },
+  { number: 103, title: 'Add the screen', state: 'draft' as const },
+  { number: 104, title: 'Add the notes', state: 'closed' as const },
+];
 
-type ConversationPullRequest = Omit<typeof openLayer, 'stack'> & {
-  stack?: typeof openLayer.stack | null;
-};
+type StackHistory = 'linear' | 'not-linear' | 'unknown';
 
-function mountConversation(pullRequest: ConversationPullRequest = openLayer) {
-  switchedPullRequest = null;
-  store = createMergeStatusStore();
-  dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
-
-  const Harness = defineComponent({
-    setup: () => () =>
-      h('div', [
-        h(Header as Component, {
-          pullRequest,
-          repoOwner: 'octo',
-          repoName: 'app',
-          onSwitchPullRequest: (owner: string, repo: string, pullNumber: number) => {
-            switchedPullRequest = { owner, repo, pullNumber };
-          },
-        }),
-        h(MergeBox as Component, {
-          owner: 'octo',
-          repo: 'app',
-          pullNumber: openLayer.number,
-          initialStatus: {
-            state: 'open',
-            merged: false,
-            mergedAt: null,
-            mergedBy: null,
-            mergeCommitSha: null,
-            mergeableState: 'clean',
-            mergeable: true,
-            autoMerge: false,
-            draft: false,
-            reviewDecision: 'none',
-            reviewSummary: { approved: 0, changesRequested: 0 },
-            checkRollup: null,
-            headSha: 'abc123',
-            headBranch: null,
-            viewerCanMerge: true,
-            allowedMergeMethods: ['merge', 'squash', 'rebase'],
-            behindBy: 0,
-            baseRef: 'main',
-            baseSha: '1234567890abcdef',
-            viewerCanWriteHead: true,
-          },
-        }),
-      ]),
-  });
-
-  return dom.mount(Harness).root;
+function layerPullRequest(history: StackHistory = 'linear', place = 2) {
+  const current = stackLayers[place - 1] ?? stackLayers[1];
+  return {
+    title: current?.title ?? 'Add the API',
+    number: current?.number ?? 102,
+    state: 'open',
+    updated_at: '2026-04-15T10:00:00Z',
+    created_at: '2026-04-15T10:00:00Z',
+    user: { login: 'octocat', avatar_url: '', html_url: 'https://github.com/octocat' },
+    stack: {
+      trunk: 'main',
+      count: stackLayers.length,
+      place,
+      history,
+      layers: stackLayers,
+    },
+  };
 }
 
-afterEach(async () => {
-  await dom.cleanup();
-});
+type ConversationPullRequest = Omit<ReturnType<typeof layerPullRequest>, 'stack'> & {
+  stack?: ReturnType<typeof layerPullRequest>['stack'] | null;
+};
 
-describe('pull request conversation', () => {
-  test("shows this Layer's place on the Stack Chip", () => {
-    const root = mountConversation();
-
-    expect(root.textContent).toContain('Layer 2 of 4');
-  });
-});
+type StackMergeFetch = (request: unknown, init?: { method?: string; body?: unknown }) => unknown;
 
 const failedChecks = {
   state: 'FAILURE',
@@ -306,22 +260,96 @@ const failedChecks = {
   },
 };
 
-const stackLayers = [
-  { number: 101, title: 'Add the model', state: 'merged' as const },
-  { number: 102, title: 'Add the API', state: 'open' as const },
-  { number: 103, title: 'Add the screen', state: 'draft' as const },
-  { number: 104, title: 'Add the notes', state: 'closed' as const },
-];
-
-function layerStack(history: 'linear' | 'not-linear' | 'unknown', place: number) {
+function openMergeStatus(options?: {
+  viewerCanMerge?: boolean;
+  behindBy?: number;
+  viewerCanWriteHead?: boolean;
+}) {
   return {
-    trunk: 'main',
-    count: 4,
-    place,
-    history,
-    layers: stackLayers,
+    state: 'open',
+    merged: false,
+    mergedAt: null,
+    mergedBy: null,
+    mergeCommitSha: null,
+    mergeableState: 'clean',
+    mergeable: true,
+    autoMerge: false,
+    draft: false,
+    reviewDecision: 'none',
+    reviewSummary: { approved: 0, changesRequested: 0 },
+    checkRollup: failedChecks,
+    headSha: 'abc123',
+    headBranch: null,
+    viewerCanMerge: options?.viewerCanMerge ?? true,
+    allowedMergeMethods: ['merge', 'squash', 'rebase'],
+    behindBy: options?.behindBy ?? 0,
+    baseRef: 'main',
+    baseSha: '1234567890abcdef',
+    viewerCanWriteHead: options?.viewerCanWriteHead ?? true,
   };
 }
+
+function mountConversation(options?: {
+  pullRequest?: ConversationPullRequest;
+  viewerCanMerge?: boolean;
+  behindBy?: number;
+  viewerCanWriteHead?: boolean;
+  fetch?: StackMergeFetch;
+}) {
+  switchedPullRequest = null;
+  useRealStackMerge = Boolean(options?.fetch);
+  store = createMergeStatusStore();
+  const pullRequest = shallowRef<ConversationPullRequest>(
+    options?.pullRequest ?? layerPullRequest()
+  );
+  const initialStatus = openMergeStatus(options);
+  dom = createVueDom({
+    useI18n: () => ({ t, locale: ref('en') }),
+    ...(options?.fetch
+      ? {
+          shallowRef,
+          onScopeDispose,
+          useGitPulseApiFetch: () => options.fetch,
+        }
+      : {}),
+  });
+
+  const Harness = defineComponent({
+    setup: () => () =>
+      h('div', [
+        h(Header as Component, {
+          pullRequest: pullRequest.value,
+          repoOwner: 'octo',
+          repoName: 'app',
+          onSwitchPullRequest: (owner: string, repo: string, pullNumber: number) => {
+            switchedPullRequest = { owner, repo, pullNumber };
+          },
+        }),
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: pullRequest.value.number,
+          stack: pullRequest.value.stack ?? null,
+          initialStatus,
+        }),
+      ]),
+  });
+
+  const mounted = dom.mount(Harness);
+  return Object.assign(mounted.root, {
+    unmount: () => {
+      mounted.unmount();
+    },
+    setStack(next: ConversationPullRequest['stack']) {
+      pullRequest.value = { ...pullRequest.value, stack: next };
+    },
+  });
+}
+
+afterEach(async () => {
+  useRealStackMerge = false;
+  await dom.cleanup();
+});
 
 const click = (element: Element | null | undefined) =>
   element?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
@@ -331,6 +359,8 @@ const settle = async () => {
   await nextTick();
   await nextTick();
 };
+
+const layerText = (element: Element) => element.textContent?.replaceAll(/\s+/g, ' ').trim() ?? '';
 
 function layerTexts(root: HTMLElement) {
   return [...root.querySelectorAll('.merge-box__stack-layer')].map((node) =>
@@ -348,64 +378,17 @@ function stackRebaseControl(root: ParentNode) {
   );
 }
 
-function mountMergeConversation(options: {
-  stack?: ReturnType<typeof layerStack> | null;
-  pullNumber?: number;
-  viewerCanMerge?: boolean;
-  behindBy?: number;
-  viewerCanWriteHead?: boolean;
-}) {
-  store = createMergeStatusStore();
-  dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
-
-  const stack = shallowRef(options.stack ?? null);
-  const pullNumber = options.pullNumber ?? openLayer.number;
-  const Harness = defineComponent({
-    setup: () => () =>
-      h('div', [
-        h(Header as Component, {
-          pullRequest: openLayer,
-          repoOwner: 'octo',
-          repoName: 'app',
-        }),
-        h(MergeBox as Component, {
-          owner: 'octo',
-          repo: 'app',
-          pullNumber,
-          stack: stack.value,
-          initialStatus: {
-            state: 'open',
-            merged: false,
-            mergedAt: null,
-            mergedBy: null,
-            mergeCommitSha: null,
-            mergeableState: 'clean',
-            mergeable: true,
-            autoMerge: false,
-            draft: false,
-            reviewDecision: 'none',
-            reviewSummary: { approved: 0, changesRequested: 0 },
-            checkRollup: failedChecks,
-            headSha: 'abc123',
-            headBranch: null,
-            viewerCanMerge: options.viewerCanMerge ?? true,
-            allowedMergeMethods: ['merge', 'squash', 'rebase'],
-            behindBy: options.behindBy ?? 0,
-            baseRef: 'main',
-            baseSha: '1234567890abcdef',
-            viewerCanWriteHead: options.viewerCanWriteHead ?? true,
-          },
-        }),
-      ]),
-  });
-
-  const root = dom.mount(Harness).root;
-  return Object.assign(root, {
-    setStack(next: ReturnType<typeof layerStack> | null) {
-      stack.value = next;
-    },
-  });
+/** The Stack Merge wait is two seconds. Collapse it so a slow landing stays in this test. */
+function collapseStackMergeWait() {
+  const original = globalThis.setTimeout;
+  globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) =>
+    original(handler, timeout === 2_000 ? 0 : timeout, ...args)) as typeof setTimeout;
+  return () => {
+    globalThis.setTimeout = original;
+  };
 }
+
+const flushMacrotask = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 async function chooseSquash(root: HTMLElement) {
   click(root.querySelector('.merge-box__method-toggle'));
@@ -425,11 +408,24 @@ async function openStackConfirmation(root: HTMLElement) {
 
 describe('Stack Merge', () => {
   test('confirms the Layers from the first through this one and sends no commit text', async () => {
-    const root = mountMergeConversation({
-      stack: layerStack('linear', 2),
-      pullNumber: 102,
-      behindBy: 2,
-    });
+    const root = mountConversation({ behindBy: 2 });
+
+    expect(root.textContent).toContain('Layer 2 of 4');
+    const chip = root.querySelector<HTMLElement>('.pr-stack-chip');
+    expect(chip).not.toBeNull();
+    chip?.click();
+    await nextTick();
+
+    const dialog = root.ownerDocument.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain('main');
+    expect([...dialog!.querySelectorAll('.pr-stack-detail__layer')].map(layerText)).toEqual([
+      '#101 Add the model Merged',
+      '#102 Add the API Open Current',
+      '#103 Add the screen Draft',
+      '#104 Add the notes Closed',
+    ]);
+    dialog?.querySelector<HTMLElement>('[aria-label="Close"]')?.click();
+    await nextTick();
 
     expect(root.textContent).toContain('No reviews required');
     expect(root.textContent).toContain('Some checks were not successful');
@@ -461,10 +457,7 @@ describe('Stack Merge', () => {
   });
 
   test('sends the commit title and message when only the first Layer lands', async () => {
-    const root = mountMergeConversation({
-      stack: layerStack('linear', 1),
-      pullNumber: 101,
-    });
+    const root = mountConversation({ pullRequest: layerPullRequest('linear', 1) });
 
     await openStackConfirmation(root);
 
@@ -499,7 +492,7 @@ describe('Stack Merge', () => {
   });
 
   test('shows that the Stack Merge entered the merge queue', async () => {
-    const root = mountMergeConversation({ stack: layerStack('linear', 2), pullNumber: 102 });
+    const root = mountConversation();
 
     await openStackConfirmation(root);
     click(root.querySelector('.merge-box__merge-btn'));
@@ -515,7 +508,7 @@ describe('Stack Merge', () => {
   });
 
   test('shows that the Stack Merge failed', async () => {
-    const root = mountMergeConversation({ stack: layerStack('linear', 2), pullNumber: 102 });
+    const root = mountConversation();
 
     await openStackConfirmation(root);
     click(root.querySelector('.merge-box__merge-btn'));
@@ -527,11 +520,7 @@ describe('Stack Merge', () => {
   });
 
   test('offers no Stack Merge to a reader who cannot merge', () => {
-    const root = mountMergeConversation({
-      stack: layerStack('linear', 2),
-      viewerCanMerge: false,
-      behindBy: 2,
-    });
+    const root = mountConversation({ viewerCanMerge: false, behindBy: 2 });
 
     expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
     expect(root.querySelector('.merge-box__stack-layer')).toBeNull();
@@ -541,8 +530,8 @@ describe('Stack Merge', () => {
   });
 
   test('offers no Stack Merge when the history is not linear', () => {
-    const root = mountMergeConversation({
-      stack: layerStack('not-linear', 2),
+    const root = mountConversation({
+      pullRequest: layerPullRequest('not-linear'),
       behindBy: 2,
     });
 
@@ -555,8 +544,8 @@ describe('Stack Merge', () => {
   });
 
   test('offers no Stack Rebase when the history is unknown, then offers Stack Merge once it is linear', async () => {
-    const root = mountMergeConversation({
-      stack: layerStack('unknown', 2),
+    const root = mountConversation({
+      pullRequest: layerPullRequest('unknown'),
       behindBy: 2,
     });
 
@@ -567,7 +556,7 @@ describe('Stack Merge', () => {
     expect(store.merges).toEqual([]);
     expect(store.stackMerges).toEqual([]);
 
-    root.setStack(layerStack('linear', 2));
+    root.setStack(layerPullRequest().stack);
     await settle();
 
     expect(stackRebaseControl(root)).toBeNull();
@@ -579,8 +568,8 @@ describe('Stack Merge', () => {
   });
 
   test('offers no Stack Rebase to a reader who cannot merge', () => {
-    const root = mountMergeConversation({
-      stack: layerStack('not-linear', 2),
+    const root = mountConversation({
+      pullRequest: layerPullRequest('not-linear'),
       viewerCanMerge: false,
       behindBy: 2,
     });
@@ -594,7 +583,10 @@ describe('Stack Merge', () => {
   });
 
   test('a pull request that is not a Layer keeps its merge and branch update', () => {
-    const root = mountMergeConversation({ stack: null, behindBy: 2 });
+    const root = mountConversation({
+      pullRequest: { ...layerPullRequest(), stack: null },
+      behindBy: 2,
+    });
 
     expect(root.querySelector('.merge-box__actions .merge-box__merge-btn')?.textContent).toContain(
       'Merge pull request'
@@ -602,39 +594,150 @@ describe('Stack Merge', () => {
     expect(root.textContent).toContain('Update branch');
     expect(root.querySelector('.merge-box__stack-layer')).toBeNull();
   });
+
+  const stackMergeId = '11111111-1111-4111-8111-111111111111';
+
+  test('waits until a slow Stack Merge lands instead of staying in progress', async () => {
+    let reads = 0;
+    const restoreWait = collapseStackMergeWait();
+    try {
+      const root = mountConversation({
+        fetch: (request, init) => {
+          const url = String(request);
+          const method = init?.method ?? 'GET';
+          if (method === 'POST' && url.endsWith('/stack-merge')) {
+            return { outcome: 'in-progress', id: stackMergeId };
+          }
+          if (url.includes(`/stack-merge/${stackMergeId}`)) {
+            reads += 1;
+            return reads > 15
+              ? { outcome: 'landed' }
+              : { outcome: 'in-progress', id: stackMergeId };
+          }
+          return openMergeStatus();
+        },
+      });
+
+      await openStackConfirmation(root);
+      click(root.querySelector('.merge-box__merge-btn'));
+
+      for (
+        let turn = 0;
+        turn < 40 && !root.textContent?.includes('Stack merge landed');
+        turn += 1
+      ) {
+        await flushMacrotask();
+        await settle();
+      }
+
+      expect(reads).toBeGreaterThan(15);
+      expect(root.textContent).toContain('Stack merge landed');
+      expect(root.textContent).not.toContain('Stack merge in progress');
+    } finally {
+      restoreWait();
+    }
+  });
+
+  test('shows that a Stack Merge which cannot be polled failed', async () => {
+    const root = mountConversation({
+      fetch: (request, init) => {
+        const url = String(request);
+        if ((init?.method ?? 'GET') === 'POST' && url.endsWith('/stack-merge')) {
+          return { outcome: 'in-progress' };
+        }
+        return openMergeStatus();
+      },
+    });
+
+    await openStackConfirmation(root);
+    click(root.querySelector('.merge-box__merge-btn'));
+    await settle();
+
+    expect(root.textContent).toContain('Stack merge failed');
+    expect(root.textContent).not.toContain('Stack merge in progress');
+  });
+
+  test('shows that a failed Stack Merge read failed', async () => {
+    const restoreWait = collapseStackMergeWait();
+    try {
+      const root = mountConversation({
+        fetch: (request, init) => {
+          const url = String(request);
+          const method = init?.method ?? 'GET';
+          if (method === 'POST' && url.endsWith('/stack-merge')) {
+            return { outcome: 'in-progress', id: stackMergeId };
+          }
+          if (url.includes('/stack-merge/')) {
+            throw new Error('GitHub did not answer');
+          }
+          return openMergeStatus();
+        },
+      });
+
+      await openStackConfirmation(root);
+      click(root.querySelector('.merge-box__merge-btn'));
+      for (
+        let turn = 0;
+        turn < 10 && !root.textContent?.includes('Stack merge failed');
+        turn += 1
+      ) {
+        await flushMacrotask();
+        await settle();
+      }
+
+      expect(root.textContent).toContain('Stack merge failed');
+      expect(root.textContent).not.toContain('Stack merge in progress');
+    } finally {
+      restoreWait();
+    }
+  });
+
+  test('stops waiting on a Stack Merge when the conversation goes away', async () => {
+    let reads = 0;
+    let releaseRead: (value: unknown) => void = () => {};
+    const restoreWait = collapseStackMergeWait();
+    try {
+      const root = mountConversation({
+        fetch: (request, init) => {
+          const url = String(request);
+          const method = init?.method ?? 'GET';
+          if (method === 'POST' && url.endsWith('/stack-merge')) {
+            return { outcome: 'in-progress', id: stackMergeId };
+          }
+          if (url.includes('/stack-merge/')) {
+            reads += 1;
+            return new Promise((resolve) => {
+              releaseRead = resolve;
+            });
+          }
+          return openMergeStatus();
+        },
+      });
+
+      await openStackConfirmation(root);
+      click(root.querySelector('.merge-box__merge-btn'));
+      for (let turn = 0; turn < 10 && reads < 1; turn += 1) {
+        await flushMacrotask();
+        await settle();
+      }
+      expect(reads).toBe(1);
+
+      root.unmount();
+      releaseRead({ outcome: 'in-progress', id: stackMergeId });
+      await settle();
+      await flushMacrotask();
+      await settle();
+
+      expect(reads).toBe(1);
+    } finally {
+      restoreWait();
+    }
+  });
 });
-
-Object.assign(messages, {
-  'prReview.stackDetail.title': 'Stack',
-  'prReview.stackDetail.close': 'Close',
-  'prReview.stackDetail.current': 'Current',
-  'prReview.stackDetail.state.open': 'Open',
-  'prReview.stackDetail.state.draft': 'Draft',
-  'prReview.stackDetail.state.closed': 'Closed',
-  'prReview.stackDetail.state.merged': 'Merged',
-});
-
-const detailLayer: ConversationPullRequest = {
-  ...openLayer,
-  stack: {
-    trunk: 'main',
-    count: 4,
-    place: 2,
-    history: 'unknown',
-    layers: [
-      { number: 101, title: 'Add the model', state: 'merged' },
-      { number: 102, title: 'Add the API', state: 'open' },
-      { number: 103, title: 'Add the screen', state: 'draft' },
-      { number: 104, title: 'Add the notes', state: 'closed' },
-    ],
-  },
-};
-
-const layerText = (element: Element) => element.textContent?.replaceAll(/\s+/g, ' ').trim() ?? '';
 
 describe('stack detail', () => {
   test('names the Trunk and lists every Layer, and another Layer switches the pull request', async () => {
-    const root = mountConversation(detailLayer);
+    const root = mountConversation();
     const chip = root.querySelector<HTMLElement>('.pr-stack-chip');
 
     expect(chip).not.toBeNull();
@@ -676,7 +779,9 @@ describe('stack detail', () => {
   });
 
   test('a pull request that is not a Layer has no Stack Chip', () => {
-    const root = mountConversation({ ...openLayer, stack: null });
+    const root = mountConversation({
+      pullRequest: { ...layerPullRequest(), stack: null },
+    });
 
     expect(root.querySelector('.pr-stack-chip')).toBeNull();
     expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
