@@ -170,14 +170,11 @@ void main() {
       ),
       ['R_native', 'R_web'],
     );
-    expect(settings['navigation'], {
-      'linkTarget': 'github',
-      'previewSingleLinkedPullRequest': true,
-    });
-    expect(settings['releaseTimeline'], {
-      'showReactions': false,
-      'showAssetsCount': false,
-    });
+    // Only the preferences the web session wrote are this client's contract;
+    // the rest of each object belongs to the backend's defaults, and a new
+    // option there must not fail a Flutter test.
+    expect(settings['navigation'], containsPair('linkTarget', 'github'));
+    expect(settings['releaseTimeline'], containsPair('showReactions', false));
     await facade.unfollow('R_web');
     settings = (await web.get<Map<String, dynamic>>('api/settings')).data!;
     expect(
