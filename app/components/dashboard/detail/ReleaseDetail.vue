@@ -168,18 +168,23 @@ usePageMeta(
         media="(max-width: 1024px)"
       >
         <div class="release-sidebar">
-          <section class="sidebar-card release-sidebar__assets-card">
+          <section
+            class="sidebar-card"
+            :class="{ 'release-sidebar__assets-card': assets.length > 0 }"
+          >
             <div class="sidebar-card__header">
               <div class="sidebar-card__header-left">
                 <PackageIcon :size="14" class="sidebar-card__icon" />
                 <span class="sidebar-card__title">{{ t('releaseDetail.assets') }}</span>
               </div>
-              <span class="sidebar-card__count">
+              <span v-if="assets.length" class="sidebar-card__count">
                 {{ t('releaseDetail.assetCount', { count: assets.length }) }}
               </span>
             </div>
             <ScrollArea
-              class="sidebar-card__content sidebar-card__content--scrollable sidebar-scroll"
+              class="sidebar-card__content"
+              :class="{ 'sidebar-card__content--scrollable sidebar-scroll': assets.length > 0 }"
+              :disabled="assets.length === 0"
               media="(min-width: 1025px)"
             >
               <ReleaseAssetsList :assets="assets" :name-prefix="assetNamePrefix" />

@@ -134,7 +134,7 @@ const handleBodyNavigation = (event: MouseEvent) => {
           <PackageIcon :size="14" aria-hidden="true" />
           <span>{{ t('releaseDetail.assets') }}</span>
         </span>
-        <span class="release-drawer-body__section-count">
+        <span v-if="assets.length" class="release-drawer-body__section-count">
           {{ t('releaseDetail.assetCount', { count: assets.length }) }}
         </span>
       </div>

@@ -123,8 +123,10 @@ describe('ReleaseAssetsList', () => {
 
   test('says so when the release has no assets at all', () => {
     const root = mountList([]);
+    const empty = root.querySelector('.release-assets-list__empty');
 
     expect(root.querySelector('.release-assets-list')).toBeNull();
-    expect(root.textContent).toContain('releaseDetail.noAssets');
+    expect(root.querySelector('a')).toBeNull();
+    expect(empty?.textContent).toContain('releaseDetail.noAssets');
   });
 });

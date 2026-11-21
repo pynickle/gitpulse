@@ -259,8 +259,19 @@ const downloadCountLabel = (count: number) => formatCompactNumber(Math.max(0, co
 }
 
 .release-assets-list__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0;
+  padding: 0.85rem 0.75rem;
+  border: 1px dashed var(--gitpulse-border-strong);
+  border-radius: 6px;
   color: var(--gitpulse-text-muted);
-  font-size: 0.9rem;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 </style>
