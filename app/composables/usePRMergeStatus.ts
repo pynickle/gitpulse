@@ -33,8 +33,26 @@ export interface PRMergeStatus {
   headSha: string | null;
   headBranch: PullRequestHeadBranchState | null;
   viewerCanMerge: boolean;
+  /**
+   * Commits on the base ref that are absent from the head.
+   * Null when that comparison could not be read. Zero is current, including a head that is only ahead.
+   */
+  behindBy: number | null;
+  /** The pull request's base ref, the ref currency is measured against. */
+  baseRef: string;
+  /** The pull request's base tip, not the merge base. */
+  baseSha: string | null;
+  /** The viewer can write the head repository, or can edit files on this pull request. */
+  viewerCanWriteHead: boolean;
   /** The merge methods the repository allows, in the order the box offers them. */
   allowedMergeMethods?: PRMergeMethod[];
+}
+
+export type PRBranchUpdateMethod = 'merge' | 'rebase';
+
+export interface PRBranchUpdatePayload {
+  method: PRBranchUpdateMethod;
+  expectedHeadOid: string;
 }
 
 /** The commit title and message GitHub would record for each merge method. */
@@ -81,6 +99,29 @@ const getFetchErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const isHeadOidMismatch = (error: unknown) => {
+  if (!error || typeof error !== 'object' || !('data' in error)) {
+    return false;
+  }
+
+  const body = error.data;
+  if (!body || typeof body !== 'object') {
+    return false;
+  }
+
+  if ('code' in body && body.code === 'head_oid_mismatch') {
+    return true;
+  }
+
+  return (
+    'data' in body &&
+    !!body.data &&
+    typeof body.data === 'object' &&
+    'code' in body.data &&
+    body.data.code === 'head_oid_mismatch'
+  );
+};
+
 export function usePRMergeStatus() {
   const apiFetch = useGitPulseApiFetch();
   const mergeStatus = shallowRef<PRMergeStatus | null>(null);
@@ -88,6 +129,7 @@ export function usePRMergeStatus() {
   const error = shallowRef<string | null>(null);
   const mergeError = shallowRef<string | null>(null);
   const branchActionError = shallowRef<string | null>(null);
+  const branchUpdateError = shallowRef<string | null>(null);
   const commitDefaults = shallowRef<PRMergeCommitDefaults | null>(null);
   let statusRequestId = 0;
   let commitDefaultsRequestId = 0;
@@ -97,6 +139,7 @@ export function usePRMergeStatus() {
     mergeStatus.value = status;
     loading.value = false;
     error.value = null;
+    branchUpdateError.value = null;
   };
 
   const fetchMergeStatus = async (owner: string, repo: string, pullNumber: number) => {
@@ -207,6 +250,33 @@ export function usePRMergeStatus() {
     }
   };
 
+  const updatePullRequestBranch = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    payload: PRBranchUpdatePayload
+  ) => {
+    branchUpdateError.value = null;
+
+    try {
+      await apiFetch(`/api/pulls/${owner}/${repo}/${pullNumber}/update-branch`, {
+        method: 'POST',
+        body: payload,
+      });
+      await fetchMergeStatus(owner, repo, pullNumber);
+      return true;
+    } catch (fetchError: unknown) {
+      branchUpdateError.value = getFetchErrorMessage(
+        fetchError,
+        'Failed to update pull request branch'
+      );
+      if (isHeadOidMismatch(fetchError)) {
+        await fetchMergeStatus(owner, repo, pullNumber);
+      }
+      return false;
+    }
+  };
+
   const deleteHeadBranch = (owner: string, repo: string, pullNumber: number) =>
     mutateHeadBranch(
       owner,
@@ -225,12 +295,14 @@ export function usePRMergeStatus() {
     error,
     mergeError,
     branchActionError,
+    branchUpdateError,
     commitDefaults,
     setMergeStatus,
     fetchMergeStatus,
     fetchCommitDefaults,
     clearCommitDefaults,
     mergePullRequest,
+    updatePullRequestBranch,
     deleteHeadBranch,
     restoreHeadBranch,
   };

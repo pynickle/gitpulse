@@ -240,8 +240,16 @@ The surface for reviewing one pull request: its changed files, its diff, and its
 _Avoid_: PR review page, review UI
 
 **Merge Box**:
-The part of a pull request's conversation that states whether it can be merged and performs the merge, including the method chosen for it and the commit title and message the merge records. It offers only the Merge Methods the repository allows.
+The part of a pull request's conversation that states whether it can be merged and performs the merge, including the method chosen for it and the commit title and message the merge records. It offers only the Merge Methods the repository allows, and it states Branch Currency and offers a Branch Update.
 _Avoid_: merge panel, merge card, merge widget
+
+**Branch Currency**:
+Whether a pull request's head ref contains the base ref's current tip. It is current when every commit on the base ref is already in the head, and behind by the commits that are not.
+_Avoid_: up to date when that could mean checks or mergeability, sync, freshness
+
+**Branch Update**:
+A change that brings a behind head ref up to the base ref's tip, either by merging the base into the head or by rebasing the head onto the base. It leaves the pull request open. Rebase is available only when the repository allows a rebase Merge Method.
+_Avoid_: merge when meaning a Merge Method, update branch when naming how the pull request lands
 
 **Merge Method**:
 One of the three ways GitHub can land a pull request: a merge commit, a squash, or a rebase. Rebase records no title or message of its own.

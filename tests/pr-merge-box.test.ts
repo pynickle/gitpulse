@@ -22,9 +22,28 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.methodRebase': 'Rebase and merge',
   'prReview.mergeBox.selectMethod': 'Select merge method',
   'prReview.mergeBox.reviewNone': 'No reviews required',
+  'prReview.mergeBox.reviewRequired': 'Review required',
   'prReview.mergeBox.mergeableClean': 'This branch has no conflicts with the base branch',
+  'prReview.mergeBox.mergeableDirty': 'This branch has conflicts that must be resolved',
+  'prReview.mergeBox.mergeableChecking': 'Checking mergeability...',
+  'prReview.mergeBox.checksFailed': 'Some checks were not successful',
   'prReview.mergeBox.cancel': 'Cancel',
+  'prReview.mergeBox.loading': 'Loading merge status...',
   'prReview.mergeBox.loadingCommitDefaults': 'Loading the default commit message...',
+  'prReview.mergeBox.merged': 'Merged',
+  'prReview.mergeBox.closedTitle': 'Closed without merging',
+  'prReview.mergeBox.branchCurrent': 'This branch is current with {base}.',
+  'prReview.mergeBox.branchBehindOne': 'This branch is 1 commit behind {base} ({sha}).',
+  'prReview.mergeBox.branchBehindMany': 'This branch is {count} commits behind {base} ({sha}).',
+  'prReview.mergeBox.branchUnreadable': 'Branch currency could not be read.',
+  'prReview.mergeBox.updateBranch': 'Update branch',
+  'prReview.mergeBox.rebaseBranch': 'Rebase branch',
+  'prReview.mergeBox.confirmUpdateBranch': 'Confirm update',
+  'prReview.mergeBox.confirmRebaseBranch': 'Confirm rebase',
+  'prReview.mergeBox.updating': 'Updating...',
+  'prReview.mergeBox.selectUpdateMethod': 'Select update method',
+  'prReview.mergeBox.updateWithMerge': 'Update with a merge commit',
+  'prReview.mergeBox.updateWithRebase': 'Update with rebase',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -36,6 +55,11 @@ interface RecordedMerge {
   method: string;
   commitTitle?: string;
   commitMessage?: string;
+}
+
+interface RecordedUpdate {
+  method: string;
+  expectedHeadOid: string;
 }
 
 interface CommitDefaults {
@@ -67,9 +91,12 @@ function createDeferred() {
 function createMergeStatusStore({ holdDefaults = false } = {}) {
   const mergeStatus = shallowRef<Record<string, unknown> | null>(null);
   const merges: RecordedMerge[] = [];
+  const updates: RecordedUpdate[] = [];
+  const branchUpdateError = ref<string | null>(null);
   const defaults = shallowRef<CommitDefaults | null>(null);
   const defaultsGate = holdDefaults ? createDeferred() : null;
   let defaultsReads = 0;
+  let finishUpdate = async (_payload: RecordedUpdate): Promise<boolean> => true;
 
   const store = {
     mergeStatus,
@@ -77,9 +104,11 @@ function createMergeStatusStore({ holdDefaults = false } = {}) {
     error: ref<string | null>(null),
     mergeError: ref<string | null>(null),
     branchActionError: ref<string | null>(null),
+    branchUpdateError,
     commitDefaults: defaults,
     setMergeStatus: (value: Record<string, unknown> | null) => {
       mergeStatus.value = value;
+      branchUpdateError.value = null;
     },
     fetchMergeStatus: async () => null,
     fetchCommitDefaults: async () => {
@@ -104,7 +133,25 @@ function createMergeStatusStore({ holdDefaults = false } = {}) {
     },
     deleteHeadBranch: async () => true,
     restoreHeadBranch: async () => true,
+    updatePullRequestBranch: async (
+      _owner: string,
+      _repo: string,
+      _pullNumber: number,
+      payload: RecordedUpdate
+    ) => {
+      updates.push(payload);
+      return finishUpdate(payload);
+    },
+    /**
+     * Replaces what the branch update does after the box has recorded it.
+     * The real store rereads on success and on a rejected head oid; a test
+     * that needs that reread does it here.
+     */
+    stageBranchUpdate: (fn: (payload: RecordedUpdate) => Promise<boolean>) => {
+      finishUpdate = fn;
+    },
     merges,
+    updates,
   };
 
   return store;
@@ -159,6 +206,10 @@ function mountMergeBox(allowedMergeMethods: MergeMethod[], options?: { holdDefau
     headBranch: null,
     viewerCanMerge: true,
     allowedMergeMethods,
+    behindBy: 0,
+    baseRef: 'main',
+    baseSha: '1234567890abcdef',
+    viewerCanWriteHead: true,
   };
 
   const Harness = defineComponent({
@@ -320,5 +371,605 @@ describe('PRMergeBox default commit message', () => {
     await settle();
 
     expect(store.merges).toEqual([{ method: 'squash', commitTitle: 'Ship the merge policy' }]);
+  });
+});
+
+const BASE_SHA = '1234567890abcdef';
+const HEAD_SHA = 'abc123def456';
+
+const passedChecks = {
+  state: 'SUCCESS',
+  contexts: {
+    totalCount: 1,
+    nodes: [{ name: 'build', conclusion: 'SUCCESS', status: 'COMPLETED' }],
+  },
+};
+
+const failedChecks = {
+  state: 'FAILURE',
+  contexts: {
+    totalCount: 1,
+    nodes: [{ name: 'build', conclusion: 'FAILURE', status: 'COMPLETED' }],
+  },
+};
+
+function openStatus(overrides: Record<string, unknown> = {}) {
+  return {
+    state: 'open',
+    merged: false,
+    mergedAt: null,
+    mergedBy: null,
+    mergeCommitSha: null,
+    mergeableState: 'clean',
+    mergeable: true,
+    autoMerge: false,
+    draft: false,
+    reviewDecision: 'none',
+    reviewSummary: { approved: 0, changesRequested: 0 },
+    checkRollup: null,
+    headSha: HEAD_SHA,
+    headBranch: null,
+    viewerCanMerge: true,
+    allowedMergeMethods: ['merge', 'squash', 'rebase'],
+    behindBy: 0,
+    baseRef: 'main',
+    baseSha: BASE_SHA,
+    viewerCanWriteHead: true,
+    ...overrides,
+  };
+}
+
+function mountCurrency(status: Record<string, unknown>) {
+  store = createMergeStatusStore();
+  dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+  const events: string[] = [];
+
+  const Harness = defineComponent({
+    setup: () => () =>
+      h(MergeBox as Component, {
+        owner: 'octo',
+        repo: 'app',
+        pullNumber: 4,
+        initialStatus: status,
+        onBranchUpdated: () => {
+          events.push('branch-updated');
+        },
+      }),
+  });
+
+  return { root: dom.mount(Harness).root, events };
+}
+
+const currencyRow = (root: HTMLElement) => root.querySelector('.merge-box__currency');
+
+const currencyText = (root: HTMLElement) =>
+  currencyRow(root)?.querySelector('.merge-box__row-title')?.textContent?.trim() ?? '';
+
+const updateRoot = (root: HTMLElement) => root.querySelector('.merge-box__update');
+
+const updateButton = (root: HTMLElement) =>
+  updateRoot(root)?.querySelector<HTMLButtonElement>('.merge-box__merge-btn') ?? null;
+
+const updateToggle = (root: HTMLElement) =>
+  updateRoot(root)?.querySelector<HTMLButtonElement>('.merge-box__method-toggle') ?? null;
+
+const updateOptions = (root: HTMLElement) =>
+  [...(updateRoot(root)?.querySelectorAll('.merge-box__method-option') ?? [])].map((node) =>
+    node.textContent?.trim()
+  );
+
+const openRowKinds = (root: HTMLElement) =>
+  [...root.querySelectorAll('.merge-box__open > .merge-box__row')].map((node) => {
+    if (node.classList.contains('merge-box__currency')) return 'currency';
+    if (node.classList.contains('merge-box__row--toggle')) return 'checks';
+    const title = node.querySelector('.merge-box__row-title')?.textContent?.trim();
+    if (title === 'No reviews required' || title === 'Review required') return 'review';
+    return 'mergeability';
+  });
+
+describe('PRMergeBox branch currency', () => {
+  test('says a current head is current with its base, in the success tone', () => {
+    const { root } = mountCurrency(openStatus());
+
+    expect(currencyRow(root)?.classList.contains('merge-box__row--success')).toBe(true);
+    expect(currencyText(root)).toBe('This branch is current with main.');
+    expect(currencyText(root)).not.toContain(BASE_SHA.slice(0, 7));
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('treats a head that is only ahead as current', () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 0, baseRef: 'develop' }));
+
+    expect(currencyText(root)).toBe('This branch is current with develop.');
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('names one missing commit, the base ref, and the short base sha', () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 1, baseRef: 'develop' }));
+
+    expect(currencyRow(root)?.classList.contains('merge-box__row--warning')).toBe(true);
+    expect(currencyText(root)).toBe(
+      `This branch is 1 commit behind develop (${BASE_SHA.slice(0, 7)}).`
+    );
+    expect(currencyText(root)).not.toContain('commits');
+    expect(currencyText(root)).not.toContain(BASE_SHA);
+  });
+
+  test('uses the plural when more than one base commit is missing', () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 3 }));
+
+    expect(currencyText(root)).toBe(
+      `This branch is 3 commits behind main (${BASE_SHA.slice(0, 7)}).`
+    );
+  });
+
+  test('says when branch currency could not be read, with nothing to update', () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: null, baseRef: 'main', baseSha: BASE_SHA })
+    );
+
+    expect(currencyRow(root)?.classList.contains('merge-box__row--muted')).toBe(true);
+    expect(currencyText(root)).toBe('Branch currency could not be read.');
+    expect(currencyText(root)).not.toContain(BASE_SHA.slice(0, 7));
+    expect(currencyText(root)).not.toMatch(/\d/);
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('places branch currency between the checks and whether the pull request can merge', () => {
+    const { root } = mountCurrency(openStatus({ checkRollup: passedChecks, behindBy: 2 }));
+
+    expect(openRowKinds(root)).toEqual(['review', 'checks', 'currency', 'mergeability']);
+  });
+
+  test('places branch currency directly above mergeability when there is no check rollup', () => {
+    const { root } = mountCurrency(openStatus({ checkRollup: null, behindBy: 2 }));
+
+    expect(openRowKinds(root)).toEqual(['review', 'currency', 'mergeability']);
+  });
+
+  test('states currency on a draft the same way, and still offers the update', () => {
+    const { root } = mountCurrency(
+      openStatus({ draft: true, viewerCanMerge: true, behindBy: 2, viewerCanWriteHead: true })
+    );
+
+    expect(currencyText(root)).toBe(
+      `This branch is 2 commits behind main (${BASE_SHA.slice(0, 7)}).`
+    );
+    expect(root.querySelector('.merge-box__actions')).toBeNull();
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+    expect(updateButton(root)?.hasAttribute('disabled')).toBe(false);
+  });
+
+  test('leaves a merged pull request on its merged panel', () => {
+    const { root } = mountCurrency(
+      openStatus({ state: 'merged', merged: true, behindBy: 4, viewerCanWriteHead: true })
+    );
+
+    expect(root.querySelector('.merge-box__panel--merged')).not.toBeNull();
+    expect(currencyRow(root)).toBeNull();
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('leaves a closed pull request on its closed panel', () => {
+    const { root } = mountCurrency(
+      openStatus({ state: 'closed', merged: false, behindBy: 4, viewerCanWriteHead: true })
+    );
+
+    expect(root.querySelector('.merge-box__panel--closed')).not.toBeNull();
+    expect(currencyRow(root)).toBeNull();
+  });
+
+  test('shows the existing skeleton and no currency row while the box is loading', async () => {
+    store = createMergeStatusStore();
+    store.loading.value = true;
+    store.fetchMergeStatus = async () => {
+      store.loading.value = true;
+      store.mergeStatus.value = null;
+      return null;
+    };
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+        }),
+    });
+    const root = dom.mount(Harness).root;
+    await settle();
+
+    expect(root.querySelector('.merge-box__skeleton')).not.toBeNull();
+    expect(currencyRow(root)).toBeNull();
+  });
+
+  test('shows the existing error and no currency row when merge status fails', async () => {
+    store = createMergeStatusStore();
+    store.fetchMergeStatus = async () => {
+      store.loading.value = false;
+      store.mergeStatus.value = null;
+      store.error.value = 'Failed to fetch pull request merge status';
+      return null;
+    };
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+        }),
+    });
+    const root = dom.mount(Harness).root;
+    await settle();
+
+    expect(root.querySelector('.merge-box__note--danger')?.textContent).toContain(
+      'Failed to fetch pull request merge status'
+    );
+    expect(currencyRow(root)).toBeNull();
+  });
+
+  test('offers an enabled update when the reader can write a clean behind head', () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, viewerCanWriteHead: true, viewerCanMerge: false })
+    );
+
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+    expect(updateButton(root)?.hasAttribute('disabled')).toBe(false);
+    expect(root.querySelector('.merge-box__actions .merge-box__update')).toBeNull();
+    expect(currencyRow(root)?.querySelector('.merge-box__update')).not.toBeNull();
+  });
+
+  test('hides the update when the head conflicts', () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, mergeable: false, mergeableState: 'dirty' })
+    );
+
+    expect(currencyText(root)).toContain('2 commits behind');
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('shows the update disabled while mergeability is still unknown', () => {
+    const { root } = mountCurrency(
+      openStatus({
+        behindBy: 2,
+        mergeable: null,
+        mergeableState: null,
+        allowedMergeMethods: ['merge', 'rebase'],
+      })
+    );
+
+    expect(updateButton(root)?.hasAttribute('disabled')).toBe(true);
+    expect(updateToggle(root)?.hasAttribute('disabled')).toBe(true);
+
+    click(updateButton(root));
+    click(updateToggle(root));
+
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+    expect(updateOptions(root)).toEqual([]);
+  });
+
+  test('keeps the update enabled when checks are failing', () => {
+    const { root } = mountCurrency(
+      openStatus({
+        behindBy: 2,
+        mergeable: true,
+        mergeableState: 'unstable',
+        checkRollup: failedChecks,
+      })
+    );
+
+    expect(root.querySelector('.merge-box__row--toggle')?.textContent).toContain(
+      'Some checks were not successful'
+    );
+    expect(updateButton(root)?.hasAttribute('disabled')).toBe(false);
+  });
+
+  test('keeps the update enabled when a review is still required', () => {
+    const { root } = mountCurrency(
+      openStatus({
+        behindBy: 2,
+        mergeable: true,
+        mergeableState: 'blocked',
+        reviewDecision: 'review_required',
+      })
+    );
+
+    expect(openRowKinds(root)[0]).toBe('review');
+    expect(
+      root.querySelector('.merge-box__actions .merge-box__merge-btn')?.hasAttribute('disabled')
+    ).toBe(true);
+    expect(updateButton(root)?.hasAttribute('disabled')).toBe(false);
+  });
+
+  test('hides the update when the reader cannot write the head', () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 2, viewerCanWriteHead: false }));
+
+    expect(currencyText(root)).toContain('2 commits behind');
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('hides the update when the head is already current', () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 0, viewerCanWriteHead: true }));
+
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('offers merge and rebase, and the main label follows the selection', async () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, allowedMergeMethods: ['squash', 'rebase'] })
+    );
+
+    expect(updateButton(root)?.classList.contains('merge-box__merge-btn--standalone')).toBe(false);
+    click(updateToggle(root));
+    await settle();
+
+    expect(updateOptions(root)).toEqual(['Update with a merge commit', 'Update with rebase']);
+
+    click(updateRoot(root)?.querySelectorAll('.merge-box__method-option')[1] ?? null);
+    await settle();
+
+    expect(updateOptions(root)).toEqual([]);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Rebase branch');
+
+    click(updateToggle(root));
+    await settle();
+    click(updateRoot(root)?.querySelectorAll('.merge-box__method-option')[0] ?? null);
+    await settle();
+
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+  });
+
+  test('offers only Update branch when the repository does not allow rebase', () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, allowedMergeMethods: ['merge', 'squash'] })
+    );
+
+    expect(updateToggle(root)).toBeNull();
+    expect(updateButton(root)?.classList.contains('merge-box__merge-btn--standalone')).toBe(true);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+  });
+
+  test('confirms before sending, and cancel sends nothing', async () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 2, allowedMergeMethods: ['merge'] }));
+
+    click(updateButton(root));
+    await settle();
+
+    expect(updateButton(root)?.textContent?.trim()).toBe('Confirm update');
+    expect(updateRoot(root)?.querySelector('.merge-box__cancel-btn')).not.toBeNull();
+    expect(updateRoot(root)?.querySelector('input, textarea')).toBeNull();
+    expect(store.updates).toEqual([]);
+
+    click(updateRoot(root)?.querySelector('.merge-box__cancel-btn') ?? null);
+    await settle();
+
+    expect(store.updates).toEqual([]);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+  });
+
+  test('sends the selected method and the head oid on confirm', async () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, headSha: HEAD_SHA, allowedMergeMethods: ['merge', 'rebase'] })
+    );
+
+    click(updateToggle(root));
+    await settle();
+    click(updateRoot(root)?.querySelectorAll('.merge-box__method-option')[1] ?? null);
+    await settle();
+    click(updateButton(root));
+    await settle();
+
+    expect(updateButton(root)?.textContent?.trim()).toBe('Confirm rebase');
+    expect(updateRoot(root)?.querySelector('input, textarea')).toBeNull();
+
+    click(updateButton(root));
+    await settle();
+
+    expect(store.updates).toEqual([{ method: 'rebase', expectedHeadOid: HEAD_SHA }]);
+  });
+
+  test('cancel returns the selected method, and a later choice does not send the update', async () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, allowedMergeMethods: ['merge', 'rebase'] })
+    );
+
+    click(updateButton(root));
+    await settle();
+    expect(updateButton(root)?.textContent?.trim()).toBe('Confirm update');
+
+    click(updateRoot(root)?.querySelector('.merge-box__cancel-btn') ?? null);
+    await settle();
+    click(updateToggle(root));
+    await settle();
+    click(updateRoot(root)?.querySelectorAll('.merge-box__method-option')[1] ?? null);
+    await settle();
+
+    expect(store.updates).toEqual([]);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Rebase branch');
+  });
+
+  test('a click outside the update menu closes it', async () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, allowedMergeMethods: ['merge', 'rebase'] })
+    );
+
+    click(updateToggle(root));
+    await settle();
+    expect(updateOptions(root)).toHaveLength(2);
+
+    click(currencyRow(root)?.querySelector('.merge-box__row-title') ?? null);
+    await settle();
+
+    expect(updateOptions(root)).toEqual([]);
+  });
+
+  test('shows progress while the update is in flight and ignores another click', async () => {
+    const { root } = mountCurrency(openStatus({ behindBy: 2, allowedMergeMethods: ['merge'] }));
+    const gate = createDeferred();
+    store.stageBranchUpdate(async () => {
+      await gate.promise;
+      return true;
+    });
+
+    click(updateButton(root));
+    await settle();
+    click(updateButton(root));
+    click(updateButton(root));
+    await settle();
+
+    expect(store.updates).toHaveLength(1);
+    expect(updateButton(root)?.querySelector('.merge-box__spinner')).not.toBeNull();
+    expect(updateButton(root)?.getAttribute('aria-busy')).toBe('true');
+    expect(updateButton(root)?.textContent?.trim()).toBe('Updating...');
+    expect(updateButton(root)?.hasAttribute('disabled')).toBe(true);
+
+    gate.resolve();
+    await settle();
+
+    expect(store.updates).toHaveLength(1);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+  });
+
+  test('a failed update stays on this control and leaves the merge error alone', async () => {
+    const { root } = mountCurrency(
+      openStatus({ behindBy: 2, allowedMergeMethods: ['merge', 'rebase'] })
+    );
+    store.mergeError.value = 'The merge failed';
+    store.stageBranchUpdate(async () => {
+      store.branchUpdateError.value = 'The update failed';
+      return false;
+    });
+
+    click(updateToggle(root));
+    await settle();
+    click(updateRoot(root)?.querySelectorAll('.merge-box__method-option')[1] ?? null);
+    await settle();
+    click(updateButton(root));
+    await settle();
+    click(updateButton(root));
+    await settle();
+
+    expect(updateRoot(root)?.querySelector('[role="alert"]')?.textContent).toContain(
+      'The update failed'
+    );
+    expect(root.querySelector('.merge-box__actions [role="alert"]')?.textContent).toContain(
+      'The merge failed'
+    );
+    expect(root.querySelector('.merge-box__actions [role="alert"]')?.textContent).not.toContain(
+      'The update failed'
+    );
+    expect(updateButton(root)?.textContent?.trim()).toBe('Rebase branch');
+  });
+
+  test('a rejected head oid is shown here, and the next confirmation uses the reread oid', async () => {
+    const { root, events } = mountCurrency(openStatus({ behindBy: 2, headSha: HEAD_SHA }));
+    store.stageBranchUpdate(async () => {
+      store.branchUpdateError.value = 'Expected head sha did not match';
+      const current = store.mergeStatus.value;
+      if (current) {
+        store.mergeStatus.value = { ...current, headSha: 'newhead1' };
+      }
+      return false;
+    });
+
+    click(updateButton(root));
+    await settle();
+    click(updateButton(root));
+    await settle();
+
+    expect(store.updates[0]).toEqual({ method: 'merge', expectedHeadOid: HEAD_SHA });
+    expect(updateRoot(root)?.querySelector('[role="alert"]')?.textContent).toContain(
+      'Expected head sha did not match'
+    );
+    expect(root.querySelector('.merge-box__actions [role="alert"]')).toBeNull();
+    expect(events).toEqual([]);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+
+    click(updateButton(root));
+    await settle();
+    click(updateButton(root));
+    await settle();
+
+    expect(store.updates[1]).toEqual({ method: 'merge', expectedHeadOid: 'newhead1' });
+  });
+
+  test('a successful update that leaves the head current drops the control after one reread', async () => {
+    const { root, events } = mountCurrency(openStatus({ behindBy: 2 }));
+    store.stageBranchUpdate(async () => {
+      const current = store.mergeStatus.value;
+      if (current) {
+        store.mergeStatus.value = { ...current, behindBy: 0 };
+      }
+      return true;
+    });
+
+    click(updateButton(root));
+    await settle();
+    click(updateButton(root));
+    await settle();
+
+    expect(events).toEqual(['branch-updated']);
+    expect(currencyRow(root)?.classList.contains('merge-box__row--success')).toBe(true);
+    expect(currencyText(root)).toBe('This branch is current with main.');
+    expect(updateRoot(root)).toBeNull();
+  });
+
+  test('opening another pull request closes the menu, clears confirmation, and selects merge', async () => {
+    store = createMergeStatusStore();
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+    const pullNumber = ref(4);
+    const status = shallowRef(
+      openStatus({ behindBy: 2, allowedMergeMethods: ['merge', 'rebase'], headSha: 'aaaaaaa' })
+    );
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: pullNumber.value,
+          initialStatus: status.value,
+        }),
+    });
+    const root = dom.mount(Harness).root;
+
+    click(updateToggle(root));
+    await settle();
+    click(updateRoot(root)?.querySelectorAll('.merge-box__method-option')[1] ?? null);
+    await settle();
+    click(updateToggle(root));
+    await settle();
+    expect(updateButton(root)?.textContent?.trim()).toBe('Rebase branch');
+    expect(updateOptions(root)).toHaveLength(2);
+    store.branchUpdateError.value = 'stale update';
+
+    pullNumber.value = 9;
+    status.value = openStatus({
+      behindBy: 2,
+      allowedMergeMethods: ['merge', 'rebase'],
+      headSha: 'bbbbbbb',
+    });
+    await settle();
+
+    expect(updateOptions(root)).toEqual([]);
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
+    expect(store.branchUpdateError.value).toBeNull();
+
+    click(updateButton(root));
+    await settle();
+    expect(updateButton(root)?.textContent?.trim()).toBe('Confirm update');
+
+    pullNumber.value = 10;
+    status.value = openStatus({
+      behindBy: 2,
+      allowedMergeMethods: ['merge', 'rebase'],
+      headSha: 'ccccccc',
+    });
+    await settle();
+
+    expect(updateRoot(root)?.querySelector('.merge-box__cancel-btn')).toBeNull();
+    expect(updateButton(root)?.textContent?.trim()).toBe('Update branch');
   });
 });

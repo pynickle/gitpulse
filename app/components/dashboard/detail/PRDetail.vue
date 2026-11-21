@@ -100,6 +100,7 @@
               :pull-number="currentPullRequest.number"
               :initial-status="terminalMergeStatus"
               @head-branch-updated="handlePullRequestHeadBranchUpdated"
+              @branch-updated="handlePullRequestBranchUpdated"
               @merged="handlePullRequestMerged"
             />
           </div>
@@ -472,6 +473,10 @@ const terminalMergeStatus = computed(() => {
     headSha: pullRequest.head?.sha ?? null,
     headBranch: pullRequest.head_branch ?? null,
     viewerCanMerge: false,
+    behindBy: null,
+    baseRef: pullRequest.base?.ref ?? '',
+    baseSha: pullRequest.base?.sha ?? null,
+    viewerCanWriteHead: false,
   };
 });
 
@@ -814,6 +819,12 @@ const handlePullRequestStateUpdated = () => {
 
 const handlePullRequestHeadBranchUpdated = () => {
   fetchPullRequestDetails();
+};
+
+const handlePullRequestBranchUpdated = () => {
+  fetchPullRequestDetails();
+  fetchTimeline();
+  void refreshCommits();
 };
 
 const updateLabels = (labels: RepositoryLabel[]) => {

@@ -106,6 +106,91 @@
           </Transition>
         </template>
 
+        <div class="merge-box__row merge-box__currency" :class="`merge-box__row--${currencyTone}`">
+          <span class="merge-box__row-icon">
+            <component :is="currencyIcon" :size="13" />
+          </span>
+          <p class="merge-box__row-title">{{ currencySentence }}</p>
+          <div v-if="showBranchUpdate" class="merge-box__update">
+            <div
+              v-if="branchUpdateError"
+              class="merge-box__note merge-box__note--danger"
+              role="alert"
+            >
+              <CircleExclamationPointIcon :size="14" />
+              <span>{{ branchUpdateError }}</span>
+            </div>
+            <div ref="updateControlsRef" class="merge-box__merge-controls">
+              <button
+                type="button"
+                class="merge-box__merge-btn"
+                :class="{
+                  'merge-box__merge-btn--confirm': updateConfirming,
+                  'merge-box__merge-btn--standalone': !updateConfirming && !rebaseUpdateAllowed,
+                  'merge-box__merge-btn--busy': updating,
+                }"
+                :disabled="branchUpdateDisabled"
+                :aria-busy="updating || undefined"
+                @click="onBranchUpdateClick"
+              >
+                <span v-if="updating" class="merge-box__spinner" aria-hidden="true" />
+                <GitMergeIcon v-else :size="14" />
+                <span>{{ branchUpdateButtonLabel }}</span>
+              </button>
+              <button
+                v-if="!updateConfirming && rebaseUpdateAllowed"
+                type="button"
+                class="merge-box__method-toggle"
+                :disabled="branchUpdateDisabled"
+                :aria-label="t('prReview.mergeBox.selectUpdateMethod')"
+                :aria-expanded="updateMenuOpen"
+                @click="toggleBranchUpdateMenu"
+              >
+                <ChevronDownIcon :size="14" />
+              </button>
+              <button
+                v-else-if="updateConfirming"
+                type="button"
+                class="merge-box__cancel-btn"
+                :disabled="updating"
+                @click="cancelBranchUpdate"
+              >
+                {{ t('prReview.mergeBox.cancel') }}
+              </button>
+              <div v-if="updateMenuOpen" class="merge-box__method-menu" role="menu">
+                <button
+                  type="button"
+                  class="merge-box__method-option"
+                  role="menuitemradio"
+                  :aria-checked="updateMethod === 'merge'"
+                  @click="selectBranchUpdateMethod('merge')"
+                >
+                  <CheckIcon
+                    :size="12"
+                    class="merge-box__method-check"
+                    :class="{ 'merge-box__method-check--hidden': updateMethod !== 'merge' }"
+                  />
+                  <span>{{ t('prReview.mergeBox.updateWithMerge') }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="merge-box__method-option"
+                  role="menuitemradio"
+                  :aria-checked="updateMethod === 'rebase'"
+                  @click="selectBranchUpdateMethod('rebase')"
+                >
+                  <CheckIcon
+                    :size="12"
+                    class="merge-box__method-check"
+                    :class="{ 'merge-box__method-check--hidden': updateMethod !== 'rebase' }"
+                  />
+                  <span>{{ t('prReview.mergeBox.updateWithRebase') }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="merge-box__row" :class="`merge-box__row--${mergeabilityRow.tone}`">
           <span class="merge-box__row-icon">
             <component :is="mergeabilityRow.icon" :size="13" />
@@ -304,6 +389,7 @@ const { owner, repo, pullNumber, initialStatus } = defineProps<{
 const emit = defineEmits<{
   merged: [];
   headBranchUpdated: [];
+  branchUpdated: [];
 }>();
 
 const { t, locale } = useI18n();
@@ -322,13 +408,21 @@ const {
   mergePullRequest,
   deleteHeadBranch,
   restoreHeadBranch,
+  branchUpdateError,
+  updatePullRequestBranch,
 } = usePRMergeStatus();
 
 const ALL_MERGE_METHODS: PRMergeMethod[] = ['merge', 'squash', 'rebase'];
+type BranchUpdateMethod = 'merge' | 'rebase';
 const selectedMethod = shallowRef<PRMergeMethod>('merge');
 const dropdownOpen = shallowRef(false);
 const confirming = shallowRef(false);
 const merging = shallowRef(false);
+const updateMethod = shallowRef<BranchUpdateMethod>('merge');
+const updateMenuOpen = shallowRef(false);
+const updateConfirming = shallowRef(false);
+const updating = shallowRef(false);
+let suppressMergeabilityPoll = false;
 /** The confirm step is open but its Default Commit Message is still being read. */
 const loadingCommitDefaults = shallowRef(false);
 const branchAction = shallowRef<'delete' | 'restore' | null>(null);
@@ -338,6 +432,7 @@ const commitMessage = shallowRef('');
 const prefillTitle = shallowRef('');
 const prefillMessage = shallowRef('');
 const mergeControlsRef = ref<HTMLElement | null>(null);
+const updateControlsRef = ref<HTMLElement | null>(null);
 const commitTitleId = useId();
 const commitMessageId = useId();
 
@@ -548,6 +643,79 @@ const mergeabilityRow = computed<MergeBoxRow>(() => {
   }
 });
 
+/** Missing base commits. Null when the comparison could not be read. */
+const behindCount = computed(() => {
+  const value = status.value?.behindBy;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+});
+
+const currencyTone = computed(() => {
+  if (behindCount.value === null) return 'muted';
+  return behindCount.value > 0 ? 'warning' : 'success';
+});
+
+const currencyIcon = computed(() => {
+  if (behindCount.value === null) return ClockIcon;
+  return behindCount.value > 0 ? CircleExclamationPointIcon : CheckIcon;
+});
+
+const currencySentence = computed(() => {
+  const base = status.value?.baseRef ?? '';
+  if (behindCount.value === null) {
+    return t('prReview.mergeBox.branchUnreadable');
+  }
+  if (behindCount.value > 0) {
+    const sha = status.value?.baseSha?.slice(0, 7) ?? '';
+    if (behindCount.value === 1) {
+      return t('prReview.mergeBox.branchBehindOne', { base, sha });
+    }
+    return t('prReview.mergeBox.branchBehindMany', {
+      base,
+      sha,
+      count: behindCount.value,
+    });
+  }
+  return t('prReview.mergeBox.branchCurrent', { base });
+});
+
+/** A known conflict is a finished check that found conflicts. Null is still running. */
+const branchConflicts = computed(() => {
+  const current = status.value;
+  if (!current) return false;
+  return current.mergeable === false || current.mergeableState === 'dirty';
+});
+
+const branchMergeabilityKnown = computed(() => {
+  const current = status.value;
+  return current?.mergeable === true && current.mergeableState !== 'dirty';
+});
+
+const showBranchUpdate = computed(
+  () =>
+    behindCount.value !== null &&
+    behindCount.value > 0 &&
+    Boolean(status.value?.viewerCanWriteHead) &&
+    !branchConflicts.value
+);
+
+const rebaseUpdateAllowed = computed(() => mergeMethods.value.includes('rebase'));
+
+const branchUpdateDisabled = computed(() => !branchMergeabilityKnown.value || updating.value);
+
+const branchUpdateButtonLabel = computed(() => {
+  if (updating.value) {
+    return t('prReview.mergeBox.updating');
+  }
+  if (updateConfirming.value) {
+    return updateMethod.value === 'rebase'
+      ? t('prReview.mergeBox.confirmRebaseBranch')
+      : t('prReview.mergeBox.confirmUpdateBranch');
+  }
+  return updateMethod.value === 'rebase'
+    ? t('prReview.mergeBox.rebaseBranch')
+    : t('prReview.mergeBox.updateBranch');
+});
+
 /** The button is working on the reader's own request: a merge, or the text its form opens on. */
 const mergeButtonBusy = computed(() => merging.value || loadingCommitDefaults.value);
 
@@ -640,6 +808,68 @@ const selectMergeMethod = (method: PRMergeMethod) => {
   selectedMethod.value = method;
   dropdownOpen.value = false;
   confirming.value = false;
+};
+
+const selectBranchUpdateMethod = (method: BranchUpdateMethod) => {
+  updateMethod.value = method;
+  updateMenuOpen.value = false;
+  updateConfirming.value = false;
+};
+
+const cancelBranchUpdate = () => {
+  if (updating.value) {
+    return;
+  }
+  updateConfirming.value = false;
+};
+
+const toggleBranchUpdateMenu = () => {
+  if (branchUpdateDisabled.value || updateConfirming.value) {
+    return;
+  }
+  updateMenuOpen.value = !updateMenuOpen.value;
+};
+
+const performBranchUpdate = async () => {
+  if (updating.value) {
+    return;
+  }
+
+  const headOid = status.value?.headSha;
+  if (!headOid) {
+    return;
+  }
+
+  updating.value = true;
+  // The reread often comes back with mergeable still null. That status must
+  // not start the mergeability poll; this update settles after one reread.
+  suppressMergeabilityPoll = true;
+  try {
+    const succeeded = await updatePullRequestBranch(owner, repo, pullNumber, {
+      method: updateMethod.value,
+      expectedHeadOid: headOid,
+    });
+    if (succeeded) {
+      emit('branchUpdated');
+    }
+  } finally {
+    updating.value = false;
+    updateConfirming.value = false;
+  }
+};
+
+const onBranchUpdateClick = async () => {
+  if (branchUpdateDisabled.value) {
+    return;
+  }
+
+  if (updateConfirming.value) {
+    await performBranchUpdate();
+    return;
+  }
+
+  updateMenuOpen.value = false;
+  updateConfirming.value = true;
 };
 
 const cancelConfirm = () => {
@@ -743,17 +973,21 @@ const onMergeClick = async () => {
   applyCommitDefaults();
 };
 
+const isEventNode = (value: EventTarget | null): value is Node =>
+  !!value && typeof value === 'object' && 'nodeType' in value;
+
 const onDocumentClick = (event: MouseEvent) => {
-  if (!dropdownOpen.value) {
-    return;
-  }
-
   const target = event.target;
-  if (target instanceof Node && mergeControlsRef.value?.contains(target)) {
-    return;
+  const containsTarget = (root: HTMLElement | null) =>
+    Boolean(root && isEventNode(target) && root.contains(target));
+
+  if (dropdownOpen.value && !containsTarget(mergeControlsRef.value)) {
+    dropdownOpen.value = false;
   }
 
-  dropdownOpen.value = false;
+  if (updateMenuOpen.value && !containsTarget(updateControlsRef.value)) {
+    updateMenuOpen.value = false;
+  }
 };
 
 // GitHub computes mergeability asynchronously; while `mergeable` is null,
@@ -774,6 +1008,11 @@ watch(
   () => status.value,
   (current) => {
     stopMergeabilityPolling();
+
+    if (suppressMergeabilityPoll) {
+      suppressMergeabilityPoll = false;
+      return;
+    }
 
     const shouldPoll =
       current &&
@@ -807,6 +1046,10 @@ watch(
   ([owner, repo, pullNumber, initialStatus]) => {
     dropdownOpen.value = false;
     confirming.value = false;
+    updateMenuOpen.value = false;
+    updateConfirming.value = false;
+    updateMethod.value = 'merge';
+    suppressMergeabilityPoll = false;
     loadingCommitDefaults.value = false;
     checksExpanded.value = false;
     resetCommitForm();
@@ -1096,6 +1339,22 @@ watch(
 .merge-box__open {
   display: flex;
   flex-direction: column;
+}
+
+.merge-box__currency {
+  .merge-box__row-title {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.merge-box__update {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .merge-box__row {
