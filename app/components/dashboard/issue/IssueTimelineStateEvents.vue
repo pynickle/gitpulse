@@ -253,13 +253,6 @@
     </span>
   </template>
 
-  <template v-else-if="item.eventType === 'renamed'">
-    renamed this from
-    <span class="tag is-activity ml-1 is-warning is-light">{{ item.previousTitle }}</span>
-    to
-    <span class="tag is-activity ml-1 is-success is-light">{{ item.currentTitle }}</span>
-  </template>
-
   <template v-else-if="item.eventType === 'transferred'">
     transferred this from
     <a

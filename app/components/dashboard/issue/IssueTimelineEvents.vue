@@ -31,6 +31,15 @@
           :repo-name="repoName"
         />
 
+        <TimelineRenamedTitleEvent
+          v-else-if="item.eventType === 'renamed'"
+          class="mx-2"
+          :actor="item.actor"
+          :previous-title="item.previousTitle"
+          :current-title="item.currentTitle"
+          :created-at="item.createdAt"
+        />
+
         <div v-else-if="item.groupedEvents" class="mx-2">
           <TimelineEventActorRow :actor="item.actor" align-start>
             <div>
@@ -109,6 +118,7 @@ import IssueTimelineReferencedEventCard from '~/components/dashboard/issue/Issue
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import TimelineCommentCard from '~/components/dashboard/timeline/TimelineCommentCard.vue';
 import TimelineEventActorRow from '~/components/dashboard/timeline/TimelineEventActorRow.vue';
+import TimelineRenamedTitleEvent from '~/components/dashboard/timeline/TimelineRenamedTitleEvent.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import {

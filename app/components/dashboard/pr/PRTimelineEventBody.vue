@@ -147,7 +147,6 @@ const stateEventTypes = new Set([
   'removed_from_merge_queue',
   'removed_from_project',
   'removed_from_project_v2',
-  'renamed',
   'reopened',
   'review_dismissed',
   'review_request_removed',

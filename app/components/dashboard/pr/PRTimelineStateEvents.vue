@@ -341,13 +341,6 @@
     }}</span>
   </template>
 
-  <template v-else-if="item.eventType === 'renamed'">
-    renamed this from
-    <span class="tag is-activity ml-1 is-info is-light">{{ item.previousTitle }}</span>
-    to
-    <span class="tag is-activity ml-1 is-info is-light">{{ item.currentTitle }}</span>
-  </template>
-
   <template v-else-if="item.eventType === 'review_dismissed'">
     dismissed review by
     <GitHubProfileLink

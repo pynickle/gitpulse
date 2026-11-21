@@ -166,6 +166,7 @@ const IssueTimelineEvents = await compileVue(
     '~/components/dashboard/issue/IssueTimelineReferencedEventCard.vue': { default: empty },
     '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue': { default: empty },
     '~/components/dashboard/timeline/TimelineEventActorRow.vue': { default: TimelineEventActorRow },
+    '~/components/dashboard/timeline/TimelineRenamedTitleEvent.vue': { default: empty },
     '~/components/ui/LoadingIcon.vue': { default: empty },
     '~/composables/useIssueTimelineEvents': timelineEvents,
   }
