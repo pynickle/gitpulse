@@ -33,6 +33,7 @@ const { owner, repo, pullNumber, commitId, title, changedFiles, additions, delet
 
 const emit = defineEmits<{
   (e: 'close'): void;
+  (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
 }>();
 
 const { t } = useI18n();
@@ -306,7 +307,11 @@ watch(
           </button>
           <div class="pr-review-workspace__title-line">
             <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
-            <PRStackChip v-if="stack" :stack="stack" />
+            <PRStackChip
+              v-if="stack"
+              :stack="stack"
+              @select="emit('switch-pull-request', owner, repo, $event)"
+            />
           </div>
         </div>
       </div>
