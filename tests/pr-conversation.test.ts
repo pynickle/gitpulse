@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { defineComponent, h, ref, shallowRef, type Component } from 'vue';
+import { defineComponent, h, nextTick, ref, shallowRef, type Component } from 'vue';
 
 import { formatDurationFromNow } from '../app/utils/formatDurationFromNow';
 import { getPullRequestStateVisual } from '../app/utils/getPullRequestStateVisual';
@@ -49,6 +49,18 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.selectUpdateMethod': 'Select update method',
   'prReview.mergeBox.updateWithMerge': 'Update with a merge commit',
   'prReview.mergeBox.updateWithRebase': 'Update with rebase',
+  'prReview.mergeBox.confirmMerge': 'Confirm merge',
+  'prReview.mergeBox.confirmSquash': 'Confirm squash and merge',
+  'prReview.mergeBox.commitTitleLabel': 'Commit title',
+  'prReview.mergeBox.commitMessageLabel': 'Commit message',
+  'prReview.mergeBox.stackMergeInProgress': 'Stack merge in progress',
+  'prReview.mergeBox.stackMergeLanded': 'Stack merge landed',
+  'prReview.mergeBox.stackMergeQueued': 'Entered the merge queue',
+  'prReview.mergeBox.stackMergeFailed': 'Stack merge failed',
+  'prReview.mergeBox.layerOpen': 'Open',
+  'prReview.mergeBox.layerDraft': 'Draft',
+  'prReview.mergeBox.layerClosed': 'Closed',
+  'prReview.mergeBox.layerMerged': 'Merged',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -65,9 +77,23 @@ interface RecordedUpdate {
   expectedHeadOid: string;
 }
 
+interface RecordedStackMerge extends RecordedMerge {
+  owner: string;
+  repo: string;
+  pullNumber: number;
+}
+
+interface StackMergeResult {
+  outcome: 'in-progress' | 'landed' | 'queued' | 'failed';
+  message?: string;
+}
+
 function createMergeStatusStore() {
   const mergeStatus = shallowRef<Record<string, unknown> | null>(null);
   const branchUpdateError = ref<string | null>(null);
+  const merges: RecordedMerge[] = [];
+  const stackMerges: RecordedStackMerge[] = [];
+  let finishStackMerge: (result: StackMergeResult) => void = () => {};
 
   return {
     mergeStatus,
@@ -77,6 +103,8 @@ function createMergeStatusStore() {
     branchActionError: ref<string | null>(null),
     branchUpdateError,
     commitDefaults: shallowRef(null),
+    merges,
+    stackMerges,
     setMergeStatus: (value: Record<string, unknown> | null) => {
       mergeStatus.value = value;
       branchUpdateError.value = null;
@@ -88,8 +116,18 @@ function createMergeStatusStore() {
       _owner: string,
       _repo: string,
       _pullNumber: number,
-      _payload: RecordedMerge
-    ) => true,
+      payload: RecordedMerge
+    ) => {
+      merges.push(payload);
+      return true;
+    },
+    mergeStack: async (owner: string, repo: string, pullNumber: number, payload: RecordedMerge) => {
+      stackMerges.push({ owner, repo, pullNumber, ...payload });
+      return new Promise<StackMergeResult>((resolve) => {
+        finishStackMerge = resolve;
+      });
+    },
+    settleStackMerge: (result: StackMergeResult) => finishStackMerge(result),
     deleteHeadBranch: async () => true,
     restoreHeadBranch: async () => true,
     updatePullRequestBranch: async (
@@ -237,5 +275,266 @@ describe('pull request conversation', () => {
     const root = mountConversation();
 
     expect(root.textContent).toContain('Layer 2 of 4');
+  });
+});
+
+const failedChecks = {
+  state: 'FAILURE',
+  contexts: {
+    totalCount: 1,
+    nodes: [{ name: 'build', conclusion: 'FAILURE', status: 'COMPLETED' }],
+  },
+};
+
+const stackLayers = [
+  { number: 101, title: 'Add the model', state: 'merged' as const },
+  { number: 102, title: 'Add the API', state: 'open' as const },
+  { number: 103, title: 'Add the screen', state: 'draft' as const },
+  { number: 104, title: 'Add the notes', state: 'closed' as const },
+];
+
+function layerStack(history: 'linear' | 'not-linear' | 'unknown', place: number) {
+  return {
+    trunk: 'main',
+    count: 4,
+    place,
+    history,
+    layers: stackLayers,
+  };
+}
+
+const click = (element: Element | null | undefined) =>
+  element?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+
+const settle = async () => {
+  await Promise.resolve();
+  await nextTick();
+  await nextTick();
+};
+
+function layerTexts(root: HTMLElement) {
+  return [...root.querySelectorAll('.merge-box__stack-layer')].map((node) =>
+    node.textContent?.replace(/\s+/g, ' ').trim()
+  );
+}
+
+function mountMergeConversation(options: {
+  stack?: ReturnType<typeof layerStack> | null;
+  pullNumber?: number;
+  viewerCanMerge?: boolean;
+  behindBy?: number;
+  viewerCanWriteHead?: boolean;
+}) {
+  store = createMergeStatusStore();
+  dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+  const pullNumber = options.pullNumber ?? openLayer.number;
+  const Harness = defineComponent({
+    setup: () => () =>
+      h('div', [
+        h(Header as Component, {
+          pullRequest: openLayer,
+          repoOwner: 'octo',
+          repoName: 'app',
+        }),
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber,
+          stack: options.stack ?? null,
+          initialStatus: {
+            state: 'open',
+            merged: false,
+            mergedAt: null,
+            mergedBy: null,
+            mergeCommitSha: null,
+            mergeableState: 'clean',
+            mergeable: true,
+            autoMerge: false,
+            draft: false,
+            reviewDecision: 'none',
+            reviewSummary: { approved: 0, changesRequested: 0 },
+            checkRollup: failedChecks,
+            headSha: 'abc123',
+            headBranch: null,
+            viewerCanMerge: options.viewerCanMerge ?? true,
+            allowedMergeMethods: ['merge', 'squash', 'rebase'],
+            behindBy: options.behindBy ?? 0,
+            baseRef: 'main',
+            baseSha: '1234567890abcdef',
+            viewerCanWriteHead: options.viewerCanWriteHead ?? true,
+          },
+        }),
+      ]),
+  });
+
+  return dom.mount(Harness).root;
+}
+
+async function chooseSquash(root: HTMLElement) {
+  click(root.querySelector('.merge-box__method-toggle'));
+  await settle();
+  const option = [...root.querySelectorAll('.merge-box__method-option')].find((node) =>
+    node.textContent?.includes('Squash and merge')
+  );
+  click(option);
+  await settle();
+}
+
+async function openStackConfirmation(root: HTMLElement) {
+  await chooseSquash(root);
+  click(root.querySelector('.merge-box__merge-btn'));
+  await settle();
+}
+
+describe('Stack Merge', () => {
+  test('confirms the Layers from the first through this one and sends no commit text', async () => {
+    const root = mountMergeConversation({
+      stack: layerStack('linear', 2),
+      pullNumber: 102,
+      behindBy: 2,
+    });
+
+    expect(root.textContent).toContain('No reviews required');
+    expect(root.textContent).toContain('Some checks were not successful');
+    expect(root.textContent).toContain('This branch has no conflicts with the base branch');
+    expect(root.textContent).toContain('This branch is 2 commits behind main (1234567).');
+    expect(root.querySelector('.merge-box__update')).toBeNull();
+
+    await openStackConfirmation(root);
+
+    expect(layerTexts(root)).toEqual(['#101 Add the model Merged', '#102 Add the API Open']);
+    expect(root.querySelector('.merge-box__commit-form')).toBeNull();
+    expect(store.stackMerges).toEqual([]);
+    expect(store.merges).toEqual([]);
+
+    click(root.querySelector('.merge-box__merge-btn'));
+    await settle();
+
+    expect(store.stackMerges).toEqual([
+      { owner: 'octo', repo: 'app', pullNumber: 102, method: 'squash' },
+    ]);
+    expect(store.merges).toEqual([]);
+    expect(root.textContent).toContain('Stack merge in progress');
+
+    store.settleStackMerge({ outcome: 'landed' });
+    await settle();
+
+    expect(root.textContent).toContain('Stack merge landed');
+    expect(root.textContent).not.toContain('Stack merge in progress');
+  });
+
+  test('sends the commit title and message when only the first Layer lands', async () => {
+    const root = mountMergeConversation({
+      stack: layerStack('linear', 1),
+      pullNumber: 101,
+    });
+
+    await openStackConfirmation(root);
+
+    expect(layerTexts(root)).toEqual(['#101 Add the model Merged']);
+    const form = root.querySelector<HTMLFormElement>('.merge-box__commit-form');
+    const title = form?.querySelector<HTMLInputElement>('.merge-box__commit-input');
+    const message = form?.querySelector<HTMLTextAreaElement>('.merge-box__commit-textarea');
+    if (title) {
+      title.value = 'Land the model';
+      title.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    }
+    if (message) {
+      message.value = 'Keep the schema change.';
+      message.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    }
+    await nextTick();
+
+    form?.dispatchEvent(new dom.window.Event('submit'));
+    await settle();
+
+    expect(store.merges).toEqual([]);
+    expect(store.stackMerges).toEqual([
+      {
+        owner: 'octo',
+        repo: 'app',
+        pullNumber: 101,
+        method: 'squash',
+        commitTitle: 'Land the model',
+        commitMessage: 'Keep the schema change.',
+      },
+    ]);
+  });
+
+  test('shows that the Stack Merge entered the merge queue', async () => {
+    const root = mountMergeConversation({ stack: layerStack('linear', 2), pullNumber: 102 });
+
+    await openStackConfirmation(root);
+    click(root.querySelector('.merge-box__merge-btn'));
+    await settle();
+    store.settleStackMerge({ outcome: 'queued' });
+    await settle();
+
+    expect(root.textContent).toContain('Entered the merge queue');
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    expect(
+      [...root.querySelectorAll('button')].some((button) => /queue/i.test(button.textContent ?? ''))
+    ).toBe(false);
+  });
+
+  test('shows that the Stack Merge failed', async () => {
+    const root = mountMergeConversation({ stack: layerStack('linear', 2), pullNumber: 102 });
+
+    await openStackConfirmation(root);
+    click(root.querySelector('.merge-box__merge-btn'));
+    await settle();
+    store.settleStackMerge({ outcome: 'failed' });
+    await settle();
+
+    expect(root.textContent).toContain('Stack merge failed');
+  });
+
+  test('offers no Stack Merge to a reader who cannot merge', () => {
+    const root = mountMergeConversation({
+      stack: layerStack('linear', 2),
+      viewerCanMerge: false,
+      behindBy: 2,
+    });
+
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    expect(root.querySelector('.merge-box__stack-layer')).toBeNull();
+    expect(root.querySelector('.merge-box__update')).toBeNull();
+    expect(root.textContent).toContain('No reviews required');
+    expect(root.textContent).toContain('Some checks were not successful');
+  });
+
+  test('offers no Stack Merge when the history is not linear', () => {
+    const root = mountMergeConversation({
+      stack: layerStack('not-linear', 2),
+      behindBy: 2,
+    });
+
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    expect(root.querySelector('.merge-box__update')).toBeNull();
+    expect(root.textContent).toContain('This branch is 2 commits behind main (1234567).');
+    expect(root.textContent).toContain('This branch has no conflicts with the base branch');
+  });
+
+  test('offers no Stack Merge when the history is unknown', () => {
+    const root = mountMergeConversation({
+      stack: layerStack('unknown', 2),
+      behindBy: 2,
+    });
+
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    expect(root.querySelector('.merge-box__update')).toBeNull();
+    expect(store.merges).toEqual([]);
+    expect(store.stackMerges).toEqual([]);
+  });
+
+  test('a pull request that is not a Layer keeps its merge and branch update', () => {
+    const root = mountMergeConversation({ stack: null, behindBy: 2 });
+
+    expect(root.querySelector('.merge-box__actions .merge-box__merge-btn')?.textContent).toContain(
+      'Merge pull request'
+    );
+    expect(root.textContent).toContain('Update branch');
+    expect(root.querySelector('.merge-box__stack-layer')).toBeNull();
   });
 });

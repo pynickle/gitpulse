@@ -200,15 +200,35 @@
           </div>
         </div>
 
-        <div v-if="status.viewerCanMerge && !status.draft" class="merge-box__actions">
+        <div v-if="showMergeActions" class="merge-box__actions">
           <p class="is-sr-only" role="status" aria-live="polite">
             {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
+          </p>
+          <ul v-if="confirming && landingLayers.length" class="merge-box__stack-layers">
+            <li v-for="layer in landingLayers" :key="layer.number" class="merge-box__stack-layer">
+              <span class="merge-box__stack-layer-number">#{{ layer.number }}</span
+              >{{ stackLayerGap }}<span class="merge-box__stack-layer-title">{{ layer.title }}</span
+              >{{ stackLayerGap
+              }}<span class="merge-box__stack-layer-state">{{ layerStateLabel(layer.state) }}</span>
+            </li>
+          </ul>
+          <p
+            v-if="stackMergeStatusLabel"
+            class="merge-box__stack-outcome"
+            :class="{ 'merge-box__note merge-box__note--danger': stackMergePhase === 'failed' }"
+            :role="stackMergePhase === 'failed' ? 'alert' : 'status'"
+          >
+            {{ stackMergeStatusLabel }}
           </p>
           <div v-if="mergeError" class="merge-box__note merge-box__note--danger" role="alert">
             <CircleExclamationPointIcon :size="14" />
             <span>{{ mergeError }}</span>
           </div>
-          <div v-if="!showCommitForm" ref="mergeControlsRef" class="merge-box__merge-controls">
+          <div
+            v-if="!stackMergeHolding && !showCommitForm"
+            ref="mergeControlsRef"
+            class="merge-box__merge-controls"
+          >
             <button
               type="button"
               class="merge-box__merge-btn"
@@ -266,7 +286,7 @@
           </div>
 
           <form
-            v-else
+            v-else-if="!stackMergeHolding"
             class="merge-box__commit-form"
             @submit.prevent="performMerge"
             @keydown.esc.stop.prevent="cancelConfirm"
@@ -372,6 +392,7 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { PullRequestStack, PullRequestStackLayerState } from '#shared/types/pulls';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -379,11 +400,19 @@ import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
 
-const { owner, repo, pullNumber, initialStatus } = defineProps<{
+const {
+  owner,
+  repo,
+  pullNumber,
+  initialStatus,
+  stack = null,
+} = defineProps<{
   owner: string;
   repo: string;
   pullNumber: number;
   initialStatus?: PRMergeStatus | null;
+  /** Present only when this pull request is a Layer. */
+  stack?: PullRequestStack | null;
 }>();
 
 const emit = defineEmits<{
@@ -406,6 +435,7 @@ const {
   fetchCommitDefaults,
   clearCommitDefaults,
   mergePullRequest,
+  mergeStack,
   deleteHeadBranch,
   restoreHeadBranch,
   branchUpdateError,
@@ -429,6 +459,9 @@ const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
+const stackMergePhase = shallowRef<'in-progress' | 'landed' | 'queued' | 'failed' | null>(null);
+/** Kept as an interpolation so the compiler does not drop the space between Layer fields. */
+const stackLayerGap = ' ';
 const prefillTitle = shallowRef('');
 const prefillMessage = shallowRef('');
 const mergeControlsRef = ref<HTMLElement | null>(null);
@@ -692,11 +725,63 @@ const branchMergeabilityKnown = computed(() => {
 
 const showBranchUpdate = computed(
   () =>
+    !stack &&
     behindCount.value !== null &&
     behindCount.value > 0 &&
     Boolean(status.value?.viewerCanWriteHead) &&
     !branchConflicts.value
 );
+
+/** A Layer lands with a Stack Merge only while GitHub reports the history as linear. */
+const showMergeActions = computed(() => {
+  const current = status.value;
+  if (!current?.viewerCanMerge || current.draft) return false;
+  if (stack) return stack.history === 'linear';
+  return true;
+});
+
+/** Layers from the first through this one. Empty when this pull request is not a Layer. */
+const landingLayers = computed(() => {
+  if (!stack) return [];
+  const through = Math.min(stack.place, stack.layers.length);
+  if (through < 1) return [];
+  return stack.layers.slice(0, through);
+});
+
+const stackMergeStatusLabel = computed(() => {
+  switch (stackMergePhase.value) {
+    case 'in-progress':
+      return t('prReview.mergeBox.stackMergeInProgress');
+    case 'landed':
+      return t('prReview.mergeBox.stackMergeLanded');
+    case 'queued':
+      return t('prReview.mergeBox.stackMergeQueued');
+    case 'failed':
+      return t('prReview.mergeBox.stackMergeFailed');
+    default:
+      return '';
+  }
+});
+
+/** A finished Stack Merge stays on its outcome. A failure can be tried again. */
+const stackMergeHolding = computed(() => {
+  const phase = stackMergePhase.value;
+  if (phase === 'landed' || phase === 'queued') return true;
+  return phase === 'in-progress' && !merging.value;
+});
+
+const layerStateLabel = (state: PullRequestStackLayerState) => {
+  switch (state) {
+    case 'draft':
+      return t('prReview.mergeBox.layerDraft');
+    case 'closed':
+      return t('prReview.mergeBox.layerClosed');
+    case 'merged':
+      return t('prReview.mergeBox.layerMerged');
+    default:
+      return t('prReview.mergeBox.layerOpen');
+  }
+};
 
 const rebaseUpdateAllowed = computed(() => mergeMethods.value.includes('rebase'));
 
@@ -771,7 +856,11 @@ const confirmLabel = computed(() => {
 });
 
 const showCommitForm = computed(
-  () => confirming.value && !loadingCommitDefaults.value && selectedMethod.value !== 'rebase'
+  () =>
+    confirming.value &&
+    !loadingCommitDefaults.value &&
+    selectedMethod.value !== 'rebase' &&
+    landingLayers.value.length <= 1
 );
 
 /** The default text GitHub forms for a method. Rebase keeps every commit's own message. */
@@ -887,22 +976,41 @@ const performMerge = async () => {
 
   // Only a field the reader changed is sent. An untouched field keeps GitHub's own
   // default, which is the text we would otherwise have to reproduce byte for byte.
+  // More than one Layer keeps each Layer's own Default Commit Message.
+  const includeCommitText = !stack || landingLayers.value.length === 1;
   const title =
-    showCommitForm.value && commitTitle.value !== prefillTitle.value
+    includeCommitText && showCommitForm.value && commitTitle.value !== prefillTitle.value
       ? commitTitle.value.trim()
       : '';
   const message =
-    showCommitForm.value && commitMessage.value !== prefillMessage.value
+    includeCommitText && showCommitForm.value && commitMessage.value !== prefillMessage.value
       ? commitMessage.value.trim()
       : '';
+  const payload = {
+    method: selectedMethod.value,
+    ...(title ? { commitTitle: title } : {}),
+    ...(message ? { commitMessage: message } : {}),
+  };
 
   merging.value = true;
   try {
-    const succeeded = await mergePullRequest(owner, repo, pullNumber, {
-      method: selectedMethod.value,
-      ...(title ? { commitTitle: title } : {}),
-      ...(message ? { commitMessage: message } : {}),
-    });
+    if (stack) {
+      if (stack.history !== 'linear') return;
+
+      stackMergePhase.value = 'in-progress';
+      const result = await mergeStack(owner, repo, pullNumber, payload);
+      stackMergePhase.value = result?.outcome ?? 'failed';
+      if (result?.outcome === 'failed' && result.message) {
+        mergeError.value = result.message;
+      }
+      if (result?.outcome === 'landed') {
+        emit('merged');
+      }
+      confirming.value = false;
+      return;
+    }
+
+    const succeeded = await mergePullRequest(owner, repo, pullNumber, payload);
 
     if (succeeded) {
       emit('merged');
@@ -947,10 +1055,12 @@ const onMergeClick = async () => {
 
   dropdownOpen.value = false;
   resetCommitForm();
+  stackMergePhase.value = null;
   confirming.value = true;
 
   // Rebase writes one commit per change, each keeping its own message: no form.
-  if (selectedMethod.value === 'rebase') {
+  // A Stack Merge of more than one Layer keeps each Layer's own message too.
+  if (selectedMethod.value === 'rebase' || landingLayers.value.length > 1) {
     return;
   }
 
@@ -1042,10 +1152,11 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [owner, repo, pullNumber, initialStatus] as const,
+  () => [owner, repo, pullNumber, initialStatus, stack?.history, stack?.place] as const,
   ([owner, repo, pullNumber, initialStatus]) => {
     dropdownOpen.value = false;
     confirming.value = false;
+    stackMergePhase.value = null;
     updateMenuOpen.value = false;
     updateConfirming.value = false;
     updateMethod.value = 'merge';
@@ -1726,6 +1837,44 @@ watch(
   line-height: 1.5;
   resize: vertical;
   min-height: 84px;
+}
+
+.merge-box__stack-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.merge-box__stack-layer {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.merge-box__stack-layer-number,
+.merge-box__stack-layer-state {
+  flex-shrink: 0;
+  color: var(--gitpulse-text-muted);
+}
+
+.merge-box__stack-layer-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merge-box__stack-outcome {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .merge-box__form-actions {

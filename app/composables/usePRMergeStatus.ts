@@ -73,6 +73,14 @@ export interface PRMergeResponse {
   message: string;
 }
 
+export type PRStackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
+
+export interface PRStackMergeResponse {
+  outcome: PRStackMergeOutcome;
+  id?: string;
+  message?: string;
+}
+
 export interface PRHeadBranchMutationResponse {
   head_branch?: PullRequestHeadBranchState | null;
 }
@@ -201,6 +209,60 @@ export function usePRMergeStatus() {
     commitDefaults.value = null;
   };
 
+  const STACK_MERGE_POLL_ATTEMPTS = 15;
+  const STACK_MERGE_POLL_DELAY_MS = 2000;
+  let stackMergeRequestId = 0;
+
+  const wait = (ms: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
+
+  const mergeStack = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    payload: PRMergePayload
+  ) => {
+    const requestId = stackMergeRequestId + 1;
+    stackMergeRequestId = requestId;
+    mergeError.value = null;
+
+    try {
+      let result = await apiFetch<PRStackMergeResponse>(
+        `/api/pulls/${owner}/${repo}/${pullNumber}/stack-merge`,
+        { method: 'POST', body: payload }
+      );
+
+      for (
+        let attempt = 0;
+        requestId === stackMergeRequestId &&
+        result.outcome === 'in-progress' &&
+        result.id &&
+        attempt < STACK_MERGE_POLL_ATTEMPTS;
+        attempt += 1
+      ) {
+        await wait(STACK_MERGE_POLL_DELAY_MS);
+        const id = result.id;
+        if (requestId !== stackMergeRequestId || !id) return result;
+        result = await apiFetch<PRStackMergeResponse>(
+          `/api/pulls/${owner}/${repo}/${pullNumber}/stack-merge/${encodeURIComponent(id)}`
+        );
+      }
+
+      if (result.outcome === 'landed' && requestId === stackMergeRequestId) {
+        await fetchMergeStatus(owner, repo, pullNumber);
+      }
+
+      return requestId === stackMergeRequestId ? result : null;
+    } catch (fetchError: unknown) {
+      if (requestId === stackMergeRequestId) {
+        mergeError.value = getFetchErrorMessage(fetchError, 'Failed to merge stack');
+      }
+      return null;
+    }
+  };
+
   const mergePullRequest = async (
     owner: string,
     repo: string,
@@ -302,6 +364,7 @@ export function usePRMergeStatus() {
     fetchCommitDefaults,
     clearCommitDefaults,
     mergePullRequest,
+    mergeStack,
     updatePullRequestBranch,
     deleteHeadBranch,
     restoreHeadBranch,

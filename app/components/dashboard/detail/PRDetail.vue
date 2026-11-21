@@ -99,6 +99,7 @@
               :owner="repoOwner"
               :repo="repoName"
               :pull-number="currentPullRequest.number"
+              :stack="currentPullRequest.stack ?? null"
               :initial-status="terminalMergeStatus"
               @head-branch-updated="handlePullRequestHeadBranchUpdated"
               @branch-updated="handlePullRequestBranchUpdated"

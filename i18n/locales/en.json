@@ -1191,7 +1191,15 @@
       "deleteBranch": "Delete branch",
       "restoreBranch": "Restore branch",
       "deletingBranch": "Deleting branch...",
-      "restoringBranch": "Restoring branch..."
+      "restoringBranch": "Restoring branch...",
+      "stackMergeInProgress": "Stack merge in progress",
+      "stackMergeLanded": "Stack merge landed",
+      "stackMergeQueued": "Entered the merge queue",
+      "stackMergeFailed": "Stack merge failed",
+      "layerOpen": "Open",
+      "layerDraft": "Draft",
+      "layerClosed": "Closed",
+      "layerMerged": "Merged"
     }
   },
   "markdown": {
