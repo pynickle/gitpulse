@@ -338,6 +338,16 @@ function layerTexts(root: HTMLElement) {
   );
 }
 
+function stackRebaseControl(root: ParentNode) {
+  return (
+    [...root.querySelectorAll('button, [role="button"]')].find((control) =>
+      /stack rebase/i.test(
+        `${control.textContent ?? ''} ${control.getAttribute('aria-label') ?? ''}`
+      )
+    ) ?? null
+  );
+}
+
 function mountMergeConversation(options: {
   stack?: ReturnType<typeof layerStack> | null;
   pullNumber?: number;
@@ -348,6 +358,7 @@ function mountMergeConversation(options: {
   store = createMergeStatusStore();
   dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
 
+  const stack = shallowRef(options.stack ?? null);
   const pullNumber = options.pullNumber ?? openLayer.number;
   const Harness = defineComponent({
     setup: () => () =>
@@ -361,7 +372,7 @@ function mountMergeConversation(options: {
           owner: 'octo',
           repo: 'app',
           pullNumber,
-          stack: options.stack ?? null,
+          stack: stack.value,
           initialStatus: {
             state: 'open',
             merged: false,
@@ -388,7 +399,12 @@ function mountMergeConversation(options: {
       ]),
   });
 
-  return dom.mount(Harness).root;
+  const root = dom.mount(Harness).root;
+  return Object.assign(root, {
+    setStack(next: ReturnType<typeof layerStack> | null) {
+      stack.value = next;
+    },
+  });
 }
 
 async function chooseSquash(root: HTMLElement) {
@@ -531,21 +547,50 @@ describe('Stack Merge', () => {
     });
 
     expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    expect(stackRebaseControl(root)).toBeNull();
+    expect(root.textContent).not.toContain('Stack Rebase');
     expect(root.querySelector('.merge-box__update')).toBeNull();
     expect(root.textContent).toContain('This branch is 2 commits behind main (1234567).');
     expect(root.textContent).toContain('This branch has no conflicts with the base branch');
   });
 
-  test('offers no Stack Merge when the history is unknown', () => {
+  test('offers no Stack Rebase when the history is unknown, then offers Stack Merge once it is linear', async () => {
     const root = mountMergeConversation({
       stack: layerStack('unknown', 2),
       behindBy: 2,
     });
 
+    expect(stackRebaseControl(root)).toBeNull();
+    expect(root.textContent).not.toContain('Stack Rebase');
     expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
     expect(root.querySelector('.merge-box__update')).toBeNull();
     expect(store.merges).toEqual([]);
     expect(store.stackMerges).toEqual([]);
+
+    root.setStack(layerStack('linear', 2));
+    await settle();
+
+    expect(stackRebaseControl(root)).toBeNull();
+    expect(root.textContent).not.toContain('Stack Rebase');
+    expect(root.querySelector('.merge-box__actions .merge-box__merge-btn')?.textContent).toContain(
+      'Merge pull request'
+    );
+    expect(root.querySelector('.merge-box__update')).toBeNull();
+  });
+
+  test('offers no Stack Rebase to a reader who cannot merge', () => {
+    const root = mountMergeConversation({
+      stack: layerStack('not-linear', 2),
+      viewerCanMerge: false,
+      behindBy: 2,
+    });
+
+    expect(stackRebaseControl(root)).toBeNull();
+    expect(root.textContent).not.toContain('Stack Rebase');
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    expect(root.querySelector('.merge-box__update')).toBeNull();
+    expect(root.textContent).toContain('No reviews required');
+    expect(root.textContent).toContain('Some checks were not successful');
   });
 
   test('a pull request that is not a Layer keeps its merge and branch update', () => {
