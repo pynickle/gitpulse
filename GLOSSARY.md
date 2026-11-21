@@ -209,6 +209,36 @@ _Avoid_: sub-issue modal, child chooser
 Consecutive events of the same type by the same GitHub user, presented together with a shared actor and a separate target and time for each event.
 _Avoid_: merged event, when individual actions remain distinct
 
+## Stack
+
+**Stack**:
+An ordered set of pull requests in one repository that GitHub has linked. Each one targets the branch of the pull request below it, and the set lands on a single Trunk.
+_Avoid_: chain, stacked branch, Graphite stack
+
+**Layer**:
+One pull request's place in a Stack. The first Layer is the one closest to the Trunk.
+_Avoid_: position, level, slice
+
+**Trunk**:
+The branch a Stack lands on.
+_Avoid_: base branch, main, default branch
+
+**Stack Chip**:
+The control on a Layer that shows this pull request's place in its Stack and opens the Stack Detail. It sits on the pull request header and on the PR Review Workspace header, and it is absent when the pull request is not a Layer.
+_Avoid_: stack badge, stack icon, stack label
+
+**Stack Detail**:
+The modal opened from a Stack Chip that lists the Stack's Trunk and its Layers, from the first Layer to the top. The current Layer is marked, choosing another Layer opens that pull request, and the modal does not land or rebase the Stack.
+_Avoid_: stack map, stack popover, stack panel
+
+**Stack Merge**:
+Landing every Layer from the first through a chosen Layer as one operation, offered only while the Stack's history is linear. Each landed Layer uses the repository's Merge Method, Layers above the chosen Layer stay in the Stack, and a landing of more than one Layer uses each Layer's Default Commit Message.
+_Avoid_: single-pull-request merge, top-down merge
+
+**Stack Rebase**:
+A cascading rebase of every Layer in a Stack, from the Trunk upward, so each Layer's branch contains the tip of the Layer below it. The pull requests stay open.
+_Avoid_: Branch Update, rebase Merge Method
+
 ## Pull Request Review
 
 **Copilot Reviewer**:
@@ -244,7 +274,7 @@ The surface for reviewing one pull request: its changed files, its diff, and its
 _Avoid_: PR review page, review UI
 
 **Merge Box**:
-The part of a pull request's conversation that states whether it can be merged and performs the merge, including the method chosen for it and the commit title and message the merge records. It offers only the Merge Methods the repository allows, and it states Branch Currency and offers a Branch Update.
+The part of a pull request's conversation that states whether it can be merged and performs the merge. A Layer is landed with a Stack Merge or restored with a Stack Rebase and is not offered a Branch Update, while any other pull request is offered only the repository's Merge Methods, its commit title and message, its Branch Currency, and a Branch Update.
 _Avoid_: merge panel, merge card, merge widget
 
 **Branch Currency**:
