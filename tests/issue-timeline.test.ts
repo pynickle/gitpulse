@@ -216,6 +216,147 @@ afterEach(async () => {
   await dom.cleanup();
 });
 
+test('a parent issue and a blocked-by issue render as links when the timeline includes them', () => {
+  const targets: Array<[string, string, number]> = [];
+  const parent = {
+    number: 1,
+    title: 'Spec',
+    resourceType: 'issue',
+    repository: { owner: { login: 'pynickle' }, name: 'trial-contracts' },
+  };
+  const blockedIssue = {
+    number: 17,
+    title: 'Settings',
+    resourceType: 'issue',
+    repository: { owner: { login: 'pynickle' }, name: 'trial-contracts' },
+  };
+  const view = dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(IssueTimelineEvents as never, {
+          timeline: [
+            {
+              kind: 'event',
+              eventType: 'parent_issue_added',
+              actor: { login: 'octocat' },
+              parent,
+              createdAt: '2026-10-16T08:01:30Z',
+            },
+            {
+              kind: 'event',
+              eventType: 'blocked_by_added',
+              actor: { login: 'octocat' },
+              blockedIssue,
+              createdAt: '2026-10-16T08:01:31Z',
+            },
+          ],
+          loading: false,
+          repoOwner: 'pynickle',
+          repoName: 'trial-contracts',
+          issueNumber: 29,
+          onSwitchIssue: (owner: string, repo: string, number: number) => {
+            targets.push([owner, repo, number]);
+          },
+        }),
+    })
+  );
+
+  const links = Array.from(view.root.querySelectorAll<HTMLAnchorElement>('a.tags'));
+  expect(
+    links.map((link) =>
+      Array.from(link.querySelectorAll('.tag'), (tag) =>
+        tag.textContent?.replace(/\s+/g, ' ').trim()
+      )
+    )
+  ).toEqual([
+    ['Issue #1', 'Spec'],
+    ['Issue #17', 'Settings'],
+  ]);
+  expect(view.root.textContent).toContain('added a parent issue');
+  expect(view.root.textContent).toContain('marked this as blocked by');
+  links[0]?.click();
+  links[1]?.click();
+  expect(targets).toEqual([
+    ['pynickle', 'trial-contracts', 1],
+    ['pynickle', 'trial-contracts', 17],
+  ]);
+});
+
+test('adjacent blocked-by marks collapse under one actor and action', () => {
+  const view = dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(IssueTimelineEvents as never, {
+          timeline: [
+            {
+              kind: 'event',
+              eventType: 'blocked_by_added',
+              actor: { login: 'octocat' },
+              blockedIssue: {
+                number: 17,
+                title: 'Settings',
+                resourceType: 'issue',
+                repository: { owner: { login: 'pynickle' }, name: 'trial-contracts' },
+              },
+              createdAt: '2026-10-16T08:01:31Z',
+            },
+            {
+              kind: 'event',
+              eventType: 'blocked_by_added',
+              actor: { login: 'octocat' },
+              blockedIssue: {
+                number: 18,
+                title: 'Loot',
+                resourceType: 'issue',
+                repository: { owner: { login: 'pynickle' }, name: 'trial-contracts' },
+              },
+              createdAt: '2026-10-16T08:01:32Z',
+            },
+          ],
+          loading: false,
+          repoOwner: 'pynickle',
+          repoName: 'trial-contracts',
+          issueNumber: 29,
+        }),
+    })
+  );
+
+  const group = view.root.querySelector('.issue-timeline-events__list');
+  expect(group?.querySelectorAll('.avatar-stub')).toHaveLength(1);
+  expect(group?.textContent?.replace(/\s+/g, ' ').trim()).toMatch(
+    /octocat marked this as blocked by Issue #17\s*Settings\s*2026-10-16T08:01:31Z Issue #18\s*Loot\s*2026-10-16T08:01:32Z/
+  );
+  expect(group?.textContent?.match(/marked this as blocked by/g)).toHaveLength(1);
+});
+
+test('a parent issue event without a target explains itself with the unavailable mark', async () => {
+  const Unavailable = await compileVue(
+    'app/components/dashboard/timeline/TimelineUnavailableEvent.vue',
+    {
+      'vue-i18n': i18n,
+      '@lucide/vue': {
+        InfoIcon: defineComponent({ setup: () => () => h('span', { class: 'info-icon' }) }),
+      },
+    }
+  );
+  const view = dom.mount(
+    defineComponent({
+      setup: () => () =>
+        h(Unavailable, {
+          eventType: 'parent_issue_added',
+          reasonCode: 'parent',
+          scope: 'issue',
+        }),
+    })
+  );
+
+  expect(view.root.textContent).toContain('added a parent issue');
+  expect(view.root.querySelector('.timeline-unavailable__tooltip')?.textContent).toBe(
+    'timeline.unavailableReason_parent'
+  );
+  expect(view.root.querySelector('.info-icon')).not.toBeNull();
+});
+
 test('a grouped issue activity displays one actor and action before its individually timed targets', () => {
   const targets: Array<[string, string, number]> = [];
   const view = dom.mount(

@@ -1,4 +1,8 @@
-const GROUPED_TIMELINE_EVENT_TYPES = new Set(['cross-referenced', 'sub_issue_added']);
+const GROUPED_TIMELINE_EVENT_TYPES = new Set([
+  'cross-referenced',
+  'sub_issue_added',
+  'blocked_by_added',
+]);
 
 export function groupAdjacentTimelineItems<
   T extends { kind: string; eventType?: string; actor?: { login?: string } },

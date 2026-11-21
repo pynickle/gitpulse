@@ -49,6 +49,21 @@
   </template>
 
   <template
+    v-else-if="item.eventType === 'blocked_by_added' || item.eventType === 'blocked_by_removed'"
+  >
+    <template v-if="!grouped">{{
+      item.eventType === 'blocked_by_added'
+        ? 'marked this as blocked by'
+        : 'unmarked this as blocked by'
+    }}</template>
+    <ReferenceSubject
+      :ref-subject="item.blockedIssue"
+      resource-type="issue"
+      @switch-issue="handleSwitchIssue"
+    />
+  </template>
+
+  <template
     v-else-if="item.eventType === 'parent_issue_added' || item.eventType === 'parent_issue_removed'"
   >
     {{
@@ -56,7 +71,7 @@
     }}
     <a
       href="#"
-      @click.prevent="switchToIssueFromUrl(item.parent?.url)"
+      @click.prevent="switchToIssueOrPR(item.parent)"
       class="tag is-activity ml-1 is-info is-light"
     >
       {{ item.parent?.title }} #{{ item.parent?.number }}
@@ -89,7 +104,6 @@ import { useI18n } from 'vue-i18n';
 
 import ReferenceSubject from '~/components/dashboard/timeline/ReferenceSubject.vue';
 import {
-  parseGitHubIssueOrPullUrl,
   parseRepoFullName,
   type PRTimelineItem,
   type TimelineReference,
@@ -146,17 +160,5 @@ const switchToIssueOrPR = (reference?: TimelineReference) => {
   }
 
   emit('switch-issue', parsed.owner, parsed.repo, reference.number);
-};
-
-const switchToIssueFromUrl = (url?: string) => {
-  const parsed = parseGitHubIssueOrPullUrl(url);
-  if (!parsed) return;
-
-  if (parsed.kind === 'pull-request') {
-    emit('switch-pull-request', parsed.owner, parsed.repo, parsed.number);
-    return;
-  }
-
-  emit('switch-issue', parsed.owner, parsed.repo, parsed.number);
 };
 </script>

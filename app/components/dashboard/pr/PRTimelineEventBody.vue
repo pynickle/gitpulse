@@ -87,6 +87,8 @@ const referenceEventTypes = new Set([
   'cross-referenced',
   'marked_as_duplicate',
   'unmarked_as_duplicate',
+  'blocked_by_added',
+  'blocked_by_removed',
   'parent_issue_added',
   'parent_issue_removed',
   'sub_issue_added',
@@ -170,6 +172,9 @@ const shouldRenderReferenceEvents = (item: PRTimelineItem) => {
     case 'marked_as_duplicate':
     case 'unmarked_as_duplicate':
       return Boolean(item.duplicate);
+    case 'blocked_by_added':
+    case 'blocked_by_removed':
+      return Boolean(item.blockedIssue);
     case 'parent_issue_added':
     case 'parent_issue_removed':
       return Boolean(item.parent);

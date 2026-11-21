@@ -70,6 +70,105 @@ describe('issue timeline REST event normalization', () => {
     expect(item.displayText).toContain('no longer fully visible');
   });
 
+  test('maps a parent issue from repository metadata when REST omits its URL', () => {
+    const item = normalizeIssueTimelineEvent(
+      {
+        event: 'parent_issue_added',
+        parent_issue: {
+          number: 1,
+          title: 'Spec',
+          state: 'open',
+          repository: {
+            name: 'trial-contracts',
+            full_name: 'pynickle/trial-contracts',
+            owner: { login: 'pynickle' },
+          },
+        },
+      },
+      context
+    );
+
+    expect(item).toMatchObject({
+      kind: 'event',
+      eventType: 'parent_issue_added',
+      parent: {
+        resourceType: 'issue',
+        number: 1,
+        title: 'Spec',
+        state: 'open',
+        repository: {
+          name: 'trial-contracts',
+          nameWithOwner: 'pynickle/trial-contracts',
+          owner: { login: 'pynickle' },
+        },
+      },
+    });
+  });
+
+  test('maps a blocked-by issue from repository metadata when REST includes it', () => {
+    const item = normalizeIssueTimelineEvent(
+      {
+        event: 'blocked_by_added',
+        blocked_by: {
+          number: 17,
+          title: 'Settings',
+          state: 'open',
+          repository: {
+            name: 'trial-contracts',
+            full_name: 'pynickle/trial-contracts',
+            owner: { login: 'pynickle' },
+          },
+        },
+      },
+      context
+    );
+
+    expect(item).toMatchObject({
+      kind: 'event',
+      eventType: 'blocked_by_added',
+      blockedIssue: {
+        resourceType: 'issue',
+        number: 17,
+        title: 'Settings',
+        repository: {
+          name: 'trial-contracts',
+          nameWithOwner: 'pynickle/trial-contracts',
+          owner: { login: 'pynickle' },
+        },
+      },
+    });
+  });
+
+  test('marks a blocked-by event unavailable when REST omits the other issue', () => {
+    const item = normalizeIssueTimelineEvent({ event: 'blocked_by_removed' }, context);
+
+    expect(item).toMatchObject({
+      kind: 'unavailable',
+      eventType: 'blocked_by_removed',
+      unavailableReasonCode: 'blocking',
+    });
+    expect(item.blockedIssue).toBeUndefined();
+  });
+
+  test('marks a parent issue event unavailable when REST omits the parent', () => {
+    const item = normalizeIssueTimelineEvent(
+      {
+        id: 7,
+        event: 'parent_issue_removed',
+        actor: user('alice'),
+        created_at: '2026-06-01T12:00:00Z',
+      },
+      context
+    );
+
+    expect(item).toMatchObject({
+      kind: 'unavailable',
+      eventType: 'parent_issue_removed',
+      unavailableReasonCode: 'parent',
+    });
+    expect(item.parent).toBeUndefined();
+  });
+
   test('keeps sub-issue additions visible when REST omits the target issue', () => {
     const item = normalizeIssueTimelineEvent(
       {

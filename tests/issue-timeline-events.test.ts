@@ -82,6 +82,52 @@ describe('issue timeline client normalization', () => {
     ]);
   });
 
+  test('groups adjacent blocked-by marks from the same actor', () => {
+    const items = normalizeIssueTimelineItems(
+      [
+        {
+          kind: 'event',
+          id: 'block-1',
+          eventType: 'blocked_by_added',
+          createdAt: '2026-10-16T08:01:31Z',
+          actor: { login: 'octocat' },
+          blockedIssue: { number: 17, title: 'Settings', resourceType: 'issue' },
+        },
+        {
+          kind: 'event',
+          id: 'block-2',
+          eventType: 'blocked_by_added',
+          createdAt: '2026-10-16T08:01:32Z',
+          actor: { login: 'octocat' },
+          blockedIssue: { number: 18, title: 'Loot', resourceType: 'issue' },
+        },
+        {
+          kind: 'event',
+          id: 'block-3',
+          eventType: 'blocked_by_removed',
+          createdAt: '2026-10-16T08:01:33Z',
+          actor: { login: 'octocat' },
+          blockedIssue: { number: 18, title: 'Loot', resourceType: 'issue' },
+        },
+      ],
+      context
+    );
+
+    expect(items).toHaveLength(2);
+    expect(
+      items[0]?.groupedEvents?.map(({ id, createdAt, blockedIssue }) => ({
+        id,
+        createdAt,
+        number: blockedIssue?.number,
+      }))
+    ).toEqual([
+      { id: 'block-1', createdAt: '2026-10-16T08:01:31Z', number: 17 },
+      { id: 'block-2', createdAt: '2026-10-16T08:01:32Z', number: 18 },
+    ]);
+    expect(items[1]?.id).toBe('block-3');
+    expect(items[1]?.groupedEvents).toBeUndefined();
+  });
+
   test('does not group same-type references across an intervening event', () => {
     const items = normalizeIssueTimelineItems(
       [

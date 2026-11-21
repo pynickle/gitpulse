@@ -940,6 +940,20 @@ export function normalizeIssueTimelineEvent(
         displayText: subIssue ? undefined : 'target issue details are unavailable',
       };
     }
+    case 'parent_issue_added':
+    case 'parent_issue_removed': {
+      const parent = mapTimelineReferenceTarget(rawEvent.parent_issue);
+      if (!parent) {
+        return createUnavailableEvent(baseItem, eventName, 'parent');
+      }
+
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+        parent,
+      };
+    }
     case 'cross-referenced': {
       const source = mapReferencedSource(rawEvent.source);
       return {
@@ -1185,10 +1199,22 @@ export function normalizeIssueTimelineEvent(
         eventType: eventName,
         commit: mapCommitPayload(rawEvent),
       };
+    case 'blocked_by_added':
+    case 'blocked_by_removed': {
+      const blockedIssue = mapTimelineReferenceTarget(rawEvent.blocked_by);
+      if (!blockedIssue) {
+        return createUnavailableEvent(baseItem, eventName, 'blocking');
+      }
+
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+        blockedIssue,
+      };
+    }
     case 'blocking_added':
     case 'blocking_removed':
-    case 'blocked_by_added':
-    case 'blocked_by_removed':
       return createUnavailableEvent(baseItem, eventName, 'blocking');
     default:
       return createUnsupportedRestEvent(baseItem, eventName, 'issue');

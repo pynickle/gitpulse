@@ -50,9 +50,7 @@
                 >
                   {{ item.actor?.login }}
                 </GitHubProfileLink>
-                {{
-                  item.eventType === 'cross-referenced' ? 'referenced this in' : 'added sub-issues'
-                }}
+                {{ groupedActionLabel(item.eventType) }}
               </div>
               <div v-for="groupedItem in item.groupedEvents" :key="groupedItem.renderKey">
                 <PRTimelineEventBody
@@ -145,6 +143,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { processedTimeline } = usePRTimelineEvents(() => timeline);
+
+const groupedActionLabel = (eventType?: string) => {
+  if (eventType === 'cross-referenced') return 'referenced this in';
+  if (eventType === 'blocked_by_added') return 'marked this as blocked by';
+  return 'added sub-issues';
+};
 
 const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);

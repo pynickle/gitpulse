@@ -18,6 +18,22 @@
   </template>
 
   <template
+    v-else-if="item.eventType === 'blocked_by_added' || item.eventType === 'blocked_by_removed'"
+  >
+    <template v-if="!grouped">{{
+      item.eventType === 'blocked_by_added'
+        ? 'marked this as blocked by'
+        : 'unmarked this as blocked by'
+    }}</template>
+    <ReferenceSubject
+      :ref-subject="item.blockedIssue"
+      resource-type="issue"
+      @switch-issue="handleSwitchIssue"
+      @switch-pull-request="handleSwitchPullRequest"
+    />
+  </template>
+
+  <template
     v-else-if="item.eventType === 'parent_issue_added' || item.eventType === 'parent_issue_removed'"
   >
     {{

@@ -31,9 +31,13 @@ const eventLabel = computed(() => {
     case 'blocking_removed':
       return 'removed a blocking relationship';
     case 'blocked_by_added':
-      return 'was marked as blocked by another issue';
+      return 'marked this as blocked by another issue';
     case 'blocked_by_removed':
-      return 'was unmarked as blocked by another issue';
+      return 'unmarked this as blocked by another issue';
+    case 'parent_issue_added':
+      return 'added a parent issue';
+    case 'parent_issue_removed':
+      return 'removed the parent issue';
     default:
       return eventType.replace(/_/g, ' ');
   }

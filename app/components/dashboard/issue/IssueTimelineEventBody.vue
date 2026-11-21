@@ -78,6 +78,8 @@ const shouldRenderActorPrefix = computed(() => !grouped && !item.hasMixedActors)
 const referenceEventTypes = new Set([
   'connected',
   'disconnected',
+  'blocked_by_added',
+  'blocked_by_removed',
   'parent_issue_added',
   'parent_issue_removed',
   'closed',
@@ -138,6 +140,9 @@ const shouldRenderReferenceEvents = (item: ProcessedIssueTimelineItem) => {
       return true;
     case 'sub_issue_removed':
       return Boolean(item.subIssue);
+    case 'blocked_by_added':
+    case 'blocked_by_removed':
+      return Boolean(item.blockedIssue);
     case 'parent_issue_added':
     case 'parent_issue_removed':
       return Boolean(item.parent);
