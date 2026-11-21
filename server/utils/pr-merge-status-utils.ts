@@ -51,7 +51,7 @@ interface GitHubPullRequestResponse {
     sha?: string | null;
     repo?: {
       name?: string | null;
-      owner?: { login?: string | null } | null;
+      owner?: { login: string } | null;
       permissions?: RepositoryPermissions | null;
     } | null;
   } | null;
