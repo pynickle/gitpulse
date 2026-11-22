@@ -168,6 +168,7 @@ const MergeBox = await compileVue(
     'vue-i18n': { useI18n: () => ({ t, locale: ref('en') }) },
     '#shared/utils/pr-checks': prChecks,
     '~/components/dashboard/pr/CheckListRows.vue': { default: slotStub },
+    '~/components/dashboard/pr/PRStackRebaseDialog.vue': { default: slotStub },
     '~/components/ui/GitHubAvatar.vue': { default: slotStub },
     '~/components/ui/ScrollArea.vue': { default: slotStub },
     '~/utils/getCheckStatusToneIcon': { getCheckStatusToneIcon: () => icon },

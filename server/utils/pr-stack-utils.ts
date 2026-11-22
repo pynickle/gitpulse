@@ -1,5 +1,6 @@
 import type { Octokit } from '@octokit/core';
 
+import { fetchBaseBehindCount } from '#server/utils/pr-merge-status-utils';
 import type {
   PullRequestStack,
   PullRequestStackLayer,
@@ -9,7 +10,7 @@ import type {
 type GitHubClient = Octokit;
 
 interface GitHubStackMembership {
-  base?: { ref?: string | null } | null;
+  base?: { ref?: string | null; sha?: string | null } | null;
   size?: number | null;
   position?: number | null;
   number?: number | null;
@@ -17,10 +18,13 @@ interface GitHubStackMembership {
 
 interface GitHubStackPullRequest {
   number?: number | null;
+  node_id?: string;
   title?: string | null;
   state?: string | null;
   draft?: boolean | null;
   merged_at?: string | null;
+  base?: { ref?: string | null; sha?: string | null } | null;
+  head?: { sha?: string | null } | null;
 }
 
 interface GitHubStackResource {
@@ -53,6 +57,9 @@ const normalizePullRequestStack = (
       number,
       title: typeof pull.title === 'string' ? pull.title : '',
       state: layerState(pull),
+      ...(pull.head?.sha ? { headSha: pull.head.sha } : {}),
+      ...(pull.base?.sha ? { baseSha: pull.base.sha } : {}),
+      ...(pull.base?.ref ? { baseRef: pull.base.ref } : {}),
     });
   }
 
@@ -65,13 +72,19 @@ const normalizePullRequestStack = (
 
   return {
     trunk,
+    number: positiveInteger(membership.number) ?? undefined,
     count,
     place,
     layers,
-    // No published stack field reports linearity. Do not guess it from SHAs.
     history: 'unknown',
   };
 };
+
+const STACK_MERGEABILITY_QUERY = `query PullRequestStackMergeability($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on PullRequest { mergeable }
+  }
+}`;
 
 export async function fetchPullRequestStack(
   octokit: GitHubClient,
@@ -91,7 +104,37 @@ export async function fetchPullRequestStack(
       repo,
       stack_number: stackNumber,
     });
-    return normalizePullRequestStack(membership, data, pullNumber);
+    const stack = normalizePullRequestStack(membership, data, pullNumber);
+    if (!stack || stack.count !== stack.layers.length) return stack;
+
+    const active = (data.pull_requests ?? []).filter(
+      (pull) => pull.state === 'open' && !pull.merged_at
+    );
+    if (!active.length) return stack;
+
+    const behindCounts = await Promise.all(
+      active.map(async (pull) =>
+        pull.base?.ref && pull.head?.sha
+          ? fetchBaseBehindCount(octokit, owner, repo, pull.base.ref, pull.head.sha)
+          : null
+      )
+    );
+    if (behindCounts.every((count) => count === 0)) {
+      stack.history = 'linear';
+    } else if (behindCounts.some((count) => count !== null && count > 0)) {
+      stack.history = 'not-linear';
+      try {
+        const { nodes } = await octokit.graphql<{
+          nodes: Array<{ mergeable?: string } | null>;
+        }>(STACK_MERGEABILITY_QUERY, {
+          ids: active.map((pull) => pull.node_id),
+        });
+        stack.hasConflicts = nodes.some((node) => node?.mergeable === 'CONFLICTING');
+      } catch (error: unknown) {
+        console.warn('Failed to check pull request stack conflicts:', error);
+      }
+    }
+    return stack;
   } catch (error: unknown) {
     console.warn('Failed to fetch pull request stack:', error);
     return normalizePullRequestStack(membership, null, pullNumber);

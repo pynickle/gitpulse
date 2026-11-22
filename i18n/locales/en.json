@@ -1006,6 +1006,7 @@
     },
     "stackDetail": {
       "title": "Stack",
+      "trunk": "Trunk",
       "close": "Close",
       "current": "Current",
       "state": {
@@ -1014,6 +1015,17 @@
         "closed": "Closed",
         "merged": "Merged"
       }
+    },
+    "stackRebase": {
+      "title": "Rebase stack",
+      "description": "Rebase each open branch onto the branch below it, starting from {trunk}. Each rebased branch is force-pushed. The operation stops at the first failure.",
+      "confirm": "Confirm rebase",
+      "pending": "Pending",
+      "skipped": "Not rebased",
+      "rebasing": "Rebasing…",
+      "current": "Up to date",
+      "rebased": "Rebased",
+      "failed": "Rebase failed"
     },
     "reviewers": "Reviewers",
     "noReviewers": "No reviewers assigned",

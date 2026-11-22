@@ -79,16 +79,21 @@ export type PullRequestStackLayerState = 'open' | 'draft' | 'closed' | 'merged';
 /** In progress until GitHub lands the Stack, queues it, or fails it. */
 export type StackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
 
-/** GitHub either reports the Stack's history, or the detail does not say. */
+/** Whether each open layer contains the tip of its base branch. */
 export type PullRequestStackHistory = 'linear' | 'not-linear' | 'unknown';
 
 export interface PullRequestStackLayer {
   number: number;
   title: string;
   state: PullRequestStackLayerState;
+  headSha?: string;
+  baseSha?: string;
+  baseRef?: string;
+  rebaseProof?: string;
 }
 
 export interface PullRequestStack {
+  number?: number;
   trunk: string;
   count: number;
   /** 1 is the Layer closest to the Trunk. */
@@ -96,6 +101,7 @@ export interface PullRequestStack {
   /** From the first Layer to the top. */
   layers: PullRequestStackLayer[];
   history: PullRequestStackHistory;
+  hasConflicts?: boolean;
 }
 
 export interface PullRequestDetailPayload {

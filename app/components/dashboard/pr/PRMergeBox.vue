@@ -200,6 +200,29 @@
           </div>
         </div>
 
+        <div v-if="showStackRebase" class="merge-box__actions">
+          <div class="merge-box__merge-controls">
+            <button
+              type="button"
+              class="merge-box__merge-btn merge-box__merge-btn--standalone"
+              aria-haspopup="dialog"
+              @click="stackRebaseOpen = true"
+            >
+              <GitBranchIcon :size="14" aria-hidden="true" />
+              {{ t('prReview.stackRebase.title') }}
+            </button>
+          </div>
+        </div>
+        <PRStackRebaseDialog
+          v-if="stack && stackRebaseOpen"
+          :key="`${owner}/${repo}/${pullNumber}`"
+          :owner="owner"
+          :repo="repo"
+          :stack="stack"
+          @close="stackRebaseOpen = false"
+          @settled="refreshAfterStackRebase"
+        />
+
         <div v-if="showMergeActions" class="merge-box__actions">
           <p class="is-sr-only" role="status" aria-live="polite">
             {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
@@ -399,6 +422,7 @@ import type {
 } from '#shared/types/pulls';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
+import PRStackRebaseDialog from '~/components/dashboard/pr/PRStackRebaseDialog.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
@@ -464,6 +488,7 @@ const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
 const stackMergePhase = shallowRef<StackMergeOutcome | null>(null);
+const stackRebaseOpen = shallowRef(false);
 /** Kept as an interpolation so the compiler does not drop the space between Layer fields. */
 const stackLayerGap = ' ';
 const prefillTitle = shallowRef('');
@@ -736,7 +761,25 @@ const showBranchUpdate = computed(
     !branchConflicts.value
 );
 
-/** A Layer lands with a Stack Merge only while GitHub reports the history as linear. */
+const showStackRebase = computed(
+  () =>
+    status.value?.viewerCanMerge &&
+    !branchConflicts.value &&
+    stack?.history === 'not-linear' &&
+    stack.number &&
+    !stack.hasConflicts &&
+    stack.layers.length === stack.count &&
+    stack.layers.every(
+      (layer) => layer.state === 'merged' || layer.state === 'closed' || layer.rebaseProof
+    )
+);
+
+const refreshAfterStackRebase = () => {
+  void fetchMergeStatus(owner, repo, pullNumber);
+  emit('branchUpdated');
+};
+
+/** A Layer lands with a Stack Merge only while the history is linear. */
 const showMergeActions = computed(() => {
   const current = status.value;
   if (!current?.viewerCanMerge || current.draft) return false;
@@ -1144,6 +1187,13 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick);
   stopMergeabilityPolling();
 });
+
+watch(
+  () => [owner, repo, pullNumber],
+  () => {
+    stackRebaseOpen.value = false;
+  }
+);
 
 watch(
   () => [owner, repo, pullNumber, initialStatus, stack?.history, stack?.place] as const,

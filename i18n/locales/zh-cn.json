@@ -1006,6 +1006,7 @@
     },
     "stackDetail": {
       "title": "堆叠",
+      "trunk": "主干",
       "close": "关闭",
       "current": "当前",
       "state": {
@@ -1014,6 +1015,17 @@
         "closed": "已关闭",
         "merged": "已合并"
       }
+    },
+    "stackRebase": {
+      "title": "变基堆叠",
+      "description": "从 {trunk} 开始，将每个仍打开的 PR 分支变基到下方分支。变基后的分支会被强制推送，操作在首次失败时停止。",
+      "confirm": "确认变基",
+      "pending": "等待中",
+      "skipped": "未变基",
+      "rebasing": "正在变基…",
+      "current": "已是最新",
+      "rebased": "变基完成",
+      "failed": "变基失败"
     },
     "reviewers": "审查者",
     "noReviewers": "没有指派审查者",

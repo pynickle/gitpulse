@@ -233,7 +233,7 @@ async function fetchRepositoryPermissions(octokit: GitHubClient, owner: string, 
  * Counts commits on `baseRef` that are absent from `headOid`.
  * Compare's `behind_by` is that count when the base ref is the left side.
  */
-async function fetchBaseBehindCount(
+export async function fetchBaseBehindCount(
   octokit: GitHubClient,
   owner: string,
   repo: string,

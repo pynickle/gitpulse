@@ -296,23 +296,23 @@ watch(
           aria-hidden="true"
         />
         <div class="pr-review-workspace__title-block">
-          <button
-            type="button"
-            class="pr-review-workspace__detail-link"
-            :aria-label="t('prReview.backToDetails')"
-            :title="t('prReview.backToDetails')"
-            @click="goToPullRequestDetails"
-          >
-            {{ owner }}/{{ repo }} #{{ pullNumber }}
-          </button>
-          <div class="pr-review-workspace__title-line">
-            <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
+          <div class="pr-review-workspace__meta">
+            <button
+              type="button"
+              class="pr-review-workspace__detail-link"
+              :aria-label="t('prReview.backToDetails')"
+              :title="t('prReview.backToDetails')"
+              @click="goToPullRequestDetails"
+            >
+              {{ owner }}/{{ repo }} #{{ pullNumber }}
+            </button>
             <PRStackChip
               v-if="stack"
               :stack="stack"
               @select="emit('switch-pull-request', owner, repo, $event)"
             />
           </div>
+          <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
         </div>
       </div>
 
@@ -592,7 +592,7 @@ watch(
   min-width: 0;
 }
 
-.pr-review-workspace__title-line {
+.pr-review-workspace__meta {
   min-width: 0;
   display: flex;
   align-items: center;

@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, onScopeDispose, ref, shallowRef, type Com
 const { usePRMergeStatus: readMergeStatus } = await import('../app/composables/usePRMergeStatus');
 
 import { formatDurationFromNow } from '../app/utils/formatDurationFromNow';
+import { getFetchErrorMessage } from '../app/utils/getFetchErrorMessage';
 import { getPullRequestStateVisual } from '../app/utils/getPullRequestStateVisual';
 import { resolvePullRequestBranchRef } from '../app/utils/resolvePullRequestBranchRef';
 import * as prChecks from '../shared/utils/pr-checks';
@@ -59,6 +60,14 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.stackMergeLanded': 'Stack merge landed',
   'prReview.mergeBox.stackMergeQueued': 'Entered the merge queue',
   'prReview.mergeBox.stackMergeFailed': 'Stack merge failed',
+  'prReview.stackRebase.title': 'Rebase stack',
+  'prReview.stackRebase.confirm': 'Confirm rebase',
+  'prReview.stackRebase.rebasing': 'Rebasing',
+  'prReview.stackRebase.rebased': 'Rebased',
+  'prReview.stackRebase.current': 'Up to date',
+  'prReview.stackRebase.failed': 'Failed',
+  'prReview.stackRebase.pending': 'Pending',
+  'prReview.stackRebase.skipped': 'Not rebased',
   'prReview.stackDetail.title': 'Stack',
   'prReview.stackDetail.close': 'Close',
   'prReview.stackDetail.current': 'Current',
@@ -159,14 +168,26 @@ const PickerModal = await compileVue('app/components/dashboard/PickerModal.vue',
 });
 
 const StackDetail = await compileVue('app/components/dashboard/pr/PRStackDetail.vue', {
+  '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
   'vue-i18n': i18n,
   '~/components/dashboard/PickerModal.vue': { default: PickerModal },
 });
 
 const StackChip = await compileVue('app/components/dashboard/pr/PRStackChip.vue', {
+  '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
   'vue-i18n': i18n,
   '~/components/dashboard/pr/PRStackDetail.vue': { default: StackDetail },
 });
+
+const StackRebaseDialog = await compileVue(
+  'app/components/dashboard/pr/PRStackRebaseDialog.vue',
+  {
+    '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+    'vue-i18n': i18n,
+    '~/utils/getFetchErrorMessage': { getFetchErrorMessage },
+  },
+  { getFetchErrorMessage: '~/utils/getFetchErrorMessage' }
+);
 
 const Header = await compileVue(
   'app/components/dashboard/pr/PRHeader.vue',
@@ -201,6 +222,7 @@ const MergeBox = await compileVue(
     'vue-i18n': i18n,
     '#shared/utils/pr-checks': prChecks,
     '~/components/dashboard/pr/CheckListRows.vue': { default: slotStub },
+    '~/components/dashboard/pr/PRStackRebaseDialog.vue': { default: StackRebaseDialog },
     '~/components/ui/GitHubAvatar.vue': { default: slotStub },
     '~/components/ui/ScrollArea.vue': { default: slotStub },
     '~/utils/getCheckStatusToneIcon': { getCheckStatusToneIcon: () => icon },
@@ -219,11 +241,11 @@ const MergeBox = await compileVue(
 );
 
 const stackLayers = [
-  { number: 101, title: 'Add the model', state: 'merged' as const },
-  { number: 102, title: 'Add the API', state: 'open' as const },
-  { number: 103, title: 'Add the screen', state: 'draft' as const },
-  { number: 104, title: 'Add the notes', state: 'closed' as const },
-];
+  { number: 101, title: 'Add the model', state: 'merged' as const, headSha: 'head-101' },
+  { number: 102, title: 'Add the API', state: 'open' as const, headSha: 'head-102' },
+  { number: 103, title: 'Add the screen', state: 'draft' as const, headSha: 'head-103' },
+  { number: 104, title: 'Add the notes', state: 'closed' as const, headSha: 'head-104' },
+].map((layer) => ({ ...layer, baseRef: 'main', baseSha: 'old-base', rebaseProof: 'rebase-proof' }));
 
 type StackHistory = 'linear' | 'not-linear' | 'unknown';
 
@@ -237,11 +259,13 @@ function layerPullRequest(history: StackHistory = 'linear', place = 2) {
     created_at: '2026-04-15T10:00:00Z',
     user: { login: 'octocat', avatar_url: '', html_url: 'https://github.com/octocat' },
     stack: {
+      number: 106,
       trunk: 'main',
       count: stackLayers.length,
       place,
       history,
       layers: stackLayers,
+      hasConflicts: false,
     },
   };
 }
@@ -371,7 +395,7 @@ function layerTexts(root: HTMLElement) {
 function stackRebaseControl(root: ParentNode) {
   return (
     [...root.querySelectorAll('button, [role="button"]')].find((control) =>
-      /stack rebase/i.test(
+      /rebase stack/i.test(
         `${control.textContent ?? ''} ${control.getAttribute('aria-label') ?? ''}`
       )
     ) ?? null
@@ -529,18 +553,88 @@ describe('Stack Merge', () => {
     expect(root.textContent).toContain('Some checks were not successful');
   });
 
-  test('offers no Stack Merge when the history is not linear', () => {
+  test('confirms before rebasing each active layer from the bottom and stops at a failure', async () => {
+    const requests: Array<{ path: string; body: unknown }> = [];
+    let finishFirst: (result: { outcome: 'rebased' }) => void = () => {};
+    const pullRequest = layerPullRequest('not-linear');
+    const layers = [
+      ...pullRequest.stack.layers,
+      {
+        number: 105,
+        title: 'Add the footer',
+        state: 'open' as const,
+        headSha: 'head-105',
+        baseRef: 'main',
+        baseSha: 'old-base',
+        rebaseProof: 'rebase-proof',
+      },
+    ];
     const root = mountConversation({
-      pullRequest: layerPullRequest('not-linear'),
+      pullRequest: {
+        ...pullRequest,
+        stack: { ...pullRequest.stack, layers, count: layers.length },
+      },
       behindBy: 2,
+      fetch: (path, options) => {
+        const url = String(path);
+        if (!url.endsWith('/stack-rebase')) return openMergeStatus();
+        requests.push({ path: url, body: options?.body });
+        if (url.includes('/102/')) return new Promise((resolve) => (finishFirst = resolve));
+        throw new Error('Rebase conflict');
+      },
     });
 
-    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
-    expect(stackRebaseControl(root)).toBeNull();
-    expect(root.textContent).not.toContain('Stack Rebase');
+    expect(root.textContent).not.toContain('Merge pull request');
+    const trigger = stackRebaseControl(root);
+    expect(trigger).not.toBeNull();
+    click(trigger);
+    await settle();
+    const dialog = root.ownerDocument.querySelector('dialog, [role="dialog"]');
+    expect(dialog?.textContent).toContain('Add the notes');
+    expect(requests).toEqual([]);
+    click(
+      [...dialog!.querySelectorAll('button')].find((button) =>
+        button.textContent?.includes('Confirm rebase')
+      )
+    );
+    await settle();
+    expect(requests).toEqual([
+      {
+        path: '/api/pulls/octo/app/102/stack-rebase',
+        body: {
+          expectedHeadOid: 'head-102',
+          stackNumber: 106,
+          baseRef: 'main',
+          baseSha: 'old-base',
+          proof: 'rebase-proof',
+        },
+      },
+    ]);
+    const row = (number: number) =>
+      [...dialog!.querySelectorAll('li')].find((item) => item.textContent?.includes(`#${number}`));
+    expect(row(102)?.textContent).toContain('Rebasing');
+    finishFirst({ outcome: 'rebased' });
+    await settle();
+    expect(requests.map((request) => request.path)).toEqual([
+      '/api/pulls/octo/app/102/stack-rebase',
+      '/api/pulls/octo/app/103/stack-rebase',
+    ]);
+    expect(row(102)?.textContent).toContain('Rebased');
+    expect(row(103)?.textContent).toContain('Failed');
+    expect(row(105)?.textContent).toContain('Not rebased');
+    expect(dialog?.textContent).toContain('Rebase conflict');
     expect(root.querySelector('.merge-box__update')).toBeNull();
-    expect(root.textContent).toContain('This branch is 2 commits behind main (1234567).');
-    expect(root.textContent).toContain('This branch has no conflicts with the base branch');
+  });
+
+  test('hides Rebase stack when a different layer has a known conflict', async () => {
+    const pullRequest = layerPullRequest('not-linear');
+    const root = mountConversation({ pullRequest });
+    expect(stackRebaseControl(root)).not.toBeNull();
+
+    root.setStack({ ...pullRequest.stack, hasConflicts: true });
+    await settle();
+    expect(stackRebaseControl(root)).toBeNull();
+    expect(root.textContent).not.toContain('Merge pull request');
   });
 
   test('offers no Stack Rebase when the history is unknown, then offers Stack Merge once it is linear', async () => {
@@ -741,6 +835,7 @@ describe('stack detail', () => {
     const chip = root.querySelector<HTMLElement>('.pr-stack-chip');
 
     expect(chip).not.toBeNull();
+    expect(chip?.closest('.header-meta')).not.toBeNull();
     expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
 
     chip?.click();

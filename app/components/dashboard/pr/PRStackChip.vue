@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { LayersIcon } from '@lucide/vue';
 import { shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -31,6 +32,7 @@ const choose = (pullNumber: number) => {
       aria-haspopup="dialog"
       @click="open = true"
     >
+      <LayersIcon :size="13" aria-hidden="true" />
       {{ t('prReview.stackChip.place', { place: stack.place, count: stack.count }) }}
     </button>
     <PRStackDetail v-if="open" :stack="stack" @close="open = false" @select="choose" />
@@ -46,6 +48,9 @@ const choose = (pullNumber: number) => {
 }
 
 .pr-stack-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   flex: none;
   padding: 0.15rem 0.55rem;
   border: 1px solid var(--gitpulse-border);

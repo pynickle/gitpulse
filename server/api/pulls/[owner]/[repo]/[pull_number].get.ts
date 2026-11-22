@@ -2,6 +2,7 @@ import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/gi
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
 import { fetchPullHeadBranchState } from '#server/utils/pr-head-branch-utils';
 import { createEmptyPRReviewerSummary } from '#server/utils/pr-reviewers-utils';
+import { signStackRebaseSnapshot } from '#server/utils/pr-stack-rebase-utils';
 import { fetchPullRequestStack } from '#server/utils/pr-stack-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
@@ -49,6 +50,19 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       }),
       fetchPullRequestStack(octokit, owner, repo, pullNumber, pullRequest.data.stack),
     ]);
+
+    if (stack?.number && stack.history === 'not-linear' && !stack.hasConflicts) {
+      const secret = useRuntimeConfig(event).appSecret;
+      for (const layer of stack.layers) {
+        if (!layer.headSha || !layer.baseRef || !layer.baseSha) continue;
+        layer.rebaseProof = signStackRebaseSnapshot(secret, owner, repo, layer.number, {
+          stackNumber: stack.number,
+          baseRef: layer.baseRef,
+          baseSha: layer.baseSha,
+          expectedHeadOid: layer.headSha,
+        });
+      }
+    }
 
     return {
       ...pullRequest.data,

@@ -4,12 +4,6 @@
     <div class="is-flex is-align-items-center mb-3 header-title">
       <component :size="22" :is="stateIcon" :style="stateColor" class="header-title__icon" />
       <h1 class="title is-3 ml-3 mb-0 header-title__text">{{ pullRequest?.title }}</h1>
-      <PRStackChip
-        v-if="pullRequest?.stack"
-        class="header-title__stack"
-        :stack="pullRequest.stack"
-        @select="emit('switch-pull-request', repoOwner, repoName, $event)"
-      />
     </div>
 
     <!-- Meta row -->
@@ -19,6 +13,11 @@
         <component :size="12" :is="stateIcon" />
         <span>{{ displayState }}</span>
       </span>
+      <PRStackChip
+        v-if="pullRequest?.stack"
+        :stack="pullRequest.stack"
+        @select="emit('switch-pull-request', repoOwner, repoName, $event)"
+      />
       <span class="header-time is-flex is-align-items-center">
         <ClockIcon :size="13" />
         <span>{{ updatedAtLabel }}</span>
@@ -204,11 +203,6 @@ const handleRepoClick = async () => {
   overflow-wrap: anywhere;
   font-size: clamp(1.3rem, 1rem + 1.5vw, 2rem);
   line-height: 1.25;
-}
-
-.header-title__stack {
-  flex: none;
-  margin-left: 0.75rem;
 }
 
 .header-meta {
