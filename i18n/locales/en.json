@@ -854,6 +854,10 @@
     "mentionSuggestionsUnavailable": "Unable to load users"
   },
   "timeline": {
+    "forcePushedThe": "force-pushed the",
+    "forcePushedBranch": "branch",
+    "forcePushedFrom": "from",
+    "forcePushedTo": "to",
     "referenceUnavailable": "Reference unavailable",
     "pullRequestType": "PR",
     "issueType": "Issue",

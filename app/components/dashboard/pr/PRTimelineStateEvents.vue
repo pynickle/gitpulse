@@ -134,20 +134,23 @@
       item.eventType === 'base_ref_force_pushed' || item.eventType === 'head_ref_force_pushed'
     "
   >
-    {{
-      item.eventType === 'base_ref_force_pushed'
-        ? 'force-pushed the base branch'
-        : 'force-pushed the head branch'
-    }}
-    <span v-if="item.ref?.name" class="tag is-activity ml-1 is-info is-light">{{
-      item.ref.name
-    }}</span>
-    <span v-if="item.beforeCommit?.oid" class="tag is-activity ml-1 is-warning is-light">
-      {{ item.beforeCommit.oid.slice(0, 7) }}
+    <!-- Each value is its own tag, so the words around them come from the catalogue
+    as slots; a single interpolated sentence could not carry them. -->
+    {{ t('timeline.forcePushedThe') }}
+    <span v-if="item.ref?.name" class="tag is-activity is-info is-light">
+      {{ item.ref.name }}
     </span>
-    <span v-if="item.afterCommit?.oid" class="tag is-activity ml-1 is-success is-light">
-      {{ item.afterCommit.oid.slice(0, 7) }}
-    </span>
+    {{ t('timeline.forcePushedBranch') }}
+    <template v-if="item.beforeCommit?.oid && item.afterCommit?.oid">
+      {{ t('timeline.forcePushedFrom') }}
+      <span class="tag is-activity is-warning is-light">
+        {{ item.beforeCommit.oid.slice(0, 7) }}
+      </span>
+      {{ t('timeline.forcePushedTo') }}
+      <span class="tag is-activity is-success is-light">
+        {{ item.afterCommit.oid.slice(0, 7) }}
+      </span>
+    </template>
   </template>
 
   <template v-else-if="item.eventType === 'closed'">

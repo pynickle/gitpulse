@@ -142,9 +142,25 @@ export function usePRMergeStatus() {
   let statusRequestId = 0;
   let commitDefaultsRequestId = 0;
 
+  /**
+   * Adopts a status the caller already holds. Distinct from `resetMergeStatus`:
+   * this one is an answer, not a request to forget the last one.
+   */
   const setMergeStatus = (status: PRMergeStatus | null) => {
     statusRequestId += 1;
     mergeStatus.value = status;
+    loading.value = false;
+    error.value = null;
+    branchUpdateError.value = null;
+  };
+
+  /**
+   * Forgets the status before a reread. Only a different pull request needs this,
+   * because the old box's data must not sit under the new one's heading.
+   */
+  const resetMergeStatus = () => {
+    statusRequestId += 1;
+    mergeStatus.value = null;
     loading.value = false;
     error.value = null;
     branchUpdateError.value = null;
@@ -170,7 +186,8 @@ export function usePRMergeStatus() {
     } catch (fetchError: unknown) {
       if (requestId === statusRequestId) {
         error.value = getFetchErrorMessage(fetchError, 'Failed to fetch pull request merge status');
-        mergeStatus.value = null;
+        // A reread that fails keeps the status already on screen: throwing it away
+        // would blank the whole Merge Box for a request the reader did not make.
       }
       return null;
     } finally {
@@ -383,6 +400,7 @@ export function usePRMergeStatus() {
     branchUpdateError,
     commitDefaults,
     setMergeStatus,
+    resetMergeStatus,
     fetchMergeStatus,
     fetchCommitDefaults,
     clearCommitDefaults,

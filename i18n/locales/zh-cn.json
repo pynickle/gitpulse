@@ -854,6 +854,10 @@
     "mentionSuggestionsUnavailable": "无法加载用户"
   },
   "timeline": {
+    "forcePushedThe": "强制推送了",
+    "forcePushedBranch": "分支",
+    "forcePushedFrom": "从",
+    "forcePushedTo": "到",
     "referenceUnavailable": "引用不可用",
     "pullRequestType": "PR",
     "issueType": "议题",

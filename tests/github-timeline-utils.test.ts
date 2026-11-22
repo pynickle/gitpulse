@@ -8,8 +8,10 @@ mock.module('#shared/types/comment-moderation', () => import('../shared/types/co
 
 const {
   assignCommitCheckRollups,
+  applyPRForcePushRefs,
   enrichPRTimelineWithReviewData,
   fetchPRReviewMetadata,
+  fetchPRTimelineSupplement,
   normalizeIssueTimelineEvent,
   normalizePRTimelineEvent,
   normalizeTimelineStateItems,
@@ -725,5 +727,171 @@ describe('timeline commit verification and check rollups', () => {
     expect(items[0]?.commit?.checkRollup).toEqual(rollup);
     expect(items[1]?.commit?.checkRollup).toBeNull();
     expect(items[2]?.commit?.checkRollup).toBeUndefined();
+  });
+});
+
+describe('force-push events', () => {
+  // REST reports a force push with no ref and no commits; GraphQL knows both. The
+  // event's own node id is the same in both APIs, which is how they are joined.
+  // REST carries both a numeric event id and a node id; the numeric one must not be
+  // mistaken for the node id GraphQL keys on.
+  const restForcePush = (event: string, nodeId: string, createdAt: string, id = 36907013486) => ({
+    event,
+    id,
+    node_id: nodeId,
+    created_at: createdAt,
+    actor: user('pynickle'),
+    commit_id: null,
+    commit_url: null,
+  });
+
+  test('fills a force-pushed branch and its commits from the GraphQL refs', () => {
+    const timeline = normalizePullTimeline([
+      restForcePush('head_ref_force_pushed', 'HRFPE_one', '2026-11-22T05:50:35Z'),
+      restForcePush('base_ref_force_pushed', 'BRFPE_two', '2026-11-22T05:49:58Z'),
+    ]);
+
+    applyPRForcePushRefs(timeline, [
+      {
+        id: 'HRFPE_one',
+        refName: 'stack/reb-03',
+        beforeOid: 'd116a1d33bc23e3ac3556ea782b714eea075babd',
+        afterOid: '06e80370cd900edd211dc580a990e3a6b216b3ab',
+      },
+      {
+        id: 'BRFPE_two',
+        refName: 'stack/reb-02',
+        beforeOid: '11263214ca7ba2be31f06e02a47a40f9cfecec0c',
+        afterOid: 'f7076f1615b7308d9680cca8df8b46361c0b22d9',
+      },
+    ]);
+
+    const head = timeline.find((item) => item.eventType === 'head_ref_force_pushed');
+    const base = timeline.find((item) => item.eventType === 'base_ref_force_pushed');
+    expect(head?.ref?.name).toBe('stack/reb-03');
+    expect(head?.beforeCommit?.oid).toBe('d116a1d33bc23e3ac3556ea782b714eea075babd');
+    expect(head?.afterCommit?.oid).toBe('06e80370cd900edd211dc580a990e3a6b216b3ab');
+    expect(base?.ref?.name).toBe('stack/reb-02');
+    expect(base?.beforeCommit?.oid).toBe('11263214ca7ba2be31f06e02a47a40f9cfecec0c');
+  });
+
+  test('leaves a force push alone when GraphQL named no other event', () => {
+    const timeline = normalizePullTimeline([
+      restForcePush('head_ref_force_pushed', 'HRFPE_unmatched', '2026-11-22T05:50:35Z'),
+    ]);
+
+    applyPRForcePushRefs(timeline, []);
+
+    const [item] = timeline;
+    // REST named neither, and GraphQL had nothing to add.
+    expect(item.ref?.name).toBeUndefined();
+    expect(item.beforeCommit).toBeUndefined();
+    expect(item.afterCommit).toBeUndefined();
+  });
+});
+
+describe('timeline supplement', () => {
+  const supplementNode = (overrides: Record<string, any> = {}) => ({
+    repository: {
+      pullRequest: {
+        reviewThreads: {
+          nodes: [
+            { id: 'thread-1', isResolved: false, isOutdated: false, comments: { nodes: [] } },
+          ],
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+        reviews: {
+          nodes: [{ databaseId: 7, isCopilotCodeReview: true, copilotCodeReviewEffort: 'lite' }],
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+        timelineItems: {
+          nodes: [
+            {
+              id: 'HRFPE_one',
+              ref: { name: 'stack/reb-03' },
+              beforeCommit: { oid: 'd116a1d33bc23e3ac3556ea782b714eea075babd' },
+              afterCommit: { oid: '06e80370cd900edd211dc580a990e3a6b216b3ab' },
+            },
+          ],
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+        ...overrides,
+      },
+    },
+  });
+
+  test('reads threads, review provenance and force pushes in one request', async () => {
+    const requests: unknown[] = [];
+    const octokit = {
+      graphql: async (query: string, variables: unknown) => {
+        requests.push({ query, variables });
+        return supplementNode();
+      },
+    };
+
+    const supplement = await fetchPRTimelineSupplement(
+      octokit as never,
+      'pynickle',
+      'pynickle',
+      16
+    );
+
+    expect(requests).toHaveLength(1);
+    expect(supplement.reviewThreads.map((thread) => thread.id)).toEqual(['thread-1']);
+    expect(supplement.reviewMetadata.get('7')).toEqual({
+      isCopilotCodeReview: true,
+      copilotReviewEffort: 'lite',
+    });
+    expect(supplement.forcePushRefs).toEqual([
+      {
+        id: 'HRFPE_one',
+        refName: 'stack/reb-03',
+        beforeOid: 'd116a1d33bc23e3ac3556ea782b714eea075babd',
+        afterOid: '06e80370cd900edd211dc580a990e3a6b216b3ab',
+      },
+    ]);
+  });
+
+  test('finishes an overflowing connection with its own fetcher', async () => {
+    let calls = 0;
+    const octokit = {
+      graphql: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return supplementNode({
+            reviewThreads: {
+              nodes: [
+                { id: 'thread-1', isResolved: false, isOutdated: false, comments: { nodes: [] } },
+              ],
+              pageInfo: { hasNextPage: true, endCursor: 'cursor-1' },
+            },
+          });
+        }
+        // The per-connection fetcher, started over from its own first page.
+        return {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                nodes: [
+                  { id: 'thread-1', isResolved: false, isOutdated: false, comments: { nodes: [] } },
+                  { id: 'thread-2', isResolved: false, isOutdated: false, comments: { nodes: [] } },
+                ],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        };
+      },
+    };
+
+    const supplement = await fetchPRTimelineSupplement(
+      octokit as never,
+      'pynickle',
+      'pynickle',
+      16
+    );
+
+    // The merged page is kept, and the fallback adds only what it did not have.
+    expect(supplement.reviewThreads.map((thread) => thread.id)).toEqual(['thread-1', 'thread-2']);
   });
 });

@@ -1,19 +1,19 @@
 import { enrichCommentModeration } from '#server/utils/comment-moderation-utils';
 import {
+  applyPRForcePushRefs,
   assignCommitCheckRollups,
   buildPRTimelineCapabilities,
   createUnsupportedWarnings,
   enrichPRTimelineWithReviewData,
   fetchPaginatedArray,
-  fetchPRReviewMetadata,
-  fetchPRReviewThreads,
+  fetchPRTimelineSupplement,
+  type PRTimelineSupplement,
   fetchTimelinePage,
   normalizePRTimelineItems,
   normalizePRTimelineEvent,
   SKIPPED_TIMELINE_EVENTS,
   sortTimelineItems,
   throwTimelineFatalError,
-  type TimelineReviewMetadata,
 } from '#server/utils/github-timeline-utils';
 import { fetchCommitCheckRollups } from '#server/utils/pr-check-rollup-graphql-utils';
 
@@ -64,31 +64,22 @@ function enrichTimelineEventWithPullCommit(
   };
 }
 
-async function fetchPRReviewThreadsForTimeline(
-  octokit: Parameters<typeof fetchPRReviewThreads>[0],
+/**
+ * Everything GraphQL adds to the REST timeline, in one request. A failed read
+ * degrades each part on its own: threads and provenance go missing, and a force
+ * push still renders without its branch, but the timeline itself still loads.
+ */
+async function fetchPRTimelineSupplementForTimeline(
+  octokit: Parameters<typeof fetchPRTimelineSupplement>[0],
   owner: string,
   repo: string,
   pullNumber: number
-) {
+): Promise<PRTimelineSupplement> {
   try {
-    return await fetchPRReviewThreads(octokit, owner, repo, pullNumber);
+    return await fetchPRTimelineSupplement(octokit, owner, repo, pullNumber);
   } catch (error: unknown) {
-    console.warn('Failed to fetch pull request review threads:', error);
-    return [];
-  }
-}
-
-async function fetchPRReviewMetadataForTimeline(
-  octokit: Parameters<typeof fetchPRReviewMetadata>[0],
-  owner: string,
-  repo: string,
-  pullNumber: number
-): Promise<Map<string, TimelineReviewMetadata>> {
-  try {
-    return await fetchPRReviewMetadata(octokit, owner, repo, pullNumber);
-  } catch (error: unknown) {
-    console.warn('Failed to fetch pull request review metadata:', error);
-    return new Map();
+    console.warn('Failed to fetch pull request timeline supplement:', error);
+    return { reviewThreads: [], reviewMetadata: new Map(), forcePushRefs: [] };
   }
 }
 
@@ -113,54 +104,47 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
 
     const octokit = await getGitHubClient(event);
 
-    const [
-      timelinePage,
-      pullCommits,
-      pullReviews,
-      pullReviewComments,
-      pullReviewThreads,
-      reviewMetadata,
-    ] = await Promise.all([
-      fetchTimelinePage<Record<string, any>>(
-        octokit,
-        'GET /repos/{owner}/{repo}/issues/{issue_number}/timeline',
-        {
-          owner,
-          repo,
-          issue_number: pullNumber,
-        },
-        page
-      ),
-      fetchPaginatedArray<Record<string, any>>(
-        octokit,
-        'GET /repos/{owner}/{repo}/pulls/{pull_number}/commits',
-        {
-          owner,
-          repo,
-          pull_number: pullNumber,
-        }
-      ),
-      fetchPaginatedArray<Record<string, any>>(
-        octokit,
-        'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
-        {
-          owner,
-          repo,
-          pull_number: pullNumber,
-        }
-      ),
-      fetchPaginatedArray<Record<string, any>>(
-        octokit,
-        'GET /repos/{owner}/{repo}/pulls/{pull_number}/comments',
-        {
-          owner,
-          repo,
-          pull_number: pullNumber,
-        }
-      ),
-      fetchPRReviewThreadsForTimeline(octokit, owner, repo, pullNumber),
-      fetchPRReviewMetadataForTimeline(octokit, owner, repo, pullNumber),
-    ]);
+    const [timelinePage, pullCommits, pullReviews, pullReviewComments, supplement] =
+      await Promise.all([
+        fetchTimelinePage<Record<string, any>>(
+          octokit,
+          'GET /repos/{owner}/{repo}/issues/{issue_number}/timeline',
+          {
+            owner,
+            repo,
+            issue_number: pullNumber,
+          },
+          page
+        ),
+        fetchPaginatedArray<Record<string, any>>(
+          octokit,
+          'GET /repos/{owner}/{repo}/pulls/{pull_number}/commits',
+          {
+            owner,
+            repo,
+            pull_number: pullNumber,
+          }
+        ),
+        fetchPaginatedArray<Record<string, any>>(
+          octokit,
+          'GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews',
+          {
+            owner,
+            repo,
+            pull_number: pullNumber,
+          }
+        ),
+        fetchPaginatedArray<Record<string, any>>(
+          octokit,
+          'GET /repos/{owner}/{repo}/pulls/{pull_number}/comments',
+          {
+            owner,
+            repo,
+            pull_number: pullNumber,
+          }
+        ),
+        fetchPRTimelineSupplementForTimeline(octokit, owner, repo, pullNumber),
+      ]);
 
     const pullCommitsBySha = buildPullCommitLookup(pullCommits);
     const enrichedTimeline = timelinePage.items
@@ -174,12 +158,13 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         enrichedTimeline.flatMap((rawEvent) => normalizePRTimelineEvent(rawEvent, { owner, repo }))
       )
     );
+    applyPRForcePushRefs(normalizedTimeline, supplement.forcePushRefs);
     const timeline = enrichPRTimelineWithReviewData(
       normalizedTimeline,
       pullReviews,
       pullReviewComments,
-      pullReviewThreads,
-      reviewMetadata
+      supplement.reviewThreads,
+      supplement.reviewMetadata
     );
     const commitShas = timeline.flatMap((item) =>
       item.kind === 'commit' && item.commit?.oid ? [item.commit.oid] : []

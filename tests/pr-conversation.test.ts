@@ -126,6 +126,10 @@ function createMergeStatusStore() {
       mergeStatus.value = value;
       branchUpdateError.value = null;
     },
+    resetMergeStatus: () => {
+      mergeStatus.value = null;
+      branchUpdateError.value = null;
+    },
     fetchMergeStatus: async () => null,
     fetchCommitDefaults: async () => null,
     clearCommitDefaults: () => {},

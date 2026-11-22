@@ -16,6 +16,13 @@
     </div>
 
     <template v-else-if="status">
+      <!-- A reread that failed keeps this status on screen; the same alert is shown
+      above it, because replacing the box would throw away data the reader can use. -->
+      <div v-if="error" class="merge-box__note merge-box__note--danger" role="alert">
+        <CircleExclamationPointIcon :size="14" />
+        <span>{{ error }}</span>
+      </div>
+
       <!-- Merged -->
       <template v-if="status.merged">
         <div
@@ -461,6 +468,7 @@ const {
   branchActionError,
   commitDefaults,
   setMergeStatus,
+  resetMergeStatus,
   fetchMergeStatus,
   fetchCommitDefaults,
   clearCommitDefaults,
@@ -1195,37 +1203,75 @@ watch(
   }
 );
 
-watch(
-  () => [owner, repo, pullNumber, initialStatus, stack?.history, stack?.place] as const,
-  ([owner, repo, pullNumber, initialStatus]) => {
-    dropdownOpen.value = false;
-    confirming.value = false;
-    stackMergePhase.value = null;
-    updateMenuOpen.value = false;
-    updateConfirming.value = false;
-    updateMethod.value = 'merge';
-    suppressMergeabilityPoll = false;
-    loadingCommitDefaults.value = false;
-    checksExpanded.value = false;
-    resetCommitForm();
-    clearCommitDefaults();
-    branchAction.value = null;
-    stopMergeabilityPolling();
-    mergeabilityPollAttempts = 0;
+/** Every local control this box owns, back to the state a fresh pull request opens in. */
+const resetMergeBoxState = () => {
+  dropdownOpen.value = false;
+  confirming.value = false;
+  stackMergePhase.value = null;
+  updateMenuOpen.value = false;
+  updateConfirming.value = false;
+  updateMethod.value = 'merge';
+  suppressMergeabilityPoll = false;
+  loadingCommitDefaults.value = false;
+  checksExpanded.value = false;
+  resetCommitForm();
+  clearCommitDefaults();
+  branchAction.value = null;
+  stopMergeabilityPolling();
+  mergeabilityPollAttempts = 0;
+};
 
+// A different pull request is the only thing that may forget the status: the old
+// box's data must not sit under the new one's heading.
+watch(
+  () => [owner, repo, pullNumber] as const,
+  ([owner, repo, pullNumber]) => {
+    resetMergeBoxState();
+    resetMergeStatus();
+
+    // A terminal status comes from the detail payload, which already read it.
+    // Fetching anyway would race the answer the reader is about to be given.
     if (initialStatus) {
       setMergeStatus(initialStatus);
-    } else {
-      setMergeStatus(null);
-
-      if (owner && repo && pullNumber) {
-        fetchMergeStatus(owner, repo, pullNumber);
-      }
+    } else if (owner && repo && pullNumber) {
+      fetchMergeStatus(owner, repo, pullNumber);
     }
 
-    // Pick from the status already in hand, so the first paint names the method
-    // the repository actually offers.
+    // Pick from the status in hand, so the first paint names the method the
+    // repository actually offers.
     selectedMethod.value = mergeMethods.value[0] ?? 'merge';
+  },
+  { immediate: true }
+);
+
+// The same pull request, re-read: a Stack Rebase finishing or the detail page
+// refreshing. The box keeps showing what it has while the answer is in flight,
+// so nothing the reader is reading is torn off the screen.
+watch(
+  () => [initialStatus, stack?.history, stack?.place] as const,
+  ([initialStatus, history, place], previous) => {
+    const [previousHistory, previousPlace] = previous?.slice(1) ?? [];
+    const stackMoved = history !== previousHistory || place !== previousPlace;
+
+    if (stackMoved) {
+      // A Stack that turned linear or changed shape invalidates the open confirm
+      // step, but not the status the reader is looking at.
+      dropdownOpen.value = false;
+      confirming.value = false;
+      stackMergePhase.value = null;
+      updateMenuOpen.value = false;
+      updateConfirming.value = false;
+      resetCommitForm();
+      clearCommitDefaults();
+    }
+
+    // The detail payload may already carry a fresh status; otherwise re-read it
+    // while still showing the one on screen.
+    if (initialStatus) {
+      setMergeStatus(initialStatus);
+    } else if (stackMoved) {
+      fetchMergeStatus(owner, repo, pullNumber);
+    }
   },
   { immediate: true }
 );

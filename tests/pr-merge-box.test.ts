@@ -44,6 +44,7 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.selectUpdateMethod': 'Select update method',
   'prReview.mergeBox.updateWithMerge': 'Update with a merge commit',
   'prReview.mergeBox.updateWithRebase': 'Update with rebase',
+  'prReview.stackRebase.title': 'Rebase stack',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -108,6 +109,10 @@ function createMergeStatusStore({ holdDefaults = false } = {}) {
     commitDefaults: defaults,
     setMergeStatus: (value: Record<string, unknown> | null) => {
       mergeStatus.value = value;
+      branchUpdateError.value = null;
+    },
+    resetMergeStatus: () => {
+      mergeStatus.value = null;
       branchUpdateError.value = null;
     },
     fetchMergeStatus: async () => null,
@@ -186,8 +191,12 @@ const MergeBox = await compileVue(
   }
 );
 
-function mountMergeBox(allowedMergeMethods: MergeMethod[], options?: { holdDefaults?: boolean }) {
+function mountMergeBox(
+  allowedMergeMethods: MergeMethod[],
+  options?: { holdDefaults?: boolean; rereadError?: string }
+) {
   store = createMergeStatusStore(options);
+  store.error.value = options?.rereadError ?? null;
   dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
 
   const initialStatus = {
@@ -249,6 +258,109 @@ afterEach(async () => {
   await dom.cleanup();
 });
 
+describe('PRMergeBox reread failure', () => {
+  test('keeps the merge box and reports the failed reread beside it', () => {
+    const root = mountMergeBox(['merge'], { rereadError: 'Failed to read merge status' });
+
+    // The status is still on screen, so the reader keeps working with what it says.
+    expect(root.querySelector('.merge-box__merge-btn')?.textContent?.trim()).toBe(
+      'Merge pull request'
+    );
+    expect(root.textContent).toContain('Failed to read merge status');
+    expect(root.querySelector('.merge-box__skeleton')).toBeNull();
+  });
+
+  test('shows only the error when no status was ever read', () => {
+    store = createMergeStatusStore();
+    store.error.value = 'Failed to read merge status';
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+          initialStatus: null,
+        }),
+    });
+    const root = dom.mount(Harness).root;
+
+    expect(root.textContent).toContain('Failed to read merge status');
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+  });
+});
+
+describe('PRMergeBox status reread', () => {
+  test('a stack that turns linear re-reads without forgetting the status on screen', async () => {
+    const heldAtCall: (Record<string, unknown> | null)[] = [];
+    const stack = shallowRef({
+      number: 106,
+      trunk: 'main',
+      count: 2,
+      place: 2,
+      history: 'not-linear' as 'not-linear' | 'linear',
+      hasConflicts: false,
+      layers: [
+        {
+          number: 101,
+          title: 'Add the model',
+          state: 'open' as const,
+          headSha: 'head-101',
+          baseRef: 'main',
+          baseSha: 'base-101',
+          rebaseProof: 'proof-101',
+        },
+        {
+          number: 102,
+          title: 'Add the API',
+          state: 'open' as const,
+          headSha: 'head-102',
+          baseRef: 'main',
+          baseSha: 'base-102',
+          rebaseProof: 'proof-102',
+        },
+      ],
+    });
+    store = createMergeStatusStore();
+    // This pull request arrives without a terminal status, so the box reads its own.
+    store.fetchMergeStatus = async () => {
+      heldAtCall.push(store.mergeStatus.value as Record<string, unknown> | null);
+      store.mergeStatus.value = openStatus();
+      return null;
+    };
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+          initialStatus: null,
+          stack: stack.value,
+        }),
+    });
+    const root = dom.mount(Harness).root;
+    await settle();
+    // While the history is not linear the box offers Stack Rebase, not a merge.
+    expect(root.querySelector('.merge-box__merge-btn')?.textContent).toContain('Rebase stack');
+    heldAtCall.length = 0;
+
+    // A Stack Rebase finishes, so the detail reread reports a linear history.
+    stack.value = { ...stack.value, history: 'linear' as const };
+    await settle();
+
+    // The box re-reads while still holding the status it was showing, so the reader
+    // never sees it blank out: the same status keeps answering the new question.
+    expect(heldAtCall).toHaveLength(1);
+    expect(heldAtCall[0]?.headSha).toBe(HEAD_SHA);
+    expect(root.querySelector('.merge-box__skeleton')).toBeNull();
+    expect(root.querySelector('.merge-box__merge-btn')?.textContent).toContain(
+      'Merge pull request'
+    );
+  });
+});
 describe('PRMergeBox merge methods', () => {
   test('offers only the methods the repository allows', async () => {
     const root = mountMergeBox(['squash', 'rebase']);
