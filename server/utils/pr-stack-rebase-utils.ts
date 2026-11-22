@@ -53,6 +53,185 @@ interface StackLayerRebase {
   oldBaseOid: string | null;
 }
 
+interface StackLayerCommit {
+  oid: string;
+  parent: string;
+  authorName: string;
+  authorEmail: string;
+  authorDate: string;
+  message: string;
+}
+
+type LayerGit = (
+  args: string[],
+  message: string,
+  network?: boolean,
+  extraEnv?: Record<string, string>
+) => Promise<string>;
+
+/** Matches the fields requested from `git log` below, one commit at a time. */
+const COMMIT_FIELDS = 6;
+const COMMIT_FORMAT = '--format=%H%x00%P%x00%an%x00%ae%x00%aI%x00%B';
+const COMMITTER = [
+  '-c',
+  'user.name=GitPulse',
+  '-c',
+  'user.email=gitpulse@users.noreply.github.com',
+];
+
+/**
+ * Reads the commits this Layer adds, oldest first, with the author each one keeps
+ * across the rewrite. `%P` gives the parent to diff against, which is the very
+ * parent `git rebase` would replay from.
+ */
+function parseLayerCommits(stdout: string, fallbackParent: string): StackLayerCommit[] {
+  const fields = stdout.split('\0');
+  const commits: StackLayerCommit[] = [];
+
+  for (let index = 0; index + COMMIT_FIELDS <= fields.length; index += COMMIT_FIELDS) {
+    const oid = fields[index] ?? '';
+    const parents = (fields[index + 1] ?? '').trim();
+    if (!commitOid.test(oid)) continue;
+    commits.push({
+      oid,
+      parent: parents.split(' ')[0] || fallbackParent,
+      authorName: fields[index + 2] ?? '',
+      authorEmail: fields[index + 3] ?? '',
+      authorDate: fields[index + 4] ?? '',
+      message: fields[index + 5] ?? '',
+    });
+  }
+
+  return commits;
+}
+
+const isConflict = (error: unknown) =>
+  Boolean(
+    error &&
+    typeof error === 'object' &&
+    'statusCode' in error &&
+    error.statusCode === 409 &&
+    'statusMessage' in error &&
+    typeof error.statusMessage === 'string' &&
+    /rebased cleanly/.test(error.statusMessage)
+  );
+
+/**
+ * Replays the whole Layer in one `git replay` call. That command writes straight to the
+ * object database, so the cost stops growing with the number of patches the Layer
+ * carries.
+ *
+ * `git replay` is experimental and needs Git 2.38, so it is probed first and skipped on
+ * any build without it. Returns null when the caller must fall back; a conflicting
+ * replay performs the same three-way merge `git rebase` does, so it raises the same
+ * error instead of falling back.
+ */
+async function replayLayerOntoBase({
+  git,
+  forkPoint,
+  baseTip,
+  fetchedHead,
+  scratchRef,
+}: {
+  git: LayerGit;
+  forkPoint: string;
+  baseTip: string;
+  fetchedHead: string;
+  scratchRef: string;
+}): Promise<string | null> {
+  try {
+    const help = await git(['replay', '-h'], 'Could not detect the Git replay ability');
+    // Only a Git that documents the subcommand counts. An older one either fails the
+    // call above or answers a different help text.
+    if (!/\bgit replay\b/.test(help)) return null;
+  } catch {
+    return null;
+  }
+
+  try {
+    await git(
+      [
+        ...COMMITTER,
+        'replay',
+        `--onto=${baseTip}`,
+        `--ref=${scratchRef}`,
+        '--ref-action=update',
+        `${forkPoint}..${fetchedHead}`,
+      ],
+      'The stack layer could not be rebased cleanly'
+    );
+    const replayed = await git(
+      ['rev-parse', '--verify', scratchRef],
+      'Could not read the rebased stack layer'
+    );
+    return replayed || null;
+  } catch (error: unknown) {
+    // A conflict is a real answer about this Layer, not a reason to retry another way.
+    if (isConflict(error)) throw error;
+    return null;
+  }
+}
+
+/**
+ * Replays the Layer one patch at a time for a Git that has no `git replay`. Each patch is
+ * a three-way merge written straight to the object database, so no work tree is checked
+ * out either.
+ */
+async function replayLayerPatchByPatch(
+  git: LayerGit,
+  forkPoint: string,
+  baseTip: string,
+  fetchedHead: string,
+  messageFile: string
+): Promise<string> {
+  const commits = parseLayerCommits(
+    await git(
+      [
+        'log',
+        '--reverse',
+        '--topo-order',
+        '-z',
+        '--no-color',
+        COMMIT_FORMAT,
+        `${forkPoint}..${fetchedHead}`,
+      ],
+      'Could not read the stack layer commits'
+    ),
+    forkPoint
+  );
+
+  let parent = baseTip;
+  // The tree of `parent` is the previous patch's result, so it only has to be read once
+  // for the whole run instead of once per patch.
+  let parentTree = await git(
+    ['rev-parse', `${baseTip}^{tree}`],
+    'Could not read the stack layer commits'
+  );
+  for (const commit of commits) {
+    const tree = await git(
+      ['merge-tree', '--write-tree', `--merge-base=${commit.parent}`, parent, commit.oid],
+      'The stack layer could not be rebased cleanly'
+    );
+    // A patch the new base already contains replays to the same tree, which is the empty
+    // commit `git rebase` drops.
+    if (tree === parentTree) continue;
+    await writeFile(messageFile, commit.message);
+    parent = await git(
+      [...COMMITTER, 'commit-tree', tree, '-p', parent, '-F', messageFile],
+      'Could not write the rebased stack layer',
+      false,
+      {
+        GIT_AUTHOR_NAME: commit.authorName,
+        GIT_AUTHOR_EMAIL: commit.authorEmail,
+        GIT_AUTHOR_DATE: commit.authorDate,
+      }
+    );
+    parentTree = tree;
+  }
+
+  return parent;
+}
+
 export async function rebasePullRequestStackLayer({
   remote,
   accessToken,
@@ -62,7 +241,8 @@ export async function rebasePullRequestStackLayer({
   oldBaseOid,
 }: StackLayerRebase): Promise<'current' | 'rebased'> {
   const cwd = await mkdtemp(join(tmpdir(), 'gitpulse-stack-'));
-  const globalConfig = join(cwd, '.git', 'gitpulse-global-config');
+  const globalConfig = join(cwd, 'gitpulse-global-config');
+  const messageFile = join(cwd, 'gitpulse-message');
   const env = {
     ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^git_/i.test(name))),
     GIT_CONFIG_NOSYSTEM: '1',
@@ -77,11 +257,11 @@ export async function rebasePullRequestStackLayer({
         GIT_CONFIG_VALUE_0: `Authorization: Basic ${Buffer.from(`x-access-token:${accessToken}`).toString('base64')}`,
       }
     : env;
-  const git = async (args: string[], message: string, network = false) => {
+  const git: LayerGit = async (args, message, network = false, extraEnv = {}) => {
     try {
       const { stdout } = await exec('git', args, {
         cwd,
-        env: network ? transportEnv : env,
+        env: { ...(network ? transportEnv : env), ...extraEnv },
         timeout: 90_000,
         windowsHide: true,
       });
@@ -105,7 +285,12 @@ export async function rebasePullRequestStackLayer({
     if (!commitOid.test(expectedHeadOid) || (oldBaseOid !== null && !commitOid.test(oldBaseOid))) {
       throw createError({ statusCode: 409, statusMessage: 'Stack layer has an invalid commit ID' });
     }
-    await git(['init', '--quiet', '--template='], 'Could not initialize the rebase workspace');
+    // A bare repository keeps the objects in place without checking a work tree out,
+    // which is the step that used to dominate this call.
+    await git(
+      ['init', '--quiet', '--bare', '--template='],
+      'Could not initialize the rebase workspace'
+    );
     await writeFile(globalConfig, '');
     await git(['check-ref-format', head], 'Invalid stack head branch');
     await git(['check-ref-format', base], 'Invalid stack base branch');
@@ -123,12 +308,16 @@ export async function rebasePullRequestStackLayer({
       'Could not fetch the stack layer and its base branch',
       true
     );
-    const actualHead = await git(['rev-parse', fetchedHead], 'Could not read the stack head');
+    const [actualHead, baseTip] = (
+      await git(['rev-parse', fetchedHead, fetchedBase], 'Could not read the stack layer commits')
+    ).split('\n');
     if (actualHead !== expectedHeadOid) {
       throw createError({ statusCode: 409, statusMessage: 'This stack layer has changed' });
     }
+    if (!actualHead || !baseTip) {
+      throw createError({ statusCode: 409, statusMessage: 'Could not read the stack layer' });
+    }
 
-    const baseTip = await git(['rev-parse', fetchedBase], 'Could not read the stack base');
     const commonBase = await git(
       ['merge-base', fetchedBase, fetchedHead],
       'Stack layer has no common base'
@@ -156,24 +345,16 @@ export async function rebasePullRequestStackLayer({
         statusMessage: 'This stack layer contains a merge commit',
       });
     }
-    await git(
-      ['switch', '--quiet', '--detach', fetchedHead],
-      'Could not check out the stack layer'
-    );
-    await git(
-      [
-        '-c',
-        'user.name=GitPulse',
-        '-c',
-        'user.email=gitpulse@users.noreply.github.com',
-        'rebase',
-        '--quiet',
-        '--onto',
-        baseTip,
+
+    const parent =
+      (await replayLayerOntoBase({
+        git,
         forkPoint,
-      ],
-      'The stack layer could not be rebased cleanly'
-    );
+        baseTip,
+        fetchedHead,
+        scratchRef: 'refs/gitpulse/rebased',
+      })) ?? (await replayLayerPatchByPatch(git, forkPoint, baseTip, fetchedHead, messageFile));
+
     await git(
       [
         'push',
@@ -181,7 +362,7 @@ export async function rebasePullRequestStackLayer({
         `--force-with-lease=${head}:${expectedHeadOid}`,
         '--',
         remote,
-        `HEAD:${head}`,
+        `${parent}:${head}`,
       ],
       'GitHub rejected the rebased branch. Check permissions, branch rules, and the current head.',
       true
