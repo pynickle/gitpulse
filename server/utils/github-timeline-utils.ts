@@ -147,6 +147,9 @@ interface SortableTimelineItem {
     dismissalMessage?: string;
     dismissalCommitId?: string;
   };
+  ref?: { name?: string };
+  beforeCommit?: TimelineCommitPayload;
+  afterCommit?: TimelineCommitPayload;
   [key: string]: unknown;
 }
 
@@ -572,18 +575,20 @@ interface TimelineReviewTeamNode {
   organization?: { login?: string | null } | null;
 }
 
+interface PRReviewMetadataNode {
+  databaseId?: number | null;
+  isCopilotCodeReview?: boolean;
+  copilotCodeReviewEffort?: string | null;
+  onBehalfOf?: {
+    nodes?: Array<TimelineReviewTeamNode | null> | null;
+  } | null;
+}
+
 interface PRReviewMetadataGraphQLResponse {
   repository?: {
     pullRequest?: {
       reviews?: {
-        nodes?: Array<{
-          databaseId?: number | null;
-          isCopilotCodeReview?: boolean;
-          copilotCodeReviewEffort?: string | null;
-          onBehalfOf?: {
-            nodes?: Array<TimelineReviewTeamNode | null> | null;
-          } | null;
-        } | null> | null;
+        nodes?: Array<PRReviewMetadataNode | null> | null;
         pageInfo?: {
           hasNextPage?: boolean;
           endCursor?: string | null;
@@ -623,16 +628,9 @@ export async function fetchPRReviewMetadata(
   }
 }
 
-type ReviewMetadataNodes = PRReviewMetadataGraphQLResponse['repository'] extends
-  | { pullRequest?: { reviews?: { nodes?: infer Nodes } } }
-  | null
-  | undefined
-  ? Nodes
-  : never;
-
 /** Teams and Copilot provenance, keyed by review id, from either fetcher's nodes. */
 function collectReviewMetadata(
-  nodes: ReviewMetadataNodes,
+  nodes: Array<PRReviewMetadataNode | null> | null | undefined,
   into: Map<string, TimelineReviewMetadata>
 ) {
   for (const review of nodes ?? []) {
@@ -837,7 +835,7 @@ export async function fetchPRTimelineSupplement(
 }
 
 /** Joins two pages of the same connection, keeping the first page's order. */
-function mergeById<T extends { id: string }>(first: T[], rest: T[]): T[] {
+function mergeById<T extends { id?: string }>(first: T[], rest: T[]): T[] {
   const seen = new Set(first.map((item) => item.id));
   return [...first, ...rest.filter((item) => !seen.has(item.id))];
 }
