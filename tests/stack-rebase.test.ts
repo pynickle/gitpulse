@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'bun:test';
-import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { delimiter, join } from 'node:path';
+import { join } from 'node:path';
 
 import { createError } from 'h3';
 
@@ -14,9 +14,7 @@ import {
 Object.assign(globalThis, { createError });
 
 const tempDirs: string[] = [];
-const originalPath = process.env.PATH ?? '';
 afterEach(async () => {
-  process.env.PATH = originalPath;
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
@@ -41,28 +39,6 @@ async function fixture() {
     return git(cwd, 'rev-parse', 'HEAD');
   };
   return { cwd, commit };
-}
-
-/** Puts a shim on PATH that forwards to the real Git but refuses `git replay`. */
-async function withoutGitReplay() {
-  const bin = await mkdtemp(join(tmpdir(), 'gitpulse-no-replay-'));
-  tempDirs.push(bin);
-  const realGit = Bun.spawnSync(['git', '--exec-path']).stdout.toString().trim();
-  const shim = join(bin, 'git');
-  const script = [
-    '#!/bin/sh',
-    `REAL="${join(realGit, '..', '..', 'bin', 'git')}"`,
-    'if [ "$1" = "replay" ]; then',
-    '  echo "git: \'replay\' is not a git command." >&2',
-    '  exit 1',
-    'fi',
-    'exec "$REAL" "$@"',
-    '',
-  ].join('\n');
-  await mkdir(bin, { recursive: true });
-  await writeFile(shim, script);
-  await chmod(shim, 0o755);
-  process.env.PATH = `${bin}${delimiter}${originalPath}`;
 }
 
 test('a rebase confirmation cannot substitute a different commit boundary', () => {
@@ -122,14 +98,56 @@ test('rebases only the upper layer patches after the lower layer was rewritten',
 }, 30_000);
 
 test('rebases the layer the same way when Git has no replay subcommand', async () => {
+  // The per-patch path is what an older Git gets. Forcing it here is the only way
+  // to execute that branch: on Windows a PATH shim cannot hide a built-in
+  // subcommand, so the choice is injected instead of staged.
   const { cwd, layer, newLower } = await upperLayerOf();
-  await withoutGitReplay();
 
-  expect(await rebasePullRequestStackLayer(layer)).toBe('rebased');
+  expect(await rebasePullRequestStackLayer({ ...layer, replay: 'per-patch' })).toBe('rebased');
   expect(await git(cwd, 'rev-parse', 'upper^')).toBe(newLower);
   expect(await git(cwd, 'log', '--format=%s', 'lower..upper')).toBe('Upper change');
   expect(await git(cwd, 'show', 'upper:lower.txt')).toBe('rewritten');
   expect(await git(cwd, 'show', 'upper:upper.txt')).toBe('upper');
+}, 30_000);
+
+test('both replay paths produce the same history for the same layer', async () => {
+  const commonTip = async (replay: 'git' | 'per-patch') => {
+    const { cwd, layer } = await upperLayerOf();
+    expect(await rebasePullRequestStackLayer({ ...layer, replay })).toBe('rebased');
+    return {
+      subjects: await git(cwd, 'log', '--reverse', '--format=%s', 'lower..upper'),
+      tree: await git(cwd, 'rev-parse', 'upper^{tree}'),
+      // Each fixture is its own repository, so the parent commits differ by hash.
+      // What must match is that the layer sits directly on its new base.
+      baseRefs: await git(cwd, 'log', '--format=%D', 'lower..upper'),
+      depth: await git(cwd, 'rev-list', '--count', 'lower..upper'),
+    };
+  };
+
+  const fastPath = await commonTip('git');
+  const perPatch = await commonTip('per-patch');
+  expect(perPatch).toEqual(fastPath);
+}, 30_000);
+
+test('the per-patch fallback keeps the remote head intact when replaying conflicts', async () => {
+  const { cwd, commit } = await fixture();
+  await commit('file.txt', 'original', 'Trunk');
+  await git(cwd, 'switch', '-c', 'layer');
+  const expectedHeadOid = await commit('file.txt', 'layer', 'Layer change');
+  await git(cwd, 'switch', 'main');
+  await commit('file.txt', 'trunk', 'Trunk change');
+
+  await expect(
+    rebasePullRequestStackLayer({
+      remote: cwd,
+      baseRef: 'main',
+      headRef: 'layer',
+      expectedHeadOid,
+      oldBaseOid: null,
+      replay: 'per-patch',
+    })
+  ).rejects.toThrow('could not be rebased cleanly');
+  expect(await git(cwd, 'rev-parse', 'layer')).toBe(expectedHeadOid);
 }, 30_000);
 
 test('replays every patch in order and preserves each commit message and author', async () => {
@@ -208,6 +226,38 @@ test('drops a patch that the new base already contains, like a rebase does', asy
   expect(becomesEmpty).not.toBe(await git(cwd, 'rev-parse', 'layer'));
 }, 30_000);
 
+test('keeps a commit that was already empty before the replay', async () => {
+  // `git rebase` keeps a commit that was born empty and only drops one that becomes
+  // empty, so both replay paths must tell the two apart.
+  for (const replay of ['git', 'per-patch'] as const) {
+    const { cwd, commit } = await fixture();
+    await commit('root.txt', 'main', 'Trunk');
+    await git(cwd, 'switch', '-c', 'layer');
+    await commit('one.txt', 'one', 'First patch');
+    await git(cwd, 'commit', '--allow-empty', '--quiet', '-m', 'Born empty patch');
+    const head = await commit('three.txt', 'three', 'Real patch');
+    await git(cwd, 'switch', 'main');
+    const newBase = await commit('root.txt', 'moved', 'Trunk moves');
+    await git(cwd, 'switch', '--quiet', 'main');
+
+    expect(
+      await rebasePullRequestStackLayer({
+        remote: cwd,
+        baseRef: 'main',
+        headRef: 'layer',
+        expectedHeadOid: head,
+        oldBaseOid: null,
+        replay,
+      })
+    ).toBe('rebased');
+
+    expect(await git(cwd, 'log', '--reverse', '--format=%s', 'main..layer')).toBe(
+      ['First patch', 'Born empty patch', 'Real patch'].join('\n')
+    );
+    expect(await git(cwd, 'rev-parse', 'layer~~~')).toBe(newBase);
+  }
+}, 30_000);
+
 test('keeps the remote head intact when replaying this layer conflicts', async () => {
   const { cwd, commit } = await fixture();
   await commit('file.txt', 'original', 'Trunk');
@@ -226,4 +276,66 @@ test('keeps the remote head intact when replaying this layer conflicts', async (
     })
   ).rejects.toThrow('could not be rebased cleanly');
   expect(await git(cwd, 'rev-parse', 'layer')).toBe(expectedHeadOid);
+}, 30_000);
+
+test('refuses a layer that contains a merge commit', async () => {
+  const { cwd, commit } = await fixture();
+  await commit('root.txt', 'main', 'Trunk');
+  await git(cwd, 'switch', '-c', 'layer');
+  await commit('left.txt', 'left', 'Left work');
+  await git(cwd, 'switch', '-c', 'side', 'main');
+  await commit('side.txt', 'side', 'Side work');
+  await git(cwd, 'switch', 'layer');
+  await git(cwd, 'merge', '--no-ff', '--quiet', '-m', 'Merge side', 'side');
+  const expectedHeadOid = await git(cwd, 'rev-parse', 'HEAD');
+  await git(cwd, 'switch', 'main');
+  await commit('root.txt', 'moved', 'Trunk moves');
+  await git(cwd, 'switch', '--quiet', 'main');
+
+  await expect(
+    rebasePullRequestStackLayer({
+      remote: cwd,
+      baseRef: 'main',
+      headRef: 'layer',
+      expectedHeadOid,
+      oldBaseOid: null,
+    })
+  ).rejects.toThrow('contains a merge commit');
+  expect(await git(cwd, 'rev-parse', 'layer')).toBe(expectedHeadOid);
+}, 30_000);
+
+test('rebases a layer whose every patch is already on the new base', async () => {
+  const { cwd, commit } = await fixture();
+  await commit('root.txt', 'main', 'Trunk');
+  await git(cwd, 'switch', '-c', 'layer');
+  const expectedHeadOid = await commit('same.txt', 'same', 'Layer adds the file');
+  await git(cwd, 'switch', 'main');
+  const newBase = await commit('same.txt', 'same', 'Trunk adds the file too');
+  await git(cwd, 'switch', '--quiet', 'main');
+
+  expect(
+    await rebasePullRequestStackLayer({
+      remote: cwd,
+      baseRef: 'main',
+      headRef: 'layer',
+      expectedHeadOid,
+      oldBaseOid: null,
+    })
+  ).toBe('rebased');
+  // The Layer carries nothing the new base does not already have, so it lands on
+  // the base itself, which is what `git rebase` leaves behind.
+  expect(await git(cwd, 'rev-parse', 'layer')).toBe(newBase);
+}, 30_000);
+test('answers that Git is required when the server has none', async () => {
+  // `execFile` reports a missing binary as ENOENT, which must surface as the
+  // documented 503 instead of looking like a rejected layer.
+  const { cwd, layer } = await upperLayerOf();
+  const savedPath = process.env.PATH;
+  process.env.PATH = join(tmpdir(), 'gitpulse-no-git-on-this-host');
+  try {
+    await expect(rebasePullRequestStackLayer(layer)).rejects.toThrow('requires Git on the server');
+  } finally {
+    process.env.PATH = savedPath;
+  }
+  expect(await git(cwd, 'rev-parse', 'upper')).toBe(layer.expectedHeadOid);
 }, 30_000);
