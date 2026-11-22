@@ -291,6 +291,62 @@ describe('PRMergeBox reread failure', () => {
   });
 });
 
+describe('PRMergeBox first read', () => {
+  test('a Layer reads its status once when it opens', async () => {
+    const stack = {
+      number: 106,
+      trunk: 'main',
+      count: 2,
+      place: 2,
+      history: 'not-linear' as const,
+      hasConflicts: false,
+      layers: [
+        {
+          number: 101,
+          title: 'Add the model',
+          state: 'open' as const,
+          headSha: 'head-101',
+          baseRef: 'main',
+          baseSha: 'base-101',
+          rebaseProof: 'proof-101',
+        },
+        {
+          number: 102,
+          title: 'Add the API',
+          state: 'open' as const,
+          headSha: 'head-102',
+          baseRef: 'main',
+          baseSha: 'base-102',
+          rebaseProof: 'proof-102',
+        },
+      ],
+    };
+    store = createMergeStatusStore();
+    let reads = 0;
+    store.fetchMergeStatus = async () => {
+      reads += 1;
+      return null;
+    };
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+          initialStatus: null,
+          stack,
+        }),
+    });
+    dom.mount(Harness);
+    await settle();
+
+    // Opening a Layer asks GitHub once, not once per watcher.
+    expect(reads).toBe(1);
+  });
+});
+
 describe('PRMergeBox status reread', () => {
   test('a stack that turns linear re-reads without forgetting the status on screen', async () => {
     const heldAtCall: (Record<string, unknown> | null)[] = [];

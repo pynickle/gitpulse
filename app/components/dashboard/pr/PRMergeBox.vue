@@ -1250,7 +1250,10 @@ watch(
 watch(
   () => [initialStatus, stack?.history, stack?.place] as const,
   ([initialStatus, history, place], previous) => {
-    const [previousHistory, previousPlace] = previous?.slice(1) ?? [];
+    // `previous` is undefined on the first run, where nothing has moved yet. The
+    // identity watch owns that read; comparing against a missing previous would
+    // treat every Layer as having just changed shape and read the status twice.
+    const [previousHistory, previousPlace] = previous?.slice(1) ?? [history, place];
     const stackMoved = history !== previousHistory || place !== previousPlace;
 
     if (stackMoved) {
