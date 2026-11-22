@@ -56,11 +56,14 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.confirmSquash': 'Confirm squash and merge',
   'prReview.mergeBox.commitTitleLabel': 'Commit title',
   'prReview.mergeBox.commitMessageLabel': 'Commit message',
-  'prReview.mergeBox.stackMergeInProgress': 'Stack merge in progress',
   'prReview.mergeBox.stackMergeLanded': 'Stack merge landed',
   'prReview.mergeBox.stackMergeQueued': 'Entered the merge queue',
   'prReview.mergeBox.stackMergeFailed': 'Stack merge failed',
   'prReview.stackRebase.title': 'Rebase stack',
+  'prReview.stackRebase.description':
+    'Rebase each open branch onto the branch below it, starting from {trunk}.',
+  'prReview.stackRebase.notice':
+    'Each rebased branch is force-pushed. The operation stops at the first failure.',
   'prReview.stackRebase.confirm': 'Confirm rebase',
   'prReview.stackRebase.rebasing': 'Rebasing',
   'prReview.stackRebase.rebased': 'Rebased',
@@ -471,13 +474,15 @@ describe('Stack Merge', () => {
       { owner: 'octo', repo: 'app', pullNumber: 102, method: 'squash' },
     ]);
     expect(store.merges).toEqual([]);
-    expect(root.textContent).toContain('Stack merge in progress');
+    // The merge button's spinner is the progress; no second line repeats it.
+    expect(root.querySelector('.merge-box__merge-btn')?.getAttribute('aria-busy')).toBe('true');
+    expect(root.querySelector('.merge-box__stack-outcome')).toBeNull();
 
     store.settleStackMerge({ outcome: 'landed' });
     await settle();
 
     expect(root.textContent).toContain('Stack merge landed');
-    expect(root.textContent).not.toContain('Stack merge in progress');
+    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
   });
 
   test('sends the commit title and message when only the first Layer lands', async () => {
@@ -613,6 +618,7 @@ describe('Stack Merge', () => {
     const row = (number: number) =>
       [...dialog!.querySelectorAll('li')].find((item) => item.textContent?.includes(`#${number}`));
     expect(row(102)?.textContent).toContain('Rebasing');
+    expect(row(102)?.getAttribute('data-state')).toBe('rebasing');
     finishFirst({ outcome: 'rebased' });
     await settle();
     expect(requests.map((request) => request.path)).toEqual([
@@ -622,6 +628,7 @@ describe('Stack Merge', () => {
     expect(row(102)?.textContent).toContain('Rebased');
     expect(row(103)?.textContent).toContain('Failed');
     expect(row(105)?.textContent).toContain('Not rebased');
+    expect(row(105)?.getAttribute('data-state')).toBe('skipped');
     expect(dialog?.textContent).toContain('Rebase conflict');
     expect(root.querySelector('.merge-box__update')).toBeNull();
   });
@@ -726,7 +733,7 @@ describe('Stack Merge', () => {
 
       expect(reads).toBeGreaterThan(15);
       expect(root.textContent).toContain('Stack merge landed');
-      expect(root.textContent).not.toContain('Stack merge in progress');
+      expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
     } finally {
       restoreWait();
     }
@@ -748,7 +755,6 @@ describe('Stack Merge', () => {
     await settle();
 
     expect(root.textContent).toContain('Stack merge failed');
-    expect(root.textContent).not.toContain('Stack merge in progress');
   });
 
   test('shows that a failed Stack Merge read failed', async () => {
@@ -780,7 +786,6 @@ describe('Stack Merge', () => {
       }
 
       expect(root.textContent).toContain('Stack merge failed');
-      expect(root.textContent).not.toContain('Stack merge in progress');
     } finally {
       restoreWait();
     }

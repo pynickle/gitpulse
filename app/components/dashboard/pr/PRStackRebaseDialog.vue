@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { CheckIcon, CircleAlertIcon, GitBranchIcon, LoaderCircleIcon } from '@lucide/vue';
+import {
+  CheckIcon,
+  CircleAlertIcon,
+  ClockIcon,
+  GitBranchIcon,
+  GitMergeIcon,
+  GitPullRequestClosedIcon,
+  LoaderCircleIcon,
+  MinusIcon,
+  XIcon,
+} from '@lucide/vue';
 import { nextTick, onBeforeUnmount, onMounted, shallowRef, useId, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -43,13 +53,28 @@ const cancel = (event: Event) => {
   close();
 };
 
-const label = (layer: (typeof layers)[number]) => {
-  if (layer.state === 'closed' || layer.state === 'merged') {
-    return t(`prReview.stackDetail.state.${layer.state}`);
-  }
-  return t(
-    `prReview.stackRebase.${results.value[layer.number] ?? (phase.value === 'done' ? 'skipped' : 'pending')}`
-  );
+/** A Layer already landed has nothing to replay; the rest read their own progress. */
+const layerResult = (layer: (typeof layers)[number]) => {
+  if (layer.state === 'merged' || layer.state === 'closed') return layer.state;
+  return results.value[layer.number] ?? (phase.value === 'done' ? 'skipped' : 'pending');
+};
+
+const layerStatus = (layer: (typeof layers)[number]) => {
+  const result = layerResult(layer);
+  return result === 'merged' || result === 'closed'
+    ? t(`prReview.stackDetail.state.${result}`)
+    : t(`prReview.stackRebase.${result}`);
+};
+
+const STATUS_ICONS: Record<string, typeof CheckIcon> = {
+  merged: GitMergeIcon,
+  closed: GitPullRequestClosedIcon,
+  rebasing: LoaderCircleIcon,
+  rebased: CheckIcon,
+  current: CheckIcon,
+  failed: CircleAlertIcon,
+  skipped: MinusIcon,
+  pending: ClockIcon,
 };
 
 const setResult = (number: number, result: LayerResult) => {
@@ -103,53 +128,55 @@ const confirm = async () => {
       @cancel="cancel"
     >
       <header class="stack-rebase__header">
-        <GitBranchIcon :size="17" aria-hidden="true" />
-        <h2 :id="titleId">{{ t('prReview.stackRebase.title') }}</h2>
+        <h2 :id="titleId" class="stack-rebase__title">
+          <GitBranchIcon :size="15" aria-hidden="true" />
+          {{ t('prReview.stackRebase.title') }}
+        </h2>
+        <button
+          type="button"
+          class="stack-rebase__close"
+          :disabled="phase === 'running'"
+          :aria-label="t('prReview.stackDetail.close')"
+          @click="close"
+        >
+          <XIcon :size="16" aria-hidden="true" />
+        </button>
       </header>
+
       <div class="stack-rebase__content">
-        <p :id="descriptionId">{{ t('prReview.stackRebase.description', { trunk }) }}</p>
+        <p :id="descriptionId" class="stack-rebase__description">
+          {{ t('prReview.stackRebase.description', { trunk }) }}
+        </p>
+        <p class="stack-rebase__notice">
+          <CircleAlertIcon :size="13" aria-hidden="true" />
+          <span>{{ t('prReview.stackRebase.notice') }}</span>
+        </p>
         <ol class="stack-rebase__layers">
           <li
             v-for="layer in layers"
             :key="layer.number"
             class="stack-rebase__layer"
-            :data-result="results[layer.number]"
+            :data-state="layerResult(layer)"
           >
-            <span class="stack-rebase__pull">
-              <span class="stack-rebase__number">#{{ layer.number }}</span>
-              {{ layer.title }}
-            </span>
-            <span class="stack-rebase__result" role="status">
-              <LoaderCircleIcon
-                v-if="results[layer.number] === 'rebasing'"
-                class="stack-rebase__spinner"
-                :size="15"
-                aria-hidden="true"
-              />
-              <CheckIcon
-                v-else-if="
-                  results[layer.number] === 'rebased' || results[layer.number] === 'current'
-                "
-                :size="15"
-                aria-hidden="true"
-              />
-              <CircleAlertIcon
-                v-else-if="results[layer.number] === 'failed'"
-                :size="15"
-                aria-hidden="true"
-              />
-              {{ label(layer) }}
+            <span class="stack-rebase__number">#{{ layer.number }}</span>
+            <span class="stack-rebase__name">{{ layer.title }}</span>
+            <span class="stack-rebase__status" role="status">
+              <component :is="STATUS_ICONS[layerResult(layer)]" :size="14" aria-hidden="true" />
+              {{ layerStatus(layer) }}
             </span>
           </li>
         </ol>
-        <p v-if="error" class="stack-rebase__error" role="alert">{{ error }}</p>
+        <p v-if="error" class="stack-rebase__error" role="alert">
+          <CircleAlertIcon :size="14" aria-hidden="true" />
+          <span>{{ error }}</span>
+        </p>
       </div>
+
       <footer class="stack-rebase__footer">
         <button
           ref="closeButton"
           type="button"
-          class="button is-small"
-          autofocus
+          class="stack-rebase__btn"
           :disabled="phase === 'running'"
           @click="close"
         >
@@ -158,7 +185,7 @@ const confirm = async () => {
         <button
           v-if="phase === 'ready'"
           type="button"
-          class="button is-small is-success"
+          class="stack-rebase__btn stack-rebase__btn--primary"
           @click="confirm"
         >
           {{ t('prReview.stackRebase.confirm') }}
@@ -169,12 +196,14 @@ const confirm = async () => {
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .stack-rebase {
-  width: min(36rem, calc(100% - 2rem));
+  width: min(38rem, calc(100% - 2rem));
   max-height: calc(100dvh - 2rem);
   padding: 0;
   border: 1px solid var(--gitpulse-border);
-  border-radius: 8px;
+  border-radius: var(--gitpulse-radius-lg);
   background: var(--gitpulse-surface);
   color: var(--gitpulse-text);
   box-shadow: var(--gitpulse-shadow-raised);
@@ -189,92 +218,235 @@ const confirm = async () => {
 
 .stack-rebase::backdrop {
   background: var(--gitpulse-overlay-bg);
+  backdrop-filter: blur(6px);
   overflow: hidden;
   overscroll-behavior: contain;
 }
 
-.stack-rebase__header,
-.stack-rebase__footer {
+/* ── Header ── */
+.stack-rebase__header {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.85rem 1rem;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 10px;
 }
 
-.stack-rebase__header {
-  border-bottom: 1px solid var(--gitpulse-border);
-  color: var(--gitpulse-text-strong);
-  font-weight: 700;
+.stack-rebase__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+
+  svg {
+    flex-shrink: 0;
+    color: var(--gitpulse-text-muted);
+  }
 }
 
+.stack-rebase__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--gitpulse-text-subtle);
+  background: transparent;
+  border: 0;
+  border-radius: var(--gitpulse-radius-md);
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease;
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--gitpulse-text);
+      background: var(--gitpulse-surface-hover);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+/* ── Content ── */
 .stack-rebase__content {
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 0.85rem 1rem;
-  font-size: 0.875rem;
-  overflow-wrap: anywhere;
+  min-height: 0;
+  padding: 0 20px 16px;
+}
+
+.stack-rebase__description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--gitpulse-text-muted);
+}
+
+.stack-rebase__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 8px 0 14px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--gitpulse-text-subtle);
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
 }
 
 .stack-rebase__layers {
-  margin-top: 0.75rem;
+  margin: 0;
+  padding: 0;
   list-style: none;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-lg);
+  overflow: hidden;
 }
 
 .stack-rebase__layer {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem 0.55rem;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--gitpulse-border);
-}
+  gap: 10px;
+  padding: 9px 12px;
 
-.stack-rebase__pull {
-  flex: 1 1 14rem;
-}
-
-.stack-rebase__number,
-.stack-rebase__result {
-  color: var(--gitpulse-text-muted);
-  font-size: 0.75rem;
+  & + & {
+    border-top: 1px solid var(--gitpulse-border);
+  }
 }
 
 .stack-rebase__number {
-  margin-inline-end: 0.3rem;
+  flex-shrink: 0;
+  font-family: var(--gitpulse-code-font-family);
+  font-size: 11px;
+  color: var(--gitpulse-text-subtle);
 }
 
-.stack-rebase__result {
+.stack-rebase__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.stack-rebase__status {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  flex-shrink: 0;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gitpulse-text-muted);
 }
 
-[data-result='rebasing'] .stack-rebase__result {
+.stack-rebase__layer[data-state='rebasing'] .stack-rebase__status {
   color: var(--gitpulse-info);
 }
 
-[data-result='rebased'] .stack-rebase__result,
-[data-result='current'] .stack-rebase__result {
+.stack-rebase__layer[data-state='rebased'] .stack-rebase__status,
+.stack-rebase__layer[data-state='current'] .stack-rebase__status {
   color: var(--gitpulse-success-solid);
 }
 
-[data-result='failed'] .stack-rebase__result,
-.stack-rebase__error {
+.stack-rebase__layer[data-state='failed'] .stack-rebase__status {
   color: var(--gitpulse-danger-solid);
 }
 
-.stack-rebase__error {
-  margin-top: 0.5rem;
+.stack-rebase__layer[data-state='merged'] .stack-rebase__status,
+.stack-rebase__layer[data-state='closed'] .stack-rebase__status {
+  color: var(--gitpulse-text-subtle);
 }
 
+.stack-rebase__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--gitpulse-danger-solid);
+  background: var(--gitpulse-danger-soft);
+  border-radius: var(--gitpulse-radius-lg);
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+}
+
+/* ── Footer ── */
 .stack-rebase__footer {
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
   border-top: 1px solid var(--gitpulse-border);
 }
 
+.stack-rebase__btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--gitpulse-text);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-md);
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    color: #ffffff;
+    background: var(--gitpulse-success-solid);
+    border-color: var(--gitpulse-success-solid);
+
+    @include hover-only {
+      &:hover:not(:disabled) {
+        color: #ffffff;
+        background: var(--gitpulse-success-solid-hover);
+        border-color: var(--gitpulse-success-solid-hover);
+      }
+    }
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .stack-rebase__spinner {
+  .stack-rebase__layer[data-state='rebasing'] .stack-rebase__status svg {
     animation: stack-rebase-spin 0.85s linear infinite;
   }
 }

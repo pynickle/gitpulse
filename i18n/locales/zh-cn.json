@@ -1018,7 +1018,8 @@
     },
     "stackRebase": {
       "title": "变基堆叠",
-      "description": "从 {trunk} 开始，将每个仍打开的 PR 分支变基到下方分支。变基后的分支会被强制推送，操作在首次失败时停止。",
+      "description": "从 {trunk} 开始，将每个仍打开的分支变基到下方分支。",
+      "notice": "变基后的分支会被强制推送，操作在首次失败时停止。",
       "confirm": "确认变基",
       "pending": "等待中",
       "skipped": "未变基",
@@ -1215,7 +1216,6 @@
       "restoreBranch": "恢复分支",
       "deletingBranch": "正在删除分支...",
       "restoringBranch": "正在恢复分支...",
-      "stackMergeInProgress": "堆叠合并进行中",
       "stackMergeLanded": "堆叠合并已落地",
       "stackMergeQueued": "已进入合并队列",
       "stackMergeFailed": "堆叠合并失败"

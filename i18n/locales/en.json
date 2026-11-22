@@ -1018,7 +1018,8 @@
     },
     "stackRebase": {
       "title": "Rebase stack",
-      "description": "Rebase each open branch onto the branch below it, starting from {trunk}. Each rebased branch is force-pushed. The operation stops at the first failure.",
+      "description": "Rebase each open branch onto the branch below it, starting from {trunk}.",
+      "notice": "Each rebased branch is force-pushed. The operation stops at the first failure.",
       "confirm": "Confirm rebase",
       "pending": "Pending",
       "skipped": "Not rebased",
@@ -1215,7 +1216,6 @@
       "restoreBranch": "Restore branch",
       "deletingBranch": "Deleting branch...",
       "restoringBranch": "Restoring branch...",
-      "stackMergeInProgress": "Stack merge in progress",
       "stackMergeLanded": "Stack merge landed",
       "stackMergeQueued": "Entered the merge queue",
       "stackMergeFailed": "Stack merge failed"

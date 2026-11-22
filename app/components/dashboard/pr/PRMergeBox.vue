@@ -232,7 +232,9 @@
               <span class="merge-box__stack-layer-number">#{{ layer.number }}</span
               >{{ stackLayerGap }}<span class="merge-box__stack-layer-title">{{ layer.title }}</span
               >{{ stackLayerGap
-              }}<span class="merge-box__stack-layer-state">{{ layerStateLabel(layer.state) }}</span>
+              }}<span class="merge-box__stack-layer-state" :data-state="layer.state">{{
+                layerStateLabel(layer.state)
+              }}</span>
             </li>
           </ul>
           <p
@@ -489,7 +491,7 @@ const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
 const stackMergePhase = shallowRef<StackMergeOutcome | null>(null);
 const stackRebaseOpen = shallowRef(false);
-/** Kept as an interpolation so the compiler does not drop the space between Layer fields. */
+/** The flex row's gap is visual only; the text still needs a separator between fields. */
 const stackLayerGap = ' ';
 const prefillTitle = shallowRef('');
 const prefillMessage = shallowRef('');
@@ -795,10 +797,9 @@ const landingLayers = computed(() => {
   return stack.layers.slice(0, through);
 });
 
+/** A running Stack Merge is the merge button's spinner; only an outcome needs a line. */
 const stackMergeStatusLabel = computed(() => {
   switch (stackMergePhase.value) {
-    case 'in-progress':
-      return t('prReview.mergeBox.stackMergeInProgress');
     case 'landed':
       return t('prReview.mergeBox.stackMergeLanded');
     case 'queued':
@@ -810,11 +811,10 @@ const stackMergeStatusLabel = computed(() => {
   }
 });
 
-/** A finished Stack Merge stays on its outcome. A failure can be tried again. */
+/** A landed or queued Stack Merge stays on its outcome. A failure can be tried again. */
 const stackMergeHolding = computed(() => {
   const phase = stackMergePhase.value;
-  if (phase === 'landed' || phase === 'queued') return true;
-  return phase === 'in-progress' && !merging.value;
+  return phase === 'landed' || phase === 'queued';
 });
 
 const layerStateLabel = (state: PullRequestStackLayerState) =>
@@ -1895,23 +1895,45 @@ watch(
 .merge-box__stack-layer {
   display: flex;
   align-items: baseline;
+  gap: 8px;
   min-width: 0;
   font-size: 12px;
   line-height: 1.4;
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
-.merge-box__stack-layer-number,
-.merge-box__stack-layer-state {
+.merge-box__stack-layer-number {
   flex-shrink: 0;
-  color: var(--gitpulse-text-muted);
+  font-family: var(--gitpulse-code-font-family);
+  font-size: 11px;
+  color: var(--gitpulse-text-subtle);
 }
 
 .merge-box__stack-layer-title {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.merge-box__stack-layer-state {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gitpulse-text-muted);
+
+  &[data-state='open'] {
+    color: var(--gitpulse-success-solid);
+  }
+
+  &[data-state='merged'] {
+    color: var(--gitpulse-info);
+  }
+
+  &[data-state='closed'] {
+    color: var(--gitpulse-danger-solid);
+  }
 }
 
 .merge-box__stack-outcome {
