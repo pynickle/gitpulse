@@ -121,14 +121,6 @@ async function unseal(value: string): Promise<NativeLoginGrant> {
   return grant;
 }
 
-// `EEXIST` is the lock being held. On Windows the release window answers
-// `EPERM` instead: the previous holder already unlinked the file, so the name is
-// free while its handle is still closing. Both mean "someone else has it", so
-// anything else keeps failing loudly instead of silently retrying.
-function isLockBusy(code: unknown) {
-  return code === 'EEXIST' || code === 'EPERM';
-}
-
 // Redis adapters fence commits with a remote lock. The filesystem adapter also
 // needs an OS-visible lock so multiple Nitro workers cannot consume one grant.
 async function withTransactionLock<T>(id: string, action: () => Promise<T>): Promise<T> {
@@ -150,7 +142,11 @@ async function withTransactionLock<T>(id: string, action: () => Promise<T>): Pro
       lock = await open(path, 'wx');
     } catch (error) {
       const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
-      if (!isLockBusy(code)) throw error;
+      // `EEXIST` is the lock being held. On Windows the release window answers
+      // `EPERM` instead: the previous holder already unlinked the file, so the
+      // name is free while its handle is still closing.
+      const isBusy = code === 'EEXIST' || (process.platform === 'win32' && code === 'EPERM');
+      if (!isBusy) throw error;
       await new Promise((resolve) => setTimeout(resolve, 25));
     }
   }
@@ -159,8 +155,11 @@ async function withTransactionLock<T>(id: string, action: () => Promise<T>): Pro
   try {
     return await action();
   } finally {
-    await lock.close();
-    await unlink(path);
+    try {
+      await lock.close();
+    } finally {
+      await unlink(path).catch(() => {});
+    }
   }
 }
 

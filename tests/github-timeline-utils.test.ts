@@ -2,6 +2,10 @@ import { describe, expect, mock, test } from 'bun:test';
 
 const reactions = await import('../shared/utils/reactions');
 
+mock.module(
+  '#server/utils/github-graphql-utils',
+  () => import('../server/utils/github-graphql-utils')
+);
 mock.module('#shared/utils/reactions', () => reactions);
 mock.module('#shared/utils/copilot-review', () => import('../shared/utils/copilot-review'));
 mock.module('#shared/types/comment-moderation', () => import('../shared/types/comment-moderation'));
@@ -852,12 +856,12 @@ describe('timeline supplement', () => {
     ]);
   });
 
-  test('finishes an overflowing connection with its own fetcher', async () => {
-    let calls = 0;
+  test('finishes an overflowing connection from its endCursor instead of page 1', async () => {
+    const calls: Array<Record<string, unknown>> = [];
     const octokit = {
-      graphql: async () => {
-        calls += 1;
-        if (calls === 1) {
+      graphql: async (_query: string, variables: Record<string, unknown>) => {
+        calls.push(variables);
+        if (calls.length === 1) {
           return supplementNode({
             reviewThreads: {
               nodes: [
@@ -867,13 +871,11 @@ describe('timeline supplement', () => {
             },
           });
         }
-        // The per-connection fetcher, started over from its own first page.
         return {
           repository: {
             pullRequest: {
               reviewThreads: {
                 nodes: [
-                  { id: 'thread-1', isResolved: false, isOutdated: false, comments: { nodes: [] } },
                   { id: 'thread-2', isResolved: false, isOutdated: false, comments: { nodes: [] } },
                 ],
                 pageInfo: { hasNextPage: false, endCursor: null },
@@ -891,7 +893,135 @@ describe('timeline supplement', () => {
       16
     );
 
-    // The merged page is kept, and the fallback adds only what it did not have.
+    expect(calls).toEqual([
+      { owner: 'pynickle', repo: 'pynickle', pullNumber: 16 },
+      { owner: 'pynickle', repo: 'pynickle', pullNumber: 16, cursor: 'cursor-1' },
+    ]);
     expect(supplement.reviewThreads.map((thread) => thread.id)).toEqual(['thread-1', 'thread-2']);
+  });
+
+  test('salvages partial GraphQL data when one supplement field errors', async () => {
+    const octokit = {
+      graphql: async () => {
+        throw Object.assign(new Error('GraphQL partial failure'), {
+          data: supplementNode({
+            reviews: null,
+          }),
+        });
+      },
+    };
+
+    const supplement = await fetchPRTimelineSupplement(
+      octokit as never,
+      'pynickle',
+      'pynickle',
+      16
+    );
+
+    expect(supplement.reviewThreads.map((thread) => thread.id)).toEqual(['thread-1']);
+    expect(supplement.reviewMetadata.size).toBe(0);
+    expect(supplement.forcePushRefs).toEqual([
+      {
+        id: 'HRFPE_one',
+        refName: 'stack/reb-03',
+        beforeOid: 'd116a1d33bc23e3ac3556ea782b714eea075babd',
+        afterOid: '06e80370cd900edd211dc580a990e3a6b216b3ab',
+      },
+    ]);
+  });
+
+  test('keeps page 1 data across all connections when an overflow continuation fails', async () => {
+    let calls = 0;
+    const octokit = {
+      graphql: async (_query: string, variables: Record<string, unknown>) => {
+        calls += 1;
+        if (calls === 1) {
+          return supplementNode({
+            reviewThreads: {
+              nodes: [
+                { id: 'thread-1', isResolved: false, isOutdated: false, comments: { nodes: [] } },
+              ],
+              pageInfo: { hasNextPage: true, endCursor: 'threads-cursor-1' },
+            },
+            reviews: {
+              nodes: [
+                { databaseId: 7, isCopilotCodeReview: true, copilotCodeReviewEffort: 'lite' },
+              ],
+              pageInfo: { hasNextPage: true, endCursor: 'reviews-cursor-1' },
+            },
+            timelineItems: {
+              nodes: [
+                {
+                  id: 'HRFPE_one',
+                  ref: { name: 'stack/reb-03' },
+                  beforeCommit: { oid: 'd116a1d33bc23e3ac3556ea782b714eea075babd' },
+                  afterCommit: { oid: '06e80370cd900edd211dc580a990e3a6b216b3ab' },
+                },
+              ],
+              pageInfo: { hasNextPage: true, endCursor: 'force-cursor-1' },
+            },
+          });
+        }
+        if (variables.cursor === 'reviews-cursor-1') {
+          throw new Error('reviews page 2 failed');
+        }
+        if (variables.cursor === 'threads-cursor-1') {
+          return {
+            repository: {
+              pullRequest: {
+                reviewThreads: {
+                  nodes: [
+                    {
+                      id: 'thread-2',
+                      isResolved: false,
+                      isOutdated: false,
+                      comments: { nodes: [] },
+                    },
+                  ],
+                  pageInfo: { hasNextPage: false, endCursor: null },
+                },
+              },
+            },
+          };
+        }
+        return {
+          repository: {
+            pullRequest: {
+              timelineItems: {
+                nodes: [
+                  {
+                    id: 'BRFPE_two',
+                    ref: { name: 'stack/reb-02' },
+                    beforeCommit: { oid: '11263214ca7ba2be31f06e02a47a40f9cfecec0c' },
+                    afterCommit: { oid: 'f7076f1615b7308d9680cca8df8b46361c0b22d9' },
+                  },
+                ],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        };
+      },
+    };
+
+    const originalWarn = console.warn;
+    console.warn = () => {};
+    try {
+      const supplement = await fetchPRTimelineSupplement(
+        octokit as never,
+        'pynickle',
+        'pynickle',
+        16
+      );
+
+      expect(supplement.reviewThreads.map((thread) => thread.id)).toEqual(['thread-1', 'thread-2']);
+      expect(supplement.reviewMetadata.get('7')).toEqual({
+        isCopilotCodeReview: true,
+        copilotReviewEffort: 'lite',
+      });
+      expect(supplement.forcePushRefs.map((ref) => ref.id)).toEqual(['HRFPE_one', 'BRFPE_two']);
+    } finally {
+      console.warn = originalWarn;
+    }
   });
 });

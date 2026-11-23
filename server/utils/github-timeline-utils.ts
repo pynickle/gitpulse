@@ -11,6 +11,7 @@ import {
 import { ISSUE_COMMENT_REACTION_CONTENTS } from '#shared/utils/reactions';
 
 import { restCommentModeration } from './comment-moderation-utils';
+import { getPartialGraphQLData } from './github-graphql-utils';
 import { stringifyGitHubId } from './github-id-utils';
 import { parseLinkHeader } from './github-pagination';
 import { mapCommitVerification } from './repo-latest-commit-utils';
@@ -198,7 +199,6 @@ const PR_UNSUPPORTED_EVENT_CLASSES = [
   'review_thread_resolution_history',
   'auto_merge_history',
   'merge_queue_history',
-  'branch_force_push_history',
   'blocking_relationships',
   'duplicate_relationships',
   'parent_sub_issue_relationships',
@@ -366,6 +366,72 @@ export async function fetchTimelinePage<T>(
   return { items, hasNextPage };
 }
 
+const PR_REVIEW_THREADS_FIELDS = `
+  nodes {
+    id
+    isResolved
+    isOutdated
+    resolvedBy {
+      login
+      avatarUrl
+      url
+    }
+    comments(first: 100) {
+      nodes {
+        id
+        databaseId
+      }
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+`;
+
+const PR_REVIEW_METADATA_FIELDS = `
+  nodes {
+    databaseId
+    isCopilotCodeReview
+    copilotCodeReviewEffort
+    onBehalfOf(first: 10) {
+      nodes {
+        name
+        slug
+        url
+        organization {
+          login
+        }
+      }
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+`;
+
+const PR_FORCE_PUSH_FIELDS = `
+  nodes {
+    ... on HeadRefForcePushedEvent {
+      id
+      ref { name }
+      beforeCommit { oid }
+      afterCommit { oid }
+    }
+    ... on BaseRefForcePushedEvent {
+      id
+      ref { name }
+      beforeCommit { oid }
+      afterCommit { oid }
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+`;
+
 /**
  * One round trip for the three connections the timeline needs beyond REST: review
  * threads, review provenance, and force-push refs. They share no pagination state,
@@ -381,70 +447,16 @@ const PR_TIMELINE_SUPPLEMENT_QUERY = `
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $pullNumber) {
         reviewThreads(first: 100) {
-          nodes {
-            id
-            isResolved
-            isOutdated
-            resolvedBy {
-              login
-              avatarUrl
-              url
-            }
-            comments(first: 100) {
-              nodes {
-                id
-                databaseId
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          ${PR_REVIEW_THREADS_FIELDS}
         }
         reviews(first: 100) {
-          nodes {
-            databaseId
-            isCopilotCodeReview
-            copilotCodeReviewEffort
-            onBehalfOf(first: 10) {
-              nodes {
-                name
-                slug
-                url
-                organization {
-                  login
-                }
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          ${PR_REVIEW_METADATA_FIELDS}
         }
         timelineItems(
           first: 100
           itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT, BASE_REF_FORCE_PUSHED_EVENT]
         ) {
-          nodes {
-            ... on HeadRefForcePushedEvent {
-              id
-              ref { name }
-              beforeCommit { oid }
-              afterCommit { oid }
-            }
-            ... on BaseRefForcePushedEvent {
-              id
-              ref { name }
-              beforeCommit { oid }
-              afterCommit { oid }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          ${PR_FORCE_PUSH_FIELDS}
         }
       }
     }
@@ -461,26 +473,7 @@ const PR_REVIEW_THREADS_QUERY = `
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $pullNumber) {
         reviewThreads(first: 100, after: $cursor) {
-          nodes {
-            id
-            isResolved
-            isOutdated
-            resolvedBy {
-              login
-              avatarUrl
-              url
-            }
-            comments(first: 100) {
-              nodes {
-                id
-                databaseId
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          ${PR_REVIEW_THREADS_FIELDS}
         }
       }
     }
@@ -505,10 +498,11 @@ export async function fetchPRReviewThreads(
   octokit: GitHubClient,
   owner: string,
   repo: string,
-  pullNumber: number
+  pullNumber: number,
+  startCursor?: string | null
 ): Promise<TimelineReviewThreadPayload[]> {
   const threads: TimelineReviewThreadPayload[] = [];
-  let cursor: string | null = null;
+  let cursor: string | null = startCursor ?? null;
 
   while (true) {
     const response = (await octokit.graphql(PR_REVIEW_THREADS_QUERY, {
@@ -543,25 +537,7 @@ const PR_REVIEW_METADATA_QUERY = `
     repository(owner: $owner, name: $repo) {
       pullRequest(number: $pullNumber) {
         reviews(first: 100, after: $cursor) {
-          nodes {
-            databaseId
-            isCopilotCodeReview
-            copilotCodeReviewEffort
-            onBehalfOf(first: 10) {
-              nodes {
-                name
-                slug
-                url
-                organization {
-                  login
-                }
-              }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          ${PR_REVIEW_METADATA_FIELDS}
         }
       }
     }
@@ -605,10 +581,11 @@ export async function fetchPRReviewMetadata(
   octokit: GitHubClient,
   owner: string,
   repo: string,
-  pullNumber: number
+  pullNumber: number,
+  startCursor?: string | null
 ): Promise<Map<string, TimelineReviewMetadata>> {
   const metadataByReviewId = new Map<string, TimelineReviewMetadata>();
-  let cursor: string | null = null;
+  let cursor: string | null = startCursor ?? null;
 
   while (true) {
     const response = (await octokit.graphql(PR_REVIEW_METADATA_QUERY, {
@@ -682,24 +659,7 @@ const PR_FORCE_PUSH_QUERY = `
           after: $cursor
           itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT, BASE_REF_FORCE_PUSHED_EVENT]
         ) {
-          nodes {
-            ... on HeadRefForcePushedEvent {
-              id
-              ref { name }
-              beforeCommit { oid }
-              afterCommit { oid }
-            }
-            ... on BaseRefForcePushedEvent {
-              id
-              ref { name }
-              beforeCommit { oid }
-              afterCommit { oid }
-            }
-          }
-          pageInfo {
-            hasNextPage
-            endCursor
-          }
+          ${PR_FORCE_PUSH_FIELDS}
         }
       }
     }
@@ -714,16 +674,18 @@ export interface TimelineForcePushRef {
   afterOid?: string;
 }
 
+interface PRForcePushGraphQLNode {
+  id?: string | null;
+  ref?: { name?: string | null } | null;
+  beforeCommit?: { oid?: string | null } | null;
+  afterCommit?: { oid?: string | null } | null;
+}
+
 interface PRForcePushesGraphQLResponse {
   repository?: {
     pullRequest?: {
       timelineItems?: {
-        nodes?: Array<{
-          id?: string | null;
-          ref?: { name?: string | null } | null;
-          beforeCommit?: { oid?: string | null } | null;
-          afterCommit?: { oid?: string | null } | null;
-        } | null> | null;
+        nodes?: Array<PRForcePushGraphQLNode | null> | null;
         pageInfo?: {
           hasNextPage?: boolean;
           endCursor?: string | null;
@@ -733,6 +695,10 @@ interface PRForcePushesGraphQLResponse {
   } | null;
 }
 
+type PRTimelineSupplementGraphQLResponse = PRReviewThreadsGraphQLResponse &
+  PRReviewMetadataGraphQLResponse &
+  PRForcePushesGraphQLResponse;
+
 /**
  * The branch and both ends of every force push on a pull request. REST omits all
  * three, so a force-push row would otherwise name no branch and no commits.
@@ -741,10 +707,11 @@ export async function fetchPRForcePushRefs(
   octokit: GitHubClient,
   owner: string,
   repo: string,
-  pullNumber: number
+  pullNumber: number,
+  startCursor?: string | null
 ): Promise<TimelineForcePushRef[]> {
   const refs: TimelineForcePushRef[] = [];
-  let cursor: string | null = null;
+  let cursor: string | null = startCursor ?? null;
 
   while (true) {
     const response = (await octokit.graphql(PR_FORCE_PUSH_QUERY, {
@@ -781,26 +748,18 @@ export async function fetchPRTimelineSupplement(
   repo: string,
   pullNumber: number
 ): Promise<PRTimelineSupplement> {
-  const response = (await octokit.graphql(PR_TIMELINE_SUPPLEMENT_QUERY, {
-    owner,
-    repo,
-    pullNumber,
-  })) as PRReviewThreadsGraphQLResponse &
-    PRReviewMetadataGraphQLResponse & {
-      repository?: {
-        pullRequest?: {
-          timelineItems?: {
-            nodes?: Array<{
-              id?: string | null;
-              ref?: { name?: string | null } | null;
-              beforeCommit?: { oid?: string | null } | null;
-              afterCommit?: { oid?: string | null } | null;
-            } | null> | null;
-            pageInfo?: { hasNextPage?: boolean; endCursor?: string | null } | null;
-          } | null;
-        } | null;
-      } | null;
-    };
+  let response: PRTimelineSupplementGraphQLResponse;
+  try {
+    response = (await octokit.graphql(PR_TIMELINE_SUPPLEMENT_QUERY, {
+      owner,
+      repo,
+      pullNumber,
+    })) as PRTimelineSupplementGraphQLResponse;
+  } catch (error) {
+    const partial = getPartialGraphQLData<PRTimelineSupplementGraphQLResponse>(error);
+    if (!partial) throw error;
+    response = partial;
+  }
 
   const pullRequest = response.repository?.pullRequest;
   const reviewThreads = (pullRequest?.reviewThreads?.nodes ?? []).filter(
@@ -810,19 +769,37 @@ export async function fetchPRTimelineSupplement(
   collectReviewMetadata(pullRequest?.reviews?.nodes, reviewMetadata);
   const forcePushRefs = toForcePushRefs(pullRequest?.timelineItems?.nodes);
 
+  const threadsPage = pullRequest?.reviewThreads?.pageInfo;
+  const reviewsPage = pullRequest?.reviews?.pageInfo;
+  const forcePushesPage = pullRequest?.timelineItems?.pageInfo;
+
   const [moreThreads, moreMetadata, moreForcePushes] = await Promise.all([
-    pullRequest?.reviewThreads?.pageInfo?.hasNextPage
-      ? fetchPRReviewThreads(octokit, owner, repo, pullNumber)
+    threadsPage?.hasNextPage && threadsPage.endCursor
+      ? fetchPRReviewThreads(octokit, owner, repo, pullNumber, threadsPage.endCursor).catch(
+          (error) => {
+            console.warn('[Timeline] Failed to paginate review threads:', error);
+            return [] as TimelineReviewThreadPayload[];
+          }
+        )
       : [],
-    pullRequest?.reviews?.pageInfo?.hasNextPage
-      ? fetchPRReviewMetadata(octokit, owner, repo, pullNumber)
+    reviewsPage?.hasNextPage && reviewsPage.endCursor
+      ? fetchPRReviewMetadata(octokit, owner, repo, pullNumber, reviewsPage.endCursor).catch(
+          (error) => {
+            console.warn('[Timeline] Failed to paginate review metadata:', error);
+            return new Map<string, TimelineReviewMetadata>();
+          }
+        )
       : new Map<string, TimelineReviewMetadata>(),
-    pullRequest?.timelineItems?.pageInfo?.hasNextPage
-      ? fetchPRForcePushRefs(octokit, owner, repo, pullNumber)
+    forcePushesPage?.hasNextPage && forcePushesPage.endCursor
+      ? fetchPRForcePushRefs(octokit, owner, repo, pullNumber, forcePushesPage.endCursor).catch(
+          (error) => {
+            console.warn('[Timeline] Failed to paginate force-push refs:', error);
+            return [] as TimelineForcePushRef[];
+          }
+        )
       : [],
   ]);
 
-  // A fallback fetcher starts from the first page again, so the merged page wins.
   for (const [id, metadata] of moreMetadata) {
     if (!reviewMetadata.has(id)) reviewMetadata.set(id, metadata);
   }
@@ -842,15 +819,7 @@ function mergeById<T extends { id?: string }>(first: T[], rest: T[]): T[] {
 
 /** The node shape both force-push fragments share, as the query returns it. */
 function toForcePushRefs(
-  nodes:
-    | Array<{
-        id?: string | null;
-        ref?: { name?: string | null } | null;
-        beforeCommit?: { oid?: string | null } | null;
-        afterCommit?: { oid?: string | null } | null;
-      } | null>
-    | null
-    | undefined
+  nodes: Array<PRForcePushGraphQLNode | null> | null | undefined
 ): TimelineForcePushRef[] {
   return (nodes ?? []).flatMap((node) =>
     node?.id
