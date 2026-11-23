@@ -13,14 +13,16 @@ describe('normalizeEnvBoolean', () => {
   });
 
   test('keeps the default for a blank, missing, or unrecognized value', () => {
-    for (const value of [undefined, null, '', '   ', 'maybe', '2', 0, 1, {}, []]) {
+    for (const value of [undefined, null, '', '   ', 'maybe', '2', 2, -1, Number.NaN, {}, []]) {
       expect(normalizeEnvBoolean(value, true)).toBe(true);
       expect(normalizeEnvBoolean(value, false)).toBe(false);
     }
   });
 
-  test('passes a boolean through unchanged', () => {
+  test('passes a boolean or Nitro-coerced 0/1 through', () => {
     expect(normalizeEnvBoolean(true, false)).toBe(true);
     expect(normalizeEnvBoolean(false, true)).toBe(false);
+    expect(normalizeEnvBoolean(1, false)).toBe(true);
+    expect(normalizeEnvBoolean(0, true)).toBe(false);
   });
 });

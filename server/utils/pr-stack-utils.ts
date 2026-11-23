@@ -80,12 +80,6 @@ const normalizePullRequestStack = (
   };
 };
 
-const STACK_MERGEABILITY_QUERY = `query PullRequestStackMergeability($ids: [ID!]!) {
-  nodes(ids: $ids) {
-    ... on PullRequest { mergeable }
-  }
-}`;
-
 export async function fetchPullRequestStack(
   octokit: GitHubClient,
   owner: string,
@@ -123,16 +117,6 @@ export async function fetchPullRequestStack(
       stack.history = 'linear';
     } else if (behindCounts.some((count) => count !== null && count > 0)) {
       stack.history = 'not-linear';
-      try {
-        const { nodes } = await octokit.graphql<{
-          nodes: Array<{ mergeable?: string } | null>;
-        }>(STACK_MERGEABILITY_QUERY, {
-          ids: active.map((pull) => pull.node_id),
-        });
-        stack.hasConflicts = nodes.some((node) => node?.mergeable === 'CONFLICTING');
-      } catch (error: unknown) {
-        console.warn('Failed to check pull request stack conflicts:', error);
-      }
     }
     return stack;
   } catch (error: unknown) {

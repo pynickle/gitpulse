@@ -77,30 +77,73 @@ describe('git availability', () => {
       expect(await gitAvailability.resolveGitAvailability()).toEqual({ available: true });
     }
   });
+  test('deduplicates concurrent probes on cold start', async () => {
+    const [first, second] = await Promise.all([
+      gitAvailability.resolveGitAvailability(),
+      gitAvailability.resolveGitAvailability(),
+    ]);
+
+    expect(first).toEqual({ available: true });
+    expect(second).toEqual({ available: true });
+  });
+
+  test('requires Git 2.40 or newer for stack rebase plumbing', () => {
+    expect(
+      gitAvailability.isSupportedGitVersion(gitAvailability.parseGitVersion('git version 2.39.5'))
+    ).toBe(false);
+    expect(
+      gitAvailability.isSupportedGitVersion(gitAvailability.parseGitVersion('git version 2.40.0'))
+    ).toBe(true);
+    expect(
+      gitAvailability.isSupportedGitVersion(gitAvailability.parseGitVersion('git version 2.47.3'))
+    ).toBe(true);
+    expect(
+      gitAvailability.isSupportedGitVersion(
+        gitAvailability.parseGitVersion('git version 2.56.0.windows.3')
+      )
+    ).toBe(true);
+    expect(gitAvailability.isSupportedGitVersion(null)).toBe(false);
+  });
+
+  test('detects the git replay strategy from help output', () => {
+    expect(
+      gitAvailability.detectGitReplayModeFromHelp(
+        'usage: git replay [--onto=<newbase>] [--ref-action=<mode>] <revision-range>'
+      )
+    ).toBe('replay-print');
+    expect(
+      gitAvailability.detectGitReplayModeFromHelp(
+        'usage: (EXPERIMENTAL!) git replay --onto=<newbase> <revision-range>'
+      )
+    ).toBe('replay-legacy');
+    expect(gitAvailability.detectGitReplayModeFromHelp("git: 'replay' is not a git command.")).toBe(
+      'per-patch'
+    );
+  });
 });
 
 describe('the route gate', () => {
   const event = {} as never;
 
-  test('answers not found on a deployment that switched the capability off', () => {
+  test('answers not found on a deployment that switched the capability off', async () => {
     setGitEnabled('false');
 
-    expect(() => gitAvailability.assertGitAvailable(event)).toThrow(
+    await expect(gitAvailability.assertGitAvailable(event)).rejects.toThrow(
       expect.objectContaining({ statusCode: 404 })
     );
   });
 
-  test('answers that Git is required when the capability is on but the host has none', () => {
+  test('answers that Git is required when the capability is on but the host has none', async () => {
     gitAvailability.setGitAvailable(false);
 
-    expect(() => gitAvailability.assertGitAvailable(event)).toThrow(
+    await expect(gitAvailability.assertGitAvailable(event)).rejects.toThrow(
       expect.objectContaining({ statusCode: 503 })
     );
   });
 
-  test('lets the request through on a host that has Git', () => {
+  test('lets the request through on a host that has Git', async () => {
     gitAvailability.setGitAvailable(true);
 
-    expect(() => gitAvailability.assertGitAvailable(event)).not.toThrow();
+    await expect(gitAvailability.assertGitAvailable(event)).resolves.toBeUndefined();
   });
 });

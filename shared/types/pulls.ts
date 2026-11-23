@@ -79,6 +79,26 @@ export type PullRequestStackLayerState = 'open' | 'draft' | 'closed' | 'merged';
 /** In progress until GitHub lands the Stack, queues it, or fails it. */
 export type StackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
 
+export type StackRebaseLayerOutcome =
+  | 'current'
+  | 'rebased'
+  | 'failed'
+  | 'skipped'
+  | 'merged'
+  | 'closed';
+
+export interface StackRebaseLayerResult {
+  number: number;
+  outcome: StackRebaseLayerOutcome;
+  message?: string;
+}
+
+export interface StackRebaseResult {
+  ok: boolean;
+  results: StackRebaseLayerResult[];
+  error?: string;
+}
+
 /** Whether each open layer contains the tip of its base branch. */
 export type PullRequestStackHistory = 'linear' | 'not-linear' | 'unknown';
 
@@ -89,7 +109,6 @@ export interface PullRequestStackLayer {
   headSha?: string;
   baseSha?: string;
   baseRef?: string;
-  rebaseProof?: string;
 }
 
 export interface PullRequestStack {
@@ -101,7 +120,6 @@ export interface PullRequestStack {
   /** From the first Layer to the top. */
   layers: PullRequestStackLayer[];
   history: PullRequestStackHistory;
-  hasConflicts?: boolean;
 }
 
 export interface PullRequestDetailPayload {

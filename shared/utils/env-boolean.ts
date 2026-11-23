@@ -10,6 +10,9 @@ const DISABLED_VALUES = new Set(['0', 'false', 'no', 'off']);
 
 export function normalizeEnvBoolean(value: unknown, defaultValue: boolean): boolean {
   if (typeof value === 'boolean') return value;
+  // Nitro's runtime env loader passes env values through `destr`, which coerces '0'/'1' to numbers.
+  if (value === 1) return true;
+  if (value === 0) return false;
   if (typeof value !== 'string') return defaultValue;
 
   const normalized = value.trim().toLowerCase();

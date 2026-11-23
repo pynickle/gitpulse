@@ -18,7 +18,7 @@ Pre-built Docker images are published to GitHub Container Registry and Docker Hu
 
 The running container needs `NUXT_SITE_URL`. The image build leaves it unset.
 
-Stack Rebase uses Git on the server. The Docker images include it. For deployments that run GitPulse directly, install Git and make it available on the server's `PATH`.
+Stack Rebase uses Git (2.40 or newer) on the server. The Docker images include it. For deployments that run GitPulse directly, install Git 2.40+ and make it available on the server's `PATH`.
 
 ---
 

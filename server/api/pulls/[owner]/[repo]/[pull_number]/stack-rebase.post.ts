@@ -1,45 +1,60 @@
 import * as z from 'zod';
 
-import { assertGitAvailable } from '#server/utils/git-availability';
+import { assertGitAvailable, resolveGitReplayMode } from '#server/utils/git-availability';
+import { getGitHubTransportContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import {
-  createGitHubClient,
-  getAccessToken,
-  throwGitHubRouteError,
-} from '#server/utils/github-auth-utils';
-import {
-  rebasePullRequestStackLayer,
-  signStackRebaseSnapshot,
-  verifyStackRebaseSnapshot,
+  rebasePullRequestStack,
+  type StackRebaseLayerInput,
 } from '#server/utils/pr-stack-rebase-utils';
 import { extractPullRouteParams } from '#server/utils/repo-route-utils';
 import { parseZodRequestBody } from '#server/utils/zod-validation-utils';
+import type { PullRequestStackLayerState } from '#shared/types/pulls';
 
 const commitOid = z.string().regex(/^[0-9a-f]{40}$/);
+const canonicalRepoName = /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
+
 const rebaseBody = z.strictObject({
   stackNumber: z.number().int().positive(),
-  baseRef: z.string().min(1),
-  baseSha: commitOid,
-  expectedHeadOid: commitOid,
-  proof: z.string().regex(/^[0-9a-f]{64}$/),
+  expectedHeads: z.record(z.string().regex(/^\d+$/), commitOid),
 });
 
+interface StackPullRequestItem {
+  number?: number | null;
+  state?: string | null;
+  draft?: boolean | null;
+  merged_at?: string | null;
+  base?: { ref?: string | null } | null;
+  head?: {
+    ref?: string | null;
+    sha?: string | null;
+    repo?: { full_name?: string | null } | null;
+  } | null;
+}
+
+interface StackResourcePayload {
+  base?: { ref?: string | null } | null;
+  pull_requests?: StackPullRequestItem[] | null;
+}
+
+interface RepoPermissions {
+  admin?: boolean;
+  maintain?: boolean;
+  push?: boolean;
+}
+
+function resolveLayerState(item: StackPullRequestItem): PullRequestStackLayerState {
+  if (item.merged_at) return 'merged';
+  if (item.state === 'closed') return 'closed';
+  if (item.draft) return 'draft';
+  return 'open';
+}
+
 export default defineEventHandler(async (event) => {
-  assertGitAvailable(event);
+  await assertGitAvailable(event);
 
   const { owner, repo, pullNumber } = extractPullRouteParams(event);
   const body = parseZodRequestBody(rebaseBody, await readBody(event), 'Invalid stack rebase');
-  const accessToken = await getAccessToken(event);
-  const expectedProof = signStackRebaseSnapshot(
-    useRuntimeConfig(event).appSecret,
-    owner,
-    repo,
-    pullNumber,
-    body
-  );
-  if (!verifyStackRebaseSnapshot(expectedProof, body.proof)) {
-    throw createError({ statusCode: 409, statusMessage: 'Reload the stack before rebasing' });
-  }
-  const octokit = createGitHubClient(accessToken);
+  const { octokit, accessToken } = await getGitHubTransportContext(event);
 
   try {
     const { data: pull } = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
@@ -48,30 +63,97 @@ export default defineEventHandler(async (event) => {
       pull_number: pullNumber,
     });
     const membership = pull.stack;
-    if (
-      membership?.number !== body.stackNumber ||
-      pull.state !== 'open' ||
-      pull.head.repo?.full_name.toLowerCase() !== `${owner}/${repo}`.toLowerCase() ||
-      pull.base.ref !== body.baseRef ||
-      pull.head.sha !== body.expectedHeadOid
-    ) {
-      throw createError({ statusCode: 409, statusMessage: 'This stack layer has changed' });
-    }
-    if (pull.mergeable === false || pull.mergeable_state === 'dirty') {
-      throw createError({ statusCode: 409, statusMessage: 'This stack layer has conflicts' });
+    if (membership?.number !== body.stackNumber || pull.state !== 'open') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'The stack has changed; reload before rebasing',
+      });
     }
 
-    const outcome = await rebasePullRequestStackLayer({
-      remote: `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}.git`,
+    let permissions = (pull.base?.repo as { permissions?: RepoPermissions } | null | undefined)
+      ?.permissions;
+    if (!permissions) {
+      const { data: repoData } = await octokit.request('GET /repos/{owner}/{repo}', {
+        owner,
+        repo,
+      });
+      permissions = repoData.permissions;
+    }
+    const canPush = Boolean(permissions?.push || permissions?.maintain || permissions?.admin);
+    if (!canPush) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'You do not have permission to rebase this stack',
+      });
+    }
+
+    const canonicalFullName = pull.base?.repo?.full_name ?? `${owner}/${repo}`;
+    if (!canonicalRepoName.test(canonicalFullName)) {
+      throw createError({ statusCode: 422, statusMessage: 'Invalid repository name' });
+    }
+
+    const { data: stackData } = (await octokit.request(
+      'GET /repos/{owner}/{repo}/stacks/{stack_number}',
+      {
+        owner,
+        repo,
+        stack_number: body.stackNumber,
+      }
+    )) as { data: StackResourcePayload };
+
+    const trunk = (stackData.base?.ref ?? membership.base?.ref ?? '').trim();
+    const pullRequests = stackData.pull_requests;
+    if (!trunk || !Array.isArray(pullRequests) || !pullRequests.length) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'The stack has changed; reload before rebasing',
+      });
+    }
+
+    const layers: StackRebaseLayerInput[] = [];
+    for (const item of pullRequests) {
+      const number = item.number;
+      if (typeof number !== 'number' || !Number.isInteger(number) || number <= 0) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: 'The stack has changed; reload before rebasing',
+        });
+      }
+      const state = resolveLayerState(item);
+      if (state === 'open' || state === 'draft') {
+        if (item.head?.repo?.full_name?.toLowerCase() !== canonicalFullName.toLowerCase()) {
+          throw createError({
+            statusCode: 409,
+            statusMessage:
+              'Stack rebase is only supported when every open layer lives in this repository',
+          });
+        }
+        if (!item.head?.sha || body.expectedHeads[String(number)] !== item.head.sha) {
+          throw createError({
+            statusCode: 409,
+            statusMessage: 'The stack has changed; reload before rebasing',
+          });
+        }
+      }
+
+      layers.push({
+        number,
+        state,
+        headRef: item.head?.ref ?? '',
+        baseRef: item.base?.ref ?? '',
+        expectedHeadOid: item.head?.sha ?? '',
+      });
+    }
+
+    return await rebasePullRequestStack({
+      remote: `https://github.com/${canonicalFullName}.git`,
       accessToken,
-      headRef: pull.head.ref,
-      baseRef: pull.base.ref,
-      expectedHeadOid: body.expectedHeadOid,
-      // A lower branch may already have been rewritten by an earlier step.
-      oldBaseOid: pull.base.ref === membership.base?.ref ? null : body.baseSha,
+      trunk,
+      layers,
+      replayMode: await resolveGitReplayMode(event),
+      stackLockKey: `${canonicalFullName.toLowerCase()}#${body.stackNumber}`,
     });
-    return { outcome };
   } catch (error: unknown) {
-    throwGitHubRouteError(error, 'Failed to rebase stack layer');
+    throwGitHubRouteError(error, 'Failed to rebase stack');
   }
 });

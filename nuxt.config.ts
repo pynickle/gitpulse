@@ -95,7 +95,6 @@ const oauthEnvReady = Boolean(
 );
 const effectiveOAuthEnabled = oauthRequested && oauthEnvReady;
 const personalModeEnabled = normalizeEnvBoolean(process.env.NUXT_AUTH_PERSONAL_MODE_ENABLED, true);
-const gitEnabled = normalizeEnvBoolean(process.env.NUXT_GITPULSE_GIT_ENABLED, true);
 
 function siteConfig() {
   return personalModeEnabled ? { indexable: false } : {};
@@ -178,7 +177,7 @@ export default defineNuxtConfig({
     // Git is a capability of the server, not of one feature: `NUXT_GITPULSE_GIT_ENABLED`
     // says this deployment offers it, and the startup probe says the host can run it.
     gitpulse: {
-      gitEnabled: String(gitEnabled),
+      gitEnabled: 'true',
     },
   },
 

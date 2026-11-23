@@ -1,9 +1,8 @@
-import { readGitAvailability } from '#server/utils/git-availability';
+import { resolveGitAvailability } from '#server/utils/git-availability';
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
 import { fetchPullHeadBranchState } from '#server/utils/pr-head-branch-utils';
 import { createEmptyPRReviewerSummary } from '#server/utils/pr-reviewers-utils';
-import { signStackRebaseSnapshot } from '#server/utils/pr-stack-rebase-utils';
 import { fetchPullRequestStack } from '#server/utils/pr-stack-utils';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
@@ -52,21 +51,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       fetchPullRequestStack(octokit, owner, repo, pullNumber, pullRequest.data.stack),
     ]);
 
-    // A proof is minted only for a deployment that can actually rebase: without
-    // Git there is nothing to confirm, and a stale proof must not survive.
-    const git = readGitAvailability(event);
-    if (git.available && stack?.number && stack.history === 'not-linear' && !stack.hasConflicts) {
-      const secret = useRuntimeConfig(event).appSecret;
-      for (const layer of stack.layers) {
-        if (!layer.headSha || !layer.baseRef || !layer.baseSha) continue;
-        layer.rebaseProof = signStackRebaseSnapshot(secret, owner, repo, layer.number, {
-          stackNumber: stack.number,
-          baseRef: layer.baseRef,
-          baseSha: layer.baseSha,
-          expectedHeadOid: layer.headSha,
-        });
-      }
-    }
+    const git = await resolveGitAvailability(event);
 
     return {
       ...pullRequest.data,
