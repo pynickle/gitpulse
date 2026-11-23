@@ -141,8 +141,12 @@ async function withTransactionLock<T>(id: string, action: () => Promise<T>): Pro
     try {
       lock = await open(path, 'wx');
     } catch (error) {
-      if (!(error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST'))
-        throw error;
+      const code = error && typeof error === 'object' && 'code' in error ? error.code : null;
+      // `EEXIST` is the lock being held. On Windows the release window answers
+      // `EPERM` instead: the previous holder already unlinked the file, so the
+      // name is free while its handle is still closing.
+      const isBusy = code === 'EEXIST' || (process.platform === 'win32' && code === 'EPERM');
+      if (!isBusy) throw error;
       await new Promise((resolve) => setTimeout(resolve, 25));
     }
   }
@@ -151,8 +155,11 @@ async function withTransactionLock<T>(id: string, action: () => Promise<T>): Pro
   try {
     return await action();
   } finally {
-    await lock.close();
-    await unlink(path);
+    try {
+      await lock.close();
+    } finally {
+      await unlink(path).catch(() => {});
+    }
   }
 }
 

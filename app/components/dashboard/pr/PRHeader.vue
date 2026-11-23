@@ -13,6 +13,12 @@
         <component :size="12" :is="stateIcon" />
         <span>{{ displayState }}</span>
       </span>
+      <PRStackChip
+        v-if="pullRequest?.stack"
+        :stack="pullRequest.stack"
+        :current-pull-number="Number(pullRequest.number) || undefined"
+        @select="emit('switch-pull-request', repoOwner, repoName, $event)"
+      />
       <span class="header-time is-flex is-align-items-center">
         <ClockIcon :size="13" />
         <span>{{ updatedAtLabel }}</span>
@@ -108,7 +114,9 @@ import { ArrowRightIcon, ClockIcon, GitForkIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { PullRequestStack } from '#shared/types/pulls';
 import type { ReactionSummaryItem } from '#shared/types/reactions';
+import PRStackChip from '~/components/dashboard/pr/PRStackChip.vue';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
@@ -141,12 +149,17 @@ interface PullRequestHeaderPullRequest {
   created_at?: string;
   body?: string | null;
   reactions?: ReactionSummaryItem[];
+  stack?: PullRequestStack | null;
 }
 
 const { pullRequest, repoOwner, repoName } = defineProps<{
   pullRequest?: PullRequestHeaderPullRequest | null;
   repoOwner: string;
   repoName: string;
+}>();
+
+const emit = defineEmits<{
+  'switch-pull-request': [owner: string, repo: string, pullNumber: number];
 }>();
 
 const headBranch = computed(() =>

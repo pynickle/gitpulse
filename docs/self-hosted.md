@@ -18,6 +18,8 @@ Pre-built Docker images are published to GitHub Container Registry and Docker Hu
 
 The running container needs `NUXT_SITE_URL`. The image build leaves it unset.
 
+Stack Rebase uses Git (2.40 or newer) on the server. The Docker images include it. For deployments that run GitPulse directly, install Git 2.40+ and make it available on the server's `PATH`.
+
 ---
 
 ## Configuration
@@ -37,6 +39,14 @@ Set `NUXT_SITE_URL` on the process that serves the app. A build does not bake it
 | `NUXT_SITE_URL`      | **Yes** in production | —       | This deployment's origin, for example `https://example.com` |
 
 `NUXT_PUBLIC_SITE_URL` is not read. Production also refuses to start when that name is set.
+
+### Git
+
+GitPulse probes for Git once at startup and keeps the answer for the life of the process. A deployment with Git offers Stack Rebase; one without keeps the action on screen, disabled, with the reason. Installing Git afterwards takes effect on the next restart.
+
+| Environment Variable        | Required | Default | Description                                                                       |
+| --------------------------- | -------- | ------- | --------------------------------------------------------------------------------- |
+| `NUXT_GITPULSE_GIT_ENABLED` | No       | `true`  | Set `false` to offer no Git-backed feature at all, and to skip the startup probe. |
 
 ### Non-personal Mode (multi-user)
 

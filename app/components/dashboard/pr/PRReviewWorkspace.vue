@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ArrowLeftIcon, GitPullRequestIcon, HouseIcon, MessageSquareIcon } from '@lucide/vue';
-import { computed, nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, shallowRef, useId, useTemplateRef, watch } from 'vue';
 
+import type { PullRequestStack } from '#shared/types/pulls';
 import {
   buildPRReviewWorkspaceNarrowLayoutCss,
   presentReviewBottomBar,
@@ -14,6 +15,7 @@ import PRReviewBottomBar from '~/components/dashboard/pr/PRReviewBottomBar.vue';
 import PRReviewDiffViewer from '~/components/dashboard/pr/PRReviewDiffViewer.vue';
 import PRReviewFileSidebar from '~/components/dashboard/pr/PRReviewFileSidebar.vue';
 import PRReviewSubmitBar from '~/components/dashboard/pr/PRReviewSubmitBar.vue';
+import PRStackChip from '~/components/dashboard/pr/PRStackChip.vue';
 import { shouldCloseReviewWorkspaceAfterSubmit } from '~/utils/prReviewNavigation';
 
 const { owner, repo, pullNumber, commitId, title, changedFiles, additions, deletions } =
@@ -26,10 +28,18 @@ const { owner, repo, pullNumber, commitId, title, changedFiles, additions, delet
     changedFiles?: number;
     additions?: number;
     deletions?: number;
+    stack?: PullRequestStack | null;
   }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
+  (
+    e: 'switch-pull-request',
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    openReview?: boolean
+  ): void;
 }>();
 
 const { t } = useI18n();
@@ -109,6 +119,82 @@ const goHome = async () => {
 const goToPullRequestDetails = () => {
   emit('close');
 };
+
+const pendingSwitchPullNumber = shallowRef<number | null>(null);
+const discardDialog = useTemplateRef<HTMLDialogElement>('discardDialog');
+const discardTitleId = useId();
+const discardBodyId = useId();
+const pendingSwitchCommentCount = computed(() =>
+  Math.max(
+    review.pendingCommentCount.value,
+    review.activeDraftTarget.value != null || Boolean(review.draftBody.value?.trim()) ? 1 : 0
+  )
+);
+
+const closeDiscardDialog = () => {
+  if (discardDialog.value?.open) discardDialog.value.close();
+  pendingSwitchPullNumber.value = null;
+};
+
+const handleDiscardDialogCancel = (event: Event) => {
+  event.preventDefault();
+  closeDiscardDialog();
+};
+
+const handleDiscardDialogNativeClose = () => {
+  pendingSwitchPullNumber.value = null;
+};
+
+let discardDialogPressedOutside = false;
+
+const isOutsideDiscardDialog = (event: PointerEvent) => {
+  const dialog = discardDialog.value;
+  if (!dialog || Reflect.has(dialog, 'closedBy')) return false;
+  const { left, right, top, bottom } = dialog.getBoundingClientRect();
+  return (
+    event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom
+  );
+};
+
+const handleDiscardDialogPointerDown = (event: PointerEvent) => {
+  discardDialogPressedOutside = isOutsideDiscardDialog(event);
+};
+
+const handleDiscardDialogPointerUp = (event: PointerEvent) => {
+  if (discardDialogPressedOutside && isOutsideDiscardDialog(event)) closeDiscardDialog();
+  discardDialogPressedOutside = false;
+};
+
+const handleSelectStackPullRequest = async (nextPullNumber: number) => {
+  if (
+    review.pendingCommentCount.value > 0 ||
+    review.activeDraftTarget.value != null ||
+    Boolean(review.draftBody.value?.trim())
+  ) {
+    pendingSwitchPullNumber.value = nextPullNumber;
+    await nextTick();
+    const dialog = discardDialog.value;
+    if (dialog && !dialog.open) dialog.showModal();
+    return;
+  }
+
+  emit('switch-pull-request', owner, repo, nextPullNumber, true);
+};
+
+const confirmDiscardAndSwitch = () => {
+  const nextPullNumber = pendingSwitchPullNumber.value;
+  closeDiscardDialog();
+  if (nextPullNumber !== null) {
+    emit('switch-pull-request', owner, repo, nextPullNumber, true);
+  }
+};
+
+watch(
+  () => [owner, repo, pullNumber],
+  () => {
+    closeDiscardDialog();
+  }
+);
 
 const bottomBar = computed(() =>
   presentReviewBottomBar({
@@ -292,15 +378,23 @@ watch(
           aria-hidden="true"
         />
         <div class="pr-review-workspace__title-block">
-          <button
-            type="button"
-            class="pr-review-workspace__detail-link"
-            :aria-label="t('prReview.backToDetails')"
-            :title="t('prReview.backToDetails')"
-            @click="goToPullRequestDetails"
-          >
-            {{ owner }}/{{ repo }} #{{ pullNumber }}
-          </button>
+          <div class="pr-review-workspace__meta">
+            <button
+              type="button"
+              class="pr-review-workspace__detail-link"
+              :aria-label="t('prReview.backToDetails')"
+              :title="t('prReview.backToDetails')"
+              @click="goToPullRequestDetails"
+            >
+              {{ owner }}/{{ repo }} #{{ pullNumber }}
+            </button>
+            <PRStackChip
+              v-if="stack"
+              :stack="stack"
+              :current-pull-number="pullNumber"
+              @select="handleSelectStackPullRequest"
+            />
+          </div>
           <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
         </div>
       </div>
@@ -500,6 +594,45 @@ watch(
       @toggle-files="applyBottomBarAction({ type: 'toggle-files' })"
       @toggle-review="applyBottomBarAction({ type: 'toggle-review' })"
     />
+
+    <dialog
+      v-if="pendingSwitchPullNumber !== null"
+      ref="discardDialog"
+      class="pr-review-discard-dialog"
+      closedby="any"
+      :aria-labelledby="discardTitleId"
+      :aria-describedby="discardBodyId"
+      @cancel="handleDiscardDialogCancel"
+      @close="handleDiscardDialogNativeClose"
+      @pointerdown="handleDiscardDialogPointerDown"
+      @pointerup="handleDiscardDialogPointerUp"
+    >
+      <div class="pr-review-discard-dialog__body">
+        <h2 :id="discardTitleId" class="pr-review-discard-dialog__title">
+          {{ t('prReview.stackChip.discardPendingReviewTitle') }}
+        </h2>
+        <p :id="discardBodyId" class="pr-review-discard-dialog__text">
+          {{
+            t('prReview.stackChip.discardPendingReviewBody', {
+              number: pendingSwitchPullNumber,
+              count: pendingSwitchCommentCount,
+            })
+          }}
+        </p>
+      </div>
+      <footer class="pr-review-discard-dialog__footer">
+        <button type="button" class="pr-review-discard-dialog__btn" @click="closeDiscardDialog">
+          {{ t('prReview.mergeBox.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="pr-review-discard-dialog__btn pr-review-discard-dialog__btn--primary"
+          @click="confirmDiscardAndSwitch"
+        >
+          {{ t('prReview.stackChip.discardAndSwitch') }}
+        </button>
+      </footer>
+    </dialog>
   </section>
 </template>
 
@@ -581,7 +714,16 @@ watch(
   min-width: 0;
 }
 
+.pr-review-workspace__meta {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
 .pr-review-workspace__title {
+  min-width: 0;
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
   font-size: 0.9rem;
   font-weight: 700;
@@ -744,6 +886,102 @@ html.dark .pr-review-workspace__loading-btn {
 html.dark .pr-review-workspace__loading-btn::after {
   border-color: var(--gitpulse-text-strong);
   border-right-color: transparent;
+}
+
+.pr-review-discard-dialog {
+  margin: auto;
+  width: min(24rem, calc(100% - 2rem));
+  padding: 0;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-lg);
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-raised);
+  overflow: hidden;
+  overscroll-behavior: contain;
+
+  &::backdrop {
+    background: var(--gitpulse-overlay-bg);
+    backdrop-filter: blur(6px);
+  }
+}
+
+.pr-review-discard-dialog__body {
+  padding: 16px 20px;
+}
+
+.pr-review-discard-dialog__title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.pr-review-discard-dialog__text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--gitpulse-text-muted);
+}
+
+.pr-review-discard-dialog__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--gitpulse-border);
+}
+
+.pr-review-discard-dialog__btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--gitpulse-text);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-md);
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background-color 0.12s ease,
+    border-color 0.12s ease;
+
+  @include hover-only {
+    &:hover {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
+  }
+
+  &--primary {
+    color: #ffffff;
+    background: var(--gitpulse-primary-solid);
+    border-color: var(--gitpulse-primary-solid);
+
+    @include hover-only {
+      &:hover {
+        color: #ffffff;
+        background: var(--gitpulse-primary-solid-hover);
+        border-color: var(--gitpulse-primary-solid-hover);
+      }
+    }
+
+    &:active {
+      color: #ffffff;
+      background: var(--gitpulse-primary-solid-hover);
+      border-color: var(--gitpulse-primary-solid-hover);
+    }
+  }
 }
 
 @media (max-width: 1100px) {

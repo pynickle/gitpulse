@@ -1248,9 +1248,14 @@ const handleSwitchIssueFromDetail = (
   handleSwitchIssue(owner, repo, issueNumber, openInOverlay);
 };
 
-const handleSwitchPRFromDetail = (owner: string, repo: string, pullNumber: number) => {
+const handleSwitchPRFromDetail = (
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  openReview = false
+) => {
   clearSourceNotification();
-  handleSwitchPR(owner, repo, pullNumber);
+  handleSwitchPR(owner, repo, pullNumber, openReview);
 };
 
 const {

@@ -13,9 +13,32 @@
     <div v-else-if="showError" class="merge-box__note merge-box__note--danger" role="alert">
       <CircleExclamationPointIcon :size="14" />
       <span>{{ error }}</span>
+      <button
+        type="button"
+        class="merge-box__retry-btn"
+        :disabled="loading"
+        @click="retryFetchMergeStatus"
+      >
+        {{ t('prReview.mergeBox.retryStatus') }}
+      </button>
     </div>
 
     <template v-else-if="status">
+      <!-- A reread that failed keeps this status on screen; the same alert is shown
+      above it, because replacing the box would throw away data the reader can use. -->
+      <div v-if="error" class="merge-box__note merge-box__note--danger" role="alert">
+        <CircleExclamationPointIcon :size="14" />
+        <span>{{ error }}</span>
+        <button
+          type="button"
+          class="merge-box__retry-btn"
+          :disabled="loading"
+          @click="retryFetchMergeStatus"
+        >
+          {{ t('prReview.mergeBox.retryStatus') }}
+        </button>
+      </div>
+
       <!-- Merged -->
       <template v-if="status.merged">
         <div
@@ -200,113 +223,118 @@
           </div>
         </div>
 
-        <div v-if="status.viewerCanMerge && !status.draft" class="merge-box__actions">
-          <p class="is-sr-only" role="status" aria-live="polite">
-            {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
-          </p>
-          <div v-if="mergeError" class="merge-box__note merge-box__note--danger" role="alert">
-            <CircleExclamationPointIcon :size="14" />
-            <span>{{ mergeError }}</span>
-          </div>
-          <div v-if="!showCommitForm" ref="mergeControlsRef" class="merge-box__merge-controls">
-            <button
-              type="button"
-              class="merge-box__merge-btn"
-              :class="{
-                'merge-box__merge-btn--confirm': confirming,
-                'merge-box__merge-btn--standalone': !confirming && !showMethodMenu,
-                'merge-box__merge-btn--busy': mergeButtonBusy,
-              }"
-              :disabled="mergeDisabled"
-              :aria-busy="mergeButtonBusy || undefined"
-              @click="onMergeClick"
-            >
-              <span v-if="mergeButtonBusy" class="merge-box__spinner" aria-hidden="true" />
-              <GitMergeIcon v-else :size="14" />
-              <span>{{ mergeButtonLabel }}</span>
-            </button>
-            <button
-              v-if="!confirming && showMethodMenu"
-              type="button"
-              class="merge-box__method-toggle"
-              :disabled="mergeDisabled"
-              :aria-label="t('prReview.mergeBox.selectMethod')"
-              :aria-expanded="dropdownOpen"
-              @click="dropdownOpen = !dropdownOpen"
-            >
-              <ChevronDownIcon :size="14" />
-            </button>
-            <button
-              v-else-if="confirming"
-              type="button"
-              class="merge-box__cancel-btn"
-              :disabled="merging"
-              @click="cancelConfirm"
-            >
-              {{ t('prReview.mergeBox.cancel') }}
-            </button>
-            <div v-if="dropdownOpen" class="merge-box__method-menu" role="menu">
+        <div v-if="showStackRebase || showMergeActions" class="merge-box__actions">
+          <template v-if="showStackRebase">
+            <div class="merge-box__merge-controls">
               <button
-                v-for="method in mergeMethods"
-                :key="method"
                 type="button"
-                class="merge-box__method-option"
-                role="menuitemradio"
-                :aria-checked="method === selectedMethod"
-                @click="selectMergeMethod(method)"
+                class="merge-box__rebase-stack-btn"
+                :disabled="stackRebaseDisabled"
+                aria-haspopup="dialog"
+                :title="stackRebaseBlockedReason || undefined"
+                :aria-describedby="stackRebaseBlockedReason ? stackRebaseReasonId : undefined"
+                @click="openStackRebase"
               >
-                <CheckIcon
-                  :size="12"
-                  class="merge-box__method-check"
-                  :class="{ 'merge-box__method-check--hidden': method !== selectedMethod }"
-                />
-                <span>{{ methodLabel(method) }}</span>
+                <GitBranchIcon :size="14" aria-hidden="true" />
+                {{ t('prReview.stackRebase.title') }}
               </button>
             </div>
+            <p
+              v-if="stackRebaseBlockedReason"
+              :id="stackRebaseReasonId"
+              class="merge-box__blocked-reason"
+            >
+              {{ stackRebaseBlockedReason }}
+            </p>
+          </template>
+          <div v-if="stackRebaseError" class="merge-box__note merge-box__note--danger" role="alert">
+            <CircleExclamationPointIcon :size="14" />
+            <span>{{ stackRebaseError }}</span>
           </div>
+          <PRStackRebaseDialog
+            v-if="stack && stackRebaseOpen"
+            :key="`${owner}/${repo}/${pullNumber}`"
+            :owner="owner"
+            :repo="repo"
+            :pull-number="pullNumber"
+            :stack="stack"
+            @close="stackRebaseOpen = false"
+            @settled="refreshAfterStackRebase"
+          />
 
-          <form
-            v-else
-            class="merge-box__commit-form"
-            @submit.prevent="performMerge"
-            @keydown.esc.stop.prevent="cancelConfirm"
-          >
-            <div class="merge-box__field">
-              <label class="merge-box__field-label" :for="commitTitleId">
-                {{ t('prReview.mergeBox.commitTitleLabel') }}
-              </label>
-              <input
-                :id="commitTitleId"
-                v-model="commitTitle"
-                class="input merge-box__commit-input"
-                type="text"
-                :disabled="merging"
-              />
-            </div>
-            <div class="merge-box__field">
-              <label class="merge-box__field-label" :for="commitMessageId">
-                {{ t('prReview.mergeBox.commitMessageLabel') }}
-              </label>
-              <textarea
-                :id="commitMessageId"
-                v-model="commitMessage"
-                class="textarea merge-box__commit-textarea"
-                rows="4"
-                :placeholder="t('prReview.mergeBox.commitMessagePlaceholder')"
-                :disabled="merging"
-              />
-            </div>
-            <div class="merge-box__form-actions">
+          <template v-if="showMergeActions">
+            <p class="is-sr-only" role="status" aria-live="polite">
+              {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
+            </p>
+            <ul v-if="confirming && landingLayers.length" class="merge-box__stack-layers">
+              <li v-for="layer in landingLayers" :key="layer.number" class="merge-box__stack-layer">
+                <span class="merge-box__stack-layer-number">#{{ layer.number }}</span
+                >{{ stackLayerGap
+                }}<span class="merge-box__stack-layer-title">{{ layer.title }}</span
+                >{{ stackLayerGap
+                }}<span class="merge-box__stack-layer-state" :data-state="layer.state">{{
+                  layerStateLabel(layer.state)
+                }}</span>
+              </li>
+            </ul>
+            <div v-if="stackMergeStatusLabel" class="merge-box__stack-status" role="status">
+              <p class="merge-box__stack-outcome">
+                {{ stackMergeStatusLabel }}
+              </p>
               <button
-                type="submit"
-                class="merge-box__merge-btn merge-box__merge-btn--confirm"
+                v-if="stackMergePhase === 'stalled' && stackMergeId"
+                type="button"
+                class="merge-box__check-status-btn"
                 :disabled="merging"
+                @click="checkStalledStackMerge"
               >
-                <span v-if="merging" class="merge-box__spinner" aria-hidden="true" />
+                {{ t('prReview.mergeBox.checkStackMergeStatus') }}
+              </button>
+            </div>
+            <div
+              v-if="activeMergeAlert"
+              class="merge-box__note merge-box__note--danger"
+              role="alert"
+            >
+              <CircleExclamationPointIcon :size="14" />
+              <span>{{ activeMergeAlert }}</span>
+            </div>
+            <div
+              v-if="!stackMergeHolding && !showCommitForm"
+              ref="mergeControlsRef"
+              class="merge-box__merge-controls"
+            >
+              <button
+                type="button"
+                class="merge-box__merge-btn"
+                :class="{
+                  'merge-box__merge-btn--confirm': confirming,
+                  'merge-box__merge-btn--standalone': !confirming && !showMethodMenu,
+                  'merge-box__merge-btn--busy': mergeButtonBusy,
+                }"
+                :disabled="mergeDisabled"
+                :aria-busy="mergeButtonBusy || undefined"
+                :title="mergeBlockedReason || undefined"
+                :aria-describedby="mergeBlockedReason ? mergeReasonId : undefined"
+                @click="onMergeClick"
+              >
+                <span v-if="mergeButtonBusy" class="merge-box__spinner" aria-hidden="true" />
                 <GitMergeIcon v-else :size="14" />
-                <span>{{ merging ? t('prReview.mergeBox.merging') : confirmLabel }}</span>
+                <span>{{ mergeButtonLabel }}</span>
               </button>
               <button
+                v-if="!confirming && showMethodMenu"
+                type="button"
+                class="merge-box__method-toggle"
+                :disabled="mergeDisabled"
+                :aria-label="t('prReview.mergeBox.selectMethod')"
+                :aria-expanded="dropdownOpen"
+                @click="dropdownOpen = !dropdownOpen"
+              >
+                <ChevronDownIcon :size="14" />
+              </button>
+              <button
+                v-else-if="confirming"
                 type="button"
                 class="merge-box__cancel-btn"
                 :disabled="merging"
@@ -314,8 +342,85 @@
               >
                 {{ t('prReview.mergeBox.cancel') }}
               </button>
+              <div v-if="dropdownOpen" class="merge-box__method-menu" role="menu">
+                <button
+                  v-for="method in mergeMethods"
+                  :key="method"
+                  type="button"
+                  class="merge-box__method-option"
+                  role="menuitemradio"
+                  :aria-checked="method === selectedMethod"
+                  @click="selectMergeMethod(method)"
+                >
+                  <CheckIcon
+                    :size="12"
+                    class="merge-box__method-check"
+                    :class="{ 'merge-box__method-check--hidden': method !== selectedMethod }"
+                  />
+                  <span>{{ methodLabel(method) }}</span>
+                </button>
+              </div>
             </div>
-          </form>
+            <p
+              v-if="!stackMergeHolding && !showCommitForm && mergeBlockedReason"
+              :id="mergeReasonId"
+              class="merge-box__blocked-reason"
+            >
+              {{ mergeBlockedReason }}
+            </p>
+
+            <form
+              v-else-if="!stackMergeHolding && showCommitForm"
+              class="merge-box__commit-form"
+              @submit.prevent="performMerge"
+              @keydown.esc.stop.prevent="cancelConfirm"
+            >
+              <div class="merge-box__field">
+                <label class="merge-box__field-label" :for="commitTitleId">
+                  {{ t('prReview.mergeBox.commitTitleLabel') }}
+                </label>
+                <input
+                  :id="commitTitleId"
+                  v-model="commitTitle"
+                  class="input merge-box__commit-input"
+                  type="text"
+                  :disabled="merging"
+                />
+              </div>
+              <div class="merge-box__field">
+                <label class="merge-box__field-label" :for="commitMessageId">
+                  {{ t('prReview.mergeBox.commitMessageLabel') }}
+                </label>
+                <textarea
+                  :id="commitMessageId"
+                  v-model="commitMessage"
+                  class="textarea merge-box__commit-textarea"
+                  rows="4"
+                  :placeholder="t('prReview.mergeBox.commitMessagePlaceholder')"
+                  :disabled="merging"
+                />
+              </div>
+              <div class="merge-box__form-actions">
+                <button
+                  type="submit"
+                  class="merge-box__merge-btn merge-box__merge-btn--confirm"
+                  :disabled="merging"
+                >
+                  <span v-if="merging" class="merge-box__spinner" aria-hidden="true" />
+                  <GitMergeIcon v-else :size="14" />
+                  <span>{{ merging ? t('prReview.mergeBox.merging') : confirmLabel }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="merge-box__cancel-btn"
+                  :disabled="merging"
+                  @click="cancelConfirm"
+                >
+                  {{ t('prReview.mergeBox.cancel') }}
+                </button>
+              </div>
+            </form>
+          </template>
         </div>
       </div>
 
@@ -372,18 +477,39 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type {
+  GitAvailability,
+  PullRequestStack,
+  PullRequestStackLayerState,
+} from '#shared/types/pulls';
 import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
+import PRStackRebaseDialog from '~/components/dashboard/pr/PRStackRebaseDialog.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
-import type { PRMergeMethod, PRMergeStatus } from '~/composables/usePRMergeStatus';
+import type {
+  PRMergeMethod,
+  PRMergeStatus,
+  PRStackMergeOutcome,
+} from '~/composables/usePRMergeStatus';
 
-const { owner, repo, pullNumber, initialStatus } = defineProps<{
+const {
+  owner,
+  repo,
+  pullNumber,
+  initialStatus,
+  stack = null,
+  git = null,
+} = defineProps<{
   owner: string;
   repo: string;
   pullNumber: number;
   initialStatus?: PRMergeStatus | null;
+  /** Present only when this pull request is a Layer. */
+  stack?: PullRequestStack | null;
+  /** Whether this deployment can run Git, which is what Stack Rebase needs. */
+  git?: GitAvailability | null;
 }>();
 
 const emit = defineEmits<{
@@ -402,10 +528,13 @@ const {
   branchActionError,
   commitDefaults,
   setMergeStatus,
+  resetMergeStatus,
   fetchMergeStatus,
   fetchCommitDefaults,
   clearCommitDefaults,
   mergePullRequest,
+  mergeStack,
+  resumeStackMergePoll,
   deleteHeadBranch,
   restoreHeadBranch,
   branchUpdateError,
@@ -414,6 +543,12 @@ const {
 
 const ALL_MERGE_METHODS: PRMergeMethod[] = ['merge', 'squash', 'rebase'];
 type BranchUpdateMethod = 'merge' | 'rebase';
+type StackBlockedCode =
+  | 'stack_not_linear'
+  | 'stack_rebase_disabled'
+  | 'stack_history_unknown'
+  | 'git_missing'
+  | 'stack_lower_layer_blocked';
 const selectedMethod = shallowRef<PRMergeMethod>('merge');
 const dropdownOpen = shallowRef(false);
 const confirming = shallowRef(false);
@@ -423,18 +558,28 @@ const updateMenuOpen = shallowRef(false);
 const updateConfirming = shallowRef(false);
 const updating = shallowRef(false);
 let suppressMergeabilityPoll = false;
+let identityVersion = 0;
 /** The confirm step is open but its Default Commit Message is still being read. */
 const loadingCommitDefaults = shallowRef(false);
 const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
+const stackMergePhase = shallowRef<PRStackMergeOutcome | null>(null);
+const stackMergeId = shallowRef<string | null>(null);
+const stackRebaseOpen = shallowRef(false);
+const stackRebaseError = shallowRef('');
+const refreshingAfterStackRebase = shallowRef(false);
+/** The flex row's gap is visual only; the text still needs a separator between fields. */
+const stackLayerGap = ' ';
 const prefillTitle = shallowRef('');
 const prefillMessage = shallowRef('');
 const mergeControlsRef = ref<HTMLElement | null>(null);
 const updateControlsRef = ref<HTMLElement | null>(null);
 const commitTitleId = useId();
 const commitMessageId = useId();
+const mergeReasonId = useId();
+const stackRebaseReasonId = useId();
 
 const status = computed(() => mergeStatus.value);
 const showSkeleton = computed(() => loading.value && !status.value);
@@ -692,15 +837,184 @@ const branchMergeabilityKnown = computed(() => {
 
 const showBranchUpdate = computed(
   () =>
+    !stack &&
     behindCount.value !== null &&
     behindCount.value > 0 &&
     Boolean(status.value?.viewerCanWriteHead) &&
     !branchConflicts.value
 );
 
+/** The one capability question the box asks, answered once for every action below. */
+const gitUnavailableReason = computed(() => {
+  const current = git;
+  return current && !current.available ? current.reason : null;
+});
+
+/**
+ * A switched-off deployment does not offer the action at all, disabled or otherwise.
+ * Neither does a box that has not been told what the deployment can do: an action
+ * that cannot open its dialog is not a refusal the reader can act on.
+ */
+const stackRebaseHidden = computed(() => !git || gitUnavailableReason.value === 'disabled');
+
+const isTerminalLayerState = (state: PullRequestStackLayerState): state is 'merged' | 'closed' =>
+  state === 'merged' || state === 'closed';
+
+/** The stack's own shape allows a whole-stack rebase, before this deployment is considered. */
+const stackRebaseOffered = computed(() =>
+  Boolean(
+    status.value?.viewerCanMerge &&
+    stack?.history === 'not-linear' &&
+    stack.number &&
+    stack.layers.length === stack.count &&
+    stack.layers.every((layer) => isTerminalLayerState(layer.state) || Boolean(layer.headSha))
+  )
+);
+
+const showStackRebase = computed(() => stackRebaseOffered.value && !stackRebaseHidden.value);
+
+/**
+ * Why Stack Rebase cannot run. Null when it can. The code is the contract: the
+ * text is looked up here, so the server never ships a sentence to translate.
+ */
+const stackRebaseBlockedCode = computed<StackBlockedCode | null>(() => {
+  if (!stack) return null;
+  const reason = gitUnavailableReason.value;
+  if (reason === 'disabled') return 'stack_rebase_disabled';
+  if (reason === 'git_missing') return 'git_missing';
+  return null;
+});
+
+/** Unmerged Layers from the first through this one. Empty when this pull request is not a Layer. */
+const landingLayers = computed(() => {
+  if (!stack || !stack.layers.length) return [];
+  const byNumber = stack.layers.findIndex((layer) => layer.number === pullNumber);
+  const index = byNumber >= 0 ? byNumber : Math.min(stack.place, stack.layers.length) - 1;
+  if (index < 0) return [];
+  return stack.layers.slice(0, index + 1).filter((layer) => layer.state !== 'merged');
+});
+
+const hasUnmergeableLowerLayer = computed(() =>
+  landingLayers.value
+    .slice(0, -1)
+    .some((layer) => layer.state === 'draft' || layer.state === 'closed')
+);
+
+/** Why this Layer cannot be merged yet. Null when the merge button may be used. */
+const stackMergeBlockedCode = computed<StackBlockedCode | null>(() => {
+  if (!stack) return null;
+  if (stack.history === 'unknown') return 'stack_history_unknown';
+  if (stack.history === 'not-linear') {
+    return gitUnavailableReason.value === 'disabled' ? 'stack_rebase_disabled' : 'stack_not_linear';
+  }
+  if (hasUnmergeableLowerLayer.value) return 'stack_lower_layer_blocked';
+  return null;
+});
+
+const stackRebaseDisabled = computed(
+  () =>
+    showStackRebase.value &&
+    (stackRebaseBlockedCode.value !== null ||
+      refreshingAfterStackRebase.value ||
+      Boolean(error.value))
+);
+
+const reasonText = (code: StackBlockedCode | null) =>
+  code ? t(`prReview.mergeBox.unavailableReason_${code}`) : '';
+
+const stackRebaseBlockedReason = computed(() =>
+  stackRebaseDisabled.value ? reasonText(stackRebaseBlockedCode.value) : ''
+);
+
+const STACK_REBASE_REFRESH_TIMEOUT_MS = 5000;
+let stackRebaseRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+const clearStackRebaseRefreshTimer = () => {
+  if (stackRebaseRefreshTimer !== null) {
+    clearTimeout(stackRebaseRefreshTimer);
+    stackRebaseRefreshTimer = null;
+  }
+};
+
+const clearRefreshingAfterStackRebase = () => {
+  clearStackRebaseRefreshTimer();
+  refreshingAfterStackRebase.value = false;
+};
+
+const openStackRebase = () => {
+  stackRebaseError.value = '';
+  stackRebaseOpen.value = true;
+};
+
+const refreshAfterStackRebase = (result: { ok: boolean; error?: string }) => {
+  if (result.ok) {
+    stackRebaseError.value = '';
+    clearStackRebaseRefreshTimer();
+    refreshingAfterStackRebase.value = true;
+    stackRebaseRefreshTimer = setTimeout(() => {
+      stackRebaseRefreshTimer = null;
+      refreshingAfterStackRebase.value = false;
+    }, STACK_REBASE_REFRESH_TIMEOUT_MS);
+  } else {
+    clearRefreshingAfterStackRebase();
+    stackRebaseError.value = result.error || t('prReview.stackRebase.failed');
+  }
+  if (owner && repo && pullNumber) {
+    void fetchMergeStatus(owner, repo, pullNumber);
+  }
+  emit('branchUpdated');
+};
+
+const retryFetchMergeStatus = () => {
+  if (owner && repo && pullNumber) {
+    void fetchMergeStatus(owner, repo, pullNumber);
+  }
+};
+
+/**
+ * The merge action is always on screen for a reader who may merge, so a Stack that
+ * cannot be landed says why through a disabled button instead of vanishing.
+ */
+const showMergeActions = computed(() => {
+  const current = status.value;
+  if (!current?.viewerCanMerge || current.draft) return false;
+  return true;
+});
+
+/** A running Stack Merge is the merge button's spinner; only an outcome needs a line. */
+const stackMergeStatusLabel = computed(() => {
+  switch (stackMergePhase.value) {
+    case 'landed':
+      return t('prReview.mergeBox.stackMergeLanded');
+    case 'queued':
+      return t('prReview.mergeBox.stackMergeQueued');
+    case 'stalled':
+      return t('prReview.mergeBox.stackMergeStalled');
+    default:
+      return '';
+  }
+});
+
+const activeMergeAlert = computed(
+  () =>
+    mergeError.value ||
+    (stackMergePhase.value === 'failed' ? t('prReview.mergeBox.stackMergeFailed') : '')
+);
+
+/** A landed, queued, or stalled Stack Merge stays on its outcome until resolved or resumed. */
+const stackMergeHolding = computed(() => {
+  const phase = stackMergePhase.value;
+  return phase === 'landed' || phase === 'queued' || phase === 'stalled';
+});
+
+const layerStateLabel = (state: PullRequestStackLayerState) =>
+  t(`prReview.stackDetail.state.${state}`);
+
 const rebaseUpdateAllowed = computed(() => mergeMethods.value.includes('rebase'));
 
-const branchUpdateDisabled = computed(() => !branchMergeabilityKnown.value || updating.value);
+const branchUpdateDisabled = computed(
+  () => !branchMergeabilityKnown.value || updating.value || Boolean(error.value)
+);
 
 const branchUpdateButtonLabel = computed(() => {
   if (updating.value) {
@@ -721,7 +1035,14 @@ const mergeButtonBusy = computed(() => merging.value || loadingCommitDefaults.va
 
 const mergeDisabled = computed(() => {
   const current = status.value;
-  if (!current || mergeButtonBusy.value || loading.value) {
+  if (!current || mergeButtonBusy.value || loading.value || Boolean(error.value)) {
+    return true;
+  }
+
+  // A Layer is landed with its whole Stack in order, so a Stack whose history is
+  // not linear has nothing to land here: the box used to hide the button for this,
+  // and now it stays on screen to say why.
+  if (stackMergeBlockedCode.value) {
     return true;
   }
 
@@ -733,6 +1054,11 @@ const mergeDisabled = computed(() => {
 
   return current.mergeableState === 'dirty' || current.mergeableState === 'blocked';
 });
+
+/** Only the Stack's own state is explained here; GitHub's mergeability has its own row. */
+const mergeBlockedReason = computed(() =>
+  mergeDisabled.value ? reasonText(stackMergeBlockedCode.value) : ''
+);
 
 const methodLabel = (method: PRMergeMethod) => {
   switch (method) {
@@ -771,7 +1097,11 @@ const confirmLabel = computed(() => {
 });
 
 const showCommitForm = computed(
-  () => confirming.value && !loadingCommitDefaults.value && selectedMethod.value !== 'rebase'
+  () =>
+    confirming.value &&
+    !loadingCommitDefaults.value &&
+    selectedMethod.value !== 'rebase' &&
+    landingLayers.value.length <= 1
 );
 
 /** The default text GitHub forms for a method. Rebase keeps every commit's own message. */
@@ -840,6 +1170,7 @@ const performBranchUpdate = async () => {
     return;
   }
 
+  const version = identityVersion;
   updating.value = true;
   // The reread often comes back with mergeable still null. That status must
   // not start the mergeability poll; this update settles after one reread.
@@ -849,12 +1180,15 @@ const performBranchUpdate = async () => {
       method: updateMethod.value,
       expectedHeadOid: headOid,
     });
+    if (version !== identityVersion) return;
     if (succeeded) {
       emit('branchUpdated');
     }
   } finally {
-    updating.value = false;
-    updateConfirming.value = false;
+    if (version === identityVersion) {
+      updating.value = false;
+      updateConfirming.value = false;
+    }
   }
 };
 
@@ -880,6 +1214,37 @@ const cancelConfirm = () => {
   confirming.value = false;
 };
 
+const applyStackMergeResult = (result: Awaited<ReturnType<typeof mergeStack>>, version: number) => {
+  if (version !== identityVersion || !result) return;
+  if (result.id) {
+    stackMergeId.value = result.id;
+  }
+  stackMergePhase.value = result.outcome;
+  if (result.outcome === 'failed' && result.message) {
+    mergeError.value = result.message;
+  }
+  if (result.outcome === 'landed') {
+    emit('merged');
+  }
+  confirming.value = false;
+};
+
+const checkStalledStackMerge = async () => {
+  if (merging.value || !stackMergeId.value) return;
+  const id = stackMergeId.value;
+  const version = identityVersion;
+  merging.value = true;
+  stackMergePhase.value = 'in-progress';
+  try {
+    const result = await resumeStackMergePoll(owner, repo, pullNumber, id);
+    applyStackMergeResult(result, version);
+  } finally {
+    if (version === identityVersion) {
+      merging.value = false;
+    }
+  }
+};
+
 const performMerge = async () => {
   if (merging.value) {
     return;
@@ -887,29 +1252,45 @@ const performMerge = async () => {
 
   // Only a field the reader changed is sent. An untouched field keeps GitHub's own
   // default, which is the text we would otherwise have to reproduce byte for byte.
+  // More than one Layer keeps each Layer's own Default Commit Message.
+  const includeCommitText = !stack || landingLayers.value.length === 1;
   const title =
-    showCommitForm.value && commitTitle.value !== prefillTitle.value
+    includeCommitText && showCommitForm.value && commitTitle.value !== prefillTitle.value
       ? commitTitle.value.trim()
       : '';
   const message =
-    showCommitForm.value && commitMessage.value !== prefillMessage.value
+    includeCommitText && showCommitForm.value && commitMessage.value !== prefillMessage.value
       ? commitMessage.value.trim()
       : '';
+  const payload = {
+    method: selectedMethod.value,
+    ...(title ? { commitTitle: title } : {}),
+    ...(message ? { commitMessage: message } : {}),
+  };
 
+  const version = identityVersion;
   merging.value = true;
   try {
-    const succeeded = await mergePullRequest(owner, repo, pullNumber, {
-      method: selectedMethod.value,
-      ...(title ? { commitTitle: title } : {}),
-      ...(message ? { commitMessage: message } : {}),
-    });
+    if (stack) {
+      if (stack.history !== 'linear') return;
+
+      stackMergePhase.value = 'in-progress';
+      const result = await mergeStack(owner, repo, pullNumber, payload);
+      applyStackMergeResult(result, version);
+      return;
+    }
+
+    const succeeded = await mergePullRequest(owner, repo, pullNumber, payload);
+    if (version !== identityVersion) return;
 
     if (succeeded) {
       emit('merged');
       confirming.value = false;
     }
   } finally {
-    merging.value = false;
+    if (version === identityVersion) {
+      merging.value = false;
+    }
   }
 };
 
@@ -919,18 +1300,22 @@ const performHeadBranchAction = async () => {
     return;
   }
 
+  const version = identityVersion;
   branchAction.value = action;
   try {
     const succeeded =
       action === 'delete'
         ? await deleteHeadBranch(owner, repo, pullNumber)
         : await restoreHeadBranch(owner, repo, pullNumber);
+    if (version !== identityVersion) return;
 
     if (succeeded) {
       emit('headBranchUpdated');
     }
   } finally {
-    branchAction.value = null;
+    if (version === identityVersion) {
+      branchAction.value = null;
+    }
   }
 };
 
@@ -941,32 +1326,37 @@ const onMergeClick = async () => {
 
   if (confirming.value) {
     await performMerge();
-    confirming.value = false;
     return;
   }
 
   dropdownOpen.value = false;
   resetCommitForm();
+  stackMergePhase.value = null;
+  stackMergeId.value = null;
   confirming.value = true;
 
   // Rebase writes one commit per change, each keeping its own message: no form.
-  if (selectedMethod.value === 'rebase') {
+  // A Stack Merge of more than one Layer keeps each Layer's own message too.
+  if (selectedMethod.value === 'rebase' || landingLayers.value.length > 1) {
     return;
   }
 
   // Read on every open: the pull request's own text may have moved since the last
   // one, and the answer is only shown, never sent unchanged. The form waits for it,
   // so the button that asked for it carries the progress until the text is in hand.
+  const version = identityVersion;
   const method = selectedMethod.value;
   loadingCommitDefaults.value = true;
   try {
     await fetchCommitDefaults(owner, repo, pullNumber);
   } finally {
-    loadingCommitDefaults.value = false;
+    if (version === identityVersion) {
+      loadingCommitDefaults.value = false;
+    }
   }
 
   // The reader may have cancelled or switched method while the request was in flight.
-  if (!confirming.value || selectedMethod.value !== method) {
+  if (version !== identityVersion || !confirming.value || selectedMethod.value !== method) {
     return;
   }
 
@@ -1039,40 +1429,103 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick);
   stopMergeabilityPolling();
+  clearStackRebaseRefreshTimer();
 });
 
-watch(
-  () => [owner, repo, pullNumber, initialStatus] as const,
-  ([owner, repo, pullNumber, initialStatus]) => {
-    dropdownOpen.value = false;
-    confirming.value = false;
-    updateMenuOpen.value = false;
-    updateConfirming.value = false;
-    updateMethod.value = 'merge';
-    suppressMergeabilityPoll = false;
-    loadingCommitDefaults.value = false;
-    checksExpanded.value = false;
-    resetCommitForm();
-    clearCommitDefaults();
-    branchAction.value = null;
-    stopMergeabilityPolling();
-    mergeabilityPollAttempts = 0;
+const resetInteractionState = () => {
+  dropdownOpen.value = false;
+  confirming.value = false;
+  stackMergePhase.value = null;
+  stackMergeId.value = null;
+  updateMenuOpen.value = false;
+  updateConfirming.value = false;
+  loadingCommitDefaults.value = false;
+  resetCommitForm();
+  clearCommitDefaults();
+};
 
+/** Every local control this box owns, back to the state a fresh pull request opens in. */
+const resetMergeBoxState = () => {
+  identityVersion += 1;
+  resetInteractionState();
+  stackRebaseOpen.value = false;
+  stackRebaseError.value = '';
+  clearRefreshingAfterStackRebase();
+  merging.value = false;
+  updating.value = false;
+  updateMethod.value = 'merge';
+  suppressMergeabilityPoll = false;
+  checksExpanded.value = false;
+  branchAction.value = null;
+  stopMergeabilityPolling();
+  mergeabilityPollAttempts = 0;
+};
+
+// A different pull request is the only thing that may forget the status: the old
+// box's data must not sit under the new one's heading.
+watch(
+  () => [owner, repo, pullNumber] as const,
+  ([owner, repo, pullNumber]) => {
+    resetMergeBoxState();
+    resetMergeStatus();
+
+    // A terminal status comes from the detail payload, which already read it.
+    // Fetching anyway would race the answer the reader is about to be given.
     if (initialStatus) {
       setMergeStatus(initialStatus);
-    } else {
-      setMergeStatus(null);
-
-      if (owner && repo && pullNumber) {
-        fetchMergeStatus(owner, repo, pullNumber);
-      }
+    } else if (owner && repo && pullNumber) {
+      void fetchMergeStatus(owner, repo, pullNumber);
     }
 
-    // Pick from the status already in hand, so the first paint names the method
-    // the repository actually offers.
+    // Pick from the status in hand, so the first paint names the method the
+    // repository actually offers.
     selectedMethod.value = mergeMethods.value[0] ?? 'merge';
   },
   { immediate: true }
+);
+
+// The same pull request, re-read: a Stack Rebase finishing or the detail page
+// refreshing. The box keeps showing what it has while the answer is in flight,
+// so nothing the reader is reading is torn off the screen.
+watch(
+  () => [owner, repo, pullNumber, initialStatus, stack?.history, stack?.place, stack] as const,
+  (
+    [nextOwner, nextRepo, nextPullNumber, nextInitial, nextHistory, nextPlace, nextStack],
+    [prevOwner, prevRepo, prevPullNumber, prevInitial, prevHistory, prevPlace, prevStack]
+  ) => {
+    if (nextOwner !== prevOwner || nextRepo !== prevRepo || nextPullNumber !== prevPullNumber) {
+      return;
+    }
+
+    if (nextStack !== prevStack) {
+      clearRefreshingAfterStackRebase();
+    }
+    if (nextHistory === 'linear') {
+      stackRebaseError.value = '';
+    }
+
+    const stackMoved =
+      prevHistory !== undefined && (nextHistory !== prevHistory || nextPlace !== prevPlace);
+
+    if (stackMoved) {
+      // A Stack that turned linear or changed shape invalidates the open confirm
+      // step, but not the status the reader is looking at.
+      resetInteractionState();
+    }
+
+    // The detail payload may already carry a fresh status; otherwise re-read it
+    // while still showing the one on screen.
+    if (nextInitial) {
+      setMergeStatus(nextInitial);
+    } else if (prevInitial && !nextInitial) {
+      resetMergeStatus();
+      if (owner && repo && pullNumber) {
+        void fetchMergeStatus(owner, repo, pullNumber);
+      }
+    } else if (stackMoved && owner && repo && pullNumber) {
+      void fetchMergeStatus(owner, repo, pullNumber);
+    }
+  }
 );
 </script>
 
@@ -1122,9 +1575,17 @@ watch(
 }
 
 /* ── Notes ── */
+.merge-box > .merge-box__note {
+  margin: 12px 16px;
+}
+
+.merge-box > .merge-box__note:not(:last-child) {
+  margin-bottom: 0;
+}
+
 .merge-box__note {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   padding: 10px 16px;
   font-size: 12px;
@@ -1132,12 +1593,53 @@ watch(
 
   svg {
     flex-shrink: 0;
-    margin-top: 1px;
+  }
+
+  span {
+    flex: 1;
+    min-width: 0;
   }
 
   &--danger {
     color: var(--gitpulse-danger-solid);
     background: var(--gitpulse-danger-soft);
+  }
+}
+
+.merge-box__retry-btn,
+.merge-box__check-status-btn {
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--gitpulse-text);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }
 
@@ -1501,7 +2003,9 @@ watch(
   gap: 0;
 }
 
-.merge-box__merge-btn {
+/* The Stack Rebase action sits in the same row as a merge, so it shares the shell. */
+.merge-box__merge-btn,
+.merge-box__rebase-stack-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1513,7 +2017,6 @@ watch(
   color: #ffffff;
   background: var(--gitpulse-success-solid);
   border: 1px solid var(--gitpulse-success-solid);
-  border-radius: 6px 0 0 6px;
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -1536,21 +2039,55 @@ watch(
     opacity: 0.55;
     cursor: not-allowed;
   }
+}
 
-  /* A busy control keeps its own fill: the spinner is the progress, not a refusal. */
-  &--busy:disabled {
-    opacity: 1;
-    cursor: progress;
+.merge-box__merge-btn {
+  /* The left half of the split button; a Stack Rebase action stands alone. */
+  border-radius: 6px 0 0 6px;
+}
+
+.merge-box__rebase-stack-btn {
+  border-radius: 6px;
+  background: var(--gitpulse-primary-solid);
+  border-color: var(--gitpulse-primary-solid);
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-primary-solid-hover);
+      border-color: var(--gitpulse-primary-solid-hover);
+    }
   }
 
-  &--confirm {
-    border-radius: 6px;
+  &:focus-visible,
+  &:active:not(:disabled) {
+    background: var(--gitpulse-primary-solid-hover);
+    border-color: var(--gitpulse-primary-solid-hover);
   }
+}
 
-  /* No method picker beside it, so the split button's right edge rounds too. */
-  &--standalone {
-    border-radius: 6px;
-  }
+.merge-box__blocked-reason {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--gitpulse-text-muted);
+}
+
+.merge-box__stack-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* A busy control keeps its own fill: the spinner is the progress, not a refusal. */
+.merge-box__merge-btn--busy:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.merge-box__merge-btn--confirm,
+.merge-box__merge-btn--standalone {
+  border-radius: 6px;
 }
 
 .merge-box__method-toggle {
@@ -1726,6 +2263,66 @@ watch(
   line-height: 1.5;
   resize: vertical;
   min-height: 84px;
+}
+
+.merge-box__stack-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.merge-box__stack-layer {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.merge-box__stack-layer-number {
+  flex-shrink: 0;
+  font-family: var(--gitpulse-code-font-family);
+  font-size: 11px;
+  color: var(--gitpulse-text-subtle);
+}
+
+.merge-box__stack-layer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merge-box__stack-layer-state {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gitpulse-text-muted);
+
+  &[data-state='open'] {
+    color: var(--gitpulse-success-solid);
+  }
+
+  &[data-state='merged'] {
+    color: var(--gitpulse-info);
+  }
+
+  &[data-state='closed'] {
+    color: var(--gitpulse-danger-solid);
+  }
+}
+
+.merge-box__stack-outcome {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .merge-box__form-actions {

@@ -74,6 +74,54 @@ export interface PullRequestHeadBranchState {
   unavailable_reason: PullRequestHeadBranchUnavailableReason | null;
 }
 
+export type PullRequestStackLayerState = 'open' | 'draft' | 'closed' | 'merged';
+
+/** In progress until GitHub lands the Stack, queues it, or fails it. */
+export type StackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
+
+export type StackRebaseLayerOutcome =
+  | 'current'
+  | 'rebased'
+  | 'failed'
+  | 'skipped'
+  | 'merged'
+  | 'closed';
+
+export interface StackRebaseLayerResult {
+  number: number;
+  outcome: StackRebaseLayerOutcome;
+  message?: string;
+}
+
+export interface StackRebaseResult {
+  ok: boolean;
+  results: StackRebaseLayerResult[];
+  error?: string;
+}
+
+/** Whether each open layer contains the tip of its base branch. */
+export type PullRequestStackHistory = 'linear' | 'not-linear' | 'unknown';
+
+export interface PullRequestStackLayer {
+  number: number;
+  title: string;
+  state: PullRequestStackLayerState;
+  headSha?: string;
+  baseSha?: string;
+  baseRef?: string;
+}
+
+export interface PullRequestStack {
+  number?: number;
+  trunk: string;
+  count: number;
+  /** 1 is the Layer closest to the Trunk. */
+  place: number;
+  /** From the first Layer to the top. */
+  layers: PullRequestStackLayer[];
+  history: PullRequestStackHistory;
+}
+
 export interface PullRequestDetailPayload {
   id: number;
   number: number;
@@ -119,7 +167,23 @@ export interface PullRequestDetailPayload {
   changed_files?: number;
   additions?: number;
   deletions?: number;
+
+  /** Null when GitHub has not linked this pull request into a Stack. */
+  stack?: PullRequestStack | null;
+  /** Whether this deployment can run Git, which decides whether Stack Rebase is offered. */
+  git?: GitAvailability | null;
 }
+
+/**
+ * Whether this deployment can run Git. `disabled` is `NUXT_GITPULSE_GIT_ENABLED`
+ * switched off; `git_missing` is the capability switched on with no `git` on the server.
+ */
+export type GitUnavailableReason = 'disabled' | 'git_missing';
+
+/** A union, so "available" and "has a reason" can never both be true. */
+export type GitAvailability =
+  | { available: true }
+  | { available: false; reason: GitUnavailableReason };
 
 /**
  * GitHub GraphQL `MergeableState`, stored lowercased.

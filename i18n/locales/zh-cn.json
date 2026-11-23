@@ -854,6 +854,12 @@
     "mentionSuggestionsUnavailable": "无法加载用户"
   },
   "timeline": {
+    "forcePushedNamedWithCommits": "将 {branch} 分支从 {from} 强制推送至 {to}",
+    "forcePushedNamed": "强制推送了 {branch} 分支",
+    "forcePushedHeadWithCommits": "将头部分支从 {from} 强制推送至 {to}",
+    "forcePushedHead": "强制推送了头部分支",
+    "forcePushedBaseWithCommits": "将基础分支从 {from} 强制推送至 {to}",
+    "forcePushedBase": "强制推送了基础分支",
     "referenceUnavailable": "引用不可用",
     "pullRequestType": "PR",
     "issueType": "议题",
@@ -1001,6 +1007,38 @@
     "retry": "重试",
     "noFiles": "此拉取请求没有变更文件。",
     "noDescription": "没有提供描述",
+    "stackChip": {
+      "place": "第 {place} 层，共 {count} 层",
+      "discardPendingReviewTitle": "放弃未提交的评审评论？",
+      "discardPendingReviewBody": "切换到 #{number} 将放弃当前拉取请求上 {count} 条未提交的评论。",
+      "discardAndSwitch": "放弃并切换"
+    },
+    "stackDetail": {
+      "title": "堆叠",
+      "trunk": "主干",
+      "close": "关闭",
+      "current": "当前",
+      "unavailable": "无法加载堆叠层列表。",
+      "state": {
+        "open": "打开",
+        "draft": "草稿",
+        "closed": "已关闭",
+        "merged": "已合并"
+      }
+    },
+    "stackRebase": {
+      "title": "变基堆叠",
+      "description": "从 {trunk} 开始逐层变基打开的分支，仅在所有层均无冲突时才会统一强制推送。",
+      "confirm": "确认变基",
+      "pending": "等待中",
+      "skipped": "未变基",
+      "rebasing": "正在变基…",
+      "current": "已是最新",
+      "rebased": "变基完成",
+      "failed": "变基失败",
+      "liveRunning": "正在变基堆叠…",
+      "liveDone": "堆叠变基完成。"
+    },
     "reviewers": "审查者",
     "noReviewers": "没有指派审查者",
     "status": {
@@ -1161,6 +1199,11 @@
       "mergeableDraft": "此拉取请求仍是草稿",
       "mergeableUnstable": "可能可以合并，但部分要求仍在处理中",
       "mergeableChecking": "正在检查可合并性...",
+      "unavailableReason_stack_not_linear": "只有线性的堆叠才能合并，请先变基该堆叠。",
+      "unavailableReason_stack_rebase_disabled": "只有线性的堆叠才能合并。此部署已关闭堆叠变基。",
+      "unavailableReason_stack_history_unknown": "无法读取堆叠历史。",
+      "unavailableReason_git_missing": "此服务器上没有 Git，因此无法变基堆叠。",
+      "unavailableReason_stack_lower_layer_blocked": "必须先使下方的堆叠层处于打开且可合并状态。",
       "methodMerge": "合并拉取请求",
       "methodSquash": "压缩合并",
       "methodRebase": "变基合并",
@@ -1188,7 +1231,13 @@
       "deleteBranch": "删除分支",
       "restoreBranch": "恢复分支",
       "deletingBranch": "正在删除分支...",
-      "restoringBranch": "正在恢复分支..."
+      "restoringBranch": "正在恢复分支...",
+      "stackMergeLanded": "堆叠合并已落地",
+      "stackMergeQueued": "已进入合并队列",
+      "stackMergeFailed": "堆叠合并失败",
+      "stackMergeStalled": "堆叠合并仍在 GitHub 后台运行。",
+      "checkStackMergeStatus": "检查状态",
+      "retryStatus": "重试"
     }
   },
   "markdown": {

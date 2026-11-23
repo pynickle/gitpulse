@@ -134,20 +134,21 @@
       item.eventType === 'base_ref_force_pushed' || item.eventType === 'head_ref_force_pushed'
     "
   >
-    {{
-      item.eventType === 'base_ref_force_pushed'
-        ? 'force-pushed the base branch'
-        : 'force-pushed the head branch'
-    }}
-    <span v-if="item.ref?.name" class="tag is-activity ml-1 is-info is-light">{{
-      item.ref.name
-    }}</span>
-    <span v-if="item.beforeCommit?.oid" class="tag is-activity ml-1 is-warning is-light">
-      {{ item.beforeCommit.oid.slice(0, 7) }}
-    </span>
-    <span v-if="item.afterCommit?.oid" class="tag is-activity ml-1 is-success is-light">
-      {{ item.afterCommit.oid.slice(0, 7) }}
-    </span>
+    <i18n-t :keypath="forcePushKeypath" tag="span">
+      <template v-if="item.ref?.name" #branch>
+        <span class="tag is-activity is-info is-light">{{ item.ref.name }}</span>
+      </template>
+      <template v-if="item.beforeCommit?.oid" #from>
+        <span class="tag is-activity is-warning is-light">{{
+          item.beforeCommit.oid.slice(0, 7)
+        }}</span>
+      </template>
+      <template v-if="item.afterCommit?.oid" #to>
+        <span class="tag is-activity is-success is-light">{{
+          item.afterCommit.oid.slice(0, 7)
+        }}</span>
+      </template>
+    </i18n-t>
   </template>
 
   <template v-else-if="item.eventType === 'closed'">
@@ -394,6 +395,17 @@ const { t } = useI18n();
 const reviewer = computed(() => describeRequestedReviewer(item.requestedReviewer));
 const assigneeChanges = computed(() => item.assigneeChanges ?? []);
 const labelChanges = computed(() => item.labelChanges ?? []);
+
+const forcePushKeypath = computed(() => {
+  const hasCommits = Boolean(item.beforeCommit?.oid && item.afterCommit?.oid);
+  if (item.ref?.name) {
+    return hasCommits ? 'timeline.forcePushedNamedWithCommits' : 'timeline.forcePushedNamed';
+  }
+  if (item.eventType === 'base_ref_force_pushed') {
+    return hasCommits ? 'timeline.forcePushedBaseWithCommits' : 'timeline.forcePushedBase';
+  }
+  return hasCommits ? 'timeline.forcePushedHeadWithCommits' : 'timeline.forcePushedHead';
+});
 
 const issueFieldPrefix = computed(() => {
   switch (item.eventType) {

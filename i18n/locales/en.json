@@ -854,6 +854,12 @@
     "mentionSuggestionsUnavailable": "Unable to load users"
   },
   "timeline": {
+    "forcePushedNamedWithCommits": "force-pushed the {branch} branch from {from} to {to}",
+    "forcePushedNamed": "force-pushed the {branch} branch",
+    "forcePushedHeadWithCommits": "force-pushed the head branch from {from} to {to}",
+    "forcePushedHead": "force-pushed the head branch",
+    "forcePushedBaseWithCommits": "force-pushed the base branch from {from} to {to}",
+    "forcePushedBase": "force-pushed the base branch",
     "referenceUnavailable": "Reference unavailable",
     "pullRequestType": "PR",
     "issueType": "Issue",
@@ -1001,6 +1007,38 @@
     "retry": "Retry",
     "noFiles": "No changed files found for this pull request.",
     "noDescription": "No description provided",
+    "stackChip": {
+      "place": "Layer {place} of {count}",
+      "discardPendingReviewTitle": "Discard pending review comments?",
+      "discardPendingReviewBody": "Switching to #{number} will discard {count} pending comment(s) on this pull request.",
+      "discardAndSwitch": "Discard and switch"
+    },
+    "stackDetail": {
+      "title": "Stack",
+      "trunk": "Trunk",
+      "close": "Close",
+      "current": "Current",
+      "unavailable": "Stack layers could not be loaded.",
+      "state": {
+        "open": "Open",
+        "draft": "Draft",
+        "closed": "Closed",
+        "merged": "Merged"
+      }
+    },
+    "stackRebase": {
+      "title": "Rebase stack",
+      "description": "Rebase open branches from {trunk} upward. Branches are force-pushed only if every Layer replays cleanly.",
+      "confirm": "Confirm rebase",
+      "pending": "Pending",
+      "skipped": "Not rebased",
+      "rebasing": "Rebasing…",
+      "current": "Already current",
+      "rebased": "Rebased",
+      "failed": "Rebase failed",
+      "liveRunning": "Rebasing stack…",
+      "liveDone": "Stack rebase finished."
+    },
     "reviewers": "Reviewers",
     "noReviewers": "No reviewers assigned",
     "status": {
@@ -1161,6 +1199,11 @@
       "mergeableDraft": "This pull request is still a draft",
       "mergeableUnstable": "Merging may be possible, but some requirements are still settling",
       "mergeableChecking": "Checking mergeability...",
+      "unavailableReason_stack_not_linear": "Only a linear Stack can merge. Rebase the Stack first.",
+      "unavailableReason_stack_rebase_disabled": "Only a linear Stack can merge. Stack Rebase is switched off on this deployment.",
+      "unavailableReason_stack_history_unknown": "The Stack history could not be read.",
+      "unavailableReason_git_missing": "This server has no Git, so it cannot rebase a Stack.",
+      "unavailableReason_stack_lower_layer_blocked": "Lower Layers in this Stack must be open and ready before merging.",
       "methodMerge": "Merge pull request",
       "methodSquash": "Squash and merge",
       "methodRebase": "Rebase and merge",
@@ -1188,7 +1231,13 @@
       "deleteBranch": "Delete branch",
       "restoreBranch": "Restore branch",
       "deletingBranch": "Deleting branch...",
-      "restoringBranch": "Restoring branch..."
+      "restoringBranch": "Restoring branch...",
+      "stackMergeLanded": "Stack merge landed",
+      "stackMergeQueued": "Entered the merge queue",
+      "stackMergeFailed": "Stack merge failed",
+      "stackMergeStalled": "Stack merge is still running on GitHub.",
+      "checkStackMergeStatus": "Check status",
+      "retryStatus": "Retry"
     }
   },
   "markdown": {

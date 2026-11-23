@@ -1,6 +1,25 @@
 import { compileScript, parse } from '@vue/compiler-sfc';
 import * as Vue from 'vue';
 
+// A child component the test does not steer still needs a binding. Rendering
+// nothing keeps the parent's own output intact, so adding a child to an SFC
+// cannot fail a test that asserts the parent's behavior.
+const autoStub = { setup: () => () => null };
+
+// Anything the test supplied wins. Any other missing module is a setup error
+// named in the message, so a rename or a new dependency points at the fix
+// instead of crashing on `undefined.default`.
+function resolveModules(modules: Record<string, unknown>) {
+  const supplied: Record<string, unknown> = { vue: Vue, ...modules };
+  return new Proxy(supplied, {
+    get(target, key, receiver) {
+      if (typeof key !== 'string' || key in target) return Reflect.get(target, key, receiver);
+      if (key.endsWith('.vue')) return { default: autoStub };
+      throw new Error(`compileVue: no module supplied for '${key}'. Add it to the modules map.`);
+    },
+  });
+}
+
 // Compile the real SFC (including its template) for the mounted host. Imports are
 // supplied explicitly so tests can isolate child presentation and external data.
 //
@@ -50,8 +69,7 @@ export async function compileVue(
     .replaceAll('import.meta.client', 'true')
     .replaceAll('import.meta.server', 'false');
   // oxlint-disable-next-line no-implied-eval -- compiles a checked-in fixture; evaluating generated code is the point
-  return new Function('modules', `${executable}\nreturn __component;`)({
-    vue: Vue,
-    ...modules,
-  }) as Vue.Component;
+  return new Function('modules', `${executable}\nreturn __component;`)(
+    resolveModules(modules)
+  ) as Vue.Component;
 }

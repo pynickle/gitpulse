@@ -567,11 +567,29 @@ export function useDashboardDetails(currentRouteTab: Ref<string>) {
     await pushDetailRoute('issue', { owner, repo, number: issueNumber });
   };
 
-  const handleSwitchPR = async (owner: string, repo: string, pullNumber: number) => {
+  const handleSwitchPR = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    openReview = false
+  ) => {
     if (!owner || !repo || !pullNumber) return;
 
     if (opensGitHubLinks.value) {
-      openGitHubTarget(createDashboardPullRequestTarget(owner, repo, pullNumber));
+      openGitHubTarget(
+        openReview
+          ? createDashboardPullRequestReviewTarget(owner, repo, pullNumber)
+          : createDashboardPullRequestTarget(owner, repo, pullNumber)
+      );
+      return;
+    }
+
+    if (openReview) {
+      await pushDashboardQuery({
+        ...route.query,
+        pr: undefined,
+        prReview: serializeDashboardDetailTarget(owner, repo, pullNumber),
+      });
       return;
     }
 

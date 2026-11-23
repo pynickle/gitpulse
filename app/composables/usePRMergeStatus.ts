@@ -1,5 +1,7 @@
+import { onScopeDispose, shallowRef } from 'vue';
+
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
-import type { PullRequestHeadBranchState } from '#shared/types/pulls';
+import type { PullRequestHeadBranchState, StackMergeOutcome } from '#shared/types/pulls';
 
 export type PRState = 'open' | 'closed' | 'merged';
 export type PRReviewDecision = 'approved' | 'changes_requested' | 'review_required' | 'none';
@@ -73,6 +75,19 @@ export interface PRMergeResponse {
   message: string;
 }
 
+/** `stalled` is client-only: the poll gave up while the merge may still be running. */
+export type PRStackMergeOutcome = StackMergeOutcome | 'stalled';
+
+export interface PRStackMergeResult {
+  outcome: PRStackMergeOutcome;
+  id?: string;
+  message?: string;
+}
+
+const STACK_MERGE_POLL_DELAYS_MS = [2000, 2000, 2000, 3000, 3000, 4000];
+const STACK_MERGE_MAX_POLLS = 25;
+const STACK_MERGE_MAX_CONSECUTIVE_ERRORS = 2;
+
 export interface PRHeadBranchMutationResponse {
   head_branch?: PullRequestHeadBranchState | null;
 }
@@ -133,12 +148,56 @@ export function usePRMergeStatus() {
   const commitDefaults = shallowRef<PRMergeCommitDefaults | null>(null);
   let statusRequestId = 0;
   let commitDefaultsRequestId = 0;
+  // Bumped when the composable moves to another pull request or is disposed, so an
+  // await that started before then cannot write over what replaced it.
+  let mutationGeneration = 0;
+  let stackMergeRequestId = 0;
+  let stackMergePollTimer: ReturnType<typeof setTimeout> | null = null;
+  let finishStackMergePoll: ((current: boolean) => void) | null = null;
 
+  const stopStackMergePoll = () => {
+    if (stackMergePollTimer !== null) {
+      clearTimeout(stackMergePollTimer);
+      stackMergePollTimer = null;
+    }
+    const finish = finishStackMergePoll;
+    finishStackMergePoll = null;
+    finish?.(false);
+  };
+
+  // Disposal retires this caller so a Stack Merge does not keep polling.
+  onScopeDispose(() => {
+    mutationGeneration += 1;
+    stackMergeRequestId += 1;
+    stopStackMergePoll();
+  });
+
+  /**
+   * Adopts a status the caller already holds. Distinct from `resetMergeStatus`:
+   * this one is an answer, not a request to forget the last one.
+   */
   const setMergeStatus = (status: PRMergeStatus | null) => {
     statusRequestId += 1;
     mergeStatus.value = status;
     loading.value = false;
     error.value = null;
+    branchUpdateError.value = null;
+  };
+
+  /**
+   * Forgets the status before a reread. Only a different pull request needs this,
+   * because the old box's data must not sit under the new one's heading.
+   */
+  const resetMergeStatus = () => {
+    mutationGeneration += 1;
+    stackMergeRequestId += 1;
+    stopStackMergePoll();
+    statusRequestId += 1;
+    mergeStatus.value = null;
+    loading.value = false;
+    error.value = null;
+    mergeError.value = null;
+    branchActionError.value = null;
     branchUpdateError.value = null;
   };
 
@@ -162,7 +221,8 @@ export function usePRMergeStatus() {
     } catch (fetchError: unknown) {
       if (requestId === statusRequestId) {
         error.value = getFetchErrorMessage(fetchError, 'Failed to fetch pull request merge status');
-        mergeStatus.value = null;
+        // A reread that fails keeps the status already on screen: throwing it away
+        // would blank the whole Merge Box for a request the reader did not make.
       }
       return null;
     } finally {
@@ -201,12 +261,135 @@ export function usePRMergeStatus() {
     commitDefaults.value = null;
   };
 
+  const waitForStackMergePoll = (requestId: number, delayMs: number) =>
+    new Promise<boolean>((resolve) => {
+      finishStackMergePoll = resolve;
+      stackMergePollTimer = setTimeout(() => {
+        stackMergePollTimer = null;
+        finishStackMergePoll = null;
+        resolve(requestId === stackMergeRequestId);
+      }, delayMs);
+    });
+
+  const failedStackMerge = (message?: string): PRStackMergeResult => ({
+    outcome: 'failed',
+    ...(message ? { message } : {}),
+  });
+
+  /**
+   * Follows an in-progress Stack Merge until it settles. A poll that cannot settle
+   * (too many reads, or repeated read failures) answers `stalled`, not `failed`:
+   * the merge may still be running, so the caller can resume it.
+   */
+  const pollStackMergeStatus = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    initialResult: PRStackMergeResult,
+    requestId: number,
+    gen: number
+  ): Promise<PRStackMergeResult | null> => {
+    const isCurrentRequest = () => requestId === stackMergeRequestId && gen === mutationGeneration;
+    let result = initialResult;
+    let activeId = initialResult.id;
+    let polls = 0;
+    let consecutiveErrors = 0;
+
+    while (isCurrentRequest() && result.outcome === 'in-progress') {
+      if (result.id) activeId = result.id;
+      if (!activeId) return failedStackMerge(result.message);
+      if (polls >= STACK_MERGE_MAX_POLLS) {
+        return { outcome: 'stalled', id: activeId, message: result.message };
+      }
+
+      const delayMs =
+        STACK_MERGE_POLL_DELAYS_MS[Math.min(polls, STACK_MERGE_POLL_DELAYS_MS.length - 1)]!;
+      polls += 1;
+      const current = await waitForStackMergePoll(requestId, delayMs);
+      if (!current || !isCurrentRequest()) return null;
+
+      try {
+        result = await apiFetch<PRStackMergeResult>(
+          `/api/pulls/${owner}/${repo}/${pullNumber}/stack-merge/${encodeURIComponent(activeId)}`
+        );
+        consecutiveErrors = 0;
+      } catch (fetchError: unknown) {
+        if (!isCurrentRequest()) return null;
+        consecutiveErrors += 1;
+        if (
+          consecutiveErrors <= STACK_MERGE_MAX_CONSECUTIVE_ERRORS &&
+          polls < STACK_MERGE_MAX_POLLS
+        ) {
+          continue;
+        }
+        return { outcome: 'stalled', id: activeId, message: getFetchErrorMessage(fetchError, '') };
+      }
+    }
+
+    if (!isCurrentRequest()) return null;
+
+    if (result.outcome === 'landed') {
+      await fetchMergeStatus(owner, repo, pullNumber);
+    }
+
+    return isCurrentRequest() ? result : null;
+  };
+
+  const mergeStack = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    payload: PRMergePayload
+  ): Promise<PRStackMergeResult | null> => {
+    const requestId = stackMergeRequestId + 1;
+    stackMergeRequestId = requestId;
+    stopStackMergePoll();
+    mergeError.value = null;
+    const gen = mutationGeneration;
+    const isCurrentRequest = () => requestId === stackMergeRequestId && gen === mutationGeneration;
+
+    try {
+      const initial = await apiFetch<PRStackMergeResult>(
+        `/api/pulls/${owner}/${repo}/${pullNumber}/stack-merge`,
+        { method: 'POST', body: payload }
+      );
+      if (!isCurrentRequest()) return null;
+      return await pollStackMergeStatus(owner, repo, pullNumber, initial, requestId, gen);
+    } catch (fetchError: unknown) {
+      if (!isCurrentRequest()) return null;
+      mergeError.value = getFetchErrorMessage(fetchError, 'Failed to merge stack');
+      return failedStackMerge();
+    }
+  };
+
+  /** Picks a stalled Stack Merge back up by its id. */
+  const resumeStackMergePoll = async (
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    id: string
+  ): Promise<PRStackMergeResult | null> => {
+    const requestId = stackMergeRequestId + 1;
+    stackMergeRequestId = requestId;
+    stopStackMergePoll();
+    mergeError.value = null;
+    return pollStackMergeStatus(
+      owner,
+      repo,
+      pullNumber,
+      { outcome: 'in-progress', id },
+      requestId,
+      mutationGeneration
+    );
+  };
+
   const mergePullRequest = async (
     owner: string,
     repo: string,
     pullNumber: number,
     payload: PRMergePayload
   ) => {
+    const gen = mutationGeneration;
     mergeError.value = null;
 
     try {
@@ -214,9 +397,11 @@ export function usePRMergeStatus() {
         method: 'POST',
         body: payload,
       });
+      if (gen !== mutationGeneration) return false;
       await fetchMergeStatus(owner, repo, pullNumber);
-      return true;
+      return gen === mutationGeneration;
     } catch (fetchError: unknown) {
+      if (gen !== mutationGeneration) return false;
       mergeError.value = getFetchErrorMessage(fetchError, 'Failed to merge pull request');
       return false;
     }
@@ -229,6 +414,7 @@ export function usePRMergeStatus() {
     method: 'DELETE' | 'POST',
     fallbackError: string
   ) => {
+    const gen = mutationGeneration;
     branchActionError.value = null;
 
     try {
@@ -236,15 +422,17 @@ export function usePRMergeStatus() {
         `/api/pulls/${owner}/${repo}/${pullNumber}/head-branch`,
         { method }
       );
+      if (gen !== mutationGeneration) return false;
       const nextStatus = await fetchMergeStatus(owner, repo, pullNumber);
-      if (!nextStatus && response?.head_branch && mergeStatus.value) {
+      if (gen === mutationGeneration && !nextStatus && response?.head_branch && mergeStatus.value) {
         mergeStatus.value = {
           ...mergeStatus.value,
           headBranch: response.head_branch,
         };
       }
-      return true;
+      return gen === mutationGeneration;
     } catch (fetchError: unknown) {
+      if (gen !== mutationGeneration) return false;
       branchActionError.value = getFetchErrorMessage(fetchError, fallbackError);
       return false;
     }
@@ -256,6 +444,7 @@ export function usePRMergeStatus() {
     pullNumber: number,
     payload: PRBranchUpdatePayload
   ) => {
+    const gen = mutationGeneration;
     branchUpdateError.value = null;
 
     try {
@@ -263,9 +452,11 @@ export function usePRMergeStatus() {
         method: 'POST',
         body: payload,
       });
+      if (gen !== mutationGeneration) return false;
       await fetchMergeStatus(owner, repo, pullNumber);
-      return true;
+      return gen === mutationGeneration;
     } catch (fetchError: unknown) {
+      if (gen !== mutationGeneration) return false;
       branchUpdateError.value = getFetchErrorMessage(
         fetchError,
         'Failed to update pull request branch'
@@ -276,7 +467,6 @@ export function usePRMergeStatus() {
       return false;
     }
   };
-
   const deleteHeadBranch = (owner: string, repo: string, pullNumber: number) =>
     mutateHeadBranch(
       owner,
@@ -298,10 +488,13 @@ export function usePRMergeStatus() {
     branchUpdateError,
     commitDefaults,
     setMergeStatus,
+    resetMergeStatus,
     fetchMergeStatus,
     fetchCommitDefaults,
     clearCommitDefaults,
     mergePullRequest,
+    mergeStack,
+    resumeStackMergePoll,
     updatePullRequestBranch,
     deleteHeadBranch,
     restoreHeadBranch,

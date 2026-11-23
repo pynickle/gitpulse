@@ -1,26 +1,13 @@
 import type { H3Event } from 'h3';
 
 import type { AuthProviderMode, AuthProviderState } from '#shared/types/auth-provider';
-
-const ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
-const DISABLED_VALUES = new Set(['0', 'false', 'no', 'off']);
+import { normalizeEnvBoolean } from '#shared/utils/env-boolean';
 
 export const AUTH_PROVIDER_CONFIGURATION_ERROR =
   'GitPulse auth configuration is invalid: both token input and GitHub OAuth are disabled. Enable AUTH_PAT_ENABLED or AUTH_GITHUB_OAUTH_ENABLED before starting the app.';
 
 export const AUTH_PERSONAL_MODE_CONFIGURATION_ERROR =
   'GitPulse auth configuration is invalid: personal mode requires non-empty NUXT_GITPULSE_AUTH_GITHUB_TOKEN, NUXT_GITPULSE_AUTH_PERSONAL_PASSWORD, and NUXT_GITPULSE_AUTH_PERSONAL_COOKIE_SECRET (formerly AUTH_PERSONAL_TOKEN, AUTH_PERSONAL_PASSWORD, AUTH_PERSONAL_COOKIE_SECRET) values before starting the app.';
-
-function normalizeBoolean(value: unknown, defaultValue: boolean): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    if (ENABLED_VALUES.has(normalized)) return true;
-    if (DISABLED_VALUES.has(normalized)) return false;
-  }
-
-  return defaultValue;
-}
 
 function hasNonBlankString(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0;
@@ -92,11 +79,11 @@ function resolveMode(
 
 export function resolveAuthProviderState(event?: H3Event): AuthProviderState {
   const gitpulseAuth = getGitpulseAuthConfig(event);
-  const personalMode = normalizeBoolean(gitpulseAuth.personalModeEnabled, false);
-  const tokenEnabled = normalizeBoolean(gitpulseAuth.tokenEnabled, true);
-  const oauthRequested = normalizeBoolean(gitpulseAuth.githubOAuthRequested, false);
-  const oauthEnvReady = normalizeBoolean(gitpulseAuth.githubOAuthEnvReady, false);
-  const oauthEnabled = normalizeBoolean(gitpulseAuth.githubOAuthEnabled, false);
+  const personalMode = normalizeEnvBoolean(gitpulseAuth.personalModeEnabled, false);
+  const tokenEnabled = normalizeEnvBoolean(gitpulseAuth.tokenEnabled, true);
+  const oauthRequested = normalizeEnvBoolean(gitpulseAuth.githubOAuthRequested, false);
+  const oauthEnvReady = normalizeEnvBoolean(gitpulseAuth.githubOAuthEnvReady, false);
+  const oauthEnabled = normalizeEnvBoolean(gitpulseAuth.githubOAuthEnabled, false);
   const warnings: string[] = [];
 
   if (

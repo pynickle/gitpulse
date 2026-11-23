@@ -11,10 +11,12 @@ import { createStorage } from 'unstorage';
 import fsDriver from 'unstorage/drivers/fs-lite';
 
 import * as authReturn from '../shared/utils/auth-return-route';
+import * as envBoolean from '../shared/utils/env-boolean';
 import * as env from '../shared/utils/user-settings-storage-env';
 import { createNativeLoginTestHandler } from './fixtures/native-login-server';
 mock.module('#shared/utils/user-settings-storage-env', () => env);
 mock.module('#shared/utils/auth-return-route', () => authReturn);
+mock.module('#shared/utils/env-boolean', () => envBoolean);
 const { clearCachedUserSettingsStorageAdapterForTesting } =
   await import('../server/utils/user-settings-storage-utils');
 

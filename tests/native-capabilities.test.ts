@@ -3,8 +3,10 @@ import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { createApp, getHeader, toWebHandler, type H3Event } from 'h3';
 
 import * as authReturn from '../shared/utils/auth-return-route';
+import * as envBoolean from '../shared/utils/env-boolean';
 import * as env from '../shared/utils/user-settings-storage-env';
 mock.module('#shared/utils/auth-return-route', () => authReturn);
+mock.module('#shared/utils/env-boolean', () => envBoolean);
 mock.module('#shared/utils/user-settings-storage-env', () => env);
 
 const originalRuntimeConfig = globalThis.useRuntimeConfig;

@@ -43,6 +43,19 @@ export async function getGitHubClient(event: H3Event): Promise<Octokit> {
   return createGitHubClient(accessToken);
 }
 
+/** Provides both Octokit and the session token for server-side Git transport. */
+export async function getGitHubTransportContext(event: H3Event): Promise<{
+  accessToken: string;
+  octokit: Octokit;
+}> {
+  const accessToken = await getAccessToken(event);
+
+  return {
+    accessToken,
+    octokit: createGitHubClient(accessToken),
+  };
+}
+
 function getAccessTokenCacheKey(accessToken: string) {
   return createHash('sha256').update(accessToken).digest('hex');
 }
