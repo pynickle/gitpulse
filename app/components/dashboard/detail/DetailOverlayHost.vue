@@ -298,14 +298,6 @@ const isRepositoryContentVisible = computed(
   () => activeDetailPane.value?.type === 'repository' && !isFeedbackVisible.value
 );
 
-/* The pane's error may be the generic fallback or the server's own message.
-   A message that repeats the headline adds nothing, so it is not shown twice. */
-const detailErrorDetails = computed(() => {
-  const pane = activeDetailPane.value;
-  if (!pane?.error || pane.error === pane.errorTitle) return '';
-  return pane.error;
-});
-
 const getPullRequestState = (pullRequest: PullRequestDetailViewModel | null) => {
   if (pullRequest?.merged || pullRequest?.merged_at) return 'merged';
   if (pullRequest?.state === 'closed') return 'closed';
@@ -519,7 +511,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
             <div v-else-if="activeDetailPane?.error" class="detail-feedback-pane">
               <PageErrorState
                 :title="activeDetailPane.errorTitle"
-                :description="detailErrorDetails"
+                :description="activeDetailPane.error"
                 @retry="emit('retry')"
               />
             </div>
@@ -659,7 +651,6 @@ onUnmounted(() => syncDetailSidebarPane(null));
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
 }
 
 .detail-loading-box {

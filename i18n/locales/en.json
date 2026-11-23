@@ -326,8 +326,7 @@
       "refreshCurrentTab": "Refresh Tab"
     },
     "error": {
-      "title": "Unable to load this view",
-      "description": "Please check your connection and try again."
+      "title": "Unable to load this view"
     },
     "sidebar": {
       "views": "Views",

@@ -282,8 +282,7 @@
             <div v-else class="dashboard-error-state">
               <PageErrorState
                 :title="t('dashboard.error.title')"
-                :description="t('dashboard.error.description')"
-                :details="dashboardListError ?? ''"
+                :description="dashboardListError ?? ''"
                 @retry="refreshCurrentTabSafely"
               />
             </div>

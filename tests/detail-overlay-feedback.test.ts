@@ -26,7 +26,6 @@ const defaultLoaders = () => ({
 type PaneLoaders = Record<keyof ReturnType<typeof defaultLoaders>, () => Promise<Component>>;
 const PageErrorState = await compileVue('app/components/ui/PageErrorState.vue', {
   '@lucide/vue': {
-    ChevronDownIcon: empty,
     RefreshCwIcon: empty,
     TriangleExclamationPointIcon: empty,
   },

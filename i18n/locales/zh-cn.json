@@ -417,8 +417,7 @@
       "refreshCurrentTab": "刷新当前标签"
     },
     "error": {
-      "title": "无法加载此视图",
-      "description": "请检查网络连接后重试。"
+      "title": "无法加载此视图"
     },
     "sidebar": {
       "views": "视图",

@@ -9,7 +9,6 @@ const icon = defineComponent({ setup: () => () => h('span') });
 
 const PageErrorState = await compileVue('app/components/ui/PageErrorState.vue', {
   '@lucide/vue': {
-    ChevronDownIcon: icon,
     RefreshCwIcon: icon,
     TriangleExclamationPointIcon: icon,
   },
@@ -48,6 +47,17 @@ describe('page error state', () => {
     );
   });
 
+  test('renders cleanly when title is omitted', () => {
+    const { root } = mount({
+      description: 'Request failed with status code 500',
+    });
+
+    expect(root.querySelector('.page-error-state__title')).toBeNull();
+    expect(root.querySelector('.page-error-state__description--solo')?.textContent).toBe(
+      'Request failed with status code 500'
+    );
+  });
+
   test('the retry control emits retry', () => {
     const { root, state } = mount({ title: 'Failed' });
 
@@ -67,17 +77,16 @@ describe('page error state', () => {
     );
   });
 
-  test('a page can show a human sentence and the technical message together', () => {
+  test('omits description when it repeats the title', () => {
     const { root } = mount({
-      title: 'Unable to load this view',
-      description: 'Please check your connection and try again.',
-      details: 'Request failed with status code 502',
+      title: 'Failed to load package.',
+      description: '  Failed to load package. ',
     });
 
-    expect(root.querySelector('.page-error-state__description')?.textContent).toContain(
-      'Please check your connection'
+    expect(root.querySelector('.page-error-state__title')?.textContent).toBe(
+      'Failed to load package.'
     );
-    expect(root.querySelector('.page-error-state__details')?.textContent).toContain('502');
+    expect(root.querySelector('.page-error-state__description')).toBeNull();
   });
 
   test('the retry control stays outside the alert', () => {

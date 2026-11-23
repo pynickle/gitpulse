@@ -1,37 +1,50 @@
 <script setup lang="ts">
 import { RefreshCwIcon, TriangleExclamationPointIcon } from '@lucide/vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-// Only the props that need a default are bound; `title` is read from the
-// template alone. Retry means the same thing on every failure, so the label is
-// the component's own copy rather than a prop each page has to resolve.
-const { description = '', details = '' } = defineProps<{
-  title: string;
+const { title = '', description = '' } = defineProps<{
+  title?: string;
   description?: string;
-  details?: string;
 }>();
 
-const emit = defineEmits<{ (e: 'retry'): void }>();
+const emit = defineEmits<{ retry: [] }>();
 
 const { t } = useI18n();
+
+const visibleTitle = computed(() => title.trim());
+
+// Callers often pass a composable's fallback string that repeats the localized
+// headline verbatim; suppressing exact matches prevents echoing the same line twice.
+const visibleDescription = computed(() => {
+  const trimmed = description.trim();
+  if (!trimmed || trimmed === visibleTitle.value) return '';
+  return trimmed;
+});
 </script>
 
 <template>
   <div class="page-error-state">
-    <div class="page-error-state__card">
+    <div class="page-error-state__content">
       <span class="page-error-state__icon" aria-hidden="true">
-        <TriangleExclamationPointIcon :size="26" />
+        <TriangleExclamationPointIcon :size="20" />
       </span>
 
-      <!-- The alert covers the message only; the retry control stays outside it
-           so a screen reader announces the failure without the button. -->
+      <!-- The alert covers the failure message only; keeping the retry button
+           outside it prevents screen readers from announcing the action label
+           as part of the error alert. -->
       <div class="page-error-state__message" role="alert">
-        <p class="page-error-state__title">{{ title }}</p>
-        <p v-if="description" class="page-error-state__description">{{ description }}</p>
-        <p v-if="details" class="page-error-state__details">{{ details }}</p>
+        <p v-if="visibleTitle" class="page-error-state__title">{{ visibleTitle }}</p>
+        <p
+          v-if="visibleDescription"
+          class="page-error-state__description"
+          :class="{ 'page-error-state__description--solo': !visibleTitle }"
+        >
+          {{ visibleDescription }}
+        </p>
       </div>
 
-      <button type="button" class="button page-error-state__retry" @click="emit('retry')">
+      <button type="button" class="page-error-state__retry" @click="emit('retry')">
         <RefreshCwIcon :size="14" aria-hidden="true" />
         <span>{{ t('pageError.retry') }}</span>
       </button>
@@ -41,34 +54,26 @@ const { t } = useI18n();
 
 <style scoped lang="scss">
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/variables' as *;
 
-/* Fills whatever box it is dropped into so the card sits in the middle of the
-   empty page rather than hanging under the top padding. */
 .page-error-state {
+  container: page-error / inline-size;
+  box-sizing: border-box;
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  min-height: 14rem;
-  padding: clamp(1.25rem, 5vh, 3rem) clamp(1rem, 4vw, 2.5rem);
+  inline-size: 100%;
+  min-block-size: clamp(11rem, 26vh, 16rem);
+  padding: clamp(1.25rem, 4vh, 2.5rem) clamp(1rem, 4vw, 2rem);
 }
 
-.page-error-state__card {
+.page-error-state__content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
-  max-width: 26rem;
-  padding: clamp(1.5rem, 4vw, 2rem);
-  border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 20%, var(--gitpulse-border));
-  border-radius: var(--gitpulse-radius-xl);
-  /* A wash of the failure tone at the top of the card, so the block reads as an
-     interruption rather than as another panel of content. */
-  background:
-    radial-gradient(140% 110% at 50% -10%, var(--gitpulse-danger-soft), transparent 58%),
-    var(--gitpulse-surface);
-  box-shadow: var(--gitpulse-shadow-card);
+  inline-size: min(100%, 24rem);
+  min-inline-size: 0;
   text-align: center;
 }
 
@@ -77,31 +82,33 @@ const { t } = useI18n();
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 3.25rem;
-  height: 3.25rem;
-  margin-bottom: 1rem;
-  border-radius: 50%;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  margin-block-end: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 20%, transparent);
+  border-radius: var(--gitpulse-radius-xl);
+  background: var(--gitpulse-danger-soft);
   color: var(--gitpulse-danger);
-  background: color-mix(in srgb, var(--gitpulse-danger) 12%, var(--gitpulse-surface));
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--gitpulse-danger) 6%, transparent);
 }
 
 .page-error-state__message {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
+  align-items: center;
+  gap: 0.375rem;
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
-/* The headline carries the message; everything under it is deliberately quieter
-   so the eye lands on what failed and only then on the technical cause. */
 .page-error-state__title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.4;
   letter-spacing: -0.01em;
   color: var(--gitpulse-text-strong);
+  overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 .page-error-state__description {
@@ -109,48 +116,82 @@ const { t } = useI18n();
   font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--gitpulse-text-muted);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
 }
 
-/* The technical message under a human sentence, when a page has both. */
-.page-error-state__details {
-  margin: 0;
-  color: var(--gitpulse-text-subtle);
-  font-family: var(--gitpulse-code-font-family);
-  font-size: 0.6875rem;
+.page-error-state__description--solo {
+  font-size: 0.9375rem;
+  font-weight: 500;
   line-height: 1.45;
-  overflow-wrap: anywhere;
+  color: var(--gitpulse-text-strong);
+  text-wrap: balance;
 }
 
-/* A small bordered control. It stays visibly a button without the weight of a
-   filled call-to-action, which shouted over the message it sits under. */
-.page-error-state__card .page-error-state__retry {
+.page-error-state__retry {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  min-height: 2.25rem;
-  margin-top: 1rem;
-  padding: 0 0.875rem;
-  border: 1px solid var(--gitpulse-border-strong);
-  border-radius: var(--gitpulse-radius-md);
-  background: var(--gitpulse-surface);
-  color: var(--gitpulse-text-strong);
+  min-block-size: 2.125rem;
+  margin-block-start: 1.125rem;
+  padding: 0.375rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--gitpulse-accent) 26%, transparent);
+  border-radius: var(--gitpulse-radius-lg);
+  background: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-accent);
+  font-family: inherit;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: $theme-transition;
 
   @include hover-only {
     &:hover {
-      border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
-      background: var(--gitpulse-surface-hover);
-      color: var(--gitpulse-accent);
+      border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, transparent);
+      background: color-mix(in srgb, var(--gitpulse-accent) 16%, transparent);
+      color: var(--gitpulse-accent-hover);
     }
   }
 
   &:focus-visible {
-    border-color: var(--gitpulse-accent);
-    outline: 2px solid color-mix(in srgb, var(--gitpulse-accent) 72%, transparent);
-    outline-offset: 1px;
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (pointer: coarse) {
+  .page-error-state__retry {
+    min-block-size: 2.75rem;
+    padding-inline: 1.125rem;
+  }
+}
+
+@container page-error (inline-size <= 22rem) {
+  .page-error-state__retry {
+    inline-size: 100%;
+    max-inline-size: 16rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-error-state__retry {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .page-error-state__icon {
+    border: 1px solid CanvasText;
+  }
+
+  .page-error-state__retry {
+    border: 1px solid ButtonText;
+
+    &:focus-visible {
+      outline: 2px solid Highlight;
+    }
   }
 }
 </style>
