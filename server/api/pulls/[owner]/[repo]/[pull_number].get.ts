@@ -1,3 +1,4 @@
+import { readGitAvailability } from '#server/utils/git-availability';
 import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/github-auth-utils';
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
 import { fetchPullHeadBranchState } from '#server/utils/pr-head-branch-utils';
@@ -51,7 +52,10 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       fetchPullRequestStack(octokit, owner, repo, pullNumber, pullRequest.data.stack),
     ]);
 
-    if (stack?.number && stack.history === 'not-linear' && !stack.hasConflicts) {
+    // A proof is minted only for a deployment that can actually rebase: without
+    // Git there is nothing to confirm, and a stale proof must not survive.
+    const git = readGitAvailability(event);
+    if (git.available && stack?.number && stack.history === 'not-linear' && !stack.hasConflicts) {
       const secret = useRuntimeConfig(event).appSecret;
       for (const layer of stack.layers) {
         if (!layer.headSha || !layer.baseRef || !layer.baseSha) continue;
@@ -70,6 +74,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       reviewers: createEmptyPRReviewerSummary(),
       reactions: reactionSummary.items,
       stack,
+      git,
     };
   } catch (error: unknown) {
     console.error('Error fetching GitHub pull request:', error);

@@ -1,5 +1,6 @@
 import * as z from 'zod';
 
+import { assertGitAvailable } from '#server/utils/git-availability';
 import {
   createGitHubClient,
   getAccessToken,
@@ -23,6 +24,8 @@ const rebaseBody = z.strictObject({
 });
 
 export default defineEventHandler(async (event) => {
+  assertGitAvailable(event);
+
   const { owner, repo, pullNumber } = extractPullRouteParams(event);
   const body = parseZodRequestBody(rebaseBody, await readBody(event), 'Invalid stack rebase');
   const accessToken = await getAccessToken(event);

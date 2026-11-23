@@ -40,6 +40,14 @@ Set `NUXT_SITE_URL` on the process that serves the app. A build does not bake it
 
 `NUXT_PUBLIC_SITE_URL` is not read. Production also refuses to start when that name is set.
 
+### Git
+
+GitPulse probes for Git once at startup and keeps the answer for the life of the process. A deployment with Git offers Stack Rebase; one without keeps the action on screen, disabled, with the reason. Installing Git afterwards takes effect on the next restart.
+
+| Environment Variable        | Required | Default | Description                                                                       |
+| --------------------------- | -------- | ------- | --------------------------------------------------------------------------------- |
+| `NUXT_GITPULSE_GIT_ENABLED` | No       | `true`  | Set `false` to offer no Git-backed feature at all, and to skip the startup probe. |
+
 ### Non-personal Mode (multi-user)
 
 Users sign in by pasting a GitHub token or via GitHub OAuth. Suitable for teams or hosted deployments.

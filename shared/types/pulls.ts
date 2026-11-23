@@ -152,7 +152,20 @@ export interface PullRequestDetailPayload {
 
   /** Null when GitHub has not linked this pull request into a Stack. */
   stack?: PullRequestStack | null;
+  /** Whether this deployment can run Git, which decides whether Stack Rebase is offered. */
+  git?: GitAvailability | null;
 }
+
+/**
+ * Whether this deployment can run Git. `disabled` is `NUXT_GITPULSE_GIT_ENABLED`
+ * switched off; `git_missing` is the capability switched on with no `git` on the server.
+ */
+export type GitUnavailableReason = 'disabled' | 'git_missing';
+
+/** A union, so "available" and "has a reason" can never both be true. */
+export type GitAvailability =
+  | { available: true }
+  | { available: false; reason: GitUnavailableReason };
 
 /**
  * GitHub GraphQL `MergeableState`, stored lowercased.

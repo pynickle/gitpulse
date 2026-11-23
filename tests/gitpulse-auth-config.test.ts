@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 
-import {
-  AUTH_PERSONAL_MODE_CONFIGURATION_ERROR,
-  getGitpulseAuthConfig,
-  resolveAuthProviderState,
-} from '../server/utils/auth-providers';
+import * as envBoolean from '../shared/utils/env-boolean';
+// The shared alias is a Nuxt build-time alias; a bare `bun test` run resolves it
+// only through an alias fixture like this one, and that registration has to land
+// before the module graph that imports it is evaluated.
+mock.module('#shared/utils/env-boolean', () => envBoolean);
+const { AUTH_PERSONAL_MODE_CONFIGURATION_ERROR, getGitpulseAuthConfig, resolveAuthProviderState } =
+  await import('../server/utils/auth-providers');
 
 const LEGACY_GITHUB_TOKEN = 'NUXT_GIT_PULSE_AUTH_GITHUB_TOKEN';
 const LEGACY_PASSWORD = 'NUXT_GIT_PULSE_AUTH_PERSONAL_PASSWORD';

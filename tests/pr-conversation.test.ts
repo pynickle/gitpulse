@@ -78,6 +78,14 @@ const messages: Record<string, string> = {
   'prReview.stackDetail.state.draft': 'Draft',
   'prReview.stackDetail.state.closed': 'Closed',
   'prReview.stackDetail.state.merged': 'Merged',
+  'prReview.mergeBox.unavailableReason_stack_not_linear':
+    'Only a linear Stack can merge. Rebase the Stack first.',
+  'prReview.mergeBox.unavailableReason_stack_rebase_disabled':
+    'Stack Rebase is switched off on this deployment.',
+  'prReview.mergeBox.unavailableReason_stack_history_unknown':
+    'The Stack history could not be read.',
+  'prReview.mergeBox.unavailableReason_git_missing':
+    'This server has no Git, so it cannot rebase a Stack.',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -326,6 +334,7 @@ function mountConversation(options?: {
   behindBy?: number;
   viewerCanWriteHead?: boolean;
   fetch?: StackMergeFetch;
+  git?: { available: boolean; reason?: string } | null;
 }) {
   switchedPullRequest = null;
   useRealStackMerge = Boolean(options?.fetch);
@@ -334,6 +343,7 @@ function mountConversation(options?: {
     options?.pullRequest ?? layerPullRequest()
   );
   const initialStatus = openMergeStatus(options);
+  const git = options && 'git' in options ? (options.git ?? null) : { available: true };
   dom = createVueDom({
     useI18n: () => ({ t, locale: ref('en') }),
     ...(options?.fetch
@@ -361,6 +371,7 @@ function mountConversation(options?: {
           repo: 'app',
           pullNumber: pullRequest.value.number,
           stack: pullRequest.value.stack ?? null,
+          git,
           initialStatus,
         }),
       ]),
@@ -593,7 +604,9 @@ describe('Stack Merge', () => {
       },
     });
 
-    expect(root.textContent).not.toContain('Merge pull request');
+    // The merge action stays on screen for a reader who may merge, but a Stack that
+    // is not linear has nothing to land here, so it answers with a refusal.
+    expect(root.querySelector('.merge-box__merge-btn')?.hasAttribute('disabled')).toBe(true);
     const trigger = stackRebaseControl(root);
     expect(trigger).not.toBeNull();
     click(trigger);
@@ -645,7 +658,8 @@ describe('Stack Merge', () => {
     root.setStack({ ...pullRequest.stack, hasConflicts: true });
     await settle();
     expect(stackRebaseControl(root)).toBeNull();
-    expect(root.textContent).not.toContain('Merge pull request');
+    // The merge action does not vanish with it; a conflicting Stack still owes an answer.
+    expect(root.querySelector('.merge-box__merge-btn')).not.toBeNull();
   });
 
   test('offers no Stack Rebase when the history is unknown, then offers Stack Merge once it is linear', async () => {
@@ -656,7 +670,9 @@ describe('Stack Merge', () => {
 
     expect(stackRebaseControl(root)).toBeNull();
     expect(root.textContent).not.toContain('Stack Rebase');
-    expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
+    // Nothing can land while the history is unknown, and the button says so instead
+    // of disappearing.
+    expect(root.querySelector('.merge-box__merge-btn')?.hasAttribute('disabled')).toBe(true);
     expect(root.querySelector('.merge-box__update')).toBeNull();
     expect(store.merges).toEqual([]);
     expect(store.stackMerges).toEqual([]);
@@ -670,6 +686,48 @@ describe('Stack Merge', () => {
       'Merge pull request'
     );
     expect(root.querySelector('.merge-box__update')).toBeNull();
+  });
+
+  test('hides Rebase stack on a deployment that switched Git off', () => {
+    const root = mountConversation({
+      pullRequest: layerPullRequest('not-linear'),
+      behindBy: 2,
+      git: { available: false, reason: 'disabled' },
+    });
+
+    expect(stackRebaseControl(root)).toBeNull();
+    // The merge button stays, and carries the reason Stack Rebase is not offered.
+    expect(root.querySelector('.merge-box__merge-btn')?.hasAttribute('disabled')).toBe(true);
+    expect(root.textContent).toContain('Stack Rebase is switched off on this deployment.');
+  });
+
+  test('keeps Rebase stack visible but disabled when the server has no Git', () => {
+    const root = mountConversation({
+      pullRequest: layerPullRequest('not-linear'),
+      behindBy: 2,
+      git: { available: false, reason: 'git_missing' },
+    });
+
+    const trigger = stackRebaseControl(root);
+    expect(trigger).not.toBeNull();
+    expect(trigger?.hasAttribute('disabled')).toBe(true);
+    expect(trigger?.getAttribute('title')).toBe(
+      'This server has no Git, so it cannot rebase a Stack.'
+    );
+    expect(root.textContent).toContain('This server has no Git, so it cannot rebase a Stack.');
+  });
+
+  test('offers Rebase stack on a deployment whose server has Git', () => {
+    const root = mountConversation({
+      pullRequest: layerPullRequest('not-linear'),
+      behindBy: 2,
+      git: { available: true },
+    });
+
+    const trigger = stackRebaseControl(root);
+    expect(trigger).not.toBeNull();
+    expect(trigger?.hasAttribute('disabled')).toBe(false);
+    expect(trigger?.hasAttribute('title')).toBe(false);
   });
 
   test('offers no Stack Rebase to a reader who cannot merge', () => {

@@ -18,9 +18,11 @@ import { createStorage } from 'unstorage';
 import fsDriver from 'unstorage/drivers/fs-lite';
 
 import * as authReturn from '../../shared/utils/auth-return-route';
+import * as envBoolean from '../../shared/utils/env-boolean';
 import * as env from '../../shared/utils/user-settings-storage-env';
 
 mock.module('#shared/utils/auth-return-route', () => authReturn);
+mock.module('#shared/utils/env-boolean', () => envBoolean);
 mock.module('#shared/utils/user-settings-storage-env', () => env);
 // `deriveSecret` from `nuxt/server` reads `appSecret` through this module, which a
 // real build replaces with the configured runtime config. Defer to the `useRuntimeConfig`

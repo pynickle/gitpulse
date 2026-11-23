@@ -211,13 +211,19 @@
           <div class="merge-box__merge-controls">
             <button
               type="button"
-              class="merge-box__merge-btn merge-box__merge-btn--standalone"
+              class="merge-box__rebase-stack-btn"
+              :disabled="stackRebaseDisabled"
               aria-haspopup="dialog"
+              :title="stackRebaseDisabled ? reasonText(stackRebaseBlockedCode) : undefined"
+              :aria-describedby="stackRebaseDisabled ? stackRebaseReasonId : undefined"
               @click="stackRebaseOpen = true"
             >
               <GitBranchIcon :size="14" aria-hidden="true" />
               {{ t('prReview.stackRebase.title') }}
             </button>
+            <p v-if="stackRebaseDisabled" :id="stackRebaseReasonId" class="is-sr-only">
+              {{ reasonText(stackRebaseBlockedCode) }}
+            </p>
           </div>
         </div>
         <PRStackRebaseDialog
@@ -271,12 +277,17 @@
               }"
               :disabled="mergeDisabled"
               :aria-busy="mergeButtonBusy || undefined"
+              :title="mergeBlockedReason || undefined"
+              :aria-describedby="mergeBlockedReason ? mergeReasonId : undefined"
               @click="onMergeClick"
             >
               <span v-if="mergeButtonBusy" class="merge-box__spinner" aria-hidden="true" />
               <GitMergeIcon v-else :size="14" />
               <span>{{ mergeButtonLabel }}</span>
             </button>
+            <p v-if="mergeBlockedReason" :id="mergeReasonId" class="is-sr-only">
+              {{ mergeBlockedReason }}
+            </p>
             <button
               v-if="!confirming && showMethodMenu"
               type="button"
@@ -425,6 +436,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } f
 import { useI18n } from 'vue-i18n';
 
 import type {
+  GitAvailability,
   PullRequestStack,
   PullRequestStackLayerState,
   StackMergeOutcome,
@@ -443,6 +455,7 @@ const {
   pullNumber,
   initialStatus,
   stack = null,
+  git = null,
 } = defineProps<{
   owner: string;
   repo: string;
@@ -450,6 +463,8 @@ const {
   initialStatus?: PRMergeStatus | null;
   /** Present only when this pull request is a Layer. */
   stack?: PullRequestStack | null;
+  /** Whether this deployment can run Git, which is what Stack Rebase needs. */
+  git?: GitAvailability | null;
 }>();
 
 const emit = defineEmits<{
@@ -507,6 +522,8 @@ const mergeControlsRef = ref<HTMLElement | null>(null);
 const updateControlsRef = ref<HTMLElement | null>(null);
 const commitTitleId = useId();
 const commitMessageId = useId();
+const mergeReasonId = useId();
+const stackRebaseReasonId = useId();
 
 const status = computed(() => mergeStatus.value);
 const showSkeleton = computed(() => loading.value && !status.value);
@@ -771,29 +788,89 @@ const showBranchUpdate = computed(
     !branchConflicts.value
 );
 
-const showStackRebase = computed(
+/** The one capability question the box asks, answered once for every action below. */
+const gitUnavailableReason = computed(() => {
+  const current = git;
+  return current && !current.available ? current.reason : null;
+});
+
+/**
+ * A switched-off deployment does not offer the action at all, disabled or otherwise.
+ * Neither does a box that has not been told what the deployment can do: an action
+ * that cannot open its dialog is not a refusal the reader can act on.
+ */
+const stackRebaseHidden = computed(() => !git || gitUnavailableReason.value === 'disabled');
+
+/**
+ * A capable server mints one proof per Layer; without Git it mints none, so only a
+ * deployment that can rebase is held to them.
+ */
+const stackRebaseProven = computed(
   () =>
+    gitUnavailableReason.value !== null ||
+    Boolean(
+      stack?.layers.every(
+        (layer) => layer.state === 'merged' || layer.state === 'closed' || layer.rebaseProof
+      )
+    )
+);
+
+/** The stack's own shape allows a whole-stack rebase, before this deployment is considered. */
+const stackRebaseOffered = computed(() =>
+  Boolean(
     status.value?.viewerCanMerge &&
     !branchConflicts.value &&
     stack?.history === 'not-linear' &&
     stack.number &&
     !stack.hasConflicts &&
     stack.layers.length === stack.count &&
-    stack.layers.every(
-      (layer) => layer.state === 'merged' || layer.state === 'closed' || layer.rebaseProof
-    )
+    stackRebaseProven.value
+  )
 );
+
+const showStackRebase = computed(() => stackRebaseOffered.value && !stackRebaseHidden.value);
+
+/**
+ * Why Stack Rebase cannot run. Null when it can. The code is the contract: the
+ * text is looked up here, so the server never ships a sentence to translate.
+ */
+const stackRebaseBlockedCode = computed(() => {
+  if (!stack) return null;
+  const reason = gitUnavailableReason.value;
+  if (reason === 'disabled') return 'stack_rebase_disabled';
+  if (reason === 'git_missing') return 'git_missing';
+  return null;
+});
+
+/** Why this Layer cannot be merged yet. Null when the merge button may be used. */
+const stackMergeBlockedCode = computed(() => {
+  if (!stack) return null;
+  if (stack.history === 'unknown') return 'stack_history_unknown';
+  if (stack.history === 'not-linear') {
+    return gitUnavailableReason.value === 'disabled' ? 'stack_rebase_disabled' : 'stack_not_linear';
+  }
+  return null;
+});
+
+const stackRebaseDisabled = computed(
+  () => showStackRebase.value && stackRebaseBlockedCode.value !== null
+);
+
+const reasonText = (code: string | null) =>
+  code ? t(`prReview.mergeBox.unavailableReason_${code}`) : '';
 
 const refreshAfterStackRebase = () => {
   void fetchMergeStatus(owner, repo, pullNumber);
   emit('branchUpdated');
 };
 
-/** A Layer lands with a Stack Merge only while the history is linear. */
+/**
+ * The merge action is always on screen for a reader who may merge, so a Stack that
+ * cannot be landed says why through a disabled button instead of vanishing.
+ */
 const showMergeActions = computed(() => {
   const current = status.value;
   if (!current?.viewerCanMerge || current.draft) return false;
-  if (stack) return stack.history === 'linear';
   return true;
 });
 
@@ -855,6 +932,13 @@ const mergeDisabled = computed(() => {
     return true;
   }
 
+  // A Layer is landed with its whole Stack in order, so a Stack whose history is
+  // not linear has nothing to land here: the box used to hide the button for this,
+  // and now it stays on screen to say why.
+  if (stackMergeBlockedCode.value) {
+    return true;
+  }
+
   // Only enable once GitHub has positively confirmed mergeability:
   // mergeable === null means the check is still running.
   if (current.mergeable !== true) {
@@ -863,6 +947,11 @@ const mergeDisabled = computed(() => {
 
   return current.mergeableState === 'dirty' || current.mergeableState === 'blocked';
 });
+
+/** Only the Stack's own state is explained here; GitHub's mergeability has its own row. */
+const mergeBlockedReason = computed(() =>
+  mergeDisabled.value ? reasonText(stackMergeBlockedCode.value) : ''
+);
 
 const methodLabel = (method: PRMergeMethod) => {
   switch (method) {
@@ -1705,7 +1794,9 @@ watch(
   gap: 0;
 }
 
-.merge-box__merge-btn {
+/* The Stack Rebase action sits in the same row as a merge, so it shares the shell. */
+.merge-box__merge-btn,
+.merge-box__rebase-stack-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1717,7 +1808,6 @@ watch(
   color: #ffffff;
   background: var(--gitpulse-success-solid);
   border: 1px solid var(--gitpulse-success-solid);
-  border-radius: 6px 0 0 6px;
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -1740,21 +1830,26 @@ watch(
     opacity: 0.55;
     cursor: not-allowed;
   }
+}
 
-  /* A busy control keeps its own fill: the spinner is the progress, not a refusal. */
-  &--busy:disabled {
-    opacity: 1;
-    cursor: progress;
-  }
+.merge-box__merge-btn {
+  /* The left half of the split button; a Stack Rebase action stands alone. */
+  border-radius: 6px 0 0 6px;
+}
 
-  &--confirm {
-    border-radius: 6px;
-  }
+.merge-box__rebase-stack-btn {
+  border-radius: 6px;
+}
 
-  /* No method picker beside it, so the split button's right edge rounds too. */
-  &--standalone {
-    border-radius: 6px;
-  }
+/* A busy control keeps its own fill: the spinner is the progress, not a refusal. */
+.merge-box__merge-btn--busy:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.merge-box__merge-btn--confirm,
+.merge-box__merge-btn--standalone {
+  border-radius: 6px;
 }
 
 .merge-box__method-toggle {

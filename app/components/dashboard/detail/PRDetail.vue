@@ -102,6 +102,7 @@
               :repo="repoName"
               :pull-number="currentPullRequest.number"
               :stack="currentPullRequest.stack ?? null"
+              :git="currentPullRequest.git ?? null"
               :initial-status="terminalMergeStatus"
               @head-branch-updated="handlePullRequestHeadBranchUpdated"
               @branch-updated="handlePullRequestBranchUpdated"

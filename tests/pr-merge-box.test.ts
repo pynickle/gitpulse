@@ -45,6 +45,14 @@ const messages: Record<string, string> = {
   'prReview.mergeBox.updateWithMerge': 'Update with a merge commit',
   'prReview.mergeBox.updateWithRebase': 'Update with rebase',
   'prReview.stackRebase.title': 'Rebase stack',
+  'prReview.mergeBox.unavailableReason_git_missing':
+    'This server has no Git, so it cannot rebase a Stack.',
+  'prReview.mergeBox.unavailableReason_stack_rebase_disabled':
+    'Stack Rebase is switched off on this deployment.',
+  'prReview.mergeBox.unavailableReason_stack_not_linear':
+    'Only a linear Stack can merge. Rebase the Stack first.',
+  'prReview.mergeBox.unavailableReason_stack_history_unknown':
+    'The Stack history could not be read.',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -347,6 +355,123 @@ describe('PRMergeBox first read', () => {
   });
 });
 
+describe('PRMergeBox Git capability', () => {
+  const notLinearStack = (history: 'not-linear' | 'unknown' = 'not-linear') => ({
+    number: 106,
+    trunk: 'main',
+    count: 2,
+    place: 2,
+    history,
+    hasConflicts: false,
+    layers: [
+      {
+        number: 101,
+        title: 'Add the model',
+        state: 'open' as const,
+        headSha: 'head-101',
+        baseRef: 'main',
+        baseSha: 'base-101',
+        rebaseProof: 'proof-101',
+      },
+      {
+        number: 102,
+        title: 'Add the API',
+        state: 'open' as const,
+        headSha: 'head-102',
+        baseRef: 'main',
+        baseSha: 'base-102',
+        rebaseProof: 'proof-102',
+      },
+    ],
+  });
+
+  function mountLayer(stack: unknown, git: unknown) {
+    store = createMergeStatusStore();
+    store.mergeStatus.value = openStatus();
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+          initialStatus: openStatus(),
+          stack,
+          git,
+        }),
+    });
+
+    return dom.mount(Harness).root;
+  }
+
+  const rebaseButton = (root: HTMLElement) => root.querySelector('.merge-box__rebase-stack-btn');
+  const mergeButton = (root: HTMLElement) => root.querySelector('.merge-box__merge-btn');
+
+  test('offers Stack Rebase beside a disabled merge while the history is not linear', () => {
+    const root = mountLayer(notLinearStack(), { available: true });
+
+    expect(rebaseButton(root)).not.toBeNull();
+    expect(rebaseButton(root)?.hasAttribute('disabled')).toBe(false);
+    // The merge button stays on screen and says why it cannot be used.
+    expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
+    expect(root.textContent).toContain('Only a linear Stack can merge. Rebase the Stack first.');
+  });
+
+  test('hides Stack Rebase and explains the disabled merge when Git is switched off', () => {
+    const root = mountLayer(notLinearStack(), { available: false, reason: 'disabled' });
+
+    expect(rebaseButton(root)).toBeNull();
+    expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
+    expect(root.textContent).toContain('Stack Rebase is switched off on this deployment.');
+  });
+
+  test('keeps Stack Rebase on screen but disabled when the server has no Git', () => {
+    const root = mountLayer(notLinearStack(), { available: false, reason: 'git_missing' });
+
+    expect(rebaseButton(root)?.hasAttribute('disabled')).toBe(true);
+    // A disabled control is not a dead end: the reason is readable without hovering.
+    expect(root.textContent).toContain('This server has no Git, so it cannot rebase a Stack.');
+    expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
+  });
+
+  test('explains a stack whose history could not be read, instead of rendering nothing', () => {
+    const root = mountLayer(notLinearStack('unknown'), { available: true });
+
+    expect(rebaseButton(root)).toBeNull();
+    expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
+    expect(root.textContent).toContain('The Stack history could not be read.');
+  });
+
+  test('offers no Stack Rebase before the box has been told what the server can do', () => {
+    // A click could not open the dialog, so an enabled button would be a lie.
+    const root = mountLayer(notLinearStack(), null);
+
+    expect(rebaseButton(root)).toBeNull();
+  });
+
+  test('offers no Stack Rebase to a reader who cannot merge', () => {
+    store = createMergeStatusStore();
+    store.mergeStatus.value = openStatus({ viewerCanMerge: false });
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+          initialStatus: openStatus({ viewerCanMerge: false }),
+          stack: notLinearStack(),
+          git: { available: true },
+        }),
+    });
+    const root = dom.mount(Harness).root;
+
+    expect(rebaseButton(root)).toBeNull();
+  });
+});
+
 describe('PRMergeBox status reread', () => {
   test('a stack that turns linear re-reads without forgetting the status on screen', async () => {
     const heldAtCall: (Record<string, unknown> | null)[] = [];
@@ -395,12 +520,15 @@ describe('PRMergeBox status reread', () => {
           pullNumber: 4,
           initialStatus: null,
           stack: stack.value,
+          git: { available: true },
         }),
     });
     const root = dom.mount(Harness).root;
     await settle();
     // While the history is not linear the box offers Stack Rebase, not a merge.
-    expect(root.querySelector('.merge-box__merge-btn')?.textContent).toContain('Rebase stack');
+    expect(root.querySelector('.merge-box__rebase-stack-btn')?.textContent).toContain(
+      'Rebase stack'
+    );
     heldAtCall.length = 0;
 
     // A Stack Rebase finishes, so the detail reread reports a linear history.

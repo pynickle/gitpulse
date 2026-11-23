@@ -7,15 +7,13 @@ import {
   publicSiteName,
 } from './shared/utils/app-locales';
 import { bundledFontFaces, bundledFontWeights } from './shared/utils/bundled-fonts';
+import { normalizeEnvBoolean } from './shared/utils/env-boolean';
 import {
   defaultUserSettingsStorageBase,
   normalizeOptionalString,
   normalizeUserSettingsStorageDriver,
   resolveOptionalUpstashRedisCredentials,
 } from './shared/utils/user-settings-storage-env';
-
-const ENABLED_VALUES = new Set(['1', 'true']);
-const DISABLED_VALUES = new Set(['0', 'false']);
 
 type UserSettingsStorageConfig = {
   driver: string;
@@ -50,16 +48,6 @@ const USER_SETTINGS_STORAGE_DRIVER = normalizeUserSettingsStorageDriver(
 const USER_SETTINGS_STORAGE_BASE =
   normalizeOptionalString(process.env.NUXT_GITPULSE_USER_SETTINGS_STORAGE_BASE) ||
   defaultUserSettingsStorageBase(USER_SETTINGS_STORAGE_DRIVER);
-
-function normalizeBoolean(value: string | undefined, defaultValue: boolean): boolean {
-  if (typeof value !== 'string') return defaultValue;
-
-  const normalized = value.trim().toLowerCase();
-  if (ENABLED_VALUES.has(normalized)) return true;
-  if (DISABLED_VALUES.has(normalized)) return false;
-
-  return defaultValue;
-}
 
 function createBaseScopedUserSettingsStorageConfig(context: UserSettingsStorageContext) {
   return {
@@ -100,13 +88,14 @@ function userSettingsStorageConfig() {
   return adapter.createConfig(context);
 }
 
-const tokenEnabled = normalizeBoolean(process.env.NUXT_AUTH_PAT_ENABLED, true);
-const oauthRequested = normalizeBoolean(process.env.NUXT_AUTH_GITHUB_OAUTH_ENABLED, true);
+const tokenEnabled = normalizeEnvBoolean(process.env.NUXT_AUTH_PAT_ENABLED, true);
+const oauthRequested = normalizeEnvBoolean(process.env.NUXT_AUTH_GITHUB_OAUTH_ENABLED, true);
 const oauthEnvReady = Boolean(
   process.env.NUXT_OAUTH_GITHUB_CLIENT_ID && process.env.NUXT_OAUTH_GITHUB_CLIENT_SECRET
 );
 const effectiveOAuthEnabled = oauthRequested && oauthEnvReady;
-const personalModeEnabled = normalizeBoolean(process.env.NUXT_AUTH_PERSONAL_MODE_ENABLED, true);
+const personalModeEnabled = normalizeEnvBoolean(process.env.NUXT_AUTH_PERSONAL_MODE_ENABLED, true);
+const gitEnabled = normalizeEnvBoolean(process.env.NUXT_GITPULSE_GIT_ENABLED, true);
 
 function siteConfig() {
   return personalModeEnabled ? { indexable: false } : {};
@@ -185,6 +174,11 @@ export default defineNuxtConfig({
       githubToken: '',
       personalPassword: '',
       personalCookieSecret: '',
+    },
+    // Git is a capability of the server, not of one feature: `NUXT_GITPULSE_GIT_ENABLED`
+    // says this deployment offers it, and the startup probe says the host can run it.
+    gitpulse: {
+      gitEnabled: String(gitEnabled),
     },
   },
 
