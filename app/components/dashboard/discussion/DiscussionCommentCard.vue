@@ -95,7 +95,7 @@ const submitReplyDraft = async (body: string) => {
       </div>
 
       <CommentBody v-slot="{ body }" :target="comment.moderation" :body="comment.body">
-        <div class="discussion-comment__body content">
+        <div class="discussion-comment__body">
           <MarkdownRenderer
             v-if="body"
             :value="body"

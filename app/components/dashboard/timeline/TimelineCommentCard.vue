@@ -4,7 +4,7 @@
       ><CommentActions :target="item.moderation"
     /></TimelineCardHeader>
     <CommentBody v-slot="{ body }" :target="item.moderation" :body="item.body">
-      <div class="comment-item__body content">
+      <div class="comment-item__body">
         <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
         <p v-else class="has-text-grey is-size-7">
           {{ emptyText ?? t('detailTimeline.noCommentBody') }}

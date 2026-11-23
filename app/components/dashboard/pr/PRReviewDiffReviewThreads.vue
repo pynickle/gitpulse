@@ -104,7 +104,7 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
           <CommentActions :target="comment.moderation" />
         </div>
         <CommentBody v-slot="{ body }" :target="comment.moderation" :body="comment.body">
-          <div class="pr-review-diff-viewer__review-comment-body content">
+          <div class="pr-review-diff-viewer__review-comment-body">
             <MarkdownRenderer
               v-if="body"
               :value="body"

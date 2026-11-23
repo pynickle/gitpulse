@@ -64,7 +64,7 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
         </div>
 
         <CommentBody v-slot="{ body }" :target="reply.moderation" :body="reply.body">
-          <div class="discussion-replies__body content">
+          <div class="discussion-replies__body">
             <MarkdownRenderer
               v-if="body"
               :value="body"

@@ -86,7 +86,7 @@
           </span>
         </div>
       </div>
-      <div class="content">
+      <div>
         <MarkdownRenderer
           v-if="pullRequest?.body"
           :value="pullRequest.body"

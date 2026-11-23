@@ -285,18 +285,9 @@ watch(
   hr {
     display: revert;
   }
-  h3:not(:first-child) {
-    margin-top: revert;
-  }
   code {
     color: revert;
     font-weight: revert;
-  }
-  blockquote:not(:last-child) {
-    margin-bottom: revert;
-  }
-  blockquote {
-    background-color: revert;
   }
   a {
     text-decoration: underline;
@@ -304,7 +295,6 @@ watch(
   }
   ul {
     list-style: none;
-    margin-inline-start: revert;
     padding-left: 1em;
   }
 

@@ -487,7 +487,7 @@ defineExpose({
 
       <ScrollArea
         @scroll-element="previewRef = $event"
-        class="markdown-composer__preview content"
+        class="markdown-composer__preview"
         :class="{ 'markdown-composer__preview--hidden': !previewVisible }"
         @scroll="handleSplitScroll('preview')"
       >

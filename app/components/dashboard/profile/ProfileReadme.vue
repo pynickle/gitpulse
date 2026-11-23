@@ -31,7 +31,7 @@ const sourceRepo = computed(() => {
       <BookOpenIcon :size="16" aria-hidden="true" />
       <h2 class="profile-readme__title">{{ t('profile.readme.title', { login }) }}</h2>
     </header>
-    <ScrollArea class="profile-readme__body content" axis="x">
+    <ScrollArea class="profile-readme__body" axis="x">
       <MarkdownRenderer
         :value="readme.content ?? ''"
         :repo-owner="sourceRepo.owner"

@@ -932,7 +932,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                 <div v-if="loadingReadme" class="repo-readme__loading">
                   <LoaderCircleIcon :size="20" class="spin-animation" />
                 </div>
-                <div v-else-if="readmeContent" class="repo-readme__content content">
+                <div v-else-if="readmeContent" class="repo-readme__content">
                   <MarkdownRenderer
                     :value="readmeContent"
                     :repo-owner="owner"

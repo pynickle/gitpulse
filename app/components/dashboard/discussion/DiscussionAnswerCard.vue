@@ -58,7 +58,7 @@ const localeCode = computed(() => locale.value);
     </div>
 
     <CommentBody v-slot="{ body }" :target="answer.moderation" :body="answer.body">
-      <div class="discussion-answer__body content">
+      <div class="discussion-answer__body">
         <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
         <p v-else class="has-text-grey is-size-7">
           {{ t('discussionDetail.noCommentBody') }}

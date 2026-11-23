@@ -70,7 +70,7 @@
       </template>
     </TimelineEventNote>
     <CommentBody v-slot="{ body }" :target="item.moderation" :body="item.body">
-      <div v-if="body" class="review-item__body content">
+      <div v-if="body" class="review-item__body">
         <MarkdownRenderer :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
       </div>
     </CommentBody>
@@ -184,7 +184,7 @@
               <CommentActions :target="comment.moderation" />
             </div>
             <CommentBody v-slot="{ body }" :target="comment.moderation" :body="comment.body">
-              <div class="review-item__comment-body content">
+              <div class="review-item__comment-body">
                 <template v-if="body">
                   <template v-for="part in splitSuggestionBody(body)" :key="part.key">
                     <MarkdownRenderer

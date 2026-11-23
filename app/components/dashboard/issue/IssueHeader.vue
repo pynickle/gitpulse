@@ -81,7 +81,7 @@
           </span>
         </div>
       </div>
-      <div class="content">
+      <div>
         <MarkdownRenderer
           v-if="issue?.body"
           :value="issue.body"
