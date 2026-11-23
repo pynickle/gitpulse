@@ -23,14 +23,19 @@ const readAsyncMerge = (data: unknown): AsyncMergeFields => {
     return { status: null, uuid: null, message: null };
   }
 
-  const record = data as { status?: unknown; details?: unknown };
+  const record = data as { status?: unknown; details?: unknown; message?: unknown };
   const status = typeof record.status === 'string' ? record.status : null;
   const details =
     record.details && typeof record.details === 'object'
       ? (record.details as { uuid?: unknown; message?: unknown })
       : null;
   const uuid = typeof details?.uuid === 'string' && details.uuid ? details.uuid : null;
-  const message = typeof details?.message === 'string' && details.message ? details.message : null;
+  const message =
+    typeof details?.message === 'string' && details.message
+      ? details.message
+      : typeof record.message === 'string' && record.message
+        ? record.message
+        : null;
 
   return { status, uuid, message };
 };
@@ -52,8 +57,16 @@ const stackMergeResult = (
 export function mapStackMergeResult(httpStatus: number, data: unknown): StackMergeResult {
   const fields = readAsyncMerge(data);
 
-  if (httpStatus === 202 || httpStatus === 409) {
+  if (httpStatus === 202) {
     return stackMergeResult('in-progress', fields);
+  }
+
+  // A 409 with no request id and no pending status is a refusal, not a request already running.
+  if (httpStatus === 409) {
+    return stackMergeResult(
+      fields.uuid !== null || fields.status === 'pending' ? 'in-progress' : 'failed',
+      fields
+    );
   }
 
   if (httpStatus === 200) {
@@ -114,15 +127,23 @@ export async function readPullRequestStackMerge(
   pullNumber: number,
   id: string
 ): Promise<StackMergeResult> {
-  const response = await octokit.request(
-    'GET /repos/{owner}/{repo}/pulls/{pull_number}/merge-async/{uuid}',
-    {
-      owner,
-      repo,
-      pull_number: pullNumber,
-      uuid: id,
-    }
-  );
+  try {
+    const response = await octokit.request(
+      'GET /repos/{owner}/{repo}/pulls/{pull_number}/merge-async/{uuid}',
+      {
+        owner,
+        repo,
+        pull_number: pullNumber,
+        uuid: id,
+      }
+    );
 
-  return mapStackMergeResult(response.status, response.data);
+    return mapStackMergeResult(response.status, response.data);
+  } catch (error: unknown) {
+    const status = getGitHubErrorStatusCode(error);
+    if (status === 400 || status === 409) {
+      return mapStackMergeResult(status, githubErrorBody(error));
+    }
+    throw error;
+  }
 }

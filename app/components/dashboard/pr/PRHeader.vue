@@ -16,6 +16,7 @@
       <PRStackChip
         v-if="pullRequest?.stack"
         :stack="pullRequest.stack"
+        :current-pull-number="Number(pullRequest.number) || undefined"
         @select="emit('switch-pull-request', repoOwner, repoName, $event)"
       />
       <span class="header-time is-flex is-align-items-center">

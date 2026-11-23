@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { LayersIcon } from '@lucide/vue';
-import { shallowRef } from 'vue';
+import { shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { PullRequestStack } from '#shared/types/pulls';
 import PRStackDetail from '~/components/dashboard/pr/PRStackDetail.vue';
 
-defineProps<{
+const { stack } = defineProps<{
   stack?: PullRequestStack | null;
+  currentPullNumber?: number;
 }>();
 
 const emit = defineEmits<{
@@ -16,6 +17,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const open = shallowRef(false);
+
+watch(
+  () => stack,
+  (value) => {
+    if (!value) open.value = false;
+  }
+);
 
 const choose = (pullNumber: number) => {
   open.value = false;
@@ -35,7 +43,13 @@ const choose = (pullNumber: number) => {
       <LayersIcon :size="13" aria-hidden="true" />
       {{ t('prReview.stackChip.place', { place: stack.place, count: stack.count }) }}
     </button>
-    <PRStackDetail v-if="open" :stack="stack" @close="open = false" @select="choose" />
+    <PRStackDetail
+      v-if="open"
+      :stack="stack"
+      :current-pull-number="currentPullNumber"
+      @close="open = false"
+      @select="choose"
+    />
   </span>
 </template>
 
@@ -52,6 +66,7 @@ const choose = (pullNumber: number) => {
   align-items: center;
   gap: 0.3rem;
   flex: none;
+  min-height: 1.5rem;
   padding: 0.15rem 0.55rem;
   border: 1px solid var(--gitpulse-border);
   border-radius: 999px;

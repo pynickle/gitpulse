@@ -1,14 +1,27 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { defineComponent, h, nextTick, onScopeDispose, ref, shallowRef, type Component } from 'vue';
+import {
+  computed,
+  defineComponent,
+  h,
+  nextTick,
+  onScopeDispose,
+  ref,
+  shallowRef,
+  type Component,
+} from 'vue';
 
 const { usePRMergeStatus: readMergeStatus } = await import('../app/composables/usePRMergeStatus');
 
+import { useCompactCount } from '../app/composables/useCompactCount';
 import { formatDurationFromNow } from '../app/utils/formatDurationFromNow';
 import { getFetchErrorMessage } from '../app/utils/getFetchErrorMessage';
 import { getPullRequestStateVisual } from '../app/utils/getPullRequestStateVisual';
+import { parseGridTemplateColumnWidths } from '../app/utils/parseGridTemplateColumnWidths';
 import { resolvePullRequestBranchRef } from '../app/utils/resolvePullRequestBranchRef';
+import enMessages from '../i18n/locales/en.json';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as prReviewWorkspacePresentation from '../shared/utils/pr-review-workspace-presentation';
 import { compileVue } from './helpers/compile-vue';
 import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { interpolateTranslation } from './helpers/translation';
@@ -22,74 +35,19 @@ const slotStub = defineComponent({
       h('div', slots.default?.()),
 });
 
-const messages: Record<string, string> = {
-  'prReview.noDescription': 'No description provided',
-  'prReview.stackChip.place': 'Layer {place} of {count}',
-  'prReview.mergeBox.methodMerge': 'Merge pull request',
-  'prReview.mergeBox.methodSquash': 'Squash and merge',
-  'prReview.mergeBox.methodRebase': 'Rebase and merge',
-  'prReview.mergeBox.selectMethod': 'Select merge method',
-  'prReview.mergeBox.reviewNone': 'No reviews required',
-  'prReview.mergeBox.reviewRequired': 'Review required',
-  'prReview.mergeBox.mergeableClean': 'This branch has no conflicts with the base branch',
-  'prReview.mergeBox.mergeableDirty': 'This branch has conflicts that must be resolved',
-  'prReview.mergeBox.mergeableChecking': 'Checking mergeability...',
-  'prReview.mergeBox.checksFailed': 'Some checks were not successful',
-  'prReview.mergeBox.cancel': 'Cancel',
-  'prReview.mergeBox.loading': 'Loading merge status...',
-  'prReview.mergeBox.loadingCommitDefaults': 'Loading the default commit message...',
-  'prReview.mergeBox.merged': 'Merged',
-  'prReview.mergeBox.closedTitle': 'Closed without merging',
-  'prReview.mergeBox.branchCurrent': 'This branch is current with {base}.',
-  'prReview.mergeBox.branchBehindOne': 'This branch is 1 commit behind {base} ({sha}).',
-  'prReview.mergeBox.branchBehindMany': 'This branch is {count} commits behind {base} ({sha}).',
-  'prReview.mergeBox.branchUnreadable': 'Branch currency could not be read.',
-  'prReview.mergeBox.updateBranch': 'Update branch',
-  'prReview.mergeBox.rebaseBranch': 'Rebase branch',
-  'prReview.mergeBox.confirmUpdateBranch': 'Confirm update',
-  'prReview.mergeBox.confirmRebaseBranch': 'Confirm rebase',
-  'prReview.mergeBox.updating': 'Updating...',
-  'prReview.mergeBox.selectUpdateMethod': 'Select update method',
-  'prReview.mergeBox.updateWithMerge': 'Update with a merge commit',
-  'prReview.mergeBox.updateWithRebase': 'Update with rebase',
-  'prReview.mergeBox.confirmMerge': 'Confirm merge',
-  'prReview.mergeBox.confirmSquash': 'Confirm squash and merge',
-  'prReview.mergeBox.commitTitleLabel': 'Commit title',
-  'prReview.mergeBox.commitMessageLabel': 'Commit message',
-  'prReview.mergeBox.stackMergeLanded': 'Stack merge landed',
-  'prReview.mergeBox.stackMergeQueued': 'Entered the merge queue',
-  'prReview.mergeBox.stackMergeFailed': 'Stack merge failed',
-  'prReview.stackRebase.title': 'Rebase stack',
-  'prReview.stackRebase.description':
-    'Rebase each open branch onto the branch below it, starting from {trunk}.',
-  'prReview.stackRebase.notice':
-    'Each rebased branch is force-pushed. The operation stops at the first failure.',
-  'prReview.stackRebase.confirm': 'Confirm rebase',
-  'prReview.stackRebase.rebasing': 'Rebasing',
-  'prReview.stackRebase.rebased': 'Rebased',
-  'prReview.stackRebase.current': 'Up to date',
-  'prReview.stackRebase.failed': 'Failed',
-  'prReview.stackRebase.pending': 'Pending',
-  'prReview.stackRebase.skipped': 'Not rebased',
-  'prReview.stackDetail.title': 'Stack',
-  'prReview.stackDetail.close': 'Close',
-  'prReview.stackDetail.current': 'Current',
-  'prReview.stackDetail.state.open': 'Open',
-  'prReview.stackDetail.state.draft': 'Draft',
-  'prReview.stackDetail.state.closed': 'Closed',
-  'prReview.stackDetail.state.merged': 'Merged',
-  'prReview.mergeBox.unavailableReason_stack_not_linear':
-    'Only a linear Stack can merge. Rebase the Stack first.',
-  'prReview.mergeBox.unavailableReason_stack_rebase_disabled':
-    'Stack Rebase is switched off on this deployment.',
-  'prReview.mergeBox.unavailableReason_stack_history_unknown':
-    'The Stack history could not be read.',
-  'prReview.mergeBox.unavailableReason_git_missing':
-    'This server has no Git, so it cannot rebase a Stack.',
-};
+function lookupMessage(catalog: Record<string, unknown>, key: string): string {
+  let current: unknown = catalog;
+  for (const segment of key.split('.')) {
+    if (typeof current !== 'object' || current === null || !(segment in current)) {
+      return key;
+    }
+    current = (current as Record<string, unknown>)[segment];
+  }
+  return typeof current === 'string' ? current : key;
+}
 
 const t = (key: string, params?: Record<string, unknown>) =>
-  interpolateTranslation(messages[key] ?? key, params);
+  interpolateTranslation(lookupMessage(enMessages, key), params);
 
 interface RecordedMerge {
   method: string;
@@ -260,7 +218,7 @@ const stackLayers = [
   { number: 102, title: 'Add the API', state: 'open' as const, headSha: 'head-102' },
   { number: 103, title: 'Add the screen', state: 'draft' as const, headSha: 'head-103' },
   { number: 104, title: 'Add the notes', state: 'closed' as const, headSha: 'head-104' },
-].map((layer) => ({ ...layer, baseRef: 'main', baseSha: 'old-base', rebaseProof: 'rebase-proof' }));
+].map((layer) => ({ ...layer, baseRef: 'main', baseSha: 'old-base' }));
 
 type StackHistory = 'linear' | 'not-linear' | 'unknown';
 
@@ -280,7 +238,6 @@ function layerPullRequest(history: StackHistory = 'linear', place = 2) {
       place,
       history,
       layers: stackLayers,
-      hasConflicts: false,
     },
   };
 }
@@ -420,11 +377,15 @@ function stackRebaseControl(root: ParentNode) {
   );
 }
 
-/** The Stack Merge wait is two seconds. Collapse it so a slow landing stays in this test. */
+/** Collapse Stack Merge polling waits (2–4s) so a slow landing stays in this test. */
 function collapseStackMergeWait() {
   const original = globalThis.setTimeout;
   globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) =>
-    original(handler, timeout === 2_000 ? 0 : timeout, ...args)) as typeof setTimeout;
+    original(
+      handler,
+      typeof timeout === 'number' && timeout >= 2_000 ? 0 : timeout,
+      ...args
+    )) as typeof setTimeout;
   return () => {
     globalThis.setTimeout = original;
   };
@@ -450,7 +411,17 @@ async function openStackConfirmation(root: HTMLElement) {
 
 describe('Stack Merge', () => {
   test('confirms the Layers from the first through this one and sends no commit text', async () => {
-    const root = mountConversation({ behindBy: 2 });
+    const pullRequest = layerPullRequest();
+    const openFirstLayers = pullRequest.stack.layers.map((layer, index) =>
+      index === 0 ? { ...layer, state: 'open' as const } : layer
+    );
+    const root = mountConversation({
+      pullRequest: {
+        ...pullRequest,
+        stack: { ...pullRequest.stack, layers: openFirstLayers },
+      },
+      behindBy: 2,
+    });
 
     expect(root.textContent).toContain('Layer 2 of 4');
     const chip = root.querySelector<HTMLElement>('.pr-stack-chip');
@@ -461,7 +432,7 @@ describe('Stack Merge', () => {
     const dialog = root.ownerDocument.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain('main');
     expect([...dialog!.querySelectorAll('.pr-stack-detail__layer')].map(layerText)).toEqual([
-      '#101 Add the model Merged',
+      '#101 Add the model Open',
       '#102 Add the API Open Current',
       '#103 Add the screen Draft',
       '#104 Add the notes Closed',
@@ -477,7 +448,7 @@ describe('Stack Merge', () => {
 
     await openStackConfirmation(root);
 
-    expect(layerTexts(root)).toEqual(['#101 Add the model Merged', '#102 Add the API Open']);
+    expect(layerTexts(root)).toEqual(['#101 Add the model Open', '#102 Add the API Open']);
     expect(root.querySelector('.merge-box__commit-form')).toBeNull();
     expect(store.stackMerges).toEqual([]);
     expect(store.merges).toEqual([]);
@@ -500,12 +471,12 @@ describe('Stack Merge', () => {
     expect(root.querySelector('.merge-box__merge-btn')).toBeNull();
   });
 
-  test('sends the commit title and message when only the first Layer lands', async () => {
-    const root = mountConversation({ pullRequest: layerPullRequest('linear', 1) });
+  test('sends the commit title and message when lower Layers are already merged so only this Layer lands', async () => {
+    const root = mountConversation({ pullRequest: layerPullRequest('linear', 2) });
 
     await openStackConfirmation(root);
 
-    expect(layerTexts(root)).toEqual(['#101 Add the model Merged']);
+    expect(layerTexts(root)).toEqual(['#102 Add the API Open']);
     const form = root.querySelector<HTMLFormElement>('.merge-box__commit-form');
     const title = form?.querySelector<HTMLInputElement>('.merge-box__commit-input');
     const message = form?.querySelector<HTMLTextAreaElement>('.merge-box__commit-textarea');
@@ -527,12 +498,33 @@ describe('Stack Merge', () => {
       {
         owner: 'octo',
         repo: 'app',
-        pullNumber: 101,
+        pullNumber: 102,
         method: 'squash',
         commitTitle: 'Land the model',
         commitMessage: 'Keep the schema change.',
       },
     ]);
+  });
+
+  test('blocks merging when a lower Layer in the Stack is draft or closed', () => {
+    const pullRequest = layerPullRequest('linear', 2);
+    const draftFirstLayers = pullRequest.stack.layers.map((layer, index) =>
+      index === 0 ? { ...layer, state: 'draft' as const } : layer
+    );
+    const root = mountConversation({
+      pullRequest: {
+        ...pullRequest,
+        stack: { ...pullRequest.stack, layers: draftFirstLayers },
+      },
+    });
+
+    const mergeBtn = root.querySelector<HTMLButtonElement>('.merge-box__merge-btn');
+    expect(mergeBtn?.hasAttribute('disabled')).toBe(true);
+    const reasonEl = root.querySelector('.merge-box__blocked-reason');
+    expect(reasonEl?.classList.contains('is-sr-only')).toBe(false);
+    expect(reasonEl?.textContent?.trim()).toBe(
+      'Lower Layers in this Stack must be open and ready before merging.'
+    );
   });
 
   test('shows that the Stack Merge entered the merge queue', async () => {
@@ -573,9 +565,9 @@ describe('Stack Merge', () => {
     expect(root.textContent).toContain('Some checks were not successful');
   });
 
-  test('confirms before rebasing each active layer from the bottom and stops at a failure', async () => {
+  test('confirms before rebasing the stack atomically and persists a failure in the Merge Box', async () => {
     const requests: Array<{ path: string; body: unknown }> = [];
-    let finishFirst: (result: { outcome: 'rebased' }) => void = () => {};
+    let finishRebase: (result: unknown) => void = () => {};
     const pullRequest = layerPullRequest('not-linear');
     const layers = [
       ...pullRequest.stack.layers,
@@ -586,7 +578,6 @@ describe('Stack Merge', () => {
         headSha: 'head-105',
         baseRef: 'main',
         baseSha: 'old-base',
-        rebaseProof: 'rebase-proof',
       },
     ];
     const root = mountConversation({
@@ -599,8 +590,9 @@ describe('Stack Merge', () => {
         const url = String(path);
         if (!url.endsWith('/stack-rebase')) return openMergeStatus();
         requests.push({ path: url, body: options?.body });
-        if (url.includes('/102/')) return new Promise((resolve) => (finishFirst = resolve));
-        throw new Error('Rebase conflict');
+        return new Promise((resolve) => {
+          finishRebase = resolve;
+        });
       },
     });
 
@@ -624,42 +616,46 @@ describe('Stack Merge', () => {
       {
         path: '/api/pulls/octo/app/102/stack-rebase',
         body: {
-          expectedHeadOid: 'head-102',
           stackNumber: 106,
-          baseRef: 'main',
-          baseSha: 'old-base',
-          proof: 'rebase-proof',
+          expectedHeads: {
+            '102': 'head-102',
+            '103': 'head-103',
+            '105': 'head-105',
+          },
         },
       },
     ]);
     const row = (number: number) =>
       [...dialog!.querySelectorAll('li')].find((item) => item.textContent?.includes(`#${number}`));
-    expect(row(102)?.textContent).toContain('Rebasing');
+    expect(row(102)?.textContent).toContain('Rebasing…');
     expect(row(102)?.getAttribute('data-state')).toBe('rebasing');
-    finishFirst({ outcome: 'rebased' });
+    expect(row(103)?.getAttribute('data-state')).toBe('rebasing');
+    expect(row(105)?.getAttribute('data-state')).toBe('rebasing');
+    finishRebase({
+      ok: false,
+      results: [
+        { number: 101, outcome: 'merged' },
+        { number: 102, outcome: 'rebased' },
+        { number: 103, outcome: 'failed', message: 'Rebase conflict' },
+        { number: 104, outcome: 'closed' },
+        { number: 105, outcome: 'skipped' },
+      ],
+      error: 'Rebase conflict',
+    });
     await settle();
-    expect(requests.map((request) => request.path)).toEqual([
-      '/api/pulls/octo/app/102/stack-rebase',
-      '/api/pulls/octo/app/103/stack-rebase',
-    ]);
     expect(row(102)?.textContent).toContain('Rebased');
-    expect(row(103)?.textContent).toContain('Failed');
+    expect(row(103)?.textContent).toContain('Rebase failed');
     expect(row(105)?.textContent).toContain('Not rebased');
     expect(row(105)?.getAttribute('data-state')).toBe('skipped');
     expect(dialog?.textContent).toContain('Rebase conflict');
     expect(root.querySelector('.merge-box__update')).toBeNull();
-  });
 
-  test('hides Rebase stack when a different layer has a known conflict', async () => {
-    const pullRequest = layerPullRequest('not-linear');
-    const root = mountConversation({ pullRequest });
-    expect(stackRebaseControl(root)).not.toBeNull();
-
-    root.setStack({ ...pullRequest.stack, hasConflicts: true });
+    // Closing the dialog leaves the error visible in the Merge Box
+    dialog?.dispatchEvent(new dom.window.Event('close'));
     await settle();
-    expect(stackRebaseControl(root)).toBeNull();
-    // The merge action does not vanish with it; a conflicting Stack still owes an answer.
-    expect(root.querySelector('.merge-box__merge-btn')).not.toBeNull();
+    expect(root.querySelector('.merge-box__actions [role="alert"]')?.textContent).toContain(
+      'Rebase conflict'
+    );
   });
 
   test('offers no Stack Rebase when the history is unknown, then offers Stack Merge once it is linear', async () => {
@@ -819,8 +815,9 @@ describe('Stack Merge', () => {
     expect(root.textContent).toContain('Stack merge failed');
   });
 
-  test('shows that a failed Stack Merge read failed', async () => {
+  test('shows that a Stack Merge with repeated poll read errors is stalled and can check status again', async () => {
     const restoreWait = collapseStackMergeWait();
+    let shouldFailPoll = true;
     try {
       const root = mountConversation({
         fetch: (request, init) => {
@@ -830,7 +827,10 @@ describe('Stack Merge', () => {
             return { outcome: 'in-progress', id: stackMergeId };
           }
           if (url.includes('/stack-merge/')) {
-            throw new Error('GitHub did not answer');
+            if (shouldFailPoll) {
+              throw new Error('GitHub did not answer');
+            }
+            return { outcome: 'landed', id: stackMergeId };
           }
           return openMergeStatus();
         },
@@ -840,14 +840,29 @@ describe('Stack Merge', () => {
       click(root.querySelector('.merge-box__merge-btn'));
       for (
         let turn = 0;
-        turn < 10 && !root.textContent?.includes('Stack merge failed');
+        turn < 10 && !root.textContent?.includes('Stack merge is still running on GitHub.');
         turn += 1
       ) {
         await flushMacrotask();
         await settle();
       }
 
-      expect(root.textContent).toContain('Stack merge failed');
+      expect(root.textContent).toContain('Stack merge is still running on GitHub.');
+      const checkBtn = root.querySelector<HTMLButtonElement>('.merge-box__check-status-btn');
+      expect(checkBtn?.textContent?.trim()).toBe('Check status');
+
+      shouldFailPoll = false;
+      click(checkBtn);
+      for (
+        let turn = 0;
+        turn < 10 && !root.textContent?.includes('Stack merge landed');
+        turn += 1
+      ) {
+        await flushMacrotask();
+        await settle();
+      }
+
+      expect(root.textContent).toContain('Stack merge landed');
     } finally {
       restoreWait();
     }
@@ -947,5 +962,306 @@ describe('stack detail', () => {
 
     expect(root.querySelector('.pr-stack-chip')).toBeNull();
     expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  test('shows the unavailable label when stack layers are empty', async () => {
+    const pullRequest = layerPullRequest();
+    const root = mountConversation({
+      pullRequest: {
+        ...pullRequest,
+        stack: { ...pullRequest.stack, layers: [] },
+      },
+    });
+
+    root.querySelector<HTMLElement>('.pr-stack-chip')?.click();
+    await nextTick();
+
+    const dialog = root.ownerDocument.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain('Stack layers could not be loaded.');
+    expect(dialog?.querySelectorAll('.pr-stack-detail__layer').length).toBe(0);
+  });
+
+  test('matches the current layer by currentPullNumber and falls back to stack.place when absent or unmatched', async () => {
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+    const currentPullNumber = shallowRef<number | undefined>(103);
+    const stack = { ...layerPullRequest('linear', 1).stack };
+
+    dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(StackDetail as Component, {
+            stack,
+            currentPullNumber: currentPullNumber.value,
+          }),
+      })
+    );
+    await nextTick();
+
+    const currentLayerText = () =>
+      layerText(dom.document.querySelector('[role="dialog"] [aria-current="true"]')!);
+
+    expect(currentLayerText()).toContain('#103 Add the screen Draft Current');
+
+    currentPullNumber.value = 999;
+    await nextTick();
+    expect(currentLayerText()).toContain('#101 Add the model Merged Current');
+
+    currentPullNumber.value = undefined;
+    await nextTick();
+    expect(currentLayerText()).toContain('#101 Add the model Merged Current');
+  });
+
+  test('closes the open Stack Detail dialog when stack becomes null', async () => {
+    const pullRequest = layerPullRequest();
+    const root = mountConversation({ pullRequest });
+
+    root.querySelector<HTMLElement>('.pr-stack-chip')?.click();
+    await nextTick();
+    expect(root.ownerDocument.querySelector('[role="dialog"]')).not.toBeNull();
+
+    root.setStack(null);
+    await nextTick();
+    expect(root.querySelector('.pr-stack-chip')).toBeNull();
+    expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
+
+    root.setStack(pullRequest.stack);
+    await nextTick();
+    expect(root.querySelector('.pr-stack-chip')).not.toBeNull();
+    expect(root.ownerDocument.querySelector('[role="dialog"]')).toBeNull();
+  });
+});
+
+describe('review workspace Stack Chip', () => {
+  const createWorkspaceReviewState = () => {
+    const pendingCount = ref(0);
+    const activeDraftTarget = ref<Record<string, unknown> | null>(null);
+    return {
+      pendingCount,
+      activeDraftTarget,
+      review: {
+        files: ref([]),
+        reviewComments: ref([]),
+        activeFilename: shallowRef(''),
+        pagination: ref({ hasNext: false }),
+        loading: shallowRef(false),
+        loadingMore: shallowRef(false),
+        submitting: shallowRef(false),
+        resolvingReviewThreadId: shallowRef(null),
+        errorMessage: shallowRef(''),
+        submitError: shallowRef(''),
+        draftBody: shallowRef(''),
+        selectedEvent: shallowRef('COMMENT'),
+        draftComments: ref([]),
+        activeDraftTarget,
+        allDiffSections: computed(() => []),
+        reviewCommentThreads: computed(() => []),
+        pendingCommentCount: computed(() => pendingCount.value),
+        canSubmit: computed(() => false),
+        loadMoreFiles: () => {},
+        retryLoad: () => {},
+        selectFile: () => {},
+        syncVisibleFile: () => {},
+        openDraftEditor: () => {},
+        closeDraftEditor: () => {},
+        saveDraftComment: () => {},
+        removeDraftComment: () => {},
+        toggleReviewThreadResolved: () => {},
+        submitReview: () => {},
+      },
+    };
+  };
+
+  async function mountReviewWorkspace(options?: {
+    pendingCount?: number;
+    hasActiveDraft?: boolean;
+    draftBody?: string;
+  }) {
+    const reviewState = createWorkspaceReviewState();
+    reviewState.pendingCount.value = options?.pendingCount ?? 0;
+    reviewState.activeDraftTarget.value = options?.hasActiveDraft
+      ? { path: 'a.ts', line: 1 }
+      : null;
+    reviewState.review.draftBody.value = options?.draftBody ?? '';
+
+    const presentation = {
+      presentation: ref({
+        mode: 'wide',
+        diffArrangement: 'split',
+        showFileColumn: true,
+        showSubmitColumn: true,
+        wrapCode: true,
+      }),
+      keyboardInsetPx: ref(0),
+      keyboardVisibleHeightPx: ref(null),
+    };
+    const navigation = {
+      canGoBack: ref(false),
+      goBackToPreviousPage: async () => {},
+      goToDashboardHome: async () => {},
+      previousEntry: ref(null),
+    };
+
+    const Workspace = await compileVue(
+      'app/components/dashboard/pr/PRReviewWorkspace.vue',
+      {
+        '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+        '#shared/utils/pr-review-workspace-presentation': prReviewWorkspacePresentation,
+        '~/components/dashboard/pr/PRReviewBottomBar.vue': { default: slotStub },
+        '~/components/dashboard/pr/PRReviewDiffViewer.vue': { default: slotStub },
+        '~/components/dashboard/pr/PRReviewFileSidebar.vue': { default: slotStub },
+        '~/components/dashboard/pr/PRReviewSubmitBar.vue': { default: slotStub },
+        '~/components/dashboard/pr/PRStackChip.vue': { default: StackChip },
+        '~/utils/prReviewNavigation': { shouldCloseReviewWorkspaceAfterSubmit: () => false },
+        '~/utils/parseGridTemplateColumnWidths': { parseGridTemplateColumnWidths },
+        '~/composables/usePRReview': { usePRReview: () => reviewState.review },
+        '~/composables/usePRReviewWorkspacePresentation': {
+          usePRReviewWorkspacePresentation: () => presentation,
+        },
+        '~/composables/useNavigationRouting': { useNavigationRouting: () => navigation },
+        'vue-i18n': i18n,
+      },
+      {
+        useI18n: 'vue-i18n',
+        useNavigationRouting: '~/composables/useNavigationRouting',
+        usePRReview: '~/composables/usePRReview',
+        usePRReviewWorkspacePresentation: '~/composables/usePRReviewWorkspacePresentation',
+        parseGridTemplateColumnWidths: '~/utils/parseGridTemplateColumnWidths',
+      }
+    );
+
+    const emitted: Array<{
+      owner: string;
+      repo: string;
+      pullNumber: number;
+      openReview?: boolean;
+    }> = [];
+    dom = createVueDom({ useI18n: i18n.useI18n, useCompactCount });
+    const mounted = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(Workspace, {
+            owner: 'octo',
+            repo: 'app',
+            pullNumber: 102,
+            commitId: 'abc123',
+            title: 'Add the API',
+            stack: layerPullRequest('linear', 2).stack,
+            onSwitchPullRequest: (
+              owner: string,
+              repo: string,
+              pullNumber: number,
+              openReview?: boolean
+            ) => {
+              emitted.push({ owner, repo, pullNumber, openReview });
+            },
+          }),
+      })
+    );
+    await nextTick();
+
+    const selectLayerFromChip = async (titleFragment: string) => {
+      mounted.root.querySelector<HTMLElement>('.pr-stack-chip')?.click();
+      await nextTick();
+      const pickerDialog = dom.document.querySelector('[role="dialog"]');
+      [...(pickerDialog?.querySelectorAll('button') ?? [])]
+        .find((button) => layerText(button).includes(titleFragment))
+        ?.click();
+      await settle();
+    };
+
+    return { root: mounted.root, emitted, selectLayerFromChip };
+  }
+
+  test('switches immediately with openReview=true when there are no pending comments or active draft', async () => {
+    const { root, emitted, selectLayerFromChip } = await mountReviewWorkspace();
+
+    await selectLayerFromChip('Add the model');
+
+    expect(root.querySelector('dialog.pr-review-discard-dialog')).toBeNull();
+    expect(emitted).toEqual([{ owner: 'octo', repo: 'app', pullNumber: 101, openReview: true }]);
+  });
+
+  test('prompts before switching when pending comments exist, respects Cancel, and emits openReview=true on Discard', async () => {
+    const { root, emitted, selectLayerFromChip } = await mountReviewWorkspace({ pendingCount: 2 });
+
+    await selectLayerFromChip('Add the model');
+
+    const dialog = root.querySelector<HTMLDialogElement>('dialog.pr-review-discard-dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain('Discard pending review comments?');
+    expect(dialog?.textContent).toContain(
+      'Switching to #101 will discard 2 pending comment(s) on this pull request.'
+    );
+    expect(emitted).toEqual([]);
+
+    const cancelButton = [...dialog!.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Cancel'
+    );
+    click(cancelButton);
+    await settle();
+
+    expect(root.querySelector('dialog.pr-review-discard-dialog')).toBeNull();
+    expect(emitted).toEqual([]);
+
+    await selectLayerFromChip('Add the model');
+    const reopened = root.querySelector<HTMLDialogElement>('dialog.pr-review-discard-dialog');
+    expect(reopened).not.toBeNull();
+
+    const discardButton = [...reopened!.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Discard and switch'
+    );
+    click(discardButton);
+    await settle();
+
+    expect(root.querySelector('dialog.pr-review-discard-dialog')).toBeNull();
+    expect(emitted).toEqual([{ owner: 'octo', repo: 'app', pullNumber: 101, openReview: true }]);
+  });
+
+  test('prompts before switching when an active inline draft composer is open', async () => {
+    const { root, emitted, selectLayerFromChip } = await mountReviewWorkspace({
+      pendingCount: 0,
+      hasActiveDraft: true,
+    });
+
+    await selectLayerFromChip('Add the screen');
+
+    const dialog = root.querySelector<HTMLDialogElement>('dialog.pr-review-discard-dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain(
+      'Switching to #103 will discard 1 pending comment(s) on this pull request.'
+    );
+    expect(emitted).toEqual([]);
+
+    const discardButton = [...dialog!.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Discard and switch'
+    );
+    click(discardButton);
+    await settle();
+
+    expect(emitted).toEqual([{ owner: 'octo', repo: 'app', pullNumber: 103, openReview: true }]);
+  });
+
+  test('prompts before switching when unsaved top-level review summary draftBody text exists', async () => {
+    const { root, emitted, selectLayerFromChip } = await mountReviewWorkspace({
+      pendingCount: 0,
+      hasActiveDraft: false,
+      draftBody: 'Overall LGTM with one note',
+    });
+
+    await selectLayerFromChip('Add the screen');
+
+    const dialog = root.querySelector<HTMLDialogElement>('dialog.pr-review-discard-dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.getAttribute('closedby')).toBe('any');
+    expect(emitted).toEqual([]);
+
+    const discardButton = [...dialog!.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Discard and switch'
+    );
+    click(discardButton);
+    await settle();
+
+    expect(emitted).toEqual([{ owner: 'octo', repo: 'app', pullNumber: 103, openReview: true }]);
   });
 });

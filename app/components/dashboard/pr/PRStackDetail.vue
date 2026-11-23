@@ -6,15 +6,24 @@ import { useI18n } from 'vue-i18n';
 import type { PullRequestStack } from '#shared/types/pulls';
 import PickerModal from '~/components/dashboard/PickerModal.vue';
 
-const { stack } = defineProps<{ stack: PullRequestStack }>();
+const { stack, currentPullNumber } = defineProps<{
+  stack: PullRequestStack;
+  currentPullNumber?: number;
+}>();
 const emit = defineEmits<{
   close: [];
   select: [pullNumber: number];
 }>();
 const { t } = useI18n();
-const layers = computed(() =>
-  stack.layers.map((layer, index) => ({ ...layer, current: index + 1 === stack.place }))
-);
+const layers = computed(() => {
+  const hasPullNumberMatch =
+    currentPullNumber !== undefined &&
+    stack.layers.some((layer) => layer.number === currentPullNumber);
+  return stack.layers.map((layer, index) => ({
+    ...layer,
+    current: hasPullNumberMatch ? layer.number === currentPullNumber : index + 1 === stack.place,
+  }));
+});
 </script>
 
 <template>
@@ -22,6 +31,7 @@ const layers = computed(() =>
     :is-visible="true"
     :title="t('prReview.stackDetail.title')"
     :close-label="t('prReview.stackDetail.close')"
+    :empty-label="!layers.length ? t('prReview.stackDetail.unavailable') : undefined"
     @close="emit('close')"
   >
     <div class="pr-stack-detail__trunk">
@@ -29,7 +39,7 @@ const layers = computed(() =>
       <span>{{ t('prReview.stackDetail.trunk') }}</span>
       <code>{{ stack.trunk }}</code>
     </div>
-    <ol class="pr-stack-detail__layers" data-picker-list>
+    <ol v-if="layers.length" class="pr-stack-detail__layers" data-picker-list>
       <li v-for="layer in layers" :key="layer.number" class="pr-stack-detail__row">
         <span class="pr-stack-detail__node" aria-hidden="true">
           <LayersIcon :size="13" />
@@ -155,9 +165,12 @@ const layers = computed(() =>
   color: var(--gitpulse-success-solid);
 }
 
-.pr-stack-detail__state[data-state='merged'],
-.pr-stack-detail__current {
+.pr-stack-detail__state[data-state='merged'] {
   color: var(--gitpulse-info);
+}
+
+.pr-stack-detail__current {
+  color: var(--gitpulse-accent);
 }
 
 .pr-stack-detail__state[data-state='closed'] {
@@ -165,8 +178,8 @@ const layers = computed(() =>
 }
 
 .pr-stack-detail__layer[aria-current='true'] {
-  border-color: var(--gitpulse-info);
-  background: var(--gitpulse-info-soft);
+  border-color: var(--gitpulse-accent);
+  background: var(--gitpulse-accent-soft);
 }
 
 button.pr-stack-detail__layer {

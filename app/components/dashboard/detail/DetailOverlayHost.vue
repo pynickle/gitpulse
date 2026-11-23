@@ -115,7 +115,13 @@ const emit = defineEmits<{
     issueNumber: number,
     openInOverlay?: boolean
   ): void;
-  (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
+  (
+    e: 'switch-pull-request',
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    openReview?: boolean
+  ): void;
   (e: 'switch-discussion', owner: string, repo: string, discussionNumber: number): void;
   (e: 'open-issue', item: DashboardIssuePrEntity): void;
   (e: 'open-pull-request', item: DashboardIssuePrEntity): void;
@@ -356,8 +362,14 @@ const handleSwitchIssue = (
   else emit('switch-issue', owner, repo, issueNumber);
 };
 
-const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number) => {
-  emit('switch-pull-request', owner, repo, pullNumber);
+const handleSwitchPullRequest = (
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  openReview?: boolean
+) => {
+  if (openReview) emit('switch-pull-request', owner, repo, pullNumber, true);
+  else emit('switch-pull-request', owner, repo, pullNumber);
 };
 
 const handleSwitchDiscussion = (owner: string, repo: string, discussionNumber: number) => {

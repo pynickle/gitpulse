@@ -294,7 +294,13 @@ interface CompactHeaderSummary {
 
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
-  (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
+  (
+    e: 'switch-pull-request',
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    openReview?: boolean
+  ): void;
   (e: 'update:review-active', isActive: boolean): void;
   (e: 'update:compact-header-visible', visible: boolean): void;
   (e: 'update:compact-header-summary', summary: CompactHeaderSummary): void;
@@ -519,8 +525,14 @@ const switchToIssue = (owner: string, repo: string, issueNumber: number) => {
   emit('switch-issue', owner, repo, issueNumber);
 };
 
-const switchToPullRequest = (owner: string, repo: string, pullNumber: number) => {
-  emit('switch-pull-request', owner, repo, pullNumber);
+const switchToPullRequest = (
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  openReview?: boolean
+) => {
+  if (openReview) emit('switch-pull-request', owner, repo, pullNumber, true);
+  else emit('switch-pull-request', owner, repo, pullNumber);
 };
 
 const addTimelineEvent = (event: PRTimelineItem) => {
