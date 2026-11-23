@@ -66,6 +66,10 @@
       "panelTitle": "Trigger an error page"
     }
   },
+  "pageError": {
+    "showDetails": "Show details",
+    "hideDetails": "Hide details"
+  },
   "auth": {
     "connectWithGithub": "Connect with GitHub",
     "connectingWithPat": "Verifying token...",
@@ -326,9 +330,7 @@
     "error": {
       "title": "Unable to load this view",
       "description": "Please check your connection and try again.",
-      "retry": "Retry",
-      "showDetails": "Show details",
-      "hideDetails": "Hide details"
+      "retry": "Retry"
     },
     "sidebar": {
       "views": "Views",

@@ -10,6 +10,7 @@ import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import { COMPOSER_BLEED_LAYER_ID } from '~/composables/useComposerBleedPosition';
@@ -35,6 +36,7 @@ interface ActiveDetailPane {
   hasData: boolean;
   error: string;
   loadingTitle: string;
+  errorTitle: string;
 }
 
 interface DetailSummary {
@@ -158,6 +160,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(issue),
       error: issueError,
       loadingTitle: t('detailOverlay.loading.issue'),
+      errorTitle: t('detailOverlay.loadError.issue'),
     };
   }
 
@@ -169,6 +172,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(pullRequest),
       error: pullRequestError,
       loadingTitle: t('detailOverlay.loading.pullRequest'),
+      errorTitle: t('detailOverlay.loadError.pullRequest'),
     };
   }
 
@@ -180,6 +184,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(discussion),
       error: discussionError,
       loadingTitle: t('discussionDetail.loading'),
+      errorTitle: t('detailOverlay.loadError.discussion'),
     };
   }
 
@@ -191,6 +196,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(release),
       error: releaseError,
       loadingTitle: t('releaseDetail.loading'),
+      errorTitle: t('detailOverlay.loadError.release'),
     };
   }
 
@@ -202,6 +208,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
       hasData: Boolean(repository),
       error: repoError,
       loadingTitle: t('detailOverlay.loading.repository'),
+      errorTitle: t('detailOverlay.loadError.repository'),
     };
   }
 
@@ -290,6 +297,14 @@ const isFeedbackVisible = computed(
 const isRepositoryContentVisible = computed(
   () => activeDetailPane.value?.type === 'repository' && !isFeedbackVisible.value
 );
+
+/* The pane's error may be the generic fallback or the server's own message.
+   A message that repeats the headline adds nothing, so it is not shown twice. */
+const detailErrorDescription = computed(() => {
+  const pane = activeDetailPane.value;
+  if (!pane?.error || pane.error === pane.errorTitle) return '';
+  return pane.error;
+});
 
 const getPullRequestState = (pullRequest: PullRequestDetailViewModel | null) => {
   if (pullRequest?.merged || pullRequest?.merged_at) return 'merged';
@@ -502,19 +517,12 @@ onUnmounted(() => syncDetailSidebarPane(null));
             </div>
 
             <div v-else-if="activeDetailPane?.error" class="detail-feedback-pane">
-              <div class="notification is-danger is-light mb-0 detail-feedback-box">
-                <p class="is-size-6 has-text-weight-semibold mb-2">
-                  {{ activeDetailPane.loadingTitle }}
-                </p>
-                <p class="is-size-7 mb-3">{{ activeDetailPane.error }}</p>
-                <button
-                  class="button is-small is-danger is-outlined"
-                  type="button"
-                  @click="emit('retry')"
-                >
-                  {{ t('detailOverlay.retry') }}
-                </button>
-              </div>
+              <PageErrorState
+                :title="activeDetailPane.errorTitle"
+                :description="detailErrorDescription"
+                :retry-label="t('detailOverlay.retry')"
+                @retry="emit('retry')"
+              />
             </div>
 
             <Suspense v-else @pending="isPanePending = true" @resolve="isPanePending = false">
@@ -649,15 +657,14 @@ onUnmounted(() => syncDetailSidebarPane(null));
 }
 
 .detail-feedback-pane {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 2rem;
 }
 
 .detail-loading-box {
   min-width: 200px;
-}
-
-.detail-feedback-box {
-  max-width: 420px;
 }
 
 .detail-overlay-fade-enter-active,

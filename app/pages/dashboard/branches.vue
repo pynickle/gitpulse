@@ -15,6 +15,7 @@ import type { RepoBranchAssociatedPull, RepoBranchDetail } from '#shared/types/r
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import { serializeDashboardDetailTarget } from '~/utils/dashboardUrlNavigationUtils';
 import { getPullRequestStateIcon } from '~/utils/getPullRequestStateVisual';
 
@@ -303,12 +304,13 @@ watch(repoFullName, () => {
           <p>{{ t('branchesPage.noRepo') }}</p>
         </div>
 
-        <div v-else-if="error" class="notification is-danger is-light branches-page__error">
-          <p class="mb-2">{{ t('branchesPage.error') }}</p>
-          <button type="button" class="button is-small is-danger is-outlined" @click="handleRetry">
-            {{ t('branchesPage.retry') }}
-          </button>
-        </div>
+        <PageErrorState
+          v-else-if="error"
+          :title="t('branchesPage.error')"
+          :details="error"
+          :retry-label="t('branchesPage.retry')"
+          @retry="handleRetry"
+        />
 
         <div v-else-if="!loading && items.length === 0" class="branches-page__empty">
           <p>{{ t('branchesPage.empty') }}</p>
@@ -556,10 +558,6 @@ watch(repoFullName, () => {
   &:disabled {
     opacity: 0.6;
   }
-}
-
-.branches-page__error {
-  margin-bottom: 1rem;
 }
 
 .branches-page__empty {

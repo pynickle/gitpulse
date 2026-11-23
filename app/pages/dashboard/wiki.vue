@@ -20,6 +20,7 @@ import { splitWikiHtmlSegments, type WikiHtmlSegment } from '#shared/utils/githu
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
 const AsyncMermaidBlock = defineAsyncComponent(() => import('~/components/ui/MermaidBlock.vue'));
@@ -382,16 +383,13 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
           <p>{{ t('wikiPage.noRepo') }}</p>
         </div>
 
-        <div v-else-if="pagesError" class="notification is-danger is-light wiki-page__error">
-          <p class="mb-2">{{ t('wikiPage.error') }}</p>
-          <button
-            type="button"
-            class="button is-small is-danger is-outlined"
-            @click="handleRetryPages"
-          >
-            {{ t('wikiPage.retry') }}
-          </button>
-        </div>
+        <PageErrorState
+          v-else-if="pagesError"
+          :title="t('wikiPage.error')"
+          :details="pagesError"
+          :retry-label="t('wikiPage.retry')"
+          @retry="handleRetryPages"
+        />
 
         <div v-else-if="!pagesLoading && !available" class="wiki-page__empty">
           <p>{{ t('wikiPage.unavailable') }}</p>
@@ -430,16 +428,14 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
           </aside>
 
           <section ref="contentRef" class="wiki-page__content">
-            <div v-if="pageError" class="notification is-danger is-light wiki-page__error">
-              <p class="mb-2">{{ t('wikiPage.pageError') }}</p>
-              <button
-                type="button"
-                class="button is-small is-danger is-outlined"
-                @click="handleRetryPage"
-              >
-                {{ t('wikiPage.retry') }}
-              </button>
-            </div>
+            <PageErrorState
+              v-if="pageError"
+              variant="inline"
+              :title="t('wikiPage.pageError')"
+              :details="pageError"
+              :retry-label="t('wikiPage.retry')"
+              @retry="handleRetryPage"
+            />
 
             <div v-else-if="pageLoading" class="wiki-page__content-loading">
               <LoaderCircleIcon :size="20" class="wiki-page__spinner" />
@@ -565,10 +561,6 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
       color: var(--gitpulse-text-strong);
     }
   }
-}
-
-.wiki-page__error {
-  margin-bottom: 1rem;
 }
 
 .wiki-page__empty {

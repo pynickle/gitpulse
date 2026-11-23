@@ -24,11 +24,20 @@ const defaultLoaders = () => ({
   loadRepoDetail: async () => repository,
 });
 type PaneLoaders = Record<keyof ReturnType<typeof defaultLoaders>, () => Promise<Component>>;
+const PageErrorState = await compileVue('app/components/ui/PageErrorState.vue', {
+  '@lucide/vue': {
+    ChevronDownIcon: empty,
+    RefreshCwIcon: empty,
+    TriangleExclamationPointIcon: empty,
+  },
+  'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
+});
 const Host = await compileVue('app/components/dashboard/detail/DetailOverlayHost.vue', {
   '~/composables/useCommentModeration': commentModerationComposable,
   '@lucide/vue': { LoaderCircleIcon: empty },
   'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
   '~/components/dashboard/overlay/DashboardOverlayFrame.vue': { default: frame },
+  '~/components/ui/PageErrorState.vue': { default: PageErrorState },
   '~/components/ui/ScrollArea.vue': { default: ScrollArea },
   '~/composables/useComposerBleedPosition': { COMPOSER_BLEED_LAYER_ID: 'test-bleed' },
 });
@@ -91,7 +100,14 @@ test('repository loading and errors fill the pane without a nested scrolling con
     props.loadingRepository = false;
     props.repoError = 'Repository request failed';
     await nextTick();
-    expect(view.root.querySelector('.detail-feedback-pane')?.textContent).toContain(
+    // The pane names what failed, and the server's own message is the detail
+    // under it — not the headline.
+    const feedback = view.root.querySelector('.detail-feedback-pane');
+    expect(feedback?.querySelector('.page-error-state__message[role="alert"]')).not.toBeNull();
+    expect(feedback?.querySelector('.page-error-state__title')?.textContent).toBe(
+      'detailOverlay.loadError.repository'
+    );
+    expect(feedback?.querySelector('.page-error-state__description')?.textContent).toBe(
       props.repoError
     );
     expect(pane.classList.contains('scroll-area--disabled')).toBe(true);

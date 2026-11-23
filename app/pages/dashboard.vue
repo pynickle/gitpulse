@@ -280,41 +280,13 @@
             </div>
 
             <div v-else class="dashboard-error-state">
-              <div class="dashboard-error-state__content">
-                <div class="dashboard-error-state__icon" aria-hidden="true">
-                  <TriangleExclamationPointIcon :size="40" />
-                </div>
-                <p class="dashboard-error-state__title">
-                  {{ t('dashboard.error.title') }}
-                </p>
-                <p class="dashboard-error-state__description">
-                  {{ t('dashboard.error.description') }}
-                </p>
-                <div class="dashboard-error-state__actions">
-                  <Button color="primary" size="normal" @click="refreshCurrentTabSafely">
-                    {{ t('dashboard.error.retry') }}
-                  </Button>
-                  <button
-                    type="button"
-                    class="dashboard-error-state__details-toggle"
-                    :aria-expanded="showErrorDetails"
-                    @click="showErrorDetails = !showErrorDetails"
-                  >
-                    {{
-                      showErrorDetails
-                        ? t('dashboard.error.hideDetails')
-                        : t('dashboard.error.showDetails')
-                    }}
-                  </button>
-                  <ScrollArea
-                    v-if="showErrorDetails"
-                    class="dashboard-error-state__details"
-                    axis="both"
-                  >
-                    <pre class="dashboard-error-state__details-text">{{ dashboardListError }}</pre>
-                  </ScrollArea>
-                </div>
-              </div>
+              <PageErrorState
+                :title="t('dashboard.error.title')"
+                :description="t('dashboard.error.description')"
+                :details="dashboardListError ?? ''"
+                :retry-label="t('dashboard.error.retry')"
+                @retry="refreshCurrentTabSafely"
+              />
             </div>
           </div>
 
@@ -446,7 +418,6 @@
 
 <script setup lang="ts">
 import {
-  TriangleExclamationPointIcon,
   BellIcon,
   BookBookmarkIcon,
   CircleDotIcon,
@@ -475,8 +446,8 @@ import ReleaseTimelineView from '~/components/dashboard/release-timeline/Release
 import TabSidebar from '~/components/dashboard/tab-sidebar/TabSidebar.vue';
 import QuickActions from '~/components/dashboard/widgets/QuickActions.vue';
 import WidgetsPanel from '~/components/dashboard/widgets/WidgetsPanel.vue';
-import Button from '~/components/ui/Button.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { resolveCustomTabSubtitle } from '~/composables/useCustomTabSettingsOptions';
 import {
@@ -585,7 +556,6 @@ const { filters: dashboardFilters, updateFilters, clearSourceFilters } = useDash
 const isFilterDrawerOpen = shallowRef(false);
 const hasOpenedDetailOverlay = shallowRef(false);
 const hasOpenedFilterDrawer = shallowRef(false);
-const showErrorDetails = shallowRef(false);
 const userLogin = computed(() => user.value?.login);
 const filterSourceStates = computed(() => ({
   todos: createDashboardFilterSourceState('todos', dashboardFilters.value),
@@ -1606,8 +1576,6 @@ watch(
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/pointer' as *;
-
 .dashboard-page {
   display: flex;
   width: 100%;
@@ -1694,14 +1662,8 @@ watch(
   overflow-x: hidden;
 }
 
-.dashboard-page--narrow :deep(.dashboard-empty-state),
-.dashboard-page--narrow :deep(.dashboard-error-state__description) {
+.dashboard-page--narrow :deep(.dashboard-empty-state) {
   overflow-wrap: anywhere;
-}
-
-.dashboard-page--narrow :deep(.dashboard-error-state__actions .button) {
-  min-width: 2.75rem;
-  min-height: 2.75rem;
 }
 
 .dashboard-file-browser {
@@ -1862,103 +1824,13 @@ watch(
   }
 }
 
+/* The failure block sits where the list normally does, so the shell keeps its
+   height and the card does not collapse around the message. */
 .dashboard-error-state {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
   width: 100%;
   min-height: 0;
-  padding: clamp(1.5rem, 6vh, 4rem) clamp(1rem, 5vw, 3rem);
-  flex: 1;
-  text-align: center;
   overflow: hidden;
-}
-
-.dashboard-error-state__content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: min(100%, 28rem);
-}
-
-.dashboard-error-state__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: clamp(56px, 10vh, 72px);
-  height: clamp(56px, 10vh, 72px);
-  margin-bottom: clamp(1rem, 3vh, 1.5rem);
-  border-radius: 50%;
-  background-color: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
-  flex-shrink: 0;
-}
-
-.dashboard-error-state__title {
-  font-size: clamp(1rem, 2.2vw, 1.25rem);
-  font-weight: 600;
-  color: var(--gitpulse-text-strong);
-  margin: 0 0 0.5rem;
-}
-
-.dashboard-error-state__description {
-  font-size: clamp(0.8125rem, 1.6vw, 0.9375rem);
-  line-height: 1.55;
-  color: var(--gitpulse-text-muted);
-  margin: 0 0 clamp(1rem, 3vh, 1.5rem);
-  max-width: min(100%, 26rem);
-}
-
-.dashboard-error-state__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-}
-
-.dashboard-error-state__details-toggle {
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-subtle);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.15s ease;
-}
-
-@include hover-only {
-  .dashboard-error-state__details-toggle:hover {
-    color: var(--gitpulse-text-muted);
-  }
-}
-
-.dashboard-error-state__details {
-  margin-top: 0.75rem;
-  padding: 0.75rem 1rem;
-  width: 100%;
-  max-width: min(100%, 32rem);
-  max-height: clamp(120px, 25vh, 220px);
-  font-family: var(--gitpulse-code-font-family);
-  font-size: 0.8rem;
-  line-height: 1.5;
-  color: var(--gitpulse-text-muted);
-  background-color: var(--gitpulse-surface-muted);
-  border: 1px solid var(--gitpulse-border);
-  border-radius: var(--gitpulse-radius-md);
-  text-align: left;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-:deep(.dashboard-error-state__details-text) {
-  overflow: visible;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
 }
 </style>

@@ -7,6 +7,7 @@ import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverl
 import RepoItem from '~/components/dashboard/RepoItem.vue';
 import type { SegmentedOption } from '~/components/ui/FilterSegmentedControl.vue';
 import FilterSegmentedControl from '~/components/ui/FilterSegmentedControl.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import type { StarredDirection, StarredSort } from '~/composables/useStarredRepos';
 
 const { t } = useI18n();
@@ -163,12 +164,13 @@ watch(requestedUser, () => {
       </div>
 
       <div class="starred-page__body">
-        <div v-if="error" class="notification is-danger is-light starred-page__error">
-          <p class="mb-2">{{ t('starred.error') }}</p>
-          <button type="button" class="button is-small is-danger is-outlined" @click="handleRetry">
-            {{ t('starred.retry') }}
-          </button>
-        </div>
+        <PageErrorState
+          v-if="error"
+          :title="t('starred.error')"
+          :details="error"
+          :retry-label="t('starred.retry')"
+          @retry="handleRetry"
+        />
 
         <div v-else-if="loading" class="starred-page__empty" aria-busy="true">
           <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
@@ -216,10 +218,6 @@ watch(requestedUser, () => {
   flex-wrap: wrap;
   gap: 0.5rem;
   min-width: 0;
-}
-
-.starred-page__error {
-  margin-bottom: 1rem;
 }
 
 .starred-page__empty {

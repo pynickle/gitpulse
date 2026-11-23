@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  TriangleExclamationPointIcon,
   CalendarIcon,
   RotateCcwClockIcon,
   LayoutGridIcon,
@@ -15,6 +14,7 @@ import DashboardPagination from '~/components/dashboard/DashboardPagination.vue'
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import {
   packageTypeHasVersionTags,
@@ -248,13 +248,13 @@ const handleHome = async () => {
         <p>{{ t('packageDetail.noPackage') }}</p>
       </div>
 
-      <div v-else-if="detailError" class="package-page__status package-page__status--error">
-        <TriangleExclamationPointIcon :size="32" aria-hidden="true" />
-        <p>{{ detailError }}</p>
-        <button type="button" class="button is-small is-light" @click="refresh">
-          {{ t('packageDetail.retry') }}
-        </button>
-      </div>
+      <PageErrorState
+        v-else-if="detailError"
+        :title="t('packageDetail.error')"
+        :details="detailError"
+        :retry-label="t('packageDetail.retry')"
+        @retry="refresh"
+      />
 
       <template v-else-if="detail">
         <header class="package-page__header">
@@ -378,12 +378,14 @@ const handleHome = async () => {
             <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
           </div>
 
-          <div v-else-if="versionsError" class="package-page__status package-page__status--error">
-            <p>{{ versionsError }}</p>
-            <button type="button" class="button is-small is-light" @click="retryVersions">
-              {{ t('packageDetail.retry') }}
-            </button>
-          </div>
+          <PageErrorState
+            v-else-if="versionsError"
+            variant="inline"
+            :title="t('packageDetail.versionsError')"
+            :details="versionsError"
+            :retry-label="t('packageDetail.retry')"
+            @retry="retryVersions"
+          />
 
           <div v-else-if="versions.length === 0" class="package-page__status">
             <p>
@@ -677,10 +679,6 @@ const handleHome = async () => {
   color: var(--gitpulse-text-muted);
   font-size: 0.9rem;
   text-align: center;
-}
-
-.package-page__status--error {
-  color: var(--gitpulse-danger);
 }
 
 .spin-animation {

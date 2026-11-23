@@ -14,6 +14,7 @@ import DashboardPagination from '~/components/dashboard/DashboardPagination.vue'
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import ReleaseListItemCard from '~/components/dashboard/releases/ReleaseListItemCard.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import { serializeReleaseQuery } from '~/utils/dashboardUrlNavigationUtils';
 
 type ReleaseTypeFilter = 'all' | 'stable' | 'prerelease' | 'draft';
@@ -253,12 +254,13 @@ watch(repoFullName, () => {
           <p>{{ t('releasesPage.noRepo') }}</p>
         </div>
 
-        <div v-else-if="error" class="notification is-danger is-light releases-page__error">
-          <p class="mb-2">{{ t('releasesPage.error') }}</p>
-          <button type="button" class="button is-small is-danger is-outlined" @click="handleRetry">
-            {{ t('releasesPage.retry') }}
-          </button>
-        </div>
+        <PageErrorState
+          v-else-if="error"
+          :title="t('releasesPage.error')"
+          :details="error"
+          :retry-label="t('releasesPage.retry')"
+          @retry="handleRetry"
+        />
 
         <div v-else-if="loading" class="releases-page__empty" aria-busy="true">
           <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />
@@ -383,10 +385,6 @@ watch(repoFullName, () => {
 
 .releases-page__filter-icon {
   flex-shrink: 0;
-}
-
-.releases-page__error {
-  margin-bottom: 1rem;
 }
 
 .releases-page__empty {

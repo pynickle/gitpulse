@@ -66,6 +66,10 @@
       "panelTitle": "触发错误页面"
     }
   },
+  "pageError": {
+    "showDetails": "查看详情",
+    "hideDetails": "收起详情"
+  },
   "auth": {
     "connectWithGithub": "使用 GitHub 连接",
     "connectingWithPat": "正在验证 Token...",
@@ -417,9 +421,7 @@
     "error": {
       "title": "无法加载此视图",
       "description": "请检查网络连接后重试。",
-      "retry": "重试",
-      "showDetails": "查看详情",
-      "hideDetails": "收起详情"
+      "retry": "重试"
     },
     "sidebar": {
       "views": "视图",

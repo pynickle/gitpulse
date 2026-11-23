@@ -8,6 +8,7 @@ import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverl
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import { useRepoContributors } from '~/composables/useRepoContributors';
 import { useRepoContributorStats } from '~/composables/useRepoContributorStats';
 
@@ -236,12 +237,13 @@ watch(repoFullName, () => {
           <p>{{ t('contributorsPage.noRepo') }}</p>
         </div>
 
-        <div v-else-if="pageError" class="notification is-danger is-light contributors-page__error">
-          <p class="mb-2">{{ t('contributorsPage.error') }}</p>
-          <button type="button" class="button is-small is-danger is-outlined" @click="handleRetry">
-            {{ t('contributorsPage.retry') }}
-          </button>
-        </div>
+        <PageErrorState
+          v-else-if="pageError"
+          :title="t('contributorsPage.error')"
+          :details="pageError"
+          :retry-label="t('contributorsPage.retry')"
+          @retry="handleRetry"
+        />
 
         <div
           v-else-if="
@@ -431,10 +433,6 @@ watch(repoFullName, () => {
   margin-bottom: 0.75rem;
   color: var(--gitpulse-text-muted);
   font-size: 0.8rem;
-}
-
-.contributors-page__error {
-  margin-bottom: 1rem;
 }
 
 .contributors-page__empty {
