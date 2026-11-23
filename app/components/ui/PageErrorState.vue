@@ -124,7 +124,7 @@ const { t } = useI18n();
 
 /* A small bordered control. It stays visibly a button without the weight of a
    filled call-to-action, which shouted over the message it sits under. */
-.page-error-state__retry {
+.page-error-state__card .page-error-state__retry {
   display: inline-flex;
   align-items: center;
   justify-content: center;
