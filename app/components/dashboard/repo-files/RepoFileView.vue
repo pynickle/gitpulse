@@ -21,6 +21,7 @@ import type { LocationQueryRaw } from 'vue-router';
 import type { ShikiDarkThemeId, ShikiLightThemeId } from '#shared/types/user-settings';
 import FloatingRefreshButton from '~/components/dashboard/FloatingRefreshButton.vue';
 import BranchSelector from '~/components/dashboard/repo-files/BranchSelector.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { RepoContentItem } from '~/composables/useRepoFiles';
 
@@ -1035,11 +1036,12 @@ onActivated(() => {
           <LoaderCircleIcon :size="24" class="spin-animation" />
         </div>
 
-        <div v-else-if="error" class="repo-file-view__error">
-          <div class="notification is-danger is-light">
-            <p>{{ error }}</p>
-          </div>
-        </div>
+        <PageErrorState
+          v-else-if="error"
+          :title="t('repoFileView.loadError')"
+          :description="error"
+          @retry="retry"
+        />
 
         <template v-else-if="!fileContent">
           <ScrollArea v-if="sortedDirectoryContents.length" class="repo-file-view__file-list">
@@ -1592,14 +1594,6 @@ onActivated(() => {
   align-items: center;
   justify-content: center;
   color: var(--gitpulse-text-muted);
-}
-
-.repo-file-view__error {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
 }
 
 .repo-file-view__empty {

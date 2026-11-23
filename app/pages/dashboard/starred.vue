@@ -167,8 +167,7 @@ watch(requestedUser, () => {
         <PageErrorState
           v-if="error"
           :title="t('starred.error')"
-          :details="error"
-          :retry-label="t('starred.retry')"
+          :description="error"
           @retry="handleRetry"
         />
 

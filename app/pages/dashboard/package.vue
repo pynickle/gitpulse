@@ -251,8 +251,7 @@ const handleHome = async () => {
       <PageErrorState
         v-else-if="detailError"
         :title="t('packageDetail.error')"
-        :details="detailError"
-        :retry-label="t('packageDetail.retry')"
+        :description="detailError"
         @retry="refresh"
       />
 
@@ -380,10 +379,8 @@ const handleHome = async () => {
 
           <PageErrorState
             v-else-if="versionsError"
-            variant="inline"
             :title="t('packageDetail.versionsError')"
-            :details="versionsError"
-            :retry-label="t('packageDetail.retry')"
+            :description="versionsError"
             @retry="retryVersions"
           />
 

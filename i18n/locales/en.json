@@ -67,8 +67,7 @@
     }
   },
   "pageError": {
-    "showDetails": "Show details",
-    "hideDetails": "Hide details"
+    "retry": "Retry"
   },
   "auth": {
     "connectWithGithub": "Connect with GitHub",
@@ -117,7 +116,6 @@
   "detailOverlay": {
     "back": "Back",
     "home": "Home",
-    "retry": "Retry",
     "syncing": "Syncing data...",
     "hideDetailSidebar": "Hide Detail Sidebar",
     "showDetailSidebar": "Show Detail Sidebar",
@@ -329,8 +327,7 @@
     },
     "error": {
       "title": "Unable to load this view",
-      "description": "Please check your connection and try again.",
-      "retry": "Retry"
+      "description": "Please check your connection and try again."
     },
     "sidebar": {
       "views": "Views",
@@ -993,7 +990,8 @@
     "binaryFileHint": "This file is a binary and cannot be displayed as text.",
     "toggleWrap": "Toggle word wrap",
     "copyContent": "Copy content",
-    "download": "Download"
+    "download": "Download",
+    "loadError": "Failed to load this file."
   },
   "prReview": {
     "openReview": "Review changes",
@@ -1272,6 +1270,7 @@
     "openProfile": "Open your profile",
     "viewOnGitHub": "View on GitHub",
     "noUser": "No user to display. Sign in to view your profile.",
+    "error": "Failed to load this profile.",
     "retry": "Retry",
     "joined": "Joined {date}",
     "followers": "followers",
@@ -1328,7 +1327,6 @@
     "loadingTitle": "Loading package",
     "loadingSubtitle": "Fetching package details from GitHub",
     "error": "Failed to load package.",
-    "retry": "Retry",
     "noPackage": "No package specified.",
     "viewOnGitHub": "View on GitHub",
     "repository": "Open repository",
@@ -1356,7 +1354,6 @@
     "loadingSubtitle": "Fetching your stars from GitHub",
     "empty": "You haven't starred any repositories yet.",
     "error": "Failed to load starred repositories.",
-    "retry": "Retry",
     "sortLabel": "Sort starred repositories",
     "orderLabel": "Sort order",
     "sort": {
@@ -1500,7 +1497,6 @@
     "loadingSubtitle": "Fetching branch details from GitHub",
     "empty": "This repository has no branches yet.",
     "error": "Failed to load branches.",
-    "retry": "Retry",
     "noRepo": "No repository specified.",
     "default": "Default",
     "protected": "Protected",
@@ -1539,7 +1535,6 @@
     "error": "Failed to load the wiki.",
     "pageError": "Failed to load this wiki page.",
     "pageUnavailable": "This page can't be rendered here. View it on GitHub instead.",
-    "retry": "Retry",
     "noRepo": "No repository specified."
   },
   "contributorsPage": {
@@ -1553,7 +1548,6 @@
     "empty": "This repository has no contributors yet.",
     "emptyFiltered": "No contributors match this filter.",
     "error": "Failed to load contributors.",
-    "retry": "Retry",
     "noRepo": "No repository specified.",
     "count": "{count} contributors",
     "searchPlaceholder": "Filter by username…",

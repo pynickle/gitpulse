@@ -284,7 +284,6 @@
                 :title="t('dashboard.error.title')"
                 :description="t('dashboard.error.description')"
                 :details="dashboardListError ?? ''"
-                :retry-label="t('dashboard.error.retry')"
                 @retry="refreshCurrentTabSafely"
               />
             </div>

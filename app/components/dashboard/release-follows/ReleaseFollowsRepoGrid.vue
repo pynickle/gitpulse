@@ -3,6 +3,7 @@ import { LoaderCircleIcon } from '@lucide/vue';
 
 import type { FollowAddError, FollowedRepository } from '#shared/types/release-follows';
 import FollowableRepoCard from '~/components/dashboard/release-follows/FollowableRepoCard.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import type { StarredRepo } from '~/composables/useStarredRepos';
 
 defineProps<{
@@ -13,7 +14,6 @@ defineProps<{
   addBlock: Exclude<FollowAddError, 'duplicate'> | null;
   emptyMessage: string;
   errorMessage: string;
-  retryLabel: string;
 }>();
 
 const emit = defineEmits<{
@@ -24,12 +24,12 @@ const emit = defineEmits<{
 
 <template>
   <div class="release-follows-grid">
-    <div v-if="error" class="notification is-danger is-light">
-      <p class="mb-2">{{ errorMessage }}</p>
-      <button class="button is-small is-danger is-outlined" type="button" @click="emit('retry')">
-        {{ retryLabel }}
-      </button>
-    </div>
+    <PageErrorState
+      v-if="error"
+      :title="errorMessage"
+      :description="error"
+      @retry="emit('retry')"
+    />
 
     <div v-else-if="loading" class="release-follows-grid__empty" aria-busy="true">
       <LoaderCircleIcon :size="22" class="spin-animation" aria-hidden="true" />

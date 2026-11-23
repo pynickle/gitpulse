@@ -386,8 +386,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
         <PageErrorState
           v-else-if="pagesError"
           :title="t('wikiPage.error')"
-          :details="pagesError"
-          :retry-label="t('wikiPage.retry')"
+          :description="pagesError"
           @retry="handleRetryPages"
         />
 
@@ -430,10 +429,8 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
           <section ref="contentRef" class="wiki-page__content">
             <PageErrorState
               v-if="pageError"
-              variant="inline"
               :title="t('wikiPage.pageError')"
-              :details="pageError"
-              :retry-label="t('wikiPage.retry')"
+              :description="pageError"
               @retry="handleRetryPage"
             />
 

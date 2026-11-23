@@ -15,10 +15,17 @@ const profileHeader = defineComponent({
   props: { profile: { type: Object as PropType<UserProfilePayload>, required: true } },
   setup: (props) => () => h('h1', props.profile.login),
 });
+const PageErrorState = await compileVue('app/components/ui/PageErrorState.vue', {
+  '@lucide/vue': icons,
+  'vue-i18n': {
+    useI18n: () => ({ t: (key: string) => (key === 'pageError.retry' ? 'Retry' : key) }),
+  },
+});
 const ProfileView = await compileVue(
   'app/components/dashboard/profile/ProfileView.vue',
   {
     '@lucide/vue': icons,
+    '~/components/ui/PageErrorState.vue': { default: PageErrorState },
     '~/components/dashboard/profile/ContributionGraph.vue': empty,
     '~/components/dashboard/profile/ProfileHeader.vue': { default: profileHeader },
     '~/components/dashboard/profile/ProfilePackageList.vue': empty,

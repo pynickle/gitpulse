@@ -307,8 +307,7 @@ watch(repoFullName, () => {
         <PageErrorState
           v-else-if="error"
           :title="t('branchesPage.error')"
-          :details="error"
-          :retry-label="t('branchesPage.retry')"
+          :description="error"
           @retry="handleRetry"
         />
 

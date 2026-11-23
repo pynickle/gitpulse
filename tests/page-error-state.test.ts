@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 
-import { defineComponent, h, nextTick, reactive } from 'vue';
+import { defineComponent, h, reactive } from 'vue';
 
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
@@ -37,7 +37,6 @@ describe('page error state', () => {
     const { root } = mount({
       title: 'Failed to load branches.',
       description: 'Check your connection.',
-      retryLabel: 'Retry',
     });
 
     expect(root.querySelector('.page-error-state__message[role="alert"]')).toBeTruthy();
@@ -50,50 +49,42 @@ describe('page error state', () => {
   });
 
   test('the retry control emits retry', () => {
-    const { root, state } = mount({ title: 'Failed', retryLabel: 'Retry' });
+    const { root, state } = mount({ title: 'Failed' });
 
     root.querySelector<HTMLButtonElement>('.page-error-state__retry')!.click();
 
     expect(state.retries).toBe(1);
   });
 
-  test('details stay collapsed until the toggle is pressed', async () => {
+  test('the server message is shown without a second interaction', () => {
     const { root } = mount({
       title: 'Failed',
-      retryLabel: 'Retry',
-      details: 'Request failed with status code 500',
+      description: 'Request failed with status code 500',
     });
 
-    const toggle = root.querySelector<HTMLButtonElement>('.page-error-state__toggle')!;
-    expect(root.querySelector('.page-error-state__details')).toBeNull();
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-
-    toggle.click();
-    await nextTick();
-
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(root.querySelector('.page-error-state__details')?.textContent).toContain(
+    expect(root.querySelector('.page-error-state__description')?.textContent).toContain(
       'Request failed with status code 500'
     );
   });
 
-  test('no details toggle is rendered without a detail message', () => {
-    const { root } = mount({ title: 'Failed', retryLabel: 'Retry' });
-
-    expect(root.querySelector('.page-error-state__toggle')).toBeNull();
-  });
-
-  test('the inline variant keeps the same contract on a compact block', () => {
+  test('a page can show a human sentence and the technical message together', () => {
     const { root } = mount({
-      title: 'Failed to load this wiki page.',
-      retryLabel: 'Retry',
-      variant: 'inline',
+      title: 'Unable to load this view',
+      description: 'Please check your connection and try again.',
+      details: 'Request failed with status code 502',
     });
 
-    expect(
-      root.querySelector('.page-error-state')?.classList.contains('page-error-state--inline')
-    ).toBe(true);
-    expect(root.querySelector('.page-error-state__message[role="alert"]')).toBeTruthy();
-    expect(root.querySelector('.page-error-state__retry')).toBeTruthy();
+    expect(root.querySelector('.page-error-state__description')?.textContent).toContain(
+      'Please check your connection'
+    );
+    expect(root.querySelector('.page-error-state__details')?.textContent).toContain('502');
+  });
+
+  test('the retry control stays outside the alert', () => {
+    const { root } = mount({ title: 'Failed', description: 'boom' });
+    const alert = root.querySelector('.page-error-state__message[role="alert"]')!;
+
+    expect(alert.textContent).toContain('boom');
+    expect(alert.querySelector('.page-error-state__retry')).toBeNull();
   });
 });

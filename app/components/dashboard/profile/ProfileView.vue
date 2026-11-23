@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TriangleExclamationPointIcon, LoaderCircleIcon } from '@lucide/vue';
+import { LoaderCircleIcon } from '@lucide/vue';
 import { computed, toRef } from 'vue';
 
 import type { PackageSummary, PackageType } from '#shared/types/packages';
@@ -11,6 +11,7 @@ import ProfileReadme from '~/components/dashboard/profile/ProfileReadme.vue';
 import ProfileRepositoryList from '~/components/dashboard/profile/ProfileRepositoryList.vue';
 import ProfileTabNav, { type ProfileTab } from '~/components/dashboard/profile/ProfileTabNav.vue';
 import UserConnectionList from '~/components/dashboard/profile/UserConnectionList.vue';
+import PageErrorState from '~/components/ui/PageErrorState.vue';
 import { useUserProfile } from '~/composables/useUserProfile';
 
 export type { ProfileTab };
@@ -91,13 +92,12 @@ const showOverviewSkeleton = computed(
       <LoaderCircleIcon :size="28" class="spin-animation" aria-hidden="true" />
     </div>
 
-    <div v-else-if="profileError" class="profile-view__status profile-view__status--error">
-      <TriangleExclamationPointIcon :size="32" aria-hidden="true" />
-      <p>{{ profileError }}</p>
-      <button type="button" class="button is-small is-light" @click="refresh">
-        {{ t('profile.retry') }}
-      </button>
-    </div>
+    <PageErrorState
+      v-else-if="profileError"
+      :title="t('profile.error')"
+      :description="profileError"
+      @retry="refresh"
+    />
 
     <div v-else-if="profile" class="profile-view__layout">
       <aside class="profile-view__sidebar">
@@ -206,10 +206,6 @@ const showOverviewSkeleton = computed(
   color: var(--gitpulse-text-muted);
   font-size: 0.875rem;
   text-align: center;
-}
-
-.profile-view__status--error {
-  color: var(--gitpulse-danger);
 }
 
 .profile-view__status--inline {

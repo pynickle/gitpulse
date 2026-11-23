@@ -253,7 +253,6 @@ onMounted(() => {
           :add-block="addBlock"
           :empty-message="gridEmptyMessage"
           :error-message="gridErrorMessage"
-          :retry-label="t('releaseFollows.retry')"
           @retry="handleRetry"
           @toggle="handleToggle"
         />

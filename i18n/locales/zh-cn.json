@@ -67,8 +67,7 @@
     }
   },
   "pageError": {
-    "showDetails": "查看详情",
-    "hideDetails": "收起详情"
+    "retry": "重试"
   },
   "auth": {
     "connectWithGithub": "使用 GitHub 连接",
@@ -117,7 +116,6 @@
   "detailOverlay": {
     "back": "返回",
     "home": "主页",
-    "retry": "重试",
     "syncing": "同步数据中...",
     "hideDetailSidebar": "隐藏详情侧边栏",
     "showDetailSidebar": "显示详情侧边栏",
@@ -420,8 +418,7 @@
     },
     "error": {
       "title": "无法加载此视图",
-      "description": "请检查网络连接后重试。",
-      "retry": "重试"
+      "description": "请检查网络连接后重试。"
     },
     "sidebar": {
       "views": "视图",
@@ -993,7 +990,8 @@
     "binaryFileHint": "此文件是二进制文件，无法以文本形式显示。",
     "toggleWrap": "切换自动换行",
     "copyContent": "复制内容",
-    "download": "下载"
+    "download": "下载",
+    "loadError": "文件加载失败。"
   },
   "prReview": {
     "openReview": "审查变更",
@@ -1272,6 +1270,7 @@
     "openProfile": "打开我的主页",
     "viewOnGitHub": "在 GitHub 查看",
     "noUser": "暂无可显示的用户。请登录以查看你的主页。",
+    "error": "个人主页加载失败。",
     "retry": "重试",
     "joined": "加入于 {date}",
     "followers": "关注者",
@@ -1328,7 +1327,6 @@
     "loadingTitle": "正在加载软件包",
     "loadingSubtitle": "正在从 GitHub 获取软件包信息",
     "error": "加载软件包失败。",
-    "retry": "重试",
     "noPackage": "未指定软件包。",
     "viewOnGitHub": "在 GitHub 查看",
     "repository": "打开仓库",
@@ -1356,7 +1354,6 @@
     "loadingSubtitle": "正在从 GitHub 获取你的星标",
     "empty": "你还没有为任何仓库加星标。",
     "error": "加载已加星标的仓库失败。",
-    "retry": "重试",
     "sortLabel": "排序星标仓库",
     "orderLabel": "排序方向",
     "sort": {
@@ -1500,7 +1497,6 @@
     "loadingSubtitle": "正在从 GitHub 获取分支详细信息",
     "empty": "该仓库还没有任何分支。",
     "error": "加载分支列表失败。",
-    "retry": "重试",
     "noRepo": "未指定仓库。",
     "default": "默认",
     "protected": "受保护",
@@ -1539,7 +1535,6 @@
     "error": "加载 Wiki 失败。",
     "pageError": "加载该 Wiki 页面失败。",
     "pageUnavailable": "此页面无法在这里渲染，请前往 GitHub 查看。",
-    "retry": "重试",
     "noRepo": "未指定仓库。"
   },
   "contributorsPage": {
@@ -1553,7 +1548,6 @@
     "empty": "此仓库还没有贡献者。",
     "emptyFiltered": "没有匹配此筛选条件的贡献者。",
     "error": "加载贡献者失败。",
-    "retry": "重试",
     "noRepo": "未指定仓库。",
     "count": "{count} 位贡献者",
     "searchPlaceholder": "按用户名筛选…",

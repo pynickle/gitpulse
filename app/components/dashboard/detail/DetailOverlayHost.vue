@@ -300,7 +300,7 @@ const isRepositoryContentVisible = computed(
 
 /* The pane's error may be the generic fallback or the server's own message.
    A message that repeats the headline adds nothing, so it is not shown twice. */
-const detailErrorDescription = computed(() => {
+const detailErrorDetails = computed(() => {
   const pane = activeDetailPane.value;
   if (!pane?.error || pane.error === pane.errorTitle) return '';
   return pane.error;
@@ -519,8 +519,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
             <div v-else-if="activeDetailPane?.error" class="detail-feedback-pane">
               <PageErrorState
                 :title="activeDetailPane.errorTitle"
-                :description="detailErrorDescription"
-                :retry-label="t('detailOverlay.retry')"
+                :description="detailErrorDetails"
                 @retry="emit('retry')"
               />
             </div>
