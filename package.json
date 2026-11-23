@@ -58,7 +58,7 @@
     "happy-dom": "^21.0.4",
     "nuxt-skill-hub": "^0.3.3",
     "nuxtseo-devtools-host": "^1.0.3",
-    "oxfmt": "^0.79.0",
+    "oxfmt": "^0.80.0",
     "oxlint": "^1.94.0",
     "postcss": "8.5.33",
     "sass-embedded": "1.108.2",
