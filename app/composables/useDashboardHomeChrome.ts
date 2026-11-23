@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue';
-import { computed, shallowRef, toValue, watch } from 'vue';
+import { computed, onMounted, shallowRef, toValue, watch } from 'vue';
 
 import {
   DASHBOARD_HOME_NARROW_MAX_WIDTH,
@@ -19,23 +19,30 @@ const readViewportWidth = () => {
     : DASHBOARD_HOME_NARROW_MAX_WIDTH + 1;
 };
 
-const viewportWidth = shallowRef(readViewportWidth());
+/*
+ * Starts at the server's assumption and only narrows after mount: reading the
+ * real viewport during setup makes the client's first render disagree with the
+ * server's markup, which is a hydration mismatch rather than a late update.
+ */
+const viewportWidth = shallowRef(DASHBOARD_HOME_NARROW_MAX_WIDTH + 1);
 const openState = shallowRef<DashboardHomeChromeOpenState>({
   dashboardMenuOpen: false,
   accountMenuOpen: false,
 });
 
-if (import.meta.client) {
-  const media = window.matchMedia(`(max-width: ${DASHBOARD_HOME_NARROW_MAX_WIDTH}px)`);
-  const syncViewport = () => {
-    viewportWidth.value = media.matches
-      ? DASHBOARD_HOME_NARROW_MAX_WIDTH
-      : DASHBOARD_HOME_NARROW_MAX_WIDTH + 1;
-  };
+const syncViewport = () => {
+  viewportWidth.value = readViewportWidth();
+};
 
-  syncViewport();
+/* Listeners are registered once for the whole client, from any consumer's mount. */
+let viewportListenersAttached = false;
+const attachViewportListeners = () => {
+  if (viewportListenersAttached) return;
+  viewportListenersAttached = true;
+
+  const media = window.matchMedia(`(max-width: ${DASHBOARD_HOME_NARROW_MAX_WIDTH}px)`);
   media.addEventListener('change', syncViewport);
-}
+};
 
 export function useDashboardHomeChrome(options?: {
   hasCustomSubtitle?: MaybeRefOrGetter<boolean>;
@@ -54,6 +61,16 @@ export function useDashboardHomeChrome(options?: {
       isReleaseTimeline: options?.isReleaseTimeline ? toValue(options.isReleaseTimeline) : false,
     })
   );
+
+  /*
+   * The real viewport is read after hydration, so the first client render
+   * matches the server markup exactly and the responsive chrome settles on the
+   * next tick instead of tearing.
+   */
+  onMounted(() => {
+    syncViewport();
+    attachViewportListeners();
+  });
 
   const dispatch = (event: DashboardHomeChromeEvent) => {
     openState.value = reduceDashboardHomeChromeOpenState(openState.value, event);

@@ -31,11 +31,7 @@ const { t } = useI18n();
         <p v-if="details" class="page-error-state__details">{{ details }}</p>
       </div>
 
-      <button
-        type="button"
-        class="button is-primary page-error-state__retry"
-        @click="emit('retry')"
-      >
+      <button type="button" class="button page-error-state__retry" @click="emit('retry')">
         <RefreshCwIcon :size="14" aria-hidden="true" />
         <span>{{ t('pageError.retry') }}</span>
       </button>
@@ -44,11 +40,17 @@ const { t } = useI18n();
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
+/* Fills whatever box it is dropped into so the card sits in the middle of the
+   empty page rather than hanging under the top padding. */
 .page-error-state {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 14rem;
   padding: clamp(1.25rem, 5vh, 3rem) clamp(1rem, 4vw, 2.5rem);
 }
 
@@ -87,22 +89,25 @@ const { t } = useI18n();
 .page-error-state__message {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.5rem;
   min-width: 0;
 }
 
+/* The headline carries the message; everything under it is deliberately quieter
+   so the eye lands on what failed and only then on the technical cause. */
 .page-error-state__title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
   color: var(--gitpulse-text-strong);
 }
 
 .page-error-state__description {
   margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.55;
+  font-size: 0.8125rem;
+  line-height: 1.5;
   color: var(--gitpulse-text-muted);
   overflow-wrap: anywhere;
 }
@@ -112,25 +117,40 @@ const { t } = useI18n();
   margin: 0;
   color: var(--gitpulse-text-subtle);
   font-family: var(--gitpulse-code-font-family);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: 0.6875rem;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
-/* The app's 2.75rem touch target, so the one control here is comfortably hit. */
+/* A small bordered control. It stays visibly a button without the weight of a
+   filled call-to-action, which shouted over the message it sits under. */
 .page-error-state__retry {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  min-height: 2.75rem;
-  margin-top: 1.25rem;
-  padding-inline: 1rem;
-}
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  margin-top: 1rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--gitpulse-border-strong);
+  border-radius: var(--gitpulse-radius-md);
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-text-strong);
+  font-size: 0.8125rem;
+  font-weight: 500;
 
-@media (max-width: 860px) {
-  .page-error-state__retry {
-    width: 100%;
+  @include hover-only {
+    &:hover {
+      border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-accent);
+    }
+  }
+
+  &:focus-visible {
+    border-color: var(--gitpulse-accent);
+    outline: 2px solid color-mix(in srgb, var(--gitpulse-accent) 72%, transparent);
+    outline-offset: 1px;
   }
 }
 </style>
