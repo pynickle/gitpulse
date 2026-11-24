@@ -73,7 +73,31 @@ function mountHeader(pullRequest: Record<string, unknown>) {
   );
 }
 
-describe('pull request header branch refs', () => {
+describe('pull request header eyebrow and branch refs', () => {
+  test('renders the 3-tier eyebrow with repo identity and PR number and no title icon', async () => {
+    const view = mountHeader({
+      title: 'Fix hover',
+      number: 12,
+      state: 'open',
+      head: {
+        ref: 'fix/hover',
+        label: 'pynickle:fix/hover',
+        repo: repository('pynickle', 'gitpulse'),
+      },
+      base: {
+        ref: 'main',
+        label: 'pynickle:main',
+        repo: repository('pynickle', 'gitpulse'),
+      },
+    });
+    await nextTick();
+
+    const eyebrow = view.root.querySelector('.detail-header-eyebrow');
+    expect(eyebrow?.textContent).toContain('pynickle/gitpulse');
+    expect(eyebrow?.textContent).toContain('#12');
+    expect(view.root.querySelector('.detail-header-title svg')).toBeNull();
+  });
+
   test('shows the owner login as text before a branch from another repository', async () => {
     const view = mountHeader({
       title: 'Fix hover',
@@ -127,5 +151,69 @@ describe('pull request header branch refs', () => {
     expect(
       [...view.root.querySelectorAll('.header-branch__ref')].map((node) => node.textContent)
     ).toEqual(['fix/hover', 'main']);
+  });
+
+  test('toggles branch expansion on click and copies the head branch without toggling', async () => {
+    const copied: string[] = [];
+    Object.defineProperty(dom.window.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          copied.push(text);
+        },
+      },
+    });
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          copied.push(text);
+        },
+      },
+    });
+
+    const view = mountHeader({
+      title: 'Fix hover',
+      number: 12,
+      state: 'open',
+      head: {
+        ref: 'fix/hover',
+        label: 'pynickle:fix/hover',
+        repo: repository('pynickle', 'gitpulse'),
+      },
+      base: {
+        ref: 'main',
+        label: 'pynickle:main',
+        repo: repository('pynickle', 'gitpulse'),
+      },
+    });
+    await nextTick();
+
+    const branchRow = view.root.querySelector('.pr-branch-row');
+    const toggle = view.root.querySelector<HTMLButtonElement>('.pr-branch-row__toggle');
+    const copy = view.root.querySelector<HTMLButtonElement>('.pr-branch-row__copy');
+
+    expect(toggle).not.toBeNull();
+    expect(copy).not.toBeNull();
+    expect(toggle?.contains(copy!)).toBe(false);
+    expect(toggle?.querySelector('.header-branch')).not.toBeNull();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(branchRow?.classList.contains('is-expanded')).toBe(false);
+
+    copy!.click();
+    await nextTick();
+    expect(copied).toEqual(['fix/hover']);
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(branchRow?.classList.contains('is-expanded')).toBe(false);
+
+    toggle!.click();
+    await nextTick();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(branchRow?.classList.contains('is-expanded')).toBe(true);
+
+    toggle!.click();
+    await nextTick();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(branchRow?.classList.contains('is-expanded')).toBe(false);
   });
 });

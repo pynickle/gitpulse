@@ -9,14 +9,20 @@ import type { DashboardNotification } from '#shared/types/notifications';
 import type { PullRequestDetailViewModel } from '#shared/types/pulls';
 import type { ReleaseDetailPayload } from '#shared/types/releases';
 import type { RepositoryDetailPayload } from '#shared/types/repos';
+import DetailBottomBar from '~/components/dashboard/detail/DetailBottomBar.vue';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
 import PageErrorState from '~/components/ui/PageErrorState.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
 import { COMPOSER_BLEED_LAYER_ID } from '~/composables/useComposerBleedPosition';
+import {
+  DETAIL_SHEET_LAYER_ID,
+  provideDetailOverlayChrome,
+  type DetailOverlayPaneType,
+} from '~/composables/useDetailOverlayChrome';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 
-type DetailPaneType = 'issue' | 'pull-request' | 'discussion' | 'release' | 'repository';
+type DetailPaneType = DetailOverlayPaneType;
 type DetailSummaryTone = 'open' | 'closed' | 'merged' | 'draft' | 'answered' | 'unanswered';
 type DetailSubjectType = 'issue' | 'pull-request' | 'discussion';
 
@@ -134,7 +140,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { shouldShowHomeButton } = useNavigationHistory();
-const { isDetailSidebarHidden, syncDetailSidebarPane, toggleDetailSidebar } =
+const { isDetailSidebarHidden, syncDetailSidebarPane, toggleDetailSidebar, closeDetailSidebar } =
   useDetailSidebarState();
 const { isDetailSidebarSheetViewport } = useDetailSidebarViewport();
 const { loadDiscussionDetail, loadIssueDetail, loadPrDetail, loadReleaseDetail, loadRepoDetail } =
@@ -216,6 +222,7 @@ const activeDetailPane = computed<ActiveDetailPane | null>(() => {
 });
 
 const activeDetailKey = computed(() => activeDetailPane.value?.key ?? 'empty');
+const activeDetailType = computed(() => activeDetailPane.value?.type ?? null);
 const { reset: resetCommentModeration } = useCommentModeration();
 watch(activeDetailKey, resetCommentModeration, { immediate: true });
 const isPanePending = shallowRef(false);
@@ -251,8 +258,7 @@ const isDetailSidebarToggleVisible = computed(() => {
  * The mobile bottom sheet mirrors the shared hidden flag: a hidden sidebar is
  * a closed sheet, the expanded default an open one. Only panes that actually
  * have a Detail Sidebar can open it, so a subject without a toggle never
- * reports an open sheet. The sheet is a non-modal panel, so this state drives
- * focus handoff only.
+ * reports an open sheet.
  */
 const isDetailSidebarSheetOpen = computed(() => {
   return resolveDetailSidebarSheetOpen(
@@ -297,6 +303,25 @@ const isFeedbackVisible = computed(
 const isRepositoryContentVisible = computed(
   () => activeDetailPane.value?.type === 'repository' && !isFeedbackVisible.value
 );
+
+const overlayChrome = provideDetailOverlayChrome({
+  activePaneType: activeDetailType,
+  activeDetailKey,
+  isFeedbackVisible,
+  isPullRequestReviewActive,
+  isNarrowViewport: isDetailSidebarSheetViewport,
+  isSidebarHidden: isDetailSidebarHidden,
+  onToggleSidebar: toggleDetailSidebar,
+  onCloseSidebar: closeDetailSidebar,
+});
+
+const keyboardInsetStyle = computed(() => ({
+  '--detail-keyboard-inset': `${overlayChrome.keyboardInsetPx.value}px`,
+  '--detail-keyboard-visible-height':
+    overlayChrome.keyboardVisibleHeightPx.value == null
+      ? '100%'
+      : `${overlayChrome.keyboardVisibleHeightPx.value}px`,
+}));
 
 const getPullRequestState = (pullRequest: PullRequestDetailViewModel | null) => {
   if (pullRequest?.merged || pullRequest?.merged_at) return 'merged';
@@ -402,10 +427,10 @@ watch(detailSidebarPaneIdentity, (paneIdentity) => syncDetailSidebarPane(paneIde
 });
 
 /*
- * Closing the sheet restores focus to the header toggle that owns it, but only
- * when focus was inside the sheet: a click on the pane behind it must keep the
- * focus the user just gave that element. The sheet also closes when the pane
- * identity changes, so the toggle takes focus back on that path too.
+ * Closing the sheet restores focus to the bottom bar toggle that owns it
+ * (falling back to the desktop header toggle), but only when focus was inside
+ * the sheet: a click elsewhere must keep the focus the user just gave that
+ * element.
  */
 watch(isDetailSidebarSheetOpen, (isOpen, wasOpen) => {
   if (isOpen || !wasOpen) return;
@@ -415,34 +440,38 @@ watch(isDetailSidebarSheetOpen, (isOpen, wasOpen) => {
     const active = document.activeElement;
     if (!sheet || !active || !sheet.contains(active)) return;
 
-    document
-      .querySelector<HTMLElement>('.dashboard-top-header__detail-sidebar-toggle')
-      ?.focus({ preventScroll: true });
+    (
+      document.querySelector<HTMLElement>('.detail-bottom-bar__sidebar-toggle') ??
+      document.querySelector<HTMLElement>('.dashboard-top-header__detail-sidebar-toggle')
+    )?.focus({ preventScroll: true });
   });
 });
 
-/*
- * Light dismiss for the non-modal sheet: a click on the pane outside it closes
- * it. The listener sits on the pane stage rather than the document, so a dialog
- * opened from the sheet (teleported out of the stage) never dismisses the sheet
- * behind it, and the header toggle keeps its own toggle instead of closing and
- * reopening in one click.
- *
- * A sheet that is not on screen is skipped: the PR review workspace and the
- * loading/error panes keep the open flag but render no sheet column, so their
- * clicks must not flip the shared state the user cannot see.
- */
-const handlePaneStageClick = (event: MouseEvent) => {
-  if (!isDetailSidebarSheetOpen.value) return;
+let restoreComposerFocus = false;
 
-  const sheet = document.querySelector<HTMLElement>('.detail-sidebar-column');
-  if (!sheet) return;
+watch(
+  () => overlayChrome.openSheet.value === 'composer',
+  (isOpen, wasOpen) => {
+    if (isOpen || !wasOpen) {
+      restoreComposerFocus = false;
+      return;
+    }
 
-  const target = event.target;
-  if (target instanceof Element && sheet.contains(target)) return;
+    const sheet = document.querySelector<HTMLElement>('.detail-composer-sheet');
+    const active = document.activeElement;
+    restoreComposerFocus = Boolean(sheet && active && sheet.contains(active));
 
-  toggleDetailSidebar();
-};
+    nextTick(() => {
+      if (!restoreComposerFocus) return;
+      restoreComposerFocus = false;
+
+      document
+        .querySelector<HTMLElement>('.detail-bottom-bar__composer-toggle')
+        ?.focus({ preventScroll: true });
+    });
+  },
+  { flush: 'sync' }
+);
 
 /*
  * The volatile Detail Sidebar state outlives this host (app-scoped), so an
@@ -471,144 +500,156 @@ onUnmounted(() => syncDetailSidebarPane(null));
       @back="emit('back')"
       @home="emit('home')"
     >
-      <div
-        class="detail-pane-stage is-clipped"
-        @click="handlePaneStageClick"
-        :class="{
-          'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository',
-          'detail-pane-stage--sidebar-sheet':
-            isDetailSidebarSheetViewport && isDetailSidebarToggleVisible,
-        }"
-      >
-        <Transition name="detail-pane-slide">
-          <ScrollArea
-            :key="activeDetailKey"
-            class="detail-pane"
-            :class="{
-              'detail-pane--page-scroll': isRepositoryContentVisible,
-              'detail-pane--feedback': isFeedbackVisible,
-            }"
-            :disabled="!isRepositoryContentVisible"
-          >
-            <div
-              v-if="isContentLoading"
-              class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
+      <div class="detail-host-body" :style="keyboardInsetStyle">
+        <div
+          class="detail-pane-stage is-clipped"
+          :class="{
+            'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository',
+          }"
+        >
+          <Transition name="detail-pane-slide">
+            <ScrollArea
+              :key="activeDetailKey"
+              class="detail-pane"
+              :class="{
+                'detail-pane--page-scroll': isRepositoryContentVisible,
+                'detail-pane--feedback': isFeedbackVisible,
+              }"
+              :disabled="!isRepositoryContentVisible"
             >
-              <div class="box has-text-centered py-5 px-6 shadow-md detail-loading-box">
-                <LoaderCircleIcon
-                  class="spin-animation has-text-link mb-3"
-                  :size="40"
-                  :stroke-width="2.5"
+              <div
+                v-if="isContentLoading"
+                class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
+              >
+                <div class="box has-text-centered py-5 px-6 shadow-md detail-loading-box">
+                  <LoaderCircleIcon
+                    class="spin-animation has-text-link mb-3"
+                    :size="40"
+                    :stroke-width="2.5"
+                  />
+
+                  <p class="is-size-6 has-text-weight-semibold has-text-grey-dark">
+                    {{ activeDetailPane?.loadingTitle || t('detailOverlay.loading.issue') }}
+                  </p>
+                  <p class="is-size-7 has-text-grey-light mt-1">{{ t('detailOverlay.syncing') }}</p>
+                </div>
+              </div>
+
+              <div v-else-if="activeDetailPane?.error" class="detail-feedback-pane">
+                <PageErrorState
+                  :title="activeDetailPane.errorTitle"
+                  :description="activeDetailPane.error"
+                  @retry="emit('retry')"
+                />
+              </div>
+
+              <Suspense v-else @pending="isPanePending = true" @resolve="isPanePending = false">
+                <IssueDetail
+                  v-if="activeDetailPane?.type === 'issue' && issue"
+                  :issue="issue"
+                  :detail-sidebar-hidden="isDetailSidebarHidden"
+                  :source-notification="sourceNotification"
+                  @update:compact-header-visible="isCompactHeaderVisible = $event"
+                  @update:compact-header-state="issueCompactState = $event"
+                  @switch-issue="handleSwitchIssue"
+                  @switch-pull-request="handleSwitchPullRequest"
                 />
 
-                <p class="is-size-6 has-text-weight-semibold has-text-grey-dark">
-                  {{ activeDetailPane?.loadingTitle || t('detailOverlay.loading.issue') }}
-                </p>
-                <p class="is-size-7 has-text-grey-light mt-1">{{ t('detailOverlay.syncing') }}</p>
-              </div>
-            </div>
+                <PrDetail
+                  v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
+                  :pull-request="pullRequest"
+                  :review-active="isPullRequestReviewRoute"
+                  :detail-sidebar-hidden="isDetailSidebarHidden"
+                  :source-notification="sourceNotification"
+                  @update:review-active="isPullRequestReviewActive = $event"
+                  @update:compact-header-visible="isCompactHeaderVisible = $event"
+                  @update:compact-header-summary="pullRequestCompactSummary = $event"
+                  @open-review="emit('open-pull-request-review')"
+                  @close-review="emit('close-pull-request-review')"
+                  @switch-issue="handleSwitchIssue"
+                  @switch-pull-request="handleSwitchPullRequest"
+                />
 
-            <div v-else-if="activeDetailPane?.error" class="detail-feedback-pane">
-              <PageErrorState
-                :title="activeDetailPane.errorTitle"
-                :description="activeDetailPane.error"
-                @retry="emit('retry')"
-              />
-            </div>
+                <DiscussionDetail
+                  v-else-if="activeDetailPane?.type === 'discussion' && discussion"
+                  :discussion="discussion"
+                  :detail-sidebar-hidden="isDetailSidebarHidden"
+                  :source-notification="sourceNotification"
+                  @update:compact-header-visible="isCompactHeaderVisible = $event"
+                  @switch-issue="handleSwitchIssue"
+                  @switch-pull-request="handleSwitchPullRequest"
+                  @switch-discussion="handleSwitchDiscussion"
+                />
 
-            <Suspense v-else @pending="isPanePending = true" @resolve="isPanePending = false">
-              <IssueDetail
-                v-if="activeDetailPane?.type === 'issue' && issue"
-                :issue="issue"
-                :detail-sidebar-hidden="isDetailSidebarHidden"
-                :source-notification="sourceNotification"
-                @update:compact-header-visible="isCompactHeaderVisible = $event"
-                @update:compact-header-state="issueCompactState = $event"
-                @switch-issue="handleSwitchIssue"
-                @switch-pull-request="handleSwitchPullRequest"
-              />
+                <ReleaseDetail
+                  v-else-if="activeDetailPane?.type === 'release' && release"
+                  :release="release"
+                  :detail-sidebar-hidden="isDetailSidebarHidden"
+                />
 
-              <PrDetail
-                v-else-if="activeDetailPane?.type === 'pull-request' && pullRequest"
-                :pull-request="pullRequest"
-                :review-active="isPullRequestReviewRoute"
-                :detail-sidebar-hidden="isDetailSidebarHidden"
-                :source-notification="sourceNotification"
-                @update:review-active="isPullRequestReviewActive = $event"
-                @update:compact-header-visible="isCompactHeaderVisible = $event"
-                @update:compact-header-summary="pullRequestCompactSummary = $event"
-                @open-review="emit('open-pull-request-review')"
-                @close-review="emit('close-pull-request-review')"
-                @switch-issue="handleSwitchIssue"
-                @switch-pull-request="handleSwitchPullRequest"
-              />
+                <RepoDetail
+                  v-else-if="activeDetailPane?.type === 'repository' && repository"
+                  :repository="repository"
+                  :owner="repositoryOwner"
+                  :repo="repositoryName"
+                  :detail-sidebar-hidden="isDetailSidebarHidden"
+                  @open-issue="emit('open-issue', $event)"
+                  @open-pull-request="emit('open-pull-request', $event)"
+                  @switch-issue="handleSwitchIssue"
+                  @switch-pull-request="handleSwitchPullRequest"
+                />
+                <template #fallback>
+                  <div
+                    class="detail-loading-pane is-flex is-justify-content-center is-align-items-center"
+                    role="status"
+                    :aria-label="activeDetailPane?.loadingTitle"
+                    aria-busy="true"
+                  >
+                    <LoaderCircleIcon class="spin-animation" :size="40" aria-hidden="true" />
+                  </div>
+                </template>
+              </Suspense>
+            </ScrollArea>
+          </Transition>
+          <div :id="COMPOSER_BLEED_LAYER_ID" class="composer-bleed-layer" />
+          <div :id="DETAIL_SHEET_LAYER_ID" class="detail-sheet-layer" />
+        </div>
 
-              <DiscussionDetail
-                v-else-if="activeDetailPane?.type === 'discussion' && discussion"
-                :discussion="discussion"
-                :detail-sidebar-hidden="isDetailSidebarHidden"
-                :source-notification="sourceNotification"
-                @update:compact-header-visible="isCompactHeaderVisible = $event"
-                @switch-issue="handleSwitchIssue"
-                @switch-pull-request="handleSwitchPullRequest"
-                @switch-discussion="handleSwitchDiscussion"
-              />
-
-              <ReleaseDetail
-                v-else-if="activeDetailPane?.type === 'release' && release"
-                :release="release"
-                :detail-sidebar-hidden="isDetailSidebarHidden"
-              />
-
-              <RepoDetail
-                v-else-if="activeDetailPane?.type === 'repository' && repository"
-                :repository="repository"
-                :owner="repositoryOwner"
-                :repo="repositoryName"
-                :detail-sidebar-hidden="isDetailSidebarHidden"
-                @open-issue="emit('open-issue', $event)"
-                @open-pull-request="emit('open-pull-request', $event)"
-                @switch-issue="handleSwitchIssue"
-                @switch-pull-request="handleSwitchPullRequest"
-              />
-              <template #fallback>
-                <div
-                  class="detail-loading-pane is-flex is-justify-content-center is-align-items-center"
-                  role="status"
-                  :aria-label="activeDetailPane?.loadingTitle"
-                  aria-busy="true"
-                >
-                  <LoaderCircleIcon class="spin-animation" :size="40" aria-hidden="true" />
-                </div>
-              </template>
-            </Suspense>
-          </ScrollArea>
-        </Transition>
-        <div :id="COMPOSER_BLEED_LAYER_ID" class="composer-bleed-layer" />
+        <DetailBottomBar />
       </div>
     </DashboardOverlayFrame>
   </Transition>
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/detail-sidebar-columns' as *;
+.detail-host-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
 
 .detail-pane-stage {
   position: relative;
-  height: 100%;
+  flex: 1 1 0;
   min-height: 0;
   background: var(--gitpulse-surface);
 }
-
-/* Mobile Detail Sidebar bottom sheet: the host owns one ruleset covering every
-   detail component, so their templates stay untouched. */
-@include detail-sidebar-sheet('.detail-pane-stage');
 
 .composer-bleed-layer {
   position: absolute;
   inset: 0;
   z-index: 8;
   pointer-events: none;
+}
+
+.detail-sheet-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .detail-pane {
@@ -620,10 +661,10 @@ onUnmounted(() => syncDetailSidebarPane(null));
   overflow: hidden;
   background: var(--gitpulse-surface);
 
-  /* Same breakpoint as the mobile filter modal; the fixed 4rem side padding
-     would otherwise eat ~128px of width on phones. */
-  @media (max-width: 860px) {
-    padding: 1.25rem 1.25rem 1.5rem;
+  /* Below 1024px, panes with their own ScrollArea own the symmetric Gutter so
+     the right scrollbar track sits flush on the viewport edge. */
+  @media (max-width: 1024px) {
+    padding: 0;
   }
 }
 
@@ -633,12 +674,20 @@ onUnmounted(() => syncDetailSidebarPane(null));
   padding-top: 0.75rem;
   overflow-x: hidden;
   scrollbar-gutter: stable;
+
+  @media (max-width: 1024px) {
+    padding: 0.75rem 1.25rem 1.5rem;
+  }
 }
 
 /* Feedback fills the pane directly, without a scrolling content box or
    negative margins tied to the loaded content's responsive padding. */
 .detail-pane--feedback {
   padding: 0;
+
+  @media (max-width: 1024px) {
+    padding: 0;
+  }
 }
 
 .detail-loading-pane,

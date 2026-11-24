@@ -610,6 +610,8 @@ test('Discussion detail reconciles a wiped accepted parent, keeping replies and 
   );
   const Detail = await compileVue('app/components/dashboard/detail/DiscussionDetail.vue', {
     ...components.shared,
+    '#shared/utils/detail-overlay-presentation': { resolveDetailSidebarMetadataCount: () => 0 },
+    '~/composables/useDetailOverlayChrome': { useDetailOverlayChrome: () => null },
     '~/components/dashboard/discussion/DiscussionComments.vue': { default: Comments },
     '~/components/dashboard/discussion/DiscussionAnswerCard.vue': { default: components.Answer },
     '~/components/dashboard/discussion/DiscussionHeader.vue': { default: empty },

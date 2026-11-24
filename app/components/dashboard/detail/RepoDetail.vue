@@ -22,11 +22,12 @@ import {
   TagIcon,
   XIcon,
 } from '@lucide/vue';
-import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch, type Component } from 'vue';
 import type { LocationQueryRaw } from 'vue-router';
 
 import type { RepositoryDetailPayload } from '#shared/types/repos';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
+import DetailSidebarColumn from '~/components/dashboard/detail/DetailSidebarColumn.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import RepoContributorsCard from '~/components/dashboard/detail/RepoContributorsCard.vue';
 import RepoIssuePrList from '~/components/dashboard/detail/RepoIssuePrList.vue';
@@ -39,6 +40,7 @@ import RepoFileTree from '~/components/dashboard/repo-files/RepoFileTree.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { useDetailOverlayChrome } from '~/composables/useDetailOverlayChrome';
 import { useRepoDetailSession, type RepoDetailPanel } from '~/composables/useRepoDetailSession';
 import type { DashboardIssuePrEntity } from '~/utils/dashboardIssuePrCard';
 import { createDashboardFileTarget } from '~/utils/dashboardUrlNavigationUtils';
@@ -78,6 +80,7 @@ const localePath = useLocalePath();
 const apiFetch = useGitPulseApiFetch();
 const { openRepository } = useDashboardRepositoryNavigation();
 const { opensGitHubLinks, getGitHubTargetUrl } = useGitHubLinkRouting();
+const detailOverlayChrome = useDetailOverlayChrome();
 
 const {
   activePanel,
@@ -309,6 +312,19 @@ const formatLanguagePercentage = (value: number) => {
 };
 
 const languageColor = computed(() => getLanguageColor(repository.language));
+
+watch(
+  () => ({
+    starCount: starCount.value,
+    language: repository.language ?? null,
+    languageColor: languageColor.value,
+  }),
+  (summary) => {
+    if (!detailOverlayChrome) return;
+    detailOverlayChrome.setRepoSummary(summary);
+  },
+  { immediate: true }
+);
 const languageShares = computed(() =>
   buildRepoLanguageBreakdown(languageBytes.value, { getColor: getLanguageColor })
 );
@@ -808,7 +824,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             </div>
           </div>
 
-          <hr class="mr-4" />
+          <hr />
 
           <div class="repo-detail-section">
             <div class="repo-detail-section__chrome">
@@ -972,11 +988,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         </section>
       </div>
 
-      <ScrollArea
-        class="column detail-sidebar-column"
-        :inert="detailSidebarHidden || undefined"
-        media="(max-width: 1024px)"
-      >
+      <DetailSidebarColumn :hidden="detailSidebarHidden">
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <div class="repo-sidebar">
             <div class="sidebar-card mb-4">
@@ -1068,7 +1080,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             </a>
           </div>
         </ScrollArea>
-      </ScrollArea>
+      </DetailSidebarColumn>
     </div>
   </div>
 
@@ -1871,30 +1883,17 @@ html.dark .repo-detail-section__chrome {
     display: block;
   }
 
-  .repo-detail-layout :deep(.detail-main-column),
-  .repo-detail-layout :deep(.detail-sidebar-column) {
+  .repo-detail-layout :deep(.detail-main-column) {
     width: 100%;
     max-height: none;
     overflow: visible;
     position: static;
     display: block;
     min-height: 0;
-    padding-right: 0;
   }
 
-  /* The desktop gap pairs with a sticky pane; stacked flow keeps the column's. */
-  .repo-detail-layout :deep(.detail-sidebar-column) {
-    padding-top: var(--bulma-column-gap);
-  }
-
-  .repo-detail-layout :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+  .repo-detail-layout :deep(.columns > .detail-sidebar-column) {
     display: none;
-  }
-
-  .sidebar-scroll {
-    max-height: none;
-    overflow: visible;
-    padding-bottom: 0;
   }
 
   .repo-detail-header {

@@ -161,6 +161,8 @@ export interface PullRequestDetailPayload {
   mergeable_state?: string;
   merged?: boolean;
   draft?: boolean;
+  locked?: boolean;
+  active_lock_reason?: string | null;
 
   // Stats
   commits?: number;

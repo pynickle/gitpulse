@@ -59,11 +59,7 @@
         </div>
       </ScrollArea>
 
-      <ScrollArea
-        class="column detail-sidebar-column"
-        :inert="detailSidebarHidden || undefined"
-        media="(max-width: 1024px)"
-      >
+      <DetailSidebarColumn :hidden="detailSidebarHidden">
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <IssueTypeCard
             :issue-type="currentIssue?.type"
@@ -105,7 +101,7 @@
             @add-timeline-event="addTimelineEvent"
           />
         </ScrollArea>
-      </ScrollArea>
+      </DetailSidebarColumn>
     </div>
   </ScrollArea>
 </template>
@@ -117,9 +113,11 @@ import type { IssueAssigneeMutationResponse, IssueAssigneeUser } from '#shared/t
 import type { IssueDetailPayload, IssueDuplicateTarget } from '#shared/types/issues';
 import type { RepositoryLabel } from '#shared/types/labels';
 import type { DashboardNotification } from '#shared/types/notifications';
+import { resolveDetailSidebarMetadataCount } from '#shared/utils/detail-overlay-presentation';
 import { readSubIssueProgress, toSubIssueIdentity } from '#shared/utils/sub-issues';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
+import DetailSidebarColumn from '~/components/dashboard/detail/DetailSidebarColumn.vue';
 import IssueActions from '~/components/dashboard/issue/IssueActions.vue';
 import IssueHeader from '~/components/dashboard/issue/IssueHeader.vue';
 import IssueTimelineEvents from '~/components/dashboard/issue/IssueTimelineEvents.vue';
@@ -127,6 +125,7 @@ import IssueTypeCard from '~/components/dashboard/issue/IssueTypeCard.vue';
 import LinkedPullRequestList from '~/components/dashboard/issue/LinkedPullRequestList.vue';
 import SubIssueList from '~/components/dashboard/issue/SubIssueList.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { useDetailOverlayChrome } from '~/composables/useDetailOverlayChrome';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { normalizeRepoPermissions } from '~/utils/createEmptyRepoPermissions';
 import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
@@ -167,6 +166,7 @@ const hasNextTimelinePage = ref(false);
 const loadingMoreTimeline = ref(false);
 const apiFetch = useGitPulseApiFetch();
 const { user: sessionUser } = useUserSession();
+const detailOverlayChrome = useDetailOverlayChrome();
 const detailScrollRef = ref<HTMLElement | null>(null);
 const mainColumnRef = ref<HTMLElement | null>(null);
 const detailHeaderRef = ref<HTMLElement | null>(null);
@@ -443,6 +443,30 @@ watch(
 );
 
 watch(
+  () => ({
+    available: Boolean(
+      resolvedRepoOwner.value && resolvedRepoName.value && currentIssue.value?.number
+    ),
+    locked: isLocked.value,
+    metadataCount: resolveDetailSidebarMetadataCount({
+      kind: 'issue',
+      labelCount: currentIssue.value?.labels?.length ?? 0,
+      assigneeCount: issueAssignees.value.length,
+      hasIssueType: Boolean(currentIssue.value?.type),
+    }),
+  }),
+  (state) => {
+    if (!detailOverlayChrome) return;
+    detailOverlayChrome.setComposerAvailability({
+      available: state.available,
+      locked: state.locked,
+    });
+    detailOverlayChrome.setMetadataCount(state.metadataCount);
+  },
+  { immediate: true }
+);
+
+watch(
   () => issue,
   (newIssue) => {
     timelineRequestId.value += 1;
@@ -499,6 +523,12 @@ watch(
 
 .issue-detail__timeline {
   padding-bottom: 5rem;
+}
+
+@media (max-width: 1024px) {
+  .issue-detail__timeline {
+    padding-bottom: 1.5rem;
+  }
 }
 
 @include detail-sidebar-stacking('.detail-scroll');

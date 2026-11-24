@@ -1,16 +1,27 @@
 <template>
   <div class="mb-4">
-    <!-- Title row -->
-    <div class="is-flex is-align-items-center mb-3 header-title">
-      <component :size="22" :is="stateIcon" :style="stateColor" class="header-title__icon" />
-      <h1 class="title is-3 ml-3 mb-0 header-title__text">{{ pullRequest?.title }}</h1>
+    <!-- Tier 1: Eyebrow -->
+    <div class="detail-header-eyebrow">
+      <span class="header-repo">
+        <GitForkIcon :size="13" class="header-repo__icon" aria-hidden="true" />
+        <a class="header-repo__link" href="#" @click.prevent="handleRepoClick">
+          {{ repoOwner }}/{{ repoName }}
+        </a>
+      </span>
+      <span v-if="pullRequest?.number != null" class="header-number"
+        >#{{ pullRequest.number }}</span
+      >
     </div>
 
-    <!-- Meta row -->
-    <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
-      <span class="header-number has-text-weight-medium">#{{ pullRequest?.number }}</span>
+    <!-- Tier 2: Full-width Title -->
+    <div class="detail-header-title">
+      <h1 class="title is-3 mb-0 header-title__text">{{ pullRequest?.title }}</h1>
+    </div>
+
+    <!-- Tier 3: Single-line Status Strip -->
+    <div class="detail-header-status header-meta">
       <span class="header-state-tag" :class="`is-${displayState}`">
-        <component :size="12" :is="stateIcon" />
+        <component :size="12" :is="stateIcon" aria-hidden="true" />
         <span>{{ displayState }}</span>
       </span>
       <PRStackChip
@@ -19,24 +30,30 @@
         :current-pull-number="Number(pullRequest.number) || undefined"
         @select="emit('switch-pull-request', repoOwner, repoName, $event)"
       />
-      <span class="header-time is-flex is-align-items-center">
-        <ClockIcon :size="13" />
+      <span class="header-time">
+        <ClockIcon :size="13" aria-hidden="true" />
         <span>{{ updatedAtLabel }}</span>
       </span>
     </div>
 
-    <!-- Repo + Branch row -->
-    <div class="header-repo is-flex is-align-items-center is-flex-wrap-wrap mb-4">
-      <span class="header-repo__name is-flex is-align-items-center">
-        <GitForkIcon :size="14" />
-        <a class="header-repo__link has-text-weight-medium" @click.prevent="handleRepoClick">
-          {{ repoOwner }}/{{ repoName }}
-        </a>
-      </span>
-      <template v-if="headBranch.ref && baseBranch.ref">
-        <span class="header-branch is-flex is-align-items-center">
+    <!-- Tier 4: Branch Merge Row -->
+    <div
+      v-if="headBranch.ref && baseBranch.ref"
+      class="pr-branch-row"
+      :class="{ 'is-expanded': isBranchExpanded }"
+    >
+      <button
+        type="button"
+        class="pr-branch-row__toggle"
+        :aria-expanded="isBranchExpanded"
+        :aria-label="
+          isBranchExpanded ? t('detailOverlay.collapseBranches') : t('detailOverlay.expandBranches')
+        "
+        @click="toggleBranchExpanded"
+      >
+        <span class="header-branch">
           <span
-            class="header-branch__side"
+            class="header-branch__side header-branch__side--head"
             :class="{ 'header-branch__side--split': headBranch.ownerLogin }"
           >
             <span v-if="headBranch.ownerLogin" class="header-branch__owner">{{
@@ -44,9 +61,9 @@
             }}</span>
             <span class="header-branch__ref">{{ headBranch.ref }}</span>
           </span>
-          <ArrowRightIcon :size="14" class="header-branch__arrow" />
+          <ArrowRightIcon :size="14" class="header-branch__arrow" aria-hidden="true" />
           <span
-            class="header-branch__side"
+            class="header-branch__side header-branch__side--base"
             :class="{ 'header-branch__side--split': baseBranch.ownerLogin }"
           >
             <span v-if="baseBranch.ownerLogin" class="header-branch__owner">{{
@@ -55,10 +72,29 @@
             <span class="header-branch__ref">{{ baseBranch.ref }}</span>
           </span>
         </span>
-      </template>
+      </button>
+      <button
+        type="button"
+        class="pr-branch-row__copy"
+        :class="{ 'is-copied': isHeadBranchCopied }"
+        :aria-label="
+          isHeadBranchCopied
+            ? t('detailOverlay.copiedHeadBranch')
+            : t('detailOverlay.copyHeadBranch')
+        "
+        :title="
+          isHeadBranchCopied
+            ? t('detailOverlay.copiedHeadBranch')
+            : t('detailOverlay.copyHeadBranch')
+        "
+        @click.stop="copyHeadBranch"
+      >
+        <CheckIcon v-if="isHeadBranchCopied" :size="13" aria-hidden="true" />
+        <CopyIcon v-else :size="13" aria-hidden="true" />
+      </button>
     </div>
 
-    <hr class="mr-4" />
+    <hr class="header-rule" />
     <div data-detail-compact-threshold aria-hidden="true"></div>
 
     <!-- Author row -->
@@ -110,8 +146,8 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowRightIcon, ClockIcon, GitForkIcon } from '@lucide/vue';
-import { computed } from 'vue';
+import { ArrowRightIcon, CheckIcon, ClockIcon, CopyIcon, GitForkIcon } from '@lucide/vue';
+import { computed, onBeforeUnmount, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { PullRequestStack } from '#shared/types/pulls';
@@ -162,6 +198,10 @@ const emit = defineEmits<{
   'switch-pull-request': [owner: string, repo: string, pullNumber: number];
 }>();
 
+const isBranchExpanded = shallowRef(false);
+const isHeadBranchCopied = shallowRef(false);
+let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
+
 const headBranch = computed(() =>
   resolvePullRequestBranchRef(repoOwner, repoName, pullRequest?.head)
 );
@@ -172,7 +212,6 @@ const baseBranch = computed(() =>
 const stateVisual = computed(() => getPullRequestStateVisual(pullRequest));
 const displayState = computed(() => stateVisual.value.state);
 const stateIcon = computed(() => stateVisual.value.icon);
-const stateColor = computed(() => ({ color: stateVisual.value.color }));
 
 const updatedAtLabel = computed(() => {
   return pullRequest?.updated_at
@@ -186,50 +225,59 @@ const createdAtLabel = computed(() => {
     : '-';
 });
 
+const clearCopyTimer = () => {
+  if (copyResetTimer !== null) {
+    clearTimeout(copyResetTimer);
+    copyResetTimer = null;
+  }
+};
+
+watch(
+  () => [repoOwner, repoName, pullRequest?.number],
+  () => {
+    isBranchExpanded.value = false;
+    isHeadBranchCopied.value = false;
+    clearCopyTimer();
+  }
+);
+
+onBeforeUnmount(clearCopyTimer);
+
+const toggleBranchExpanded = () => {
+  isBranchExpanded.value = !isBranchExpanded.value;
+};
+
+const copyHeadBranch = async () => {
+  const refName = headBranch.value.ref;
+  if (!refName || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(refName);
+    isHeadBranchCopied.value = true;
+    clearCopyTimer();
+    copyResetTimer = setTimeout(() => {
+      isHeadBranchCopied.value = false;
+      copyResetTimer = null;
+    }, 1800);
+  } catch {
+    // Clipboard writes can be blocked by browser permissions.
+  }
+};
+
 const handleRepoClick = async () => {
   await openRepository(repoOwner, repoName);
 };
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-header' as *;
 @use '~/assets/scss/pointer' as *;
 
-.header-title__icon {
-  flex-shrink: 0;
-}
-
-.header-title__text {
-  min-width: 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  font-size: clamp(1.3rem, 1rem + 1.5vw, 2rem);
-  line-height: 1.25;
-}
-
-.header-meta {
-  gap: 0.75rem;
-}
-
-.header-number {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--gitpulse-radius-sm);
-  color: var(--gitpulse-text-muted);
-  background-color: var(--gitpulse-surface-muted);
-  border: 1px solid var(--gitpulse-border);
-}
+@include detail-header-shared;
 
 .header-state-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-
   &.is-open {
     background-color: var(--gitpulse-success-soft);
     color: var(--gitpulse-success-solid);
@@ -255,39 +303,46 @@ const handleRepoClick = async () => {
   }
 }
 
-.header-time {
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
-}
-
-.header-repo {
+.pr-branch-row {
+  display: flex;
+  align-items: flex-start;
   gap: 0.4rem;
-  font-size: 0.875rem;
-  color: var(--gitpulse-text-muted);
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 0.75rem;
 }
 
-.header-repo__name {
-  gap: 0.4rem;
-}
-
-.header-repo__link {
-  color: var(--gitpulse-text-muted);
-  text-decoration: none;
+.pr-branch-row__toggle {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
   cursor: pointer;
-  transition: color 0.16s ease;
 
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent-hover);
-      text-decoration: underline;
-    }
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+    border-radius: var(--gitpulse-radius-sm);
   }
 }
 
 .header-branch {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 0.25rem;
-  margin-left: 0.75rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pr-branch-row.is-expanded .header-branch {
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .header-branch__side {
@@ -295,6 +350,15 @@ const handleRepoClick = async () => {
   align-items: stretch;
   min-width: 0;
   max-width: 100%;
+}
+
+.pr-branch-row:not(.is-expanded) .header-branch__side--head {
+  flex: 1 1 auto;
+}
+
+.pr-branch-row:not(.is-expanded) .header-branch__side--base {
+  flex: 0 0 auto;
+  max-width: 44%;
 }
 
 .header-branch__side--split {
@@ -310,48 +374,77 @@ const handleRepoClick = async () => {
 .header-branch__owner {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
   padding: 0.1rem 0.4rem;
   border-right: 1px solid color-mix(in srgb, var(--gitpulse-purple) 32%, transparent);
   background-color: color-mix(in srgb, var(--gitpulse-purple) 18%, var(--gitpulse-surface));
   color: var(--gitpulse-purple);
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .header-branch__arrow {
+  flex: none;
   color: var(--gitpulse-text-subtle);
 }
 
 .header-branch__ref {
-  font-size: 0.75rem;
-  font-weight: 500;
+  min-width: 0;
   padding: 0.1rem 0.4rem;
   border-radius: var(--gitpulse-radius-sm);
   background-color: var(--gitpulse-info-soft);
   color: var(--gitpulse-info);
+  font-size: 0.75rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.header-author {
-  gap: 0.6rem;
+.pr-branch-row.is-expanded .header-branch__owner,
+.pr-branch-row.is-expanded .header-branch__ref {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  overflow: visible;
 }
 
-.header-author__name {
-  font-size: 0.875rem;
-  transition: color 0.16s ease;
+.pr-branch-row__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-sm);
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
+  cursor: pointer;
+  transition:
+    color 0.14s ease,
+    border-color 0.14s ease,
+    background-color 0.14s ease;
 
   @include hover-only {
     &:hover {
-      color: var(--gitpulse-accent-hover);
+      border-color: var(--gitpulse-border-strong);
+      color: var(--gitpulse-text-strong);
+      background-color: var(--gitpulse-surface-hover);
     }
   }
-}
 
-.header-author__time {
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
-}
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+  }
 
-.header-reactions {
-  margin-top: 0.75rem;
+  &.is-copied {
+    color: var(--gitpulse-success-solid);
+    border-color: color-mix(in srgb, var(--gitpulse-success) 35%, transparent);
+    background-color: var(--gitpulse-success-soft);
+  }
 }
 </style>

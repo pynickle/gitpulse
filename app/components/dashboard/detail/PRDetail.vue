@@ -134,11 +134,7 @@
         </div>
       </ScrollArea>
 
-      <ScrollArea
-        class="column detail-sidebar-column"
-        :inert="detailSidebarHidden || undefined"
-        media="(max-width: 1024px)"
-      >
+      <DetailSidebarColumn :hidden="detailSidebarHidden">
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <DetailLabels
             :labels="currentPullRequest?.labels || []"
@@ -205,7 +201,7 @@
             @clear-error="clearReviewerPickerError"
           />
         </ScrollArea>
-      </ScrollArea>
+      </DetailSidebarColumn>
     </div>
   </ScrollArea>
 </template>
@@ -216,6 +212,7 @@ import {
   computed,
   defineAsyncComponent,
   nextTick,
+  onBeforeUnmount,
   ref,
   shallowRef,
   watch,
@@ -231,15 +228,18 @@ import {
   isCopilotReviewer,
   type CopilotReviewEffort,
 } from '#shared/utils/copilot-review';
+import { resolveDetailSidebarMetadataCount } from '#shared/utils/detail-overlay-presentation';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import DetailAssignees from '~/components/dashboard/detail/DetailAssignees.vue';
 import DetailLabels from '~/components/dashboard/detail/DetailLabels.vue';
+import DetailSidebarColumn from '~/components/dashboard/detail/DetailSidebarColumn.vue';
 import RepoCommitList from '~/components/dashboard/detail/RepoCommitList.vue';
 import PRActions from '~/components/dashboard/pr/PRActions.vue';
 import PRHeader from '~/components/dashboard/pr/PRHeader.vue';
 import PRMergeBox from '~/components/dashboard/pr/PRMergeBox.vue';
 import PRTimelineEvents from '~/components/dashboard/pr/PRTimelineEvents.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { useDetailOverlayChrome } from '~/composables/useDetailOverlayChrome';
 import { usePRCommitList } from '~/composables/usePRCommitList';
 import { createEmptyPRReviewersSummary } from '~/composables/usePRReviewers';
 import type {
@@ -346,6 +346,8 @@ const copilotReviewEffort = computed({
 });
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
+const { openModal, closeModal } = useModalState();
+const detailOverlayChrome = useDetailOverlayChrome();
 const detailScrollRef = ref<HTMLElement | null>(null);
 const mainColumnRef = ref<HTMLElement | null>(null);
 const detailHeaderRef = ref<HTMLElement | null>(null);
@@ -507,11 +509,18 @@ const terminalMergeStatus = computed(() => {
   };
 });
 
+const closeSidebarSheetOnNarrow = () => {
+  if (detailOverlayChrome?.isNarrowViewport.value) {
+    detailOverlayChrome.dispatch({ type: 'navigate-from-sheet' });
+  }
+};
+
 const openReviewWindow = () => {
   if (!canOpenReviewWindow.value) {
     return;
   }
 
+  closeSidebarSheetOnNarrow();
   isReviewWindowOpen.value = true;
   emit('open-review');
 };
@@ -552,6 +561,20 @@ const openReviewerPicker = () => {
 const closeReviewerPicker = () => {
   isReviewerPickerOpen.value = false;
 };
+
+watch(isReviewerPickerOpen, (open, wasOpen) => {
+  if (open && !wasOpen) {
+    openModal();
+  } else if (!open && wasOpen) {
+    closeModal();
+  }
+});
+
+onBeforeUnmount(() => {
+  if (isReviewerPickerOpen.value) {
+    closeModal();
+  }
+});
 
 const panelTabs = computed<PRPanelTab[]>(() => [
   {
@@ -602,8 +625,51 @@ const selectPanel = (value: PRDetailPanel) => {
 };
 
 const openCommitsPanel = () => {
+  closeSidebarSheetOnNarrow();
   selectPanel('commits');
 };
+
+const prReviewerCount = computed(() => {
+  const summaryItems = currentPullRequest.value?.reviewers?.items;
+  if (summaryItems) {
+    return summaryItems.length;
+  }
+  return (
+    (currentPullRequest.value?.requested_reviewers?.length ?? 0) +
+    (currentPullRequest.value?.requested_teams?.length ?? 0)
+  );
+});
+
+watch(
+  () => ({
+    available: Boolean(repoOwner.value && repoName.value && currentPullRequest.value?.number),
+    locked: Boolean(currentPullRequest.value?.locked),
+    metadataCount: resolveDetailSidebarMetadataCount({
+      kind: 'pull-request',
+      labelCount: currentPullRequest.value?.labels?.length ?? 0,
+      assigneeCount: pullRequestAssignees.value.length,
+      reviewerCount: prReviewerCount.value,
+    }),
+    additions: currentPullRequest.value?.additions,
+    deletions: currentPullRequest.value?.deletions,
+    canOpenReview: canOpenReviewWindow.value,
+  }),
+  (state) => {
+    if (!detailOverlayChrome) return;
+    detailOverlayChrome.setComposerAvailability({
+      available: state.available,
+      locked: state.locked,
+    });
+    detailOverlayChrome.setMetadataCount(state.metadataCount);
+    detailOverlayChrome.setPrSummary({
+      additions: state.additions,
+      deletions: state.deletions,
+      canOpenReview: state.canOpenReview,
+      onOpenReview: openReviewWindow,
+    });
+  },
+  { immediate: true }
+);
 
 const handlePanelTablistKeydown = (event: KeyboardEvent) => {
   handleRovingTablistKeydown(event, {
@@ -1319,6 +1385,12 @@ watch(
 .pr-detail__merge-box {
   margin-top: 1.5rem;
   margin-bottom: 5rem;
+}
+
+@media (max-width: 1024px) {
+  .pr-detail__merge-box {
+    margin-bottom: 1.5rem;
+  }
 }
 
 /* After the base .pr-detail-layout rule so the stacking overrides win. */

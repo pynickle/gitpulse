@@ -41,9 +41,14 @@ export default function useDetailSidebarState() {
     isDetailSidebarHidden.value = !isDetailSidebarHidden.value;
   };
 
+  const closeDetailSidebar = () => {
+    isDetailSidebarHidden.value = true;
+  };
+
   return {
     isDetailSidebarHidden,
     syncDetailSidebarPane,
     toggleDetailSidebar,
+    closeDetailSidebar,
   };
 }

@@ -9,7 +9,7 @@ import {
   UsersIcon,
   XIcon,
 } from '@lucide/vue';
-import { computed, nextTick, ref, shallowRef, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 
 import CollapsibleGroup from '~/components/ui/CollapsibleGroup.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
@@ -219,9 +219,30 @@ watch(
   }
 );
 
+const handleEscapeClose = () => {
+  if (!submitting) emit('close');
+};
+
+const handleDocumentEscape = (event: KeyboardEvent) => {
+  if (!isVisible || event.key !== 'Escape' || event.defaultPrevented) return;
+  event.preventDefault();
+  event.stopPropagation();
+  handleEscapeClose();
+};
+
+const bindEscapeListener = (active: boolean) => {
+  if (!import.meta.client || typeof document === 'undefined') return;
+  if (active) {
+    document.addEventListener('keydown', handleDocumentEscape, true);
+  } else {
+    document.removeEventListener('keydown', handleDocumentEscape, true);
+  }
+};
+
 watch(
   () => isVisible,
   async (isVisible) => {
+    bindEscapeListener(isVisible);
     if (isVisible) {
       if (import.meta.client) focusTrap.capturePreviousFocus();
       searchQuery.value = '';
@@ -239,6 +260,10 @@ watch(
   { immediate: true }
 );
 
+onBeforeUnmount(() => {
+  bindEscapeListener(false);
+});
+
 const handleOverlayKeydown = (event: KeyboardEvent) => {
   if (panelRef.value) focusTrap.trapTabKey(event, panelRef.value);
 };
@@ -251,7 +276,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
         v-if="isVisible"
         class="reviewer-modal-overlay"
         @click.self="emit('close')"
-        @keydown.escape="emit('close')"
+        @keydown.escape.prevent.stop="handleEscapeClose"
         @keydown="handleOverlayKeydown"
       >
         <div

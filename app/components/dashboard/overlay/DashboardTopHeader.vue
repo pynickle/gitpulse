@@ -51,7 +51,7 @@
         <ChromeActions hold-open-on-locale-switch>
           <template #actions>
             <button
-              v-if="showDetailSidebarToggle"
+              v-if="showDetailSidebarToggle && !isDetailSidebarSheetViewport"
               type="button"
               class="button is-light is-small dashboard-top-header__detail-sidebar-toggle"
               :title="detailSidebarToggleLabel"
@@ -363,5 +363,11 @@ const isDetailSummaryVisible = computed(() => {
 
 .dashboard-top-header__detail-sidebar-toggle {
   height: 2.25rem;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-top-header__detail-sidebar-toggle {
+    display: none;
+  }
 }
 </style>

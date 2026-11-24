@@ -1,29 +1,38 @@
 <template>
   <div class="mb-4">
-    <!-- Title row -->
-    <div class="is-flex is-align-items-center mb-3">
-      <component :is="stateVisual.icon" :size="22" :style="stateColor" />
-      <h1 class="title is-3 ml-3 mb-0">
+    <!-- Tier 1: Eyebrow -->
+    <div class="detail-header-eyebrow">
+      <span class="header-repo">
+        <GitForkIcon :size="13" class="header-repo__icon" aria-hidden="true" />
+        <a class="header-repo__link" href="#" @click.prevent="handleRepoClick">
+          {{ repoOwner }}/{{ repoName }}
+        </a>
+      </span>
+      <span class="header-number">#{{ discussion.number }}</span>
+    </div>
+
+    <!-- Tier 2: Full-width Title -->
+    <div class="detail-header-title">
+      <h1 class="title is-3 mb-0 header-title__text">
         {{ discussion.title || t('discussionDetail.titleFallback') }}
       </h1>
     </div>
 
-    <!-- Meta row -->
-    <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
-      <span class="header-number has-text-weight-medium">#{{ discussion.number }}</span>
+    <!-- Tier 3: Single-line Status Strip -->
+    <div class="detail-header-status header-meta">
       <span
         class="header-state-tag"
         :class="discussion.isAnswered ? 'is-answered' : 'is-unanswered'"
       >
-        <component :is="stateVisual.icon" :size="12" />
+        <component :is="stateVisual.icon" :size="12" aria-hidden="true" />
         <span>{{ stateLabel }}</span>
       </span>
       <span v-if="discussion.locked" class="header-locked-tag">
-        <LockIcon :size="12" />
+        <LockIcon :size="12" aria-hidden="true" />
         <span>{{ t('discussionDetail.locked') }}</span>
       </span>
-      <span class="header-time is-flex is-align-items-center">
-        <ClockIcon :size="13" />
+      <span class="header-time">
+        <ClockIcon :size="13" aria-hidden="true" />
         <span>
           {{
             formatDurationFromNow(
@@ -36,17 +45,7 @@
       </span>
     </div>
 
-    <!-- Repo row -->
-    <div class="header-repo is-flex is-align-items-center mb-4">
-      <span class="header-repo__name is-flex is-align-items-center">
-        <GitForkIcon :size="14" />
-        <a class="header-repo__link has-text-weight-medium" @click.prevent="handleRepoClick">
-          {{ repoOwner }}/{{ repoName }}
-        </a>
-      </span>
-    </div>
-
-    <hr class="mr-4" />
+    <hr class="header-rule" />
     <div data-detail-compact-threshold aria-hidden="true"></div>
 
     <!-- Author row -->
@@ -118,42 +117,17 @@ const stateLabel = computed(() =>
 
 const stateVisual = computed(() => getDashboardDiscussionStateVisual(discussion.isAnswered));
 
-const stateColor = computed(() => ({
-  color: stateVisual.value.color,
-}));
-
 const handleRepoClick = async () => {
   await openRepository(repoOwner, repoName);
 };
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/detail-header' as *;
 
-.header-meta {
-  gap: 0.75rem;
-}
-
-.header-number {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--gitpulse-radius-sm);
-  color: var(--gitpulse-text-muted);
-  background-color: var(--gitpulse-surface-muted);
-  border: 1px solid var(--gitpulse-border);
-}
+@include detail-header-shared;
 
 .header-state-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-
   &.is-answered {
     background-color: var(--gitpulse-success-soft);
     color: var(--gitpulse-success-solid);
@@ -170,63 +144,15 @@ const handleRepoClick = async () => {
 .header-locked-tag {
   display: inline-flex;
   align-items: center;
+  flex: none;
   gap: 0.3rem;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
   background-color: var(--gitpulse-warning-soft);
   color: var(--gitpulse-warning-solid);
   border: 1px solid color-mix(in srgb, var(--gitpulse-warning) 24%, transparent);
-}
-
-.header-time {
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
-}
-
-.header-repo {
-  gap: 0.4rem;
-  font-size: 0.875rem;
-  color: var(--gitpulse-text-muted);
-}
-
-.header-repo__name {
-  gap: 0.4rem;
-}
-
-.header-repo__link {
-  color: var(--gitpulse-text-muted);
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.16s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent-hover);
-      text-decoration: underline;
-    }
-  }
-}
-
-.header-author {
-  gap: 0.6rem;
-}
-
-.header-author__name {
-  font-size: 0.875rem;
-  transition: color 0.16s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent-hover);
-    }
-  }
-}
-
-.header-author__time {
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
 }
 </style>

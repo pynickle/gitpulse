@@ -8,6 +8,7 @@ import {
 } from '../app/utils/createEmptyRepoPermissions';
 import { formatPageMetaDescription } from '../app/utils/formatPageMetaDescription';
 import { parseGitHubRepoPath } from '../app/utils/parseGitHubRepoPath';
+import * as detailOverlayPresentation from '../shared/utils/detail-overlay-presentation';
 import * as subIssues from '../shared/utils/sub-issues';
 import { compileVue } from './helpers/compile-vue';
 import { createVueDom } from './helpers/vue-dom';
@@ -42,7 +43,7 @@ const IssueHeader = defineComponent({
   },
 });
 const IssueActions = defineComponent({
-  emits: ['update:state'],
+  emits: ['update:state', 'update:is-locked'],
   setup(_, { emit }) {
     return () =>
       h('div', [
@@ -54,9 +55,24 @@ const IssueActions = defineComponent({
           'Close as duplicate'
         ),
         h('button', { onClick: () => emit('update:state', 'open', null, null) }, 'Reopen'),
+        h(
+          'button',
+          { 'data-lock-toggle': 'true', onClick: () => emit('update:is-locked', true) },
+          'Lock'
+        ),
+        h(
+          'button',
+          { 'data-lock-toggle': 'false', onClick: () => emit('update:is-locked', false) },
+          'Unlock'
+        ),
       ]);
   },
 });
+
+let activeChrome: {
+  setComposerAvailability: (value: { available: boolean; locked: boolean }) => void;
+  setMetadataCount: (count: number) => void;
+} | null = null;
 
 let bandProps: Record<string, unknown> | undefined;
 let selectLinkedPullRequest: ((identity: unknown) => void) | undefined;
@@ -79,9 +95,12 @@ const IssueDetail = await compileVue(
   {
     '~/components/dashboard/detail/DetailAssignees.vue': { default: emptyStub },
     '~/components/dashboard/detail/DetailLabels.vue': { default: emptyStub },
+    '~/components/dashboard/detail/DetailSidebarColumn.vue': { default: ScrollArea },
     '~/components/dashboard/issue/IssueActions.vue': { default: IssueActions },
     '~/components/dashboard/issue/IssueHeader.vue': { default: IssueHeader },
+    '#shared/utils/detail-overlay-presentation': detailOverlayPresentation,
     '#shared/utils/sub-issues': subIssues,
+    '~/composables/useDetailOverlayChrome': { useDetailOverlayChrome: () => activeChrome },
     '~/components/dashboard/issue/SubIssueList.vue': { default: emptyStub },
     '~/components/dashboard/issue/IssueTimelineEvents.vue': { default: emptyStub },
     '~/components/dashboard/issue/IssueTypeCard.vue': { default: emptyStub },
@@ -173,6 +192,42 @@ test('lists the linked pull requests of the issue it shows and opens the chosen 
 
     expect(switched).toEqual([{ owner: 'acme', repo: 'widgets', number: 22 }]);
   } finally {
+    await dom.cleanup();
+  }
+});
+
+test('propagates initial and toggled issue lock state to detail overlay chrome', async () => {
+  const availabilityUpdates: Array<{ available: boolean; locked: boolean }> = [];
+  activeChrome = {
+    setComposerAvailability: (value) => {
+      availabilityUpdates.push(value);
+    },
+    setMetadataCount: () => {},
+  };
+  const dom = createVueDom();
+  try {
+    const issue = {
+      id: 7,
+      number: 7,
+      title: 'Locked issue',
+      state: 'open',
+      locked: true,
+      repository_url: 'https://api.github.com/repos/acme/widgets',
+    };
+    const { root } = dom.mount(defineComponent(() => () => h(IssueDetail, { issue })));
+    await nextTick();
+
+    expect(availabilityUpdates.at(-1)).toEqual({ available: true, locked: true });
+
+    root.querySelector<HTMLButtonElement>('[data-lock-toggle="false"]')!.click();
+    await nextTick();
+    expect(availabilityUpdates.at(-1)).toEqual({ available: true, locked: false });
+
+    root.querySelector<HTMLButtonElement>('[data-lock-toggle="true"]')!.click();
+    await nextTick();
+    expect(availabilityUpdates.at(-1)).toEqual({ available: true, locked: true });
+  } finally {
+    activeChrome = null;
     await dom.cleanup();
   }
 });

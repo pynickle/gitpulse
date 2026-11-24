@@ -1,5 +1,5 @@
 /*
- * Shared Detail Sidebar collapse layout for the four Detail Overlay detail
+ * Shared Detail Sidebar collapse layout for the Detail Overlay detail
  * components. The two-column grid track list is driven by --detail-columns so
  * hiding the Detail Sidebar transitions grid-template-columns, mirroring the
  * repository file view precedent. $scope is the component's root selector.
@@ -34,8 +34,8 @@
   /* Scroll thumb gutter. SimpleBar copies the host's padding onto the scrolled
      content, so right padding on the scroll host is the only thing that keeps
      the content off the thumb capsule. Only the columns that own a scroller at
-     this width get it; narrower layouts stack and the page scroller owns the
-     track (the repository detail's main column is never a scroll host). */
+     this width get it; narrower layouts stack and the outer scroll area carries
+     the symmetric page gutter. */
   @media (min-width: 1025px) {
     #{$scope} :deep(.scroll-area.detail-main-column),
     #{$scope} :deep(.scroll-area.sidebar-scroll) {
@@ -52,12 +52,15 @@
 }
 
 /*
- * Below-1024px column stacking shared by the pull request, issue and
- * discussion details; the repository detail keeps its own wider block.
+ * Below-1024px single-column flow shared by the pull request, issue, discussion,
+ * and release details. The active outer ScrollArea spans the full viewport width
+ * and owns the symmetric page Gutter, placing its scrollbar track flush on the
+ * right viewport edge while keeping content clear of the thumb.
  */
 @mixin detail-sidebar-stacking($scope) {
   @media (max-width: 1024px) {
-    #{$scope} {
+    #{$scope}:not(.pr-detail-layout--review) {
+      padding: 1.25rem 1.25rem 1.5rem;
     }
 
     #{$scope} :deep(.columns) {
@@ -65,120 +68,14 @@
       height: auto;
     }
 
-    #{$scope} :deep(.detail-main-column),
-    #{$scope} :deep(.detail-sidebar-column) {
+    #{$scope} :deep(.detail-main-column) {
       width: 100%;
       height: auto;
       overflow: visible;
     }
 
-    #{$scope} :deep(.detail-sidebar-column) {
-      padding-right: 0.75rem;
-    }
-
-    #{$scope} :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+    #{$scope} :deep(.columns > .detail-sidebar-column) {
       display: none;
-    }
-  }
-}
-
-/*
- * Mobile Detail Sidebar bottom sheet. Applied by the Detail Overlay host on
- * its pane stage so one ruleset covers every detail component without
- * touching their templates: the sidebar column is pulled out of the stacked
- * flow and pinned to the viewport bottom as a sheet. The shared
- * `isDetailSidebarHidden` flag drives it — hidden means the sheet is slid
- * down (not unmounted), so the slide transition can play and the existing
- * `inert` binding keeps the closed sheet out of the tab order.
- *
- * The sheet is a non-modal panel, never a dialog: no scrim may be painted
- * over it. It always renders inside an enabled SimpleBar scroll area — the
- * detail component's root one, or the pane's for the repository detail —
- * whose `.simplebar-mask` is `z-index: 0`. The column's own `z-index` only
- * orders it inside that stacking context, so a scrim rendered by the pane
- * stage outranks the whole context: it dims the sheet and swallows its
- * pointer and wheel input.
- *
- * The doubled stage class raises specificity above the stacking mixin's
- * `display: none` collapse and the collapse fade without `!important`.
- */
-@mixin detail-sidebar-sheet($stage) {
-  @media (max-width: 1024px) {
-    #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column) {
-      position: fixed;
-      /* Cancel sticky `top` from repository detail; otherwise the sheet
-         stretches from that offset instead of sitting on the bottom edge. */
-      top: auto;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      z-index: 30;
-      width: auto;
-      max-height: 75dvh;
-      /* Top padding matches the side padding: the drag handle sits inside that
-         band, so the first card starts as far from the top edge as from the
-         sides instead of cramming against the rounded corner. */
-      padding: 1.25rem 1.25rem 1.5rem;
-      overflow-x: hidden;
-      border-radius: 16px 16px 0 0;
-      background: var(--gitpulse-surface);
-      box-shadow: 0 -8px 32px rgb(0 0 0 / 0.25);
-      transform: translateY(0);
-      visibility: visible;
-      opacity: 1;
-      overscroll-behavior: contain;
-      transition:
-        transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-        opacity 0.28s ease,
-        visibility 0.28s;
-
-      /*
-       * Drag handle affordance, centered in the reserved top padding band.
-       * Absolute (not in flow) because the scroll content lives in SimpleBar's
-       * absolutely positioned mask: a flow handle would sit under the first
-       * card, and `z-index` keeps it visible above the content as it scrolls.
-       */
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0.5rem;
-        right: 0;
-        left: 0;
-        z-index: 1;
-        width: 2.25rem;
-        height: 0.25rem;
-        margin: 0 auto;
-        border-radius: 999px;
-        background: var(--gitpulse-border);
-        pointer-events: none;
-      }
-    }
-
-    #{$stage}#{$stage}--sidebar-sheet
-      :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
-      display: block;
-      transform: translateY(105%);
-      visibility: hidden;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    /*
-     * The column is an enabled ScrollArea at this breakpoint, so its own
-     * SimpleBar scroller owns the sheet's scrolling; the inner scroll region
-     * must not impose its own 100% height or a nested scrollbar.
-     */
-    #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column .sidebar-scroll) {
-      height: auto;
-      max-height: none;
-      padding-right: 0;
-      overflow: visible;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #{$stage}#{$stage}--sidebar-sheet :deep(.detail-sidebar-column) {
-        transition: none;
-      }
     }
   }
 }

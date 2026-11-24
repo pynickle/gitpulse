@@ -11,6 +11,7 @@ import type {
   DiscussionReply,
 } from '#shared/types/discussions';
 import type { DashboardNotification } from '#shared/types/notifications';
+import DetailSidebarColumn from '~/components/dashboard/detail/DetailSidebarColumn.vue';
 import DiscussionActions from '~/components/dashboard/discussion/DiscussionActions.vue';
 import DiscussionAnswerCard from '~/components/dashboard/discussion/DiscussionAnswerCard.vue';
 import DiscussionComments from '~/components/dashboard/discussion/DiscussionComments.vue';
@@ -18,6 +19,7 @@ import DiscussionHeader from '~/components/dashboard/discussion/DiscussionHeader
 import FloatingMarkdownEditor from '~/components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import { useCommentModeration } from '~/composables/useCommentModeration';
+import { useDetailOverlayChrome } from '~/composables/useDetailOverlayChrome';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 const { discussion } = defineProps<{
@@ -40,6 +42,7 @@ const EMPTY_PAGE_INFO: DiscussionPageInfo = {
 
 const { t } = useI18n();
 const apiFetch = useGitPulseApiFetch();
+const detailOverlayChrome = useDetailOverlayChrome();
 
 const discussionState = shallowRef<DiscussionDetailPayload>(cloneDiscussion(discussion));
 const comments = shallowRef<DiscussionComment[]>([]);
@@ -440,6 +443,23 @@ watch(
 );
 
 watch(
+  () => ({
+    available: Boolean(discussionWriteApiBase.value),
+    locked: isDiscussionLocked.value,
+    inlineReplyOpen: hasOpenReplyEditor.value,
+  }),
+  (state) => {
+    if (!detailOverlayChrome) return;
+    detailOverlayChrome.setComposerAvailability({
+      available: state.available,
+      locked: state.locked,
+    });
+    detailOverlayChrome.setInlineReplyOpen(state.inlineReplyOpen);
+  },
+  { immediate: true }
+);
+
+watch(
   () => discussion,
   (discussion) => resetDiscussionState(discussion),
   { immediate: true }
@@ -498,7 +518,8 @@ watch(
         />
 
         <FloatingMarkdownEditor
-          v-if="canComment && !hasOpenReplyEditor"
+          v-if="canComment"
+          v-show="!hasOpenReplyEditor"
           v-model="commentDraft"
           class="discussion-detail__composer"
           :repo-owner="repoOwner"
@@ -511,18 +532,14 @@ watch(
         />
       </ScrollArea>
 
-      <ScrollArea
-        class="column detail-sidebar-column"
-        :inert="detailSidebarHidden || undefined"
-        media="(max-width: 1024px)"
-      >
+      <DetailSidebarColumn :hidden="detailSidebarHidden">
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <DiscussionActions
             :discussion="displayDiscussion"
             :source-notification="sourceNotification"
           />
         </ScrollArea>
-      </ScrollArea>
+      </DetailSidebarColumn>
     </div>
   </ScrollArea>
 </template>

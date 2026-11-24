@@ -1,37 +1,34 @@
 <template>
   <div class="mb-4">
-    <!-- Title row -->
-    <div class="is-flex is-align-items-center mb-3 header-title">
-      <component
-        :size="22"
-        :is="stateVisual.icon"
-        :style="stateColor"
-        class="header-title__icon"
-        aria-hidden="true"
-      />
-      <h1 class="title is-3 ml-3 mb-0 header-title__text">{{ issue?.title }}</h1>
+    <!-- Tier 1: Eyebrow -->
+    <div class="detail-header-eyebrow">
+      <span class="header-repo">
+        <GitForkIcon :size="13" class="header-repo__icon" aria-hidden="true" />
+        <a class="header-repo__link" href="#" @click.prevent="handleRepoClick">
+          {{ repoOwner }}/{{ repoName }}
+        </a>
+      </span>
+      <span v-if="issue?.number != null" class="header-number">#{{ issue.number }}</span>
     </div>
 
-    <!-- Meta row -->
-    <div class="header-meta is-flex is-align-items-center is-flex-wrap-wrap mb-4">
-      <span class="header-number has-text-weight-medium">#{{ issue?.number }}</span>
+    <!-- Tier 2: Full-width Title -->
+    <div class="detail-header-title">
+      <h1 class="title is-3 mb-0 header-title__text">{{ issue?.title }}</h1>
+    </div>
+
+    <!-- Tier 3: Single-line Status Strip -->
+    <div class="detail-header-status header-meta">
       <span class="header-state-tag" :class="stateTagClass">
         <component :size="12" :is="stateVisual.icon" :style="stateColor" aria-hidden="true" />
         <span>{{ issue?.state }}</span>
       </span>
-      <span class="header-time is-flex is-align-items-center">
-        <ClockIcon :size="13" />
+      <span class="header-time">
+        <ClockIcon :size="13" aria-hidden="true" />
         <span>{{ formatDurationFromNow(issue?.updated_at, localeCode, relativeTimeNow) }}</span>
-      </span>
-      <span class="header-repo is-flex is-align-items-center">
-        <GitForkIcon :size="13" />
-        <a class="header-repo__link has-text-weight-medium" @click.prevent="handleRepoClick">
-          {{ repoOwner }}/{{ repoName }}
-        </a>
       </span>
     </div>
 
-    <p v-if="issue?.duplicate_of" class="header-duplicate mb-4" data-duplicate-target>
+    <p v-if="issue?.duplicate_of" class="header-duplicate mb-3" data-duplicate-target>
       <span>{{ t('issueDetail.duplicateOf') }}</span>
       <ReferenceSubject
         :ref-subject="issue.duplicate_of"
@@ -41,7 +38,7 @@
       />
     </p>
 
-    <p v-if="issue?.parent_issue" class="header-duplicate mb-4">
+    <p v-if="issue?.parent_issue" class="header-duplicate mb-3">
       <span>{{ t('dashboard.subIssues.parent') }}</span>
       <ReferenceSubject
         :ref-subject="issue.parent_issue"
@@ -53,7 +50,7 @@
 
     <slot name="before-description" />
 
-    <hr class="mr-4 header-rule" />
+    <hr class="header-rule" />
     <div data-detail-compact-threshold aria-hidden="true"></div>
 
     <!-- Author row -->
@@ -181,49 +178,11 @@ const handleRepoClick = async () => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/detail-header' as *;
 
-.header-title__icon {
-  flex-shrink: 0;
-}
-
-.header-title__text {
-  min-width: 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  font-size: clamp(1.3rem, 1rem + 1.5vw, 2rem);
-  line-height: 1.25;
-}
-
-.header-meta {
-  gap: 0.75rem;
-}
-
-/* Tightened so the band above and the author below sit 0.75rem from the rule. */
-.header-rule {
-  margin: 0.75rem 0;
-}
-
-.header-number {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.15rem 0.5rem;
-  border-radius: var(--gitpulse-radius-sm);
-  color: var(--gitpulse-text-muted);
-  background-color: var(--gitpulse-surface-muted);
-  border: 1px solid var(--gitpulse-border);
-}
+@include detail-header-shared;
 
 .header-state-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-
   &.is-open {
     background-color: var(--gitpulse-success-soft);
     color: var(--gitpulse-success-solid);
@@ -256,55 +215,5 @@ const handleRepoClick = async () => {
   :deep(.tag.is-activity) {
     margin-bottom: 0;
   }
-}
-
-.header-time {
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
-}
-
-.header-repo {
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
-}
-
-.header-repo__link {
-  color: var(--gitpulse-text-muted);
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.16s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent-hover);
-      text-decoration: underline;
-    }
-  }
-}
-
-.header-author {
-  gap: 0.6rem;
-}
-
-.header-author__name {
-  font-size: 0.875rem;
-  transition: color 0.16s ease;
-
-  @include hover-only {
-    &:hover {
-      color: var(--gitpulse-accent-hover);
-    }
-  }
-}
-
-.header-author__time {
-  font-size: 0.8rem;
-  color: var(--gitpulse-text-muted);
-}
-
-.header-reactions {
-  margin-top: 0.75rem;
 }
 </style>

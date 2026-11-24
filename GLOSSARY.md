@@ -370,7 +370,7 @@ A Composer Layout that shows Write on the left and a live Preview on the right a
 _Avoid_: live preview, realtime preview when referring to the layout
 
 **Conversation Composer**:
-The Markdown Composer on an issue, pull request, or discussion conversation, including the sticky composer and in-thread discussion replies.
+The Markdown Composer on an issue, pull request, or discussion conversation, including in-thread discussion replies and the top-level composer — sticky at the bottom of the conversation on a wide viewport and opened in a bottom sheet from the Detail Bottom Bar on a narrow viewport.
 _Avoid_: PR/issue comment, floating editor
 
 **Review Inline Composer**:
@@ -458,12 +458,16 @@ One language's percentage of a repository's bytes, as the repository Detail Side
 ## Detail Overlays
 
 **Detail Overlay**:
-The full-screen surface that opens over the dashboard to show one subject in depth: a pull request, issue, discussion, or repository.
+The full-screen surface that opens over the dashboard to show one subject in depth: a pull request, issue, discussion, release, or repository.
 _Avoid_: detail page, detail view
 
 **Detail Sidebar**:
-The metadata column on the right side of a Detail Overlay, holding cards such as labels, assignees, and actions. Present on pull request, issue, discussion, and repository Detail Overlays.
+The supplementary metadata and action surface of a Detail Overlay, holding cards such as labels, assignees, release assets, repository statistics, and actions. On a wide viewport it sits as the right column; on a narrow viewport it is a bottom sheet with a backdrop and downward swipe dismissal, opened from the Detail Bottom Bar. Present on pull request, issue, discussion, release, and repository Detail Overlays.
 _Avoid_: right panel, metadata column, "sidebar" used alone
+
+**Detail Bottom Bar**:
+The persistent bar at the bottom of a narrow Detail Overlay that exposes primary actions — opening the Conversation Composer sheet, entering the PR Review Workspace, and toggling the Detail Sidebar sheet — without scrolling back to the top. It hides while the virtual keyboard or an inline discussion reply composer is open.
+_Avoid_: bottom nav, tab bar, Review Bottom Bar
 
 **Metadata Editor Modal**:
 The modal a Detail Sidebar card opens to change one metadata value of the subject — the labels card's editor or the issue type card's editor, which draw their shell (overlay, title, scrollable option list, Cancel/Save) from one stylesheet. The assignee card's picker is a different shell. The labels editor is one component serving both an issue and a pull request, because both attach labels through the same GitHub endpoint.

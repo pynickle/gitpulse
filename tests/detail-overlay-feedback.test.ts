@@ -7,6 +7,15 @@ import { compileVue } from './helpers/compile-vue';
 import { ScrollArea } from './helpers/scroll-area';
 import { createVueDom } from './helpers/vue-dom';
 
+const detailOverlayChromeStub = {
+  DETAIL_SHEET_LAYER_ID: 'gitpulse-detail-sheet-layer',
+  provideDetailOverlayChrome: () => ({
+    keyboardInsetPx: shallowRef(0),
+    keyboardVisibleHeightPx: shallowRef(null),
+    openSheet: shallowRef(null),
+  }),
+};
+
 const empty = defineComponent({ setup: () => () => h('span') });
 const frame = defineComponent({
   setup:
@@ -39,6 +48,7 @@ const Host = await compileVue('app/components/dashboard/detail/DetailOverlayHost
   '~/components/ui/PageErrorState.vue': { default: PageErrorState },
   '~/components/ui/ScrollArea.vue': { default: ScrollArea },
   '~/composables/useComposerBleedPosition': { COMPOSER_BLEED_LAYER_ID: 'test-bleed' },
+  '~/composables/useDetailOverlayChrome': detailOverlayChromeStub,
 });
 
 const createDom = (loaders: () => PaneLoaders = defaultLoaders) =>
@@ -49,6 +59,7 @@ const createDom = (loaders: () => PaneLoaders = defaultLoaders) =>
       isDetailSidebarHidden: shallowRef(false),
       syncDetailSidebarPane: () => {},
       toggleDetailSidebar: () => {},
+      closeDetailSidebar: () => {},
     }),
     useDetailSidebarViewport: () => ({ isDetailSidebarSheetViewport: shallowRef(false) }),
     resolveDetailSidebarSheetOpen: () => false,

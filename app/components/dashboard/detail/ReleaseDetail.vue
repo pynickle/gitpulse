@@ -7,14 +7,17 @@ import {
   PackageIcon,
   TagIcon,
 } from '@lucide/vue';
+import { computed, watch } from 'vue';
 
 import type { ReleaseAsset, ReleaseDetailPayload } from '#shared/types/releases';
+import DetailSidebarColumn from '~/components/dashboard/detail/DetailSidebarColumn.vue';
 import ReactionBar from '~/components/dashboard/reactions/ReactionBar.vue';
 import ReleaseAssetsList from '~/components/dashboard/releases/ReleaseAssetsList.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
+import { useDetailOverlayChrome } from '~/composables/useDetailOverlayChrome';
 import { formatPageMetaDescription } from '~/utils/formatPageMetaDescription';
 
 const { release } = defineProps<{
@@ -25,6 +28,7 @@ const { release } = defineProps<{
 const { locale, t } = useI18n();
 const { openRepository } = useDashboardRepositoryNavigation();
 const relativeTimeNow = useRelativeTimeNow();
+const detailOverlayChrome = useDetailOverlayChrome();
 
 const repoInfo = computed(() => parseGitHubRepoPath(release.repository_url));
 const repoOwner = computed(() => repoInfo.value?.owner ?? '');
@@ -45,6 +49,15 @@ const releasedAtLabel = computed(() => {
 const body = computed(() => release.body?.trim() || '');
 
 const assets = computed<ReleaseAsset[]>(() => release.assets ?? []);
+
+watch(
+  () => assets.value.length,
+  (assetCount) => {
+    if (!detailOverlayChrome) return;
+    detailOverlayChrome.setReleaseSummary({ assetCount });
+  },
+  { immediate: true }
+);
 
 // The header above already names the tag, so asset names can shed the prefix
 // they all repeat and leave the part that actually tells them apart.
@@ -86,45 +99,46 @@ usePageMeta(
     <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
       <ScrollArea class="column detail-main-column" media="(min-width: 1025px)">
         <header class="release-header">
-          <div class="release-header__top">
-            <div class="release-header__tag-row">
-              <TagIcon :size="16" class="release-header__tag-icon" />
+          <div class="detail-header-eyebrow release-header__eyebrow">
+            <a
+              class="header-repo__link release-header__repo"
+              href="#"
+              @click.prevent="handleRepoClick"
+            >
+              <GitHubIcon :size="14" class="header-repo__icon" aria-hidden="true" />
+              <span>{{ repoOwner }}/{{ repoName }}</span>
+            </a>
+
+            <span class="release-header__meta-separator" aria-hidden="true">·</span>
+
+            <span class="release-header__tag-row">
+              <TagIcon :size="14" class="release-header__tag-icon" aria-hidden="true" />
               <span class="release-header__tag-name">{{ release.tag_name }}</span>
-            </div>
-            <div class="release-header__badges">
-              <span v-if="release.draft" class="tag is-warning is-light">
-                {{ t('releaseDetail.draft') }}
-              </span>
-              <span v-if="release.prerelease" class="tag is-info is-light">
-                {{ t('releaseDetail.prerelease') }}
-              </span>
-              <span v-if="release.target_commitish" class="tag release-header__branch">
-                <GitBranchIcon :size="13" />
-                <span>{{ release.target_commitish }}</span>
-              </span>
-            </div>
+            </span>
           </div>
 
-          <h1 class="title is-3 release-header__title">{{ releaseTitle }}</h1>
+          <div class="detail-header-title">
+            <h1 class="title is-3 mb-0 header-title__text release-header__title">
+              {{ releaseTitle }}
+            </h1>
+          </div>
 
           <div class="release-header__meta">
-            <button
-              type="button"
-              class="release-header__repo button is-ghost is-small"
-              @click="handleRepoClick"
-            >
-              <GitHubIcon :size="15" />
-              <span>{{ repoOwner }}/{{ repoName }}</span>
-            </button>
-
-            <span class="release-header__meta-separator">·</span>
-
-            <span class="release-header__meta-item">
-              <CalendarIcon :size="15" />
-              <span>{{ releasedAtLabel }}</span>
+            <span v-if="release.draft" class="tag is-warning is-light">
+              {{ t('releaseDetail.draft') }}
+            </span>
+            <span v-if="release.prerelease" class="tag is-info is-light">
+              {{ t('releaseDetail.prerelease') }}
+            </span>
+            <span v-if="release.target_commitish" class="tag release-header__branch">
+              <GitBranchIcon :size="13" aria-hidden="true" />
+              <span>{{ release.target_commitish }}</span>
             </span>
 
-            <span v-if="release.author?.login" class="release-header__meta-separator">·</span>
+            <span class="release-header__meta-item">
+              <CalendarIcon :size="14" aria-hidden="true" />
+              <span>{{ releasedAtLabel }}</span>
+            </span>
 
             <span v-if="release.author?.login" class="release-header__meta-item">
               <GitHubAvatar
@@ -162,11 +176,7 @@ usePageMeta(
         />
       </ScrollArea>
 
-      <ScrollArea
-        class="column detail-sidebar-column"
-        :inert="detailSidebarHidden || undefined"
-        media="(max-width: 1024px)"
-      >
+      <DetailSidebarColumn :hidden="detailSidebarHidden">
         <div class="release-sidebar">
           <section
             class="sidebar-card"
@@ -228,15 +238,18 @@ usePageMeta(
             <ExternalLinkIcon :size="12" aria-hidden="true" />
           </a>
         </div>
-      </ScrollArea>
+      </DetailSidebarColumn>
     </div>
   </ScrollArea>
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/detail-header' as *;
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
+
+@include detail-header-shared;
 
 .detail-scroll {
   height: 100%;
@@ -269,21 +282,19 @@ usePageMeta(
 .release-header {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
-.release-header__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.release-header__eyebrow {
+  margin-bottom: 0.45rem;
 }
 
 .release-header__tag-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.85rem;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 0 1 auto;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--gitpulse-text-muted);
 }
@@ -293,17 +304,10 @@ usePageMeta(
 }
 
 .release-header__tag-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.release-header__badges {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  flex-shrink: 0;
 }
 
 .release-header__title {
@@ -316,25 +320,27 @@ usePageMeta(
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem 0.6rem;
   color: var(--gitpulse-text-muted);
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
 }
 
 .release-header__repo {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  height: auto;
-  padding: 0;
-  color: var(--gitpulse-link);
-}
+  flex: 0 1 auto;
+  min-width: 0;
 
-.release-header__repo span {
-  overflow-wrap: anywhere;
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .release-header__meta-separator {
+  flex: none;
   color: var(--gitpulse-text-muted);
   opacity: 0.5;
 }
@@ -353,7 +359,7 @@ usePageMeta(
 }
 
 .release-divider {
-  margin: 1.25rem 0;
+  margin: 0.85rem 0 1.25rem;
 }
 
 .release-body {
@@ -504,16 +510,6 @@ usePageMeta(
   .release-sidebar {
     height: auto;
     overflow: visible;
-  }
-
-  .release-header__top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .release-header__badges {
-    width: 100%;
   }
 }
 </style>

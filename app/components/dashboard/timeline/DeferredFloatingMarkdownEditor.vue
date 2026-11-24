@@ -22,10 +22,11 @@
   />
 
   <div
-    v-else
+    v-else-if="!isNarrowComposerSheet"
     v-bind="attrs"
     v-show="!isAnyModalOpen"
     class="deferred-floating-markdown-editor"
+    :class="{ 'deferred-floating-markdown-editor--sheet-host': !compact && Boolean(chrome) }"
     :aria-hidden="isAnyModalOpen ? 'true' : undefined"
     :inert="isAnyModalOpen || undefined"
   >
@@ -58,6 +59,7 @@ import { computed, defineAsyncComponent, shallowRef, useAttrs, watch } from 'vue
 import { useI18n } from 'vue-i18n';
 
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
+import { useDetailOverlayChrome } from '~/composables/useDetailOverlayChrome';
 
 type TimelineCommentItem = {
   kind: 'comment';
@@ -86,6 +88,7 @@ const {
   submit = null,
   placeholder,
   submitLabel,
+  modelValue,
   compact = false,
   autofocus = false,
   submitting = false,
@@ -119,8 +122,13 @@ const attrs = useAttrs();
 const { t } = useI18n();
 const { user } = useUserSession();
 const { isAnyModalOpen } = useModalState();
+const chrome = useDetailOverlayChrome();
 const activatedByPlaceholder = shallowRef(false);
-const shouldLoadEditor = shallowRef(Boolean(compact || autofocus));
+const isNarrowComposerSheet = computed(() => !compact && Boolean(chrome?.isNarrowViewport.value));
+const isSheetOpen = computed(
+  () => isNarrowComposerSheet.value && chrome?.openSheet.value === 'composer'
+);
+const shouldLoadEditor = shallowRef(Boolean(compact || autofocus || isSheetOpen.value));
 // Empty values fall back to GitHubAvatar's placeholder icon instead of a 404 image.
 const currentUserLogin = computed(() => user.value?.login || '');
 const currentUserAvatar = computed(() => user.value?.avatar_url || '');
@@ -134,12 +142,23 @@ const activateEditor = () => {
 };
 
 watch(
-  () => [compact, autofocus],
-  ([compact, autofocus]) => {
-    if (compact || autofocus) {
+  () => [compact, autofocus, isSheetOpen.value],
+  ([isCompact, isAutofocus, sheetOpen]) => {
+    if (isCompact || isAutofocus || sheetOpen) {
       shouldLoadEditor.value = true;
     }
-  }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => modelValue,
+  (value) => {
+    if (!compact && !shouldLoadEditor.value) {
+      chrome?.setComposerDraft(Boolean(value?.trim()));
+    }
+  },
+  { immediate: true }
 );
 </script>
 
@@ -149,6 +168,12 @@ watch(
   bottom: 1rem;
   z-index: 6;
   padding-top: 0.5rem;
+}
+
+@media (max-width: 1024px) {
+  .deferred-floating-markdown-editor--sheet-host {
+    display: none;
+  }
 }
 
 .deferred-floating-markdown-editor__capsule {

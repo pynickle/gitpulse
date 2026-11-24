@@ -47,19 +47,27 @@ afterEach(async () => {
   dom = undefined;
 });
 
-test('shows the completed icon and returns to the open icon after reopening', async () => {
+test('renders the 3-tier header without a duplicate title icon and updates state icons on reopen', async () => {
   dom = createVueDom();
-  const issue = shallowRef({ title: 'Issue', state: 'closed', state_reason: 'completed' });
+  const issue = shallowRef({
+    number: 88,
+    title: 'Issue',
+    state: 'closed',
+    state_reason: 'completed',
+  });
   const { root } = dom.mount(
     defineComponent({
       setup: () => () =>
         h(IssueHeader, { issue: issue.value, repoOwner: 'acme', repoName: 'repo' }),
     })
   );
-  expect(root.querySelector('.header-title svg.lucide-circle-check')).not.toBeNull();
-  expect((root.querySelector('.header-title svg') as SVGElement).style.color).toBe(
-    'var(--gitpulse-purple)'
-  );
+
+  const eyebrow = root.querySelector('.detail-header-eyebrow');
+  expect(eyebrow?.textContent).toContain('acme/repo');
+  expect(eyebrow?.textContent).toContain('#88');
+  expect(root.querySelector('.detail-header-title svg')).toBeNull();
+
+  expect(root.querySelector('.header-state-tag svg.lucide-circle-check')).not.toBeNull();
   expect((root.querySelector('.header-state-tag svg') as SVGElement).style.color).toBe(
     'var(--gitpulse-purple)'
   );
@@ -70,7 +78,7 @@ test('shows the completed icon and returns to the open icon after reopening', as
   issue.value = { ...issue.value, state: 'open', state_reason: null };
   await nextTick();
 
-  expect(root.querySelector('.header-title svg.lucide-circle-dot')).not.toBeNull();
+  expect(root.querySelector('.header-state-tag svg.lucide-circle-dot')).not.toBeNull();
   expect(root.querySelector('.header-state-tag')?.textContent).toContain('open');
 });
 
@@ -80,14 +88,14 @@ test('paints a closed issue that was not completed with the closed pill', () => 
     defineComponent({
       setup: () => () =>
         h(IssueHeader, {
-          issue: { title: 'Issue', state: 'closed', state_reason: 'not_planned' },
+          issue: { number: 19, title: 'Issue', state: 'closed', state_reason: 'not_planned' },
           repoOwner: 'acme',
           repoName: 'repo',
         }),
     })
   );
 
-  expect(root.querySelector('.header-title svg.lucide-circle-minus')).not.toBeNull();
+  expect(root.querySelector('.header-state-tag svg.lucide-circle-minus')).not.toBeNull();
   expect(root.querySelector('.header-state-tag')?.classList.contains('is-closed')).toBe(true);
   expect(root.querySelector('.header-state-tag')?.classList.contains('is-completed')).toBe(false);
 });
