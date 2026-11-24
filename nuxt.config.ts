@@ -307,8 +307,12 @@ export default defineNuxtConfig({
     strategy: 'prefix_except_default',
   },
 
+  // Pages and locale prefixes are fixed at build time. This builds the server
+  // matcher once and turns on early404. A root catch-all, `app/router.options`,
+  // or `router.addRoute()` would make it wrong. Unmatched paths stay 404s.
   experimental: {
     prefetchPreloadTags: true,
     routeTypedFetch: true,
+    staticRoutes: true,
   },
 });
