@@ -183,6 +183,13 @@ export default defineNuxtConfig({
 
   css: ['bulma/css/bulma.min.css', '~/assets/scss/main.scss'],
 
+  build: {
+    // Nuxt 4.7 emits a synthetic ESM-only `vue` package in server output; packages
+    // with a CJS `main` and no `exports` map would otherwise `require('vue')` at
+    // runtime and fail with ERR_REQUIRE_ESM under Vercel's Node loader.
+    transpile: ['@lucide/vue', 'simplebar-vue'],
+  },
+
   nitro: {
     minify: true,
     storage: {
