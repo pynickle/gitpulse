@@ -1010,6 +1010,9 @@
   "prReview": {
     "openReview": "Review changes",
     "closePullRequest": "Close Pull Request",
+    "closePullRequestConfirm": "Close this pull request?",
+    "closingPullRequest": "Closing...",
+    "cancelClosePullRequest": "Cancel",
     "reopenPullRequest": "Reopen Pull Request",
     "failedToClosePullRequest": "Failed to close pull request",
     "failedToReopenPullRequest": "Failed to reopen pull request",

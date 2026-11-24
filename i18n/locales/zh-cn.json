@@ -1010,6 +1010,9 @@
   "prReview": {
     "openReview": "审查变更",
     "closePullRequest": "关闭拉取请求",
+    "closePullRequestConfirm": "关闭此拉取请求？",
+    "closingPullRequest": "正在关闭...",
+    "cancelClosePullRequest": "取消",
     "reopenPullRequest": "重新打开拉取请求",
     "failedToClosePullRequest": "关闭拉取请求失败",
     "failedToReopenPullRequest": "重新打开拉取请求失败",

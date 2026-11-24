@@ -188,7 +188,7 @@
         <h3 class="sidebar-section__title">{{ t('detailActions.manage') }}</h3>
       </header>
       <div class="sidebar-section__body">
-        <div v-if="stateError" class="sidebar-alert sidebar-alert--error">
+        <div v-if="stateError && !showCloseModal" class="sidebar-alert sidebar-alert--error">
           <CircleExclamationPointIcon :size="14" />
           <span>{{ stateError }}</span>
           <button type="button" class="sidebar-alert__dismiss" @click="clearStateError">
@@ -232,7 +232,7 @@
             class="sidebar-action-btn"
             :class="isClosed ? 'sidebar-action-btn--reopen' : 'sidebar-action-btn--close'"
             :disabled="loadingState"
-            @click="isClosed ? updatePullRequestState('open') : updatePullRequestState('closed')"
+            @click="isClosed ? updatePullRequestState('open') : openCloseModal()"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
               <LoaderCircleIcon v-if="loadingState" class="spin-animation" :size="14" />
@@ -293,6 +293,21 @@
       @close="closeApproveModal"
       @confirm="confirmQuickApprove"
       @dismiss-error="clearApproveError"
+    />
+
+    <IssueOptionModal
+      v-if="repoInfo && prNumber"
+      :is-visible="showCloseModal"
+      :title="t('prReview.closePullRequestConfirm')"
+      :cancel-label="t('prReview.cancelClosePullRequest')"
+      :confirm-label="
+        loadingState ? t('prReview.closingPullRequest') : t('prReview.closePullRequest')
+      "
+      :saving="loadingState"
+      :error="stateError"
+      @close="closeCloseModal"
+      @confirm="confirmClosePullRequest"
+      @dismiss-error="clearStateError"
     />
   </div>
 </template>
@@ -561,6 +576,7 @@ const confirmQuickApprove = async () => {
 
 const loadingState = ref(false);
 const stateError = ref('');
+const showCloseModal = shallowRef(false);
 let stateErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
 const clearStateError = () => {
@@ -569,6 +585,18 @@ const clearStateError = () => {
     stateErrorTimer = null;
   }
   stateError.value = '';
+};
+
+const openCloseModal = () => {
+  if (!showManageActions.value || isClosed.value) return;
+  clearStateError();
+  showCloseModal.value = true;
+};
+
+const closeCloseModal = () => {
+  if (loadingState.value) return;
+  clearStateError();
+  showCloseModal.value = false;
 };
 
 onUnmounted(() => {
@@ -596,6 +624,7 @@ const updatePullRequestState = async (state: 'open' | 'closed') => {
     });
 
     emit('stateUpdated', state);
+    if (state === 'closed') showCloseModal.value = false;
   } catch (err: unknown) {
     console.error('Error updating pull request state:', err);
     stateError.value = getFetchErrorMessage(
@@ -612,6 +641,8 @@ const updatePullRequestState = async (state: 'open' | 'closed') => {
     loadingState.value = false;
   }
 };
+
+const confirmClosePullRequest = () => updatePullRequestState('closed');
 
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 
