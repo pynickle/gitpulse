@@ -104,6 +104,7 @@
               :stack="currentPullRequest.stack ?? null"
               :git="currentPullRequest.git ?? null"
               :initial-status="terminalMergeStatus"
+              :refresh-version="mergeStatusRefreshVersion"
               @head-branch-updated="handlePullRequestHeadBranchUpdated"
               @branch-updated="handlePullRequestBranchUpdated"
               @merged="handlePullRequestMerged"
@@ -178,12 +179,17 @@
             :can-manage-state="canManagePullRequestState"
             :repo-info="repoInfo"
             :pr-number="currentPullRequest?.number"
+            :draft="Boolean(currentPullRequest?.draft)"
+            :head-sha="reviewCommitId"
+            :author-login="currentPullRequest?.user?.login"
+            :viewer-login="sessionUser?.login"
             @open-reviewers="openReviewerPicker"
             @open-review="openReviewWindow"
             @open-commits="openCommitsPanel"
             @request-reviewer="rerequestReviewer"
             @remove-reviewer="removeReviewerRequest"
             @state-updated="handlePullRequestStateUpdated"
+            @review-submitted="handleQuickReviewSubmitted"
           />
 
           <PRReviewerRequestModal
@@ -309,6 +315,7 @@ const emit = defineEmits<{
 }>();
 
 const loadingTimeline = ref(false);
+const mergeStatusRefreshVersion = shallowRef(0);
 const currentPullRequest = ref(pullRequest);
 const { user: sessionUser } = useUserSession();
 const detailError = ref('');
@@ -916,6 +923,12 @@ const handlePullRequestStateUpdated = () => {
   fetchTimeline();
 };
 
+const handleQuickReviewSubmitted = () => {
+  mergeStatusRefreshVersion.value += 1;
+  void loadReviewerSummary();
+  void fetchTimeline();
+};
+
 const handlePullRequestHeadBranchUpdated = () => {
   fetchPullRequestDetails();
 };
@@ -973,6 +986,7 @@ const resetPullRequestScopedState = (pullRequest: PullRequestDetailViewModel) =>
   currentTimelinePage.value = 1;
   hasNextTimelinePage.value = false;
   loadingMoreTimeline.value = false;
+  mergeStatusRefreshVersion.value = 0;
   isReviewWindowOpen.value = false;
   isReviewerPickerOpen.value = false;
   activePanel.value = 'conversation';

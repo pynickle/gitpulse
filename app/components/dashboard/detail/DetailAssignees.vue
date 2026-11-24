@@ -55,6 +55,49 @@
         </div>
       </div>
       <p v-else class="sidebar-card__empty">{{ t('detailAssignees.empty') }}</p>
+      <div v-if="canSelfAssign" ref="selfAssignRef" class="assignees-self-assign">
+        <div v-if="confirmingSelfAssign" class="assignees-self-assign__confirm-row">
+          <button
+            type="button"
+            class="assignees-self-assign__confirm-btn"
+            :class="{ 'assignees-self-assign__confirm-btn--busy': assigningSelf }"
+            :disabled="savingAssignees"
+            :aria-busy="assigningSelf || undefined"
+            @click="confirmAssignYourself"
+          >
+            <LoaderCircleIcon
+              v-if="assigningSelf"
+              class="spin-animation"
+              :size="13"
+              aria-hidden="true"
+            />
+            <CheckIcon v-else :size="13" aria-hidden="true" />
+            <span>{{
+              assigningSelf
+                ? t('detailAssignees.assigningYourself')
+                : t('detailAssignees.confirmAssignYourself')
+            }}</span>
+          </button>
+          <button
+            type="button"
+            class="assignees-self-assign__cancel-btn"
+            :disabled="savingAssignees"
+            @click="cancelSelfAssignConfirm"
+          >
+            {{ t('detailAssignees.cancel') }}
+          </button>
+        </div>
+        <button
+          v-else
+          type="button"
+          class="assignees-self-assign__trigger"
+          :disabled="savingAssignees"
+          @click="startSelfAssignConfirm"
+        >
+          <UserRoundPlusIcon :size="13" aria-hidden="true" />
+          <span>{{ t('detailAssignees.assignYourself') }}</span>
+        </button>
+      </div>
       <p v-if="assigneeError" class="sidebar-card__error">
         {{ assigneeError }}
       </p>
@@ -90,8 +133,15 @@
 </template>
 
 <script setup lang="ts">
-import { LoaderCircleIcon, PlusIcon, UserRoundIcon, XIcon } from '@lucide/vue';
-import { computed, onUnmounted, ref, shallowRef } from 'vue';
+import {
+  CheckIcon,
+  LoaderCircleIcon,
+  PlusIcon,
+  UserRoundIcon,
+  UserRoundPlusIcon,
+  XIcon,
+} from '@lucide/vue';
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type {
@@ -123,19 +173,36 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { openModal, closeModal } = useModalState();
+const { user: sessionUser } = useUserSession();
+const { isAnyModalOpen, openModal, closeModal } = useModalState();
 const { fetchAssigneeCandidates, addAssignees, removeAssignees } = useIssueAssignees();
 
 const isAssigneeEditorVisible = shallowRef(false);
 const loadingCandidates = shallowRef(false);
 const savingAssignees = shallowRef(false);
+const assigningSelf = shallowRef(false);
 const removingLogin = shallowRef<string | null>(null);
 const assigneeError = shallowRef('');
 const candidates = ref<IssueAssigneeCandidate[]>([]);
+const selfAssignRef = ref<HTMLElement | null>(null);
 
 let assigneeErrorTimer: ReturnType<typeof setTimeout> | null = null;
 
 const visibleAssignees = computed(() => assignees.filter((assignee) => assignee.login));
+
+const viewerLogin = computed(() => sessionUser.value?.login?.trim() || '');
+
+const isViewerAssigned = computed(() => {
+  const login = viewerLogin.value.toLowerCase();
+  if (!login) return false;
+  return visibleAssignees.value.some((assignee) => assignee.login.toLowerCase() === login);
+});
+
+const canSelfAssign = computed(() =>
+  Boolean(
+    canEditAssignees && repoInfo && issueNumber && viewerLogin.value && !isViewerAssigned.value
+  )
+);
 
 const currentLoginSet = computed(() => {
   return new Set(visibleAssignees.value.map((assignee) => assignee.login));
@@ -286,6 +353,109 @@ const saveAssigneeSelection = async ({ selectedKeys }: DetailPeoplePickerSubmitP
   }
 };
 
+const isEventNode = (value: EventTarget | null): value is Node =>
+  Boolean(value && typeof value === 'object' && 'nodeType' in value);
+
+const confirmingSelfAssign = shallowRef(false);
+let selfAssignBoundDocument: Document | null = null;
+
+const onSelfAssignPointerDown = (event: Event) => {
+  if (!confirmingSelfAssign.value || savingAssignees.value) return;
+
+  const container = selfAssignRef.value;
+  const target = event.target;
+  if (!container || !isEventNode(target) || !container.contains(target)) {
+    confirmingSelfAssign.value = false;
+  }
+};
+
+const onSelfAssignKeyDown = (event: KeyboardEvent) => {
+  if (
+    isAnyModalOpen.value ||
+    !confirmingSelfAssign.value ||
+    event.key !== 'Escape' ||
+    event.defaultPrevented ||
+    savingAssignees.value
+  ) {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  confirmingSelfAssign.value = false;
+};
+
+const bindSelfAssignListeners = (active: boolean) => {
+  if (active) {
+    if (selfAssignBoundDocument || typeof document === 'undefined') return;
+    selfAssignBoundDocument = document;
+    selfAssignBoundDocument.addEventListener('pointerdown', onSelfAssignPointerDown);
+    selfAssignBoundDocument.addEventListener('keydown', onSelfAssignKeyDown, true);
+    return;
+  }
+
+  if (!selfAssignBoundDocument) return;
+  selfAssignBoundDocument.removeEventListener('pointerdown', onSelfAssignPointerDown);
+  selfAssignBoundDocument.removeEventListener('keydown', onSelfAssignKeyDown, true);
+  selfAssignBoundDocument = null;
+};
+
+const cancelSelfAssignConfirm = () => {
+  if (savingAssignees.value) return;
+  confirmingSelfAssign.value = false;
+};
+
+watch(confirmingSelfAssign, bindSelfAssignListeners);
+watch(
+  () =>
+    [
+      repoInfo?.owner,
+      repoInfo?.repo,
+      issueNumber,
+      canSelfAssign.value,
+      isAnyModalOpen.value,
+    ] as const,
+  () => {
+    confirmingSelfAssign.value = false;
+  }
+);
+
+const startSelfAssignConfirm = () => {
+  if (!canSelfAssign.value || savingAssignees.value) return;
+  clearAssigneeError();
+  confirmingSelfAssign.value = true;
+};
+
+const confirmAssignYourself = async () => {
+  if (!canSelfAssign.value || !repoInfo || !issueNumber || savingAssignees.value) return;
+
+  savingAssignees.value = true;
+  assigningSelf.value = true;
+  clearAssigneeError();
+
+  try {
+    const { owner, repo } = repoInfo;
+    const latestIssue = await addAssignees(owner, repo, issueNumber, {
+      assignees: [viewerLogin.value],
+    });
+    emitUpdatedAssignees(latestIssue);
+    confirmingSelfAssign.value = false;
+  } catch (err: unknown) {
+    console.error('Error self-assigning issue:', err);
+    try {
+      await syncCurrentAssignees();
+    } catch (syncErr: unknown) {
+      console.error('Error syncing issue assignees after failed self-assign:', syncErr);
+    }
+    assigneeError.value = getFetchErrorMessage(err, t('detailAssignees.updateFailed'));
+    scheduleAssigneeErrorClear();
+    confirmingSelfAssign.value = false;
+  } finally {
+    savingAssignees.value = false;
+    assigningSelf.value = false;
+  }
+};
+
 const removeAssignee = async (assignee: IssueAssigneeUser) => {
   if (!repoInfo || !issueNumber || savingAssignees.value) return;
 
@@ -310,6 +480,7 @@ const removeAssignee = async (assignee: IssueAssigneeUser) => {
 };
 
 onUnmounted(() => {
+  bindSelfAssignListeners(false);
   clearAssigneeErrorTimer();
   if (isAssigneeEditorVisible.value) {
     closeModal();
@@ -484,5 +655,92 @@ onUnmounted(() => {
   &:disabled {
     cursor: progress;
   }
+}
+
+.assignees-self-assign {
+  margin-top: 8px;
+}
+
+.assignees-self-assign__trigger,
+.assignees-self-assign__confirm-btn,
+.assignees-self-assign__cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.assignees-self-assign__trigger,
+.assignees-self-assign__cancel-btn {
+  color: var(--gitpulse-text-muted);
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      background: var(--gitpulse-surface-hover);
+      border-color: var(--gitpulse-border-strong);
+    }
+  }
+}
+
+.assignees-self-assign__trigger {
+  width: 100%;
+}
+
+.assignees-self-assign__confirm-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assignees-self-assign__confirm-btn {
+  flex: 1;
+  min-width: 0;
+  color: #ffffff;
+  background: var(--gitpulse-primary-solid);
+  border: 1px solid var(--gitpulse-primary-solid);
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background: var(--gitpulse-primary-solid-hover);
+      border-color: var(--gitpulse-primary-solid-hover);
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: var(--gitpulse-primary-solid-hover);
+    border-color: var(--gitpulse-primary-solid-hover);
+  }
+}
+
+.assignees-self-assign__confirm-btn--busy:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.assignees-self-assign__cancel-btn {
+  flex-shrink: 0;
 }
 </style>

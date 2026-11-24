@@ -501,6 +501,7 @@ const {
   initialStatus,
   stack = null,
   git = null,
+  refreshVersion = 0,
 } = defineProps<{
   owner: string;
   repo: string;
@@ -510,6 +511,7 @@ const {
   stack?: PullRequestStack | null;
   /** Whether this deployment can run Git, which is what Stack Rebase needs. */
   git?: GitAvailability | null;
+  refreshVersion?: number;
 }>();
 
 const emit = defineEmits<{
@@ -1523,6 +1525,15 @@ watch(
         void fetchMergeStatus(owner, repo, pullNumber);
       }
     } else if (stackMoved && owner && repo && pullNumber) {
+      void fetchMergeStatus(owner, repo, pullNumber);
+    }
+  }
+);
+
+watch(
+  () => refreshVersion,
+  () => {
+    if (!initialStatus && owner && repo && pullNumber) {
       void fetchMergeStatus(owner, repo, pullNumber);
     }
   }

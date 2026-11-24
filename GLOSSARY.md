@@ -277,6 +277,10 @@ _Avoid_: checks panel, checks popover, checks drawer, CI details
 The surface for reviewing one pull request: its changed files, its diff, and its review submission. On a wide viewport these are three panes. On a narrow viewport the Diff Viewer stays on screen, and a bottom bar opens the changed files and the review submission each in its own sheet.
 _Avoid_: PR review page, review UI
 
+**Quick Approval**:
+An approval submitted directly from a pull request's Detail Overlay without entering the PR Review Workspace, carrying no body or inline comments and bound to the currently displayed head commit.
+_Avoid_: one-click approve, rubber stamp, instant approve
+
 **Merge Box**:
 The part of a pull request's conversation that states whether it can be merged and performs the merge. A Layer is landed with a Stack Merge or restored with a Stack Rebase and is not offered a Branch Update, while any other pull request is offered only the repository's Merge Methods, its commit title and message, its Branch Currency, and a Branch Update.
 _Avoid_: merge panel, merge card, merge widget

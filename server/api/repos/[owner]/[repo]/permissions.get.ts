@@ -19,6 +19,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         pull: false,
       };
       const canPush = Boolean(permissions.admin || permissions.maintain || permissions.push);
+      const canTriage = Boolean(canPush || permissions.triage);
 
       return {
         admin: Boolean(permissions.admin),
@@ -29,10 +30,8 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
         canEditLabels: canPush,
         canEditIssueType: repository.owner.type === 'Organization' && canPush,
         canLockIssue: canPush,
-        canEditAssignees: canPush,
-        canManageItemState: Boolean(
-          permissions.admin || permissions.maintain || permissions.push || permissions.triage
-        ),
+        canEditAssignees: canTriage,
+        canManageItemState: canTriage,
       };
     },
     'Failed to fetch repository permissions'

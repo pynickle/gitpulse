@@ -1740,4 +1740,41 @@ describe('PRMergeBox regression suite', () => {
     await settle();
     expect(rebaseBtn()?.hasAttribute('disabled')).toBe(false);
   });
+
+  test('re-fetches merge status when refreshVersion increments without initialStatus', async () => {
+    store = createMergeStatusStore();
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+    let fetchCalls = 0;
+    store.fetchMergeStatus = async () => {
+      fetchCalls += 1;
+      return null;
+    };
+
+    const refreshVersion = shallowRef(0);
+    const initialStatus = shallowRef<Record<string, unknown> | null>(null);
+
+    const Harness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 4,
+          initialStatus: initialStatus.value,
+          refreshVersion: refreshVersion.value,
+        }),
+    });
+    dom.mount(Harness);
+    await settle();
+    expect(fetchCalls).toBe(1);
+
+    refreshVersion.value += 1;
+    await settle();
+    expect(fetchCalls).toBe(2);
+
+    initialStatus.value = openStatus();
+    await settle();
+    refreshVersion.value += 1;
+    await settle();
+    expect(fetchCalls).toBe(2);
+  });
 });

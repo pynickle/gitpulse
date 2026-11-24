@@ -18,6 +18,7 @@ export function normalizeRepoPermissions(source: RepoPermissionsSource): RepoPer
   const maintain = Boolean(source?.maintain);
   const push = Boolean(source?.push);
   const triage = Boolean(source?.triage);
+  const canTriage = admin || maintain || push || triage;
 
   return {
     admin,
@@ -28,8 +29,8 @@ export function normalizeRepoPermissions(source: RepoPermissionsSource): RepoPer
     canEditLabels: Boolean(source?.canEditLabels),
     canEditIssueType: Boolean(source?.canEditIssueType),
     canLockIssue: Boolean(source?.canLockIssue),
-    canEditAssignees: Boolean(source?.canEditAssignees || admin || maintain || push),
-    canManageItemState: Boolean(source?.canManageItemState || admin || maintain || push || triage),
+    canEditAssignees: Boolean(source?.canEditAssignees || canTriage),
+    canManageItemState: Boolean(source?.canManageItemState || canTriage),
   };
 }
 

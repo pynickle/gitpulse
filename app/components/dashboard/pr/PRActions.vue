@@ -209,6 +209,24 @@
             <ChevronRightIcon :size="14" class="sidebar-action-btn__chevron" aria-hidden="true" />
           </button>
           <button
+            v-if="showQuickApprove"
+            type="button"
+            class="sidebar-action-btn sidebar-action-btn--approve"
+            :disabled="isQuickApproveDisabled"
+            :title="
+              draft && !isAlreadyApproved ? t('prReview.quickApproveDraftDisabled') : undefined
+            "
+            @click="openApproveModal"
+          >
+            <span class="sidebar-action-btn__icon" aria-hidden="true">
+              <LoaderCircleIcon v-if="approving" class="spin-animation" :size="14" />
+              <CheckIcon v-else :size="14" />
+            </span>
+            <span class="sidebar-action-btn__label">{{
+              isAlreadyApproved ? t('prReview.quickApproveApproved') : t('prReview.quickApprove')
+            }}</span>
+          </button>
+          <button
             v-if="showManageActions"
             type="button"
             class="sidebar-action-btn"
@@ -263,6 +281,19 @@
       <span>{{ t('detailActions.viewOnGithub') }}</span>
       <ExternalLinkIcon :size="12" aria-hidden="true" />
     </a>
+
+    <IssueOptionModal
+      v-if="repoInfo && prNumber"
+      :is-visible="showApproveModal"
+      :title="t('prReview.quickApproveConfirm')"
+      :cancel-label="t('prReview.cancelQuickApprove')"
+      :confirm-label="approving ? t('prReview.quickApproving') : t('prReview.quickApprove')"
+      :saving="approving"
+      :error="approveError"
+      @close="closeApproveModal"
+      @confirm="confirmQuickApprove"
+      @dismiss-error="clearApproveError"
+    />
   </div>
 </template>
 
@@ -289,7 +320,7 @@ import {
   UsersIcon,
   XIcon,
 } from '@lucide/vue';
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 import type { DashboardNotification } from '#shared/types/notifications';
@@ -298,6 +329,7 @@ import {
   isCopilotReviewer,
   type CopilotReviewEffort,
 } from '#shared/utils/copilot-review';
+import IssueOptionModal from '~/components/dashboard/issue/IssueOptionModal.vue';
 import CopilotReviewEffortPicker from '~/components/dashboard/pr/CopilotReviewEffortPicker.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
@@ -338,6 +370,10 @@ const {
   repoInfo,
   prNumber,
   hideUnrequestedCopilot = true,
+  draft = false,
+  headSha = '',
+  authorLogin = '',
+  viewerLogin = '',
 } = defineProps<{
   requestedReviewers: PullRequestUserSummary[];
   requestedTeams: PullRequestTeamSummary[];
@@ -363,6 +399,10 @@ const {
   canManageState: boolean;
   repoInfo: { owner: string; repo: string } | null;
   prNumber: number | undefined;
+  draft?: boolean;
+  headSha?: string;
+  authorLogin?: string;
+  viewerLogin?: string;
 }>();
 
 const copilotReviewEffort = defineModel<CopilotReviewEffort>('copilotReviewEffort');
@@ -374,6 +414,7 @@ const emit = defineEmits<{
   requestReviewer: [reviewer: PRReviewerSummaryItem];
   removeReviewer: [reviewer: PRReviewerSummaryItem];
   stateUpdated: [state: 'open' | 'closed'];
+  reviewSubmitted: [];
 }>();
 
 const apiFetch = useGitPulseApiFetch();
@@ -382,6 +423,141 @@ const isClosed = computed(() => prState === 'closed');
 
 // Merged pull requests can never be reopened or closed again.
 const showManageActions = computed(() => canManageState && !merged);
+
+const normalizedViewerLogin = computed(() => viewerLogin?.trim().toLowerCase() || '');
+const normalizedAuthorLogin = computed(() => authorLogin?.trim().toLowerCase() || '');
+const isSelfAuthored = computed(() =>
+  Boolean(
+    normalizedViewerLogin.value && normalizedViewerLogin.value === normalizedAuthorLogin.value
+  )
+);
+const showQuickApprove = computed(
+  () =>
+    Boolean(normalizedViewerLogin.value) && !isSelfAuthored.value && prState === 'open' && !merged
+);
+const isAlreadyApproved = computed(() => {
+  const login = normalizedViewerLogin.value;
+  if (!login) return false;
+  return Boolean(
+    reviewers?.items?.some(
+      (item) =>
+        item.kind === 'user' &&
+        item.login?.trim().toLowerCase() === login &&
+        item.status === 'approved'
+    )
+  );
+});
+const approving = shallowRef(false);
+const isQuickApproveDisabled = computed(
+  () =>
+    isAlreadyApproved.value ||
+    Boolean(draft) ||
+    !headSha?.trim() ||
+    !repoInfo ||
+    !prNumber ||
+    approving.value
+);
+
+const approveError = shallowRef('');
+let approveErrorTimer: ReturnType<typeof setTimeout> | null = null;
+const showApproveModal = shallowRef(false);
+const confirmedHeadSha = shallowRef('');
+
+const clearApproveError = () => {
+  if (approveErrorTimer) {
+    clearTimeout(approveErrorTimer);
+    approveErrorTimer = null;
+  }
+  approveError.value = '';
+};
+
+const scheduleApproveErrorClear = () => {
+  if (approveErrorTimer) {
+    clearTimeout(approveErrorTimer);
+  }
+  approveErrorTimer = setTimeout(() => {
+    approveError.value = '';
+    approveErrorTimer = null;
+  }, 5000);
+};
+
+const openApproveModal = () => {
+  if (!showQuickApprove.value || isQuickApproveDisabled.value) return;
+  clearApproveError();
+  confirmedHeadSha.value = headSha.trim();
+  showApproveModal.value = true;
+};
+
+const closeApproveModal = () => {
+  if (approving.value) return;
+  clearApproveError();
+  confirmedHeadSha.value = '';
+  showApproveModal.value = false;
+};
+
+watch(
+  () =>
+    [
+      repoInfo?.owner,
+      repoInfo?.repo,
+      prNumber,
+      headSha,
+      showQuickApprove.value,
+      isAlreadyApproved.value,
+      Boolean(draft),
+    ] as const,
+  () => {
+    if (!approving.value && showApproveModal.value) {
+      clearApproveError();
+      confirmedHeadSha.value = '';
+      showApproveModal.value = false;
+    }
+  }
+);
+
+const confirmQuickApprove = async () => {
+  const commitId = confirmedHeadSha.value || headSha?.trim();
+  if (
+    !showQuickApprove.value ||
+    isQuickApproveDisabled.value ||
+    !repoInfo ||
+    !prNumber ||
+    !commitId
+  ) {
+    return;
+  }
+
+  approving.value = true;
+  clearApproveError();
+
+  try {
+    const { owner, repo } = repoInfo;
+    await apiFetch(`/api/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, {
+      method: 'POST',
+      body: {
+        commitId,
+        event: 'APPROVE',
+      },
+    });
+    confirmedHeadSha.value = '';
+    showApproveModal.value = false;
+    emit('reviewSubmitted');
+  } catch (err: unknown) {
+    console.error('Error quick-approving pull request:', err);
+    approveError.value = getFetchErrorMessage(err, t('prReview.submitFailed'));
+    scheduleApproveErrorClear();
+  } finally {
+    approving.value = false;
+    if (
+      showApproveModal.value &&
+      (!showQuickApprove.value || isQuickApproveDisabled.value || headSha?.trim() !== commitId)
+    ) {
+      clearApproveError();
+      confirmedHeadSha.value = '';
+      showApproveModal.value = false;
+    }
+  }
+};
 
 const loadingState = ref(false);
 const stateError = ref('');
@@ -399,6 +575,10 @@ onUnmounted(() => {
   if (stateErrorTimer) {
     clearTimeout(stateErrorTimer);
     stateErrorTimer = null;
+  }
+  if (approveErrorTimer) {
+    clearTimeout(approveErrorTimer);
+    approveErrorTimer = null;
   }
 });
 
@@ -1097,7 +1277,8 @@ const formatRelativeTime = (dateString: string | undefined) => {
 }
 
 // Reopen: positive recovery when the PR is currently closed.
-.sidebar-action-btn--reopen {
+.sidebar-action-btn--reopen,
+.sidebar-action-btn--approve {
   color: var(--gitpulse-success);
   border-color: color-mix(in srgb, var(--gitpulse-success) 28%, var(--gitpulse-border));
   background: color-mix(in srgb, var(--gitpulse-success-soft) 70%, var(--gitpulse-surface));

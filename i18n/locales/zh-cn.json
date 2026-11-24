@@ -204,7 +204,10 @@
     "close": "关闭指派人编辑器",
     "loadFailed": "加载指派人失败。",
     "updateFailed": "更新指派人失败。",
-    "removeFailed": "移除指派人失败。"
+    "removeFailed": "移除指派人失败。",
+    "assignYourself": "指派给自己",
+    "confirmAssignYourself": "确认指派",
+    "assigningYourself": "指派中..."
   },
   "detailActions": {
     "manage": "管理",
@@ -1183,6 +1186,12 @@
     "suggestedChangeLabel": "{filename} 的建议更改",
     "collapseFileSidebar": "收起变更文件",
     "expandFileSidebar": "展开变更文件",
+    "quickApprove": "批准拉取请求",
+    "quickApproveConfirm": "批准此拉取请求？",
+    "quickApproving": "正在批准...",
+    "quickApproveApproved": "已批准",
+    "cancelQuickApprove": "取消",
+    "quickApproveDraftDisabled": "草稿拉取请求不可快捷批准",
     "mergeBox": {
       "loading": "正在加载合并状态...",
       "loadingCommitDefaults": "正在加载默认提交信息...",

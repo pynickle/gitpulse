@@ -204,7 +204,10 @@
     "close": "Close assignee editor",
     "loadFailed": "Failed to load assignees.",
     "updateFailed": "Failed to update assignees.",
-    "removeFailed": "Failed to remove assignee."
+    "removeFailed": "Failed to remove assignee.",
+    "assignYourself": "Assign yourself",
+    "confirmAssignYourself": "Confirm assign",
+    "assigningYourself": "Assigning..."
   },
   "detailActions": {
     "manage": "Manage",
@@ -1183,6 +1186,12 @@
     "suggestedChangeLabel": "{filename} suggested change",
     "collapseFileSidebar": "Collapse changed files",
     "expandFileSidebar": "Expand changed files",
+    "quickApprove": "Approve pull request",
+    "quickApproveConfirm": "Approve this pull request?",
+    "quickApproving": "Approving...",
+    "quickApproveApproved": "Approved",
+    "cancelQuickApprove": "Cancel",
+    "quickApproveDraftDisabled": "Draft pull requests cannot be quick-approved",
     "mergeBox": {
       "loading": "Loading merge status...",
       "loadingCommitDefaults": "Loading the default commit message...",
