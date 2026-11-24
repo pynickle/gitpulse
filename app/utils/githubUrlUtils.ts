@@ -1,7 +1,7 @@
 export const GITHUB_API_HOST = 'api.github.com';
 export const GITHUB_RAW_HOST = 'raw.githubusercontent.com';
 
-const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
+const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com', 'redirect.github.com']);
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:\/\//i;
 
 export function hasAbsoluteUrlProtocol(value: string) {

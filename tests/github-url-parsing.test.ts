@@ -71,6 +71,16 @@ describe('parseGitHubMarkdownTarget', () => {
       number: 9,
       type: 'discussion',
     });
+
+    expect(
+      parseGitHubMarkdownTarget('https://redirect.github.com/owner/repo/issues/42#event-1')
+    ).toEqual({
+      owner: 'owner',
+      repo: 'repo',
+      number: 42,
+      type: 'issue',
+      hash: '#event-1',
+    });
   });
 
   test('rejects unsupported hosts and invalid target numbers', () => {
@@ -155,6 +165,14 @@ describe('markdown repository resources', () => {
       path: 'assets/logo.png',
       hash: undefined,
     });
+
+    expect(
+      parseMarkdownRepoResource(
+        'https://redirect.github.com/owner/repo/blob/main/docs/readme.md#intro'
+      )
+    ).toEqual(
+      parseMarkdownRepoResource('https://github.com/owner/repo/blob/main/docs/readme.md#intro')
+    );
 
     expect(parseMarkdownRepoResource('https://github.com/owner/repo/tree/main/docs')).toEqual({
       owner: 'owner',
@@ -329,6 +347,20 @@ describe('parseDashboardUrlTarget', () => {
 
   test('does not rewrite site-relative repo-shaped links without repo context', () => {
     expect(parseDashboardUrlTarget('/owner/repo')).toBeNull();
+  });
+
+  test('treats redirect.github.com as the same GitHub page and still links out to github.com', () => {
+    const redirectTarget = parseDashboardUrlTarget(
+      'https://redirect.github.com/owner/repo/pull/7/files?diff=split#diff-abc'
+    );
+    const githubTarget = parseDashboardUrlTarget(
+      'https://github.com/owner/repo/pull/7/files?diff=split#diff-abc'
+    );
+
+    expect(redirectTarget).toEqual(githubTarget);
+    expect(redirectTarget && buildGitHubUrlFromDashboardTarget(redirectTarget)).toBe(
+      'https://github.com/owner/repo/pull/7/files#diff-abc'
+    );
   });
 });
 

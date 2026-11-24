@@ -90,6 +90,10 @@ _Avoid_: login, username when referring to account identity
 The view in GitPulse of public GitHub information for an account identified by its login. It covers users, organizations, and bots.
 _Avoid_: other user's account, GitHub account identity when referring to the profile surface
 
+**GitHub Page Address**:
+A GitHub page named by its path, query, and fragment. `github.com`, `www.github.com`, and `redirect.github.com` name the same page.
+_Avoid_: redirect link, special GitHub link
+
 **Browser Launch Link**:
 A URL that asks GitPulse to open a supported GitHub page and resolve it into the matching GitPulse
 surface after authentication.

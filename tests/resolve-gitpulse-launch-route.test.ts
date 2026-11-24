@@ -29,6 +29,15 @@ describe('resolveGitPulseLaunchRoute', () => {
     expect(resolveGitPulseLaunchRoute(githubUrl)?.path).toBe(path);
   });
 
+  test('maps redirect.github.com to the same route as github.com', () => {
+    expect(
+      resolveGitPulseLaunchRoute('https://redirect.github.com/octo/widgets/wiki/Setup')
+    ).toEqual(resolveGitPulseLaunchRoute('https://github.com/octo/widgets/wiki/Setup'));
+    expect(
+      resolveGitPulseLaunchRoute('https://redirect.github.com/octo/widgets/issues/42#event-1')
+    ).toEqual(resolveGitPulseLaunchRoute('https://github.com/octo/widgets/issues/42#event-1'));
+  });
+
   test('maps issue and pull request detail URLs to dashboard queries', () => {
     expect(resolveGitPulseLaunchRoute('https://github.com/octo/widgets/issues/42')).toEqual({
       path: '/dashboard',

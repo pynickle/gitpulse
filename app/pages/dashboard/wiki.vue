@@ -268,9 +268,11 @@ const handleWikiHtmlClick = (event: MouseEvent) => {
   event.preventDefault();
 
   const target = repoTarget.value;
-  const normalized = href.startsWith('https://github.com/')
-    ? href.slice('https://github.com'.length)
-    : href;
+  const page = parseUrl(href);
+  const normalized =
+    page?.protocol === 'https:' && isGitHubWebHost(page.hostname)
+      ? `${page.pathname}${page.search}${page.hash}`
+      : href;
   const wikiPrefix = target ? `/${target.owner}/${target.repo}/wiki/` : '';
 
   if (target && normalized.toLowerCase().startsWith(wikiPrefix.toLowerCase())) {

@@ -1,6 +1,7 @@
 import type { LocationQueryRaw } from 'vue-router';
 
-const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
+import { isGitHubWebHost } from './githubUrlUtils';
+
 const GITHUB_PACKAGE_TYPES = new Set(['npm', 'maven', 'rubygems', 'docker', 'nuget', 'container']);
 const GITHUB_WIKI_ACTIONS = new Set(['_new', '_edit', '_history', '_compare', '_pages']);
 const GITHUB_PROFILE_TABS = new Set([
@@ -203,7 +204,7 @@ function parseRepositoryEntry(url: URL, segments: string[]): LaunchEntry {
 }
 
 function parseGitHubPageEntry(url: URL): LaunchEntry {
-  if (!GITHUB_WEB_HOSTS.has(url.hostname.toLowerCase())) return null;
+  if (!isGitHubWebHost(url.hostname)) return null;
 
   const segments = getSegments(url);
   if (segments.length === 0) return null;
@@ -261,7 +262,7 @@ export function resolveGitPulseLaunchRoute(
   }
 
   if (
-    GITHUB_WEB_HOSTS.has(url.hostname.toLowerCase()) &&
+    isGitHubWebHost(url.hostname) &&
     GITHUB_RESERVED_PATHS.has(getSegments(url)[0]?.toLowerCase() ?? '')
   ) {
     return null;
