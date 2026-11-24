@@ -282,7 +282,7 @@
       <ExternalLinkIcon :size="12" aria-hidden="true" />
     </a>
 
-    <IssueOptionModal
+    <ConfirmModal
       v-if="repoInfo && prNumber"
       :is-visible="showApproveModal"
       :title="t('prReview.quickApproveConfirm')"
@@ -295,7 +295,7 @@
       @dismiss-error="clearApproveError"
     />
 
-    <IssueOptionModal
+    <ConfirmModal
       v-if="repoInfo && prNumber"
       :is-visible="showCloseModal"
       :title="t('prReview.closePullRequestConfirm')"
@@ -344,7 +344,7 @@ import {
   isCopilotReviewer,
   type CopilotReviewEffort,
 } from '#shared/utils/copilot-review';
-import IssueOptionModal from '~/components/dashboard/issue/IssueOptionModal.vue';
+import ConfirmModal from '~/components/dashboard/ConfirmModal.vue';
 import CopilotReviewEffortPicker from '~/components/dashboard/pr/CopilotReviewEffortPicker.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';

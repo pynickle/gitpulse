@@ -134,7 +134,7 @@
       @dismiss-error="clearStateError"
     />
 
-    <IssueOptionModal
+    <ConfirmModal
       v-if="repoInfo && issueNumber"
       :is-visible="showReopenModal"
       :title="t('issueDetail.reopenIssueConfirm')"
@@ -170,12 +170,12 @@ import { useI18n } from 'vue-i18n';
 
 import type { IssueCloseReason, IssueDuplicateTarget } from '#shared/types/issues';
 import type { DashboardNotification } from '#shared/types/notifications';
+import ConfirmModal from '~/components/dashboard/ConfirmModal.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import type { IssueTimelineItem } from '~/composables/useIssueTimelineEvents';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 
 import IssueCloseModal from './IssueCloseModal.vue';
-import IssueOptionModal from './IssueOptionModal.vue';
 import LockReasonModal from './LockReasonModal.vue';
 
 const { canLockIssue, canManageState, issueState, repoInfo, issueNumber, sourceNotification } =

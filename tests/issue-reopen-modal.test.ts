@@ -30,8 +30,8 @@ const stubs = {
 const getFetchErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback;
 
-const IssueOptionModal = await compileVue(
-  'app/components/dashboard/issue/IssueOptionModal.vue',
+const ConfirmModal = await compileVue(
+  'app/components/dashboard/ConfirmModal.vue',
   {
     '@lucide/vue': icons,
     '~/components/ui/ScrollArea.vue': { default: ScrollArea },
@@ -49,7 +49,7 @@ const IssueActions = await compileVue(
     '~/utils/getFetchErrorMessage': { getFetchErrorMessage },
     './LockReasonModal.vue': { default: icon },
     './IssueCloseModal.vue': { default: icon },
-    './IssueOptionModal.vue': { default: IssueOptionModal },
+    '~/components/dashboard/ConfirmModal.vue': { default: ConfirmModal },
     'test/stubs': stubs,
   },
   {

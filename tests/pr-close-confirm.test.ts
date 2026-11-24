@@ -26,8 +26,8 @@ let apiImpl: (
 
 const modalStubs = { useModalLifecycle };
 
-const IssueOptionModal = await compileVue(
-  'app/components/dashboard/issue/IssueOptionModal.vue',
+const ConfirmModal = await compileVue(
+  'app/components/dashboard/ConfirmModal.vue',
   {
     '@lucide/vue': icons,
     '~/components/ui/ScrollArea.vue': { default: ScrollArea },
@@ -43,7 +43,7 @@ const PRActions = await compileVue(
     'vue-i18n': { useI18n: () => ({ t: (key: string) => key, locale: shallowRef('en') }) },
     '#shared/utils/copilot-review': copilot,
     '#shared/types/notifications': {},
-    '~/components/dashboard/issue/IssueOptionModal.vue': { default: IssueOptionModal },
+    '~/components/dashboard/ConfirmModal.vue': { default: ConfirmModal },
     '~/components/dashboard/pr/CopilotReviewEffortPicker.vue': {
       default: defineComponent({ setup: () => () => h('div') }),
     },

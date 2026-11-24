@@ -10,8 +10,8 @@ import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ setup: () => () => h('svg') });
 const modalStubs = { useModalLifecycle };
-const IssueOptionModal = await compileVue(
-  'app/components/dashboard/issue/IssueOptionModal.vue',
+const ConfirmModal = await compileVue(
+  'app/components/dashboard/ConfirmModal.vue',
   {
     '@lucide/vue': {
       CheckIcon: icon,
@@ -26,7 +26,7 @@ const IssueOptionModal = await compileVue(
 );
 const LockReasonModal = await compileVue('app/components/dashboard/issue/LockReasonModal.vue', {
   'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
-  './IssueOptionModal.vue': { default: IssueOptionModal },
+  '~/components/dashboard/ConfirmModal.vue': { default: ConfirmModal },
   '~/utils/issueTypeColor': { resolveIssueTypeColor },
 });
 

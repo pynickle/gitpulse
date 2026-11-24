@@ -1,5 +1,5 @@
 <template>
-  <IssueOptionModal
+  <ConfirmModal
     v-model="selectedReason"
     :is-visible="isVisible"
     :title="t('issueDetail.lockIssueReason')"
@@ -19,9 +19,8 @@
 import { computed, shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import ConfirmModal from '~/components/dashboard/ConfirmModal.vue';
 import { resolveIssueTypeColor } from '~/utils/issueTypeColor';
-
-import IssueOptionModal from './IssueOptionModal.vue';
 
 defineProps<{
   isVisible: boolean;

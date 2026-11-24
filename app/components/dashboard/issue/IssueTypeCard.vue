@@ -24,7 +24,7 @@
       <p v-else class="sidebar-card__empty">{{ t('detailIssueType.empty') }}</p>
     </div>
 
-    <IssueOptionModal
+    <ConfirmModal
       v-model="selectedTypeName"
       :is-visible="isIssueTypeEditorVisible"
       :title="t('detailIssueType.edit')"
@@ -49,11 +49,10 @@ import { PencilIcon, TagsIcon } from '@lucide/vue';
 import { computed, onUnmounted, ref, watch } from 'vue';
 
 import type { GitHubIssueType } from '#shared/types/issues';
+import ConfirmModal from '~/components/dashboard/ConfirmModal.vue';
 import IssueTypeBadge from '~/components/dashboard/issue/IssueTypeBadge.vue';
 import { getFetchErrorMessage } from '~/utils/getFetchErrorMessage';
 import { resolveIssueTypeColor } from '~/utils/issueTypeColor';
-
-import IssueOptionModal from './IssueOptionModal.vue';
 
 const { issueType, canEditIssueType, repoInfo, issueNumber } = defineProps<{
   issueType?: GitHubIssueType | null;
