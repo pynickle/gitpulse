@@ -4,6 +4,7 @@ import { defineComponent, h, shallowRef } from 'vue';
 
 import * as copilot from '../shared/utils/copilot-review';
 import { compileVue } from './helpers/compile-vue';
+import { archiveStub } from './helpers/pr-archive-stub';
 import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ render: () => h('svg') });
@@ -38,6 +39,7 @@ const PRActions = await compileVue(
       }),
       getFetchErrorMessage: (_error: unknown, fallback: string) => fallback,
       formatDurationFromNow: () => '',
+      usePullRequestArchive: () => archiveStub(),
     },
   },
   {
@@ -47,6 +49,7 @@ const PRActions = await compileVue(
     useNotificationTodos: 'virtual',
     getFetchErrorMessage: 'virtual',
     formatDurationFromNow: 'virtual',
+    usePullRequestArchive: 'virtual',
   }
 );
 

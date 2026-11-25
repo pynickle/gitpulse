@@ -217,6 +217,22 @@ describe('PR timeline server normalization', () => {
     });
   });
 
+  test('keeps archived and unarchived as real events instead of degrading them', () => {
+    for (const event of ['archived', 'unarchived']) {
+      const [item] = normalizePRTimelineEvent(
+        { id: 9, event, actor: user('moderator'), created_at: '2026-11-24T13:21:46Z' },
+        context
+      );
+
+      expect(item).toMatchObject({
+        kind: 'event',
+        eventType: event,
+        actor: { login: 'moderator' },
+      });
+      expect(item.displayText).toBeUndefined();
+    }
+  });
+
   test('attaches the actual Copilot effort to its submitted review', () => {
     const timeline = normalizePRTimelineEvent(
       { id: 2, event: 'reviewed', user: user('Copilot') },

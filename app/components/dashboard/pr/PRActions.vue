@@ -231,7 +231,7 @@
             type="button"
             class="sidebar-action-btn"
             :class="isClosed ? 'sidebar-action-btn--reopen' : 'sidebar-action-btn--close'"
-            :disabled="loadingState"
+            :disabled="loadingState || archived"
             @click="isClosed ? updatePullRequestState('open') : openCloseModal()"
           >
             <span class="sidebar-action-btn__icon" aria-hidden="true">
@@ -241,6 +241,23 @@
             </span>
             <span>{{
               isClosed ? t('prReview.reopenPullRequest') : t('prReview.closePullRequest')
+            }}</span>
+          </button>
+          <button
+            v-if="(showManageActions || archived) && canManageItemState"
+            type="button"
+            class="sidebar-action-btn"
+            :class="archived ? 'sidebar-action-btn--reopen' : 'sidebar-action-btn--archive'"
+            :disabled="archiving"
+            @click="openArchiveModal"
+          >
+            <span class="sidebar-action-btn__icon" aria-hidden="true">
+              <LoaderCircleIcon v-if="archiving" class="spin-animation" :size="14" />
+              <ArchiveRestoreIcon v-else-if="archived" :size="14" />
+              <ArchiveIcon v-else :size="14" />
+            </span>
+            <span>{{
+              archived ? t('prReview.unarchivePullRequest') : t('prReview.archivePullRequest')
             }}</span>
           </button>
         </div>
@@ -309,11 +326,35 @@
       @confirm="confirmClosePullRequest"
       @dismiss-error="clearStateError"
     />
+    <ConfirmModal
+      v-if="repoInfo && prNumber"
+      :is-visible="showArchiveModal"
+      :title="
+        archived
+          ? t('prReview.unarchivePullRequestConfirm')
+          : t('prReview.archivePullRequestConfirm')
+      "
+      :cancel-label="t('prReview.cancelArchivePullRequest')"
+      :confirm-label="
+        archiving
+          ? t('prReview.archivingPullRequest')
+          : archived
+            ? t('prReview.unarchivePullRequest')
+            : t('prReview.archivePullRequest')
+      "
+      :saving="archiving"
+      :error="archiveError"
+      @close="closeArchiveModal"
+      @confirm="confirmArchiveChange"
+      @dismiss-error="clearArchiveError"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
   CircleExclamationPointIcon,
   CheckIcon,
   ChevronRightIcon,
@@ -382,6 +423,7 @@ const {
   prState,
   merged,
   canManageState,
+  canManageItemState,
   repoInfo,
   prNumber,
   hideUnrequestedCopilot = true,
@@ -412,6 +454,8 @@ const {
   prState: string | undefined;
   merged: boolean;
   canManageState: boolean;
+  /** Repository triage+ rights, which is what archiving requires. */
+  canManageItemState?: boolean;
   repoInfo: { owner: string; repo: string } | null;
   prNumber: number | undefined;
   draft?: boolean;
@@ -429,10 +473,17 @@ const emit = defineEmits<{
   requestReviewer: [reviewer: PRReviewerSummaryItem];
   removeReviewer: [reviewer: PRReviewerSummaryItem];
   stateUpdated: [state: 'open' | 'closed'];
+  archiveUpdated: [];
   reviewSubmitted: [];
 }>();
 
 const apiFetch = useGitPulseApiFetch();
+
+const archiveController = usePullRequestArchive({
+  owner: () => repoInfo?.owner ?? '',
+  repo: () => repoInfo?.repo ?? '',
+  pullNumber: () => prNumber ?? 0,
+});
 
 const isClosed = computed(() => prState === 'closed');
 
@@ -643,6 +694,52 @@ const updatePullRequestState = async (state: 'open' | 'closed') => {
 };
 
 const confirmClosePullRequest = () => updatePullRequestState('closed');
+
+// Archiving requires repository triage or higher, which is the same right that
+// lets a repository show archived pull requests at all.
+const {
+  isArchived: archived,
+  submitting: archiving,
+  error: archiveError,
+  load: loadArchiveState,
+  setArchived,
+} = archiveController;
+
+const showArchiveModal = shallowRef(false);
+
+const clearArchiveError = () => {
+  archiveError.value = '';
+};
+
+const openArchiveModal = () => {
+  clearArchiveError();
+  showArchiveModal.value = true;
+};
+
+const closeArchiveModal = () => {
+  if (archiving.value) return;
+  clearArchiveError();
+  showArchiveModal.value = false;
+};
+
+const confirmArchiveChange = async () => {
+  const archivingNow = archived.value;
+  const succeeded = await setArchived(
+    archivingNow ? 'unarchive' : 'archive',
+    archivingNow
+      ? t('prReview.failedToUnarchivePullRequest')
+      : t('prReview.failedToArchivePullRequest')
+  );
+
+  if (succeeded) {
+    showArchiveModal.value = false;
+    emit('archiveUpdated');
+  }
+};
+
+// Only a repository that grants triage can see an archived pull request at all,
+// so the read is skipped for every other viewer instead of spending a search.
+void (canManageItemState ? loadArchiveState() : undefined);
 
 const { isNotificationTodo, toggleNotificationTodo } = useNotificationTodos();
 
@@ -1328,6 +1425,8 @@ const formatRelativeTime = (dateString: string | undefined) => {
   }
 }
 
+// Archive: a moderation door, quieter than closing the pull request itself.
+.sidebar-action-btn--archive,
 .sidebar-action-btn--todo {
   color: var(--gitpulse-text-strong);
   border-color: var(--gitpulse-border);

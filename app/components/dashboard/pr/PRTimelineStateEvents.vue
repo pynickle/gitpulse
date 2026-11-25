@@ -70,6 +70,8 @@
     </span>
   </template>
   <template v-else-if="item.eventType === 'reopened'">reopened this PR</template>
+  <template v-else-if="item.eventType === 'archived'">archived this PR</template>
+  <template v-else-if="item.eventType === 'unarchived'">unarchived this PR</template>
   <template v-else-if="item.eventType === 'unpinned'">unpinned this PR</template>
 
   <template v-else-if="item.eventType === 'added_to_project'">

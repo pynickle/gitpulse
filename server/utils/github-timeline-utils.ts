@@ -1384,6 +1384,13 @@ export function normalizeIssueTimelineEvent(
         kind: 'event',
         eventType: eventName,
       };
+    case 'archived':
+    case 'unarchived':
+      return {
+        ...baseItem,
+        kind: 'event',
+        eventType: eventName,
+      };
     case 'pinned':
       return {
         ...baseItem,

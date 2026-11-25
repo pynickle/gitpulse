@@ -76,6 +76,13 @@ export interface PullRequestHeadBranchState {
 
 export type PullRequestStackLayerState = 'open' | 'draft' | 'closed' | 'merged';
 
+/** Archiving a pull request is a GraphQL-only moderation action. */
+export type PullRequestArchiveAction = 'archive' | 'unarchive';
+
+export interface PullRequestArchiveResult {
+  archived: boolean;
+}
+
 /** In progress until GitHub lands the Stack, queues it, or fails it. */
 export type StackMergeOutcome = 'in-progress' | 'landed' | 'queued' | 'failed';
 

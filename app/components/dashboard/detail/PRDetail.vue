@@ -177,6 +177,7 @@
             :pr-state="currentPullRequest?.state"
             :merged="Boolean(currentPullRequest?.merged || currentPullRequest?.merged_at)"
             :can-manage-state="canManagePullRequestState"
+            :can-manage-item-state="repoPermissions.canManageItemState"
             :repo-info="repoInfo"
             :pr-number="currentPullRequest?.number"
             :draft="Boolean(currentPullRequest?.draft)"
@@ -189,6 +190,7 @@
             @request-reviewer="rerequestReviewer"
             @remove-reviewer="removeReviewerRequest"
             @state-updated="handlePullRequestStateUpdated"
+            @archive-updated="handlePullRequestStateUpdated"
             @review-submitted="handleQuickReviewSubmitted"
           />
 

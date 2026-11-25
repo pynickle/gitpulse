@@ -6,6 +6,7 @@ import { useModalLifecycle } from '../app/composables/useModalLifecycle';
 import { getFetchErrorMessage } from '../app/utils/getFetchErrorMessage';
 import * as copilot from '../shared/utils/copilot-review';
 import { compileVue } from './helpers/compile-vue';
+import { archiveStub } from './helpers/pr-archive-stub';
 import { ScrollArea } from './helpers/scroll-area';
 import { createVueDom } from './helpers/vue-dom';
 
@@ -69,6 +70,7 @@ const PRActions = await compileVue(
       }),
       getFetchErrorMessage,
       formatDurationFromNow: () => '',
+      usePullRequestArchive: () => archiveStub(),
     },
   },
   {
@@ -78,6 +80,7 @@ const PRActions = await compileVue(
     useNotificationTodos: 'virtual',
     getFetchErrorMessage: 'virtual',
     formatDurationFromNow: 'virtual',
+    usePullRequestArchive: 'virtual',
   }
 );
 
