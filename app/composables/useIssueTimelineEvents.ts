@@ -25,6 +25,7 @@ export interface IssueTimelineItem {
   body?: string;
   url?: string;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
   timelineSource?: string;
   degraded?: boolean;
   displayText?: string;

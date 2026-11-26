@@ -157,6 +157,7 @@ export interface PullRequestDetailPayload {
   // Labels
   labels?: RepositoryLabel[];
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
 
   // Reviewers
   requested_reviewers?: PullRequestUserSummary[];

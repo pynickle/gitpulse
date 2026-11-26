@@ -8,7 +8,7 @@ import type {
   RepositoryReleaseItem,
   RepositoryReleaseLookup,
 } from '#shared/types/release-follows';
-import { normalizeGraphQLReactionGroups } from '#shared/utils/reactions';
+import { normalizeGraphQLReactionGroups, normalizeViewerCanReact } from '#shared/utils/reactions';
 import { releaseNoteSearchText } from '#shared/utils/release-note-search-text';
 
 export interface ReleaseTimelineGraphQLClient {
@@ -26,6 +26,7 @@ export interface GraphQLReleaseNode {
   isPrerelease?: boolean | null;
   releaseAssets?: { totalCount?: number | null } | null;
   reactionGroups?: (GraphQLReactionGroup | null)[] | null;
+  viewerCanReact?: boolean | null;
 }
 
 export interface GraphQLRepositoryReleaseNode {
@@ -106,6 +107,7 @@ const RELEASE_TIMELINE_REPOSITORY_FIELDS = `
           isDraft
           isPrerelease
           releaseAssets(first: 1) { totalCount }
+          viewerCanReact
           reactionGroups {
             content
             viewerHasReacted
@@ -158,6 +160,8 @@ const mapReleaseNode = (node: GraphQLReleaseNode | null): RepositoryReleaseItem 
     return null;
   }
 
+  const canReact = normalizeViewerCanReact(node.viewerCanReact);
+
   return {
     id,
     tagName: toNonEmptyString(node.tagName) ?? '',
@@ -170,6 +174,7 @@ const mapReleaseNode = (node: GraphQLReleaseNode | null): RepositoryReleaseItem 
     assetCount: toAssetCount(node.releaseAssets?.totalCount),
     htmlUrl: toNonEmptyString(node.url),
     reactions: normalizeGraphQLReactionGroups(node.reactionGroups, 'release'),
+    ...(canReact !== undefined ? { canReact } : {}),
   };
 };
 
@@ -345,6 +350,7 @@ export async function fetchFollowedRepositoryReleaseLookups(
           if (page.status !== 'available') return [follow.id, { status: 'transient' }];
           const optionalFields = new Set([
             'reactionGroups',
+            'viewerCanReact',
             'releaseAssets',
             'description',
             'name',

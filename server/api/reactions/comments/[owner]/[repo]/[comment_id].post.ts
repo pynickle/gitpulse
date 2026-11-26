@@ -4,7 +4,9 @@ import {
   fetchIssueCommentReactionSummary,
   normalizeReactionMutationBody,
   parseReactionTargetId,
+  runReactionMutation,
 } from '#server/utils/github-reaction-utils';
+import { isReactionForbiddenError } from '#shared/utils/reactions';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -30,10 +32,14 @@ export default defineEventHandler(async (event) => {
       targetId: commentId,
     };
 
-    await createIssueCommentReaction(octokit, options, body.content);
-
-    return await fetchIssueCommentReactionSummary(octokit, options, userLogin);
+    return await runReactionMutation(octokit, 'issue-comment', options, async () => {
+      await createIssueCommentReaction(octokit, options, body.content);
+      return await fetchIssueCommentReactionSummary(octokit, options, userLogin);
+    });
   } catch (error: unknown) {
+    if (isReactionForbiddenError(error)) {
+      throw error;
+    }
     console.error('Error creating GitHub issue comment reaction:', error);
     throwGitHubRouteError(error, 'Failed to create comment reaction');
   }

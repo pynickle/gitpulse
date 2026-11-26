@@ -146,6 +146,7 @@ export interface PRTimelineItem {
   body?: string;
   url?: string;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
   state?: string;
   actor?: TimelineActor;
   author?: TimelineActor;

@@ -31,6 +31,7 @@ export interface ReactionSummaryItem {
 
 export interface ReactionSummaryPayload {
   items: ReactionSummaryItem[];
+  canReact?: boolean;
 }
 
 export interface GraphQLReactionGroup {

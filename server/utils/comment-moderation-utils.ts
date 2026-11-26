@@ -16,6 +16,7 @@ export interface CommentModerationNode {
 
 export interface CommentNode extends CommentModerationNode {
   body?: string | null;
+  viewerCanReact?: boolean | null;
   repository?: { name: string; owner: { login: string } };
   replies?: { totalCount: number };
   discussion?: { id: string };
@@ -33,6 +34,13 @@ const RESOURCE_TYPES: CommentResourceType[] = [
   'CommitComment',
   'DiscussionComment',
 ];
+
+const REACTABLE_COMMENT_TYPES = new Set<CommentResourceType>([
+  'IssueComment',
+  'PullRequestReviewComment',
+  'CommitComment',
+  'DiscussionComment',
+]);
 
 export function normalizeCommentModeration(
   node: CommentModerationNode
@@ -54,7 +62,7 @@ export function normalizeCommentModeration(
 const COMMENT_NODES_QUERY = `query CommentModeration($ids: [ID!]!) {
   nodes(ids: $ids) {
     __typename id
-    ${RESOURCE_TYPES.map((type) => `... on ${type} { databaseId body ${COMMENT_MODERATION_FIELDS} }`).join('\n')}
+    ${RESOURCE_TYPES.map((type) => `... on ${type} { databaseId body ${COMMENT_MODERATION_FIELDS} ${REACTABLE_COMMENT_TYPES.has(type) ? 'viewerCanReact' : ''} }`).join('\n')}
     ... on CommitComment { repository { name owner { login } } }
     ... on DiscussionComment { discussion { id } replyTo { id } replies { totalCount } }
   }
@@ -97,6 +105,7 @@ export function restCommentModeration(
 
 interface ModeratedItem {
   moderation?: CommentModeration;
+  canReact?: boolean;
   reviewComments?: ModeratedItem[];
 }
 
@@ -105,10 +114,19 @@ export async function enrichCommentModeration(octokit: Octokit, items: Moderated
     .flatMap((item) => [item, ...(item.reviewComments ?? [])])
     .filter((item) => item.moderation);
   if (!targets.length) return;
-  const states = await fetchCommentModeration(
+  const nodes = await fetchCommentNodes(
     octokit,
     targets.map((item) => item.moderation!.nodeId)
   );
-  for (const item of targets)
-    item.moderation = states.get(item.moderation!.nodeId) ?? item.moderation;
+  for (const item of targets) {
+    const node = nodes.get(item.moderation!.nodeId);
+    if (!node) continue;
+    const moderation = normalizeCommentModeration(node);
+    if (moderation) {
+      item.moderation = moderation;
+    }
+    if (typeof node.viewerCanReact === 'boolean') {
+      item.canReact = node.viewerCanReact;
+    }
+  }
 }

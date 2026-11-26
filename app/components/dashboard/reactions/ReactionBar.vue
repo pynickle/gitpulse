@@ -7,9 +7,9 @@
         class="reaction-bar__chip"
         :class="{ 'reaction-bar__chip--active': item.viewerHasReacted }"
         type="button"
-        :disabled="isBusy"
-        :title="getReactionTitle(item)"
-        :aria-label="getReactionTitle(item)"
+        :disabled="isBusy || isReactionDisabled"
+        :title="getChipLabel(item)"
+        :aria-label="getChipLabel(item)"
         :aria-pressed="item.viewerHasReacted"
         @click="toggleReaction(item.content)"
       >
@@ -23,9 +23,9 @@
         <button
           class="reaction-bar__add"
           type="button"
-          :disabled="isBusy"
-          :title="t('reactions.addReaction')"
-          :aria-label="t('reactions.addReaction')"
+          :disabled="isBusy || isReactionDisabled"
+          :title="addButtonLabel"
+          :aria-label="addButtonLabel"
           :aria-expanded="isPopoverOpen"
           @click="togglePopover"
         >
@@ -42,7 +42,7 @@
             type="button"
             role="menuitemcheckbox"
             :aria-checked="Boolean(getItem(content)?.viewerHasReacted)"
-            :disabled="isBusy"
+            :disabled="isBusy || isReactionDisabled"
             :title="getReactionLabel(content)"
             :aria-label="getReactionLabel(content)"
             @click="toggleReaction(content)"
@@ -55,14 +55,41 @@
       </div>
     </div>
 
-    <p v-if="errorMessage" class="reaction-bar__error">
-      {{ errorMessage }}
-    </p>
+    <div
+      v-if="feedback"
+      class="reaction-bar__feedback"
+      :class="`reaction-bar__feedback--${feedback.tone}`"
+      :role="feedback.tone === 'error' ? 'alert' : 'status'"
+    >
+      <CircleAlertIcon
+        v-if="feedback.tone === 'error'"
+        :size="13"
+        class="reaction-bar__feedback-icon"
+        aria-hidden="true"
+      />
+      <InfoIcon v-else :size="13" class="reaction-bar__feedback-icon" aria-hidden="true" />
+      <span class="reaction-bar__feedback-text">{{ feedback.message }}</span>
+      <button
+        type="button"
+        class="reaction-bar__feedback-dismiss"
+        :aria-label="t('common.close')"
+        :title="t('common.close')"
+        @click="clearFeedback"
+      >
+        <XIcon :size="12" aria-hidden="true" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { LoaderCircleIcon, FaceSlightlySmilingPlusIcon } from '@lucide/vue';
+import {
+  CircleAlertIcon,
+  FaceSlightlySmilingPlusIcon,
+  InfoIcon,
+  LoaderCircleIcon,
+  XIcon,
+} from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -75,9 +102,14 @@ import type {
 import {
   getReactionApiPathForTarget,
   getReactionContentsForTarget,
+  isReactionForbiddenError,
   REACTION_EMOJI_MAP,
   REACTION_LABEL_MAP,
 } from '#shared/utils/reactions';
+
+type ReactionFeedbackTone = 'error' | 'muted';
+
+const FEEDBACK_AUTO_CLEAR_MS = 5000;
 
 const {
   targetKind,
@@ -87,6 +119,7 @@ const {
   initialItems,
   initialItemsIncludeViewerState,
   deferViewerState,
+  canReact = true,
 } = defineProps<{
   targetKind: ReactionTargetKind;
   owner: string;
@@ -95,10 +128,12 @@ const {
   initialItems?: ReactionSummaryItem[];
   initialItemsIncludeViewerState?: boolean;
   deferViewerState?: boolean;
+  canReact?: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:items': [items: ReactionSummaryItem[]];
+  'update:canReact': [canReact: boolean];
 }>();
 
 const { t } = useI18n();
@@ -106,14 +141,20 @@ const apiFetch = useGitPulseApiFetch();
 const rootEl = useTemplateRef<HTMLElement>('rootEl');
 
 const summaryItems = shallowRef<ReactionSummaryItem[]>(cloneSummaryItems(initialItems));
+const canReactState = shallowRef<boolean>(canReact);
 const isPopoverOpen = shallowRef(false);
 const isLoading = shallowRef(false);
 const pendingContent = shallowRef<ReactionContent | null>(null);
-const errorMessage = shallowRef('');
+const feedback = shallowRef<{ message: string; tone: ReactionFeedbackTone } | null>(null);
 const hasViewerState = shallowRef(Boolean(initialItemsIncludeViewerState));
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 const allowedContents = computed(() => getReactionContentsForTarget(targetKind));
 const isBusy = computed(() => isLoading.value || Boolean(pendingContent.value));
+const isReactionDisabled = computed(() => canReactState.value === false);
+const addButtonLabel = computed(() =>
+  isReactionDisabled.value ? t('reactions.cannotReact') : t('reactions.addReaction')
+);
 const hasHydratedInitialItems = computed(
   () => Boolean(initialItems) && Boolean(initialItemsIncludeViewerState)
 );
@@ -143,9 +184,22 @@ watch(
 );
 
 watch(
+  () => canReact,
+  (value) => {
+    canReactState.value = value;
+    if (value === false) {
+      closePopover();
+    }
+  }
+);
+
+watch(
   () => [targetKind, owner, repo, String(targetId)] as const,
   () => {
     hasViewerState.value = Boolean(initialItemsIncludeViewerState);
+    canReactState.value = canReact;
+    closePopover();
+    clearFeedback();
 
     if (
       hasHydratedInitialItems.value ||
@@ -166,7 +220,36 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick);
+  clearFeedback();
 });
+
+function clearFeedback() {
+  if (feedbackTimer !== null) {
+    clearTimeout(feedbackTimer);
+    feedbackTimer = null;
+  }
+  feedback.value = null;
+}
+
+function showFeedback(message: string, tone: ReactionFeedbackTone) {
+  clearFeedback();
+  feedback.value = { message, tone };
+  feedbackTimer = setTimeout(() => {
+    feedbackTimer = null;
+    feedback.value = null;
+  }, FEEDBACK_AUTO_CLEAR_MS);
+}
+
+function setCanReact(value: boolean) {
+  if (canReactState.value === value) {
+    return;
+  }
+  canReactState.value = value;
+  emit('update:canReact', value);
+  if (!value) {
+    closePopover();
+  }
+}
 
 function cloneSummaryItems(items: ReactionSummaryItem[] | undefined): ReactionSummaryItem[] {
   return items?.map((item) => ({ ...item })) ?? [];
@@ -179,6 +262,9 @@ function publishSummary(items: ReactionSummaryItem[]) {
 
 function applySummary(payload: ReactionSummaryPayload) {
   publishSummary(cloneSummaryItems(payload.items));
+  if (typeof payload.canReact === 'boolean') {
+    setCanReact(payload.canReact);
+  }
 }
 
 function getItem(content: ReactionContent): ReactionSummaryItem | null {
@@ -200,12 +286,25 @@ function getReactionTitle(item: ReactionSummaryItem) {
   });
 }
 
+function getChipLabel(item: ReactionSummaryItem) {
+  const baseTitle = getReactionTitle(item);
+  return isReactionDisabled.value ? `${baseTitle} · ${t('reactions.cannotReact')}` : baseTitle;
+}
+
 async function togglePopover() {
+  if (isReactionDisabled.value) {
+    return;
+  }
+
   isPopoverOpen.value = !isPopoverOpen.value;
-  errorMessage.value = '';
+  clearFeedback();
 
   if (isPopoverOpen.value) {
     await ensureViewerState();
+    if (isReactionDisabled.value) {
+      closePopover();
+      showFeedback(t('reactions.cannotReact'), 'muted');
+    }
   }
 }
 
@@ -219,24 +318,31 @@ async function loadSummary() {
   }
 
   isLoading.value = true;
-  errorMessage.value = '';
+  clearFeedback();
 
   try {
     applySummary(await apiFetch<ReactionSummaryPayload>(endpoint.value));
     hasViewerState.value = true;
   } catch {
-    errorMessage.value = t('reactions.loadFailed');
+    showFeedback(t('reactions.loadFailed'), 'error');
   } finally {
     isLoading.value = false;
   }
 }
 
 async function toggleReaction(content: ReactionContent) {
-  if (pendingContent.value) {
+  if (pendingContent.value || isReactionDisabled.value) {
     return;
   }
 
+  closePopover();
+
   if (!(await ensureViewerState())) {
+    return;
+  }
+
+  if (isReactionDisabled.value) {
+    showFeedback(t('reactions.cannotReact'), 'muted');
     return;
   }
 
@@ -245,7 +351,7 @@ async function toggleReaction(content: ReactionContent) {
   const snapshot = cloneSummaryItems(summaryItems.value);
 
   pendingContent.value = content;
-  errorMessage.value = '';
+  clearFeedback();
   applyOptimisticReaction(content, !willRemove);
 
   try {
@@ -257,9 +363,14 @@ async function toggleReaction(content: ReactionContent) {
     });
 
     applySummary(payload);
-  } catch {
+  } catch (error: unknown) {
     publishSummary(snapshot);
-    errorMessage.value = t('reactions.updateFailed');
+    if (isReactionForbiddenError(error)) {
+      setCanReact(false);
+      showFeedback(t('reactions.cannotReact'), 'muted');
+    } else {
+      showFeedback(t('reactions.updateFailed'), 'error');
+    }
   } finally {
     pendingContent.value = null;
   }
@@ -425,10 +536,66 @@ function onDocumentClick(event: MouseEvent) {
   background: color-mix(in srgb, var(--gitpulse-accent) 14%, var(--gitpulse-surface));
 }
 
-.reaction-bar__error {
-  margin-top: 0.35rem;
+.reaction-bar__feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  margin-top: 0.45rem;
+  padding: 0.25rem 0.35rem 0.25rem 0.5rem;
+  border-radius: var(--gitpulse-radius-md, 6px);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.reaction-bar__feedback--error {
+  border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  background: var(--gitpulse-danger-soft);
   color: var(--gitpulse-danger);
-  font-size: 0.72rem;
+}
+
+.reaction-bar__feedback--muted {
+  border: 1px solid var(--gitpulse-border);
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
+}
+
+.reaction-bar__feedback-icon {
+  flex: none;
+}
+
+.reaction-bar__feedback-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reaction-bar__feedback-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.72;
+  cursor: pointer;
+
+  @include hover-only {
+    &:hover {
+      opacity: 1;
+      background: color-mix(in srgb, currentcolor 10%, transparent);
+    }
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 1px;
+  }
 }
 
 @keyframes reaction-spin {

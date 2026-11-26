@@ -172,6 +172,7 @@ usePageMeta(
           :repo="repoName"
           :target-id="release.id"
           :initial-items="release.reactions"
+          :can-react="release.canReact"
           initial-items-include-viewer-state
         />
       </ScrollArea>

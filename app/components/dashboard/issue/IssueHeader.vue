@@ -95,6 +95,7 @@
         :repo="repoName"
         :target-id="issue.number"
         :initial-items="issue.reactions"
+        :can-react="issue.canReact"
         initial-items-include-viewer-state
       />
     </div>
@@ -139,6 +140,7 @@ interface IssueHeaderIssue {
   created_at?: string;
   body?: string | null;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
 }
 
 const { issue, repoOwner, repoName } = defineProps<{

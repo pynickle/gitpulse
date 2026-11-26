@@ -4,7 +4,9 @@ import {
   fetchPullReviewCommentReactionSummary,
   normalizeReactionMutationBody,
   parseReactionTargetId,
+  runReactionMutation,
 } from '#server/utils/github-reaction-utils';
+import { isReactionForbiddenError } from '#shared/utils/reactions';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -30,10 +32,14 @@ export default defineEventHandler(async (event) => {
       targetId: commentId,
     };
 
-    await createPullReviewCommentReaction(octokit, options, body.content);
-
-    return await fetchPullReviewCommentReactionSummary(octokit, options, userLogin);
+    return await runReactionMutation(octokit, 'pull-review-comment', options, async () => {
+      await createPullReviewCommentReaction(octokit, options, body.content);
+      return await fetchPullReviewCommentReactionSummary(octokit, options, userLogin);
+    });
   } catch (error: unknown) {
+    if (isReactionForbiddenError(error)) {
+      throw error;
+    }
     console.error('Error creating GitHub pull request review comment reaction:', error);
     throwGitHubRouteError(error, 'Failed to create review comment reaction');
   }

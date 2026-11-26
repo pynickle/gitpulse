@@ -159,6 +159,35 @@ export function normalizeGraphQLReactionGroups(
   });
 }
 
+export const REACTION_FORBIDDEN_ERROR_CODE = 'reaction_forbidden';
+
+export function normalizeViewerCanReact(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+export function isReactionForbiddenError(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('data' in error)) {
+    return false;
+  }
+
+  const body = error.data;
+  if (!body || typeof body !== 'object') {
+    return false;
+  }
+
+  if ('code' in body && body.code === REACTION_FORBIDDEN_ERROR_CODE) {
+    return true;
+  }
+
+  return (
+    'data' in body &&
+    !!body.data &&
+    typeof body.data === 'object' &&
+    'code' in body.data &&
+    body.data.code === REACTION_FORBIDDEN_ERROR_CODE
+  );
+}
+
 export function normalizeReactionSummary(
   reactions: GitHubReaction[],
   viewerLogin: string,

@@ -159,6 +159,7 @@
   "reactions": {
     "reactions": "反应",
     "addReaction": "添加表情",
+    "cannotReact": "无法添加表情",
     "reactionCount": "{reaction}: {count}",
     "loadFailed": "加载表情失败",
     "updateFailed": "更新表情失败"

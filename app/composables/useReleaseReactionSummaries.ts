@@ -10,6 +10,10 @@ export function useReleaseReactionSummaries() {
     'release-reaction-summaries',
     () => new Map()
   );
+  const canReactOverrides = useState<Map<string, boolean>>(
+    'release-reaction-eligibility',
+    () => new Map()
+  );
 
   const itemsFor = (item: TimelineRelease) => resolveTimelineReleaseReactions(item, overlays.value);
 
@@ -22,5 +26,14 @@ export function useReleaseReactionSummaries() {
     overlays.value = next;
   };
 
-  return { itemsFor, setItems };
+  const canReactFor = (item: TimelineRelease) =>
+    canReactOverrides.value.get(timelineReleaseKey(item)) ?? item.canReact;
+
+  const setCanReact = (item: TimelineRelease, canReact: boolean) => {
+    const next = new Map(canReactOverrides.value);
+    next.set(timelineReleaseKey(item), canReact);
+    canReactOverrides.value = next;
+  };
+
+  return { itemsFor, setItems, canReactFor, setCanReact };
 }

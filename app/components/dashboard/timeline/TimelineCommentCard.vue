@@ -19,6 +19,7 @@
       :repo="repoName || ''"
       :target-id="reactionTargetId"
       :initial-items="item.reactions"
+      :can-react="item.canReact"
       defer-viewer-state
     />
   </article>
@@ -48,6 +49,7 @@ interface TimelineCommentCardItem {
   body?: string;
   url?: string;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
 }
 
 const {

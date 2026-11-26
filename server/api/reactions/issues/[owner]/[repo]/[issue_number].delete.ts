@@ -5,7 +5,9 @@ import {
   fetchIssueReactionSummary,
   normalizeReactionMutationBody,
   parseReactionTargetId,
+  runReactionMutation,
 } from '#server/utils/github-reaction-utils';
+import { isReactionForbiddenError } from '#shared/utils/reactions';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -32,14 +34,18 @@ export default defineEventHandler(async (event) => {
     };
     const fetchSummary = () => fetchIssueReactionSummary(octokit, options, userLogin);
 
-    await deleteReactionByContent(
-      fetchSummary,
-      (reactionId) => deleteIssueReaction(octokit, options, reactionId),
-      body.content
-    );
-
-    return await fetchSummary();
+    return await runReactionMutation(octokit, 'issue', options, async () => {
+      await deleteReactionByContent(
+        fetchSummary,
+        (reactionId) => deleteIssueReaction(octokit, options, reactionId),
+        body.content
+      );
+      return await fetchSummary();
+    });
   } catch (error: unknown) {
+    if (isReactionForbiddenError(error)) {
+      throw error;
+    }
     console.error('Error deleting GitHub issue reaction:', error);
     throwGitHubRouteError(error, 'Failed to delete issue reaction');
   }

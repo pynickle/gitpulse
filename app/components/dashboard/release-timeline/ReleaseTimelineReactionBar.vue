@@ -11,13 +11,18 @@ const { item } = defineProps<{
 
 const { t } = useI18n();
 const { settings } = useUserSettings();
-const { itemsFor, setItems } = useReleaseReactionSummaries();
+const { itemsFor, setItems, canReactFor, setCanReact } = useReleaseReactionSummaries();
 
 const showReactions = computed(() => settings.value.releaseTimeline.showReactions);
 const reactionItems = computed(() => itemsFor(item));
+const canReact = computed(() => canReactFor(item));
 
 const handleReactionItems = (items: ReactionSummaryItem[]) => {
   setItems(item, items);
+};
+
+const handleCanReact = (value: boolean) => {
+  setCanReact(item, value);
 };
 </script>
 
@@ -35,8 +40,10 @@ const handleReactionItems = (items: ReactionSummaryItem[]) => {
       :repo="item.repository.name"
       :target-id="item.id"
       :initial-items="reactionItems"
+      :can-react="canReact"
       initial-items-include-viewer-state
       @update:items="handleReactionItems"
+      @update:can-react="handleCanReact"
     />
   </div>
 </template>

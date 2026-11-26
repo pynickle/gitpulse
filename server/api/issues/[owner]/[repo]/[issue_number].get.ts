@@ -2,6 +2,7 @@ import { getGitHubSessionContext, throwGitHubRouteError } from '#server/utils/gi
 import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
 import { fetchIssueDuplicateTarget } from '#server/utils/issue-duplicate-target-utils';
 import { fetchIssueParentTarget } from '#server/utils/sub-issue-graphql-utils';
+import type { ReactionSummaryPayload } from '#shared/types/reactions';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
@@ -35,7 +36,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
           targetId: issueNumber,
         },
         userLogin
-      ).catch((error: unknown) => {
+      ).catch((error: unknown): ReactionSummaryPayload => {
         console.warn('Failed to fetch GitHub issue reactions:', error);
         return { items: [] };
       }),
@@ -53,6 +54,9 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
     return {
       ...issue.data,
       reactions: reactionSummary.items,
+      ...(typeof reactionSummary.canReact === 'boolean'
+        ? { canReact: reactionSummary.canReact }
+        : {}),
       ...(duplicateOf ? { duplicate_of: duplicateOf } : {}),
       ...(parentIssue ? { parent_issue: parentIssue } : {}),
     };

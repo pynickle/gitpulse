@@ -4,7 +4,9 @@ import {
   fetchIssueReactionSummary,
   normalizeReactionMutationBody,
   parseReactionTargetId,
+  runReactionMutation,
 } from '#server/utils/github-reaction-utils';
+import { isReactionForbiddenError } from '#shared/utils/reactions';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -30,10 +32,14 @@ export default defineEventHandler(async (event) => {
       targetId: issueNumber,
     };
 
-    await createIssueReaction(octokit, options, body.content);
-
-    return await fetchIssueReactionSummary(octokit, options, userLogin);
+    return await runReactionMutation(octokit, 'issue', options, async () => {
+      await createIssueReaction(octokit, options, body.content);
+      return await fetchIssueReactionSummary(octokit, options, userLogin);
+    });
   } catch (error: unknown) {
+    if (isReactionForbiddenError(error)) {
+      throw error;
+    }
     console.error('Error creating GitHub issue reaction:', error);
     throwGitHubRouteError(error, 'Failed to create issue reaction');
   }

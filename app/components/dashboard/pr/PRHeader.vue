@@ -139,6 +139,7 @@
         :repo="repoName"
         :target-id="pullRequest.number"
         :initial-items="pullRequest.reactions"
+        :can-react="pullRequest.canReact"
         initial-items-include-viewer-state
       />
     </div>
@@ -185,6 +186,7 @@ interface PullRequestHeaderPullRequest {
   created_at?: string;
   body?: string | null;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
   stack?: PullRequestStack | null;
 }
 

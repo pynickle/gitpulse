@@ -80,6 +80,8 @@ const dom = createVueDom({
   useReleaseReactionSummaries: () => ({
     itemsFor: () => release.reactions,
     setItems: () => {},
+    canReactFor: () => release.canReact,
+    setCanReact: () => {},
   }),
 });
 

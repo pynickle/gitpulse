@@ -159,6 +159,7 @@
   "reactions": {
     "reactions": "Reactions",
     "addReaction": "Add reaction",
+    "cannotReact": "You can't react to this",
     "reactionCount": "{reaction}: {count}",
     "loadFailed": "Failed to load reactions",
     "updateFailed": "Failed to update reactions"

@@ -75,6 +75,7 @@ export interface IssueDetailPayload {
   labels?: RepositoryLabel[];
   type?: GitHubIssueType | null;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
 
   [key: string]: unknown;
 }

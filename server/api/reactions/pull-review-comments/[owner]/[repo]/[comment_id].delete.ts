@@ -5,7 +5,9 @@ import {
   fetchPullReviewCommentReactionSummary,
   normalizeReactionMutationBody,
   parseReactionTargetId,
+  runReactionMutation,
 } from '#server/utils/github-reaction-utils';
+import { isReactionForbiddenError } from '#shared/utils/reactions';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -32,14 +34,18 @@ export default defineEventHandler(async (event) => {
     };
     const fetchSummary = () => fetchPullReviewCommentReactionSummary(octokit, options, userLogin);
 
-    await deleteReactionByContent(
-      fetchSummary,
-      (reactionId) => deletePullReviewCommentReaction(octokit, options, reactionId),
-      body.content
-    );
-
-    return await fetchSummary();
+    return await runReactionMutation(octokit, 'pull-review-comment', options, async () => {
+      await deleteReactionByContent(
+        fetchSummary,
+        (reactionId) => deletePullReviewCommentReaction(octokit, options, reactionId),
+        body.content
+      );
+      return await fetchSummary();
+    });
   } catch (error: unknown) {
+    if (isReactionForbiddenError(error)) {
+      throw error;
+    }
     console.error('Error deleting GitHub pull request review comment reaction:', error);
     throwGitHubRouteError(error, 'Failed to delete review comment reaction');
   }

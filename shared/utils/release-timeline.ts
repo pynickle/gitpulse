@@ -121,6 +121,7 @@ const toTimelineRelease = (
     isOldestShown: lookup.hasOlderReleases && oldestPublishedId === item.id,
     htmlUrl: item.htmlUrl,
     reactions: item.reactions ?? [],
+    ...(typeof item.canReact === 'boolean' ? { canReact: item.canReact } : {}),
   };
 };
 

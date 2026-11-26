@@ -50,4 +50,5 @@ export interface ReleaseDetailPayload {
   assets?: ReleaseAsset[];
   repository_url?: string;
   reactions?: ReactionSummaryItem[];
+  canReact?: boolean;
 }

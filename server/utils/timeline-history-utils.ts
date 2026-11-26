@@ -38,6 +38,7 @@ export const recoveredReleaseSchema = z.object({
       viewerReactionId: z.number().nullable(),
     })
   ),
+  canReact: z.boolean().optional(),
   discoveredAt: timestamp,
 });
 const schema = z.object({

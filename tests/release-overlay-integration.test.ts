@@ -380,6 +380,8 @@ beforeEach(() => {
     useReleaseReactionSummaries: () => ({
       itemsFor: (release: TimelineRelease) => release.reactions,
       setItems: () => {},
+      canReactFor: (release: TimelineRelease) => release.canReact,
+      setCanReact: () => {},
     }),
     filterReleaseTimelineGroups,
     useReleaseDrawer: () => {

@@ -4,6 +4,7 @@ import { fetchIssueReactionSummary } from '#server/utils/github-reaction-utils';
 import { fetchPullHeadBranchState } from '#server/utils/pr-head-branch-utils';
 import { createEmptyPRReviewerSummary } from '#server/utils/pr-reviewers-utils';
 import { fetchPullRequestStack } from '#server/utils/pr-stack-utils';
+import type { ReactionSummaryPayload } from '#shared/types/reactions';
 
 export default definePrivateApiCoalescedEventHandler(async (event) => {
   try {
@@ -37,7 +38,7 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
           targetId: pullNumber,
         },
         userLogin
-      ).catch((error: unknown) => {
+      ).catch((error: unknown): ReactionSummaryPayload => {
         console.warn('Failed to fetch GitHub pull request reactions:', error);
         return { items: [] };
       }),
@@ -58,6 +59,9 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       head_branch: headBranch,
       reviewers: createEmptyPRReviewerSummary(),
       reactions: reactionSummary.items,
+      ...(typeof reactionSummary.canReact === 'boolean'
+        ? { canReact: reactionSummary.canReact }
+        : {}),
       stack,
       git,
     };

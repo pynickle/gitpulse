@@ -32,6 +32,7 @@ export interface RepositoryReleaseItem {
   assetCount: number;
   htmlUrl: string | null;
   reactions: ReactionSummaryItem[];
+  canReact?: boolean;
 }
 
 export type RepositoryReleaseLookup =
@@ -91,6 +92,7 @@ export interface TimelineRelease {
   isOldestShown: boolean;
   htmlUrl: string | null;
   reactions: ReactionSummaryItem[];
+  canReact?: boolean;
 }
 
 export interface ReleaseTimelineGroup {

@@ -5,7 +5,9 @@ import {
   fetchReleaseReactionSummary,
   normalizeReactionMutationBody,
   parseReactionTargetId,
+  runReactionMutation,
 } from '#server/utils/github-reaction-utils';
+import { isReactionForbiddenError } from '#shared/utils/reactions';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -32,14 +34,18 @@ export default defineEventHandler(async (event) => {
     };
     const fetchSummary = () => fetchReleaseReactionSummary(octokit, options, userLogin);
 
-    await deleteReactionByContent(
-      fetchSummary,
-      (reactionId) => deleteReleaseReaction(octokit, options, reactionId),
-      body.content
-    );
-
-    return await fetchSummary();
+    return await runReactionMutation(octokit, 'release', options, async () => {
+      await deleteReactionByContent(
+        fetchSummary,
+        (reactionId) => deleteReleaseReaction(octokit, options, reactionId),
+        body.content
+      );
+      return await fetchSummary();
+    });
   } catch (error: unknown) {
+    if (isReactionForbiddenError(error)) {
+      throw error;
+    }
     console.error('Error deleting GitHub release reaction:', error);
     throwGitHubRouteError(error, 'Failed to delete release reaction');
   }
