@@ -582,9 +582,9 @@ files = '(^|/)(tests|flutter/test)/.*\.(ts|dart)$'
 |   11 | `check-json`                  | b → 采纳，`exclude = 'tsconfig\.json$'`                     |
 |   12 | `check-jsonc`                 | b → 采纳                                                    |
 
-- **改写型钩子的排除项**：`(^|/)(\.nuxtrc|[^/]*\.lock|[^/]*\.g\.dart)$|^flutter/assets/document_viewer/`，加在第 1–4 个钩子上。口径是「生成物」而不是「扫描时刚好脏的文件」：8 个 `*.g.dart`（build_runner / json_serializable / 生成调色板）、5 个 lockfile（`bun.lock`、`extension/bun.lock`、`flutter/pubspec.lock`、`flutter/tool/document_viewer/bun.lock`、`generate_app_icons.py.lock`）、`.nuxtrc`、`flutter/assets/document_viewer/`。**`flutter/ios/**`（74 个）与 `flutter/android/**`（35 个）不在此列** —— 它们由 `flutter create` 一次性生成、此后一直手改，放行等于让平台层无人看管。
+- **改写型钩子的排除项**：`(^|/)([^/]*\.lock|[^/]*\.g\.dart)$|^flutter/assets/document_viewer/`，加在第 1–4 个钩子上。口径是「生成物」而不是「扫描时刚好脏的文件」：8 个 `*.g.dart`（build_runner / json_serializable / 生成调色板）、5 个 lockfile（`bun.lock`、`extension/bun.lock`、`flutter/pubspec.lock`、`flutter/tool/document_viewer/bun.lock`、`generate_app_icons.py.lock`）、`flutter/assets/document_viewer/`。**`flutter/ios/**`（74 个）与 `flutter/android/**`（35 个）不在此列** —— 它们由 `flutter create` 一次性生成、此后一直手改，放行等于让平台层无人看管。
 - **不做**：CI 增加 `prek` job（会让 `fmt:check`/`lint` 在 CI 里跑两遍）、`deny-pattern` 拦 focused test（需 `files` 限定，否则 `docs/` 与 `.agents/skills/` 里的示例文字会误报）、`forbid-new-submodules`（无可检测对象），以及 §5.2 判为 **c** 的全部 12 项。
-- **存量规范化**：同一改动里修掉 4 个缺末尾换行的文件（`flutter/analysis_options.yaml`、`flutter/AGENTS.md`、`flutter/android/app/src/main/res/values/colors.xml`、`flutter/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md`）。`.nuxtrc` 已排除，不在内；`analysis_options.yaml` 是本文件早期静态扫描**漏报**的一处（当时只报 4 个，其中含现已排除的 `.nuxtrc`），由实跑的 `end-of-file-fixer` 抓出。
+- **存量规范化**：同一改动里修掉 4 个缺末尾换行的文件（`flutter/analysis_options.yaml`、`flutter/AGENTS.md`、`flutter/android/app/src/main/res/values/colors.xml`、`flutter/ios/Runner/Assets.xcassets/LaunchImage.imageset/README.md`）。`analysis_options.yaml` 是本文件早期静态扫描**漏报**的一处，由实跑的 `end-of-file-fixer` 抓出。
 
 ### 7.1 补充实测（对 §二 与 §5 中未覆盖或写错的行为）
 
@@ -598,8 +598,7 @@ files = '(^|/)(tests|flutter/test)/.*\.(ts|dart)$'
 | 行尾空白普查                    | 1169 个文本文件逐行匹配 `[ \t]+$`                        | 仅 `flutter/assets/document_viewer/viewer.js` 一处（3 行），且是生成物 → 已排除                                                                                                                                                                             |
 | XML 可解析性                    | 9 个 `.xml` 逐个 `XmlDocument.Load`                      | 全部通过 → `check-xml` 零存量                                                                                                                                                                                                                               |
 | CRLF 数量                       | `git ls-files --eol`                                     | **48** 个 `w/crlf`（47 个 `flutter/` + 根 `LICENSE`），`w/mixed` 为 0；§一 与 §5.1 早期写的 17 已更正                                                                                                                                                       |
-| `.nuxtrc` 的 eol 状态           | `git ls-files --eol`                                     | 全仓唯一 `i/none w/none` 文件（整文件无任何换行），与「缺末尾换行」同源                                                                                                                                                                                     |
-| 生成物排除正则是否真的生效      | 临时仓库放入 6 个带行尾空白的文件，其中 5 个符合排除模式 | 只有 `flutter/lib/main.dart` 被修，`.nuxtrc`、`bun.lock`、`flutter/pubspec.lock`、`timeline_dto.g.dart`、`viewer.js` 全部原样保留                                                                                                                           |
+| 生成物排除正则是否真的生效      | 临时仓库放入带行尾空白的文件，符合排除模式的与源文件对照 | 只有 `flutter/lib/main.dart` 被修，`bun.lock`、`flutter/pubspec.lock`、`timeline_dto.g.dart`、`viewer.js` 全部原样保留                                                                                                                                      |
 
 ## 出处
 

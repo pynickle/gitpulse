@@ -117,7 +117,3 @@ The shipped controls were rebuilt once the first implementation was readable in 
 - The hidden notice is one line of app-native pieces: a light tag stating Hidden and the reason, followed by a text-only control. The control paints no border and no background in either state; only its label and chevron answer the pointer, so the notice never looks like a second button.
 - The delete confirmation reuses the picker's panel (title, close control, footer) with the filled danger answer, so the two moderation steps share one dialog geometry. The pending spinner inside the submit button is the picker's own filled-button layout, which is what keeps its distance from the label identical to the Issue Edit Type save button.
 - A refused Unhide keeps the menu open and renders the failure next to the menu items; refusals inside a dialog render in the dialog. A failed action never hides the comment or fakes success.
-
-## Documentation discrepancy found during inspection
-
-`.agents/skills/nuxt-gitpulse/SKILL.md` points to `.nuxt/skill-hub/nuxt-gitpulse/SKILL.md`, which is absent in this checkout. The generated router is present at `.codex/skills/nuxt-gitpulse/SKILL.md` and was used for the read-only investigation. No application code or adjacent skill files were changed.

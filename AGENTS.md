@@ -165,8 +165,3 @@ Use the single-context domain layout. See `docs/agents/domain.md`.
 Domain files such as `GLOSSARY.md` and `docs/adr/` are tracked source, not ignored files — read them
 directly. If one is absent from the index, inspect that path through the filesystem instead of
 concluding the file does not exist.
-
-<!-- nuxt-skill-hub:start -->
-
-Use the `nuxt-gitpulse` skill as the Nuxt router/entrypoint for tasks in this repository.
-<!-- nuxt-skill-hub:end -->

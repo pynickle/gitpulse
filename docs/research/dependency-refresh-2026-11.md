@@ -219,7 +219,7 @@ Finished in 2.1s on 748 files with 0 rules using 16 threads.
 
 按仓库约定未运行本地 production build，也未做浏览器测试；因此上述结果证明依赖与类型兼容，不证明运行时行为或性能改进。
 
-安装期有两处环境噪音，与代码无关：`prepare` 脚本的 `prek install` 因 `%LOCALAPPDATA%\prek\prek.log` 拒绝访问而失败；`nuxt-skill-hub` 生成技能目录时出现一次目录 `rename` 的 EPERM。重跑 `nuxi prepare` 后类型生成正常，所有检查基于该次结果。
+安装期有一处环境噪音，与代码无关：`prepare` 脚本的 `prek install` 因 `%LOCALAPPDATA%\prek\prek.log` 拒绝访问而失败。重跑 `nuxi prepare` 后类型生成正常，所有检查基于该次结果。
 
 ## 来源
 

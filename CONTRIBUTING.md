@@ -99,12 +99,6 @@ the checks above can all pass while the app fails to build.
 Do not bypass `prek` unless there is an exceptional reason. If you must bypass a
 hook locally, run the same checks manually before pushing.
 
-## Agent Guidance
-
-`nuxt-skill-hub` regenerates project-specific guidance during `nuxt prepare`.
-Keep the small `nuxt-gitpulse` wrapper skills in version control; the generated
-`.nuxt/skill-hub/` tree stays local. See the [Skill Hub documentation](https://github.com/onmax/nuxt-skill-hub).
-
 ## Flutter Client
 
 The native client is an independent package in `flutter/`. Use its pinned stable

@@ -45,8 +45,7 @@ is accepted: it is a four-line project-references stub whose body is `"files": [
 hook should edit: the next regeneration overwrites the fix and the hook reports the same violation
 again. The four rewriting hooks therefore skip the build products tracked in this tree —
 `**/*.g.dart` (build_runner, json_serializable and the generated palette), `bun.lock`, `pubspec.lock`
-and `*.py.lock` — plus `.nuxtrc`, written by `nuxt-skill-hub` during `nuxt prepare`, and
-`flutter/assets/document_viewer/`. Flutter's `ios/` and `android/` scaffolding is deliberately **not**
+and `*.py.lock`, and `flutter/assets/document_viewer/`. Flutter's `ios/` and `android/` scaffolding is deliberately **not**
 on that list: those files are generated once by `flutter create` and edited by hand ever after, so
 `Info.plist`, `AndroidManifest.xml` and the Gradle files stay under the hooks.
 
