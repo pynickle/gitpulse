@@ -20,7 +20,7 @@
           class="detail-loading is-overlay is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
           style="z-index: 10"
         >
-          <div class="box has-text-centered py-5 px-6 shadow-md" style="min-width: 200px">
+          <div class="detail-loading__box has-text-centered py-5 px-6 shadow-md">
             <LoaderCircleIcon
               class="spin-animation has-text-link mb-3"
               :size="40"
@@ -140,6 +140,13 @@ defineEmits<{
 
 .detail-loading {
   background: var(--gitpulse-surface-muted);
+}
+
+.detail-loading__box {
+  min-width: 200px;
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
 }
 
 .shadow-md {

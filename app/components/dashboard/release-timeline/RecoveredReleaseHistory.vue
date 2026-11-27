@@ -219,7 +219,7 @@ const {
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.3;

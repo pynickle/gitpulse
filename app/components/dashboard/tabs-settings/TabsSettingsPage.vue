@@ -80,7 +80,7 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
 
 .settings-header__title {
   margin: 0 0 0.15rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -1084,7 +1084,7 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
   width: 2rem;
   height: 2rem;
   padding: 0;
-  border: 1px solid var(--bulma-border, #dbdbdb);
+  border: 1px solid var(--gitpulse-border);
   border-radius: 5px;
   background: var(--gitpulse-surface);
   color: var(--gitpulse-text);

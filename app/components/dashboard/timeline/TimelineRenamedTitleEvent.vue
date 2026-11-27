@@ -101,7 +101,7 @@ const actorTail = computed(() => {
   line-height: 1.45;
   overflow-wrap: anywhere;
   text-wrap: pretty;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .timeline-renamed__title--previous {

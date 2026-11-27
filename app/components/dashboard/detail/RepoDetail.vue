@@ -664,8 +664,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 <template>
   <div class="repo-detail-layout">
-    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div class="column detail-main-column">
+    <div class="detail-columns" :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }">
+      <div class="detail-main-column">
         <section class="repo-detail-header">
           <div class="repo-detail-header__title-row">
             <GitHubIcon :size="28" class="repo-detail-header__icon" />
@@ -1111,7 +1111,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   min-height: 100%;
 }
 
-.repo-detail-layout :deep(.columns) {
+.repo-detail-layout :deep(.detail-columns) {
   align-items: flex-start;
   margin-bottom: 0;
 }
@@ -1150,8 +1150,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* Column padding plus the gap the sticky inset used to add. */
-  padding-top: calc(var(--bulma-column-gap) + var(--repo-detail-sidebar-extra-top-gap));
+  padding-top: var(--repo-detail-sidebar-extra-top-gap);
   padding-right: 1rem;
   box-sizing: border-box;
 }
@@ -1164,7 +1163,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 /* The header section wraps the whole main column, so this readability cap is
    lifted while the Detail Sidebar is hidden and the main column is expected
    to fill the overlay width. */
-.repo-detail-layout .columns--detail-sidebar-hidden .repo-detail-header {
+.repo-detail-layout .detail-columns--sidebar-hidden .repo-detail-header {
   max-width: none;
 }
 
@@ -1225,7 +1224,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     &:hover:not(:disabled):not(&--active) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -1288,7 +1287,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   @include hover-only {
     &:hover:not(&--active) {
       background: var(--gitpulse-surface-active);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -1390,7 +1389,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .repo-detail-forked-from__link {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--gitpulse-text-strong, var(--bulma-text-strong));
+  color: var(--gitpulse-text-strong);
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -1416,7 +1415,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .repo-detail-description__body {
   margin-bottom: 0;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -1648,7 +1647,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .repo-about__item-value {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-about__item-value--link {
@@ -1671,7 +1670,7 @@ html.dark .repo-detail-section__chrome {
   align-items: center;
   gap: 8px;
   margin-bottom: 1rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
 }
 
@@ -1733,7 +1732,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-card__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   font-weight: 600;
 }
@@ -1782,7 +1781,7 @@ html.dark .repo-detail-section__chrome {
 
 .info-stat__value {
   margin-bottom: 0.25rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.35rem;
   font-weight: 800;
 }
@@ -1863,7 +1862,7 @@ html.dark .repo-detail-section__chrome {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1878,7 +1877,7 @@ html.dark .repo-detail-section__chrome {
 @include sidebar-github-link;
 
 @media screen and (max-width: 1024px) {
-  .repo-detail-layout :deep(.columns) {
+  .repo-detail-layout :deep(.detail-columns) {
     display: block;
   }
 
@@ -1891,7 +1890,7 @@ html.dark .repo-detail-section__chrome {
     min-height: 0;
   }
 
-  .repo-detail-layout :deep(.columns > .detail-sidebar-column) {
+  .repo-detail-layout :deep(.detail-columns > .detail-sidebar-column) {
     display: none;
   }
 

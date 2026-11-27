@@ -1254,7 +1254,7 @@ onActivated(() => {
 }
 
 .repo-file-view__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.9rem;
   font-weight: 700;
   overflow: hidden;
@@ -1332,7 +1332,7 @@ onActivated(() => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 }
@@ -1367,7 +1367,7 @@ onActivated(() => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 }
@@ -1436,7 +1436,7 @@ onActivated(() => {
 
 .repo-file-view__sidebar-title {
   margin: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -1457,7 +1457,7 @@ onActivated(() => {
 @include hover-only {
   .repo-file-view__collapse-button:hover {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -1482,7 +1482,7 @@ onActivated(() => {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1510,7 +1510,7 @@ onActivated(() => {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1639,7 +1639,7 @@ onActivated(() => {
   border: 0;
   border-bottom: 1px solid var(--gitpulse-border);
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   text-align: left;
   cursor: pointer;
@@ -1708,7 +1708,7 @@ onActivated(() => {
   gap: 0.35rem;
   flex: 1;
   min-width: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 600;
   overflow: hidden;
@@ -1739,7 +1739,7 @@ onActivated(() => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 }
@@ -1779,7 +1779,7 @@ onActivated(() => {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-file-view__binary-hint {
@@ -1867,7 +1867,7 @@ onActivated(() => {
   font-family: var(--gitpulse-code-font-family);
   font-size: 0.82rem;
   line-height: 1.6;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-file-view__code-table {

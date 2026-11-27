@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
   // No font-weight change on the active row: the glyph reflow reads as a jitter
   // that fights the bar sliding under it.
   &.is-active {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 
   &:focus-visible {
@@ -228,7 +228,7 @@ onBeforeUnmount(() => {
     border-radius: 0;
     border-left: 0;
     border-bottom: 1px solid var(--gitpulse-border);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     font-size: 0.95rem;
     font-weight: 650;
 

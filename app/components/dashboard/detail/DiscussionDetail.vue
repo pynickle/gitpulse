@@ -473,10 +473,10 @@ watch(
     @scroll="onCompactHeaderScroll"
     media="(max-width: 1024px)"
   >
-    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
+    <div class="detail-columns" :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }">
       <ScrollArea
         @scroll-element="mainColumnRef = $event"
-        class="column detail-main-column"
+        class="detail-main-column"
         @scroll="onCompactHeaderScroll"
         media="(min-width: 1025px)"
       >
@@ -553,7 +553,7 @@ watch(
   overflow: hidden;
 }
 
-.detail-scroll :deep(.columns) {
+.detail-scroll :deep(.detail-columns) {
   height: 100%;
   min-height: 0;
   align-items: stretch;

@@ -632,7 +632,9 @@ test('preserves source, search, sort, and page while switching the followed view
 
   page.buttonIn(page.dom.document.body, 'Updated').click();
   await flush();
-  page.dom.document.querySelector<HTMLButtonElement>('.pagination-link:not(.is-current)')!.click();
+  page.dom.document
+    .querySelector<HTMLButtonElement>('.dashboard-pagination__link:not(.is-current)')!
+    .click();
   await flush();
   expect(page.starredPagination.value.page).toBe(2);
   expect(page.sort.value).toBe('updated');
@@ -660,9 +662,9 @@ test('preserves source, search, sort, and page while switching the followed view
   expect(page.buttonIn(page.dom.document.body, 'Updated').getAttribute('aria-selected')).toBe(
     'true'
   );
-  expect(page.dom.document.querySelector('.pagination-link.is-current')?.textContent?.trim()).toBe(
-    '2'
-  );
+  expect(
+    page.dom.document.querySelector('.dashboard-pagination__link.is-current')?.textContent?.trim()
+  ).toBe('2');
 });
 
 test.each([

@@ -145,7 +145,7 @@ const updatedLabel = computed(() => {
 .linked-pr-picker-row-title {
   font-size: 13px;
   font-weight: 550;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -627,7 +627,7 @@ onBeforeUnmount(() => {
   width: min(760px, calc(100% - 48px));
   max-height: calc(100% - 120px);
   padding: 1.5rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .diagram-overlay__close {
@@ -657,14 +657,14 @@ onBeforeUnmount(() => {
   .diagram-overlay__close:hover {
     border-color: var(--gitpulse-border-strong);
     background-color: var(--gitpulse-surface);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
 .diagram-overlay__close:focus-visible {
   outline: 2px solid var(--gitpulse-focus-ring);
   outline-offset: 2px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .diagram-overlay__zoom {
@@ -720,7 +720,7 @@ onBeforeUnmount(() => {
 @include hover-only {
   .diagram-overlay__zoom-button:hover:not(:disabled) {
     background-color: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -745,7 +745,7 @@ onBeforeUnmount(() => {
   border: 0;
   border-radius: 999px;
   background-color: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-feature-settings: 'tnum' 1;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -765,7 +765,7 @@ onBeforeUnmount(() => {
   bottom: 20px;
   left: 20px;
   margin: 0;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   font-size: 0.8125rem;
   line-height: 1.2;
   pointer-events: none;

@@ -176,11 +176,13 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightRoot.get('--gitpulse-topbar-height')).toBe('3.25rem');
     expect(lightRoot.get('--gitpulse-primary-solid')).toBe('#4f46e5');
     expect(lightRoot.get('--gitpulse-primary-solid-hover')).toBe('#4338ca');
+    expect(lightRoot.get('--gitpulse-link-soft')).toBe('rgba(79, 70, 229, 0.08)');
     expect(lightRoot.get('--gitpulse-app-font-family')).toContain('HarmonyOS Sans');
     expect(lightRoot.get('--gitpulse-code-font-family')).toContain('Maple Mono');
 
     expect(darkRoot.get('color-scheme')).toBe('dark');
     expect(darkRoot.get('--gitpulse-primary-solid')).toBe('#5048e5');
+    expect(darkRoot.get('--gitpulse-link-soft')).toBe('rgba(165, 180, 252, 0.14)');
     expect(darkRoot.get('--gitpulse-scrollbar-thumb')).toBe('#4b5563');
 
     const bulmaProps: string[] = [];
@@ -245,21 +247,33 @@ describe('global SCSS architecture (#196)', () => {
     expect(findUngatedHoverSelectors(root)).toEqual([]);
   });
 
-  test('bulma-overrides.scss emits the temporary Bulma token bridge and component overrides', () => {
+  test('bulma-overrides.scss emits component overrides using Foundation Layer tokens without a Bulma token bridge', () => {
     const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
     const lightRoot = collectTopLevelDecls(root, ':root');
     const darkRoot = collectTopLevelDecls(root, 'html.dark');
 
-    expect(lightRoot.get('--bulma-scheme-main')).toBe('var(--gitpulse-surface)');
-    expect(lightRoot.get('--bulma-primary')).toBe('var(--gitpulse-accent)');
-    expect(darkRoot.get('--bulma-primary-l')).toBe('72%');
-    expect(darkRoot.get('--bulma-scheme-main-ter')).toBe('var(--gitpulse-surface-raised)');
+    expect(lightRoot.size).toBe(0);
+    expect(darkRoot.size).toBe(0);
 
-    expect(collectTopLevelDecls(root, '.navbar').get('background-color')).toBe(
+    const bulmaTokens: string[] = [];
+    root.walkDecls((decl) => {
+      if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
+        bulmaTokens.push(`${decl.prop}: ${decl.value}`);
+      }
+    });
+    expect(bulmaTokens).toEqual([]);
+
+    expect(collectTopLevelDecls(root, '.button').get('background-color')).toBe(
       'var(--gitpulse-surface)'
+    );
+    expect(collectTopLevelDecls(root, '.button.is-ghost').get('background-color')).toBe(
+      'transparent'
     );
     expect(collectTopLevelDecls(root, '.button.is-primary').get('background-color')).toBe(
       'var(--gitpulse-primary-solid)'
+    );
+    expect(collectTopLevelDecls(root, '.tag.is-link.is-light').get('background-color')).toBe(
+      'var(--gitpulse-link-soft)'
     );
     expect(collectTopLevelDecls(root, '.tag.is-activity').get('font-weight')).toBe('bold');
     expect(collectTopLevelDecls(root, '.has-text-primary').get('color')).toBe(
@@ -284,7 +298,8 @@ describe('global SCSS architecture (#196)', () => {
     let lightPrimarySolidCount = 0;
     let darkPrimarySolidCount = 0;
     let baseLinkIndex = -1;
-    let tabsLinkIndex = -1;
+    let controlsBtnIndex = -1;
+    let buttonOverrideIndex = -1;
     let ruleIndex = 0;
 
     root.walkRules((rule) => {
@@ -304,8 +319,15 @@ describe('global SCSS architecture (#196)', () => {
       if (rule.parent === root && rule.selector === 'a' && baseLinkIndex === -1) {
         baseLinkIndex = ruleIndex;
       }
-      if (rule.parent === root && rule.selector === '.tabs a' && tabsLinkIndex === -1) {
-        tabsLinkIndex = ruleIndex;
+      if (rule.parent === root && rule.selector === '.gp-btn' && controlsBtnIndex === -1) {
+        controlsBtnIndex = ruleIndex;
+      }
+      if (
+        rule.parent === root &&
+        rule.selector === '.button.is-primary' &&
+        buttonOverrideIndex === -1
+      ) {
+        buttonOverrideIndex = ruleIndex;
       }
       ruleIndex += 1;
     });
@@ -314,7 +336,8 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightPrimarySolidCount).toBe(1);
     expect(darkPrimarySolidCount).toBe(1);
     expect(baseLinkIndex).toBeGreaterThanOrEqual(0);
-    expect(tabsLinkIndex).toBeGreaterThan(baseLinkIndex);
+    expect(controlsBtnIndex).toBeGreaterThan(baseLinkIndex);
+    expect(buttonOverrideIndex).toBeGreaterThan(controlsBtnIndex);
   });
 
   test('leading underscore strictly separates zero-output partials from CSS-emitting sheets', () => {
@@ -684,24 +707,7 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     });
 
     // Whitelisted component modules
-    for (const activeClass of [
-      '.columns',
-      '.column',
-      '.navbar',
-      '.hero',
-      '.tabs',
-      '.pagination',
-      '.media',
-      '.level',
-      '.loader',
-      '.box',
-      '.button',
-      '.tag',
-      '.title',
-      '.subtitle',
-      '.icon',
-      '.image',
-    ]) {
+    for (const activeClass of ['.button', '.tag', '.title', '.subtitle', '.icon', '.image']) {
       expect(bulmaLayeredClasses.has(activeClass), `expected ${activeClass} in @layer bulma`).toBe(
         true
       );
@@ -762,11 +768,11 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     const cases = [
       {
         file: 'app/components/dashboard/composer/MarkdownComposer.vue',
-        selectorMatch: '.markdown-composer__tabs.tabs ul',
+        selectorMatch: '.markdown-composer__tabs ul',
       },
       {
         file: 'app/components/dashboard/DashboardPagination.vue',
-        selectorMatch: '.pagination-list',
+        selectorMatch: '.dashboard-pagination__list',
       },
       {
         file: 'app/pages/dashboard/package.vue',
@@ -941,5 +947,260 @@ describe('Control Layer primitives and Bulma form/notice/delete/card retirement 
 
     const unexpected = retiredRootSelectors.filter((sel) => emittedArms.has(sel));
     expect(unexpected).toEqual([]);
+  });
+});
+
+describe('layout and single-file Bulma relics retirement (#200)', () => {
+  test('compiled global CSS emits zero rules for retired Bulma layout and single-file component modules', async () => {
+    const root = await getProcessedMainRoot();
+
+    const retiredRootSelectors = [
+      '.columns',
+      '.column',
+      '.navbar',
+      '.navbar-brand',
+      '.navbar-menu',
+      '.navbar-item',
+      '.hero',
+      '.hero-body',
+      '.tabs',
+      '.tabs a',
+      '.menu',
+      '.menu-list',
+      '.pagination',
+      '.pagination-previous',
+      '.pagination-next',
+      '.pagination-link',
+      '.pagination-ellipsis',
+      '.pagination-list',
+      '.media',
+      '.media-left',
+      '.media-content',
+      '.level',
+      '.level-item',
+      '.loader',
+      '.box',
+    ];
+
+    const emittedRootArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedRootArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = retiredRootSelectors.filter((sel) => emittedRootArms.has(sel));
+    expect(unexpected).toEqual([]);
+  });
+
+  test('bulma-overrides.scss emits zero rules for retired hero, navbar, box, and tabs modules', () => {
+    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    for (const retired of ['.hero', '.hero-body', '.navbar', '.navbar .title', '.box', '.tabs a']) {
+      expect(
+        emittedArms.has(retired),
+        `${retired} should be removed from bulma-overrides.scss`
+      ).toBe(false);
+    }
+  });
+
+  test('_detail-sidebar-columns.scss drives CSS Grid collapse and narrow stacking via .detail-columns without Bulma .columns', () => {
+    const css = compileScssSnippet(`
+      @use '~/assets/scss/detail-sidebar-columns' as *;
+      @include detail-sidebar-columns('.detail-scroll');
+      @include detail-sidebar-stacking('.detail-scroll');
+    `);
+    const root = postcss.parse(css);
+    const selectors = collectSelectors(root);
+
+    expect(selectors.some((selector) => selector.includes('.detail-columns'))).toBe(true);
+    expect(selectors.some((selector) => selector.includes('.detail-columns--sidebar-hidden'))).toBe(
+      true
+    );
+    expect(selectors.filter((selector) => /\.columns\b/.test(selector))).toEqual([]);
+
+    let hasExpandedTrack = false;
+    let hasCollapsedTrack = false;
+    let hasNarrowBlock = false;
+    root.walkRules((rule) => {
+      rule.walkDecls((decl) => {
+        if (decl.prop === '--detail-columns' && decl.value === 'minmax(0, 72%) minmax(0, 28%)') {
+          hasExpandedTrack = true;
+        }
+        if (decl.prop === '--detail-columns' && decl.value === 'minmax(0, 100%) minmax(0, 0%)') {
+          hasCollapsedTrack = true;
+        }
+        if (
+          rule.selector.includes('.detail-columns') &&
+          decl.prop === 'display' &&
+          decl.value === 'block'
+        ) {
+          hasNarrowBlock = true;
+        }
+      });
+    });
+
+    expect(hasExpandedTrack).toBe(true);
+    expect(hasCollapsedTrack).toBe(true);
+    expect(hasNarrowBlock).toBe(true);
+  });
+
+  test('all five Detail Overlays compile .detail-columns styles without Bulma .columns or --bulma-column-gap', () => {
+    const detailOverlays = [
+      'components/dashboard/detail/DiscussionDetail.vue',
+      'components/dashboard/detail/IssueDetail.vue',
+      'components/dashboard/detail/PRDetail.vue',
+      'components/dashboard/detail/ReleaseDetail.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+    ];
+
+    for (const component of detailOverlays) {
+      const root = compileSfcStyles(component);
+      const selectors = collectSelectors(root);
+
+      expect(
+        selectors.some((selector) => selector.includes('.detail-columns')),
+        `${component} should emit .detail-columns rules`
+      ).toBe(true);
+      expect(
+        selectors.filter((selector) => /\.columns\b/.test(selector)),
+        `${component} must not emit Bulma .columns rules`
+      ).toEqual([]);
+      expect(findUngatedHoverSelectors(root), `${component} hover gating`).toEqual([]);
+
+      const columnGapProps: string[] = [];
+      root.walkDecls((decl) => {
+        if (decl.value.includes('--bulma-column-gap')) {
+          columnGapProps.push(`${decl.prop}: ${decl.value}`);
+        }
+      });
+      expect(columnGapProps, `${component} must not reference --bulma-column-gap`).toEqual([]);
+    }
+  });
+
+  test('migrated layout and single-file relic components compile cleanly with ADR 0049 hover gating', () => {
+    const components = [
+      'components/layouts/Navbar.vue',
+      'layouts/dashboard.vue',
+      'components/dashboard/DashboardLayout.vue',
+      'components/dashboard/composer/MarkdownComposer.vue',
+      'components/dashboard/DashboardPagination.vue',
+      'components/dashboard/DashboardLoadingList.vue',
+      'components/dashboard/widgets/TabStats.vue',
+      'components/auth/AuthenticatedLandingCard.vue',
+      'components/dashboard/detail/DetailOverlayHost.vue',
+      'components/dashboard/overlay/DashboardOverlayFrame.vue',
+    ];
+
+    for (const component of components) {
+      const root = compileSfcStyles(component);
+      expect(findUngatedHoverSelectors(root), `${component} hover gating`).toEqual([]);
+    }
+  });
+});
+
+function collectBulmaCustomPropertyUsages(root: Root, options?: { skipBulmaLayer?: boolean }) {
+  const hits: string[] = [];
+  root.walkDecls((decl) => {
+    if (options?.skipBulmaLayer && enclosingLayerNames(decl)[0] === 'bulma') {
+      return;
+    }
+    if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
+      const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
+      hits.push(`${selector} { ${decl.prop}: ${decl.value} }`);
+    }
+  });
+  return hits;
+}
+
+describe('Foundation Layer custom property migration and bridge removal (#199)', () => {
+  test('compiled main.scss emits zero --bulma-* declarations or references outside @layer bulma', async () => {
+    const root = await getProcessedMainRoot();
+    expect(collectBulmaCustomPropertyUsages(root, { skipBulmaLayer: true })).toEqual([]);
+  });
+
+  test('compiled application stylesheets emit zero --bulma-* declarations or references', () => {
+    const sharedSheets = [
+      'assets/scss/tokens.scss',
+      'assets/scss/reset.scss',
+      'assets/scss/scrollbars.scss',
+      'assets/scss/base.scss',
+      'assets/scss/controls.scss',
+      'assets/scss/bulma-overrides.scss',
+      'assets/scss/dashboard-list-card.scss',
+      'assets/scss/modal-shell.scss',
+      'assets/scss/detail-metadata-editor.scss',
+      'components/dashboard/notification-card.scss',
+      'components/dashboard/detail/people-picker-modal.scss',
+    ];
+
+    for (const sheet of sharedSheets) {
+      const root = postcss.parse(compileScssAtPath(sheet));
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sheet} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+    }
+
+    const cardRoot = postcss.parse(compileScssFile('dashboard-list-card.scss'));
+    const cardDecls = collectTopLevelDecls(cardRoot, '.dashboard-list-card');
+    expect(cardDecls.get('box-shadow')).toBe('var(--gitpulse-shadow-card)');
+    expect(cardDecls.get('color')).toBe('var(--gitpulse-text)');
+  });
+
+  test('compiled migrated SFC stylesheets emit zero --bulma-* references and use Foundation Layer tokens', () => {
+    const migratedSfcs = [
+      'components/dashboard/activity-bar/ActivityBar.vue',
+      'components/dashboard/tab-sidebar/TabSidebar.vue',
+      'components/dashboard/widgets/QuickFilters.vue',
+      'components/dashboard/widgets/TabStats.vue',
+      'components/dashboard/NotificationTodoSwipeRow.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+      'components/dashboard/timeline/TimelineUnavailableEvent.vue',
+      'components/dashboard/DashboardPagination.vue',
+      'components/dashboard/DashboardMenu.vue',
+      'components/dashboard/TokenizedQuery.vue',
+      'components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue',
+      'components/dashboard/tabs-settings/TabsSettingsPage.vue',
+    ];
+
+    for (const sfc of migratedSfcs) {
+      const root = compileSfcStyles(sfc);
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sfc} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+    }
+
+    const quickFiltersRoot = compileSfcStyles('components/dashboard/widgets/QuickFilters.vue');
+    expect(
+      collectTopLevelDecls(
+        quickFiltersRoot,
+        '.quick-filters__item.is-active .quick-filters__checkbox'
+      ).get('background-color')
+    ).toBe('var(--gitpulse-primary-solid)');
+
+    const swipeRowRoot = compileSfcStyles('components/dashboard/NotificationTodoSwipeRow.vue');
+    expect(
+      collectTopLevelDecls(swipeRowRoot, '.notification-swipe-row__card-backing').get(
+        'border-radius'
+      )
+    ).toBe('var(--gitpulse-radius-xl)');
+
+    const unavailableRoot = compileSfcStyles(
+      'components/dashboard/timeline/TimelineUnavailableEvent.vue'
+    );
+    expect(collectTopLevelDecls(unavailableRoot, '.timeline-unavailable__label').get('color')).toBe(
+      'var(--gitpulse-text-muted)'
+    );
+    expect(collectTopLevelDecls(unavailableRoot, '.timeline-unavailable__icon').get('color')).toBe(
+      'var(--gitpulse-text-subtle)'
+    );
   });
 });

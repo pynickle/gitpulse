@@ -186,7 +186,7 @@ const updatedAtLabel = computed(() =>
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   letter-spacing: -0.01em;
 }
 
@@ -215,7 +215,7 @@ const updatedAtLabel = computed(() =>
 
 .info-item__value {
   font-size: 12px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -256,7 +256,7 @@ const updatedAtLabel = computed(() =>
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 

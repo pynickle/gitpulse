@@ -356,7 +356,7 @@ const toggleSection = (section: string) => {
   .pr-review-submit-bar__collapse-button:hover,
   .pr-review-submit-bar__delete-button:hover {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -448,7 +448,7 @@ const toggleSection = (section: string) => {
 
 @include hover-only {
   .pr-review-submit-bar__section-header:hover {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -469,7 +469,7 @@ const toggleSection = (section: string) => {
   min-height: 2.15rem;
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -561,7 +561,7 @@ const toggleSection = (section: string) => {
 }
 
 .pr-review-submit-bar__draft-body {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.78rem;
 }
 

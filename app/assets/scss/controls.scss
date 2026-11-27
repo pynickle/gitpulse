@@ -662,7 +662,7 @@
 
 .gp-tag--link {
   border-color: color-mix(in srgb, var(--gitpulse-link) 24%, transparent);
-  background-color: color-mix(in srgb, var(--gitpulse-link) 10%, transparent);
+  background-color: var(--gitpulse-link-soft);
   color: var(--gitpulse-link);
 }
 

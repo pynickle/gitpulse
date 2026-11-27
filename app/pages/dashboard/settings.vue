@@ -994,7 +994,7 @@ onMounted(() => {
 
 .settings__title {
   margin: 0 0 0.15rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -1030,7 +1030,7 @@ onMounted(() => {
 
 .settings__section-title {
   margin: 0 0 0.6rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -1079,7 +1079,7 @@ onMounted(() => {
 .settings__label {
   display: block;
   margin-bottom: 0.3rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 650;
 }
@@ -1099,7 +1099,7 @@ onMounted(() => {
   border: 1px solid var(--gitpulse-input-border);
   border-radius: 6px;
   background: var(--gitpulse-surface-muted);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 500;
   cursor: text;
@@ -1119,7 +1119,7 @@ onMounted(() => {
   border: 1px solid var(--gitpulse-accent);
   border-radius: 6px;
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 500;
   outline: none;
@@ -1223,7 +1223,7 @@ onMounted(() => {
 }
 
 .settings__option-label {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.85rem;
   font-weight: 650;
   line-height: 1.2;
@@ -1400,7 +1400,7 @@ onMounted(() => {
 
   .settings__list-title {
     margin: 0;
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.03em;

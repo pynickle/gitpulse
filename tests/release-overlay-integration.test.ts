@@ -764,7 +764,7 @@ test('list page, filter, scroll and expanded sheet survive detail browsing, then
   await showList();
   requests[1]!.resolve(releasePage([listRelease(1)], 1, true));
   await settle();
-  await click('.pagination-next');
+  await click('.dashboard-pagination__next');
   expect(requests[2]!.url).toBe('/api/releases/octo/widgets?page=2');
   requests[2]!.resolve(releasePage([listRelease(2, { draft: true })], 2, true));
   await settle();
@@ -927,11 +927,11 @@ test('an empty filtered page keeps pagination usable and selecting the Entry Rel
     'releasesPage.emptyFiltered'
   );
   expect(dom.document.querySelector('.release-drawer-list__entry')).toBeNull();
-  await click('.pagination-next');
+  await click('.dashboard-pagination__next');
   requests[2]!.resolve(releasePage([listRelease(2, { draft: true })], 2));
   await settle();
   expect(rows()).toHaveLength(1);
-  await click('.pagination-previous');
+  await click('.dashboard-pagination__prev');
   requests[3]!.resolve(releasePage([listRelease(1)], 1, true));
   await settle();
   await click('[data-filter="all"]');

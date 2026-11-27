@@ -25,12 +25,12 @@ const skeletonCardCount = 20;
         "
       >
         <div class="dashboard-list-card__body p-3" :class="{ 'pl-4': currentTab === 'repos' }">
-          <div class="media mb-2">
-            <div v-if="currentTab !== 'repos'" class="media-left ml-2 mt-2">
+          <div class="dashboard-loading-card__media mb-2">
+            <div v-if="currentTab !== 'repos'" class="dashboard-loading-card__media-left ml-2 mt-2">
               <span class="dashboard-loading-card__icon" />
             </div>
 
-            <div class="media-content">
+            <div class="dashboard-loading-card__media-content">
               <div class="is-flex is-justify-content-space-between is-align-items-center">
                 <span class="dashboard-loading-card__line dashboard-loading-card__line--title" />
                 <span class="dashboard-loading-card__pill" />
@@ -76,6 +76,21 @@ const skeletonCardCount = 20;
   background:
     radial-gradient(circle at top left, var(--gitpulse-info-soft), transparent 36%),
     linear-gradient(135deg, var(--gitpulse-surface), var(--gitpulse-surface-muted));
+}
+
+.dashboard-loading-card__media {
+  display: flex;
+  align-items: flex-start;
+}
+
+.dashboard-loading-card__media-left {
+  flex: 0 0 auto;
+  margin-inline-end: 1rem;
+}
+
+.dashboard-loading-card__media-content {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .dashboard-loading-card__icon,
