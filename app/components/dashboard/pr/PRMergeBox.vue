@@ -1891,7 +1891,7 @@ watch(
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+  color: var(--gitpulse-text-strong);
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
@@ -1976,7 +1976,7 @@ watch(
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 
   .merge-box__panel--merged & {
     color: var(--gitpulse-purple);
@@ -1998,7 +1998,7 @@ watch(
   align-items: center;
   gap: 5px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   text-decoration: none;
   transition: color 0.2s ease;
 
@@ -2088,7 +2088,7 @@ watch(
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }
@@ -2263,7 +2263,7 @@ watch(
   font-size: 13px;
   font-weight: 600;
   line-height: 1.4;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .merge-box__row-detail {
@@ -2387,7 +2387,7 @@ watch(
   /* Secondary inline remediation style used by Branch Update on its owning row. */
   &--secondary {
     height: 28px;
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+    color: var(--gitpulse-text-strong);
     background: var(--gitpulse-surface);
     border-color: var(--gitpulse-border);
 
@@ -2495,7 +2495,7 @@ watch(
 
     @include hover-only {
       &:hover:not(:disabled) {
-        color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+        color: var(--gitpulse-text-strong);
         background: var(--gitpulse-surface-hover);
         border-color: var(--gitpulse-border-strong);
       }
@@ -2525,7 +2525,7 @@ watch(
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
     }
   }
@@ -2563,7 +2563,7 @@ watch(
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   background: transparent;
   border: 0;
   border-radius: 6px;
@@ -2620,7 +2620,7 @@ watch(
   padding: 7px 10px;
   font-size: 12px;
   font-family: inherit;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   background: var(--gitpulse-input-bg);
   border: 1px solid var(--gitpulse-input-border);
   border-radius: 8px;
@@ -2671,7 +2671,7 @@ watch(
   border-radius: 8px;
   font-size: 12px;
   line-height: 1.35;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .merge-box__stack-layer-title {

@@ -309,7 +309,7 @@ const pageItems = computed(() => {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   padding: 0.25rem 0.5rem;
   min-width: 1.5rem;
   min-height: 1.5rem;
@@ -326,13 +326,13 @@ const pageItems = computed(() => {
   @include hover-only {
     &:hover:not([disabled]) {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible:not([disabled]) {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -452,7 +452,7 @@ html.dark .dashboard-pagination__link.is-current:focus-visible {
   border: none;
   border-radius: var(--gitpulse-radius-md);
   background: transparent;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -461,7 +461,7 @@ html.dark .dashboard-pagination__link.is-current:focus-visible {
   @include hover-only {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -521,7 +521,7 @@ html.dark .dashboard-pagination__link.is-current:focus-visible {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font: inherit;
   font-weight: 600;
   text-align: right;

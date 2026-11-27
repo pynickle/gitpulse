@@ -176,11 +176,13 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightRoot.get('--gitpulse-topbar-height')).toBe('3.25rem');
     expect(lightRoot.get('--gitpulse-primary-solid')).toBe('#4f46e5');
     expect(lightRoot.get('--gitpulse-primary-solid-hover')).toBe('#4338ca');
+    expect(lightRoot.get('--gitpulse-link-soft')).toBe('rgba(79, 70, 229, 0.08)');
     expect(lightRoot.get('--gitpulse-app-font-family')).toContain('HarmonyOS Sans');
     expect(lightRoot.get('--gitpulse-code-font-family')).toContain('Maple Mono');
 
     expect(darkRoot.get('color-scheme')).toBe('dark');
     expect(darkRoot.get('--gitpulse-primary-solid')).toBe('#5048e5');
+    expect(darkRoot.get('--gitpulse-link-soft')).toBe('rgba(165, 180, 252, 0.14)');
     expect(darkRoot.get('--gitpulse-scrollbar-thumb')).toBe('#4b5563');
 
     const bulmaProps: string[] = [];
@@ -245,21 +247,36 @@ describe('global SCSS architecture (#196)', () => {
     expect(findUngatedHoverSelectors(root)).toEqual([]);
   });
 
-  test('bulma-overrides.scss emits the temporary Bulma token bridge and component overrides', () => {
+  test('bulma-overrides.scss emits component overrides using Foundation Layer tokens without a Bulma token bridge', () => {
     const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
     const lightRoot = collectTopLevelDecls(root, ':root');
     const darkRoot = collectTopLevelDecls(root, 'html.dark');
 
-    expect(lightRoot.get('--bulma-scheme-main')).toBe('var(--gitpulse-surface)');
-    expect(lightRoot.get('--bulma-primary')).toBe('var(--gitpulse-accent)');
-    expect(darkRoot.get('--bulma-primary-l')).toBe('72%');
-    expect(darkRoot.get('--bulma-scheme-main-ter')).toBe('var(--gitpulse-surface-raised)');
+    expect(lightRoot.size).toBe(0);
+    expect(darkRoot.size).toBe(0);
+
+    const bulmaTokens: string[] = [];
+    root.walkDecls((decl) => {
+      if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
+        bulmaTokens.push(`${decl.prop}: ${decl.value}`);
+      }
+    });
+    expect(bulmaTokens).toEqual([]);
 
     expect(collectTopLevelDecls(root, '.card').get('background-color')).toBe(
       'var(--gitpulse-surface)'
     );
+    expect(collectTopLevelDecls(root, '.button').get('background-color')).toBe(
+      'var(--gitpulse-surface)'
+    );
+    expect(collectTopLevelDecls(root, '.button.is-ghost').get('background-color')).toBe(
+      'transparent'
+    );
     expect(collectTopLevelDecls(root, '.button.is-primary').get('background-color')).toBe(
       'var(--gitpulse-primary-solid)'
+    );
+    expect(collectTopLevelDecls(root, '.tag.is-link.is-light').get('background-color')).toBe(
+      'var(--gitpulse-link-soft)'
     );
     expect(collectTopLevelDecls(root, '.tag.is-activity').get('font-weight')).toBe('bold');
     expect(collectTopLevelDecls(root, '.has-text-primary').get('color')).toBe(
@@ -986,5 +1003,104 @@ describe('layout and single-file Bulma relics retirement (#200)', () => {
       const root = compileSfcStyles(component);
       expect(findUngatedHoverSelectors(root), `${component} hover gating`).toEqual([]);
     }
+  });
+});
+
+function collectBulmaCustomPropertyUsages(root: Root, options?: { skipBulmaLayer?: boolean }) {
+  const hits: string[] = [];
+  root.walkDecls((decl) => {
+    if (options?.skipBulmaLayer && enclosingLayerNames(decl)[0] === 'bulma') {
+      return;
+    }
+    if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
+      const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
+      hits.push(`${selector} { ${decl.prop}: ${decl.value} }`);
+    }
+  });
+  return hits;
+}
+
+describe('Foundation Layer custom property migration and bridge removal (#199)', () => {
+  test('compiled main.scss emits zero --bulma-* declarations or references outside @layer bulma', async () => {
+    const root = await getProcessedMainRoot();
+    expect(collectBulmaCustomPropertyUsages(root, { skipBulmaLayer: true })).toEqual([]);
+  });
+
+  test('compiled application stylesheets emit zero --bulma-* declarations or references', () => {
+    const sharedSheets = [
+      'assets/scss/tokens.scss',
+      'assets/scss/reset.scss',
+      'assets/scss/scrollbars.scss',
+      'assets/scss/base.scss',
+      'assets/scss/bulma-overrides.scss',
+      'assets/scss/dashboard-list-card.scss',
+      'assets/scss/modal-shell.scss',
+      'assets/scss/detail-metadata-editor.scss',
+      'components/dashboard/notification-card.scss',
+      'components/dashboard/detail/people-picker-modal.scss',
+    ];
+
+    for (const sheet of sharedSheets) {
+      const root = postcss.parse(compileScssAtPath(sheet));
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sheet} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+    }
+
+    const cardRoot = postcss.parse(compileScssFile('dashboard-list-card.scss'));
+    const cardDecls = collectTopLevelDecls(cardRoot, '.card');
+    expect(cardDecls.get('box-shadow')).toBe('var(--gitpulse-shadow-card)');
+    expect(cardDecls.get('color')).toBe('var(--gitpulse-text)');
+  });
+
+  test('compiled migrated SFC stylesheets emit zero --bulma-* references and use Foundation Layer tokens', () => {
+    const migratedSfcs = [
+      'components/dashboard/activity-bar/ActivityBar.vue',
+      'components/dashboard/tab-sidebar/TabSidebar.vue',
+      'components/dashboard/widgets/QuickFilters.vue',
+      'components/dashboard/widgets/TabStats.vue',
+      'components/dashboard/NotificationTodoSwipeRow.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+      'components/dashboard/timeline/TimelineUnavailableEvent.vue',
+      'components/dashboard/DashboardPagination.vue',
+      'components/dashboard/DashboardMenu.vue',
+      'components/dashboard/TokenizedQuery.vue',
+      'components/dashboard/release-timeline/ReleaseTimelineFilterPanel.vue',
+      'components/dashboard/tabs-settings/TabsSettingsPage.vue',
+    ];
+
+    for (const sfc of migratedSfcs) {
+      const root = compileSfcStyles(sfc);
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sfc} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+    }
+
+    const quickFiltersRoot = compileSfcStyles('components/dashboard/widgets/QuickFilters.vue');
+    expect(
+      collectTopLevelDecls(
+        quickFiltersRoot,
+        '.quick-filters__item.is-active .quick-filters__checkbox'
+      ).get('background-color')
+    ).toBe('var(--gitpulse-primary-solid)');
+
+    const swipeRowRoot = compileSfcStyles('components/dashboard/NotificationTodoSwipeRow.vue');
+    expect(
+      collectTopLevelDecls(swipeRowRoot, '.notification-swipe-row__card-backing').get(
+        'border-radius'
+      )
+    ).toBe('var(--gitpulse-radius-xl)');
+
+    const unavailableRoot = compileSfcStyles(
+      'components/dashboard/timeline/TimelineUnavailableEvent.vue'
+    );
+    expect(collectTopLevelDecls(unavailableRoot, '.timeline-unavailable__label').get('color')).toBe(
+      'var(--gitpulse-text-muted)'
+    );
+    expect(collectTopLevelDecls(unavailableRoot, '.timeline-unavailable__icon').get('color')).toBe(
+      'var(--gitpulse-text-subtle)'
+    );
   });
 });

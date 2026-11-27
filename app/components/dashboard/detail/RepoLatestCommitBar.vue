@@ -195,7 +195,7 @@ const relativeTime = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;

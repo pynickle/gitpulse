@@ -322,7 +322,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 .font-modal-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -382,7 +382,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   height: 32px;
   padding: 0 32px 0 32px;
   font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
@@ -496,7 +496,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   flex: 1;
   font-size: 13px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -521,7 +521,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   cursor: pointer;
   transition: all 0.12s ease;
 
@@ -610,7 +610,7 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
     }

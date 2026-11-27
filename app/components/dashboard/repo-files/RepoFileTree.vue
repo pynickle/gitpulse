@@ -110,7 +110,7 @@ const navigateToItem = async (item: RepoContentItem) => {
   align-items: center;
   gap: 8px;
   margin-bottom: 1rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
 }
 
@@ -150,7 +150,7 @@ const navigateToItem = async (item: RepoContentItem) => {
   border: 0;
   border-bottom: 1px solid var(--gitpulse-border);
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   text-align: left;
   cursor: pointer;

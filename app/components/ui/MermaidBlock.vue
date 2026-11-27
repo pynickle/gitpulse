@@ -179,7 +179,7 @@ watch(
   gap: 0.25rem;
   border-color: var(--gitpulse-border);
   background-color: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.75rem;
   line-height: 1;
   box-shadow: var(--gitpulse-shadow-card);

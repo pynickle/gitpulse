@@ -194,7 +194,7 @@ const diffLines = computed(() => {
   min-width: 0;
   padding: 0.18rem 0.65rem 0.18rem 0;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;

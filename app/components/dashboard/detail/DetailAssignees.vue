@@ -521,7 +521,7 @@ onUnmounted(() => {
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   letter-spacing: 0;
 }
 
@@ -538,7 +538,7 @@ onUnmounted(() => {
 .sidebar-card__error {
   margin: 8px 0 0;
   font-size: 11px;
-  color: var(--bulma-danger, #cc0f35);
+  color: var(--gitpulse-danger);
 }
 
 .sidebar-badge {
@@ -571,7 +571,7 @@ onUnmounted(() => {
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
     }
@@ -621,7 +621,7 @@ onUnmounted(() => {
   flex: 1;
   font-size: 12px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -644,7 +644,7 @@ onUnmounted(() => {
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       opacity: 1;
     }
@@ -696,7 +696,7 @@ onUnmounted(() => {
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }

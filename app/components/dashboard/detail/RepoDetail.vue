@@ -1224,7 +1224,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     &:hover:not(:disabled):not(&--active) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -1287,7 +1287,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   @include hover-only {
     &:hover:not(&--active) {
       background: var(--gitpulse-surface-active);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -1389,7 +1389,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .repo-detail-forked-from__link {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--gitpulse-text-strong, var(--bulma-text-strong));
+  color: var(--gitpulse-text-strong);
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -1415,7 +1415,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .repo-detail-description__body {
   margin-bottom: 0;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -1647,7 +1647,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .repo-about__item-value {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-about__item-value--link {
@@ -1670,7 +1670,7 @@ html.dark .repo-detail-section__chrome {
   align-items: center;
   gap: 8px;
   margin-bottom: 1rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
 }
 
@@ -1732,7 +1732,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-card__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   font-weight: 600;
 }
@@ -1781,7 +1781,7 @@ html.dark .repo-detail-section__chrome {
 
 .info-stat__value {
   margin-bottom: 0.25rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.35rem;
   font-weight: 800;
 }
@@ -1862,7 +1862,7 @@ html.dark .repo-detail-section__chrome {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;

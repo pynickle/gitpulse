@@ -300,11 +300,11 @@ const statusPrefixFor = (kind: CheckOutcomeGroup, check: CheckListItem): string 
   min-width: 0;
   overflow-wrap: anywhere;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+  color: var(--gitpulse-text-strong);
 }
 
 .check-list__name--link {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+  color: var(--gitpulse-text-strong);
   text-decoration: none;
   transition: color 0.15s ease;
 

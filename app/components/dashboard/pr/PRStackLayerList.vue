@@ -296,7 +296,7 @@ const behindLabelFor = (count: number) =>
   font-size: 0.84rem;
   font-weight: 600;
   line-height: 1.35;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+  color: var(--gitpulse-text-strong);
   overflow-wrap: anywhere;
 }
 

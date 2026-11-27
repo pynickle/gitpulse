@@ -381,7 +381,7 @@ watch(
   padding: 0 10px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-input-border);
   border-radius: var(--gitpulse-radius-md);
@@ -505,7 +505,7 @@ watch(
 .filter-dropdown-option-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

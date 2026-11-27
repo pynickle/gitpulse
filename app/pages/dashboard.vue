@@ -1709,7 +1709,7 @@ watch(
 .dashboard-tab-title {
   margin-bottom: 0;
   font-weight: 700;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   letter-spacing: -0.01em;
   flex-shrink: 0;
 }

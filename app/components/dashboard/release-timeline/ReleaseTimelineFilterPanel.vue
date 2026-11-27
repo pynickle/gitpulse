@@ -238,7 +238,7 @@ const clearAll = () => {
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
 }
 
 .release-timeline-filter-panel__close {
@@ -320,7 +320,7 @@ const clearAll = () => {
 
 @include hover-only {
   .release-timeline-filter-panel__toggle-row:hover {
-    background: var(--bulma-background-hover);
+    background: var(--gitpulse-surface-hover);
   }
 }
 
