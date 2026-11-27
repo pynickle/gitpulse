@@ -99,7 +99,6 @@ const navigateToItem = async (item: RepoContentItem) => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .repo-file-tree {
@@ -173,7 +172,7 @@ const navigateToItem = async (item: RepoContentItem) => {
 }
 
 .repo-file-tree__item-icon--dir {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .repo-file-tree__item-icon--file {

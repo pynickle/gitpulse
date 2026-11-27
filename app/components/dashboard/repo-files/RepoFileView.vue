@@ -1211,7 +1211,6 @@ onActivated(() => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .repo-file-view {
@@ -1667,7 +1666,7 @@ onActivated(() => {
 }
 
 .repo-file-view__file-icon--dir {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .repo-file-view__file-icon--file {

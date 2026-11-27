@@ -489,7 +489,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/reviewer-modal';
 @use '~/assets/scss/pointer' as *;
 
@@ -517,7 +516,7 @@ onUnmounted(() => {
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {

@@ -1101,7 +1101,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
@@ -1730,7 +1729,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {

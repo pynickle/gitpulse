@@ -171,8 +171,6 @@ const handlePatSubmit = async () => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/variables' as *;
-
 .auth-gateway {
   height: 100%;
 }
@@ -182,7 +180,7 @@ const handlePatSubmit = async () => {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .auth-gateway__divider {

@@ -1,4 +1,4 @@
-@use './pointer' as *;
+@use '~/assets/scss/pointer' as *;
 
 // Profile-style escape hatch: quiet footer link, not another full-width button.
 @mixin sidebar-github-link {

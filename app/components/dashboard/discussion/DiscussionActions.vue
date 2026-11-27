@@ -148,7 +148,6 @@ const updatedAtLabel = computed(() =>
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
 
@@ -181,7 +180,7 @@ const updatedAtLabel = computed(() =>
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {

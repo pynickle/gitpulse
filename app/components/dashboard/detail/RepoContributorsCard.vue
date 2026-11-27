@@ -128,7 +128,6 @@ watch(
 <style scoped lang="scss">
 // Child component: must own full sidebar-card chrome. RepoDetail's scoped
 // .sidebar-card rules do not apply across component boundaries.
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
@@ -155,7 +154,7 @@ watch(
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {

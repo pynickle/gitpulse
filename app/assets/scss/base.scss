@@ -1,0 +1,141 @@
+@use '~/assets/scss/pointer' as *;
+
+body {
+  font-family: var(--gitpulse-app-font-family);
+  background-color: var(--gitpulse-page-bg);
+  color: var(--bulma-text, var(--gitpulse-text));
+}
+
+code,
+pre,
+kbd,
+samp,
+.markdown-body code,
+.markdown-body pre,
+.shiki {
+  font-family: var(--gitpulse-code-font-family);
+}
+
+// ── Pointer contract (ADR 0049) ──
+// A touch tap paints neither the platform's own highlight nor a background the
+// app authored for a pointer, and no surface may keep a tint after the finger
+// lifts. The base rules below are the ones that must hold for the whole document;
+// every other stylesheet expresses the same rule through `_pointer.scss`.
+
+// Declared on the universal selector rather than inherited from `html`: the
+// property's inheritance is not dependable in older WebViews, and no surface in
+// this app wants the platform highlight back.
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+// The document, not a surface: a control that restored double-tap zoom would make
+// every tap wait for the second one. Pinching still zooms.
+html {
+  touch-action: manipulation;
+}
+
+// Chrome refuses the platform's long-press selection and callout. Prose keeps
+// both — a reader who cannot select a paragraph cannot copy it.
+#{$unselectable-chrome} {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.dashboard-shell {
+  background: var(--gitpulse-page-bg);
+  color: var(--bulma-text, var(--gitpulse-text));
+}
+
+a {
+  color: var(--bulma-link, var(--gitpulse-link));
+}
+
+@include hover-only {
+  a:hover {
+    color: var(--gitpulse-accent-hover);
+  }
+}
+
+a:focus-visible {
+  color: var(--gitpulse-accent-hover);
+}
+
+hr {
+  background-color: var(--gitpulse-border);
+}
+
+.gitpulse-floating-fab {
+  appearance: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--gitpulse-border-strong);
+  border-radius: 50%;
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-text-strong);
+  box-shadow: var(--gitpulse-shadow-raised);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+@include hover-only {
+  .gitpulse-floating-fab:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
+    color: var(--gitpulse-accent);
+  }
+}
+
+.gitpulse-floating-fab:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--gitpulse-accent) 42%, var(--gitpulse-border));
+  color: var(--gitpulse-accent);
+  outline: 2px solid color-mix(in srgb, var(--gitpulse-accent) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.gitpulse-floating-fab:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gitpulse-floating-fab {
+    transition: none;
+  }
+}
+
+.markdown-body {
+  background-color: transparent;
+  color: var(--fgColor-default, var(--bulma-text, var(--gitpulse-text)));
+}
+
+::selection {
+  background: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-text-strong);
+}
+
+// Global spin animation
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-animation {
+  animation: spin 1s linear infinite;
+}

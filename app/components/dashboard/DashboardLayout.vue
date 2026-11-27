@@ -134,7 +134,6 @@ const handleReset = () => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 // Layout variables defining the 4-column structure

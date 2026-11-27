@@ -1,0 +1,147 @@
+:root {
+  color-scheme: light;
+  /* Visible app-shell height. A client plugin may replace this with visualViewport pixels. */
+  --gitpulse-frame-height: 100vh;
+  /* One top-bar height for every surface: the layout navbar and the dashboard
+     overlay header must agree, or the two shells disagree by a few pixels. */
+  --gitpulse-topbar-height: 3.25rem;
+
+  /* ── Border radius scale ── */
+  --gitpulse-radius-sm: 4px;
+  --gitpulse-radius-md: 6px;
+  --gitpulse-radius-lg: 8px;
+  --gitpulse-radius-xl: 12px;
+
+  /* ── Scrollbar scale ── */
+  /* The track reserves the pointer area; the thumb is the visible capsule inside it. */
+  --gitpulse-scrollbar-track-size: 10px;
+  --gitpulse-scrollbar-thumb-inset: 2px;
+  --gitpulse-scrollbar-thumb-radius: 999px;
+  /* Space between the scrolled content and the thumb capsule. A SimpleBar host
+     moves this right padding onto its scroll content, so the thumb never sits
+     on top of the text. */
+  --gitpulse-scrollbar-content-gap: calc(var(--gitpulse-scrollbar-track-size) + 0.5rem);
+
+  /* The semantic palette — the page canvas, the shell, surface, border, text, accent and the
+     status tones — is injected at startup from shared/data/theme-palette.json, the data the
+     Flutter client reads too. */
+  --gitpulse-overlay-bg: rgba(15, 23, 42, 0.68);
+  --gitpulse-accent-hover: #4338ca;
+  --gitpulse-primary-solid: #4f46e5;
+  --gitpulse-primary-solid-hover: #4338ca;
+  --gitpulse-link: #1f6feb;
+  --gitpulse-link-solid: #1f6feb;
+  --gitpulse-link-solid-hover: #1a5fd0;
+  --gitpulse-success-solid-hover: #16642d;
+  --gitpulse-success-soft: rgba(34, 197, 94, 0.12);
+  --gitpulse-danger-solid-hover: #ad1a24;
+  --gitpulse-warning: #bf8700;
+  --gitpulse-warning-solid: #bf8700;
+  --gitpulse-warning-solid-hover: #a77200;
+  --gitpulse-warning-soft: rgba(245, 158, 11, 0.14);
+  --gitpulse-info: #0969da;
+  --gitpulse-info-solid: #0969da;
+  --gitpulse-info-solid-hover: #0857b3;
+  --gitpulse-info-soft: rgba(9, 105, 218, 0.1);
+  /* Release asset glyphs: one hue per file family, so colour reinforces shape. */
+  --gitpulse-file-installer: #4f46e5;
+  --gitpulse-file-archive: #b45309;
+  --gitpulse-file-document: #1d4ed8;
+  --gitpulse-file-code: #15803d;
+  --gitpulse-file-media: #be185d;
+  --gitpulse-file-check: #0f766e;
+  --gitpulse-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --gitpulse-shadow-card-hover:
+    0 0.45rem 1rem -0.35rem rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(79, 70, 229, 0.2);
+  --gitpulse-shadow-raised: 0 18px 48px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(15, 23, 42, 0.06);
+  --gitpulse-input-bg: #ffffff;
+  --gitpulse-input-border: rgba(15, 23, 42, 0.16);
+  --gitpulse-scrollbar-thumb: #cbd5e1;
+  --gitpulse-markdown-bg: #ffffff;
+  --gitpulse-code-bg: #f6f8fa;
+  --gitpulse-focus-ring: #0969da;
+  --gitpulse-unread-bg: rgba(9, 105, 218, 0.08);
+  --gitpulse-skeleton-bg: #f1f5f9;
+  --gitpulse-skeleton-shimmer: linear-gradient(90deg, #f6f8fa, #eaeef2, #f6f8fa);
+  --gitpulse-grid-line: rgba(208, 215, 222, 0.35);
+  --gitpulse-diff-add-bg: #e6ffec;
+  --gitpulse-diff-delete-bg: #ffebe9;
+  --gitpulse-diff-hunk-bg: #ddf4ff;
+  --gitpulse-diff-empty-bg: #f6f8fa;
+  --gitpulse-draft-bg: rgba(79, 70, 229, 0.05);
+  --gitpulse-draft-border: rgba(79, 70, 229, 0.32);
+  --gitpulse-purple: #8250df;
+  --gitpulse-purple-soft: #f5f0ff;
+  /* Local and system faces. Bundled families are prepended by the font stack helpers. */
+  --gitpulse-app-font-fallback:
+    'Mona Sans VF', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --gitpulse-code-font-fallback:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --gitpulse-app-font-family: 'HarmonyOS Sans', var(--gitpulse-app-font-fallback);
+  --gitpulse-code-font-family: 'Maple Mono', 'Maple Mono NF CN', var(--gitpulse-code-font-fallback);
+}
+
+@supports (height: 100svh) {
+  :root {
+    --gitpulse-frame-height: 100svh;
+  }
+}
+
+html.dark {
+  color-scheme: dark;
+
+  /* ── Border radius scale (same as light) ── */
+  --gitpulse-radius-sm: 4px;
+  --gitpulse-radius-md: 6px;
+  --gitpulse-radius-lg: 8px;
+  --gitpulse-radius-xl: 12px;
+
+  /* The semantic palette comes from the startup injection (shared/data/theme-palette.json). */
+  --gitpulse-overlay-bg: rgba(5, 7, 12, 0.78);
+  --gitpulse-accent-hover: #c4b5fd;
+  --gitpulse-primary-solid: #5048e5;
+  --gitpulse-primary-solid-hover: #4338ca;
+  --gitpulse-link: #79c0ff;
+  --gitpulse-link-solid: #2563eb;
+  --gitpulse-link-solid-hover: #1d4ed8;
+  --gitpulse-success-solid-hover: #1f7a31;
+  --gitpulse-success-soft: rgba(126, 231, 135, 0.14);
+  --gitpulse-danger-solid-hover: #b62324;
+  --gitpulse-warning: #f2cc60;
+  --gitpulse-warning-solid: #9a6700;
+  --gitpulse-warning-solid-hover: #845900;
+  --gitpulse-warning-soft: rgba(242, 204, 96, 0.16);
+  --gitpulse-info: #79c0ff;
+  --gitpulse-info-solid: #0969da;
+  --gitpulse-info-solid-hover: #0857b3;
+  --gitpulse-info-soft: rgba(121, 192, 255, 0.14);
+  --gitpulse-file-installer: #a5b4fc;
+  --gitpulse-file-archive: #fbbf24;
+  --gitpulse-file-document: #93c5fd;
+  --gitpulse-file-code: #86efac;
+  --gitpulse-file-media: #f9a8d4;
+  --gitpulse-file-check: #5eead4;
+  --gitpulse-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.34);
+  --gitpulse-shadow-card-hover:
+    0 0.65rem 1.2rem -0.45rem rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(165, 180, 252, 0.24);
+  --gitpulse-shadow-raised: 0 22px 58px rgba(0, 0, 0, 0.36), 0 5px 18px rgba(0, 0, 0, 0.24);
+  --gitpulse-input-bg: #151922;
+  --gitpulse-input-border: rgba(230, 237, 243, 0.16);
+  --gitpulse-scrollbar-thumb: #4b5563;
+  --gitpulse-markdown-bg: #0d1117;
+  --gitpulse-code-bg: #161b22;
+  --gitpulse-focus-ring: #79c0ff;
+  --gitpulse-unread-bg: rgba(121, 192, 255, 0.12);
+  --gitpulse-skeleton-bg: #20252f;
+  --gitpulse-skeleton-shimmer: linear-gradient(90deg, #20252f, #2a3140, #20252f);
+  --gitpulse-grid-line: rgba(230, 237, 243, 0.1);
+  --gitpulse-diff-add-bg: rgba(46, 160, 67, 0.18);
+  --gitpulse-diff-delete-bg: rgba(248, 81, 73, 0.18);
+  --gitpulse-diff-hunk-bg: rgba(121, 192, 255, 0.14);
+  --gitpulse-diff-empty-bg: #151922;
+  --gitpulse-draft-bg: rgba(165, 180, 252, 0.08);
+  --gitpulse-draft-border: rgba(165, 180, 252, 0.34);
+  --gitpulse-purple: #d2a8ff;
+  --gitpulse-purple-soft: rgba(210, 168, 255, 0.14);
+}

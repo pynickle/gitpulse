@@ -1,9 +1,7 @@
-/*
- * Shared Detail Sidebar collapse layout for the Detail Overlay detail
- * components. The two-column grid track list is driven by --detail-columns so
- * hiding the Detail Sidebar transitions grid-template-columns, mirroring the
- * repository file view precedent. $scope is the component's root selector.
- */
+// Shared Detail Sidebar collapse layout for the Detail Overlay detail
+// components. The two-column grid track list is driven by --detail-columns so
+// hiding the Detail Sidebar transitions grid-template-columns, mirroring the
+// repository file view precedent. $scope is the component's root selector.
 @mixin detail-sidebar-columns($scope) {
   #{$scope} :deep(.columns) {
     --detail-columns: minmax(0, 72%) minmax(0, 28%);
@@ -51,12 +49,10 @@
   }
 }
 
-/*
- * Below-1024px single-column flow shared by the pull request, issue, discussion,
- * and release details. The active outer ScrollArea spans the full viewport width
- * and owns the symmetric page Gutter, placing its scrollbar track flush on the
- * right viewport edge while keeping content clear of the thumb.
- */
+// Below-1024px single-column flow shared by the pull request, issue, discussion,
+// and release details. The active outer ScrollArea spans the full viewport width
+// and owns the symmetric page Gutter, placing its scrollbar track flush on the
+// right viewport edge while keeping content clear of the thumb.
 @mixin detail-sidebar-stacking($scope) {
   @media (max-width: 1024px) {
     #{$scope}:not(.pr-detail-layout--review) {

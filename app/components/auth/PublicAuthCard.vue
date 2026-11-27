@@ -35,8 +35,6 @@ const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/variables' as *;
-
 .public-card {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
@@ -93,7 +91,7 @@ const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .public-card__title {

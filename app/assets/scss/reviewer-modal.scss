@@ -1,4 +1,3 @@
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .reviewer-modal-overlay {
@@ -255,8 +254,8 @@
   }
 
   .reviewer-modal-candidate--selected & {
-    background: $brand-primary;
-    border-color: $brand-primary;
+    background: var(--gitpulse-primary-solid);
+    border-color: var(--gitpulse-primary-solid);
     color: var(--bulma-primary-invert, #fff);
   }
 
@@ -369,8 +368,8 @@
 
 .reviewer-modal-btn--submit {
   color: var(--bulma-primary-invert, #fff);
-  background: $brand-primary;
-  border: 1px solid $brand-primary;
+  background: var(--gitpulse-primary-solid);
+  border: 1px solid var(--gitpulse-primary-solid);
 
   @include hover-only {
     &:hover:not(:disabled) {
