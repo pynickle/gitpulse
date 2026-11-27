@@ -263,7 +263,7 @@ describe('global SCSS architecture (#196)', () => {
     });
     expect(bulmaTokens).toEqual([]);
 
-    expect(collectTopLevelDecls(root, '.navbar').get('background-color')).toBe(
+    expect(collectTopLevelDecls(root, '.card').get('background-color')).toBe(
       'var(--gitpulse-surface)'
     );
     expect(collectTopLevelDecls(root, '.button').get('background-color')).toBe(
@@ -301,7 +301,7 @@ describe('global SCSS architecture (#196)', () => {
     let lightPrimarySolidCount = 0;
     let darkPrimarySolidCount = 0;
     let baseLinkIndex = -1;
-    let tabsLinkIndex = -1;
+    let cardOverrideIndex = -1;
     let ruleIndex = 0;
 
     root.walkRules((rule) => {
@@ -321,8 +321,8 @@ describe('global SCSS architecture (#196)', () => {
       if (rule.parent === root && rule.selector === 'a' && baseLinkIndex === -1) {
         baseLinkIndex = ruleIndex;
       }
-      if (rule.parent === root && rule.selector === '.tabs a' && tabsLinkIndex === -1) {
-        tabsLinkIndex = ruleIndex;
+      if (rule.parent === root && rule.selector === '.card' && cardOverrideIndex === -1) {
+        cardOverrideIndex = ruleIndex;
       }
       ruleIndex += 1;
     });
@@ -331,7 +331,7 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightPrimarySolidCount).toBe(1);
     expect(darkPrimarySolidCount).toBe(1);
     expect(baseLinkIndex).toBeGreaterThanOrEqual(0);
-    expect(tabsLinkIndex).toBeGreaterThan(baseLinkIndex);
+    expect(cardOverrideIndex).toBeGreaterThan(baseLinkIndex);
   });
 
   test('leading underscore strictly separates zero-output partials from CSS-emitting sheets', () => {
@@ -702,16 +702,6 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
 
     // Whitelisted component modules
     for (const activeClass of [
-      '.columns',
-      '.column',
-      '.navbar',
-      '.hero',
-      '.tabs',
-      '.pagination',
-      '.media',
-      '.level',
-      '.loader',
-      '.box',
       '.input',
       '.textarea',
       '.checkbox',
@@ -789,11 +779,11 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     const cases = [
       {
         file: 'app/components/dashboard/composer/MarkdownComposer.vue',
-        selectorMatch: '.markdown-composer__tabs.tabs ul',
+        selectorMatch: '.markdown-composer__tabs ul',
       },
       {
         file: 'app/components/dashboard/DashboardPagination.vue',
-        selectorMatch: '.pagination-list',
+        selectorMatch: '.dashboard-pagination__list',
       },
       {
         file: 'app/pages/dashboard/package.vue',
@@ -858,6 +848,161 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(hasNarrowRowMargin).toBe(true);
     expect(hasNarrowRowRightClearance).toBe(true);
     expect(hasPaginationLastChildReset).toBe(true);
+  });
+});
+
+describe('layout and single-file Bulma relics retirement (#200)', () => {
+  test('compiled global CSS emits zero rules for retired Bulma layout and single-file component modules', async () => {
+    const root = await getProcessedMainRoot();
+
+    const retiredRootSelectors = [
+      '.columns',
+      '.column',
+      '.navbar',
+      '.navbar-brand',
+      '.navbar-menu',
+      '.navbar-item',
+      '.hero',
+      '.hero-body',
+      '.tabs',
+      '.tabs a',
+      '.menu',
+      '.menu-list',
+      '.pagination',
+      '.pagination-previous',
+      '.pagination-next',
+      '.pagination-link',
+      '.pagination-ellipsis',
+      '.pagination-list',
+      '.media',
+      '.media-left',
+      '.media-content',
+      '.level',
+      '.level-item',
+      '.loader',
+      '.box',
+    ];
+
+    const emittedRootArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedRootArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = retiredRootSelectors.filter((sel) => emittedRootArms.has(sel));
+    expect(unexpected).toEqual([]);
+  });
+
+  test('bulma-overrides.scss emits zero rules for retired hero, navbar, box, and tabs modules', () => {
+    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    for (const retired of ['.hero', '.hero-body', '.navbar', '.navbar .title', '.box', '.tabs a']) {
+      expect(
+        emittedArms.has(retired),
+        `${retired} should be removed from bulma-overrides.scss`
+      ).toBe(false);
+    }
+  });
+
+  test('_detail-sidebar-columns.scss drives CSS Grid collapse and narrow stacking via .detail-columns without Bulma .columns', () => {
+    const css = compileScssSnippet(`
+      @use '~/assets/scss/detail-sidebar-columns' as *;
+      @include detail-sidebar-columns('.detail-scroll');
+      @include detail-sidebar-stacking('.detail-scroll');
+    `);
+    const root = postcss.parse(css);
+    const selectors = collectSelectors(root);
+
+    expect(selectors.some((selector) => selector.includes('.detail-columns'))).toBe(true);
+    expect(selectors.some((selector) => selector.includes('.detail-columns--sidebar-hidden'))).toBe(
+      true
+    );
+    expect(selectors.filter((selector) => /\.columns\b/.test(selector))).toEqual([]);
+
+    let hasExpandedTrack = false;
+    let hasCollapsedTrack = false;
+    let hasNarrowBlock = false;
+    root.walkRules((rule) => {
+      rule.walkDecls((decl) => {
+        if (decl.prop === '--detail-columns' && decl.value === 'minmax(0, 72%) minmax(0, 28%)') {
+          hasExpandedTrack = true;
+        }
+        if (decl.prop === '--detail-columns' && decl.value === 'minmax(0, 100%) minmax(0, 0%)') {
+          hasCollapsedTrack = true;
+        }
+        if (
+          rule.selector.includes('.detail-columns') &&
+          decl.prop === 'display' &&
+          decl.value === 'block'
+        ) {
+          hasNarrowBlock = true;
+        }
+      });
+    });
+
+    expect(hasExpandedTrack).toBe(true);
+    expect(hasCollapsedTrack).toBe(true);
+    expect(hasNarrowBlock).toBe(true);
+  });
+
+  test('all five Detail Overlays compile .detail-columns styles without Bulma .columns or --bulma-column-gap', () => {
+    const detailOverlays = [
+      'components/dashboard/detail/DiscussionDetail.vue',
+      'components/dashboard/detail/IssueDetail.vue',
+      'components/dashboard/detail/PRDetail.vue',
+      'components/dashboard/detail/ReleaseDetail.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+    ];
+
+    for (const component of detailOverlays) {
+      const root = compileSfcStyles(component);
+      const selectors = collectSelectors(root);
+
+      expect(
+        selectors.some((selector) => selector.includes('.detail-columns')),
+        `${component} should emit .detail-columns rules`
+      ).toBe(true);
+      expect(
+        selectors.filter((selector) => /\.columns\b/.test(selector)),
+        `${component} must not emit Bulma .columns rules`
+      ).toEqual([]);
+      expect(findUngatedHoverSelectors(root), `${component} hover gating`).toEqual([]);
+
+      const columnGapProps: string[] = [];
+      root.walkDecls((decl) => {
+        if (decl.value.includes('--bulma-column-gap')) {
+          columnGapProps.push(`${decl.prop}: ${decl.value}`);
+        }
+      });
+      expect(columnGapProps, `${component} must not reference --bulma-column-gap`).toEqual([]);
+    }
+  });
+
+  test('migrated layout and single-file relic components compile cleanly with ADR 0049 hover gating', () => {
+    const components = [
+      'components/layouts/Navbar.vue',
+      'layouts/dashboard.vue',
+      'components/dashboard/DashboardLayout.vue',
+      'components/dashboard/composer/MarkdownComposer.vue',
+      'components/dashboard/DashboardPagination.vue',
+      'components/dashboard/DashboardLoadingList.vue',
+      'components/dashboard/widgets/TabStats.vue',
+      'components/auth/AuthenticatedLandingCard.vue',
+      'components/dashboard/detail/DetailOverlayHost.vue',
+      'components/dashboard/overlay/DashboardOverlayFrame.vue',
+    ];
+
+    for (const component of components) {
+      const root = compileSfcStyles(component);
+      expect(findUngatedHoverSelectors(root), `${component} hover gating`).toEqual([]);
+    }
   });
 });
 

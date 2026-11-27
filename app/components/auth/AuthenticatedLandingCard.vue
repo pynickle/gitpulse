@@ -1,6 +1,6 @@
 <template>
   <div class="auth-shell auth-shell--signed-in is-flex is-justify-content-center">
-    <div class="box auth-shell__box has-text-centered">
+    <div class="auth-shell__box has-text-centered">
       <div class="auth-shell__avatar mb-5">
         <GitHubAvatar
           variant="raised"
@@ -69,6 +69,9 @@ const handleGoToDashboard = async () => {
   width: min(100%, 32rem);
   padding: 2.5rem 2.25rem;
   border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
   box-shadow: var(--gitpulse-shadow-raised);
 }
 

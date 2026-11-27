@@ -65,8 +65,12 @@ const mountNavbar = (variant?: 'app' | 'public') => {
 
 describe('Navbar', () => {
   test('links the localized brand name to the locale root', () => {
-    const brand = mountNavbar('public').querySelector('.navbar-brand-link');
+    const root = mountNavbar('public');
+    const nav = root.querySelector('nav.top-navbar');
+    const brand = root.querySelector('.navbar-brand-link');
 
+    expect(nav).not.toBeNull();
+    expect(nav?.classList.contains('navbar')).toBe(false);
     expect(brand?.textContent?.trim()).toBe('GitPulse');
     expect(brand?.getAttribute('href')).toBe('/');
   });

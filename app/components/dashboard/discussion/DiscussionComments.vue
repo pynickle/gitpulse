@@ -3,6 +3,7 @@ import { CircleExclamationPointIcon, MessageSquareIcon } from '@lucide/vue';
 
 import type { DiscussionComment } from '#shared/types/discussions';
 import DiscussionCommentCard from '~/components/dashboard/discussion/DiscussionCommentCard.vue';
+import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 
 type DiscussionReplySubmitHandler = (comment: DiscussionComment, body: string) => Promise<void>;
 
@@ -56,7 +57,7 @@ const { t } = useI18n();
     </div>
 
     <div v-if="loading" class="discussion-comments__loading">
-      <span class="loader" aria-hidden="true" />
+      <LoadingIcon :size="16" aria-hidden="true" />
       <span class="is-size-7 has-text-grey">{{ t('discussionDetail.loadingComments') }}</span>
     </div>
 

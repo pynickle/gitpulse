@@ -521,7 +521,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
                 v-if="isContentLoading"
                 class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
               >
-                <div class="box has-text-centered py-5 px-6 shadow-md detail-loading-box">
+                <div class="has-text-centered py-5 px-6 shadow-md detail-loading-box">
                   <LoaderCircleIcon
                     class="spin-animation has-text-link mb-3"
                     :size="40"
@@ -704,6 +704,9 @@ onUnmounted(() => syncDetailSidebarPane(null));
 
 .detail-loading-box {
   min-width: 200px;
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
 }
 
 .detail-overlay-fade-enter-active,

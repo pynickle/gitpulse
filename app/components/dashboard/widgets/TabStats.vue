@@ -1,7 +1,11 @@
 <template>
   <div class="tab-stats">
-    <nav class="level is-mobile">
-      <div v-for="(stat, index) in displayStats" :key="index" class="level-item has-text-centered">
+    <nav class="tab-stats__list">
+      <div
+        v-for="(stat, index) in displayStats"
+        :key="index"
+        class="tab-stats__item has-text-centered"
+      >
         <div>
           <p class="heading" :class="stat.colorClass">{{ stat.label }}</p>
           <p class="title is-4">{{ stat.value }}</p>
@@ -86,6 +90,21 @@ const displayStats = computed(() => {
   margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--gitpulse-border);
 
+  .tab-stats__list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .tab-stats__item {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: center;
+    justify-content: center;
+  }
+
   .heading {
     text-transform: uppercase;
     font-size: 0.75rem;
@@ -115,6 +134,7 @@ const displayStats = computed(() => {
   }
 
   .title {
+    margin-bottom: 0;
     font-weight: 600;
     color: var(--gitpulse-text-strong);
   }

@@ -1,23 +1,6 @@
 @use '~/assets/scss/variables' as *;
 @use '~/assets/scss/pointer' as *;
 
-.hero-body {
-  padding: 0;
-}
-
-.hero {
-  background: var(--gitpulse-page-bg);
-  color: var(--gitpulse-text);
-}
-
-.navbar {
-  border-bottom: 1px solid var(--gitpulse-border);
-  background-color: var(--gitpulse-surface);
-  box-shadow: none;
-  transition: $theme-transition;
-}
-
-.navbar .title,
 .title,
 .label,
 .has-text-weight-semibold {
@@ -32,15 +15,10 @@
   color: var(--gitpulse-text-muted);
 }
 
-.card,
-.box {
+.card {
   border-color: var(--gitpulse-border);
   background-color: var(--gitpulse-surface);
   color: var(--gitpulse-text);
-}
-
-.box {
-  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .input,
@@ -324,17 +302,6 @@
   border: 1px solid var(--gitpulse-border);
   background-color: var(--gitpulse-surface-muted);
   color: var(--gitpulse-text);
-}
-
-.tabs a {
-  color: var(--gitpulse-text-muted);
-
-  @include hover-only {
-    &:hover {
-      border-bottom-color: var(--gitpulse-border-strong);
-      color: var(--gitpulse-text-strong);
-    }
-  }
 }
 
 .delete {
