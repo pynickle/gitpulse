@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
 .branch-selector-panel__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -432,7 +432,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border: 0;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   outline: none;
 
@@ -560,7 +560,7 @@ onBeforeUnmount(() => {
     @include hover-only {
       &:hover:not(:disabled) {
         background: var(--gitpulse-surface-hover);
-        color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+        color: var(--gitpulse-text-strong);
       }
     }
   }

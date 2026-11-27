@@ -724,7 +724,7 @@ watch(
 
 .pr-review-workspace__title {
   min-width: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.9rem;
   font-weight: 700;
   overflow: hidden;
@@ -826,7 +826,7 @@ watch(
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -915,7 +915,7 @@ html.dark .pr-review-workspace__loading-btn::after {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .pr-review-discard-dialog__text {
@@ -952,7 +952,7 @@ html.dark .pr-review-workspace__loading-btn::after {
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }

@@ -121,6 +121,30 @@ describe('Bulma monotonic ratchet checker', () => {
     expect(result.violations.some((v) => v.kind === 'custom-property')).toBe(true);
   });
 
+  test('fails on any --bulma-* custom property when customProperties baseline is locked at zero', () => {
+    const root = createFixtureTree({
+      'components/RegressedVar.vue': `
+        <template><div class="custom">Hi</div></template>
+        <style scoped lang="scss">
+        .a { color: var(--bulma-text-strong, var(--gitpulse-text-strong)); }
+        </style>
+      `,
+    });
+
+    const result = checkBulmaRatchet(root, {
+      customProperties: 0,
+      classes: SAMPLE_BASELINE.classes,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.violations).toEqual([
+      {
+        kind: 'custom-property',
+        actual: 1,
+        baseline: 0,
+      },
+    ]);
+  });
+
   test('fails when a retired Bulma component class is reintroduced', () => {
     const root = createFixtureTree({
       'components/Regressed.vue': `

@@ -34,7 +34,7 @@
 .reviewer-modal-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   margin: 0;
   letter-spacing: 0;
 }
@@ -98,7 +98,7 @@
   height: 32px;
   padding: 0 32px 0 32px;
   font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
@@ -256,7 +256,7 @@
   .reviewer-modal-candidate--selected & {
     background: var(--gitpulse-primary-solid);
     border-color: var(--gitpulse-primary-solid);
-    color: var(--bulma-primary-invert, #fff);
+    color: #ffffff;
   }
 
   .reviewer-modal-candidate--requested & {
@@ -291,7 +291,7 @@
 .reviewer-modal-candidate-name {
   font-size: 13px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -359,7 +359,7 @@
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
     }
@@ -367,7 +367,7 @@
 }
 
 .reviewer-modal-btn--submit {
-  color: var(--bulma-primary-invert, #fff);
+  color: #ffffff;
   background: var(--gitpulse-primary-solid);
   border: 1px solid var(--gitpulse-primary-solid);
 
@@ -394,7 +394,7 @@
   padding: 0 5px;
   font-size: 10px;
   font-weight: 600;
-  color: var(--bulma-primary-invert, #fff);
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 9px;
 }

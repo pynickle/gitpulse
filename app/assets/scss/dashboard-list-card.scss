@@ -2,10 +2,10 @@
 
 .card {
   margin: 0.25rem;
-  --bulma-shadow: var(--gitpulse-shadow-card);
+  box-shadow: var(--gitpulse-shadow-card);
   border: 1px solid var(--gitpulse-border, #f5f5f5);
   background-color: var(--gitpulse-surface);
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
 }
 
 .dashboard-list-card {

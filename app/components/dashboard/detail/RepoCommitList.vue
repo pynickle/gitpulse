@@ -84,7 +84,7 @@ const { t } = useI18n();
 
 .repo-commit-list__error-title {
   margin: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.9375rem;
   font-weight: 600;
 }

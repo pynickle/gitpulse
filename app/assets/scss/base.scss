@@ -3,7 +3,7 @@
 body {
   font-family: var(--gitpulse-app-font-family);
   background-color: var(--gitpulse-page-bg);
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
 }
 
 code,
@@ -46,11 +46,11 @@ html {
 
 .dashboard-shell {
   background: var(--gitpulse-page-bg);
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
 }
 
 a {
-  color: var(--bulma-link, var(--gitpulse-link));
+  color: var(--gitpulse-link);
 }
 
 @include hover-only {
@@ -118,7 +118,7 @@ hr {
 
 .markdown-body {
   background-color: transparent;
-  color: var(--fgColor-default, var(--bulma-text, var(--gitpulse-text)));
+  color: var(--fgColor-default, var(--gitpulse-text));
 }
 
 ::selection {

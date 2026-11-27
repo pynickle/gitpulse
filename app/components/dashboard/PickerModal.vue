@@ -140,7 +140,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 .picker-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   margin: 0;
   letter-spacing: -0.01em;
 }

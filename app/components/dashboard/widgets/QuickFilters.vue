@@ -147,7 +147,7 @@ const onChange = () => {
 
     @include hover-only {
       &:hover {
-        background-color: var(--bulma-background-hover);
+        background-color: var(--gitpulse-surface-hover);
 
         .quick-filters__checkbox {
           border-color: var(--gitpulse-border-strong);
@@ -157,13 +157,13 @@ const onChange = () => {
 
     &.is-active {
       .quick-filters__checkbox {
-        background-color: var(--bulma-primary);
-        border-color: var(--bulma-primary);
+        background-color: var(--gitpulse-primary-solid);
+        border-color: var(--gitpulse-primary-solid);
         color: #ffffff;
       }
 
       .quick-filters__label {
-        color: var(--bulma-text-strong);
+        color: var(--gitpulse-text-strong);
         font-weight: 500;
       }
     }
@@ -184,7 +184,7 @@ const onChange = () => {
 
   &__label {
     font-size: 0.875rem;
-    color: var(--bulma-text);
+    color: var(--gitpulse-text);
     transition: color 0.2s ease;
     user-select: none;
   }

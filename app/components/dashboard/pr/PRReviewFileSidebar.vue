@@ -540,7 +540,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 @include hover-only {
   .pr-review-file-sidebar__collapse-button:hover {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -575,7 +575,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border-left: 3px solid transparent;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -657,7 +657,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.35rem;

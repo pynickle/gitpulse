@@ -46,7 +46,7 @@ const listItem = computed((): RepoCommitListItemPayload | null =>
 .commit-item__fallback {
   margin: 0;
   padding: 0.75rem 1rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.875rem;
   font-weight: 500;
 }

@@ -84,7 +84,7 @@ const displayStats = computed(() => {
 .tab-stats {
   padding: 1rem 0;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--bulma-border);
+  border-bottom: 1px solid var(--gitpulse-border);
 
   .heading {
     text-transform: uppercase;
@@ -116,7 +116,7 @@ const displayStats = computed(() => {
 
   .title {
     font-weight: 600;
-    color: var(--bulma-text-strong);
+    color: var(--gitpulse-text-strong);
   }
 }
 </style>

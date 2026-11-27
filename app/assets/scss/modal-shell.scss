@@ -33,7 +33,7 @@
 .label-editor-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   margin: 0;
   letter-spacing: 0;
 }
@@ -191,7 +191,7 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   transition: color 0.12s ease;
 }
 
@@ -250,13 +250,13 @@
   @include hover-only {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 
   &:disabled {
