@@ -869,7 +869,6 @@ const formatRelativeTime = (dateString: string | undefined) => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
 
@@ -928,7 +927,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
 .sidebar-section__icon {
   flex-shrink: 0;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-section__title {

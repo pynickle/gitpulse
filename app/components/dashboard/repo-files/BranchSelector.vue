@@ -268,7 +268,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 // ─── Trigger button ────────────────────────────────────────────
@@ -420,7 +419,7 @@ onBeforeUnmount(() => {
 
   &:focus-within {
     border-color: var(--gitpulse-accent);
-    box-shadow: 0 0 0 2px rgba($brand-primary, 0.12);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gitpulse-accent) 12%, transparent);
   }
 }
 

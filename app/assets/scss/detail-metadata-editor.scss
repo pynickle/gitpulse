@@ -1,6 +1,4 @@
-@use 'sass:color';
-@use './variables' as *;
-@use './pointer' as *;
+@use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
   background: var(--gitpulse-surface-muted);
@@ -25,7 +23,7 @@
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {
@@ -247,8 +245,8 @@
   pointer-events: none;
 
   .label-row-check input:checked + & {
-    background: $brand-primary;
-    border-color: $brand-primary;
+    background: var(--gitpulse-primary-solid);
+    border-color: var(--gitpulse-primary-solid);
     color: var(--gitpulse-surface);
   }
 
@@ -259,8 +257,8 @@
   }
 
   .label-row.is-selected & {
-    background: $brand-primary;
-    border-color: $brand-primary;
+    background: var(--gitpulse-primary-solid);
+    border-color: var(--gitpulse-primary-solid);
     color: var(--gitpulse-surface);
   }
 }
@@ -321,7 +319,7 @@
   }
 
   &:has(.issue-option-row__input:focus-visible) {
-    outline: 2px solid $brand-primary;
+    outline: 2px solid var(--gitpulse-accent);
     outline-offset: -2px;
   }
 
@@ -447,7 +445,7 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--gitpulse-surface);
-  background: $brand-primary;
+  background: var(--gitpulse-primary-solid);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -455,15 +453,15 @@
 
   @include hover-only {
     &:hover:not(:disabled) {
-      background: color.adjust($brand-primary, $lightness: -5%);
-      box-shadow: 0 2px 8px rgba($brand-primary, 0.25);
+      background: var(--gitpulse-primary-solid-hover);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--gitpulse-primary-solid) 25%, transparent);
     }
   }
 
   // A filled surface keeps an answer to a press (ADR 0032): its own tone one step
   // deeper, where a touch device has no hover to fall back on.
   &:active:not(:disabled) {
-    background: color.adjust($brand-primary, $lightness: -5%);
+    background: var(--gitpulse-primary-solid-hover);
   }
 
   &:disabled {

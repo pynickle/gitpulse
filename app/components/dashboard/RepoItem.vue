@@ -128,7 +128,7 @@ const languageColor = computed(() => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/card.scss';
+@use '~/assets/scss/card';
 
 .repo-item {
   position: relative;
