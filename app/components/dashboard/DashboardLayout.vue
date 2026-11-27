@@ -272,7 +272,7 @@ $splitter-hover-zone: 14px;
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover, var(--gitpulse-shell-bg));
       border-color: var(--gitpulse-border-strong, var(--gitpulse-border));
     }

@@ -599,7 +599,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -672,7 +672,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--gitpulse-border);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -689,7 +689,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   :deep(h5),
   :deep(h6) {
     margin: 1.4em 0 0.6em;
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     font-weight: 600;
     line-height: 1.3;
   }
@@ -849,7 +849,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8rem;
   font-weight: 600;
 }

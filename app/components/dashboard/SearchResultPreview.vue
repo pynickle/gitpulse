@@ -347,7 +347,7 @@ const getStateIcon = (item: SearchResultItem) => {
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.35;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .srp-card__title--with-conflict {
@@ -372,7 +372,7 @@ const getStateIcon = (item: SearchResultItem) => {
   align-items: center;
   gap: 0.2rem;
   font-size: 0.72rem;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   white-space: nowrap;
   overflow: hidden;
 }

@@ -51,7 +51,7 @@ const reasonText = computed(() => t(`timeline.unavailableReason_${reasonCode}`))
 
 .timeline-unavailable {
   &__label {
-    color: var(--bulma-grey);
+    color: var(--gitpulse-text-muted);
   }
 
   &__icon {
@@ -60,12 +60,12 @@ const reasonText = computed(() => t(`timeline.unavailableReason_${reasonCode}`))
     align-items: center;
     margin-left: 0.25rem;
     cursor: help;
-    color: var(--bulma-grey-light);
+    color: var(--gitpulse-text-subtle);
     vertical-align: middle;
 
     @include hover-only {
       &:hover {
-        color: var(--bulma-grey);
+        color: var(--gitpulse-text-muted);
       }
     }
   }

@@ -199,7 +199,7 @@ watch(
 .reviewer-picker__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .reviewer-picker__content {
@@ -219,7 +219,7 @@ watch(
   min-width: 0;
   height: 24px;
   padding: 0 8px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
@@ -243,7 +243,7 @@ watch(
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
     }
@@ -296,7 +296,7 @@ watch(
 
 .reviewer-picker__candidate-name {
   overflow: hidden;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   font-weight: 500;
   text-overflow: ellipsis;

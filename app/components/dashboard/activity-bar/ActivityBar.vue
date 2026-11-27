@@ -221,7 +221,7 @@ function getGroupIcon(icon?: string) {
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: var(--bulma-text-weak, #9ca3af);
+    color: var(--gitpulse-text-subtle);
     cursor: pointer;
     transition:
       background-color 0.15s ease,
@@ -229,8 +229,8 @@ function getGroupIcon(icon?: string) {
 
     @include hover-only {
       &:hover {
-        background: var(--bulma-background-hover);
-        color: var(--bulma-text-strong, #1e293b);
+        background: var(--gitpulse-surface-hover);
+        color: var(--gitpulse-text-strong);
       }
     }
 

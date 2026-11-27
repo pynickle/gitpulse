@@ -158,7 +158,7 @@ watch(
 }
 
 .sidebar-card__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
@@ -210,14 +210,14 @@ watch(
     &:hover {
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible {
     border-color: var(--gitpulse-border-strong);
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 

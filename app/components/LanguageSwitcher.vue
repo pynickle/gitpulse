@@ -96,13 +96,13 @@ const switchLocale = async (code: AppLocale) => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     outline: 2px solid var(--gitpulse-accent);
     outline-offset: 2px;
   }

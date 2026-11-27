@@ -193,7 +193,7 @@ watch(() => activeIndex, scrollActiveOptionIntoView);
 }
 
 .fa-option-label {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 
   :deep(.fa-highlight) {
     background: var(--gitpulse-accent-soft);

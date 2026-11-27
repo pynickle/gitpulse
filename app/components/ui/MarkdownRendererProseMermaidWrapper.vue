@@ -210,7 +210,7 @@ onBeforeUnmount(clearResetTimer);
   .markdown-code-block__copy:hover {
     border-color: var(--gitpulse-border-strong);
     background-color: var(--gitpulse-surface);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 

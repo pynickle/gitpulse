@@ -198,7 +198,7 @@ const { t } = useI18n();
   overflow: hidden;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
