@@ -489,7 +489,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/reviewer-modal';
 @use '~/assets/scss/pointer' as *;
 
 .sidebar-card {

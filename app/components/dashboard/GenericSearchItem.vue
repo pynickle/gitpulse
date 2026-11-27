@@ -131,7 +131,7 @@ const icon = computed(() => {
 });
 </script>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
 <style scoped lang="scss">
 .generic-search-card {
   color: inherit;

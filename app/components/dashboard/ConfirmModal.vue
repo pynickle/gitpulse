@@ -137,5 +137,5 @@ const { handleKeydown } = useModalLifecycle({
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/detail-metadata-editor';
+@use '~/assets/scss/modal-shell';
 </style>

@@ -475,8 +475,8 @@ const reasonIcon = computed(() => {
 });
 </script>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
-<style scoped lang="scss" src="~/assets/scss/notification-card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
+<style scoped lang="scss" src="./notification-card.scss" />
 <style scoped lang="scss">
 .avatar-skeleton {
   display: inline-flex;
