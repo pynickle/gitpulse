@@ -265,7 +265,7 @@ watch(repoFullName, () => {
           class="contributors-page__grid"
           :class="{ 'contributors-page__grid--loading': gridLoadingSoft }"
         >
-          <article v-for="card in matrixCards" :key="card.key" class="contributors-page__card card">
+          <article v-for="card in matrixCards" :key="card.key" class="contributors-page__card">
             <div class="contributors-page__card-top">
               <GitHubProfileLink
                 v-if="card.login"
@@ -460,6 +460,7 @@ watch(repoFullName, () => {
 }
 
 .contributors-page__card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -469,6 +470,7 @@ watch(repoFullName, () => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 10px;
   background: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
   box-shadow: none;
 }
 

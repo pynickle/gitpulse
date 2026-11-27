@@ -1,10 +1,10 @@
 <template>
   <component
     :is="profileLogin ? GitHubProfileLink : itemUrl ? 'a' : 'div'"
-    class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed generic-search-card"
+    class="dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed generic-search-card"
     v-bind="linkProps"
   >
-    <div class="card-content p-3">
+    <div class="dashboard-list-card__body p-3">
       <div class="dashboard-list-card__main-row">
         <div class="dashboard-list-card__icon ml-2 mt-1">
           <component :size="22" :is="icon" />

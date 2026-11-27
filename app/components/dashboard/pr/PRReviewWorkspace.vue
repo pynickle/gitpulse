@@ -444,7 +444,7 @@ watch(
     </header>
 
     <div v-if="review.errorMessage.value && !hasFiles" class="pr-review-workspace__notice">
-      <div class="notification is-danger is-light">
+      <div class="gp-notice gp-notice--danger" role="alert">
         <p class="mb-3">{{ review.errorMessage.value }}</p>
         <button class="button is-small is-danger" type="button" @click="review.retryLoad">
           {{ t('prReview.retry') }}

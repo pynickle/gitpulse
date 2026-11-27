@@ -49,9 +49,13 @@
             </div>
 
             <ScrollArea class="detail-composer-sheet__scroll" axis="y">
-              <div v-if="errorMessage" class="notification is-danger is-light mb-3 py-2 px-3">
+              <div
+                v-if="errorMessage"
+                class="gp-notice gp-notice--danger gp-notice--compact mb-3"
+                role="alert"
+              >
                 <button
-                  class="delete is-small"
+                  class="gp-dismiss gp-dismiss--small"
                   type="button"
                   :aria-label="t('floatingMarkdownEditor.dismissError')"
                   @click="errorMessage = ''"
@@ -118,9 +122,13 @@
     </template>
 
     <template v-else>
-      <div v-if="errorMessage" class="notification is-danger is-light mb-3 py-2 px-3">
+      <div
+        v-if="errorMessage"
+        class="gp-notice gp-notice--danger gp-notice--compact mb-3"
+        role="alert"
+      >
         <button
-          class="delete is-small"
+          class="gp-dismiss gp-dismiss--small"
           type="button"
           :aria-label="t('floatingMarkdownEditor.dismissError')"
           @click="errorMessage = ''"

@@ -83,7 +83,11 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
       {{ t('discussionDetail.noReplies') }}
     </p>
 
-    <p v-if="error" class="notification is-danger is-light py-2 px-3 is-size-7 mt-3">
+    <p
+      v-if="error"
+      class="gp-notice gp-notice--danger gp-notice--compact is-size-7 mt-3"
+      role="alert"
+    >
       {{ error }}
     </p>
 

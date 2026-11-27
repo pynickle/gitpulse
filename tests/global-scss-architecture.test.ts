@@ -263,9 +263,6 @@ describe('global SCSS architecture (#196)', () => {
     });
     expect(bulmaTokens).toEqual([]);
 
-    expect(collectTopLevelDecls(root, '.card').get('background-color')).toBe(
-      'var(--gitpulse-surface)'
-    );
     expect(collectTopLevelDecls(root, '.button').get('background-color')).toBe(
       'var(--gitpulse-surface)'
     );
@@ -301,7 +298,8 @@ describe('global SCSS architecture (#196)', () => {
     let lightPrimarySolidCount = 0;
     let darkPrimarySolidCount = 0;
     let baseLinkIndex = -1;
-    let cardOverrideIndex = -1;
+    let controlsBtnIndex = -1;
+    let buttonOverrideIndex = -1;
     let ruleIndex = 0;
 
     root.walkRules((rule) => {
@@ -321,8 +319,15 @@ describe('global SCSS architecture (#196)', () => {
       if (rule.parent === root && rule.selector === 'a' && baseLinkIndex === -1) {
         baseLinkIndex = ruleIndex;
       }
-      if (rule.parent === root && rule.selector === '.card' && cardOverrideIndex === -1) {
-        cardOverrideIndex = ruleIndex;
+      if (rule.parent === root && rule.selector === '.gp-btn' && controlsBtnIndex === -1) {
+        controlsBtnIndex = ruleIndex;
+      }
+      if (
+        rule.parent === root &&
+        rule.selector === '.button.is-primary' &&
+        buttonOverrideIndex === -1
+      ) {
+        buttonOverrideIndex = ruleIndex;
       }
       ruleIndex += 1;
     });
@@ -331,7 +336,8 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightPrimarySolidCount).toBe(1);
     expect(darkPrimarySolidCount).toBe(1);
     expect(baseLinkIndex).toBeGreaterThanOrEqual(0);
-    expect(cardOverrideIndex).toBeGreaterThan(baseLinkIndex);
+    expect(controlsBtnIndex).toBeGreaterThan(baseLinkIndex);
+    expect(buttonOverrideIndex).toBeGreaterThan(controlsBtnIndex);
   });
 
   test('leading underscore strictly separates zero-output partials from CSS-emitting sheets', () => {
@@ -701,24 +707,7 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     });
 
     // Whitelisted component modules
-    for (const activeClass of [
-      '.input',
-      '.textarea',
-      '.checkbox',
-      '.field',
-      '.control',
-      '.label',
-      '.help',
-      '.notification',
-      '.delete',
-      '.card',
-      '.button',
-      '.tag',
-      '.title',
-      '.subtitle',
-      '.icon',
-      '.image',
-    ]) {
+    for (const activeClass of ['.button', '.tag', '.title', '.subtitle', '.icon', '.image']) {
       expect(bulmaLayeredClasses.has(activeClass), `expected ${activeClass} in @layer bulma`).toBe(
         true
       );
@@ -848,6 +837,116 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(hasNarrowRowMargin).toBe(true);
     expect(hasNarrowRowRightClearance).toBe(true);
     expect(hasPaginationLastChildReset).toBe(true);
+  });
+});
+
+describe('Control Layer primitives and Bulma form/notice/delete/card retirement (#201)', () => {
+  test('controls.scss compiles cleanly on Foundation Layer tokens with ADR 0049 pointer rules', () => {
+    const root = postcss.parse(compileScssFile('controls.scss'));
+
+    // Zero --bulma-* custom properties and zero !important declarations.
+    const bulmaProps: string[] = [];
+    const importantDecls: string[] = [];
+    root.walkDecls((decl) => {
+      if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
+        bulmaProps.push(`${decl.prop}: ${decl.value}`);
+      }
+      if (decl.important) {
+        importantDecls.push(`${decl.prop}: ${decl.value} !important`);
+      }
+    });
+    expect(bulmaProps).toEqual([]);
+    expect(importantDecls).toEqual([]);
+    expect(findUngatedHoverSelectors(root)).toEqual([]);
+
+    const selectors = collectSelectors(root);
+    const hasSelector = (needle: string) => selectors.some((s) => s.includes(needle));
+
+    // Core Control Layer primitives for #201, #202, #203
+    for (const primitive of [
+      '.gp-btn',
+      '.gp-btn--primary',
+      '.gp-btn--light',
+      '.gp-btn--ghost',
+      '.gp-btn--link',
+      '.gp-btn--danger',
+      '.gp-btn--danger-soft',
+      '.gp-btn--outlined',
+      '.gp-btn--small',
+      '.gp-btn--large',
+      '.gp-btn--block',
+      '.gp-btn--loading',
+      '.gp-btn-group',
+      '.gp-field',
+      '.gp-label',
+      '.gp-control',
+      '.gp-control--icon-left',
+      '.gp-input',
+      '.gp-textarea',
+      '.gp-checkbox',
+      '.gp-help',
+      '.gp-notice',
+      '.gp-notice--danger',
+      '.gp-notice--warning',
+      '.gp-dismiss',
+      '.gp-tag',
+      '.gp-tags',
+      '.gp-tags--addons',
+    ]) {
+      expect(hasSelector(primitive), `expected ${primitive} in controls.scss`).toBe(true);
+    }
+
+    // ADR 0049: filled controls deepen on :active:not(:disabled, ...); non-filled controls paint nothing on :active.
+    expect(
+      selectors.some((s) => s.includes('.gp-btn--primary') && s.includes(':active:not(:disabled'))
+    ).toBe(true);
+    expect(
+      selectors.some((s) => s.includes('.gp-btn--danger') && s.includes(':active:not(:disabled'))
+    ).toBe(true);
+    expect(selectors.filter((s) => s.includes('.gp-btn--light:active'))).toEqual([]);
+    expect(selectors.filter((s) => s.includes('.gp-btn--ghost:active'))).toEqual([]);
+    expect(selectors.filter((s) => s.includes('.gp-dismiss:active'))).toEqual([]);
+
+    // ADR 0049: form fields keep bare :focus.
+    expect(hasSelector('.gp-input:focus')).toBe(true);
+    expect(hasSelector('.gp-textarea:focus')).toBe(true);
+  });
+
+  test('compiled global CSS emits zero rules for retired Bulma form, notification, delete, and card modules', async () => {
+    const root = await getProcessedMainRoot();
+
+    const retiredRootSelectors = [
+      '.field',
+      '.field-label',
+      '.field-body',
+      '.control',
+      '.control.has-icons-left',
+      '.input',
+      '.textarea',
+      '.checkbox',
+      '.radio',
+      '.label',
+      '.help',
+      '.notification',
+      '.notification.is-danger.is-light',
+      '.notification.is-warning.is-light',
+      '.delete',
+      '.card',
+      '.card-header',
+      '.card-header-title',
+      '.card-content',
+      '.card-footer',
+    ];
+
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = retiredRootSelectors.filter((sel) => emittedArms.has(sel));
+    expect(unexpected).toEqual([]);
   });
 });
 
@@ -1032,6 +1131,7 @@ describe('Foundation Layer custom property migration and bridge removal (#199)',
       'assets/scss/reset.scss',
       'assets/scss/scrollbars.scss',
       'assets/scss/base.scss',
+      'assets/scss/controls.scss',
       'assets/scss/bulma-overrides.scss',
       'assets/scss/dashboard-list-card.scss',
       'assets/scss/modal-shell.scss',
@@ -1049,7 +1149,7 @@ describe('Foundation Layer custom property migration and bridge removal (#199)',
     }
 
     const cardRoot = postcss.parse(compileScssFile('dashboard-list-card.scss'));
-    const cardDecls = collectTopLevelDecls(cardRoot, '.card');
+    const cardDecls = collectTopLevelDecls(cardRoot, '.dashboard-list-card');
     expect(cardDecls.get('box-shadow')).toBe('var(--gitpulse-shadow-card)');
     expect(cardDecls.get('color')).toBe('var(--gitpulse-text)');
   });

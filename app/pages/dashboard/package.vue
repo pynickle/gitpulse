@@ -395,7 +395,7 @@ const handleHome = async () => {
           </div>
 
           <ul v-else class="package-page__version-list">
-            <li v-for="version in versions" :key="version.id" class="package-page__version card">
+            <li v-for="version in versions" :key="version.id" class="package-page__version">
               <div class="package-page__version-main">
                 <a
                   v-if="version.htmlUrl"
@@ -600,6 +600,7 @@ const handleHome = async () => {
 }
 
 .package-page__version {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -607,6 +608,10 @@ const handleHome = async () => {
   gap: 0.5rem 1rem;
   padding: 0.7rem 1rem;
   border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .package-page__version-main {

@@ -42,7 +42,11 @@ const { t } = useI18n();
       {{ t('discussionDetail.commentCount', { count: totalCount }) }}
     </h2>
 
-    <div v-if="error" class="notification is-danger is-light py-2 px-3 discussion-comments__error">
+    <div
+      v-if="error"
+      class="gp-notice gp-notice--danger gp-notice--compact discussion-comments__error"
+      role="alert"
+    >
       <p class="is-size-7">
         <CircleExclamationPointIcon :size="14" class="mr-1" style="vertical-align: text-bottom" />
         {{ error }}

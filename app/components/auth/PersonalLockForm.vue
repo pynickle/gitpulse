@@ -10,15 +10,15 @@
 
     <div class="personal-lock-form__content">
       <form @submit.prevent="handleUnlock">
-        <div class="field mb-4">
-          <label class="label personal-lock-form__label" for="vault-password">{{
+        <div class="gp-field mb-4">
+          <label class="gp-label personal-lock-form__label" for="vault-password">{{
             t('auth.passwordLabel')
           }}</label>
-          <div class="control has-icons-left">
+          <div class="gp-control gp-control--icon-left">
             <input
               id="vault-password"
               v-model="password"
-              class="input is-medium"
+              class="gp-input gp-input--medium"
               type="password"
               autocomplete="current-password"
               spellcheck="false"
@@ -26,24 +26,28 @@
               :disabled="submitting"
               autofocus
             />
-            <span class="icon is-left personal-lock-form__input-icon">
+            <span class="gp-control__icon personal-lock-form__input-icon">
               <KeyRoundIcon :size="20" />
             </span>
           </div>
         </div>
 
-        <div class="field mb-5">
-          <label class="checkbox personal-lock-form__checkbox">
+        <div class="gp-field mb-5">
+          <label class="gp-checkbox personal-lock-form__checkbox">
             <input v-model="remember" type="checkbox" :disabled="submitting" />
             <span class="ml-2">{{ t('auth.rememberDevice') }}</span>
           </label>
         </div>
 
-        <div v-if="error" class="notification is-danger is-light personal-lock-form__error mb-4">
+        <div
+          v-if="error"
+          class="gp-notice gp-notice--danger personal-lock-form__error mb-4"
+          role="alert"
+        >
           {{ error }}
         </div>
 
-        <Button type="submit" class="is-fullwidth is-justify-content-center" :disabled="submitting">
+        <Button type="submit" size="large" block :disabled="submitting">
           <LoadingIcon v-if="submitting" class="mr-3" :size="18" />
           <LockOpenIcon v-else class="mr-3" :size="18" />
           {{ submitting ? t('auth.unlocking') : t('auth.unlock') }}

@@ -1,7 +1,7 @@
 <template>
   <div class="detail-overlay is-flex is-align-items-center is-justify-content-center">
     <div class="detail-container is-flex is-flex-direction-column">
-      <div class="card is-flex is-flex-direction-column is-radiusless">
+      <div class="detail-frame is-flex is-flex-direction-column is-radiusless">
         <DashboardTopHeader
           v-if="!hideHeader"
           :back-label="backLabel"
@@ -36,7 +36,7 @@
 
         <ScrollArea
           v-else
-          :class="['card-content', 'is-flex-grow-1', contentClass]"
+          :class="['detail-frame__content', 'is-flex-grow-1', contentClass]"
           :disabled="contentClass?.includes('is-clipped') || contentClass?.includes('is-flush')"
         >
           <slot />
@@ -102,19 +102,32 @@ defineEmits<{
   overflow: hidden;
 }
 
-.card {
+.detail-frame {
+  position: relative;
+  max-width: 100%;
   height: 100%;
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
-.card-content {
+.detail-frame__content {
   min-height: 0;
   padding: 2rem 4rem;
   background: var(--gitpulse-surface);
+
+  &.p-0 {
+    padding: 0;
+  }
 
   /* Same breakpoint as the mobile filter modal; the fixed 4rem side padding
      would otherwise eat ~128px of width on phones. */
   @media (max-width: 860px) {
     padding: 1.25rem 1.25rem 1.5rem;
+
+    &.p-0 {
+      padding: 0;
+    }
 
     &.is-flush {
       display: flex;

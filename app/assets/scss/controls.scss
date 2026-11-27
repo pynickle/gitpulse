@@ -1,0 +1,697 @@
+@use '~/assets/scss/variables' as *;
+@use '~/assets/scss/pointer' as *;
+
+// Semantic Control Layer primitives built directly on Foundation Layer
+// `--gitpulse-*` tokens and the ADR 0032 / ADR 0049 pointer contract.
+
+// ── Buttons ──
+
+.gp-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45em;
+  min-height: 2.25em;
+  padding: calc(0.5em - 1px) calc(1em - 1px);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-md);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text-strong);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: $theme-transition;
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled,
+  &[aria-disabled='true'] {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &[aria-disabled='true'] {
+    pointer-events: none;
+  }
+}
+
+.gp-btn--small {
+  padding: calc(0.4em - 1px) calc(0.75em - 1px);
+  border-radius: var(--gitpulse-radius-sm);
+  font-size: 0.75rem;
+}
+
+.gp-btn--medium {
+  font-size: 1.125rem;
+}
+
+.gp-btn--large {
+  padding: 0.65rem 1.5rem;
+  border-radius: var(--gitpulse-radius-md);
+  font-size: 1.1rem;
+}
+
+.gp-btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.gp-btn--pill {
+  border-radius: 999px;
+}
+
+// Filled button variants (ADR 0032 / ADR 0049): hover tint is gated; keyboard
+// focus and active press deepen the control's own fill. Outlined buttons are
+// non-filled and stay excluded from filled active press rules.
+@mixin gp-filled-button($solid, $hover) {
+  &:not(.gp-btn--outlined) {
+    border-color: $solid;
+    background-color: $solid;
+    color: #ffffff;
+
+    @include hover-only {
+      &:hover:not(:disabled, [aria-disabled='true']) {
+        border-color: $hover;
+        background-color: $hover;
+        color: #ffffff;
+      }
+    }
+
+    &:focus-visible,
+    &:active:not(:disabled, [aria-disabled='true']) {
+      border-color: $hover;
+      background-color: $hover;
+      color: #ffffff;
+    }
+
+    &:disabled,
+    &[aria-disabled='true'] {
+      border-color: $solid;
+      background-color: $solid;
+      color: #ffffff;
+    }
+  }
+}
+
+.gp-btn--primary {
+  @include gp-filled-button(var(--gitpulse-primary-solid), var(--gitpulse-primary-solid-hover));
+}
+
+.gp-btn--link {
+  @include gp-filled-button(var(--gitpulse-link-solid), var(--gitpulse-link-solid-hover));
+}
+
+.gp-btn--info {
+  @include gp-filled-button(var(--gitpulse-info-solid), var(--gitpulse-info-solid-hover));
+}
+
+.gp-btn--success {
+  @include gp-filled-button(var(--gitpulse-success-solid), var(--gitpulse-success-solid-hover));
+}
+
+.gp-btn--warning {
+  @include gp-filled-button(var(--gitpulse-warning-solid), var(--gitpulse-warning-solid-hover));
+}
+
+.gp-btn--danger {
+  @include gp-filled-button(var(--gitpulse-danger-solid), var(--gitpulse-danger-solid-hover));
+}
+
+// Non-filled button variants (ADR 0049): hover is gated, keyboard uses
+// :focus-visible, and :active paints nothing.
+.gp-btn--secondary,
+.gp-btn--light {
+  border-color: var(--gitpulse-border);
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-strong);
+
+  @include hover-only {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      border-color: var(--gitpulse-border-strong);
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
+  }
+
+  &:focus-visible {
+    border-color: var(--gitpulse-border-strong);
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text-strong);
+  }
+}
+
+.gp-btn--ghost {
+  border-color: transparent;
+  background-color: transparent;
+  color: var(--gitpulse-text);
+
+  @include hover-only {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      background-color: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
+    }
+  }
+
+  &:focus-visible {
+    background-color: var(--gitpulse-surface-hover);
+    color: var(--gitpulse-text-strong);
+  }
+}
+
+.gp-btn--danger-soft {
+  border-color: color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  background-color: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+
+  @include hover-only {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      border-color: color-mix(in srgb, var(--gitpulse-danger) 42%, transparent);
+      background-color: color-mix(in srgb, var(--gitpulse-danger) 18%, transparent);
+      color: var(--gitpulse-danger);
+    }
+  }
+
+  &:focus-visible {
+    border-color: color-mix(in srgb, var(--gitpulse-danger) 42%, transparent);
+    background-color: color-mix(in srgb, var(--gitpulse-danger) 18%, transparent);
+    color: var(--gitpulse-danger);
+  }
+}
+
+.gp-btn--outlined {
+  background-color: transparent;
+
+  &.gp-btn--primary {
+    border-color: var(--gitpulse-primary-solid);
+    color: var(--gitpulse-accent);
+
+    @include hover-only {
+      &:hover:not(:disabled, [aria-disabled='true']) {
+        background-color: var(--gitpulse-accent-soft);
+        border-color: var(--gitpulse-primary-solid);
+        color: var(--gitpulse-accent);
+      }
+    }
+
+    &:focus-visible {
+      background-color: var(--gitpulse-accent-soft);
+      border-color: var(--gitpulse-primary-solid);
+      color: var(--gitpulse-accent);
+    }
+  }
+
+  &.gp-btn--link {
+    border-color: var(--gitpulse-link);
+    color: var(--gitpulse-link);
+
+    @include hover-only {
+      &:hover:not(:disabled, [aria-disabled='true']) {
+        background-color: var(--gitpulse-info-soft);
+        border-color: var(--gitpulse-link);
+        color: var(--gitpulse-link);
+      }
+    }
+
+    &:focus-visible {
+      background-color: var(--gitpulse-info-soft);
+      border-color: var(--gitpulse-link);
+      color: var(--gitpulse-link);
+    }
+  }
+
+  &.gp-btn--danger {
+    border-color: var(--gitpulse-danger);
+    color: var(--gitpulse-danger);
+
+    @include hover-only {
+      &:hover:not(:disabled, [aria-disabled='true']) {
+        background-color: var(--gitpulse-danger-soft);
+        border-color: var(--gitpulse-danger);
+        color: var(--gitpulse-danger);
+      }
+    }
+
+    &:focus-visible {
+      background-color: var(--gitpulse-danger-soft);
+      border-color: var(--gitpulse-danger);
+      color: var(--gitpulse-danger);
+    }
+  }
+
+  &.gp-btn--secondary,
+  &.gp-btn--light {
+    border-color: var(--gitpulse-border-strong);
+    background-color: transparent;
+    color: var(--gitpulse-text-strong);
+  }
+}
+
+.gp-btn--loading {
+  color: transparent;
+  pointer-events: none;
+
+  @include hover-only {
+    &:hover {
+      color: transparent;
+    }
+  }
+
+  &:focus-visible,
+  &:active,
+  &:disabled,
+  &[aria-disabled='true'] {
+    color: transparent;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: calc(50% - 0.5em);
+    top: calc(50% - 0.5em);
+    width: 1em;
+    height: 1em;
+    border: 2px solid var(--gitpulse-text-strong);
+    border-radius: 999px;
+    border-right-color: transparent;
+    border-top-color: transparent;
+    animation: spin 0.5s linear infinite;
+  }
+
+  &.gp-btn--primary::after,
+  &.gp-btn--link::after,
+  &.gp-btn--info::after,
+  &.gp-btn--success::after,
+  &.gp-btn--warning::after,
+  &.gp-btn--danger::after {
+    border-color: #ffffff;
+    border-right-color: transparent;
+    border-top-color: transparent;
+  }
+
+  &.gp-btn--outlined::after {
+    border-color: var(--gitpulse-text-strong);
+    border-right-color: transparent;
+    border-top-color: transparent;
+  }
+}
+
+.gp-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+// ── Form controls ──
+
+.gp-field {
+  display: block;
+
+  &:not(:last-child) {
+    margin-bottom: 0.75rem;
+  }
+}
+
+.gp-label {
+  display: block;
+  color: var(--gitpulse-text-strong);
+  font-size: 1rem;
+  font-weight: 600;
+
+  &:not(:last-child) {
+    margin-bottom: 0.5em;
+  }
+}
+
+.gp-control {
+  position: relative;
+  box-sizing: border-box;
+  font-size: 1rem;
+  text-align: inherit;
+}
+
+.gp-control--icon-left {
+  .gp-input {
+    padding-left: 2.5em;
+  }
+
+  .gp-control__icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5em;
+    height: 2.5em;
+    color: var(--gitpulse-text-muted);
+    pointer-events: none;
+  }
+
+  .gp-input--small ~ .gp-control__icon {
+    font-size: 0.75rem;
+  }
+
+  .gp-input--medium ~ .gp-control__icon {
+    font-size: 1.125rem;
+  }
+
+  .gp-input:focus ~ .gp-control__icon {
+    color: var(--gitpulse-focus-ring);
+  }
+}
+
+.gp-input,
+.gp-textarea {
+  appearance: none;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--gitpulse-input-border);
+  border-radius: var(--gitpulse-radius-md);
+  background-color: var(--gitpulse-input-bg);
+  color: var(--gitpulse-text-strong);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background-color 0.16s ease;
+
+  &::placeholder {
+    color: var(--gitpulse-text-subtle);
+  }
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      border-color: var(--gitpulse-border-strong);
+    }
+  }
+
+  // Form fields keep bare :focus (ADR 0049) so a field stays tinted while typing.
+  &:focus {
+    outline: none;
+    border-color: var(--gitpulse-focus-ring);
+    box-shadow: 0 0 0 0.125em color-mix(in srgb, var(--gitpulse-focus-ring) 25%, transparent);
+  }
+
+  &:disabled {
+    border-color: var(--gitpulse-border);
+    background-color: var(--gitpulse-surface-muted);
+    color: var(--gitpulse-text-subtle);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+}
+
+.gp-input {
+  height: 2.5em;
+  padding: calc(0.5em - 1px) calc(0.75em - 1px);
+}
+
+.gp-input--small {
+  border-radius: var(--gitpulse-radius-sm);
+  font-size: 0.75rem;
+}
+
+.gp-input--medium {
+  font-size: 1.125rem;
+}
+
+.gp-textarea {
+  min-width: 100%;
+  padding: calc(0.5em - 1px) calc(0.75em - 1px);
+  resize: vertical;
+
+  &:not([rows]) {
+    min-height: 8em;
+    max-height: 40em;
+  }
+}
+
+.gp-checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.25;
+  color: var(--gitpulse-text);
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    cursor: pointer;
+    accent-color: var(--gitpulse-accent);
+  }
+
+  input[type='checkbox']:disabled {
+    cursor: not-allowed;
+  }
+
+  &:has(input[type='checkbox']:disabled) {
+    color: var(--gitpulse-text-subtle);
+    cursor: not-allowed;
+  }
+}
+
+.gp-help {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--gitpulse-text-muted);
+}
+
+// ── Status notices & dismiss buttons ──
+
+.gp-notice {
+  position: relative;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-md);
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text);
+
+  &:not(:last-child) {
+    margin-bottom: 1rem;
+  }
+
+  a:not(.gp-btn) {
+    color: currentColor;
+    text-decoration: underline;
+  }
+
+  strong {
+    color: currentColor;
+  }
+
+  & > .gp-dismiss {
+    position: absolute;
+    top: 0.75rem;
+    inset-inline-end: 0.75rem;
+  }
+}
+
+.gp-notice--compact {
+  padding: 0.5rem 0.75rem;
+
+  & > .gp-dismiss {
+    top: 0.5rem;
+    inset-inline-end: 0.5rem;
+  }
+
+  &:has(> .gp-dismiss) {
+    padding-inline-end: 2rem;
+  }
+}
+
+.gp-notice--danger {
+  border-color: color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  background-color: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+}
+
+.gp-notice--warning {
+  border-color: color-mix(in srgb, var(--gitpulse-warning) 28%, transparent);
+  background-color: var(--gitpulse-warning-soft);
+  color: var(--gitpulse-warning);
+}
+
+.gp-notice--info {
+  border-color: color-mix(in srgb, var(--gitpulse-info) 24%, transparent);
+  background-color: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
+}
+
+.gp-notice--success {
+  border-color: color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
+  background-color: var(--gitpulse-success-soft);
+  color: var(--gitpulse-success);
+}
+
+.gp-dismiss {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--gitpulse-text-muted) 34%, transparent);
+  cursor: pointer;
+  vertical-align: top;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background-color: var(--gitpulse-surface);
+    transform: translate(-50%, -50%) rotate(45deg);
+    transform-origin: center;
+  }
+
+  &::before {
+    width: 50%;
+    height: 2px;
+  }
+
+  &::after {
+    width: 2px;
+    height: 50%;
+  }
+
+  @include hover-only {
+    &:hover:not(:disabled) {
+      background-color: color-mix(in srgb, var(--gitpulse-text-strong) 42%, transparent);
+    }
+  }
+
+  &:focus-visible {
+    background-color: color-mix(in srgb, var(--gitpulse-text-strong) 42%, transparent);
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.gp-dismiss--small {
+  width: 1rem;
+  height: 1rem;
+}
+
+// ── Tags (#203 primitive) ──
+
+.gp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gp-tags--inline {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.gp-tags--addons {
+  gap: 0;
+
+  > .gp-tag:not(:first-child) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+    margin-inline-start: -1px;
+  }
+
+  > .gp-tag:not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+}
+
+.gp-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3em;
+  height: 2em;
+  padding: 0 0.75em;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-sm);
+  background-color: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-strong);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.gp-tag--small {
+  height: 1.8em;
+  padding: 0 0.55em;
+  font-size: 0.7rem;
+}
+
+.gp-tag--activity {
+  margin-bottom: 0.3rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.gp-tag--primary {
+  border-color: color-mix(in srgb, var(--gitpulse-primary-solid) 24%, transparent);
+  background-color: var(--gitpulse-accent-soft);
+  color: var(--gitpulse-accent);
+}
+
+.gp-tag--link {
+  border-color: color-mix(in srgb, var(--gitpulse-link) 24%, transparent);
+  background-color: var(--gitpulse-link-soft);
+  color: var(--gitpulse-link);
+}
+
+.gp-tag--info {
+  border-color: color-mix(in srgb, var(--gitpulse-info) 22%, transparent);
+  background-color: var(--gitpulse-info-soft);
+  color: var(--gitpulse-info);
+}
+
+.gp-tag--success {
+  border-color: color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
+  background-color: var(--gitpulse-success-soft);
+  color: var(--gitpulse-success);
+}
+
+.gp-tag--warning {
+  border-color: color-mix(in srgb, var(--gitpulse-warning) 28%, transparent);
+  background-color: var(--gitpulse-warning-soft);
+  color: var(--gitpulse-warning);
+}
+
+.gp-tag--danger {
+  border-color: color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
+  background-color: var(--gitpulse-danger-soft);
+  color: var(--gitpulse-danger);
+}
+
+.gp-tag--raised {
+  border-color: var(--gitpulse-border);
+  background-color: var(--gitpulse-surface-raised);
+  color: var(--gitpulse-text-strong);
+}

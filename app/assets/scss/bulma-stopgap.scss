@@ -2,23 +2,15 @@
 
 // Temporary layered Bulma stopgap (ADR 0057).
 // Excluded: base/minireset, base/generic, base/skeleton, helpers/*,
-// grid/{grid,columns}, components/{breadcrumb,dropdown,menu,message,modal,navbar,pagination,panel,tabs},
-// elements/{block,box,content,loader,progress,table}, form/{file,select},
+// grid/{grid,columns}, components/{breadcrumb,card,dropdown,menu,message,modal,navbar,pagination,panel,tabs},
+// elements/{block,box,content,delete,loader,notification,progress,table},
+// form/{checkbox-radio,file,input-textarea,select,shared,tools},
 // layout/{container,footer,hero,level,media,section}.
 @layer bulma {
   @layer components {
     // Core runtime required while any Bulma component module remains (#206)
     @include meta.load-css('bulma/sass/themes');
     @include meta.load-css('bulma/sass/base/animations');
-
-    // Forms, notices, delete, cards (#201)
-    @include meta.load-css('bulma/sass/form/shared');
-    @include meta.load-css('bulma/sass/form/tools');
-    @include meta.load-css('bulma/sass/form/input-textarea');
-    @include meta.load-css('bulma/sass/form/checkbox-radio');
-    @include meta.load-css('bulma/sass/elements/notification');
-    @include meta.load-css('bulma/sass/elements/delete');
-    @include meta.load-css('bulma/sass/components/card');
 
     // Buttons (#202)
     @include meta.load-css('bulma/sass/elements/button');

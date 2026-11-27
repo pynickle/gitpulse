@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
             </span>
             <div class="tree-group-main">
               <input
-                class="input is-small tree-name-input"
+                class="gp-input gp-input--small tree-name-input"
                 :value="group.name"
                 :disabled="!canEditGroup(group)"
                 @change="
@@ -273,16 +273,16 @@ onBeforeUnmount(() => {
               {{ t('dashboard.tabsSettings.addChildGroupLabel', { group: group.name }) }}
             </div>
             <div class="inline-child-creator__controls">
-              <div class="control has-icons-left inline-child-creator__input">
+              <div class="gp-control gp-control--icon-left inline-child-creator__input">
                 <input
                   v-model="childGroupName"
-                  class="input is-small"
+                  class="gp-input gp-input--small"
                   type="text"
                   :placeholder="t('dashboard.tabsSettings.childGroupNamePlaceholder')"
                   @keyup.enter="handleCreateChildGroup"
                   @keyup.esc="handleCancelChildGroup"
                 />
-                <span class="icon is-small is-left"><FolderIcon :size="14" /></span>
+                <span class="gp-control__icon"><FolderIcon :size="14" /></span>
               </div>
               <button
                 class="button is-primary is-small"
@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
                     v-if="editingSubtitleTabId === tab.id"
                     :ref="setSubtitleInputRef"
                     v-model="editingSubtitleDraft"
-                    class="input is-small tab-subtitle-input"
+                    class="gp-input gp-input--small tab-subtitle-input"
                     type="text"
                     :aria-label="t('dashboard.tabsSettings.editSubtitleLabel', { view: tab.name })"
                     @keydown.enter.stop.prevent="saveSubtitleFromInput(tab)"
@@ -416,17 +416,17 @@ onBeforeUnmount(() => {
       <span class="group-creator-tile__icon" aria-hidden="true">
         <FolderPlusIcon :size="16" />
       </span>
-      <div class="control has-icons-left group-creator-tile__input">
+      <div class="gp-control gp-control--icon-left group-creator-tile__input">
         <input
           id="new-group-name"
           v-model="newGroup.name"
-          class="input is-small"
+          class="gp-input gp-input--small"
           type="text"
           :aria-label="t('dashboard.tabsSettings.groupNameLabel')"
           :placeholder="t('dashboard.tabsSettings.groupNamePlaceholder')"
           @keyup.enter="handleCreateGroup"
         />
-        <span class="icon is-small is-left"><FolderIcon :size="14" /></span>
+        <span class="gp-control__icon"><FolderIcon :size="14" /></span>
       </div>
       <button
         class="button is-primary is-small group-create-button"

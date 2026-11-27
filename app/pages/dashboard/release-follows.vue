@@ -37,7 +37,7 @@ const handleHome = async () => {
    its own scrolling and padding and hands over one full-height flex box. The
    content class lands on the SimpleBar content element as well; flattening that
    wrapper lets the page itself be the flex item that fills the overlay. */
-.card-content.release-follows-overlay-content {
+.detail-frame__content.release-follows-overlay-content {
   padding: 0;
   display: flex;
   flex-direction: column;

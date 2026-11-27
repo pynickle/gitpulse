@@ -464,7 +464,7 @@ defineExpose({
       <textarea
         ref="textareaRef"
         :value="draft"
-        class="textarea markdown-composer__textarea"
+        class="gp-textarea markdown-composer__textarea"
         :class="{ 'markdown-composer__textarea--hidden': !writeVisible }"
         role="combobox"
         :rows="compact ? 4 : 6"
