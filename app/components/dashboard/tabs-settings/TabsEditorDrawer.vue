@@ -82,17 +82,17 @@ const {
 
     <ScrollArea class="drawer-body" media="(max-width: 1160px)" content-class="drawer-body-flow">
       <ScrollArea class="drawer-form" media="(min-width: 1161px)">
-        <div class="field">
-          <label class="label">{{ t('dashboard.tabsSettings.viewNameLabel') }}</label>
-          <div class="control has-icons-left">
-            <input v-model="newTab.name" class="input" type="text" />
-            <span class="icon is-small is-left"><SearchIcon :size="16" /></span>
+        <div class="gp-field">
+          <label class="gp-label">{{ t('dashboard.tabsSettings.viewNameLabel') }}</label>
+          <div class="gp-control gp-control--icon-left">
+            <input v-model="newTab.name" class="gp-input" type="text" />
+            <span class="gp-control__icon"><SearchIcon :size="16" /></span>
           </div>
         </div>
 
-        <div class="field">
+        <div class="gp-field">
           <div class="subtitle-label-row">
-            <label class="label mb-0" for="new-tab-subtitle">
+            <label class="gp-label mb-0" for="new-tab-subtitle">
               {{ t('dashboard.tabsSettings.viewSubtitleLabel') }}
             </label>
             <div
@@ -114,17 +114,17 @@ const {
               </button>
             </div>
           </div>
-          <div v-if="newTab.subtitleMode === 'custom'" class="control has-icons-left">
+          <div v-if="newTab.subtitleMode === 'custom'" class="gp-control gp-control--icon-left">
             <input
               id="new-tab-subtitle"
-              class="input"
+              class="gp-input"
               type="text"
               :value="newTab.subtitle"
               @input="handleSubtitleInput"
             />
-            <span class="icon is-small is-left"><ListFilterIcon :size="16" /></span>
+            <span class="gp-control__icon"><ListFilterIcon :size="16" /></span>
           </div>
-          <p v-if="newTab.subtitleMode === 'none'" class="help subtitle-auto-hint">
+          <p v-if="newTab.subtitleMode === 'none'" class="gp-help subtitle-auto-hint">
             {{ t('dashboard.tabsSettings.noSubtitleHint') }}
           </p>
         </div>
@@ -167,8 +167,8 @@ const {
             </div>
           </div>
 
-          <div class="field">
-            <label class="label">{{ t('dashboard.tabsSettings.searchSyntaxInputLabel') }}</label>
+          <div class="gp-field">
+            <label class="gp-label">{{ t('dashboard.tabsSettings.searchSyntaxInputLabel') }}</label>
             <GitHubSearchSyntaxEditor
               v-model="newTab.query.syntax"
               :ast="searchSyntaxAst"

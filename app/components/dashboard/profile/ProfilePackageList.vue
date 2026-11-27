@@ -130,7 +130,7 @@ const updatedLabel = (pkg: PackageSummary) => {
           v-for="pkg in items"
           :key="`${pkg.packageType}:${pkg.id}`"
           type="button"
-          class="profile-package-list__item card"
+          class="profile-package-list__item"
           @click="emit('select-package', pkg)"
         >
           <div class="profile-package-list__item-title-row">
@@ -241,11 +241,16 @@ const updatedLabel = (pkg: PackageSummary) => {
 }
 
 .profile-package-list__item {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.12s ease;

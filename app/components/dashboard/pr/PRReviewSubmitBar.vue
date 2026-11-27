@@ -165,7 +165,7 @@ const toggleSection = (section: string) => {
               compact
               @update:model-value="emit('update:body', $event)"
             />
-            <p class="help mb-0">{{ t('prReview.bodyRequiredHint') }}</p>
+            <p class="gp-help mb-0">{{ t('prReview.bodyRequiredHint') }}</p>
           </div>
         </section>
 
@@ -218,7 +218,11 @@ const toggleSection = (section: string) => {
       </ScrollArea>
 
       <div class="pr-review-submit-bar__footer">
-        <div v-if="errorMessage" class="notification is-danger is-light py-2 px-3 mb-3">
+        <div
+          v-if="errorMessage"
+          class="gp-notice gp-notice--danger gp-notice--compact mb-3"
+          role="alert"
+        >
           <p class="is-size-7">{{ errorMessage }}</p>
         </div>
         <button

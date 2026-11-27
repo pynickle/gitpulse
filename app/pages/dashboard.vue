@@ -97,7 +97,7 @@
           :show-reload="!dashboardHomeChrome.showTopBarRefresh"
           @manage="handleReleaseFollowsManage"
         />
-        <div v-else class="card dashboard-main-card">
+        <div v-else class="dashboard-main-card">
           <div
             v-if="dashboardHomeChrome.showListTitleRow || dashboardHomeChrome.showFilterPills"
             class="dashboard-tabs-header"
@@ -124,7 +124,7 @@
             </div>
           </div>
 
-          <div class="card-content dashboard-list-card-content">
+          <div class="dashboard-list-card-content">
             <div v-if="dashboardListLoading || !dashboardListError" class="dashboard-list-shell">
               <ScrollArea
                 class="dashboard-list-scroll"
@@ -1679,6 +1679,7 @@ watch(
 }
 
 .dashboard-main-card {
+  position: relative;
   display: flex;
   width: 100%;
   max-width: 54rem;
@@ -1687,6 +1688,11 @@ watch(
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .dashboard-tabs-header {
@@ -1740,8 +1746,7 @@ watch(
 .dashboard-list-card-content {
   display: flex;
   min-height: 0;
-  padding-top: 0.25rem;
-  padding-bottom: 0.75rem;
+  padding: 0.25rem 1.5rem 0.75rem;
   flex: 1;
 }
 

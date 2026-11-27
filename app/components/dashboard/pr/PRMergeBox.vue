@@ -455,7 +455,7 @@
                 <input
                   :id="commitTitleId"
                   v-model="commitTitle"
-                  class="input merge-box__commit-input"
+                  class="gp-input merge-box__commit-input"
                   type="text"
                   :disabled="merging"
                 />
@@ -467,7 +467,7 @@
                 <textarea
                   :id="commitMessageId"
                   v-model="commitMessage"
-                  class="textarea merge-box__commit-textarea"
+                  class="gp-textarea merge-box__commit-textarea"
                   rows="4"
                   :placeholder="t('prReview.mergeBox.commitMessagePlaceholder')"
                   :disabled="merging"

@@ -571,7 +571,7 @@ onBeforeUnmount(() => {
                 <p class="mb-0">{{ comment.body }}</p>
               </div>
               <button
-                class="delete is-small"
+                class="gp-dismiss gp-dismiss--small"
                 type="button"
                 :aria-label="t('prReview.removeDraft')"
                 :disabled="submitting"

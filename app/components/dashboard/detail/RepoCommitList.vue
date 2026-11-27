@@ -36,7 +36,7 @@ const { t } = useI18n();
       </div>
       <p class="repo-commit-list__error-title">{{ t('repoDetail.listErrorTitle') }}</p>
       <p class="repo-commit-list__error-message">{{ error }}</p>
-      <Button color="primary" size="normal" @click="emit('retry')">
+      <Button variant="primary" size="normal" @click="emit('retry')">
         {{ t('repoDetail.retry') }}
       </Button>
     </div>

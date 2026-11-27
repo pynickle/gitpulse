@@ -1,12 +1,12 @@
 <template>
   <div
-    class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
+    class="dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
     :class="{
       'is-unread': currentNotification.unread,
       'notification-card--todo': isTodoCard,
     }"
   >
-    <div class="card-content p-3">
+    <div class="dashboard-list-card__body p-3">
       <div class="dashboard-list-card__main-row notification-card__main-row">
         <div class="dashboard-list-card__icon">
           <figure class="image is-32x32">

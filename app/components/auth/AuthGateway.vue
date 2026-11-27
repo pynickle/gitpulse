@@ -7,11 +7,7 @@
     </div>
 
     <div class="auth-gateway__content">
-      <Button
-        v-if="providers.oauthEnabled"
-        :href="oauthHref"
-        class="is-fullwidth is-justify-content-center mb-0"
-      >
+      <Button v-if="providers.oauthEnabled" :href="oauthHref" size="large" block class="mb-0">
         <GitHubIcon class="mr-3" />
         {{ t('auth.connectWithGithub') }}
       </Button>
@@ -21,26 +17,26 @@
       </div>
 
       <form v-if="showPatSection" class="auth-gateway__pat" @submit.prevent="handlePatSubmit">
-        <div class="field">
-          <label class="label auth-gateway__label" for="github-pat-input">{{
+        <div class="gp-field">
+          <label class="gp-label auth-gateway__label" for="github-pat-input">{{
             t('auth.tokenLabel')
           }}</label>
-          <div class="control has-icons-left">
+          <div class="gp-control gp-control--icon-left">
             <input
               id="github-pat-input"
               v-model="token"
-              class="input"
+              class="gp-input"
               type="password"
               autocomplete="off"
               spellcheck="false"
               :placeholder="t('auth.tokenPlaceholder')"
               :disabled="submitting"
             />
-            <span class="icon is-left auth-gateway__input-icon">
+            <span class="gp-control__icon auth-gateway__input-icon">
               <KeyRoundIcon :size="18" />
             </span>
           </div>
-          <p class="help has-text-grey-dark auth-gateway__help">
+          <p class="gp-help has-text-grey-dark auth-gateway__help">
             {{ t('auth.tokenHelp') }}
             <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer">
               {{ t('auth.tokenHelpLink') }}
@@ -55,11 +51,11 @@
           </div>
         </div>
 
-        <div v-if="tokenError" class="notification is-danger is-light auth-gateway__error">
+        <div v-if="tokenError" class="gp-notice gp-notice--danger auth-gateway__error" role="alert">
           {{ tokenError }}
         </div>
 
-        <Button type="submit" class="is-fullwidth is-justify-content-center" :disabled="submitting">
+        <Button type="submit" size="large" block :disabled="submitting">
           <LoadingIcon v-if="submitting" class="mr-3" :size="18" />
           <KeyRoundIcon v-else class="mr-3" :size="18" />
           {{ submitting ? t('auth.connectingWithPat') : t('auth.continueWithPat') }}

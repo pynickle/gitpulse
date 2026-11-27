@@ -3,7 +3,7 @@
     v-if="canNavigate"
     href="#"
     @click.prevent="handleClick"
-    class="tags has-addons is-inline ml-1"
+    class="tags reference-subject is-inline ml-1"
   >
     <span class="tag is-activity is-danger is-light">
       <span v-if="crossRepository && refSubject?.repository?.nameWithOwner" class="mr-1">
@@ -18,7 +18,7 @@
     </span>
   </a>
 
-  <span v-else class="tags has-addons is-inline ml-1">
+  <span v-else class="tags reference-subject is-inline ml-1">
     <span class="tag is-activity is-danger is-light">
       {{ formatReferenceType(resolvedResourceType) }} #{{ refSubject?.number ?? '?' }}
     </span>
@@ -95,3 +95,19 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
   emit('switch-pull-request', owner, repo, pullNumber);
 };
 </script>
+
+<style scoped lang="scss">
+.reference-subject {
+  gap: 0;
+
+  > .tag:not(:first-child) {
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+  }
+
+  > .tag:not(:last-child) {
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+  }
+}
+</style>

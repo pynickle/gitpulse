@@ -19,17 +19,12 @@
       <p class="subtitle is-6 has-text-grey mb-5">@{{ user.login }}</p>
 
       <div class="buttons is-flex is-flex-direction-column auth-shell__actions">
-        <Button class="is-fullwidth is-justify-content-center" @click="handleGoToDashboard">
+        <Button size="large" block @click="handleGoToDashboard">
           <LayoutDashboardIcon class="mr-3" :size="20" />
           {{ t('landing.goToDashboard') }}
         </Button>
 
-        <Button
-          color="light"
-          :lifted="false"
-          class="is-fullwidth is-justify-content-center"
-          @click="$emit('logout')"
-        >
+        <Button variant="light" size="large" block @click="$emit('logout')">
           <LogOutIcon class="mr-3" :size="20" />
           {{ t('landing.loggedOut') }}
         </Button>

@@ -1,8 +1,6 @@
 <template>
-  <div
-    class="card dashboard-list-card dashboard-list-card--repo dashboard-list-card--compact repo-item"
-  >
-    <div class="card-content p-3 pl-4">
+  <div class="dashboard-list-card dashboard-list-card--repo dashboard-list-card--compact repo-item">
+    <div class="dashboard-list-card__body p-3 pl-4">
       <div class="dashboard-list-card__content">
         <div class="dashboard-list-card__text-stack mb-2">
           <p class="title is-6 mb-1 dashboard-list-card__title">{{ repo.name }}</p>

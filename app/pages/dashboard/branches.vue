@@ -324,11 +324,7 @@ watch(repoFullName, () => {
           class="branches-page__list"
           :class="{ 'branches-page__list--loading': loading }"
         >
-          <article
-            v-for="branch in filteredItems"
-            :key="branch.name"
-            class="branches-page__item card"
-          >
+          <article v-for="branch in filteredItems" :key="branch.name" class="branches-page__item">
             <button
               type="button"
               class="branches-page__item-main"
@@ -580,11 +576,17 @@ watch(repoFullName, () => {
 }
 
 .branches-page__item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.875rem 1rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
 
   @media (max-width: 640px) {
     flex-direction: column;

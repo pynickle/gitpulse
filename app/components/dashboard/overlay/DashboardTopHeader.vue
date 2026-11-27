@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-top-header">
-    <div class="card-header-title dashboard-top-header__toolbar">
+    <div class="dashboard-top-header__toolbar">
       <div class="buttons dashboard-top-header__nav">
         <button type="button" class="button is-light is-small" @click="$emit('back')">
           <ArrowLeftIcon :size="18" class="mr-1" />
@@ -194,11 +194,13 @@ const isDetailSummaryVisible = computed(() => {
 
 .dashboard-top-header__toolbar {
   display: flex;
+  flex-grow: 1;
   flex-wrap: wrap;
   align-items: center;
   min-height: var(--gitpulse-topbar-height);
   padding: 0.4rem 1rem;
   gap: 0.5rem 0.75rem;
+  color: var(--gitpulse-text-strong);
 }
 
 .dashboard-top-header__nav {

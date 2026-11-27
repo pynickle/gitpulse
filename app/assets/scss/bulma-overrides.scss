@@ -111,43 +111,22 @@ html.dark {
 
 .navbar .title,
 .title,
-.label,
 .has-text-weight-semibold {
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .subtitle,
-.help,
 .has-text-grey,
 .has-text-grey-dark,
 .has-text-grey-light {
   color: var(--gitpulse-text-muted);
 }
 
-.card,
 .box {
   border-color: var(--gitpulse-border);
   background-color: var(--gitpulse-surface);
   color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.box {
   box-shadow: var(--gitpulse-shadow-raised);
-}
-
-.input,
-.textarea {
-  border-color: var(--gitpulse-input-border);
-  background-color: var(--gitpulse-input-bg);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-
-  &::placeholder {
-    color: var(--gitpulse-text-subtle);
-  }
-}
-
-.checkbox {
-  color: var(--bulma-text, var(--gitpulse-text));
 }
 
 .button {
@@ -378,25 +357,16 @@ html.dark {
   color: var(--gitpulse-success);
 }
 
-.tag.is-danger.is-light,
-.notification.is-danger.is-light {
+.tag.is-danger.is-light {
   border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
   background-color: var(--gitpulse-danger-soft);
   color: var(--gitpulse-danger);
 }
 
-.tag.is-warning.is-light,
-.notification.is-warning.is-light {
+.tag.is-warning.is-light {
   border: 1px solid color-mix(in srgb, var(--gitpulse-warning) 28%, transparent);
   background-color: var(--gitpulse-warning-soft);
   color: var(--gitpulse-warning);
-}
-
-.notification.is-light,
-.notification:not([class*='is-']) {
-  border: 1px solid var(--gitpulse-border);
-  background-color: var(--gitpulse-surface-muted);
-  color: var(--bulma-text, var(--gitpulse-text));
 }
 
 .tabs a {
@@ -407,20 +377,6 @@ html.dark {
       border-bottom-color: var(--gitpulse-border-strong);
       color: var(--bulma-text-strong, var(--gitpulse-text-strong));
     }
-  }
-}
-
-.delete {
-  background-color: color-mix(in srgb, var(--gitpulse-text-muted) 34%, transparent);
-
-  @include hover-only {
-    &:hover {
-      background-color: color-mix(in srgb, var(--gitpulse-text-strong) 42%, transparent);
-    }
-  }
-
-  &:focus-visible {
-    background-color: color-mix(in srgb, var(--gitpulse-text-strong) 42%, transparent);
   }
 }
 

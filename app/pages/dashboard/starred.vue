@@ -253,9 +253,9 @@ watch(requestedUser, () => {
 </style>
 
 <style lang="scss">
-/* The overlay frame's card-content has a 2rem bottom padding; strip it so the
+/* The overlay frame's content has a 2rem bottom padding; strip it so the
    sticky pagination bar sits flush with the bottom of the scrollport. */
-.card-content.starred-page-content {
+.detail-frame__content.starred-page-content {
   padding-bottom: 0;
 }
 </style>

@@ -29,7 +29,11 @@
         @scroll="onCompactHeaderScroll"
         media="(min-width: 1025px)"
       >
-        <div v-if="detailError" class="notification is-danger is-light mb-4 py-2 px-3">
+        <div
+          v-if="detailError"
+          class="gp-notice gp-notice--danger gp-notice--compact mb-4"
+          role="alert"
+        >
           <p class="is-size-7">{{ detailError }}</p>
         </div>
 

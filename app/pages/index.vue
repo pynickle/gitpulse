@@ -10,19 +10,28 @@
     :paragraphs="[t('app.subtitle'), t('landing.heroDescription')]"
     logo-alt="GitPulse Logo"
   >
-    <div v-if="pageErrorMessage" class="notification is-danger is-light landing-shell__notice">
+    <div
+      v-if="pageErrorMessage"
+      class="gp-notice gp-notice--danger landing-shell__notice"
+      role="alert"
+    >
       {{ pageErrorMessage }}
     </div>
 
     <div
       v-for="warning in providerWarnings"
       :key="warning"
-      class="notification is-warning is-light landing-shell__notice"
+      class="gp-notice gp-notice--warning landing-shell__notice"
+      role="status"
     >
       {{ warning }}
     </div>
 
-    <div v-if="showProvidersError" class="notification is-danger is-light landing-shell__notice">
+    <div
+      v-if="showProvidersError"
+      class="gp-notice gp-notice--danger landing-shell__notice"
+      role="alert"
+    >
       {{ t('auth.providerStateUnavailable') }}
     </div>
 

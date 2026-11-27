@@ -19,12 +19,12 @@ const skeletonCardCount = 20;
       class="mb-4 mr-4"
     >
       <div
-        class="card dashboard-list-card dashboard-loading-card"
+        class="dashboard-list-card dashboard-loading-card"
         :class="
           currentTab === 'repos' ? 'dashboard-list-card--repo' : 'dashboard-list-card--activity'
         "
       >
-        <div class="card-content p-3" :class="{ 'pl-4': currentTab === 'repos' }">
+        <div class="dashboard-list-card__body p-3" :class="{ 'pl-4': currentTab === 'repos' }">
           <div class="media mb-2">
             <div v-if="currentTab !== 'repos'" class="media-left ml-2 mt-2">
               <span class="dashboard-loading-card__icon" />
