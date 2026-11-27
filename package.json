@@ -60,7 +60,7 @@
     "oxfmt": "^0.80.0",
     "oxlint": "^1.95.0",
     "portless": "^0.18.1",
-    "postcss": "8.5.33",
+    "postcss": "8.5.34",
     "sass-embedded": "1.108.2",
     "tsrs": "^7.1.0-beta.tsrs5",
     "typescript": "^6.0.3",
